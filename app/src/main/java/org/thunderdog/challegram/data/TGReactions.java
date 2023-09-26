@@ -222,10 +222,14 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
       TGReactions.MessageReactionEntry entry = reactionsMapEntry.get(reactionKey);
       if (entry != null) {
         entry.setCount(
-          filterSenders(reaction.recentSenderIds, mode),
+          limitSenders(filterSenders(reaction.recentSenderIds, mode), reaction.totalCount > 3 ? 2 : 3),
           reaction.totalCount, reaction.isChosen, animated);
       }
     }
+  }
+
+  private TdApi.MessageSender[] limitSenders (TdApi.MessageSender[] senders, int maxCount) {
+    return senders != null && senders.length > maxCount ? Arrays.copyOfRange(senders, 0, maxCount) : senders;
   }
 
   private TdApi.MessageSender[] filterSenders (TdApi.MessageSender[] senders, int mode) {

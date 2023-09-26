@@ -65,6 +65,7 @@ import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.PopupLayout;
+import org.thunderdog.challegram.widget.Popups.ItemDecorationFirstViewTop;
 import org.thunderdog.challegram.widget.ViewPager;
 
 import java.util.Arrays;
@@ -642,26 +643,19 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   private PickerOpenerScrollListener reactionsPickerScrollListener;
   private View reactionsPickerBottomHeaderView;
   private boolean doNotUpdateScrollReactionPicker;
+  private ItemDecorationFirstViewTop reactionPickerTopDecoration;
 
   private CustomRecyclerView createReactionsPopupPicker () {
     reactionsPickerVisibility = new BoolAnimator(REACTIONS_PICKER_VISIBILITY_ANIMATOR_ID, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 280L, false);
     reactionsPickerController = new ReactionsPickerController(context, tdlib) {
       @Override
       protected void onBottomHeaderEnterSearchMode () {
-        int firstVisiblePosition = ((LinearLayoutManager) reactionsPickerRecyclerView.getLayoutManager()).findFirstVisibleItemPosition();
-        reactionsPickerRecyclerView.invalidateItemDecorations();
-        if (firstVisiblePosition == 0) {
-          ScrollJumpCompensator.compensate(reactionsPickerRecyclerView, -getReactionPickerOffsetTopReal(), () -> checkReactionPickerHeaderTopVisibility());
-        }
+        reactionPickerTopDecoration.scheduleDisableDecorationOffset();
       }
 
       @Override
       protected void onBottomHeaderLeaveSearchMode () {
-        int firstVisiblePosition = ((LinearLayoutManager) reactionsPickerRecyclerView.getLayoutManager()).findFirstVisibleItemPosition();
-        reactionsPickerRecyclerView.invalidateItemDecorations();
-        if (firstVisiblePosition == 0) {
-          ScrollJumpCompensator.compensate(reactionsPickerRecyclerView, getReactionPickerOffsetTopReal(), () -> checkReactionPickerHeaderTopVisibility());
-        }
+        reactionPickerTopDecoration.enableDecorationOffset();
       }
     };
     reactionsPickerController.setArguments(state);
@@ -671,6 +665,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     reactionsPickerRecyclerView.setPadding(Screen.dp(9.5f), 0, Screen.dp(9.5f), 0);
     reactionsPickerRecyclerView.setClipToPadding(false);
 
+    reactionPickerTopDecoration = ItemDecorationFirstViewTop.attach(reactionsPickerRecyclerView, this::getReactionPickerOffsetTopReal);
     reactionsPickerRecyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
       @Override
       public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
@@ -678,11 +673,8 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
         final int itemType = parent.getAdapter().getItemViewType(position);
         final int itemCount = parent.getAdapter().getItemCount();
         final boolean isUnknown = position == RecyclerView.NO_POSITION;
-        int top = 0, leftRight = 0, bottom = 0;
+        int leftRight = 0, bottom = 0;
 
-        if (position == 0 || isUnknown) {
-          top = getReactionPickerOffsetTopReal();
-        }
         if (itemType == MediaStickersAdapter.StickerHolder.TYPE_STICKER) {
           leftRight = Screen.dp(-1);
         }
@@ -692,11 +684,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
           bottom = Math.max(parent.getMeasuredHeight() - reactionsPickerController.measureItemsHeight(), keyboardHeight + Screen.dp(64));
         }
 
-        if (reactionsPickerController.inBottomHeaderSearchMode() && reactionsPickerVisibility.getValue()) {
-          top = 0;
-        }
-
-        outRect.set(leftRight, top, leftRight, bottom);
+        outRect.set(leftRight, 0, leftRight, bottom);
       }
     });
     reactionsPickerRecyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -750,6 +738,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     reactionsPickerVisibility.setValue(false, true);
     reactionsPickerController.closeBottomHeaderSearchMode(false);
     reactionsPickerController.scrollToDefaultPosition(getReactionPickerOffsetTopReal());
+    reactionPickerTopDecoration.enableDecorationOffset();
     contentView.setVisibility(View.VISIBLE);
     if (headerView != null) {
       headerView.setVisibility(View.VISIBLE);
