@@ -33,10 +33,14 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;
 
 public class EmojiCategoriesRecyclerView extends CustomRecyclerView {
+  private static final int CATEGORY_WIDTH = 38;
+  private static final int SHADOW_SIZE = 30;
+
   private final GradientDrawable gradientDrawableLeft = new GradientDrawable(GradientDrawable.Orientation.RIGHT_LEFT, new int[]{ 0, Theme.fillingColor() });
   private final GradientDrawable gradientDrawableRight = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{ 0, Theme.fillingColor() });
   private final LinearLayoutManager layoutManager;
   private EmojiSearchTypesAdapter emojiSearchTypesAdapter;
+  private int minimalLeftPadding;
 
   public EmojiCategoriesRecyclerView (Context context) {
     super(context);
@@ -51,7 +55,11 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView {
       public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull State state) {
         int position = parent.getChildAdapterPosition(view);
         if (position == 0) {
-          outRect.set(parent.getMeasuredWidth() - Screen.dp(148), 0, 0, 0);
+          float availWidth = parent.getMeasuredWidth() - minimalLeftPadding - Screen.dp(SHADOW_SIZE);
+          float itemsCount = (float) (Math.floor((availWidth - Screen.dp(CATEGORY_WIDTH / 2f)) / Screen.dp(CATEGORY_WIDTH)) + 0.5f);
+          int itemsWidth = Screen.dp(CATEGORY_WIDTH * itemsCount);
+          
+          outRect.set(parent.getMeasuredWidth() - itemsWidth, 0, 0, 0);
         }
       }
     });
@@ -73,6 +81,11 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView {
     });
   }
 
+  public void setMinimalLeftPadding (int minimalLeftPadding) {
+    this.minimalLeftPadding = minimalLeftPadding;
+    invalidateItemDecorations();
+  }
+
   public void reset () {
     emojiSearchTypesAdapter.setActiveIndex(-1);
   }
@@ -82,8 +95,8 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView {
     int sL = getFirstItemX();
     int sR = computeHorizontalScrollRange() - computeHorizontalScrollOffset() - computeHorizontalScrollExtent();
 
-    int alphaL = (int) ((1f - (MathUtils.clamp((float) sL / Screen.dp(30f)))) * 255);
-    int alphaR = (int) (MathUtils.clamp((float) sR / Screen.dp(30f)) * 255);
+    int alphaL = (int) ((1f - (MathUtils.clamp((float) sL / Screen.dp(SHADOW_SIZE)))) * 255);
+    int alphaR = (int) (MathUtils.clamp((float) sR / Screen.dp(SHADOW_SIZE)) * 255);
 
     canvas.drawRect(sL, 0, getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(Theme.fillingColor()));
 
@@ -92,15 +105,15 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView {
     checkGradients();
 
     gradientDrawableLeft.setAlpha(alphaL);
-    gradientDrawableLeft.setBounds(0, 0, Screen.dp(30), getMeasuredHeight());
+    gradientDrawableLeft.setBounds(0, 0, Screen.dp(SHADOW_SIZE), getMeasuredHeight());
     gradientDrawableLeft.draw(canvas);
 
     gradientDrawableRight.setAlpha(255);
-    gradientDrawableRight.setBounds(sL - Screen.dp(30), 0, sL, getMeasuredHeight());
+    gradientDrawableRight.setBounds(sL - Screen.dp(SHADOW_SIZE), 0, sL, getMeasuredHeight());
     gradientDrawableRight.draw(canvas);
 
     gradientDrawableRight.setAlpha(alphaR);
-    gradientDrawableRight.setBounds(getMeasuredWidth() - Screen.dp(30), 0, getMeasuredWidth(), getMeasuredHeight());
+    gradientDrawableRight.setBounds(getMeasuredWidth() - Screen.dp(SHADOW_SIZE), 0, getMeasuredWidth(), getMeasuredHeight());
     gradientDrawableRight.draw(canvas);
   }
 
@@ -144,7 +157,7 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView {
 
     public static EmojiSearchTypesViewHolder create (ViewController<?> context, View.OnClickListener onClickListener) {
       StickerSmallView stickerSmallView = new StickerSmallView(context.context());
-      stickerSmallView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(38), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER, 0, Screen.dp(9), 0, Screen.dp(9)));
+      stickerSmallView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(CATEGORY_WIDTH), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER, 0, Screen.dp(9), 0, Screen.dp(9)));
       stickerSmallView.setOnClickListener(onClickListener);
       stickerSmallView.setPadding(Screen.dp(5.5f));
       stickerSmallView.setStickerMovementCallback(new StickerSmallView.StickerMovementCallback() {

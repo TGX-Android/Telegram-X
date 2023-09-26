@@ -36,6 +36,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.emoji.MediaStickersAdapter;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
@@ -787,6 +788,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     emojiTypesRecyclerView.setAlpha(0);
     emojiTypesRecyclerView.setVisibility(View.GONE);
     emojiTypesRecyclerView.init(this, this::searchEmojiSection);
+    emojiTypesRecyclerView.setMinimalLeftPadding((int) U.measureText(Lang.getString(R.string.Search), Paints.getRegularTextPaint(16)));
 
     bottomHeaderViewGroup = new FrameLayout(context);
     bottomHeaderViewGroup.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, HeaderView.getSize(false), Gravity.BOTTOM));

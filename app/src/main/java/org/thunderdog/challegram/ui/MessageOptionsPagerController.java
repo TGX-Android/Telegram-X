@@ -80,7 +80,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.td.Td;
 
 public class MessageOptionsPagerController extends BottomSheetViewController<OptionDelegate> implements
-  FactorAnimator.Target, View.OnClickListener, Menu, DrawableProvider,
+  FactorAnimator.Target, View.OnClickListener, Menu, DrawableProvider, PopupLayout.TouchDownInterceptor,
   Counter.Callback, TextColorSet {
 
   private final State state;
@@ -201,7 +201,6 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     headerView.initWithSingleController(this, false);
     headerView.getFilling().setShadowAlpha(0f);
     headerView.getBackButton().setIsReverse(true);
-    reactionsPickerBackgroundColor = Theme.getColor(ColorId.background);
     if (state.needShowReactionsPopupPicker) {
       headerView.setBackground(null);
     } else {
@@ -266,14 +265,13 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
         @Override
         protected void dispatchDraw (Canvas canvas) {
-          int color = Theme.backgroundColor(); // me.vkryl.core.ColorUtils.fromToArgb(reactionsPickerBackgroundColor, Theme.backgroundColor(), reactionsPickerVisibility.getFloatValue());
           float top = getPickerTop();
           float bottom = getPickerBottom();
           if (bottom <= top) return;
 
           canvas.save();
           canvas.clipRect(0, top, getMeasuredWidth(), bottom);
-          canvas.drawRect(0, top, getMeasuredWidth(), bottom, Paints.fillingPaint(color));
+          canvas.drawRect(0, top, getMeasuredWidth(), bottom, Paints.fillingPaint(Theme.backgroundColor()));
           super.dispatchDraw(canvas);
           canvas.restore();
         }
@@ -379,7 +377,6 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       headerBackgroundFactor
     );
     setLickViewColor(headerBackground);
-    reactionsPickerBackgroundColor = headerBackground;
     if (headerView != null && !state.needShowReactionsPopupPicker) {
       headerView.setBackgroundColor(headerBackground);
     }
@@ -615,6 +612,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     popupLayout.setNeedRootInsets();
     popupLayout.setTouchProvider(this);
     popupLayout.setIgnoreHorizontal();
+    popupLayout.setTouchDownInterceptor(this);
 
    // super.setupPopupLayout(popupLayout);
   }
@@ -643,7 +641,6 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   private CustomRecyclerView reactionsPickerRecyclerView;
   private PickerOpenerScrollListener reactionsPickerScrollListener;
   private View reactionsPickerBottomHeaderView;
-  private int reactionsPickerBackgroundColor;
   private boolean doNotUpdateScrollReactionPicker;
 
   private CustomRecyclerView createReactionsPopupPicker () {
@@ -732,16 +729,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       reactionsPickerBottomHeaderView.setAlpha(0f);
       reactionsPickerBottomHeaderView.setVisibility(View.GONE);
       reactionsPickerController.getTopHeaderView().getBackButton().setOnClickListener(v -> {
-        doNotUpdateScrollReactionPicker = true;
-        reactionsPickerRecyclerView.stopScroll();
-        reactionsPickerScrollListener.reset(true);
-        reactionsPickerVisibility.setValue(false, true);
-        reactionsPickerController.closeBottomHeaderSearchMode(false);
-        reactionsPickerController.scrollToDefaultPosition(getReactionPickerOffsetTopReal());
-        contentView.setVisibility(View.VISIBLE);
-        if (headerView != null) {
-          headerView.setVisibility(View.VISIBLE);
-        }
+        hideReactionPicker();
       });
 
       if (state.needShowCustomEmojiInsidePicker) {
@@ -753,6 +741,19 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
     reactionsPickerVisibility.setValue(true, true);
 
+  }
+
+  private void hideReactionPicker () {
+    doNotUpdateScrollReactionPicker = true;
+    reactionsPickerRecyclerView.stopScroll();
+    reactionsPickerScrollListener.reset(true);
+    reactionsPickerVisibility.setValue(false, true);
+    reactionsPickerController.closeBottomHeaderSearchMode(false);
+    reactionsPickerController.scrollToDefaultPosition(getReactionPickerOffsetTopReal());
+    contentView.setVisibility(View.VISIBLE);
+    if (headerView != null) {
+      headerView.setVisibility(View.VISIBLE);
+    }
   }
 
   @Override
@@ -827,6 +828,14 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     return headerView != null && y < getPickerTop() - HeaderView.getSize(true);
   }
 
+  @Override
+  public boolean onBackgroundTouchDown (PopupLayout popupLayout, MotionEvent e) {
+    if (reactionsPickerVisibility != null && reactionsPickerVisibility.getValue()) {
+      hideReactionPicker();
+      return true;
+    }
+    return false;
+  }
 
   /* * */
 
