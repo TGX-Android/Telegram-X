@@ -81,7 +81,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
       @Override
       protected void onDraw (Canvas canvas) {
         if (headerView != null) {
-          canvas.drawRect(0, headerTranslationY + (isHeaderHasStaticPosition() ? getHeaderHeight(): 0) /*+ HeaderView.getTopOffset()*/, getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(Theme.getColor(getBackgroundColorId())));
+          canvas.drawRect(0, headerTranslationY, getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(Theme.getColor(getBackgroundColorId())));
         }
         super.onDraw(canvas);
       }
@@ -271,7 +271,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
   protected void setHeaderPosition (float y) {
     y = Math.max(y, HeaderView.getTopOffset());
     headerTranslationY = y;
-    float realHeaderOffset = isHeaderHasStaticPosition() ? HeaderView.getTopOffset(): y;
+    float realHeaderOffset = y;
     if (headerView != null) {
       headerView.setTranslationY(realHeaderOffset);
     }
@@ -288,10 +288,6 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
       // headerView.getFilling().setShadowAlpha(factor);
       setHeaderBackgroundFactor(factor);
     }
-  }
-
-  protected boolean isHeaderHasStaticPosition () {
-    return false;
   }
 
   protected void setHeaderBackgroundFactor (float headerBackgroundFactor) {

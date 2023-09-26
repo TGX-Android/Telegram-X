@@ -166,7 +166,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   public void setHeaderViewOverTranslation (float headerViewOvertranslation) {
     this.headerViewOverTranslation = headerViewOvertranslation;
     if (headerView != null) {
-      headerView.setTranslationY(headerView.getTranslationY());
+      headerView.setTranslationY(headerTranslationY);
     }
   }
 
@@ -861,6 +861,9 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       reactionsPickerScrollListener.reset(false);
       doNotUpdateScrollReactionPicker = false;
       checkReactionPickerHeaderTopVisibility();
+      if (headerView != null) {
+        headerView.setTranslationY(headerTranslationY);
+      }
     }
   }
 
