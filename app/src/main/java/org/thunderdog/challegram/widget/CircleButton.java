@@ -29,10 +29,12 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.support.RippleSupport;
+import org.thunderdog.challegram.telegram.ReactionLoadListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ColorId;
@@ -50,7 +52,7 @@ import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 
-public class CircleButton extends View implements FactorAnimator.Target, Destroyable {
+public class CircleButton extends View implements FactorAnimator.Target, ReactionLoadListener, Destroyable {
   private Drawable icon;
   private int offsetLeft;
 
@@ -532,12 +534,25 @@ public class CircleButton extends View implements FactorAnimator.Target, Destroy
   }
 
   @Nullable
+  private TdApi.UnreadReaction unreadReactionRaw;
   private TGReaction reaction;
   private TGStickerObj sticker;
 
   public void setUnreadReaction (TdApi.UnreadReaction unreadReaction) {
+    if (reaction != null && unreadReaction != null && unreadReactionRaw != null && StringUtils.equalsOrBothEmpty(TD.makeReactionKey(unreadReaction.type), TD.makeReactionKey(unreadReactionRaw.type))) {
+      return;
+    }
+
+    if (unreadReactionRaw != null) {
+      tdlib.listeners().removeReactionLoadListener(TD.makeReactionKey(unreadReactionRaw.type), this);
+    }
+
+    unreadReactionRaw = unreadReaction;
     reaction = unreadReaction != null ? tdlib.getReaction(unreadReaction.type) : null;
     sticker = reaction != null ? reaction.newCenterAnimationSicker() : null;
+    if (unreadReactionRaw != null && reaction == null) {
+      tdlib.listeners().addReactionLoadListener(TD.makeReactionKey(unreadReactionRaw.type), this);
+    }
     if (sticker != null) {
       if (sticker.getPreviewAnimation() != null && sticker.isEmojiReaction()) {
         sticker.getPreviewAnimation().setPlayOnce(true);
@@ -550,6 +565,15 @@ public class CircleButton extends View implements FactorAnimator.Target, Destroy
       imageReceiver.clear();
     }
     invalidate();
+  }
+
+  @Override
+  public void onReactionLoaded (String reactionKey) {
+    UI.execute(() -> {
+      if (unreadReactionRaw != null && StringUtils.equalsOrBothEmpty(reactionKey, TD.makeReactionKey(unreadReactionRaw.type))) {
+        setUnreadReaction(unreadReactionRaw);
+      }
+    });
   }
 
   @Override
@@ -570,5 +594,8 @@ public class CircleButton extends View implements FactorAnimator.Target, Destroy
   public void performDestroy () {
     imageReceiver.destroy();
     gifReceiver.destroy();
+    if (unreadReactionRaw != null) {
+      tdlib.listeners().removeReactionLoadListener(TD.makeReactionKey(unreadReactionRaw.type), this);
+    }
   }
 }

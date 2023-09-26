@@ -14,9 +14,12 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.CancellableResultHandler;
 
 import java.util.HashMap;
+import java.util.Iterator;
 
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.core.reference.ReferenceList;
+import me.vkryl.core.reference.ReferenceLongMap;
 
 public class TdlibSingleUnreadReactionsManager implements ChatListener, MessageListener, Destroyable {
   private final Tdlib tdlib;
@@ -37,7 +40,7 @@ public class TdlibSingleUnreadReactionsManager implements ChatListener, MessageL
   public void onUpdateChatUnreadReactionCount (long chatId, @Nullable TdApi.UnreadReaction[] unreadReactions, int unreadReactionCount) {
     ChatState chatState = chatStates.get(chatId);
     if (chatState == null) {
-      chatState = new ChatState(tdlib, chatId);
+      chatState = new ChatState(tdlib, this, chatId);
       chatStates.put(chatId, chatState);
     }
 
@@ -55,6 +58,7 @@ public class TdlibSingleUnreadReactionsManager implements ChatListener, MessageL
     private static final int STATE_LOADING = 2;
     private static final int STATE_SINGLE_REACTION_FOUND = 3;
 
+    private final TdlibSingleUnreadReactionsManager manager;
     private final Tdlib tdlib;
     private final long chatId;
 
@@ -63,10 +67,11 @@ public class TdlibSingleUnreadReactionsManager implements ChatListener, MessageL
 
     private CancellableResultHandler handler;
 
-    public ChatState (Tdlib tdlib, long chatId) {
+    public ChatState (Tdlib tdlib, TdlibSingleUnreadReactionsManager manager, long chatId) {
       this.tdlib = tdlib;
       this.chatId = chatId;
       this.state = STATE_NO_SINGLE_REACTION;
+      this.manager = manager;
     }
 
     @Nullable
@@ -114,6 +119,10 @@ public class TdlibSingleUnreadReactionsManager implements ChatListener, MessageL
     private void setState (int state, TdApi.UnreadReaction foundUnreadReaction) {
       this.state = state;
       this.lastSingleUnreadReaction = foundUnreadReaction;
+      if (foundUnreadReaction != null) {
+        tdlib.getReaction(foundUnreadReaction.type);    // preload reaction
+      }
+      manager.updateUnreadSingleReaction(chatId, foundUnreadReaction);
     }
 
     @UiThread
@@ -193,6 +202,31 @@ public class TdlibSingleUnreadReactionsManager implements ChatListener, MessageL
     ScheduledUpdate update = scheduledUpdates.remove(chatId);
     if (update != null) {
       update.update.run();
+    }
+  }
+
+  /* * */
+
+  public interface UnreadSingleReactionListener {
+    void onUnreadSingleReactionUpdate (long chatId, @Nullable TdApi.UnreadReaction unreadReaction);
+  }
+
+  private ReferenceLongMap<UnreadSingleReactionListener> listeners = new ReferenceLongMap<>();
+
+  public void subscribeToUnreadSingleReactionUpdates (long chatId, UnreadSingleReactionListener listener) {
+    listeners.add(chatId, listener);
+  }
+
+  public void unsubscribeFromUnreadSingleReactionUpdates (long chatId, UnreadSingleReactionListener listener) {
+    listeners.remove(chatId, listener);
+  }
+
+  private void updateUnreadSingleReaction (long chatId, TdApi.UnreadReaction unreadReaction) {
+    Iterator<UnreadSingleReactionListener> list = listeners.iterator(chatId);
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onUnreadSingleReactionUpdate(chatId, unreadReaction);
+      }
     }
   }
 }

@@ -118,6 +118,7 @@ import org.thunderdog.challegram.component.chat.RaiseHelper;
 import org.thunderdog.challegram.component.chat.ReplyView;
 import org.thunderdog.challegram.component.chat.SilentButton;
 import org.thunderdog.challegram.component.chat.StickerSuggestionAdapter;
+import org.thunderdog.challegram.component.chat.TdlibSingleUnreadReactionsManager;
 import org.thunderdog.challegram.component.chat.TopBarView;
 import org.thunderdog.challegram.component.chat.VoiceInputView;
 import org.thunderdog.challegram.component.chat.VoiceVideoButtonView;
@@ -193,6 +194,7 @@ import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.telegram.GlobalAccountListener;
 import org.thunderdog.challegram.telegram.ListManager;
 import org.thunderdog.challegram.telegram.MessageListManager;
+import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.RightId;
@@ -285,7 +287,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   ReplyView.Callback, RaiseHelper.Listener, VoiceInputView.Callback,
   TGLegacyManager.EmojiLoadListener, ChatHeaderView.Callback,
   ChatListener, NotificationSettingsListener, EmojiLayout.Listener,
-  MessageThreadListener,
+  MessageThreadListener, TdlibSingleUnreadReactionsManager.UnreadSingleReactionListener,
   TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener, TdlibCache.SecretChatDataChangeListener,
   TdlibCache.UserDataChangeListener,
   TdlibCache.UserStatusChangeListener,
@@ -5944,9 +5946,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       boolean visible = reactionCount > 0;
       boolean animate = isFocused();
       reactionsCountView.setCounter(reactionCount, true, animate && reactionButtonFactor > 0f);
-      reactionsButton.setUnreadReaction(tdlib.getSingleUnreadReaction(getChatId()));
       setReactionButtonVisible(visible, animate);
     }
+    reactionsButton.setUnreadReaction(tdlib.getSingleUnreadReaction(getChatId()));
   }
 
   private void setReactionButtonFactor (float factor) {
@@ -9629,6 +9631,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public void subscribeToUpdates (long chatId) {
     tdlib.listeners().subscribeToChatUpdates(chatId, this);
+    tdlib.singleUnreadReactionsManager().subscribeToUnreadSingleReactionUpdates(chatId, this);
     if (chatId != getHeaderChatId()) {
       tdlib.listeners().subscribeToChatUpdates(getHeaderChatId(), this);
     }
@@ -9662,6 +9665,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public void unsubscribeFromUpdates (long chatId) {
     tdlib.listeners().unsubscribeFromChatUpdates(chatId, this);
+    tdlib.singleUnreadReactionsManager().unsubscribeFromUnreadSingleReactionUpdates(chatId, this);
     if (chatId != getHeaderChatId()) {
       tdlib.listeners().unsubscribeFromChatUpdates(getHeaderChatId(), this);
     }
@@ -9793,6 +9797,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void onChatUnreadReactionCount (long chatId, int unreadReactionCount, boolean availabilityChanged) {
     tdlib.ui().post(() -> {
+      if (getChatId() == chatId) {
+        updateCounters(true);
+      }
+    });
+  }
+
+  @Override
+  public void onUnreadSingleReactionUpdate (long chatId, @Nullable TdApi.UnreadReaction unreadReaction) {
+    UI.execute(() -> {
       if (getChatId() == chatId) {
         updateCounters(true);
       }

@@ -10822,10 +10822,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  public TdlibSingleUnreadReactionsManager singleUnreadReactionsManager () {
+    return unreadReactionsManager;
+  }
+
   @Nullable
   public TdApi.UnreadReaction getSingleUnreadReaction (long chatId) {
     // If chat has one unread reaction, returns it. May be null
-    return null; // unreadReactionsManager.getSingleUnreadReaction(chatId);
+    return unreadReactionsManager.getSingleUnreadReaction(chatId);
   }
 
   public boolean haveAnySettingsSuggestions () {
