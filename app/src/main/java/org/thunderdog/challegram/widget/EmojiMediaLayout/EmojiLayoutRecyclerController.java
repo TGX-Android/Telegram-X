@@ -35,6 +35,7 @@ import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.emoji.RecentEmoji;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.EmojiMediaType;
+import org.thunderdog.challegram.telegram.StickersListener;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibEmojiManager;
@@ -58,7 +59,8 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayoutRec
   StickerSmallView.StickerMovementCallback,
   TGLegacyManager.EmojiLoadListener,
   Emoji.EmojiChangeListener,
-  TdlibEmojiManager.Watcher {
+  TdlibEmojiManager.Watcher,
+  StickersListener {
 
   private static final int SCROLL_BY_SECTION_LIMIT = 8;
 
@@ -152,17 +154,25 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayoutRec
   }
 
   public void clearAllItems () {
+    clearAllItems(null);
+  }
+
+  public void clearAllItems (@Nullable MediaStickersAdapter.StickerItem item) {
     this.classicEmojiSets = null;
     this.stickerSets = null;
     this.lastStickerSetInfo = null;
-    adapter.removeRange(0, adapter.getItemCount());
+    if (item != null) {
+      adapter.setItem(item);
+    } else {
+      adapter.removeRange(0, adapter.getItemCount());
+    }
   }
 
   public void setDefaultEmojiPacks (ArrayList<TGStickerSetInfo> stickerSets, ArrayList<MediaStickersAdapter.StickerItem> items) {
     this.classicEmojiSets = stickerSets;
     this.stickerSets = stickerSets;
     this.lastStickerSetInfo = null;
-    adapter.addItems(items);
+    adapter.addItems(modifyStickers(items));
     TGLegacyManager.instance().addEmojiListener(this);
     Emoji.instance().addEmojiChangeListener(this);
   }

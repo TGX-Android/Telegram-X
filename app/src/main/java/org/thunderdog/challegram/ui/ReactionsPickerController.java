@@ -99,7 +99,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     bottomHeaderCell = new EmojiHeaderView(context, this, this, emojiSections, null, false);
     bottomHeaderCell.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, HeaderView.getSize(false)));
     bottomHeaderCell.setIsPremium(true, false);
-    bottomHeaderCell.setSectionsOnLongClickListener(this::onEmojiHeaderLongClick);
+    // bottomHeaderCell.setSectionsOnLongClickListener(this::onEmojiHeaderLongClick);
     bottomHeaderCell.setSectionsOnClickListener(this::onStickerSectionClick);
 
     recyclerView = onCreateRecyclerView();
