@@ -16,9 +16,7 @@ import org.thunderdog.challegram.util.CancellableResultHandler;
 import java.util.HashMap;
 import java.util.Iterator;
 
-import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceLongMap;
 
 public class TdlibSingleUnreadReactionsManager implements ChatListener, MessageListener, Destroyable {
@@ -176,7 +174,6 @@ public class TdlibSingleUnreadReactionsManager implements ChatListener, MessageL
   }
 
   private final HashMap<Long, ScheduledUpdate> scheduledUpdates = new HashMap<>();
-  private final HashMap<Long, CancellableRunnable> scheduledUpdatesExecutors = new HashMap<>();
 
   private static class ScheduledUpdate {
     public final Runnable update;
@@ -222,7 +219,7 @@ public class TdlibSingleUnreadReactionsManager implements ChatListener, MessageL
     void onUnreadSingleReactionUpdate (long chatId, @Nullable TdApi.UnreadReaction unreadReaction);
   }
 
-  private ReferenceLongMap<UnreadSingleReactionListener> listeners = new ReferenceLongMap<>();
+  private final ReferenceLongMap<UnreadSingleReactionListener> listeners = new ReferenceLongMap<>();
 
   public void subscribeToUnreadSingleReactionUpdates (long chatId, UnreadSingleReactionListener listener) {
     listeners.add(chatId, listener);
