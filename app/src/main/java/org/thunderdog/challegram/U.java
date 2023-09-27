@@ -708,8 +708,10 @@ public class U {
   public static void recycle (@Nullable Bitmap bitmap) {
     if (bitmap != null) {
       try {
-        if (!bitmap.isRecycled())
-          bitmap.recycle();
+        synchronized (bitmap) {
+          if (!bitmap.isRecycled())
+            bitmap.recycle();
+        }
       } catch (Throwable ignored) { }
     }
   }

@@ -553,6 +553,14 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   }
 
   @Override
+  public void destroy () {
+    super.destroy();
+    if (reactionsPickerController != null) {
+      reactionsPickerController.destroy();
+    }
+  }
+
+  @Override
   public void onThemeColorsChanged (boolean areTemp, ColorState state) {
     super.onThemeColorsChanged(areTemp, state);
     if (headerView != null) {

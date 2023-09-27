@@ -16,21 +16,16 @@ package org.thunderdog.challegram.ui;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Rect;
-import android.graphics.drawable.GradientDrawable;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.Client;
@@ -57,12 +52,12 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.util.StickerSetsDataProvider;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutRecyclerController;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Headers.EmojiCategoriesRecyclerView;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Headers.EmojiHeaderView;
-import org.thunderdog.challegram.util.StickerSetsDataProvider;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSection;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSectionView;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.StickerSectionView;
@@ -70,17 +65,13 @@ import org.thunderdog.challegram.widget.ShadowView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Set;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.BitwiseUtils;
-import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
-import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.td.Td;
 
 public class ReactionsPickerController extends ViewController<MessageOptionsPagerController.State>
   implements StickersListener, EmojiLayoutRecyclerController.Callback,
@@ -108,6 +99,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     bottomHeaderCell = new EmojiHeaderView(context, this, this, emojiSections, null, false);
     bottomHeaderCell.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, HeaderView.getSize(false)));
     bottomHeaderCell.setIsPremium(true, false);
+    bottomHeaderCell.setSectionsOnLongClickListener(this::onEmojiHeaderLongClick);
     bottomHeaderCell.setSectionsOnClickListener(this::onStickerSectionClick);
 
     recyclerView = onCreateRecyclerView();
@@ -725,10 +717,6 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
   }
 
-  public boolean inBottomHeaderSearchMode () {
-    return fakeControllerForBottomHeader.inSearchMode();
-  }
-
   public void closeBottomHeaderSearchMode (boolean animated) {
     bottomHeaderView.closeSearchMode(animated, null);
   }
@@ -811,6 +799,64 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
 
 
+  /*  */
+
+  private boolean onEmojiHeaderLongClick (View v) {
+    int viewId = v.getId();
+
+    if (v instanceof StickerSectionView) {
+      StickerSectionView sectionView = (StickerSectionView) v;
+      TGStickerSetInfo info = sectionView.getStickerSet();
+      removeStickerSet(info);
+      return true;
+    } else if (viewId == R.id.btn_section) {
+      EmojiSection section = ((EmojiSectionView) v).getSection();
+      if (section.index == 1) {
+        showOptions(null, new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {
+          Lang.getString(R.string.ClearRecentReactionsAction),
+          Lang.getString(R.string.Cancel)
+        }, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_auto_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+          if (id == R.id.btn_done) {
+            // todo: update
+            tdlib.client().send(new TdApi.ClearRecentReactions(), tdlib.okHandler());
+          }
+          return true;
+        });
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private void removeStickerSet (final TGStickerSetInfo info) {
+    showOptions(null, new int[] {R.id.btn_copyLink, R.id.btn_archive, R.id.more_btn_delete}, new String[] {Lang.getString(R.string.CopyLink), Lang.getString(R.string.ArchivePack), Lang.getString(R.string.DeletePack)}, new int[] {ViewController.OPTION_COLOR_NORMAL, ViewController.OPTION_COLOR_NORMAL, ViewController.OPTION_COLOR_RED}, new int[] {R.drawable.baseline_link_24, R.drawable.baseline_archive_24, R.drawable.baseline_delete_24}, (itemView, id) -> {
+      if (id == R.id.more_btn_delete) {
+        showOptions(Lang.getStringBold(R.string.RemoveStickerSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.RemoveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
+          if (resultId == R.id.btn_delete) {
+            tdlib().client().send(new TdApi.ChangeStickerSet(info.getId(), false, false), tdlib().okHandler());
+          }
+          return true;
+        });
+      } else if (id == R.id.btn_archive) {
+        showOptions(Lang.getStringBold(R.string.ArchiveStickerSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ArchiveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_archive_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
+          if (resultId == R.id.btn_delete) {
+            tdlib().client().send(new TdApi.ChangeStickerSet(info.getId(), false, true), tdlib().okHandler());
+          }
+          return true;
+        });
+      } else if (id == R.id.btn_copyLink) {
+        TdApi.StickerSetInfo stickerSetInfo = info.getInfo();
+        if (stickerSetInfo != null) {
+          String url = tdlib().tMeStickerSetUrl(stickerSetInfo);
+          UI.copyText(url, R.string.CopiedLink);
+        }
+      }
+      return true;
+    });
+  }
+
+
+
   /* Search */
 
   private TdlibUi.EmojiStickers lastEmojiStickers;
@@ -821,6 +867,8 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     }
 
     lastEmojiSearchRequest = request;
+
+    reactionsController.clearAllItems(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_PROGRESS));
 
     if (!StringUtils.isEmpty(request)) {
       if (lastEmojiStickers == null || !StringUtils.equalsOrBothEmpty(lastEmojiStickers.query, request)) {
@@ -850,8 +898,12 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
             items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
           }
 
-          reactionsController.clearAllItems();
-          reactionsController.setStickers(packs, items);
+          if (stickers.size() == 0) {
+            reactionsController.clearAllItems(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_NO_EMOJISETS));
+          } else {
+            reactionsController.clearAllItems();
+            reactionsController.setStickers(packs, items);
+          }
         }
       }, 0);
     } else {
@@ -862,21 +914,16 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
   public TGStickerObj modifyStickerObj (TGStickerObj sticker) {
     sticker.setDisplayScale(1f);
+    // sticker.setPreviewOptimizationMode(GifFile.OptimizationMode.EMOJI);
+    // if (sticker.getPreviewAnimation() != null) {
+      // sticker.getPreviewAnimation().setRequestedSize(1);
+    // }
 
    // sticker.setDisplayScale(//sticker.isEmojiReaction() ?
    //   //getScaleForClassicEmojiReaction(sticker.getSticker(), getItemWidth() - Screen.dp(DEFAULT_STICKER_PADDING_DP * 2)) :
    //   TextMedia.getScale(sticker.getSticker(), getItemWidth() - Screen.dp(DEFAULT_STICKER_PADDING_DP * 2)));
     return sticker;
   }
-
-  public static float getScaleForClassicEmojiReaction (@Nullable TdApi.Sticker sticker, int size) {
-    if (sticker != null && Td.isAnimated(sticker.format) &&
-      sticker.format.getConstructor() != TdApi.StickerFormatWebm.CONSTRUCTOR) {
-      return 200.0f / 100.0f - (size != 0 ? Screen.dp(1f) * 2 / (float) size : 0);
-    }
-    return 1f;
-  }
-
 
 
   /* * */

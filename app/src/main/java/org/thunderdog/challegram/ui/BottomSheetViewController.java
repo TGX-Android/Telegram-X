@@ -244,13 +244,10 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
   }
 
   protected int getTargetHeight () {
-    final int r = Screen.currentHeight()
+    return Screen.currentHeight()
       + (context.isKeyboardVisible() ? Keyboard.getSize() : 0)
       - (Screen.needsKeyboardPadding(context) ? Screen.getNavigationBarFrameDifference() : 0)
       + (context.isKeyboardVisible() && Device.NEED_ADD_KEYBOARD_SIZE ? Screen.getNavigationBarHeight() : 0);
-    Log.i("WTF_DEBUG", "target height: " + r);
-
-    return r;
   }
 
   protected void invalidateAllItemDecorations () {

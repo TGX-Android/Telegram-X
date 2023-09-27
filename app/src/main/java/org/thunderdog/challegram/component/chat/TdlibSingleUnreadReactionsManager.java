@@ -196,8 +196,6 @@ public class TdlibSingleUnreadReactionsManager implements ChatListener, MessageL
       scheduledUpdates.put(chatId, null);
     } else if (!hasPriorityScheduledUpdate) {
       scheduledUpdates.put(chatId, update);
-    } else {
-      Log.i("WTF_DEBUG", "Update ignored");
     }
 
     if (!hasScheduledUpdate) {
