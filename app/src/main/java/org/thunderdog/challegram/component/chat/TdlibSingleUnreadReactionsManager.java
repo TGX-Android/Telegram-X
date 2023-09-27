@@ -37,7 +37,7 @@ public class TdlibSingleUnreadReactionsManager implements ChatListener, MessageL
   }
 
   @UiThread
-  public void onUpdateChatUnreadReactionCount (long chatId, @Nullable TdApi.UnreadReaction[] unreadReactions, int unreadReactionCount) {
+  private void onUpdateChatUnreadReactionCount (long chatId, @Nullable TdApi.UnreadReaction[] unreadReactions, int unreadReactionCount) {
     ChatState chatState = chatStates.get(chatId);
     if (chatState == null) {
       chatState = new ChatState(tdlib, this, chatId);
@@ -45,6 +45,17 @@ public class TdlibSingleUnreadReactionsManager implements ChatListener, MessageL
     }
 
     chatState.onUpdateChatUnreadReactionCount(chatId, unreadReactions, unreadReactionCount);
+  }
+
+  @UiThread
+  public void checkChat (TdApi.Chat chat) {
+    final long chatId = chat.id;
+    ChatState chatState = chatStates.get(chatId);
+    if (chatState == null && chat.unreadReactionCount == 1) {
+      chatState = new ChatState(tdlib, this, chatId);
+      chatStates.put(chatId, chatState);
+      chatState.onUpdateChatUnreadReactionCount(chatId, null, chat.unreadReactionCount);
+    }
   }
 
   @Nullable

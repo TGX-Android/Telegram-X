@@ -4102,6 +4102,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       requestsView.performDestroy();
     }
 
+    if (reactionsButton != null) {
+      reactionsButton.performDestroy();
+    }
+
     // messagesView.clear();
 
     closeVoicePreview(true);

@@ -17,18 +17,17 @@ package org.thunderdog.challegram.widget;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.DrawableRes;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.loader.ImageReceiver;
@@ -36,8 +35,8 @@ import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.ReactionLoadListener;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -62,15 +61,20 @@ public class CircleButton extends View implements FactorAnimator.Target, Reactio
 
   private int crossBackgroundColorId, crossIconColorId;
 
-  private final Tdlib tdlib;
-  private final ImageReceiver imageReceiver;
-  private final GifReceiver gifReceiver;
+  private final @Nullable Tdlib tdlib;
+  private final @Nullable ImageReceiver imageReceiver;
+  private final @Nullable GifReceiver gifReceiver;
 
   public CircleButton (Context context) {
-    this(context, null);
+    super(context);
+    Views.setClickable(this);
+
+    this.tdlib = null;
+    this.imageReceiver = null;
+    this.gifReceiver = null;
   }
 
-  public CircleButton (Context context, Tdlib tdlib) {
+  public CircleButton (Context context, @NonNull Tdlib tdlib) {
     super(context);
     Views.setClickable(this);
 
@@ -409,7 +413,7 @@ public class CircleButton extends View implements FactorAnimator.Target, Reactio
 
     boolean hasText = !StringUtils.isEmpty(bottomText);
 
-    if (sticker != null) {
+    if (sticker != null && imageReceiver != null && gifReceiver != null) {
       imageReceiver.setBounds(cx - width / 3, cy - height / 3, cx + width / 3, cy + height / 3);
       gifReceiver.setBounds(cx - width / 3, cy - height / 3, cx + width / 3, cy + height / 3);
 
@@ -539,7 +543,7 @@ public class CircleButton extends View implements FactorAnimator.Target, Reactio
   private TGStickerObj sticker;
 
   public void setUnreadReaction (TdApi.UnreadReaction unreadReaction) {
-    if (reaction != null && unreadReaction != null && unreadReactionRaw != null && StringUtils.equalsOrBothEmpty(TD.makeReactionKey(unreadReaction.type), TD.makeReactionKey(unreadReactionRaw.type))) {
+    if (tdlib == null || imageReceiver == null || gifReceiver == null || reaction != null && unreadReaction != null && unreadReactionRaw != null && StringUtils.equalsOrBothEmpty(TD.makeReactionKey(unreadReaction.type), TD.makeReactionKey(unreadReactionRaw.type))) {
       return;
     }
 
@@ -579,22 +583,34 @@ public class CircleButton extends View implements FactorAnimator.Target, Reactio
   @Override
   protected void onAttachedToWindow () {
     super.onAttachedToWindow();
-    gifReceiver.attach();
-    imageReceiver.attach();
+    if (gifReceiver != null) {
+      gifReceiver.attach();
+    }
+    if (imageReceiver != null) {
+      imageReceiver.attach();
+    }
   }
 
   @Override
   protected void onDetachedFromWindow () {
     super.onDetachedFromWindow();
-    gifReceiver.detach();
-    imageReceiver.detach();
+    if (gifReceiver != null) {
+      gifReceiver.detach();
+    }
+    if (imageReceiver != null) {
+      imageReceiver.detach();
+    }
   }
 
   @Override
   public void performDestroy () {
-    imageReceiver.destroy();
-    gifReceiver.destroy();
-    if (unreadReactionRaw != null) {
+    if (imageReceiver != null) {
+      imageReceiver.destroy();
+    }
+    if (gifReceiver != null) {
+      gifReceiver.destroy();
+    }
+    if (unreadReactionRaw != null && tdlib != null) {
       tdlib.listeners().removeReactionLoadListener(TD.makeReactionKey(unreadReactionRaw.type), this);
     }
   }

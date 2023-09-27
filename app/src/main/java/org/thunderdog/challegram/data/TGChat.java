@@ -201,6 +201,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     setCounter(false);
     setReactions(false);
     setViews();
+    this.tdlib.singleUnreadReactionsManager().checkChat(chat);
     this.scheduleAnimator.setValue(hasScheduledMessages(), false);
     checkOnline();
     if (makeMeasures) {
