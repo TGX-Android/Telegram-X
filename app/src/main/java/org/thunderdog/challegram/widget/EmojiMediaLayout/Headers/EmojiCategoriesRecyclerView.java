@@ -54,7 +54,7 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView {
         int position = parent.getChildAdapterPosition(view);
         if (position == 0) {
           float availWidth = parent.getMeasuredWidth() - minimalLeftPadding - Screen.dp(SHADOW_SIZE);
-          float itemsCount = (float) (Math.floor((availWidth - Screen.dp(CATEGORY_WIDTH / 2f)) / Screen.dp(CATEGORY_WIDTH)) + 0.5f);
+          float itemsCount = (float) (Math.floor((availWidth - Screen.dp(CATEGORY_WIDTH * 0.65f)) / Screen.dp(CATEGORY_WIDTH)) + 0.65f);
           int itemsWidth = Screen.dp(CATEGORY_WIDTH * itemsCount);
           
           outRect.set(parent.getMeasuredWidth() - itemsWidth, 0, 0, 0);
@@ -270,8 +270,13 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView {
     @Override
     public void onClick (View v) {
       int index = (int) v.getTag();
-      setActiveIndex(index);
-      onSectionClickListener.runWithData(StringUtils.join(" ", " ", Arrays.asList(categories[index].emojis)));
+      if (index != activeIndex) {
+        setActiveIndex(index);
+        onSectionClickListener.runWithData(StringUtils.join(" ", " ", Arrays.asList(categories[index].emojis)));
+      } else {
+        setActiveIndex(-1);
+        onSectionClickListener.runWithData(null);
+      }
     }
 
     private TdApi.EmojiCategory[] categories;

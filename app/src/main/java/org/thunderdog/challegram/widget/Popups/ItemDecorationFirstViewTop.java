@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.ScrollJumpCompensator;
 
 public class ItemDecorationFirstViewTop extends RecyclerView.ItemDecoration {
@@ -47,13 +48,13 @@ public class ItemDecorationFirstViewTop extends RecyclerView.ItemDecoration {
     this.scrollListener = new RecyclerView.OnScrollListener() {
       @Override
       public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
-        checkCanDisableDecorationOffset(false);
+        UI.post(() -> checkCanDisableDecorationOffset(false));
       }
 
       @Override
       public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
         if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-          checkCanDisableDecorationOffset(true);
+          UI.post(() -> checkCanDisableDecorationOffset(true));
         }
       }
     };
