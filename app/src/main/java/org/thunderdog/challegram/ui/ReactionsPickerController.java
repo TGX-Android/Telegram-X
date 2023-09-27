@@ -39,7 +39,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
-import org.thunderdog.challegram.loader.gif.GifFile;
+import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -356,6 +356,11 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
   @Override
   public CharSequence getName () {
     return Lang.getString(R.string.ReactionsPickerHeader);
+  }
+
+  @Override
+  public boolean onBackPressed (boolean fromTop) {
+    return fakeControllerForBottomHeader != null && fakeControllerForBottomHeader.onBackPressed(fromTop) || super.onBackPressed(fromTop);
   }
 
   @Override
@@ -773,6 +778,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     };
     bottomHeaderView.initWithSingleController(fakeControllerForBottomHeader, false);
     bottomHeaderView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.BOTTOM));
+    fakeControllerForBottomHeader.attachHeaderViewWithoutNavigation(bottomHeaderView);
 
     emojiTypesRecyclerView = new EmojiCategoriesRecyclerView(context);
     emojiTypesRecyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT | Gravity.BOTTOM, Screen.dp(56), 0, 0, 0));
@@ -951,6 +957,15 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     @Override
     public int getId () {
       return 0;
+    }
+
+    @Override
+    public boolean onBackPressed (boolean fromTop) {
+      if (inSearchMode()) {
+        closeSearchMode(null);
+        return true;
+      }
+      return false;
     }
   }
 

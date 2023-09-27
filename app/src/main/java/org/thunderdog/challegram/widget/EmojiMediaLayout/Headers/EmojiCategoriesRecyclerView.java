@@ -8,7 +8,6 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -158,6 +157,7 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView {
       stickerSmallView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(CATEGORY_WIDTH), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER, 0, Screen.dp(9), 0, Screen.dp(9)));
       stickerSmallView.setOnClickListener(onClickListener);
       stickerSmallView.setPadding(Screen.dp(5.5f));
+      stickerSmallView.init(context.tdlib());
       stickerSmallView.setStickerMovementCallback(new StickerSmallView.StickerMovementCallback() {
         @Override
         public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions) {
@@ -233,6 +233,22 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView {
       view.setSticker(categoryStickers[position]);
       view.setRepaintingColorId(position == activeIndex ? ColorId.iconActive : ColorId.icon);
       view.setTag(position);
+      view.invalidate();
+    }
+
+    @Override
+    public void onViewAttachedToWindow (EmojiSearchTypesViewHolder holder) {
+      ((StickerSmallView) holder.itemView).attach();
+    }
+
+    @Override
+    public void onViewDetachedFromWindow (EmojiSearchTypesViewHolder holder) {
+      ((StickerSmallView) holder.itemView).detach();
+    }
+
+    @Override
+    public void onViewRecycled (EmojiSearchTypesViewHolder holder) {
+      ((StickerSmallView) holder.itemView).performDestroy();
     }
 
     @Override
@@ -291,6 +307,7 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView {
         categoryStickers[a] = new TGStickerObj(context.tdlib(), category.icon, category.icon.fullType, category.emojis);
         if (categoryStickers[a].getPreviewAnimation() != null) {
           categoryStickers[a].getPreviewAnimation().setPlayOnce(true);
+          categoryStickers[a].getPreviewAnimation().setLooped(false);
         }
       }
       notifyItemRangeInserted(0, categories.length);

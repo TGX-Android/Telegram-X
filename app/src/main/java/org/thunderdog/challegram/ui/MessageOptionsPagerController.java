@@ -20,7 +20,6 @@ import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -58,7 +57,6 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.OptionDelegate;
-import org.thunderdog.challegram.util.ScrollJumpCompensator;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.v.CustomRecyclerView;
@@ -537,7 +535,9 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   @Override
   public boolean onBackPressed (boolean fromTop) {
     if (reactionsPickerVisibility != null && reactionsPickerVisibility.getValue()) {
-      hideReactionPicker();
+      if (!reactionsPickerController.onBackPressed(fromTop)) {
+        hideReactionPicker();
+      }
       return true;
     }
     return false;
