@@ -1746,7 +1746,7 @@ public class MessagesLoader implements Client.ResultHandler {
             return true;
           }
         }
-        if (searchFilter != null && searchFilter.getConstructor() == TdApi.SearchMessagesFilterPinned.CONSTRUCTOR && manager.maxPinnedMessageId() != 0 && messageId.getMessageId() >= manager.maxPinnedMessageId()) {
+        if (searchFilter != null && Td.isPinnedFilter(searchFilter) && manager.maxPinnedMessageId() != 0 && messageId.getMessageId() >= manager.maxPinnedMessageId()) {
           return true;
         }
       }

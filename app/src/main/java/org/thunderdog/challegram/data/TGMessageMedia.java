@@ -178,7 +178,7 @@ public class TGMessageMedia extends TGMessage {
 
   @Override
   protected boolean preferFullWidth () {
-    return UI.isPortrait() && !UI.isTablet() && isChannel() && !isEventLog() && msg.content.getConstructor() != TdApi.MessageAnimation.CONSTRUCTOR && (!mosaicWrapper.isSingular() || mosaicWrapper.getAspectRatio() >= (mosaicWrapper.getSingularItem().isGif() ? MIN_RATIO_GIF : MIN_RATIO));
+    return UI.isPortrait() && !UI.isTablet() && isChannel() && !isEventLog() && !Td.isAnimation(msg.content) && (!mosaicWrapper.isSingular() || mosaicWrapper.getAspectRatio() >= (mosaicWrapper.getSingularItem().isGif() ? MIN_RATIO_GIF : MIN_RATIO));
   }
 
   @Override
@@ -344,7 +344,7 @@ public class TGMessageMedia extends TGMessage {
 
   @Override
   protected boolean onMessageContentChanged (TdApi.Message message, TdApi.MessageContent oldContent, TdApi.MessageContent newContent, boolean isBottomMessage) {
-    if (message.viaBotUserId != 0 && oldContent.getConstructor() == TdApi.MessagePhoto.CONSTRUCTOR) {
+    if (message.viaBotUserId != 0 && Td.isPhoto(oldContent)) {
       updateMessageContent(message, newContent, isBottomMessage);
       return true;
     }

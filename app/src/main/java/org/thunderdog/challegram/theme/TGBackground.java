@@ -143,7 +143,8 @@ public class TGBackground {
           needImages = false;
           break;
         default:
-          throw new UnsupportedOperationException(type.toString());
+          Td.assertBackgroundType_64138c2();
+          throw Td.unsupported(type);
       }
     } else {
       needImages = true;
@@ -596,8 +597,10 @@ public class TGBackground {
           .remove(key + "_rotation_angle");
         break;
       }
-      default:
-        throw new UnsupportedOperationException(fill.toString());
+      default: {
+        Td.assertBackgroundFill_6086fe10();
+        throw Td.unsupported(fill);
+      }
     }
   }
 
@@ -668,8 +671,10 @@ public class TGBackground {
           putFill(editor, key, pattern.fill);
           break;
         }
-        default:
-          throw new UnsupportedOperationException(type.toString());
+        default: {
+          Td.assertBackgroundType_64138c2();
+          throw Td.unsupported(type);
+        }
       }
     } else {
       editor
@@ -923,8 +928,11 @@ public class TGBackground {
       case TdApi.BackgroundFillFreeformGradient.CONSTRUCTOR: {
         return getPatternColorFreeform((TdApi.BackgroundFillFreeformGradient) fill);
       }
+      default: {
+        Td.assertBackgroundFill_6086fe10();
+        throw Td.unsupported(fill);
+      }
     }
-    throw new UnsupportedOperationException(fill.toString());
   }
 
   private static int getPatternColorFreeform (TdApi.BackgroundFillFreeformGradient gradient) {
@@ -1093,8 +1101,11 @@ public class TGBackground {
         TdApi.BackgroundFillFreeformGradient gradient = (TdApi.BackgroundFillFreeformGradient) fill;
         return getNameForColor(gradient.colors);
       }
+      default: {
+        Td.assertBackgroundFill_6086fe10();
+        throw Td.unsupported(fill);
+      }
     }
-    throw new UnsupportedOperationException(fill.toString());
   }
 
   public static String getBackgroundForLegacyWallpaperId (int wallpaperId) {

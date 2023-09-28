@@ -165,6 +165,7 @@ public class TGUser implements UserProvider {
   public static String getActionDateStatus (Tdlib tdlib, int actionDateSeconds, TdApi.Message viewedMessage) {
     int stringRes = R.string.viewed;
     if (viewedMessage != null) {
+      //noinspection SwitchIntDef
       switch (viewedMessage.content.getConstructor()) {
         case TdApi.MessageVoiceNote.CONSTRUCTOR:
           stringRes = R.string.opened_voice;

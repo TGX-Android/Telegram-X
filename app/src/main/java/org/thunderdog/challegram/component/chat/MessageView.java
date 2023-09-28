@@ -650,6 +650,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         icons.append(R.drawable.outline_forum_24);
       }
 
+      //noinspection SwitchIntDef
       switch (content.getConstructor()) {
         case TdApi.MessagePoll.CONSTRUCTOR: {
           TdApi.Poll poll = ((TdApi.MessagePoll) content).poll;

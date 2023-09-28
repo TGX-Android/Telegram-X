@@ -599,6 +599,9 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
       case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
         break;
+      default:
+        Td.assertTextEntityType_542d164b();
+        throw Td.unsupported(entity.type);
     }
     return false;
   }

@@ -146,6 +146,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
     TdApi.UserPrivacySetting[] privacySettings = new TdApi.UserPrivacySetting[] {
       new TdApi.UserPrivacySettingShowStatus(),
       new TdApi.UserPrivacySettingShowProfilePhoto(),
+      new TdApi.UserPrivacySettingShowBio(),
       new TdApi.UserPrivacySettingShowPhoneNumber(),
       new TdApi.UserPrivacySettingAllowFindingByPhoneNumber(),
       new TdApi.UserPrivacySettingShowLinkInForwardedMessages(),

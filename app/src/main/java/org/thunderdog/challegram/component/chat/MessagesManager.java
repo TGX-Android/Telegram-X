@@ -600,7 +600,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     loader.setChat(chat, null, MessagesLoader.SPECIAL_MODE_SEARCH, filter);
     loader.setSearchParameters(query, sender, filter);
     adapter.setChatType(chat.type);
-    if (filter != null && filter.getConstructor() == TdApi.SearchMessagesFilterPinned.CONSTRUCTOR) {
+    if (filter != null && Td.isPinnedFilter(filter)) {
       initPinned(chat.id, 1, 1);
     }
     if (highlightMessageId != null) {

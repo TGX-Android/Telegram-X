@@ -927,15 +927,20 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     if (msg == null) {
       return null;
     }
+    //noinspection SwitchIntDef
     switch (msg.content.getConstructor()) {
       case TdApiExt.MessageChatEvent.CONSTRUCTOR: {
         TdApiExt.MessageChatEvent event = ((TdApiExt.MessageChatEvent) msg.content);
+        //noinspection SwitchIntDef
         switch (event.event.action.getConstructor()) {
           case TdApi.ChatEventPhotoChanged.CONSTRUCTOR: {
             TdApi.ChatEventPhotoChanged changedPhoto = (TdApi.ChatEventPhotoChanged) event.event.action;
             if (changedPhoto.oldPhoto != null || changedPhoto.newPhoto != null) {
               return new MediaItem(context, tdlib, msg.chatId, 0, changedPhoto.newPhoto != null ? changedPhoto.newPhoto : changedPhoto.oldPhoto).setSourceSender(event.event.memberId).setSourceDate(event.event.date);
             }
+          }
+          default: {
+            Td.assertChatEventAction_d9a53493();
           }
         }
         break;

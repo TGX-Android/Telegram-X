@@ -2222,7 +2222,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private boolean setDescription (String text) {
-    TdApi.TextEntity[] entities = Td.findEntities(text, (e) -> e.type.getConstructor() != TdApi.TextEntityTypeBotCommand.CONSTRUCTOR);
+    TdApi.TextEntity[] entities = Td.findEntities(text, (e) -> !Td.isBotCommand(e.type));
     return setDescription(new TdApi.FormattedText(text, entities));
   }
 
@@ -5618,6 +5618,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private static TdApi.SearchMessagesFilter[] filtersOrder, filtersOrder2;
 
   private static boolean isSyncTab (TdApi.SearchMessagesFilter filter) {
+    //noinspection SwitchIntDef
     switch (filter.getConstructor()) {
       case TdApi.SearchMessagesFilterPhotoAndVideo.CONSTRUCTOR:
       case TdApi.SearchMessagesFilterPhoto.CONSTRUCTOR:

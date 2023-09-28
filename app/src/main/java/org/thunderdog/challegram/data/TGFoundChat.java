@@ -81,8 +81,10 @@ public class TGFoundChat {
         setChat(tdlib.chatStrict(chat.chatId), null, isGlobal);
         break;
       }
-      default:
-        throw new UnsupportedOperationException(sender.toString());
+      default: {
+        Td.assertMessageSender_439d4c9c();
+        throw Td.unsupported(sender);
+      }
     }
   }
 

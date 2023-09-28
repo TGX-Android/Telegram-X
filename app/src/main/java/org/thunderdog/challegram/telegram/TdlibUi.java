@@ -868,7 +868,8 @@ public class TdlibUi extends Handler {
             isValid = option.ttlTime == ((TdApi.MessageSelfDestructTypeTimer) currentSelfDestructType).selfDestructTime;
             break;
           default:
-            throw new UnsupportedOperationException(currentSelfDestructType.toString());
+            Td.assertMessageSelfDestructType_58882d8c();
+            throw Td.unsupported(currentSelfDestructType);
         }
       }
       if (isValid) {
@@ -2008,8 +2009,10 @@ public class TdlibUi extends Handler {
         openPrivateChat(context, ((TdApi.MessageSenderChat) senderId).chatId, new TdlibUi.ChatOpenParameters().keepStack());
         break;
       }
-      default:
-        throw new UnsupportedOperationException(senderId.toString());
+      default: {
+        Td.assertMessageSender_439d4c9c();
+        throw Td.unsupported(senderId);
+      }
     }
   }
 
@@ -2517,7 +2520,8 @@ public class TdlibUi extends Handler {
         openChatProfile(context, ((TdApi.MessageSenderChat) senderId).chatId, null, openParameters);
         break;
       default:
-        throw new UnsupportedOperationException(senderId.toString());
+        Td.assertMessageSender_439d4c9c();
+        throw Td.unsupported(senderId);
     }
   }
 
@@ -5913,6 +5917,7 @@ public class TdlibUi extends Handler {
 
   private static <T extends TdApi.Function<?>> void toReportReasons (ViewController<?> context, int reportReasonId, CharSequence title, T request, boolean forceText, RunnableData<T> reportCallback) {
     final TdApi.ReportReason reason;
+    Td.assertReportReason_cf03e541();
     if (reportReasonId == R.id.btn_reportChatSpam) {
       reason = new TdApi.ReportReasonSpam();
     } else if (reportReasonId == R.id.btn_reportChatFake) {

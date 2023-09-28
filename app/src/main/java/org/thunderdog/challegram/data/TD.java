@@ -395,7 +395,7 @@ public class TD {
     TdApi.TextEntity[] entities = Td.findEntities(text);
     if (entities != null) {
       for (TdApi.TextEntity entity : entities) {
-        if (entity.type.getConstructor() == TdApi.TextEntityTypeUrl.CONSTRUCTOR) {
+        if (Td.isUrl(entity.type)) {
           if (urls == null)
             urls = new ArrayList<>();
           urls.add(text.substring(entity.offset, entity.offset + entity.length));
@@ -483,7 +483,7 @@ public class TD {
             }
 
             // add textUrl
-            if (existingEntity.type.getConstructor() == TdApi.TextEntityTypeTextUrl.CONSTRUCTOR) {
+            if (Td.isTextUrl(existingEntity.type)) {
               if (links == null)
                 links = new ArrayList<>();
               links.add(((TdApi.TextEntityTypeTextUrl) existingEntity.type).url);
@@ -518,6 +518,9 @@ public class TD {
       case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
       case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR:
       case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR:
+      // Only because custom emoji aren't displayed in the notification
+      case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
         return false;
 
       case TdApi.TextEntityTypeBold.CONSTRUCTOR:
@@ -533,9 +536,11 @@ public class TD {
 
       case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
         return allowInternal;
-    }
 
-    return false;
+      default:
+        Td.assertTextEntityType_542d164b();
+        throw Td.unsupported(type);
+    }
   }
 
   public static GifFile toGifFile (Tdlib tdlib, TdApi.Thumbnail thumbnail) {
@@ -989,7 +994,8 @@ public class TD {
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
         break;
       default:
-        throw new UnsupportedOperationException(type.toString());
+        Td.assertTextEntityType_542d164b();
+        throw Td.unsupported(type);
     }
   }
 
@@ -1045,6 +1051,7 @@ public class TD {
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
         return new TdApi.TextEntityTypeUrl();
       default:
+        Td.assertTextEntityType_542d164b();
         throw new UnsupportedOperationException("constructor=" + constructor);
     }
   }
@@ -1119,8 +1126,10 @@ public class TD {
         return "archive";
       case TdApi.ChatListFolder.CONSTRUCTOR:
         return KEY_PREFIX_FOLDER + ((TdApi.ChatListFolder) chatList).chatFolderId;
+      default:
+        Td.assertChatList_db6c93ab();
+        throw Td.unsupported(chatList);
     }
-    throw new UnsupportedOperationException(chatList.toString());
   }
 
   public static TdApi.ReactionType toReactionType (String key) {
@@ -1136,8 +1145,10 @@ public class TD {
         return ((TdApi.ReactionTypeEmoji) reactionType).emoji;
       case TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR:
         return "custom_" + ((TdApi.ReactionTypeCustomEmoji) reactionType).customEmojiId;
+      default:
+        Td.assertReactionType_7dcca074();
+        throw Td.unsupported(reactionType);
     }
-    throw new UnsupportedOperationException(reactionType.toString());
   }
 
   public static int getColorIndex (long selfUserId, long id) {
@@ -1496,9 +1507,12 @@ public class TD {
   }
 
   public static boolean canSendToSecretChat (TdApi.MessageContent content) {
+    Td.assertMessageContent_6479f6fc();
+    //noinspection SwitchIntDef
     switch (content.getConstructor()) {
       case TdApi.MessagePoll.CONSTRUCTOR:
-      case TdApi.MessageGame.CONSTRUCTOR: {
+      case TdApi.MessageGame.CONSTRUCTOR:
+      case TdApi.MessageStory.CONSTRUCTOR: {
         return false;
       }
     }
@@ -1610,6 +1624,7 @@ public class TD {
   public static int getCombineMode (TdApi.Message message) {
     if (message != null) {
       if (!Td.isSecret(message.content)) {
+        //noinspection SwitchIntDef
         switch (message.content.getConstructor()) {
           case TdApi.MessagePhoto.CONSTRUCTOR:
           case TdApi.MessageVideo.CONSTRUCTOR:
@@ -1781,6 +1796,14 @@ public class TD {
         everybodyExceptRes = R.string.PrivacyAllowFindingEverybodyExcept;
         everybodyRes = R.string.PrivacyAllowFindingEverybody;
         break;
+      case TdApi.UserPrivacySettingShowBio.CONSTRUCTOR:
+        nobodyExceptRes = R.string.PrivacyShowBioNobodyExcept;
+        nobodyRes = R.string.PrivacyShowBioNobody;
+        contactsExceptRes = R.string.PrivacyShowBioContactsExcept;
+        contactsRes = R.string.PrivacyShowBioContacts;
+        everybodyExceptRes = R.string.PrivacyShowBioEverybodyExcept;
+        everybodyRes = R.string.PrivacyShowBioEverybody;
+        break;
       case TdApi.UserPrivacySettingAllowChatInvites.CONSTRUCTOR:
         nobodyExceptRes = R.string.PrivacyAddToGroupsNobodyExcept;
         nobodyRes = R.string.PrivacyAddToGroupsNobody;
@@ -1843,7 +1866,8 @@ public class TD {
         everybodyRes = R.string.PrivacyVoiceVideoEverybody;
         break;
       default:
-        throw new IllegalArgumentException("privacyKey == " + privacyKey);
+        Td.assertUserPrivacySetting_21d3f4();
+        throw new UnsupportedOperationException(Integer.toString(privacyKey));
     }
 
     int res, exceptRes;
@@ -2265,8 +2289,11 @@ public class TD {
             isFileLoaded(slotMachine.rightReel.sticker) &&
             isFileLoaded(slotMachine.lever.sticker);
         }
+        default: {
+          Td.assertDiceStickers_bd2aa513();
+          throw Td.unsupported(stickers);
+        }
       }
-      throw new UnsupportedOperationException(stickers.toString());
     }
     return false;
   }
@@ -2539,6 +2566,7 @@ public class TD {
     }
     String url = null;
     for (TdApi.TextEntity entity : text.entities) {
+      //noinspection SwitchIntDef
       switch (entity.type.getConstructor()) {
         case TdApi.TextEntityTypeUrl.CONSTRUCTOR: {
           return text.text.substring(entity.offset, entity.offset + entity.length);
@@ -3501,7 +3529,7 @@ public class TD {
   public static boolean hasHashtag (TdApi.FormattedText text, String hashtag) {
     if (!Td.isEmpty(text) && text.entities != null) {
       for (TdApi.TextEntity entity : text.entities) {
-        if (entity.type.getConstructor() == TdApi.TextEntityTypeHashtag.CONSTRUCTOR) {
+        if (Td.isHashtag(entity.type)) {
           if (hashtag.equals(Td.substring(text.text, entity)))
             return true;
         }
@@ -4138,6 +4166,7 @@ public class TD {
       }
       // Unsupported in this method
       case TdApi.MessageChatSetTheme.CONSTRUCTOR:
+      case TdApi.MessageChatSetBackground.CONSTRUCTOR:
       case TdApi.MessageInviteVideoChatParticipants.CONSTRUCTOR:
       case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR:
       case TdApi.MessageVideoChatEnded.CONSTRUCTOR:
@@ -4159,7 +4188,9 @@ public class TD {
       case TdApi.MessageChatShared.CONSTRUCTOR:
       case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
       case TdApi.MessageUserShared.CONSTRUCTOR:
+      case TdApi.MessageStory.CONSTRUCTOR:
       default: {
+        Td.assertMessageContent_6479f6fc();
         U.set(isTranslatable, true);
         return Lang.getString(R.string.UnsupportedMessage);
       }
@@ -4408,10 +4439,11 @@ public class TD {
   }
 
   public static boolean canEditText (TdApi.MessageContent content) {
-     return canBeEdited(content) && content.getConstructor() != TdApi.MessageLocation.CONSTRUCTOR;
+     return canBeEdited(content) && !Td.isLocation(content);
   }
 
   public static boolean canBeEdited (TdApi.MessageContent content) {
+    //noinspection SwitchIntDef
     switch (content.getConstructor()) {
       case TdApi.MessageText.CONSTRUCTOR:
       case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
@@ -4510,29 +4542,6 @@ public class TD {
     return null;
   }
 
-  public static @Nullable String getTextOrCaption (TdApi.PushMessageContent content) {
-    if (content == null)
-      return null;
-    switch (content.getConstructor()) {
-      case TdApi.PushMessageContentText.CONSTRUCTOR: return ((TdApi.PushMessageContentText) content).text;
-      case TdApi.PushMessageContentAnimation.CONSTRUCTOR: return ((TdApi.PushMessageContentAnimation) content).caption;
-      case TdApi.PushMessageContentVideo.CONSTRUCTOR: return ((TdApi.PushMessageContentVideo) content).caption;
-
-      case TdApi.PushMessageContentPhoto.CONSTRUCTOR: return ((TdApi.PushMessageContentPhoto) content).caption;
-      case TdApi.PushMessageContentPoll.CONSTRUCTOR: return ((TdApi.PushMessageContentPoll) content).question;
-
-      // FIXME: server+TDLIB missing captions in these media kinds
-      /*case TdApi.PushMessageContentDocument.CONSTRUCTOR: return ((TdApi.PushMessageContentDocument) content).caption;
-      case TdApi.PushMessageContentMediaAlbum.CONSTRUCTOR: return ((TdApi.PushMessageContentMediaAlbum) content).caption;
-      case TdApi.PushMessageContentAudio.CONSTRUCTOR: return ((TdApi.PushMessageContentAudio) content).caption;
-      case TdApi.PushMessageContentVoiceNote.CONSTRUCTOR: return ((TdApi.PushMessageContentVoiceNote) content).caption;*/
-
-      case TdApi.PushMessageContentChatChangeTitle.CONSTRUCTOR: return ((TdApi.PushMessageContentChatChangeTitle) content).title;
-      // case TdApi.PushMessageContentChatSetTheme.CONSTRUCTOR: return ((TdApi.PushMessageContentChatSetTheme) content).themeName;
-    }
-    return null;
-  }
-
   public static boolean canCopyText (TdApi.Message msg) {
     TdApi.FormattedText text = msg != null ? Td.textOrCaption(msg.content) : null;
     return !Td.isEmpty(Td.trim(text));
@@ -4548,7 +4557,7 @@ public class TD {
   }
 
   public static TdApi.MessageContent removeWebPage (TdApi.MessageContent content) {
-    if (content == null || content.getConstructor() != TdApi.MessageText.CONSTRUCTOR) {
+    if (content == null || !Td.isText(content)) {
       return content;
     }
     TdApi.MessageText messageText = (TdApi.MessageText) content;
@@ -4682,10 +4691,11 @@ public class TD {
   public static boolean isHeavyContent (TdApi.Message message) {
     if (message == null)
       return false;
-    int constructor = message.content.getConstructor();
+    @TdApi.MessageContent.Constructors int constructor = message.content.getConstructor();
     if (constructor == TdApi.MessageText.CONSTRUCTOR) {
       constructor = convertToMessageContent(((TdApi.MessageText) message.content).webPage);
     }
+    //noinspection SwitchIntDef
     switch (constructor) {
       case TdApi.MessagePhoto.CONSTRUCTOR:
       case TdApi.MessageVideo.CONSTRUCTOR:
@@ -5164,16 +5174,6 @@ public class TD {
 
   // other
 
-  public static boolean isMessageOpened (TdApi.Message message) {
-    switch (message.content.getConstructor()) {
-      case TdApi.MessageVoiceNote.CONSTRUCTOR:
-        return ((TdApi.MessageVoiceNote) message.content).isListened;
-      case TdApi.MessageVideoNote.CONSTRUCTOR:
-        return ((TdApi.MessageVideoNote) message.content).isViewed;
-    }
-    return false;
-  }
-
   public static void setMessageOpened (TdApi.Message message) {
     // FIXME when TDLib will get a field
     switch (message.content.getConstructor()) {
@@ -5284,9 +5284,11 @@ public class TD {
       case TdApi.TextEntityTypeMention.CONSTRUCTOR:
       case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR:
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
-        break;
+        return null;
+      default:
+        Td.assertTextEntityType_542d164b();
+        throw Td.unsupported(entityType);
     }
-    return null;
   }
 
   private static HtmlTag[] toHtmlTag (CharacterStyle span) {
@@ -5382,7 +5384,7 @@ public class TD {
     SpannableStringBuilder b = null;
     boolean hasSpoilers = false;
     for (TdApi.TextEntity entity : text.entities) {
-      boolean isSpoiler = entity.type.getConstructor() == TdApi.TextEntityTypeSpoiler.CONSTRUCTOR;
+      boolean isSpoiler = Td.isSpoiler(entity.type);
       if (isSpoiler) {
         hasSpoilers = true;
       }
@@ -5397,7 +5399,7 @@ public class TD {
       StringBuilder builder = b != null ? null : new StringBuilder(text.text);
       for (int i = text.entities.length - 1; i >= 0; i--) {
         TdApi.TextEntity entity = text.entities[i];
-        if (entity.type.getConstructor() == TdApi.TextEntityTypeSpoiler.CONSTRUCTOR) {
+        if (Td.isSpoiler(entity.type)) {
           String replacement = StringUtils.multiply(SPOILER_REPLACEMENT_CHAR, entity.length);
           if (b != null) {
             b.delete(entity.offset, entity.offset + entity.length);
@@ -5461,8 +5463,10 @@ public class TD {
       case TdApi.TextEntityTypeMention.CONSTRUCTOR:
       case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR:
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
-      default:
         return null;
+      default:
+        Td.assertTextEntityType_542d164b();
+        throw Td.unsupported(type);
     }
     span.setEntityType(type);
     return span;
@@ -5502,9 +5506,11 @@ public class TD {
       case TdApi.TextEntityTypeMention.CONSTRUCTOR:
       case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR:
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
-        break;
+        return false;
+      default:
+        Td.assertTextEntityType_542d164b();
+        throw Td.unsupported(type);
     }
-    return false;
   }
 
   public static CharacterStyle toSpan (TdApi.TextEntityType type, boolean allowInternal) {
@@ -5541,9 +5547,11 @@ public class TD {
       case TdApi.TextEntityTypeMention.CONSTRUCTOR:
       case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR:
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
-        break;
+        return null;
+      default:
+        Td.assertTextEntityType_542d164b();
+        throw Td.unsupported(type);
     }
-    return null;
   }
 
   public static TdApi.TextEntityType[] toEntityType (CharacterStyle span) {
@@ -5734,7 +5742,7 @@ public class TD {
       int start = ((Spanned) cs).getSpanStart(span);
       int end = ((Spanned) cs).getSpanEnd(span);
       for (TdApi.TextEntityType type : types) {
-        if (onlyLinks && type.getConstructor() != TdApi.TextEntityTypeTextUrl.CONSTRUCTOR)
+        if (onlyLinks && !Td.isTextUrl(type))
           continue;
         if (entities == null)
           entities = new ArrayList<>();
@@ -6018,7 +6026,7 @@ public class TD {
         }
       }
     }
-    int type = message.content.getConstructor();
+    @TdApi.MessageContent.Constructors int type = message.content.getConstructor();
     TdApi.FormattedText formattedText;
     if (allowContent) {
       formattedText = Td.textOrCaption(message.content);
@@ -6040,12 +6048,13 @@ public class TD {
         if (!Td.isEmpty(messageText.text) && messageText.text.entities != null) {
           boolean isUrl = false;
           for (TdApi.TextEntity entity : messageText.text.entities) {
+            //noinspection SwitchIntDef
             switch (entity.type.getConstructor()) {
               case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
               case TdApi.TextEntityTypeUrl.CONSTRUCTOR: {
                 if (entity.offset == 0 && (
                   entity.length == messageText.text.text.length() ||
-                  entity.type.getConstructor() != TdApi.TextEntityTypeTextUrl.CONSTRUCTOR ||
+                  !Td.isTextUrl(entity.type) ||
                   !StringUtils.isEmptyOrInvisible(Td.substring(messageText.text.text, entity
                   )))
                 ) {
@@ -6177,14 +6186,14 @@ public class TD {
             message.chatId, score.gameMessageId,
             timeoutMs
           ) : null;
-        String gameTitle = gameMessage != null && gameMessage.content.getConstructor() == TdApi.MessageGame.CONSTRUCTOR ? TD.getGameName(((TdApi.MessageGame) gameMessage.content).game, false) : null;
+        String gameTitle = gameMessage != null && Td.isGame(gameMessage.content) ? TD.getGameName(((TdApi.MessageGame) gameMessage.content).game, false) : null;
         if (!StringUtils.isEmpty(gameTitle)) {
           return new ContentPreview(EMOJI_GAME, 0, Lang.plural(message.isOutgoing ? R.string.game_ActionYouScoredInGame : R.string.game_ActionScoredInGame, score.score, gameTitle), true);
         } else {
           return new ContentPreview(EMOJI_GAME, 0, Lang.plural(message.isOutgoing ? R.string.game_ActionYouScored : R.string.game_ActionScored, score.score), true)
             .setRefresher(gameMessage != null ? null :
               (oldPreview, callback) -> tdlib.getMessage(message.chatId, score.gameMessageId, remoteGameMessage -> {
-              if (remoteGameMessage != null && remoteGameMessage.content.getConstructor() == TdApi.MessageGame.CONSTRUCTOR) {
+              if (remoteGameMessage != null && Td.isGame(remoteGameMessage.content)) {
                 String newGameTitle = TD.getGameName(((TdApi.MessageGame) remoteGameMessage.content).game, false);
                 if (!StringUtils.isEmpty(newGameTitle)) {
                   callback.onContentPreviewChanged(message.chatId, message.id, new ContentPreview(EMOJI_GAME, 0, Lang.plural(message.isOutgoing ? R.string.game_ActionYouScoredInGame : R.string.game_ActionScoredInGame, score.score, newGameTitle), true), oldPreview);
@@ -6533,6 +6542,14 @@ public class TD {
           return getNotificationPreview(TdApi.MessageVideoNote.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, argument, argumentTranslatable, 0);
       }
 
+      case TdApi.PushMessageContentStory.CONSTRUCTOR: {
+        if (((TdApi.PushMessageContentStory) push.content).isPinned) {
+          return getNotificationPinned(R.string.ActionPinnedStory, TdApi.MessageStory.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, 0);
+        } else {
+          return getNotificationPreview(TdApi.MessageStory.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, 0);
+        }
+      }
+
       case TdApi.PushMessageContentVoiceNote.CONSTRUCTOR: {
         String argument = null; // FIXME server ((TdApi.PushMessageContentVoiceNote) push.content).caption;
         boolean argumentTranslatable = false;
@@ -6650,8 +6667,13 @@ public class TD {
 
       case TdApi.PushMessageContentChatSetTheme.CONSTRUCTOR:
         return getNotificationPreview(TdApi.MessageChatSetTheme.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentChatSetTheme) push.content).themeName, 0);
+      case TdApi.PushMessageContentChatSetBackground.CONSTRUCTOR:
+        return getNotificationPreview(TdApi.MessageChatSetBackground.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, ((TdApi.PushMessageContentChatSetBackground) push.content).isSame ? ARG_TRUE : ARG_NONE);
+      case TdApi.PushMessageContentSuggestProfilePhoto.CONSTRUCTOR:
+        return getNotificationPreview(TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, 0);
+      default:
+        throw Td.unsupported(push.content);
     }
-    throw new AssertionError(push.content);
   }
 
   public static final class Emoji {
@@ -6934,6 +6956,20 @@ public class TD {
       case TdApi.MessageVideoChatScheduled.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
+      case TdApi.MessageBotWriteAccessAllowed.CONSTRUCTOR:
+      case TdApi.MessageChatSetBackground.CONSTRUCTOR:
+      case TdApi.MessageChatShared.CONSTRUCTOR:
+      case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
+      case TdApi.MessageForumTopicEdited.CONSTRUCTOR:
+      case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
+      case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
+      case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
+      case TdApi.MessageUserShared.CONSTRUCTOR:
+      case TdApi.MessageStory.CONSTRUCTOR:
+        break;
+      default:
+        Td.assertMessageContent_6479f6fc();
+        // not critical, not crashing
         break;
     }
     return null;
@@ -6952,7 +6988,7 @@ public class TD {
 
     LongSet emojis = new LongSet();
     for (TdApi.TextEntity entity : text.entities) {
-      if (entity.type.getConstructor() == TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR) {
+      if (Td.isCustomEmoji(entity.type)) {
         emojis.add(((TdApi.TextEntityTypeCustomEmoji) entity.type).customEmojiId);
       }
     }

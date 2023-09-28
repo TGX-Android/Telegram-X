@@ -252,6 +252,7 @@ public class TGMessageFile extends TGMessage {
     FileComponent component;
     TdApi.FormattedText caption;
     boolean disallowTouch = true;
+    //noinspection SwitchIntDef
     switch (message.content.getConstructor()) {
       case TdApi.MessageDocument.CONSTRUCTOR: {
         TdApi.MessageDocument document = (TdApi.MessageDocument) message.content;
@@ -351,6 +352,7 @@ public class TGMessageFile extends TGMessage {
       boolean fileChanged = false;
       TdApi.FormattedText serverCaption;
       FileComponent component = file.component;
+      //noinspection SwitchIntDef
       switch (newContent.getConstructor()) {
         case TdApi.MessageAudio.CONSTRUCTOR: {
           TdApi.MessageAudio audio = (TdApi.MessageAudio) newContent;

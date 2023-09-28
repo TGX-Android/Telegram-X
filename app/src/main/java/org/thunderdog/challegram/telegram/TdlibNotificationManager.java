@@ -2102,6 +2102,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       c = UI.getCurrentStackItem();
     } catch (IndexOutOfBoundsException ignored) { }
     if (((c instanceof MessagesController && ((MessagesController) c).compareChat(sentMessage.chatId)) || (c instanceof MainController)) && !c.isPaused()) {
+      //noinspection SwitchIntDef
       switch (sentMessage.content.getConstructor()) {
         case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
         case TdApi.MessageChatSetMessageAutoDeleteTime.CONSTRUCTOR: {

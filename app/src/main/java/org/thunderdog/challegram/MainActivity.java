@@ -536,6 +536,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
       if (c != null) {
         c.openAlert(R.string.ExperimentalBuildTitle,
           Strings.buildMarkdown(c, Lang.getStringSecure(R.string.ExperimentalBuildInfo), (view, span, clickedText) -> {
+            //noinspection SwitchIntDef
             switch (span.getEntityType().getConstructor()) {
               case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
                 UI.openUrl(clickedText);

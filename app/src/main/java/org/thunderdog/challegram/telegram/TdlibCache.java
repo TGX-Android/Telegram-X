@@ -1385,7 +1385,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   }
 
   void addOutputLocationMessage (TdApi.Message message) {
-    if (message.sendingState != null || !message.canBeEdited || !message.isOutgoing || message.content.getConstructor() != TdApi.MessageLocation.CONSTRUCTOR) {
+    if (message.sendingState != null || !message.canBeEdited || !message.isOutgoing || !Td.isLocation(message.content)) {
       return;
     }
     TdApi.MessageLocation location = (TdApi.MessageLocation) message.content;
@@ -1551,7 +1551,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
             case TdApi.Message.CONSTRUCTOR: {
               TdApi.Message resultMessage = (TdApi.Message) object;
               message.editDate = resultMessage.editDate;
-              if (resultMessage.content.getConstructor() == TdApi.MessageLocation.CONSTRUCTOR) {
+              if (Td.isLocation(resultMessage.content)) {
                 TdApi.MessageLocation in = (TdApi.MessageLocation) resultMessage.content;
                 TdApi.MessageLocation out = (TdApi.MessageLocation) message.content;
                 out.expiresIn = in.livePeriod;

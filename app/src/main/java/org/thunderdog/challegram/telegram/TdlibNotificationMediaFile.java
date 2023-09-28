@@ -21,6 +21,8 @@ import org.thunderdog.challegram.data.MediaWrapper;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.unsorted.Settings;
 
+import me.vkryl.td.Td;
+
 public class TdlibNotificationMediaFile {
   public static final int TYPE_IMAGE = 0;
   public static final int TYPE_STICKER = 1;
@@ -57,8 +59,10 @@ public class TdlibNotificationMediaFile {
         return TYPE_LOTTIE_STICKER;
       case TdApi.StickerFormatWebp.CONSTRUCTOR:
         return TYPE_STICKER;
+      default:
+        Td.assertStickerFormat_4fea4648();
+        throw Td.unsupported(format);
     }
-    throw new UnsupportedOperationException(format.toString());
   }
 
   @Nullable
@@ -73,6 +77,7 @@ public class TdlibNotificationMediaFile {
     switch (notificationType.getConstructor()) {
       case TdApi.NotificationTypeNewMessage.CONSTRUCTOR: {
         TdApi.Message message = ((TdApi.NotificationTypeNewMessage) notificationType).message;
+        //noinspection SwitchIntDef
         switch (message.content.getConstructor()) {
           case TdApi.MessagePhoto.CONSTRUCTOR: {
             TdApi.MessagePhoto photo = (TdApi.MessagePhoto) message.content;
@@ -113,6 +118,7 @@ public class TdlibNotificationMediaFile {
       }
       case TdApi.NotificationTypeNewPushMessage.CONSTRUCTOR: {
         TdApi.PushMessageContent push = ((TdApi.NotificationTypeNewPushMessage) notificationType).content;
+        //noinspection SwitchIntDef
         switch (push.getConstructor()) {
           case TdApi.PushMessageContentPhoto.CONSTRUCTOR: {
             TdApi.PushMessageContentPhoto photo = (TdApi.PushMessageContentPhoto) push;
