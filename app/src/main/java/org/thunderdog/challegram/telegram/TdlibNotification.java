@@ -140,8 +140,11 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
       case TdApi.NotificationTypeNewCall.CONSTRUCTOR:
       case TdApi.NotificationTypeNewSecretChat.CONSTRUCTOR:
         return false;
+      default: {
+        Td.assertNotificationType_dd6d967f();
+        throw Td.unsupported(notification.type);
+      }
     }
-    throw new UnsupportedOperationException(notification.type.toString());
   }
 
   public boolean isVisuallySilent () { // Display bell icon
@@ -164,7 +167,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
   public boolean isPinnedMessage () {
     switch (notification.type.getConstructor()) {
       case TdApi.NotificationTypeNewMessage.CONSTRUCTOR:
-        return ((TdApi.NotificationTypeNewMessage) notification.type).message.content.getConstructor() == TdApi.MessagePinMessage.CONSTRUCTOR;
+        return Td.isPinned(((TdApi.NotificationTypeNewMessage) notification.type).message.content);
       case TdApi.NotificationTypeNewPushMessage.CONSTRUCTOR:
         return Td.isPinned(((TdApi.NotificationTypeNewPushMessage) notification.type).content);
       case TdApi.NotificationTypeNewCall.CONSTRUCTOR:
@@ -274,9 +277,9 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
   public boolean isStickerContent () {
     switch (notification.type.getConstructor()) {
       case TdApi.NotificationTypeNewMessage.CONSTRUCTOR:
-        return ((TdApi.NotificationTypeNewMessage) notification.type).message.content.getConstructor() == TdApi.MessageSticker.CONSTRUCTOR;
+        return Td.isSticker(((TdApi.NotificationTypeNewMessage) notification.type).message.content);
       case TdApi.NotificationTypeNewPushMessage.CONSTRUCTOR:
-        return ((TdApi.NotificationTypeNewPushMessage) notification.type).content.getConstructor() == TdApi.PushMessageContentSticker.CONSTRUCTOR;
+        return Td.isSticker(((TdApi.NotificationTypeNewPushMessage) notification.type).content);
       case TdApi.NotificationTypeNewCall.CONSTRUCTOR:
       case TdApi.NotificationTypeNewSecretChat.CONSTRUCTOR:
         break;
@@ -348,17 +351,14 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
         }
 
         // TODO move this to TD.getNotificationPreview?
-        switch (message.content.getConstructor()) {
-          case TdApi.MessagePinMessage.CONSTRUCTOR: {
-            long messageId = ((TdApi.MessagePinMessage) message.content).messageId;
-            TdApi.Message pinnedMessage = messageId != 0 ? tdlib.getMessageLocally(message.chatId, messageId) : null;
-            if (onlyPinned) {
-              if (pinnedMessage != null)
-                message = pinnedMessage;
-            } else {
-              return wrapEdited(Lang.getPinnedMessageText(tdlib, message.senderId, pinnedMessage, false));
-            }
-            break;
+        if (Td.isPinned(message.content)) {
+          long messageId = ((TdApi.MessagePinMessage) message.content).messageId;
+          TdApi.Message pinnedMessage = messageId != 0 ? tdlib.getMessageLocally(message.chatId, messageId) : null;
+          if (onlyPinned) {
+            if (pinnedMessage != null)
+              message = pinnedMessage;
+          } else {
+            return wrapEdited(Lang.getPinnedMessageText(tdlib, message.senderId, pinnedMessage, false));
           }
         }
 
@@ -375,7 +375,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
         TdApi.NotificationTypeNewPushMessage push = (TdApi.NotificationTypeNewPushMessage) notification.type;
         TD.ContentPreview content = TD.getNotificationPreview(tdlib, getChatId(), push, allowContent);
         if (content == null)
-          throw new UnsupportedOperationException(Integer.toString(push.content.getConstructor()));
+          throw Td.unsupported(push.content);
         if (hasCustomText != null && !content.isTranslatable) {
           hasCustomText[0] = true;
         }

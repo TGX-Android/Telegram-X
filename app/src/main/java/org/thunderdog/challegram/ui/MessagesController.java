@@ -514,14 +514,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     int totalCount = manager != null ? manager.getKnownTotalMessageCount() : -1;
 
     if (previewSearchFilter != null) {
-      switch (previewSearchFilter.getConstructor()) {
-        case TdApi.SearchMessagesFilterPinned.CONSTRUCTOR: {
-          if (totalCount > 0) {
-            headerCell.setForcedSubtitle(Lang.pluralBold(R.string.XPinnedMessages, totalCount));
-          } else {
-            headerCell.setForcedSubtitle(Lang.getString(R.string.PinnedMessages));
-          }
-          break;
+      if (Td.isPinnedFilter(previewSearchFilter)) {
+        if (totalCount > 0) {
+          headerCell.setForcedSubtitle(Lang.pluralBold(R.string.XPinnedMessages, totalCount));
+        } else {
+          headerCell.setForcedSubtitle(Lang.getString(R.string.PinnedMessages));
         }
       }
       return;
@@ -3896,14 +3893,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
         // TODO save local draft
       } else if (inputView != null && inputView.textChangedSinceChatOpened() && isFocused()) {
         final TdApi.FormattedText outputText = inputView.getOutputText(false);
-        final TdApi.MessageReplyToMessage replyTo = getCurrentReplyId();
+        final @Nullable TdApi.MessageReplyToMessage replyTo = getCurrentReplyId();
         final long date = tdlib.currentTime(TimeUnit.SECONDS);
         final TdApi.InputMessageText inputMessageText = new TdApi.InputMessageText(
           outputText,
           getCurrentAllowLinkPreview(),
           false
         );
-        final TdApi.DraftMessage draftMessage = new TdApi.DraftMessage(replyTo.messageId, (int) date, inputMessageText);
+        final TdApi.DraftMessage draftMessage = new TdApi.DraftMessage(replyTo != null ? replyTo.messageId : 0, (int) date, inputMessageText);
         final long outputChatId = messageThread != null ? messageThread.getChatId() : getChatId();
         final long messageThreadId = messageThread != null ? messageThread.getMessageThreadId() : 0;
         if (messageThread != null) {
@@ -4344,6 +4341,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
           b.append(". ");
         }
         b.append(Lang.getString(R.string.SendFailureInfo, Strings.join(", ", (Object[]) errors)));
+      }
+    }
+    if (msg.isSponsoredMessage()) {
+      String additionalInfo = msg.getSponsoredMessage().additionalInfo;
+      if (!StringUtils.isEmpty(additionalInfo)) {
+        if (b.length() > 0) {
+          b.append('\n');
+        }
+        b.append(additionalInfo);
       }
     }
     if (!msg.canBeSaved()) {
@@ -6360,7 +6366,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean arePinnedMessages () {
-    return previewSearchFilter != null && previewSearchFilter.getConstructor() == TdApi.SearchMessagesFilterPinned.CONSTRUCTOR;
+    return previewSearchFilter != null && Td.isPinnedFilter(previewSearchFilter);
   }
 
   public void openPreviewMessage (TGMessage msg) {
@@ -7478,7 +7484,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           items.add(new TopBarView.Item(R.id.btn_shareMyContact, R.string.SharePhoneNumber, v -> {
             TdApi.User user = tdlib.myUser();
             if (user != null) {
-              showOptions(TD.getUserName(user) + ", " + Strings.formatPhone(user.phoneNumber), new int[]{R.id.btn_shareMyContact, R.id.btn_cancel}, new String[]{Lang.getString(R.string.SharePhoneNumberAction), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_BLUE, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_contact_phone_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
+              showOptions(TD.getUserName(user) + ", " + Strings.formatPhone(user.phoneNumber), new int[] {R.id.btn_shareMyContact, R.id.btn_cancel}, new String[] {Lang.getString(R.string.SharePhoneNumberAction), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_BLUE, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_contact_phone_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
                 if (id1 == R.id.btn_shareMyContact) {
                   tdlib.client().send(new TdApi.SharePhoneNumber(tdlib.chatUserId(chatId)), tdlib.okHandler());
                 }
@@ -7487,6 +7493,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
             }
           }));
           break;
+        }
+        case TdApi.ChatActionBarJoinRequest.CONSTRUCTOR: {
+          TdApi.ChatActionBarJoinRequest joinRequest = (TdApi.ChatActionBarJoinRequest) actionBar;
+          // TODO
+          break;
+        }
+        default: {
+          Td.assertChatActionBar_9b96400f();
+          throw Td.unsupported(actionBar);
         }
       }
     }
@@ -8777,7 +8792,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     long chatId = getChatId();
     long messageThreadId = getMessageThreadId();
-    TdApi.MessageReplyTo replyTo = allowReply ? (clearInput ? getCurrentReplyId() : obtainReplyTo()) : null;
+    final @Nullable TdApi.MessageReplyTo replyTo = allowReply ? (clearInput ? getCurrentReplyId() : obtainReplyTo()) : null;
 
     TdApi.InputMessageContent content;
     if (allowDice && tdlib.shouldSendAsDice(msg)) {
@@ -10784,7 +10799,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean callNonAnonymousProtection (long hash, @Nullable TooltipOverlayView.TooltipBuilder tooltipBuilder) {
-    if (chat == null || chat.messageSenderId == null || tdlib.isSelfSender(chat.messageSenderId)) {
+    if (chat == null || tdlib.isSelfSender(chat.messageSenderId) || (chat.messageSenderId == null && !tdlib.isAnonymousAdmin(chat.id))) {
       return true;
     }
 

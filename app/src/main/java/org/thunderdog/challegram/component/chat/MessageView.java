@@ -650,6 +650,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         icons.append(R.drawable.outline_forum_24);
       }
 
+      //noinspection SwitchIntDef
       switch (content.getConstructor()) {
         case TdApi.MessagePoll.CONSTRUCTOR: {
           TdApi.Poll poll = ((TdApi.MessagePoll) content).poll;
@@ -1018,7 +1019,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       }
     }
 
-    if (msg.canBeReported() && !msg.isFakeMessage()) {
+    if (msg.canBeReported() && !msg.isFakeMessage() && !msg.isSponsoredMessage()) {
       if (isMore) {
         ids.append(R.id.btn_messageReport);
         strings.append(R.string.MessageReport);

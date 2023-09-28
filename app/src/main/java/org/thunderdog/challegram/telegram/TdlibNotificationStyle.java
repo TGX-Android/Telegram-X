@@ -80,6 +80,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import me.leolin.shortcutbadger.ShortcutBadger;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.ChatId;
+import me.vkryl.td.Td;
 
 public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, FileUpdateListener {
   private static final boolean USE_GROUPS = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH;
@@ -137,7 +138,8 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
               matches = tdlib.isChannelFast(group.getChatId());
               break;
             default:
-              throw new UnsupportedOperationException(scope.toString());
+              Td.assertNotificationSettingsScope_edff9c28();
+              throw Td.unsupported(scope);
           }
           if (matches) {
             if (displayChildNotification(manager, context, helper, badgeCount, allowPreview, group, null, true) != DISPLAY_STATE_FAIL) {

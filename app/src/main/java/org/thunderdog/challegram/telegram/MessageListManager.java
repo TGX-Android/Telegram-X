@@ -30,7 +30,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableInt;
 import me.vkryl.td.Td;
 
-public class MessageListManager extends ListManager<TdApi.Message> implements MessageListener, Comparator<TdApi.Message> {
+public final class MessageListManager extends ListManager<TdApi.Message> implements MessageListener, Comparator<TdApi.Message> {
   public interface ChangeListener extends ListManager.ListChangeListener<TdApi.Message> { }
 
   private final long chatId;
@@ -409,7 +409,7 @@ public class MessageListManager extends ListManager<TdApi.Message> implements Me
               removeMessageAt(index);
             }
           }
-        } else if (filter != null && filter.getConstructor() == TdApi.SearchMessagesFilterPinned.CONSTRUCTOR && isPinned) {
+        } else if (filter != null && Td.isPinnedFilter(filter) && isPinned) {
           fetchMessage(messageId, true);
         }
       });

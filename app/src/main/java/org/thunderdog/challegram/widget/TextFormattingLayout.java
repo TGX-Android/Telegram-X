@@ -452,24 +452,46 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     return -1;
   }
 
-  private static int getTypeFlagFromEntityType (TdApi.TextEntityType entityType) {
-    int constructor = entityType.getConstructor();
-    if (constructor == TdApi.TextEntityTypeBold.CONSTRUCTOR) {
-      return FLAG_BOLD;
-    } else if (constructor == TdApi.TextEntityTypeItalic.CONSTRUCTOR) {
-      return FLAG_ITALIC;
-    } else if (constructor == TdApi.TextEntityTypeCode.CONSTRUCTOR) {
-      return FLAG_MONOSPACE;
-    } else if (constructor == TdApi.TextEntityTypeUnderline.CONSTRUCTOR) {
-      return  FLAG_UNDERLINE;
-    } else if (constructor == TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR) {
-      return FLAG_STRIKETHROUGH;
-    } else if (constructor == TdApi.TextEntityTypeTextUrl.CONSTRUCTOR) {
-      return FLAG_LINK;
-    } else if (constructor == TdApi.TextEntityTypeSpoiler.CONSTRUCTOR) {
-      return FLAG_SPOILER;
+  private static int getTypeFlagFromEntityType (TdApi.TextEntityType type) {
+    switch (type.getConstructor()) {
+      case TdApi.TextEntityTypeBold.CONSTRUCTOR:
+        return FLAG_BOLD;
+      case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
+        return FLAG_ITALIC;
+      case TdApi.TextEntityTypeCode.CONSTRUCTOR:
+      case TdApi.TextEntityTypePre.CONSTRUCTOR:
+      case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
+        return FLAG_MONOSPACE;
+      case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
+        return FLAG_UNDERLINE;
+      case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
+        return FLAG_STRIKETHROUGH;
+      case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
+        return FLAG_LINK;
+      case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
+        return FLAG_SPOILER;
+
+      // immutable
+      case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
+      case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
+
+      // auto-detected
+      case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
+      case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
+      case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
+      case TdApi.TextEntityTypeHashtag.CONSTRUCTOR:
+      case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR:
+      case TdApi.TextEntityTypeMention.CONSTRUCTOR:
+      case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
+        return -1;
+
+      // unsupported
+      default:
+        Td.assertTextEntityType_542d164b();
+        throw Td.unsupported(type);
     }
-    return -1;
   }
 
   private static TdApi.TextEntityType getEntityTypeFromTypeFlag (int flag) {

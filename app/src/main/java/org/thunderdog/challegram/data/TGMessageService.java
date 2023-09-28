@@ -263,6 +263,9 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageContact.CONSTRUCTOR:
               staticResId = R.string.ActionPinnedContact;
               break;
+            case TdApi.MessageStory.CONSTRUCTOR:
+              staticResId = R.string.ActionPinnedStory;
+              break;
             case TdApi.MessageDice.CONSTRUCTOR: // TODO?
               // unreachable
             case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
@@ -278,6 +281,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageChatJoinByLink.CONSTRUCTOR:
             case TdApi.MessageChatJoinByRequest.CONSTRUCTOR:
             case TdApi.MessageChatSetTheme.CONSTRUCTOR:
+            case TdApi.MessageChatSetBackground.CONSTRUCTOR:
             case TdApi.MessageChatSetMessageAutoDeleteTime.CONSTRUCTOR:
             case TdApi.MessageChatUpgradeFrom.CONSTRUCTOR:
             case TdApi.MessageChatUpgradeTo.CONSTRUCTOR:
@@ -300,10 +304,19 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
             case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
             case TdApi.MessageWebsiteConnected.CONSTRUCTOR:
+            case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
+            case TdApi.MessageForumTopicEdited.CONSTRUCTOR:
+            case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
+            case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
+            case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
+            case TdApi.MessageUserShared.CONSTRUCTOR:
+            case TdApi.MessageChatShared.CONSTRUCTOR:
+            case TdApi.MessageBotWriteAccessAllowed.CONSTRUCTOR:
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              throw new UnsupportedOperationException(message.content.toString());
+              Td.assertMessageContent_6479f6fc();
+              throw Td.unsupported(message.content);
           }
           String format = Lang.getString(staticResId);
           int startIndex = format.indexOf("**");
@@ -608,6 +621,22 @@ public final class TGMessageService extends TGMessageServiceImpl {
     );
   }
 
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageBotWriteAccessAllowed botWriteAccessAllowed) {
+    super(context, msg);
+    setTextCreator(() -> {
+      if (botWriteAccessAllowed.byRequest) {
+        return getText(R.string.BotWebappAllowed);
+      } else if (botWriteAccessAllowed.webApp == null) {
+        return getText(R.string.BotAttachAllowed);
+      } else {
+        return getText(
+          R.string.BotAppAllowed,
+          new BoldArgument(botWriteAccessAllowed.webApp.title)
+        );
+      }
+    });
+  }
+
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatSetMessageAutoDeleteTime setMessageAutoDeleteTime) {
     super(context, msg);
     setTextCreator(() -> {
@@ -690,7 +719,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
     });
     if (gameScore.gameMessageId != 0) {
       setDisplayMessage(msg.chatId, gameScore.gameMessageId, (message) -> {
-        if (message.content.getConstructor() != TdApi.MessageGame.CONSTRUCTOR) {
+        if (!Td.isGame(message.content)) {
           return false;
         }
         setTextCreator(() -> {
@@ -731,7 +760,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
         paymentSuccessful.invoiceChatId,
         paymentSuccessful.invoiceMessageId,
         message -> {
-          if (message.content.getConstructor() != TdApi.MessageInvoice.CONSTRUCTOR) {
+          if (!Td.isInvoice(message.content)) {
             return false;
           }
           setTextCreator(() ->
@@ -919,8 +948,8 @@ public final class TGMessageService extends TGMessageServiceImpl {
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventMessageEdited messageEdited) {
     super(context, msg);
     setTextCreator(() -> {
-      if (messageEdited.newMessage.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR ||
-          messageEdited.newMessage.content.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
+      if (Td.isText(messageEdited.newMessage.content) ||
+          Td.isAnimatedEmoji(messageEdited.newMessage.content)) {
         return getText(R.string.EventLogEditedMessages, new SenderArgument(sender));
       } else if (Td.isEmpty(Td.textOrCaption(messageEdited.newMessage.content))) {
         return getText(R.string.EventLogRemovedCaption, new SenderArgument(sender));
@@ -934,7 +963,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
     super(context, msg);
     setTextCreator(() -> {
       final boolean isQuiz =
-        pollStopped.message.content.getConstructor() == TdApi.MessagePoll.CONSTRUCTOR &&
+        Td.isPoll(pollStopped.message.content) &&
         ((TdApi.MessagePoll) pollStopped.message.content).poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR;
       return getText(
         isQuiz ?

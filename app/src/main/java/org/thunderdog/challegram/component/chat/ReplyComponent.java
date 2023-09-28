@@ -543,8 +543,10 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
         retryFunction = new TdApi.GetStory(replyToStory.storySenderChatId, replyToStory.storyId, false);
         break;
       }
-      default:
-        throw new UnsupportedOperationException(message.replyTo.toString());
+      default: {
+        Td.assertMessageReplyTo_699c5345();
+        throw Td.unsupported(message.replyTo);
+      }
     }
     flags |= FLAG_LOADING;
     this.retryFunction = retryFunction;
@@ -767,7 +769,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     } else {
       miniPreview = null;
     }
-    TD.ContentPreview contentPreview = TD.getChatListPreview(tdlib, msg.chatId, msg);
+    TD.ContentPreview contentPreview = TD.getChatListPreview(tdlib, msg.chatId, msg, true);
     if (msg.forwardInfo != null && (parent != null && parent.getMessage().forwardInfo != null)) {
       switch (msg.forwardInfo.origin.getConstructor()) {
         case TdApi.MessageForwardOriginUser.CONSTRUCTOR:

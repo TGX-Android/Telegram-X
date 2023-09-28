@@ -48,6 +48,7 @@ public class MessageSeenController extends MediaBottomBaseController<Void> imple
   private final TdApi.MessageViewers viewers;
 
   public static CharSequence getViewString (TGMessage msg, int count) {
+    //noinspection SwitchIntDef
     switch (msg.getMessage().content.getConstructor()) {
       case TdApi.MessageVoiceNote.CONSTRUCTOR: {
         return Lang.pluralBold(R.string.MessageSeenXListened, count);
@@ -62,6 +63,7 @@ public class MessageSeenController extends MediaBottomBaseController<Void> imple
   }
 
   public static String getNobodyString (TGMessage msg) {
+    //noinspection SwitchIntDef
     switch (msg.getMessage().content.getConstructor()) {
       case TdApi.MessageVoiceNote.CONSTRUCTOR: {
         return Lang.getString(R.string.MessageSeenNobodyListened);

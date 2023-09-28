@@ -1655,11 +1655,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       ShareController c;
       if (item.getMessage() != null) {
         c = new ShareController(context, tdlib);
-        if (item.getMessage().content.getConstructor() != TdApi.MessageText.CONSTRUCTOR) {
-          c.setArguments(new ShareController.Args(item.getMessage()));
-        } else {
+        if (Td.isText(item.getMessage().content)) {
           TdApi.WebPage webPage = ((TdApi.MessageText) item.getMessage().content).webPage;
           c.setArguments(new ShareController.Args(item, webPage.displayUrl, webPage.displayUrl));
+        } else {
+          c.setArguments(new ShareController.Args(item.getMessage()));
         }
       } else if (item.getShareFile() != null) {
         c = new ShareController(context, tdlib);
@@ -1930,7 +1930,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     switch (mode) {
       case MODE_MESSAGES: {
         TdApi.Message message = item.getMessage();
-        if (message != null && message.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
+        if (message != null && Td.isText(message.content)) {
           TdApi.MessageText messageText = (TdApi.MessageText) message.content;
           if (messageText.webPage != null) {
             if (!StringUtils.isEmpty(messageText.webPage.author)) {
@@ -7482,7 +7482,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
             value = TdlibUi.getDuration(((TdApi.MessageSelfDestructTypeTimer) selfDestructType).selfDestructTime, TimeUnit.SECONDS, false);
             break;
           default:
-            throw new UnsupportedOperationException(selfDestructType.toString());
+            Td.assertMessageSelfDestructType_58882d8c();
+            throw Td.unsupported(selfDestructType);
         }
       } else {
         value = null;
@@ -8214,7 +8215,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     Args args = new Args(context, MODE_MESSAGES, stack);
     args.reverseMode = stack.getReverseModeHint(true);
     args.forceThumbs = stack.getForceThumbsHint(true);
-    args.forceOpenIn = forceOpenIn || (filter != null && filter.getConstructor() == TdApi.SearchMessagesFilterDocument.CONSTRUCTOR);
+    args.forceOpenIn = forceOpenIn || (filter != null && Td.isDocumentFilter(filter));
     args.filter = filter;
     if (context instanceof MediaCollectorDelegate) {
       ((MediaCollectorDelegate) context).modifyMediaArguments(item, args);
@@ -8386,6 +8387,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
 
     TdApi.SearchMessagesFilter filter = null;
+    //noinspection SwitchIntDef
     switch (msg.content.getConstructor()) {
       case TdApi.MessagePhoto.CONSTRUCTOR: {
         filter = new TdApi.SearchMessagesFilterPhotoAndVideo();

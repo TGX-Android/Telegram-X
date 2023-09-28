@@ -467,7 +467,7 @@ public class Strings {
 
   @Deprecated
   public static CharSequence highlightWords (String text, String highlight, int startIndex, @Nullable char[] special) {
-    return highlightWords(text, highlight, startIndex, special, 0);
+    return highlightWords(text, highlight, startIndex, special, ThemeId.NONE);
   }
 
   @Deprecated
@@ -617,7 +617,7 @@ public class Strings {
       return false;
     }
     TdApi.TextEntity[] entities = Td.findEntities(in);
-    return entities != null && entities.length == 1 && entities[0].offset == 0 && entities[0].length == in.length() && entities[0].type.getConstructor() == TdApi.TextEntityTypeUrl.CONSTRUCTOR;
+    return entities != null && entities.length == 1 && entities[0].offset == 0 && entities[0].length == in.length() && Td.isUrl(entities[0].type);
   }
 
   public static boolean isValidEmail (String in) {
@@ -625,7 +625,7 @@ public class Strings {
       return false;
     }
     TdApi.TextEntity[] entities = Td.findEntities(in);
-    if (entities != null && entities.length == 1 && entities[0].offset == 0 && entities[0].length == in.length() && entities[0].type.getConstructor() == TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR) {
+    if (entities != null && entities.length == 1 && entities[0].offset == 0 && entities[0].length == in.length() && Td.isEmailAddress(entities[0].type)) {
       return true;
     }
     try {
@@ -683,7 +683,7 @@ public class Strings {
   }
 
   public static CharSequence replaceBoldTokens (final String input) {
-    return replaceBoldTokens(input, 0);
+    return replaceBoldTokens(input, ColorId.NONE);
   }
 
   public static CharSequence replaceBoldTokens (final String input, @ColorId int colorId) {

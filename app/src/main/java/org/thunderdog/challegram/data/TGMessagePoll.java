@@ -458,7 +458,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       for (ListAnimator.Entry<SenderEntry> entry : recentVoters) {
         long senderId = Td.getSenderId(entry.item.senderId);
         AvatarReceiver receiver = complexReceiver.getAvatarReceiver(senderId);
-        receiver.requestUser(tdlib, senderId, AvatarReceiver.Options.NONE);
+        receiver.requestMessageSender(tdlib, entry.item.senderId, AvatarReceiver.Options.NONE);
       }
     }
     complexReceiver.clearReceivers(this);
@@ -1012,7 +1012,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
 
   @Override
   protected boolean onMessageContentChanged (TdApi.Message message, TdApi.MessageContent oldContent, TdApi.MessageContent newContent, boolean isBottomMessage) {
-    if (newContent.getConstructor() == TdApi.MessagePoll.CONSTRUCTOR) {
+    if (Td.isPoll(newContent)) {
       TdApi.Poll updatedPoll = ((TdApi.MessagePoll) newContent).poll;
       applyPoll(updatedPoll, false);
       return true;
@@ -1446,7 +1446,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
               }
               int[] selectedOptionIds = selectedOptions.get();
               int[] currentOptionIds = currentOptions.get();
-              if (isAnonymous() || messagesController().callNonAnonymousProtection(msg.id + R.id.btn_vote, this, makeVoteButtonLocationProvider())) {
+              if (!Config.PROTECT_ANONYMOUS_VOTING || isAnonymous() || messagesController().callNonAnonymousProtection(msg.id + R.id.btn_vote, this, makeVoteButtonLocationProvider())) {
                 if (Arrays.equals(selectedOptionIds, currentOptionIds)) {
                   tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, null), tdlib.okHandler());
                 } else {
@@ -1512,7 +1512,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
   }
 
   private void chooseOption (final int optionId) {
-    if (isAnonymous() || messagesController().callNonAnonymousProtection(msg.id + optionId, this, makeButtonLocationProvider(optionId))) {
+    if (!Config.PROTECT_ANONYMOUS_VOTING || isAnonymous() || messagesController().callNonAnonymousProtection(msg.id + optionId, this, makeButtonLocationProvider(optionId))) {
       if (getPoll().options[optionId].isBeingChosen) {
         tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, null), tdlib.okHandler());
       } else {

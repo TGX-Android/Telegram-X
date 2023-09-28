@@ -682,9 +682,9 @@ public class ShareController extends TelegramViewController<ShareController.Args
           String mimeType = getExportMimeType(args.messages[0]);
           int count = args.messages.length;
 
-          int type = args.messages[0].content.getConstructor();
+          @TdApi.MessageContent.Constructors int type = args.messages[0].content.getConstructor();
           for (int i = 1; i < count; i++) {
-            int contentType = args.messages[i].content.getConstructor();
+            @TdApi.MessageContent.Constructors int contentType = args.messages[i].content.getConstructor();
             if (contentType != type) {
               type = 0;
               break;
@@ -1733,8 +1733,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       }
       case MODE_MESSAGES: {
         for (TdApi.Message message : args.messages) {
-          if (message.content.getConstructor() == TdApi.MessageVoiceNote.CONSTRUCTOR ||
-              message.content.getConstructor() == TdApi.MessageVideoNote.CONSTRUCTOR) {
+          if (Td.isVoiceNote(message.content) || Td.isVideoNote(message.content)) {
             return true;
           }
         }
@@ -1742,8 +1741,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       }
       case MODE_CUSTOM_CONTENT: {
         return
-          args.customContent.getConstructor() == TdApi.InputMessageVoiceNote.CONSTRUCTOR ||
-          args.customContent.getConstructor() == TdApi.InputMessageVideoNote.CONSTRUCTOR;
+          Td.isVoiceNote(args.customContent) || Td.isVideoNote(args.customContent);
       }
     }
     return false;
@@ -1784,9 +1782,8 @@ public class ShareController extends TelegramViewController<ShareController.Args
           if (message.content.getConstructor() == TdApi.MessagePoll.CONSTRUCTOR && !((TdApi.MessagePoll) message.content).poll.isAnonymous && tdlib.isChannel(chatId))
             return Lang.getString(R.string.PollPublicForwardHint);
 
-          if (message.content.getConstructor() == TdApi.MessageVoiceNote.CONSTRUCTOR ||
-              message.content.getConstructor() == TdApi.MessageVideoNote.CONSTRUCTOR) {
-            CharSequence restrictionText = tdlib.getVoiceVideoRestricitonText(chat, message.content.getConstructor() == TdApi.MessageVideoNote.CONSTRUCTOR);
+          if (Td.isVoiceNote(message.content) || Td.isVideoNote(message.content)) {
+            CharSequence restrictionText = tdlib.getVoiceVideoRestrictionText(chat, Td.isVideoNote(message.content));
             if (restrictionText != null)
               return restrictionText;
           }
@@ -2906,6 +2903,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     TdApi.File file = getFile(message);
     if (file == null)
       return null;
+    //noinspection SwitchIntDef
     switch (message.content.getConstructor()) {
       case TdApi.MessageText.CONSTRUCTOR: {
         return TD.getMimeType(((TdApi.MessageText) message.content).webPage);
@@ -2969,6 +2967,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
   }
 
   private static boolean canExportStaticContent (TdApi.Message msg) {
+    //noinspection SwitchIntDef
     switch (msg.content.getConstructor()) {
       case TdApi.MessageContact.CONSTRUCTOR:
         return true;
@@ -2977,6 +2976,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
   }
 
   private void exportStaticContent (TdApi.Message msg) {
+    //noinspection SwitchIntDef
     switch (msg.content.getConstructor()) {
       case TdApi.MessageContact.CONSTRUCTOR: {
         TdApi.Contact contact = ((TdApi.MessageContact) msg.content).contact;
@@ -3073,7 +3073,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
     if (mode == MODE_MESSAGES) {
       for (TdApi.Message message : getArgumentsStrict().messages) {
-        if (message.content.getConstructor() != TdApi.MessageText.CONSTRUCTOR && TD.canCopyText(message)) {
+        if (!Td.isText(message.content) && TD.canCopyText(message)) {
           canRemoveCaptions = true;
           break;
         }
@@ -3299,7 +3299,8 @@ public class ShareController extends TelegramViewController<ShareController.Args
               isUser = false;
               break;
             default:
-              throw new UnsupportedOperationException(args.messages[0].senderId.toString());
+              Td.assertMessageSender_439d4c9c();
+              throw Td.unsupported(args.messages[0].senderId);
           }
           tdlib.getMessageLink(args.messages[0], args.messages.length > 1, args.messageThreadId != 0, link ->
             Intents.shareText(Lang.getString(args.messageThreadId != 0 && isUser ? R.string.ShareTextComment : isUser || !tdlib.isChannel(args.messages[0].chatId) ? R.string.ShareTextMessage : R.string.ShareTextPost, link.url, name))

@@ -189,6 +189,7 @@ public class Config {
 
   public static boolean useCloudPlayback (TdApi.Message playPauseFile) {
     if (USE_CLOUD_PLAYER && playPauseFile != null) {
+      //noinspection SwitchIntDef
       switch (playPauseFile.content.getConstructor()) {
         case TdApi.MessageAudio.CONSTRUCTOR:
           TdApi.Audio audio = ((TdApi.MessageAudio) playPauseFile.content).audio;
@@ -302,4 +303,8 @@ public class Config {
 
   public static final int VOIP_CONNECTION_MIN_LAYER = 65;
   public static final boolean FORCE_DIRECT_TGVOIP = false;
+
+  public static final boolean ALLOW_SPONSORED_MESSAGE_LINK_COPY = true;
+  public static final boolean PROTECT_ANONYMOUS_VOTING = false;
+  public static final boolean PROTECT_ANONYMOUS_REACTIONS = false;
 }

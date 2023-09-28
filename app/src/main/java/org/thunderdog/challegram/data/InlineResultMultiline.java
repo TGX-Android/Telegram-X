@@ -90,7 +90,7 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
     setMessage(message);
 
     TdApi.FormattedText text = Td.textOrCaption(message.content);
-    TdApi.WebPage webPage = message.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR ? ((TdApi.MessageText) message.content).webPage : null;
+    TdApi.WebPage webPage = Td.isText(message.content) ? ((TdApi.MessageText) message.content).webPage : null;
 
     if (webPage != null) {
       this.title = Strings.any(webPage.title, webPage.document != null ? webPage.document.fileName : null, webPage.audio != null ? webPage.audio.title : null, webPage.siteName);
@@ -102,6 +102,7 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
     } else if (text != null) {
       TdApi.TextEntity effectiveEntity = null;
       main: for (TdApi.TextEntity entity : text.entities) {
+        //noinspection SwitchIntDef
         switch (entity.type.getConstructor()) {
           case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR: {
             if (effectiveEntity == null) {
@@ -138,7 +139,7 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
         }
       }
       if (effectiveEntity != null) {
-        if (effectiveEntity.type.getConstructor() == TdApi.TextEntityTypeUrl.CONSTRUCTOR) {
+        if (Td.isUrl(effectiveEntity.type)) {
           TdApi.FormattedText part1 = effectiveEntity.offset > 0 ? Td.substring(text, 0, effectiveEntity.offset) : null;
           TdApi.FormattedText part2 = effectiveEntity.offset + effectiveEntity.length < text.text.length() ? Td.substring(text, effectiveEntity.offset + effectiveEntity.length) : null;
           TdApi.FormattedText finalText = Td.trim(part1 != null && part2 != null ? Td.concat(part1, new TdApi.FormattedText("…", new TdApi.TextEntity[]{new TdApi.TextEntity(0, 1, new TdApi.TextEntityTypeTextUrl(url))}), part2) : part1 != null ? part1 : part2);

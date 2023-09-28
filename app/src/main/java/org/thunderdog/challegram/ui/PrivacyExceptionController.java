@@ -237,6 +237,9 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
                 case TdApi.UserPrivacySettingShowPhoneNumber.CONSTRUCTOR:
                   view.setData(R.string.PrivacyShowNumberExceptionContacts);
                   break;
+                case TdApi.UserPrivacySettingShowBio.CONSTRUCTOR:
+                  view.setData(R.string.PrivacyShowNumberExceptionContacts);
+                  break;
                 case TdApi.UserPrivacySettingShowProfilePhoto.CONSTRUCTOR:
                   view.setData(R.string.PrivacyPhotoExceptionContacts);
                   break;
@@ -260,8 +263,10 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
                   break;
                 case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR:
                   throw new IllegalStateException();
-                default:
-                  throw new UnsupportedOperationException();
+                default: {
+                  Td.assertUserPrivacySetting_21d3f4();
+                  throw Td.unsupported(setting);
+                }
               }
             } else {
               view.setData(matchingRule != null && (matchingRule.getConstructor() == TdApi.UserPrivacySettingRuleAllowContacts.CONSTRUCTOR || matchingRule.getConstructor() == TdApi.UserPrivacySettingRuleRestrictContacts.CONSTRUCTOR) ? R.string.PrivacyDefaultContacts : R.string.PrivacyDefault);
@@ -271,6 +276,9 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
             switch (setting.getConstructor()) {
               case TdApi.UserPrivacySettingShowPhoneNumber.CONSTRUCTOR:
                 view.setData(isActive ? R.string.PrivacyShowNumberExceptionOn : R.string.PrivacyShowNumberExceptionOff);
+                break;
+              case TdApi.UserPrivacySettingShowBio.CONSTRUCTOR:
+                view.setData(isActive ? R.string.PrivacyShowBioExceptionOn : R.string.PrivacyShowBioExceptionOff);
                 break;
               case TdApi.UserPrivacySettingShowProfilePhoto.CONSTRUCTOR:
                 view.setData(isActive ? R.string.PrivacyPhotoExceptionOn : R.string.PrivacyPhotoExceptionOff);
@@ -295,8 +303,10 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
                 break;
               case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR:
                 throw new IllegalStateException();
-              default:
-                throw new UnsupportedOperationException();
+              default: {
+                Td.assertUserPrivacySetting_21d3f4();
+                throw Td.unsupported(setting);
+              }
             }
           }
         } else if (itemId == R.id.btn_newContact) {
@@ -333,12 +343,14 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
         new TdApi.UserPrivacySetting[] {
           new TdApi.UserPrivacySettingShowStatus(),
           new TdApi.UserPrivacySettingShowProfilePhoto(),
+          new TdApi.UserPrivacySettingShowBio(),
           new TdApi.UserPrivacySettingShowLinkInForwardedMessages(),
         }
       :
       new TdApi.UserPrivacySetting[] {
         new TdApi.UserPrivacySettingShowStatus(),
         new TdApi.UserPrivacySettingShowProfilePhoto(),
+        new TdApi.UserPrivacySettingShowBio(),
         new TdApi.UserPrivacySettingShowPhoneNumber(),
 
         new TdApi.UserPrivacySettingShowLinkInForwardedMessages(),

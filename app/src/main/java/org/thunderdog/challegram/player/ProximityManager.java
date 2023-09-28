@@ -42,6 +42,8 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 
+import me.vkryl.td.Td;
+
 public class ProximityManager implements Settings.RaiseToSpeakListener, SensorEventListener, UI.StateListener {
   public interface Delegate {
     void onUpdateAttributes ();
@@ -57,7 +59,7 @@ public class ProximityManager implements Settings.RaiseToSpeakListener, SensorEv
   }
 
   private boolean isPlayingVideo () {
-    return playbackObject != null && playbackObject.content.getConstructor() == TdApi.MessageVideoNote.CONSTRUCTOR;
+    return playbackObject != null && Td.isVideoNote(playbackObject.content);
   }
 
   public void setPlaybackObject (@Nullable TdApi.Message playbackObject) {
