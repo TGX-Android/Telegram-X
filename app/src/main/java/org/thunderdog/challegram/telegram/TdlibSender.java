@@ -99,7 +99,8 @@ public class TdlibSender {
         break;
       }
       default: {
-        throw new UnsupportedOperationException(sender.toString());
+        Td.assertMessageSender_439d4c9c();
+        throw Td.unsupported(sender);
       }
     }
     return flags;
@@ -124,7 +125,8 @@ public class TdlibSender {
         sender = null;
         break;
       default:
-        throw new UnsupportedOperationException(sponsor.type.toString());
+        Td.assertMessageSponsorType_ce9e3245();
+        throw Td.unsupported(sponsor.type);
     }
     if (sender != null) {
       this.sender = sender;

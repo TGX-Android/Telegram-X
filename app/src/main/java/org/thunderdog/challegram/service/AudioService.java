@@ -64,6 +64,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.td.Td;
 
 public class AudioService extends Service implements TGPlayerController.TrackListChangeListener, TGPlayerController.TrackListener, AudioController.ApicListener, AudioManager.OnAudioFocusChangeListener {
 
@@ -134,7 +135,7 @@ public class AudioService extends Service implements TGPlayerController.TrackLis
   // List management
 
   private static boolean isSupportedTrack (TdApi.Message message) {
-    return message != null && message.content.getConstructor() == TdApi.MessageAudio.CONSTRUCTOR;
+    return message != null && Td.isAudio(message.content);
   }
 
   private boolean isInitialized () {

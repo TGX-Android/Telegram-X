@@ -47,6 +47,7 @@ import java.util.List;
 
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.td.ChatId;
+import me.vkryl.td.Td;
 
 public class SettingsBlockedController extends RecyclerViewController<TdApi.BlockList> implements View.OnClickListener, Menu, TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener, SenderPickerDelegate, Client.ResultHandler, ChatListener {
   public SettingsBlockedController (Context context, Tdlib tdlib) {
@@ -192,7 +193,8 @@ public class SettingsBlockedController extends RecyclerViewController<TdApi.Bloc
         break;
       }
       default: {
-        throw new UnsupportedOperationException(sender.toString());
+        Td.assertMessageSender_439d4c9c();
+        throw Td.unsupported(sender);
       }
     }
     parsedUser.setNoBotState();

@@ -403,7 +403,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     this.file = file;
     if (file != null && file.local != null) {
       this.isDownloaded = file.local.isDownloadingCompleted;
-      this.useGenerationProgress = !file.local.isDownloadingCompleted && !file.remote.isUploadingCompleted && message != null && message.content.getConstructor() != TdApi.MessagePhoto.CONSTRUCTOR;
+      this.useGenerationProgress = !file.local.isDownloadingCompleted && !file.remote.isUploadingCompleted && message != null && !Td.isPhoto(message.content);
     } else {
       this.isDownloaded = this.useGenerationProgress = false;
     }

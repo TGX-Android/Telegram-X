@@ -1150,7 +1150,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
       } else if (isOutgoing()) {
         prefix = Lang.getString(listMode != Settings.CHAT_MODE_2LINE && tdlib.isMultiChat(chat) && Td.getSenderId(chat.lastMessage) == chat.id ? R.string.FromYouAnonymous : R.string.FromYou);
         flags |= FLAG_CONTENT_STRING;
-      } else if (chat.lastMessage != null && chat.lastMessage.content.getConstructor() != TdApi.MessageProximityAlertTriggered.CONSTRUCTOR) {
+      } else if (chat.lastMessage != null && !Td.isProximityAlertTriggered(chat.lastMessage.content)) {
         prefix = listMode == Settings.CHAT_MODE_2LINE && Td.getMessageAuthorId(chat.lastMessage) == chat.lastMessage.chatId && StringUtils.isEmpty(chat.lastMessage.authorSignature) ?
           Lang.getString(R.string.FromAnonymous) :
           tdlib.senderName(chat.lastMessage, false, listMode == Settings.CHAT_MODE_2LINE);
@@ -1357,7 +1357,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
     if ((isGroup() || isSupergroup()) && !preview.hideAuthor) {
       flags |= FLAG_HAS_PREFIX;
-    } else if (chat.lastMessage != null && chat.lastMessage.content.getConstructor() == TdApi.MessageCall.CONSTRUCTOR) {
+    } else if (chat.lastMessage != null && Td.isCall(chat.lastMessage.content)) {
       if (textIconIds != null)
         textIconIds.clear();
       addIcon(CallItem.getSubtitleIcon((TdApi.MessageCall) chat.lastMessage.content, TD.isOut(chat.lastMessage)));

@@ -92,6 +92,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.td.ChatId;
+import me.vkryl.td.Td;
 
 public class SettingsNotificationController extends RecyclerViewController<SettingsNotificationController.Args> implements
   View.OnClickListener, View.OnLongClickListener,
@@ -224,6 +225,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         setScope(null);
         break;
       default:
+        Td.assertNotificationSettingsScope_edff9c28();
         throw new UnsupportedOperationException("constructor == " + scopeConstructor);
     }
   }
@@ -1970,7 +1972,8 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
               forcedFileName = tdlib.id() + "_channel.ogg";
               break;
             default:
-              throw new UnsupportedOperationException(scope.toString());
+              Td.assertNotificationSettingsScope_edff9c28();
+              throw Td.unsupported(scope);
           }
         }
         Uri uri = TdlibNotificationManager.fixSoundUri(originalUri, true, forcedFileName);

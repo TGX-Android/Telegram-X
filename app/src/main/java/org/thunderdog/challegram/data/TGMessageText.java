@@ -107,6 +107,7 @@ public class TGMessageText extends TGMessage {
     Uri uri = null;
     for (TdApi.TextEntity entity : text.entities) {
       String url;
+      //noinspection SwitchIntDef
       switch (entity.type.getConstructor()) {
         case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
           url = Td.substring(text.text, entity);
@@ -131,11 +132,11 @@ public class TGMessageText extends TGMessage {
   protected int onMessagePendingContentChanged (long chatId, long messageId, int oldHeight) {
     if (currentMessageText != null) {
       TdApi.MessageContent messageContent = tdlib.getPendingMessageText(chatId, messageId);
-      if (messageContent != null && messageContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR && Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI)) {
+      if (messageContent != null && Td.isAnimatedEmoji(messageContent) && Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI)) {
         messageContent = new TdApi.MessageText(Td.textOrCaption(messageContent), null);
       }
       if (this.pendingMessageText != messageContent) {
-        if (messageContent != null && messageContent.getConstructor() != TdApi.MessageText.CONSTRUCTOR)
+        if (messageContent != null && !Td.isText(messageContent))
           return MESSAGE_REPLACE_REQUIRED;
         TdApi.MessageText messageText = (TdApi.MessageText) messageContent;
         this.pendingMessageText = messageText;
@@ -168,9 +169,9 @@ public class TGMessageText extends TGMessage {
     boolean found = false;
     for (TdApi.TextEntity entity : text.entities) {
       String url;
-      if (entity.type.getConstructor() == TdApi.TextEntityTypeUrl.CONSTRUCTOR) {
+      if (Td.isUrl(entity.type)) {
         url = text.text.substring(entity.offset, entity.offset + entity.length);
-      } else if (entity.type.getConstructor() == TdApi.TextEntityTypeTextUrl.CONSTRUCTOR) {
+      } else if (Td.isTextUrl(entity.type)) {
         url = ((TdApi.TextEntityTypeTextUrl) entity.type).url;
       } else {
         continue;
@@ -281,7 +282,7 @@ public class TGMessageText extends TGMessage {
     if (pendingMessageText != null) {
       if (setWebPage(pendingMessageText.webPage))
         webPage.buildLayout(webPageMaxWidth);
-    } else if (msg.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR && setWebPage(((TdApi.MessageText) msg.content).webPage)) {
+    } else if (Td.isText(msg.content) && setWebPage(((TdApi.MessageText) msg.content).webPage)) {
       webPage.buildLayout(webPageMaxWidth);
     } else if (webPage != null && webPage.getMaxWidth() != webPageMaxWidth) {
       webPage.buildLayout(webPageMaxWidth);
@@ -324,7 +325,7 @@ public class TGMessageText extends TGMessage {
 
   @Override
   protected boolean isSupportedMessageContent (TdApi.Message message, TdApi.MessageContent messageContent) {
-    if (messageContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR)
+    if (Td.isAnimatedEmoji(messageContent))
       return Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI);
     return super.isSupportedMessageContent(message, messageContent);
   }
@@ -332,8 +333,8 @@ public class TGMessageText extends TGMessage {
   @Override
   protected boolean onMessageContentChanged (TdApi.Message message, TdApi.MessageContent oldContent, TdApi.MessageContent newContent, boolean isBottomMessage) {
     if (!Td.equalsTo(Td.textOrCaption(oldContent), Td.textOrCaption(newContent)) ||
-        !Td.equalsTo(oldContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR ? ((TdApi.MessageText) oldContent).webPage : null,
-                     newContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR ? ((TdApi.MessageText) newContent).webPage : null)
+        !Td.equalsTo(Td.isText(oldContent) ? ((TdApi.MessageText) oldContent).webPage : null,
+                     Td.isText(newContent) ? ((TdApi.MessageText) newContent).webPage : null)
     ) {
       updateMessageContent(msg, newContent, isBottomMessage);
       return true;
@@ -343,9 +344,9 @@ public class TGMessageText extends TGMessage {
 
   @Override
   protected boolean updateMessageContent (TdApi.Message message, TdApi.MessageContent newContent, boolean isBottomMessage) {
-    TdApi.WebPage oldWebPage = this.msg.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR ? ((TdApi.MessageText) this.msg.content).webPage : null;
+    TdApi.WebPage oldWebPage = Td.isText(this.msg.content) ? ((TdApi.MessageText) this.msg.content).webPage : null;
     this.msg.content = newContent;
-    TdApi.MessageText newText = newContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR ? new TdApi.MessageText(Td.textOrCaption(newContent), null) : (TdApi.MessageText) newContent;
+    TdApi.MessageText newText = Td.isText(newContent) ? (TdApi.MessageText) newContent : new TdApi.MessageText(Td.textOrCaption(newContent), null);
     this.currentMessageText = newText;
     if (!isBeingEdited()) {
       setText(newText.text, false);

@@ -1425,8 +1425,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         return Status.UNAUTHORIZED;
       case TdApi.AuthorizationStateReady.CONSTRUCTOR:
         return Status.READY;
+      default:
+        Td.assertAuthorizationState_6e5056de();
+        throw Td.unsupported(state);
     }
-    throw new UnsupportedOperationException(state.toString());
   }
 
   public boolean checkChangeLogs (boolean alreadySent, boolean test) {
@@ -2440,6 +2442,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       case TdApi.ChatTypeBasicGroup.CONSTRUCTOR:
         break;
       default:
+        Td.assertChatType_e562ec7d();
         throw new UnsupportedOperationException(Long.toString(chatId));
     }
     return false;
@@ -3076,8 +3079,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         TdApi.BasicGroupFullInfo basicGroupFullInfo = basicGroupId != 0 ? cache().basicGroupFull(basicGroupId, allowRequest) : null;
         return basicGroupFullInfo != null ? basicGroupFullInfo.photo : null;
       }
+      default: {
+        Td.assertChatType_e562ec7d();
+        throw new UnsupportedOperationException(Long.toString(chatId));
+      }
     }
-    throw new UnsupportedOperationException(Long.toString(chatId));
   }
 
   public TdApi.MessageSender sender (long chatId) {
@@ -3149,8 +3155,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         long supergroupId = ((TdApi.ChatTypeSupergroup) chat.type).supergroupId;
         return cache().supergroupUsernames(supergroupId);
       }
+      default: {
+        Td.assertChatType_e562ec7d();
+        throw Td.unsupported(chat.type);
+      }
     }
-    throw new UnsupportedOperationException(chat.type.toString());
   }
 
   @Nullable
@@ -3178,8 +3187,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         long supergroupId = ChatId.toSupergroupId(chatId);
         return cache().supergroupUsernames(supergroupId);
       }
+      default: {
+        Td.assertChatType_e562ec7d();
+        throw new UnsupportedOperationException(Long.toString(chatId));
+      }
     }
-    throw new UnsupportedOperationException(Long.toString(chatId));
   }
 
   @Nullable
@@ -3463,7 +3475,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         return website.name;
       }
       default:
-        throw new UnsupportedOperationException(sponsor.type.toString());
+        Td.assertMessageSponsorType_ce9e3245();
+        throw Td.unsupported(sponsor.type);
     }
   }
 
@@ -3541,7 +3554,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         userId = ((TdApi.MessageSenderUser) sender).userId;
         break;
       default:
-        throw new UnsupportedOperationException(sender.toString());
+        Td.assertMessageSender_439d4c9c();
+        throw Td.unsupported(sender);
     }
     TdApi.User user = cache().user(userId);
     return user != null && user.isPremium;
@@ -4418,7 +4432,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     long customEmojiId = 0;
     if (content.text.entities != null) {
       for (TdApi.TextEntity entity : content.text.entities) {
-        if (entity.type.getConstructor() == TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR) {
+        if (Td.isCustomEmoji(entity.type)) {
           customEmojiId = ((TdApi.TextEntityTypeCustomEmoji) entity.type).customEmojiId;
           break;
         }
@@ -4466,13 +4480,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   public TdApi.FormattedText getPendingFormattedText (long chatId, long messageId) {
     TdApi.MessageContent messageText = getPendingMessageText(chatId, messageId);
     if (messageText != null) {
+      //noinspection SwitchIntDef
       switch (messageText.getConstructor()) {
         case TdApi.MessageText.CONSTRUCTOR:
           return ((TdApi.MessageText) messageText).text;
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
           return Td.textOrCaption(messageText);
       }
-      throw new UnsupportedOperationException(Integer.toString(messageText.getConstructor()));
+      Td.assertMessageContent_6479f6fc();
+      throw Td.unsupported(messageText);
     }
     return getPendingMessageCaption(chatId, messageId);
   }
@@ -6554,8 +6570,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       case TdApi.StickerTypeMask.CONSTRUCTOR:
       case TdApi.StickerTypeRegular.CONSTRUCTOR:
         return tMeUrl("addstickers/" + stickerSetInfo.name);
+      default: {
+        Td.assertStickerType_cc811bb7();
+        throw Td.unsupported(stickerSetInfo.stickerType);
+      }
     }
-    throw new UnsupportedOperationException(stickerSetInfo.stickerType.toString());
   }
 
   public String tMeHost () {
@@ -8349,7 +8368,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         state = ConnectionState.CONNECTED;
         break;
       default:
-        throw new UnsupportedOperationException(update.toString());
+        Td.assertConnectionState_963d6b5f();
+        throw Td.unsupported(update.state);
     }
 
     if (this.connectionState != state) {
@@ -9791,7 +9811,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           case TdApi.AuthorizationStateReady.CONSTRUCTOR:
             return true;
           default:
-            throw new UnsupportedOperationException(state.toString());
+            Td.assertAuthorizationState_6e5056de();
+            throw Td.unsupported(state);
         }
       }
       return false;
@@ -9960,7 +9981,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
     }
     clientHolder().updates.findResource(message -> {
-      if (message != null && message.content.getConstructor() == TdApi.MessageDocument.CONSTRUCTOR) {
+      if (message != null && Td.isDocument(message.content)) {
         TdApi.Document document = ((TdApi.MessageDocument) message.content).document;
         TdApi.FormattedText caption = ((TdApi.MessageDocument) message.content).caption;
         boolean ok = false;
@@ -10462,6 +10483,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         case TdApi.MessageVideo.CONSTRUCTOR:
         case TdApi.MessageExpiredVideo.CONSTRUCTOR:
           return getDefaultRestrictionText(chat, RightId.SEND_VIDEOS);
+        case TdApi.MessageStory.CONSTRUCTOR:
+          return getStoryRestrictionText(chat);
         case TdApi.MessageVideoNote.CONSTRUCTOR:
           return getDefaultRestrictionText(chat, RightId.SEND_VIDEO_NOTES);
         case TdApi.MessageVoiceNote.CONSTRUCTOR:
@@ -10495,6 +10518,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         case TdApi.MessageChatJoinByRequest.CONSTRUCTOR:
         case TdApi.MessageChatSetMessageAutoDeleteTime.CONSTRUCTOR:
         case TdApi.MessageChatSetTheme.CONSTRUCTOR:
+        case TdApi.MessageChatSetBackground.CONSTRUCTOR:
         case TdApi.MessageChatShared.CONSTRUCTOR:
         case TdApi.MessageChatUpgradeFrom.CONSTRUCTOR:
         case TdApi.MessageChatUpgradeTo.CONSTRUCTOR:
@@ -10523,8 +10547,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           // None of these messages ever passed to this method,
           // assuming we want to check RightId.SEND_BASIC_MESSAGES
           return getBasicMessageRestrictionText(chat);
+        default:
+          Td.assertMessageContent_6479f6fc();
+          throw Td.unsupported(message.content);
       }
-      throw new UnsupportedOperationException(message.content.toString());
     }
     // Assuming if null is passed, we want to check if we can write text messages
     return getBasicMessageRestrictionText(chat);
@@ -10638,7 +10664,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     );
   }
 
-  public CharSequence getVoiceVideoRestricitonText (TdApi.Chat chat, boolean needVideo) {
+  public CharSequence getVoiceVideoRestrictionText (TdApi.Chat chat, boolean needVideo) {
     return getDefaultRestrictionText(chat, needVideo ? RightId.SEND_VIDEO_NOTES : RightId.SEND_VOICE_NOTES);
   }
 
@@ -10652,6 +10678,37 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public CharSequence getGameRestrictionText (TdApi.Chat chat) {
     return buildRestrictionText(chat, RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledGames, R.string.ChatRestrictedGames, R.string.ChatRestrictedGamesUntil);
+  }
+
+  public CharSequence getStoryRestrictionText (TdApi.Chat chat) {
+    Tdlib.RestrictionStatus photoStatus = getRestrictionStatus(chat, RightId.SEND_PHOTOS);
+    Tdlib.RestrictionStatus videoStatus = getRestrictionStatus(chat, RightId.SEND_VIDEOS);
+    Tdlib.RestrictionStatus status;
+    @RightId int rightId;
+    if (photoStatus == null || videoStatus == null) {
+      if (videoStatus != null) {
+        rightId = RightId.SEND_VIDEOS;
+        status = videoStatus;
+      } else {
+        rightId = RightId.SEND_PHOTOS;
+        status = photoStatus;
+      }
+    } else if (photoStatus.isGlobal() != videoStatus.isGlobal()) {
+      if (photoStatus.isGlobal()) {
+        rightId = RightId.SEND_VIDEOS;
+        status = videoStatus;
+      } else {
+        rightId = RightId.SEND_PHOTOS;
+        status = photoStatus;
+      }
+    } else {
+      status = videoStatus;
+      rightId = RightId.SEND_VIDEOS;
+    }
+    return buildRestrictionText(status,
+      chat, rightId,
+      R.string.ChatDisabledStory, R.string.ChatRestrictedStory, R.string.ChatRestrictedStoryUntil
+    );
   }
 
   public CharSequence getInlineRestrictionText (TdApi.Chat chat) {
@@ -10688,6 +10745,21 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
                                             @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes,
                                             @StringRes int defaultUserRes, @StringRes int specificUserRes) {
     RestrictionStatus status = getRestrictionStatus(chat, rightId);
+    return buildRestrictionText(status,
+      chat, rightId,
+      defaultRes, specificRes, specificUntilRes,
+      defaultUserRes, specificUserRes
+    );
+  }
+
+  public CharSequence buildRestrictionText (@Nullable RestrictionStatus status, TdApi.Chat chat, @RightId int rightId, @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes) {
+    return buildRestrictionText(status, chat, rightId, defaultRes, specificRes, specificUntilRes, R.string.UserDisabledMessages, 0);
+  }
+
+  public CharSequence buildRestrictionText (@Nullable RestrictionStatus status,
+                                            TdApi.Chat chat, @RightId int rightId,
+                                            @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes,
+                                            @StringRes int defaultUserRes, @StringRes int specificUserRes) {
     if (status != null) {
       switch (rightId) {
         case RightId.SEND_BASIC_MESSAGES:

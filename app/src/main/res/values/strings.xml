@@ -1217,6 +1217,7 @@
   <string name="ActionPinnedVideo">%1$s pinned a **video**</string>
   <string name="ActionPinnedRound">%1$s pinned a **video message**</string>
   <string name="ActionPinnedVoice">%1$s pinned a **voice message**</string>
+  <string name="ActionPinnedStory">%1$s pinned a **story**</string>
   <string name="ActionPinnedContact">%1$s pinned a **contact**</string>
   <string name="UnknownTrack">Unknown Track</string>
   <string name="AudioUnknownArtist">Unknown Artist</string>
@@ -2467,6 +2468,9 @@
   <string name="SyncContactsDeleteButton">Delete Synced Contacts</string>
   <string name="SyncContactsDeleteInfo">This will remove your contacts from the Telegram servers. If \'Sync Contacts\' is enabled, contacts will be re-synced.</string>
   <string name="BotWebsiteAllowed">You allowed this bot to message you when you logged in on %1$s.</string>
+  <string name="BotWebappAllowed">You allowed this bot to message you in its web-app.</string>
+  <string name="BotAttachAllowed">You allowed this bot to message you when you added it to your attachment menu.</string>
+  <string name="BotAppAllowed">You allowed this bot to message you when launched its "%1$s" app.</string>
   <string name="QuickActionSettingNone">None</string>
   <string name="QuickActionSettingShare">Share</string>
   <string name="QuickActionSettingReply">Reply</string>
@@ -3405,6 +3409,7 @@
   <string name="ChatDisabledDocs">Only admins can send files in this group</string>
   <string name="ChatDisabledPhoto">Only admins can send photos in this group</string>
   <string name="ChatDisabledVideo">Only admins can send videos in this group</string>
+  <string name="ChatDisabledStory">Only admins can send stories in this group</string>
   <string name="ChatDisabledOther">Only admins can send stickers and GIFs in this group</string>
   <string name="ChatDisabledVoice">Only admins can send voice messages in this group</string>
   <string name="ChatDisabledVideoNotes">Only admins can send video messages in this group</string>
@@ -3437,6 +3442,8 @@
   <string name="ChatRestrictedPhotoUntil">Admins have restricted you from sending photos in this group until %1$s</string>
   <string name="ChatRestrictedVideo">The admins of this group have restricted your ability to send videos.</string>
   <string name="ChatRestrictedVideoUntil">Admins have restricted you from sending videos in this group until %1$s</string>
+  <string name="ChatRestrictedStory">The admins of this group have restricted your ability to send stories.</string>
+  <string name="ChatRestrictedStoryUntil">Admins have restricted you from sending stories in this group until %1$s</string>
   <string name="ChatRestrictedOther">The admins of this group have restricted your ability to send stickers and GIFs.</string>
   <string name="ChatRestrictedOtherUntil">Admins have restricted you from sending stickers and GIFs in this group until %1$s</string>
   <string name="ChatRestrictedPolls">The admins of this group have restricted your ability to send polls.</string>
@@ -3586,6 +3593,8 @@
   <string name="PhoneNumber">Phone Number</string>
   <string name="WhoCanSeePhone">Who can see your Phone Number?</string>
   <string name="WhoCanSeePhoneInfo">Users who have your number saved in their contacts will also see it on Telegram.</string>
+  <string name="WhoCanSeeBio">Who can see your bio?</string>
+  <string name="WhoCanSeeBioInfo">You can restrict who can see can see the bio on your profile with granular precision.</string>
 
   <string name="PrivacyShowNumberExceptionOn">Visible</string>
   <string name="PrivacyShowNumberExceptionContacts">Visible only for contacts</string>
@@ -3596,6 +3605,16 @@
   <string name="PrivacyShowNumberContactsExcept">Only contacts (%1$s) can see your phone number</string>
   <string name="PrivacyShowNumberEverybody">Everybody can see your phone number</string>
   <string name="PrivacyShowNumberEverybodyExcept">Everybody (%1$s) can see your phone number</string>
+
+  <string name="PrivacyShowBioExceptionOn">Visible</string>
+  <string name="PrivacyShowBioExceptionContacts">Visible only for contacts</string>
+  <string name="PrivacyShowBioExceptionOff">Hidden</string>
+  <string name="PrivacyShowBioNobody">Nobody can see your bio</string>
+  <string name="PrivacyShowBioNobodyExcept">Nobody (%1$s) can see your bio</string>
+  <string name="PrivacyShowBioContacts">Only contacts can see your bio</string>
+  <string name="PrivacyShowBioContactsExcept">Only contacts (%1$s) can see your bio</string>
+  <string name="PrivacyShowBioEverybody">Everybody can see your bio</string>
+  <string name="PrivacyShowBioEverybodyExcept">Everybody (%1$s) can see your bio</string>
 
   <!--<string name="PrivacyAllowFindingNobody">Nobody can see your phone number</string>
   <string name="PrivacyAllowFindingNobodyExcept">Nobody (%1$s) can see your phone number</string>-->
@@ -4010,6 +4029,7 @@
   <string name="EditPrivacyPhoto">Profile Photos</string>
   <string name="EditPrivacyStatus">Last Seen &amp; Online</string>
   <string name="EditPrivacyPhoneNumber">Phone Number</string>
+  <string name="EditPrivacyBio">Bio</string>
 
   <string name="EditPrivacyForward">Forward My Messages</string>
   <string name="EditPrivacyCall">Call Me</string>

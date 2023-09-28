@@ -167,7 +167,7 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
     if (result != null) {
       result.setQueryId(message.id);
       result.setDate(message.date);
-      if (result instanceof InlineResultCommon && message.content.getConstructor() == TdApi.MessageAudio.CONSTRUCTOR) {
+      if (result instanceof InlineResultCommon && Td.isAudio(message.content)) {
         ((InlineResultCommon) result).setIsTrack(false);
       }
     }
@@ -247,6 +247,7 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
     int foundIndex = -1;
 
     int desiredType;
+    //noinspection SwitchIntDef
     switch (fromMessage.content.getConstructor()) {
       case TdApi.MessageAudio.CONSTRUCTOR:
         desiredType = InlineResult.TYPE_AUDIO;

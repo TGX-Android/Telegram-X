@@ -487,7 +487,7 @@ public class MessagesSearchManagerMiddleware {
 
   private static TdApi.Function<?> safeSearchSecretQuery (TdApi.SearchSecretMessages query) {
     final TdApi.SearchMessagesFilter safeFilter = safeFilter(query.filter);
-    final boolean hasMediaFilter = query.filter != null && safeFilter != null && safeFilter.getConstructor() != TdApi.SearchMessagesFilterEmpty.CONSTRUCTOR;
+    final boolean hasMediaFilter = query.filter != null && safeFilter != null && !Td.isEmptyFilter(safeFilter);
     final boolean queryIsEmpty = StringUtils.isEmpty(query.query);
 
     if (queryIsEmpty) {

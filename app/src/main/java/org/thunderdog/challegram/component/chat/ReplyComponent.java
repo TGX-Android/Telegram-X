@@ -543,8 +543,10 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
         retryFunction = new TdApi.GetStory(replyToStory.storySenderChatId, replyToStory.storyId, false);
         break;
       }
-      default:
-        throw new UnsupportedOperationException(message.replyTo.toString());
+      default: {
+        Td.assertMessageReplyTo_699c5345();
+        throw Td.unsupported(message.replyTo);
+      }
     }
     flags |= FLAG_LOADING;
     this.retryFunction = retryFunction;

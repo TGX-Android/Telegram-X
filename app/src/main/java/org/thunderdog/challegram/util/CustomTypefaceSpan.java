@@ -33,6 +33,7 @@ import org.thunderdog.challegram.tool.Screen;
 
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.td.Td;
 
 public class CustomTypefaceSpan extends MetricAffectingSpan {
   private static final int FLAG_FAKE_BOLD = 1;
@@ -142,9 +143,9 @@ public class CustomTypefaceSpan extends MetricAffectingSpan {
   public CustomTypefaceSpan setEntityType (TdApi.TextEntityType type) {
     this.type = type;
     if (type != null) {
-      setNeedUnderline(type.getConstructor() == TdApi.TextEntityTypeUnderline.CONSTRUCTOR);
-      setNeedStrikethrough(type.getConstructor() == TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR);
-      setNeedRevealOnTap(type.getConstructor() == TdApi.TextEntityTypeSpoiler.CONSTRUCTOR);
+      setNeedUnderline(Td.isUnderline(type));
+      setNeedStrikethrough(Td.isStrikethrough(type));
+      setNeedRevealOnTap(Td.isSpoiler(type));
     } else {
       setNeedUnderline(false);
       setNeedStrikethrough(false);

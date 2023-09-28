@@ -514,14 +514,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     int totalCount = manager != null ? manager.getKnownTotalMessageCount() : -1;
 
     if (previewSearchFilter != null) {
-      switch (previewSearchFilter.getConstructor()) {
-        case TdApi.SearchMessagesFilterPinned.CONSTRUCTOR: {
-          if (totalCount > 0) {
-            headerCell.setForcedSubtitle(Lang.pluralBold(R.string.XPinnedMessages, totalCount));
-          } else {
-            headerCell.setForcedSubtitle(Lang.getString(R.string.PinnedMessages));
-          }
-          break;
+      if (Td.isPinnedFilter(previewSearchFilter)) {
+        if (totalCount > 0) {
+          headerCell.setForcedSubtitle(Lang.pluralBold(R.string.XPinnedMessages, totalCount));
+        } else {
+          headerCell.setForcedSubtitle(Lang.getString(R.string.PinnedMessages));
         }
       }
       return;
@@ -6369,7 +6366,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean arePinnedMessages () {
-    return previewSearchFilter != null && previewSearchFilter.getConstructor() == TdApi.SearchMessagesFilterPinned.CONSTRUCTOR;
+    return previewSearchFilter != null && Td.isPinnedFilter(previewSearchFilter);
   }
 
   public void openPreviewMessage (TGMessage msg) {
@@ -7487,7 +7484,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           items.add(new TopBarView.Item(R.id.btn_shareMyContact, R.string.SharePhoneNumber, v -> {
             TdApi.User user = tdlib.myUser();
             if (user != null) {
-              showOptions(TD.getUserName(user) + ", " + Strings.formatPhone(user.phoneNumber), new int[]{R.id.btn_shareMyContact, R.id.btn_cancel}, new String[]{Lang.getString(R.string.SharePhoneNumberAction), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_BLUE, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_contact_phone_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
+              showOptions(TD.getUserName(user) + ", " + Strings.formatPhone(user.phoneNumber), new int[] {R.id.btn_shareMyContact, R.id.btn_cancel}, new String[] {Lang.getString(R.string.SharePhoneNumberAction), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_BLUE, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_contact_phone_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
                 if (id1 == R.id.btn_shareMyContact) {
                   tdlib.client().send(new TdApi.SharePhoneNumber(tdlib.chatUserId(chatId)), tdlib.okHandler());
                 }
@@ -7496,6 +7493,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
             }
           }));
           break;
+        }
+        case TdApi.ChatActionBarJoinRequest.CONSTRUCTOR: {
+          TdApi.ChatActionBarJoinRequest joinRequest = (TdApi.ChatActionBarJoinRequest) actionBar;
+          // TODO
+          break;
+        }
+        default: {
+          Td.assertChatActionBar_9b96400f();
+          throw Td.unsupported(actionBar);
         }
       }
     }

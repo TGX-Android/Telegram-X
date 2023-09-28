@@ -2395,7 +2395,8 @@ public class Settings {
       case TdApi.ChatSourceMtprotoProxy.CONSTRUCTOR:
         return needTutorial(TUTORIAL_PROXY_SPONSOR);
       default:
-        throw new UnsupportedOperationException(source.toString());
+        Td.assertChatSource_12b21238();
+        throw Td.unsupported(source);
     }
   }
 
@@ -4376,8 +4377,11 @@ public class Settings {
         return ((TdApi.ProxyTypeHttp) type).username;
       case TdApi.ProxyTypeMtproto.CONSTRUCTOR:
         return null;
+      default: {
+        Td.assertProxyType_bc1a1076();
+        throw Td.unsupported(type);
+      }
     }
-    throw new UnsupportedOperationException(type.toString());
   }
 
   public static String getProxyPassword (@NonNull TdApi.ProxyType type) {
@@ -4388,8 +4392,11 @@ public class Settings {
         return ((TdApi.ProxyTypeHttp) type).password;
       case TdApi.ProxyTypeMtproto.CONSTRUCTOR:
         return null;
+      default: {
+        Td.assertProxyType_bc1a1076();
+        throw Td.unsupported(type);
+      }
     }
-    throw new UnsupportedOperationException(type.toString());
   }
 
   public static int getProxyDefaultOrder (@NonNull TdApi.ProxyType type) {
@@ -4400,8 +4407,10 @@ public class Settings {
         return 2;
       case TdApi.ProxyTypeHttp.CONSTRUCTOR:
         return 3;
+      default:
+        Td.assertProxyType_bc1a1076();
+        throw Td.unsupported(type);
     }
-    throw new UnsupportedOperationException(type.toString());
   }
 
   private static @Proxy.Type int getProxyType (@NonNull TdApi.ProxyType type) {
@@ -4412,8 +4421,10 @@ public class Settings {
         return Proxy.TYPE_MTPROTO;
       case TdApi.ProxyTypeHttp.CONSTRUCTOR:
         return Proxy.TYPE_HTTP;
+      default:
+        Td.assertProxyType_bc1a1076();
+        throw Td.unsupported(type);
     }
-    throw new UnsupportedOperationException(type.toString());
   }
 
   private static byte[] serializeProxy (@NonNull TdApi.InternalLinkTypeProxy proxy) {
@@ -4770,7 +4781,8 @@ public class Settings {
           stringRes = R.string.ProxyHttp;
           break;
         default:
-          throw new UnsupportedOperationException(proxy.type.toString());
+          Td.assertProxyType_bc1a1076();
+          throw Td.unsupported(proxy.type);
       }
       return Lang.getString(stringRes, (target, argStart, argEnd, argIndex, needFakeBold) -> new CustomTypefaceSpan(null, ColorId.textLight), name);
     }
@@ -6244,6 +6256,7 @@ public class Settings {
       boolean isValidSetting = false, hideName = false;
       if (document.caption != null && document.caption.entities != null && document.caption.entities.length > 0) {
         for (TdApi.TextEntity entity : document.caption.entities) {
+          //noinspection SwitchIntDef
           switch (entity.type.getConstructor()) {
             case TdApi.TextEntityTypeHashtag.CONSTRUCTOR: {
               String hashtag = Td.substring(document.caption.text, entity);

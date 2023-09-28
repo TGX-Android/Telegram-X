@@ -342,12 +342,12 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
 
   public boolean isPlayingMusic () {
     synchronized (this) {
-      return message != null && message.content.getConstructor() == TdApi.MessageAudio.CONSTRUCTOR;
+      return message != null && Td.isAudio(message.content);
     }
   }
 
   public int canAddToPlayList (Tdlib tdlib, TdApi.Message track) {
-    if (track.content.getConstructor() != TdApi.MessageAudio.CONSTRUCTOR) {
+    if (!Td.isAudio(track.content)) {
       return ADD_MODE_NONE;
     }
     synchronized (this) {
@@ -391,7 +391,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
 
   public void moveTrack (int fromPosition, int toPosition) {
     synchronized (this) {
-      if (this.message != null && playState != STATE_NONE && this.message.content.getConstructor() == TdApi.MessageAudio.CONSTRUCTOR) {
+      if (this.message != null && playState != STATE_NONE && Td.isAudio(this.message.content)) {
         TdApi.Message track = messageList.remove(fromPosition);
         messageList.add(toPosition, track);
         notifyTrackListItemMoved(trackListChangeListeners, tdlib, track, fromPosition, toPosition);
@@ -402,7 +402,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
 
   public void removeTrack (TdApi.Message track, boolean byUserRequest) {
     synchronized (this) {
-      if (this.message != null && playState != STATE_NONE && this.message.content.getConstructor() == TdApi.MessageAudio.CONSTRUCTOR && messageList.size() > 1) {
+      if (this.message != null && playState != STATE_NONE && Td.isAudio(this.message.content) && messageList.size() > 1) {
         int position = indexOfMessage(track);
         removeTrackImpl(track, position, byUserRequest);
       }
@@ -510,7 +510,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
   }
 
   private static boolean supportsPlaybackFlags (TdApi.Message message) {
-    return message != null && message.content.getConstructor() == TdApi.MessageAudio.CONSTRUCTOR;
+    return message != null && Td.isAudio(message.content);
   }
 
   private static int getPlaybackFlags (TdApi.Message message, int flags) {
@@ -565,7 +565,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
     }
   }
 
-  public int getContentType () {
+  public @TdApi.MessageContent.Constructors int getContentType () {
     synchronized (this) {
       return message != null ? message.content.getConstructor() : 0;
     }
@@ -579,13 +579,13 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
 
   public boolean isPlayingRoundVideo () {
     synchronized (this) {
-      return message != null && message.content.getConstructor() == TdApi.MessageVideoNote.CONSTRUCTOR;
+      return message != null && Td.isVideoNote(message.content);
     }
   }
 
   public boolean isPlayingVoice () {
     synchronized (this) {
-      return message != null && message.content.getConstructor() == TdApi.MessageVoiceNote.CONSTRUCTOR;
+      return message != null && Td.isVoiceNote(message.content);
     }
   }
 
@@ -735,7 +735,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
   }
 
   private void updateProximityMessageImpl () {
-    if (message != null && (message.content.getConstructor() == TdApi.MessageVoiceNote.CONSTRUCTOR || message.content.getConstructor() == TdApi.MessageVideoNote.CONSTRUCTOR)) {
+    if (message != null && (Td.isVoiceNote(message.content) || Td.isVideoNote(message.content))) {
       proximityManager.setPlaybackObject(message);
     } else {
       proximityManager.setPlaybackObject(null);
@@ -893,7 +893,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
   }
 
   public void stopRoundPlayback (boolean byUserRequest) {
-    if (message != null && message.content.getConstructor() == TdApi.MessageVideoNote.CONSTRUCTOR) {
+    if (message != null && Td.isVideoNote(message.content)) {
       playPauseMessageImpl(null, byUserRequest, false, tdlib, null);
     }
   }
@@ -923,6 +923,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
         TdApi.Message track = messageList.get(i);
         if (track.chatId != 0 && track.chatId == chatId && ArrayUtils.indexOf(messageIds, track.id) != -1) {
           if (i == currentIndex) {
+            //noinspection SwitchIntDef
             switch (track.content.getConstructor()) {
               case TdApi.MessageAudio.CONSTRUCTOR:
                 // Do nothing. Let user finish playback
@@ -950,7 +951,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
       handler.sendMessage(Message.obtain(handler, ACTION_SKIP, next ? 1 : 0, 0));
     } else {
       synchronized (this) {
-        if (message != null && message.content.getConstructor() == TdApi.MessageAudio.CONSTRUCTOR) {
+        if (message != null && Td.isAudio(message.content)) {
           context.audio().skip(next);
         }
       }
@@ -1278,11 +1279,11 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
   }
 
   private static boolean canControlQueue (TdApi.Message message) {
-    return message.content.getConstructor() == TdApi.MessageAudio.CONSTRUCTOR;
+    return Td.isAudio(message.content);
   }
 
-  private static boolean matchesFilter (TdApi.MessageContent content, int contentType) {
-    int ctr = content.getConstructor();
+  private static boolean matchesFilter (TdApi.MessageContent content, @TdApi.MessageContent.Constructors int contentType) {
+    final @TdApi.MessageContent.Constructors int ctr = content.getConstructor();
     return ctr == contentType || ((ctr == TdApi.MessageVoiceNote.CONSTRUCTOR || ctr == TdApi.MessageVideoNote.CONSTRUCTOR) && (contentType == TdApi.MessageVoiceNote.CONSTRUCTOR || contentType == TdApi.MessageVideoNote.CONSTRUCTOR));
   }
 
@@ -1481,7 +1482,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
     final long minMessageId = playlistMinMessageId;
     final long maxMessageId = playlistMaxMessageId;
 
-    final int contentType = message.content.getConstructor();
+    final @TdApi.MessageContent.Constructors int contentType = message.content.getConstructor();
 
     final int contextId = messageListContextId;
     final boolean reverse = (playListFlags & PLAYLIST_FLAG_REVERSE) != 0;
@@ -1632,7 +1633,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
   @Override
   public void onNewMessage (Tdlib tdlib, TdApi.Message message) {
     final long chatId = getChatId();
-    final int contentType = getContentType();
+    final @TdApi.MessageContent.Constructors int contentType = getContentType();
     if (chatId != 0 && contentType != 0 && message.chatId == chatId && message.content.getConstructor() == contentType && message.sendingState == null) {
       addNewMessage(tdlib, message);
     }
@@ -1641,7 +1642,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
   @Override
   public void onNewMessages (Tdlib tdlib, TdApi.Message[] messages) {
     final long chatId = getChatId();
-    final int contentType = getContentType();
+    final @TdApi.MessageContent.Constructors int contentType = getContentType();
     if (chatId != 0 && contentType != 0) {
       for (TdApi.Message message : messages) {
         if (message.chatId == chatId && message.content.getConstructor() == contentType && message.sendingState == null) {

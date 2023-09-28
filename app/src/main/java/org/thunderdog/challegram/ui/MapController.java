@@ -1705,7 +1705,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
         if (messages.length > 0) {
           final ArrayList<LocationPoint<T>> list = new ArrayList<>(messages.length);
           for (TdApi.Message message : messages) {
-            if (message.content.getConstructor() != TdApi.MessageLocation.CONSTRUCTOR) {
+            if (!Td.isLocation(message.content)) {
               continue;
             }
             if (message.isOutgoing || tdlib.isSelfSender(message)) {
@@ -1742,7 +1742,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
     if (isDestroyed()) {
       return;
     }
-    if (message.content.getConstructor() != TdApi.MessageLocation.CONSTRUCTOR) {
+    if (!Td.isLocation(message.content)) {
       return;
     }
     if (message.schedulingState != null || tdlib.isSelfSender(message)) {
@@ -1787,7 +1787,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
 
   @Override
   public void onMessageContentChanged (long chatId, long messageId, TdApi.MessageContent newContent) {
-    if (newContent.getConstructor() == TdApi.MessageLocation.CONSTRUCTOR) {
+    if (Td.isLocation(newContent)) {
       updateMessageIfNeeded(chatId, messageId, (TdApi.MessageLocation) newContent);
     }
   }

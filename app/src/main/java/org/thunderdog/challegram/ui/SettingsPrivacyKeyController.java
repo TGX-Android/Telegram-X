@@ -71,6 +71,8 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
     switch (privacySetting.getConstructor()) {
       case TdApi.UserPrivacySettingShowPhoneNumber.CONSTRUCTOR:
         return R.drawable.baseline_call_24;
+      case TdApi.UserPrivacySettingShowBio.CONSTRUCTOR:
+        return R.drawable.baseline_info_24;
       case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR:
         return R.drawable.baseline_search_24;
       case TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR:
@@ -87,8 +89,10 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
         return R.drawable.baseline_swap_horiz_24;
       case TdApi.UserPrivacySettingAllowPrivateVoiceAndVideoNoteMessages.CONSTRUCTOR:
         return R.drawable.baseline_mic_24;
+      default:
+        Td.assertUserPrivacySetting_21d3f4();
+        throw Td.unsupported(privacySetting);
     }
-    return 0;
   }
 
   public static int getName (TdApi.UserPrivacySetting privacyKey, boolean isException, boolean isMultiChatException) {
@@ -97,6 +101,8 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
         return isException ? R.string.EditPrivacyPhoneNumber : R.string.PhoneNumber;
       case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR:
         return R.string.FindingByPhoneNumber;
+      case TdApi.UserPrivacySettingShowBio.CONSTRUCTOR:
+        return isException ? R.string.EditPrivacyBio : R.string.UserBio;
       case TdApi.UserPrivacySettingAllowChatInvites.CONSTRUCTOR:
         return isException ? (isMultiChatException ? R.string.EditPrivacyChatInviteGroup : R.string.EditPrivacyChatInvite) : R.string.GroupsAndChannels;
       case TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR:
@@ -111,8 +117,10 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
         return isException ? R.string.EditPrivacyPhoto : R.string.PrivacyPhotoTitle;
       case TdApi.UserPrivacySettingAllowPrivateVoiceAndVideoNoteMessages.CONSTRUCTOR:
         return isException ? R.string.EditPrivacyVoice : R.string.PrivacyVoiceVideoTitle;
+      default:
+        Td.assertUserPrivacySetting_21d3f4();
+        throw Td.unsupported(privacyKey);
     }
-    throw new IllegalStateException("privacyKey == " + privacyKey);
   }
 
   @Override
@@ -181,6 +189,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
   }
 
   private boolean needNobodyOption () {
+    //noinspection SwitchIntDef
     switch (getArgumentsStrict().getConstructor()) {
       case TdApi.UserPrivacySettingAllowChatInvites.CONSTRUCTOR:
       case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR:
@@ -191,6 +200,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
   }
 
   private boolean needExceptions () {
+    //noinspection SwitchIntDef
     switch (getArgumentsStrict().getConstructor()) {
       case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR:
         return false;
@@ -238,6 +248,11 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
         hintItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.btn_description, 0, R.string.WhoCanSeePhoneInfo);
         break;
       }
+      case TdApi.UserPrivacySettingShowBio.CONSTRUCTOR: {
+        headerItem = new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.WhoCanSeeBio);
+        hintItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.btn_description, 0, R.string.WhoCanSeeBioInfo);
+        break;
+      }
       case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR: {
         headerItem = new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.WhoCanFindByPhone);
         hintItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.btn_description, 0, rulesType == PrivacySettings.MODE_EVERYBODY ? R.string.WhoCanFindByPhoneInfoEveryone : R.string.WhoCanFindByPhoneInfoContacts);
@@ -272,7 +287,8 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
         break;
       }
       default: {
-        throw new IllegalStateException("privacyKey == " + getArgumentsStrict());
+        Td.assertUserPrivacySetting_21d3f4();
+        throw Td.unsupported(getArgumentsStrict());
       }
     }
 
@@ -349,6 +365,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
 
   private void updateHints () {
     int mode = currentRules().getMode();
+    //noinspection SwitchIntDef
     switch (getArgumentsStrict().getConstructor()) {
       case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR:  {
         int i = adapter.indexOfViewById(R.id.btn_description);

@@ -57,6 +57,7 @@ import java.util.List;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
+import me.vkryl.td.Td;
 
 public class CallListController extends RecyclerViewController<Void> implements
   View.OnClickListener,
@@ -696,7 +697,7 @@ public class CallListController extends RecyclerViewController<Void> implements
   }
 
   private static boolean filter (TdApi.Message message) {
-    return message.content.getConstructor() == TdApi.MessageCall.CONSTRUCTOR && message.sendingState == null && message.schedulingState == null;
+    return Td.isCall(message.content) && message.sendingState == null && message.schedulingState == null;
   }
 
   @Override

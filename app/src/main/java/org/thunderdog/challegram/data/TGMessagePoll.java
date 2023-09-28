@@ -1012,7 +1012,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
 
   @Override
   protected boolean onMessageContentChanged (TdApi.Message message, TdApi.MessageContent oldContent, TdApi.MessageContent newContent, boolean isBottomMessage) {
-    if (newContent.getConstructor() == TdApi.MessagePoll.CONSTRUCTOR) {
+    if (Td.isPoll(newContent)) {
       TdApi.Poll updatedPoll = ((TdApi.MessagePoll) newContent).poll;
       applyPoll(updatedPoll, false);
       return true;
