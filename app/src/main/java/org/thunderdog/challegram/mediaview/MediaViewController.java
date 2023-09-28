@@ -8463,11 +8463,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private void openSetSenderPopup (TdApi.Chat chat) {
     if (chat == null) return;
 
-    tdlib().send(new TdApi.GetChatAvailableMessageSenders(chat.id), result -> {
+    tdlib().send(new TdApi.GetChatAvailableMessageSenders(chat.id), (result, error) -> {
       UI.post(() -> {
-        if (result.getConstructor() == TdApi.ChatMessageSenders.CONSTRUCTOR) {
+        if (result != null) {
           final SetSenderController c = new SetSenderController(context, tdlib());
-          c.setArguments(new SetSenderController.Args(chat, ((TdApi.ChatMessageSenders) result).senders, chat.messageSenderId));
+          c.setArguments(new SetSenderController.Args(chat, result.senders, chat.messageSenderId));
           c.setShowOverEverything(true);
           c.setDelegate((s) -> setNewMessageSender(chat, s));
           c.show();
@@ -8477,7 +8477,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void setNewMessageSender (TdApi.Chat chat, TdApi.ChatMessageSender sender) {
-    tdlib().send(new TdApi.SetChatMessageSender(chat.id, sender.sender), o -> {
+    tdlib().send(new TdApi.SetChatMessageSender(chat.id, sender.sender), ignored -> {
       UI.post(() -> {
         if (senderSendIcon != null) {
           senderSendIcon.update(chat.messageSenderId);

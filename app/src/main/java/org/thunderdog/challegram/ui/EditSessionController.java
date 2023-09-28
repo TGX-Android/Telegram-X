@@ -22,6 +22,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -121,7 +122,7 @@ public class EditSessionController extends EditBaseController<EditSessionControl
   protected boolean onDoneClick () {
     setDoneInProgress(true);
 
-    List<TdApi.Function<?>> functions = new ArrayList<>();
+    List<TdApi.Function<TdApi.Ok>> functions = new ArrayList<>();
 
     if (allowSecretChats != session.canAcceptSecretChats) {
       functions.add(new TdApi.ToggleSessionCanAcceptSecretChats(session.id, allowSecretChats));
@@ -131,16 +132,12 @@ public class EditSessionController extends EditBaseController<EditSessionControl
       functions.add(new TdApi.ToggleSessionCanAcceptCalls(session.id, allowCalls));
     }
 
-    tdlib.sendAll(functions.toArray(new TdApi.Function<?>[0]), (obj) -> {
-
-    }, () -> {
-      runOnUiThreadOptional(() -> {
-        session.canAcceptSecretChats = allowSecretChats;
-        session.canAcceptCalls = allowCalls;
-        getArgumentsStrict().sessionChangeListener.runWithData(session);
-        navigateBack();
-      });
-    });
+    tdlib.sendAll(TD.toArray(functions), obj -> { }, () -> runOnUiThreadOptional(() -> {
+      session.canAcceptSecretChats = allowSecretChats;
+      session.canAcceptCalls = allowCalls;
+      getArgumentsStrict().sessionChangeListener.runWithData(session);
+      navigateBack();
+    }));
 
     return true;
   }

@@ -10730,22 +10730,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
   // Call methods
 
   public static void getChatAvailableMessagesSenders (Tdlib tdlib, long chatId, @NonNull RunnableData<TdApi.ChatMessageSenders> callback) {
-    tdlib.send(new TdApi.GetChatAvailableMessageSenders(chatId), result -> UI.post(() -> {
-      switch (result.getConstructor()) {
-        case TdApi.ChatMessageSenders.CONSTRUCTOR: {
-          callback.runWithData((TdApi.ChatMessageSenders) result);
-          break;
-        }
-        case TdApi.Error.CONSTRUCTOR: {
-          UI.showError(result);
-          break;
-        }
+    tdlib.send(new TdApi.GetChatAvailableMessageSenders(chatId), (result, error) -> UI.post(() -> {
+      if (error != null) {
+        UI.showError(error);
+      } else {
+        callback.runWithData(result);
       }
     }));
   }
 
   public static void setNewMessageSender (Tdlib tdlib, long chatId, TdApi.ChatMessageSender sender, @Nullable Runnable after) {
-    tdlib.send(new TdApi.SetChatMessageSender(chatId, sender.sender), o -> {
+    tdlib.send(new TdApi.SetChatMessageSender(chatId, sender.sender), ignored -> {
       if (after != null) {
         tdlib.ui().post(after);
       }

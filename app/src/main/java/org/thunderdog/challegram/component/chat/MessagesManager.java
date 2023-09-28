@@ -2179,13 +2179,13 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         @Override
         public void act () {
           if (allowReadMessages()) {
-            ArrayList<TdApi.Function<?>> functions = new ArrayList<>();
+            List<TdApi.Function<TdApi.Ok>> functions = new ArrayList<>();
             for (int i = 0; i < refreshMessageIds.size(); i++) {
               long chatId = refreshMessageIds.keyAt(i);
               long[] messageIds = refreshMessageIds.valueAt(i);
               functions.add(new TdApi.ViewMessages(chatId, messageIds, new TdApi.MessageSourceHistoryPreview(), false));
             }
-            tdlib.sendAll(functions.toArray(new TdApi.Function<?>[0]), tdlib.okHandler(), () -> tdlib.ui().post(MessagesManager.this::scheduleRefresh));
+            tdlib.sendAll(TD.toArray(functions), tdlib.okHandler(), () -> tdlib.ui().post(MessagesManager.this::scheduleRefresh));
           } else {
             scheduleRefresh();
           }

@@ -4755,6 +4755,17 @@
   <string name="PasteCustomEmoji">Paste Emoji</string>
   <string name="LoopAnimatedEmoji">Loop Animated Emoji</string>
 
+  <string name="ArchiveSettings">Archive Settings</string>
+  <string name="ArchiveSettingsDesc">Control what chats remain archived even if they are unmuted and get a new message.</string>
+
+  <string name="ArchiveSettingUnmutedChatsTitle">Unmuted chats</string>
+  <string name="ArchiveSettingUnmutedChats">Always keep archived</string>
+  <string name="ArchiveSettingUnmutedChatsDesc">Keep archived chats in the Archive even if they are unmuted and get a new message.</string>
+
+  <string name="ArchiveSettingFolderChatsTitle">Chats from folders</string>
+  <string name="ArchiveSettingFolderChats">Always keep archived</string>
+  <string name="ArchiveSettingFolderChatsDesc">Keep archived chats from folders in the Archive even if they are unmuted and get a new message.</string>
+
   <string name="xStickerSetsInstalled_one">%1$s set installed</string>
   <string name="xStickerSetsInstalled_other">%1$s set installed</string>
   <string name="xStickerSetsInstalledUnknown">Sticker set settings</string>

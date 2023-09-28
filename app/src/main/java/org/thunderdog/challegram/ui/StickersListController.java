@@ -632,10 +632,9 @@ public class StickersListController extends ViewController<StickersListControlle
     final long[] currentStickerSetIds = stickerSetIdsToLoad;
     final TdApi.StickerSet[] loadSetsResult = new TdApi.StickerSet[stickerSetIdsToLoad.length];
     for (long id : stickerSetIdsToLoad) {
-      tdlib.send(new TdApi.GetStickerSet(id), object -> UI.post(() -> {
+      tdlib.send(new TdApi.GetStickerSet(id), (stickerSet, error) -> UI.post(() -> {
         if (currentKey != loadSetsKey || isDestroyed()) return;
-        if (object.getConstructor() == TdApi.StickerSet.CONSTRUCTOR) {
-          TdApi.StickerSet stickerSet = (TdApi.StickerSet) object;
+        if (stickerSet != null) {
           int index = ArrayUtils.indexOf(currentStickerSetIds, stickerSet.id);
           if (index > -1 && index < loadSetsResult.length) {
             loadSetsResult[index] = stickerSet;

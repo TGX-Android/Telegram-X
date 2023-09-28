@@ -782,9 +782,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   }
 
   public HeaderButton addMoreButton (LinearLayout menu, @Nullable ViewController<?> themeProvider, @ColorId int colorId) {
-    HeaderButton button;
-    menu.addView(button = genButton(R.id.menu_btn_more, R.drawable.baseline_more_vert_24, colorId, themeProvider, Screen.dp(49f), this), Lang.rtl() ? 0 : -1);
-    return button;
+    return addButton(menu, R.id.menu_btn_more, R.drawable.baseline_more_vert_24, 49f, themeProvider, colorId);
   }
 
   public HeaderButton addSearchButton (LinearLayout menu, @NonNull ViewController<?> themeProvider) {
@@ -792,8 +790,12 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   }
 
   public HeaderButton addSearchButton (LinearLayout menu, @Nullable ViewController<?> themeProvider, @ColorId int colorId) {
+    return addButton(menu, R.id.menu_btn_search, R.drawable.baseline_search_24, 49f, themeProvider, colorId);
+  }
+
+  public HeaderButton addButton (LinearLayout menu, @IdRes int buttonId, @DrawableRes int iconRes, float widthDp, @Nullable ViewController<?> themeProvider, @ColorId int colorId) {
     HeaderButton button;
-    menu.addView(button = genButton(R.id.menu_btn_search, R.drawable.baseline_search_24, colorId, themeProvider, Screen.dp(49f), this), Lang.rtl() ? 0 : -1);
+    menu.addView(button = genButton(buttonId, iconRes, colorId, themeProvider, Screen.dp(widthDp), this), Lang.rtl() ? 0 : -1);
     return button;
   }
 
