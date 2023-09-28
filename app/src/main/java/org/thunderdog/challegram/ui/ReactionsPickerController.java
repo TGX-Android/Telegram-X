@@ -40,7 +40,6 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
-import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.StickersListener;
@@ -99,12 +98,12 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     bottomHeaderCell = new EmojiHeaderView(context, this, this, emojiSections, null, false);
     bottomHeaderCell.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, HeaderView.getSize(false)));
     bottomHeaderCell.setIsPremium(true, false);
-    // bottomHeaderCell.setSectionsOnLongClickListener(this::onEmojiHeaderLongClick);
+    bottomHeaderCell.setSectionsOnLongClickListener(this::onEmojiHeaderLongClick);
     bottomHeaderCell.setSectionsOnClickListener(this::onStickerSectionClick);
 
     recyclerView = onCreateRecyclerView();
     recyclerView.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> reactionsController.invalidateStickerObjModifiers());
-    recyclerView.setItemAnimator(null);
+    // recyclerView.setItemAnimator(null);
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
       public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {}
@@ -183,14 +182,9 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     return recyclerView;
   }
 
-  private ArrayList<TGStickerSetInfo> emojiPacks;
-  private ArrayList<MediaStickersAdapter.StickerItem> emojiItems;
-
-
   private void buildCells () {
-    emojiItems = new ArrayList<>();
-    emojiPacks = new ArrayList<>();
-
+    ArrayList<TGStickerSetInfo> emojiPacks = new ArrayList<>();
+    ArrayList<MediaStickersAdapter.StickerItem> emojiItems = new ArrayList<>();
     ArrayList<MediaStickersAdapter.StickerItem> emojiItemsCustom = new ArrayList<>();
 
     TdApi.AvailableReaction[] reactions = state.availableReactions;
@@ -257,8 +251,8 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
       EmojiSection section = ((EmojiSectionView) v).getSection();
       if (section.index == -14) {
         bottomHeaderView.openSearchMode(true, false);
-      } else if (section.index >= 0 && section.index < emojiPacks.size()) {
-        reactionsController.scrollToStickerSet(section.index == 0 ? 0 : emojiPacks.get(section.index).getStartIndex(), HeaderView.getSize(true), false, true);
+      } else if (section.index >= 0 && section.index < reactionsController.stickerSets.size()) {
+        reactionsController.scrollToStickerSet(section.index == 0 ? 0 : reactionsController.stickerSets.get(section.index).getStartIndex(), HeaderView.getSize(true), false, true);
       }
     }
   }
@@ -334,9 +328,6 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
   }
 
   private void setStickers (ArrayList<TGStickerSetInfo> stickerSets, ArrayList<MediaStickersAdapter.StickerItem> items) {
-    this.emojiPacks.addAll(stickerSets);
-    this.emojiItems.addAll(items);
-
     this.reactionsController.addStickers(stickerSets, items);
     this.loadingStickers = false;
     if (stickerSetsDataProvider != null) {
@@ -551,7 +542,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
   @Override
   public void onRemoveStickerSection (int controllerId, int section) {
-    bottomHeaderCell.removeStickerSection(section);
+    bottomHeaderCell.removeStickerSection(section + 1);
   }
 
   @Override
@@ -823,7 +814,10 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
           Lang.getString(R.string.Cancel)
         }, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_auto_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
           if (id == R.id.btn_done) {
-            // todo: update
+            TGStickerSetInfo info = reactionsController.getStickerSetBySectionIndex(1);
+            if (info != null) {
+              reactionsController.removeStickerSet(info);
+            }
             tdlib.client().send(new TdApi.ClearRecentReactions(), tdlib.okHandler());
           }
           return true;
@@ -837,15 +831,17 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
   private void removeStickerSet (final TGStickerSetInfo info) {
     showOptions(null, new int[] {R.id.btn_copyLink, R.id.btn_archive, R.id.more_btn_delete}, new String[] {Lang.getString(R.string.CopyLink), Lang.getString(R.string.ArchivePack), Lang.getString(R.string.DeletePack)}, new int[] {ViewController.OPTION_COLOR_NORMAL, ViewController.OPTION_COLOR_NORMAL, ViewController.OPTION_COLOR_RED}, new int[] {R.drawable.baseline_link_24, R.drawable.baseline_archive_24, R.drawable.baseline_delete_24}, (itemView, id) -> {
       if (id == R.id.more_btn_delete) {
-        showOptions(Lang.getStringBold(R.string.RemoveStickerSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.RemoveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
+        showOptions(Lang.getStringBold(R.string.RemoveEmojiSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.RemoveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
           if (resultId == R.id.btn_delete) {
+            reactionsController.removeStickerSet(info);
             tdlib().client().send(new TdApi.ChangeStickerSet(info.getId(), false, false), tdlib().okHandler());
           }
           return true;
         });
       } else if (id == R.id.btn_archive) {
-        showOptions(Lang.getStringBold(R.string.ArchiveStickerSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ArchiveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_archive_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
+        showOptions(Lang.getStringBold(R.string.ArchiveEmojiSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ArchiveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_archive_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
           if (resultId == R.id.btn_delete) {
+            reactionsController.removeStickerSet(info);
             tdlib().client().send(new TdApi.ChangeStickerSet(info.getId(), false, true), tdlib().okHandler());
           }
           return true;
@@ -867,9 +863,17 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
   private TdlibUi.EmojiStickers lastEmojiStickers;
 
+  private ArrayList<TGStickerSetInfo> emojiPacksSaved;
+  private ArrayList<MediaStickersAdapter.StickerItem> emojiItemsSaved;
+
   private void searchEmojiImpl (final String request, boolean isEmojiString) {
     if (StringUtils.equalsOrBothEmpty(lastEmojiSearchRequest, request)) {
       return;
+    }
+
+    if (StringUtils.isEmpty(lastEmojiSearchRequest) && !StringUtils.isEmpty(request)) {
+      emojiPacksSaved = new ArrayList<>(reactionsController.stickerSets);
+      emojiItemsSaved = new ArrayList<>(adapter.getItems());
     }
 
     lastEmojiSearchRequest = request;
@@ -914,7 +918,9 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
       }, 0);
     } else {
       reactionsController.clearAllItems();
-      reactionsController.setStickers(emojiPacks, emojiItems);
+      reactionsController.setStickers(emojiPacksSaved, emojiItemsSaved);
+      emojiPacksSaved = null;
+      emojiItemsSaved = null;
     }
   }
 

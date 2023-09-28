@@ -682,9 +682,9 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       @Override
       public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
         final int position = parent.getChildAdapterPosition(view);
-        final int itemType = parent.getAdapter().getItemViewType(position);
         final int itemCount = parent.getAdapter().getItemCount();
         final boolean isUnknown = position == RecyclerView.NO_POSITION;
+        final int itemType = position < itemCount && !isUnknown ? parent.getAdapter().getItemViewType(position) : -1;
         int leftRight = 0, bottom = 0;
 
         if (itemType == MediaStickersAdapter.StickerHolder.TYPE_STICKER) {

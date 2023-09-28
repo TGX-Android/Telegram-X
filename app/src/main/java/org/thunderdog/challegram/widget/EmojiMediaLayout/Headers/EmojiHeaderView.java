@@ -209,7 +209,7 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
   }
 
   public void removeStickerSection (int index) {
-    adapter.removeStickerSection(index - adapter.getAddIndexCount());
+    adapter.removeStickerSection(index);
     checkStickerSections(true);
   }
 
@@ -392,9 +392,15 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
     }
 
     public void removeStickerSection (int index) {
-      if (index >= 0 && index < stickerSets.size()) {
-        stickerSets.remove(index);
-        notifyItemRemoved(index + getAddItemCount());
+      if (index >= getAddIndexCount()) {
+        index -= getAddIndexCount();
+        if (index >= 0 && index < stickerSets.size()) {
+          stickerSets.remove(index);
+          notifyItemRemoved(index + getAddItemCount());
+        }
+      } else if (index >= 0 && index < emojiSections.size()) {
+        emojiSections.remove(index);
+        notifyItemRemoved(index);
       }
     }
 
