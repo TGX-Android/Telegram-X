@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -29,14 +30,16 @@ import java.util.Arrays;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.RunnableData;
 
-public class EmojiCategoriesRecyclerView extends CustomRecyclerView {
+public class EmojiCategoriesRecyclerView extends CustomRecyclerView implements Destroyable {
   private static final int CATEGORY_WIDTH = 38;
   private static final int SHADOW_SIZE = 30;
 
   private final GradientDrawable gradientDrawableLeft = new GradientDrawable(GradientDrawable.Orientation.RIGHT_LEFT, new int[]{ 0, Theme.fillingColor() });
   private final GradientDrawable gradientDrawableRight = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{ 0, Theme.fillingColor() });
+  private final ComplexReceiver receiverForPriorityLoading = new ComplexReceiver();
   private final LinearLayoutManager layoutManager;
   private EmojiSearchTypesAdapter emojiSearchTypesAdapter;
   private int minimalLeftPadding;
@@ -73,9 +76,26 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView {
     controller.tdlib().send(new TdApi.GetEmojiCategories(new TdApi.EmojiCategoryTypeDefault()), object -> {
       if (object.getConstructor() == TdApi.EmojiCategories.CONSTRUCTOR) {
         TdApi.EmojiCategories categories = (TdApi.EmojiCategories) object;
-        UI.post(() -> emojiSearchTypesAdapter.setEmojiCategories(categories.categories));
+        UI.post(() -> emojiSearchTypesAdapter.requestEmojiCategories(categories.categories, receiverForPriorityLoading));
       }
     });
+  }
+
+  @Override
+  protected void onAttachedToWindow () {
+    super.onAttachedToWindow();
+    receiverForPriorityLoading.attach();
+  }
+
+  @Override
+  protected void onDetachedFromWindow () {
+    super.onDetachedFromWindow();
+    receiverForPriorityLoading.detach();
+  }
+
+  @Override
+  public void performDestroy () {
+    receiverForPriorityLoading.performDestroy();
   }
 
   public void setMinimalLeftPadding (int minimalLeftPadding) {
@@ -298,8 +318,11 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView {
     private TdApi.EmojiCategory[] categories;
     private TGStickerObj[] categoryStickers;
 
-    public void setEmojiCategories (TdApi.EmojiCategory[] categories) {
-      notifyItemRangeRemoved(0, getItemCount());
+    public void requestEmojiCategories (TdApi.EmojiCategory[] categories, ComplexReceiver receiverForPriorityLoading) {
+      final int itemCount = getItemCount();
+      if (itemCount > 0) {
+        notifyItemRangeRemoved(0, itemCount);
+      }
       this.categories = categories;
       this.categoryStickers = new TGStickerObj[categories.length];
       for (int a = 0; a < categories.length; a++) {
@@ -308,6 +331,7 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView {
         if (categoryStickers[a].getPreviewAnimation() != null) {
           categoryStickers[a].getPreviewAnimation().setPlayOnce(true);
           categoryStickers[a].getPreviewAnimation().setLooped(false);
+          receiverForPriorityLoading.getGifReceiver(a).requestFile(categoryStickers[a].getPreviewAnimation());
         }
       }
       notifyItemRangeInserted(0, categories.length);
