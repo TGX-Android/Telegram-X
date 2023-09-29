@@ -62,6 +62,7 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.MathUtils;
+import me.vkryl.td.Td;
 
 public class AudioController extends BasePlaybackController implements TGAudio.PlayListener, TGPlayerController.TrackListChangeListener, FactorAnimator.Target {
   private final TdlibManager context;
@@ -173,6 +174,7 @@ public class AudioController extends BasePlaybackController implements TGAudio.P
 
   @Override
   protected boolean isSupported (TdApi.Message message) {
+    //noinspection SwitchIntDef
     switch (message.content.getConstructor()) {
       case TdApi.MessageAudio.CONSTRUCTOR:
       case TdApi.MessageVoiceNote.CONSTRUCTOR:
@@ -186,7 +188,7 @@ public class AudioController extends BasePlaybackController implements TGAudio.P
   }
 
   protected boolean isPlayingVoice () {
-    return isPlayingSomething() && playList.get(playIndex).content.getConstructor() == TdApi.MessageVoiceNote.CONSTRUCTOR;
+    return isPlayingSomething() && Td.isVoiceNote(playList.get(playIndex).content);
   }
 
   @Override
@@ -276,12 +278,12 @@ public class AudioController extends BasePlaybackController implements TGAudio.P
   @Override
   protected void startPlayback (Tdlib tdlib, TdApi.Message message, boolean byUserRequest, boolean hadObject, Tdlib previousTdlib, int previousFileId) {
     if (playbackMode == PLAYBACK_MODE_UNSET) {
-      setPlaybackMode(determineBestPlaybackMode(message.content.getConstructor() == TdApi.MessageVoiceNote.CONSTRUCTOR), message.content.getConstructor() == TdApi.MessageAudio.CONSTRUCTOR);
+      setPlaybackMode(determineBestPlaybackMode(Td.isVoiceNote(message.content)), Td.isAudio(message.content));
     }
     Log.i(Log.TAG_PLAYER, "startPlayback mode:%d byUserRequest:%b, hadObject:%b, previousFileId:%d", playbackMode, byUserRequest, hadObject, previousFileId);
     switch (playbackMode) {
       case PLAYBACK_MODE_LEGACY: {
-        if (message.content.getConstructor() == TdApi.MessageVoiceNote.CONSTRUCTOR) {
+        if (Td.isVoiceNote(message.content)) {
           legacyAudio = new TGAudio(tdlib, message, ((TdApi.MessageVoiceNote) message.content).voiceNote);
         } else {
           legacyAudio = new TGAudio(tdlib, message, ((TdApi.MessageAudio) message.content).audio);

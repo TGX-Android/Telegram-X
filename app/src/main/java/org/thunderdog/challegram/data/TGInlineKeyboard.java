@@ -606,6 +606,7 @@ public class TGInlineKeyboard {
 
       if (type != null) {
         int iconColor = Theme.inlineIconColor(isOutBubble);
+        //noinspection SwitchIntDef
         switch (type.getConstructor()) {
           case TdApi.InlineKeyboardButtonTypeSwitchInline.CONSTRUCTOR:
           case TdApi.InlineKeyboardButtonTypeCallbackWithPassword.CONSTRUCTOR:
@@ -626,7 +627,7 @@ public class TGInlineKeyboard {
                 paddingDp = 4f;
                 break;
               default:
-                throw new UnsupportedOperationException();
+                throw new RuntimeException();
             }
             Drawable icon = getSparseDrawable(iconRes, ColorId.NONE);
             int padding = Screen.dp(paddingDp);
@@ -1145,7 +1146,7 @@ public class TGInlineKeyboard {
           break;
         }
         case TdApi.InlineKeyboardButtonTypeCallbackGame.CONSTRUCTOR: {
-          if (parent.getMessage().content.getConstructor() != TdApi.MessageGame.CONSTRUCTOR) {
+          if (!Td.isGame(parent.getMessage().content)) {
             break;
           }
 

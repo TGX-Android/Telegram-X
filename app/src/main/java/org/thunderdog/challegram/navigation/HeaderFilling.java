@@ -68,6 +68,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.td.Td;
 
 public class HeaderFilling extends Drawable implements TGLegacyAudioManager.PlayListener, FactorAnimator.Target, CallManager.CurrentCallListener, TdlibCache.CallStateChangeListener, Runnable, TGPlayerController.TrackChangeListener, TGPlayerController.TrackListener, ClickHelper.Delegate, Destroyable, TGLegacyManager.EmojiLoadListener {
   private HeaderView headerView; // Header that holds the filling
@@ -479,7 +480,7 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
 
   @Override
   public void onTrackPlayProgress (Tdlib tdlib, long chatId, long messageId, int fileId, float progress, long playPosition, long playDuration, boolean isBuffering) {
-    if (currentTrack != null && currentTrack.content.getConstructor() != TdApi.MessageVideoNote.CONSTRUCTOR) {
+    if (currentTrack != null && !Td.isVideoNote(currentTrack.content)) {
       setSeekFactor(progress);
     }
   }
@@ -498,7 +499,7 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
     if (navigationController == null || playingMessageTdlib == null || playingMessage == null) {
       return;
     }
-    if (playingMessage.content.getConstructor() != TdApi.MessageAudio.CONSTRUCTOR) {
+    if (!Td.isAudio(playingMessage.content)) {
       if (playingMessage.chatId == 0 || playingMessage.id == 0) {
         return;
       }
@@ -556,7 +557,7 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
     } else {
       title = tdlib.messageAuthor(message);
       if (StringUtils.isEmpty(title)) {
-        title = Lang.getString(message.content.getConstructor() == TdApi.MessageVideoNote.CONSTRUCTOR ? R.string.AttachRound : R.string.AttachAudio);
+        title = Lang.getString(Td.isVideoNote(message.content) ? R.string.AttachRound : R.string.AttachAudio);
       }
     }
     return title;

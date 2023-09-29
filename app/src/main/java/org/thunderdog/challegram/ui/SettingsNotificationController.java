@@ -92,6 +92,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.td.ChatId;
+import me.vkryl.td.Td;
 
 public class SettingsNotificationController extends RecyclerViewController<SettingsNotificationController.Args> implements
   View.OnClickListener, View.OnLongClickListener,
@@ -224,6 +225,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         setScope(null);
         break;
       default:
+        Td.assertNotificationSettingsScope_edff9c28();
         throw new UnsupportedOperationException("constructor == " + scopeConstructor);
     }
   }
@@ -755,6 +757,8 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
      .setLongValue(account.getKnownUserId());
   }
 
+  private TdApi.ArchiveChatListSettings archiveChatListSettings;
+
   @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
     adapter = new SettingsAdapter(this) {
@@ -949,7 +953,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         } else if (itemId == R.id.btn_silenceNonContacts) {
           view.getToggler().setRadioEnabled(tdlib.settings().needMuteNonContacts(), isUpdate);
         } else if (itemId == R.id.btn_archiveMuteNonContacts) {
-          view.getToggler().setRadioEnabled(tdlib.autoArchiveEnabled(), isUpdate);
+          view.getToggler().setRadioEnabled(archiveChatListSettings != null && archiveChatListSettings.archiveAndMuteNewChatsFromUnknownUsers, isUpdate);
         } else if (itemId == R.id.btn_repeatNotifications) {
           int minutes = tdlib.notifications().getRepeatNotificationMinutes();
           if (minutes == 0) {
@@ -1155,6 +1159,11 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+        items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_archiveSettings, 0, R.string.ArchiveSettings));
+        items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+        items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ArchiveSettingsDesc));
+
+        items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
         items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_inApp_chatSounds, 0, R.string.InChatSound));
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.InChatSoundInfo));
@@ -1188,11 +1197,17 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
 
         items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.UnknownChats));
 
-        if (tdlib.autoArchiveAvailable() || tdlib.autoArchiveEnabled()) {
+        if (tdlib.autoArchiveAvailable()) {
           items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
           items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_archiveMuteNonContacts, 0, R.string.ArchiveNonContacts));
           items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
           items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ArchiveNonContactsInfo));
+          tdlib.send(new TdApi.GetArchiveChatListSettings(), (archiveSettings, error) -> runOnUiThreadOptional(() -> {
+            if (archiveSettings != null) {
+              this.archiveChatListSettings = archiveSettings;
+              adapter.updateValuedSettingById(R.id.btn_archiveMuteNonContacts);
+            }
+          }));
         }
 
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -1257,6 +1272,14 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   @Override
   public void onNotificationGlobalSettingsChanged () {
     runOnUiThreadOptional(() -> adapter.updateValuedSettingById(R.id.btn_archiveMuteNonContacts), this::isCommonScreen);
+  }
+
+  @Override
+  public void onArchiveChatListSettingsChanged (TdApi.ArchiveChatListSettings settings) {
+    runOnUiThreadOptional(() -> {
+      this.archiveChatListSettings = settings;
+      adapter.updateValuedSettingById(R.id.btn_archiveMuteNonContacts);
+    });
   }
 
   private void checkContentPreview (boolean showPreview, int afterId, int id) {
@@ -1810,7 +1833,17 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     } else if (viewId == R.id.btn_silenceNonContacts) {
       tdlib.settings().setUserPreference(TdlibSettingsManager.PREFERENCE_MUTE_NON_CONTACTS, adapter.toggleView(v));
     } else if (viewId == R.id.btn_archiveMuteNonContacts) {
-      tdlib.setAutoArchiveEnabled(adapter.toggleView(v));
+      if (archiveChatListSettings != null) {
+        archiveChatListSettings.archiveAndMuteNewChatsFromUnknownUsers = adapter.toggleView(v);
+        tdlib.send(new TdApi.SetArchiveChatListSettings(archiveChatListSettings), (ok, error) -> {
+          if (ok != null) {
+            tdlib.listeners().notifyArchiveChatListSettingsChanged(archiveChatListSettings);
+          }
+        });
+      }
+    } else if (viewId == R.id.btn_archiveSettings) {
+      SettingsArchiveChatListController c = new SettingsArchiveChatListController(context, tdlib);
+      navigateTo(c);
     } else if (viewId == R.id.btn_events_pinnedMessages) {
       boolean disabled = !adapter.toggleView(v);
       tdlib.notifications().setDefaultDisablePinnedMessages(tdlib.notifications().scopeGroup(), disabled);
@@ -1970,7 +2003,8 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
               forcedFileName = tdlib.id() + "_channel.ogg";
               break;
             default:
-              throw new UnsupportedOperationException(scope.toString());
+              Td.assertNotificationSettingsScope_edff9c28();
+              throw Td.unsupported(scope);
           }
         }
         Uri uri = TdlibNotificationManager.fixSoundUri(originalUri, true, forcedFileName);

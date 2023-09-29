@@ -1160,9 +1160,9 @@ public class TdlibListeners {
     }
   }
 
-  // updateChatFilters
+  // updateChatFolders
 
-  void updateChatFilters (TdApi.UpdateChatFolders update) {
+  void updateChatFolders (TdApi.UpdateChatFolders update) {
     // TODO?
   }
 
@@ -1564,6 +1564,13 @@ public class TdlibListeners {
   public void updateNotificationGlobalSettings () {
     for (NotificationSettingsListener listener : settingsListeners) {
       listener.onNotificationGlobalSettingsChanged();
+    }
+  }
+
+  @AnyThread
+  public void notifyArchiveChatListSettingsChanged (TdApi.ArchiveChatListSettings archiveChatListSettings) {
+    for (NotificationSettingsListener listener : settingsListeners) {
+      listener.onArchiveChatListSettingsChanged(archiveChatListSettings);
     }
   }
 

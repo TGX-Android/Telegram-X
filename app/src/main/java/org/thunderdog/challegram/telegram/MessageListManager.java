@@ -409,7 +409,7 @@ public final class MessageListManager extends ListManager<TdApi.Message> impleme
               removeMessageAt(index);
             }
           }
-        } else if (filter != null && filter.getConstructor() == TdApi.SearchMessagesFilterPinned.CONSTRUCTOR && isPinned) {
+        } else if (filter != null && Td.isPinnedFilter(filter) && isPinned) {
           fetchMessage(messageId, true);
         }
       });

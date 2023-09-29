@@ -508,17 +508,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     }
   }
 
-  private static boolean canBeNested (TdApi.TextEntityType type) {
-    switch (type.getConstructor()) {
-      case TdApi.TextEntityTypePre.CONSTRUCTOR:
-      case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
-      case TdApi.TextEntityTypeCode.CONSTRUCTOR: {
-        return false;
-      }
-    }
-    return true;
-  }
-
   private static boolean isComposingSpan (Spanned spanned, Object span) {
     return BitwiseUtils.hasFlag(spanned.getSpanFlags(span), Spanned.SPAN_COMPOSING);
   }
@@ -596,7 +585,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       editable.setSpan(newSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
       return true;
     }
-    boolean canBeNested = canBeNested(newType);
+    boolean canBeNested = Td.canBeNested(newType);
     for (CharacterStyle existingSpan : existingSpans) {
       int existingSpanStart = editable.getSpanStart(existingSpan);
       int existingSpanEnd = editable.getSpanEnd(existingSpan);
@@ -608,7 +597,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         if (!((EmojiSpan) existingSpan).isCustomEmoji()) {
           throw new IllegalStateException(); // Unreachable
         }
-        if (!canBeNested || newType.getConstructor() == TdApi.TextEntityTypeTextUrl.CONSTRUCTOR) {
+        if (!canBeNested || Td.isTextUrl(newType)) {
           editable.removeSpan(existingSpan);
           if (existingSpan instanceof Destroyable) {
             ((Destroyable) existingSpan).performDestroy();
@@ -619,7 +608,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       }
       boolean moveExistingEntity = !canBeNested;
       for (TdApi.TextEntityType existingType : existingTypes) {
-        if (!canBeNested(existingType) || (existingType.getConstructor() == TdApi.TextEntityTypeTextUrl.CONSTRUCTOR && newType.getConstructor() == TdApi.TextEntityTypeTextUrl.CONSTRUCTOR)) {
+        if (!Td.canBeNested(existingType) || (Td.isTextUrl(existingType) && Td.isTextUrl(newType))) {
           moveExistingEntity = true;
         }
       }

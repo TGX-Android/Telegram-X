@@ -17,6 +17,7 @@ package org.thunderdog.challegram.data;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
+import androidx.annotation.StringRes;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
@@ -123,8 +124,11 @@ public class ChatEventUtil {
       case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR:
       case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
         return ActionMessageMode.ONLY_FULL;
+      default: {
+        Td.assertChatEventAction_d9a53493();
+        throw Td.unsupported(action);
+      }
     }
-    throw new UnsupportedOperationException(action.toString());
   }
 
   @NonNull
@@ -211,8 +215,11 @@ public class ChatEventUtil {
       case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR:
       case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
         throw new IllegalArgumentException(action.toString());
+      default: {
+        Td.assertChatEventAction_d9a53493();
+        throw Td.unsupported(action);
+      }
     }
-    throw new UnsupportedOperationException(action.toString());
   }
 
   @NonNull
@@ -305,16 +312,13 @@ public class ChatEventUtil {
       case TdApi.ChatEventMessageEdited.CONSTRUCTOR: {
         TdApi.ChatEventMessageEdited e = (TdApi.ChatEventMessageEdited) action;
         fullMessage = TGMessage.valueOf(context, TD.removeWebPage(e.newMessage));
-        int footerRes;
         TdApi.Message oldMessage = TD.removeWebPage(e.oldMessage);
         TdApi.FormattedText originalText = Td.textOrCaption(oldMessage.content);
-        switch (oldMessage.content.getConstructor()) {
-          case TdApi.MessageText.CONSTRUCTOR:
-            footerRes = R.string.EventLogOriginalMessages;
-            break;
-          default:
-            footerRes = R.string.EventLogOriginalCaption;
-            break;
+        final @StringRes int footerRes;
+        if (Td.isText(oldMessage.content)) {
+          footerRes = R.string.EventLogOriginalMessages;
+        } else {
+          footerRes = R.string.EventLogOriginalCaption;
         }
         //noinspection UnsafeOptInUsageError
         String text = Td.isEmpty(originalText) ? Lang.getString(R.string.EventLogOriginalCaptionEmpty) : originalText.text;
@@ -622,8 +626,10 @@ public class ChatEventUtil {
       case TdApi.ChatEventForumTopicToggleIsClosed.CONSTRUCTOR:
       case TdApi.ChatEventForumTopicToggleIsHidden.CONSTRUCTOR:
         throw new IllegalArgumentException(action.toString());
-      default:
-        throw new UnsupportedOperationException(action.toString());
+      default: {
+        Td.assertChatEventAction_d9a53493();
+        throw Td.unsupported(action);
+      }
     }
     return fullMessage;
   }
@@ -727,8 +733,10 @@ public class ChatEventUtil {
               newReactions.add(TD.makeReactionKey(type));
             }
             break;
-          default:
-            throw new UnsupportedOperationException(e.newAvailableReactions.toString());
+          default: {
+            Td.assertChatAvailableReactions_21c76ded();
+            throw Td.unsupported(e.newAvailableReactions);
+          }
         }
 
         boolean hadAll = false;
@@ -903,9 +911,11 @@ public class ChatEventUtil {
       case TdApi.ChatEventForumTopicToggleIsClosed.CONSTRUCTOR:
         throw new IllegalArgumentException(event.action.toString());
 
-        // Unsupported
-      default:
-        throw new UnsupportedOperationException(event.action.toString());
+      // Unsupported
+      default: {
+        Td.assertChatEventAction_d9a53493();
+        throw Td.unsupported(event.action);
+      }
     }
   }
 }

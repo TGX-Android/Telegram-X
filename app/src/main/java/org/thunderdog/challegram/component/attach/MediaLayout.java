@@ -1879,11 +1879,11 @@ public class MediaLayout extends FrameLayoutFix implements
     TdApi.Chat chat = getTargetChat();
     if (chat == null) return;
 
-    tdlib().send(new TdApi.GetChatAvailableMessageSenders(getTargetChatId()), result -> {
+    tdlib().send(new TdApi.GetChatAvailableMessageSenders(getTargetChatId()), (result, error) -> {
       UI.post(() -> {
-        if (result.getConstructor() == TdApi.ChatMessageSenders.CONSTRUCTOR) {
+        if (result != null) {
           final SetSenderController c = new SetSenderController(getContext(), tdlib());
-          c.setArguments(new SetSenderController.Args(chat, ((TdApi.ChatMessageSenders) result).senders, chat.messageSenderId));
+          c.setArguments(new SetSenderController.Args(chat, result.senders, chat.messageSenderId));
           c.setDelegate(this::setNewMessageSender);
           c.show();
         }
@@ -1892,7 +1892,7 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   private void setNewMessageSender (TdApi.ChatMessageSender sender) {
-    tdlib().send(new TdApi.SetChatMessageSender(getTargetChatId(), sender.sender), o -> {
+    tdlib().send(new TdApi.SetChatMessageSender(getTargetChatId(), sender.sender), ignored -> {
       UI.post(() -> {
         TdApi.Chat chat = getTargetChat();
         if (senderSendIcon != null) {

@@ -1885,18 +1885,15 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
     if (entities != null) {
       List<Object> spans = new ArrayList<>();
       for (TdApi.TextEntity entity : entities) {
-        switch (entity.type.getConstructor()) {
-          case TdApi.TextEntityTypeMention.CONSTRUCTOR: {
-            String username = text.subSequence(entity.offset + 1, entity.offset + entity.length).toString();
-            spans.add(new ClickableSpan() {
-              @Override
-              public void onClick (@NonNull View widget) {
-                tdlib.ui().switchInline(ThemeListController.this, username, "", true);
-              }
-            });
-            spans.add(new CustomTypefaceSpan(null, ColorId.textLink).setEntityType(entity.type).setRemoveUnderline(true));
-            break;
-          }
+        if (Td.isMention(entity.type)) {
+          String username = text.subSequence(entity.offset + 1, entity.offset + entity.length).toString();
+          spans.add(new ClickableSpan() {
+            @Override
+            public void onClick (@NonNull View widget) {
+              tdlib.ui().switchInline(ThemeListController.this, username, "", true);
+            }
+          });
+          spans.add(new CustomTypefaceSpan(null, ColorId.textLink).setEntityType(entity.type).setRemoveUnderline(true));
         }
         if (!spans.isEmpty()) {
           if (!(text instanceof SpannableStringBuilder)) {

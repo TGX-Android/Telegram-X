@@ -980,7 +980,11 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   protected int getMenuId () {
-    return isBaseController() ? R.id.menu_passcode : R.id.menu_search;
+    return isBaseController() ? R.id.menu_passcode : isArchiveChatList() ? R.id.menu_archive : R.id.menu_search;
+  }
+
+  private boolean isArchiveChatList () {
+    return pickerDelegate == null && filter == null && chatList().getConstructor() == TdApi.ChatListArchive.CONSTRUCTOR;
   }
 
   @Override
@@ -1006,6 +1010,9 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       if (isBaseController()) {
         header.addLockButton(menu);
       }
+      header.addSearchButton(menu, this);
+    } else if (id == R.id.menu_archive) {
+      header.addButton(menu, R.id.menu_btn_settings, R.drawable.baseline_settings_24, 49f, this, getHeaderIconColorId());
       header.addSearchButton(menu, this);
     } else if (id == R.id.menu_search) {
       header.addSearchButton(menu, this);
@@ -1110,6 +1117,11 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   public void onMenuItemPressed (int id, View view) {
     if (id == R.id.menu_btn_search) {
       openSearchMode();
+    } else if (id == R.id.menu_btn_settings) {
+      if (isArchiveChatList()) {
+        SettingsArchiveChatListController c = new SettingsArchiveChatListController(context, tdlib);
+        navigateTo(c);
+      }
     } else if (id == R.id.menu_btn_clear) {
       clearSearchInput();
     } else if (id == R.id.menu_btn_more) {

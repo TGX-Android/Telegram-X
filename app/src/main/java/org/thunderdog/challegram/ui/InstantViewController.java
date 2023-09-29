@@ -543,6 +543,7 @@ public class InstantViewController extends ViewController<InstantViewController.
     ArrayList<TdApi.Message> out = new ArrayList<>();
     int foundIndex = -1;
     int desiredType;
+    //noinspection SwitchIntDef
     switch (fromMessage.content.getConstructor()) {
       case TdApi.MessageAudio.CONSTRUCTOR:
         desiredType = InlineResult.TYPE_AUDIO;

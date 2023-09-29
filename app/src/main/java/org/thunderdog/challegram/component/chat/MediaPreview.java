@@ -143,6 +143,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       }
     }
 
+    //noinspection SwitchIntDdef
     switch (message.content.getConstructor()) {
       case TdApi.MessageText.CONSTRUCTOR: {
         TdApi.WebPage webPage = ((TdApi.MessageText) message.content).webPage;
@@ -240,6 +241,10 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.MessageVoiceNote.CONSTRUCTOR: {
         // TODO voice note preview?
         TdApi.VoiceNote voiceNote = ((TdApi.MessageVoiceNote) message.content).voiceNote;
+        break;
+      }
+      default: {
+        Td.assertMessageContent_6479f6fc();
         break;
       }
     }

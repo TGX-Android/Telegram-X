@@ -868,7 +868,8 @@ public class TdlibUi extends Handler {
             isValid = option.ttlTime == ((TdApi.MessageSelfDestructTypeTimer) currentSelfDestructType).selfDestructTime;
             break;
           default:
-            throw new UnsupportedOperationException(currentSelfDestructType.toString());
+            Td.assertMessageSelfDestructType_58882d8c();
+            throw Td.unsupported(currentSelfDestructType);
         }
       }
       if (isValid) {
@@ -2008,8 +2009,10 @@ public class TdlibUi extends Handler {
         openPrivateChat(context, ((TdApi.MessageSenderChat) senderId).chatId, new TdlibUi.ChatOpenParameters().keepStack());
         break;
       }
-      default:
-        throw new UnsupportedOperationException(senderId.toString());
+      default: {
+        Td.assertMessageSender_439d4c9c();
+        throw Td.unsupported(senderId);
+      }
     }
   }
 
@@ -2457,28 +2460,25 @@ public class TdlibUi extends Handler {
       MessageId messageId = new MessageId(messageLink.message.chatId, messageLink.message.id);
       if (messageLink.messageThreadId != 0) {
         // FIXME TDLib/Server: need GetMessageThread alternative that accepts (chatId, messageThreadId)
-        context.tdlib().send(new TdApi.GetMessageThread(messageId.getChatId(), messageId.getMessageId()), (result) -> {
-          switch (result.getConstructor()) {
-            case TdApi.MessageThreadInfo.CONSTRUCTOR:
-              ThreadInfo messageThread = ThreadInfo.openedFromMessage(context.tdlib(), (TdApi.MessageThreadInfo) result, openParameters.messageId);
-              if (Config.SHOW_CHANNEL_POST_REPLY_INFO_IN_COMMENTS) {
-                TdApi.Message message = messageThread.getOldestMessage();
-                if (message != null && message.replyTo == null && message.forwardInfo != null && tdlib.isChannelAutoForward(message)) {
-                  tdlib.send(new TdApi.GetRepliedMessage(message.forwardInfo.fromChatId, message.forwardInfo.fromMessageId), (object) -> {
-                    if (object.getConstructor() == TdApi.Message.CONSTRUCTOR) {
-                      TdApi.Message repliedMessage = (TdApi.Message) object;
-                      message.replyTo = new TdApi.MessageReplyToMessage(repliedMessage.chatId, repliedMessage.id);
-                    }
-                    openMessage(context, messageThread.getChatId(), messageId, messageThread, openParameters);
-                  });
-                  break;
-                }
+        context.tdlib().send(new TdApi.GetMessageThread(messageId.getChatId(), messageId.getMessageId()), (messageThreadInfo, error) -> {
+          if (error != null) {
+            openMessage(context, messageLink.chatId, messageId, openParameters);
+          } else {
+            ThreadInfo messageThread = ThreadInfo.openedFromMessage(context.tdlib(), messageThreadInfo, openParameters.messageId);
+            if (Config.SHOW_CHANNEL_POST_REPLY_INFO_IN_COMMENTS) {
+              TdApi.Message message = messageThread.getOldestMessage();
+              if (message != null && message.replyTo == null && message.forwardInfo != null && tdlib.isChannelAutoForward(message)) {
+                tdlib.send(new TdApi.GetRepliedMessage(message.forwardInfo.fromChatId, message.forwardInfo.fromMessageId), (object) -> {
+                  if (object.getConstructor() == TdApi.Message.CONSTRUCTOR) {
+                    TdApi.Message repliedMessage = (TdApi.Message) object;
+                    message.replyTo = new TdApi.MessageReplyToMessage(repliedMessage.chatId, repliedMessage.id);
+                  }
+                  openMessage(context, messageThread.getChatId(), messageId, messageThread, openParameters);
+                });
+                return;
               }
-              openMessage(context, messageThread.getChatId(), messageId, messageThread, openParameters);
-              break;
-            case TdApi.Error.CONSTRUCTOR:
-              openMessage(context, messageLink.chatId, messageId, openParameters);
-              break;
+            }
+            openMessage(context, messageThread.getChatId(), messageId, messageThread, openParameters);
           }
         });
       } else {
@@ -2517,7 +2517,8 @@ public class TdlibUi extends Handler {
         openChatProfile(context, ((TdApi.MessageSenderChat) senderId).chatId, null, openParameters);
         break;
       default:
-        throw new UnsupportedOperationException(senderId.toString());
+        Td.assertMessageSender_439d4c9c();
+        throw Td.unsupported(senderId);
     }
   }
 
@@ -4639,12 +4640,12 @@ public class TdlibUi extends Handler {
   }
 
   public void showInviteLinkOptionsPreload (ViewController<?> context, final TdApi.ChatInviteLink link, final long chatId, final boolean showNavigatingToLinks, @Nullable Runnable onLinkDeleted, @Nullable RunnableData<TdApi.ChatInviteLinks> onLinkRevoked) {
-    context.tdlib().send(new TdApi.GetChatInviteLink(chatId, link.inviteLink), result -> {
+    context.tdlib().send(new TdApi.GetChatInviteLink(chatId, link.inviteLink), (inviteLink, error) -> {
       context.runOnUiThreadOptional(() -> {
-        if (result.getConstructor() == TdApi.ChatInviteLink.CONSTRUCTOR) {
-          showInviteLinkOptions(context, (TdApi.ChatInviteLink) result, chatId, showNavigatingToLinks, false, onLinkDeleted, onLinkRevoked);
-        } else {
+        if (error != null) {
           showInviteLinkOptions(context, link, chatId, showNavigatingToLinks, true, onLinkDeleted, onLinkRevoked);
+        } else {
+          showInviteLinkOptions(context, inviteLink, chatId, showNavigatingToLinks, false, onLinkDeleted, onLinkRevoked);
         }
       });
     });
@@ -5913,6 +5914,7 @@ public class TdlibUi extends Handler {
 
   private static <T extends TdApi.Function<?>> void toReportReasons (ViewController<?> context, int reportReasonId, CharSequence title, T request, boolean forceText, RunnableData<T> reportCallback) {
     final TdApi.ReportReason reason;
+    Td.assertReportReason_cf03e541();
     if (reportReasonId == R.id.btn_reportChatSpam) {
       reason = new TdApi.ReportReasonSpam();
     } else if (reportReasonId == R.id.btn_reportChatFake) {

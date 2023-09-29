@@ -74,6 +74,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;
+import me.vkryl.td.Td;
 
 public class PasswordController extends ViewController<PasswordController.Args> implements View.OnClickListener, FactorAnimator.Target, MaterialEditTextGroup.EmptyListener, MaterialEditTextGroup.DoneListener, MaterialEditTextGroup.TextChangeListener, AuthorizationListener, Handler.Callback {
   public static final int MODE_EDIT = 0;
@@ -917,7 +918,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     if (message instanceof Spannable) {
       CustomTypefaceSpan[] spans = ((Spannable) message).getSpans(0, message.length(), CustomTypefaceSpan.class);
       for (CustomTypefaceSpan span : spans) {
-        if (span.getEntityType() != null && span.getEntityType().getConstructor() == TdApi.TextEntityTypeItalic.CONSTRUCTOR) {
+        if (span.getEntityType() != null && Td.isItalic(span.getEntityType())) {
           span.setTypeface(null);
           span.setColorId(ColorId.textLink);
           span.setEntityType(new TdApi.TextEntityTypeEmailAddress());

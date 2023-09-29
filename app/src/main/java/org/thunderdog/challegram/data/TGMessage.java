@@ -1364,8 +1364,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageSponsorTypeWebsite.CONSTRUCTOR:
         case TdApi.MessageSponsorTypePrivateChannel.CONSTRUCTOR:
           return false;
+        case TdApi.MessageSponsorTypeBot.CONSTRUCTOR:
+        case TdApi.MessageSponsorTypePublicChannel.CONSTRUCTOR:
+          return true;
+        default:
+          Td.assertMessageSponsorType_ce9e3245();
+          throw Td.unsupported(sponsoredMessage.sponsor.type);
       }
-      return true;
     }
     if (isThreadHeader() && messagesController().getMessageThread().areComments()) {
       return false;
@@ -3918,7 +3923,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
               break;
             }
             default:
-              throw new UnsupportedOperationException(sponsor.type.toString());
+              Td.assertMessageSponsorType_ce9e3245();
+              throw Td.unsupported(sponsor.type);
           }
         }
       } else if (forceForwardedInfo()) {
@@ -5180,7 +5186,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean isContentRead () {
-    return TD.isMessageOpened(msg);
+    return Td.isListenedOrViewed(msg.content);
   }
 
   private static @Nullable HotHandler __hotHandler;
@@ -7759,6 +7765,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageWebsiteConnected.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageWebsiteConnected) content);
         }
+        case TdApi.MessageBotWriteAccessAllowed.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageBotWriteAccessAllowed) content);
+        }
         case TdApi.MessageChatUpgradeTo.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageChatUpgradeTo) content);
         }
@@ -7780,6 +7789,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         // unsupported
         case TdApi.MessageInvoice.CONSTRUCTOR:
         case TdApi.MessagePassportDataSent.CONSTRUCTOR:
+        case TdApi.MessageStory.CONSTRUCTOR:
+        case TdApi.MessageChatSetBackground.CONSTRUCTOR:
+        case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
+        case TdApi.MessageUserShared.CONSTRUCTOR:
+        case TdApi.MessageChatShared.CONSTRUCTOR:
           break;
         case TdApi.MessageUnsupported.CONSTRUCTOR:
           unsupportedStringRes = R.string.UnsupportedMessageType;
@@ -7787,12 +7801,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         // bots only
         case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
         case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
-        case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
+        case TdApi.MessageWebAppDataReceived.CONSTRUCTOR: {
           Log.e("Received bot message for a regular user:\n%s", msg);
           break;
+        }
         default: {
-          Log.i("Weird content type: %s", msg.content.getClass().getName());
-          break;
+          Td.assertMessageContent_6479f6fc();
+          throw Td.unsupported(msg.content);
         }
       }
       TGMessageText text = new TGMessageText(context, msg, new TdApi.FormattedText(Lang.getString(unsupportedStringRes), null));
@@ -8852,7 +8867,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (text == null || text.text == null || text.entities == null || text.entities.length == 0) return -1;
 
     for (TdApi.TextEntity entity : text.entities) {
-      if (entity.type.getConstructor() == TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR) {
+      if (Td.isCustomEmoji(entity.type)) {
         return ((TdApi.TextEntityTypeCustomEmoji) entity.type).customEmojiId;
       }
     }
@@ -8917,7 +8932,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         break;
       }
       default:
-        throw new UnsupportedOperationException(sponsor.type.toString());
+        Td.assertMessageSponsorType_ce9e3245();
+        throw Td.unsupported(sponsor.type);
     }
   }
 
@@ -8942,7 +8958,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         return R.string.AdOpenWebsite;
       }
       default:
-        throw new UnsupportedOperationException(sponsor.type.toString());
+        Td.assertMessageSponsorType_ce9e3245();
+        throw Td.unsupported(sponsor.type);
     }
   }
 
@@ -8984,6 +9001,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         TdApi.MessageSponsorTypeWebsite website = (TdApi.MessageSponsorTypeWebsite) sponsor.type;
         return website.url;
       }
+      default:
+        Td.assertMessageSponsorType_ce9e3245();
+        throw Td.unsupported(sponsor.type);
     }
 
     return null;

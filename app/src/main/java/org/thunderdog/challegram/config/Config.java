@@ -186,6 +186,7 @@ public class Config {
 
   public static boolean useCloudPlayback (TdApi.Message playPauseFile) {
     if (USE_CLOUD_PLAYER && playPauseFile != null) {
+      //noinspection SwitchIntDef
       switch (playPauseFile.content.getConstructor()) {
         case TdApi.MessageAudio.CONSTRUCTOR:
           TdApi.Audio audio = ((TdApi.MessageAudio) playPauseFile.content).audio;

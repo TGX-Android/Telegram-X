@@ -609,20 +609,6 @@ public class TdlibFilesManager implements GlobalConnectionListener {
 
   // Update handlers
 
-  public static boolean isDownloadableContentType (@NonNull TdApi.MessageContent content) {
-    switch (content.getConstructor()) {
-      case TdApi.MessageAnimation.CONSTRUCTOR:
-      case TdApi.MessageAudio.CONSTRUCTOR:
-      case TdApi.MessageVideo.CONSTRUCTOR:
-      case TdApi.MessagePhoto.CONSTRUCTOR:
-      case TdApi.MessageVoiceNote.CONSTRUCTOR:
-      case TdApi.MessageDocument.CONSTRUCTOR: {
-        return true;
-      }
-    }
-    return false;
-  }
-
   public void onFileUpdate (TdApi.UpdateFile update) {
     // pendingOperations.get()
     synchronized (this) {

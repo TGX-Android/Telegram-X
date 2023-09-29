@@ -692,7 +692,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
         return null;
       }
 
-      int contentType = fromMessage.content.getConstructor();
+      @TdApi.MessageContent.Constructors int contentType = fromMessage.content.getConstructor();
       ArrayList<TdApi.Message> items = null;
       int foundIndex = -1;
 

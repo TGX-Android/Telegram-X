@@ -452,7 +452,7 @@ public class SharedMediaController extends SharedBaseController<MediaItem> imple
     if (item != null && item.getViewType() == ListItem.TYPE_SMALL_MEDIA) {
       MediaItem mediaItem = (MediaItem) item.getData();
       TdApi.Message message = mediaItem.getMessage();
-      if (message == null || message.content.getConstructor() == TdApi.MessageVideoNote.CONSTRUCTOR) {
+      if (message == null || Td.isVideoNote(message.content)) {
         return super.onLongClick(v);
       }
 
