@@ -271,7 +271,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
   protected int onMessagePendingContentChanged (long chatId, long messageId, int oldHeight) {
     if (specialType == SPECIAL_TYPE_ANIMATED_EMOJI) {
       TdApi.MessageContent content = tdlib.getPendingMessageText(chatId, messageId);
-      if ((content == null && animatedEmoji == null) || (content != null && !Td.isAnimatedEmoji(content))) {
+      if ((content == null && animatedEmoji == null)) {
         return MESSAGE_REPLACE_REQUIRED;
       }
       if (content != null) {
