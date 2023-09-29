@@ -80,7 +80,9 @@ public class CircleButton extends View implements FactorAnimator.Target, Reactio
 
     this.tdlib = tdlib;
     this.imageReceiver = new ImageReceiver(this, 0);
+    this.imageReceiver.setRepaintingColorId(ColorId.iconActive);
     this.gifReceiver = new GifReceiver(this);
+    this.gifReceiver.setRepaintingColorId(ColorId.iconActive);
   }
 
   public void setIconColorId (int colorId) {
@@ -421,16 +423,11 @@ public class CircleButton extends View implements FactorAnimator.Target, Reactio
       final boolean isAnimation = sticker.isAnimated();
       float originalScale = sticker.getDisplayScale();
       boolean saved = originalScale != 1f || factor != 0f;
-      boolean repainting = sticker.isNeedRepainting();
       int restoreToCount = -1;
-      int repaintingRestoreToCount = -1;
       if (saved) {
         restoreToCount = Views.save(c);
         float scale = originalScale * (MIN_SCALE + (1f - MIN_SCALE) * (1f - factor));
         c.scale(scale, scale, cx, cy);
-      }
-      if (repainting) {
-        repaintingRestoreToCount = Views.saveRepainting(c, imageReceiver);
       }
       if (isAnimation) {
         if (gifReceiver.needPlaceholder()) {
@@ -445,9 +442,6 @@ public class CircleButton extends View implements FactorAnimator.Target, Reactio
         //  imageReceiver.drawPlaceholderContour(c, contour);
         //}
         imageReceiver.draw(c);
-      }
-      if (repainting) {
-        Views.restoreRepainting(c, imageReceiver, repaintingRestoreToCount, Theme.getColor(ColorId.iconActive));
       }
       if (saved) {
         Views.restore(c, restoreToCount);

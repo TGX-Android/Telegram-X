@@ -93,6 +93,7 @@ public class GifFile {
 
   public GifFile (Tdlib tdlib, TdApi.Sticker sticker) {
     this(tdlib, sticker.sticker, sticker.format);
+    this.needRepainting = TD.needRepainting(sticker);
   }
 
   public GifFile (Tdlib tdlib, TdApi.File file, TdApi.StickerFormat format) {
@@ -108,6 +109,16 @@ public class GifFile {
 
   public boolean isLottie () {
     return type == TYPE_TG_LOTTIE;
+  }
+
+  private boolean needRepainting;
+
+  public void setNeedRepainting (boolean needRepainting) {
+    this.needRepainting = needRepainting;
+  }
+
+  public boolean isNeedRepainting () {
+    return needRepainting;
   }
 
   private static int toFileType (TdApi.StickerFormat format) {

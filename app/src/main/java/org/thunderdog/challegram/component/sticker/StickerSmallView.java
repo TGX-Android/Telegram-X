@@ -67,7 +67,9 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
   public StickerSmallView (Context context) {
     super(context);
     this.imageReceiver = new ImageReceiver(this, 0);
+    this.imageReceiver.setRepaintingColorId(repaintingColorId);
     this.gifReceiver = new GifReceiver(this);
+    this.gifReceiver.setRepaintingColorId(repaintingColorId);
     this.animator = new FactorAnimator(0, this, OVERSHOOT_INTERPOLATOR, 230l);
     this.padding = Screen.dp(PADDING);
   }
@@ -75,7 +77,9 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
   public StickerSmallView (Context context, int padding) {
     super(context);
     this.imageReceiver = new ImageReceiver(this, 0);
+    this.imageReceiver.setRepaintingColorId(repaintingColorId);
     this.gifReceiver = new GifReceiver(this);
+    this.gifReceiver.setRepaintingColorId(repaintingColorId);
     this.animator = new FactorAnimator(0, this, OVERSHOOT_INTERPOLATOR, 230l);
     this.padding = padding;
   }
@@ -215,6 +219,8 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
 
   public void setRepaintingColorId (@ColorId int repaintingColorId) {
     this.repaintingColorId = repaintingColorId;
+    this.imageReceiver.setRepaintingColorId(repaintingColorId);
+    this.gifReceiver.setRepaintingColorId(repaintingColorId);
   }
 
   public int getRepaintingColorId () {
@@ -240,8 +246,10 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     float originalScale = sticker != null ? sticker.getDisplayScale() : 1f;
     boolean saved = originalScale != 1f || factor != 0f;
     boolean repainting = sticker != null && sticker.isNeedRepainting();
+    imageReceiver.setNeedForceRepainting(repainting);
+    gifReceiver.setNeedForceRepainting(repainting);
+
     int restoreToCount = -1;
-    int repaintingRestoreToCount = -1;
     int cx = imageReceiver.centerX();
     int cy = imageReceiver.centerY();
     if (saved) {
@@ -249,11 +257,8 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
       float scale = originalScale * (MIN_SCALE + (1f - MIN_SCALE) * (1f - factor));
       c.scale(scale, scale, cx, cy);
     }
-    if (repainting) {
-      repaintingRestoreToCount = Views.saveRepainting(c, imageReceiver);
-    }
     if (premiumStarDrawable != null) {
-      Drawables.drawCentered(c, premiumStarDrawable, cx, cy, null);
+      Drawables.drawCentered(c, premiumStarDrawable, cx, cy, Paints.getPorterDuffPaint(Theme.getColor(repaintingColorId)));
     } else if (isAnimation) {
       if (gifReceiver.needPlaceholder()) {
         if (imageReceiver.needPlaceholder()) {
@@ -270,9 +275,6 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     }
     if (Config.DEBUG_STICKER_OUTLINES) {
       imageReceiver.drawPlaceholderContour(c, contour);
-    }
-    if (repainting) {
-      Views.restoreRepainting(c, imageReceiver, repaintingRestoreToCount, Theme.getColor(repaintingColorId));
     }
     if (saved) {
       Views.restore(c, restoreToCount);

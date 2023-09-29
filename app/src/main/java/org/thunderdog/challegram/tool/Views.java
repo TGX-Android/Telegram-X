@@ -368,15 +368,6 @@ public class Views {
     return LayoutInflater.from(context).inflate(resource, contentView, false);
   }
 
-  public static int saveRepainting (Canvas c, Receiver receiver) {
-    return c.saveLayerAlpha(receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), 255, Canvas.ALL_SAVE_FLAG);
-  }
-
-  public static void restoreRepainting (Canvas c, Receiver receiver, int count, int color) {
-    c.drawRect(receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), Paints.getSrcInPaint(color));
-    restore(c, count);
-  }
-
   public static int save (Canvas c) {
     return c.save(); // 191
   }

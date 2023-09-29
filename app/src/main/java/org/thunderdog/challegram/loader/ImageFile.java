@@ -587,6 +587,18 @@ public class ImageFile {
     }
   }
 
+  /* Repainting */
+
+  private boolean needRepainting;
+
+  public void setNeedRepainting (boolean needRepainting) {
+    this.needRepainting = needRepainting;
+  }
+
+  public boolean isNeedRepainting () {
+    return needRepainting;
+  }
+
   // Overlay calculations
 
   /*public static final int LEFT_TOP_INDEX = 0;

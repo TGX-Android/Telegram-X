@@ -26,6 +26,7 @@ import androidx.annotation.Nullable;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
@@ -48,7 +49,9 @@ public class StickerSectionView extends View implements Destroyable, FactorAnima
   public StickerSectionView (Context context) {
     super(context);
     receiver = new ImageReceiver(this, 0);
+    receiver.setRepaintingColorId(ColorId.iconActive);
     gifReceiver = new GifReceiver(this);
+    gifReceiver.setRepaintingColorId(ColorId.iconActive);
   }
 
   public void attach () {
@@ -150,7 +153,9 @@ public class StickerSectionView extends View implements Destroyable, FactorAnima
       c.scale(scale, scale, cx, cy);
     }
 
-    DrawAlgorithms.drawRepaintedSticker(c, info, gifReceiver, receiver, contour);
+    receiver.setNeedForceRepainting(info.isNeedRepaintingPreview());
+    gifReceiver.setNeedForceRepainting(info.isNeedRepaintingPreview());
+    DrawAlgorithms.drawSticker(c, info, gifReceiver, receiver, contour);
 
     if (saved) {
       c.restore();

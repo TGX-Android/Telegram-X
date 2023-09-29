@@ -308,14 +308,9 @@ public class ReactionsOverlayView extends ViewGroup {
         canvas.drawRect(gifReceiver.getLeft(), gifReceiver.getTop(), gifReceiver.getRight(), gifReceiver.getBottom(), Paints.fillingPaint(0xaaff0000));
       }
 
-      if (needsRepainting) {
-        canvas.saveLayerAlpha(
-          gifReceiver.getLeft() - gifReceiver.getWidth() / 4f,
-          gifReceiver.getTop() - gifReceiver.getHeight() / 4f,
-          gifReceiver.getRight() + gifReceiver.getWidth() / 4f,
-          gifReceiver.getBottom() + gifReceiver.getHeight() / 4f,
-          255, Canvas.ALL_SAVE_FLAG);
-      }
+      final int color = ColorUtils.fromToArgb(repaintingColorStart, repaintingColorEnd, positionAnimator != null ? positionAnimator.getFactor() : 1f);
+      imageReceiver.setRepaintingColor(color, needsRepainting);
+      gifReceiver.setRepaintingColor(color, needsRepainting);
 
       if (gifReceiver.needPlaceholder() || Config.DEBUG_REACTIONS_ANIMATIONS) {
         imageReceiver.draw(canvas);
@@ -330,16 +325,6 @@ public class ReactionsOverlayView extends ViewGroup {
         canvas.save();
         canvas.translate(imageReceiver.getLeft(), imageReceiver.getTop());
         animatedEmojiEffect.draw(canvas);
-        canvas.restore();
-      }
-
-      if (needsRepainting) {
-        canvas.drawRect(
-          gifReceiver.getLeft() - gifReceiver.getWidth() / 4f,
-          gifReceiver.getTop() - gifReceiver.getHeight() / 4f,
-          gifReceiver.getRight() + gifReceiver.getWidth() / 4f,
-          gifReceiver.getBottom() + gifReceiver.getHeight() / 4f,
-          Paints.getSrcInPaint(ColorUtils.fromToArgb(repaintingColorStart, repaintingColorEnd, positionAnimator != null ? positionAnimator.getFactor() : 1f)));
         canvas.restore();
       }
 

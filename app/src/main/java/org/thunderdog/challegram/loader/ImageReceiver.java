@@ -19,6 +19,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
@@ -29,6 +30,7 @@ import android.graphics.Shader;
 import android.os.Build;
 import android.view.View;
 
+import androidx.annotation.ColorInt;
 import androidx.annotation.FloatRange;
 import androidx.annotation.Nullable;
 
@@ -37,8 +39,12 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.mediaview.crop.CropState;
 import org.thunderdog.challegram.mediaview.paint.PaintState;
+import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.UI;
 
 import me.vkryl.android.AnimatorUtils;
@@ -1153,10 +1159,50 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     return false;
   }
 
+  private @ColorInt int repaintingColor = 0xFF888888;
+  private @PorterDuffColorId int repaintingColorId;
+  private boolean needForceRepainting;
+  private boolean canGetRepaintingColorById;
+
+  @Override
+  public void setRepaintingColor (@ColorInt int repaintingColor) {
+    this.repaintingColor = repaintingColor;
+    this.canGetRepaintingColorById = false;
+  }
+
+  @Override
+  public void setRepaintingColorId (@PorterDuffColorId int repaintingColorId) {
+    this.repaintingColor = Theme.getColor(repaintingColorId);
+    this.repaintingColorId = repaintingColorId;
+    this.canGetRepaintingColorById = true;
+  }
+
+  @Override
+  public void setNeedForceRepainting (boolean needForceRepainting) {
+    this.needForceRepainting = needForceRepainting;
+  }
+
+  private ColorFilter getRepaintingColorFilter () {
+    if (canGetRepaintingColorById) {
+      return Paints.getColorFilter(Theme.getColor(repaintingColorId));
+      // return PorterDuffPaint.get(repaintingColorId).getColorFilter();
+    } else {
+      return Paints.getColorFilter(repaintingColor);
+    }
+  }
+
   @Override
   public void draw (Canvas c) {
     if (U.isValidBitmap(bitmap)) {
+      final boolean needRepainting = file != null && !hasColorFilter && (file.isNeedRepainting() || needForceRepainting);
       final int rotation = getVisualRotation();
+      if (needRepainting) {
+        final ColorFilter repaintingColorFilter = getRepaintingColorFilter();
+        bitmapPaint.setColorFilter(repaintingColorFilter);
+        if (repeatPaint != null) {
+          repeatPaint.setColorFilter(repaintingColorFilter);
+        }
+      }
       if (radius != 0) {
         if (rotation != 0) {
           c.save();
@@ -1250,6 +1296,12 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
             DrawAlgorithms.drawPainting(c, bitmap, bitmapRect, drawRegion, paintState);
             c.restore();
           }
+        }
+      }
+      if (needRepainting) {
+        bitmapPaint.setColorFilter(null);
+        if (repeatPaint != null) {
+          repeatPaint.setColorFilter(null);
         }
       }
     }

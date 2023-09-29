@@ -31,6 +31,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
+import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifBridge;
 import org.thunderdog.challegram.loader.gif.GifFile;
@@ -536,26 +537,19 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
 
       index = 0;
       for (Representation representation : representation) {
-        if (representation.needRepainting) {
-          c.saveLayerAlpha(
-            left - width / 4f,
-            top - height / 4f,
-            right + width / 4f,
-            bottom + height / 4f,
-            255, Canvas.ALL_SAVE_FLAG);
-        }
         DoubleImageReceiver preview = receiver.getPreviewReceiver(index);
-        Receiver target = representation.isAnimated() ? receiver.getGifReceiver(index) : receiver.getImageReceiver(index);
-        DrawAlgorithms.drawReceiver(c, preview, target, !representation.isAnimated(), false, left, top, right, bottom);
-        if (representation.needRepainting) {
-          c.drawRect(
-            left - width / 4f,
-            top - height / 4f,
-            right + width / 4f,
-            bottom + height / 4f,
-            Paints.getSrcInPaint(getTextColorSet().emojiStatusColor()));
-          c.restore();
+        preview.setRepaintingColor(getTextColorSet().emojiStatusColor(), representation.needRepainting);
+        final Receiver target;
+        if (representation.isAnimated()) {
+          GifReceiver gifReceiver = receiver.getGifReceiver(index);
+          gifReceiver.setRepaintingColor(getTextColorSet().emojiStatusColor(), representation.needRepainting);
+          target = gifReceiver;
+        } else {
+          ImageReceiver imageReceiver = receiver.getImageReceiver(index);
+          imageReceiver.setRepaintingColor(getTextColorSet().emojiStatusColor(), representation.needRepainting);
+          target = imageReceiver;
         }
+        DrawAlgorithms.drawReceiver(c, preview, target, !representation.isAnimated(), false, left, top, right, bottom);
         index++;
       }
 

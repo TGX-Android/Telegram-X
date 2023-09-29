@@ -114,7 +114,6 @@ public class ComplexMediaItemCustomEmoji implements ComplexMediaItem {
       translate = false;
     }
 
-    int restoreToCountRepainting = -1;
     boolean needRepainting = TD.needRepainting(sticker);
 
     Receiver receiver;
@@ -137,11 +136,9 @@ public class ComplexMediaItemCustomEmoji implements ComplexMediaItem {
     } else {
       receiver.setBounds(rect.left, rect.top, rect.right, rect.bottom);
     }
-    if (needRepainting) {
-      restoreToCountRepainting = Views.saveRepainting(c, receiver);
-    }
     if (receiver.needPlaceholder()) {
       DoubleImageReceiver preview = mediaReceiver.getPreviewReceiver(displayMediaKey);
+      preview.setRepaintingColor(Theme.getColor(ColorId.text), needRepainting);
       if (translate) {
         preview.setBounds(0, 0, rect.right - rect.left, rect.bottom - rect.top);
       } else {
@@ -151,10 +148,8 @@ public class ComplexMediaItemCustomEmoji implements ComplexMediaItem {
         preview.drawPlaceholderContour(c, outline);
       }
     }
+    receiver.setRepaintingColor(Theme.getColor(ColorId.text), needRepainting);
     receiver.draw(c);
-    if (needRepainting) {
-      Views.restoreRepainting(c, receiver, restoreToCountRepainting, Theme.getColor(ColorId.text));
-    }
     if (translate) {
       Views.restore(c, restoreToCount);
     }

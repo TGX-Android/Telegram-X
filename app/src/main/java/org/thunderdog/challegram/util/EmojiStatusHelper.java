@@ -34,6 +34,7 @@ import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -403,11 +404,10 @@ public class EmojiStatusHelper implements Destroyable {
       lastDrawY = startY;
       lastDrawScale = scale;
       if (imageReceiver != null && gifReceiver != null && preview != null) {
-        int repaintRestoreToCount = -1;
-        if (needRepainting) {
-          repaintRestoreToCount = c.saveLayerAlpha(startX, startY, startX + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), startY + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), 255, Canvas.ALL_SAVE_FLAG);
-        }
-
+        final int repaintingColorId = textColorSet != null ? textColorSet.emojiStatusColor() : ColorId.icon;
+        gifReceiver.setRepaintingColor(repaintingColorId, needRepainting);
+        imageReceiver.setRepaintingColor(repaintingColorId, needRepainting);
+        preview.setRepaintingColor(repaintingColorId, needRepainting);
         imageReceiver.setBounds(startX, startY, startX + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), startY + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)));
         preview.setBounds(startX, startY, startX + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), startY + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)));
         gifReceiver.setBounds(startX, startY, startX + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), startY + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)));
@@ -421,12 +421,6 @@ public class EmojiStatusHelper implements Destroyable {
             preview.draw(c);
           }
           imageReceiver.draw(c);
-        }
-        if (needRepainting) {
-          if (textColorSet != null) {
-            c.drawRect(startX, startY, startX + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), startY + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), Paints.getSrcInPaint(textColorSet.emojiStatusColor()));
-          }
-          Views.restore(c, repaintRestoreToCount);
         }
       } else if (emojiStatus != null) {
         emojiStatus.draw(c, startX, startY, null, alpha, emojiStatusReceiver);

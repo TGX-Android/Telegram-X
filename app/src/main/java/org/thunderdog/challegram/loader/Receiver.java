@@ -21,8 +21,12 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.view.View;
 
+import androidx.annotation.ColorInt;
+
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
+import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Views;
@@ -72,6 +76,17 @@ public interface Receiver extends TooltipOverlayView.LocationProvider {
 
   default void setColorFilter (int colorFilter) { throw new UnsupportedOperationException(); }
   default void disableColorFilter () { throw new UnsupportedOperationException(); }
+
+  // todo: use or delete setColorFilter ???
+
+  default void setRepaintingColorId (@PorterDuffColorId int repaintingColorId) { setRepaintingColor(Theme.getColor(repaintingColorId)); }
+  default void setRepaintingColor (@ColorInt int repaintingColor) {}
+  default void setNeedForceRepainting (boolean needForceRepainting) {}
+
+  default void setRepaintingColor (@ColorInt int repaintingColor, boolean forceRepainting) {
+    setRepaintingColor(repaintingColor);
+    setNeedForceRepainting(forceRepainting);
+  }
 
   default void drawPlaceholderContour (Canvas c, Path path) {
     drawPlaceholderContour(c, path, 1f);

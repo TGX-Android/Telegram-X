@@ -826,8 +826,6 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     @Override
     protected void onDraw (Canvas c) {
       final boolean needRepainting = currentSticker != null && currentSticker.isNeedRepainting();
-      int restoreToRepainting = -1;
-
       final boolean savedAppear = appearFactor != 1f;
       if (savedAppear) {
         final float fromScale = (float) fromWidth / (float) stickerWidth;
@@ -844,6 +842,9 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
       boolean animated = currentSticker != null && currentSticker.isAnimated();
       Receiver receiver = animated ? gifReceiver : imageReceiver;
 
+      preview.setRepaintingColor(Theme.getColor(repaintingColorId), needRepainting);
+      receiver.setRepaintingColor(Theme.getColor(repaintingColorId), needRepainting);
+
       if (emojiString != null) {
         int textX = receiver.centerX() - emojiString.getWidth() / 2;
         int textY = receiver.centerY() - stickerMaxWidth / 2 - Screen.dp(58f);
@@ -859,10 +860,6 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
         }
       }
 
-      if (needRepainting) {
-        restoreToRepainting = Views.saveRepainting(c, receiver);
-      }
-
       final boolean savedReplace = replaceFactor != 0f;
       if (savedReplace) {
         c.save();
@@ -872,7 +869,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
         float s = ((float) receiver.getWidth()) / Screen.dp(30);
         c.save();
         c.scale(s, s, receiver.centerX(), receiver.centerY());
-        Drawables.drawCentered(c, defaultPremiumStarDrawable, receiver.centerX(), receiver.centerY(), null);
+        Drawables.drawCentered(c, defaultPremiumStarDrawable, receiver.centerX(), receiver.centerY(), Paints.getPorterDuffPaint(Theme.getColor(repaintingColorId)));
         c.restore();
       } else if (animated) {
         if (receiver.needPlaceholder()) {
@@ -899,18 +896,16 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
 
       if (currentEffectSticker != null) {
         if (effectGifReceiver.needPlaceholder()) {
+          effectPreview.setRepaintingColor(Theme.getColor(repaintingColorId), needRepainting);
           effectPreview.draw(c);
         } else {
+          effectGifReceiver.setRepaintingColor(Theme.getColor(repaintingColorId), needRepainting);
           effectGifReceiver.draw(c);
         }
       }
 
       if (savedReplace) {
         c.restore();
-      }
-
-      if (needRepainting) {
-        Views.restoreRepainting(c, receiver, restoreToRepainting, Theme.getColor(repaintingColorId));
       }
 
       if (savedAppear) {

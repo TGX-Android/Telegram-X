@@ -17,6 +17,7 @@ package org.thunderdog.challegram.loader.gif;
 import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
+import android.graphics.ColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
@@ -28,6 +29,7 @@ import android.os.SystemClock;
 import android.view.View;
 
 import androidx.annotation.AnyThread;
+import androidx.annotation.ColorInt;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 
@@ -37,7 +39,11 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.ReceiverUpdateListener;
+import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 
@@ -739,6 +745,38 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     this.drawBatchFlags = 0;
   }
 
+  private @ColorInt int repaintingColor = 0xFF888888;
+  private @PorterDuffColorId int repaintingColorId;
+  private boolean needForceRepainting;
+  private boolean canGetRepaintingColorById;
+
+  @Override
+  public void setRepaintingColor (@ColorInt int repaintingColor) {
+    this.repaintingColor = repaintingColor;
+    this.canGetRepaintingColorById = false;
+  }
+
+  @Override
+  public void setRepaintingColorId (@PorterDuffColorId int repaintingColorId) {
+    this.repaintingColor = Theme.getColor(repaintingColorId);
+    this.repaintingColorId = repaintingColorId;
+    this.canGetRepaintingColorById = true;
+  }
+
+  @Override
+  public void setNeedForceRepainting (boolean needForceRepainting) {
+    this.needForceRepainting = needForceRepainting;
+  }
+
+  private ColorFilter getRepaintingColorFilter () {
+    if (canGetRepaintingColorById) {
+      return Paints.getColorFilter(Theme.getColor(repaintingColorId));
+      // return PorterDuffPaint.get(repaintingColorId).getColorFilter();
+    } else {
+      return Paints.getColorFilter(repaintingColor);
+    }
+  }
+
   public void draw (Canvas c) {
     if (file == null) {
       return;
@@ -748,6 +786,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
       boolean isFirstFrame = false;
       synchronized (gif.getBusyList()) {
         if (gif.hasBitmap()) {
+          final boolean needRepainting = file.isNeedRepainting() || needForceRepainting;
           final boolean inBatch = BitwiseUtils.hasFlag(drawBatchFlags, DRAW_BATCH_STARTED);
           if (!inBatch || !BitwiseUtils.hasFlag(drawBatchFlags, DRAW_BATCH_DRAWN)) {
             gif.applyNext();
@@ -760,6 +799,10 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
           int restoreAlpha = bitmapPaint.getAlpha();
           if (alpha != restoreAlpha) {
             bitmapPaint.setAlpha(alpha);
+          }
+          final ColorFilter restoreColorFilter = bitmapPaint.getColorFilter();
+          if (needRepainting) {
+            bitmapPaint.setColorFilter(getRepaintingColorFilter());   // todo: change to PorterDuffPaint.get
           }
           int scaleType = file.getScaleType();
           GifState.Frame frame = gif.getDrawFrame(!inBatch);
@@ -806,6 +849,9 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
           }
           if (alpha != restoreAlpha) {
             bitmapPaint.setAlpha(restoreAlpha);
+          }
+          if (needRepainting) {
+            bitmapPaint.setColorFilter(restoreColorFilter);
           }
           isFirstFrame = frame.no == 0;
         }
