@@ -1815,16 +1815,11 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
               pendingRequests.incrementAndGet();
             }
             TDLib.Tag.td_init("Reporting crash %d: %s", crash.id, saveFunction);
-            tdlib.send(saveFunction, result -> {
-              switch (result.getConstructor()) {
-                case TdApi.Ok.CONSTRUCTOR: {
-                  Settings.instance().markCrashAsSaved(crash);
-                  break;
-                }
-                case TdApi.Error.CONSTRUCTOR: {
-                  TDLib.Tag.td_init("Can't report crash %d: %s", crash.id, TD.toErrorString(result));
-                  break;
-                }
+            tdlib.send(saveFunction, (ok, error) -> {
+              if (error != null) {
+                TDLib.Tag.td_init("Can't report crash %d: %s", crash.id, TD.toErrorString(error));
+              } else {
+                Settings.instance().markCrashAsSaved(crash);
               }
               synchronized (pendingRequests) {
                 pendingRequests.decrementAndGet();

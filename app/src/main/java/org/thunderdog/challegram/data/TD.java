@@ -94,6 +94,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -1896,6 +1897,11 @@ public class TD {
     } else {
       return Lang.getString(res);
     }
+  }
+
+  public static <T extends TdApi.Object> TdApi.Function<T>[] toArray (Collection<TdApi.Function<T>> collection) {
+    //noinspection unchecked
+    return (TdApi.Function<T>[]) collection.toArray(new TdApi.Function<?>[0]);
   }
 
   public static boolean isPrivateChat (TdApi.ChatType info) {

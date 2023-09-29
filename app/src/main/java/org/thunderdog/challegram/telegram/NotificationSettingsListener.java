@@ -21,5 +21,6 @@ public interface NotificationSettingsListener {
   default void onNotificationSettingsChanged (long chatId, TdApi.ChatNotificationSettings settings) { }
   default void onNotificationChannelChanged (TdApi.NotificationSettingsScope scope) { }
   default void onNotificationChannelChanged (long chatId) { }
-  default void onNotificationGlobalSettingsChanged () { }
+  default void onNotificationGlobalSettingsChanged ()                                    { }
+  default void onArchiveChatListSettingsChanged (TdApi.ArchiveChatListSettings settings) { }
 }

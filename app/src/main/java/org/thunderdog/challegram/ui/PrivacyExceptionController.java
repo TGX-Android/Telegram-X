@@ -238,7 +238,7 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
                   view.setData(R.string.PrivacyShowNumberExceptionContacts);
                   break;
                 case TdApi.UserPrivacySettingShowBio.CONSTRUCTOR:
-                  view.setData(R.string.PrivacyShowNumberExceptionContacts);
+                  view.setData(R.string.PrivacyShowBioExceptionContacts);
                   break;
                 case TdApi.UserPrivacySettingShowProfilePhoto.CONSTRUCTOR:
                   view.setData(R.string.PrivacyPhotoExceptionContacts);

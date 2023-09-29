@@ -33,6 +33,7 @@
   <item type="id" name="menu_chat" />
   <item type="id" name="menu_chatBulkActions" />
   <item type="id" name="menu_search" />
+  <item type="id" name="menu_archive" />
   <item type="id" name="menu_clear" />
   <item type="id" name="menu_emoji" />
   <item type="id" name="menu_editLangPack" />
@@ -48,6 +49,7 @@
   <item type="id" name="menu_btn_addContact" />
   <item type="id" name="menu_btn_done" />
   <item type="id" name="menu_btn_forward" />
+  <item type="id" name="menu_btn_settings" />
   <item type="id" name="menu_btn_copy" />
   <item type="id" name="menu_btn_archive" />
   <item type="id" name="menu_btn_help" />
@@ -171,6 +173,7 @@
   <item type="id" name="controller_call" />
   <item type="id" name="controller_people" />
   <item type="id" name="controller_settings" />
+  <item type="id" name="controller_archiveSettings" />
   <item type="id" name="controller_storageSettings" />
   <item type="id" name="controller_messages" />
   <item type="id" name="controller_wallpaper" />
@@ -1038,7 +1041,10 @@
   <item type="id" name="btn_events_contactJoined" />
   <item type="id" name="btn_events_sentScheduled" />
   <item type="id" name="btn_archiveMuteNonContacts" />
+  <item type="id" name="btn_keepUnmutedChatsArchived" />
+  <item type="id" name="btn_keepFolderChatsArchived" />
   <item type="id" name="btn_silenceNonContacts" />
+  <item type="id" name="btn_archiveSettings" />
   <item type="id" name="btn_events_pinnedMessages" />
   <item type="id" name="btn_events_mentions" />
 
