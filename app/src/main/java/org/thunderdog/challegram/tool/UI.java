@@ -465,10 +465,6 @@ public class UI {
     }
   }
 
-  public static void showWeird (TdApi.Object response, Class<? extends TdApi.Function<?>> function, Class<?>... objects) {
-    Log.unexpectedTdlibResponse(response, function, objects);
-  }
-
   public static void showApiLevelWarning (int apiLevel) {
     getAppHandler().showToast(Lang.getString(R.string.AndroidVersionWarning, SdkVersion.getPrettyName(apiLevel), SdkVersion.getPrettyVersionCode(apiLevel)), Toast.LENGTH_LONG);
   }

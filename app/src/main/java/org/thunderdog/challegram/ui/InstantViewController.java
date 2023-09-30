@@ -29,7 +29,6 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -75,7 +74,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.Td;
 
-public class InstantViewController extends ViewController<InstantViewController.Args> implements Menu, Client.ResultHandler,  TGLegacyManager.EmojiLoadListener, Text.ClickCallback, View.OnClickListener, View.OnLongClickListener, TGPlayerController.PlayListBuilder {
+public class InstantViewController extends ViewController<InstantViewController.Args> implements Menu, TGLegacyManager.EmojiLoadListener, Text.ClickCallback, View.OnClickListener, View.OnLongClickListener, TGPlayerController.PlayListBuilder {
   public static class Args {
     public final TdApi.WebPage webPage;
     public TdApi.WebPageInstantView instantView;
@@ -490,25 +489,11 @@ public class InstantViewController extends ViewController<InstantViewController.
     // recyclerView.setItemAnimator(new CustomItemAnimator(Anim.DECELERATE_INTERPOLATOR, 180l));
 
     if (!isReplace) {
-      tdlib.client().send(new TdApi.GetWebPageInstantView(getUrl(), true), this);
-    }
-  }
-
-  public String getUrl () {
-    return getArgumentsStrict().webPage.url;
-  }
-
-  public String getDisplayUrl () {
-    return getArgumentsStrict().webPage.displayUrl;
-  }
-
-  @Override
-  public void onResult (TdApi.Object object) {
-    switch (object.getConstructor()) {
-      case TdApi.WebPageInstantView.CONSTRUCTOR: {
-        final TdApi.WebPageInstantView instantView = (TdApi.WebPageInstantView) object;
-        tdlib.ui().post(() -> {
-          if (!isDestroyed()) {
+      tdlib.send(new TdApi.GetWebPageInstantView(getUrl(), true), (webPageInstantView, error) -> {
+        if (error != null) {
+          UI.showError(error);
+        } else {
+          runOnUiThreadOptional(() -> {
             if (!TD.hasInstantView(instantView.version)) {
               UI.showToast(R.string.InstantViewUnsupported, Toast.LENGTH_SHORT);
               UI.openUrl(getUrl());
@@ -522,19 +507,18 @@ public class InstantViewController extends ViewController<InstantViewController.
               getArgumentsStrict().instantView = instantView;
               buildCells(pageBlocks, true);
             }
-          }
-        });
-        break;
-      }
-      case TdApi.Error.CONSTRUCTOR: {
-        UI.showError(object);
-        break;
-      }
-      default: {
-        Log.unexpectedTdlibResponse(object, TdApi.GetWebPageInstantView.class, TdApi.WebPageInstantView.class);
-        break;
-      }
+          });
+        }
+      });
     }
+  }
+
+  public String getUrl () {
+    return getArgumentsStrict().webPage.url;
+  }
+
+  public String getDisplayUrl () {
+    return getArgumentsStrict().webPage.displayUrl;
   }
 
   @Nullable
