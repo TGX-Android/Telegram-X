@@ -962,7 +962,8 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     return trimmedTitle;
   }
 
-  public void setTime () {
+  public boolean setTime () {
+    String time;
     if (isArchive()) {
       int maxDate = archive.maxDate();
       time = maxDate != 0 ? Lang.timeOrDateShort(maxDate, TimeUnit.SECONDS) : "";
@@ -977,15 +978,24 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
             time = Lang.getPsaType(((TdApi.ChatSourcePublicServiceAnnouncement) source));
             break;
           }
+          default: {
+            Td.assertChatSource_12b21238();
+            throw Td.unsupported(source);
+          }
         }
       } else {
         int date = chat.draftMessage != null && showDraft() ? chat.draftMessage.date : chat.lastMessage != null ? chat.lastMessage.date : 0;
         time = date != 0 ? Lang.timeOrDateShort(date, TimeUnit.SECONDS) : "";
       }
     }
-    timeWidth = (int) U.measureText(time, ChatView.getTimePaint());
+    boolean changed = !time.equals(this.time);
+    if (changed) {
+      this.time = time;
+      this.timeWidth = (int) U.measureText(time, ChatView.getTimePaint());
+    }
     layoutTime();
     setViews();
+    return changed;
   }
 
   private int getViewCount () {
@@ -996,6 +1006,12 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     if (viewCounter != null) {
       int count = getViewCount();
       viewCounter.setCount(count, needAnimateChanges());
+    }
+  }
+
+  public void updateDate () {
+    if (setTime()) {
+      layoutTitle(false);
     }
   }
 

@@ -46,7 +46,6 @@ public class TdlibListeners {
   final ReferenceList<StickersListener> stickersListeners;
   final ReferenceList<AnimationsListener> animationsListeners;
   final ReferenceList<ConnectionListener> connectionListeners;
-  final ReferenceList<DayChangeListener> dayListeners;
   final ReferenceList<AuthorizationListener> authorizationListeners;
   final ReferenceList<CleanupStartupDelegate> componentDelegates;
   final ReferenceList<TdlibOptionListener> optionListeners;
@@ -87,7 +86,6 @@ public class TdlibListeners {
     this.stickersListeners = new ReferenceList<>(true);
     this.animationsListeners = new ReferenceList<>();
     this.connectionListeners = new ReferenceList<>(true);
-    this.dayListeners = new ReferenceList<>();
     this.authorizationListeners = new ReferenceList<>(true);
     this.componentDelegates = new ReferenceList<>(true);
     this.optionListeners = new ReferenceList<>(true);
@@ -157,9 +155,6 @@ public class TdlibListeners {
       if (any instanceof ConnectionListener) {
         connectionListeners.add((ConnectionListener) any);
       }
-      if (any instanceof DayChangeListener) {
-        dayListeners.add((DayChangeListener) any);
-      }
       if (any instanceof TdlibOptionListener) {
         optionListeners.add((TdlibOptionListener) any);
       }
@@ -210,9 +205,6 @@ public class TdlibListeners {
       }
       if (any instanceof ConnectionListener) {
         connectionListeners.remove((ConnectionListener) any);
-      }
-      if (any instanceof DayChangeListener) {
-        dayListeners.remove((DayChangeListener) any);
       }
       if (any instanceof TdlibOptionListener) {
         optionListeners.remove((TdlibOptionListener) any);

@@ -116,7 +116,7 @@ import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 import me.vkryl.td.TdConstants;
 
-public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
+public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, DateChangeListener {
   @Override
   public final int accountId () {
     return id();
@@ -1328,6 +1328,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     if (newStatus != Status.READY) {
       startupPerformed = false;
     }
+    setNeedTimeZoneListener(newStatus != Status.UNKNOWN);
     if (prevStatus == Status.UNKNOWN && newStatus != prevStatus) {
       onInitialized();
     }
@@ -1350,6 +1351,29 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     if (newStatus == Status.READY && stressTest > 0) {
       clientHolder().sendClose();
     }
+  }
+
+  private boolean needTimeZoneListener;
+
+  private void setNeedTimeZoneListener (boolean needTimeZoneListener) {
+    if (this.needTimeZoneListener != needTimeZoneListener) {
+      this.needTimeZoneListener = needTimeZoneListener;
+      if (needTimeZoneListener) {
+        context.dateManager().addListener(this);
+      } else {
+        context.dateManager().removeListener(this);
+      }
+    }
+  }
+
+  @Override
+  public void onTimeChanged () {
+    updateUtcTimeOffset();
+  }
+
+  @Override
+  public void onTimeZoneChanged () {
+    updateUtcTimeOffset();
   }
 
   private static TdApi.FormattedText makeUpdateText (String version, String changeLog) {
@@ -5577,10 +5601,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           throw new IllegalStateException(Integer.toString(state));
       }
     }
-    long timeZoneOffset = TimeUnit.MILLISECONDS.toSeconds(
-      TimeZone.getDefault().getRawOffset() +
-      TimeZone.getDefault().getDSTSavings()
-    );
+    long timeZoneOffset = timeZoneOffset();
     params.put("package_id", UI.getAppContext().getPackageName());
     String installerName = U.getInstallerPackageName();
     if (!StringUtils.isEmpty(installerName)) {
@@ -5617,6 +5638,22 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     params.put("git", git);
 
     return params;
+  }
+
+  private void updateUtcTimeOffset () {
+    performOptional(client -> {
+      long timeZoneOffset = timeZoneOffset();
+      if (this.utcTimeOffset != timeZoneOffset) {
+        client.send(new TdApi.SetOption("utc_time_offset", new TdApi.OptionValueInteger(timeZoneOffset)), silentHandler());
+      }
+    }, null);
+  }
+
+  public static long timeZoneOffset () {
+    return TimeUnit.MILLISECONDS.toSeconds(
+      TimeZone.getDefault().getRawOffset() +
+        TimeZone.getDefault().getDSTSavings()
+    );
   }
 
   private void checkConnectionParams (Client client, boolean force) {

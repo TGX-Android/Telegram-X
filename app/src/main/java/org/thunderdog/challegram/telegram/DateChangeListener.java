@@ -14,6 +14,13 @@
  */
 package org.thunderdog.challegram.telegram;
 
-public interface DayChangeListener {
-  void onDayChanged ();
+import androidx.annotation.UiThread;
+
+public interface DateChangeListener {
+  @UiThread
+  default void onDateChanged () { }
+  @UiThread
+  default void onTimeZoneChanged () { }
+  @UiThread
+  default void onTimeChanged () { }
 }
