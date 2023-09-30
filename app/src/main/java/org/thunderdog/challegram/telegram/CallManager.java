@@ -422,20 +422,11 @@ debugCall id:long debug:string = Ok;
       return;
     }
     if (userFull == null) {
-      context.tdlib().client().send(new TdApi.GetUserFullInfo(userId), object -> {
-        switch (object.getConstructor()) {
-          case TdApi.UserFullInfo.CONSTRUCTOR: {
-            makeCall(context, userId, (TdApi.UserFullInfo) object, needPrompt);
-            break;
-          }
-          case TdApi.Error.CONSTRUCTOR: {
-            UI.showError(object);
-            break;
-          }
-          default: {
-            Log.unexpectedTdlibResponse(object, TdApi.GetUserFullInfo.class, TdApi.UserFullInfo.class);
-            break;
-          }
+      context.tdlib().send(new TdApi.GetUserFullInfo(userId), (remoteUserFull, error) -> {
+        if (error != null) {
+          UI.showError(error);
+        } else {
+          makeCall(context, userId, remoteUserFull, needPrompt);
         }
       });
       return;
@@ -455,18 +446,12 @@ debugCall id:long debug:string = Ok;
       return;
     }
     context.context().closeAllMedia(false);
-    context.tdlib().client().send(new TdApi.CreateCall(userId, VoIP.getProtocol(), false), object -> {
-      switch (object.getConstructor()) {
-        case TdApi.CallId.CONSTRUCTOR:
-          Log.v(Log.TAG_VOIP, "#%d: call created, user_id:%d", ((TdApi.CallId) object).id, userId);
-          break;
-        case TdApi.Error.CONSTRUCTOR:
-          Log.e(Log.TAG_VOIP, "Failed to create call: %s", TD.toErrorString(object));
-          UI.showError(object);
-          break;
-        default:
-          Log.unexpectedTdlibResponse(object, TdApi.CreateCall.class, TdApi.CallId.class, TdApi.Error.class);
-          break;
+    context.tdlib().send(new TdApi.CreateCall(userId, VoIP.getProtocol(), false), (callId, error) -> {
+      if (error != null) {
+        Log.e(Log.TAG_VOIP, "Failed to create call: %s", TD.toErrorString(error));
+        UI.showError(error);
+      } else {
+        Log.v(Log.TAG_VOIP, "#%d: call created, user_id:%d", callId.id, userId);
       }
     });
   }

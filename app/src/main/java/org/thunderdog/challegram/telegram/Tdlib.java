@@ -216,24 +216,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       Log.e("TDLib Error (silenced): %s", TD.toErrorString(object));
     }
   };
-  private final Client.ResultHandler imageLoadHandler = object -> {
-    switch (object.getConstructor()) {
-      case TdApi.Ok.CONSTRUCTOR:
-        break;
-      case TdApi.File.CONSTRUCTOR:
-        TdApi.File file = (TdApi.File) object;
-        if (file.local.isDownloadingCompleted) {
-          ImageLoader.instance().onLoad(Tdlib.this, file);
-        } else if (!file.local.isDownloadingActive) {
-          Log.e(Log.TAG_IMAGE_LOADER, "WARNING: Image load not started");
-        }
-        break;
-      case TdApi.Error.CONSTRUCTOR:
-        Log.e(Log.TAG_IMAGE_LOADER, "DownloadFile failed: %s", TD.toErrorString(object));
-        break;
-      default:
-        Log.unexpectedTdlibResponse(object, TdApi.DownloadFile.class, TdApi.Ok.class, TdApi.Error.class);
-        break;
+  private final ResultHandler<TdApi.File> imageLoadHandler = (file, error) -> {
+    if (error != null) {
+      Log.e(Log.TAG_IMAGE_LOADER, "DownloadFile failed: %s", TD.toErrorString(error));
+    } else {
+      if (file.local.isDownloadingCompleted) {
+        ImageLoader.instance().onLoad(Tdlib.this, file);
+      } else if (!file.local.isDownloadingActive) {
+        Log.e(Log.TAG_IMAGE_LOADER, "WARNING: Image load not started");
+      }
     }
   };
   private final Client.ResultHandler profilePhotoHandler = object -> {
@@ -1753,7 +1744,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public <T extends TdApi.Object> void send (TdApi.Function<T> function, ResultHandler<T> handler) {
-    send(function, ResultHandler.toTdlibHandler(handler));
+    send(client(), function, handler);
   }
 
   public <T extends TdApi.Object> void sendAll (TdApi.Function<T>[] functions, @NonNull ResultHandler<T> handler, @Nullable Runnable after) {
@@ -1761,7 +1752,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public <T extends TdApi.Object> void send (TdApi.Function<T> function, Client.ResultHandler handler) {
-    client().send(function, handler);
+    send(client(), function, handler);
+  }
+
+  public static <T extends TdApi.Object> void send (Client client, TdApi.Function<T> function, ResultHandler<T> handler) {
+    send(client, function, ResultHandler.toTdlibHandler(handler));
+  }
+
+  public static <T extends TdApi.Object> void send (Client client, TdApi.Function<T> function, Client.ResultHandler handler) {
+    client.send(function, handler);
   }
 
   public <T extends TdApi.Object> void sendAll (TdApi.Function<T>[] functions, @NonNull Client.ResultHandler handler, @Nullable Runnable after) {
@@ -2371,7 +2370,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return messageHandler;
   }
 
-  public Client.ResultHandler imageLoadHandler () {
+  public ResultHandler<TdApi.File> imageLoadHandler () {
     return imageLoadHandler;
   }
 
@@ -4687,7 +4686,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     client().send(new TdApi.SetChatMessageAutoDeleteTime(chatId, ttl), okHandler());
   }
 
-  public void getPrimaryChatInviteLink (long chatId, Client.ResultHandler handler) {
+  public void getPrimaryChatInviteLink (long chatId, Tdlib.ResultHandler<TdApi.ChatInviteLink> handler) {
     Client.ResultHandler linkHandler = new Client.ResultHandler() {
       @Override
       public void onResult (TdApi.Object result) {
@@ -4702,15 +4701,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             break;
           }
           case TdApi.ChatInviteLink.CONSTRUCTOR:
+            handler.onResult((TdApi.ChatInviteLink) result, null);
+            return;
           case TdApi.Error.CONSTRUCTOR:
-            handler.onResult(result);
+            handler.onResult(null, (TdApi.Error) result);
             return;
           default:
-            Log.unexpectedTdlibResponse(result, TdApi.ReplacePrimaryChatInviteLink.class, TdApi.ChatInviteLink.class);
-            return;
+            throw new UnsupportedOperationException(result.toString());
         }
         if (inviteLink != null) {
-          handler.onResult(inviteLink);
+          handler.onResult(inviteLink, null);
         } else {
           client().send(new TdApi.ReplacePrimaryChatInviteLink(chatId), this);
         }
@@ -4726,7 +4726,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         break;
       }
       default: {
-        handler.onResult(new TdApi.Error(-1, "Invalid chat type"));
+        handler.onResult(null, new TdApi.Error(-1, "Invalid chat type"));
         break;
       }
     }
@@ -5362,29 +5362,23 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private void syncLanguage (@NonNull String languagePackId, @Nullable RunnableBool callback) {
-    client().send(new TdApi.SynchronizeLanguagePack(languagePackId), result -> {
+    send(new TdApi.SynchronizeLanguagePack(languagePackId), (ok, error) -> {
       boolean success;
-      switch (result.getConstructor()) {
-        case TdApi.Ok.CONSTRUCTOR:
-          Log.v("%s language is successfully synchronized", languagePackId);
-          success = true;
-          break;
-        case TdApi.Error.CONSTRUCTOR:
-          Log.e("Unable to synchronize languagePackId %s: %s", languagePackId, TD.toErrorString(result));
-          success = languagePackId.equals(Lang.getBuiltinLanguagePackId());
-          if (!success) {
-            success = Config.NEED_LANGUAGE_WORKAROUND;
+      if (error != null) {
+        Log.e("Unable to synchronize languagePackId %s: %s", languagePackId, TD.toErrorString(error));
+        success = languagePackId.equals(Lang.getBuiltinLanguagePackId());
+        if (!success) {
+          success = Config.NEED_LANGUAGE_WORKAROUND;
+          UI.showError(error);
+          /*if (success = Config.NEED_LANGUAGE_WORKAROUND) {
+            UI.showToast("Warning: language not synced. It's temporary issue of current beta version. " + TD.makeErrorString(result), Toast.LENGTH_LONG);
+          } else {
             UI.showError(result);
-            /*if (success = Config.NEED_LANGUAGE_WORKAROUND) {
-              UI.showToast("Warning: language not synced. It's temporary issue of current beta version. " + TD.makeErrorString(result), Toast.LENGTH_LONG);
-            } else {
-              UI.showError(result);
-            }*/
-          }
-          break;
-        default:
-          Log.unexpectedTdlibResponse(result, TdApi.SynchronizeLanguagePack.class, TdApi.Ok.class, TdApi.Error.class);
-          return;
+          }*/
+        }
+      } else {
+        Log.v("%s language is successfully synchronized", languagePackId);
+        success = true;
       }
       if (callback != null) {
         callback.runWithBool(success);
@@ -5901,33 +5895,22 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   public void getProxyLink (@NonNull Settings.Proxy proxy, RunnableData<String> callback) {
     if (proxy.proxy == null)
       throw new IllegalArgumentException();
-    client().send(new TdApi.AddProxy(proxy.proxy.server, proxy.proxy.port, false, proxy.proxy.type), object -> {
-      switch (object.getConstructor()) {
-        case TdApi.Proxy.CONSTRUCTOR: {
-          int tdlibProxyId = ((TdApi.Proxy) object).id;
-          client().send(new TdApi.GetProxyLink(tdlibProxyId), httpUrl -> {
-            String url;
-            switch (httpUrl.getConstructor()) {
-              case TdApi.HttpUrl.CONSTRUCTOR:
-                url = ((TdApi.HttpUrl) httpUrl).url;
-                break;
-              case TdApi.Error.CONSTRUCTOR:
-                Log.e("Proxy link unavailable: %s", TD.toErrorString(httpUrl));
-                url = null;
-                break;
-              default:
-                Log.unexpectedTdlibResponse(httpUrl, TdApi.GetProxyLink.class, TdApi.HttpUrl.class, TdApi.Error.class);
-                return;
-            }
-            ui().post(() -> callback.runWithData(url));
-          });
-          break;
-        }
-        case TdApi.Error.CONSTRUCTOR: {
-          UI.showError(object);
-          ui().post(() -> callback.runWithData(null));
-          break;
-        }
+    send(new TdApi.AddProxy(proxy.proxy.server, proxy.proxy.port, false, proxy.proxy.type), (tdlibProxy, error) -> {
+      if (error != null) {
+        UI.showError(error);
+        ui().post(() -> callback.runWithData(null));
+      } else {
+        int tdlibProxyId = tdlibProxy.id;
+        send(new TdApi.GetProxyLink(tdlibProxyId), (httpUrl, error1) -> {
+          String url;
+          if (error1 != null) {
+            Log.e("Proxy link unavailable: %s", TD.toErrorString(error1));
+            url = null;
+          } else {
+            url = httpUrl.url;
+          }
+          ui().post(() -> callback.runWithData(url));
+        });
       }
     });
   }
@@ -8927,18 +8910,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           this.suggestedLanguagePackId = languagePackId;
           this.suggestedLanguagePackInfo = null;
           listeners().updateSuggestedLanguageChanged(languagePackId, null);
-          context.client.send(new TdApi.GetLanguagePackInfo(languagePackId), result -> {
-            switch (result.getConstructor()) {
-              case TdApi.LanguagePackInfo.CONSTRUCTOR:
-                setSuggestedLanguagePackInfo(languagePackId, (TdApi.LanguagePackInfo) result);
-                break;
-              case TdApi.Error.CONSTRUCTOR:
-                Log.e("Failed to fetch suggested language, code: %s %s", languagePackId, TD.toErrorString(result));
-                setSuggestedLanguagePackInfo(languagePackId, null);
-                break;
-              default:
-                Log.unexpectedTdlibResponse(result, TdApi.GetLanguagePackInfo.class, TdApi.LanguagePackInfo.class, TdApi.Error.class);
-                break;
+          send(context.client, new TdApi.GetLanguagePackInfo(languagePackId), (languagePackInfo, error) -> {
+            if (error != null) {
+              Log.e("Failed to fetch suggested language, code: %s %s", languagePackId, TD.toErrorString(error));
+              setSuggestedLanguagePackInfo(languagePackId, null);
+            } else {
+              setSuggestedLanguagePackInfo(languagePackId, languagePackInfo);
             }
           });
         }
@@ -9641,7 +9618,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         break;
       }
 
-      // Bots
+      // for bots only.
       case TdApi.UpdateNewChatJoinRequest.CONSTRUCTOR:
       case TdApi.UpdateNewCustomEvent.CONSTRUCTOR:
       case TdApi.UpdateNewCustomQuery.CONSTRUCTOR:
@@ -9654,8 +9631,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       case TdApi.UpdatePoll.CONSTRUCTOR:
       case TdApi.UpdatePollAnswer.CONSTRUCTOR:
       case TdApi.UpdateChatMember.CONSTRUCTOR: {
-        Log.unexpectedTdlibResponse(update, null, TdApi.Update.class);
-        break;
+        // Must never come from TDLib. If it does, there's a bug on TDLib side.
+        throw Td.unsupported(update);
+      }
+      default: {
+        Td.assertUpdate_3afd10e9();
+        throw Td.unsupported(update);
       }
     }
   }

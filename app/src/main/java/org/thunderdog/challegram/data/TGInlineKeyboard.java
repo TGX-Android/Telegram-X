@@ -33,7 +33,6 @@ import androidx.collection.SparseArrayCompat;
 
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.chat.MessageView;
@@ -43,6 +42,7 @@ import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -1087,7 +1087,7 @@ public class TGInlineKeyboard {
                   cancelDelayedProgress();
                   animateProgressFactor(1f);
                 }
-                context.context.tdlib.client().send(new TdApi.GetCallbackQueryAnswer(parent.getChatId(), context.messageId, new TdApi.CallbackQueryPayloadDataWithPassword(password, data)), getAnswerCallback(currentContextId, view,false));
+                context.context.tdlib.send(new TdApi.GetCallbackQueryAnswer(parent.getChatId(), context.messageId, new TdApi.CallbackQueryPayloadDataWithPassword(password, data)), getAnswerCallback(currentContextId, view,false));
               }
             });
           };
@@ -1141,7 +1141,7 @@ public class TGInlineKeyboard {
           showProgressDelayed();
 
           final byte[] data = ((TdApi.InlineKeyboardButtonTypeCallback) type).data;
-          context.context.tdlib().client().send(new TdApi.GetCallbackQueryAnswer(parent.getChatId(), context.messageId, new TdApi.CallbackQueryPayloadData(data)), getAnswerCallback(currentContextId, view,false));
+          context.context.tdlib().send(new TdApi.GetCallbackQueryAnswer(parent.getChatId(), context.messageId, new TdApi.CallbackQueryPayloadData(data)), getAnswerCallback(currentContextId, view,false));
 
           break;
         }
@@ -1159,7 +1159,7 @@ public class TGInlineKeyboard {
           makeActive();
           showProgressDelayed();
 
-          context.context.tdlib().client().send(new TdApi.GetCallbackQueryAnswer(parent.getChatId(), context.messageId, new TdApi.CallbackQueryPayloadGame(data)), getAnswerCallback(currentContextId, view, true));
+          context.context.tdlib().send(new TdApi.GetCallbackQueryAnswer(parent.getChatId(), context.messageId, new TdApi.CallbackQueryPayloadGame(data)), getAnswerCallback(currentContextId, view, true));
           break;
         }
         case TdApi.InlineKeyboardButtonTypeUser.CONSTRUCTOR: {
@@ -1333,80 +1333,62 @@ public class TGInlineKeyboard {
       });
     }
 
-    private Client.ResultHandler getAnswerCallback (final int currentContextId, final View view, final boolean isGame) {
-      return object -> {
-        switch (object.getConstructor()) {
-          case TdApi.CallbackQueryAnswer.CONSTRUCTOR: {
-            final TdApi.CallbackQueryAnswer answer = (TdApi.CallbackQueryAnswer) object;
+    private Tdlib.ResultHandler<TdApi.CallbackQueryAnswer> getAnswerCallback (final int currentContextId, final View view, final boolean isGame) {
+      return (answer, error) -> {
+        if (error != null) {
+          if (error.code == 502) {
+            UI.showBotDown(context.context.tdlib().messageUsername(parent.getMessage()));
+            return;
+          }
+          UI.showError(error);
+          context.context.tdlib().ui().post(() -> {
+            if (currentContextId == contextId) {
+              makeInactive();
+            }
+          });
+        } else {
+          final CharSequence answerText;
+          if (answer.text.isEmpty()) {
+            answerText = null;
+          } else {
+            answerText = Emoji.instance().replaceEmoji(answer.text);
+          }
 
-            final CharSequence answerText;
-            if (answer.text.isEmpty()) {
-              answerText = null;
-            } else {
-              answerText = Emoji.instance().replaceEmoji(answer.text);
+          final boolean showAlert = answer.showAlert;
+          final String url = answer.url;
+
+          context.context.tdlib().ui().post(() -> {
+            if (currentContextId == contextId) {
+              makeInactive();
             }
 
-            final boolean showAlert = answer.showAlert;
-            final String url = answer.url;
-
-            context.context.tdlib().ui().post(() -> {
-              if (currentContextId == contextId) {
-                makeInactive();
-              }
-
-              if (parent.isDestroyed()) {
-                return;
-              }
-
-              ViewController<?> c = parent.context().navigation().getCurrentStackItem();
-              boolean isMessagesController = c instanceof MessagesController;
-
-              if (c == null || c.getChatId() != parent.getChatId()) {
-                return;
-              }
-
-              if (!StringUtils.isEmpty(url)) {
-                if (isGame && isMessagesController) {
-                  TdApi.Message msg = parent.getMessage();
-                  ((MessagesController) c).openGame(msg.viaBotUserId != 0 ? msg.viaBotUserId : Td.getSenderUserId(msg), ((TdApi.MessageGame) msg.content).game, url, msg);
-                } else {
-                  c.openLinkAlert(url, openParameters(currentContextId, view));
-                }
-              }
-              if (answerText != null) {
-                if (showAlert || !isMessagesController) {
-                  c.openOkAlert(context.context.tdlib().messageUsername(parent.getMessage()), answerText);
-                } else {
-                  ((MessagesController) c).showCallbackToast(answerText);
-                }
-              }
-            });
-
-            break;
-          }
-          case TdApi.Error.CONSTRUCTOR: {
-            TdApi.Error error = (TdApi.Error) object;
-            if (error.code == 502) {
-              UI.showBotDown(context.context.tdlib().messageUsername(parent.getMessage()));
+            if (parent.isDestroyed()) {
               return;
             }
-            UI.showError(object);
-            context.context.tdlib().ui().post(() -> {
-              if (currentContextId == contextId) {
-                makeInactive();
+
+            ViewController<?> c = parent.context().navigation().getCurrentStackItem();
+            boolean isMessagesController = c instanceof MessagesController;
+
+            if (c == null || c.getChatId() != parent.getChatId()) {
+              return;
+            }
+
+            if (!StringUtils.isEmpty(url)) {
+              if (isGame && isMessagesController) {
+                TdApi.Message msg = parent.getMessage();
+                ((MessagesController) c).openGame(msg.viaBotUserId != 0 ? msg.viaBotUserId : Td.getSenderUserId(msg), ((TdApi.MessageGame) msg.content).game, url, msg);
+              } else {
+                c.openLinkAlert(url, openParameters(currentContextId, view));
               }
-            });
-            break;
-          }
-          default: {
-            Log.unexpectedTdlibResponse(object, TdApi.GetCallbackQueryAnswer.class, TdApi.CallbackQueryAnswer.class);
-            context.context.tdlib().ui().post(() -> {
-              if (currentContextId == contextId) {
-                makeInactive();
+            }
+            if (answerText != null) {
+              if (showAlert || !isMessagesController) {
+                c.openOkAlert(context.context.tdlib().messageUsername(parent.getMessage()), answerText);
+              } else {
+                ((MessagesController) c).showCallbackToast(answerText);
               }
-            });
-            break;
-          }
+            }
+          });
         }
       };
     }

@@ -2604,25 +2604,15 @@ public class TdlibUi extends Handler {
       return true;
     }
     // TODO progress
-    tdlib.client().send(new TdApi.GetLanguagePackInfo(languagePackId), result -> {
-      switch (result.getConstructor()) {
-        case TdApi.LanguagePackInfo.CONSTRUCTOR: {
-          TdApi.LanguagePackInfo info = (TdApi.LanguagePackInfo) result;
-          tdlib.ui().post(() -> {
-            if (context.context().getActivityState() != UI.STATE_DESTROYED) {
-              showLanguageInstallPrompt(context, info);
-            }
-          });
-          break;
-        }
-        case TdApi.Error.CONSTRUCTOR: {
-          showLinkTooltip(context.tdlib(), R.drawable.baseline_warning_24, TD.toErrorString(result), openParameters);
-          break;
-        }
-        default: {
-          Log.unexpectedTdlibResponse(result, TdApi.GetLanguagePackInfo.class, TdApi.LanguagePackInfo.class, TdApi.Error.class);
-          break;
-        }
+    tdlib.send(new TdApi.GetLanguagePackInfo(languagePackId), (info, error) -> {
+      if (error != null) {
+        showLinkTooltip(context.tdlib(), R.drawable.baseline_warning_24, TD.toErrorString(error), openParameters);
+      } else {
+        tdlib.ui().post(() -> {
+          if (context.context().getActivityState() != UI.STATE_DESTROYED) {
+            showLanguageInstallPrompt(context, info);
+          }
+        });
       }
     });
     return true;

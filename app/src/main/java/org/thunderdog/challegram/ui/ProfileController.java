@@ -5481,19 +5481,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private void getMessageCount (TdApi.SearchMessagesFilter filter, boolean returnLocal) {
-    tdlib.client().send(new TdApi.GetChatMessageCount(getChatId(), filter, returnLocal), result -> {
+    tdlib.send(new TdApi.GetChatMessageCount(getChatId(), filter, returnLocal), (messageCount, error) -> {
       int count;
-      switch (result.getConstructor()) {
-        case TdApi.Count.CONSTRUCTOR:
-          count = ((TdApi.Count) result).count;
-          break;
-        case TdApi.Error.CONSTRUCTOR:
-          Log.e("TDLib error getMessageCount chatId:%d, filter:%s, returnLocal:%b", getChatId(), filter, returnLocal);
-          count = -1;
-          break;
-        default:
-          Log.unexpectedTdlibResponse(result, TdApi.GetChatMessageCount.class, TdApi.Count.class, TdApi.Error.class);
-          return;
+      if (error != null) {
+        Log.e("TDLib error getMessageCount chatId:%d, filter:%s, returnLocal:%b: %s", getChatId(), filter, returnLocal, TD.toErrorString(error));
+        count = -1;
+      } else {
+        count = messageCount.count;
       }
       if (returnLocal) {
         tdlib.ui().post(() -> {

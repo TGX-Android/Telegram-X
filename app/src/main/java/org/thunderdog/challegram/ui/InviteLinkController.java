@@ -24,12 +24,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.UiThread;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
@@ -51,7 +50,7 @@ import java.util.ArrayList;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 
-public class InviteLinkController extends ViewController<InviteLinkController.Arguments> implements View.OnClickListener, Client.ResultHandler, Unlockable {
+public class InviteLinkController extends ViewController<InviteLinkController.Arguments> implements View.OnClickListener, Unlockable {
   private static final int FLAG_GETTING_LINK = 0x01;
 
   private long chatId;
@@ -104,7 +103,9 @@ public class InviteLinkController extends ViewController<InviteLinkController.Ar
     contentView.setAdapter(adapter = new LinkAdapter(context, this));
 
     if (inviteLink == null) {
-      tdlib.getPrimaryChatInviteLink(chatId, this);
+      tdlib.getPrimaryChatInviteLink(chatId, (inviteLink, error) -> runOnUiThread(() ->
+        processInviteLink(inviteLink, error)
+      ));
     }
 
     FrameLayoutFix wrapper = new FrameLayoutFix(context);
@@ -112,6 +113,25 @@ public class InviteLinkController extends ViewController<InviteLinkController.Ar
     wrapper.addView(contentView);
 
     return wrapper;
+  }
+
+  @UiThread
+  private void processInviteLink (TdApi.ChatInviteLink newInviteLink, @Nullable TdApi.Error error) {
+    if (error != null) {
+      UI.showError(error);
+      if (!isDestroyed()) {
+        UI.unlock(this);
+      }
+      return;
+    }
+    if (callback != null) {
+      callback.onInviteLinkChanged(newInviteLink);
+    }
+    if (!isDestroyed()) {
+      inviteLink = newInviteLink;
+      adapter.notifyItemChanged(0);
+      flags &= ~FLAG_GETTING_LINK;
+    }
   }
 
   @Override
@@ -122,42 +142,15 @@ public class InviteLinkController extends ViewController<InviteLinkController.Ar
   private void exportLink () {
     if ((flags & FLAG_GETTING_LINK) == 0) {
       flags |= FLAG_GETTING_LINK;
-      tdlib.client().send(new TdApi.ReplacePrimaryChatInviteLink(chatId), this);
+      tdlib.send(new TdApi.ReplacePrimaryChatInviteLink(chatId), (newInviteLink, error) -> runOnUiThread(() ->
+        processInviteLink(newInviteLink, error)
+      ));
     }
   }
 
   @Override
   public void unlock () {
     flags &= ~FLAG_GETTING_LINK;
-  }
-
-  @Override
-  public void onResult (TdApi.Object object) {
-    switch (object.getConstructor()) {
-      case TdApi.ChatInviteLink.CONSTRUCTOR: {
-        final TdApi.ChatInviteLink newInviteLink = (TdApi.ChatInviteLink) object;
-        UI.post(() -> {
-          if (callback != null) {
-            callback.onInviteLinkChanged(newInviteLink);
-          }
-          if (!isDestroyed()) {
-            inviteLink = newInviteLink;
-            adapter.notifyItemChanged(0);
-            flags &= ~FLAG_GETTING_LINK;
-          }
-        });
-        break;
-      }
-      case TdApi.Error.CONSTRUCTOR: {
-        UI.showError(object);
-        UI.unlock(this);
-        break;
-      }
-      default: {
-        Log.unexpectedTdlibResponse(object, TdApi.ReplacePrimaryChatInviteLink.class, TdApi.ChatInviteLink.class);
-        break;
-      }
-    }
   }
 
   @Override

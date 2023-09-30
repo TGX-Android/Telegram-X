@@ -143,7 +143,8 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   private final ArrayList<TdApi.Message> outputLocations = new ArrayList<>();
 
   private boolean loadingMyUser;
-  private final Client.ResultHandler meHandler, dataHandler;
+  private final Tdlib.ResultHandler<TdApi.User> meHandler;
+  private final Client.ResultHandler dataHandler;
 
   private final LongSparseIntArray pendingStatusRefresh = new LongSparseIntArray();
   private final Handler onlineHandler;
@@ -206,20 +207,11 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   TdlibCache (Tdlib tdlib) {
     this.tdlib = tdlib;
 
-    this.meHandler = object -> {
-      switch (object.getConstructor()) {
-        case TdApi.User.CONSTRUCTOR: {
-          loadingMyUser = false;
-          break;
-        }
-        case TdApi.Error.CONSTRUCTOR: {
-          UI.showError(object);
-          break;
-        }
-        default: {
-          Log.unexpectedTdlibResponse(object, TdApi.GetMe.class, TdApi.User.class, TdApi.Error.class);
-          break;
-        }
+    this.meHandler = (user, error) -> {
+      if (error != null) {
+        UI.showError(error);
+      } else {
+        loadingMyUser = false;
       }
     };
     this.dataHandler = object -> {
@@ -253,8 +245,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
           break;
         }
         default: {
-          Log.unexpectedTdlibResponse(object, TdApi.GetUserFullInfo.class, TdApi.UserFullInfo.class, TdApi.BasicGroupFullInfo.class, TdApi.SupergroupFullInfo.class, TdApi.Error.class, TdApi.User.class);
-          break;
+          throw new UnsupportedOperationException(object.toString());
         }
       }
     };
@@ -436,7 +427,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
         tdlib.downloadMyUser(myUser);
       } else if (!loadingMyUser) {
         loadingMyUser = true;
-        tdlib.client().send(new TdApi.GetMe(), meHandler);
+        tdlib.send(new TdApi.GetMe(), meHandler);
       }
     } else {
       notifyMyUserListeners(myUserListeners.iterator(), null);
