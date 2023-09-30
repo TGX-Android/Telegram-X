@@ -1388,24 +1388,14 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
           }
           UI.post(() -> {
             if (linkContextId == contextId) {
-              tdlib.client().send(new TdApi.GetWebPagePreview(callback.getOutputText(true)), object -> {
-                switch (object.getConstructor()) {
-                  case TdApi.WebPage.CONSTRUCTOR: {
-                    dispatchLinkPreview(contextId, link, (TdApi.WebPage) object);
-                    break;
+              tdlib.send(new TdApi.GetWebPagePreview(callback.getOutputText(true)), (webPagePreview, error) -> {
+                if (error != null) {
+                  if (error.code != 404) { // 404 is "Web page is empty". Maybe something interesting
+                    Log.w("Cannot load link preview: %s", TD.toErrorString(error));
                   }
-                  case TdApi.Error.CONSTRUCTOR: {
-                    TdApi.Error error = (TdApi.Error) object;
-                    if (error.code != 404) { // 404 is "Web page is empty". Maybe something interesting
-                      Log.w("Cannot load link preview: %s", TD.toErrorString(object));
-                    }
-                    dispatchLinkPreview(contextId, null, null);
-                    break;
-                  }
-                  default: {
-                    Log.unexpectedTdlibResponse(object, TdApi.GetWebPagePreview.class, TdApi.WebPage.class);
-                    break;
-                  }
+                  dispatchLinkPreview(contextId, null, null);
+                } else {
+                  dispatchLinkPreview(contextId, link, webPagePreview);
                 }
               });
             }

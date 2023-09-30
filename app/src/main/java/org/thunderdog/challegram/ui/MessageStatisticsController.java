@@ -177,24 +177,20 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
     if (getArgumentsStrict().album != null) {
       setAlbum(getArgumentsStrict().album);
     } else {
-      tdlib.client().send(new TdApi.GetMessageStatistics(getArgumentsStrict().chatId, getArgumentsStrict().message.id, Theme.isDark()), result -> {
-        switch (result.getConstructor()) {
-          case TdApi.MessageStatistics.CONSTRUCTOR:
-            tdlib.client().send(new TdApi.GetMessagePublicForwards(getArgumentsStrict().chatId, getArgumentsStrict().message.id, "", 20), result2 -> {
-              if (result2.getConstructor() == TdApi.FoundMessages.CONSTRUCTOR) {
-                publicShares = (TdApi.FoundMessages) result2;
-              }
-
-              runOnUiThreadOptional(() -> {
-                setStatistics((TdApi.MessageStatistics) result);
-              });
-            });
-            break;
-          case TdApi.Error.CONSTRUCTOR:
-            UI.showError(result);
-            break;
+      long chatId = getArgumentsStrict().chatId;
+      long messageId = getArgumentsStrict().message.id;
+      tdlib.send(new TdApi.GetMessageStatistics(chatId, messageId, Theme.isDark()), (messageStatistics, error) -> runOnUiThreadOptional(() -> {
+        if (error != null) {
+          UI.showError(error);
+        } else {
+          tdlib.send(new TdApi.GetMessagePublicForwards(chatId, messageId, null, 20), (foundMessages, error1) -> runOnUiThreadOptional(() -> {
+            if (foundMessages != null) {
+              publicShares = foundMessages;
+            }
+            setStatistics(messageStatistics);
+          }));
         }
-      });
+      }));
     }
   }
 

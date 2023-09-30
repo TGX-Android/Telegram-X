@@ -117,19 +117,13 @@ public final class MessageListManager extends ListManager<TdApi.Message> impleme
 
   private void fetchMessageCount (boolean local, @Nullable RunnableInt callback) {
     if (!hasComplexFilter() && filter != null) {
-      tdlib.client().send(new TdApi.GetChatMessageCount(chatId, filter, local), result -> {
+      tdlib.send(new TdApi.GetChatMessageCount(chatId, filter, local), (chatMessageCount, error) -> {
         final int count;
-        switch (result.getConstructor()) {
-          case TdApi.Count.CONSTRUCTOR:
-            count = ((TdApi.Count) result).count;
-            break;
-          case TdApi.Error.CONSTRUCTOR:
-            Log.e("GetChatMessageCount: %s, filter:%s, chatId:%s", TD.toErrorString(result), filter, chatId);
-            count = -1;
-            break;
-          default:
-            Log.unexpectedTdlibResponse(result, TdApi.GetChatMessageCount.class, TdApi.Count.class);
-            throw new AssertionError(result.toString());
+        if (error != null) {
+          Log.e("GetChatMessageCount: %s, filter:%s, chatId:%s", TD.toErrorString(error), filter, chatId);
+          count = -1;
+        } else {
+          count = chatMessageCount.count;
         }
         if (callback != null) {
           runOnUiThread(() ->

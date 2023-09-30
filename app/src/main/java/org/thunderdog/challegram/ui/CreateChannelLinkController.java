@@ -30,9 +30,7 @@ import android.widget.Toast;
 import androidx.annotation.IdRes;
 import androidx.annotation.StringRes;
 
-import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
@@ -63,7 +61,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.TdConstants;
 
-public class CreateChannelLinkController extends ViewController<CreateChannelLinkController.Args> implements View.OnClickListener, Client.ResultHandler, Unlockable {
+public class CreateChannelLinkController extends ViewController<CreateChannelLinkController.Args> implements View.OnClickListener, Unlockable {
   public static class Args {
     private TdApi.Chat chat;
     private ImageFile photo;
@@ -312,33 +310,24 @@ public class CreateChannelLinkController extends ViewController<CreateChannelLin
   private void loadInviteLink () {
     if (!linkRequested) {
       linkRequested = true;
-      tdlib.getPrimaryChatInviteLink(chat.id, this);
+      tdlib.getPrimaryChatInviteLink(chat.id, (chatInviteLink, error) -> {
+        if (error != null) {
+          UI.showError(error);
+        } else {
+          inviteLink = StringUtils.urlWithoutProtocol(chatInviteLink.inviteLink);
+          for (String host : TdConstants.TME_HOSTS) {
+            if (inviteLink.startsWith(host)) {
+              inviteLink = inviteLink.substring(host.length() + 1);
+              break;
+            }
+          }
+          runOnUiThreadOptional(this::updateLink);
+        }
+      });
     }
   }
 
   private String inviteLink;
-
-  @Override
-  public void onResult (TdApi.Object object) {
-    switch (object.getConstructor()) {
-      case TdApi.ChatInviteLink.CONSTRUCTOR: {
-        inviteLink = StringUtils.urlWithoutProtocol(((TdApi.ChatInviteLink) object).inviteLink);
-        for (String host : TdConstants.TME_HOSTS) {
-          if (inviteLink.startsWith(host)) {
-            inviteLink = inviteLink.substring(host.length() + 1);
-            break;
-          }
-        }
-
-        UI.post(() -> updateLink());
-        break;
-      }
-      case TdApi.Error.CONSTRUCTOR: {
-        UI.showError(object);
-        break;
-      }
-    }
-  }
 
   @Override
   public View getCustomHeaderCell () {
@@ -398,22 +387,12 @@ public class CreateChannelLinkController extends ViewController<CreateChannelLin
     }
     usernameRequested = true;
     setEnabled(false);
-    tdlib.client().send(new TdApi.SetSupergroupUsername(getSupergroupId(), username), object -> {
-      switch (object.getConstructor()) {
-        case TdApi.Ok.CONSTRUCTOR: {
-          UI.post(this::nextStep);
-          break;
-        }
-        case TdApi.Error.CONSTRUCTOR: {
-          UI.showError(object);
-          UI.unlock(CreateChannelLinkController.this);
-          break;
-        }
-        default: {
-          Log.unexpectedTdlibResponse(object, TdApi.SetSupergroupUsername.class, TdApi.Ok.class);
-          UI.unlock(CreateChannelLinkController.this);
-          break;
-        }
+    tdlib.send(new TdApi.SetSupergroupUsername(getSupergroupId(), username), (ok, error) -> {
+      if (error != null) {
+        UI.showError(error);
+        UI.unlock(CreateChannelLinkController.this);
+      } else {
+        UI.post(this::nextStep);
       }
     });
   }

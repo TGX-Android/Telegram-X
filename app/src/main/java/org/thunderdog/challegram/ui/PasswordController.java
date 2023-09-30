@@ -1278,39 +1278,28 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     }
 
     setInProgress(true);
-    tdlib.client().send(new TdApi.GetRecoveryEmailAddress(password), object -> tdlib.ui().post(() -> {
-      if (!isDestroyed()) {
-        setInProgress(false);
+    tdlib.send(new TdApi.GetRecoveryEmailAddress(password), (recoveryEmailAddress, error) -> runOnUiThreadOptional(() -> {
+      setInProgress(false);
 
-        boolean success = false;
-        String recoveryEmail = null;
+      boolean success = false;
+      String recoveryEmail = null;
 
-        switch (object.getConstructor()) {
-          case TdApi.RecoveryEmailAddress.CONSTRUCTOR: {
-            success = true;
-            recoveryEmail = ((TdApi.RecoveryEmailAddress) object).recoveryEmailAddress;
-            break;
-          }
-          case TdApi.Error.CONSTRUCTOR: {
-            setHintText(R.string.InvalidPasswordTryAgain, true);
-            break;
-          }
-          default: {
-            Log.unexpectedTdlibResponse(object, TdApi.GetRecoveryEmailAddress.class, TdApi.RecoveryEmailAddress.class);
-            break;
-          }
-        }
+      if (error != null) {
+        setHintText(R.string.InvalidPasswordTryAgain, true);
+      } else {
+        success = true;
+        recoveryEmail = recoveryEmailAddress.recoveryEmailAddress;
+      }
 
-        if (success) {
-          ViewController<?> prev = navigationController != null ? navigationController.getPreviousStackItem() : null;
-          if (prev instanceof SettingsPrivacyController) {
-            Settings2FAController c = new Settings2FAController(context, tdlib);
-            c.setArguments(new Settings2FAController.Args((SettingsPrivacyController) prev, password, recoveryEmail));
-            navigateTo(c);
-          } else if ((mode == MODE_CONFIRM || mode == MODE_TRANSFER_OWNERSHIP_CONFIRM) && getArguments() != null && getArguments().onSuccessListener != null) {
-            navigateBack();
-            getArgumentsStrict().onSuccessListener.runWithData(password);
-          }
+      if (success) {
+        ViewController<?> prev = navigationController != null ? navigationController.getPreviousStackItem() : null;
+        if (prev instanceof SettingsPrivacyController) {
+          Settings2FAController c = new Settings2FAController(context, tdlib);
+          c.setArguments(new Settings2FAController.Args((SettingsPrivacyController) prev, password, recoveryEmail));
+          navigateTo(c);
+        } else if ((mode == MODE_CONFIRM || mode == MODE_TRANSFER_OWNERSHIP_CONFIRM) && getArguments() != null && getArguments().onSuccessListener != null) {
+          navigateBack();
+          getArgumentsStrict().onSuccessListener.runWithData(password);
         }
       }
     }));
@@ -1405,23 +1394,12 @@ public class PasswordController extends ViewController<PasswordController.Args> 
 
     setInProgress(true);
     final String oldPassword = getArguments() != null ? getArguments().oldPassword : null;
-    tdlib.client().send(new TdApi.SetRecoveryEmailAddress(oldPassword, email), object -> tdlib.ui().post(() -> {
-      if (!isDestroyed()) {
-        setInProgress(false);
-        switch (object.getConstructor()) {
-          case TdApi.PasswordState.CONSTRUCTOR: {
-            processNewPasswordState((TdApi.PasswordState) object, oldPassword);
-            break;
-          }
-          case TdApi.Error.CONSTRUCTOR: {
-            setHintText(TD.toErrorString(object), true);
-            break;
-          }
-          default: {
-            Log.unexpectedTdlibResponse(object, TdApi.SetRecoveryEmailAddress.class, TdApi.PasswordState.class);
-            break;
-          }
-        }
+    tdlib.send(new TdApi.SetRecoveryEmailAddress(oldPassword, email), (passwordState, error) -> runOnUiThreadOptional(() -> {
+      setInProgress(false);
+      if (error != null) {
+        setHintText(TD.toErrorString(error), true);
+      } else {
+        processNewPasswordState(passwordState, oldPassword);
       }
     }));
   }
@@ -1733,23 +1711,12 @@ public class PasswordController extends ViewController<PasswordController.Args> 
 
     setInProgress(true);
 
-    tdlib.client().send(new TdApi.SetPassword(mode == MODE_NEW || getArguments() == null ? null : getArguments().oldPassword, password, passwordHint, mode != MODE_EDIT, email), object -> tdlib.ui().post(() -> {
-      if (!isDestroyed()) {
-        setInProgress(false);
-        switch (object.getConstructor()) {
-          case TdApi.PasswordState.CONSTRUCTOR: {
-            processNewPasswordState((TdApi.PasswordState) object, password);
-            break;
-          }
-          case TdApi.Error.CONSTRUCTOR: {
-            UI.showError(object);
-            break;
-          }
-          default: {
-            Log.unexpectedTdlibResponse(object, TdApi.SetPassword.class, TdApi.PasswordState.class);
-            break;
-          }
-        }
+    tdlib.send(new TdApi.SetPassword(mode == MODE_NEW || getArguments() == null ? null : getArguments().oldPassword, password, passwordHint, mode != MODE_EDIT, email), (passwordState, error) -> runOnUiThreadOptional(() -> {
+      setInProgress(false);
+      if (error != null) {
+        UI.showError(error);
+      } else {
+        processNewPasswordState(passwordState, password);
       }
     }));
   }

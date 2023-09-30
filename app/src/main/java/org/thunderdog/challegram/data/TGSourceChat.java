@@ -16,9 +16,7 @@ package org.thunderdog.challegram.data;
 
 import android.view.View;
 
-import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
@@ -31,7 +29,7 @@ import org.thunderdog.challegram.util.text.TextPart;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.MessageId;
 
-public class TGSourceChat extends TGSource implements Client.ResultHandler, Runnable {
+public class TGSourceChat extends TGSource implements Runnable {
   private final long chatId;
   private final String authorSignature;
   private final long messageId;
@@ -60,7 +58,23 @@ public class TGSourceChat extends TGSource implements Client.ResultHandler, Runn
       if (chat != null) {
         setChat(chat);
       } else {
-        msg.tdlib().client().send(new TdApi.GetChat(chatId), this);
+        msg.tdlib().send(new TdApi.GetChat(chatId), (remoteChat, error) -> {
+          if (error != null) {
+            this.title = Lang.getString(R.string.ChannelPrivate);
+            this.isReady = true;
+            this.photo = null;
+            Background.instance().post(() -> {
+              msg.rebuildForward();
+              msg.postInvalidate();
+            });
+          } else {
+            setChat(msg.tdlib().chat(remoteChat.id));
+            Background.instance().post(() -> {
+              msg.rebuildForward();
+              msg.postInvalidate();
+            });
+          }
+        });
       }
     }
   }
@@ -79,34 +93,6 @@ public class TGSourceChat extends TGSource implements Client.ResultHandler, Runn
   public void run () {
     msg.rebuildForward();
     msg.postInvalidate();
-  }
-
-  @Override
-  public void onResult (TdApi.Object object) {
-    switch (object.getConstructor()) {
-      case TdApi.Chat.CONSTRUCTOR: {
-        setChat(msg.tdlib().chat(((TdApi.Chat) object).id));
-        Background.instance().post(() -> {
-          msg.rebuildForward();
-          msg.postInvalidate();
-        });
-        break;
-      }
-      case TdApi.Error.CONSTRUCTOR: {
-        this.title = Lang.getString(R.string.ChannelPrivate);
-        this.isReady = true;
-        this.photo = null;
-        Background.instance().post(() -> {
-          msg.rebuildForward();
-          msg.postInvalidate();
-        });
-        break;
-      }
-      default: {
-        Log.unexpectedTdlibResponse(object, TdApi.GetChat.class, TdApi.Chat.class);
-        break;
-      }
-    }
   }
 
   @Override

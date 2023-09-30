@@ -368,41 +368,32 @@ public class SearchManager {
       searchLocalChats(currentContextId, chatList, query);
       return;
     }
-    tdlib.client().send(new TdApi.GetTopChats((searchFlags & FLAG_TOP_SEARCH_CATEGORY_GROUPS) != 0 ? new TdApi.TopChatCategoryGroups() : new TdApi.TopChatCategoryUsers(), 30), object -> {
+    tdlib.send(new TdApi.GetTopChats((searchFlags & FLAG_TOP_SEARCH_CATEGORY_GROUPS) != 0 ? new TdApi.TopChatCategoryGroups() : new TdApi.TopChatCategoryUsers(), 30), (topChats, error) -> {
       if (contextId == currentContextId || isCheck) {
         final ArrayList<TGFoundChat> foundTopChats;
         final long[] foundTopChatIds;
-        switch (object.getConstructor()) {
-          case TdApi.Chats.CONSTRUCTOR: {
-            long[] chatIds = ((TdApi.Chats) object).chatIds;
-            ArrayList<TGFoundChat> foundChats = new ArrayList<>(chatIds.length);
-            int resultCount = parseResult(tdlib, listener, searchFlags, foundChats, chatList, chatIds, null, false, null);
-            if (resultCount == 0) {
-              foundTopChats = null;
-              foundTopChatIds = null;
-            } else if (resultCount == chatIds.length) {
-              foundTopChats = foundChats;
-              foundTopChatIds = chatIds;
-            } else {
-              foundTopChats = foundChats;
-              foundTopChatIds = new long[resultCount];
-              int i = 0;
-              for (TGFoundChat chat : foundChats) {
-                foundTopChatIds[i] = chat.getId();
-                i++;
-              }
-            }
-            break;
-          }
-          case TdApi.Error.CONSTRUCTOR: {
-            Log.i("GetTopChats error, displaying no results: %s", TD.toErrorString(object));
+        if (error != null) {
+          Log.i("GetTopChats error, displaying no results: %s", TD.toErrorString(error));
+          foundTopChats = null;
+          foundTopChatIds = null;
+        } else {
+          long[] chatIds = topChats.chatIds;
+          ArrayList<TGFoundChat> foundChats = new ArrayList<>(chatIds.length);
+          int resultCount = parseResult(tdlib, listener, searchFlags, foundChats, chatList, chatIds, null, false, null);
+          if (resultCount == 0) {
             foundTopChats = null;
             foundTopChatIds = null;
-            break;
-          }
-          default: {
-            Log.unexpectedTdlibResponse(object, TdApi.GetTopChats.class, TdApi.Chats.class, TdApi.Error.class);
-            return;
+          } else if (resultCount == chatIds.length) {
+            foundTopChats = foundChats;
+            foundTopChatIds = chatIds;
+          } else {
+            foundTopChats = foundChats;
+            foundTopChatIds = new long[resultCount];
+            int i = 0;
+            for (TGFoundChat chat : foundChats) {
+              foundTopChatIds[i] = chat.getId();
+              i++;
+            }
           }
         }
         tdlib.ui().post(() -> {
@@ -889,26 +880,17 @@ public class SearchManager {
 
     tdlib.ui().post(runnable);
 
-    tdlib.client().send(new TdApi.SearchPublicChats(usernameQuery), object -> {
+    tdlib.send(new TdApi.SearchPublicChats(usernameQuery), (remoteChats, error) -> {
       if (contextId == currentContextId) {
         runnable.cancel();
         final ArrayList<TGFoundChat> foundChats;
-        switch (object.getConstructor()) {
-          case TdApi.Chats.CONSTRUCTOR: {
-            long[] chatIds = ((TdApi.Chats) object).chatIds;
-            foundChats = new ArrayList<>(chatIds.length);
-            parseResult(tdlib, listener, searchFlags & (~FLAG_ONLY_CONTACTS), foundChats, chatList, chatIds, usernameQuery, true, null);
-            break;
-          }
-          case TdApi.Error.CONSTRUCTOR: {
-            Log.i("SearchPublicChats error, showing no results: %s", TD.toErrorString(object));
-            foundChats = null;
-            break;
-          }
-          default: {
-            Log.unexpectedTdlibResponse(object, TdApi.SearchChats.class, TdApi.Chats.class, TdApi.Error.class);
-            return;
-          }
+        if (error != null) {
+          Log.i("SearchPublicChats error, showing no results: %s", TD.toErrorString(error));
+          foundChats = null;
+        } else {
+          long[] chatIds = remoteChats.chatIds;
+          foundChats = new ArrayList<>(chatIds.length);
+          parseResult(tdlib, listener, searchFlags & (~FLAG_ONLY_CONTACTS), foundChats, chatList, chatIds, usernameQuery, true, null);
         }
         tdlib.ui().post(() -> {
           if (contextId == currentContextId) {
@@ -1019,9 +1001,9 @@ public class SearchManager {
       if (isMore) {
         offset = messageList.nextOffset;
       }
-      tdlib.client().send(new TdApi.SearchMessages(chatList, query, offset, loadCount, null, 0, 0), new Client.ResultHandler() {
+      tdlib.send(new TdApi.SearchMessages(chatList, query, offset, loadCount, null, 0, 0), new Tdlib.ResultHandler<>() {
         @Override
-        public void onResult (TdApi.Object object) {
+        public void onResult (TdApi.FoundMessages foundMessages, @Nullable TdApi.Error error) {
           if (contextId != currentContextId) {
             return;
           }
@@ -1030,36 +1012,26 @@ public class SearchManager {
           }
           final TGFoundMessage[] messages;
           final String nextOffset;
-          switch (object.getConstructor()) {
-            case TdApi.FoundMessages.CONSTRUCTOR: {
-              TdApi.FoundMessages foundMessages = (TdApi.FoundMessages) object;
-              List<TGFoundMessage> foundMessageList = new ArrayList<>(foundMessages.messages.length);
-              TdApi.Chat chat = null;
-              for (TdApi.Message message : foundMessages.messages) {
-                if (chat == null || chat.id != message.chatId)
-                  chat = tdlib.chat(message.chatId);
-                if (listener.filterMessageSearchResultSource(chat)) {
-                  foundMessageList.add(new TGFoundMessage(tdlib, chatList, chat, message, query));
-                }
+          if (error != null) {
+            Log.w("SearchMessages returned error, displaying no results: %s", TD.toErrorString(error));
+            messages = null;
+            nextOffset = null;
+          } else {
+            List<TGFoundMessage> foundMessageList = new ArrayList<>(foundMessages.messages.length);
+            TdApi.Chat chat = null;
+            for (TdApi.Message message : foundMessages.messages) {
+              if (chat == null || chat.id != message.chatId)
+                chat = tdlib.chat(message.chatId);
+              if (listener.filterMessageSearchResultSource(chat)) {
+                foundMessageList.add(new TGFoundMessage(tdlib, chatList, chat, message, query));
               }
-              if (foundMessageList.isEmpty() && !StringUtils.isEmpty(foundMessages.nextOffset)) {
-                tdlib.client().send(new TdApi.SearchMessages(chatList, query, foundMessages.nextOffset, loadCount, null, 0, 0), this);
-                return;
-              }
-              messages = foundMessageList.toArray(new TGFoundMessage[0]);
-              nextOffset = foundMessages.nextOffset;
-              break;
             }
-            case TdApi.Error.CONSTRUCTOR: {
-              Log.w("SearchMessages returned error, displaying no results: %s", TD.toErrorString(object));
-              messages = null;
-              nextOffset = null;
-              break;
-            }
-            default: {
-              Log.unexpectedTdlibResponse(object, TdApi.SearchMessages.class, TdApi.FoundMessages.class, TdApi.Error.class);
+            if (foundMessageList.isEmpty() && !StringUtils.isEmpty(foundMessages.nextOffset)) {
+              tdlib.send(new TdApi.SearchMessages(chatList, query, foundMessages.nextOffset, loadCount, null, 0, 0), this);
               return;
             }
+            messages = foundMessageList.toArray(new TGFoundMessage[0]);
+            nextOffset = foundMessages.nextOffset;
           }
           tdlib.ui().post(() -> {
             if (contextId == currentContextId) {
