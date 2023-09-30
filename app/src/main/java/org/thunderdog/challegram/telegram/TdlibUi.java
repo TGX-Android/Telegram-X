@@ -2658,6 +2658,7 @@ public class TdlibUi extends Handler {
         this.displayUrl = options.displayUrl;
         this.parentController = options.parentController;
         this.originalUrl = options.originalUrl;
+        this.sourceWebPage = options.sourceWebPage;
         if (options.sourceMessage != null) {
           sourceMessage(options.sourceMessage);
         }
@@ -2795,26 +2796,30 @@ public class TdlibUi extends Handler {
     });
   }
 
-  private void openExternalUrl (final TdlibDelegate context, final String originalUrl, @Nullable UrlOpenParameters options) {
+  private void openExternalUrl (final TdlibDelegate context, final String originalUrl, @Nullable UrlOpenParameters options, @Nullable RunnableBool after) {
     if (options != null && options.messageId != null && ChatId.isSecret(options.messageId.getChatId())) {
-      openUrlImpl(context, originalUrl, options);
+      openUrlImpl(context, originalUrl, options, after);
       return;
     }
-    tdlib.client().send(new TdApi.GetExternalLinkInfo(originalUrl), externalLinkInfoResult -> {
-      switch (externalLinkInfoResult.getConstructor()) {
+    tdlib.send(new TdApi.GetExternalLinkInfo(originalUrl), (loginUrlInfo, error) -> {
+      if (error != null) {
+        openUrlImpl(context, originalUrl, options, after);
+        return;
+      }
+      switch (loginUrlInfo.getConstructor()) {
         case TdApi.LoginUrlInfoOpen.CONSTRUCTOR: {
-          TdApi.LoginUrlInfoOpen open = (TdApi.LoginUrlInfoOpen) externalLinkInfoResult;
+          TdApi.LoginUrlInfoOpen open = (TdApi.LoginUrlInfoOpen) loginUrlInfo;
           if (options != null) {
             if (open.skipConfirmation) {
               options.disableOpenPrompt();
             }
             options.displayUrl(originalUrl);
           }
-          openUrlImpl(context, open.url, options);
+          openUrlImpl(context, open.url, options, after);
           break;
         }
         case TdApi.LoginUrlInfoRequestConfirmation.CONSTRUCTOR: {
-          TdApi.LoginUrlInfoRequestConfirmation confirm = (TdApi.LoginUrlInfoRequestConfirmation) externalLinkInfoResult;
+          TdApi.LoginUrlInfoRequestConfirmation confirm = (TdApi.LoginUrlInfoRequestConfirmation) loginUrlInfo;
           List<ListItem> items = new ArrayList<>();
           items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION_MULTILINE,
             R.id.btn_signIn, 0,
@@ -2845,19 +2850,13 @@ public class TdlibUi extends Handler {
                   boolean needSignIn = items.get(0).isSelected();
                   boolean needWriteAccess = items.size() > 1 && items.get(1).isSelected();
                   if (needSignIn) {
-                    context.tdlib().client().send(
-                      new TdApi.GetExternalLink(originalUrl, needWriteAccess), externalLinkResult -> {
-                        switch (externalLinkResult.getConstructor()) {
-                          case TdApi.HttpUrl.CONSTRUCTOR:
-                            openUrlImpl(context, ((TdApi.HttpUrl) externalLinkResult).url, options != null ? options.disableOpenPrompt() : null);
-                            break;
-                          case TdApi.Error.CONSTRUCTOR:
-                            openUrlImpl(context, originalUrl, options != null ? options.disableOpenPrompt() : null);
-                            break;
-                        }
+                    context.tdlib().send(
+                      new TdApi.GetExternalLink(originalUrl, needWriteAccess), (httpUrl, error1) -> {
+                        String destinationUrl = error1 != null ? originalUrl : httpUrl.url;
+                        openUrlImpl(context, destinationUrl, options != null ? options.disableOpenPrompt() : null, after);
                       });
                   } else {
-                    openUrlImpl(context, originalUrl, options != null ? options.disableOpenPrompt() : null);
+                    openUrlImpl(context, originalUrl, options != null ? options.disableOpenPrompt() : null, after);
                   }
                 })
                 .setSettingProcessor((item, itemView, isUpdate) -> {
@@ -2888,20 +2887,24 @@ public class TdlibUi extends Handler {
                 .setSaveStr(R.string.Open)
                 .setRawItems(items)
             );
+          } else {
+            if (after != null) {
+              after.runWithBool(false);
+            }
           }
           break;
         }
-        case TdApi.Error.CONSTRUCTOR: {
-          openUrlImpl(context, originalUrl, options);
-          break;
+        default: {
+          Td.assertLoginUrlInfo_7af29c11();
+          throw Td.unsupported(loginUrlInfo);
         }
       }
     });
   }
 
-  private void openUrlImpl (final TdlibDelegate context, final String url, @Nullable UrlOpenParameters options) {
+  private void openUrlImpl (final TdlibDelegate context, final String url, @Nullable UrlOpenParameters options, @Nullable RunnableBool after) {
     if (!UI.inUiThread()) {
-      tdlib.ui().post(() -> openUrlImpl(context, url, options));
+      tdlib.ui().post(() -> openUrlImpl(context, url, options, after));
       return;
     }
 
@@ -2915,7 +2918,7 @@ public class TdlibUi extends Handler {
         b.setMessage(Lang.getString(R.string.OpenThisLink, !StringUtils.isEmpty(options.displayUrl) ? options.displayUrl : url));
         b.setPositiveButton(Lang.getString(R.string.Open), (dialog, which) ->
           tdlib.ui()
-            .openExternalUrl(context, url, options.disableOpenPrompt())
+            .openExternalUrl(context, url, options.disableOpenPrompt(), after)
         );
         b.setNegativeButton(Lang.getString(R.string.Cancel), (dialog, which) -> dialog.dismiss());
         c.showAlert(b);
@@ -2924,7 +2927,10 @@ public class TdlibUi extends Handler {
     }
 
     if (uri == null) {
-      UI.openUrl(url);
+      boolean result = Intents.openLink(url);
+      if (after != null) {
+        after.runWithBool(result);
+      }
       return;
     }
 
@@ -2968,7 +2974,10 @@ public class TdlibUi extends Handler {
     final String externalUrl = options == null || StringUtils.isEmpty(options.instantViewFallbackUrl) ? url : options.instantViewFallbackUrl;
     final Uri uriFinal = uri;
     if (instantViewMode == INSTANT_VIEW_DISABLED && embedViewMode == EMBED_VIEW_DISABLED) {
-      UI.openUrl(url);
+      boolean result = Intents.openLink(url);
+      if (after != null) {
+        after.runWithBool(result);
+      }
       return;
     }
 
@@ -2978,6 +2987,9 @@ public class TdlibUi extends Handler {
         (webPage != null && PreviewLayout.show((ViewController<?>) context, webPage, isFromSecretChat)) ||
         (webPage == null && PreviewLayout.show((ViewController<?>) context, url, isFromSecretChat))
       ) {
+        if (after != null) {
+          after.runWithBool(true);
+        }
         return;
       }
     }
@@ -2986,60 +2998,51 @@ public class TdlibUi extends Handler {
     final AtomicReference<TdApi.WebPage> foundWebPage = new AtomicReference<>();
     CancellableRunnable[] runnable = new CancellableRunnable[1];
 
-    tdlib.client().send(new TdApi.GetWebPagePreview(new TdApi.FormattedText(url, null)), page -> {
-      switch (page.getConstructor()) {
-        case TdApi.WebPage.CONSTRUCTOR: {
-          TdApi.WebPage webPage = (TdApi.WebPage) page;
-          foundWebPage.set(webPage);
-          if (instantViewMode == INSTANT_VIEW_DISABLED || !TD.hasInstantView(webPage.instantViewVersion) || TD.shouldInlineIv(webPage)) {
-            post(runnable[0]);
-            return;
-          }
-          tdlib.client().send(new TdApi.GetWebPageInstantView(url, false), preview -> {
-            switch (preview.getConstructor()) {
-              case TdApi.WebPageInstantView.CONSTRUCTOR: {
-                TdApi.WebPageInstantView instantView = (TdApi.WebPageInstantView) preview;
-                if (!TD.hasInstantView(instantView.version)) {
-                  post(runnable[0]);
-                  return;
-                }
-                post(() -> {
-                  if (!signal.getAndSet(true)) {
-                    runnable[0].cancel();
-
-                    InstantViewController controller = new InstantViewController(context.context(), context.tdlib());
-                    try {
-                      controller.setArguments(new InstantViewController.Args(webPage, instantView, Uri.parse(url).getEncodedFragment()));
-                      controller.show();
-                    } catch (Throwable t) {
-                      Log.e("Unable to open instantView, url:%s", t, url);
-                      UI.showToast(R.string.InstantViewUnsupported, Toast.LENGTH_SHORT);
-                      UI.openUrl(externalUrl);
-                    }
-                  }
-                });
-                break;
-              }
-              case TdApi.Error.CONSTRUCTOR: {
-                post(runnable[0]);
-                break;
-              }
-            }
-          });
-          break;
-        }
-        case TdApi.Error.CONSTRUCTOR: {
-          post(runnable[0]);
-          break;
-        }
+    tdlib.send(new TdApi.GetWebPagePreview(new TdApi.FormattedText(url, null)), (webPage, error) -> {
+      if (error != null) {
+        post(runnable[0]);
+        return;
       }
+      foundWebPage.set(webPage);
+      if (instantViewMode == INSTANT_VIEW_DISABLED || !TD.hasInstantView(webPage.instantViewVersion) || TD.shouldInlineIv(webPage)) {
+        post(runnable[0]);
+        return;
+      }
+      tdlib.send(new TdApi.GetWebPageInstantView(url, false), (instantView, error1) -> {
+        if (error1 != null) {
+          post(runnable[0]);
+          return;
+        }
+        if (!TD.hasInstantView(instantView.version)) {
+          post(runnable[0]);
+          return;
+        }
+        post(() -> {
+          if (!signal.getAndSet(true)) {
+            runnable[0].cancel();
+
+            InstantViewController controller = new InstantViewController(context.context(), context.tdlib());
+            try {
+              controller.setArguments(new InstantViewController.Args(webPage, instantView, Uri.parse(url).getEncodedFragment()));
+              controller.show();
+              if (after != null) {
+                after.runWithBool(true);
+              }
+            } catch (Throwable t) {
+              Log.e("Unable to open instantView, url:%s", t, url);
+              UI.showToast(R.string.InstantViewUnsupported, Toast.LENGTH_SHORT);
+              UI.openUrl(externalUrl);
+            }
+          }
+        });
+      });
     });
     runnable[0] = new CancellableRunnable() {
       @Override
       public void act () {
         if (!signal.getAndSet(true)) {
           if (options != null && !StringUtils.isEmpty(options.instantViewFallbackUrl) && !options.instantViewFallbackUrl.equals(url) && !options.instantViewFallbackUrl.equals(options.originalUrl)) {
-            openUrl(context, options.instantViewFallbackUrl, new UrlOpenParameters(options).instantViewMode(INSTANT_VIEW_UNSPECIFIED));
+            openUrl(context, options.instantViewFallbackUrl, new UrlOpenParameters(options).instantViewMode(INSTANT_VIEW_UNSPECIFIED), after);
             return;
           }
           if (tdlib.isKnownHost(uriFinal.getHost(), false)) {
@@ -3047,7 +3050,7 @@ public class TdlibUi extends Handler {
             if (segments != null && segments.size() == 1 && "iv".equals(segments.get(0))) {
               String originalUrl = uriFinal.getQueryParameter("url");
               if (Strings.isValidLink(originalUrl)) {
-                openUrl(context, originalUrl, new UrlOpenParameters(options).disableInstantView());
+                openUrl(context, originalUrl, new UrlOpenParameters(options).disableInstantView(), after);
                 return;
               }
             }
@@ -3055,13 +3058,19 @@ public class TdlibUi extends Handler {
           if (embedViewMode == EMBED_VIEW_ENABLED) {
             TdApi.WebPage webPage = foundWebPage.get();
             if (context instanceof ViewController<?> && webPage != null && PreviewLayout.show((ViewController<?>) context, webPage, isFromSecretChat)) {
+              if (after != null) {
+                after.runWithBool(true);
+              }
               return;
             }
           }
           if (!externalUrl.equals(url) && !(options != null && externalUrl.equals(options.originalUrl))) {
-            openUrl(context, externalUrl, new UrlOpenParameters(options).instantViewMode(INSTANT_VIEW_UNSPECIFIED));
+            openUrl(context, externalUrl, new UrlOpenParameters(options).instantViewMode(INSTANT_VIEW_UNSPECIFIED), after);
           } else {
-            UI.openUrl(externalUrl);
+            boolean result = Intents.openLink(externalUrl);
+            if (after != null) {
+              after.runWithBool(result);
+            }
           }
         }
       }
@@ -3071,9 +3080,17 @@ public class TdlibUi extends Handler {
   }
 
   public void openUrl (final TdlibDelegate context, final String url, @Nullable UrlOpenParameters options) {
+    openUrl(context, url, options, null);
+  }
+  
+  public void openUrl (final TdlibDelegate context, final String url, @Nullable UrlOpenParameters options, @Nullable RunnableBool after) {
     openTelegramUrl(context, url, options, processed -> {
       if (!processed) {
-        openExternalUrl(context, url, options);
+        openExternalUrl(context, url, options, after);
+      } else {
+        if (after != null) {
+          after.runWithBool(true);
+        }
       }
     });
   }
@@ -3381,22 +3398,22 @@ public class TdlibUi extends Handler {
       return;
     }
     AtomicReference<String> url = new AtomicReference<>(preProcessTelegramUrl(rawUrl));
-    tdlib.client().send(new TdApi.GetInternalLinkType(url.get()), new Client.ResultHandler() {
+    tdlib.send(new TdApi.GetInternalLinkType(url.get()), new Tdlib.ResultHandler<>() {
       @Override
-      public void onResult (TdApi.Object result) {
+      public void onResult (TdApi.InternalLinkType internalLinkType, @Nullable TdApi.Error error) {
         final String currentUrl = url.get();
         TdApi.InternalLinkType linkType;
-        if (result instanceof TdApi.InternalLinkTypeUnknownDeepLink) {
-          TdApi.InternalLinkType parsedType = parseTelegramUrl(rawUrl);
-          linkType = parsedType != null ? parsedType : (TdApi.InternalLinkType) result;
-        } else if (result instanceof TdApi.InternalLinkType) {
-          linkType = (TdApi.InternalLinkType) result;
-        } else {
+        if (error != null) {
           linkType = parseTelegramUrl(rawUrl);
+        } else if (internalLinkType instanceof TdApi.InternalLinkTypeUnknownDeepLink) {
+          TdApi.InternalLinkType parsedType = parseTelegramUrl(rawUrl);
+          linkType = parsedType != null ? parsedType : internalLinkType;
+        } else {
+          linkType = internalLinkType;
         }
-        if ((linkType == null || result instanceof TdApi.InternalLinkTypeUnknownDeepLink) && !url.get().equals(rawUrl)) {
+        if ((linkType == null || internalLinkType instanceof TdApi.InternalLinkTypeUnknownDeepLink) && !url.get().equals(rawUrl)) {
           url.set(rawUrl);
-          tdlib.client().send(new TdApi.GetInternalLinkType(url.get()), this);
+          tdlib.send(new TdApi.GetInternalLinkType(url.get()), this);
           return;
         }
         if (linkType == null) {
@@ -3405,9 +3422,9 @@ public class TdlibUi extends Handler {
           }
           return;
         }
-        post(() -> {
-          openInternalLinkType(context, currentUrl, linkType, openParameters, after);
-        });
+        post(() ->
+          openInternalLinkType(context, currentUrl, linkType, openParameters, after)
+        );
       }
     });
   }
@@ -3419,8 +3436,12 @@ public class TdlibUi extends Handler {
       );
       return;
     }
-    if (context.context().navigation().isDestroyed())
+    if (context.context().navigation().isDestroyed()) {
+      if (after != null) {
+        after.runWithBool(false);
+      }
       return;
+    }
     boolean ok = true;
     switch (linkType.getConstructor()) {
       case TdApi.InternalLinkTypeStickerSet.CONSTRUCTOR: {
@@ -3545,7 +3566,8 @@ public class TdlibUi extends Handler {
         startBot(context, game.botUsername, game.gameShortName, BOT_MODE_START_GAME, openParameters);
         break;
       }
-      case TdApi.InternalLinkTypeSettings.CONSTRUCTOR: {
+      case TdApi.InternalLinkTypeSettings.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeEditProfileSettings.CONSTRUCTOR: {
         SettingsController c = new SettingsController(context.context(), context.tdlib());
         context.context().navigation().navigateTo(c);
         break;
@@ -3569,7 +3591,7 @@ public class TdlibUi extends Handler {
       case TdApi.InternalLinkTypePublicChat.CONSTRUCTOR: {
         TdApi.InternalLinkTypePublicChat publicChat = (TdApi.InternalLinkTypePublicChat) linkType;
         if (TdConstants.IV_PREVIEW_USERNAME.equals(publicChat.chatUsername) & !StringUtils.isEmpty(originalUrl)) {
-          openExternalUrl(context, originalUrl, new UrlOpenParameters(openParameters).forceInstantView());
+          openExternalUrl(context, originalUrl, new UrlOpenParameters(openParameters).forceInstantView(), after);
         } else {
           openPublicChat(context, publicChat.chatUsername, openParameters);
         }
@@ -3583,7 +3605,7 @@ public class TdlibUi extends Handler {
         if (!StringUtils.isEmpty(originalUrl)) {
           instantViewOpenParameters.originalUrl(originalUrl);
         }
-        openExternalUrl(context, instantView.url, instantViewOpenParameters);
+        openExternalUrl(context, instantView.url, instantViewOpenParameters, after);
         break;
       }
       case TdApi.InternalLinkTypeActiveSessions.CONSTRUCTOR: {
@@ -3594,10 +3616,22 @@ public class TdlibUi extends Handler {
         break;
       }
 
+      case TdApi.InternalLinkTypeStory.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeChatFolderSettings.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeChatFolderInvite.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeDefaultMessageAutoDeleteTimerSettings.CONSTRUCTOR:
+
       case TdApi.InternalLinkTypeAttachmentMenuBot.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeWebApp.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeSideMenuBot.CONSTRUCTOR:
+
       case TdApi.InternalLinkTypeInvoice.CONSTRUCTOR:
+
       case TdApi.InternalLinkTypePremiumFeatures.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeRestorePurchases.CONSTRUCTOR: {
+      case TdApi.InternalLinkTypeRestorePurchases.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeChatBoost.CONSTRUCTOR:
+
+      case TdApi.InternalLinkTypePassportDataRequest.CONSTRUCTOR: {
         showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
         break;
       }
@@ -3619,73 +3653,50 @@ public class TdlibUi extends Handler {
       case TdApi.InternalLinkTypeBackground.CONSTRUCTOR: {
         TdApi.InternalLinkTypeBackground background = (TdApi.InternalLinkTypeBackground) linkType;
         // TODO show progress?
-        tdlib.client().send(new TdApi.SearchBackground(background.backgroundName), backgroundObj -> {
-          switch (backgroundObj.getConstructor()) {
-            case TdApi.Background.CONSTRUCTOR: {
-              TdApi.Background wallpaper = (TdApi.Background) backgroundObj;
-
-              post(() -> {
-                MessagesController c = new MessagesController(context.context(), context.tdlib());
-                c.setArguments(new MessagesController.Arguments(MessagesController.PREVIEW_MODE_WALLPAPER_OBJECT, null, null).setWallpaperObject(wallpaper));
-                context.context().navigation().navigateTo(c);
-
-                if (after != null) {
-                  after.runWithBool(true);
-                }
-              });
-              break;
+        tdlib.send(new TdApi.SearchBackground(background.backgroundName), (wallpaper, error) -> {
+          if (error != null) {
+            if (after != null) {
+              post(() -> after.runWithBool(false));
             }
-            case TdApi.Error.CONSTRUCTOR: {
+          } else {
+            post(() -> {
+              MessagesController c = new MessagesController(context.context(), context.tdlib());
+              c.setArguments(new MessagesController.Arguments(MessagesController.PREVIEW_MODE_WALLPAPER_OBJECT, null, null).setWallpaperObject(wallpaper));
+              context.context().navigation().navigateTo(c);
+
               if (after != null) {
-                post(() -> after.runWithBool(false));
+                after.runWithBool(true);
               }
-              break;
-            }
+            });
           }
         });
         return;
       }
-      case TdApi.InternalLinkTypeChatFolderSettings.CONSTRUCTOR: {
-        // TODO show chat folders screen
-        ok = false;
-        break;
-      }
-      case TdApi.InternalLinkTypePassportDataRequest.CONSTRUCTOR: {
-        TdApi.InternalLinkTypePassportDataRequest passportData = (TdApi.InternalLinkTypePassportDataRequest) linkType;
-        // TODO ?
-        break;
-      }
       case TdApi.InternalLinkTypeUnknownDeepLink.CONSTRUCTOR: {
         // TODO progress
         TdApi.InternalLinkTypeUnknownDeepLink unknownDeepLink = (TdApi.InternalLinkTypeUnknownDeepLink) linkType;
-        tdlib.client().send(new TdApi.GetDeepLinkInfo(unknownDeepLink.link), deepLinkResult -> {
-          switch (deepLinkResult.getConstructor()) {
-            case TdApi.DeepLinkInfo.CONSTRUCTOR: {
-              TdApi.DeepLinkInfo deepLink = (TdApi.DeepLinkInfo) deepLinkResult;
-              post(() -> {
-                ViewController<?> c = context.context().navigation().getCurrentStackItem();
-                if (c != null) {
-                  c.processDeepLinkInfo(deepLink);
-                }
-                if (after != null) {
-                  after.runWithBool(true);
-                }
-              });
-              break;
+        tdlib.send(new TdApi.GetDeepLinkInfo(unknownDeepLink.link), (deepLink, error) -> {
+          if (error != null) {
+            if (after != null) {
+              post(() -> after.runWithBool(false));
             }
-            case TdApi.Error.CONSTRUCTOR: {
-              if (after != null) {
-                post(() -> after.runWithBool(false));
+          } else {
+            post(() -> {
+              ViewController<?> c = context.context().navigation().getCurrentStackItem();
+              if (c != null) {
+                c.processDeepLinkInfo(deepLink);
               }
-              break;
-            }
+              if (after != null) {
+                after.runWithBool(true);
+              }
+            });
           }
         });
         return; // async
       }
       default: {
-        ok = false;
-        break;
+        Td.assertInternalLinkType_1783a2fc();
+        throw Td.unsupported(linkType);
       }
     }
     if (after != null) {

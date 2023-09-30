@@ -147,6 +147,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.LongList;
 import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.lambda.CancellableRunnable;
+import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.ChatId;
@@ -8872,31 +8873,39 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (!isSponsoredMessage()) {
       return;
     }
-    trackSponsoredMessageClicked();
+    final RunnableBool after = ok -> {
+      if (ok) {
+        trackSponsoredMessageClicked();
+      }
+    };
+    TdlibUi.UrlOpenParameters openParameters = openParameters()
+      .requireOpenPrompt();
     TdApi.MessageSponsor sponsor = sponsoredMessage.sponsor;
     switch (sponsor.type.getConstructor()) {
       case TdApi.MessageSponsorTypeBot.CONSTRUCTOR: {
         TdApi.MessageSponsorTypeBot bot = (TdApi.MessageSponsorTypeBot) sponsor.type;
-        tdlib.ui().openInternalLinkType(this, null, bot.link, openParameters(), null);
+        tdlib.ui().openInternalLinkType(this, null, bot.link, openParameters, after);
         break;
       }
       case TdApi.MessageSponsorTypePublicChannel.CONSTRUCTOR: {
         TdApi.MessageSponsorTypePublicChannel publicChannel = (TdApi.MessageSponsorTypePublicChannel) sponsor.type;
         if (publicChannel.link != null) {
-          tdlib.ui().openInternalLinkType(this, null, publicChannel.link, openParameters(), null);
+          tdlib.ui().openInternalLinkType(this, null, publicChannel.link, openParameters, after);
         } else {
-          tdlib.ui().openChat(this, publicChannel.chatId, new TdlibUi.ChatOpenParameters().urlOpenParameters(openParameters()).keepStack());
+          tdlib.ui().openChat(this, publicChannel.chatId, new TdlibUi.ChatOpenParameters().urlOpenParameters(openParameters).keepStack().after(chatId -> {
+            after.runWithBool(true);
+          }));
         }
         break;
       }
       case TdApi.MessageSponsorTypePrivateChannel.CONSTRUCTOR: {
         TdApi.MessageSponsorTypePrivateChannel privateChannel = (TdApi.MessageSponsorTypePrivateChannel) sponsor.type;
-        tdlib.ui().openUrl(this, privateChannel.inviteLink, openParameters());
+        tdlib.ui().openUrl(this, privateChannel.inviteLink, openParameters, after);
         break;
       }
       case TdApi.MessageSponsorTypeWebsite.CONSTRUCTOR: {
         TdApi.MessageSponsorTypeWebsite website = (TdApi.MessageSponsorTypeWebsite) sponsor.type;
-        tdlib.ui().openUrl(this, website.url, openParameters());
+        tdlib.ui().openUrl(this, website.url, openParameters, after);
         break;
       }
       default:
