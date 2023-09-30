@@ -455,6 +455,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private int chatFolderMaxCount = 10, folderChosenChatMaxCount = 100;
   private int addedShareableChatFolderMaxCount = 2, chatFolderInviteLinkMaxCount = 3;
   private long chatFolderUpdatePeriod = 300; // Seconds
+  private int activeStoryCountMax = 100, weeklySentStoryCountMax = 700,monthlySentStoryCountMax = 3000;
+  private boolean canUseTextEntitiesInStoryCaptions;
+  private int storyCaptionLengthMax = 2048;
+  private int storySuggestedReactionAreaCountMax = 5;
+  private int storyViewersExpirationDelay = 86400;
+  private int storyStealhModeCooldownPeriod = 3600, storyStealthModeFuturePeriod = 1500, storyStealthModePastPeriod = 300;
   private boolean isPremium, isPremiumAvailable;
   private @GiftPremiumOption int giftPremiumOptions;
   private boolean suggestOnlyApiStickers;
@@ -8883,6 +8889,37 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         break;
       case "bio_length_max":
         this.maxBioLength = Td.intValue(update.value);
+        break;
+
+      case "active_story_count_max":
+        this.activeStoryCountMax = Td.intValue(update.value);
+        break;
+      case "weekly_sent_story_count_max":
+        this.weeklySentStoryCountMax = Td.intValue(update.value);
+        break;
+      case "monthly_sent_story_count_max":
+        this.monthlySentStoryCountMax = Td.intValue(update.value);
+        break;
+      case "can_use_text_entities_in_story_caption":
+        this.canUseTextEntitiesInStoryCaptions = Td.boolValue(update.value);
+        break;
+      case "story_caption_length_max":
+        this.storyCaptionLengthMax = Td.intValue(update.value);
+        break;
+      case "story_suggested_reaction_area_count_max":
+        this.storySuggestedReactionAreaCountMax = Td.intValue(update.value);
+        break;
+      case "story_viewers_expiration_delay":
+        this.storyViewersExpirationDelay = Td.intValue(update.value);
+        break;
+      case "story_stealth_mode_cooldown_period":
+        this.storyStealhModeCooldownPeriod = Td.intValue(update.value);
+        break;
+      case "story_stealth_mode_future_period":
+        this.storyStealthModeFuturePeriod = Td.intValue(update.value);
+        break;
+      case "story_stealth_mode_past_period":
+        this.storyStealthModePastPeriod = Td.intValue(update.value);
         break;
 
       // Service accounts and chats
