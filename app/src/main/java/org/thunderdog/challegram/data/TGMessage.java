@@ -101,6 +101,7 @@ import org.thunderdog.challegram.ui.TranslationControllerV2;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.util.LanguageDetector;
+import org.thunderdog.challegram.util.NonBubbleEmojiLayout;
 import org.thunderdog.challegram.util.ReactionsCounterDrawable;
 import org.thunderdog.challegram.util.TranslationCounterDrawable;
 import org.thunderdog.challegram.util.text.Counter;
@@ -7574,9 +7575,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     final TdApi.MessageAnimatedEmoji pendingMessageEmoji = pendingContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR ?
       ((TdApi.MessageAnimatedEmoji) pendingContent) : null;
     final boolean pendingContentIsCustomEmoji = allowCustomEmoji && (
-      (pendingMessageText != null && TD.isOnlyCustomEmojiText(pendingMessageText.text)) ||
-      (pendingMessageEmoji != null));
-
+      (pendingMessageText != null && NonBubbleEmojiLayout.isValidEmojiText(pendingMessageText.text)) || (pendingMessageEmoji != null));
     if (oldContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
       TdApi.MessageAnimatedEmoji oldEmoji = nonNull((TdApi.MessageAnimatedEmoji) oldContent);
       if (pendingContentIsCustomEmoji) {
@@ -7635,7 +7634,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         }
         case TdApi.MessageText.CONSTRUCTOR: {
           TdApi.MessageText messageText = nonNull((TdApi.MessageText) content);
-          if (allowEmoji && TD.isOnlyCustomEmojiText(messageText.text)) {
+          if (allowEmoji && NonBubbleEmojiLayout.isValidEmojiText(messageText.text)) {
             return new TGMessageSticker(context, msg, messageText, null);
           }
           return new TGMessageText(context, msg, nonNull((TdApi.MessageText) content), null);

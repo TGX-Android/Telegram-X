@@ -37,6 +37,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.NonBubbleEmojiLayout;
 import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -134,7 +135,7 @@ public class TGMessageText extends TGMessage {
       TdApi.MessageContent messageContent = tdlib.getPendingMessageText(chatId, messageId);
       boolean allowEmoji = !Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI);
       if (messageContent != null && messageContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR && allowEmoji) {
-        if (TD.isOnlyCustomEmojiText(((TdApi.MessageText) messageContent).text)) {
+        if (NonBubbleEmojiLayout.isValidEmojiText(((TdApi.MessageText) messageContent).text)) {
           return MESSAGE_REPLACE_REQUIRED;
         }
       }
@@ -333,7 +334,7 @@ public class TGMessageText extends TGMessage {
   protected boolean isSupportedMessageContent (TdApi.Message message, TdApi.MessageContent messageContent) {
     final boolean allowEmoji = !Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI);
     if (messageContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
-      return !(TD.isOnlyCustomEmojiText(((TdApi.MessageText) messageContent).text) && allowEmoji);
+      return !(NonBubbleEmojiLayout.isValidEmojiText(((TdApi.MessageText) messageContent).text) && allowEmoji);
     }
     if (messageContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR)
       return !allowEmoji;

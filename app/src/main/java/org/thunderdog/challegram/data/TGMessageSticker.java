@@ -16,6 +16,7 @@ package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
 import android.graphics.Path;
+import android.graphics.Rect;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -29,6 +30,8 @@ import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.emoji.Emoji;
+import org.thunderdog.challegram.emoji.EmojiInfo;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -45,6 +48,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.NonBubbleEmojiLayout;
 import org.thunderdog.challegram.util.text.TextMedia;
 
 import java.util.ArrayList;
@@ -60,13 +64,18 @@ import me.vkryl.td.TdConstants;
 public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener, TdlibEmojiManager.Watcher {
   private @Nullable TdApi.DiceStickers sticker;
   private @Nullable TdApi.FormattedText formattedText;
+  private @Nullable NonBubbleEmojiLayout multiEmojiLayout;
 
   private List<Representation> representation;
 
   private class Representation {
     public final long stickerId;
+    public final String emoji;
+    public final @Nullable EmojiInfo emojiInfo;
+
     public @Nullable TdApi.Sticker sticker;
-    public int xIndex, yIndex;
+    public float xIndex;
+    public int yIndex;
     public int width, height;
     public Path outline;
 
@@ -81,11 +90,13 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     public boolean needRepainting;
 
     public Representation (@NonNull TdApi.Sticker sticker, int fitzpatrickType, boolean allowNoLoop, boolean forcePlayOnce) {
-      this(sticker.id, sticker, fitzpatrickType, allowNoLoop, forcePlayOnce);
+      this(sticker.id, sticker.emoji, sticker, fitzpatrickType, allowNoLoop, forcePlayOnce);
     }
 
-    public Representation (long stickerId, @Nullable TdApi.Sticker sticker, int fitzpatrickType, boolean allowNoLoop, boolean forcePlayOnce) {
+    public Representation (long stickerId, String emoji, @Nullable TdApi.Sticker sticker, int fitzpatrickType, boolean allowNoLoop, boolean forcePlayOnce) {
       this.stickerId = stickerId;
+      this.emoji = emoji;
+      this.emojiInfo = stickerId == 0 ? Emoji.instance().getEmojiInfo(emoji) : null;
       setSticker(sticker, fitzpatrickType, allowNoLoop, forcePlayOnce);
     }
 
@@ -154,6 +165,9 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
 
     public void requestFiles (int key, ComplexReceiver receiver, boolean invalidate) {
       if (sticker == null) {
+        receiver.getGifReceiver(key).requestFile(null);
+        receiver.getImageReceiver(key).requestFile(null);
+        receiver.getPreviewReceiver(key).clear();
         return;
       }
       if (!invalidate) {
@@ -194,7 +208,8 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
   private static final int SPECIAL_TYPE_DICE = 2;
 
   private int stickerWidth, stickerHeight;
-  private int stickerRowsCount, stickersMaxRowSize;
+  private int stickerRowsCount;
+  private float stickersMaxRowSize;
   private final int specialType;
   private TdApi.MessageDice dice;
   private TdApi.MessageContent currentEmoji, animatedEmoji, pendingEmoji;
@@ -278,7 +293,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
         if (animatedEmoji != null && content.getConstructor() != animatedEmoji.getConstructor()) {
           return MESSAGE_REPLACE_REQUIRED;
         }
-        if (content.getConstructor() == TdApi.MessageText.CONSTRUCTOR && !TD.isOnlyCustomEmojiText(((TdApi.MessageText) content).text)) {
+        if (content.getConstructor() == TdApi.MessageText.CONSTRUCTOR && !NonBubbleEmojiLayout.isValidEmojiText(((TdApi.MessageText) content).text)) {
           return MESSAGE_REPLACE_REQUIRED;
         }
         if (content.getConstructor() != TdApi.MessageAnimatedEmoji.CONSTRUCTOR && content.getConstructor() != TdApi.MessageText.CONSTRUCTOR) {
@@ -402,7 +417,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
   protected boolean isSupportedMessageContent (TdApi.Message message, TdApi.MessageContent messageContent) {
     if (messageContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
       final boolean allowEmoji = !Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI);
-      return allowEmoji && TD.isOnlyCustomEmojiText(((TdApi.MessageText) messageContent).text);
+      return allowEmoji && NonBubbleEmojiLayout.isValidEmojiText(((TdApi.MessageText) messageContent).text);
     }
     return super.isSupportedMessageContent(message, messageContent);
   }
@@ -424,16 +439,18 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
   private void setStickers (TdApi.FormattedText text) {
     this.formattedText = text;
     this.sticker = null;
-    final List<Representation> representation = new ArrayList<>();
-    if (TD.isOnlyCustomEmojiText(text)) {
-      for (TdApi.TextEntity entity: text.entities) {
-        TdApi.TextEntityTypeCustomEmoji emoji = ((TdApi.TextEntityTypeCustomEmoji) entity.type);
-        TdlibEmojiManager.Entry entry = tdlib.emoji().findOrPostponeRequest(emoji.customEmojiId, this);
-        representation.add(new Representation(emoji.customEmojiId, entry != null ? entry.value : null, 0, true, false));
+    this.representation = new ArrayList<>();
+    this.multiEmojiLayout = NonBubbleEmojiLayout.create(text);
+    if (multiEmojiLayout != null) {
+      for (NonBubbleEmojiLayout.Item emojiR: multiEmojiLayout.items) {
+        if (emojiR.type == NonBubbleEmojiLayout.Item.EMOJI) {
+          TdlibEmojiManager.Entry entry = emojiR.customEmojiId != 0 ?
+            tdlib.emoji().findOrPostponeRequest(emojiR.customEmojiId, this) : null;
+          representation.add(new Representation(emojiR.customEmojiId, emojiR.emoji, entry != null ? entry.value : null, 0, true, false));
+        }
       }
       tdlib.emoji().performPostponedRequests();
     }
-    this.representation = representation;
   }
 
   private void setSticker (@Nullable TdApi.DiceStickers sticker, int fitzpatrickType, boolean isUpdate, boolean allowNoLoop) {
@@ -462,6 +479,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
         }
       }
     }
+    this.multiEmojiLayout = null;
     this.representation = representation;
   }
 
@@ -507,41 +525,31 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     }
 
     if (specialType == SPECIAL_TYPE_ANIMATED_EMOJI && currentEmoji != null && currentEmoji.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
-      final TdApi.FormattedText text = ((TdApi.MessageText) currentEmoji).text;
+      if (multiEmojiLayout == null) {
+        throw new IllegalArgumentException();
+      }
+
       final int minEmojiSize = Screen.dp(30);
       final int maxRowSize = origMaxWidth / minEmojiSize;
+      NonBubbleEmojiLayout.LayoutBuildResult layout = multiEmojiLayout.layout(maxRowSize, 0.2f);
 
-
-      int xIndex = 0, yIndex = 0, end, index = 0, maxRow = 0;
-      for (TdApi.TextEntity entity: text.entities) {
-        if (xIndex >= maxRowSize) {
-          xIndex = 0;
-          yIndex += 1;
-        }
-
-        if (representation != null && representation.size() > index) {
-          Representation repr = representation.get(index);
-          repr.xIndex = xIndex;
-          repr.yIndex = yIndex;
-        }
-
-        end = entity.offset + entity.length;
-        index += 1;
-        xIndex += 1;
-        maxRow = Math.max(maxRow, xIndex);
-
-        while (text.text.length() > end && text.text.charAt(end) == '\n') {
-          end += 1;
-          xIndex = 0;
-          yIndex += 1;
+      for (int a = 0; a < layout.representations.size(); a++) {
+        NonBubbleEmojiLayout.Representation emojiR = layout.representations.get(a);
+        if (representation != null && representation.size() > a) {
+          Representation repr = representation.get(a);
+          repr.xIndex = emojiR.x;
+          repr.yIndex = emojiR.y;
         }
       }
 
-      stickersMaxRowSize = maxRow;
-      stickerRowsCount = yIndex + 1;
+      stickersMaxRowSize = layout.maxLineSize;
+      stickerRowsCount = layout.linesCount;
 
-      float realMaxWidth = MathUtils.fromTo(max, origMaxWidth, MathUtils.clamp((float) stickersMaxRowSize / maxRowSize));
+      float realMaxWidth = MathUtils.fromTo(max, origMaxWidth, MathUtils.clamp(stickersMaxRowSize / maxRowSize));
       stickerWidth = stickerHeight = (int) Math.min(realMaxWidth / stickersMaxRowSize, Math.max(max / stickerRowsCount, minEmojiSize));
+      if (layout.hasClassicEmoji) {
+        stickerWidth = stickerHeight = Math.min(stickerWidth, Screen.dp(40));
+      }
     } else {
       stickersMaxRowSize = stickerRowsCount = 1;
     }
@@ -554,7 +562,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
 
   @Override
   protected int getContentWidth () {
-    return stickerWidth * stickersMaxRowSize;
+    return (int) (stickerWidth * stickersMaxRowSize);
   }
 
   @Override
@@ -596,7 +604,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
       return super.getAbsolutelyRealRightContentEdge(view, timePartWidth);
     } else {
       int left = findStickerLeft();
-      int desiredLeft = left + stickerWidth * stickersMaxRowSize - timePartWidth;
+      int desiredLeft = (int) (left + stickerWidth * stickersMaxRowSize - timePartWidth);
       if (!useBubbles() || isOutgoingBubble()) {
         return desiredLeft;
       } else {
@@ -606,8 +614,10 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
   }
 
   private int findStickerLeft () {
-    return isOutgoingBubble() ? useBubble() ? getContentX() : getActualRightContentEdge() - stickerWidth * stickersMaxRowSize : getContentX();
+    return isOutgoingBubble() ? (int) (useBubble() ? getContentX() : getActualRightContentEdge() - stickerWidth * stickersMaxRowSize) : getContentX();
   }
+
+  private final static Rect tmpRect = new Rect();
 
   @Override
   protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth, ComplexReceiver receiver) {
@@ -617,7 +627,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     if (representation != null) {
       int index = 0;
       for (Representation representation : representation) {
-        int left = leftDefault + stickerWidth * (representation.xIndex);
+        int left = (int) (leftDefault + stickerWidth * (representation.xIndex));
         int top = topDefault + stickerHeight * (representation.yIndex);
         if (representation.outline != null) {
           DoubleImageReceiver preview = receiver.getPreviewReceiver(index);
@@ -640,7 +650,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
           if (isTgsSticker && a == 1 || !isTgsSticker && a == 0) {
             final float scale = needScale && representation.sticker != null ? TextMedia.getScale(representation.sticker, stickerWidth) : 1f;
 
-            int left = leftDefault + stickerWidth * (representation.xIndex);
+            int left = (int) (leftDefault + stickerWidth * (representation.xIndex));
             int top = topDefault + stickerHeight * (representation.yIndex);
             int right = left + stickerWidth;
             int bottom = top + stickerHeight;
@@ -651,14 +661,20 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
               saveScaleToCount = Views.save(c);
               c.scale(scale, scale, left + stickerWidth / 2f, top + stickerHeight / 2f);
             }
-            DoubleImageReceiver preview = receiver.getPreviewReceiver(index);
-            Receiver target = representation.isAnimated() ? receiver.getGifReceiver(index) : receiver.getImageReceiver(index);
-            if (representation.needRepainting) {
-              saveRepaintingToCount = Views.saveRepainting(c, target);
-            }
-            DrawAlgorithms.drawReceiver(c, preview, target, !representation.isAnimated(), false, left, top, right, bottom);
-            if (representation.needRepainting) {
-              Views.restoreRepainting(c, target, saveRepaintingToCount, getTextColorSet().emojiStatusColor());
+
+            if (representation.sticker == null && representation.emojiInfo != null) {
+              tmpRect.set(left + Screen.dp(2), top + Screen.dp(2), right - Screen.dp(2), bottom - Screen.dp(2));
+              Emoji.instance().draw(c, representation.emojiInfo, tmpRect);
+            } else {
+              DoubleImageReceiver preview = receiver.getPreviewReceiver(index);
+              Receiver target = representation.isAnimated() ? receiver.getGifReceiver(index) : receiver.getImageReceiver(index);
+              if (representation.needRepainting) {
+                saveRepaintingToCount = Views.saveRepainting(c, target);
+              }
+              DrawAlgorithms.drawReceiver(c, preview, target, !representation.isAnimated(), false, left, top, right, bottom);
+              if (representation.needRepainting) {
+                Views.restoreRepainting(c, target, saveRepaintingToCount, getTextColorSet().emojiStatusColor());
+              }
             }
             if (scale != 1f) {
               Views.restore(c, saveScaleToCount);
@@ -673,7 +689,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
           if (representation.outline == null) {
             continue;
           }
-          int left = leftDefault + stickerWidth * (representation.xIndex);
+          int left = (int) (leftDefault + stickerWidth * (representation.xIndex));
           int top = topDefault + stickerHeight * (representation.yIndex);
           final int saveCount = Views.save(c);
           c.translate(left, top);
@@ -756,7 +772,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
       case MotionEvent.ACTION_DOWN: {
         int left = findStickerLeft();
         int top = getContentY();
-        int right = left + stickerWidth * stickersMaxRowSize;
+        int right = (int) (left + stickerWidth * stickersMaxRowSize);
         int bottom = getContentY() + stickerHeight * stickerRowsCount;
         if (isCaught = (sticker != null && (x >= left && x < right && y >= top && y < bottom))) {
           startX = x;
