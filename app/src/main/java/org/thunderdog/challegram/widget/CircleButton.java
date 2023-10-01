@@ -607,5 +607,8 @@ public class CircleButton extends View implements FactorAnimator.Target, Reactio
     if (unreadReactionRaw != null && tdlib != null) {
       tdlib.listeners().removeReactionLoadListener(TD.makeReactionKey(unreadReactionRaw.type), this);
     }
+    unreadReactionRaw = null;
+    reaction = null;
+    sticker = null;
   }
 }
