@@ -36,6 +36,7 @@ import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.emoji.MediaStickersAdapter;
+import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
@@ -687,11 +688,11 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
         final int itemType = position < itemCount && !isUnknown ? parent.getAdapter().getItemViewType(position) : -1;
         int leftRight = 0, bottom = 0;
 
-        if (itemType == MediaStickersAdapter.StickerHolder.TYPE_STICKER) {
+        if (itemType == MediaStickersAdapter.StickerHolder.TYPE_STICKER || view instanceof StickerSmallView) {
           leftRight = Screen.dp(-1);
         }
 
-        if (position == itemCount - 1 || isUnknown) {
+        if (position == itemCount - 1) {
           int keyboardHeight = getKeyboardState() ? Keyboard.getSize(Keyboard.getSize()) : 0;
           bottom = Math.max(parent.getMeasuredHeight() - reactionsPickerController.measureItemsHeight(), keyboardHeight + Screen.dp(64));
         }
