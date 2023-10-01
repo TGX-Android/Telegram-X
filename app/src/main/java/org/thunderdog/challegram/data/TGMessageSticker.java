@@ -200,6 +200,9 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
         if (staticFile != null) {
           staticFile.setSize(Math.max(width, height));
         }
+        if (animatedFile != null) {
+          animatedFile.setRequestedSize(Math.max(width, height));
+        }
       }
     }
   }
