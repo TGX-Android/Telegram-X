@@ -116,7 +116,7 @@ import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 import me.vkryl.td.TdConstants;
 
-public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
+public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, DateChangeListener {
   @Override
   public final int accountId () {
     return id();
@@ -455,6 +455,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private int chatFolderMaxCount = 10, folderChosenChatMaxCount = 100;
   private int addedShareableChatFolderMaxCount = 2, chatFolderInviteLinkMaxCount = 3;
   private long chatFolderUpdatePeriod = 300; // Seconds
+  private int activeStoryCountMax = 100, weeklySentStoryCountMax = 700,monthlySentStoryCountMax = 3000;
+  private boolean canUseTextEntitiesInStoryCaptions;
+  private int storyCaptionLengthMax = 2048;
+  private int storySuggestedReactionAreaCountMax = 5;
+  private int storyViewersExpirationDelay = 86400;
+  private int storyStealhModeCooldownPeriod = 3600, storyStealthModeFuturePeriod = 1500, storyStealthModePastPeriod = 300;
   private boolean isPremium, isPremiumAvailable;
   private @GiftPremiumOption int giftPremiumOptions;
   private boolean suggestOnlyApiStickers;
@@ -1328,6 +1334,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     if (newStatus != Status.READY) {
       startupPerformed = false;
     }
+    setNeedTimeZoneListener(newStatus != Status.UNKNOWN);
     if (prevStatus == Status.UNKNOWN && newStatus != prevStatus) {
       onInitialized();
     }
@@ -1350,6 +1357,29 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     if (newStatus == Status.READY && stressTest > 0) {
       clientHolder().sendClose();
     }
+  }
+
+  private boolean needTimeZoneListener;
+
+  private void setNeedTimeZoneListener (boolean needTimeZoneListener) {
+    if (this.needTimeZoneListener != needTimeZoneListener) {
+      this.needTimeZoneListener = needTimeZoneListener;
+      if (needTimeZoneListener) {
+        context.dateManager().addListener(this);
+      } else {
+        context.dateManager().removeListener(this);
+      }
+    }
+  }
+
+  @Override
+  public void onTimeChanged () {
+    updateUtcTimeOffset();
+  }
+
+  @Override
+  public void onTimeZoneChanged () {
+    updateUtcTimeOffset();
   }
 
   private static TdApi.FormattedText makeUpdateText (String version, String changeLog) {
@@ -5577,10 +5607,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           throw new IllegalStateException(Integer.toString(state));
       }
     }
-    long timeZoneOffset = TimeUnit.MILLISECONDS.toSeconds(
-      TimeZone.getDefault().getRawOffset() +
-      TimeZone.getDefault().getDSTSavings()
-    );
+    long timeZoneOffset = timeZoneOffset();
     params.put("package_id", UI.getAppContext().getPackageName());
     String installerName = U.getInstallerPackageName();
     if (!StringUtils.isEmpty(installerName)) {
@@ -5617,6 +5644,22 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     params.put("git", git);
 
     return params;
+  }
+
+  private void updateUtcTimeOffset () {
+    performOptional(client -> {
+      long timeZoneOffset = timeZoneOffset();
+      if (this.utcTimeOffset != timeZoneOffset) {
+        client.send(new TdApi.SetOption("utc_time_offset", new TdApi.OptionValueInteger(timeZoneOffset)), silentHandler());
+      }
+    }, null);
+  }
+
+  public static long timeZoneOffset () {
+    return TimeUnit.MILLISECONDS.toSeconds(
+      TimeZone.getDefault().getRawOffset() +
+        TimeZone.getDefault().getDSTSavings()
+    );
   }
 
   private void checkConnectionParams (Client client, boolean force) {
@@ -8846,6 +8889,37 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         break;
       case "bio_length_max":
         this.maxBioLength = Td.intValue(update.value);
+        break;
+
+      case "active_story_count_max":
+        this.activeStoryCountMax = Td.intValue(update.value);
+        break;
+      case "weekly_sent_story_count_max":
+        this.weeklySentStoryCountMax = Td.intValue(update.value);
+        break;
+      case "monthly_sent_story_count_max":
+        this.monthlySentStoryCountMax = Td.intValue(update.value);
+        break;
+      case "can_use_text_entities_in_story_caption":
+        this.canUseTextEntitiesInStoryCaptions = Td.boolValue(update.value);
+        break;
+      case "story_caption_length_max":
+        this.storyCaptionLengthMax = Td.intValue(update.value);
+        break;
+      case "story_suggested_reaction_area_count_max":
+        this.storySuggestedReactionAreaCountMax = Td.intValue(update.value);
+        break;
+      case "story_viewers_expiration_delay":
+        this.storyViewersExpirationDelay = Td.intValue(update.value);
+        break;
+      case "story_stealth_mode_cooldown_period":
+        this.storyStealhModeCooldownPeriod = Td.intValue(update.value);
+        break;
+      case "story_stealth_mode_future_period":
+        this.storyStealthModeFuturePeriod = Td.intValue(update.value);
+        break;
+      case "story_stealth_mode_past_period":
+        this.storyStealthModePastPeriod = Td.intValue(update.value);
         break;
 
       // Service accounts and chats

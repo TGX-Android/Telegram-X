@@ -33,6 +33,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
 import androidx.core.os.CancellationSignal;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -74,6 +75,7 @@ import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.ConnectionListener;
 import org.thunderdog.challegram.telegram.ConnectionState;
 import org.thunderdog.challegram.telegram.CounterChangeListener;
+import org.thunderdog.challegram.telegram.DateChangeListener;
 import org.thunderdog.challegram.telegram.MessageEditListener;
 import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
@@ -137,7 +139,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   ForceTouchView.PreviewDelegate, LiveLocationHelper.Callback,
   BaseView.LongPressInterceptor, TdlibCache.UserStatusChangeListener,
   Settings.ChatListModeChangeListener, CounterChangeListener,
-  TdlibSettingsManager.PreferenceChangeListener, SelectDelegate, MoreDelegate {
+  TdlibSettingsManager.PreferenceChangeListener, SelectDelegate, MoreDelegate, DateChangeListener {
 
   private boolean progressVisible, initialLoadFinished;
   @Nullable
@@ -536,6 +538,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
     Settings.instance().addChatListModeListener(this);
     TGLegacyManager.instance().addEmojiListener(this);
+    tdlib.context().dateManager().addListener(this);
 
     list.initializeList(this, this::displayChats, chatsView.getInitialLoadCount(), () ->
       runOnUiThreadOptional(() -> {
@@ -2508,6 +2511,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     list.unsubscribeFromUpdates(this);
     TGLegacyManager.instance().removeEmojiListener(this);
     tdlib.contacts().removeListener(this);
+    tdlib.context().dateManager().removeListener(this);
   }
 
   // Updates
@@ -2713,6 +2717,14 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         chatsView.refreshLastMessage(chatId, messageId, false);
       }
     });
+  }
+
+  @Override
+  @UiThread
+  public void onDateChanged () {
+    if (!isDestroyed() && chatsView != null) {
+      chatsView.updateRelativeDate();
+    }
   }
 
   @Override
