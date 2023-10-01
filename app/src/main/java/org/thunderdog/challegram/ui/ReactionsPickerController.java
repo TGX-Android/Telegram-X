@@ -103,7 +103,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
     recyclerView = onCreateRecyclerView();
     recyclerView.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> reactionsController.invalidateStickerObjModifiers());
-    // recyclerView.setItemAnimator(null);
+    recyclerView.setItemAnimator(null); // tmp fix
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
       public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {}

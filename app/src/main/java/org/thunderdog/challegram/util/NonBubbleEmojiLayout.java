@@ -10,6 +10,8 @@ import org.thunderdog.challegram.emoji.EmojiSpan;
 
 import java.util.ArrayList;
 
+import me.vkryl.core.StringUtils;
+
 public class NonBubbleEmojiLayout {
   public final ArrayList<Item> items = new ArrayList<>();
 
@@ -40,29 +42,35 @@ public class NonBubbleEmojiLayout {
   }
 
   private static boolean isValidEmojiText (TdApi.FormattedText formattedText, @Nullable NonBubbleEmojiLayout layout) {
+    if (StringUtils.isEmpty(formattedText.text)) {
+      return false;
+    }
+
     final int textSize = formattedText.text.length();
     int index = 0;
-    for (TdApi.TextEntity entity : formattedText.entities) {
-      switch (entity.type.getConstructor()) {
-        case TdApi.TextEntityTypeBold.CONSTRUCTOR:
-        case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
-        case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
-        case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
-          continue;
-        case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR: {
-          int start = entity.offset;
-          int end = start + entity.length;
-          if (index != start && !isValidTextBlock(formattedText.text.substring(index, start), layout)) {
+    if (formattedText.entities != null) {
+      for (TdApi.TextEntity entity : formattedText.entities) {
+        switch (entity.type.getConstructor()) {
+          case TdApi.TextEntityTypeBold.CONSTRUCTOR:
+          case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
+          case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
+          case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
+            continue;
+          case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR: {
+            int start = entity.offset;
+            int end = start + entity.length;
+            if (index != start && !isValidTextBlock(formattedText.text.substring(index, start), layout)) {
+              return false;
+            }
+            index = end;
+            if (layout != null) {
+              layout.addSpan(formattedText.text.substring(start, end), ((TdApi.TextEntityTypeCustomEmoji) entity.type).customEmojiId);
+            }
+            continue;
+          }
+          default:
             return false;
-          }
-          index = end;
-          if (layout != null) {
-            layout.addSpan(formattedText.text.substring(start, end), ((TdApi.TextEntityTypeCustomEmoji) entity.type).customEmojiId);
-          }
-          continue;
         }
-        default:
-          return false;
       }
     }
 
