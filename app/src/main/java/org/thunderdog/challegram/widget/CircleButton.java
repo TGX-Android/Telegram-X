@@ -554,7 +554,7 @@ public class CircleButton extends View implements FactorAnimator.Target, Reactio
     if (sticker != null) {
       if (sticker.getPreviewAnimation() != null && sticker.isEmojiReaction()) {
         sticker.getPreviewAnimation().setPlayOnce(true);
-        sticker.getPreviewAnimation().setLooped(false);
+        sticker.getPreviewAnimation().setLooped(true);
       }
       gifReceiver.requestFile(sticker.getPreviewAnimation());
       imageReceiver.requestFile(sticker.getImage());

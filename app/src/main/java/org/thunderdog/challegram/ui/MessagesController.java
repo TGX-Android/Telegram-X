@@ -5949,7 +5949,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       reactionsCountView.setCounter(reactionCount, true, animate && reactionButtonFactor > 0f);
       setReactionButtonVisible(visible, animate);
     }
-    reactionsButton.setUnreadReaction(tdlib.getSingleUnreadReaction(getChatId()));
+    if (reactionCount > 0) {
+      reactionsButton.setUnreadReaction(tdlib.getSingleUnreadReaction(getChatId()));
+    }
   }
 
   private void setReactionButtonFactor (float factor) {

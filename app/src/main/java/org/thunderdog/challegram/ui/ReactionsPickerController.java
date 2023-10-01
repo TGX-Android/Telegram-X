@@ -92,7 +92,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
       emojiSections.add(new EmojiSection(this, -14, R.drawable.baseline_search_24, R.drawable.baseline_search_24)/*.setFactor(1f, false)*/.setMakeFirstTransparent().setOffsetHalf(false));
     }
     emojiSections.add(new EmojiSection(this, 0, R.drawable.baseline_favorite_24, R.drawable.baseline_favorite_24)/*.setFactor(1f, false)*/.setMakeFirstTransparent());
-    if (state.hasNonSelectedCustomReactions) {
+    if (state.hasNonSelectedCustomReactions && state.isPremium) {
       emojiSections.add(new EmojiSection(this, 1, R.drawable.baseline_access_time_24, R.drawable.baseline_watch_later_24)/*.setFactor(1f, false)*/.setMakeFirstTransparent());
     }
     bottomHeaderCell = new EmojiHeaderView(context, this, this, emojiSections, null, false);
@@ -212,7 +212,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
         } else {
           Log.i("WTF_DEBUG", "Can't load sticker");
         }
-        if (isClassicEmojiReaction || state.chosenReactions.contains(TD.makeReactionKey(reaction.type))) {
+        if (isClassicEmojiReaction || state.chosenReactions.contains(TD.makeReactionKey(reaction.type)) || !state.isPremium) {
           emojiItems.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, stickerObj));
         } else {
           emojiItemsCustom.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, stickerObj));
