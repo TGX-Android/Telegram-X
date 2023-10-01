@@ -315,6 +315,8 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   private @Nullable String tdlibCommitHash, tdlibVersion;
 
+  private final DateManager dateManager = new DateManager(this);
+
   private TdlibManager (int firstInstanceId, boolean forceService) {
     Client.setLogMessageHandler(0, (verbosityLevel, errorMessage) -> {
       if (verbosityLevel == 0) {
@@ -344,6 +346,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
     checkDeviceToken();
     saveCrashes();
+  }
+
+  public DateManager dateManager () {
+    return dateManager;
   }
 
   void setTdlibCommitHash (@NonNull String commitHash) {
