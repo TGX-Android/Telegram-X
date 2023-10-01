@@ -630,6 +630,12 @@ public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
     return -1;
   }
 
+  public void updateRelativeDate () {
+    for (TGChat chat : chats) {
+      chat.updateDate();
+    }
+  }
+
   public void updateLocale (boolean forceText) {
     for (TGChat chat : chats) {
       chat.updateLocale(forceText);
