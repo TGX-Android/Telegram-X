@@ -8955,6 +8955,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public void updateReactionAvatars (boolean animated) {
     messageReactions.updateCounterAnimators(animated);
+    if (BitwiseUtils.hasFlag(flags, FLAG_LAYOUT_BUILT)) {
+      buildReactions(animated);
+    }
   }
 
   public boolean isMatchesReactionSenderAvatarFilter (TdApi.MessageSender sender) {

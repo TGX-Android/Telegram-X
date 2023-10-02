@@ -4,6 +4,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Path;
 import android.graphics.RectF;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -36,10 +37,13 @@ import org.thunderdog.challegram.v.MessagesRecyclerView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
@@ -222,7 +226,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
       TGReactions.MessageReactionEntry entry = reactionsMapEntry.get(reactionKey);
       if (entry != null) {
         entry.setCount(
-          limitSenders(filterSenders(reaction.recentSenderIds, mode), reaction.totalCount > 3 ? 2 : 3),
+          limitSenders(filterSenders(reaction.recentSenderIds, mode, reaction.isChosen), reaction.totalCount > 3 ? 2 : 3),
           reaction.totalCount, reaction.isChosen, animated);
       }
     }
@@ -232,13 +236,29 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     return senders != null && senders.length > maxCount ? Arrays.copyOfRange(senders, 0, maxCount) : senders;
   }
 
-  private TdApi.MessageSender[] filterSenders (TdApi.MessageSender[] senders, int mode) {
-    if (senders == null || senders.length == 0 || mode == Settings.REACTION_AVATARS_MODE_ALWAYS) return senders;
+  private TdApi.MessageSender[] filterSenders (TdApi.MessageSender[] senders, int mode, boolean isChosen) {
+    if (senders == null || senders.length == 0) return senders;
     if (mode == Settings.REACTION_AVATARS_MODE_NEVER) return null;
 
-    return ArrayUtils.filter(ArrayUtils.asList(senders),
-      parent::isMatchesReactionSenderAvatarFilter
-    ).toArray(new TdApi.MessageSender[0]);
+    List<TdApi.MessageSender> sendersPreFiltered = deduplicate(ArrayUtils.filter(ArrayUtils.asList(senders),
+      sender -> !tdlib.isSelfChat(tdlib.chat(Td.getSenderId(sender))) || isChosen), (a, b) -> Long.signum(Td.getSenderId(a) - Td.getSenderId(b)));
+
+    if (mode == Settings.REACTION_AVATARS_MODE_ALWAYS) {
+      return sendersPreFiltered.toArray(new TdApi.MessageSender[0]);
+    }
+
+    return ArrayUtils.filter(sendersPreFiltered, parent::isMatchesReactionSenderAvatarFilter).toArray(new TdApi.MessageSender[0]);
+  }
+
+  public static <T> List<T> deduplicate(List<T> list, Comparator<T> comparator) {
+    TreeMap<T, T> uniqueMap = new TreeMap<>(comparator);
+    for (T element : list) {
+      if (uniqueMap.put(element, element) != null) {
+        Log.i("WTF_DEBUG", "tdlib bug!");
+      }
+    }
+
+    return new ArrayList<>(uniqueMap.values());
   }
 
   public void requestAvatarFiles (ComplexReceiver complexReceiver, boolean isUpdate) {
