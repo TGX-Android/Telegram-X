@@ -159,6 +159,9 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
           reactionsHashMap.put(reactionKey, fakeReaction);
         }
         fakeReaction.totalCount += reaction.totalCount;
+        if (reaction.recentSenderIds != null && reaction.recentSenderIds.length > 0) {
+          fakeReaction.recentSenderIds = reaction.recentSenderIds;  // todo conact arrays ?
+        }
         fakeReaction.isChosen = reaction.isChosen;
         totalCount += reaction.totalCount;
         if (reaction.isChosen) {
