@@ -33,9 +33,11 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.emoji.GifView;
 import org.thunderdog.challegram.component.emoji.MediaStickersAdapter;
+import org.thunderdog.challegram.component.sticker.StickerPreviewView;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.mediaview.MediaCellView;
@@ -43,6 +45,7 @@ import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.AnimationsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
@@ -66,7 +69,7 @@ import me.vkryl.core.collection.IntList;
 import me.vkryl.core.collection.LongList;
 
 public class EmojiStatusListController extends ViewController<EmojiLayout> implements
-  StickerSmallView.StickerMovementCallback,
+  StickerSmallView.StickerMovementCallback, StickerPreviewView.MenuStickerPreviewCallback,
   AnimationsListener,
   ClickHelper.Delegate,
   ForceTouchView.ActionListener {
@@ -96,6 +99,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
 
     stickersAdapter = new MediaStickersAdapter(this, this, false, this);
     stickersAdapter.setItem(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_PROGRESS));
+    stickersAdapter.setMenuStickerPreviewCallback(this);
 
     checkSpanCount();
 
@@ -1229,11 +1233,6 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
     }
   }
 
-  @Override
-  public boolean isEmojiStatus () {
-    return true;
-  }
-
   private String currentTextSearchRequest;
   private String currentEmojiSearchRequest;
 
@@ -1346,5 +1345,90 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
         }
       }
     };
+  }
+
+
+
+  /* Preview Sticker Menu */
+
+  @Override
+  public void buildMenuStickerPreview (ArrayList<StickerPreviewView.MenuItem> menuItems, @NonNull TGStickerObj sticker, @NonNull StickerSmallView stickerSmallView) {
+    menuItems.add(new StickerPreviewView.MenuItem(StickerPreviewView.MenuItem.MENU_ITEM_TEXT,
+      Lang.getString(R.string.SetEmojiAsStatus).toUpperCase(), R.id.btn_setEmojiStatus, ColorId.textNeutral));
+
+    menuItems.add(new StickerPreviewView.MenuItem(StickerPreviewView.MenuItem.MENU_ITEM_TEXT,
+      Lang.getString(R.string.SetEmojiAsStatusTimed).toUpperCase(), R.id.btn_setEmojiStatusTimed, ColorId.textNeutral));
+  }
+
+  @Override
+  public void onMenuStickerPreviewClick (View v, ViewController<?> context, @NonNull TGStickerObj sticker, @NonNull StickerSmallView stickerSmallView) {
+    final long emojiId = sticker.getCustomEmojiId();
+    final int viewId = v.getId();
+    if (viewId == R.id.btn_setEmojiStatus) {
+      tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(emojiId, 0)), tdlib.okHandler());
+      stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, 0);
+      stickerSmallView.closePreviewIfNeeded();
+    } else if (viewId == R.id.btn_setEmojiStatusTimed) {
+      if (context != null) {
+        context.showOptions(null, new int[] {
+          R.id.btn_setEmojiStatusTimed1Hour,
+          R.id.btn_setEmojiStatusTimed2Hours,
+          R.id.btn_setEmojiStatusTimed8Hours,
+          R.id.btn_setEmojiStatusTimed2Days,
+          R.id.btn_setEmojiStatusTimedCustom,
+        }, new String[] {
+          Lang.getString(R.string.SetEmojiAsStatusTimed1Hour),
+          Lang.getString(R.string.SetEmojiAsStatusTimed2Hours),
+          Lang.getString(R.string.SetEmojiAsStatusTimed8Hours),
+          Lang.getString(R.string.SetEmojiAsStatusTimed2Days),
+          Lang.getString(R.string.SetEmojiAsStatusTimedCustom)
+        }, new int[] {
+          ViewController.OPTION_COLOR_NORMAL,
+          ViewController.OPTION_COLOR_NORMAL,
+          ViewController.OPTION_COLOR_NORMAL,
+          ViewController.OPTION_COLOR_NORMAL,
+          ViewController.OPTION_COLOR_NORMAL,
+        }, new int[] {
+          R.drawable.baseline_access_time_24,
+          R.drawable.baseline_access_time_24,
+          R.drawable.baseline_access_time_24,
+          R.drawable.baseline_access_time_24,
+          R.drawable.baseline_date_range_24
+        }, (optionItemView, id) -> {
+          if (id == R.id.btn_setEmojiStatusTimedCustom) {
+            int titleRes, todayRes, tomorrowRes, futureRes;
+            titleRes = R.string.SetEmojiAsStatus;
+            todayRes = R.string.SetTodayAt;
+            tomorrowRes = R.string.SetTomorrowAt;
+            futureRes = R.string.SetDateAt;
+
+            context.showDateTimePicker(tdlib, Lang.getString(titleRes), todayRes, tomorrowRes, futureRes, millis -> {
+              int duration = (int) ((millis - System.currentTimeMillis()) / 1000L);
+              stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, duration);
+              tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(emojiId, duration)), tdlib.okHandler());
+              stickerSmallView.closePreviewIfNeeded();
+            }, null);
+            return true;
+          }
+
+          final int duration;
+          if (id == R.id.btn_setEmojiStatusTimed1Hour) {
+            duration = 60 * 60;
+          } else if (id == R.id.btn_setEmojiStatusTimed2Hours) {
+            duration = 2 * 60 * 60;
+          } else if (id == R.id.btn_setEmojiStatusTimed8Hours) {
+            duration = 8 * 60 * 60;
+          } else if (id == R.id.btn_setEmojiStatusTimed2Days) {
+            duration = 2 * 24 * 60 * 60;
+          } else {
+            duration = 0;
+          }
+          stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, duration);
+          tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(emojiId, duration)), tdlib.okHandler());
+          stickerSmallView.closePreviewIfNeeded();
+          return true;
+        });
+      }
+    }
   }
 }

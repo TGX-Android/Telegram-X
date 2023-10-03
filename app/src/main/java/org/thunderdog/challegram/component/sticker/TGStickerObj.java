@@ -274,7 +274,7 @@ public class TGStickerObj {
   }
 
   public long getCustomEmojiId () {
-    return TD.getStickerCustomEmojiId(sticker);
+    return Td.customEmojiId(sticker);
   }
 
   public void setIsRecent () {

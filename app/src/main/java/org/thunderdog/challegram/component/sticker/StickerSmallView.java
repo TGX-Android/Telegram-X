@@ -331,7 +331,6 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     default StickerSmallView getStickerViewUnder (StickerSmallView v, int x, int y) { return null; }
     default TGReaction getReactionForPreview (StickerSmallView v) { return null; }
     default void onSetEmojiStatusFromPreview (StickerSmallView view, View clickView, TGStickerObj sticker, long emojiId, int duration) { }
-    default boolean isEmojiStatus () { return false; }
   }
 
   private @Nullable StickerMovementCallback callback;
@@ -544,7 +543,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
       }
     }
 
-    ((BaseActivity) getContext()).openStickerPreview(tdlib, this, sticker, left + width / 2, top + height / 2 + (callback != null ? callback.getStickersListTop() : 0), Math.min(width, height) - Screen.dp(PADDING) * 2, callback.getViewportHeight(), isSuggestion || emojiDisabled, callback != null && callback.isEmojiStatus());
+    ((BaseActivity) getContext()).openStickerPreview(tdlib, this, sticker, left + width / 2, top + height / 2 + (callback != null ? callback.getStickersListTop() : 0), Math.min(width, height) - Screen.dp(PADDING) * 2, callback.getViewportHeight(), isSuggestion || emojiDisabled);
   }
 
   private int getRealLeft () {
@@ -596,6 +595,16 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
 
   public long getStickerOutputChatId () {
     return callback != null ? callback.getStickerOutputChatId() : 0;
+  }
+
+  private StickerPreviewView.MenuStickerPreviewCallback menuStickerPreviewCallback;
+
+  public StickerPreviewView.MenuStickerPreviewCallback getMenuStickerPreviewCallback () {
+    return menuStickerPreviewCallback;
+  }
+
+  public void setMenuStickerPreviewCallback (StickerPreviewView.MenuStickerPreviewCallback menuStickerPreviewCallback) {
+    this.menuStickerPreviewCallback = menuStickerPreviewCallback;
   }
 
   private boolean previewDroppedButStillOpen;

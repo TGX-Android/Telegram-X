@@ -33,13 +33,14 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.IdRes;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
@@ -66,6 +67,8 @@ import org.thunderdog.challegram.util.EmojiString;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
 
+import java.util.ArrayList;
+
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
@@ -88,7 +91,6 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
   private final GifReceiver gifReceiver;
   private final ImageReceiver preview;
   private Drawable defaultPremiumStarDrawable;
-  private boolean isEmojiStatus;
 
   private final ImageReceiver effectImageReceiver;
   private final GifReceiver effectGifReceiver;
@@ -306,12 +308,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
 
   private @Nullable EmojiString emojiString;
   private boolean disableEmojis;
-  private long emojiStatusId;
   private Path contour;
-
-  public void setIsEmojiStatus (boolean emojiStatus) {
-    isEmojiStatus = emojiStatus;
-  }
 
   private void setSticker (TGStickerObj sticker, boolean loadPreview) {
     setSticker(sticker, null, loadPreview);
@@ -339,7 +336,6 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     } else {
       defaultPremiumStarDrawable = null;
     }
-    this.emojiStatusId = TD.getStickerCustomEmojiId(sticker.getSticker());
 
     if (currentEffectSticker != null && currentEffectSticker.isAnimated()) {
       GifActor.addFreezeReason(currentEffectSticker.getFullAnimation(), false);
@@ -464,6 +460,46 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     FrameLayoutFix.LayoutParams params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(48f) + menu.getPaddingTop() + menu.getPaddingBottom(), Gravity.CENTER_HORIZONTAL);
     params.topMargin = getStickerCenterY() + stickerHeight / 2 + Screen.dp(32f);
     menu.setLayoutParams(params);
+
+    StickerPreviewView.MenuStickerPreviewCallback menuStickerPreviewCallback = controllerView != null ?
+      controllerView.getMenuStickerPreviewCallback() : null;
+
+    if (menuStickerPreviewCallback != null && sticker != null) {
+      ArrayList<MenuItem> menuItems = new ArrayList<>(5);
+      menuStickerPreviewCallback.buildMenuStickerPreview(menuItems, sticker, controllerView);
+
+      View.OnClickListener onClickListener = view -> menuStickerPreviewCallback.onMenuStickerPreviewClick(view, findRoot(), sticker, controllerView);
+      View.OnLongClickListener onLongClickListener = view -> menuStickerPreviewCallback.onMenuStickerPreviewLongClick(view, findRoot(), sticker, controllerView);
+
+      for (int a = 0; a < menuItems.size(); a++) {
+        final MenuItem item = menuItems.get(a);
+        final View view;
+
+        if (item.type == MenuItem.MENU_ITEM_TEXT) {
+          view = makeMenuButtonText(getContext(), item, onClickListener, onLongClickListener, a == 0, a == menuItems.size() - 1, themeListenerList);
+        } else {
+          throw new IllegalArgumentException();
+        }
+
+        if (Lang.rtl()) {
+          menu.addView(view, 0);
+        } else {
+          menu.addView(view);
+        }
+      }
+
+      menu.setAlpha(0f);
+      addView(menu);
+
+      applyMaximumMenuItemsWidth();
+
+      setMenuVisible(true, true);
+      return;
+    }
+
+
+    // Deprecated ???
+
     View.OnClickListener onClickListener = v -> {
       final int viewId = v.getId();
       if (viewId == R.id.btn_favorite) {
@@ -490,84 +526,12 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
         final int stickerId = sticker.getId();
         tdlib.client().send(new TdApi.RemoveRecentSticker(false, new TdApi.InputFileId(stickerId)), tdlib.okHandler());
         closePreviewIfNeeded();
-      } else if (viewId == R.id.btn_setEmojiStatus) {
-        final long emojiId = sticker.getCustomEmojiId();
-        controllerView.onSetEmojiStatus(v, sticker, emojiId, 0);
-        tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(emojiId, 0)), tdlib.okHandler());
-        closePreviewIfNeeded();
-      } else if (viewId == R.id.btn_setEmojiStatusTimed) {
-        ViewController<?> context = findRoot();
-        if (context != null) {
-          context.showOptions(null, new int[] {
-            R.id.btn_setEmojiStatusTimed1Hour,
-            R.id.btn_setEmojiStatusTimed2Hours,
-            R.id.btn_setEmojiStatusTimed8Hours,
-            R.id.btn_setEmojiStatusTimed2Days,
-            R.id.btn_setEmojiStatusTimedCustom,
-          }, new String[] {
-            Lang.getString(R.string.SetEmojiAsStatusTimed1Hour),
-            Lang.getString(R.string.SetEmojiAsStatusTimed2Hours),
-            Lang.getString(R.string.SetEmojiAsStatusTimed8Hours),
-            Lang.getString(R.string.SetEmojiAsStatusTimed2Days),
-            Lang.getString(R.string.SetEmojiAsStatusTimedCustom)
-          }, new int[] {
-            ViewController.OPTION_COLOR_NORMAL,
-            ViewController.OPTION_COLOR_NORMAL,
-            ViewController.OPTION_COLOR_NORMAL,
-            ViewController.OPTION_COLOR_NORMAL,
-            ViewController.OPTION_COLOR_NORMAL,
-          }, new int[] {
-            R.drawable.baseline_access_time_24,
-            R.drawable.baseline_access_time_24,
-            R.drawable.baseline_access_time_24,
-            R.drawable.baseline_access_time_24,
-            R.drawable.baseline_date_range_24
-          }, (optionItemView, id) -> {
-            final long emojiId = sticker.getCustomEmojiId();
-            if (id == R.id.btn_setEmojiStatusTimedCustom) {
-              int titleRes, todayRes, tomorrowRes, futureRes;
-              titleRes = R.string.SetEmojiAsStatus;
-              todayRes = R.string.SetTodayAt;
-              tomorrowRes = R.string.SetTomorrowAt;
-              futureRes = R.string.SetDateAt;
-
-              context.showDateTimePicker(tdlib, Lang.getString(titleRes), todayRes, tomorrowRes, futureRes, millis -> {
-                int duration = (int) ((millis - System.currentTimeMillis()) / 1000L);
-                controllerView.onSetEmojiStatus(v, sticker, emojiId, duration);
-                tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(emojiId, duration)), tdlib.okHandler());
-                closePreviewIfNeeded();
-              }, null);
-              return true;
-            }
-
-            final int duration;
-            if (id == R.id.btn_setEmojiStatusTimed1Hour) {
-              duration = 60 * 60;
-            } else if (id == R.id.btn_setEmojiStatusTimed2Hours) {
-              duration = 2 * 60 * 60;
-            } else if (id == R.id.btn_setEmojiStatusTimed8Hours) {
-              duration = 8 * 60 * 60;
-            } else if (id == R.id.btn_setEmojiStatusTimed2Days) {
-              duration = 2 * 24 * 60 * 60;
-            } else {
-              duration = 0;
-            }
-            controllerView.onSetEmojiStatus(v, sticker, emojiId, duration);
-            tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(emojiId, duration)), tdlib.okHandler());
-            closePreviewIfNeeded();
-            return true;
-          });
-        }
       } else {
         closePreviewIfNeeded();
       }
     };
     themeListenerList.addThemeInvalidateListener(menu);
-    if (isEmojiStatus || sticker.isDefaultPremiumStar()) {
-      makeMenuForEmojiStatus(sticker, onClickListener);
-    } else {
-      makeMenuForSticker(sticker, onClickListener);
-    }
+    makeMenuForSticker(sticker, onClickListener);
     menu.setAlpha(0f);
     addView(menu);
 
@@ -576,45 +540,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     setMenuVisible(true, true);
   }
 
-  private void makeMenuForEmojiStatus (final TGStickerObj sticker, final View.OnClickListener onClickListener) {
-    TextView sendView = new NoScrollTextView(getContext());
-    sendView.setId(R.id.btn_setEmojiStatus);
-    sendView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
-    sendView.setTypeface(Fonts.getRobotoMedium());
-    sendView.setTextColor(Theme.getColor(ColorId.textNeutral));
-    sendView.setOnClickListener(onClickListener);
-    themeListenerList.addThemeColorListener(sendView, ColorId.textNeutral);
-    Views.setMediumText(sendView, Lang.getString(R.string.SetEmojiAsStatus).toUpperCase());
-    sendView.setOnClickListener(onClickListener);
-    RippleSupport.setTransparentBlackSelector(sendView);
-    int paddingLeft = Screen.dp(16f);
-    int paddingRight = Screen.dp(12);
-    sendView.setPadding(Lang.rtl() ? paddingRight : paddingLeft, 0, Lang.rtl() ? paddingLeft : paddingRight, 0);
-    sendView.setGravity(Gravity.CENTER);
-    sendView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
-    if (Lang.rtl())
-      menu.addView(sendView, 0);
-    else
-      menu.addView(sendView);
-
-    TextView viewView = new NoScrollTextView(getContext());
-    viewView.setId(R.id.btn_setEmojiStatusTimed);
-    viewView.setTypeface(Fonts.getRobotoMedium());
-    viewView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
-    viewView.setTextColor(Theme.getColor(ColorId.textNeutral));
-    Views.setMediumText(viewView, Lang.getString(R.string.SetEmojiAsStatusTimed).toUpperCase());
-    themeListenerList.addThemeColorListener(viewView, ColorId.textNeutral);
-    viewView.setOnClickListener(onClickListener);
-    RippleSupport.setTransparentBlackSelector(viewView);
-    viewView.setPadding(Screen.dp(Lang.rtl() ? 16f : 12f), 0, Screen.dp(Lang.rtl() ? 12f : 16f), 0);
-    viewView.setGravity(Gravity.CENTER);
-    viewView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
-    if (Lang.rtl())
-      menu.addView(viewView, 0);
-    else
-      menu.addView(viewView);
-  }
-
+  @Deprecated
   private void makeMenuForSticker (final TGStickerObj sticker, final View.OnClickListener onClickListener) {
     boolean isFavorite = tdlib.isStickerFavorite(sticker.getId());
     boolean isEmoji = sticker.isCustomEmoji();
@@ -993,5 +919,54 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
       closePreviewIfNeeded();
     }
     return true;
+  }
+
+
+  public interface MenuStickerPreviewCallback {
+    void buildMenuStickerPreview (ArrayList<MenuItem> menuItems, @NonNull TGStickerObj sticker, @NonNull StickerSmallView stickerSmallView);
+    void onMenuStickerPreviewClick (View v, ViewController<?> context, @NonNull TGStickerObj sticker, @NonNull StickerSmallView stickerSmallView);
+    default boolean onMenuStickerPreviewLongClick (View v, ViewController<?> context, @NonNull TGStickerObj sticker, @NonNull StickerSmallView stickerSmallView) { return false; }
+  }
+
+  public static class MenuItem {
+    public final static int MENU_ITEM_TEXT = 0;
+    public final static int MENU_ITEM_IMAGE = 1;  // todo
+
+    public final int type;
+    public final String title;
+    public final @IdRes int viewId;
+    public final @ColorId int colorId;
+
+    public MenuItem (int type, String title, @IdRes int viewId, @ColorId int colorId) {
+      this.type = type;
+      this.title = title;
+      this.viewId = viewId;
+      this.colorId = colorId;
+    }
+  }
+
+  private static TextView makeMenuButtonText (Context context, MenuItem item,
+          View.OnClickListener onClickListener, View.OnLongClickListener onLongClickListener,
+          boolean isFirst, boolean isLast, ThemeListenerList themeListenerList) {
+
+    TextView buttonView = new NoScrollTextView(context);
+    buttonView.setId(item.viewId);
+    buttonView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
+    buttonView.setTypeface(Fonts.getRobotoMedium());
+    buttonView.setTextColor(Theme.getColor(item.colorId));
+    buttonView.setGravity(Gravity.CENTER);
+    buttonView.setOnClickListener(onClickListener);
+    buttonView.setOnLongClickListener(onLongClickListener);
+    buttonView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+    int paddingLeft = Screen.dp(isFirst ? 16f: 12f);
+    int paddingRight = Screen.dp(isLast ? 16f : 12f);
+    buttonView.setPadding(Lang.rtl() ? paddingRight : paddingLeft, 0, Lang.rtl() ? paddingLeft : paddingRight, 0);
+
+    themeListenerList.addThemeColorListener(buttonView, item.colorId);
+    Views.setMediumText(buttonView, item.title);
+    RippleSupport.setTransparentBlackSelector(buttonView);
+
+    return buttonView;
   }
 }

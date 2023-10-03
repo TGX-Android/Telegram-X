@@ -4756,6 +4756,7 @@
   <string name="EmojiHeader">Emoji</string>
   <string name="StickersAndEmoji">Stickers and Emoji</string>
   <string name="PasteCustomEmoji">Paste Emoji</string>
+  <string name="ShareCustomEmoji">Share Emoji</string>
   <string name="LoopAnimatedEmoji">Loop Animated Emoji</string>
 
   <string name="ArchiveSettings">Archive Settings</string>

@@ -37,6 +37,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.charts.LayoutHelper;
 import org.thunderdog.challegram.component.chat.EmojiToneHelper;
 import org.thunderdog.challegram.component.chat.EmojiView;
+import org.thunderdog.challegram.component.sticker.StickerPreviewView;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
@@ -75,6 +76,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
   private final boolean canViewStickerPackByClick;
   private final @Nullable EmojiToneHelper emojiToneHelper;
   private View.OnClickListener classicEmojiClickListener;
+  private StickerPreviewView.MenuStickerPreviewCallback menuStickerPreviewCallback;
 
   private boolean isBig;
 
@@ -110,6 +112,10 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
 
   public void setClassicEmojiClickListener (View.OnClickListener classicEmojiClickListener) {
     this.classicEmojiClickListener = classicEmojiClickListener;
+  }
+
+  public void setMenuStickerPreviewCallback (StickerPreviewView.MenuStickerPreviewCallback menuStickerPreviewCallback) {
+    this.menuStickerPreviewCallback = menuStickerPreviewCallback;
   }
 
   @NonNull @Override
@@ -656,6 +662,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
             view.setIsTrending();
           }
           view.setStickerMovementCallback(callback);
+          view.setMenuStickerPreviewCallback(adapter.menuStickerPreviewCallback);
           view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
           if (viewType == TYPE_EMOJI_STATUS_DEFAULT) {
             view.setIsPremiumStar();
