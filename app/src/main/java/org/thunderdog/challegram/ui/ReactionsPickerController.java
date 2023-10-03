@@ -32,6 +32,7 @@ import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.emoji.MediaStickersAdapter;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
@@ -103,7 +104,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
     recyclerView = onCreateRecyclerView();
     recyclerView.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> reactionsController.invalidateStickerObjModifiers());
-    recyclerView.setItemAnimator(null); // tmp fix
+    recyclerView.setItemAnimator(null);
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
       public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {}
@@ -264,7 +265,9 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
   /* * */
 
   public void prepareToShow () {
-    reactionsController.getManager();
+    if (recyclerView.getItemAnimator() == null) {
+      recyclerView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180L));
+    }
     setIsFullyVisible(true);
   }
 

@@ -415,6 +415,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
 
 
   /* Scroll offset lock */
+  /* todo: update logic to ItemDecorationFirstViewTop */
 
   private boolean isScrollOffsetDisabled;
   private boolean isScrollOffsetDisableScheduled;

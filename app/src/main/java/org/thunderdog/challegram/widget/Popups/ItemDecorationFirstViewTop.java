@@ -33,7 +33,7 @@ public class ItemDecorationFirstViewTop extends RecyclerView.ItemDecoration {
 
   public void scheduleDisableDecorationOffset () {
     this.isScheduledDecorationOffsetDisable = true;
-    checkCanDisableDecorationOffset(true);
+    checkCanDisableDecorationOffset();
   }
 
   public void enableDecorationOffset () {
@@ -47,26 +47,21 @@ public class ItemDecorationFirstViewTop extends RecyclerView.ItemDecoration {
     this.linearLayoutManager = linearLayoutManager;
     this.scrollListener = new RecyclerView.OnScrollListener() {
       @Override
-      public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
-        UI.post(() -> checkCanDisableDecorationOffset(false));
-      }
-
-      @Override
       public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
         if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-          UI.post(() -> checkCanDisableDecorationOffset(true));
+          UI.post(() -> checkCanDisableDecorationOffset());
         }
       }
     };
     this.callback = callback;
   }
 
-  private void checkCanDisableDecorationOffset (boolean canScroll) {
+  private void checkCanDisableDecorationOffset () {
     if (isScheduledDecorationOffsetDisable && !isDecorationOffsetDisabled) {
       View v = linearLayoutManager.findViewByPosition(0);
       if (v == null || v.getTop() <= 0) {
         setDecorationOffsetDisabled(true);
-      } else if (canScroll) {
+      } else {
         recyclerView.smoothScrollBy(0, v.getTop());
       }
     }
@@ -77,12 +72,26 @@ public class ItemDecorationFirstViewTop extends RecyclerView.ItemDecoration {
     isDecorationOffsetDisabled = disabled;
     isScheduledDecorationOffsetDisable &= disabled;
 
+    final int firstVisibleItemPosition = linearLayoutManager.findFirstVisibleItemPosition();
+    final int offset = lastTopDecorationOffset * (disabled ? -1 : 1);
+
+    // Changing the height of the first view can be animated, this leads to unwanted behavior.
+    // Temporarily disable animation.
+
+    final RecyclerView.ItemAnimator itemAnimator = recyclerView.getItemAnimator();
+    recyclerView.setItemAnimator(null);
+
     recyclerView.invalidateItemDecorations();
-    if (linearLayoutManager.findFirstVisibleItemPosition() == 0) {
-      int offset = lastTopDecorationOffset * (disabled ? -1 : 1);
-      if (offset != 0) {
-        ScrollJumpCompensator.compensate(recyclerView, offset);
-      }
+    if (firstVisibleItemPosition == 0 && offset != 0) {
+      ScrollJumpCompensator.compensate(recyclerView, offset);
+    }
+
+    if (itemAnimator != null) {
+      UI.post(() -> {
+        if (recyclerView.getItemAnimator() == null) {
+          recyclerView.setItemAnimator(itemAnimator);
+        }
+      });
     }
   }
 
