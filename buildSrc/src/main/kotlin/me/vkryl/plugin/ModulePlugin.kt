@@ -112,8 +112,6 @@ open class ModulePlugin : Plugin<Project> {
       androidExt.apply {
         compileSdkVersion(versions.getOrThrow("version.sdk_compile").toInt())
         buildToolsVersion(versions.getOrThrow("version.build_tools"))
-        ndkVersion = versions.getOrThrow("version.ndk")
-        ndkPath = File(sdkDirectory, "ndk/$ndkVersion").absolutePath
 
         compileOptions {
           isCoreLibraryDesugaringEnabled = true

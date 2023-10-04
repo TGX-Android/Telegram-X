@@ -370,7 +370,6 @@ target_compile_definitions(tgvoip PRIVATE
   WEBRTC_ANDROID
   FIXED_POINT
   WEBRTC_NS_FLOAT
-  __STDC_LIMIT_MACROS
 )
 target_include_directories(tgvoip PRIVATE
   .
@@ -396,4 +395,5 @@ target_link_libraries(tgvoip PUBLIC
   OpenSLES
   opus
   ssl
+  jni-utils
 )

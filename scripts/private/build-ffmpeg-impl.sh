@@ -2,6 +2,12 @@
 set -e
 
 function build_one {
+  if [ -z "$ANDROID_NDK_ROOT" -a "$ANDROID_NDK_ROOT" == "" ]; then
+    echo -e "${STYLE_ERROR}Failed! NDK is empty. Run 'export ANDROID_NDK_ROOT=[PATH_TO_NDK]'${STYLE_END}"
+    exit
+  fi
+  validate_dir "$ANDROID_NDK_ROOT"
+
   LIBVPX_INCLUDE_DIR="$THIRDPARTY_LIBRARIES/libvpx/build/$CPU/include"
   LIBVPX_LIB_DIR="$THIRDPARTY_LIBRARIES/libvpx/build/$CPU/lib"
 
@@ -25,14 +31,14 @@ function build_one {
   validate_file "$RANLIB"
   validate_dir "$LINK"
 
-  LIBS=${PREBUILT}/lib64/clang/12.0.9/lib/linux
-  validate_dir "$LIBS"
+  #LIBS=${PREBUILT}/lib64/clang/12.0.9/lib/linux
+  #validate_dir "$LIBS"
 
   echo "Cleaning..."
   rm -f config.h
   make clean || true
 
-  echo "Configuring... ${NDK}"
+  echo "Configuring ffmpeg... CPU: ${CPU}, NDK: ${ANDROID_NDK_ROOT}"
 
   ./configure \
   --nm="${NM}" \
@@ -58,7 +64,7 @@ function build_one {
   --sysroot="$SYSROOT" \
   --extra-cflags="-fvisibility=hidden -ffunction-sections -fdata-sections -g -fno-omit-frame-pointer -w -Werror -Wl,-Bsymbolic -Os -DCONFIG_LINUX_PERF=0 -DANDROID $OPTIMIZE_CFLAGS -I$LIBVPX_INCLUDE_DIR --static -fPIC" \
   --extra-ldflags="-L$LIBVPX_LIB_DIR $EXTRA_LDFLAGS -L -lvpx -Wl,-Bsymbolic -nostdlib -lc -lm -ldl -fPIC" \
-  --extra-libs="-lunwind $EXTRA_LIBS" \
+  --extra-libs="$EXTRA_LIBS" \
   \
   --enable-version3 \
   --enable-gpl \
@@ -117,12 +123,6 @@ function checkPreRequisites {
     exit
   fi
 
-  if [ -z "$ANDROID_NDK" -a "$ANDROID_NDK" == "" ]; then
-    echo -e "${STYLE_ERROR}Failed! NDK is empty. Run 'export NDK=[PATH_TO_NDK]'${STYLE_END}"
-    exit
-  fi
-
-  validate_dir "$ANDROID_NDK"
   test "$CPU_COUNT"
 }
 
@@ -133,32 +133,19 @@ popd > /dev/null
 
 ## common
 
-PREBUILT=$ANDROID_NDK/toolchains/llvm/prebuilt/$BUILD_PLATFORM
-SYSROOT=$PREBUILT/sysroot
+pushd "$THIRDPARTY_LIBRARIES/ffmpeg"
 
+# 64-bit, minSdk 21
+ANDROID_NDK_VERSION=$ANDROID_NDK_VERSION_PRIMARY
+ANDROID_NDK_ROOT="$ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_VERSION"
+PREBUILT="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$BUILD_PLATFORM"
+SYSROOT="$PREBUILT/sysroot"
+
+validate_dir "$ANDROID_NDK_ROOT"
 validate_dir "$PREBUILT"
 validate_dir "$SYSROOT"
 
-pushd "$THIRDPARTY_LIBRARIES/ffmpeg"
-
-#x86_64
-ANDROID_API=21
-LINK=$SYSROOT/usr/lib/x86_64-linux-android/$ANDROID_API
-CROSS_PREFIX=$PREBUILT/bin/x86_64-linux-android
-CC=${CROSS_PREFIX}${ANDROID_API}-clang
-CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
-LD=$CC
-AS=$CC
-ARCH=x86_64
-CPU=x86_64
-PREFIX=./build/$CPU
-ADDITIONAL_CONFIGURE_FLAG="--disable-asm"
-OPTIMIZE_CFLAGS=""
-EXTRA_LIBS=""
-EXTRA_LDFLAGS=""
-build_one
-
-#arm64-v8a
+# arm64-v8a
 ANDROID_API=21
 LINK=$SYSROOT/usr/lib/aarch64-linux-android/$ANDROID_API
 CROSS_PREFIX=$PREBUILT/bin/aarch64-linux-android
@@ -171,43 +158,85 @@ CPU=arm64-v8a
 PREFIX=./build/$CPU
 ADDITIONAL_CONFIGURE_FLAG="--disable-asm --enable-optimizations"
 OPTIMIZE_CFLAGS=""
-EXTRA_LIBS=""
+EXTRA_LIBS="-lunwind"
 EXTRA_LDFLAGS=""
 # FIXME ADDITIONAL_CONFIGURE_FLAG="--enable-neon --enable-optimizations"
 build_one
 
-#arm v7n
+# x86_64
+ANDROID_API=21
+LINK=$SYSROOT/usr/lib/x86_64-linux-android/$ANDROID_API
+CROSS_PREFIX=$PREBUILT/bin/x86_64-linux-android
+CC=${CROSS_PREFIX}${ANDROID_API}-clang
+CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
+LD=$CC
+AS=$CC
+ARCH=x86_64
+CPU=x86_64
+PREFIX=./build/$CPU
+ADDITIONAL_CONFIGURE_FLAG="--disable-asm"
+OPTIMIZE_CFLAGS=""
+EXTRA_LIBS="-lunwind"
+EXTRA_LDFLAGS=""
+build_one
+
+# 32-bit, minSdk 16
+ANDROID_NDK_VERSION=$ANDROID_NDK_VERSION_LEGACY
+ANDROID_NDK_ROOT="$ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_VERSION"
+PREBUILT="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$BUILD_PLATFORM"
+SYSROOT="$PREBUILT/sysroot"
+
+validate_dir "$PREBUILT"
+validate_dir "$SYSROOT"
+
+# armeabi-v7a
 ANDROID_API=16
 LINK=$SYSROOT/usr/lib/arm-linux-androideabi/$ANDROID_API
 CROSS_PREFIX=$PREBUILT/bin/arm-linux-androideabi
 CC=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang
 CXX=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang++
-LD=$CC
 AS=$CC
 ARCH=arm
 CPU=armv7-a
 PREFIX=./build/$CPU
 ADDITIONAL_CONFIGURE_FLAG="--enable-neon"
 OPTIMIZE_CFLAGS="-marm -march=$CPU -mfloat-abi=softfp"
-EXTRA_LDFLAGS=-L${PREBUILT}/lib64/clang/12.0.9/lib/linux
-EXTRA_LIBS=-lclang_rt.builtins-arm-android
+if [[ ${ANDROID_NDK_VERSION%%.*} -ge 23 ]]; then
+  LD=$CC
+  LIBS_DIR="${PREBUILT}/lib64/clang/12.0.9/lib/linux"
+  validate_dir "$LIBS_DIR"
+  EXTRA_LDFLAGS="-L${LIBS_DIR}"
+  EXTRA_LIBS="-lunwind -lclang_rt.builtins-arm-android"
+else
+  LD="${PREBUILT}/arm-linux-androideabi/bin/ld.gold"
+  EXTRA_LDFLAGS=""
+  EXTRA_LIBS="-lgcc"
+fi
 build_one
 
-#x86 platform
+# x86
 ANDROID_API=16
 LINK=$SYSROOT/usr/lib/i686-linux-android/$ANDROID_API
 CROSS_PREFIX=$PREBUILT/bin/i686-linux-android
 CC=${CROSS_PREFIX}${ANDROID_API}-clang
 CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
-LD=$CC
 AS=$CC
 ARCH=x86
 CPU=i686
 PREFIX=./build/$CPU
 ADDITIONAL_CONFIGURE_FLAG="--disable-x86asm --disable-inline-asm --disable-asm"
 OPTIMIZE_CFLAGS="-march=$CPU"
-EXTRA_LDFLAGS=-L${PREBUILT}/lib64/clang/12.0.9/lib/linux
-EXTRA_LIBS=-lclang_rt.builtins-i686-android
+if [[ ${ANDROID_NDK_VERSION%%.*} -ge 23 ]]; then
+  LD=$CC
+  LIBS_DIR="${PREBUILT}/lib64/clang/12.0.9/lib/linux"
+  validate_dir "$LIBS_DIR"
+  EXTRA_LDFLAGS="-L${LIBS_DIR}"
+  EXTRA_LIBS=-lclang_rt.builtins-i686-android
+else
+  LD="${PREBUILT}/i686-linux-android/bin/ld.gold"
+  EXTRA_LDFLAGS=""
+  EXTRA_LIBS="-lgcc"
+fi
 build_one
 
 # Copy headers to all platform-specific folders

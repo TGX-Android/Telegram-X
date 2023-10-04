@@ -35,18 +35,15 @@ task<me.vkryl.task.CheckEmojiKeyboardTask>("checkEmojiKeyboard") {
 val isExperimentalBuild = extra["experimental"] as Boolean? ?: false
 val properties = extra["properties"] as Properties
 val projectName = extra["app_name"] as String
+val versions = extra["versions"] as Properties
 
 android {
   namespace = "org.thunderdog.challegram"
 
   defaultConfig {
-    val versions = extra["versions"] as Properties
-
-    val ndkVersion = versions.getProperty("version.ndk")
     val jniVersion = versions.getProperty("version.jni")
     val leveldbVersion = versions.getProperty("version.leveldb")
 
-    buildConfigString("NDK_VERSION", ndkVersion)
     buildConfigString("JNI_VERSION", jniVersion)
     buildConfigString("LEVELDB_VERSION", leveldbVersion)
 
@@ -109,6 +106,14 @@ android {
         dimension = "abi"
         versionCode = (abi + 1)
         minSdk = variant.minSdkVersion
+        val ndkVersionKey = if (variant.is64Bit) {
+          "version.ndk_primary"
+        } else {
+          "version.ndk_legacy"
+        }
+        ndkVersion = versions.getProperty(ndkVersionKey)
+        ndkPath = File(sdkDirectory, "ndk/$ndkVersion").absolutePath
+        buildConfigString("NDK_VERSION", ndkVersion)
         buildConfigBool("WEBP_ENABLED", true) // variant.minSdkVersion < 19
         buildConfigBool("SIDE_LOAD_ONLY", variant.sideLoadOnly)
         ndk.abiFilters.clear()
