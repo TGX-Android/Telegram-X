@@ -11,12 +11,12 @@ function checkPreRequisites {
     exit
   fi
 
-  if [ -z "$ANDROID_NDK" -a "$ANDROID_NDK" == "" ]; then
-    echo -e "${STYLE_ERROR}Failed! NDK is empty. Run 'export NDK=[PATH_TO_NDK]'${STYLE_END}"
+  if [ -z "$ANDROID_SDK_ROOT" -a "$ANDROID_SDK_ROOT" == "" ]; then
+    echo -e "${STYLE_ERROR}Failed! ANDROID_SDK_ROOT is empty. Run 'export ANDROID_SDK_ROOT=[PATH_TO_SDK]'${STYLE_END}"
     exit
   fi
 
-  validate_dir "$ANDROID_NDK"
+  validate_dir "$ANDROID_SDK_ROOT"
   test "$CPU_COUNT"
 }
 
@@ -29,28 +29,14 @@ popd > /dev/null
 
 pushd "$THIRDPARTY_LIBRARIES/libvpx"
 
-# configuration
-
-PREBUILT=$ANDROID_NDK/toolchains/llvm/prebuilt/$BUILD_PLATFORM
-SYSROOT=$PREBUILT/sysroot
-ABIS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
-CFLAGS_="-DANDROID -fpic -fpie"
-LDFLAGS_=""
-
 # the function itself
 
 configure_abi() {
+  CFLAGS_="-DANDROID -fpic -fpie"
+  LDFLAGS_=""
   case ${ABI} in
-	  armeabi-v7a)
-      ANDROID_API=16
-      TARGET="armv7-android-gcc --enable-neon --disable-neon-asm"
-      NDK_ABIARCH="armv7a-linux-androideabi"
-      CFLAGS="${CFLAGS_} -Os -march=armv7-a -marm -mfloat-abi=softfp -mfpu=neon -mthumb -D__thumb__"
-      LDFLAGS="${LDFLAGS_}"
-      ASFLAGS=""
-      CPU=armv7-a
-    ;;
     arm64-v8a)
+      ANDROID_NDK_VERSION=$ANDROID_NDK_VERSION_PRIMARY
       ANDROID_API=21
       TARGET="arm64-android-gcc"
       NDK_ABIARCH="aarch64-linux-android"
@@ -59,16 +45,8 @@ configure_abi() {
       ASFLAGS=""
       CPU=arm64-v8a
     ;;
-    x86)
-      ANDROID_API=16
-      TARGET="x86-android-gcc"
-      NDK_ABIARCH="i686-linux-android"
-      CFLAGS="${CFLAGS_} -O3 -march=i686 -msse3 -mfpmath=sse -m32 -fPIC"
-      LDFLAGS="-m32"
-      ASFLAGS="-D__ANDROID__"
-      CPU=i686
-    ;;
     x86_64)
+      ANDROID_NDK_VERSION=$ANDROID_NDK_VERSION_PRIMARY
       ANDROID_API=21
       TARGET="x86_64-android-gcc"
       NDK_ABIARCH="x86_64-linux-android"
@@ -77,7 +55,34 @@ configure_abi() {
       ASFLAGS="-D__ANDROID__"
       CPU=x86_64
     ;;
+	  armeabi-v7a)
+      ANDROID_NDK_VERSION=$ANDROID_NDK_VERSION_LEGACY
+      ANDROID_API=16
+      TARGET="armv7-android-gcc --enable-neon --disable-neon-asm"
+      NDK_ABIARCH="armv7a-linux-androideabi"
+      CFLAGS="${CFLAGS_} -Os -march=armv7-a -marm -mfloat-abi=softfp -mfpu=neon -mthumb -D__thumb__"
+      LDFLAGS="${LDFLAGS_}"
+      ASFLAGS=""
+      CPU=armv7-a
+    ;;
+    x86)
+      ANDROID_NDK_VERSION=$ANDROID_NDK_VERSION_LEGACY
+      ANDROID_API=16
+      TARGET="x86-android-gcc"
+      NDK_ABIARCH="i686-linux-android"
+      CFLAGS="${CFLAGS_} -O3 -march=i686 -msse3 -mfpmath=sse -m32 -fPIC"
+      LDFLAGS="-m32"
+      ASFLAGS="-D__ANDROID__"
+      CPU=i686
+    ;;
   esac
+
+  ANDROID_NDK_ROOT="$ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_VERSION"
+  PREBUILT="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/$BUILD_PLATFORM"
+  SYSROOT="$PREBUILT/sysroot"
+
+  validate_dir "$ANDROID_NDK_ROOT"
+  echo "${STYLE_INFO}- Using NDK ${ANDROID_NDK_ROOT}${STYLE_END}"
 
   export CFLAGS="${CFLAGS}"
   export CPPFLAGS="${CFLAGS}"
@@ -149,10 +154,9 @@ configure_make() {
   make -j"$CPU_COUNT" install
 }
 
-for ((i=0; i < ${#ABIS[@]}; i++))
-do
-  configure_make "${ABIS[i]}"
-  echo -e "${STYLE_INFO}- libvpx build ended for ${ABIS[i]}${STYLE_END}"
+for ABI in x86 armeabi-v7a x86_64 arm64-v8a ; do
+  configure_make "$ABI"
+  echo -e "${STYLE_INFO}- libvpx build ended for ${ABI}${STYLE_END}"
 done
 
 popd
