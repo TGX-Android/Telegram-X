@@ -48,6 +48,7 @@ public class GifFile {
   public static final int FLAG_PLAY_ONCE = 1 << 2;
   public static final int FLAG_UNIQUE = 1 << 3;
   public static final int FLAG_DECODE_LAST_FRAME = 1 << 4;
+  public static final int FLAG_HIGH_PRIORITY_FOR_DECODE = 1 << 5;
 
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({
@@ -214,6 +215,14 @@ public class GifFile {
       return true;
     }
     return false;
+  }
+
+  public void setHighPriorityForDecode () {
+    flags = BitwiseUtils.setFlag(flags, FLAG_HIGH_PRIORITY_FOR_DECODE, true);
+  }
+
+  public boolean isHighPriorityForDecode () {
+    return BitwiseUtils.hasFlag(flags, FLAG_HIGH_PRIORITY_FOR_DECODE);
   }
 
   public void setOptimizationMode (@OptimizationMode int optimizationMode) {

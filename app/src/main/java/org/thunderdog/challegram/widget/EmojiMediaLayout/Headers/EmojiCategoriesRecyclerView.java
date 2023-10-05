@@ -329,6 +329,7 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView implements D
         TdApi.EmojiCategory category = categories[a];
         categoryStickers[a] = new TGStickerObj(context.tdlib(), category.icon, category.icon.fullType, category.emojis);
         if (categoryStickers[a].getPreviewAnimation() != null) {
+          categoryStickers[a].getPreviewAnimation().setHighPriorityForDecode();
           categoryStickers[a].getPreviewAnimation().setPlayOnce(true);
           categoryStickers[a].getPreviewAnimation().setLooped(false);
           receiverForPriorityLoading.getGifReceiver(a).requestFile(categoryStickers[a].getPreviewAnimation());
