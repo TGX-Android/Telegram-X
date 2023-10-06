@@ -1116,37 +1116,36 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     if (selection == null)
       return;
 
+    final String emoji = TD.stickerEmoji(stickerObj);
     final Editable editable = getText();
-    final int start = selection.start;
+    final EmojiSpan oldEmojiSpan = needReplace ? Emoji.findPrecedingEmojiSpan(editable, selection.start) : null;
 
-    String emoji = TD.stickerEmoji(stickerObj);
-    int after = start + emoji.length();
-    if (needReplace && !isEmpty() && selection.isEmpty()) {
-      EmojiSpan emojiSpan = Emoji.findPrecedingEmojiSpan(editable, start);
-      if (emojiSpan != null) {
-        int oldSpanStart = editable.getSpanStart(emojiSpan);
-        int oldSpanEnd = editable.getSpanEnd(emojiSpan);
-        editable.removeSpan(emojiSpan);
-        if (emojiSpan instanceof Destroyable) {
-          ((Destroyable) emojiSpan).performDestroy();
-        }
-        editable.setSpan(
-          Emoji.instance().newCustomSpan(emoji, null, this, tdlib, Td.customEmojiId(stickerObj)), oldSpanStart, oldSpanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        if (inlineContext != null) {
-          inlineContext.reset();
-        }
-        return;
+    final int start = oldEmojiSpan != null ? editable.getSpanStart(oldEmojiSpan) : selection.start;
+    final int end = oldEmojiSpan != null ? editable.getSpanEnd(oldEmojiSpan) : selection.end;
+
+    if (oldEmojiSpan != null) {
+      editable.removeSpan(oldEmojiSpan);
+      if (oldEmojiSpan instanceof Destroyable) {
+        ((Destroyable) oldEmojiSpan).performDestroy();
       }
     }
 
-    SpannableString s = new SpannableString(emoji);
-    s.setSpan(Emoji.instance().newCustomSpan(emoji, null, this, tdlib, Td.customEmojiId(stickerObj)), 0, s.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-    if (selection.isEmpty()) {
-      editable.insert(selection.start, s);
-    } else {
-      editable.replace(selection.start, selection.end, s);
+    if (oldEmojiSpan != null && needReplace && Config.KEEP_ORIGINAL_EMOJI_WHEN_INPUT_CUSTOM_EMOJI) {
+      editable.setSpan(Emoji.instance().newCustomSpan(emoji, null, this, tdlib, Td.customEmojiId(stickerObj)), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+      setSelection(start + emoji.length());
+      return;
     }
-    setSelection(after);
+
+    SpannableString s = new SpannableString(emoji);
+    s.setSpan(Emoji.instance().newCustomSpan(emoji, null, this, tdlib,
+      Td.customEmojiId(stickerObj)), 0, s.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+    if (needReplace || start != end) {
+      editable.replace(start, end, s);
+    } else {
+      editable.insert(start, s);
+    }
+    setSelection(start + s.length());
   }
 
   private boolean textChangedSinceChatOpened, ignoreFirstLinkPreview;
@@ -1644,26 +1643,14 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   public void paste (TdApi.FormattedText pasteText, boolean needSelectPastedText) {
-    TextSelection selection = getTextSelection();
-    if (selection == null) return;
-
-    final int start = selection.start;
-    paste(selection, pasteText.text, needSelectPastedText);
-    if (pasteText.entities != null && pasteText.entities.length > 0) {
-      for (TdApi.TextEntity entity : pasteText.entities) {
-        setSpan(start + entity.offset, start + entity.offset + entity.length, entity.type);
-      }
-      if (pasteText.text != null) {
-        setSelection(start, pasteText.text.length());
-      }
-    }
+    paste(TD.toCharSequence(pasteText), needSelectPastedText);
   }
 
   public void paste (CharSequence pasteText, boolean needSelectPastedText) {
     paste(getTextSelection(), pasteText, needSelectPastedText);
   }
 
-  public void paste (TextSelection selection, CharSequence pasteText, boolean needSelectPastedText) {
+  private void paste (TextSelection selection, CharSequence pasteText, boolean needSelectPastedText) {
     if (selection == null) return;
     final int start = selection.start;
     final int end = selection.end;

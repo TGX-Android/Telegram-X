@@ -5176,7 +5176,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (selectedMessage == null) {
         return false;
       }
-      if (id == R.id.btn_messageApplyLocalization) {
+      if (id == R.id.btn_emojiPackInfoButton) {
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
+        tdlib.ui().showStickerSets(MessagesController.this, ((EmojiPacksInfoView) itemView).getEmojiPacksIds(), true, null);
+        return true;
+      } else if (id == R.id.btn_messageApplyLocalization) {
         if (selectedMessage.getMessage().content.getConstructor() == TdApi.MessageDocument.CONSTRUCTOR) {
           TdApi.Document document = ((TdApi.MessageDocument) selectedMessage.getMessage().content).document;
           tdlib.ui().readCustomLanguage(this, document, langPack -> tdlib.ui().showLanguageInstallPrompt(this, langPack, selectedMessage.getMessage()), null);

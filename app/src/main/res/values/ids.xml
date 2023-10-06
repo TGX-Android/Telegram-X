@@ -1307,6 +1307,7 @@
   <item type="id" name="btn_avatarsInReactionsAlways" />
   <item type="id" name="btn_avatarsInReactionsSmartFilter" />
   <item type="id" name="btn_avatarsInReactionsNever" />
+  <item type="id" name="btn_emojiPackInfoButton" />
 
   <item type="id" name="controller_stickersAndEmoji" />
   <item type="id" name="controller_emojiLayoutStickers" />

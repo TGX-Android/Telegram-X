@@ -303,4 +303,6 @@ public class Config {
   public static final boolean ALLOW_SPONSORED_MESSAGE_LINK_COPY = true;
   public static final boolean PROTECT_ANONYMOUS_VOTING = false;
   public static final boolean PROTECT_ANONYMOUS_REACTIONS = false;
+
+  public static final boolean KEEP_ORIGINAL_EMOJI_WHEN_INPUT_CUSTOM_EMOJI = false;
 }
