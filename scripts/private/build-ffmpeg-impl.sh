@@ -31,9 +31,6 @@ function build_one {
   validate_file "$RANLIB"
   validate_dir "$LINK"
 
-  #LIBS=${PREBUILT}/lib64/clang/12.0.9/lib/linux
-  #validate_dir "$LIBS"
-
   echo "Cleaning..."
   rm -f config.h
   make clean || true

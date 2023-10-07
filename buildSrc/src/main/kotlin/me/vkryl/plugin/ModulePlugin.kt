@@ -113,6 +113,11 @@ open class ModulePlugin : Plugin<Project> {
         compileSdkVersion(versions.getOrThrow("version.sdk_compile").toInt())
         buildToolsVersion(versions.getOrThrow("version.build_tools"))
 
+        // TODO: investigate why AGP 8.1.2 forces default ndkVersion,
+        // despite having it properly set in productFlavors.${flavor}
+        ndkVersion = versions.getOrThrow("version.ndk_legacy")
+        ndkPath = File(sdkDirectory, "ndk/$ndkVersion").absolutePath
+
         compileOptions {
           isCoreLibraryDesugaringEnabled = true
           sourceCompatibility = Config.JAVA_VERSION
