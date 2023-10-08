@@ -35,15 +35,14 @@ import androidx.annotation.UiThread;
 
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.ReceiverUpdateListener;
-import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
-import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 
@@ -777,6 +776,16 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     }
   }
 
+  private static final int[] debugOptimizationColors;
+  static {
+    debugOptimizationColors = Config.DEBUG_GIF_OPTIMIZATION_MODE ? new int[]{
+      0x80FFFFFF, // GifFile.OptimizationMode.NONE
+      0x80FF0000, // GifFile.OptimizationMode.STICKER_PREVIEW
+      0x8000FF00, // GifFile.OptimizationMode.EMOJI
+      0x800000FF  // GifFile.OptimizationMode.EMOJI_PREVIEW
+    } : null;
+  }
+
   public void draw (Canvas c) {
     if (file == null) {
       return;
@@ -786,6 +795,9 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
       boolean isFirstFrame = false;
       synchronized (gif.getBusyList()) {
         if (gif.hasBitmap()) {
+          if (Config.DEBUG_GIF_OPTIMIZATION_MODE) {
+            c.drawRect(drawRegion, Paints.fillingPaint(debugOptimizationColors[file.getOptimizationMode()]));
+          }
           final boolean needRepainting = file.isNeedRepainting() || needForceRepainting;
           final boolean inBatch = BitwiseUtils.hasFlag(drawBatchFlags, DRAW_BATCH_STARTED);
           if (!inBatch || !BitwiseUtils.hasFlag(drawBatchFlags, DRAW_BATCH_DRAWN)) {

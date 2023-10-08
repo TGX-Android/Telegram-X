@@ -66,7 +66,7 @@ public class GifBridge {
     for (int i = 0; i < emojiThreads.length; i++) {
       emojiThreads[i] = new GifThread(i);
     }
-    lottieThreads = new GifThread[4];
+    lottieThreads = new GifThread[5];
     for (int i = 0; i < lottieThreads.length; i++) {
       lottieThreads[i] = new GifThread(i);
     }

@@ -34,6 +34,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGDefaultEmoji;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.emoji.Emoji;
+import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.StickersListener;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -70,10 +71,16 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
     emojiController = new EmojiLayoutRecyclerController(context, tdlib, EmojiLayout.EMOJI_INSTALLED_CONTROLLER_ID);
     emojiController.setItemWidth(8, 45);
     emojiController.setOnlyClassicEmoji(onlyClassicEmoji);
+    emojiController.setStickerObjModifier(this::modifyStickerObj);
 
     trendingSetsController = new EmojiLayoutTrendingController(context, tdlib, EmojiLayout.EMOJI_TRENDING_CONTROLLER_ID);
     trendingSetsController.setCallbacks(stickerSetsDataProvider(), new TdApi.StickerTypeCustomEmoji());
     trendingSetsController.stickerSets = new ArrayList<>();
+  }
+
+  public TGStickerObj modifyStickerObj (TGStickerObj sticker) {
+    sticker.setPreviewOptimizationMode(GifFile.OptimizationMode.EMOJI_PREVIEW);
+    return sticker;
   }
 
   @Override

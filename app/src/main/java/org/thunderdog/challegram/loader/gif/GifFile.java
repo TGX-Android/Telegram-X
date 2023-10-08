@@ -54,10 +54,13 @@ public class GifFile {
   @IntDef({
     OptimizationMode.NONE,
     OptimizationMode.STICKER_PREVIEW,
-    OptimizationMode.EMOJI
+    OptimizationMode.EMOJI,
+    OptimizationMode.EMOJI_PREVIEW
   })
   public @interface OptimizationMode {
-    int NONE = 0, STICKER_PREVIEW = 1, EMOJI = 2;
+    int NONE = 0, STICKER_PREVIEW = 1,
+      EMOJI = 2,          // for text media
+      EMOJI_PREVIEW = 3;  // for emoji keyboard
   }
 
   protected final Tdlib tdlib;
@@ -234,7 +237,7 @@ public class GifFile {
   }
 
   public boolean isOneTimeCache () { // Delete cache file as soon as file no longer displayed
-    return optimizationMode == OptimizationMode.EMOJI || optimizationMode == OptimizationMode.STICKER_PREVIEW;
+    return optimizationMode == OptimizationMode.EMOJI || optimizationMode == OptimizationMode.STICKER_PREVIEW || optimizationMode == OptimizationMode.EMOJI_PREVIEW;
   }
 
   @Deprecated()

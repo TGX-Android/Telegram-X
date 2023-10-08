@@ -40,6 +40,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
+import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -203,7 +204,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
         TGReaction reactionObj = tdlib.getReaction(reaction.type);
         TGStickerObj stickerObj = reactionObj != null ? reactionObj.newCenterAnimationSicker(): null;
         if (stickerObj != null) {
-          // stickerObj.setPreviewOptimizationMode(GifFile.OptimizationMode.EMOJI);
+          stickerObj.setPreviewOptimizationMode(GifFile.OptimizationMode.EMOJI_PREVIEW);
           if (isClassicEmojiReaction) {
             if (stickerObj.getPreviewAnimation() != null) {
               stickerObj.getPreviewAnimation().setPlayOnce(true);
@@ -304,7 +305,6 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
               items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_HEADER, info));
               for (int i = 0; i < rawInfo.size; i++) {
                 TGStickerObj sticker = new TGStickerObj(tdlib, i < rawInfo.covers.length ? rawInfo.covers[i] : null, null, rawInfo.stickerType);
-                // sticker.setPreviewOptimizationMode(GifFile.OptimizationMode.EMOJI);
                 sticker.setStickerSetId(rawInfo.id, null);
                 sticker.setDataProvider(stickerSetsDataProvider());
                 items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
@@ -907,7 +907,6 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
           for (TdApi.Sticker value : stickers) {
             TGStickerObj sticker = new TGStickerObj(tdlib, value, null, value.fullType);
             sticker.setReactionType(new TdApi.ReactionTypeCustomEmoji(value.id));
-            // sticker.setPreviewOptimizationMode(GifFile.OptimizationMode.EMOJI);
             items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
           }
 
@@ -929,14 +928,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
   public TGStickerObj modifyStickerObj (TGStickerObj sticker) {
     sticker.setDisplayScale(1f);
-    // sticker.setPreviewOptimizationMode(GifFile.OptimizationMode.EMOJI);
-    // if (sticker.getPreviewAnimation() != null) {
-      // sticker.getPreviewAnimation().setRequestedSize(1);
-    // }
-
-   // sticker.setDisplayScale(//sticker.isEmojiReaction() ?
-   //   //getScaleForClassicEmojiReaction(sticker.getSticker(), getItemWidth() - Screen.dp(DEFAULT_STICKER_PADDING_DP * 2)) :
-   //   TextMedia.getScale(sticker.getSticker(), getItemWidth() - Screen.dp(DEFAULT_STICKER_PADDING_DP * 2)));
+    sticker.setPreviewOptimizationMode(GifFile.OptimizationMode.EMOJI_PREVIEW);
     return sticker;
   }
 

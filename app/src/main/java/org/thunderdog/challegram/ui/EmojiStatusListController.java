@@ -40,6 +40,7 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
+import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.mediaview.MediaCellView;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -657,6 +658,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
             int i = 0;
             for (TdApi.Sticker sticker : stickers) {
               TGStickerObj parsed = new TGStickerObj(tdlib, sticker, sticker.fullType, rawStickerSet.emojis[i].emojis);
+              parsed.setPreviewOptimizationMode(GifFile.OptimizationMode.EMOJI_PREVIEW);
               items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, parsed));
               i++;
             }
@@ -840,6 +842,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
               int remainingCount = totalRecentCount;
               for (TdApi.Sticker recentSticker : recentStickers) {
                 TGStickerObj sticker = new TGStickerObj(tdlib, recentSticker, null, recentSticker.fullType);
+                sticker.setPreviewOptimizationMode(GifFile.OptimizationMode.EMOJI_PREVIEW);
                 sticker.setIsRecent();
                 items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
                 if (--remainingCount == 0) {
@@ -861,6 +864,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
               int remainingCount = totalTrendingCount;
               for (TdApi.Sticker trendingSticker : trendingStickers) {
                 TGStickerObj sticker = new TGStickerObj(tdlib, trendingSticker, null, trendingSticker.fullType);
+                sticker.setPreviewOptimizationMode(GifFile.OptimizationMode.EMOJI_PREVIEW);
                 sticker.setIsRecent();
                 items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
                 if (--remainingCount == 0) {
@@ -880,6 +884,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
               items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_HEADER, info));
               for (int i = 0; i < rawInfo.size; i++) {
                 TGStickerObj sticker = new TGStickerObj(tdlib, i < rawInfo.covers.length ? rawInfo.covers[i] : null, null, rawInfo.stickerType);
+                sticker.setPreviewOptimizationMode(GifFile.OptimizationMode.EMOJI_PREVIEW);
                 sticker.setStickerSetId(rawInfo.id, null);
                 sticker.setDataProvider(stickerSetsDataProvider());
                 items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
@@ -1173,6 +1178,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
               for (int j = oldSize; j < actualSize; j++) {
                 TdApi.Sticker sticker = stickerSet.stickers[j];
                 TGStickerObj obj = new TGStickerObj(tdlib, sticker, sticker.fullType, stickerSet.emojis[j].emojis);
+                obj.setPreviewOptimizationMode(GifFile.OptimizationMode.EMOJI_PREVIEW);
                 obj.setStickerSetId(stickerSet.id, stickerSet.emojis[j].emojis);
                 obj.setDataProvider(stickerSetsDataProvider());
                 items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, obj));
