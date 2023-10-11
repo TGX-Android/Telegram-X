@@ -381,11 +381,18 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     default int getVisibleMessageFlags () {
       TGMessage msg = getMessage();
       if (msg != null && !msg.isFakeMessage()) {
+        int flags;
         if (msg.isHot()) {
-          return TdlibMessageViewer.Flags.NO_SCREENSHOT_NOTIFICATION;
+          flags = TdlibMessageViewer.Flags.NO_SCREENSHOT_NOTIFICATION;
+        } else {
+          flags = TdlibMessageViewer.Flags.NO_SENSITIVE_SCREENSHOT_NOTIFICATION;
         }
+        if (msg.needRefreshViewCount()) {
+          flags |= TdlibMessageViewer.Flags.REFRESH_INTERACTION_INFO;
+        }
+        return flags;
       }
-      return TdlibMessageViewer.Flags.NO_SENSITIVE_SCREENSHOT_NOTIFICATION;
+      return 0;
     }
   }
 
