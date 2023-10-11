@@ -1929,6 +1929,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       forceTouchView.initWithContext(context);
     } catch (Throwable t) {
       Log.e("Unable to open force touch preview", t);
+      if (BuildConfig.DEBUG && t instanceof RuntimeException) {
+        throw (RuntimeException) t;
+      }
       return false;
     }
 
