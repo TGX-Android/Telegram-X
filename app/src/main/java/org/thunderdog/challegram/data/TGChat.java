@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.data;
 
-import android.os.SystemClock;
 import android.view.Gravity;
 import android.view.View;
 
@@ -32,6 +31,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibChatList;
 import org.thunderdog.challegram.telegram.TdlibCounter;
 import org.thunderdog.challegram.telegram.TdlibStatusManager;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -57,7 +57,6 @@ import me.vkryl.android.animator.BounceAnimator;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
-import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.Destroyable;
@@ -66,7 +65,7 @@ import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
 import me.vkryl.td.Td;
 
-public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPreview.RefreshCallback, Counter.Callback, Destroyable {
+public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPreview.RefreshCallback, Counter.Callback, Destroyable, TdlibUi.MessageProvider {
   private static final int FLAG_HAS_PREFIX = 1;
   private static final int FLAG_TEXT_DRAFT = 1 << 4;
   private static final int FLAG_SHOW_VERIFY = 1 << 5;
@@ -78,6 +77,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
   private static final int FLAG_ARCHIVE = 1 << 14;
   private static final int FLAG_SHOW_SCAM = 1 << 15;
   private static final int FLAG_SHOW_FAKE = 1 << 16;
+  private static final int FLAG_MESSAGE = 1 << 17;
 
   private int flags, listMode;
 
@@ -92,8 +92,6 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
   private int dataType;
 
   private int currentWidth;
-
-  private long viewedMessageId;
 
   private AvatarPlaceholder.Metadata avatarPlaceholder;
 
@@ -280,17 +278,8 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     }
   }
 
-  private long lastSyncTime;
-
-  public void syncCounter () {
-    if (chat != null && chat.lastMessage != null && isChannel() && showViews()) {
-      long time = SystemClock.uptimeMillis();
-      if (viewedMessageId != chat.lastMessage.id || time - lastSyncTime > 60000 * 5 + (1f - MathUtils.clamp((float) TD.getViewCount(chat.lastMessage.interactionInfo) / 1000.0f)) * 1800000 ) {
-        lastSyncTime = time;
-        viewedMessageId = chat.lastMessage.id;
-        tdlib.client().send(new TdApi.ViewMessages(chat.id, new long[] {viewedMessageId}, new TdApi.MessageSourceChatList(), false), tdlib.okHandler());
-      }
-    }
+  public boolean needRefreshInteractionInfo () {
+    return chat != null && chat.lastMessage != null && isChannel() && showViews();
   }
 
   public boolean checkOnline () {
@@ -1228,9 +1217,11 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     flags &= ~FLAG_TEXT_DRAFT;
     flags &= ~FLAG_CONTENT_HIDDEN;
     flags &= ~FLAG_CONTENT_STRING;
+    flags &= ~FLAG_MESSAGE;
     if (textIconIds != null) {
       textIconIds.clear();
     }
+    visibleMessage = null;
     currentPreview = null;
 
     if (tdlib.hasPasscode(chat)) {
@@ -1318,13 +1309,33 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
     TdApi.Message msg = chat.lastMessage;
     if (msg != null) {
+      flags |= FLAG_MESSAGE;
       // No need to check tdlib.chatRestrictionReason, because it's already handled above
       TD.ContentPreview preview = TD.getChatListPreview(tdlib, msg.chatId, msg, false);
       setContentPreview(preview);
+      visibleMessage = msg;
     } else {
       setTextValue(R.string.DeletedMessage);
       setPrefix();
     }
+  }
+
+  private TdApi.Message visibleMessage;
+
+  @Override
+  public boolean isMediaGroup () {
+    return currentPreview != null && currentPreview.getAlbum() != null;
+  }
+
+  @Override
+  public List<TdApi.Message> getVisibleMediaGroup () {
+    Tdlib.Album album = currentPreview != null ? currentPreview.getAlbum() : null;
+    return album != null ? album.messages : null;
+  }
+
+  @Override
+  public TdApi.Message getVisibleMessage () {
+    return visibleMessage;
   }
 
   private void addIcon (int icon) {

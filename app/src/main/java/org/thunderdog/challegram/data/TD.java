@@ -7022,4 +7022,22 @@ public class TD {
     }
     return unreadCount;
   }
+
+  public static boolean isScreenshotSensitive (TdApi.Message message) {
+    if (message == null) {
+      return false;
+    }
+    if (Td.isSecret(message.content)) {
+      return true;
+    }
+    switch (message.content.getConstructor()) {
+      case TdApi.MessageExpiredPhoto.CONSTRUCTOR:
+      case TdApi.MessageExpiredVideo.CONSTRUCTOR:
+        return true;
+      default:
+        Td.assertMessageContent_6479f6fc();
+        break;
+    }
+    return false;
+  }
 }

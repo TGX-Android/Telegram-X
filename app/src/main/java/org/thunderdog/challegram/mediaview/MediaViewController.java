@@ -1573,7 +1573,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   @Override
   public boolean shouldDisallowScreenshots () {
-    return mode == MODE_SECRET || !stack.getCurrent().canBeSaved();
+    return mode == MODE_SECRET || !stack.getCurrent().canBeSaved() || super.shouldDisallowScreenshots();
   }
 
   @Override

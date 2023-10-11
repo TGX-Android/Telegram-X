@@ -21,12 +21,15 @@ import android.view.View;
 
 import androidx.annotation.Nullable;
 
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.InlineResult;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.support.RippleSupport;
+import org.thunderdog.challegram.telegram.TdlibMessageViewer;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.SelectableItemDelegate;
@@ -39,7 +42,7 @@ import me.vkryl.android.util.InvalidateContentProvider;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.lambda.Destroyable;
 
-public class CustomResultView extends SparseDrawableView implements Destroyable, SelectableItemDelegate, FactorAnimator.Target, RemoveHelper.RemoveDelegate, DrawableProvider, InvalidateContentProvider {
+public class CustomResultView extends SparseDrawableView implements Destroyable, SelectableItemDelegate, FactorAnimator.Target, RemoveHelper.RemoveDelegate, DrawableProvider, InvalidateContentProvider, TdlibUi.MessageProvider {
   private static final int FLAG_DETACHED = 1;
   private static final int FLAG_CAUGHT = 1 << 1;
   private static final int FLAG_SELECTED = 1 << 2;
@@ -271,5 +274,15 @@ public class CustomResultView extends SparseDrawableView implements Destroyable,
       helper = new RemoveHelper(this, R.drawable.baseline_remove_circle_24);
     }
     helper.onSwipe();
+  }
+
+  @Override
+  public TdApi.Message getVisibleMessage () {
+    return result != null ? result.getMessage() : null;
+  }
+
+  @Override
+  public int getVisibleMessageFlags () {
+    return TdlibMessageViewer.Flags.NO_SENSITIVE_SCREENSHOT_NOTIFICATION;
   }
 }

@@ -85,6 +85,7 @@ import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibChatList;
 import org.thunderdog.challegram.telegram.TdlibChatListSlice;
 import org.thunderdog.challegram.telegram.TdlibContactManager;
+import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibThread;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -411,6 +412,8 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     return list;
   }
 
+  private TdlibMessageViewer.Viewport chatsViewport;
+
   @Override
   protected View onCreateView (Context context) {
     list();
@@ -419,6 +422,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     contentView = new ContentFrameLayout(context);
     contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
+    chatsViewport = tdlib.messageViewer().createViewport(new TdApi.MessageSourceChatList(), this);
     chatsView = (ChatsRecyclerView) Views.inflate(context(), R.layout.recycler_chats, contentView);
     chatsView.setMeasureListener((v, oldWidth, oldHeight, newWidth, newHeight) -> {
       if (newHeight != oldHeight && adapter.hasArchive() && hideArchive && adapter.getItemCount() > 0) {
@@ -521,6 +525,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     chatsView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     if (filter != null)
       chatsView.setTotalRes(filter.getTotalStringRes());
+    tdlib.ui().attachViewportToRecyclerView(chatsViewport, chatsView);
     contentView.addView(chatsView);
 
     Views.setScrollBarPosition(chatsView);
@@ -2494,6 +2499,9 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     super.destroy();
     if (liveLocationHelper != null) {
       liveLocationHelper.destroy();
+    }
+    if (chatsViewport != null) {
+      chatsViewport.performDestroy();
     }
     if (archiveList != null) {
       archiveList.unsubscribeFromUpdates(archiveListListener);

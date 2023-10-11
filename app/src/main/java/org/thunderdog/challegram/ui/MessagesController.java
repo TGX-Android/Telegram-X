@@ -3853,7 +3853,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public final boolean shouldDisallowScreenshots () {
-    return chat != null && (isSecretChat() || chat.hasProtectedContent || manager.hasVisibleProtectedContent());
+    return (chat != null && (isSecretChat() || chat.hasProtectedContent || manager.hasVisibleProtectedContent())) || super.shouldDisallowScreenshots();
   }
 
   @Override
@@ -3874,12 +3874,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     if (previewSearchSender != null && headerView != null) {
       viewMessagesFromSender(previewSearchSender, false);
-    }
-  }
-
-  public void onChatOpenStateChanged (long chatId) {
-    if (!isDestroyed() && getChatId() == chatId && manager != null) {
-      manager.viewMessages();
     }
   }
 
@@ -4116,6 +4110,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
         liveLocation.destroy();
         liveLocation = null;
       }
+      if (pinnedMessagesBar != null)
+        pinnedMessagesBar.completeDestroy();
       if (topBar != null)
         topBar.performDestroy();
       if (replyView != null)

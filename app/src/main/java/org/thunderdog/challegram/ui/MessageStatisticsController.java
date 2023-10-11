@@ -31,6 +31,7 @@ import org.thunderdog.challegram.data.TGFoundMessage;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
@@ -94,8 +95,11 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
     }
   }
 
+  private TdlibMessageViewer.Viewport messageViewport;
+
   @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
+    messageViewport = tdlib.messageViewer().createViewport(new TdApi.MessageSourceSearch(), this);
     adapter = new SettingsAdapter(this) {
       @Override
       protected void setSeparatorOptions (ListItem item, int position, SeparatorView separatorView) {
@@ -172,6 +176,7 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
         previewView.setContentInset(Screen.dp(8));
       }
     };
+    tdlib.ui().attachViewportToRecyclerView(messageViewport, recyclerView);
     recyclerView.setAdapter(adapter);
 
     if (getArgumentsStrict().album != null) {
@@ -191,6 +196,14 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
           }));
         }
       }));
+    }
+  }
+
+  @Override
+  public void destroy () {
+    super.destroy();
+    if (messageViewport != null) {
+      messageViewport.performDestroy();
     }
   }
 

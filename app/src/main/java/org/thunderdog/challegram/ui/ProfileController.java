@@ -483,7 +483,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public final boolean shouldDisallowScreenshots () {
-    return ChatId.isSecret(chat.id) || (chat.hasProtectedContent && !isEditing());
+    return ChatId.isSecret(chat.id) || (chat.hasProtectedContent && !isEditing()) || super.shouldDisallowScreenshots();
   }
 
   @Override

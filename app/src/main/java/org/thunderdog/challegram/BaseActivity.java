@@ -100,6 +100,7 @@ import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibManager;
+import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.PropertyId;
@@ -166,6 +167,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   protected Invalidator invalidator;
 
   private final ReferenceList<ActivityListener> activityListeners = new ReferenceList<>();
+
+  private final TdlibMessageViewer.Listener messageViewListener = (manager, needRestrictScreenshots) ->
+    checkDisallowScreenshots();
 
   private int currentOrientation;
   private boolean mHasSoftwareKeys;
@@ -306,10 +310,12 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       if (this.tdlib != null) {
         wasOnline = this.tdlib.isOnline();
         this.tdlib.setOnline(false);
+        this.tdlib.messageViewer().removeListener(messageViewListener);
       }
       this.tdlib = tdlib;
       recordAudioVideoController.setTdlib(tdlib);
       tdlib.setOnline(wasOnline);
+      tdlib.messageViewer().addListener(messageViewListener);
       if (drawer != null) {
         drawer.onCurrentTdlibChanged(tdlib);
       }
@@ -2540,6 +2546,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
     boolean disallowScreenshots = false;
     disallowScreenshots = (navigation.shouldDisallowScreenshots() || Passcode.instance().shouldDisallowScreenshots());
+    if (tdlib != null && tdlib.messageViewer().needRestrictScreenshots()) {
+      disallowScreenshots = true;
+    }
     for (PopupLayout popupLayout : windows) {
       boolean shouldDisallowScreenshots = popupLayout.shouldDisallowScreenshots();
       popupLayout.checkWindowFlags();

@@ -29,7 +29,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
-import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
@@ -50,7 +49,9 @@ import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.PropertyId;
 import org.thunderdog.challegram.theme.Theme;
@@ -72,15 +73,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
-import me.vkryl.core.collection.LongSet;
-import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
@@ -129,7 +127,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (MessagesManager.this.isScrolling != isScrolling) {
           MessagesManager.this.isScrolling = isScrolling;
           if (!isScrolling) {
-            viewMessages();
+            viewMessages(true);
           }
         }
         if (newState == RecyclerView.SCROLL_STATE_IDLE) {
@@ -140,7 +138,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
       @Override
       public void onScrolled (RecyclerView recyclerView, int dx, int dy) {
-        viewMessages();
+        viewMessages(true);
         if (dy == 0) {
           saveScrollPosition();
           ((MessagesRecyclerView) recyclerView).showDateForcely();
@@ -273,7 +271,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     setHasVisibleProtectedContent(hasVisibleProtectedContent);
   }
 
-  public void viewMessages () {
+  public void viewMessages (boolean byScroll) {
+    if (!byScroll && messageViewer != null) {
+      messageViewer.run();
+    }
     if (manager != null) {
       int first = manager.findFirstVisibleItemPosition();
       int last = manager.findLastVisibleItemPosition();
@@ -298,48 +299,22 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void onViewportMeasure () {
-    viewMessages();
+    viewMessages(false);
     saveScrollPosition();
   }
 
-  private long lastCheckedTopId;
-  private long lastCheckedBottomId;
-  private long lastViewedMention;
-  private int lastCheckedCount;
+  private long lastViewedMentionMessageId;
 
   private boolean viewDisplayedMessages (int first, int last) {
-    if (first == -1 || last == -1 || !allowReadMessages()) {
+    if (first == -1 || last == -1) {
       return false;
     }
 
-    TGMessage topEdge = adapter.getMessage(first);
-    TGMessage bottomEdge = adapter.getMessage(last);
-
-    if (topEdge == null || bottomEdge == null) {
-      return false;
-    }
-
-    long topId = topEdge.getSmallestId();
-    long bottomId = bottomEdge.getBiggestId();
-    final int count = last - first + 1;
-
-    if (lastCheckedTopId == topId && lastCheckedBottomId == bottomId && lastCheckedCount == count) {
-      return false;
-    }
-
-    boolean success = true;
-
-    LongSet list = null;
-    LongSparseArray<LongSet> refreshMap = null;
-    int maxDate = 0;
     boolean headerVisible = false;
     boolean hasProtectedContent = false;
 
     for (int viewIndex = first; viewIndex <= last; viewIndex++) {
       View view = manager.findViewByPosition(viewIndex);
-      if (!(view instanceof MessageProvider)) {
-        success = false;
-      }
       TGMessage msg = view instanceof MessageProvider ? ((MessageProvider) view).getMessage() : null;
       if (msg != null && msg.getChatId() == loader.getChatId()) {
         if (!msg.canBeSaved() && !msg.isSponsoredMessage()) {
@@ -348,71 +323,70 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (isHeaderMessage(msg)) {
           headerVisible = true;
         }
-        maxDate = Math.max(msg.getDate(), maxDate);
-        if (!inSpecialMode()) {
-          if (msg.markAsViewed() || msg.containsUnreadReactions()) {
-            long id = msg.getBiggestId();
-            if (msg.containsUnreadMention() && id > lastViewedMention) {
-              lastViewedMention = id;
-            }
-            if (msg.containsUnreadReactions() && id > lastViewedReaction) {
-              lastViewedReaction = id;
-            }
-          }
-        }
-        if (list == null) {
-          list = new LongSet(last - first);
-        } else {
-          list.ensureCapacity(last - first);
-        }
-        msg.getIds(list);
-        if (msg.needRefreshViewCount()) {
-          if (refreshMap == null) {
-            refreshMap = new LongSparseArray<>();
-          }
-          LongSet refreshList = refreshMap.get(msg.getChatId());
-          if (refreshList == null) {
-            refreshList = new LongSet(last - first);
-            refreshMap.put(msg.getChatId(), refreshList);
-          } else {
-            refreshList.ensureCapacity(last - first);
-          }
-          msg.getIds(refreshList);
-        }
       }
-    }
-
-    LongSparseArray<long[]> viewedMap;
-    if (refreshMap != null) {
-      viewedMap = new LongSparseArray<>(refreshMap.size());
-      for (int i = 0; i < refreshMap.size(); i++) {
-        viewedMap.append(refreshMap.keyAt(i), refreshMap.valueAt(i).toArray());
-      }
-    } else {
-      viewedMap = null;
-    }
-
-    if (success) {
-      lastCheckedTopId = topId;
-      lastCheckedBottomId = bottomId;
-      lastCheckedCount = count;
-    } else {
-      lastCheckedTopId = lastCheckedBottomId = lastCheckedCount = 0;
     }
 
     setHasVisibleProtectedContent(hasProtectedContent);
-    setRefreshMessages(loader.getChatId(), loader.getMessageThreadId(), viewedMap, maxDate);
     setHeaderVisible(headerVisible);
-
-    if (list != null) {
-      viewMessagesInternal(loader.getChatId(), loader.getMessageThreadId(), list);
-    }
 
     return true;
   }
 
-  public interface MessageProvider {
+  public interface MessageProvider extends TdlibUi.MessageProvider {
     TGMessage getMessage ();
+
+
+    // MessageProvider
+
+    @Override
+    default boolean isSponsoredMessage () {
+      TGMessage msg = getMessage();
+      return msg != null && !msg.isFakeMessage() && msg.isSponsoredMessage();
+    }
+
+    @Override
+    default TdApi.SponsoredMessage getVisibleSponsoredMessage () {
+      TGMessage msg = getMessage();
+      return msg != null && !msg.isFakeMessage() ? msg.getSponsoredMessage() : null;
+    }
+
+    @Override
+    default boolean isMediaGroup () {
+      TGMessage msg = getMessage();
+      return msg != null && !msg.isFakeMessage() && msg.getCombinedMessageCount() > 1;
+    }
+
+    @Override
+    default List<TdApi.Message> getVisibleMediaGroup () {
+      TGMessage msg = getMessage();
+      if (msg != null && !msg.isFakeMessage()) {
+        return Arrays.asList(msg.getAllMessages());
+      }
+      return null;
+    }
+
+    @Override
+    default TdApi.Message getVisibleMessage () {
+      TGMessage msg = getMessage();
+      return msg != null && !msg.isFakeMessage() ? msg.getMessage() : null;
+    }
+
+    @Override
+    default long getVisibleChatId () {
+      TGMessage msg = getMessage();
+      return msg != null && !msg.isFakeMessage() ? msg.getChatId() : 0;
+    }
+
+    @Override
+    default int getVisibleMessageFlags () {
+      TGMessage msg = getMessage();
+      if (msg != null && !msg.isFakeMessage()) {
+        if (msg.isHot()) {
+          return TdlibMessageViewer.Flags.NO_SCREENSHOT_NOTIFICATION;
+        }
+      }
+      return TdlibMessageViewer.Flags.NO_SENSITIVE_SCREENSHOT_NOTIFICATION;
+    }
   }
 
   private boolean lastScrollToBottomVisible;
@@ -537,14 +511,13 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   public void destroy (ViewController<?> context) {
     resetScroll();
-    cancelRefresh();
     returnToMessageIds = null;
     highlightMode = 0;
     tdlib.settings().removePinnedMessageDismissListener(this);
     highlightMessageId = null;
     hasScrolled = false;
-    lastViewedMention = 0;
-    lastViewedReaction = 0;
+    lastViewedMentionMessageId = 0;
+    lastViewedReactionMessageId = 0;
     chatAdmins = null;
     if (pinnedMessages != null) {
       pinnedMessages.performDestroy();
@@ -565,9 +538,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       tdlib.closeChat(chatId, context, true);
     }
     loader.reuse();
+    messageViewer = null;
     adapter.clear(true);
     clearHeaderMessage();
-    lastCheckedBottomId = lastCheckedTopId = 0;
     awaitingForPinnedMessages = false;
     wasScrollByUser = false;
   }
@@ -737,6 +710,46 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         loadFromStart();
       }
     }
+    messageViewer = tdlib.ui().attachViewportToRecyclerView(loader.viewport(), controller.getMessagesView(), new TdlibUi.MessageViewCallback() {
+      @Override
+      public void onSponsoredMessageViewed (TdlibMessageViewer.Viewport viewport, View view, TdApi.SponsoredMessage sponsoredMessage, long flags, long viewId, boolean allowRequest) {
+        MessageProvider provider = (MessageProvider) view;
+        provider.getMessage().markAsViewed();
+      }
+
+      @Override
+      public boolean isMessageContentVisible (TdlibMessageViewer.Viewport viewport, View view) {
+        // TODO return false when "FOLLOW" bar overlaps the message entirely
+        return true;
+      }
+
+      @Override
+      public void onMessageViewed (TdlibMessageViewer.Viewport viewport, View view, TdApi.Message message, long flags, long viewId, boolean allowRequest) {
+        if (inSpecialMode() || !allowRequest)
+          return;
+        MessageProvider provider = (MessageProvider) view;
+        TGMessage msg = provider.getMessage();
+        if (msg.markAsViewed() || msg.containsUnreadReactions()) {
+          long messageId = msg.getBiggestId();
+          if (msg.containsUnreadMention() && messageId > lastViewedMentionMessageId) {
+            lastViewedMentionMessageId = messageId;
+          }
+          if (msg.containsUnreadReactions() && messageId > lastViewedReactionMessageId) {
+            lastViewedReactionMessageId = messageId;
+          }
+        }
+      }
+
+      @Override
+      public boolean needForceRead (TdlibMessageViewer.Viewport viewport) {
+        return !inSpecialMode();
+      }
+
+      @Override
+      public boolean allowViewRequest (TdlibMessageViewer.Viewport viewport) {
+        return isFocused;
+      }
+    });
     subscribeForUpdates();
     this.useReactionBubblesValue = checkReactionBubbles();
     this.usedTranslateStyleMode = checkTranslateStyleMode();
@@ -1055,7 +1068,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     adapter.reset(startMessage);
     manager.scrollToPositionWithOffset(0, 0);
     loader.loadFromStart(fromId);
-    viewMessages();
+    viewMessages(false);
   }
 
   private void loadFromMessage (MessageId messageId, int highlightMode, boolean force) {
@@ -1063,7 +1076,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       adapter.reset(null);
     }
     loader.loadFromMessage(messageId, highlightMode, force);
-    viewMessages();
+    viewMessages(false);
   }
 
   private void loadPreviewMessages () {
@@ -1206,7 +1219,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (!willRepeat) {
           onChatAwaitFinish();
         }
-        viewMessages();
+        viewMessages(false);
         break;
       }
       case MessagesLoader.MODE_MORE_TOP: {
@@ -1530,7 +1543,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     this.manager = manager;
     this.adapter = new MessagesAdapter(context, this, this.controller);
 
-    recyclerView.clearOnScrollListeners();
+    recyclerView.removeOnScrollListener(listener);
     recyclerView.addOnScrollListener(listener);
     recyclerView.setAdapter(adapter);
   }
@@ -1683,7 +1696,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       if (messageThread != null) {
         messageThread.updateReadInbox(message);
       }
-      viewMessages();
+      viewMessages(false);
     }
   }
 
@@ -1863,9 +1876,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     int index = adapter.indexOfMessageContainer(messageId);
     if (index != -1 && adapter.getItem(index).setMessageUnreadReactions(messageId, unreadReactions)) {
       invalidateViewAt(index);
-
-      lastCheckedCount = 0;
-      viewMessages();
+      viewMessages(false);
     }
     ThreadInfo messageThread = loader.getMessageThread();
     if (messageThread != null) {
@@ -2042,36 +2053,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   // Reading messages
 
-  boolean viewMessagesInternal (final long chatId, final long messageThreadId, final LongSet viewed) {
-    if (allowReadMessages() && !viewed.isEmpty()) {
-      final long[] messageIds = viewed.toArray();
-      if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
-        Log.i(Log.TAG_MESSAGES_LOADER, "Reading %d messages: %s", messageIds.length, Arrays.toString(messageIds));
-      }
-      if (Log.isEnabled(Log.TAG_FCM)) {
-        Log.i(Log.TAG_FCM, "Reading %d messages from MessagesManager: %s", messageIds.length, Arrays.toString(messageIds));
-      }
-
-      TdApi.MessageSource source;
-      boolean forceRead = !inSpecialMode();
-      if (controller.isInForceTouchMode() || (BuildConfig.DEBUG && Settings.instance().dontReadMessages())) {
-        source = new TdApi.MessageSourceHistoryPreview();
-        forceRead = false;
-      } else if (isEventLog()) {
-        source = new TdApi.MessageSourceChatEventLog();
-      } else if (isSearchPreview()) {
-        source = new TdApi.MessageSourceSearch();
-      } else if (messageThreadId != 0) {
-        source = new TdApi.MessageSourceMessageThreadHistory();
-      } else {
-        source = new TdApi.MessageSourceChatHistory();
-      }
-      tdlib.client().send(new TdApi.ViewMessages(chatId, messageIds, source, forceRead), loader);
-      return true;
-    }
-    return false;
-  }
-
   private boolean parentPaused, parentFocused, parentHidden;
 
   public void setParentHidden (boolean isHidden) {
@@ -2123,9 +2104,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   private boolean isFocused;
 
-  private long viewedChatId, viewedMessageThreadId;
-  private LongSet viewedMessages;
-
   private void setFocused (boolean isFocused) {
     if (this.isFocused != isFocused) {
       if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
@@ -2137,72 +2115,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       } else {
         onBlur();
       }
-    }
-  }
-
-  private long refreshChatId;
-  private long refreshMessageThreadId;
-  private LongSparseArray<long[]> refreshMessageIds;
-  private int refreshMaxDate;
-  private CancellableRunnable refreshViewsRunnable;
-
-  private static long timeTillNextRefresh (long millis) {
-    long seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
-    if (seconds < 15) {
-      return millis % 3000; // once per 3 seconds for the first 15 seconds
-    }
-    if (seconds < 60) {
-      return millis % 5000; // once per 5 seconds for 15-60 seconds
-    }
-    long minutes = TimeUnit.MILLISECONDS.toMinutes(millis);
-    if (minutes < 30) {
-      return millis % 15000; // once per 15 seconds for 1-30 minutes
-    }
-    if (minutes < 60) {
-      return millis % 30000; // once per 30 seconds for 30-60 minutes
-    }
-    return millis % 60000; // once per minute
-  }
-
-  private void cancelRefresh () {
-    if (refreshViewsRunnable != null) {
-      refreshViewsRunnable.cancel();
-      refreshViewsRunnable = null;
-    }
-  }
-
-  private void scheduleRefresh () {
-    cancelRefresh();
-    if (refreshChatId != 0 && refreshMessageIds != null && refreshMessageIds.size() > 0) {
-      long ms = refreshMaxDate != 0 ? timeTillNextRefresh(tdlib.currentTimeMillis() - TimeUnit.SECONDS.toMillis(refreshMaxDate)) : 60000;
-      refreshViewsRunnable = new CancellableRunnable() {
-        @Override
-        public void act () {
-          if (allowReadMessages()) {
-            List<TdApi.Function<TdApi.Ok>> functions = new ArrayList<>();
-            for (int i = 0; i < refreshMessageIds.size(); i++) {
-              long chatId = refreshMessageIds.keyAt(i);
-              long[] messageIds = refreshMessageIds.valueAt(i);
-              functions.add(new TdApi.ViewMessages(chatId, messageIds, new TdApi.MessageSourceHistoryPreview(), false));
-            }
-            tdlib.sendAll(TD.toArray(functions), tdlib.okHandler(), () -> tdlib.ui().post(MessagesManager.this::scheduleRefresh));
-          } else {
-            scheduleRefresh();
-          }
-        }
-      };
-      refreshViewsRunnable.removeOnCancel(tdlib.ui());
-      tdlib.ui().postDelayed(refreshViewsRunnable, ms);
-    }
-  }
-
-  private void setRefreshMessages (long chatId, long messageThreadId, LongSparseArray<long[]> messageIds, int maxDate) {
-    if (this.refreshChatId != chatId || this.refreshMessageThreadId != messageThreadId || refreshMaxDate != maxDate || !ArrayUtils.contentEquals(refreshMessageIds, messageIds)) {
-      this.refreshChatId = chatId;
-      this.refreshMessageThreadId = messageThreadId;
-      this.refreshMessageIds = messageIds;
-      this.refreshMaxDate = maxDate;
-      scheduleRefresh();
     }
   }
 
@@ -2334,14 +2246,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     onCanLoadMoreBottomChanged();
   }
 
-  private boolean allowReadMessages () {
-    return isFocused && !inSpecialMode(); //  && !controller.isInForceTouchMode() && !inSpecialMode();
-  }
-
   private void onFocus () {
-    viewMessages();
+    viewMessages(false);
     saveScrollPosition();
-    scheduleRefresh();
   }
 
   // Highlight message id
@@ -2426,8 +2333,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       return;
     }
     final long fromMessageId;
-    if (lastViewedMention != 0) {
-      fromMessageId = lastViewedMention;
+    if (lastViewedMentionMessageId != 0) {
+      fromMessageId = lastViewedMentionMessageId;
     } else {
       TGMessage message = adapter.getTopMessage();
       if (message == null) {
@@ -2482,7 +2389,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   private ArrayList<TdApi.Message> closestUnreadReactions;
   private CancellableResultHandler reactionsHandler;
-  private long lastViewedReaction = 0;
+  private long lastViewedReactionMessageId = 0;
+  private Runnable messageViewer;
 
   private void setUnreadReactions (final CancellableResultHandler handler, final TdApi.FoundChatMessages messages, final long fromMessageId) {
     tdlib.ui().post(() -> {
@@ -2514,8 +2422,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       return;
     }
     final long fromMessageId;
-    if (lastViewedReaction != 0) {
-      fromMessageId = lastViewedReaction;
+    if (lastViewedReactionMessageId != 0) {
+      fromMessageId = lastViewedReactionMessageId;
     } else {
       TGMessage message = adapter.getTopMessage();
       if (message == null) {

@@ -28,7 +28,7 @@ import java.util.List;
 
 import me.vkryl.core.lambda.Destroyable;
 
-public abstract class ListManager<T> implements Destroyable, Iterable<T> {
+public abstract class ListManager<T> implements Destroyable, Iterable<T>, TdlibProvider {
   private static final int STATE_INITIALIZING = 0;
   private static final int STATE_INITIALIZED = 1;
   private static final int STATE_FULL = 2;
@@ -69,6 +69,12 @@ public abstract class ListManager<T> implements Destroyable, Iterable<T> {
       this.addChangeListener(listener);
     }
     subscribeToUpdates();
+  }
+
+  @NonNull
+  @Override
+  public Tdlib tdlib () {
+    return tdlib;
   }
 
   protected void loadTotalCount (@Nullable Runnable after) {

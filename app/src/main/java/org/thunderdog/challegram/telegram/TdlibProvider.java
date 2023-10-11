@@ -17,6 +17,8 @@ package org.thunderdog.challegram.telegram;
 import androidx.annotation.NonNull;
 
 public interface TdlibProvider {
-  int accountId ();
+  default int accountId () {
+    return tdlib().id();
+  }
   @NonNull Tdlib tdlib ();
 }

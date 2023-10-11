@@ -32,6 +32,7 @@ public class ViewControllerPagerAdapter extends PagerAdapter implements Destroya
     ViewController<?> createControllerForPosition (int position);
     void onPrepareToShow (int position, ViewController<?> controller);
     void onAfterHide (int position, ViewController<?> controller);
+    ViewController<?> getParentOrSelf ();
   }
 
   private final ControllerProvider provider;
@@ -128,6 +129,9 @@ public class ViewControllerPagerAdapter extends PagerAdapter implements Destroya
     provider.onPrepareToShow(position, c);
     c.onPrepareToShow();
     container.addView(view);
+    if (!c.getAttachState()) {
+      c.onAttachStateChanged(provider.getParentOrSelf().navigationController(), true);
+    }
     return c;
   }
 
@@ -135,6 +139,9 @@ public class ViewControllerPagerAdapter extends PagerAdapter implements Destroya
   public void destroyItem (ViewGroup container, int position, @NonNull Object object) {
     ViewController<?> c = (ViewController<?>) object;
     container.removeView(c.getValue());
+    if (c.getAttachState()) {
+      c.onAttachStateChanged(provider.getParentOrSelf().navigationController(), false);
+    }
     provider.onAfterHide(position, c);
     c.onCleanAfterHide();
   }

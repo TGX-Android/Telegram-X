@@ -26,6 +26,7 @@ import android.view.ViewGroup;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
@@ -37,8 +38,10 @@ import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibStatusManager;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.PropertyId;
 import org.thunderdog.challegram.theme.Theme;
@@ -59,6 +62,8 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.widget.BaseView;
 
+import java.util.List;
+
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.util.InvalidateContentProvider;
@@ -66,7 +71,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.td.ChatPosition;
 
-public class ChatView extends BaseView implements TdlibSettingsManager.PreferenceChangeListener, InvalidateContentProvider, EmojiStatusHelper.EmojiStatusReceiverInvalidateDelegate {
+public class ChatView extends BaseView implements TdlibSettingsManager.PreferenceChangeListener, InvalidateContentProvider, EmojiStatusHelper.EmojiStatusReceiverInvalidateDelegate, TdlibUi.MessageProvider {
   private static Paint timePaint;
   private static TextPaint titlePaint, titlePaintFake; // counterTextPaint
 
@@ -354,7 +359,6 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
       this.isPinnedArchive.setValue(chat != null && chat.isArchive() && !tdlib.settings().needHideArchive(), false);
       if (chat != null) {
         chat.checkLayout(getMeasuredWidth());
-        chat.syncCounter();
         chat.attachToView(this);
         if (chat.isArchive()) {
           this.tdlib.settings().addUserPreferenceChangeListener(this);
@@ -699,5 +703,25 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
 
     DrawAlgorithms.drawIcon(c, avatarReceiver, 315f, chat.getScheduleAnimator().getFloatValue(), Theme.fillingColor(), getSparseDrawable(R.drawable.baseline_watch_later_10, ColorId.badgeMuted), PorterDuffPaint.get(ColorId.badgeMuted, chat.getScheduleAnimator().getFloatValue()));
     DrawAlgorithms.drawSimplestCheckBox(c, avatarReceiver, isSelected.getFloatValue());
+  }
+
+  @Override
+  public boolean isMediaGroup () {
+    return chat != null && chat.isMediaGroup();
+  }
+
+  @Override
+  public List<TdApi.Message> getVisibleMediaGroup () {
+    return chat != null ? chat.getVisibleMediaGroup() : null;
+  }
+
+  @Override
+  public TdApi.Message getVisibleMessage () {
+    return chat != null ? chat.getVisibleMessage() : null;
+  }
+
+  @Override
+  public int getVisibleMessageFlags () {
+    return TdlibMessageViewer.Flags.NO_SENSITIVE_SCREENSHOT_NOTIFICATION | (chat != null && chat.needRefreshInteractionInfo() ? TdlibMessageViewer.Flags.REFRESH_INTERACTION_INFO : 0);
   }
 }

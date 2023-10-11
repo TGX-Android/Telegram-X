@@ -39,6 +39,8 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.collection.LongSparseArray;
 import androidx.core.os.CancellationSignal;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
@@ -6773,5 +6775,135 @@ public class TdlibUi extends Handler {
       mode = Settings.STICKER_MODE_ONLY_INSTALLED;
     }
     return new EmojiStickers(tdlib, stickerType, query, isComplexQuery, limit, chatId, mode == Settings.STICKER_MODE_ALL);
+  }
+
+  public interface MessageProvider {
+    default boolean isSponsoredMessage () {
+      return false;
+    }
+    default TdApi.SponsoredMessage getVisibleSponsoredMessage () {
+      return null;
+    }
+    default boolean isMediaGroup () {
+      return false;
+    }
+    default List<TdApi.Message> getVisibleMediaGroup () {
+      return null;
+    }
+    TdApi.Message getVisibleMessage ();
+    default @TdlibMessageViewer.Flags int getVisibleMessageFlags () {
+      return 0;
+    }
+    default long getVisibleChatId () {
+      TdApi.Message message = getVisibleMessage();
+      return message != null ? message.chatId : 0;
+    }
+  }
+
+  public interface MessageViewCallback {
+    void onMessageViewed (TdlibMessageViewer.Viewport viewport, View view, TdApi.Message message, @TdlibMessageViewer.Flags long flags, long viewId, boolean allowRequest);
+    default boolean needForceRead (TdlibMessageViewer.Viewport viewport) {
+      return false;
+    }
+    default boolean allowViewRequest (TdlibMessageViewer.Viewport viewport) {
+      return true;
+    }
+
+    default void onSponsoredMessageViewed (TdlibMessageViewer.Viewport viewport, View view, TdApi.SponsoredMessage sponsoredMessage, @TdlibMessageViewer.Flags long flags, long viewId, boolean allowRequest) {
+      // Do nothing?
+    }
+    default boolean isMessageContentVisible (TdlibMessageViewer.Viewport viewport, View view) {
+      return true;
+    }
+  }
+
+  public Runnable attachViewportToRecyclerView (TdlibMessageViewer.Viewport viewport, RecyclerView recyclerView) {
+    return attachViewportToRecyclerView(viewport, recyclerView, null);
+  }
+
+  public Runnable attachViewportToRecyclerView (TdlibMessageViewer.Viewport viewport, RecyclerView recyclerView, @Nullable MessageViewCallback callback) {
+    Runnable viewMessages = () -> {
+      if (viewport.isDestroyed()) {
+        return;
+      }
+      boolean allowViewRequest = callback == null || callback.allowViewRequest(viewport);
+      boolean forceRead = callback != null && callback.needForceRead(viewport);
+      LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
+      if (manager == null)
+        throw new IllegalStateException();
+      int startIndex = manager.findFirstVisibleItemPosition();
+      int endIndex = manager.findLastVisibleItemPosition();
+      final long viewId = SystemClock.uptimeMillis();
+      int viewedMessageCount = 0;
+      if (startIndex != -1 && endIndex != -1) {
+        for (int index = startIndex; index <= endIndex; index++) {
+          View view = manager.findViewByPosition(index);
+          if (view instanceof MessageProvider) {
+            MessageProvider provider = (MessageProvider) view;
+            boolean canViewMessage = callback == null || callback.isMessageContentVisible(viewport, view);
+            if (!canViewMessage) {
+              continue;
+            }
+            @TdlibMessageViewer.Flags int flags = provider.getVisibleMessageFlags();
+            if (provider.isSponsoredMessage()) {
+              TdApi.SponsoredMessage sponsoredMessage = provider.getVisibleSponsoredMessage();
+              long chatId = provider.getVisibleChatId();
+              if (sponsoredMessage != null && viewport.addVisibleMessage(chatId, sponsoredMessage, flags, viewId)) {
+                if (callback != null) {
+                  callback.onSponsoredMessageViewed(viewport, view, sponsoredMessage, flags, viewId, allowViewRequest);
+                }
+                viewedMessageCount++;
+              }
+            } else if (provider.isMediaGroup()) {
+              List<TdApi.Message> mediaGroup = provider.getVisibleMediaGroup();
+              if (mediaGroup != null) {
+                for (TdApi.Message message : mediaGroup) {
+                  if (viewport.addVisibleMessage(message, flags, viewId)) {
+                    if (callback != null) {
+                      callback.onMessageViewed(viewport, view, message, flags, viewId, allowViewRequest);
+                    }
+                    viewedMessageCount++;
+                  }
+                }
+              }
+            } else {
+              TdApi.Message message = provider.getVisibleMessage();
+              if (message != null && viewport.addVisibleMessage(message, flags, viewId)) {
+                if (callback != null) {
+                  callback.onMessageViewed(viewport, view, message, flags, viewId, allowViewRequest);
+                }
+                viewedMessageCount++;
+              }
+            }
+          }
+        }
+      }
+      viewport.removeOtherVisibleMessagesByViewId(viewId);
+      if (allowViewRequest && (viewedMessageCount > 0 || viewport.haveRecentlyViewedMessages())) {
+        viewport.viewMessages(true, forceRead, null);
+      }
+    };
+    RecyclerView.OnScrollListener onScrollListener = new RecyclerView.OnScrollListener() {
+      @Override
+      public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
+        viewMessages.run();
+      }
+
+      private boolean isScrolling;
+
+      @Override
+      public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
+        boolean wasScrolling = this.isScrolling;
+        this.isScrolling = newState != RecyclerView.SCROLL_STATE_IDLE;
+        if (this.isScrolling != wasScrolling && !this.isScrolling) {
+          viewMessages.run();
+        }
+      }
+    };
+    viewport.addOnDestroyListener(() ->
+      recyclerView.removeOnScrollListener(onScrollListener)
+    );
+    recyclerView.addOnScrollListener(onScrollListener);
+    return viewMessages;
   }
 }
