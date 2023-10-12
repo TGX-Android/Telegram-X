@@ -98,9 +98,11 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     }
   }
 
+  /** @noinspection unchecked*/
   @Override
-  public void setUpdateListener (ReceiverUpdateListener listener) {
+  public final ImageReceiver setUpdateListener (ReceiverUpdateListener listener) {
     this.updateListener = listener;
+    return this;
   }
 
   @Override

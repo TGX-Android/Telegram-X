@@ -104,7 +104,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private final ComplexReceiver emojiStatusReceiver;
   private final ComplexReceiver reactionsComplexReceiver, textMediaReceiver, replyTextMediaReceiver;
   private final DoubleImageReceiver replyReceiver;
-  private final RefreshRateLimiter refreshRateLimiter;
+  private final RefreshRateLimiter refreshRateLimiter, highRefreshRateLimiter;
   private ComplexReceiver footerTextMediaReceiver;
 
   private ImageReceiver contentReceiver;
@@ -113,15 +113,23 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private MessageViewGroup parentMessageViewGroup;
   private MessagesManager manager;
 
+
   public MessageView (Context context) {
     super(context);
     this.refreshRateLimiter = new RefreshRateLimiter(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
-    avatarReceiver = new AvatarReceiver(this);
-    avatarsReceiver = new ComplexReceiver(this);
-    reactionAvatarsReceiver = new ComplexReceiver(this);
-    gifReceiver = new GifReceiver(this); // TODO use refreshRateLimiter?
+    this.highRefreshRateLimiter = new RefreshRateLimiter(this, 60.0f);
+    this.highRefreshRateLimiter.attachOtherRefreshLimiter(refreshRateLimiter);
+
+    avatarReceiver = new AvatarReceiver(this)
+      .setUpdateListener(refreshRateLimiter);
+    avatarsReceiver = new ComplexReceiver(this)
+      .setUpdateListener(refreshRateLimiter);
+    reactionAvatarsReceiver = new ComplexReceiver(this)
+      .setUpdateListener(refreshRateLimiter);
+    gifReceiver = new GifReceiver(this)
+      .setUpdateListener(refreshRateLimiter.passThroughUpdateListener());
     reactionsComplexReceiver = new ComplexReceiver()
-      .setUpdateListener(new RefreshRateLimiter(this, 60.0f)); // Limit by 60fps
+      .setUpdateListener(highRefreshRateLimiter);
     textMediaReceiver = new ComplexReceiver()
       .setUpdateListener(refreshRateLimiter);
     emojiStatusReceiver = new ComplexReceiver()
@@ -129,7 +137,8 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     replyTextMediaReceiver = new ComplexReceiver()
       .setUpdateListener(refreshRateLimiter);
     //noinspection ContantConditions
-    replyReceiver = new DoubleImageReceiver(this, Config.USE_SCALED_ROUNDINGS ? Screen.dp(Theme.getImageRadius()) : 0);
+    replyReceiver = new DoubleImageReceiver(this, Config.USE_SCALED_ROUNDINGS ? Screen.dp(Theme.getImageRadius()) : 0)
+      .setUpdateListener(refreshRateLimiter);
 
     setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     if (Config.HARDWARE_MESSAGE_LAYER) {
@@ -187,7 +196,8 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   }
 
   public void setUseComplexReceiver () {
-    complexReceiver = new ComplexReceiver(this);
+    complexReceiver = new ComplexReceiver(this)
+      .setUpdateListener(refreshRateLimiter.passThroughComplexUpdateListener());
     flags |= FLAG_USE_COMPLEX_RECEIVER;
   }
 

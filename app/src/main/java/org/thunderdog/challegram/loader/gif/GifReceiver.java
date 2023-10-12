@@ -96,9 +96,11 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     this.croppedClipRegion = new RectF();
   }
 
+  /** @noinspection unchecked*/
   @Override
-  public void setUpdateListener (ReceiverUpdateListener listener) {
+  public final GifReceiver setUpdateListener (ReceiverUpdateListener listener) {
     this.updateListener = listener;
+    return this;
   }
 
   private float radius;
