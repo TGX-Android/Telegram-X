@@ -121,11 +121,11 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     this.highRefreshRateLimiter.attachOtherRefreshLimiter(refreshRateLimiter);
 
     avatarReceiver = new AvatarReceiver(this)
-      .setUpdateListener(refreshRateLimiter);
+      .setUpdateListener(refreshRateLimiter.passThroughUpdateListener());
     avatarsReceiver = new ComplexReceiver(this)
-      .setUpdateListener(refreshRateLimiter);
+      .setUpdateListener(refreshRateLimiter.passThroughComplexUpdateListener());
     reactionAvatarsReceiver = new ComplexReceiver(this)
-      .setUpdateListener(refreshRateLimiter);
+      .setUpdateListener(refreshRateLimiter.passThroughComplexUpdateListener());
     gifReceiver = new GifReceiver(this)
       .setUpdateListener(refreshRateLimiter.passThroughUpdateListener());
     reactionsComplexReceiver = new ComplexReceiver()
