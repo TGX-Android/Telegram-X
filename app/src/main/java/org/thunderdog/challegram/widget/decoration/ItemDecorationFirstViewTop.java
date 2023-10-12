@@ -1,4 +1,4 @@
-package org.thunderdog.challegram.widget.Popups;
+package org.thunderdog.challegram.widget.decoration;
 
 import android.graphics.Rect;
 import android.view.View;

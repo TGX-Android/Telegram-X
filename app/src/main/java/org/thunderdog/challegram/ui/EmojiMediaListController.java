@@ -53,14 +53,14 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.StickerSetsDataProvider;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.NewFlowLayoutManager;
 import org.thunderdog.challegram.widget.EmojiLayout;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutRecyclerController;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutSectionPager;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutTrendingController;
-import org.thunderdog.challegram.util.StickerSetsDataProvider;
 import org.thunderdog.challegram.widget.ForceTouchView;
+import org.thunderdog.challegram.widget.emoji.EmojiLayoutRecyclerController;
+import org.thunderdog.challegram.widget.emoji.EmojiLayoutSectionPager;
+import org.thunderdog.challegram.widget.emoji.EmojiLayoutTrendingController;
 
 import java.util.ArrayList;
 

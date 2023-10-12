@@ -1,4 +1,4 @@
-package org.thunderdog.challegram.widget.EmojiMediaLayout.Headers;
+package org.thunderdog.challegram.widget.emoji.header;
 
 import android.content.Context;
 import android.graphics.Canvas;

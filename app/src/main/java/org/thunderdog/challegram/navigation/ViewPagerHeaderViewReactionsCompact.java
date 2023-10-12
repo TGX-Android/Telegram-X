@@ -42,8 +42,8 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.MessageOptionsPagerController;
 import org.thunderdog.challegram.unsorted.Size;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutRecyclerController;
 import org.thunderdog.challegram.widget.ReactionsSelectorRecyclerView;
+import org.thunderdog.challegram.widget.emoji.EmojiLayoutRecyclerController;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;

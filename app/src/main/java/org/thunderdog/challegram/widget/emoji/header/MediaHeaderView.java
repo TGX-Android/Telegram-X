@@ -12,7 +12,7 @@
  *
  * File created on 19/08/2023
  */
-package org.thunderdog.challegram.widget.EmojiMediaLayout.Headers;
+package org.thunderdog.challegram.widget.emoji.header;
 
 import android.content.Context;
 import android.view.View;
@@ -33,9 +33,9 @@ import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.widget.EmojiLayout;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSection;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSectionView;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.StickerSectionView;
+import org.thunderdog.challegram.widget.emoji.section.EmojiSection;
+import org.thunderdog.challegram.widget.emoji.section.EmojiSectionView;
+import org.thunderdog.challegram.widget.emoji.section.StickerSectionView;
 
 import java.util.ArrayList;
 

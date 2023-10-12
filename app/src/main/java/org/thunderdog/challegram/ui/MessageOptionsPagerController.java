@@ -64,8 +64,8 @@ import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.PopupLayout;
-import org.thunderdog.challegram.widget.Popups.ItemDecorationFirstViewTop;
 import org.thunderdog.challegram.widget.ViewPager;
+import org.thunderdog.challegram.widget.decoration.ItemDecorationFirstViewTop;
 
 import java.util.Arrays;
 import java.util.Set;

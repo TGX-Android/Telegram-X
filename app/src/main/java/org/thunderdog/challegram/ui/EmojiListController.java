@@ -41,12 +41,12 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.EmojiData;
 import org.thunderdog.challegram.tool.UI;
-import org.thunderdog.challegram.widget.EmojiLayout;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutRecyclerController;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutSectionPager;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutTrendingController;
 import org.thunderdog.challegram.util.StickerSetsDataProvider;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSection;
+import org.thunderdog.challegram.widget.EmojiLayout;
+import org.thunderdog.challegram.widget.emoji.EmojiLayoutRecyclerController;
+import org.thunderdog.challegram.widget.emoji.EmojiLayoutSectionPager;
+import org.thunderdog.challegram.widget.emoji.EmojiLayoutTrendingController;
+import org.thunderdog.challegram.widget.emoji.section.EmojiSection;
 
 import java.util.ArrayList;
 

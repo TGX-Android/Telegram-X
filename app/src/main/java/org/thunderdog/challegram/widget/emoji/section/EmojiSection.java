@@ -12,7 +12,7 @@
  *
  * File created on 19/08/2023
  */
-package org.thunderdog.challegram.widget.EmojiMediaLayout.Sections;
+package org.thunderdog.challegram.widget.emoji.section;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -28,8 +28,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
-import org.thunderdog.challegram.widget.EmojiLayout;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutRecyclerController;
+import org.thunderdog.challegram.widget.emoji.EmojiLayoutRecyclerController;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
