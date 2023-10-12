@@ -59,10 +59,12 @@ public class DoubleImageReceiver implements Receiver {
     receiver.setNeedForceRepainting(needForceRepainting);
   }
 
+  /** @noinspection unchecked*/
   @Override
-  public void setUpdateListener (ReceiverUpdateListener listener) {
+  public final DoubleImageReceiver setUpdateListener (ReceiverUpdateListener listener) {
     preview.setUpdateListener(listener);
     receiver.setUpdateListener(listener);
+    return this;
   }
 
   public void setAnimationDisabled (boolean disabled) {

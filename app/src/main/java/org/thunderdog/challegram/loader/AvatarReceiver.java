@@ -923,8 +923,9 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     return primaryReceiver().getTargetHeight();
   }
 
+  /** @noinspection unchecked*/
   @Override
-  public void setUpdateListener (ReceiverUpdateListener listener) {
+  public final AvatarReceiver setUpdateListener (ReceiverUpdateListener listener) {
     if (listener != null) {
       complexReceiver.setUpdateListener(
         (receiver, key) ->
@@ -933,6 +934,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     } else {
       complexReceiver.setUpdateListener(null);
     }
+    return this;
   }
 
   @Override

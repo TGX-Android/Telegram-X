@@ -20,15 +20,23 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.view.View;
 
+import androidx.annotation.CallSuper;
+
 import org.thunderdog.challegram.loader.ComplexReceiverUpdateListener;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.ReceiverUpdateListener;
 import org.thunderdog.challegram.tool.Screen;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 public class RefreshRateLimiter implements ComplexReceiverUpdateListener, ReceiverUpdateListener {
   private final View target;
   private final Handler handler;
   private final float maxFrameRate;
+
+  private final Set<RefreshRateLimiter> otherRefreshRateLimiters = new HashSet<>();
 
   public RefreshRateLimiter (View target, float maxRefreshRate) {
     this.target = target;
@@ -39,12 +47,43 @@ public class RefreshRateLimiter implements ComplexReceiverUpdateListener, Receiv
     });
   }
 
+  public void attachOtherRefreshLimiter (RefreshRateLimiter limiter) {
+    otherRefreshRateLimiters.add(limiter);
+    limiter.otherRefreshRateLimiters.add(this);
+  }
+
+  private void forceInvalidate () {
+    target.invalidate();
+    onInvalidatePerformed();
+    if (!otherRefreshRateLimiters.isEmpty()) {
+      for (RefreshRateLimiter otherLimiter : otherRefreshRateLimiters) {
+        otherLimiter.onInvalidatePerformed();
+      }
+    }
+  }
+
+  public ReceiverUpdateListener passThroughUpdateListener () {
+    return receiver ->
+      forceInvalidate();
+  }
+
+  public ComplexReceiverUpdateListener passThroughComplexUpdateListener () {
+    return (key, receiver) ->
+      forceInvalidate();
+  }
+
   private boolean isScheduled;
 
-  private void onPerformInvalidate () {
+  @CallSuper
+  protected void onPerformInvalidate () {
     isScheduled = false;
     target.invalidate();
     lastInvalidateTime = SystemClock.uptimeMillis();
+    if (!otherRefreshRateLimiters.isEmpty()) {
+      for (RefreshRateLimiter otherLimiter : otherRefreshRateLimiters) {
+        otherLimiter.onInvalidatePerformed();
+      }
+    }
   }
 
   private long minRefreshDelay () {
@@ -52,6 +91,17 @@ public class RefreshRateLimiter implements ComplexReceiverUpdateListener, Receiv
   }
 
   private long lastInvalidateTime;
+
+  private static final int WHAT = 0;
+
+  public void onInvalidatePerformed () {
+    // Call when invalidate() was called on `target`
+    if (isScheduled) {
+      isScheduled = false;
+      handler.removeMessages(WHAT);
+      lastInvalidateTime = SystemClock.uptimeMillis();
+    }
+  }
 
   public void invalidate () {
     if (isScheduled) {
@@ -66,7 +116,7 @@ public class RefreshRateLimiter implements ComplexReceiverUpdateListener, Receiv
       onPerformInvalidate();
     } else {
       isScheduled = true;
-      handler.sendEmptyMessageDelayed(0, minDelay - timeElapsedSinceLastInvalidate);
+      handler.sendEmptyMessageDelayed(WHAT, minDelay - timeElapsedSinceLastInvalidate);
     }
   }
 
