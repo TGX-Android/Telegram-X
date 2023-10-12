@@ -318,7 +318,7 @@ public class ReactionsOverlayView extends ViewGroup {
       gifReceiver.draw(canvas);
       //canvas.drawRect(position, Paints.strokeBigPaint(Color.RED));
       if (drawable != null) {
-        drawable.setColorFilter(Paints.getPorterDuffPaint(0xFFFFFFFF).getColorFilter());
+        drawable.setColorFilter(Paints.whitePorterDuffPaint().getColorFilter());
         drawable.draw(canvas);
       }
       if (animatedEmojiEffect != null) {

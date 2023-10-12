@@ -71,6 +71,7 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
@@ -1838,7 +1839,7 @@ public class MediaLayout extends FrameLayoutFix implements
       if (isAnonymous) {
         c.drawCircle(cx, cy, Screen.dp(15f / 2f), Paints.fillingPaint(Theme.iconLightColor()));
         Drawable drawable = Drawables.get(getResources(), R.drawable.infanf_baseline_incognito_11);
-        Drawables.draw(c, drawable, cx - Screen.dp(5.5f), cy - Screen.dp(5.5f), Paints.getPorterDuffPaint(Theme.getColor(ColorId.badgeMutedText)));
+        Drawables.draw(c, drawable, cx - Screen.dp(5.5f), cy - Screen.dp(5.5f), PorterDuffPaint.get(ColorId.badgeMutedText));
       }
 
       super.onDraw(c);

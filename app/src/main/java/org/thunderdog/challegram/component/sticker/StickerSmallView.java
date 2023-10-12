@@ -37,9 +37,11 @@ import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
@@ -215,15 +217,15 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     contour = sticker != null ? sticker.getContour(Math.min(imageReceiver.getWidth(), imageReceiver.getHeight())) : null;
   }
 
-  private @ColorId int repaintingColorId = ColorId.iconActive;
+  private @PorterDuffColorId int repaintingColorId = ColorId.iconActive;
 
-  public void setRepaintingColorId (@ColorId int repaintingColorId) {
+  public void setRepaintingColorId (@PorterDuffColorId int repaintingColorId) {
     this.repaintingColorId = repaintingColorId;
     this.imageReceiver.setRepaintingColorId(repaintingColorId);
     this.gifReceiver.setRepaintingColorId(repaintingColorId);
   }
 
-  public int getRepaintingColorId () {
+  public @PorterDuffColorId int getRepaintingColorId () {
     return repaintingColorId;
   }
 
@@ -258,7 +260,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
       c.scale(scale, scale, cx, cy);
     }
     if (premiumStarDrawable != null) {
-      Drawables.drawCentered(c, premiumStarDrawable, cx, cy, Paints.getPorterDuffPaint(Theme.getColor(repaintingColorId)));
+      Drawables.drawCentered(c, premiumStarDrawable, cx, cy, PorterDuffPaint.get(repaintingColorId));
     } else if (isAnimation) {
       if (gifReceiver.needPlaceholder()) {
         if (imageReceiver.needPlaceholder()) {

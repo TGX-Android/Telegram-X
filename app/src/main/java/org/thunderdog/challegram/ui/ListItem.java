@@ -24,6 +24,7 @@ import androidx.annotation.StringRes;
 
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.util.DrawModifier;
 
 import me.vkryl.core.ArrayUtils;
@@ -178,7 +179,8 @@ public class ListItem {
   private @Nullable DrawModifier drawModifier;
 
   private String stringKey, stringValue;
-  private int textColorId, textPaddingLeft;
+  private @PorterDuffColorId int textColorId;
+  private int textPaddingLeft;
   private int intValue;
   private long longValue;
 
@@ -250,7 +252,7 @@ public class ListItem {
     return TGTheme.getColor(getTextColorId(defColorId));
   }*/
 
-  public ListItem setTextColorId (@ColorId int colorId) {
+  public ListItem setTextColorId (@PorterDuffColorId int colorId) {
     this.textColorId = colorId;
     return this;
   }

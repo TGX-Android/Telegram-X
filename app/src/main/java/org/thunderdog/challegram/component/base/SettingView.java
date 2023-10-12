@@ -48,9 +48,11 @@ import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
@@ -710,9 +712,9 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     }
   }
 
-  private int iconColorId;
+  private @PorterDuffColorId int iconColorId = ColorId.NONE;
 
-  public void setIconColorId (int colorId) {
+  public void setIconColorId (@PorterDuffColorId int colorId) {
     if (this.iconColorId != colorId) {
       this.iconColorId = colorId;
       if (icon != null)
@@ -801,7 +803,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     int width = getMeasuredWidth();
     if (icon != null) {
       int x = (int) (rtl ? width - pIconLeft - icon.getMinimumWidth() : pIconLeft) + Screen.dp(24f) / 2 - icon.getMinimumWidth() / 2;
-      Drawables.draw(c, icon, x, pIconTop, lastIconResource == 0 ? Paints.getBitmapPaint() : iconColorId != 0 ? Paints.getPorterDuffPaint(Theme.getColor(iconColorId)) : Paints.getIconGrayPorterDuffPaint());
+      Drawables.draw(c, icon, x, pIconTop, lastIconResource == 0 ? Paints.getBitmapPaint() : iconColorId != 0 ? PorterDuffPaint.get(iconColorId) : Paints.getIconGrayPorterDuffPaint());
       // c.drawBitmap(icon, x, pIconTop, paint);
       if (overlay != null) {
         c.save();

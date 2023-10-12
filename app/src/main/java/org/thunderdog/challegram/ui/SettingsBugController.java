@@ -16,11 +16,9 @@ package org.thunderdog.challegram.ui;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.icu.util.VersionInfo;
 import android.os.SystemClock;
 import android.util.SparseIntArray;
 import android.view.View;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.IdRes;
@@ -51,6 +49,7 @@ import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -64,7 +63,6 @@ import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.voip.VoIP;
 import org.thunderdog.challegram.voip.VoIPController;
 import org.thunderdog.challegram.widget.BetterChatView;
-import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 
 import java.io.File;
@@ -393,7 +391,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         final int itemId = item.getId();
         if (isMainCrash) {
-          int colorId;
+          @PorterDuffColorId int colorId;
           if (itemId == R.id.btn_launchApp) {
             colorId = ColorId.iconActive;
               /*case R.id.btn_shareError:
@@ -401,7 +399,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
           } else if (itemId == R.id.btn_eraseDatabase) {
             colorId = ColorId.iconNegative;
           } else {
-            colorId = 0;
+            colorId = ColorId.NONE;
           }
           view.setIconColorId(colorId);
         }

@@ -53,6 +53,7 @@ import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeChangeListener;
 import org.thunderdog.challegram.theme.ThemeListenerList;
@@ -60,6 +61,7 @@ import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
@@ -136,7 +138,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
   }
 
   private StickerSmallView controllerView;
-  private @ColorId int repaintingColorId;
+  private @PorterDuffColorId int repaintingColorId = ColorId.iconActive;
 
   public void setControllerView (StickerSmallView stickerView) {
     this.controllerView = stickerView;
@@ -795,7 +797,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
         float s = ((float) receiver.getWidth()) / Screen.dp(30);
         c.save();
         c.scale(s, s, receiver.centerX(), receiver.centerY());
-        Drawables.drawCentered(c, defaultPremiumStarDrawable, receiver.centerX(), receiver.centerY(), Paints.getPorterDuffPaint(Theme.getColor(repaintingColorId)));
+        Drawables.drawCentered(c, defaultPremiumStarDrawable, receiver.centerX(), receiver.centerY(), PorterDuffPaint.get(repaintingColorId));
         c.restore();
       } else if (animated) {
         if (receiver.needPlaceholder()) {

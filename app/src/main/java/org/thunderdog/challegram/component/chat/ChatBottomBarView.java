@@ -32,6 +32,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.SimpleDrawable;
@@ -174,11 +175,8 @@ public class ChatBottomBarView extends BaseView {
         drawingText.draw(c, cx - drawingText.getWidth() / 2, cy - drawingText.getHeight() / 2, null, factor * (1f - collapseFactor));
       }
       if (collapseFactor > 0f && drawable != null) {
-        Paint paint = Paints.getPorterDuffPaint(Theme.getColor(ColorId.circleButtonChatIcon));
-        final int restoreAlpha = paint.getAlpha();
-        paint.setAlpha((int) ((float) restoreAlpha * factor * collapseFactor));
+        Paint paint = PorterDuffPaint.get(ColorId.circleButtonChatIcon, factor * collapseFactor);
         Drawables.draw(c, drawable, cx - drawable.getMinimumWidth() / 2, cy - drawable.getMinimumHeight() / 2, paint);
-        paint.setAlpha(restoreAlpha);
       }
       if (needScale) {
         Views.restore(c, saveCount);

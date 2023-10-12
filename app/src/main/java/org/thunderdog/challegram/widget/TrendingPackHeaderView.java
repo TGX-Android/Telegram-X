@@ -36,7 +36,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
-import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.Highlight;
@@ -99,7 +99,7 @@ public class TrendingPackHeaderView extends RelativeLayout {
       @Override
       protected void dispatchDraw (Canvas canvas) {
         super.dispatchDraw(canvas);
-        Drawables.draw(canvas, lockDrawable, 0, 0, Paints.getPorterDuffPaint(Theme.getColor(ColorId.text)));
+        Drawables.draw(canvas, lockDrawable, 0, 0, PorterDuffPaint.get(ColorId.text));
       }
     };
     premiumLockIcon.setId(R.id.btn_addStickerSet);

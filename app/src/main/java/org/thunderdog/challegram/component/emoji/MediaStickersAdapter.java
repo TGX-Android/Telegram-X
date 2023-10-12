@@ -49,6 +49,7 @@ import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
@@ -621,9 +622,9 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
     return position >= 0 && position < items.size() ? items.get(position).highlight : null;
   }
 
-  private @ColorId int repaintingColorId = ColorId.iconActive;
+  private @PorterDuffColorId int repaintingColorId = ColorId.iconActive;
 
-  public void setRepaintingColorId (@ColorId int repaintingColorId) {
+  public void setRepaintingColorId (@PorterDuffColorId int repaintingColorId) {
     this.repaintingColorId = repaintingColorId;
   }
 
@@ -649,7 +650,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
       super(itemView);
     }
 
-    public static @NonNull StickerHolder create (Context context, Tdlib tdlib, MediaStickersAdapter adapter, int viewType, boolean isTrending, View.OnClickListener onClickListener, View.OnClickListener classicEmojiClickListener, StickerSmallView.StickerMovementCallback callback, boolean isBig, @Nullable ViewController<?> themeProvider, @Nullable OffsetProvider offsetProvider, @Nullable EmojiToneHelper toneHelper, @ColorId int repaintingColorId) {
+    public static @NonNull StickerHolder create (Context context, Tdlib tdlib, MediaStickersAdapter adapter, int viewType, boolean isTrending, View.OnClickListener onClickListener, View.OnClickListener classicEmojiClickListener, StickerSmallView.StickerMovementCallback callback, boolean isBig, @Nullable ViewController<?> themeProvider, @Nullable OffsetProvider offsetProvider, @Nullable EmojiToneHelper toneHelper, @PorterDuffColorId int repaintingColorId) {
       switch (viewType) {
         case TYPE_EMOJI_STATUS_DEFAULT:
         case TYPE_STICKER: {

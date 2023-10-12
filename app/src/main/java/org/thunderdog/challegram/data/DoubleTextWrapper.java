@@ -534,7 +534,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
       Drawable incognitoIcon = view.getSparseDrawable(R.drawable.baseline_lock_16, ColorId.text);
       float x = currentWidth - Screen.dp(18 + 16);
       float y = receiver.centerY();
-      Drawables.draw(c, incognitoIcon, x, y - incognitoIcon.getMinimumHeight() / 2f, Paints.getPorterDuffPaint(Theme.getColor(ColorId.text)));
+      Drawables.draw(c, incognitoIcon, x, y - incognitoIcon.getMinimumHeight() / 2f, PorterDuffPaint.get(ColorId.text));
     }
     int offset = 0;
     if (trimmedTitle != null) {

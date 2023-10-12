@@ -403,7 +403,7 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
         restoreToCount = -1;
       }
       c.drawCircle(centerX, centerY, radius, Paints.fillingPaint(ColorUtils.alphaColor(alpha, 0x40000000)));
-      Paint paint = Paints.getPorterDuffPaint(0xffffffff);
+      Paint paint = Paints.whitePorterDuffPaint();
       paint.setAlpha((int) (255f * alpha));
       Drawable drawable = view.getSparseDrawable(R.drawable.deproko_baseline_sound_muted_24, 0);
       Drawables.draw(c, drawable, centerX - drawable.getMinimumWidth() / 2f, centerY - drawable.getMinimumHeight() / 2f, paint);

@@ -25,6 +25,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 
@@ -124,7 +125,7 @@ public class PinButtonView extends View {
   @Override
   protected void onDraw (Canvas c) {
     if (number == -1) {
-      Drawables.draw(c, icon, bigLeft, bigTop, Paints.getPorterDuffPaint(Theme.getColor(ColorId.passcodeText)));
+      Drawables.draw(c, icon, bigLeft, bigTop, PorterDuffPaint.get(ColorId.passcodeText));
     } else {
       c.drawText(getNumber(), bigLeft, bigTop, Paints.getRegularTextPaint(TEXT_SIZE_BIG, Theme.getColor(ColorId.passcodeText)));
       c.drawText(getCodes(), smallLeft, smallTop, Paints.getRegularTextPaint(TEXT_SIZE_SMALL, Theme.passcodeSubtitleColor()));

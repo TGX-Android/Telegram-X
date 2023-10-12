@@ -30,7 +30,6 @@ import android.text.TextPaint;
 import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -637,9 +636,14 @@ public class Paints {
     return inlineIconPDPaint3;
   }
 
+  public static Paint whitePorterDuffPaint () {
+    return PorterDuffPaint.get(ColorId.white);
+  }
+
+  @Deprecated
   public static Paint getPorterDuffPaint (int color) {
     if (color == 0xffffffff) {
-      return PorterDuffPaint.get(ColorId.white);
+      return whitePorterDuffPaint();
     }
 
     PorterDuffColorFilter filter = getColorFilter(color);
