@@ -242,10 +242,10 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
       } else {
         c.drawColor(ColorUtils.alphaColor(alpha, wallpaper.getBackgroundColor(defaultColor)));
       }
-      receiver.setColorFilter(wallpaper.getPatternColor());
+      receiver.setPorterDuffColorFilter(wallpaper.getPatternColor());
       receiver.setPaintAlpha(alpha * wallpaper.getPatternIntensity());
     } else {
-      receiver.disableColorFilter();
+      receiver.disablePorterDuffColorFilter();
       if (alpha != 1f) {
         receiver.setPaintAlpha(alpha);
       }

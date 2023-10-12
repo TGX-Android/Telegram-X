@@ -512,10 +512,10 @@ public class WallpaperAdapter extends RecyclerView.Adapter<WallpaperAdapter.View
       if (wallpaper != null) {
         if (wallpaper.isPattern()) {
           int color = wallpaper.getPatternColor();
-          receiver.setColorFilter(color);
+          receiver.setPorterDuffColorFilter(color);
           preview.requestFile(null);
         } else {
-          receiver.disableColorFilter();
+          receiver.disablePorterDuffColorFilter();
           preview.requestFile(wallpaper.getPreview(true));
         }
         receiver.requestFile(wallpaper.getPreview(false));

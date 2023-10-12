@@ -27,6 +27,7 @@ import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
@@ -49,9 +50,7 @@ public class StickerSectionView extends View implements Destroyable, FactorAnima
   public StickerSectionView (Context context) {
     super(context);
     receiver = new ImageReceiver(this, 0);
-    receiver.setRepaintingColorId(ColorId.iconActive);
     gifReceiver = new GifReceiver(this);
-    gifReceiver.setRepaintingColorId(ColorId.iconActive);
   }
 
   public void attach () {
@@ -153,8 +152,20 @@ public class StickerSectionView extends View implements Destroyable, FactorAnima
       c.scale(scale, scale, cx, cy);
     }
 
-    receiver.setNeedForceRepainting(info.isNeedRepaintingPreview());
-    gifReceiver.setNeedForceRepainting(info.isNeedRepaintingPreview());
+    if (info.needThemedColorFilter()) {
+      if (selectionFactor == 0f || selectionFactor == 1f) {
+        @PorterDuffColorId int colorId = selectionFactor == 0f ? ColorId.icon : ColorId.iconActive;
+        receiver.setThemedPorterDuffColorId(colorId);
+        gifReceiver.setThemedPorterDuffColorId(colorId);
+      } else {
+        int color = ColorUtils.fromToArgb(Theme.getColor(ColorId.icon), Theme.getColor(ColorId.iconActive), selectionFactor);
+        receiver.setPorterDuffColorFilter(color);
+        gifReceiver.setPorterDuffColorFilter(color);
+      }
+    } else {
+      receiver.disablePorterDuffColorFilter();
+      gifReceiver.disablePorterDuffColorFilter();
+    }
     DrawAlgorithms.drawSticker(c, info, gifReceiver, receiver, contour);
 
     if (saved) {

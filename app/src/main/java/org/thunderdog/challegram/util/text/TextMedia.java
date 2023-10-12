@@ -231,7 +231,7 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
   }
 
   public boolean needsRepainting () {
-    return isCustomEmoji() && customEmoji != null && TD.needRepainting(customEmoji.value);
+    return isCustomEmoji() && customEmoji != null && TD.needThemedColorFilter(customEmoji.value);
   }
 
   public boolean isCustomEmoji () {
@@ -313,7 +313,12 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
     }
     DoubleImageReceiver preview = content == null || content.needPlaceholder() ? receiver.getPreviewReceiver(displayMediaKey) : null;
     if (preview != null) {
-      preview.setRepaintingColor(source.getEmojiStatusColor(), needRepainting);
+      if (needRepainting) {
+        // FIXME: color id
+        preview.setPorterDuffColorFilter(source.getEmojiStatusColor());
+      } else {
+        preview.disablePorterDuffColorFilter();
+      }
       preview.setBounds(left, top, right, bottom);
       preview.setPaintAlpha(alpha);
       if (outline != null && preview.needPlaceholder()) {
@@ -323,7 +328,11 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
       preview.restorePaintAlpha();
     }
     if (content != null) {
-      content.setRepaintingColor(source.getEmojiStatusColor(), needRepainting);
+      if (needRepainting) {
+        content.setPorterDuffColorFilter(source.getEmojiStatusColor());
+      } else {
+        content.disablePorterDuffColorFilter();
+      }
       if (preview == null && outline != null && content.needPlaceholder()) {
         content.drawPlaceholderContour(c, outline, alpha);
       }

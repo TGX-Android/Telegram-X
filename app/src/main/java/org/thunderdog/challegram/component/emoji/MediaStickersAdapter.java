@@ -658,7 +658,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
           view = new StickerSmallView(context);
           view.setForceHeight(LayoutParams.getStickerViewForceHeight(adapter.layoutParams));
           view.init(tdlib);
-          view.setRepaintingColorId(repaintingColorId);
+          view.setThemedColorId(repaintingColorId);
           if (isTrending) {
             view.setIsTrending();
           }

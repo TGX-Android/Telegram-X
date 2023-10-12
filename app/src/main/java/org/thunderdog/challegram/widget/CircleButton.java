@@ -80,15 +80,21 @@ public class CircleButton extends View implements FactorAnimator.Target, Reactio
 
     this.tdlib = tdlib;
     this.imageReceiver = new ImageReceiver(this, 0);
-    this.imageReceiver.setRepaintingColorId(ColorId.iconActive);
+    this.imageReceiver.setThemedPorterDuffColorId(ColorId.iconActive);
     this.gifReceiver = new GifReceiver(this);
-    this.gifReceiver.setRepaintingColorId(ColorId.iconActive);
+    this.gifReceiver.setThemedPorterDuffColorId(ColorId.iconActive);
   }
 
   public void setIconColorId (int colorId) {
     if (!this.iconColorIsId || this.iconColor != colorId) {
       this.iconColorIsId = true;
       this.iconColor = colorId;
+      if (this.imageReceiver != null) {
+        this.imageReceiver.setThemedPorterDuffColorId(colorId);
+      }
+      if (this.gifReceiver != null) {
+        this.gifReceiver.setThemedPorterDuffColorId(colorId);
+      }
       invalidate();
     }
   }
@@ -97,6 +103,12 @@ public class CircleButton extends View implements FactorAnimator.Target, Reactio
     if (this.iconColorIsId || this.iconColor != color) {
       this.iconColorIsId = false;
       this.iconColor = color;
+      if (this.imageReceiver != null) {
+        this.imageReceiver.setPorterDuffColorFilter(color);
+      }
+      if (this.gifReceiver != null) {
+        this.gifReceiver.setPorterDuffColorFilter(color);
+      }
       invalidate();
     }
   }

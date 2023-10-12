@@ -17,7 +17,6 @@ package org.thunderdog.challegram.loader.gif;
 import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
-import android.graphics.ColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
@@ -29,7 +28,6 @@ import android.os.SystemClock;
 import android.view.View;
 
 import androidx.annotation.AnyThread;
-import androidx.annotation.ColorInt;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 
@@ -40,15 +38,16 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.ReceiverUpdateListener;
-import org.thunderdog.challegram.theme.PorterDuffColorId;
-import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 
 import java.lang.ref.WeakReference;
 
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 
 public class GifReceiver implements GifWatcher, Runnable, Receiver {
@@ -746,36 +745,15 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     this.drawBatchFlags = 0;
   }
 
-  private @ColorInt int repaintingColor = 0xFF888888;
-  private @PorterDuffColorId int repaintingColorId;
-  private boolean needForceRepainting;
-  private boolean canGetRepaintingColorById;
+  private int porterDuffColor = ColorId.NONE;
+  private float porterDuffAlpha;
+  private boolean porterDuffColorIsId = true;
 
   @Override
-  public void setRepaintingColor (@ColorInt int repaintingColor) {
-    this.repaintingColor = repaintingColor;
-    this.canGetRepaintingColorById = false;
-  }
-
-  @Override
-  public void setRepaintingColorId (@PorterDuffColorId int repaintingColorId) {
-    this.repaintingColor = Theme.getColor(repaintingColorId);
-    this.repaintingColorId = repaintingColorId;
-    this.canGetRepaintingColorById = true;
-  }
-
-  @Override
-  public void setNeedForceRepainting (boolean needForceRepainting) {
-    this.needForceRepainting = needForceRepainting;
-  }
-
-  private ColorFilter getRepaintingColorFilter () {
-    if (canGetRepaintingColorById) {
-      return Paints.getColorFilter(Theme.getColor(repaintingColorId));
-      // return PorterDuffPaint.get(repaintingColorId).getColorFilter();
-    } else {
-      return Paints.getColorFilter(repaintingColor);
-    }
+  public void setPorterDuffColorFilter (int colorOrColorId, float alpha, boolean colorIsId) {
+    this.porterDuffColor = colorOrColorId;
+    this.porterDuffAlpha = alpha;
+    this.porterDuffColorIsId = colorIsId;
   }
 
   private static final int[] debugOptimizationColors;
@@ -800,7 +778,6 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
           if (Config.DEBUG_GIF_OPTIMIZATION_MODE) {
             c.drawRect(drawRegion, Paints.fillingPaint(debugOptimizationColors[file.getOptimizationMode()]));
           }
-          final boolean needRepainting = file.isNeedRepainting() || needForceRepainting;
           final boolean inBatch = BitwiseUtils.hasFlag(drawBatchFlags, DRAW_BATCH_STARTED);
           if (!inBatch || !BitwiseUtils.hasFlag(drawBatchFlags, DRAW_BATCH_DRAWN)) {
             gif.applyNext();
@@ -808,15 +785,14 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
               drawBatchFlags |= DRAW_BATCH_DRAWN;
             }
           }
-          final int alpha = (int) (255f * MathUtils.clamp(this.alpha));
-          Paint bitmapPaint = Paints.getBitmapPaint();
-          int restoreAlpha = bitmapPaint.getAlpha();
-          if (alpha != restoreAlpha) {
-            bitmapPaint.setAlpha(alpha);
-          }
-          final ColorFilter restoreColorFilter = bitmapPaint.getColorFilter();
-          if (needRepainting) {
-            bitmapPaint.setColorFilter(getRepaintingColorFilter());   // todo: change to PorterDuffPaint.get
+          float alpha = MathUtils.clamp(this.alpha);
+          Paint paint;
+          if (porterDuffColorIsId && porterDuffColor == ColorId.NONE) {
+            paint = Paints.bitmapPaint(alpha);
+          } else if (porterDuffColorIsId) {
+            paint = PorterDuffPaint.get(porterDuffColor, porterDuffAlpha * alpha);
+          } else {
+            paint = Paints.getPorterDuffPaint(ColorUtils.alphaColor(porterDuffAlpha * alpha, porterDuffColor));
           }
           int scaleType = file.getScaleType();
           GifState.Frame frame = gif.getDrawFrame(!inBatch);
@@ -829,7 +805,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
             } else {
               restoreToCount = -1;
             }
-            c.drawRoundRect(croppedClipRegion, radius, radius, shaderPaint(frame.bitmap, bitmapPaint.getAlpha()));
+            c.drawRoundRect(croppedClipRegion, radius, radius, shaderPaint(frame.bitmap, paint.getAlpha()));
             if (clip) {
               Views.restore(c, restoreToCount);
             }
@@ -853,19 +829,13 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
             }
 
             c.concat(bitmapMatrix);
-            c.drawBitmap(frame.bitmap, 0f, 0f, bitmapPaint);
+            c.drawBitmap(frame.bitmap, 0f, 0f, paint);
 
             c.restore();
           } else {
             Rect rect = Paints.getRect();
             rect.set((int) bitmapRect.left, (int) bitmapRect.top, (int) bitmapRect.right, (int) bitmapRect.bottom);
-            c.drawBitmap(frame.bitmap, rect, drawRegion, bitmapPaint);
-          }
-          if (alpha != restoreAlpha) {
-            bitmapPaint.setAlpha(restoreAlpha);
-          }
-          if (needRepainting) {
-            bitmapPaint.setColorFilter(restoreColorFilter);
+            c.drawBitmap(frame.bitmap, rect, drawRegion, paint);
           }
           isFirstFrame = frame.no == 0;
         }

@@ -189,7 +189,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     context().reactionsOverlayManager().addOverlay(
       new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
         .setSticker(sticker, false)
-        .setRepaintingColors(Theme.getColor(ColorId.iconActive), Theme.getColor(ColorId.white))
+        .setRepaintingColorIds(ColorId.iconActive, ColorId.white)
         .setAnimationEndListener(this::onSetStatusAnimationFinish)
         .setAnimatedPosition(
           new Point(startX, startY),
@@ -213,7 +213,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     context().reactionsOverlayManager().addOverlay(
       new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
         .setSticker(scheduledClickSticker, true)
-        .setRepaintingColors(Theme.getColor(ColorId.iconActive), Theme.getColor(ColorId.white))
+        .setRepaintingColorIds(ColorId.iconActive, ColorId.white)
         .setEmojiStatusEffect(scheduledClickEffectSticker)
         .setUseDefaultSprayAnimation(true)
         .setPosition(new Point(destX, destY), Screen.dp(90))

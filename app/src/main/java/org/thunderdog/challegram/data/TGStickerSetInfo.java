@@ -55,7 +55,7 @@ public class TGStickerSetInfo {
   private int startIndex;
   private @Nullable TdApi.StickerSet stickerSet;
   private @StringRes int titleRes;
-  private boolean needRepainting;
+  private boolean needThemedColorFilter;
   private int fakeClassicEmojiSectionId;
 
   private @Nullable ArrayList<TGStickerSetInfo> boundList;
@@ -124,15 +124,13 @@ public class TGStickerSetInfo {
       this.previewOutline = info.covers[0].outline;
       this.previewWidth = info.covers[0].width;
       this.previewHeight = info.covers[0].height;
-      this.needRepainting = TD.needRepainting(info.covers[0]);
+      this.needThemedColorFilter = TD.needThemedColorFilter(info.covers[0]);
       if (Td.isAnimated(info.covers[0].format)) {
         this.previewImage = null;
         this.previewAnimation = new GifFile(tdlib, info.covers[0].sticker, info.covers[0].format);
         this.previewAnimation.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
-        this.previewAnimation.setNeedRepainting(needRepainting);
       } else if (info.covers[0].thumbnail != null) {
         this.previewImage = TD.toImageFile(tdlib, info.covers[0].thumbnail);
-        this.previewImage.setNeedRepainting(needRepainting);
         this.previewAnimation = null;
       } else {
         this.previewImage = null;
@@ -186,8 +184,8 @@ public class TGStickerSetInfo {
     return fakeClassicEmojiSectionId;
   }
 
-  public boolean isNeedRepaintingPreview () {
-    return needRepainting;
+  public boolean needThemedColorFilter () {
+    return needThemedColorFilter;
   }
 
   public void setBoundList (@Nullable ArrayList<TGStickerSetInfo> list) {

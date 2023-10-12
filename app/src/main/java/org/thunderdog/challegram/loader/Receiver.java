@@ -74,18 +74,17 @@ public interface Receiver extends TooltipOverlayView.LocationProvider {
     rect.set(getLeft(), getTop(), getRight(), getBottom());
   }
 
-  default void setColorFilter (int colorFilter) { throw new UnsupportedOperationException(); }
-  default void disableColorFilter () { throw new UnsupportedOperationException(); }
-
-  // todo: use or delete setColorFilter ???
-
-  default void setRepaintingColorId (@PorterDuffColorId int repaintingColorId) { setRepaintingColor(Theme.getColor(repaintingColorId)); }
-  default void setRepaintingColor (@ColorInt int repaintingColor) {}
-  default void setNeedForceRepainting (boolean needForceRepainting) {}
-
-  default void setRepaintingColor (@ColorInt int repaintingColor, boolean forceRepainting) {
-    setRepaintingColor(repaintingColor);
-    setNeedForceRepainting(forceRepainting);
+  default void setPorterDuffColorFilter (int colorOrColorId, float alpha, boolean colorIsId) {
+    throw new UnsupportedOperationException();
+  }
+  default void setThemedPorterDuffColorId (@PorterDuffColorId int colorId) {
+    setPorterDuffColorFilter(colorId, 1f, true);
+  }
+  default void setPorterDuffColorFilter (@ColorInt int color) {
+    setPorterDuffColorFilter(color, 1f, false);
+  }
+  default void disablePorterDuffColorFilter () {
+    setPorterDuffColorFilter(ColorId.NONE, 0f, true);
   }
 
   default void drawPlaceholderContour (Canvas c, Path path) {

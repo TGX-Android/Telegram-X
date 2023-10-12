@@ -142,7 +142,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
 
   public void setControllerView (StickerSmallView stickerView) {
     this.controllerView = stickerView;
-    this.repaintingColorId = stickerView != null ? stickerView.getRepaintingColorId() : ColorId.iconActive;
+    this.repaintingColorId = stickerView != null ? stickerView.getThemedColorId() : ColorId.iconActive;
   }
 
   @Override
@@ -753,7 +753,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
 
     @Override
     protected void onDraw (Canvas c) {
-      final boolean needRepainting = currentSticker != null && currentSticker.isNeedRepainting();
+      final boolean needThemedColorFilter = currentSticker != null && currentSticker.needThemedColorFilter();
       final boolean savedAppear = appearFactor != 1f;
       if (savedAppear) {
         final float fromScale = (float) fromWidth / (float) stickerWidth;
@@ -770,8 +770,13 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
       boolean animated = currentSticker != null && currentSticker.isAnimated();
       Receiver receiver = animated ? gifReceiver : imageReceiver;
 
-      preview.setRepaintingColor(Theme.getColor(repaintingColorId), needRepainting);
-      receiver.setRepaintingColor(Theme.getColor(repaintingColorId), needRepainting);
+      if (needThemedColorFilter) {
+        preview.setThemedPorterDuffColorId(repaintingColorId);
+        receiver.setThemedPorterDuffColorId(repaintingColorId);
+      } else {
+        preview.disablePorterDuffColorFilter();
+        receiver.disablePorterDuffColorFilter();
+      }
 
       if (emojiString != null) {
         int textX = receiver.centerX() - emojiString.getWidth() / 2;
@@ -823,13 +828,13 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
       }
 
       if (currentEffectSticker != null) {
-        if (effectGifReceiver.needPlaceholder()) {
-          effectPreview.setRepaintingColor(Theme.getColor(repaintingColorId), needRepainting);
-          effectPreview.draw(c);
+        Receiver target = effectGifReceiver.needPlaceholder() ? effectPreview : effectGifReceiver;
+        if (needThemedColorFilter) {
+          target.setThemedPorterDuffColorId(repaintingColorId);
         } else {
-          effectGifReceiver.setRepaintingColor(Theme.getColor(repaintingColorId), needRepainting);
-          effectGifReceiver.draw(c);
+          target.disablePorterDuffColorFilter();
         }
+        target.draw(c);
       }
 
       if (savedReplace) {

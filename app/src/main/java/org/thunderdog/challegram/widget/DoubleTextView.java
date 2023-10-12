@@ -301,7 +301,7 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
 
   @Override
   protected void onDraw (Canvas c) {
-    final boolean needRepainting = stickerSetInfo != null && stickerSetInfo.isNeedRepaintingPreview();
+    final boolean needThemedColorFilter = stickerSetInfo != null && stickerSetInfo.needThemedColorFilter();
 
     if (useAvatarReceiver) {
       AvatarReceiver avatarReceiver = receiver.getAvatarReceiver(0);
@@ -311,14 +311,22 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
       avatarReceiver.draw(c);
     } else if (stickerSetInfo != null && stickerSetInfo.isAnimated()) {
       GifReceiver gifReceiver = receiver.getGifReceiver(0);
-      gifReceiver.setRepaintingColor(Theme.getColor(ColorId.iconActive), needRepainting);
+      if (needThemedColorFilter) {
+        gifReceiver.setThemedPorterDuffColorId(ColorId.iconActive);
+      } else {
+        gifReceiver.disablePorterDuffColorFilter();
+      }
       if (gifReceiver.needPlaceholder()) {
         gifReceiver.drawPlaceholderContour(c, stickerSetContour);
       }
       gifReceiver.draw(c);
     } else {
       ImageReceiver imageReceiver = receiver.getImageReceiver(0);
-      imageReceiver.setRepaintingColor(Theme.getColor(ColorId.iconActive), needRepainting);
+      if (needThemedColorFilter) {
+        imageReceiver.setThemedPorterDuffColorId(ColorId.iconActive);
+      } else {
+        imageReceiver.disablePorterDuffColorFilter();
+      }
       if (imageReceiver.needPlaceholder()) {
         if (stickerSetContour != null) {
           imageReceiver.drawPlaceholderContour(c, stickerSetContour);

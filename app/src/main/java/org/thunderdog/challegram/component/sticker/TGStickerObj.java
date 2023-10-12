@@ -37,7 +37,7 @@ public class TGStickerObj {
   private GifFile previewAnimation, fullAnimation, premiumFullAnimation;
   private String foundByEmoji;
   private TdApi.ReactionType reactionType;
-  private boolean needRepainting;
+  private boolean needThemedColorFilter;
   private boolean isDefaultPremiumStar;
 
   private int flags;
@@ -126,7 +126,7 @@ public class TGStickerObj {
     if (this.sticker == null || sticker == null || this.tdlib != tdlib || !Td.equalsTo(this.sticker, sticker)) {
       this.tdlib = tdlib;
       this.sticker = sticker;
-      this.needRepainting = TD.needRepainting(sticker);
+      this.needThemedColorFilter = TD.needThemedColorFilter(sticker);
       this.fullImage = null;
       this.previewAnimation = null;
       this.fullAnimation = null;
@@ -135,7 +135,6 @@ public class TGStickerObj {
       if (sticker != null && (sticker.thumbnail != null || !Td.isAnimated(sticker.format))) {
         this.preview = TD.toImageFile(tdlib, sticker.thumbnail);
         if (this.preview != null) {
-          this.preview.setNeedRepainting(TD.needRepainting(sticker));
           this.preview.setSize(Screen.dp(isCustomEmoji() ? 40f : 82f));   // In some cases, emoji are drawn at more than 40 dp;
           this.preview.setWebp();                                         // perhaps, in order not to lose quality when scaling,
           this.preview.setScaleType(ImageFile.FIT_CENTER);                //  it is worth adding an arbitrary preview size
@@ -221,7 +220,6 @@ public class TGStickerObj {
   public ImageFile getFullImage () {
     if (fullImage == null && sticker != null && !Td.isAnimated(sticker.format) && tdlib != null) {
       this.fullImage = new ImageFile(tdlib, sticker.sticker);
-      this.fullImage.setNeedRepainting(TD.needRepainting(sticker));
       this.fullImage.setScaleType(ImageFile.FIT_CENTER);
       this.fullImage.setSize(Screen.dp(190f));
       this.fullImage.setWebp();
@@ -265,8 +263,8 @@ public class TGStickerObj {
     return premiumFullAnimation;
   }
 
-  public boolean isNeedRepainting () {
-    return needRepainting || isDefaultPremiumStar();
+  public boolean needThemedColorFilter () {
+    return needThemedColorFilter || isDefaultPremiumStar();
   }
 
   public boolean isDefaultPremiumStar () {

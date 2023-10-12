@@ -265,7 +265,7 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView implements D
     public void onBindViewHolder (@NonNull EmojiSearchTypesViewHolder holder, int position) {
       StickerSmallView view = (StickerSmallView) holder.itemView;
       view.setSticker(categoryStickers[position]);
-      view.setRepaintingColorId(position == activeIndex ? ColorId.iconActive : ColorId.icon);
+      view.setThemedColorId(position == activeIndex ? ColorId.iconActive : ColorId.icon);
       view.setTag(position);
       view.invalidate();
     }
@@ -300,7 +300,7 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView implements D
       if (activeIndex != -1) {
         View view = manager.findViewByPosition(activeIndex);
         if (view instanceof StickerSmallView) {
-          ((StickerSmallView) view).setRepaintingColorId(ColorId.iconActive);
+          ((StickerSmallView) view).setThemedColorId(ColorId.iconActive);
           view.invalidate();
         } else {
           notifyItemChanged(activeIndex);
@@ -309,7 +309,7 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView implements D
       if (oldActiveIndex != -1) {
         View view = manager.findViewByPosition(oldActiveIndex);
         if (view instanceof StickerSmallView) {
-          ((StickerSmallView) view).setRepaintingColorId(ColorId.icon);
+          ((StickerSmallView) view).setThemedColorId(ColorId.icon);
           view.invalidate();
         } else {
           notifyItemChanged(oldActiveIndex);

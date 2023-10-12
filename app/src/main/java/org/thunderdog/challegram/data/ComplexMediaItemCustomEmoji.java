@@ -27,7 +27,6 @@ import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Views;
 
 import me.vkryl.td.Td;
@@ -114,7 +113,7 @@ public class ComplexMediaItemCustomEmoji implements ComplexMediaItem {
       translate = false;
     }
 
-    boolean needRepainting = TD.needRepainting(sticker);
+    boolean needThemedColorFilter = TD.needThemedColorFilter(sticker);
 
     Receiver receiver;
     if (imageFile != null) {
@@ -138,7 +137,11 @@ public class ComplexMediaItemCustomEmoji implements ComplexMediaItem {
     }
     if (receiver.needPlaceholder()) {
       DoubleImageReceiver preview = mediaReceiver.getPreviewReceiver(displayMediaKey);
-      preview.setRepaintingColor(Theme.getColor(ColorId.text), needRepainting);
+      if (needThemedColorFilter) {
+        preview.setThemedPorterDuffColorId(ColorId.text);
+      } else {
+        preview.disablePorterDuffColorFilter();
+      }
       if (translate) {
         preview.setBounds(0, 0, rect.right - rect.left, rect.bottom - rect.top);
       } else {
@@ -148,7 +151,11 @@ public class ComplexMediaItemCustomEmoji implements ComplexMediaItem {
         preview.drawPlaceholderContour(c, outline);
       }
     }
-    receiver.setRepaintingColor(Theme.getColor(ColorId.text), needRepainting);
+    if (needThemedColorFilter) {
+      receiver.setThemedPorterDuffColorId(ColorId.text);
+    } else {
+      receiver.disablePorterDuffColorFilter();
+    }
     receiver.draw(c);
     if (translate) {
       Views.restore(c, restoreToCount);

@@ -35,7 +35,6 @@ import org.thunderdog.challegram.emoji.EmojiInfo;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
-import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifBridge;
 import org.thunderdog.challegram.loader.gif.GifFile;
@@ -88,7 +87,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     @Nullable
     private GifFile animatedFile;
 
-    public boolean needRepainting;
+    public boolean needThemedColorFilter;
 
     public Representation (@NonNull TdApi.Sticker sticker, int fitzpatrickType, boolean allowNoLoop, boolean forcePlayOnce) {
       this(sticker.id, sticker.emoji, sticker, fitzpatrickType, allowNoLoop, forcePlayOnce);
@@ -106,7 +105,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
         return;
       }
       this.sticker = sticker;
-      this.needRepainting = TD.needRepainting(sticker);
+      this.needThemedColorFilter = TD.needThemedColorFilter(sticker);
 
       if (fitzpatrickType == 0 || !Td.isAnimated(sticker.format)) {
         this.preview = TD.toImageFile(tdlib, sticker.thumbnail);
@@ -670,16 +669,19 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
               Emoji.instance().draw(c, representation.emojiInfo, tmpRect);
             } else {
               DoubleImageReceiver preview = receiver.getPreviewReceiver(index);
-              preview.setRepaintingColor(getTextColorSet().emojiStatusColor(), representation.needRepainting);
               final Receiver target;
               if (representation.isAnimated()) {
-                GifReceiver gifReceiver = receiver.getGifReceiver(index);
-                gifReceiver.setRepaintingColor(getTextColorSet().emojiStatusColor(), representation.needRepainting);
-                target = gifReceiver;
+                target = receiver.getGifReceiver(index);
               } else {
-                ImageReceiver imageReceiver = receiver.getImageReceiver(index);
-                imageReceiver.setRepaintingColor(getTextColorSet().emojiStatusColor(), representation.needRepainting);
-                target = imageReceiver;
+                target = receiver.getImageReceiver(index);
+              }
+              if (representation.needThemedColorFilter) {
+                // FIXME: color id
+                preview.setPorterDuffColorFilter(getTextColorSet().emojiStatusColor());
+                target.setPorterDuffColorFilter(getTextColorSet().emojiStatusColor());
+              } else {
+                preview.disablePorterDuffColorFilter();
+                target.disablePorterDuffColorFilter();
               }
               DrawAlgorithms.drawReceiver(c, preview, target, !representation.isAnimated(), false, left, top, right, bottom);
             }

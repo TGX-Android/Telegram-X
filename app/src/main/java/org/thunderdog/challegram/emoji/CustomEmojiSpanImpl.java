@@ -127,11 +127,13 @@ class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiManager.Wat
     } else {
       restoreToCount = -1;
     }
+    ComplexReceiver receiver = surfaceProvider.provideComplexReceiverForSpan(this);
+    boolean haveDuplicateMedia = surfaceProvider.getDuplicateMediaItemCount(this, mediaItem) > 1;
     mediaItem.draw(c,
       drawRect,
-      surfaceProvider.provideComplexReceiverForSpan(this),
+      receiver,
       attachedToMediaKey,
-      surfaceProvider.getDuplicateMediaItemCount(this, mediaItem) > 1
+      haveDuplicateMedia
     );
     if (needScale) {
       Views.restore(c, restoreToCount);

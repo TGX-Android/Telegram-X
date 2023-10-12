@@ -33,6 +33,7 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -140,9 +141,9 @@ public class ReactionsOverlayView extends ViewGroup {
     @Nullable
     private AnimatedEmojiEffect animatedEmojiEffect;
 
-    private int repaintingColorStart;
-    private int repaintingColorEnd;
-    private boolean needsRepainting;
+    private @PorterDuffColorId int repaintingColorIdStart = ColorId.iconActive;
+    private @PorterDuffColorId int repaintingColorIdEnd = ColorId.iconActive;
+    private boolean needThemedColorFilter;
 
     // animation
     private static final int POSITION_ANIMATOR = 0;
@@ -169,7 +170,6 @@ public class ReactionsOverlayView extends ViewGroup {
       this.parentView = parentView;
       imageReceiver = new ImageReceiver(parentView, 0);
       gifReceiver = new GifReceiver(parentView);
-      repaintingColorStart = repaintingColorEnd = Theme.getColor(ColorId.iconActive);
     }
 
     public ReactionInfo setUseDefaultSprayAnimation (boolean useDefaultSprayAnimation) {
@@ -180,7 +180,7 @@ public class ReactionsOverlayView extends ViewGroup {
     public ReactionInfo setSticker (TGStickerObj sticker, boolean isPlayOnce) {
       if (sticker.isDefaultPremiumStar()) {
         displayScale = sticker.getDisplayScale();
-        needsRepainting = true;
+        needThemedColorFilter = true;
         drawable = Drawables.get(R.drawable.baseline_premium_star_28).mutate();
         parentView.invalidate();
         return this;
@@ -188,7 +188,7 @@ public class ReactionsOverlayView extends ViewGroup {
       ImageFile imageFile = sticker.getImage();
       animation = sticker.getPreviewAnimation();
       displayScale = sticker.getDisplayScale();
-      needsRepainting |= sticker.isNeedRepainting();
+      needThemedColorFilter |= sticker.needThemedColorFilter();
       if (animation != null) {
         if (isPlayOnce) {
           animation.setPlayOnce(true);
@@ -206,7 +206,7 @@ public class ReactionsOverlayView extends ViewGroup {
         AnimatedEmojiDrawable d = new AnimatedEmojiDrawable(parentView);
         d.setSticker(sticker, true);
         this.animatedEmojiEffect = AnimatedEmojiEffect.createFrom(d, false);
-        this.needsRepainting |= sticker.isNeedRepainting();
+        this.needThemedColorFilter |= sticker.needThemedColorFilter();
       }
       return this;
     }
@@ -220,9 +220,9 @@ public class ReactionsOverlayView extends ViewGroup {
       return setPosition(new Rect(startPosition));
     }
 
-    public ReactionInfo setRepaintingColors (int colorStart, int colorEnd) {
-      repaintingColorStart = colorStart;
-      repaintingColorEnd = colorEnd;
+    public ReactionInfo setRepaintingColorIds (@PorterDuffColorId int colorStart, @PorterDuffColorId int colorEnd) {
+      repaintingColorIdStart = colorStart;
+      repaintingColorIdEnd = colorEnd;
       return this;
     }
 
@@ -308,9 +308,21 @@ public class ReactionsOverlayView extends ViewGroup {
         canvas.drawRect(gifReceiver.getLeft(), gifReceiver.getTop(), gifReceiver.getRight(), gifReceiver.getBottom(), Paints.fillingPaint(0xaaff0000));
       }
 
-      final int color = ColorUtils.fromToArgb(repaintingColorStart, repaintingColorEnd, positionAnimator != null ? positionAnimator.getFactor() : 1f);
-      imageReceiver.setRepaintingColor(color, needsRepainting);
-      gifReceiver.setRepaintingColor(color, needsRepainting);
+      if (needThemedColorFilter) {
+        float factor = positionAnimator != null ? positionAnimator.getFactor() : 1f;
+        if (factor == 1f || factor == 0f) {
+          @PorterDuffColorId int colorId = factor == 0f ? repaintingColorIdStart : repaintingColorIdEnd;
+          imageReceiver.setThemedPorterDuffColorId(colorId);
+          gifReceiver.setThemedPorterDuffColorId(colorId);
+        } else {
+          int color = ColorUtils.fromToArgb(Theme.getColor(repaintingColorIdStart), Theme.getColor(repaintingColorIdEnd), factor);
+          imageReceiver.setPorterDuffColorFilter(color);
+          gifReceiver.setPorterDuffColorFilter(color);
+        }
+      } else {
+        imageReceiver.disablePorterDuffColorFilter();
+        gifReceiver.disablePorterDuffColorFilter();
+      }
 
       if (gifReceiver.needPlaceholder() || Config.DEBUG_REACTIONS_ANIMATIONS) {
         imageReceiver.draw(canvas);

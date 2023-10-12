@@ -56,9 +56,9 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
   public static final float PADDING = 8f;
   private static final Interpolator OVERSHOOT_INTERPOLATOR = new OvershootInterpolator(3.2f);
 
-  private ImageReceiver imageReceiver;
-  private GifReceiver gifReceiver;
-  private FactorAnimator animator;
+  private final ImageReceiver imageReceiver;
+  private final GifReceiver gifReceiver;
+  private final FactorAnimator animator;
   private @Nullable TGStickerObj sticker;
   private @Nullable Drawable premiumStarDrawable;
   private Path contour;
@@ -67,21 +67,13 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
   private int forceHeight = -1;
 
   public StickerSmallView (Context context) {
-    super(context);
-    this.imageReceiver = new ImageReceiver(this, 0);
-    this.imageReceiver.setRepaintingColorId(repaintingColorId);
-    this.gifReceiver = new GifReceiver(this);
-    this.gifReceiver.setRepaintingColorId(repaintingColorId);
-    this.animator = new FactorAnimator(0, this, OVERSHOOT_INTERPOLATOR, 230l);
-    this.padding = Screen.dp(PADDING);
+    this(context, Screen.dp(PADDING));
   }
 
   public StickerSmallView (Context context, int padding) {
     super(context);
     this.imageReceiver = new ImageReceiver(this, 0);
-    this.imageReceiver.setRepaintingColorId(repaintingColorId);
     this.gifReceiver = new GifReceiver(this);
-    this.gifReceiver.setRepaintingColorId(repaintingColorId);
     this.animator = new FactorAnimator(0, this, OVERSHOOT_INTERPOLATOR, 230l);
     this.padding = padding;
   }
@@ -217,19 +209,20 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     contour = sticker != null ? sticker.getContour(Math.min(imageReceiver.getWidth(), imageReceiver.getHeight())) : null;
   }
 
-  private @PorterDuffColorId int repaintingColorId = ColorId.iconActive;
+  private @PorterDuffColorId int themedColorId = ColorId.iconActive;
 
-  public void setRepaintingColorId (@PorterDuffColorId int repaintingColorId) {
-    this.repaintingColorId = repaintingColorId;
-    this.imageReceiver.setRepaintingColorId(repaintingColorId);
-    this.gifReceiver.setRepaintingColorId(repaintingColorId);
+  public void setThemedColorId (@PorterDuffColorId int themedColorId) {
+    if (this.themedColorId != themedColorId) {
+      this.themedColorId = themedColorId;
+      invalidate();
+    }
   }
 
-  public @PorterDuffColorId int getRepaintingColorId () {
-    return repaintingColorId;
+  public @PorterDuffColorId int getThemedColorId () {
+    return themedColorId;
   }
 
-  private Path tmpClipPath = new Path();
+  private final Path tmpClipPath = new Path();
 
   @Override
   protected void onDraw (Canvas c) {
@@ -247,9 +240,14 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
 
     float originalScale = sticker != null ? sticker.getDisplayScale() : 1f;
     boolean saved = originalScale != 1f || factor != 0f;
-    boolean repainting = sticker != null && sticker.isNeedRepainting();
-    imageReceiver.setNeedForceRepainting(repainting);
-    gifReceiver.setNeedForceRepainting(repainting);
+    boolean needThemedColorFilter = sticker != null && sticker.needThemedColorFilter();
+    if (needThemedColorFilter) {
+      imageReceiver.setThemedPorterDuffColorId(themedColorId);
+      gifReceiver.setThemedPorterDuffColorId(themedColorId);
+    } else {
+      imageReceiver.disablePorterDuffColorFilter();
+      gifReceiver.disablePorterDuffColorFilter();
+    }
 
     int restoreToCount = -1;
     int cx = imageReceiver.centerX();
@@ -260,7 +258,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
       c.scale(scale, scale, cx, cy);
     }
     if (premiumStarDrawable != null) {
-      Drawables.drawCentered(c, premiumStarDrawable, cx, cy, PorterDuffPaint.get(repaintingColorId));
+      Drawables.drawCentered(c, premiumStarDrawable, cx, cy, PorterDuffPaint.get(themedColorId));
     } else if (isAnimation) {
       if (gifReceiver.needPlaceholder()) {
         if (imageReceiver.needPlaceholder()) {

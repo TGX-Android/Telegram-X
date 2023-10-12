@@ -20,6 +20,7 @@ import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
 
+import androidx.annotation.ColorInt;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 
@@ -230,7 +231,7 @@ public class EmojiStatusHelper implements Destroyable {
     private final @Nullable ImageReceiver preview;
     private final @Nullable ImageReceiver imageReceiver;
     private final @Nullable GifReceiver gifReceiver;
-    private final boolean needRepainting;
+    private final boolean needThemedColorFilter;
     private int lastDrawX, lastDrawY;
     private float lastDrawScale = 1f;
     private boolean ignoreDraw;
@@ -246,7 +247,7 @@ public class EmojiStatusHelper implements Destroyable {
       this.preview = null;
       this.imageReceiver = null;
       this.gifReceiver = null;
-      this.needRepainting = false;
+      this.needThemedColorFilter = false;
     }
 
     private EmojiStatusDrawable (View v, @Nullable String sharedUsageId, boolean isPremium, @Nullable TdApi.Sticker sticker, @Nullable Text.ClickListener clickListener, @Nullable TextColorSet textColorSet, int defaultStarIconId, int textSize) {
@@ -257,7 +258,7 @@ public class EmojiStatusHelper implements Destroyable {
       this.textMediaListener = null;
       this.clickListener = clickListener;
       this.starDrawable = needDrawEmojiStatus && (sticker == null || !TD.isFileLoaded(sticker.sticker)) ? Drawables.get(defaultStarIconId) : null;
-      this.needRepainting = TD.needRepainting(sticker);
+      this.needThemedColorFilter = TD.needThemedColorFilter(sticker);
 
       if (sticker != null && TD.isFileLoaded(sticker.sticker)) {
         this.imageReceiver = new ImageReceiver(v, 0);
@@ -404,10 +405,21 @@ public class EmojiStatusHelper implements Destroyable {
       lastDrawY = startY;
       lastDrawScale = scale;
       if (imageReceiver != null && gifReceiver != null && preview != null) {
-        final int repaintingColorId = textColorSet != null ? textColorSet.emojiStatusColor() : ColorId.icon;
-        gifReceiver.setRepaintingColor(repaintingColorId, needRepainting);
-        imageReceiver.setRepaintingColor(repaintingColorId, needRepainting);
-        preview.setRepaintingColor(repaintingColorId, needRepainting);
+        if (!needThemedColorFilter) {
+          gifReceiver.disablePorterDuffColorFilter();
+          imageReceiver.disablePorterDuffColorFilter();
+          preview.disablePorterDuffColorFilter();
+        } else if (textColorSet != null) {
+          // FIXME: color id
+          @ColorInt int color = textColorSet.emojiStatusColor();
+          gifReceiver.setPorterDuffColorFilter(color);
+          imageReceiver.setPorterDuffColorFilter(color);
+          preview.setPorterDuffColorFilter(color);
+        } else {
+          gifReceiver.setThemedPorterDuffColorId(ColorId.icon);
+          imageReceiver.setThemedPorterDuffColorId(ColorId.icon);
+          preview.setThemedPorterDuffColorId(ColorId.icon);
+        }
         imageReceiver.setBounds(startX, startY, startX + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), startY + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)));
         preview.setBounds(startX, startY, startX + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), startY + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)));
         gifReceiver.setBounds(startX, startY, startX + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), startY + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)));

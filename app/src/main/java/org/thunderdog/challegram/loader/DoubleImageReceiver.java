@@ -17,10 +17,7 @@ package org.thunderdog.challegram.loader;
 import android.graphics.Canvas;
 import android.view.View;
 
-import androidx.annotation.ColorInt;
-
 import org.thunderdog.challegram.loader.gif.GifReceiver;
-import org.thunderdog.challegram.theme.PorterDuffColorId;
 
 public class DoubleImageReceiver implements Receiver {
   private final boolean isAnimated;
@@ -39,24 +36,6 @@ public class DoubleImageReceiver implements Receiver {
     } else {
       this.receiver = new ImageReceiver(view, radius);
     }
-  }
-
-  @Override
-  public void setRepaintingColorId (@PorterDuffColorId int repaintingColorId) {
-    preview.setRepaintingColorId(repaintingColorId);
-    receiver.setRepaintingColorId(repaintingColorId);
-  }
-
-  @Override
-  public void setRepaintingColor (@ColorInt int repaintingColor) {
-    preview.setRepaintingColor(repaintingColor);
-    receiver.setRepaintingColor(repaintingColor);
-  }
-
-  @Override
-  public void setNeedForceRepainting (boolean needForceRepainting) {
-    preview.setNeedForceRepainting(needForceRepainting);
-    receiver.setNeedForceRepainting(needForceRepainting);
   }
 
   /** @noinspection unchecked*/
@@ -141,15 +120,9 @@ public class DoubleImageReceiver implements Receiver {
   }
 
   @Override
-  public void setColorFilter (int colorFilter) {
-    preview.setColorFilter(colorFilter);
-    receiver.setColorFilter(colorFilter);
-  }
-
-  @Override
-  public void disableColorFilter () {
-    preview.disableColorFilter();
-    receiver.disableColorFilter();
+  public void setPorterDuffColorFilter (int colorOrColorId, float alpha, boolean colorIsId) {
+    preview.setPorterDuffColorFilter(colorOrColorId, alpha, colorIsId);
+    receiver.setPorterDuffColorFilter(colorOrColorId, alpha, colorIsId);
   }
 
   @Override
