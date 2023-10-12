@@ -29,10 +29,11 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.config.Config;
-import org.thunderdog.challegram.telegram.MessageListManager;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ListManager;
+import org.thunderdog.challegram.telegram.MessageListManager;
+import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
@@ -58,6 +59,7 @@ import me.vkryl.td.MessageId;
 public class PinnedMessagesBar extends ViewGroup implements Destroyable, MessageListManager.ChangeListener, View.OnClickListener {
   private CustomRecyclerView recyclerView;
   private SettingsAdapter messagesAdapter;
+  private TdlibMessageViewer.Viewport messageViewport;
   private CollapseButton collapseButton;
   private TopBarView showAllButton;
 
@@ -342,6 +344,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
   }
 
   public void initialize (@NonNull ViewController<?> viewController) {
+    messageViewport = viewController.tdlib().messageViewer().createViewport(new TdApi.MessageSourceSearch(), viewController);
     messagesAdapter = new SettingsAdapter(viewController, this, viewController) {
       @Override
       protected void setMessagePreview (ListItem item, int position, MessagePreviewView previewView) {
@@ -411,6 +414,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
         }
       }
     });
+    viewController.tdlib().ui().attachViewportToRecyclerView(messageViewport, recyclerView);
     viewController.addThemeInvalidateListener(this);
     viewController.addThemeInvalidateListener(recyclerView);
     viewController.addThemeInvalidateListener(collapseButton);
@@ -541,6 +545,11 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
   @Override
   public void performDestroy () {
     setMessageList(null);
+    messageViewport.clear();
+  }
+
+  public void completeDestroy () {
+    messageViewport.performDestroy();
   }
 
   @Override

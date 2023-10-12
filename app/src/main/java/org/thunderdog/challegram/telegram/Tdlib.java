@@ -447,6 +447,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private final TdlibNotificationManager notificationManager;
   private final TdlibFileGenerationManager fileGenerationManager;
   private final TdlibSingleUnreadReactionsManager unreadReactionsManager;
+  private final TdlibMessageViewer messageViewer;
 
   private final HashSet<Long> channels = new HashSet<>();
   private final LongSparseLongArray accessibleChatTimers = new LongSparseLongArray();
@@ -647,6 +648,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     this.fileGenerationManager = new TdlibFileGenerationManager(this);
     if (needMeasure) {
       Log.v("INITIALIZATION: Tdlib.fileGenerationManager -> %dms", SystemClock.uptimeMillis() - ms);
+      ms = SystemClock.uptimeMillis();
+    }
+    this.messageViewer = new TdlibMessageViewer(this);
+    if (needMeasure) {
+      Log.v("INITIALIZATION: Tdlib.messageViewer -> %dms", SystemClock.uptimeMillis() - ms);
       ms = SystemClock.uptimeMillis();
     }
     this.unreadReactionsManager = new TdlibSingleUnreadReactionsManager(this);
@@ -2298,6 +2304,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   public TdlibFileGenerationManager filegen () {
     return fileGenerationManager;
+  }
+
+  public TdlibMessageViewer messageViewer () {
+    return messageViewer;
   }
 
   public TdlibQuickAckManager qack () {
@@ -4376,23 +4386,26 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public void onScreenshotTaken (int timeSeconds) {
-    synchronized (chatOpenMutex) {
+   /* synchronized (chatOpenMutex) {
       final int size = openedChatsTimes.size();
       for (int i = 0; i < size; i++) {
         final int openTime = openedChatsTimes.valueAt(i);
         if (timeSeconds >= openTime) {
           final long chatId = openedChatsTimes.keyAt(i);
           TdApi.Chat chat = chat(chatId);
-          if (/*hasWritePermission(chat) && */(ChatId.isSecret(chatId) || ui().shouldSendScreenshotHint(chat))) {
+          if ((ChatId.isSecret(chatId) || ui().shouldSendScreenshotHint(chat))) {
             sendScreenshotMessage(chatId, null);
           }
         }
       }
-    }
+    }*/
+    ui().execute(() ->
+      messageViewer.onScreenshotTaken(timeSeconds)
+    );
   }
 
-  public boolean hasOpenChats () {
-    return openedChats != null && openedChats.size() > 0;
+  public boolean hasPotentiallyVisibleMessages () {
+    return (openedChats != null && openedChats.size() > 0) || messageViewer.hasPotentiallyVisibleMessages();
   }
 
   // Metadata

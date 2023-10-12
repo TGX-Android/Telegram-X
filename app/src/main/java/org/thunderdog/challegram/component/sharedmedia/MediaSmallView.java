@@ -21,6 +21,7 @@ import android.view.MotionEvent;
 
 import androidx.annotation.Nullable;
 
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
@@ -28,6 +29,8 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
+import org.thunderdog.challegram.telegram.TdlibMessageViewer;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
@@ -49,7 +52,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.Destroyable;
 
-public class MediaSmallView extends SparseDrawableView implements Destroyable, FactorAnimator.Target, SelectableItemDelegate {
+public class MediaSmallView extends SparseDrawableView implements Destroyable, FactorAnimator.Target, SelectableItemDelegate, TdlibUi.MessageProvider {
   private final ImageReceiver miniThumbnail;
   private final ImageReceiver preview, imageReceiver;
   private final GifReceiver gifReceiver;
@@ -244,6 +247,10 @@ public class MediaSmallView extends SparseDrawableView implements Destroyable, F
 
   private static final float SCALE = .24f;
 
+  private Receiver findTargetReceiver () {
+    return item == null ? null : imageReceiver.getCurrentFile() != null ? imageReceiver : gifReceiver;
+  }
+
   @Override
   protected void onDraw (Canvas c) {
     if (item == null) {
@@ -260,7 +267,7 @@ public class MediaSmallView extends SparseDrawableView implements Destroyable, F
       c.scale(scale, scale, preview.centerX(), preview.centerY());
     }
 
-    Receiver receiver = imageReceiver.getCurrentFile() != null ? imageReceiver : gifReceiver;
+    Receiver receiver = findTargetReceiver();
     final boolean scaled = receiver == gifReceiver && item != null && item.getType() == MediaItem.TYPE_VIDEO_MESSAGE;
     if (scaled) {
       c.save();
@@ -344,5 +351,22 @@ public class MediaSmallView extends SparseDrawableView implements Destroyable, F
 
   public void initWithClickDelegate (ClickHelper.Delegate delegate) {
     helper = new ClickHelper(delegate);
+  }
+
+  // MessageProvider
+
+
+  @Override
+  public TdApi.Message getVisibleMessage () {
+    return item != null ? item.getMessage() : null;
+  }
+
+  @Override
+  public int getVisibleMessageFlags () {
+    Receiver receiver = findTargetReceiver();
+    if (item.hasSpoiler() || receiver == null || receiver.needPlaceholder()) {
+      return TdlibMessageViewer.Flags.NO_SCREENSHOT_NOTIFICATION;
+    }
+    return 0;
   }
 }

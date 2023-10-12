@@ -36,6 +36,7 @@ import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -139,6 +140,8 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     }
   }
 
+  private TdlibMessageViewer.Viewport messageViewport;
+
   @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
     final long chatId = getArgumentsStrict().chatId;
@@ -150,6 +153,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     headerCell.setSubtitle(R.string.Stats);
     this.headerCell = headerCell;
 
+    this.messageViewport = tdlib.messageViewer().createViewport(new TdApi.MessageSourceSearch(), this);
     adapter = new SettingsAdapter(this) {
       @Override
       protected void setSeparatorOptions (ListItem item, int position, SeparatorView separatorView) {
@@ -217,6 +221,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
       }
     };
     recyclerView.setAdapter(adapter);
+    tdlib.ui().attachViewportToRecyclerView(messageViewport, recyclerView);
     tdlib.send(new TdApi.GetChatStatistics(chatId, Theme.isDark()), (chatStatistics, error) -> runOnUiThreadOptional(() -> {
       if (error != null) {
         UI.showError(error);
@@ -234,6 +239,14 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
         }
       }
     }));
+  }
+
+  @Override
+  public void destroy () {
+    super.destroy();
+    if (messageViewport != null) {
+      messageViewport.performDestroy();
+    }
   }
 
   @Override

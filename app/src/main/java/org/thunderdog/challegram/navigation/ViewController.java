@@ -3400,7 +3400,23 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   // Disabling screenshot
 
+  private List<FutureBool> disallowScreenshotReasons;
+
+  public void addDisallowScreenshotReason (FutureBool reason) {
+    if (disallowScreenshotReasons == null) {
+      disallowScreenshotReasons = new ArrayList<>();
+    }
+    disallowScreenshotReasons.add(reason);
+  }
+
   public boolean shouldDisallowScreenshots () {
+    if (disallowScreenshotReasons != null) {
+      for (FutureBool reason : disallowScreenshotReasons) {
+        if (reason.getBoolValue()) {
+          return true;
+        }
+      }
+    }
     return false;
   }
 
