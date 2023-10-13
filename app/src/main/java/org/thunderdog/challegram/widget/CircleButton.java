@@ -80,9 +80,7 @@ public class CircleButton extends View implements FactorAnimator.Target, Reactio
 
     this.tdlib = tdlib;
     this.imageReceiver = new ImageReceiver(this, 0);
-    this.imageReceiver.setThemedPorterDuffColorId(ColorId.iconActive);
     this.gifReceiver = new GifReceiver(this);
-    this.gifReceiver.setThemedPorterDuffColorId(ColorId.iconActive);
   }
 
   public void setIconColorId (int colorId) {
@@ -570,6 +568,13 @@ public class CircleButton extends View implements FactorAnimator.Target, Reactio
       }
       gifReceiver.requestFile(sticker.getPreviewAnimation());
       imageReceiver.requestFile(sticker.getImage());
+      if (sticker.needThemedColorFilter()) {
+        this.gifReceiver.setThemedPorterDuffColorId(ColorId.iconActive);
+        this.imageReceiver.setThemedPorterDuffColorId(ColorId.iconActive);
+      } else {
+        this.gifReceiver.disablePorterDuffColorFilter();
+        this.imageReceiver.disablePorterDuffColorFilter();
+      }
     } else {
       gifReceiver.clear();
       imageReceiver.clear();
