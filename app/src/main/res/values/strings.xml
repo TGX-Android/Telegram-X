@@ -2209,7 +2209,7 @@
   <string name="PhoneCall">Phone Call</string>
   <string name="SetAsCurrent">Set as current</string>
   <string name="ArchiveStickerSet">Archive sticker set %1$s? You can restore it later in Settings &gt; Stickers &gt; Archived.</string>
-  <string name="ArchiveEmojiSet">Archive emoji set %1$s? You can restore it later in Settings &gt; Emoji &gt; Archived.</string>
+  <string name="ArchiveEmojiSet">Archive emoji pack %1$s? You can restore it later in Settings &gt; Emoji &gt; Archived.</string>
   <string name="ArchiveStickerSetAction">Archive</string>
   <string name="ArchivePack">Archive pack</string>
   <string name="ClearDrawing">Clear drawing</string>
