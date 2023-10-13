@@ -42,6 +42,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGReaction;
+import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifActor;
@@ -526,7 +527,11 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
         }
       } else if (viewId == R.id.btn_removeRecent) {
         final int stickerId = sticker.getId();
-        tdlib.client().send(new TdApi.RemoveRecentSticker(false, new TdApi.InputFileId(stickerId)), tdlib.okHandler());
+        if (sticker.isCustomEmoji()) {
+          Emoji.instance().removeRecentCustomEmoji(sticker.getCustomEmojiId());
+        } else {
+          tdlib.client().send(new TdApi.RemoveRecentSticker(false, new TdApi.InputFileId(stickerId)), tdlib.okHandler());
+        }
         closePreviewIfNeeded();
       } else {
         closePreviewIfNeeded();
@@ -615,7 +620,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
         menu.addView(viewView);
     }
 
-    if (sticker.isRecent() && !sticker.isCustomEmoji()) {
+    if (sticker.isRecent()) {
       ImageView removeRecentView = new ImageView(getContext());
       removeRecentView.setId(R.id.btn_removeRecent);
       removeRecentView.setScaleType(ImageView.ScaleType.CENTER);

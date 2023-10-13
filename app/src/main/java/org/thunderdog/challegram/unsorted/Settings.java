@@ -174,7 +174,8 @@ public class Settings {
   private static final int VERSION_40 = 40; // drop legacy crash management ids
   private static final int VERSION_41 = 41; // clear all application log files
   private static final int VERSION_42 = 42; // drop __
-  private static final int VERSION = VERSION_42;
+  private static final int VERSION_43 = 43; // optimize recent custom emoji
+  private static final int VERSION = VERSION_43;
 
   private static final AtomicBoolean hasInstance = new AtomicBoolean(false);
   private static volatile Settings instance;
@@ -2017,6 +2018,38 @@ public class Settings {
         int accountNum = TdlibManager.readAccountNum();
         for (int accountId = 0; accountId < accountNum; accountId++) {
           editor.remove(TdlibSettingsManager.key(TdlibSettingsManager.__DEVICE_TDLIB_VERSION_KEY, accountId));
+        }
+        break;
+      }
+      case VERSION_43: {
+        String[] emojis = pmc.getStringArray(KEY_EMOJI_RECENTS);
+        if (emojis != null && emojis.length > 0) {
+          Map<String, RecentInfo> infos = new HashMap<>();
+          getBinaryMap(KEY_EMOJI_COUNTERS, infos, RecentInfo.class);
+
+          int changedCount = 0;
+          int changedEmojiCounters = 0;
+          for (int index = 0; index < emojis.length; index++) {
+            final String oldEmoji = emojis[index];
+            // Save 15*2 bytes per recent custom emoji by simply reducing prefix size
+            if (oldEmoji.startsWith(Emoji.CUSTOM_EMOJI_CACHE_OLD)) {
+              String newEmoji = Emoji.CUSTOM_EMOJI_CACHE + oldEmoji.substring(Emoji.CUSTOM_EMOJI_CACHE_OLD.length());
+              emojis[index] = newEmoji;
+              changedCount++;
+
+              RecentInfo recentInfo = infos.remove(oldEmoji);
+              if (recentInfo != null) {
+                infos.put(newEmoji, recentInfo);
+                changedEmojiCounters++;
+              }
+            }
+          }
+          if (changedCount > 0) {
+            pmc.putStringArray(KEY_EMOJI_RECENTS, emojis);
+          }
+          if (changedEmojiCounters > 0) {
+            saveBinaryMap(KEY_EMOJI_COUNTERS, infos);
+          }
         }
         break;
       }
@@ -6667,8 +6700,8 @@ public class Settings {
   public String getPushMessageStats () {
     return
       "total: " + getReceivedPushMessageCountTotal() + " " +
-        "by_token: " + getReceivedPushMessageCountByToken() + " " +
-        "by_app_version: " + getReceivedPushMessageCountByAppVersion() + " ";
+      "by_token: " + getReceivedPushMessageCountByToken() + " " +
+      "by_app_version: " + getReceivedPushMessageCountByAppVersion() + " ";
   }
 
   public long getReceivedPushMessageCountTotal () {

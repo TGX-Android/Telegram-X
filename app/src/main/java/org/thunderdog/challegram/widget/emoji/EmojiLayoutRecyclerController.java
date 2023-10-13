@@ -757,6 +757,15 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayoutRec
   }
 
   @Override
+  public void removeEmoji (int oldIndex, RecentEmoji emoji) {
+    MediaStickersAdapter.StickerItem item = processRecentEmojiItem(emoji);
+    if (item == null) {
+      return;
+    }
+    adapter.removeRange(oldIndex + getHeaderItemCount(), 1);
+  }
+
+  @Override
   public void onToneChanged (@Nullable String newDefaultTone) {
     int firstVisiblePosition = manager.findFirstVisibleItemPosition();
     int lastVisiblePosition = manager.findLastVisibleItemPosition();
