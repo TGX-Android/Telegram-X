@@ -554,27 +554,6 @@ public class Emoji {
   }
 
   @Nullable
-  public static CharSequence extractSingleEmojiLast (CharSequence emoji) {
-    if (emoji instanceof Spanned) {
-      EmojiSpan[] emojis = ((Spanned) emoji).getSpans(0, emoji.length(), EmojiSpan.class);
-      if (emojis != null && emojis.length > 0) {
-        int start = ((Spanned) emoji).getSpanStart(emojis[emojis.length - 1]);
-        int end = ((Spanned) emoji).getSpanEnd(emojis[emojis.length - 1]);
-        return start == 0 && end == emoji.length() ? emoji : emoji.subSequence(start, end);
-      }
-    }
-    return null;
-  }
-
-  public @Nullable CharSequence lastSymbolIsSingleEmoji (CharSequence cs) {
-    CharSequence emoji = extractSingleEmojiLast(cs);
-    if (emoji != null && isSingleEmoji(emoji, false) && cs.toString().endsWith(emoji.toString())) {
-      return emoji;
-    }
-    return null;
-  }
-
-  @Nullable
   public static String extractPrecedingEmoji (Spanned spanned, int beforeIndex, boolean allowCustom) {
     EmojiSpan span = Emoji.findPrecedingEmojiSpan(spanned, beforeIndex);
     if (span != null && (allowCustom || !span.isCustomEmoji())) {
