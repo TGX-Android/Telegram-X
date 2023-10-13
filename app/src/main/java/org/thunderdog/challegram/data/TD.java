@@ -2621,6 +2621,9 @@ public class TD {
       return "Unknown error (null)";
     if (object.getConstructor() == TdApi.Error.CONSTRUCTOR) {
       TdApi.Error error = (TdApi.Error) object;
+      if (StringUtils.isEmpty(error.message)) {
+        return "Empty error " + error.code;
+      }
       return translateError(error.code, error.message);
     }
     return "not an error";

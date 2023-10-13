@@ -8965,24 +8965,26 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public boolean isMatchesReactionSenderAvatarFilter (TdApi.MessageSender sender) {
     final long currentChatId = getChatId();
-    final TdApi.Supergroup supergroup = tdlib.chatToSupergroup(currentChatId);
 
+    // TODO check for reacted via senderId once it will appear in TDLib
+    if (tdlib.isSelfSender(sender)
+      || getChatId() == Td.getSenderId(sender)
+      || Td.equalsTo(sender, getInReplyToSender())) {
+      return true;
+    }
+
+    long userId = Td.getSenderUserId(sender);
+    final TdApi.User user = userId != 0 ? tdlib.cache().user(userId) : null;
+    if (user != null && (user.isContact || user.isCloseFriend || TD.containsMention(getTextToTranslateImpl(), user))) {
+      return true;
+    }
+
+    final TdApi.Supergroup supergroup = tdlib.chatToSupergroup(currentChatId);
     if (tdlib.chatMemberCount(currentChatId) < 50 && (supergroup == null || (!supergroup.hasLocation && !supergroup.hasLinkedChat && Td.isEmpty(supergroup.usernames)))) {
       return true;
     }
 
-    final long senderId = Td.getSenderId(sender);
-    final TdApi.User user = tdlib.cache().user(Td.getSenderUserId(sender));
-    final TdApi.Chat chat = tdlib.chat(senderId);
-
-    if (TD.isContact(user)
-      || tdlib.isSelfChat(chat)
-      || getChatId() == Td.getSenderId(sender)
-      || senderId == Td.getSenderId(getInReplyToSender())) {
-      return true;
-    }
-
-    return user != null && TD.containsMention(getTextToTranslateImpl(), user);
+    return false;
   }
 
   // Sponsored-related tools

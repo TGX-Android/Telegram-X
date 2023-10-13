@@ -179,7 +179,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       TdApi.JsonValue json = (TdApi.JsonValue) object;
       setApplicationConfig(json, JSON.stringify(json));
     } else {
-      Log.e("getApplicationConfig failed: %s", TD.toErrorString(object));
+      Log.i("getApplicationConfig failed: %s", TD.toErrorString(object));
     }
   };
   private final Client.ResultHandler messageHandler = object -> {
@@ -3162,6 +3162,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   public boolean isSelfSender (TdApi.Message message) {
     return message != null && (message.isOutgoing || isSelfSender(message.senderId));
+  }
+
+  public boolean senderContactOrCloseFirend (TdApi.MessageSender sender) {
+    long userId = Td.getSenderUserId(sender);
+    TdApi.User user = userId != 0 ? cache().user(userId) : null;
+    return user != null && (user.isContact || user.isCloseFriend);
   }
 
   public @Nullable TdApi.User chatUser (long chatId) {
