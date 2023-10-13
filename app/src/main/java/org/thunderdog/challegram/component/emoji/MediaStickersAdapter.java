@@ -324,7 +324,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
       case StickerHolder.TYPE_SEPARATOR_COLLAPSABLE: {
         TGStickerSetInfo stickerSet = getStickerSet(position);
         TextView collapseView = ((CollapsableSeparatorView) holder.itemView).textView;
-        updateCollapseView(collapseView, stickerSet, R.string.ShowXMore);
+        updateCollapseView(collapseView, stickerSet, R.string.ShowXMoreEmoji);
         collapseView.setTag(stickerSet);
         break;
       }

@@ -1383,7 +1383,7 @@
   <string name="ChatPreview">Chat preview</string>
   <string name="AndroidVersionWarning">Sorry, this feature is available yet only on Android %1$s (%2$s) or higher</string>
   <string name="RemoveStickerSet">Remove sticker set %1$s?</string>
-  <string name="RemoveEmojiSet">Remove emoji set %1$s?</string>
+  <string name="RemoveEmojiSet">Remove emoji pack %1$s?</string>
   <string name="RemoveStickerSetAction">Remove</string>
   <string name="DeletePack">Delete pack</string>
   <string name="AddPack">Add pack</string>
@@ -1757,7 +1757,7 @@
   <string name="ReactionsAllowSome_other">%1$s allowed</string>
 
   <string name="QuickReactionEnable">Enable Quick Reaction</string>
-  <string name="QuickReactionEnableDesc">Availability of specific reactions depends on group\'s and channel\'s settings.</string>
+  <string name="QuickReactionEnableDesc">Some groups and channels may not allow specific reactions.</string>
 
   <string name="ReactionsDisabledDesc">Allow members to react to group messages</string>
   <string name="AvailableReactions">Available reactions</string>
@@ -2271,7 +2271,7 @@
   <string name="AutoNightModeDescriptionSystemQ">Switch to night theme based on your system settings.</string>
   <string name="AutoNightModeDescriptionSystem">Switch to night theme based on the value provided by system.</string>
   <string name="PrivacyBots">Bots</string>
-  <string name="WebSessionsTitle">Logged in with Telegram</string>
+  <string name="WebSessionsTitle">Logged In with Telegram</string>
   <string name="NoActiveLogins">**No active logins**\n\nYou can log in on websites that support signing&#160;in&#160;with&#160;Telegram.</string>
   <string name="TerminateAllWebSessions">Disconnect All Websites</string>
   <string name="ClearOtherWebSessionsHelp">You can log in on websites that support signing in with Telegram.</string>
@@ -4783,8 +4783,8 @@
 
   <string name="ReactionsPickerHeader">Reactions</string>
 
-  <string name="ShowXMore_one">%1$s more</string>
-  <string name="ShowXMore_other">%1$s more</string>
+  <string name="ShowXMoreEmoji_one">%1$s more</string>
+  <string name="ShowXMoreEmoji_other">%1$s more</string>
 
   <string name="AvatarsInReactions">Avatars in Reactions</string>
   <string name="AvatarsInReactionsAlways">Always</string>

@@ -91,6 +91,7 @@ public class EmojiPacksInfoView extends CustomTextView {
     }
     String text = Lang.getString(isSingle ? R.string.EmojiUsedFromSingle : R.string.EmojiUsedFromX, link);
 
+    // FIXME: do not rely on cloud strings here
     final int linkStart = text.indexOf(link);
     final int emojiStart = text.indexOf("*");
 
