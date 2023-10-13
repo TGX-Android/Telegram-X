@@ -7,12 +7,12 @@ import android.graphics.drawable.Drawable;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
-import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.UI;
 
 import me.vkryl.android.AnimatorUtils;
@@ -39,7 +39,7 @@ public class TranslationCounterDrawable extends Drawable implements FactorAnimat
   private Runnable invalidateCallback;
 
   private int defaultColorId = ColorId.icon;
-  private int backgroundColorId = ColorId.bubbleIn_time;
+  private @PorterDuffColorId int backgroundColorId = ColorId.bubbleIn_time;
   private int loadingColorId = ColorId.bubbleIn_textLink;
 
   public TranslationCounterDrawable (Drawable drawable) {
@@ -51,7 +51,7 @@ public class TranslationCounterDrawable extends Drawable implements FactorAnimat
     UI.post(this::checkStatus);
   }
 
-  public void setColors (int defaultColorId, int backgroundColorId, int loadingColorId) {
+  public void setColors (int defaultColorId, @PorterDuffColorId int backgroundColorId, int loadingColorId) {
     this.defaultColorId = defaultColorId;
     this.backgroundColorId = backgroundColorId;
     this.loadingColorId = loadingColorId;
@@ -97,7 +97,7 @@ public class TranslationCounterDrawable extends Drawable implements FactorAnimat
     if (loadedProgress == 1f) {
       Drawables.draw(canvas, drawable, 0, 0, Paints.getPorterDuffPaint(iconColor));
     } else {
-      Drawables.draw(canvas, drawableBg, 0, 0, Paints.getPorterDuffPaint(Theme.getColor(backgroundColorId)));
+      Drawables.draw(canvas, drawableBg, 0, 0, PorterDuffPaint.get(backgroundColorId));
 
       float lineWidth = MathUtils.fromTo(0.571f, 1f, loadedProgress) * width;
       float offset = MathUtils.fromTo(MathUtils.fromTo(-lineWidth - width * 0.5f, width * 1.5f, offsetAnimator.getFloatValue()), 0, loadedProgress);

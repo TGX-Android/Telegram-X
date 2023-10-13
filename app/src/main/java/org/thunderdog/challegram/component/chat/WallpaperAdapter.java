@@ -512,10 +512,10 @@ public class WallpaperAdapter extends RecyclerView.Adapter<WallpaperAdapter.View
       if (wallpaper != null) {
         if (wallpaper.isPattern()) {
           int color = wallpaper.getPatternColor();
-          receiver.setColorFilter(color);
+          receiver.setPorterDuffColorFilter(color);
           preview.requestFile(null);
         } else {
-          receiver.disableColorFilter();
+          receiver.disablePorterDuffColorFilter();
           preview.requestFile(wallpaper.getPreview(true));
         }
         receiver.requestFile(wallpaper.getPreview(false));
@@ -647,7 +647,7 @@ public class WallpaperAdapter extends RecyclerView.Adapter<WallpaperAdapter.View
         c.drawCircle(centerX, centerY, Screen.dp(28f), Paints.fillingPaint(ColorUtils.color((int) (86f * circleFactor), 0)));
 
         if (isCustom) {
-          Paint paint = Paints.getPorterDuffPaint(0xffffffff);
+          Paint paint = Paints.whitePorterDuffPaint();
           paint.setAlpha((int) (255f * (1f - factor)));
           Drawable drawable = getSparseDrawable(R.drawable.baseline_image_24, 0);
           Drawables.draw(c, drawable, centerX - drawable.getMinimumWidth() / 2, centerY - drawable.getMinimumHeight() / 2, paint);

@@ -54,11 +54,12 @@ import org.thunderdog.challegram.ui.EmojiListController;
 import org.thunderdog.challegram.ui.EmojiMediaListController;
 import org.thunderdog.challegram.ui.EmojiStatusListController;
 import org.thunderdog.challegram.unsorted.Settings;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.Headers.EmojiHeaderView;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.Headers.MediaHeaderView;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSection;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSectionView;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.StickerSectionView;
+import org.thunderdog.challegram.widget.emoji.EmojiLayoutRecyclerController;
+import org.thunderdog.challegram.widget.emoji.header.EmojiHeaderView;
+import org.thunderdog.challegram.widget.emoji.header.MediaHeaderView;
+import org.thunderdog.challegram.widget.emoji.section.EmojiSection;
+import org.thunderdog.challegram.widget.emoji.section.EmojiSectionView;
+import org.thunderdog.challegram.widget.emoji.section.StickerSectionView;
 import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 
 import java.util.ArrayList;
@@ -67,7 +68,7 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 
-public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPreDrawListener, ViewPager.OnPageChangeListener, FactorAnimator.Target, View.OnClickListener, Lang.Listener {
+public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPreDrawListener, ViewPager.OnPageChangeListener, FactorAnimator.Target, View.OnClickListener, Lang.Listener, EmojiLayoutRecyclerController.Callback {
   public interface Listener {
     default void onEnterEmoji (String emoji) {}
     default void onEnterCustomEmoji (TGStickerObj sticker) {}
@@ -256,6 +257,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   private @Nullable ViewController<?> themeProvider;
   private boolean allowMedia;
   private boolean animatedEmojiOnly;
+  private boolean classicEmojiOnly;
   private boolean useDarkMode;
 
   public EmojiToneHelper.Delegate getToneDelegate () {
@@ -279,23 +281,24 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   }
 
   public void initWithEmojiStatus (ViewController<?> context, @NonNull Listener listener, @Nullable ViewController<?> themeProvider) {
-    initWithMediasEnabled(context, false, true, listener, themeProvider, false);
+    initWithMediasEnabled(context, false, true, listener, themeProvider, false, false);
   }
 
   public void initWithMediasEnabled (ViewController<?> context, boolean allowMedia, @NonNull Listener listener, @Nullable ViewController<?> themeProvider, boolean useDarkMode) {
-    initWithMediasEnabled(context, allowMedia, false, listener, themeProvider, useDarkMode);
+    initWithMediasEnabled(context, allowMedia, false, listener, themeProvider, useDarkMode, false);
   }
 
   public int getEmojiSectionsSize () {
     return emojiSectionsSize;
   }
 
-  public void initWithMediasEnabled (ViewController<?> context, boolean allowMedia, boolean animatedEmojiOnly, @NonNull Listener listener, @Nullable ViewController<?> themeProvider, boolean useDarkMode) {
+  public void initWithMediasEnabled (ViewController<?> context, boolean allowMedia, boolean animatedEmojiOnly, @NonNull Listener listener, @Nullable ViewController<?> themeProvider, boolean useDarkMode, boolean classicEmojiOnly) {
     this.parentController = context;
     this.listener = listener;
     this.themeProvider = themeProvider;
     this.allowMedia = allowMedia && !animatedEmojiOnly;
     this.animatedEmojiOnly = animatedEmojiOnly;
+    this.classicEmojiOnly = classicEmojiOnly;
     this.useDarkMode = useDarkMode;
 
     /*
@@ -342,10 +345,22 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     // Emoji sections
 
     if (!animatedEmojiOnly) {
-      emojiHeaderView = new EmojiHeaderView(getContext(), this, themeProvider, allowMedia);
+      ArrayList<EmojiSection> emojiSections = new ArrayList<>(2);
+      emojiSections.add(new EmojiSection(this, EmojiSection.SECTION_EMOJI_TRENDING, R.drawable.outline_whatshot_24, R.drawable.baseline_whatshot_24).setMakeFirstTransparent());
+      emojiSections.add(new EmojiSection(this, EmojiSection.SECTION_EMOJI_RECENT, R.drawable.baseline_access_time_24, R.drawable.baseline_watch_later_24)/*.setFactor(1f, false)*/.setMakeFirstTransparent().setOffsetHalf(false));
+
+      ArrayList<EmojiSection> expandableSections = new ArrayList<>(6);
+      expandableSections.add(new EmojiSection(this, EmojiSection.SECTION_EMOJI_SMILEYS, R.drawable.baseline_emoticon_outline_24, R.drawable.baseline_emoticon_24).setMakeFirstTransparent());
+      expandableSections.add(new EmojiSection(this,  EmojiSection.SECTION_EMOJI_ANIMALS, R.drawable.deproko_baseline_animals_outline_24, R.drawable.deproko_baseline_animals_24));/*.setIsPanda(!useDarkMode)*/
+      expandableSections.add(new EmojiSection(this,  EmojiSection.SECTION_EMOJI_FOOD, R.drawable.baseline_restaurant_menu_24, R.drawable.baseline_restaurant_menu_24));
+      expandableSections.add(new EmojiSection(this,  EmojiSection.SECTION_EMOJI_TRAVEL, R.drawable.baseline_directions_car_24, R.drawable.baseline_directions_car_24));
+      expandableSections.add(new EmojiSection(this,  EmojiSection.SECTION_EMOJI_SYMBOLS, R.drawable.deproko_baseline_lamp_24, R.drawable.deproko_baseline_lamp_filled_24));
+      expandableSections.add(new EmojiSection(this,  EmojiSection.SECTION_EMOJI_FLAGS, R.drawable.deproko_baseline_flag_outline_24, R.drawable.deproko_baseline_flag_filled_24).setMakeFirstTransparent());
+
+      emojiHeaderView = new EmojiHeaderView(getContext(), this, themeProvider, emojiSections, expandableSections, allowMedia);
       emojiHeaderView.setSectionsOnClickListener(this);
       emojiHeaderView.setSectionsOnLongClickListener(this::onEmojiHeaderLongClick);
-      emojiHeaderView.setIsPremium(context.tdlib().hasPremium(), false);
+      emojiHeaderView.setIsPremium(context.tdlib().hasPremium() && !classicEmojiOnly, false);
       headerView.addView(emojiHeaderView);
     }
 
@@ -948,7 +963,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
             mediaListController.setArguments(parent);
             c = mediaListController;
           } else {
-            EmojiListController emojiListController = new EmojiListController(context.context(), context.tdlib());
+            EmojiListController emojiListController = new EmojiListController(context.context(), context.tdlib(), parent.classicEmojiOnly);
             emojiListController.setArguments(parent);
             c = emojiListController;
           }
@@ -1251,12 +1266,13 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   public static final @IdRes int EMOJI_INSTALLED_CONTROLLER_ID = R.id.controller_emojiLayoutEmoji;
   public static final @IdRes int EMOJI_TRENDING_CONTROLLER_ID = R.id.controller_emojiLayoutEmojiTrending;
 
-  public static final @EmojiMediaType int getEmojiMediaType (int controllerId) {
+  public static @EmojiMediaType int getEmojiMediaType (int controllerId) {
     return controllerId == R.id.controller_emojiLayoutEmojiTrending
       || controllerId == R.id.controller_emojiLayoutEmoji ? EmojiMediaType.EMOJI : EmojiMediaType.STICKER;
   }
 
-  public void addStickerSection (@IdRes int controllerId, int section, TGStickerSetInfo info) {
+  @Override
+  public void onAddStickerSection (@IdRes int controllerId, int section, TGStickerSetInfo info) {
     if (controllerId == EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID && mediaSectionsView != null) {
       mediaSectionsView.addStickerSection(section, info);
     } else if (controllerId == EmojiLayout.EMOJI_INSTALLED_CONTROLLER_ID && emojiHeaderView != null) {
@@ -1264,7 +1280,8 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     }
   }
 
-  public void moveStickerSection (@IdRes int controllerId, int fromSection, int toSection) {
+  @Override
+  public void onMoveStickerSection (@IdRes int controllerId, int fromSection, int toSection) {
     if (controllerId == EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID && mediaSectionsView != null) {
       mediaSectionsView.moveStickerSection(fromSection, toSection);
     } else if (controllerId == EmojiLayout.EMOJI_INSTALLED_CONTROLLER_ID && emojiHeaderView != null) {
@@ -1272,7 +1289,8 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     }
   }
 
-  public void removeStickerSection (@IdRes int controllerId, int section) {
+  @Override
+  public void onRemoveStickerSection (@IdRes int controllerId, int section) {
     if (controllerId == EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID && mediaSectionsView != null) {
       mediaSectionsView.removeStickerSection(section);
     } else if (controllerId == EmojiLayout.EMOJI_INSTALLED_CONTROLLER_ID && emojiHeaderView != null) {
@@ -1280,14 +1298,16 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     }
   }
 
+  @Override
   public void setCurrentStickerSectionByPosition (@IdRes int controllerId, int i, boolean isStickerSection, boolean animated) {
     if (controllerId == R.id.controller_emojiLayoutStickers && mediaSectionsView != null) {
       mediaSectionsView.setCurrentStickerSectionByPosition(i, isStickerSection, animated);
     } else if (controllerId == EMOJI_INSTALLED_CONTROLLER_ID && emojiHeaderView != null) {
-      emojiHeaderView.setCurrentStickerSectionByPosition(i, isStickerSection, animated);
+      emojiHeaderView.setCurrentStickerSectionByPosition(i + (isStickerSection ? 1: 0), animated);
     }
   }
 
+  @Override
   public boolean onStickerClick (@IdRes int controllerId, StickerSmallView view, View clickView, TGStickerSetInfo stickerSet, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions) {
     if (sticker.isTrending() && !isMenuClick) {
       if (stickerSet != null) {
@@ -1303,28 +1323,37 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     }
   }
 
+  @Override
+  public boolean canFindChildViewUnder (int controllerId, StickerSmallView view, int recyclerX, int recyclerY) {
+    return recyclerY > getHeaderBottom();
+  }
+
   public void setHasNewHots (@IdRes int controllerId, boolean hasHots) {
     if (controllerId == STICKERS_TRENDING_CONTROLLER_ID && mediaSectionsView != null) {
       mediaSectionsView.setHasNewHots(hasHots);
     }
   }
 
+  @Override
   public void onSectionInteracted (@EmojiMediaType int mediaType, boolean interactionFinished) {
     if (listener != null) {
       listener.onSectionInteracted(this, mediaType, interactionFinished);
     }
   }
 
+  @Override
   public void onSectionInteractedScroll (@EmojiMediaType int mediaType, boolean moved) {
     if (moved) {
       onSectionInteracted(mediaType, false);
     }
   }
 
+  @Override
   public void moveHeader (int totalDy) {
     moveHeaderImpl(totalDy);
   }
 
+  @Override
   public void resetScrollState (boolean silent) {
     switch (pager.getCurrentItem()) {
       case 0: {

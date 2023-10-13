@@ -12,7 +12,7 @@
  *
  * File created on 19/08/2023
  */
-package org.thunderdog.challegram.widget.EmojiMediaLayout.Sections;
+package org.thunderdog.challegram.widget.emoji.section;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -28,7 +28,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
-import org.thunderdog.challegram.widget.EmojiLayout;
+import org.thunderdog.challegram.widget.emoji.EmojiLayoutRecyclerController;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
@@ -56,15 +56,15 @@ public class EmojiSection implements FactorAnimator.Target {
   private boolean isTrending;
 
   private @Nullable View view;
-  private final EmojiLayout parent;
+  private final EmojiLayoutRecyclerController.Callback callback;
 
   private int activeIconRes;
 
-  public EmojiSection (EmojiLayout parent, int sectionIndex, @DrawableRes int iconRes, @DrawableRes int activeIconRes) {
-    this.parent = parent;
+  public EmojiSection (EmojiLayoutRecyclerController.Callback callback, int sectionIndex, @DrawableRes int iconRes, @DrawableRes int activeIconRes) {
+    this.callback = callback;
     this.index = sectionIndex;
     this.activeIconRes = activeIconRes;
-    this.activeIcon = Drawables.get(parent.getResources(), activeIconRes);
+    this.activeIcon = Drawables.get(callback.getContext().getResources(), activeIconRes);
     changeIcon(iconRes);
   }
 
@@ -88,7 +88,7 @@ public class EmojiSection implements FactorAnimator.Target {
   public void changeIcon (final int iconRes, final int activeIconRes) {
     changeIcon(iconRes);
     if (this.activeIconRes != activeIconRes) {
-      this.activeIcon = Drawables.get(parent.getResources(), this.activeIconRes = activeIconRes);
+      this.activeIcon = Drawables.get(callback.getContext().getResources(), this.activeIconRes = activeIconRes);
       if (view != null) {
         view.invalidate();
       }
@@ -97,7 +97,7 @@ public class EmojiSection implements FactorAnimator.Target {
 
   public void changeIcon (final int iconRes) {
     if (this.iconRes != iconRes) {
-      this.icon = Drawables.get(parent.getResources(), this.iconRes = iconRes);
+      this.icon = Drawables.get(callback.getContext().getResources(), this.iconRes = iconRes);
       if (view != null) {
         view.invalidate();
       }
@@ -176,7 +176,7 @@ public class EmojiSection implements FactorAnimator.Target {
   private void setPandaBlink (boolean inBlink) {
     if (this.doesPandaBlink != inBlink) {
       this.doesPandaBlink = inBlink;
-      this.activeIcon = Drawables.get(parent.getResources(), inBlink ? R.drawable.deproko_baseline_animals_filled_blink_24 : activeIconRes);
+      this.activeIcon = Drawables.get(callback.getContext().getResources(), inBlink ? R.drawable.deproko_baseline_animals_filled_blink_24 : activeIconRes);
       if (view != null) {
         view.invalidate();
       }
@@ -258,13 +258,15 @@ public class EmojiSection implements FactorAnimator.Target {
   }
 
   public void draw (Canvas c, int cx, int cy) {
+    boolean isUseDarkMode = callback.isUseDarkMode();
+
     if (selectionFactor == 0f || activeDisabled) {
-      Drawables.draw(c, icon, cx - icon.getMinimumWidth() / 2, cy - icon.getMinimumHeight() / 2, parent.isUseDarkMode() ? Paints.getPorterDuffPaint(Theme.getColor(ColorId.icon, ThemeId.NIGHT_BLACK)) : Paints.getIconGrayPorterDuffPaint());
+      Drawables.draw(c, icon, cx - icon.getMinimumWidth() / 2, cy - icon.getMinimumHeight() / 2, isUseDarkMode ? Paints.getPorterDuffPaint(Theme.getColor(ColorId.icon, ThemeId.NIGHT_BLACK)) : Paints.getIconGrayPorterDuffPaint());
     } else if (selectionFactor == 1f) {
       final Drawable icon = this.activeIcon != null ? activeIcon : this.icon;
-      Drawables.draw(c, icon, cx - icon.getMinimumWidth() / 2, cy - icon.getMinimumHeight() / 2, parent.isUseDarkMode() ? Paints.getPorterDuffPaint(Theme.getColor(ColorId.iconActive, ThemeId.NIGHT_BLACK)) : Paints.getActiveKeyboardPaint());
+      Drawables.draw(c, icon, cx - icon.getMinimumWidth() / 2, cy - icon.getMinimumHeight() / 2, isUseDarkMode ? Paints.getPorterDuffPaint(Theme.getColor(ColorId.iconActive, ThemeId.NIGHT_BLACK)) : Paints.getActiveKeyboardPaint());
     } else {
-      final Paint grayPaint = parent.isUseDarkMode() ? Paints.getPorterDuffPaint(Theme.getColor(ColorId.icon, ThemeId.NIGHT_BLACK)) : Paints.getIconGrayPorterDuffPaint();
+      final Paint grayPaint = isUseDarkMode ? Paints.getPorterDuffPaint(Theme.getColor(ColorId.icon, ThemeId.NIGHT_BLACK)) : Paints.getIconGrayPorterDuffPaint();
       final int grayAlpha = grayPaint.getAlpha();
 
       if (makeFirstTransparent) {

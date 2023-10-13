@@ -28,9 +28,9 @@ import android.os.Looper;
 import android.text.TextPaint;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.UiThread;
 import androidx.collection.SparseArrayCompat;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -41,6 +41,7 @@ import org.thunderdog.challegram.widget.ProgressComponent;
 
 import java.lang.ref.SoftReference;
 
+import me.vkryl.core.MathUtils;
 import me.vkryl.core.util.LocalVar;
 
 public class Paints {
@@ -637,9 +638,14 @@ public class Paints {
     return inlineIconPDPaint3;
   }
 
+  public static Paint whitePorterDuffPaint () {
+    return PorterDuffPaint.get(ColorId.white);
+  }
+
+  @Deprecated
   public static Paint getPorterDuffPaint (int color) {
     if (color == 0xffffffff) {
-      return PorterDuffPaint.get(ColorId.white);
+      return whitePorterDuffPaint();
     }
 
     PorterDuffColorFilter filter = getColorFilter(color);
@@ -851,7 +857,7 @@ public class Paints {
     return srcInPaint;
   }
 
-  private static Paint bitmapPaint;
+  private static Paint bitmapPaint, bitmapPaint2;
 
   public static Paint getBitmapPaint () {
     if (bitmapPaint == null) {
@@ -862,6 +868,20 @@ public class Paints {
       }
     }
     return bitmapPaint;
+  }
+
+  @UiThread
+  public static Paint bitmapPaint () {
+    return bitmapPaint(1f);
+  }
+
+  @UiThread
+  public static Paint bitmapPaint (float alpha) {
+    if (bitmapPaint2 == null) {
+      bitmapPaint2 = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG);
+    }
+    bitmapPaint2.setAlpha(Math.round(255f * MathUtils.clamp(alpha)));
+    return bitmapPaint2;
   }
 
   private static TextPaint emojiPaint;

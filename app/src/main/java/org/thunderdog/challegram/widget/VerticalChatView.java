@@ -44,6 +44,7 @@ import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.Counter;
@@ -373,7 +374,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
 
       if (drawAnonymousSender) {
         identityAvatarReceiver.drawPlaceholderRounded(c, identityAvatarReceiver.getDisplayRadius(), Theme.getColor(ColorId.iconLight));
-        Drawables.draw(c, Drawables.get(R.drawable.infanf_baseline_incognito_14), identityAvatarReceiver.centerX() - Screen.dp(7), identityAvatarReceiver.centerY() - Screen.dp(7), Paints.getPorterDuffPaint(Theme.getColor(ColorId.badgeMutedText)));
+        Drawables.draw(c, Drawables.get(R.drawable.infanf_baseline_incognito_14), identityAvatarReceiver.centerX() - Screen.dp(7), identityAvatarReceiver.centerY() - Screen.dp(7), PorterDuffPaint.get(ColorId.badgeMutedText));
       } else {
         identityAvatarReceiver.draw(c);
       }

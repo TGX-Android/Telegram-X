@@ -23,11 +23,14 @@ import android.content.res.Resources;
 import android.os.Build;
 import android.os.CancellationSignal;
 import android.os.Handler;
+import android.os.LocaleList;
 import android.os.Looper;
 import android.text.format.DateFormat;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
+import android.view.inputmethod.InputMethodSubtype;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -38,6 +41,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
@@ -60,10 +64,12 @@ import java.io.File;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
 import me.vkryl.android.DeviceUtils;
+import me.vkryl.android.LocaleUtils;
 import me.vkryl.android.SdkVersion;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.util.InvalidateDelegate;
@@ -754,5 +760,101 @@ public class UI {
     if (context != null) {
       context.getWindow().setSoftInputMode(inputMode);
     }
+  }
+
+  // todo: move to other place?
+
+  private static String toLanguageCode (InputMethodSubtype ims) {
+    if (ims != null) {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        String languageTag = ims.getLanguageTag();
+        if (!StringUtils.isEmpty(languageTag)) {
+          return languageTag;
+        }
+      }
+      String locale = ims.getLocale();
+      if (!StringUtils.isEmpty(locale)) {
+        Locale l = U.getDisplayLocaleOfSubtypeLocale(locale);
+        if (l != null) {
+          return LocaleUtils.toBcp47Language(l);
+        }
+      }
+    }
+    return null;
+  }
+
+  @Nullable
+  public static String[] getInputLanguages () {
+    final List<String> inputLanguages = new ArrayList<>();
+    InputMethodManager imm = (InputMethodManager) UI.getAppContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+    if (imm != null) {
+      String inputLanguageCode = null;
+      try {
+        inputLanguageCode = toLanguageCode(imm.getCurrentInputMethodSubtype());
+      } catch (Throwable ignored) { }
+      if (StringUtils.isEmpty(inputLanguageCode)) {
+        try {
+          inputLanguageCode = toLanguageCode(imm.getLastInputMethodSubtype());
+        } catch (Throwable ignored) { }
+      }
+      if (!StringUtils.isEmpty(inputLanguageCode)) {
+        inputLanguages.add(inputLanguageCode);
+      }
+
+      /*if (Strings.isEmpty(inputLanguageCode)) {
+        try {
+          String id = android.provider.Settings.Secure.getString(
+            UI.getAppContext().getContentResolver(),
+            android.provider.Settings.Secure.DEFAULT_INPUT_METHOD
+          );
+          if (!Strings.isEmpty(id)) {
+            List<InputMethodInfo> list = imm.getInputMethodList();
+            lookup:
+            for (InputMethodInfo info : list) {
+              if (id.equals(info.getId())) {
+                List<InputMethodSubtype> subtypes = imm.getEnabledInputMethodSubtypeList(info, true);
+                for (InputMethodSubtype subtype : subtypes) {
+                  String languageCode = toLanguageCode(subtype);
+                  if (!Strings.isEmpty(languageCode)) {
+                    inputLanguageCode = languageCode;
+                    break lookup;
+                  }
+                }
+              }
+            }
+          }
+        } catch (Throwable ignored) { }
+      }
+      if (Strings.isEmpty(inputLanguageCode) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        try {
+          LocaleList localeList = ((InputView) callback).getImeHintLocales();
+          if (localeList != null) {
+            for (int i = 0; i < localeList.size(); i++) {
+              inputLanguageCode = U.toBcp47Language(localeList.get(i));
+              if (!Strings.isEmpty(inputLanguageCode))
+                break;
+            }
+          }
+        } catch (Throwable ignored) { }
+      }*/
+    }
+    if (inputLanguages.isEmpty()) {
+      try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+          LocaleList locales = Resources.getSystem().getConfiguration().getLocales();
+          for (int i = 0; i < locales.size(); i++) {
+            String code = LocaleUtils.toBcp47Language(locales.get(i));
+            if (!StringUtils.isEmpty(code) && !inputLanguages.contains(code))
+              inputLanguages.add(code);
+          }
+        } else {
+          String code = LocaleUtils.toBcp47Language(Resources.getSystem().getConfiguration().locale);
+          if (!StringUtils.isEmpty(code)) {
+            inputLanguages.add(code);
+          }
+        }
+      } catch (Throwable ignored) { }
+    }
+    return inputLanguages.isEmpty() ? null : inputLanguages.toArray(new String[0]);
   }
 }

@@ -138,7 +138,7 @@ public class RemoveHelper implements FactorAnimator.Target {
 
 
     float alpha = (1f - fadeFactor);
-    Paint bitmapPaint = Paints.getPorterDuffPaint(0xffffffff);
+    Paint bitmapPaint = Paints.whitePorterDuffPaint();
     if (alpha < 1f) {
       bitmapPaint.setAlpha((int) (255f * alpha));
     }

@@ -53,13 +53,14 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.StickerSetsDataProvider;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.NewFlowLayoutManager;
 import org.thunderdog.challegram.widget.EmojiLayout;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutRecyclerController;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutSectionPager;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutTrendingController;
 import org.thunderdog.challegram.widget.ForceTouchView;
+import org.thunderdog.challegram.widget.emoji.EmojiLayoutRecyclerController;
+import org.thunderdog.challegram.widget.emoji.EmojiLayoutSectionPager;
+import org.thunderdog.challegram.widget.emoji.EmojiLayoutTrendingController;
 
 import java.util.ArrayList;
 
@@ -68,12 +69,10 @@ import me.vkryl.android.util.ClickHelper;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.collection.LongList;
-import me.vkryl.core.collection.LongSparseIntArray;
 
 public class EmojiMediaListController extends ViewController<EmojiLayout> implements
   StickersListener,
   AnimationsListener,
-  TGStickerObj.DataProvider,
   MediaGifsAdapter.Callback,
   ClickHelper.Delegate,
   ForceTouchView.ActionListener {
@@ -90,7 +89,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     super(context, tdlib);
     stickersController = new EmojiLayoutRecyclerController(context, tdlib, EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID);
     trendingSetsController = new EmojiLayoutTrendingController(context, tdlib, EmojiLayout.STICKERS_TRENDING_CONTROLLER_ID);
-    trendingSetsController.setCallbacks(this, new TdApi.StickerTypeRegular());
+    trendingSetsController.setCallbacks(stickerSetsDataProvider(), new TdApi.StickerTypeRegular());
     trendingSetsController.stickerSets = new ArrayList<>();
   }
 
@@ -1201,52 +1200,6 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     });
   }
 
-  private static final int FLAG_TRENDING = 0x01;
-  private static final int FLAG_REGULAR = 0x02;
-  private LongSparseIntArray loadingStickerSets;
-
-  @Override
-  public void requestStickerData (TGStickerObj stickerObj, long stickerSetId) {
-    if (stickersController.isIgnoreRequests(stickerSetId)) { // avoiding huge data load while scrolling to section
-      return;
-    }
-    int currentFlags;
-    if (loadingStickerSets == null) {
-      loadingStickerSets = new LongSparseIntArray();
-      currentFlags = 0;
-    } else {
-      currentFlags = loadingStickerSets.get(stickerSetId, 0);
-    }
-    if (currentFlags == 0) {
-      loadingStickerSets.put(stickerSetId, stickerObj.isTrending() ? FLAG_TRENDING : FLAG_REGULAR);
-      tdlib.client().send(new TdApi.GetStickerSet(stickerSetId), singleStickerSetHandler());
-    } else if ((currentFlags & FLAG_TRENDING) == 0 && stickerObj.isTrending()) {
-      currentFlags |= FLAG_TRENDING;
-      loadingStickerSets.put(stickerSetId, currentFlags);
-    } else if ((currentFlags & FLAG_REGULAR) == 0 && !stickerObj.isTrending()) {
-      currentFlags |= FLAG_REGULAR;
-      loadingStickerSets.put(stickerSetId, currentFlags);
-    }
-  }
-
-  private Client.ResultHandler singleStickerSetHandler () {
-    return object -> {
-      switch (object.getConstructor()) {
-        case TdApi.StickerSet.CONSTRUCTOR: {
-          final TdApi.StickerSet stickerSet = (TdApi.StickerSet) object;
-          runOnUiThreadOptional(() -> {
-            applyStickerSet(stickerSet);
-          });
-          break;
-        }
-        case TdApi.Error.CONSTRUCTOR: {
-          UI.showError(object);
-          break;
-        }
-      }
-    };
-  }
-
   private Client.ResultHandler stickerSetsHandler () {
     return object -> {
       switch (object.getConstructor()) {
@@ -1324,7 +1277,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
               for (int i = 0; i < rawInfo.size; i++) {
                 TGStickerObj sticker = new TGStickerObj(tdlib, i < rawInfo.covers.length ? rawInfo.covers[i] : null, null, rawInfo.stickerType);
                 sticker.setStickerSetId(rawInfo.id, null);
-                sticker.setDataProvider(this);
+                sticker.setDataProvider(stickerSetsDataProvider());
                 items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
               }
               startIndex += rawInfo.size + 1;
@@ -1390,28 +1343,11 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       stickersController.scrollToStickerSet(i == 0 ? 0 : stickersController.stickerSets.get(i).getStartIndex(), showRecentTitle, animated);
   }
 
-  private void applyStickerSet (TdApi.StickerSet stickerSet) {
-    int flags = loadingStickerSets.get(stickerSet.id);
-    loadingStickerSets.delete(stickerSet.id);
-
-    if (flags == 0) {
-      return;
-    }
-
-    if ((flags & FLAG_TRENDING) != 0) {
-      trendingSetsController.applyStickerSet(stickerSet, this);
-    }
-
-    if ((flags & FLAG_REGULAR) != 0) {
-      stickersController.applyStickerSet(stickerSet, this);
-    }
-  }
-
   private void setStickers (ArrayList<TGStickerSetInfo> stickerSets, ArrayList<MediaStickersAdapter.StickerItem> items) {
     this.stickersController.setStickers(stickerSets, items);
     this.loadingStickers = false;
-    if (loadingStickerSets != null) {
-      this.loadingStickerSets.clear();
+    if (stickerSetsDataProvider != null) {
+      this.stickerSetsDataProvider.clear();
     }
     tdlib.listeners().subscribeToStickerUpdates(this);
   }
@@ -1523,5 +1459,38 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       }
     }
     return false;
+  }
+
+
+  /* Data provider */
+
+  private StickerSetsDataProvider stickerSetsDataProvider;
+
+  private StickerSetsDataProvider stickerSetsDataProvider() {
+    if (stickerSetsDataProvider != null) {
+      return stickerSetsDataProvider;
+    }
+
+    return stickerSetsDataProvider = new StickerSetsDataProvider(tdlib) {
+      @Override
+      protected boolean needIgnoreRequests (long stickerSetId, TGStickerObj stickerObj) {
+        return stickersController.isIgnoreRequests(stickerSetId);
+      }
+
+      @Override
+      protected int getLoadingFlags (long stickerSetId, TGStickerObj stickerObj) {
+        return stickerObj.isTrending() ? FLAG_TRENDING: FLAG_REGULAR;
+      }
+
+      @Override
+      protected void applyStickerSet (TdApi.StickerSet stickerSet, int flags) {
+        if ((flags & FLAG_REGULAR) != 0) {
+          stickersController.applyStickerSet(stickerSet, this);
+        }
+        if ((flags & FLAG_TRENDING) != 0) {
+          trendingSetsController.applyStickerSet(stickerSet, this);
+        }
+      }
+    };
   }
 }

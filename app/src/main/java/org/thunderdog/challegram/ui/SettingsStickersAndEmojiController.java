@@ -137,6 +137,18 @@ public class SettingsStickersAndEmojiController extends RecyclerViewController<S
               v.setData(R.string.SuggestStickersNone);
               break;
           }
+        } else if (itemId == R.id.btn_avatarsInReactions) {
+          switch (Settings.instance().getReactionAvatarsMode()) {
+            case Settings.REACTION_AVATARS_MODE_ALWAYS:
+              v.setData(R.string.AvatarsInReactionsAlways);
+              break;
+            case Settings.REACTION_AVATARS_MODE_SMART_FILTER:
+              v.setData(R.string.AvatarsInReactionsSmartFilter);
+              break;
+            case Settings.REACTION_AVATARS_MODE_NEVER:
+              v.setData(R.string.AvatarsInReactionsNever);
+              break;
+          }
         } else if (itemId == R.id.btn_emojiSuggestions) {
           switch (Settings.instance().getEmojiMode()) {
             case Settings.STICKER_MODE_ALL:
@@ -161,6 +173,8 @@ public class SettingsStickersAndEmojiController extends RecyclerViewController<S
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_quick_reaction, 0, R.string.QuickReaction));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_big_reactions, 0, R.string.BigReactions));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_avatarsInReactions, 0, R.string.AvatarsInReactions));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.EmojiHeader));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -173,8 +187,6 @@ public class SettingsStickersAndEmojiController extends RecyclerViewController<S
     items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.AnimatedEmoji).setLongId(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI).setBoolValue(true));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_useBigEmoji, 0, R.string.BigEmoji));
-    // items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-    // items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.LoopAnimatedEmoji).setLongId(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI_LOOP).setBoolValue(true));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.Stickers));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -183,6 +195,7 @@ public class SettingsStickersAndEmojiController extends RecyclerViewController<S
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_stickerSuggestions, 0, R.string.SuggestStickers));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.LoopAnimatedStickers).setLongId(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP).setBoolValue(true));
+    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     TGLegacyManager.instance().addEmojiListener(this);
 
     adapter.setItems(items, true);
@@ -261,7 +274,32 @@ public class SettingsStickersAndEmojiController extends RecyclerViewController<S
       showStickerOptions(false);
     } else if (viewId == R.id.btn_emojiSuggestions) {
       showStickerOptions(true);
+    } else if (viewId == R.id.btn_avatarsInReactions) {
+      showReactionAvatarsOptions();
     }
+  }
+
+  private void showReactionAvatarsOptions () {
+    final int reactionAvatarsMode = Settings.instance().getReactionAvatarsMode();
+    showSettings(new SettingsWrapBuilder(R.id.btn_avatarsInReactions).setRawItems(new ListItem[]{
+      new ListItem(ListItem.TYPE_INFO, 0, 0, R.string.ReactionAvatarsInfo),
+      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_avatarsInReactionsAlways, 0, R.string.AvatarsInReactionsAlways, R.id.btn_avatarsInReactions, reactionAvatarsMode == Settings.REACTION_AVATARS_MODE_ALWAYS),
+      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_avatarsInReactionsSmartFilter, 0, R.string.AvatarsInReactionsSmartFilter, R.id.btn_avatarsInReactions, reactionAvatarsMode == Settings.REACTION_AVATARS_MODE_SMART_FILTER),
+      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_avatarsInReactionsNever, 0, R.string.AvatarsInReactionsNever, R.id.btn_avatarsInReactions, reactionAvatarsMode == Settings.REACTION_AVATARS_MODE_NEVER),
+    }).setIntDelegate((id, result) -> {
+      int newReactionAvatarsMode = Settings.instance().getReactionAvatarsMode();
+      int stickerResultId = result.get(R.id.btn_avatarsInReactions);
+      if (stickerResultId == R.id.btn_avatarsInReactionsAlways) {
+        newReactionAvatarsMode = Settings.REACTION_AVATARS_MODE_ALWAYS;
+      } else if (stickerResultId == R.id.btn_avatarsInReactionsSmartFilter) {
+        newReactionAvatarsMode = Settings.REACTION_AVATARS_MODE_SMART_FILTER;
+      } else if (stickerResultId == R.id.btn_avatarsInReactionsNever) {
+        newReactionAvatarsMode = Settings.REACTION_AVATARS_MODE_NEVER;
+      }
+
+      Settings.instance().setReactionAvatarsMode(newReactionAvatarsMode);
+      adapter.updateValuedSettingById(R.id.btn_avatarsInReactions);
+    }).setAllowResize(false));
   }
 
   private void showStickerOptions (boolean isEmoji) {

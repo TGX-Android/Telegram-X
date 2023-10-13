@@ -368,15 +368,6 @@ public class Views {
     return LayoutInflater.from(context).inflate(resource, contentView, false);
   }
 
-  public static int saveRepainting (Canvas c, Receiver receiver) {
-    return c.saveLayerAlpha(receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), 255, Canvas.ALL_SAVE_FLAG);
-  }
-
-  public static void restoreRepainting (Canvas c, Receiver receiver, int count, int color) {
-    c.drawRect(receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), Paints.getSrcInPaint(color));
-    restore(c, count);
-  }
-
   public static int save (Canvas c) {
     return c.save(); // 191
   }
@@ -940,6 +931,31 @@ public class Views {
     }
   }
 
+  public static int getRecyclerFirstElementTop (RecyclerView recyclerView) {
+    return getRecyclerViewElementTop(recyclerView, 0, 0);
+  }
+
+  public static int getRecyclerFirstElementTop (RecyclerView recyclerView, int valueIfPositionNotFound) {
+    return getRecyclerViewElementTop(recyclerView, 0, valueIfPositionNotFound);
+  }
+
+  public static int getRecyclerViewElementTop (RecyclerView recyclerView, int position) {
+    return getRecyclerViewElementTop(recyclerView, position, 0);
+  }
+
+  public static int getRecyclerViewElementTop (RecyclerView recyclerView, int position, int valueIfPositionNotFound) {
+    if (recyclerView == null || recyclerView.getLayoutManager() == null) {
+      return valueIfPositionNotFound;
+    }
+
+    View view = recyclerView.getLayoutManager().findViewByPosition(position);
+    if (view != null) {
+      return view.getTop() + recyclerView.getTop();
+    }
+
+    return valueIfPositionNotFound;
+  }
+
   public static void getCharacterCoordinates(TextView textView, int offset, int[] coordinates) {
     if (coordinates.length != 2)
       throw new IllegalArgumentException();
@@ -956,5 +972,22 @@ public class Views {
       coordinates[0] = xPos;
       coordinates[1] = yPos;
     }
+  }
+
+  public static int findFirstCompletelyVisibleItemPositionWithOffset (LinearLayoutManager manager, int topOffset) {
+    int i = manager.findFirstCompletelyVisibleItemPosition();
+    if (i == -1) {
+      i = manager.findFirstVisibleItemPosition();
+    }
+
+    View v = manager.findViewByPosition(i);
+    while (v != null) {
+      if (v.getTop() >= topOffset) {
+        return i;
+      }
+      v = manager.findViewByPosition(++i);
+    }
+
+    return -1;
   }
 }

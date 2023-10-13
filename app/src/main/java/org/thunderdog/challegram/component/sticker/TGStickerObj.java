@@ -37,7 +37,7 @@ public class TGStickerObj {
   private GifFile previewAnimation, fullAnimation, premiumFullAnimation;
   private String foundByEmoji;
   private TdApi.ReactionType reactionType;
-  private boolean needRepainting;
+  private boolean needThemedColorFilter;
   private boolean isDefaultPremiumStar;
 
   private int flags;
@@ -80,6 +80,10 @@ public class TGStickerObj {
     return reactionType != null && reactionType.getConstructor() == TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR;
   }
 
+  public boolean isEmojiReaction () {
+    return reactionType != null && reactionType.getConstructor() == TdApi.ReactionTypeEmoji.CONSTRUCTOR;
+  }
+
   public boolean isCustomEmoji () {
     return stickerType != null && stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR;
   }
@@ -102,7 +106,12 @@ public class TGStickerObj {
   }
 
   public TdApi.ReactionType getReactionType () {
-    return reactionType;
+    if (reactionType != null) {
+      return reactionType;
+    } else if (isCustomEmoji()) {
+      return new TdApi.ReactionTypeCustomEmoji(getCustomEmojiId());
+    }
+    return null;
   }
 
   public boolean set (Tdlib tdlib, @Nullable TdApi.Sticker sticker, TdApi.StickerFullType stickerType, String[] emojis) {
@@ -117,7 +126,7 @@ public class TGStickerObj {
     if (this.sticker == null || sticker == null || this.tdlib != tdlib || !Td.equalsTo(this.sticker, sticker)) {
       this.tdlib = tdlib;
       this.sticker = sticker;
-      this.needRepainting = TD.needRepainting(sticker);
+      this.needThemedColorFilter = TD.needThemedColorFilter(sticker);
       this.fullImage = null;
       this.previewAnimation = null;
       this.fullAnimation = null;
@@ -126,9 +135,9 @@ public class TGStickerObj {
       if (sticker != null && (sticker.thumbnail != null || !Td.isAnimated(sticker.format))) {
         this.preview = TD.toImageFile(tdlib, sticker.thumbnail);
         if (this.preview != null) {
-          this.preview.setSize(Screen.dp(82f));
-          this.preview.setWebp();
-          this.preview.setScaleType(ImageFile.FIT_CENTER);
+          this.preview.setSize(Screen.dp(isCustomEmoji() ? 40f : 82f));   // In some cases, emoji are drawn at more than 40 dp;
+          this.preview.setWebp();                                         // perhaps, in order not to lose quality when scaling,
+          this.preview.setScaleType(ImageFile.FIT_CENTER);                //  it is worth adding an arbitrary preview size
         }
       } else {
         this.preview = null;
@@ -254,8 +263,8 @@ public class TGStickerObj {
     return premiumFullAnimation;
   }
 
-  public boolean isNeedRepainting () {
-    return needRepainting || isDefaultPremiumStar();
+  public boolean needThemedColorFilter () {
+    return needThemedColorFilter || isDefaultPremiumStar();
   }
 
   public boolean isDefaultPremiumStar () {
@@ -263,7 +272,7 @@ public class TGStickerObj {
   }
 
   public long getCustomEmojiId () {
-    return TD.getStickerCustomEmojiId(sticker);
+    return Td.customEmojiId(sticker);
   }
 
   public void setIsRecent () {

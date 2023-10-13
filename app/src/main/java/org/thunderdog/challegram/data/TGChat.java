@@ -27,6 +27,7 @@ import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.telegram.ReactionLoadListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibChatList;
 import org.thunderdog.challegram.telegram.TdlibCounter;
@@ -34,12 +35,14 @@ import org.thunderdog.challegram.telegram.TdlibStatusManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.PorterDuffColorId;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.EmojiStatusHelper;
+import org.thunderdog.challegram.util.ReactionsCounterDrawable;
+import org.thunderdog.challegram.util.ReactionsListAnimator;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSetOverride;
@@ -48,11 +51,17 @@ import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextEntityCustom;
 import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
+import org.thunderdog.challegram.v.MessagesRecyclerView;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BounceAnimator;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.core.ArrayUtils;
@@ -65,7 +74,7 @@ import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
 import me.vkryl.td.Td;
 
-public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPreview.RefreshCallback, Counter.Callback, Destroyable, TdlibUi.MessageProvider {
+public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPreview.RefreshCallback, Counter.Callback, ReactionLoadListener, Destroyable, TdlibUi.MessageProvider {
   private static final int FLAG_HAS_PREFIX = 1;
   private static final int FLAG_TEXT_DRAFT = 1 << 4;
   private static final int FLAG_SHOW_VERIFY = 1 << 5;
@@ -118,6 +127,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
   private int muteLeft, verifyLeft;
   private int emojiStatusLeft;
   private int checkRight;
+  private int reactionsRight;
 
   private Text chatMark;
 
@@ -125,6 +135,12 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
   private final BounceAnimator scheduleAnimator;
   private final Counter counter, mentionCounter, reactionsCounter, viewCounter;
+
+  private final ReactionsCounterDrawable reactionsCounterDrawable;
+  private final HashMap<String, TGReactions.MessageReactionEntry> reactionsMapEntry = new HashMap<>();
+  private final ReactionsListAnimator reactionsAnimator;
+  private final ArrayList<TGReactions.MessageReactionEntry> reactionsListEntry = new ArrayList<>();
+  private Set<String> awaitingReactions;
 
   public TGChat (ViewController<?> context, TdApi.ChatList chatList, TdApi.Chat chat, boolean makeMeasures) {
     this.context = context;
@@ -157,6 +173,11 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
       }
     }
     this.scheduleAnimator = new BounceAnimator(currentViews);
+    this.reactionsAnimator = new ReactionsListAnimator(
+      (a) -> currentViews.invalidate(),
+      AnimatorUtils.DECELERATE_INTERPOLATOR,
+      MessagesRecyclerView.ITEM_ANIMATOR_DURATION + 50L);
+    this.reactionsCounterDrawable = new ReactionsCounterDrawable(reactionsAnimator);
     this.counter = new Counter.Builder().callback(this).build();
     this.mentionCounter = new Counter.Builder()
       .drawable(R.drawable.baseline_at_16, 16f, 0f, Gravity.CENTER)
@@ -175,7 +196,9 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
       .drawable(R.drawable.baseline_visibility_14, 14f, 3f, Gravity.RIGHT)
       .build();
     setCounter(false);
+    setReactions(false);
     setViews();
+    this.tdlib.singleUnreadReactionsManager().checkChat(chat);
     this.scheduleAnimator.setValue(hasScheduledMessages(), false);
     checkOnline();
     if (makeMeasures) {
@@ -192,6 +215,11 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     this.archive = list;
     this.listMode = Settings.instance().getChatListMode();
     this.scheduleAnimator = new BounceAnimator(currentViews);
+    this.reactionsAnimator = new ReactionsListAnimator(
+      (a) -> currentViews.invalidate(),
+      AnimatorUtils.DECELERATE_INTERPOLATOR,
+      MessagesRecyclerView.ITEM_ANIMATOR_DURATION + 50L);
+    this.reactionsCounterDrawable = new ReactionsCounterDrawable(reactionsAnimator);
     this.counter = new Counter.Builder().callback(this).build();
     this.mentionCounter = new Counter.Builder()
       .drawable(R.drawable.baseline_at_16, 16f, 0f, Gravity.CENTER)
@@ -491,7 +519,8 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     if (getChatId() == chatId && checkLastMessageId(messageId)) {
       chat.lastMessage.interactionInfo = interactionInfo;
       setViews();
-      return showViews();
+      boolean r = setReactions(true);
+      return showViews() || r;
     }
     return false;
   }
@@ -883,12 +912,21 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     if (!tdlib.isSelfChat(chat)) {
       emojiStatusDrawable = EmojiStatusHelper.makeDrawable(null, tdlib, chat != null ? tdlib.chatUser(chat) : null, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
         @Override
-        public int emojiStatusColor () {
-          return Theme.getColor(ColorId.iconActive);
+        public int mediaTextColorOrId () {
+          return ColorId.iconActive;
+        }
+
+        @Override
+        public boolean mediaTextColorIsId () {
+          return true;
         }
       }, this::invalidateEmojiStatusReceiver);
       emojiStatusDrawable.invalidateTextMedia();
       avail -= emojiStatusDrawable.getWidth(Screen.dp(6));
+    }
+    if (needDrawReactionsPreview()) {
+      int reactionsWidth = reactionsCounterDrawable.getTargetWidth();
+      avail -= reactionsWidth + (reactionsWidth > 0 ? Screen.dp(3) : 0);
     }
 
     if (changed || lastAvailWidth != avail) {
@@ -926,6 +964,10 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     }
   }
 
+  public boolean needDrawReactionsPreview () {
+    return isPrivate() && !isSelfChat();
+  }
+
   public @Nullable EmojiStatusHelper.EmojiStatusDrawable getEmojiStatus () {
     return emojiStatusDrawable;
   }
@@ -936,6 +978,22 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
         ((EmojiStatusHelper.EmojiStatusReceiverInvalidateDelegate) view).invalidateEmojiStatusReceiver(text, specificMedia);
       }
     });
+  }
+
+  public void invalidateReactionsReceiver () {
+    currentViews.performWithViews(view -> {
+      if (view instanceof ChatView) {
+        requestReactionFiles(((ChatView) view).getReactionsReceiver());
+      }
+    });
+    currentViews.invalidate();
+  }
+
+  public void requestReactionFiles (ComplexReceiver complexReceiver) {
+    for (Map.Entry<String, TGReactions.MessageReactionEntry> pair : reactionsMapEntry.entrySet()) {
+      TGReactions.MessageReactionEntry entry = pair.getValue();
+      entry.requestReactionFiles(complexReceiver);
+    }
   }
 
   private void setTitleImpl (String title) {
@@ -983,6 +1041,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
       this.timeWidth = (int) U.measureText(time, ChatView.getTimePaint());
     }
     layoutTime();
+    setReactions(UI.inUiThread());
     setViews();
     return changed;
   }
@@ -1020,6 +1079,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
   private void layoutTime () {
     timeLeft = currentWidth - ChatView.getTimePaddingRight() - timeWidth;
     checkRight = timeLeft - ChatView.getTimePaddingLeft();
+    reactionsRight = checkRight - ChatView.getTimePaddingLeft();
   }
 
   public String getTime () {
@@ -1060,6 +1120,10 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
   public int getChecksRight () {
     return checkRight;
+  }
+
+  public int getReactionsWidth () {
+    return reactionsCounterDrawable.getMinimumWidth();
   }
 
   private int getCounterAddWidth () {
@@ -1508,9 +1572,97 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     return ((flags & FLAG_ATTACHED) != 0) && currentViews.hasAnyTargetToInvalidate() && context.getParentOrSelf().getAttachState();
   }
 
+  private boolean isDestroyed;
+
   @Override
   public void performDestroy () {
     currentViews.detachFromAllViews();
     setViewAttached(false);
+    isDestroyed = true;
+    if (awaitingReactions != null) {
+      for (String reactionKey : awaitingReactions) {
+        tdlib.listeners().removeReactionLoadListener(reactionKey, this);
+      }
+      awaitingReactions.clear();
+    }
+  }
+
+  public ReactionsCounterDrawable getReactionsCounterDrawable () {
+    return reactionsCounterDrawable;
+  }
+
+  private boolean setReactions (boolean animated) {
+    return setReactions(chat != null && chat.lastMessage != null && chat.lastMessage.interactionInfo != null ?
+      chat.lastMessage.interactionInfo.reactions : null, animated);
+  }
+
+  private boolean setReactions (TdApi.MessageReaction[] reactions, boolean animated) {
+    this.reactionsListEntry.clear();
+
+    if (reactions != null && !isDestroyed) {
+      for (TdApi.MessageReaction reaction : reactions) {
+        String reactionKey = TD.makeReactionKey(reaction.type);
+
+        TGReaction reactionObj = tdlib.getReaction(reaction.type);
+        if (reactionObj == null) {
+          if (awaitingReactions == null) {
+            awaitingReactions = new LinkedHashSet<>();
+          }
+          if (awaitingReactions.add(reactionKey)) {
+            tdlib.listeners().addReactionLoadListener(reactionKey, this);
+          }
+          continue;
+        }
+        TGReactions.MessageReactionEntry entry = getMessageReactionEntry(reactionObj);
+        entry.setMessageReaction(reaction);
+        reactionsListEntry.add(entry);
+        if (awaitingReactions != null && awaitingReactions.remove(reactionKey)) {
+          tdlib.listeners().removeReactionLoadListener(reactionKey, this);
+        }
+      }
+    }
+
+    boolean r = !reactionsAnimator.compareContents(reactionsListEntry);
+    reactionsAnimator.reset(reactionsListEntry, animated);
+    layoutTitle(false);
+    currentViews.invalidate();
+    invalidateReactionsReceiver();
+    return r;
+  }
+
+  private TGReactions.MessageReactionEntry getMessageReactionEntry (TGReaction reactionObj) {
+    final TGReactions.MessageReactionEntry entry;
+    if (!reactionsMapEntry.containsKey(reactionObj.key)) {
+      entry = new TGReactions.MessageReactionEntry(tdlib, null, null, reactionObj, null) {
+        @Override
+        public int getBubbleTargetWidth () {
+          return 0;
+        }
+
+        @Override
+        public int getBubbleWidth () {
+          return 0;
+        }
+
+        @Override
+        public void invalidate () {
+          currentViews.invalidate();
+        }
+      };
+      reactionsMapEntry.put(reactionObj.key, entry);
+    } else {
+      entry = reactionsMapEntry.get(reactionObj.key);
+    }
+    return entry;
+  }
+
+  @Override
+  public void onReactionLoaded (String reactionKey) {
+    if (awaitingReactions != null && awaitingReactions.remove(reactionKey)) {
+      UI.post(() -> {
+        setReactions(true);
+        invalidateReactionsReceiver();
+      });
+    }
   }
 }

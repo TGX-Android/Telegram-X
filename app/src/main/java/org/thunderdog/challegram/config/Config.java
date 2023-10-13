@@ -269,6 +269,7 @@ public class Config {
   public static final boolean DISABLE_PASSWORD_INVISIBILITY = true;
 
   public static final boolean DEBUG_STICKER_OUTLINES = false; // BuildConfig.DEBUG;
+  public static final boolean DEBUG_GIF_OPTIMIZATION_MODE = false;
 
   public static final int SUPPORTED_INSTANT_VIEW_VERSION = 2;
   public static final boolean INSTANT_VIEW_WRONG_LAYOUT = false;
@@ -280,7 +281,6 @@ public class Config {
   public static final boolean VIDEO_CLOUD_PLAYBACK_AVAILABLE = true;
 
   public static final float MAX_ANIMATED_EMOJI_REFRESH_RATE = 30.0f;
-  public static final boolean LOOP_BIG_CUSTOM_EMOJI = false;
 
   public static final String FILE_PROVIDER_AUTHORITY = BuildConfig.APPLICATION_ID + ".provider";
 
@@ -304,4 +304,6 @@ public class Config {
   public static final boolean ALLOW_SPONSORED_MESSAGE_LINK_COPY = true;
   public static final boolean PROTECT_ANONYMOUS_VOTING = false;
   public static final boolean PROTECT_ANONYMOUS_REACTIONS = false;
+
+  public static final boolean KEEP_ORIGINAL_EMOJI_WHEN_INPUT_CUSTOM_EMOJI = true;
 }

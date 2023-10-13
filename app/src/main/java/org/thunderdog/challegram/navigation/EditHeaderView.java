@@ -258,7 +258,7 @@ public class EditHeaderView extends FrameLayoutFix implements RtlCheckListener, 
     int cx = receiver.centerX();
     int cy = receiver.centerY();
     c.drawCircle(cx, cy, avatarRadius, Paints.fillingPaint(0x20000000));
-    Drawables.draw(c, icon, cx - (int) (icon.getMinimumWidth() * .5f), cy - (int) (icon.getMinimumHeight() * .5f), Paints.getPorterDuffPaint(0xffffffff));
+    Drawables.draw(c, icon, cx - (int) (icon.getMinimumWidth() * .5f), cy - (int) (icon.getMinimumHeight() * .5f), Paints.whitePorterDuffPaint());
   }
 
   public void setInputEnabled (boolean enabled) {

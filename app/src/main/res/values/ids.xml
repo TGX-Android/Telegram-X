@@ -1300,12 +1300,20 @@
 
   <item type="id" name="view_emojiPacksCount" />
   <item type="id" name="view_customEmojiSuggestions" />
+
   <item type="id" name="btn_animatedEmojiSettings" />
   <item type="id" name="btn_stickerSettingsAndEmoji" />
-  <item type="id" name="controller_stickersAndEmoji" />
+  <item type="id" name="btn_avatarsInReactions" />
+  <item type="id" name="btn_avatarsInReactionsAlways" />
+  <item type="id" name="btn_avatarsInReactionsSmartFilter" />
+  <item type="id" name="btn_avatarsInReactionsNever" />
+  <item type="id" name="btn_emojiPackInfoButton" />
 
+  <item type="id" name="controller_stickersAndEmoji" />
   <item type="id" name="controller_emojiLayoutStickers" />
   <item type="id" name="controller_emojiLayoutStickersTrending" />
   <item type="id" name="controller_emojiLayoutEmoji" />
   <item type="id" name="controller_emojiLayoutEmojiTrending" />
+  <item type="id" name="controller_emojiLayoutReactions" />
+  <item type="id" name="controller_reactionsPicker" />
 </resources>

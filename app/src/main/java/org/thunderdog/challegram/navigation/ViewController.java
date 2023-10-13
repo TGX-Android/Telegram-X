@@ -1126,7 +1126,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   private String lastSearchInput = "";
 
-  protected void clearSearchInput () {
+  public void clearSearchInput () {
     clearSearchInput("", false);
   }
 

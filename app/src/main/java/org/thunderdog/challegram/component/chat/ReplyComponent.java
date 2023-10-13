@@ -128,6 +128,10 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     return sender != null ? tdlib.senderName(sender) : senderName;
   }
 
+  public TdApi.MessageSender getSender () {
+    return sender;
+  }
+
   public void layout (int maxWidth) {
     if (this.maxWidth != maxWidth && maxWidth > 0) {
       this.maxWidth = maxWidth;
@@ -823,6 +827,9 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       invalidate(forceRequestImage || !isMessageComponent() || miniPreview != null || preview != null);
     } else {
       setContent(title, contentPreview, hasSpoiler, contour, miniPreview, preview, previewCircle, false);
+    }
+    if (parent != null) {
+      UI.execute(() -> parent.updateReactionAvatars(true));
     }
   }
 

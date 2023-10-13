@@ -12,7 +12,7 @@
  *
  * File created on 19/08/2023
  */
-package org.thunderdog.challegram.widget.EmojiMediaLayout.Sections;
+package org.thunderdog.challegram.widget.emoji.section;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -26,6 +26,8 @@ import androidx.annotation.Nullable;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
+import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
@@ -150,7 +152,21 @@ public class StickerSectionView extends View implements Destroyable, FactorAnima
       c.scale(scale, scale, cx, cy);
     }
 
-    DrawAlgorithms.drawRepaintedSticker(c, info, gifReceiver, receiver, contour);
+    if (info.needThemedColorFilter()) {
+      if (selectionFactor == 0f || selectionFactor == 1f) {
+        @PorterDuffColorId int colorId = selectionFactor == 0f ? ColorId.icon : ColorId.iconActive;
+        receiver.setThemedPorterDuffColorId(colorId);
+        gifReceiver.setThemedPorterDuffColorId(colorId);
+      } else {
+        int color = ColorUtils.fromToArgb(Theme.getColor(ColorId.icon), Theme.getColor(ColorId.iconActive), selectionFactor);
+        receiver.setPorterDuffColorFilter(color);
+        gifReceiver.setPorterDuffColorFilter(color);
+      }
+    } else {
+      receiver.disablePorterDuffColorFilter();
+      gifReceiver.disablePorterDuffColorFilter();
+    }
+    DrawAlgorithms.drawSticker(c, info, gifReceiver, receiver, contour);
 
     if (saved) {
       c.restore();

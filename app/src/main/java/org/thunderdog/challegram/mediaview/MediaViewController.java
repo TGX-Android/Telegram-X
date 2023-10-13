@@ -2913,10 +2913,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       if (isLeft) {
         c.save();
         c.rotate(180, getMeasuredWidth() / 2, getMeasuredHeight() / 2);
-        Drawables.draw(c, backIcon, 0, y, Paints.getPorterDuffPaint(0xffffffff));
+        Drawables.draw(c, backIcon, 0, y, Paints.whitePorterDuffPaint());
         c.restore();
       } else {
-        Drawables.draw(c, backIcon, 0, y, Paints.getPorterDuffPaint(0xffffffff));
+        Drawables.draw(c, backIcon, 0, y, Paints.whitePorterDuffPaint());
       }
     }
   }

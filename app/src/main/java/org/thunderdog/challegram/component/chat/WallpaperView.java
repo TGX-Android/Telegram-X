@@ -298,7 +298,7 @@ public class WallpaperView extends View implements ThemeChangeListener, ChatStyl
       } else {
         c.drawColor(ColorUtils.alphaColor(alpha, wallpaper.getBackgroundColor(defaultColor)));
       }
-      receiver.getReceiver().setColorFilter(wallpaper.getPatternColor());
+      receiver.getReceiver().setPorterDuffColorFilter(wallpaper.getPatternColor());
       alpha *= wallpaper.getPatternIntensity();
       if (alpha != 1f)
         receiver.setPaintAlpha(alpha);
@@ -309,7 +309,7 @@ public class WallpaperView extends View implements ThemeChangeListener, ChatStyl
       if (receiver.needPlaceholder()) {
         c.drawColor(ColorUtils.alphaColor(alpha, defaultColor));
       }
-      receiver.disableColorFilter();
+      receiver.disablePorterDuffColorFilter();
       if (alpha != 1f) {
         receiver.setPaintAlpha(alpha);
       }

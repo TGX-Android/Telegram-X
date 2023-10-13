@@ -1388,16 +1388,7 @@ public class DrawAlgorithms {
    }
  }
 
- public static void drawRepaintedSticker (Canvas c, TGStickerSetInfo info, GifReceiver gifReceiver, ImageReceiver receiver, Path contour) {
-   final boolean needRepainting = info.isNeedRepaintingPreview();
-   final int count;
-
-   if (needRepainting) {
-     count = c.saveLayerAlpha(gifReceiver.getLeft(), gifReceiver.getTop(), gifReceiver.getRight(), gifReceiver.getBottom(), 255, Canvas.ALL_SAVE_FLAG);
-   } else {
-     count = -1;
-   }
-
+ public static void drawSticker (Canvas c, TGStickerSetInfo info, GifReceiver gifReceiver, ImageReceiver receiver, Path contour) {
    if (info != null && info.isAnimated()) {
      if (gifReceiver.needPlaceholder()) {
        if (receiver.needPlaceholder()) {
@@ -1414,11 +1405,6 @@ public class DrawAlgorithms {
    }
    if (Config.DEBUG_STICKER_OUTLINES) {
      receiver.drawPlaceholderContour(c, contour);
-   }
-
-   if (needRepainting) {
-     c.drawRect(gifReceiver.getLeft(), gifReceiver.getTop(), gifReceiver.getRight(), gifReceiver.getBottom(), Paints.getSrcInPaint(Theme.getColor(ColorId.iconActive)));
-     Views.restore(c, count);
    }
  }
 }

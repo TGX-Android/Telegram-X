@@ -70,6 +70,7 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
+import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
@@ -101,6 +102,7 @@ import org.thunderdog.challegram.ui.TranslationControllerV2;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.util.LanguageDetector;
+import org.thunderdog.challegram.util.NonBubbleEmojiLayout;
 import org.thunderdog.challegram.util.ReactionsCounterDrawable;
 import org.thunderdog.challegram.util.TranslationCounterDrawable;
 import org.thunderdog.challegram.util.text.Counter;
@@ -361,6 +363,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           }
         });
       }
+
+      @Override
+      public void onInvalidateReceiversRequested () {
+        runOnUiThreadOptional(() -> {
+          invalidateReactionFilesReceiver();
+        });
+      }
     });
     this.commentButton = new TGCommentButton(this);
 
@@ -510,6 +519,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     computeQuickButtons();
     checkHighlightedText();
+
+    UI.post(() -> updateReactionAvatars(false));
   }
 
   private static @NonNull <T> T nonNull (@Nullable T value) {
@@ -2658,6 +2669,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     performWithViews(view -> requestCommentsResources(view.getAvatarsReceiver(), true));
   }
 
+  public final void invalidateReactionFilesReceiver () {
+    performWithViews(view -> requestReactions(view.getReactionsComplexReceiver()));
+  }
+
   public final void invalidateTextMediaReceiver (@NonNull Text text, @Nullable TextMedia textMedia) {
     performWithViews(view -> view.invalidateTextMediaReceiver(this, text, textMedia));
   }
@@ -3066,6 +3081,16 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         }
 
         @Override
+        public int mediaTextColorOrId () {
+          return nameColorId;
+        }
+
+        @Override
+        public boolean mediaTextColorIsId () {
+          return true;
+        }
+
+        @Override
         public int backgroundColor (boolean isPressed) {
           return isPressed ? ColorUtils.alphaColor(.2f, Theme.getColor(nameColorId)) : 0;
         }
@@ -3078,13 +3103,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     } else {
       colorTheme = getChatAuthorColorSet();
     }
-
-    colorTheme = new TextColorSetOverride(colorTheme) {
-      @Override
-      public int emojiStatusColor () {
-        return clickableTextColor(false);
-      }
-    };
 
     if (!(tdlib.isSelfChat(chat) && forwardInfo != null) && !hasBot && !isForward && sender.isUser()) {
       hAuthorEmojiStatus = EmojiStatusHelper.makeDrawable(null, tdlib, tdlib.cache().user(sender.getUserId()), colorTheme, (text1, specificMedia) -> invalidateEmojiStatusReceiver());
@@ -3944,7 +3962,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final void requestReactions (ComplexReceiver complexReceiver) {
     currentComplexReceiver = complexReceiver;
-    messageReactions.setReceiversPool(complexReceiver);
+    messageReactions.requestReactionFiles(complexReceiver);
     computeQuickButtons();
   }
 
@@ -3956,7 +3974,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final void requestReactionsResources (ComplexReceiver complexReceiver, boolean isUpdate) {
     if (messageReactions != null) {
-//      messageReactions.requestAvatarFiles(complexReceiver, isUpdate);
+      messageReactions.requestAvatarFiles(complexReceiver, isUpdate);
     }
   }
 
@@ -4251,6 +4269,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final String getInReplyTo () {
     return replyData != null ? replyData.getAuthor() : null;
+  }
+
+  public final TdApi.MessageSender getInReplyToSender () {
+    return replyData != null ? replyData.getSender() : null;
   }
 
   public final int getViewCount () {
@@ -5079,6 +5101,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (width != getWidth() || contentWidth != getContentWidth()) {
         buildMarkup();
       }
+      updateReactionAvatars(UI.inUiThread());
       return height == getHeight() ? MESSAGE_INVALIDATED : MESSAGE_CHANGED;
     }
     return MESSAGE_REPLACE_REQUIRED;
@@ -7563,6 +7586,38 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return valueOf(context, msg, msg.content);
   }
 
+  @Nullable
+  private static TGMessage checkPendingContent (MessagesManager context, TdApi.Message msg, TdApi.MessageContent oldContent, @Nullable TdApi.MessageContent pendingContent, boolean allowCustomEmoji) {
+    if (pendingContent == null) {
+      return null;
+    }
+
+    final TdApi.MessageText pendingMessageText = pendingContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR ?
+      ((TdApi.MessageText) pendingContent) : null;
+    final TdApi.MessageAnimatedEmoji pendingMessageEmoji = pendingContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR ?
+      ((TdApi.MessageAnimatedEmoji) pendingContent) : null;
+    final boolean pendingContentIsCustomEmoji = allowCustomEmoji && (
+      (pendingMessageText != null && NonBubbleEmojiLayout.isValidEmojiText(pendingMessageText.text)) || (pendingMessageEmoji != null));
+    if (oldContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
+      TdApi.MessageAnimatedEmoji oldEmoji = nonNull((TdApi.MessageAnimatedEmoji) oldContent);
+      if (pendingContentIsCustomEmoji) {
+        return new TGMessageSticker(context, msg, oldEmoji, pendingContent);
+      } else {
+        return new TGMessageText(context, msg, new TdApi.MessageText(Td.textOrCaption(oldEmoji), null),
+          new TdApi.MessageText(Td.textOrCaption(pendingContent), null));
+      }
+    } else if (oldContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
+      TdApi.MessageText oldText = nonNull((TdApi.MessageText) oldContent);
+      if (pendingContentIsCustomEmoji) {
+        return new TGMessageSticker(context, msg, oldContent, pendingContent);
+      } else {
+        return new TGMessageText(context, msg, oldText, pendingMessageText);
+      }
+    }
+
+    return null;
+  }
+
   public static TGMessage valueOf (MessagesManager context, TdApi.Message msg, TdApi.MessageContent content) {
     final Tdlib tdlib = context.controller().tdlib();
     try {
@@ -7582,31 +7637,29 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
       int unsupportedStringRes = R.string.UnsupportedMessage;
 
+      final boolean allowEmoji = !Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI);
+      final TdApi.MessageContent pendingContent = tdlib.getPendingMessageText(msg.chatId, msg.id);
+
+      TGMessage message = checkPendingContent(context, msg, content, pendingContent, allowEmoji);
+      if (message != null) {
+        return message;
+      }
+
       switch (content.getConstructor()) {
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR: {
           TdApi.MessageAnimatedEmoji emoji = nonNull((TdApi.MessageAnimatedEmoji) content);
-          TdApi.MessageContent pendingContent = tdlib.getPendingMessageText(msg.chatId, msg.id);
-          if (pendingContent != null) {
-            if (pendingContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR && !Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI)) {
-              return new TGMessageSticker(context, msg, emoji, (TdApi.MessageAnimatedEmoji) pendingContent);
-            } else {
-              return new TGMessageText(context, msg, new TdApi.MessageText(Td.textOrCaption(emoji), null), new TdApi.MessageText(Td.textOrCaption(pendingContent), null));
-            }
-          }
-          if (Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI)) {
+          if (!allowEmoji) {
             return new TGMessageText(context, msg, new TdApi.MessageText(Td.textOrCaption(emoji), null), null);
           } else {
             return new TGMessageSticker(context, msg, emoji, null);
           }
         }
-
         case TdApi.MessageText.CONSTRUCTOR: {
-          TdApi.MessageContent pendingContent = tdlib.getPendingMessageText(msg.chatId, msg.id);
-          if (pendingContent != null && pendingContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
-            TdApi.MessageAnimatedEmoji animatedEmoji = (TdApi.MessageAnimatedEmoji) pendingContent;
-            return new TGMessageSticker(context, msg, null, animatedEmoji);
+          TdApi.MessageText messageText = nonNull((TdApi.MessageText) content);
+          if (allowEmoji && NonBubbleEmojiLayout.isValidEmojiText(messageText.text)) {
+            return new TGMessageSticker(context, msg, messageText, null);
           }
-          return new TGMessageText(context, msg, nonNull((TdApi.MessageText) content), (TdApi.MessageText) pendingContent);
+          return new TGMessageText(context, msg, nonNull((TdApi.MessageText) content), null);
         }
         case TdApi.MessageCall.CONSTRUCTOR: {
           return new TGMessageCall(context, msg, nonNull(((TdApi.MessageCall) content)));
@@ -7970,7 +8023,39 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         return 0;
       });
     }
-    return reactions.toArray(new TdApi.AvailableReaction[0]);
+    return prioritizeElements(reactions.toArray(new TdApi.AvailableReaction[0]), messageReactions.getChosen());
+  }
+
+  private static TdApi.AvailableReaction[] prioritizeElements(TdApi.AvailableReaction[] inputArray, Set<String> set) {
+    if (inputArray == null) {
+      return null;
+    }
+
+    List<TdApi.AvailableReaction> resultList = new ArrayList<>();
+
+    for (TdApi.AvailableReaction element : inputArray) {
+      if (set.contains(TD.makeReactionKey(element.type))) {
+        resultList.add(element);
+      }
+    }
+
+    for (TdApi.AvailableReaction element : inputArray) {
+      if (!set.contains(TD.makeReactionKey(element.type))) {
+        resultList.add(element);
+      }
+    }
+
+    TdApi.AvailableReaction[] resultArray = new TdApi.AvailableReaction[resultList.size()];
+    resultList.toArray(resultArray);
+
+    return resultArray;
+  }
+
+  public final boolean needShowReactionPopupPicker () {
+    return messageAvailableReactions != null && (
+      messageAvailableReactions.allowCustomEmoji ||
+        (messageAvailableReactions.popularReactions.length + messageAvailableReactions.recentReactions.length + messageAvailableReactions.topReactions.length > 25)
+    );
   }
 
   // Utils
@@ -8408,6 +8493,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         }
 
         TGStickerObj activateAnimation = nextSetReactionAnimation.reaction.activateAnimationSicker();
+        final GifFile activateFullAnimation = activateAnimation.getFullAnimation();
         if (activateAnimation.getFullAnimation() != null) {
           if (!activateAnimation.isCustomReaction()) {
             activateAnimation.getFullAnimation().setPlayOnce(true);
@@ -8415,6 +8501,15 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           }
           activateAnimation.getFullAnimation().addLoopListener(() -> {
             if (nextSetReactionAnimation != null) {
+              nextSetReactionAnimation.fullscreenEmojiFinished = true;
+              if (nextSetReactionAnimation.fullscreenEffectFinished) {
+                finishAnimation.cancel();
+                tdlib().ui().postDelayed(finishRunnable, 180l);
+              }
+            }
+          });
+          activateFullAnimation.setOnTotalFrameCountLoadListener(() -> {
+            if (nextSetReactionAnimation != null && !activateFullAnimation.hasFrame(1)) {
               nextSetReactionAnimation.fullscreenEmojiFinished = true;
               if (nextSetReactionAnimation.fullscreenEffectFinished) {
                 finishAnimation.cancel();
@@ -8855,6 +8950,39 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
 
     return emojiSets.toArray();
+  }
+  
+  /* Reaction Avatars */
+
+  // todo: update when supergroup updated
+
+  public void updateReactionAvatars (boolean animated) {
+    messageReactions.updateCounterAnimators(animated);
+    if (BitwiseUtils.hasFlag(flags, FLAG_LAYOUT_BUILT)) {
+      buildReactions(animated);
+    }
+  }
+
+  public boolean isMatchesReactionSenderAvatarFilter (TdApi.MessageSender sender) {
+    final long currentChatId = getChatId();
+    final TdApi.Supergroup supergroup = tdlib.chatToSupergroup(currentChatId);
+
+    if (tdlib.chatMemberCount(currentChatId) < 50 && (supergroup == null || (!supergroup.hasLocation && !supergroup.hasLinkedChat && Td.isEmpty(supergroup.usernames)))) {
+      return true;
+    }
+
+    final long senderId = Td.getSenderId(sender);
+    final TdApi.User user = tdlib.cache().user(Td.getSenderUserId(sender));
+    final TdApi.Chat chat = tdlib.chat(senderId);
+
+    if (TD.isContact(user)
+      || tdlib.isSelfChat(chat)
+      || getChatId() == Td.getSenderId(sender)
+      || senderId == Td.getSenderId(getInReplyToSender())) {
+      return true;
+    }
+
+    return user != null && TD.containsMention(getTextToTranslateImpl(), user);
   }
 
   // Sponsored-related tools

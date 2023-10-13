@@ -163,7 +163,7 @@ public class EditButton extends View implements FactorAnimator.Target {
   private void drawSoundOn () {
     Canvas c = specialIconCanvas;
     specialIcon.eraseColor(0);
-    Drawables.draw(c, icon, 0, 0, Paints.getPorterDuffPaint(0xffffffff));
+    Drawables.draw(c, icon, 0, 0, Paints.whitePorterDuffPaint());
     if (activeFactor != 0f) {
       int width = Screen.dp(2f);
       int height = Screen.dp(24f);

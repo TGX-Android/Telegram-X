@@ -34,18 +34,19 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGDefaultEmoji;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.emoji.Emoji;
+import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.StickersListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.EmojiData;
-import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.util.StickerSetsDataProvider;
 import org.thunderdog.challegram.widget.EmojiLayout;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutRecyclerController;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutSectionPager;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutTrendingController;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSection;
+import org.thunderdog.challegram.widget.emoji.EmojiLayoutRecyclerController;
+import org.thunderdog.challegram.widget.emoji.EmojiLayoutSectionPager;
+import org.thunderdog.challegram.widget.emoji.EmojiLayoutTrendingController;
+import org.thunderdog.challegram.widget.emoji.section.EmojiSection;
 
 import java.util.ArrayList;
 
@@ -53,9 +54,8 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.LongList;
-import me.vkryl.core.collection.LongSparseIntArray;
 
-public class EmojiListController extends ViewController<EmojiLayout> implements TGStickerObj.DataProvider, StickersListener {
+public class EmojiListController extends ViewController<EmojiLayout> implements StickersListener {
 
   private static final int SECTION_STICKERS = 0;
   private static final int SECTION_TRENDING = 2;
@@ -63,21 +63,24 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
   private EmojiLayoutSectionPager contentView;
   private final EmojiLayoutRecyclerController emojiController;
   private final EmojiLayoutTrendingController trendingSetsController;
+  private final boolean onlyClassicEmoji;
 
-  public EmojiListController (Context context, Tdlib tdlib) {
+  public EmojiListController (Context context, Tdlib tdlib, boolean onlyClassicEmoji) {
     super(context, tdlib);
+    this.onlyClassicEmoji = onlyClassicEmoji;
     emojiController = new EmojiLayoutRecyclerController(context, tdlib, EmojiLayout.EMOJI_INSTALLED_CONTROLLER_ID);
-    emojiController.setSpanCount(controllerId -> {
-      int width = emojiController.recyclerView != null ? emojiController.recyclerView.getMeasuredWidth() : 0;
-      if (width == 0) {
-        width = Screen.currentWidth();
-      }
-      return Math.max(8, width / Screen.dp(48f));
-    });
+    emojiController.setItemWidth(8, 45);
+    emojiController.setOnlyClassicEmoji(onlyClassicEmoji);
+    emojiController.setStickerObjModifier(this::modifyStickerObj);
 
     trendingSetsController = new EmojiLayoutTrendingController(context, tdlib, EmojiLayout.EMOJI_TRENDING_CONTROLLER_ID);
-    trendingSetsController.setCallbacks(this, new TdApi.StickerTypeCustomEmoji());
+    trendingSetsController.setCallbacks(stickerSetsDataProvider(), new TdApi.StickerTypeCustomEmoji());
     trendingSetsController.stickerSets = new ArrayList<>();
+  }
+
+  public TGStickerObj modifyStickerObj (TGStickerObj sticker) {
+    sticker.setPreviewOptimizationMode(GifFile.OptimizationMode.EMOJI_PREVIEW);
+    return sticker;
   }
 
   @Override
@@ -197,7 +200,9 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
   @Override
   public void destroy () {
     super.destroy();
-    tdlib.listeners().unsubscribeFromStickerUpdates(this);
+    if (!onlyClassicEmoji) {
+      tdlib.listeners().unsubscribeFromStickerUpdates(this);
+    }
     emojiController.destroy();
     trendingSetsController.destroy();
   }
@@ -362,7 +367,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
   private boolean loadingStickers;
 
   private void loadStickers () {
-    if (!loadingStickers) {
+    if (!loadingStickers && !onlyClassicEmoji) {
       loadingStickers = true;
       tdlib.client().send(new TdApi.GetInstalledStickerSets(new TdApi.StickerTypeCustomEmoji()), stickerSetsHandler());
     }
@@ -391,7 +396,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
               for (int i = 0; i < rawInfo.size; i++) {
                 TGStickerObj sticker = new TGStickerObj(tdlib, i < rawInfo.covers.length ? rawInfo.covers[i] : null, null, rawInfo.stickerType);
                 sticker.setStickerSetId(rawInfo.id, null);
-                sticker.setDataProvider(this);
+                sticker.setDataProvider(stickerSetsDataProvider());
                 items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
               }
               startIndex += rawInfo.size + 1;
@@ -415,76 +420,14 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
     };
   }
 
-  private LongSparseIntArray loadingStickerSets;
-
-  private static final int FLAG_TRENDING = 0x01;
-  private static final int FLAG_REGULAR = 0x02;
-
   private void setStickers (ArrayList<TGStickerSetInfo> stickerSets, ArrayList<MediaStickersAdapter.StickerItem> items) {
     this.emojiController.setStickers(stickerSets, items);
     this.loadingStickers = false;
-    if (loadingStickerSets != null) {
-      this.loadingStickerSets.clear();
+    if (stickerSetsDataProvider != null) {
+      stickerSetsDataProvider.clear();
     }
-    tdlib.listeners().subscribeToStickerUpdates(this);
-  }
-
-  @Override
-  public void requestStickerData (TGStickerObj stickerObj, long stickerSetId) {
-    if (emojiController.isIgnoreRequests(stickerSetId)) {
-      return;
-    }
-    int currentFlags;
-    if (loadingStickerSets == null) {
-      loadingStickerSets = new LongSparseIntArray();
-      currentFlags = 0;
-    } else {
-      currentFlags = loadingStickerSets.get(stickerSetId, 0);
-    }
-    if (currentFlags == 0) {
-      loadingStickerSets.put(stickerSetId, stickerObj.isTrending() ? FLAG_TRENDING : FLAG_REGULAR);
-      tdlib.client().send(new TdApi.GetStickerSet(stickerSetId), singleStickerSetHandler());
-    } else if ((currentFlags & FLAG_TRENDING) == 0 && stickerObj.isTrending()) {
-      currentFlags |= FLAG_TRENDING;
-      loadingStickerSets.put(stickerSetId, currentFlags);
-    } else if ((currentFlags & FLAG_REGULAR) == 0 && !stickerObj.isTrending()) {
-      currentFlags |= FLAG_REGULAR;
-      loadingStickerSets.put(stickerSetId, currentFlags);
-    }
-  }
-
-  private Client.ResultHandler singleStickerSetHandler () {
-    return object -> {
-      switch (object.getConstructor()) {
-        case TdApi.StickerSet.CONSTRUCTOR: {
-          final TdApi.StickerSet stickerSet = (TdApi.StickerSet) object;
-          runOnUiThreadOptional(() -> {
-            applyStickerSet(stickerSet);
-          });
-          break;
-        }
-        case TdApi.Error.CONSTRUCTOR: {
-          UI.showError(object);
-          break;
-        }
-      }
-    };
-  }
-
-  private void applyStickerSet (TdApi.StickerSet stickerSet) {
-    int flags = loadingStickerSets.get(stickerSet.id);
-    loadingStickerSets.delete(stickerSet.id);
-
-    if (flags == 0) {
-      return;
-    }
-
-    if ((flags & FLAG_REGULAR) != 0) {
-      emojiController.applyStickerSet(stickerSet, this);
-    }
-
-    if ((flags & FLAG_TRENDING) != 0) {
-      trendingSetsController.applyStickerSet(stickerSet, this);
+    if (!onlyClassicEmoji) {
+      tdlib.listeners().subscribeToStickerUpdates(this);
     }
   }
 
@@ -701,5 +644,37 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
         }
       });
     }
+  }
+
+  /* Data provider */
+
+  private StickerSetsDataProvider stickerSetsDataProvider;
+
+  private StickerSetsDataProvider stickerSetsDataProvider() {
+    if (stickerSetsDataProvider != null) {
+      return stickerSetsDataProvider;
+    }
+
+    return stickerSetsDataProvider = new StickerSetsDataProvider(tdlib) {
+      @Override
+      protected boolean needIgnoreRequests (long stickerSetId, TGStickerObj stickerObj) {
+        return emojiController.isIgnoreRequests(stickerSetId);
+      }
+
+      @Override
+      protected int getLoadingFlags (long stickerSetId, TGStickerObj stickerObj) {
+        return stickerObj.isTrending() ? FLAG_TRENDING: FLAG_REGULAR;
+      }
+
+      @Override
+      protected void applyStickerSet (TdApi.StickerSet stickerSet, int flags) {
+        if ((flags & FLAG_REGULAR) != 0) {
+          emojiController.applyStickerSet(stickerSet, this);
+        }
+        if ((flags & FLAG_TRENDING) != 0) {
+          trendingSetsController.applyStickerSet(stickerSet, this);
+        }
+      }
+    };
   }
 }

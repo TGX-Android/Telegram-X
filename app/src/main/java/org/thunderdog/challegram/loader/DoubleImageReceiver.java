@@ -120,15 +120,9 @@ public class DoubleImageReceiver implements Receiver {
   }
 
   @Override
-  public void setColorFilter (int colorFilter) {
-    preview.setColorFilter(colorFilter);
-    receiver.setColorFilter(colorFilter);
-  }
-
-  @Override
-  public void disableColorFilter () {
-    preview.disableColorFilter();
-    receiver.disableColorFilter();
+  public void setPorterDuffColorFilter (int colorOrColorId, float alpha, boolean colorIsId) {
+    preview.setPorterDuffColorFilter(colorOrColorId, alpha, colorIsId);
+    receiver.setPorterDuffColorFilter(colorOrColorId, alpha, colorIsId);
   }
 
   @Override

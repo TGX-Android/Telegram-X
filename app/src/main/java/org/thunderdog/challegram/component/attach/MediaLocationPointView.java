@@ -101,13 +101,13 @@ public class MediaLocationPointView extends View implements FactorAnimator.Targe
     c.drawCircle(cx, cy, Screen.dp(20f), Paints.fillingPaint(color));
     progressComponent.draw(c);
     if (activeFactor > 0f && placeFactor < 1f) {
-      Paint paint = Paints.getPorterDuffPaint(0xffffffff);
+      Paint paint = Paints.whitePorterDuffPaint();
       paint.setAlpha((int) (255f * activeFactor * (1f - placeFactor)));
       Drawables.draw(c, locationIcon, cx - locationIcon.getMinimumWidth() / 2, cy - locationIcon.getMinimumHeight() / 2, paint);
       paint.setAlpha(255);
     }
     if (placeFactor > 0f) {
-      Paint paint = Paints.getPorterDuffPaint(0xffffffff);
+      Paint paint = Paints.whitePorterDuffPaint();
       paint.setAlpha((int) (255f * placeFactor));
       c.save();
       c.scale(.7f, .7f, cx, cy);

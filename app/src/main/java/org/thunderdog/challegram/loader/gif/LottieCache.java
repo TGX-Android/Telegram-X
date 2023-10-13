@@ -48,7 +48,7 @@ public class LottieCache {
   }
 
   private final BaseThread gcThread = new BaseThread("LottieCacheGcThread");
-  private final BaseThread[] threadPool = new BaseThread[3];
+  private final BaseThread[] threadPool = new BaseThread[4];
 
   private LottieCache () { }
 

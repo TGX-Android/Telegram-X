@@ -637,8 +637,13 @@ public class CallController extends ViewController<CallController.Arguments> imp
     if (emojiStatusHelper != null) {
       this.emojiStatusHelper.updateEmoji(tdlib, user, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
         @Override
-        public int emojiStatusColor () {
-          return 0xffffffff;
+        public int mediaTextColorOrId () {
+          return ColorId.white;
+        }
+
+        @Override
+        public boolean mediaTextColorIsId () {
+          return true;
         }
       }, R.drawable.baseline_premium_star_28, 32);
     }

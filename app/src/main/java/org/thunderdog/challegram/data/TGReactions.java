@@ -4,6 +4,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Path;
 import android.graphics.RectF;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -27,6 +28,8 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Strings;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.ReactionsListAnimator;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -34,14 +37,18 @@ import org.thunderdog.challegram.v.MessagesRecyclerView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.FactorAnimator;
+import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
@@ -50,7 +57,6 @@ import me.vkryl.td.Td;
 public class TGReactions implements Destroyable, ReactionLoadListener {
   private final Tdlib tdlib;
   private TdApi.MessageReaction[] reactions;
-  private ComplexReceiver complexReceiver;
 
   private final TGMessage parent;
 
@@ -85,13 +91,10 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     resetReactionsAnimator(false);
   }
 
-  public void setReceiversPool (ComplexReceiver complexReceiver) {
-    // FIXME: single TGMessage may be displayed in multiple MessageView at once.
-    //        This class wrongly relies that it cannot.
-    this.complexReceiver = complexReceiver;
+  public void requestReactionFiles (ComplexReceiver complexReceiver) {
     for (Map.Entry<String, MessageReactionEntry> pair : reactionsMapEntry.entrySet()) {
       MessageReactionEntry entry = pair.getValue();
-      entry.setComplexReceiver(complexReceiver);
+      entry.requestReactionFiles(complexReceiver);
     }
   }
 
@@ -156,6 +159,9 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
           reactionsHashMap.put(reactionKey, fakeReaction);
         }
         fakeReaction.totalCount += reaction.totalCount;
+        if (reaction.recentSenderIds != null && reaction.recentSenderIds.length > 0) {
+          fakeReaction.recentSenderIds = reaction.recentSenderIds;  // todo conact arrays ?
+        }
         fakeReaction.isChosen = reaction.isChosen;
         totalCount += reaction.totalCount;
         if (reaction.isChosen) {
@@ -197,9 +203,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
         .noBackground()
         .textColor(ColorId.badgeText, ColorId.badgeText, ColorId.badgeText);
       entry = new MessageReactionEntry(tdlib, delegate, parent, reactionObj, counterBuilder);
-      if (complexReceiver != null) {
-        entry.setComplexReceiver(complexReceiver);
-      }
+      delegate.onInvalidateReceiversRequested();
 
       reactionsMapEntry.put(reactionObj.key, entry);
     } else {
@@ -218,11 +222,60 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     if (reactions == null) {
       return;
     }
+    final int mode = Settings.instance().getReactionAvatarsMode();
+
     for (TdApi.MessageReaction reaction : reactions) {
       String reactionKey = TD.makeReactionKey(reaction.type);
       TGReactions.MessageReactionEntry entry = reactionsMapEntry.get(reactionKey);
       if (entry != null) {
-        entry.setCount(reaction.totalCount, reaction.isChosen, animated);
+        entry.setCount(
+          limitSenders(filterSenders(reaction.recentSenderIds, mode, reaction.isChosen), reaction.totalCount > 3 ? 2 : 3),
+          reaction.totalCount, reaction.isChosen, animated);
+      }
+    }
+  }
+
+  private TdApi.MessageSender[] limitSenders (TdApi.MessageSender[] senders, int maxCount) {
+    return senders != null && senders.length > maxCount ? Arrays.copyOfRange(senders, 0, maxCount) : senders;
+  }
+
+  private TdApi.MessageSender[] filterSenders (TdApi.MessageSender[] senders, int mode, boolean isChosen) {
+    if (senders == null || senders.length == 0) return senders;
+    if (mode == Settings.REACTION_AVATARS_MODE_NEVER) return null;
+
+    List<TdApi.MessageSender> sendersPreFiltered = deduplicate(ArrayUtils.filter(ArrayUtils.asList(senders),
+      sender -> !tdlib.isSelfChat(tdlib.chat(Td.getSenderId(sender))) || isChosen), (a, b) -> Long.signum(Td.getSenderId(a) - Td.getSenderId(b)));
+
+    if (mode == Settings.REACTION_AVATARS_MODE_ALWAYS) {
+      return sendersPreFiltered.toArray(new TdApi.MessageSender[0]);
+    }
+
+    return ArrayUtils.filter(sendersPreFiltered, parent::isMatchesReactionSenderAvatarFilter).toArray(new TdApi.MessageSender[0]);
+  }
+
+  public static <T> List<T> deduplicate(List<T> list, Comparator<T> comparator) {
+    TreeMap<T, T> uniqueMap = new TreeMap<>(comparator);
+    for (T element : list) {
+      if (uniqueMap.put(element, element) != null) {
+        Log.i("WTF_DEBUG", "tdlib bug!");
+      }
+    }
+
+    return new ArrayList<>(uniqueMap.values());
+  }
+
+  public void requestAvatarFiles (ComplexReceiver complexReceiver, boolean isUpdate) {
+    if (reactions == null) {
+      return;
+    }
+    if (!isUpdate) {
+      complexReceiver.clear();
+    }
+    for (TdApi.MessageReaction reaction : reactions) {
+      String reactionKey = TD.makeReactionKey(reaction.type);
+      TGReactions.MessageReactionEntry entry = reactionsMapEntry.get(reactionKey);
+      if (entry != null) {
+        entry.requestAvatars(complexReceiver, isUpdate);
       }
     }
   }
@@ -288,6 +341,18 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
 
   public static int getReactionImageSize () {
     return Screen.dp((TGMessage.reactionsTextStyleProvider().getTextSizeInDp() + 1) * 1.25f + 17);
+  }
+
+  public static int getReactionAvatarRadiusDp () {
+    return (int) ((TGMessage.reactionsTextStyleProvider().getTextSizeInDp() + 1) * 0.625f + 2.5f);
+  }
+
+  public static int getReactionAvatarOutlineDp () {
+    return (int) ((TGMessage.reactionsTextStyleProvider().getTextSizeInDp() + 1) / 6f);
+  }
+
+  public static int getReactionAvatarSpacingDp () {
+    return (int) -((TGMessage.reactionsTextStyleProvider().getTextSizeInDp() + 1) / 3f);
   }
 
   // target values
@@ -507,12 +572,13 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     public static final int TYPE_APPEAR_OPACITY_FLAG = 2;
 
     private final Counter counter;
+    private final TGAvatars avatars;
     private final TdApi.ReactionType reactionType;
     private final TGReaction reactionObj;
     private final TGMessage message;
 
-    @Nullable private Receiver staticCenterAnimationReceiver;
-    @Nullable private GifReceiver centerAnimationReceiver;
+    @Nullable private Receiver staticCenterAnimationReceiver;   // FIXME: single TGMessage may be displayed in multiple MessageView at once.
+    @Nullable private GifReceiver centerAnimationReceiver;      // This class wrongly relies that it cannot.
     @Nullable private final GifFile animation;
     private final float animationScale;
     private final GifFile staticAnimationFile;
@@ -537,7 +603,13 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
       this.path = new Path();
       this.rect = new RectF();
 
-      this.counter = counter.colorSet(this).build();
+      this.counter = counter != null ? counter.colorSet(this).build() : null;
+      if (message != null) {
+        this.avatars = new TGAvatars(tdlib, message, message.currentViews);
+        this.avatars.setDimensions(getReactionAvatarRadiusDp(), getReactionAvatarOutlineDp(), getReactionAvatarSpacingDp());
+      } else {
+        this.avatars = null;
+      }
 
       TGStickerObj stickerObj = reactionObj.newCenterAnimationSicker();
       animation = stickerObj.getFullAnimation();
@@ -563,7 +635,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
 
     // Receivers
 
-    public void setComplexReceiver (ComplexReceiver complexReceiver) {
+    public void requestReactionFiles (ComplexReceiver complexReceiver) {
       if (complexReceiver == null) {
         this.centerAnimationReceiver = null;
         this.staticCenterAnimationReceiver = null;
@@ -772,7 +844,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
       }
     }
 
-    private void invalidate () {
+    public void invalidate () {
       message.invalidate();
     }
 
@@ -798,8 +870,18 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
       return reactionObj;
     }
 
-    public void setCount (int count, boolean chosen, boolean animated) {
-      counter.setCount(count, !chosen, animated);
+    public void setCount (TdApi.MessageSender[] senders, int count, boolean chosen, boolean animated) {
+      boolean hasSenders = senders != null && senders.length > 0;
+      int countToDisplay = count - (hasSenders ? senders.length: 0);
+      int value = countToDisplay > 0 ? BitwiseUtils.setFlag(countToDisplay, 1 << 30, hasSenders): 0;
+      String text = hasSenders ? "+" + Strings.buildCounter(countToDisplay): Strings.buildCounter(countToDisplay);
+
+      counter.setCount(value, !chosen, text, animated);
+      avatars.setSenders(senders, animated);
+    }
+
+    public void requestAvatars (ComplexReceiver complexReceiver, boolean isUpdate) {
+      avatars.requestFiles(complexReceiver, isUpdate, true);
     }
 
     // Render
@@ -820,6 +902,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
       float scale = inAnimation ? animationScale : staticAnimationFile != null ? staticAnimationFileScale : staticImageFileScale;
       if (receiver != null) {
         // TODO contour placeholder
+        receiver.setThemedPorterDuffColorId(ColorId.text);
         receiver.setBounds(l, t, r, b);
         receiver.setAlpha(alpha);
         receiver.drawScaled(c, scale);
@@ -838,11 +921,14 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
         c.scale(visibility, visibility, 0, 0);
       }
 
+      int avatarsWidth = (int) avatars.getAnimatedWidth();
+      int avatarsOffset = (Screen.dp(2f * avatars.getAvatarsVisibility()));
       int width = getBubbleWidth();
       int height = getBubbleHeight();
       int imageSize = getReactionImageSize();
       int imgY = (height - imageSize) / 2;
-      int textX = height + Screen.dp(1);
+      int avatarsX = height + Screen.dp(1);
+      int textX = avatarsX + avatarsOffset + avatarsWidth;
       int radius = height / 2;
       int backgroundColor = backgroundColor(false);
 
@@ -852,6 +938,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
 
       if (visibility > 0f) {
         c.drawRoundRect(rect, radius, radius, Paints.fillingPaint( ColorUtils.alphaColor(alpha, backgroundColor)));
+        avatars.draw(view, c, view.getReactionAvatarsReceiver(), avatarsX, getReactionBubbleHeight() / 2, Gravity.LEFT, alpha);
         counter.draw(c, textX, getReactionBubbleHeight() / 2f, Gravity.LEFT, alpha, view, ColorId.badgeFailedText);
         if (!isHidden) {
           drawReceiver(c, Screen.dp(-1), imgY, Screen.dp(-1) + imageSize, imgY + imageSize, alpha);
@@ -921,13 +1008,18 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     }
 
     public int getBubbleWidth () {
+      float avatarsWidth = avatars.getAnimatedWidth();
+      float avatarsOffset = Screen.dp(2f * avatars.getAvatarsVisibility() * counter.getVisibility());
       int addW = Screen.dp((TGMessage.reactionsTextStyleProvider().getTextSizeInDp() + 1f) / 3f);
-      return (int) (counter.getWidth() + getReactionImageSize() + addW);
+      int subW = Screen.dp(6f - counter.getVisibility() * 6f);
+      return (int) (counter.getWidth() + getReactionImageSize() + addW - subW + avatarsWidth + avatarsOffset);
     }
 
     public int getBubbleTargetWidth () {
+      float avatarsWidth = avatars.getTargetWidth(Screen.dp(counter.getVisibilityTarget() ? 2: 0));
       int addW = Screen.dp((TGMessage.reactionsTextStyleProvider().getTextSizeInDp() + 1f) / 3f);
-      return (int) (counter.getTargetWidth() + getReactionImageSize() + addW);
+      int subW = Screen.dp(counter.getVisibilityTarget() ? 0: 6);
+      return (int) (counter.getTargetWidth() + getReactionImageSize() + addW - subW + avatarsWidth);
     }
 
     public int getBubbleHeight () {
@@ -974,6 +1066,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
   public interface MessageReactionsDelegate {
     default void onClick (View v, MessageReactionEntry entry) {}
     default void onLongClick (View v, MessageReactionEntry entry) {}
+    default void onInvalidateReceiversRequested () {}
     default void onRebuildRequested () {}
   }
 

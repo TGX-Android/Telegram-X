@@ -565,7 +565,7 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
         c.drawCircle(cx, cy, Screen.dp(25f), Paints.fillingPaint(Theme.getColor(customColorId)));
       }
       if (customIcon != null) {
-        Drawables.draw(c, customIcon, cx - customIcon.getMinimumWidth() / 2f, cy - customIcon.getMinimumHeight() / 2f, Paints.getPorterDuffPaint(0xffffffff));
+        Drawables.draw(c, customIcon, cx - customIcon.getMinimumWidth() / 2f, cy - customIcon.getMinimumHeight() / 2f, Paints.whitePorterDuffPaint());
       }
     } else if (fileProgress == null || getMediaPreview() != null) {
       if (getMediaPreview() != null) {

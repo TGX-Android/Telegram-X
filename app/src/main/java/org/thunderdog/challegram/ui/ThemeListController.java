@@ -1662,7 +1662,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
             rectF.set(cx, cy, cx + width, cy + avatarRadius + avatarRadius);
             c.drawRoundRect(rectF, avatarRadius, avatarRadius, Paints.fillingPaint(theme.getColor(ColorId.headerRemoveBackground)));
             c.drawCircle(cx + avatarRadius, cy + avatarRadius, avatarRadius, Paints.fillingPaint(theme.getColor(ColorId.headerRemoveBackgroundHighlight)));
-            Drawables.draw(c, icon, cx + avatarRadius - icon.getMinimumWidth() / 2, cy + avatarRadius - icon.getMinimumHeight() / 2, Paints.getPorterDuffPaint(0xffffffff));
+            Drawables.draw(c, icon, cx + avatarRadius - icon.getMinimumWidth() / 2, cy + avatarRadius - icon.getMinimumHeight() / 2, Paints.whitePorterDuffPaint());
             c.drawText(text, cx + avatarRadius * 2 + padding, cy + avatarRadius + Screen.dp(5f), paint);
           }
         });

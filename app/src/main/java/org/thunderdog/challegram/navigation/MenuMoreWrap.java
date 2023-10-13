@@ -208,7 +208,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
           if (icon != null) {
             float x = getMeasuredWidth() - Screen.dp(17 + 16);
             float y = (getMeasuredHeight() - icon.getMinimumHeight()) / 2f;
-            Drawables.draw(canvas, icon, x, y, Paints.getPorterDuffPaint(Theme.getColor(ColorId.text)));
+            Drawables.draw(canvas, icon, x, y, PorterDuffPaint.get(ColorId.text));
           }
         }
 

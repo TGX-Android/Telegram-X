@@ -1577,6 +1577,9 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
   @Nullable
   @Override
   public TdApi.FormattedText getTextToTranslateImpl () {
+    if (state == null || state.poll == null) {
+      return null;
+    }
     StringBuilder pollText = new StringBuilder(state.poll.question.replaceAll("•", " "));
     for (TdApi.PollOption option : state.poll.options) {
       pollText.append("\n\n• ").append(option.text.replaceAll("•", " "));

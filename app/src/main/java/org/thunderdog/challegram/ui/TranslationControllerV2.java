@@ -44,7 +44,7 @@ import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
-import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
@@ -931,7 +931,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     protected void dispatchDraw (Canvas canvas) {
       super.dispatchDraw(canvas);
       if (drawable != null) {
-        Drawables.draw(canvas, drawable, getMeasuredWidth() - Screen.dp(40), Screen.dp(13), Paints.getPorterDuffPaint(Theme.getColor(isSelected ? ColorId.iconActive : ColorId.icon)));
+        Drawables.draw(canvas, drawable, getMeasuredWidth() - Screen.dp(40), Screen.dp(13), PorterDuffPaint.get(isSelected ? ColorId.iconActive : ColorId.icon));
       }
     }
   }

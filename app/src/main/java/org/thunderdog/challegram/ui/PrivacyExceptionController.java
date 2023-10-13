@@ -314,7 +314,7 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
           view.setTextColorId(item.getTextColorId(ColorId.text));
           view.setIcon(item.getIconResource());
           if (!isMultiChat) {
-            view.setIconColorId(tdlib.cache().userContact(userId) ? ColorId.iconNegative : 0);
+            view.setIconColorId(tdlib.cache().userContact(userId) ? ColorId.iconNegative : ColorId.NONE);
           }
         }
       }
