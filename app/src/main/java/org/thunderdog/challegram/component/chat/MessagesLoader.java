@@ -184,7 +184,7 @@ public class MessagesLoader implements Client.ResultHandler {
   }
 
   private TdApi.MessageSource newMessageSource () {
-    if (manager.controller().isInForceTouchMode() || (BuildConfig.DEBUG && Settings.instance().dontReadMessages())) {
+    if (manager.readMessagesDisabled()) {
       return new TdApi.MessageSourceHistoryPreview();
     } else if (specialMode == MessagesLoader.SPECIAL_MODE_EVENT_LOG) {
       return new TdApi.MessageSourceChatEventLog();

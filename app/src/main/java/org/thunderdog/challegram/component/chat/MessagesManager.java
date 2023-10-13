@@ -749,7 +749,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
       @Override
       public boolean needForceRead (TdlibMessageViewer.Viewport viewport) {
-        return !inSpecialMode();
+        return canRead();
       }
 
       @Override
@@ -2163,8 +2163,16 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     saveScrollPosition();
   }
 
+  public boolean readMessagesDisabled () {
+    return controller.isInForceTouchMode() || Settings.instance().dontReadMessages();
+  }
+
+  private boolean canRead () {
+    return !(inSpecialMode() || readMessagesDisabled());
+  }
+
   private void saveScrollPosition () {
-    if (controller.isInForceTouchMode() || inSpecialMode() || Settings.instance().dontReadMessages()) {
+    if (!canRead()) {
       return;
     }
 
