@@ -30,6 +30,7 @@ import java.util.Iterator;
 
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.reference.ReferenceLongMap;
+import me.vkryl.td.Td;
 
 public class TdlibSingleUnreadReactionsManager implements ChatListener, MessageListener, Destroyable {
   private final Tdlib tdlib;
@@ -131,7 +132,7 @@ public class TdlibSingleUnreadReactionsManager implements ChatListener, MessageL
         }
       };
       tdlib.client().send(new TdApi.SearchChatMessages(
-        chatId, null, null, 0, 0, 10,
+        chatId, null, null, 0, 0, 100,
         new TdApi.SearchMessagesFilterUnreadReaction(), 0), handler
       );
     }
@@ -146,20 +147,31 @@ public class TdlibSingleUnreadReactionsManager implements ChatListener, MessageL
       manager.updateUnreadSingleReaction(chatId, foundUnreadReaction);
     }
 
+    private static TdApi.UnreadReaction findSingleReactionType (TdApi.Message[] messages) {
+      TdApi.UnreadReaction singleReaction = null;
+      for (TdApi.Message message : messages) {
+        if (message.unreadReactions == null) {
+          continue;
+        }
+        for (TdApi.UnreadReaction unreadReaction : message.unreadReactions) {
+          if (singleReaction == null) {
+            singleReaction = unreadReaction;
+          } else if (!Td.equalsTo(singleReaction.type, unreadReaction.type)) {
+            return null;
+          }
+        }
+      }
+      return singleReaction;
+    }
+
     @UiThread
     private void onUnreadReactionsLoaded (TdApi.FoundChatMessages foundChatMessages) {
-      if (foundChatMessages.totalCount != 1 || foundChatMessages.messages.length != 1) {
+      TdApi.UnreadReaction singleReaction = foundChatMessages.totalCount <= foundChatMessages.messages.length ? findSingleReactionType(foundChatMessages.messages) : null;
+      if (singleReaction != null) {
+        setState(STATE_SINGLE_REACTION_FOUND, singleReaction);
+      } else {
         setState(STATE_NO_SINGLE_REACTION, null);
-        return;
       }
-
-      TdApi.Message message = foundChatMessages.messages[0];
-      if (message.unreadReactions == null || message.unreadReactions.length != 1) {
-        setState(STATE_NO_SINGLE_REACTION, null);
-        return;
-      }
-
-      setState(STATE_SINGLE_REACTION_FOUND, message.unreadReactions[0]);
     }
   }
 
