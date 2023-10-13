@@ -29,6 +29,16 @@ public class TextColorSetOverride implements TextColorSet {
   }
 
   @Override
+  public int mediaTextColorOrId () {
+    return colorSet.mediaTextColorOrId();
+  }
+
+  @Override
+  public boolean mediaTextColorIsId () {
+    return colorSet.mediaTextColorIsId();
+  }
+
+  @Override
   public int iconColor () {
     return colorSet.iconColor();
   }
@@ -56,10 +66,5 @@ public class TextColorSetOverride implements TextColorSet {
   @Override
   public int outlineColorId (boolean isPressed) {
     return colorSet.outlineColorId(isPressed);
-  }
-
-  @Override
-  public int emojiStatusColor () {
-    return colorSet.emojiStatusColor();
   }
 }

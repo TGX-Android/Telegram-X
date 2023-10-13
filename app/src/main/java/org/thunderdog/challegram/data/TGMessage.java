@@ -3081,6 +3081,16 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         }
 
         @Override
+        public int mediaTextColorOrId () {
+          return nameColorId;
+        }
+
+        @Override
+        public boolean mediaTextColorIsId () {
+          return true;
+        }
+
+        @Override
         public int backgroundColor (boolean isPressed) {
           return isPressed ? ColorUtils.alphaColor(.2f, Theme.getColor(nameColorId)) : 0;
         }
@@ -3093,13 +3103,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     } else {
       colorTheme = getChatAuthorColorSet();
     }
-
-    colorTheme = new TextColorSetOverride(colorTheme) {
-      @Override
-      public int emojiStatusColor () {
-        return clickableTextColor(false);
-      }
-    };
 
     if (!(tdlib.isSelfChat(chat) && forwardInfo != null) && !hasBot && !isForward && sender.isUser()) {
       hAuthorEmojiStatus = EmojiStatusHelper.makeDrawable(null, tdlib, tdlib.cache().user(sender.getUserId()), colorTheme, (text1, specificMedia) -> invalidateEmojiStatusReceiver());

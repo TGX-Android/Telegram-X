@@ -314,8 +314,12 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
     DoubleImageReceiver preview = content == null || content.needPlaceholder() ? receiver.getPreviewReceiver(displayMediaKey) : null;
     if (preview != null) {
       if (needRepainting) {
-        // FIXME: color id
-        preview.setPorterDuffColorFilter(source.getEmojiStatusColor());
+        int color = source.getMediaTextColorOrId();
+        if (source.getMediaTextColorIsId()) {
+          preview.setThemedPorterDuffColorId(color);
+        } else {
+          preview.setPorterDuffColorFilter(color);
+        }
       } else {
         preview.disablePorterDuffColorFilter();
       }
@@ -329,7 +333,12 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
     }
     if (content != null) {
       if (needRepainting) {
-        content.setPorterDuffColorFilter(source.getEmojiStatusColor());
+        int color = source.getMediaTextColorOrId();
+        if (source.getMediaTextColorIsId()) {
+          content.setThemedPorterDuffColorId(color);
+        } else {
+          content.setPorterDuffColorFilter(color);
+        }
       } else {
         content.disablePorterDuffColorFilter();
       }

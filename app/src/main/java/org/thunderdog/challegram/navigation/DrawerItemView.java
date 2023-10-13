@@ -198,8 +198,13 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
   public void setEmojiStatus (TdlibAccount account) {
     TextColorSet colorSet = new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
       @Override
-      public int emojiStatusColor () {
-        return Theme.getColor(ColorId.iconActive);
+      public int mediaTextColorOrId () {
+        return ColorId.iconActive;
+      }
+
+      @Override
+      public boolean mediaTextColorIsId () {
+        return true;
       }
     };
     emojiStatusHelper.setSharedUsageId("account_" + account.id);

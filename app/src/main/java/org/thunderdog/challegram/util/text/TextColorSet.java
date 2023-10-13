@@ -25,9 +25,12 @@ public interface TextColorSet {
   default int iconColor () {
     return defaultTextColor();
   }
-  @ColorInt
-  default int emojiStatusColor () {
+
+  default int mediaTextColorOrId () {
     return defaultTextColor();
+  }
+  default boolean mediaTextColorIsId () {
+    return false;
   }
 
   @ColorInt

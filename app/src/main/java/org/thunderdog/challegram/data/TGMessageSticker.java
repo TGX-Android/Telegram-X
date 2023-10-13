@@ -676,9 +676,14 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
                 target = receiver.getImageReceiver(index);
               }
               if (representation.needThemedColorFilter) {
-                // FIXME: color id
-                preview.setPorterDuffColorFilter(getTextColorSet().emojiStatusColor());
-                target.setPorterDuffColorFilter(getTextColorSet().emojiStatusColor());
+                int color = getTextColorSet().mediaTextColorOrId();
+                if (getTextColorSet().mediaTextColorIsId()) {
+                  preview.setThemedPorterDuffColorId(color);
+                  target.setThemedPorterDuffColorId(color);
+                } else {
+                  preview.setPorterDuffColorFilter(color);
+                  target.setPorterDuffColorFilter(color);
+                }
               } else {
                 preview.disablePorterDuffColorFilter();
                 target.disablePorterDuffColorFilter();

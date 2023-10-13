@@ -35,7 +35,6 @@ import org.thunderdog.challegram.telegram.TdlibStatusManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.PorterDuffColorId;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -913,8 +912,13 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     if (!tdlib.isSelfChat(chat)) {
       emojiStatusDrawable = EmojiStatusHelper.makeDrawable(null, tdlib, chat != null ? tdlib.chatUser(chat) : null, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
         @Override
-        public int emojiStatusColor () {
-          return Theme.getColor(ColorId.iconActive);
+        public int mediaTextColorOrId () {
+          return ColorId.iconActive;
+        }
+
+        @Override
+        public boolean mediaTextColorIsId () {
+          return true;
         }
       }, this::invalidateEmojiStatusReceiver);
       emojiStatusDrawable.invalidateTextMedia();

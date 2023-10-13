@@ -13,6 +13,7 @@
 package org.thunderdog.challegram.util.text;
 
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 
@@ -126,8 +127,19 @@ public final class TextColorSets {
   // NORMAL
   public interface Regular extends TextColorSetThemed {
     @Override
+    @PorterDuffColorId
     default int defaultTextColorId () {
       return ColorId.text;
+    }
+
+    @Override
+    default int mediaTextColorOrId () {
+      return defaultTextColorId();
+    }
+
+    @Override
+    default boolean mediaTextColorIsId () {
+      return true;
     }
 
     @Override
@@ -215,6 +227,16 @@ public final class TextColorSets {
         }*/
 
         @Override
+        public int mediaTextColorOrId () {
+          return ColorId.messageAuthor;
+        }
+
+        @Override
+        public boolean mediaTextColorIsId () {
+          return true;
+        }
+
+        @Override
         public int clickableTextColorId (boolean isPressed) {
           return ColorId.messageAuthor;
         }
@@ -263,6 +285,16 @@ public final class TextColorSets {
         @Override
         public int defaultTextColorId () {
           return ColorId.bubbleOut_text;
+        }
+
+        @Override
+        public int mediaTextColorOrId () {
+          return ColorId.bubbleOut_messageAuthor;
+        }
+
+        @Override
+        public boolean mediaTextColorIsId () {
+          return true;
         }
 
         @Override
@@ -321,6 +353,16 @@ public final class TextColorSets {
         @Override
         public int defaultTextColorId () {
           return ColorId.bubbleIn_text;
+        }
+
+        @Override
+        public int mediaTextColorOrId () {
+          return ColorId.messageAuthor;
+        }
+
+        @Override
+        public boolean mediaTextColorIsId () {
+          return true;
         }
 
         @Override

@@ -20,7 +20,6 @@ import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
 
-import androidx.annotation.ColorInt;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 
@@ -38,6 +37,7 @@ import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.Text;
@@ -410,11 +410,16 @@ public class EmojiStatusHelper implements Destroyable {
           imageReceiver.disablePorterDuffColorFilter();
           preview.disablePorterDuffColorFilter();
         } else if (textColorSet != null) {
-          // FIXME: color id
-          @ColorInt int color = textColorSet.emojiStatusColor();
-          gifReceiver.setPorterDuffColorFilter(color);
-          imageReceiver.setPorterDuffColorFilter(color);
-          preview.setPorterDuffColorFilter(color);
+          int color = textColorSet.mediaTextColorOrId();
+          if (textColorSet.mediaTextColorIsId()) {
+            gifReceiver.setThemedPorterDuffColorId(color);
+            imageReceiver.setThemedPorterDuffColorId(color);
+            preview.setThemedPorterDuffColorId(color);
+          } else {
+            gifReceiver.setPorterDuffColorFilter(color);
+            imageReceiver.setPorterDuffColorFilter(color);
+            preview.setPorterDuffColorFilter(color);
+          }
         } else {
           gifReceiver.setThemedPorterDuffColorId(ColorId.icon);
           imageReceiver.setThemedPorterDuffColorId(ColorId.icon);
@@ -437,7 +442,12 @@ public class EmojiStatusHelper implements Destroyable {
       } else if (emojiStatus != null) {
         emojiStatus.draw(c, startX, startY, null, alpha, emojiStatusReceiver);
       } else if (starDrawable != null && textColorSet != null) {
-        Paint p = Paints.getPorterDuffPaint(ColorUtils.alphaColor(alpha, textColorSet.emojiStatusColor()));
+        Paint p;
+        if (textColorSet.mediaTextColorIsId()) {
+          p = PorterDuffPaint.get(textColorSet.mediaTextColorOrId(), alpha);
+        } else {
+          p = Paints.getPorterDuffPaint(ColorUtils.alphaColor(alpha, textColorSet.mediaTextColorOrId()));
+        }
         Drawables.draw(c, starDrawable, startX, startY + (Screen.dp(textSize + 2) - starDrawable.getMinimumHeight()) / 2f, p);
       }
       if (isScaled) {
