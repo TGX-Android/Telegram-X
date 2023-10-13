@@ -902,7 +902,11 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
       float scale = inAnimation ? animationScale : staticAnimationFile != null ? staticAnimationFileScale : staticImageFileScale;
       if (receiver != null) {
         // TODO contour placeholder
-        receiver.setThemedPorterDuffColorId(ColorId.text);
+        if (reactionObj.needThemedColorFilter()) {
+          receiver.setThemedPorterDuffColorId(ColorId.text);
+        } else {
+          receiver.disablePorterDuffColorFilter();
+        }
         receiver.setBounds(l, t, r, b);
         receiver.setAlpha(alpha);
         receiver.drawScaled(c, scale);
