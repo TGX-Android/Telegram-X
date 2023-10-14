@@ -2717,6 +2717,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return status != null && Td.isAnonymous(status);
   }
 
+  public boolean isAnonymousAdminNonCreator (long chatId) {
+    TdApi.ChatMemberStatus status = chatStatus(chatId);
+    return status != null && Td.isAnonymous(status) && !TD.isCreator(status);
+  }
+
   public @Nullable TdApi.ChatMemberStatus chatStatus (long chatId) {
     if (chatId == 0) {
       return null;
