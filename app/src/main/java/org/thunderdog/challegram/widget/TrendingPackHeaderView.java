@@ -15,8 +15,6 @@
 package org.thunderdog.challegram.widget;
 
 import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.View;
@@ -31,12 +29,9 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
-import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
-import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.Highlight;
@@ -46,13 +41,9 @@ public class TrendingPackHeaderView extends RelativeLayout {
   private final NonMaterialButton button;
   private final TextView titleView;
   private final TextView subtitleView;
-  private final View premiumLockIcon;
-  private final Drawable lockDrawable;
 
   public TrendingPackHeaderView (Context context) {
     super(context);
-
-    lockDrawable = Drawables.get(R.drawable.baseline_lock_16);
 
     RelativeLayout.LayoutParams params;
     params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(16f));
@@ -95,15 +86,6 @@ public class TrendingPackHeaderView extends RelativeLayout {
     params.topMargin = Screen.dp(5f);
     params.addRule(Lang.rtl() ? RelativeLayout.ALIGN_PARENT_LEFT : RelativeLayout.ALIGN_PARENT_RIGHT);
     params.width = params.height = Screen.dp(16);
-    premiumLockIcon = new View(context) {
-      @Override
-      protected void dispatchDraw (Canvas canvas) {
-        super.dispatchDraw(canvas);
-        Drawables.draw(canvas, lockDrawable, 0, 0, PorterDuffPaint.get(ColorId.text));
-      }
-    };
-    premiumLockIcon.setId(R.id.btn_addStickerSet);
-    premiumLockIcon.setLayoutParams(params);
 
     params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
     if (Lang.rtl()) {
@@ -148,14 +130,12 @@ public class TrendingPackHeaderView extends RelativeLayout {
 
     addView(newView);
     addView(button);
-    addView(premiumLockIcon);
     addView(titleView);
     addView(subtitleView);
   }
 
   public void setButtonOnClickListener (View.OnClickListener listener) {
     button.setOnClickListener(listener);
-    premiumLockIcon.setOnClickListener(listener);
   }
 
   public void setThemeProvider (@Nullable ViewController<?> themeProvider) {
@@ -164,26 +144,19 @@ public class TrendingPackHeaderView extends RelativeLayout {
       themeProvider.addThemeInvalidateListener(newView);
       themeProvider.addThemeInvalidateListener(this);
       themeProvider.addThemeInvalidateListener(button);
-      themeProvider.addThemeInvalidateListener(premiumLockIcon);
       themeProvider.addThemeTextAccentColorListener(titleView);
       themeProvider.addThemeTextDecentColorListener(subtitleView);
       ViewSupport.setThemedBackground(newView, ColorId.promo, themeProvider).setCornerRadius(3f);
     }
   }
 
-  public void setStickerSetInfo (TdlibDelegate context, @Nullable TGStickerSetInfo stickerSet, @Nullable String highlight, boolean isInProgress, boolean isNew) {
+  public void setStickerSetInfo (@Nullable TGStickerSetInfo stickerSet, @Nullable String highlight, boolean isInProgress, boolean isNew) {
     setTag(stickerSet);
 
-    boolean needLock = stickerSet != null && stickerSet.isEmoji() && !stickerSet.isInstalled() && !context.tdlib().account().isPremium();
-
     newView.setVisibility(!isNew ? View.GONE : View.VISIBLE);
-    button.setVisibility(needLock ? GONE : VISIBLE);
     button.setInProgress(stickerSet != null && !stickerSet.isRecent() && isInProgress, false);
     button.setIsDone(stickerSet != null && stickerSet.isInstalled(), false);
     button.setTag(stickerSet);
-
-    premiumLockIcon.setVisibility(needLock ? VISIBLE : GONE);
-    premiumLockIcon.setTag(stickerSet);
 
     Views.setMediumText(titleView, Highlight.toSpannable(stickerSet != null ? stickerSet.getTitle() : "", highlight));
     subtitleView.setText(stickerSet != null ? Lang.plural(stickerSet.isEmoji() ? R.string.xEmoji : R.string.xStickers, stickerSet.getFullSize()) : "");
