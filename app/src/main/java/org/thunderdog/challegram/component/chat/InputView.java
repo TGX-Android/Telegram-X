@@ -1597,6 +1597,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     return result;
   }
 
+  public final boolean hasOnlyPremiumFeatures () {
+    return TD.hasCustomEmoji(getOutputText(false));
+  }
+
   // Android-related workarounds
 
   @Override

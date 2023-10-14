@@ -256,9 +256,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
   public static <T> List<T> deduplicate(List<T> list, Comparator<T> comparator) {
     TreeMap<T, T> uniqueMap = new TreeMap<>(comparator);
     for (T element : list) {
-      if (uniqueMap.put(element, element) != null) {
-        Log.i("WTF_DEBUG", "tdlib bug!");
-      }
+      uniqueMap.put(element, element);
     }
 
     return new ArrayList<>(uniqueMap.values());

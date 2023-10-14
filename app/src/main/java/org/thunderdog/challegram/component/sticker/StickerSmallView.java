@@ -80,6 +80,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
 
   public void init (Tdlib tdlib) {
     this.tdlib = tdlib;
+    setBackgroundColor(0x4000FF00);
   }
 
   private boolean isAnimation;

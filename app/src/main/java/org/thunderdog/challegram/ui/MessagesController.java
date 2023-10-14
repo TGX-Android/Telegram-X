@@ -1967,7 +1967,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       openMediaView(false, false);
     } else if (viewId == R.id.msg_send) {
       if (!leaveInlineMode()) {
-        if (isEditingMessage()) {
+        if (inputView != null && !isSelfChat() && !tdlib.hasPremium() && inputView.hasOnlyPremiumFeatures()) {
+          showBottomHint(Strings.buildMarkdown(this, Lang.getString(R.string.MessageContainsPremiumFeatures), null), false);
+        } else if (isEditingMessage()) {
           saveMessage(true);
         } else if (areScheduled) {
           tdlib.ui().showScheduleOptions(this, getChatId(), false, (modifiedSendOptions, disableMarkdown) -> send(modifiedSendOptions), null, null);

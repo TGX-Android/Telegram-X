@@ -7879,6 +7879,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     } else if (viewId == R.id.btn_send) {
       if (currentSection != SECTION_CAPTION) {
         changeSection(SECTION_CAPTION, MODE_OK);
+      } else if (inputView != null && !tdlib.isSelfChat(getOutputChatId()) && !tdlib.hasPremium() && inputView.hasOnlyPremiumFeatures()) {
+        context().tooltipManager().builder(sendButton).show(tdlib, Strings.buildMarkdown(this, Lang.getString(R.string.MessageContainsPremiumFeatures), null)).hideDelayed();
       } else {
         send(v, Td.newSendOptions(), false, false);
       }

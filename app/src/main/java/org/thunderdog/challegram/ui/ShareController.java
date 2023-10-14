@@ -1873,6 +1873,10 @@ public class ShareController extends TelegramViewController<ShareController.Args
     }
   }
 
+  private boolean selectedSelfChatOnly () {
+    return selectedChats.size() == 1 && selectedChats.valueAt(0).isSelfChat();
+  }
+
   @Override
   public void onClick (View v) {
     final int viewId = v.getId();
@@ -1882,11 +1886,19 @@ public class ShareController extends TelegramViewController<ShareController.Args
           shareLink();
           // copyLink();
         }
+      } else if (inputView != null && !selectedSelfChatOnly() && !tdlib.hasPremium() && inputView.hasOnlyPremiumFeatures()) {
+        context().tooltipManager().builder(sendButton)
+          .show(tdlib, Strings.buildMarkdown(this, Lang.getString(R.string.MessageContainsPremiumFeatures), null))
+          .hideDelayed();
       } else {
         performSend(false, Td.newSendOptions(), false);
       }
     } else if (viewId == R.id.btn_done) {
-      if (selectedChats.size() == 0) {
+      if (inputView != null && !selectedSelfChatOnly() && !tdlib.hasPremium() && inputView.hasOnlyPremiumFeatures()) {
+        context().tooltipManager().builder(okButton)
+          .show(tdlib, Strings.buildMarkdown(this, Lang.getString(R.string.MessageContainsPremiumFeatures), null))
+          .hideDelayed();
+      } else if (selectedChats.size() == 0) {
         hideSoftwareKeyboard();
       } else {
         performSend(true, Td.newSendOptions(), false);
