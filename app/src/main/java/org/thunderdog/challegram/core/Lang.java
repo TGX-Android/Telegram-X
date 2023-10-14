@@ -1080,7 +1080,6 @@ public class Lang {
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessagePinMessage.CONSTRUCTOR:
       case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
-      case TdApi.MessageWebsiteConnected.CONSTRUCTOR:
       case TdApi.MessageBotWriteAccessAllowed.CONSTRUCTOR:
       case TdApi.MessageChatJoinByRequest.CONSTRUCTOR:
       case TdApi.MessageChatSetBackground.CONSTRUCTOR:
@@ -1101,7 +1100,7 @@ public class Lang {
       case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
         break;
       default:
-        Td.assertMessageContent_6479f6fc();
+        Td.assertMessageContent_cda9af31();
         throw Td.unsupported(message.content);
     }
     String format = Lang.getString(res);

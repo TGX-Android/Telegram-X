@@ -303,7 +303,6 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
             case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
             case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
-            case TdApi.MessageWebsiteConnected.CONSTRUCTOR:
             case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
             case TdApi.MessageForumTopicEdited.CONSTRUCTOR:
             case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
@@ -315,7 +314,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              Td.assertMessageContent_6479f6fc();
+              Td.assertMessageContent_cda9af31();
               throw Td.unsupported(message.content);
           }
           String format = Lang.getString(staticResId);
@@ -611,30 +610,46 @@ public final class TGMessageService extends TGMessageServiceImpl {
     });
   }
 
-  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageWebsiteConnected websiteConnected) {
-    super(context, msg);
-    setTextCreator(() ->
-      getText(
-        R.string.BotWebsiteAllowed,
-        new BoldArgument(websiteConnected.domainName)
-      )
-    );
-  }
-
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageBotWriteAccessAllowed botWriteAccessAllowed) {
     super(context, msg);
-    setTextCreator(() -> {
-      if (botWriteAccessAllowed.byRequest) {
-        return getText(R.string.BotWebappAllowed);
-      } else if (botWriteAccessAllowed.webApp == null) {
-        return getText(R.string.BotAttachAllowed);
-      } else {
-        return getText(
-          R.string.BotAppAllowed,
-          new BoldArgument(botWriteAccessAllowed.webApp.title)
+    switch (botWriteAccessAllowed.reason.getConstructor()) {
+      case TdApi.BotWriteAccessAllowReasonConnectedWebsite.CONSTRUCTOR: {
+        TdApi.BotWriteAccessAllowReasonConnectedWebsite connectedWebsite = (TdApi.BotWriteAccessAllowReasonConnectedWebsite) botWriteAccessAllowed.reason;
+        setTextCreator(() ->
+          getText(
+            R.string.BotWebsiteAllowed,
+            new BoldArgument(connectedWebsite.domainName)
+          )
         );
+        break;
       }
-    });
+      case TdApi.BotWriteAccessAllowReasonAddedToAttachmentMenu.CONSTRUCTOR: {
+        setTextCreator(() ->
+          getText(R.string.BotAttachAllowed)
+        );
+        break;
+      }
+      case TdApi.BotWriteAccessAllowReasonLaunchedWebApp.CONSTRUCTOR: {
+        TdApi.BotWriteAccessAllowReasonLaunchedWebApp launchedWebApp = (TdApi.BotWriteAccessAllowReasonLaunchedWebApp) botWriteAccessAllowed.reason;
+        setTextCreator(() ->
+          getText(
+            R.string.BotAppAllowed,
+            new BoldArgument(launchedWebApp.webApp.title)
+          )
+        );
+        break;
+      }
+      case TdApi.BotWriteAccessAllowReasonAcceptedRequest.CONSTRUCTOR: {
+        setTextCreator(() ->
+          getText(R.string.BotWebappAllowed)
+        );
+        break;
+      }
+      default: {
+        Td.assertBotWriteAccessAllowReason_d7597302();
+        throw Td.unsupported(botWriteAccessAllowed.reason);
+      }
+    }
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatSetMessageAutoDeleteTime setMessageAutoDeleteTime) {

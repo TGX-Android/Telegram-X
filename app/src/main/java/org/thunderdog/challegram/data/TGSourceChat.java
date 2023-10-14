@@ -80,7 +80,7 @@ public class TGSourceChat extends TGSource implements Runnable {
   }
 
   private void setChat (TdApi.Chat chat) {
-    if (!StringUtils.isEmpty(authorSignature) && !(msg.forceForwardedInfo())) {
+    if (!StringUtils.isEmpty(authorSignature) && !(msg.forceForwardOrImportInfo())) {
       this.title = Lang.getString(R.string.format_channelAndSignature, chat.title, authorSignature);
     } else {
       this.title = chat.title;

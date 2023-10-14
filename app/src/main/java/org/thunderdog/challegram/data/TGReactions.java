@@ -155,7 +155,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
         final String reactionKey = TD.makeReactionKey(reaction.type);
         TdApi.MessageReaction fakeReaction = reactionsHashMap.get(reactionKey);
         if (fakeReaction == null) {
-          fakeReaction = new TdApi.MessageReaction(reaction.type, 0, false, new TdApi.MessageSender[0]);
+          fakeReaction = new TdApi.MessageReaction(reaction.type, 0, false, null, new TdApi.MessageSender[0]);
           reactionsHashMap.put(reactionKey, fakeReaction);
         }
         fakeReaction.totalCount += reaction.totalCount;
@@ -547,7 +547,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     if (reaction != null) {
       return reaction;
     }
-    return new TdApi.MessageReaction(reactionType, 0, false, new TdApi.MessageSender[0]);
+    return new TdApi.MessageReaction(reactionType, 0, false, null, new TdApi.MessageSender[0]);
   }
 
   public boolean hasReaction (TdApi.ReactionType reactionType) {

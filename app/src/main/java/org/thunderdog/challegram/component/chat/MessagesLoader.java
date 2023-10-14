@@ -676,6 +676,7 @@ public class MessagesLoader implements Client.ResultHandler {
     Tdlib tdlib = context.tdlib();
     boolean isGroupChat = false;
     final long myUserId = tdlib.myUserId();
+    final TdApi.MessageSender mySender = tdlib.mySender();
 
     JSONObject chat = null;
     JSONArray chatsArray = new JSONArray(json.startsWith("[") && json.endsWith("]") ? json : "[" + json + "]");
@@ -994,12 +995,12 @@ public class MessagesLoader implements Client.ResultHandler {
         msg.id = maxId - messages.size() + i;
         msg.date = message.date != 0 ? message.date : (minDate = minDate + message.after);
         msg.isOutgoing = message.out;
-        msg.senderId = new TdApi.MessageSenderUser(message.out ? myUserId : message.senderUserId);
+        msg.senderId = message.out ? mySender : new TdApi.MessageSenderUser(message.senderUserId);
         msg.content = message.content;
         if (isLast) {
           msg.interactionInfo = new TdApi.MessageInteractionInfo();
           msg.interactionInfo.reactions = new TdApi.MessageReaction[]{
-            new TdApi.MessageReaction(new TdApi.ReactionTypeEmoji("\uD83D\uDC4D"), 5, true, new TdApi.MessageSender[0])
+            new TdApi.MessageReaction(new TdApi.ReactionTypeEmoji("\uD83D\uDC4D"), 5, true, mySender, new TdApi.MessageSender[0])
           };
         }
         out.add(msg);
@@ -1207,7 +1208,7 @@ public class MessagesLoader implements Client.ResultHandler {
       isChannel, false,
       false,
       event.date, 0,
-      null, null, null,
+      null, null, null, null,
       null, 0,
       null, 0, 0,
       0, null,

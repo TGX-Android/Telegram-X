@@ -1415,30 +1415,35 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
       textIconIds.clear();
     setTextValue(preview.buildText(true), preview.formattedText != null ? preview.formattedText.entities : null, preview.isTranslatable);
     this.currentPreview = preview;
+    TdApi.Message lastMessage = chat != null ? chat.lastMessage : null;
     if (preview.parentEmoji != null) {
       addIcon(preview.parentEmoji.iconRepresentation);
-    } else if (chat.lastMessage != null && chat.lastMessage.forwardInfo != null && (chat.lastMessage.isChannelPost || getPrefixIconCount() == 0)) {
-      TdApi.MessageForwardInfo forwardInfo = chat.lastMessage.forwardInfo;
-      switch (forwardInfo.origin.getConstructor()) {
-        case TdApi.MessageForwardOriginChannel.CONSTRUCTOR:
-          if (chat.id != ((TdApi.MessageForwardOriginChannel) forwardInfo.origin).chatId) {
-            addIcon(R.drawable.baseline_share_arrow_16);
-          }
-          break;
-        case TdApi.MessageForwardOriginHiddenUser.CONSTRUCTOR:
-          addIcon(R.drawable.baseline_share_arrow_16);
-          break;
-        case TdApi.MessageForwardOriginUser.CONSTRUCTOR:
-          if (Td.getSenderUserId(chat.lastMessage) != ((TdApi.MessageForwardOriginUser) forwardInfo.origin).senderUserId)
-            addIcon(R.drawable.baseline_share_arrow_16);
-          break;
-        case TdApi.MessageForwardOriginChat.CONSTRUCTOR:
-          if (Td.getSenderId(chat.lastMessage) != ((TdApi.MessageForwardOriginChat) forwardInfo.origin).senderChatId)
-            addIcon(R.drawable.baseline_share_arrow_16);
-          break;
-        case TdApi.MessageForwardOriginMessageImport.CONSTRUCTOR:
-          addIcon(R.drawable.templarian_baseline_import_16);
-          break;
+    } else if (lastMessage != null && (lastMessage.isChannelPost || getPrefixIconCount() == 0)) {
+      boolean needShareIcon = false;
+      if (lastMessage.forwardInfo != null) {
+        TdApi.MessageForwardOrigin origin = lastMessage.forwardInfo.origin;
+        switch (origin.getConstructor()) {
+          case TdApi.MessageForwardOriginChannel.CONSTRUCTOR:
+            needShareIcon = chat.id != ((TdApi.MessageForwardOriginChannel) origin).chatId;
+            break;
+          case TdApi.MessageForwardOriginHiddenUser.CONSTRUCTOR:
+            needShareIcon = true;
+            break;
+          case TdApi.MessageForwardOriginUser.CONSTRUCTOR:
+            needShareIcon = Td.getSenderUserId(chat.lastMessage) != ((TdApi.MessageForwardOriginUser) origin).senderUserId;
+            break;
+          case TdApi.MessageForwardOriginChat.CONSTRUCTOR:
+            needShareIcon = Td.getSenderId(chat.lastMessage) != ((TdApi.MessageForwardOriginChat) origin).senderChatId;
+            break;
+          default:
+            Td.assertMessageForwardOrigin_715b9732();
+            throw Td.unsupported(origin);
+        }
+      }
+      if (needShareIcon) {
+        addIcon(R.drawable.baseline_share_arrow_16);
+      } else if (lastMessage.importInfo != null) {
+        addIcon(R.drawable.templarian_baseline_import_16);
       }
     }
     if (preview.emoji != null) {

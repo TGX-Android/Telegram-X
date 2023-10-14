@@ -244,7 +244,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
         break;
       }
       default: {
-        Td.assertMessageContent_6479f6fc();
+        Td.assertMessageContent_cda9af31();
         break;
       }
     }

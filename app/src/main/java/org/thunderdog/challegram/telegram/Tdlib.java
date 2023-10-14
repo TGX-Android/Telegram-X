@@ -3032,8 +3032,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           break;
         }
         case TdApi.MessageForwardOriginHiddenUser.CONSTRUCTOR:
-        case TdApi.MessageForwardOriginMessageImport.CONSTRUCTOR:
           break;
+        default: {
+          Td.assertMessageForwardOrigin_715b9732();
+          throw Td.unsupported(message.forwardInfo.origin);
+        }
       }
     }
     if (message.senderId == null)
@@ -3559,15 +3562,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   public String senderName (TdApi.Message msg, boolean allowForward, boolean shorten) {
     long authorId = Td.getMessageAuthorId(msg, allowForward);
-    if (authorId == 0 && allowForward && msg.forwardInfo != null) {
-      switch (msg.forwardInfo.origin.getConstructor()) {
-        case TdApi.MessageForwardOriginHiddenUser.CONSTRUCTOR:
+    if (authorId == 0 && allowForward) {
+      if (msg.forwardInfo != null) {
+        if (msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginHiddenUser.CONSTRUCTOR) {
           return ((TdApi.MessageForwardOriginHiddenUser) msg.forwardInfo.origin).senderName;
-        case TdApi.MessageForwardOriginMessageImport.CONSTRUCTOR:
-          return ((TdApi.MessageForwardOriginMessageImport) msg.forwardInfo.origin).senderName;
-        default:
+        } else {
           authorId = Td.getMessageAuthorId(msg, false);
-          break;
+        }
+      }
+      if (msg.importInfo != null && authorId == 0) {
+        return msg.importInfo.senderName;
       }
     }
     if (ChatId.isUserChat(authorId)) {
@@ -4567,7 +4571,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
           return Td.textOrCaption(messageText);
       }
-      Td.assertMessageContent_6479f6fc();
+      Td.assertMessageContent_cda9af31();
       throw Td.unsupported(messageText);
     }
     return getPendingMessageCaption(chatId, messageId);
@@ -10631,12 +10635,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
         case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
         case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
-        case TdApi.MessageWebsiteConnected.CONSTRUCTOR:
           // None of these messages ever passed to this method,
           // assuming we want to check RightId.SEND_BASIC_MESSAGES
           return getBasicMessageRestrictionText(chat);
         default:
-          Td.assertMessageContent_6479f6fc();
+          Td.assertMessageContent_cda9af31();
           throw Td.unsupported(message.content);
       }
     }
