@@ -8978,10 +8978,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
-  public boolean isMatchesReactionSenderAvatarFilter (TdApi.MessageSender sender) {
+  public boolean matchesReactionSenderAvatarFilter (TdApi.MessageReaction reaction, TdApi.MessageSender sender) {
     final long currentChatId = getChatId();
 
-    // TODO check for reacted via senderId once it will appear in TDLib
+    if (Td.equalsTo(reaction.usedSenderId, sender)) {
+      return true;
+    }
     if (tdlib.isSelfSender(sender)
       || getChatId() == Td.getSenderId(sender)
       || Td.equalsTo(sender, getInReplyToSender())) {
