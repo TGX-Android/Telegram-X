@@ -258,6 +258,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   private boolean allowMedia;
   private boolean animatedEmojiOnly;
   private boolean classicEmojiOnly;
+  private boolean allowPremiumFeatures;
   private boolean useDarkMode;
 
   public EmojiToneHelper.Delegate getToneDelegate () {
@@ -360,7 +361,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       emojiHeaderView = new EmojiHeaderView(getContext(), this, themeProvider, emojiSections, expandableSections, allowMedia);
       emojiHeaderView.setSectionsOnClickListener(this);
       emojiHeaderView.setSectionsOnLongClickListener(this::onEmojiHeaderLongClick);
-      emojiHeaderView.setIsPremium(context.tdlib().hasPremium() && !classicEmojiOnly, false);
+      checkAllowPremiumFeatures();
       headerView.addView(emojiHeaderView);
     }
 
@@ -429,6 +430,17 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     // NewEmoji.instance().loadAllEmoji();
 
     setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+  }
+
+  public void setAllowPremiumFeatures (boolean allowPremiumFeatures) {
+    this.allowPremiumFeatures = allowPremiumFeatures;
+    checkAllowPremiumFeatures();
+  }
+
+  private void checkAllowPremiumFeatures () {
+    if (emojiHeaderView != null && parentController != null) {
+      emojiHeaderView.setIsPremium((allowPremiumFeatures || parentController.tdlib().hasPremium()) && !classicEmojiOnly, false);
+    }
   }
 
   public void onTextChanged (CharSequence charSequence) {

@@ -2817,6 +2817,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
     });
 
+    if (emojiLayout != null) {
+      emojiLayout.setAllowPremiumFeatures(isSelfChat());
+    }
+
     updateCounters(false);
     checkRestriction();
     checkLinkedChat();
@@ -8033,6 +8037,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (emojiLayout == null) {
         emojiLayout = new EmojiLayout(context());
         emojiLayout.initWithMediasEnabled(this, true, this, this, false);
+        emojiLayout.setAllowPremiumFeatures(isSelfChat());
         bottomWrap.addView(emojiLayout);
         if (inputView != null) {
           textFormattingLayout = new TextFormattingLayout(context(), this, inputView);
@@ -11510,8 +11515,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return new StickerSmallView.StickerMovementCallback() {
       @Override
       public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions) {
-        hideEmojiAndStickerSuggestionsFinally();
-        return onSendStickerSuggestion(clickView, sticker, sendOptions);
+        if (onSendStickerSuggestion(clickView, sticker, sendOptions)) {
+          hideEmojiAndStickerSuggestionsFinally();
+          return true;
+        }
+
+        return false;
       }
 
       @Override
@@ -11595,13 +11604,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public boolean onSendStickerSuggestion (View view, TGStickerObj sticker, TdApi.MessageSendOptions initialSendOptions) {
     if (lastJunkTime == 0l || SystemClock.uptimeMillis() - lastJunkTime >= JUNK_MINIMUM_DELAY) {
-      if (showGifRestriction(view))
-        return false;
       if (sticker.isCustomEmoji()) {
         inputView.onCustomEmojiSelected(sticker, true);
-
         return true;
       }
+      if (showGifRestriction(view))
+        return false;
       pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
         if (sendSticker(view, sticker.getSticker(), sticker.getFoundByEmoji(), true, Td.newSendOptions(modifiedSendOptions, false, Config.REORDER_INSTALLED_STICKER_SETS))) {
           lastJunkTime = SystemClock.uptimeMillis();

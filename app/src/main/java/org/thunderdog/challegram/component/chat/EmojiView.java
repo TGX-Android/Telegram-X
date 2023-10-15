@@ -186,6 +186,9 @@ public class EmojiView extends View implements ClickHelper.Delegate {
   @Override
   public boolean onLongPressRequestedAt (View view, float x, float y) {
     if (emojiStickers == null || !emojiStickers.query.equals(this.emoji)) {
+      if (colorState != EmojiData.STATE_NO_COLORS) {
+        onLongClick(view, x, y, null, null);
+      }
       return false;
     }
     emojiStickers.getStickers(new TdlibUi.EmojiStickers.Callback() {
@@ -207,7 +210,7 @@ public class EmojiView extends View implements ClickHelper.Delegate {
     return false;
   }
 
-  private void onLongClick (View view, float x, float y, @NonNull TdApi.Sticker[] installedStickers, @Nullable TdApi.Sticker[] recommendedStickers) {
+  private void onLongClick (View view, float x, float y, @Nullable TdApi.Sticker[] installedStickers, @Nullable TdApi.Sticker[] recommendedStickers) {
     helper.onLongPress(view, x, y);
     setInLongPress(true);
     toneHelper.openForEmoji(view, x, y, emoji, colorState, emojiTone, emojiOtherTones, installedStickers, recommendedStickers);

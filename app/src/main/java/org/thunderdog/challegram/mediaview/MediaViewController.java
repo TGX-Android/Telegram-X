@@ -616,6 +616,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       if (emojiLayout == null) {
         emojiLayout = new EmojiLayout(context());
         emojiLayout.initWithMediasEnabled(this, false, this, this, false); // FIXME shall we use dark mode?
+        emojiLayout.setAllowPremiumFeatures(tdlib.isSelfChat(getOutputChatId()));
         emojiLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
         bottomWrap.addView(emojiLayout);
         if (inputView != null) {
