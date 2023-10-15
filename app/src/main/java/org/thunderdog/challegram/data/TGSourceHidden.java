@@ -35,7 +35,7 @@ public class TGSourceHidden extends TGSource {
     this.isReady = true;
   }
 
-  public TGSourceHidden (TGMessage msg, TdApi.MessageForwardOriginMessageImport messageImport) {
+  public TGSourceHidden (TGMessage msg, TdApi.MessageImportInfo messageImport) {
     super(msg);
     this.name = messageImport.senderName;
     this.isImported = true;
@@ -49,7 +49,7 @@ public class TGSourceHidden extends TGSource {
       .builder(view, msg.currentViews)
       .locate(text != null ? (targetView, outRect) -> text.locatePart(outRect, part) : receiver != null ? (targetView, outRect) -> receiver.toRect(outRect) : null)
       .controller(msg.controller())
-      .show(msg.tdlib(), isImported ? R.string.ForwardAuthorImported : R.string.ForwardAuthorHidden)
+      .show(msg.tdlib(), msg.isImported() ? R.string.ForwardAuthorImported : R.string.ForwardAuthorHidden)
       .hideDelayed();
     return true;
   }

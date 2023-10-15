@@ -797,16 +797,13 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
           sender = null;
           break;
         }
-        case TdApi.MessageForwardOriginMessageImport.CONSTRUCTOR: {
-          TdApi.MessageForwardOriginMessageImport messageImport = (TdApi.MessageForwardOriginMessageImport) msg.forwardInfo.origin;
-          senderName = messageImport.senderName;
-          sender = null;
-          break;
-        }
         default: {
           throw new IllegalArgumentException(msg.forwardInfo.origin.toString());
         }
       }
+    } else if (msg.importInfo != null) {
+      senderName = msg.importInfo.senderName;
+      sender = null;
     } else {
       sender = msg.senderId;
       senderName = tdlib.isFromAnonymousGroupAdmin(msg) ? msg.authorSignature : null;

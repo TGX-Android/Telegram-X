@@ -152,7 +152,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
         final String reactionKey = TD.makeReactionKey(reaction.type);
         TdApi.MessageReaction fakeReaction = reactionsHashMap.get(reactionKey);
         if (fakeReaction == null) {
-          fakeReaction = new TdApi.MessageReaction(reaction.type, 0, false, new TdApi.MessageSender[0]);
+          fakeReaction = new TdApi.MessageReaction(reaction.type, 0, false, null, new TdApi.MessageSender[0]);
           reactionsHashMap.put(reactionKey, fakeReaction);
         }
         fakeReaction.totalCount += reaction.totalCount;
@@ -225,9 +225,9 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
       String reactionKey = TD.makeReactionKey(reaction.type);
       TGReactions.MessageReactionEntry entry = reactionsMapEntry.get(reactionKey);
       if (entry != null) {
-        entry.setCount(
-          limitSenders(filterSenders(reaction.recentSenderIds, mode, reaction.isChosen), reaction.totalCount > 3 ? 2 : 3),
-          reaction.totalCount, reaction.isChosen, animated);
+        TdApi.MessageSender[] recentSenderIds = getRecentSenderIds(reaction, mode);
+        recentSenderIds = limitSenders(recentSenderIds, reaction.totalCount > 3 ? 2 : 3);
+        entry.setCount(recentSenderIds, reaction.totalCount, reaction.isChosen, animated);
       }
     }
   }
@@ -236,18 +236,22 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     return senders != null && senders.length > maxCount ? Arrays.copyOfRange(senders, 0, maxCount) : senders;
   }
 
-  private TdApi.MessageSender[] filterSenders (TdApi.MessageSender[] senders, int mode, boolean isChosen) {
-    if (senders == null || senders.length == 0) return senders;
-    if (mode == Settings.REACTION_AVATARS_MODE_NEVER) return null;
+  private TdApi.MessageSender[] getRecentSenderIds (TdApi.MessageReaction reaction, int mode) {
+    if (reaction.recentSenderIds == null || reaction.recentSenderIds.length == 0)
+      return reaction.recentSenderIds;
+    if (mode == Settings.REACTION_AVATARS_MODE_NEVER)
+      return null;
 
-    List<TdApi.MessageSender> sendersPreFiltered = ArrayUtils.filter(ArrayUtils.asList(senders),
-      sender -> !tdlib.isSelfSender(sender) || isChosen);
+    // Filter out current user/reaction.usedSenderId, unless reaction.isChosen == true
+    List<TdApi.MessageSender> sendersPreFiltered = ArrayUtils.filter(ArrayUtils.asList(reaction.recentSenderIds),
+      sender -> !(tdlib.isSelfSender(sender) || Td.equalsTo(reaction.usedSenderId, sender)) || reaction.isChosen
+    );
 
     if (mode == Settings.REACTION_AVATARS_MODE_ALWAYS) {
       return sendersPreFiltered.toArray(new TdApi.MessageSender[0]);
     }
 
-    return ArrayUtils.filter(sendersPreFiltered, parent::isMatchesReactionSenderAvatarFilter).toArray(new TdApi.MessageSender[0]);
+    return ArrayUtils.filter(sendersPreFiltered, (item) -> parent.matchesReactionSenderAvatarFilter(reaction, item)).toArray(new TdApi.MessageSender[0]);
   }
 
   public void requestAvatarFiles (ComplexReceiver complexReceiver, boolean isUpdate) {
@@ -533,7 +537,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     if (reaction != null) {
       return reaction;
     }
-    return new TdApi.MessageReaction(reactionType, 0, false, new TdApi.MessageSender[0]);
+    return new TdApi.MessageReaction(reactionType, 0, false, null, new TdApi.MessageSender[0]);
   }
 
   public boolean hasReaction (TdApi.ReactionType reactionType) {
