@@ -7080,4 +7080,18 @@ public class TD {
     }
     return false;
   }
+
+  public static boolean hasCustomEmoji (TdApi.FormattedText text) {
+    if (text == null || text.entities == null) {
+      return false;
+    }
+
+    for (TdApi.TextEntity entity: text.entities) {
+      if (entity.type.getConstructor() == TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR) {
+        return true;
+      }
+    }
+
+    return false;
+  }
 }

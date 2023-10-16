@@ -119,10 +119,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
     if (stickersView == null || spanCount == 0) {
       return -1;
     }
-    int i = ((LinearLayoutManager) stickersView.getLayoutManager()).findFirstCompletelyVisibleItemPosition();
-    if (i == -1) {
-      i = ((LinearLayoutManager) stickersView.getLayoutManager()).findFirstVisibleItemPosition();
-    }
+    int i = Views.findFirstCompletelyVisibleItemPositionWithOffset((LinearLayoutManager) stickersView.getLayoutManager(), EmojiLayout.getHeaderSize() / 2);
     if (i != -1) {
       return indexOfStickerSetByAdapterPosition(i);
     }

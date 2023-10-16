@@ -1133,6 +1133,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     if (oldEmojiSpan != null && needReplace && Config.KEEP_ORIGINAL_EMOJI_WHEN_INPUT_CUSTOM_EMOJI) {
       editable.setSpan(Emoji.instance().newCustomSpan(emoji, null, this, tdlib, Td.customEmojiId(stickerObj)), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
       setSelection(start + emoji.length());
+      if (inlineContext != null) {
+        inlineContext.reset();
+      }
       return;
     }
 
@@ -1595,6 +1598,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       Td.parseMarkdown(result);
     }
     return result;
+  }
+
+  public final boolean hasOnlyPremiumFeatures () {
+    return TD.hasCustomEmoji(getOutputText(false));
   }
 
   // Android-related workarounds

@@ -616,6 +616,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       if (emojiLayout == null) {
         emojiLayout = new EmojiLayout(context());
         emojiLayout.initWithMediasEnabled(this, false, this, this, false); // FIXME shall we use dark mode?
+        emojiLayout.setAllowPremiumFeatures(tdlib.isSelfChat(getOutputChatId()));
         emojiLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
         bottomWrap.addView(emojiLayout);
         if (inputView != null) {
@@ -7879,6 +7880,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     } else if (viewId == R.id.btn_send) {
       if (currentSection != SECTION_CAPTION) {
         changeSection(SECTION_CAPTION, MODE_OK);
+      } else if (inputView != null && !tdlib.isSelfChat(getOutputChatId()) && !tdlib.hasPremium() && inputView.hasOnlyPremiumFeatures()) {
+        context().tooltipManager().builder(sendButton).show(tdlib, Strings.buildMarkdown(this, Lang.getString(R.string.MessageContainsPremiumFeatures), null)).hideDelayed();
       } else {
         send(v, Td.newSendOptions(), false, false);
       }

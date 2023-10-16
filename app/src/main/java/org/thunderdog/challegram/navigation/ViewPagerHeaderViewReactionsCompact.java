@@ -26,6 +26,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -43,9 +44,9 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.MessageOptionsPagerController;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.widget.ReactionsSelectorRecyclerView;
-import org.thunderdog.challegram.widget.emoji.EmojiLayoutRecyclerController;
 
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 
 @SuppressLint("ViewConstructor")
@@ -70,7 +71,8 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
     }
 
     @Override
-    public VH onCreateViewHolder (ViewGroup parent, int viewType) {
+    @NonNull
+    public VH onCreateViewHolder (@NonNull ViewGroup parent, int viewType) {
       if (topView.getParent() != null) {
         Log.w("ViewPagerHeaderViewCompact: topView is already attached to another cel");
         ((ViewGroup) topView.getParent()).removeView(topView);
@@ -79,7 +81,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
     }
 
     @Override
-    public void onBindViewHolder (VH holder, int position) {
+    public void onBindViewHolder (@NonNull VH holder, int position) {
     }
 
     @Override
@@ -98,20 +100,18 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
 
   private final MessageOptionsPagerController.State state;
 
-  private int rightOffset;
   private final boolean needReactionSelector;
   private final boolean needShowReactions, needShowViews;
-  private final boolean needShowMoreButton;
 
   public ViewPagerHeaderViewReactionsCompact (Context context, MessageOptionsPagerController.State state) {
     super(context);
     this.state = state;
 
-    this.rightOffset = state.headerAlwaysVisibleCountersWidth; // - (needShowReactions || needShowViews ? Screen.dp(12) : 0);
     this.needReactionSelector = state.needShowMessageOptions;
     this.needShowReactions = state.needShowMessageReactionSenders;
     this.needShowViews = state.needShowMessageViews;
-    this.needShowMoreButton = state.needShowReactionsPopupPicker;
+
+    final boolean needShowMoreButton = state.needShowReactionsPopupPicker;
     final int rightOffset = state.headerAlwaysVisibleCountersWidth;
 
     ViewPagerTopView topView = new ViewPagerTopView(context);
@@ -123,7 +123,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
     adapter = new A(topView);
 
     if (this.needReactionSelector) {
-      final int rightOffsetR = this.rightOffset + Screen.dp(needShowMoreButton ? 56: 0);
+      final int rightOffsetR = state.headerAlwaysVisibleCountersWidth + Screen.dp(needShowMoreButton ? 56: 0);
       reactionsSelectorRecyclerView = new ReactionsSelectorRecyclerView(context, state);
       reactionsSelectorRecyclerView.setLayoutParams(FrameLayoutFix.newParams(
         ViewGroup.LayoutParams.MATCH_PARENT,
@@ -205,18 +205,17 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
     updatePaints(Theme.backgroundColor());
   }
 
+  private float getReactionPickerHiddenZoneLeft () {
+    final int x = (int) (reactionsSelectorRecyclerView != null ? reactionsSelectorRecyclerView.getTranslationX() : 0);
+    final float width = MessageOptionsPagerController.getReactionsPickerRightHiddenWidth(state);
+    return getMeasuredWidth() - width + x;
+  }
+
   @Override
   protected void dispatchDraw (Canvas c) {
-    int x = (int)(reactionsSelectorRecyclerView != null ? reactionsSelectorRecyclerView.getTranslationX() : 0);
-    int buttonsWidth = state.getRightViewsWidth();
-
-    int emojiPickerWidthWithoutPadding = getMeasuredWidth() - Screen.dp(16);
-    int emojiPickerSpanCount = EmojiLayoutRecyclerController.calculateSpanCount(emojiPickerWidthWithoutPadding, 9, Screen.dp(38));
-    float emojiPickerItemSize = (float) emojiPickerWidthWithoutPadding / emojiPickerSpanCount;
-    int width = (int)(Math.ceil(((float) buttonsWidth - Screen.dp(8 + 8)) / emojiPickerItemSize)
-      * emojiPickerItemSize + Screen.dp(8));
-
-    c.drawRect(getMeasuredWidth() - width + x, 0, getMeasuredWidth() + x, getMeasuredHeight(), Paints.fillingPaint(Theme.backgroundColor()));
+    if (state.needShowReactionsPopupPicker) {
+      c.drawRect(getReactionPickerHiddenZoneLeft(), 0, getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(Theme.backgroundColor()));
+    }
     super.dispatchDraw(c);
   }
 
@@ -249,7 +248,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
     if (needReactionSelector && reactionsSelectorRecyclerView != null) {
       int width = getMeasuredWidth();
       if (position == 0) {
-        float offset = (width - rightOffset - Screen.dp(56)) * (1f - positionOffset);
+        float offset = (width - state.headerAlwaysVisibleCountersWidth - Screen.dp(56)) * (1f - positionOffset);
         if (needShowReactions && needShowViews) {
           getTopView().setItemTranslationX(1, (int) (Screen.dp(-8) * (1f - positionOffset)));
           getTopView().setItemTranslationX(2, (int) (Screen.dp(-8) * (1f - positionOffset)));
@@ -409,7 +408,8 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
 
   @Override
   public boolean onTouchEvent (MotionEvent e) {
-    return !(e.getAction() == MotionEvent.ACTION_DOWN && !canTouchAt(e.getX(), e.getY())) && super.onTouchEvent(e);
+    return !(e.getAction() == MotionEvent.ACTION_DOWN && !canTouchAt(e.getX(), e.getY())) && super.onTouchEvent(e)
+      || (state.needShowReactionsPopupPicker && (e.getX() > getReactionPickerHiddenZoneLeft()));
   }
 
   private boolean canTouchAt (float x, float y) {

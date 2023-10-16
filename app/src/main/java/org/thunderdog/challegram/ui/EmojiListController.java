@@ -133,7 +133,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
         if (contentView.isSectionStable() && contentView.getCurrentSection() == SECTION_STICKERS && getArguments() != null && getArguments().isWatchingMovements() && getArguments().getCurrentItem() == 0) {
           int y = emojiController.getStickersScrollY(false);
           getArguments().moveHeader(y);
-          getArguments().setCurrentStickerSectionByPosition(EmojiLayout.EMOJI_INSTALLED_CONTROLLER_ID, emojiController.getStickerSetSection(), true, true);
+          getArguments().setCurrentStickerSectionByPosition(EmojiLayout.EMOJI_INSTALLED_CONTROLLER_ID, emojiController.getStickerSetSection(EmojiLayout.getHeaderSize() / 2), true, true);
          //  getArguments().onSectionScroll(EmojiMediaType.STICKER, dy != 0);
         }
 

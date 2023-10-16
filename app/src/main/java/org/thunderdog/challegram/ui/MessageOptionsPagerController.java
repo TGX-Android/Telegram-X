@@ -66,6 +66,7 @@ import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ViewPager;
 import org.thunderdog.challegram.widget.decoration.ItemDecorationFirstViewTop;
+import org.thunderdog.challegram.widget.emoji.EmojiLayoutRecyclerController;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -675,7 +676,6 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     reactionsPickerController.getValue();
 
     reactionsPickerRecyclerView = reactionsPickerController.getRecyclerView();
-    reactionsPickerRecyclerView.setPadding(Screen.dp(9.5f), 0, Screen.dp(9.5f), 0);
     reactionsPickerRecyclerView.setClipToPadding(false);
 
     reactionPickerTopDecoration = ItemDecorationFirstViewTop.attach(reactionsPickerRecyclerView, this::getReactionPickerOffsetTopReal);
@@ -934,6 +934,16 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     if (reactionsPickerController != null) {
       reactionsPickerController.setTopHeaderVisibility(reactionsPickerVisibility.getValue() && Views.getRecyclerViewElementTop(reactionsPickerRecyclerView, 1) <= HeaderView.getSize(true) + EmojiLayout.getHeaderPadding());
     }
+  }
+
+  public static float getReactionsPickerRightHiddenWidth (State state) {
+    int buttonsWidth = state.getRightViewsWidth();
+
+    int emojiPickerWidthWithoutPadding = Screen.currentWidth() - Screen.dp(ReactionsPickerController.RECYCLER_VIEW_LEFT_RIGHT_PADDING * 2);
+    int emojiPickerSpanCount = EmojiLayoutRecyclerController.calculateSpanCount(emojiPickerWidthWithoutPadding, 9, Screen.dp(38));
+    float emojiPickerItemSize = (float) emojiPickerWidthWithoutPadding / emojiPickerSpanCount;
+    return (float) Math.ceil(((float) buttonsWidth - Screen.dp(12)) / emojiPickerItemSize)
+      * emojiPickerItemSize + Screen.dp(ReactionsPickerController.RECYCLER_VIEW_LEFT_RIGHT_PADDING) + Screen.dp(1);
   }
 
   private class PickerOpenerScrollListener extends RecyclerView.OnScrollListener {

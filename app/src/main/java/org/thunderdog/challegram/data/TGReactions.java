@@ -4,7 +4,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Path;
 import android.graphics.RectF;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -37,13 +36,11 @@ import org.thunderdog.challegram.v.MessagesRecyclerView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
@@ -255,17 +252,6 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     }
 
     return ArrayUtils.filter(sendersPreFiltered, (item) -> parent.matchesReactionSenderAvatarFilter(reaction, item)).toArray(new TdApi.MessageSender[0]);
-  }
-
-  public static <T> List<T> deduplicate(List<T> list, Comparator<T> comparator) {
-    TreeMap<T, T> uniqueMap = new TreeMap<>(comparator);
-    for (T element : list) {
-      if (uniqueMap.put(element, element) != null) {
-        Log.i("WTF_DEBUG", "tdlib bug!");
-      }
-    }
-
-    return new ArrayList<>(uniqueMap.values());
   }
 
   public void requestAvatarFiles (ComplexReceiver complexReceiver, boolean isUpdate) {

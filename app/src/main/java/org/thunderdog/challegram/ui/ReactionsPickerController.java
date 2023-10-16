@@ -125,6 +125,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     return recyclerView;
   }
 
+  public static final float RECYCLER_VIEW_LEFT_RIGHT_PADDING = 9.5f;
   private static final float DEFAULT_STICKER_PADDING_DP = 5.5f;
 
   public CustomRecyclerView onCreateRecyclerView () {
@@ -148,7 +149,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
     adapter.setLayoutParams(new MediaStickersAdapter.LayoutParams(
       (int) (HeaderView.getSize(true) + MessageOptionsPagerController.getPickerTopPadding()),
-      Screen.dp(9.5f),
+      Screen.dp(RECYCLER_VIEW_LEFT_RIGHT_PADDING),
       Screen.dp(8f),
       Screen.dp(21 - 9.5f),
       getItemHeight()
@@ -158,10 +159,10 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     reactionsController.setArguments(this);
     reactionsController.setAdapter(adapter);
     reactionsController.setItemWidth(9, 38);
-    reactionsController.getValue();
-    reactionsController.getManager();
 
-    return (CustomRecyclerView) reactionsController.getValue();
+    CustomRecyclerView recyclerView = (CustomRecyclerView) reactionsController.getValue();
+    recyclerView.setPadding(Screen.dp(RECYCLER_VIEW_LEFT_RIGHT_PADDING), 0, Screen.dp(RECYCLER_VIEW_LEFT_RIGHT_PADDING), 0);
+    return recyclerView;
   }
 
   public int measureItemsHeight () {
@@ -233,6 +234,8 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
       emojiItems.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_HEADER, pack));
       emojiItems.addAll(emojiItemsCustom);
     }
+
+    emojiItems.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_EMPTY));
 
     reactionsController.setStickers(emojiPacks, emojiItems);
   }

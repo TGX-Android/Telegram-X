@@ -260,12 +260,8 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
       TGStickerSetInfo stickerSet = (TGStickerSetInfo) tag;
       final int viewId = v.getId();
       if (viewId == R.id.btn_addStickerSet) {
-        if (stickerSet.isEmoji() && !context.tdlib().account().isPremium()) {
-          context.context().tooltipManager().builder(v).show(context.tdlib(), R.string.EmojiOnlyForPremium);
-        } else {
-          ((NonMaterialButton) v).setInProgress(true, true);
-          installStickerSet(stickerSet);
-        }
+        ((NonMaterialButton) v).setInProgress(true, true);
+        installStickerSet(stickerSet);
       } else if (viewId == R.id.btn_toggleCollapseRecentStickers) {
         onToggleCollapseRecentStickers((TextView) v, stickerSet);
         updateCollapseView((TextView) v, stickerSet);
@@ -346,7 +342,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
           stickerSet.view();
         }
         TrendingPackHeaderView contentView = (TrendingPackHeaderView) holder.itemView;
-        contentView.setStickerSetInfo(context, stickerSet, highlight,
+        contentView.setStickerSetInfo(stickerSet, highlight,
           stickerSet != null && isInProgress(stickerSet.getId()),
           stickerSet != null && !stickerSet.isViewed()
         );
