@@ -33,6 +33,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageBotInfo;
@@ -763,14 +764,14 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         if (msg.getMessage().content.getConstructor() == TdApi.MessageDice.CONSTRUCTOR && !msg.tdlib().hasRestriction(msg.getMessage().chatId, RightId.SEND_OTHER_MESSAGES)) {
           String emoji = ((TdApi.MessageDice) msg.getMessage().content).emoji;
           ids.append(R.id.btn_messageReplyWithDice);
-          if (TD.EMOJI_DART.textRepresentation.equals(emoji)) {
+          if (ContentPreview.EMOJI_DART.textRepresentation.equals(emoji)) {
             strings.append(R.string.SendDart);
-          } else if (TD.EMOJI_DICE.textRepresentation.equals(emoji)) {
+          } else if (ContentPreview.EMOJI_DICE.textRepresentation.equals(emoji)) {
             strings.append(R.string.SendDice);
           } else {
             strings.append(R.string.SendUnknownDice);
           }
-          icons.append(TD.EMOJI_DART.textRepresentation.equals(emoji) ? R.drawable.baseline_gps_fixed_24 : R.drawable.baseline_casino_24);
+          icons.append(ContentPreview.EMOJI_DART.textRepresentation.equals(emoji) ? R.drawable.baseline_gps_fixed_24 : R.drawable.baseline_casino_24);
         }
 
         ids.append(R.id.btn_messageReply);

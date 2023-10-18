@@ -74,7 +74,7 @@ import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
 import me.vkryl.td.Td;
 
-public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPreview.RefreshCallback, Counter.Callback, ReactionLoadListener, Destroyable, TdlibUi.MessageProvider {
+public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.RefreshCallback, Counter.Callback, ReactionLoadListener, Destroyable, TdlibUi.MessageProvider {
   private static final int FLAG_HAS_PREFIX = 1;
   private static final int FLAG_TEXT_DRAFT = 1 << 4;
   private static final int FLAG_SHOW_VERIFY = 1 << 5;
@@ -118,7 +118,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
   private TextEntity[] entities;
   private Text trimmedText;
 
-  private TD.ContentPreview currentPreview;
+  private ContentPreview currentPreview;
   private IntList textIconIds;
   private @PorterDuffColorId int textIconColorId;
 
@@ -539,7 +539,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
             }
           }
           if (updatedAlbum) {
-            setContentPreview(TD.getAlbumPreview(tdlib, chat.lastMessage, album, true));
+            setContentPreview(ContentPreview.getAlbumPreview(tdlib, chat.lastMessage, album, true));
             return true;
           }
         }
@@ -576,7 +576,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
             return true;
           }
           if (albumChanged) {
-            setContentPreview(TD.getAlbumPreview(tdlib, chat.lastMessage, album, true));
+            setContentPreview(ContentPreview.getAlbumPreview(tdlib, chat.lastMessage, album, true));
           }
         }
       }
@@ -1290,13 +1290,13 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
     if (tdlib.hasPasscode(chat)) {
       flags |= FLAG_CONTENT_HIDDEN;
-      setContentPreview(new TD.ContentPreview(TD.EMOJI_LOCK, R.string.ChatContentProtected));
+      setContentPreview(new ContentPreview(ContentPreview.EMOJI_LOCK, R.string.ChatContentProtected));
       return;
     }
 
     String restrictionReason = tdlib.chatRestrictionReason(chat);
     if (restrictionReason != null) {
-      setContentPreview(new TD.ContentPreview(TD.EMOJI_ERROR, 0, restrictionReason, false));
+      setContentPreview(new ContentPreview(ContentPreview.EMOJI_ERROR, 0, restrictionReason, false));
       return;
     }
 
@@ -1334,7 +1334,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     TdApi.ChatSource source = getSource();
     String psaText = source instanceof TdApi.ChatSourcePublicServiceAnnouncement ? ((TdApi.ChatSourcePublicServiceAnnouncement) source).text : null;
     if (!StringUtils.isEmpty(psaText)) {
-      setContentPreview(new TD.ContentPreview(TD.EMOJI_INFO, 0, psaText, false));
+      setContentPreview(new ContentPreview(ContentPreview.EMOJI_INFO, 0, psaText, false));
       return;
     }
 
@@ -1375,7 +1375,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     if (msg != null) {
       flags |= FLAG_MESSAGE;
       // No need to check tdlib.chatRestrictionReason, because it's already handled above
-      TD.ContentPreview preview = TD.getChatListPreview(tdlib, msg.chatId, msg, false);
+      ContentPreview preview = ContentPreview.getChatListPreview(tdlib, msg.chatId, msg, false);
       setContentPreview(preview);
       visibleMessage = msg;
     } else {
@@ -1410,7 +1410,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     }
   }
 
-  private void setContentPreview (TD.ContentPreview preview) {
+  private void setContentPreview (ContentPreview preview) {
     if (textIconIds != null)
       textIconIds.clear();
     setTextValue(preview.buildText(true), preview.formattedText != null ? preview.formattedText.entities : null, preview.isTranslatable);
@@ -1468,7 +1468,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
   }
 
   @Override
-  public void onContentPreviewChanged (long chatId, long messageId, TD.ContentPreview newPreview, TD.ContentPreview oldPreview) {
+  public void onContentPreviewChanged (long chatId, long messageId, ContentPreview newPreview, ContentPreview oldPreview) {
     tdlib.ui().post(() -> {
       if (currentPreview == oldPreview) {
         setContentPreview(newPreview);

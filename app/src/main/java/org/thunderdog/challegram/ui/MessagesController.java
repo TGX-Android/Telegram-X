@@ -133,6 +133,7 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.core.Media;
+import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.data.InlineResult;
 import org.thunderdog.challegram.data.InlineResultButton;
 import org.thunderdog.challegram.data.InlineResultCommand;
@@ -194,7 +195,6 @@ import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.telegram.GlobalAccountListener;
 import org.thunderdog.challegram.telegram.ListManager;
 import org.thunderdog.challegram.telegram.MessageListManager;
-import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.RightId;
@@ -370,9 +370,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (!canSendWithoutMarkdown && tdlib.shouldSendAsDice(currentText) && !isEditingMessage()) {
       if (items == null)
         items = new ArrayList<>();
-      if (TD.EMOJI_DART.textRepresentation.equals(currentText.text)) {
+      if (ContentPreview.EMOJI_DART.textRepresentation.equals(currentText.text)) {
         items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendNoMarkdown, Lang.getString(R.string.SendDiceAsEmoji), R.drawable.baseline_gps_fixed_24));
-      } else if (TD.EMOJI_DICE.textRepresentation.equals(currentText.text)) {
+      } else if (ContentPreview.EMOJI_DICE.textRepresentation.equals(currentText.text)) {
         items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendNoMarkdown, Lang.getString(R.string.SendDiceAsEmoji), R.drawable.baseline_casino_24));
       } else {
         items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendNoMarkdown, Lang.getString(R.string.SendDiceAsEmoji), Drawables.emojiDrawable(currentText.text)));
@@ -4311,12 +4311,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
               b.append(from);
               b.append(": ");
             }
-            b.append(TD.buildShortPreview(tdlib, msg.getMessage(), true));
+            ContentPreview contentPreview = ContentPreview.getChatListPreview(tdlib, msg.getChatId(), msg.getMessage(), true);
+            b.append(contentPreview.buildText(false));
             break;
           }
           case TdApi.MessageDice.CONSTRUCTOR: {
             String emoji = ((TdApi.MessageDice) msg.getMessage().content).emoji;
-            b.append(Lang.getString(TD.EMOJI_DART.textRepresentation.equals(emoji) ? R.string.SendDartHint : TD.EMOJI_DICE.textRepresentation.equals(emoji) ? R.string.SendDiceHint : R.string.SendUnknownDiceHint, emoji));
+            b.append(Lang.getString(ContentPreview.EMOJI_DART.textRepresentation.equals(emoji) ? R.string.SendDartHint : ContentPreview.EMOJI_DICE.textRepresentation.equals(emoji) ? R.string.SendDiceHint : R.string.SendUnknownDiceHint, emoji));
             break;
           }
         }
@@ -4773,7 +4774,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       TdApi.FormattedText text = Td.textOrCaption(msg.content);
       if (msg.content.getConstructor() != TdApi.MessageText.CONSTRUCTOR && msg.content.getConstructor() != TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
         b.append("\n[");
-        b.append(TD.buildShortPreview(tdlib, msg, false));
+        ContentPreview preview = ContentPreview.getChatListPreview(tdlib, msg.chatId, msg, true);
+        b.append(preview.buildText(false));
         b.append("]");
       }
       //noinspection UnsafeOptInUsageError
@@ -8355,11 +8357,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void sendDice (View view, String emoji) {
     int disabledRes, restrictedRes, restrictedUntilRes;
-    if (TD.EMOJI_DART.textRepresentation.equals(emoji)) {
+    if (ContentPreview.EMOJI_DART.textRepresentation.equals(emoji)) {
       disabledRes = R.string.ChatDisabledDart;
       restrictedRes = R.string.ChatRestrictedDart;
       restrictedUntilRes = R.string.ChatRestrictedDartUntil;
-    } else if (TD.EMOJI_DICE.textRepresentation.equals(emoji)) {
+    } else if (ContentPreview.EMOJI_DICE.textRepresentation.equals(emoji)) {
       disabledRes = R.string.ChatDisabledDice;
       restrictedRes = R.string.ChatRestrictedDice;
       restrictedUntilRes = R.string.ChatRestrictedDiceUntil;
@@ -8878,11 +8880,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     TdApi.InputMessageContent content;
     if (allowDice && tdlib.shouldSendAsDice(msg)) {
       int disabledRes, restrictedRes, restrictedUntilRes;
-      if (TD.EMOJI_DART.textRepresentation.equals(msg.text)) {
+      if (ContentPreview.EMOJI_DART.textRepresentation.equals(msg.text)) {
         disabledRes = R.string.ChatDisabledDart;
         restrictedRes = R.string.ChatRestrictedDart;
         restrictedUntilRes = R.string.ChatRestrictedDartUntil;
-      } else if (TD.EMOJI_DICE.textRepresentation.equals(msg.text)) {
+      } else if (ContentPreview.EMOJI_DICE.textRepresentation.equals(msg.text)) {
         disabledRes = R.string.ChatDisabledDice;
         restrictedRes = R.string.ChatRestrictedDice;
         restrictedUntilRes = R.string.ChatRestrictedDiceUntil;

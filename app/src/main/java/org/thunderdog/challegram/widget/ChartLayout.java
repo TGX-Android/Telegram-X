@@ -34,7 +34,7 @@ import org.thunderdog.challegram.charts.data.ChartData;
 import org.thunderdog.challegram.charts.data.ChartDataUtil;
 import org.thunderdog.challegram.charts.data.DoubleLinearChartData;
 import org.thunderdog.challegram.charts.data.StackBarChartData;
-import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -200,7 +200,7 @@ public class ChartLayout extends FrameLayout implements FactorAnimator.Target, A
     this.chartType = type;
     ViewSupport.setThemedBackground(this, ColorId.filling, themeProvider);
 
-    tdlib.client().send(new TdApi.GetAnimatedEmoji(TD.EMOJI_ABACUS.textRepresentation), result -> {
+    tdlib.client().send(new TdApi.GetAnimatedEmoji(ContentPreview.EMOJI_ABACUS.textRepresentation), result -> {
       if (result.getConstructor() == TdApi.AnimatedEmoji.CONSTRUCTOR) {
         TdApi.AnimatedEmoji emoji = (TdApi.AnimatedEmoji) result;
         tdlib.runOnUiThread(() -> {

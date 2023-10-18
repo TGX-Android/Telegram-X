@@ -32,6 +32,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.data.MediaWrapper;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
@@ -83,7 +84,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   private int flags;
 
   private String title;
-  private TD.ContentPreview content;
+  private ContentPreview content;
   private ImageFile miniThumbnail;
   private ImageFile preview;
   private Path contour;
@@ -489,7 +490,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     return (flags & FLAG_ALLOW_TOUCH_EVENTS) != 0 && trimmedContent != null && trimmedContent.onTouchEvent(view, e);
   }
 
-  public void set (String title, TD.ContentPreview content, TdApi.Minithumbnail miniThumbnail, TdApi.File file) {
+  public void set (String title, ContentPreview content, TdApi.Minithumbnail miniThumbnail, TdApi.File file) {
     ImageFile image;
     if (file == null || TD.isFileEmpty(file)) {
       image = null;
@@ -581,10 +582,10 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     });
   }
 
-  private void setContent (final String title, final TD.ContentPreview content, boolean hasSpoiler, final Path contour, final ImageFile miniThumbnail, final ImageFile preview, final boolean previewCircle, final boolean forceRequest) {
+  private void setContent (final String title, final ContentPreview content, boolean hasSpoiler, final Path contour, final ImageFile miniThumbnail, final ImageFile preview, final boolean previewCircle, final boolean forceRequest) {
     Background.instance().post(() -> {
       ReplyComponent.this.currentMessage = null;
-      ReplyComponent.this.content = new TD.ContentPreview(translatedText, content);
+      ReplyComponent.this.content = new ContentPreview(translatedText, content);
       setTitleImpl(title);
       ReplyComponent.this.contour = contour;
       ReplyComponent.this.miniThumbnail = miniThumbnail;
@@ -624,7 +625,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
 
   public boolean deleteMessageContent (long messageId) {
     if (currentMessage != null && currentMessage.id == messageId) {
-      setContent(Lang.getString(R.string.Error), new TD.ContentPreview(null, R.string.DeletedMessage), false, null, null, null, false, true);
+      setContent(Lang.getString(R.string.Error), new ContentPreview(null, R.string.DeletedMessage), false, null, null, null, false, true);
       return true;
     }
     return false;
@@ -773,7 +774,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     } else {
       miniPreview = null;
     }
-    TD.ContentPreview contentPreview = TD.getChatListPreview(tdlib, msg.chatId, msg, true);
+    ContentPreview contentPreview = ContentPreview.getChatListPreview(tdlib, msg.chatId, msg, true);
     if (msg.forwardInfo != null && (parent != null && parent.getMessage().forwardInfo != null)) {
       switch (msg.forwardInfo.origin.getConstructor()) {
         case TdApi.MessageForwardOriginUser.CONSTRUCTOR:
@@ -813,7 +814,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       StringUtils.isEmpty(senderName) ? tdlib.senderName(sender, isMessageComponent()) :
       Lang.getString(isChannel() ? R.string.format_channelAndSignature : R.string.format_chatAndSignature, tdlib.senderName(sender, isMessageComponent()), senderName);
     if (Thread.currentThread() == Background.instance().thread() || forceLocal) {
-      this.content = new TD.ContentPreview(translatedText, contentPreview);
+      this.content = new ContentPreview(translatedText, contentPreview);
       setTitleImpl(title);
       this.miniThumbnail = miniPreview;
       this.contour = contour;
@@ -858,7 +859,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
           tdlib.client().send(function, this);
           return;
         }
-        setContent(Lang.getString(R.string.Error), TD.errorCode(object) == 404 ? new TD.ContentPreview(null, R.string.DeletedMessage) : new TD.ContentPreview(null, 0, TD.toErrorString(object), true), false, null, null, null, false, false);
+        setContent(Lang.getString(R.string.Error), TD.errorCode(object) == 404 ? new ContentPreview(null, R.string.DeletedMessage) : new ContentPreview(null, 0, TD.toErrorString(object), true), false, null, null, null, false, false);
         currentMessage = null;
         break;
       }

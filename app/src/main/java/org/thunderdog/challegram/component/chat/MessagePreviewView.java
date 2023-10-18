@@ -22,7 +22,7 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.config.Config;
-import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 import org.thunderdog.challegram.support.RippleSupport;
@@ -108,7 +108,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   private String forcedTitle;
   private boolean ignoreAlbumRefreshers, useAvatarFallback;
 
-  private TD.ContentPreview contentPreview;
+  private ContentPreview contentPreview;
 
   public void setMessage (@Nullable TdApi.Message message, @Nullable TdApi.SearchMessagesFilter filter, @Nullable String forcedTitle, boolean ignoreAlbumRefreshers) {
     this.ignoreAlbumRefreshers = ignoreAlbumRefreshers;
@@ -171,7 +171,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   }
 
   private void buildPreview () {
-    this.contentPreview = TD.getChatListPreview(tdlib, message.chatId, message, true);
+    this.contentPreview = ContentPreview.getChatListPreview(tdlib, message.chatId, message, true);
     if (contentPreview.hasRefresher() && !(ignoreAlbumRefreshers && contentPreview.isMediaGroup())) {
       contentPreview.refreshContent((chatId, messageId, newPreview, oldPreview) -> {
         tdlib.runOnUiThread(() -> {

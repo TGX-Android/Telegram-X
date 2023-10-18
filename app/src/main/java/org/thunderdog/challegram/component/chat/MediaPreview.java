@@ -19,6 +19,7 @@ import androidx.annotation.CallSuper;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -133,7 +134,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
     }
   }
 
-  public static MediaPreview valueOf (Tdlib tdlib, TdApi.Message message, @Nullable TD.ContentPreview preview, int size, int cornerRadius) {
+  public static MediaPreview valueOf (Tdlib tdlib, TdApi.Message message, @Nullable ContentPreview preview, int size, int cornerRadius) {
     Tdlib.Album album = preview != null ? preview.getAlbum() : null;
     if (album != null) {
       // TODO album preview?

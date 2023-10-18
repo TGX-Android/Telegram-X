@@ -47,6 +47,7 @@ import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
+import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGReaction;
@@ -7135,7 +7136,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
             matchedLanguageLevel = 2;
           } else if (diceEmoji.equals(builtinLanguageEmoji)) {
             matchedLanguageLevel = 1;
-          } else if (diceEmoji.equals(TD.EMOJI_DICE.textRepresentation)) {
+          } else if (diceEmoji.equals(ContentPreview.EMOJI_DICE.textRepresentation)) {
             stickerValue = 1;
           } else if (diceEmoji.equals(numberEmoji)) {
             stickerValue = value;
@@ -7165,13 +7166,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     explicitDice = animatedDiceExplicit.find(Lang.getBuiltinLanguageEmoji());
     if (explicitDice != null)
       return explicitDice;
-    explicitDice = animatedDiceExplicit.find(TD.EMOJI_DICE.textRepresentation);
+    explicitDice = animatedDiceExplicit.find(ContentPreview.EMOJI_DICE.textRepresentation);
     return explicitDice;
   }
 
   @Nullable
   public TdApi.DiceStickers findDiceEmoji (String emoji, int value, TdApi.DiceStickers defaultValue) {
-    if (TD.EMOJI_DICE.textRepresentation.equals(emoji)) {
+    if (ContentPreview.EMOJI_DICE.textRepresentation.equals(emoji)) {
       TdApi.Sticker explicitDice = findExplicitDiceEmoji(value);
       if (explicitDice != null)
         return new TdApi.DiceStickersRegular(explicitDice);
@@ -10817,11 +10818,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   public CharSequence getDiceRestrictionText (TdApi.Chat chat, String emoji) {
     int disabledRes, restrictedRes, restrictedUntilRes;
-    if (TD.EMOJI_DART.textRepresentation.equals(emoji)) {
+    if (ContentPreview.EMOJI_DART.textRepresentation.equals(emoji)) {
       disabledRes = R.string.ChatDisabledDart;
       restrictedRes = R.string.ChatRestrictedDart;
       restrictedUntilRes = R.string.ChatRestrictedDartUntil;
-    } else if (TD.EMOJI_DICE.textRepresentation.equals(emoji)) {
+    } else if (ContentPreview.EMOJI_DICE.textRepresentation.equals(emoji)) {
       disabledRes = R.string.ChatDisabledDice;
       restrictedRes = R.string.ChatRestrictedDice;
       restrictedUntilRes = R.string.ChatRestrictedDiceUntil;

@@ -834,12 +834,12 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
                   GifReceiver receiver = ((MessageView) targetView).getComplexReceiver().getGifReceiver(0);
                   if (receiver != null) {
                     outRect.set(receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom());
-                    outRect.top += outRect.height() * (TD.EMOJI_DICE.textRepresentation.equals(dice.emoji) ? .35f : .20f);
+                    outRect.top += outRect.height() * (ContentPreview.EMOJI_DICE.textRepresentation.equals(dice.emoji) ? .35f : .20f);
                   }
                 })
                 .gif(gifFile, imageFile)
                 .controller(controller())
-                .show(tdlib, Lang.getString(TD.EMOJI_DART.textRepresentation.equals(dice.emoji) ? R.string.SendDartHint : TD.EMOJI_DICE.textRepresentation.equals(dice.emoji) ? R.string.SendDiceHint : R.string.SendUnknownDiceHint, dice.emoji));
+                .show(tdlib, Lang.getString(ContentPreview.EMOJI_DART.textRepresentation.equals(dice.emoji) ? R.string.SendDartHint : ContentPreview.EMOJI_DICE.textRepresentation.equals(dice.emoji) ? R.string.SendDiceHint : R.string.SendUnknownDiceHint, dice.emoji));
               break;
             }
             case SPECIAL_TYPE_ANIMATED_EMOJI:
