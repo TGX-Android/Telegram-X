@@ -1141,7 +1141,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
 
   public @ChatFolderStyle int chatFolderStyle () {
     if (_chatFolderStyle == null) {
-      _chatFolderStyle = Settings.instance().getInt(key(CHAT_FOLDER_STYLE, tdlib.accountId()), ChatFolderStyle.LABEL_ONLY);
+      _chatFolderStyle = Settings.instance().getInt(key(CHAT_FOLDER_STYLE, tdlib.accountId()), ChatFolderStyle.LABEL_AND_ICON);
     }
     return _chatFolderStyle;
   }
