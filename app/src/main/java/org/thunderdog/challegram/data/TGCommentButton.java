@@ -652,30 +652,27 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
     cancelAsyncPreview();
     TdApi.GetMessageThread messageThreadQuery = new TdApi.GetMessageThread(messageId.getChatId(), messageId.getMessageId());
     currentMessageThreadQuery = messageThreadQuery;
-    context.tdlib().send(messageThreadQuery, (result) -> context.runOnUiThreadOptional(() -> {
+    context.tdlib().send(messageThreadQuery, (messageThreadInfo, error) -> context.runOnUiThreadOptional(() -> {
       if (messageThreadQuery != currentMessageThreadQuery) {
         return;
       }
       currentMessageThreadQuery = null;
-      switch (result.getConstructor()) {
-        case TdApi.MessageThreadInfo.CONSTRUCTOR:
-          openCommentsPreviewAsync((TdApi.MessageThreadInfo) result, x, y);
-          break;
-        case TdApi.Error.CONSTRUCTOR:
-          if ("MSG_ID_INVALID".equals(TD.errorText(result))) {
-            if (context.isChannel()) {
-              UI.showToast(R.string.ChannelPostDeleted, Toast.LENGTH_SHORT);
-            } else {
-              UI.showError(result);
-            }
-            break;
+      if (error != null) {
+        if ("MSG_ID_INVALID".equals(TD.errorText(error))) {
+          if (context.isChannel()) {
+            UI.showToast(R.string.ChannelPostDeleted, Toast.LENGTH_SHORT);
+          } else {
+            UI.showError(error);
           }
-          if (fallbackMessageId != null) {
-            openCommentsPreviewAsync(fallbackMessageId, null, x, y);
-            break;
-          }
-          UI.showError(result);
-          break;
+          return;
+        }
+        if (fallbackMessageId != null) {
+          openCommentsPreviewAsync(fallbackMessageId, null, x, y);
+          return;
+        }
+        UI.showError(error);
+      } else {
+        openCommentsPreviewAsync(messageThreadInfo, x, y);
       }
     }));
   }

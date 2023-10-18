@@ -14,6 +14,7 @@
 // File with static configuration, that is meant to be adjusted only once
 
 object Config {
+  const val PRIMARY_SDK_VERSION = 21
   const val MIN_SDK_VERSION = 16
   val JAVA_VERSION = org.gradle.api.JavaVersion.VERSION_11
   val EXOPLAYER_EXTENSIONS = arrayOf("ffmpeg", "flac", "opus", "vp9")
@@ -27,7 +28,7 @@ object LibraryVersions {
   const val ANNOTATIONS = "1.3.0"
 }
 
-class AbiVariant (val flavor: String, vararg val filters: String = Config.SUPPORTED_ABI, val displayName: String = filters[0], val sideLoadOnly: Boolean = false) {
+class AbiVariant (val flavor: String, vararg val filters: String = arrayOf(), val displayName: String = filters[0], val sideLoadOnly: Boolean = false) {
   init {
     if (filters.isEmpty())
       error("Empty filters passed")
@@ -37,16 +38,21 @@ class AbiVariant (val flavor: String, vararg val filters: String = Config.SUPPOR
     }
   }
 
-  val minSdkVersion: Int
+  val is64Bit: Boolean
     get() {
-      var minSdkVersion = maxOf(21, Config.MIN_SDK_VERSION)
       for (filter in filters) {
         if (filter != "arm64-v8a" && filter != "x86_64") {
-          minSdkVersion = Config.MIN_SDK_VERSION
-          break
+          return false
         }
       }
-      return minSdkVersion
+      return true
+    }
+
+  val minSdkVersion: Int
+    get() = if (is64Bit) {
+      Config.PRIMARY_SDK_VERSION
+    } else {
+      Config.MIN_SDK_VERSION
     }
 }
 
@@ -58,7 +64,7 @@ object Abi {
   const val X64 = 4
 
   val VARIANTS = mapOf(
-    Pair(UNIVERSAL, AbiVariant("universal", displayName = "universal", sideLoadOnly = true)),
+    Pair(UNIVERSAL, AbiVariant("universal", displayName = "universal", sideLoadOnly = true, filters = arrayOf("arm64-v8a", "x86_64"))),
     Pair(ARMEABI_V7A, AbiVariant("arm32", "armeabi-v7a")),
     Pair(ARM64_V8A, AbiVariant("arm64", "arm64-v8a")),
     Pair(X86, AbiVariant("x86", "x86")),

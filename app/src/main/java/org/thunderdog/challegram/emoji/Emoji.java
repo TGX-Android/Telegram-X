@@ -60,7 +60,8 @@ import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.util.LocalVar;
 
 public class Emoji {
-  public static final String CUSTOM_EMOJI_CACHE = "custom_emoji_id_";
+  public static final @Deprecated String CUSTOM_EMOJI_CACHE_OLD = "custom_emoji_id_";
+  public static final String CUSTOM_EMOJI_CACHE = "_";
 
   private static Emoji instance;
 
@@ -222,6 +223,7 @@ public class Emoji {
   public interface EmojiChangeListener {
     void moveEmoji (int oldIndex, int newIndex);
     void addEmoji (int newIndex, RecentEmoji emoji);
+    void removeEmoji (int oldIndex, RecentEmoji emoji);
     void replaceEmoji (int newIndex, RecentEmoji emoji);
     void onToneChanged (@Nullable String newDefaultTone);
     void onCustomToneApplied (String emoji, @Nullable String newTone, @Nullable String[] newOtherTones);
@@ -231,21 +233,39 @@ public class Emoji {
     saveRecentEmoji(Emoji.CUSTOM_EMOJI_CACHE + id);
   }
 
+  public boolean removeRecentCustomEmoji (long id) {
+    return removeRecentEmoji(Emoji.CUSTOM_EMOJI_CACHE + id);
+  }
+
+  public boolean removeRecentEmoji (String emoji) {
+    int oldIndex = indexOfRecentEmoji(emoji);
+    if (oldIndex == -1 || recents.size() == 1) {
+      return false;
+    }
+    RecentEmoji recentEmoji = recents.remove(oldIndex);
+    for (EmojiChangeListener listener : emojiChangeListeners) {
+      listener.removeEmoji(oldIndex, recentEmoji);
+    }
+    saveRecents(true);
+    return true;
+  }
+
+  private int indexOfRecentEmoji (String emoji) {
+    getRecents();
+    int index = 0;
+    for (RecentEmoji recentEmoji : recents) {
+      if (recentEmoji.emoji.equals(emoji)) {
+        return index;
+      }
+      index++;
+    }
+    return -1;
+  }
+
   public void saveRecentEmoji (String emoji) {
     int time = (int) (System.currentTimeMillis() / 1000l);
-    getRecents();
 
-    // emoji = fixEmoji(emoji);
-
-    int oldIndex = -1;
-    int i = 0;
-    for (RecentEmoji oldEmoji : recents) {
-      if (oldEmoji.emoji.equals(emoji)) {
-        oldIndex = i;
-        break;
-      }
-      i++;
-    }
+    int oldIndex = indexOfRecentEmoji(emoji);
 
     boolean changed;
 

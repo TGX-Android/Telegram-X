@@ -35,7 +35,7 @@ import org.thunderdog.challegram.data.CallSection;
 import org.thunderdog.challegram.data.TGFoundChat;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.ViewController;
-import org.thunderdog.challegram.telegram.DayChangeListener;
+import org.thunderdog.challegram.telegram.DateChangeListener;
 import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibOptionListener;
@@ -64,7 +64,7 @@ public class CallListController extends RecyclerViewController<Void> implements
   View.OnClickListener,
   Client.ResultHandler,
   MessageListener,
-  DayChangeListener,
+  DateChangeListener,
   View.OnLongClickListener,
   BaseView.ActionListProvider, TdlibOptionListener {
   public CallListController (Context context, Tdlib tdlib) {
@@ -166,6 +166,7 @@ public class CallListController extends RecyclerViewController<Void> implements
     tdlib.client().send(new TdApi.SearchCallMessages(null, Screen.calculateLoadingItems(Screen.dp(72f), 20), false), this);
     tdlib.client().send(new TdApi.GetTopChats(new TdApi.TopChatCategoryCalls(), 30), this);
     tdlib.listeners().subscribeForAnyUpdates(this);
+    tdlib.context().dateManager().addListener(this);
   }
 
   @Override
@@ -589,6 +590,7 @@ public class CallListController extends RecyclerViewController<Void> implements
   public void destroy () {
     super.destroy();
     tdlib.listeners().unsubscribeFromAnyUpdates(this);
+    tdlib.context().dateManager().removeListener(this);
   }
 
   @Override
@@ -773,7 +775,7 @@ public class CallListController extends RecyclerViewController<Void> implements
   }*/
 
   @Override
-  public void onDayChanged () {
+  public void onDateChanged () {
     buildSections();
   }
 

@@ -39,6 +39,7 @@ import org.thunderdog.challegram.data.TdApiExt;
 import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
+import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -89,6 +90,7 @@ public class MessagesLoader implements Client.ResultHandler {
   private int knownTotalMessageCount = -1;
   private MessageId scrollMessageId;
   private int scrollHighlightMode;
+  private TdlibMessageViewer.Viewport viewport;
 
   public static final int SPECIAL_MODE_NONE = 0;
   public static final int SPECIAL_MODE_EVENT_LOG = 1;
@@ -101,6 +103,7 @@ public class MessagesLoader implements Client.ResultHandler {
   private String searchQuery;
   private TdApi.MessageSender searchSender;
   private TdApi.SearchMessagesFilter searchFilter;
+  private TdApi.MessageSource messageSource;
 
   private @Nullable TdApi.Chat chat;
   private @Nullable ThreadInfo messageThread;
@@ -158,6 +161,40 @@ public class MessagesLoader implements Client.ResultHandler {
     this.messageThread = messageThread;
     this.specialMode = mode;
     this.searchFilter = filter;
+    this.messageSource = newMessageSource();
+    recycleMessageViewer();
+    this.viewport = tdlib.messageViewer().createViewport(messageSource, manager.controller());
+  }
+
+  private void recycleMessageViewer () {
+    if (viewport != null) {
+      viewport.performDestroy();
+      viewport = null;
+    }
+  }
+
+  public TdlibMessageViewer.Viewport viewport () {
+    if (viewport == null)
+      throw new IllegalStateException();
+    return viewport;
+  }
+
+  public TdApi.MessageSource messageSource () {
+    return messageSource;
+  }
+
+  private TdApi.MessageSource newMessageSource () {
+    if (manager.readMessagesDisabled()) {
+      return new TdApi.MessageSourceHistoryPreview();
+    } else if (specialMode == MessagesLoader.SPECIAL_MODE_EVENT_LOG) {
+      return new TdApi.MessageSourceChatEventLog();
+    } else if (specialMode == MessagesLoader.SPECIAL_MODE_SEARCH) {
+      return new TdApi.MessageSourceSearch();
+    } else if (getMessageThreadId() != 0) {
+      return new TdApi.MessageSourceMessageThreadHistory();
+    } else {
+      return new TdApi.MessageSourceChatHistory();
+    }
   }
 
   public void setSearchParameters (String query, TdApi.MessageSender sender, TdApi.SearchMessagesFilter filter) {
@@ -639,6 +676,7 @@ public class MessagesLoader implements Client.ResultHandler {
     Tdlib tdlib = context.tdlib();
     boolean isGroupChat = false;
     final long myUserId = tdlib.myUserId();
+    final TdApi.MessageSender mySender = tdlib.mySender();
 
     JSONObject chat = null;
     JSONArray chatsArray = new JSONArray(json.startsWith("[") && json.endsWith("]") ? json : "[" + json + "]");
@@ -957,12 +995,12 @@ public class MessagesLoader implements Client.ResultHandler {
         msg.id = maxId - messages.size() + i;
         msg.date = message.date != 0 ? message.date : (minDate = minDate + message.after);
         msg.isOutgoing = message.out;
-        msg.senderId = new TdApi.MessageSenderUser(message.out ? myUserId : message.senderUserId);
+        msg.senderId = message.out ? mySender : new TdApi.MessageSenderUser(message.senderUserId);
         msg.content = message.content;
         if (isLast) {
           msg.interactionInfo = new TdApi.MessageInteractionInfo();
           msg.interactionInfo.reactions = new TdApi.MessageReaction[]{
-            new TdApi.MessageReaction(new TdApi.ReactionTypeEmoji("\uD83D\uDC4D"), 5, true, new TdApi.MessageSender[0])
+            new TdApi.MessageReaction(new TdApi.ReactionTypeEmoji("\uD83D\uDC4D"), 5, true, mySender, new TdApi.MessageSender[0])
           };
         }
         out.add(msg);
@@ -1170,7 +1208,7 @@ public class MessagesLoader implements Client.ResultHandler {
       isChannel, false,
       false,
       event.date, 0,
-      null, null, null,
+      null, null, null, null,
       null, 0,
       null, 0, 0,
       0, null,

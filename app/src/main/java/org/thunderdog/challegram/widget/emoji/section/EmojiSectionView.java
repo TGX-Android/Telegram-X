@@ -12,7 +12,7 @@
  *
  * File created on 18/08/2023
  */
-package org.thunderdog.challegram.widget.EmojiMediaLayout.Sections;
+package org.thunderdog.challegram.widget.emoji.section;
 
 import android.content.Context;
 import android.graphics.Canvas;

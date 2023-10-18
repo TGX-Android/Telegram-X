@@ -207,9 +207,11 @@ target_include_directories(${TGCALLS_LIB} PRIVATE
   "${YUV_DIR}/include"
   "${STUB_DIR}"
 )
-set_target_properties(${TGCALLS_LIB} PROPERTIES
-  ANDROID_ARM_MODE arm
-)
+if (${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "arm64-v8a")
+  set_target_properties(${TGCALLS_LIB} PROPERTIES
+    ANDROID_ARM_MODE arm
+  )
+endif()
 target_compile_definitions(${TGCALLS_LIB} PUBLIC ${WEBRTC_OPTIONS})
 target_compile_definitions(${TGCALLS_LIB} PRIVATE
   TDLIB_TDAPI_CLASS_PATH="org/drinkless/tdlib/TdApi"

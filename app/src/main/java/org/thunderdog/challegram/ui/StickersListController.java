@@ -34,6 +34,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.emoji.MediaStickersAdapter;
+import org.thunderdog.challegram.component.sticker.StickerPreviewView;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
@@ -44,6 +45,7 @@ import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.navigation.MoreDelegate;
+import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.StickersListener;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -67,7 +69,9 @@ import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.Td;
 
-public class StickersListController extends ViewController<StickersListController.StickerSetProvider> implements Menu, StickerSmallView.StickerMovementCallback, Client.ResultHandler, MoreDelegate, StickersListener {
+public class StickersListController extends ViewController<StickersListController.StickerSetProvider> implements
+  Menu, StickerSmallView.StickerMovementCallback, Client.ResultHandler,
+  MoreDelegate, StickersListener, StickerPreviewView.MenuStickerPreviewCallback {
   public StickersListController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
@@ -442,6 +446,7 @@ public class StickersListController extends ViewController<StickersListControlle
           || type == MediaStickersAdapter.StickerHolder.TYPE_SEPARATOR ? spanCount : 1;
       }
     });
+    adapter.setMenuStickerPreviewCallback(this);
     adapter.setRepaintingColorId(ColorId.text);
     adapter.setManager(manager);
     adapter.setIsBig();
@@ -632,10 +637,9 @@ public class StickersListController extends ViewController<StickersListControlle
     final long[] currentStickerSetIds = stickerSetIdsToLoad;
     final TdApi.StickerSet[] loadSetsResult = new TdApi.StickerSet[stickerSetIdsToLoad.length];
     for (long id : stickerSetIdsToLoad) {
-      tdlib.send(new TdApi.GetStickerSet(id), object -> UI.post(() -> {
+      tdlib.send(new TdApi.GetStickerSet(id), (stickerSet, error) -> UI.post(() -> {
         if (currentKey != loadSetsKey || isDestroyed()) return;
-        if (object.getConstructor() == TdApi.StickerSet.CONSTRUCTOR) {
-          TdApi.StickerSet stickerSet = (TdApi.StickerSet) object;
+        if (stickerSet != null) {
           int index = ArrayUtils.indexOf(currentStickerSetIds, stickerSet.id);
           if (index > -1 && index < loadSetsResult.length) {
             loadSetsResult[index] = stickerSet;
@@ -833,6 +837,41 @@ public class StickersListController extends ViewController<StickersListControlle
       }
 
       return items;
+    }
+  }
+
+  @Override
+  public void buildMenuStickerPreview (ArrayList<StickerPreviewView.MenuItem> menuItems, @NonNull TGStickerObj sticker, @NonNull StickerSmallView stickerSmallView) {
+    final NavigationController navigation = context.navigation();
+    final ViewController<?> c = navigation != null ? navigation.getCurrentStackItem() : null;
+    final boolean canWriteMessages = c instanceof MessagesController && ((MessagesController) c).canWriteMessages();
+
+    final boolean needViewPackButton = sticker.needViewPackButton();
+    final boolean isEmoji = sticker.isCustomEmoji();
+
+    final @StringRes int sendText = isEmoji ? (canWriteMessages ? R.string.PasteCustomEmoji : R.string.ShareCustomEmoji) : R.string.SendSticker;
+
+    menuItems.add(new StickerPreviewView.MenuItem(StickerPreviewView.MenuItem.MENU_ITEM_TEXT,
+      Lang.getString(sendText).toUpperCase(), R.id.btn_send, ColorId.textNeutral));
+
+    if (needViewPackButton) {
+      menuItems.add(new StickerPreviewView.MenuItem(StickerPreviewView.MenuItem.MENU_ITEM_TEXT,
+        Lang.getString(R.string.ViewPackPreview).toUpperCase(), R.id.btn_view, ColorId.textNeutral));
+    }
+  }
+
+  @Override
+  public void onMenuStickerPreviewClick (View v, ViewController<?> context, @NonNull TGStickerObj sticker, @NonNull StickerSmallView stickerSmallView) {
+    final int viewId = v.getId();
+    if (viewId == R.id.btn_send) {
+      if (stickerSmallView.onSendSticker(v, sticker, Td.newSendOptions())) {
+        stickerSmallView.closePreviewIfNeeded();
+      }
+    } else if (viewId == R.id.btn_view) {
+      if (context != null) {
+        tdlib.ui().showStickerSet(context, sticker.getStickerSetId(), null);
+        stickerSmallView.closePreviewIfNeeded();
+      }
     }
   }
 }

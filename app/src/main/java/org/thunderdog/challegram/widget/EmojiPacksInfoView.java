@@ -41,7 +41,7 @@ public class EmojiPacksInfoView extends CustomTextView {
   private final ViewController<?> parent;
   private @Nullable TdApi.StickerSetInfo lastInfo;
   private int key = 0;
-
+  private long[] emojiPacksIds;
 
   public EmojiPacksInfoView (Context context, ViewController<?> parent, Tdlib tdlib) {
     super(context, tdlib);
@@ -53,6 +53,7 @@ public class EmojiPacksInfoView extends CustomTextView {
   }
 
   public void update (long firstEmojiId, long[] emojiPacksIds, ClickableSpan onClickListener, boolean animated) {
+    this.emojiPacksIds = emojiPacksIds;
     boolean isSingle = emojiPacksIds.length == 1;
 
     if (isSingle && (lastInfo == null || lastInfo.id != emojiPacksIds[0])) {
@@ -73,6 +74,10 @@ public class EmojiPacksInfoView extends CustomTextView {
     updateImpl(firstEmojiId, emojiPacksIds.length, onClickListener, lastInfo, animated);
   }
 
+  public long[] getEmojiPacksIds () {
+    return emojiPacksIds;
+  }
+
   private void updateImpl (long firstEmojiId, int emojiPacksCount, ClickableSpan onClickListener, @Nullable TdApi.StickerSetInfo info, boolean animated) {
     boolean isSingle = emojiPacksCount == 1;
 
@@ -86,6 +91,7 @@ public class EmojiPacksInfoView extends CustomTextView {
     }
     String text = Lang.getString(isSingle ? R.string.EmojiUsedFromSingle : R.string.EmojiUsedFromX, link);
 
+    // FIXME: do not rely on cloud strings here
     final int linkStart = text.indexOf(link);
     final int emojiStart = text.indexOf("*");
 

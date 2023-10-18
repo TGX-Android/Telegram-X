@@ -870,27 +870,18 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
       awaitingQuery = q;
       if (!bingUserLoading) {
         bingUserLoading = true;
-        tdlib.client().send(new TdApi.SearchPublicChat(tdlib.getPhotoSearchBotUsername()), object -> {
-          switch (object.getConstructor()) {
-            case TdApi.Chat.CONSTRUCTOR: {
-              TdApi.User user = tdlib.chatUser((TdApi.Chat) object);
-              if (user != null) {
-                bingUserId = user.id;
-                UI.post(() -> {
-                  if (lastQuery.equals(awaitingQuery)) {
-                    searchInternal(awaitingQuery);
-                  }
-                });
-              }
-              break;
-            }
-            case TdApi.Error.CONSTRUCTOR: {
-              UI.showError(object);
-              break;
-            }
-            default: {
-              Log.unexpectedTdlibResponse(object, TdApi.SearchPublicChat.class, TdApi.Chat.class);
-              break;
+        tdlib.send(new TdApi.SearchPublicChat(tdlib.getPhotoSearchBotUsername()), (publicChat, error) -> {
+          if (error != null) {
+            UI.showError(error);
+          } else {
+            TdApi.User user = tdlib.chatUser(publicChat);
+            if (user != null) {
+              bingUserId = user.id;
+              UI.post(() -> {
+                if (lastQuery.equals(awaitingQuery)) {
+                  searchInternal(awaitingQuery);
+                }
+              });
             }
           }
         });

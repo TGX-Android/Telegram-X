@@ -37,6 +37,7 @@ import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
+import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.emoji.Emoji;
@@ -991,13 +992,17 @@ public class Lang {
     }
     String text = TD.getTextFromMessageSpoilerless(message);
     if (!needPerson) {
-      if (StringUtils.isEmpty(text))
-        text = Lang.lowercase(TD.buildShortPreview(tdlib, message, true));
+      if (StringUtils.isEmpty(text)) {
+        ContentPreview preview = ContentPreview.getNotificationPreview(tdlib, message.chatId, message, true);
+        text = Lang.lowercase(preview.buildText(false));
+      }
       return Lang.getString(R.string.format_pinned, text);
     }
     if (userName == null) {
-      if (StringUtils.isEmpty(text))
-        text = Lang.lowercase(TD.buildShortPreview(tdlib, message, true));
+      if (StringUtils.isEmpty(text)) {
+        ContentPreview preview = ContentPreview.getNotificationPreview(tdlib, message.chatId, message, true);
+        text = Lang.lowercase(preview.buildText(false));
+      }
       return Lang.getString(R.string.NewPinnedMessage, text);
     }
     if (!StringUtils.isEmpty(text)) {
@@ -1080,7 +1085,6 @@ public class Lang {
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessagePinMessage.CONSTRUCTOR:
       case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
-      case TdApi.MessageWebsiteConnected.CONSTRUCTOR:
       case TdApi.MessageBotWriteAccessAllowed.CONSTRUCTOR:
       case TdApi.MessageChatJoinByRequest.CONSTRUCTOR:
       case TdApi.MessageChatSetBackground.CONSTRUCTOR:
@@ -1101,7 +1105,7 @@ public class Lang {
       case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
         break;
       default:
-        Td.assertMessageContent_6479f6fc();
+        Td.assertMessageContent_cda9af31();
         throw Td.unsupported(message.content);
     }
     String format = Lang.getString(res);

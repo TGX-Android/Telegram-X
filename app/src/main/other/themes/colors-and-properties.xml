@@ -56,7 +56,7 @@
     <!-- MAIN -->
 
     <item name="filling" /> <!-- solid color on top of the background -->
-    <item name="background" /> <!-- solid color below filling -->
+    <item name="background" porterDuff="true" /> <!-- solid color below filling -->
     <item name="separator" /> <!-- separator color between items -->
     <item name="fillingPressed" />  <!-- same as filling, but pressed. Not transparent -->
     <item name="placeholder" />  <!-- solid color for space where image will be loaded, usually very transparent #fff or #000 -->
@@ -77,23 +77,23 @@
     <!-- TOOLTIP -->
 
     <item name="tooltip" />
-    <item name="tooltip_text" />
+    <item name="tooltip_text" porterDuff="true" />
     <item name="tooltip_textLink" tinted="true" />
     <item name="tooltip_textLinkPressHighlight" tinted="true" />
     <item name="tooltip_outline" />
 
     <!-- TEXT -->
 
-    <item name="text" /> <!-- Text on top of filling -->
+    <item name="text" porterDuff="true" /> <!-- Text on top of filling -->
     <item name="textSelectionHighlight" tinted="true" />
     <item name="textLight" porterDuff="true" />
     <item name="textSecure" porterDuff="true" />
-    <item name="textNeutral" tinted="true" />
-    <item name="textNegative" />
-    <item name="textLink" tinted="true" />  <!-- links text color -->
+    <item name="textNeutral" porterDuff="true" tinted="true" />
+    <item name="textNegative" porterDuff="true" />
+    <item name="textLink" porterDuff="true" tinted="true" />  <!-- links text color -->
     <item name="textLinkPressHighlight"
       tinted="true" /> <!-- color below textLink when user presses it -->
-    <item name="textSearchQueryHighlight" tinted="true" />
+    <item name="textSearchQueryHighlight" porterDuff="true" tinted="true" />
 
     <!-- BACKGROUND -->
 
@@ -155,7 +155,7 @@
     <item name="circleButtonOverlay" />
     <item name="circleButtonOverlayIcon" />
     <item name="circleButtonChat" />
-    <item name="circleButtonChatIcon" />
+    <item name="circleButtonChatIcon" porterDuff="true" />
 
     <item name="circleButtonNewSecret" />
     <item name="circleButtonNewSecretIcon" />
@@ -223,15 +223,15 @@
     <item name="avatarPink_big" />
     <item name="avatar_content" porterDuff="true" />
 
-    <item name="nameInactive" />
-    <item name="nameRed" />
-    <item name="nameOrange" />
-    <item name="nameYellow" />
-    <item name="nameGreen" />
-    <item name="nameCyan" />
-    <item name="nameBlue" />
-    <item name="nameViolet" />
-    <item name="namePink" />
+    <item name="nameInactive" porterDuff="true" />
+    <item name="nameRed" porterDuff="true" />
+    <item name="nameOrange" porterDuff="true" />
+    <item name="nameYellow" porterDuff="true" />
+    <item name="nameGreen" porterDuff="true" />
+    <item name="nameCyan" porterDuff="true" />
+    <item name="nameBlue" porterDuff="true" />
+    <item name="nameViolet" porterDuff="true" />
+    <item name="namePink" porterDuff="true" />
 
     <!-- NAVIGATION -->
 
@@ -267,7 +267,7 @@
 
     <item name="passcode" tinted="true" />
     <item name="passcodeIcon" porterDuff="true" />
-    <item name="passcodeText" />
+    <item name="passcodeText" porterDuff="true" />
 
     <item name="notification" tinted="true" />
     <item name="notificationLink" tinted="true" />

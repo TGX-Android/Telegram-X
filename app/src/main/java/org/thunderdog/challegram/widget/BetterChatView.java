@@ -47,6 +47,8 @@ import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.telegram.TdlibMessageViewer;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
@@ -75,7 +77,7 @@ import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 
-public class BetterChatView extends BaseView implements Destroyable, RemoveHelper.RemoveDelegate, ChatListener, TdlibCache.UserDataChangeListener, TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener, NotificationSettingsListener, TdlibCache.UserStatusChangeListener, DrawableProvider, TooltipOverlayView.LocationProvider {
+public class BetterChatView extends BaseView implements Destroyable, RemoveHelper.RemoveDelegate, ChatListener, TdlibCache.UserDataChangeListener, TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener, NotificationSettingsListener, TdlibCache.UserStatusChangeListener, DrawableProvider, TooltipOverlayView.LocationProvider, TdlibUi.MessageProvider {
   private static final int FLAG_FAKE_TITLE = 1;
   private static final int FLAG_SECRET = 1 << 1;
   private static final int FLAG_ONLINE = 1 << 2;
@@ -260,8 +262,13 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
   public void setEmojiStatus (@Nullable TdApi.User user) {
     emojiStatusHelper.updateEmoji(user, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
       @Override
-      public int emojiStatusColor () {
-        return Theme.getColor(ColorId.iconActive);
+      public int mediaTextColorOrId () {
+        return ColorId.iconActive;
+      }
+
+      @Override
+      public boolean mediaTextColorIsId () {
+        return true;
       }
     });
     setTrimmedTitle();
@@ -734,5 +741,15 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
       avatarReceiver.requestMessageSender(tdlib, sender, AvatarReceiver.Options.NONE);
       invalidate();
     }
+  }
+
+  @Override
+  public TdApi.Message getVisibleMessage () {
+    return lastMessage != null ? lastMessage.getMessage() : null;
+  }
+
+  @Override
+  public int getVisibleMessageFlags () {
+    return TdlibMessageViewer.Flags.NO_SENSITIVE_SCREENSHOT_NOTIFICATION;
   }
 }

@@ -710,6 +710,9 @@ public class TGMessageFile extends TGMessage {
   @Nullable
   @Override
   public TdApi.FormattedText getTextToTranslateImpl () {
+    if (filesList == null) {
+      return null;
+    }
     if (filesList.size() == 1) {
       CaptionedFile file = filesList.get(0);
       return file.hasCaption() ? getTranslationSafeText(file.serverCaption) : null;

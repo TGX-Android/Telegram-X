@@ -74,6 +74,10 @@ public class TGReaction {
     loadAllAnimationsAndCache();
   }
 
+  public boolean needThemedColorFilter () {
+    return TD.needThemedColorFilter(customReaction);
+  }
+
   public boolean isPremium () {
     return isCustom();
   }

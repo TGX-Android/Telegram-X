@@ -700,7 +700,22 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   }
 
   private TextColorSet getTitleColorSet () {
-    return this::getTitleColor;
+    return new TextColorSet() {
+      @Override
+      public int defaultTextColor () {
+        return getTitleColor();
+      }
+
+      @Override
+      public int mediaTextColorOrId () {
+        return mediaTextColorIsId() ? ColorId.white : getTitleColor();
+      }
+
+      @Override
+      public boolean mediaTextColorIsId () {
+        return getAvatarExpandFactor() == 1f;
+      }
+    };
   }
 
   private int getTypingColor () {

@@ -70,7 +70,7 @@ public class SettingsLogOutController extends RecyclerViewController<Void> imple
     adapter = new SettingsAdapter(this) {
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
-        view.setIconColorId(item.getId() == R.id.btn_logout ? ColorId.iconNegative : 0);
+        view.setIconColorId(item.getId() == R.id.btn_logout ? ColorId.iconNegative : ColorId.NONE);
       }
     };
 

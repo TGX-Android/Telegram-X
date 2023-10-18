@@ -33,6 +33,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReader;
@@ -328,12 +329,12 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
       }
       messages.add(message);
     }
-    TD.ContentPreview content;
+    ContentPreview content;
     if (isForward) {
-      content = new TD.ContentPreview(TD.EMOJI_FORWARD, 0, Lang.plural(R.string.xForwards, mergedList.size()), true);
+      content = new ContentPreview(ContentPreview.EMOJI_FORWARD, 0, Lang.plural(R.string.xForwards, mergedList.size()), true);
     } else {
       Tdlib.Album album = new Tdlib.Album(messages);
-      content = TD.getAlbumPreview(tdlib, messages.get(0), album, allowContent);
+      content = ContentPreview.getAlbumPreview(tdlib, messages.get(0), album, allowContent);
     }
     if (hasCustomText != null && !content.isTranslatable) {
       hasCustomText[0] = true;
@@ -362,7 +363,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
           }
         }
 
-        TD.ContentPreview content = TD.getNotificationPreview(tdlib, getChatId(), message, allowContent);
+        ContentPreview content = ContentPreview.getNotificationPreview(tdlib, getChatId(), message, allowContent);
         if (hasCustomText != null && !content.isTranslatable) {
           hasCustomText[0] = true;
         }
@@ -373,9 +374,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
       }
       case TdApi.NotificationTypeNewPushMessage.CONSTRUCTOR: {
         TdApi.NotificationTypeNewPushMessage push = (TdApi.NotificationTypeNewPushMessage) notification.type;
-        TD.ContentPreview content = TD.getNotificationPreview(tdlib, getChatId(), push, allowContent);
-        if (content == null)
-          throw Td.unsupported(push.content);
+        ContentPreview content = ContentPreview.getNotificationPreview(tdlib, getChatId(), push, allowContent);
         if (hasCustomText != null && !content.isTranslatable) {
           hasCustomText[0] = true;
         }
@@ -385,7 +384,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
     return null;
   }
 
-  private CharSequence getPreview (TD.ContentPreview content) {
+  private CharSequence getPreview (ContentPreview content) {
     TdApi.FormattedText formattedText = content.buildFormattedText(false);
     CharSequence text = TD.toCharSequence(formattedText, false, false);
     if (text instanceof Spanned) {

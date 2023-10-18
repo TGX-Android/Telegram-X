@@ -210,7 +210,7 @@ public class TGMessageMedia extends TGMessage {
     synchronized (this) {
       ArrayList<TdApi.Message> combinedMessages = getCombinedMessagesUnsafely();
       if (combinedMessages != null && !combinedMessages.isEmpty()) {
-        TdApi.Message captionMessage = TD.getAlbumCaptionMessage(tdlib, combinedMessages);
+        TdApi.Message captionMessage = ContentPreview.getAlbumCaptionMessage(tdlib, combinedMessages);
         if (captionMessage != null) {
           caption = tdlib.getPendingFormattedText(captionMessage.chatId, captionMessage.id);
           if (caption != null) {

@@ -315,6 +315,8 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   private @Nullable String tdlibCommitHash, tdlibVersion;
 
+  private final DateManager dateManager = new DateManager(this);
+
   private TdlibManager (int firstInstanceId, boolean forceService) {
     Client.setLogMessageHandler(0, (verbosityLevel, errorMessage) -> {
       if (verbosityLevel == 0) {
@@ -344,6 +346,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
     checkDeviceToken();
     saveCrashes();
+  }
+
+  public DateManager dateManager () {
+    return dateManager;
   }
 
   void setTdlibCommitHash (@NonNull String commitHash) {
@@ -1815,16 +1821,11 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
               pendingRequests.incrementAndGet();
             }
             TDLib.Tag.td_init("Reporting crash %d: %s", crash.id, saveFunction);
-            tdlib.send(saveFunction, result -> {
-              switch (result.getConstructor()) {
-                case TdApi.Ok.CONSTRUCTOR: {
-                  Settings.instance().markCrashAsSaved(crash);
-                  break;
-                }
-                case TdApi.Error.CONSTRUCTOR: {
-                  TDLib.Tag.td_init("Can't report crash %d: %s", crash.id, TD.toErrorString(result));
-                  break;
-                }
+            tdlib.send(saveFunction, (ok, error) -> {
+              if (error != null) {
+                TDLib.Tag.td_init("Can't report crash %d: %s", crash.id, TD.toErrorString(error));
+              } else {
+                Settings.instance().markCrashAsSaved(crash);
               }
               synchronized (pendingRequests) {
                 pendingRequests.decrementAndGet();

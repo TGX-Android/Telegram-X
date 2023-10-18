@@ -12,7 +12,7 @@
  *
  * File created on 26/08/2023
  */
-package org.thunderdog.challegram.widget.EmojiMediaLayout;
+package org.thunderdog.challegram.widget.emoji;
 
 import android.content.Context;
 import android.view.View;
@@ -86,8 +86,8 @@ public class EmojiLayoutTrendingController extends EmojiLayoutRecyclerController
       stickerSets.addAll(trendingSets);
     }
     this.canLoadMoreTrending = trendingSets != null && !trendingSets.isEmpty();
-    if (emojiLayout != null && (hasUnread || offset == 0)) {
-      emojiLayout.setHasNewHots(getId(), hasUnread);
+    if (callbacks != null && (hasUnread || offset == 0)) {
+      callbacks.setHasNewHots(getId(), hasUnread);
     }
     if (offset == 0) {
       if (recyclerView != null) {
@@ -194,9 +194,9 @@ public class EmojiLayoutTrendingController extends EmojiLayoutRecyclerController
   }
 
   public void onScrolledImpl (int dy, boolean showRecentTitle) {
-    if (emojiLayout != null) {
-      emojiLayout.moveHeader(getStickersScrollY(showRecentTitle));
-      emojiLayout.onSectionInteractedScroll(mediaType, dy != 0);
+    if (callbacks != null) {
+      callbacks.moveHeader(getStickersScrollY(showRecentTitle));
+      callbacks.onSectionInteractedScroll(mediaType, dy != 0);
     }
     if (!trendingLoading && canLoadMoreTrending) {
       int lastVisiblePosition = manager.findLastVisibleItemPosition();

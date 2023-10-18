@@ -100,6 +100,7 @@ import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibManager;
+import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.PropertyId;
@@ -166,6 +167,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   protected Invalidator invalidator;
 
   private final ReferenceList<ActivityListener> activityListeners = new ReferenceList<>();
+
+  private final TdlibMessageViewer.Listener messageViewListener = (manager, needRestrictScreenshots) ->
+    checkDisallowScreenshots();
 
   private int currentOrientation;
   private boolean mHasSoftwareKeys;
@@ -306,10 +310,12 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       if (this.tdlib != null) {
         wasOnline = this.tdlib.isOnline();
         this.tdlib.setOnline(false);
+        this.tdlib.messageViewer().removeListener(messageViewListener);
       }
       this.tdlib = tdlib;
       recordAudioVideoController.setTdlib(tdlib);
       tdlib.setOnline(wasOnline);
+      tdlib.messageViewer().addListener(messageViewListener);
       if (drawer != null) {
         drawer.onCurrentTdlibChanged(tdlib);
       }
@@ -1829,7 +1835,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   private StickerPreviewView stickerPreview;
   private StickerSmallView stickerPreviewControllerView;
 
-  public void openStickerPreview (Tdlib tdlib, StickerSmallView stickerView, TGStickerObj sticker, int cx, int cy, int maxWidth, int viewportHeight, boolean disableEmojis, boolean isEmojiStatus) {
+  public void openStickerPreview (Tdlib tdlib, StickerSmallView stickerView, TGStickerObj sticker, int cx, int cy, int maxWidth, int viewportHeight, boolean disableEmojis) {
     if (stickerPreview != null) {
       return;
     }
@@ -1839,7 +1845,6 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     stickerPreview = new StickerPreviewView(this);
     stickerPreview.setControllerView(stickerPreviewControllerView);
     stickerPreview.setSticker(tdlib, sticker, cx, cy, maxWidth, viewportHeight, disableEmojis);
-    stickerPreview.setIsEmojiStatus(isEmojiStatus);
 
     stickerPreviewWindow = new PopupLayout(this);
     stickerPreviewWindow.setBackListener(stickerPreview);
@@ -1923,6 +1928,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       forceTouchView.initWithContext(context);
     } catch (Throwable t) {
       Log.e("Unable to open force touch preview", t);
+      if (BuildConfig.DEBUG && t instanceof RuntimeException) {
+        throw (RuntimeException) t;
+      }
       return false;
     }
 
@@ -2540,6 +2548,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
     boolean disallowScreenshots = false;
     disallowScreenshots = (navigation.shouldDisallowScreenshots() || Passcode.instance().shouldDisallowScreenshots());
+    if (tdlib != null && tdlib.messageViewer().needRestrictScreenshots()) {
+      disallowScreenshots = true;
+    }
     for (PopupLayout popupLayout : windows) {
       boolean shouldDisallowScreenshots = popupLayout.shouldDisallowScreenshots();
       popupLayout.checkWindowFlags();

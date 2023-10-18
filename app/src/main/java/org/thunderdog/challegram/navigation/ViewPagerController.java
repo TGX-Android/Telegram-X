@@ -35,8 +35,8 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
@@ -373,13 +373,23 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     onPageSelected(adapter.reversePosition(position), position);
   }
 
+  private boolean disallowKeyboardHideOnPageScrolled;
+
+  public void setDisallowKeyboardHideOnPageScrolled (boolean disallowKeyboardHideOnPageScrolled) {
+    this.disallowKeyboardHideOnPageScrolled = disallowKeyboardHideOnPageScrolled;
+  }
+
+  public boolean isDisallowKeyboardHideOnPageScrolled () {
+    return disallowKeyboardHideOnPageScrolled;
+  }
+
   @Override
   public void onPageScrolled (int position, float positionOffset, int positionOffsetPixels) {
     if (headerCell != null) {
       headerCell.getTopView().setSelectionFactor((float) position + positionOffset);
     }
     onPageScrolled(adapter.reversePosition(position), position, positionOffset, positionOffsetPixels);
-    if (getKeyboardState()) {
+    if (getKeyboardState() && !disallowKeyboardHideOnPageScrolled) {
       hideSoftwareKeyboard();
     }
   }
@@ -497,7 +507,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
         return true;
       }
     }
-    return false;
+    return super.shouldDisallowScreenshots();
   }
 
   protected void setCurrentPagerPosition (int position, boolean animated) {
@@ -675,7 +685,11 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
 
     @Override
     public void destroyItem (ViewGroup container, int position, @NonNull Object object) {
-      container.removeView(((ViewController<?>) object).getValue());
+      ViewController<?> c = (ViewController<?>) object;
+      container.removeView(c.getValue());
+      if (c.getAttachState()) {
+        c.onAttachStateChanged(parent.navigationController, false);
+      }
     }
 
     public void destroyCachedItems () {
@@ -722,6 +736,9 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     public Object instantiateItem (@NonNull ViewGroup container, int position) {
       ViewController<?> c = prepareViewController(reversePosition(position));
       container.addView(c.getValue());
+      if (!c.getAttachState()) {
+        c.onAttachStateChanged(parent.navigationController, true);
+      }
       if ((position == parent.currentPosition || (parent.currentPositionOffset != 0f && position == parent.currentPosition + (parent.currentPositionOffset > 0f ? 1 : -1))) && c.shouldDisallowScreenshots()) {
         parent.context().checkDisallowScreenshots();
       }

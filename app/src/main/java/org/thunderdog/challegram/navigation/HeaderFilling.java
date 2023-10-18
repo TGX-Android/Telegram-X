@@ -999,7 +999,7 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
 
     c.drawRect(0, playerTop, rectWidth, playerBottom, Paints.fillingPaint(playerFillingColor));
 
-    Paint iconPaint = Paints.getPorterDuffPaint(0xffffffff);
+    Paint iconPaint = Paints.whitePorterDuffPaint();
 
     // Mute button
     iconPaint.setAlpha((int) (255f * dropShadowAlpha * callActiveFactor * (1f - callIncomingFactor)));

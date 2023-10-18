@@ -34,6 +34,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.SessionListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
@@ -255,7 +256,7 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
         if (item.getViewType() == ListItem.TYPE_VALUED_SETTING_COMPACT) {
           view.forcePadding(Screen.dp(63f), 0);
         }
-        int iconColorId = item.getTextColorId(ColorId.NONE);
+        @PorterDuffColorId int iconColorId = item.getTextColorId(ColorId.NONE);
         if (iconColorId == ColorId.textNegative) {
           iconColorId = ColorId.iconNegative;
         }

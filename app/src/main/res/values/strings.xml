@@ -1386,7 +1386,7 @@
   <string name="ChatPreview">Chat preview</string>
   <string name="AndroidVersionWarning">Sorry, this feature is available yet only on Android %1$s (%2$s) or higher</string>
   <string name="RemoveStickerSet">Remove sticker set %1$s?</string>
-  <string name="RemoveEmojiSet">Remove emoji set %1$s?</string>
+  <string name="RemoveEmojiSet">Remove emoji pack %1$s?</string>
   <string name="RemoveStickerSetAction">Remove</string>
   <string name="DeletePack">Delete pack</string>
   <string name="AddPack">Add pack</string>
@@ -1760,7 +1760,7 @@
   <string name="ReactionsAllowSome_other">%1$s allowed</string>
 
   <string name="QuickReactionEnable">Enable Quick Reaction</string>
-  <string name="QuickReactionEnableDesc">Availability of specific reactions depends on group\'s and channel\'s settings.</string>
+  <string name="QuickReactionEnableDesc">Some groups and channels may not allow specific reactions.</string>
 
   <string name="ReactionsDisabledDesc">Allow members to react to group messages</string>
   <string name="AvailableReactions">Available reactions</string>
@@ -1770,6 +1770,7 @@
   <string name="QuickReaction">Quick Reaction</string>
   <string name="QuickReactionDisabled">Disabled</string>
   <string name="BigReactionsInfo">Big reactions are interactive buttons under messages presenting each reaction</string>
+  <string name="ReactionAvatarsInfo">When limited, avatars display only in scenarios when you are likely to recognise the user.</string>
   <string name="BigReactions">Big Reactions</string>
   <string name="BigReactionsChats">Chats</string>
   <string name="BigReactionsChannels">Channels</string>
@@ -2114,6 +2115,7 @@
   <string name="RemoveFromFavorites">Remove from Favorites</string>
   <string name="HoldToAudio">Hold to record audio. Tap to switch to video.</string>
   <string name="HoldToVideo">Hold to record video. Tap to switch to audio.</string>
+  <string name="MessageContainsPremiumFeatures">Sending animated emoji requires **Telegram Premium**</string>
   <string name="SecretChatFeatureUnsupported">%1$s\'s Telegram client doesn\'t support this feature. They need to install an update first.</string>
   <string name="UseHqRoundVideos">Record HQ Round Videos</string>
   <string name="DiscardVideoMessageTitle">Discard Video Message</string>
@@ -2188,6 +2190,7 @@
   <string name="SecretLinkPreviewAlert">Would you like to enable extended link previews in Secret Chats? Note that link previews are generated on Telegram servers.</string>
   <string name="SecretChatContextBotAlert">Please note that inline bots are provided by third-party developers. For the bot to work, the symbols you type after the bot\'s username are sent to the respective developer.</string>
   <string name="ClearRecentEmojiAction">Clear Recent Emoji</string>
+  <string name="ClearRecentReactionsAction">Clear Recent Reactions</string>
   <string name="PaintModeDoodle">Doodle</string>
   <string name="PaintModeArrow">Arrow</string>
   <string name="PaintModeRect">Rectangle</string>
@@ -2210,6 +2213,7 @@
   <string name="PhoneCall">Phone Call</string>
   <string name="SetAsCurrent">Set as current</string>
   <string name="ArchiveStickerSet">Archive sticker set %1$s? You can restore it later in Settings &gt; Stickers &gt; Archived.</string>
+  <string name="ArchiveEmojiSet">Archive emoji pack %1$s? You can restore it later in Settings &gt; Emoji &gt; Archived.</string>
   <string name="ArchiveStickerSetAction">Archive</string>
   <string name="ArchivePack">Archive pack</string>
   <string name="ClearDrawing">Clear drawing</string>
@@ -2271,7 +2275,7 @@
   <string name="AutoNightModeDescriptionSystemQ">Switch to night theme based on your system settings.</string>
   <string name="AutoNightModeDescriptionSystem">Switch to night theme based on the value provided by system.</string>
   <string name="PrivacyBots">Bots</string>
-  <string name="WebSessionsTitle">Logged in with Telegram</string>
+  <string name="WebSessionsTitle">Logged In with Telegram</string>
   <string name="NoActiveLogins">**No active logins**\n\nYou can log in on websites that support signing&#160;in&#160;with&#160;Telegram.</string>
   <string name="TerminateAllWebSessions">Disconnect All Websites</string>
   <string name="ClearOtherWebSessionsHelp">You can log in on websites that support signing in with Telegram.</string>
@@ -4764,7 +4768,19 @@
   <string name="EmojiHeader">Emoji</string>
   <string name="StickersAndEmoji">Stickers and Emoji</string>
   <string name="PasteCustomEmoji">Paste Emoji</string>
+  <string name="ShareCustomEmoji">Share Emoji</string>
   <string name="LoopAnimatedEmoji">Loop Animated Emoji</string>
+
+  <string name="ArchiveSettings">Archive Settings</string>
+  <string name="ArchiveSettingsDesc">Control what chats remain archived even if they are unmuted and get a new message.</string>
+
+  <string name="ArchiveSettingUnmutedChatsTitle">Unmuted chats</string>
+  <string name="ArchiveSettingUnmutedChats">Always keep archived</string>
+  <string name="ArchiveSettingUnmutedChatsDesc">Keep archived chats in the Archive even if they are unmuted and get a new message.</string>
+
+  <string name="ArchiveSettingFolderChatsTitle">Chats from folders</string>
+  <string name="ArchiveSettingFolderChats">Always keep archived</string>
+  <string name="ArchiveSettingFolderChatsDesc">Keep archived chats from folders in the Archive even if they are unmuted and get a new message.</string>
 
   <string name="xStickerSetsInstalled_one">%1$s set installed</string>
   <string name="xStickerSetsInstalled_other">%1$s set installed</string>
@@ -4777,6 +4793,16 @@
   <string name="xStickersInstall_one">Install %1$s pack</string>
   <string name="xStickersInstall_other">Install %1$s packs</string>
 
+  <string name="ReactionsPickerHeader">Reactions</string>
+
+  <string name="ShowXMoreEmoji_one">%1$s more</string>
+  <string name="ShowXMoreEmoji_other">%1$s more</string>
+
+  <string name="AvatarsInReactions">Avatars in Reactions</string>
+  <string name="AvatarsInReactionsAlways">Always</string>
+  <string name="AvatarsInReactionsSmartFilter">Limited</string>
+  <string name="AvatarsInReactionsNever">Never</string>
+  
   <string name="ShowXMore_one">%1$s more</string>
   <string name="ShowXMore_other">%1$s more</string>
   

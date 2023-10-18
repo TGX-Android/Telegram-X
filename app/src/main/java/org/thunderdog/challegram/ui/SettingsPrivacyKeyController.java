@@ -191,7 +191,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
   private boolean needNobodyOption () {
     //noinspection SwitchIntDef
     switch (getArgumentsStrict().getConstructor()) {
-      case TdApi.UserPrivacySettingAllowChatInvites.CONSTRUCTOR:
+      // case TdApi.UserPrivacySettingAllowChatInvites.CONSTRUCTOR:
       case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR:
       // case TdApi.UserPrivacySettingShowProfilePhoto.CONSTRUCTOR:
         return false;

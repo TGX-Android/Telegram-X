@@ -100,14 +100,14 @@ public class TGMessageCall extends TGMessage {
     } else {
       int radius = Screen.dp(FileProgressComponent.DEFAULT_FILE_RADIUS);
       c.drawCircle(startX + radius, startY + radius, radius, Paints.fillingPaint(Theme.getColor(ColorId.file)));
-      Drawables.draw(c, phoneIcon, startX + radius - phoneIcon.getMinimumWidth() / 2f, startY + radius - phoneIcon.getMinimumHeight() / 2f, Paints.getPorterDuffPaint(0xffffffff));
+      Drawables.draw(c, phoneIcon, startX + radius - phoneIcon.getMinimumWidth() / 2f, startY + radius - phoneIcon.getMinimumHeight() / 2f, Paints.whitePorterDuffPaint());
       startX += radius * 2 + Screen.dp(11f);
     }
     if (useBubbles()) {
       startY -= Screen.dp(4f);
     }
     c.drawText(trimmedTitle, startX, startY + Screen.dp(21f), Paints.getMediumTextPaint(15f, getTextColor(), needFakeTitle));
-    Drawables.draw(c, callIcon, startX, startY + Screen.dp(callIconId == R.drawable.baseline_call_missed_18 ? 27.5f : callIconId == R.drawable.baseline_call_made_18 ? 26.5f : 27f), Paints.getPorterDuffPaint(Theme.getColor(callIconColorId)));
+    Drawables.draw(c, callIcon, startX, startY + Screen.dp(callIconId == R.drawable.baseline_call_missed_18 ? 27.5f : callIconId == R.drawable.baseline_call_made_18 ? 26.5f : 27f), PorterDuffPaint.get(callIconColorId));
     c.drawText(trimmedSubtitle, startX + Screen.dp(20f), startY + Screen.dp(41f), Paints.getRegularTextPaint(13f, getDecentColor()));
   }
 

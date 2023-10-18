@@ -156,7 +156,7 @@ public class MediaPreviewSimple extends MediaPreview {
         previewReceiver.drawPlaceholder(c);
         if (needPinIcon) {
           Drawable drawable = view.getSparseDrawable(R.drawable.baseline_location_on_24, 0);
-          Drawables.draw(c, drawable, receiver.centerX() - drawable.getMinimumWidth() / 2, receiver.centerY() - drawable.getMinimumHeight() / 2, Paints.getPorterDuffPaint(0xffffffff));
+          Drawables.draw(c, drawable, receiver.centerX() - drawable.getMinimumWidth() / 2, receiver.centerY() - drawable.getMinimumHeight() / 2, Paints.whitePorterDuffPaint());
         }
       }
       previewReceiver.draw(c);

@@ -238,7 +238,7 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
                   view.setData(R.string.PrivacyShowNumberExceptionContacts);
                   break;
                 case TdApi.UserPrivacySettingShowBio.CONSTRUCTOR:
-                  view.setData(R.string.PrivacyShowNumberExceptionContacts);
+                  view.setData(R.string.PrivacyShowBioExceptionContacts);
                   break;
                 case TdApi.UserPrivacySettingShowProfilePhoto.CONSTRUCTOR:
                   view.setData(R.string.PrivacyPhotoExceptionContacts);
@@ -314,7 +314,7 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
           view.setTextColorId(item.getTextColorId(ColorId.text));
           view.setIcon(item.getIconResource());
           if (!isMultiChat) {
-            view.setIconColorId(tdlib.cache().userContact(userId) ? ColorId.iconNegative : 0);
+            view.setIconColorId(tdlib.cache().userContact(userId) ? ColorId.iconNegative : ColorId.NONE);
           }
         }
       }

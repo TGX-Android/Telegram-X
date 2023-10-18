@@ -47,7 +47,6 @@ public class TdlibListeners {
   final ReferenceList<StickersListener> stickersListeners;
   final ReferenceList<AnimationsListener> animationsListeners;
   final ReferenceList<ConnectionListener> connectionListeners;
-  final ReferenceList<DayChangeListener> dayListeners;
   final ReferenceList<AuthorizationListener> authorizationListeners;
   final ReferenceList<CleanupStartupDelegate> componentDelegates;
   final ReferenceList<TdlibOptionListener> optionListeners;
@@ -89,7 +88,6 @@ public class TdlibListeners {
     this.stickersListeners = new ReferenceList<>(true);
     this.animationsListeners = new ReferenceList<>();
     this.connectionListeners = new ReferenceList<>(true);
-    this.dayListeners = new ReferenceList<>();
     this.authorizationListeners = new ReferenceList<>(true);
     this.componentDelegates = new ReferenceList<>(true);
     this.optionListeners = new ReferenceList<>(true);
@@ -159,9 +157,6 @@ public class TdlibListeners {
       if (any instanceof ConnectionListener) {
         connectionListeners.add((ConnectionListener) any);
       }
-      if (any instanceof DayChangeListener) {
-        dayListeners.add((DayChangeListener) any);
-      }
       if (any instanceof TdlibOptionListener) {
         optionListeners.add((TdlibOptionListener) any);
       }
@@ -212,9 +207,6 @@ public class TdlibListeners {
       }
       if (any instanceof ConnectionListener) {
         connectionListeners.remove((ConnectionListener) any);
-      }
-      if (any instanceof DayChangeListener) {
-        dayListeners.remove((DayChangeListener) any);
       }
       if (any instanceof TdlibOptionListener) {
         optionListeners.remove((TdlibOptionListener) any);
@@ -851,7 +843,7 @@ public class TdlibListeners {
     }
   }
 
-  void updateMessageUnreadReactions (TdApi.UpdateMessageUnreadReactions update, boolean counterChanged, boolean availabilityChanged) {
+  void updateMessageUnreadReactions (TdApi.UpdateMessageUnreadReactions update, boolean counterChanged, boolean availabilityChanged, TdApi.Chat chat, TdlibChatList[] chatLists) {
     List<TdApi.Message> messages = pendingMessages.get(update.chatId + "_" + update.messageId);
     if (messages != null) {
       for (TdApi.Message message : messages) {
@@ -863,6 +855,17 @@ public class TdlibListeners {
     if (counterChanged) {
       updateChatUnreadReactionCount(update.chatId, update.unreadReactionCount, availabilityChanged, chatListeners.iterator());
       updateChatUnreadReactionCount(update.chatId, update.unreadReactionCount, availabilityChanged, specificChatListeners.iterator(update.chatId));
+    }
+    if (counterChanged) {
+      updateChatUnreadReactionCount(update.chatId, update.unreadReactionCount, availabilityChanged, chatListeners.iterator());
+      updateChatUnreadReactionCount(update.chatId, update.unreadReactionCount, availabilityChanged, specificChatListeners.iterator(update.chatId));
+      if (chatLists != null) {
+        for (TdlibChatList chatList : chatLists) {
+          iterateChatListListeners(chatList, listener ->
+            listener.onChatListItemChanged(chatList, chat, availabilityChanged ? ChatListListener.ItemChangeType.UNREAD_AVAILABILITY_CHANGED : ChatListListener.ItemChangeType.READ_INBOX)
+          );
+        }
+      }
     }
   }
 
@@ -1172,7 +1175,7 @@ public class TdlibListeners {
     }
   }
 
-  // updateChatFilters
+  // updateChatFolders
 
   void updateChatFolders (TdApi.UpdateChatFolders update) {
     for (ChatFoldersListener listener : chatFoldersListeners) {
@@ -1578,6 +1581,13 @@ public class TdlibListeners {
   public void updateNotificationGlobalSettings () {
     for (NotificationSettingsListener listener : settingsListeners) {
       listener.onNotificationGlobalSettingsChanged();
+    }
+  }
+
+  @AnyThread
+  public void notifyArchiveChatListSettingsChanged (TdApi.ArchiveChatListSettings archiveChatListSettings) {
+    for (NotificationSettingsListener listener : settingsListeners) {
+      listener.onArchiveChatListSettingsChanged(archiveChatListSettings);
     }
   }
 

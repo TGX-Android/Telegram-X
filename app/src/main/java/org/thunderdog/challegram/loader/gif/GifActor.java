@@ -342,6 +342,9 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
         case GifFile.OptimizationMode.STICKER_PREVIEW:
           resolution = Math.min(Math.max(EmojiMediaListController.getEstimateColumnResolution(), StickersListController.getEstimateColumnResolution()), 160);
           break;
+        case GifFile.OptimizationMode.EMOJI_PREVIEW:
+          resolution = Math.min(Screen.dp(40), 120);
+          break;
         case GifFile.OptimizationMode.NONE:
           resolution = Math.min(Screen.dp(TGMessageSticker.MAX_STICKER_SIZE), 384);
           break;

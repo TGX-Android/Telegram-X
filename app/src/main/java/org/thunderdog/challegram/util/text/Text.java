@@ -50,6 +50,7 @@ import org.thunderdog.challegram.emoji.EmojiInfo;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -2918,13 +2919,14 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return isClickable ? theme.clickableTextColor(isPressed) : theme.defaultTextColor();
   }
 
-  public int getEmojiSize () {
-    return emojiSize;
+  public @PorterDuffColorId int getMediaTextColorOrId () {
+    TextColorSet theme = pickTheme(null, null);
+    return theme.mediaTextColorOrId();
   }
 
-  public int getEmojiStatusColor () {
+  public boolean getMediaTextColorIsId () {
     TextColorSet theme = pickTheme(null, null);
-    return theme.emojiStatusColor();
+    return theme.mediaTextColorIsId();
   }
 
   @ColorInt

@@ -773,7 +773,7 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
 
       if (iconReceiver.needPlaceholder()) {
         float iconAlpha = 1f - ((ImageReceiver) iconReceiver).getDisplayAlpha();
-        Paint paint = Paints.getPorterDuffPaint(0xffffffff);
+        Paint paint = Paints.whitePorterDuffPaint();
         if (iconAlpha != 1f) {
           paint.setAlpha((int) (255f * iconAlpha));
         }

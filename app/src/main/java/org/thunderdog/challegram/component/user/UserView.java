@@ -222,8 +222,13 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
     }
     emojiStatusHelper.updateEmoji(user != null ? user.getUser() : null, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
       @Override
-      public int emojiStatusColor () {
-        return Theme.getColor(ColorId.iconActive);
+      public int mediaTextColorOrId () {
+        return ColorId.iconActive;
+      }
+
+      @Override
+      public boolean mediaTextColorIsId () {
+        return true;
       }
     });
     if (emojiStatusHelper.needDrawEmojiStatus()) {

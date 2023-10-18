@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.drawable.GradientDrawable;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -18,7 +19,6 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
-import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -26,21 +26,23 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.ui.MessageOptionsPagerController;
 import org.thunderdog.challegram.util.text.Counter;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.MathUtils;
 
 public class ReactionsSelectorRecyclerView extends RecyclerView {
+  private final GradientDrawable gradientDrawableRight;
+  private final MessageOptionsPagerController.State state;
+  private boolean needDrawBorderGradient;
+  private ReactionsAdapter adapter;
 
-  public ReactionsSelectorRecyclerView (@NonNull Context context) {
+  public ReactionsSelectorRecyclerView (@NonNull Context context, MessageOptionsPagerController.State state) {
     super(context);
-  }
+    this.state = state;
+    this.gradientDrawableRight = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{ 0, lastColor = Theme.backgroundColor() });
 
-  public void setMessage (TGMessage message) {
     LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false) {
       @Override
       protected boolean isLayoutRTL () {
@@ -60,12 +62,45 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
     });
 
     setLayoutManager(linearLayoutManager);
-    setAdapter(adapter = new ReactionsAdapter(getContext(), message));
+    setAdapter(adapter = new ReactionsAdapter(getContext(), state));
   }
 
-  ReactionsAdapter adapter;
-  public void setDelegate (ReactionSelectDelegate delegate) {
-    adapter.setDelegate(delegate);
+  public void setNeedDrawBorderGradient (boolean needDrawBorderGradient) {
+    this.needDrawBorderGradient = needDrawBorderGradient;
+    this.invalidate();
+  }
+
+  @Override
+  protected void dispatchDraw (Canvas canvas) {
+    super.dispatchDraw(canvas);
+    if (!needDrawBorderGradient) {
+      return;
+    }
+
+    checkGradients();
+    float s = computeHorizontalScrollRange() - computeHorizontalScrollOffset() - computeHorizontalScrollExtent();
+    int alpha = (int) (MathUtils.clamp(s / Screen.dp(20f)) * 255);
+
+    gradientDrawableRight.setAlpha(alpha);
+    gradientDrawableRight.setBounds(getMeasuredWidth() - Screen.dp(35), 0, getMeasuredWidth(), getMeasuredHeight());
+    gradientDrawableRight.draw(canvas);
+  }
+
+  @Override
+  public void onScrolled (int dx, int dy) {
+    super.onScrolled(dx, dy);
+    if (needDrawBorderGradient) {
+      invalidate();
+    }
+  }
+
+  private int lastColor;
+
+  private void checkGradients () {
+    int color = Theme.backgroundColor();
+    if (color != lastColor) {
+      gradientDrawableRight.setColors(new int[]{ 0, lastColor = Theme.backgroundColor() });
+    }
   }
 
   private static class ReactionView extends FrameLayoutFix {
@@ -160,19 +195,14 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
     private final Context context;
     private final TGMessage message;
     private final TdApi.AvailableReaction[] reactions;
-    private final Set<String> chosen;
-    private ReactionSelectDelegate delegate;
+    private final MessageOptionsPagerController.State state;
 
-    ReactionsAdapter (Context context, TGMessage message) {
+    ReactionsAdapter (Context context, MessageOptionsPagerController.State state) {
       this.context = context;
-      this.tdlib = message.tdlib();
-      this.message = message;
-      this.chosen = message.getMessageReactions().getChosen();
-      this.reactions = prioritizeElements(message.getMessageAvailableReactions(), chosen);
-    }
-
-    public void setDelegate (ReactionSelectDelegate delegate) {
-      this.delegate = delegate;
+      this.tdlib = state.tdlib;
+      this.message = state.message;
+      this.state = state;
+      this.reactions = state.availableReactions;
     }
 
     @NonNull
@@ -192,14 +222,10 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
       final boolean needUseCounter = (message.isChannel() || !message.canGetAddedReactions()) && !message.useReactionBubbles();
       view.setReaction(reaction, tdReaction, needUseCounter);
       view.setOnClickListener((v) -> {
-        if (delegate != null) {
-          delegate.onClick(v, reaction);
-        }
+        state.onReactionClickListener.onReactionClick(v, reaction, false);
       });
       view.setOnLongClickListener((v) -> {
-        if (delegate != null) {
-          delegate.onLongClick(v, reaction);
-        }
+        state.onReactionClickListener.onReactionClick(v, reaction, true);
         return true;
       });
     }
@@ -224,35 +250,5 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
     public void onViewRecycled (ReactionHolder holder) {
       ((ReactionView) holder.itemView).stickerView.performDestroy();
     }
-  }
-
-  public interface ReactionSelectDelegate {
-    void onClick (View v, TGReaction reaction);
-    void onLongClick (View v, TGReaction reaction);
-  }
-
-  public static TdApi.AvailableReaction[] prioritizeElements(TdApi.AvailableReaction[] inputArray, Set<String> set) {
-    if (inputArray == null) {
-      return null;
-    }
-
-    List<TdApi.AvailableReaction> resultList = new ArrayList<>();
-
-    for (TdApi.AvailableReaction element : inputArray) {
-      if (set.contains(TD.makeReactionKey(element.type))) {
-        resultList.add(element);
-      }
-    }
-
-    for (TdApi.AvailableReaction element : inputArray) {
-      if (!set.contains(TD.makeReactionKey(element.type))) {
-        resultList.add(element);
-      }
-    }
-
-    TdApi.AvailableReaction[] resultArray = new TdApi.AvailableReaction[resultList.size()];
-    resultList.toArray(resultArray);
-
-    return resultArray;
   }
 }

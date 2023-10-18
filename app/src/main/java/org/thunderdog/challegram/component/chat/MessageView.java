@@ -33,6 +33,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageBotInfo;
@@ -104,7 +105,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private final ComplexReceiver emojiStatusReceiver;
   private final ComplexReceiver reactionsComplexReceiver, textMediaReceiver, replyTextMediaReceiver;
   private final DoubleImageReceiver replyReceiver;
-  private final RefreshRateLimiter refreshRateLimiter;
+  private final RefreshRateLimiter refreshRateLimiter, highRefreshRateLimiter;
   private ComplexReceiver footerTextMediaReceiver;
 
   private ImageReceiver contentReceiver;
@@ -113,15 +114,23 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private MessageViewGroup parentMessageViewGroup;
   private MessagesManager manager;
 
+
   public MessageView (Context context) {
     super(context);
     this.refreshRateLimiter = new RefreshRateLimiter(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
-    avatarReceiver = new AvatarReceiver(this);
-    avatarsReceiver = new ComplexReceiver(this);
-    reactionAvatarsReceiver = new ComplexReceiver(this);
-    gifReceiver = new GifReceiver(this); // TODO use refreshRateLimiter?
+    this.highRefreshRateLimiter = new RefreshRateLimiter(this, 60.0f);
+    this.highRefreshRateLimiter.attachOtherRefreshLimiter(refreshRateLimiter);
+
+    avatarReceiver = new AvatarReceiver(this)
+      .setUpdateListener(refreshRateLimiter.passThroughUpdateListener());
+    avatarsReceiver = new ComplexReceiver(this)
+      .setUpdateListener(refreshRateLimiter.passThroughComplexUpdateListener());
+    reactionAvatarsReceiver = new ComplexReceiver(this)
+      .setUpdateListener(refreshRateLimiter.passThroughComplexUpdateListener());
+    gifReceiver = new GifReceiver(this)
+      .setUpdateListener(refreshRateLimiter.passThroughUpdateListener());
     reactionsComplexReceiver = new ComplexReceiver()
-      .setUpdateListener(new RefreshRateLimiter(this, 60.0f)); // Limit by 60fps
+      .setUpdateListener(highRefreshRateLimiter);
     textMediaReceiver = new ComplexReceiver()
       .setUpdateListener(refreshRateLimiter);
     emojiStatusReceiver = new ComplexReceiver()
@@ -129,7 +138,8 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     replyTextMediaReceiver = new ComplexReceiver()
       .setUpdateListener(refreshRateLimiter);
     //noinspection ContantConditions
-    replyReceiver = new DoubleImageReceiver(this, Config.USE_SCALED_ROUNDINGS ? Screen.dp(Theme.getImageRadius()) : 0);
+    replyReceiver = new DoubleImageReceiver(this, Config.USE_SCALED_ROUNDINGS ? Screen.dp(Theme.getImageRadius()) : 0)
+      .setUpdateListener(refreshRateLimiter);
 
     setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     if (Config.HARDWARE_MESSAGE_LAYER) {
@@ -187,7 +197,8 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   }
 
   public void setUseComplexReceiver () {
-    complexReceiver = new ComplexReceiver(this);
+    complexReceiver = new ComplexReceiver(this)
+      .setUpdateListener(refreshRateLimiter.passThroughComplexUpdateListener());
     flags |= FLAG_USE_COMPLEX_RECEIVER;
   }
 
@@ -753,14 +764,14 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         if (msg.getMessage().content.getConstructor() == TdApi.MessageDice.CONSTRUCTOR && !msg.tdlib().hasRestriction(msg.getMessage().chatId, RightId.SEND_OTHER_MESSAGES)) {
           String emoji = ((TdApi.MessageDice) msg.getMessage().content).emoji;
           ids.append(R.id.btn_messageReplyWithDice);
-          if (TD.EMOJI_DART.textRepresentation.equals(emoji)) {
+          if (ContentPreview.EMOJI_DART.textRepresentation.equals(emoji)) {
             strings.append(R.string.SendDart);
-          } else if (TD.EMOJI_DICE.textRepresentation.equals(emoji)) {
+          } else if (ContentPreview.EMOJI_DICE.textRepresentation.equals(emoji)) {
             strings.append(R.string.SendDice);
           } else {
             strings.append(R.string.SendUnknownDice);
           }
-          icons.append(TD.EMOJI_DART.textRepresentation.equals(emoji) ? R.drawable.baseline_gps_fixed_24 : R.drawable.baseline_casino_24);
+          icons.append(ContentPreview.EMOJI_DART.textRepresentation.equals(emoji) ? R.drawable.baseline_gps_fixed_24 : R.drawable.baseline_casino_24);
         }
 
         ids.append(R.id.btn_messageReply);

@@ -14,21 +14,28 @@
  */
 package org.thunderdog.challegram.util;
 
-import android.util.Log;
 import android.view.View;
 import android.view.ViewTreeObserver;
 
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 public class ScrollJumpCompensator implements ViewTreeObserver.OnGlobalLayoutListener {
   private final RecyclerView recyclerView;
   private final ViewTreeObserver observer;
+  private final @Nullable Runnable after;
   private int offset;
 
+  @Deprecated
   public ScrollJumpCompensator (RecyclerView r, View v, int offset) {
+    this(r, v, offset, null);
+  }
+
+  private ScrollJumpCompensator (RecyclerView r, View v, int offset, @Nullable Runnable after) {
     this.recyclerView = r;
     this.observer = v.getViewTreeObserver();
     this.offset = offset;
+    this.after = after;
   }
 
   public void add () {
@@ -40,6 +47,9 @@ public class ScrollJumpCompensator implements ViewTreeObserver.OnGlobalLayoutLis
     if (offset != 0) {
       recyclerView.scrollBy(0, offset);
       offset = 0;
+      if (after != null) {
+        after.run();
+      }
     }
 
     remove(observer, this);
@@ -59,6 +69,11 @@ public class ScrollJumpCompensator implements ViewTreeObserver.OnGlobalLayoutLis
 
   public static void compensate (RecyclerView r, int offset) {
     ScrollJumpCompensator x = new ScrollJumpCompensator(r, r, offset);
+    x.add();
+  }
+
+  public static void compensate (RecyclerView r, int offset, Runnable after) {
+    ScrollJumpCompensator x = new ScrollJumpCompensator(r, r, offset, after);
     x.add();
   }
 

@@ -406,7 +406,7 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
         drawPlaceholder(c, ColorId.statusBar);
       }
       if (overlayIcon != null)
-        Drawables.draw(c, overlayIcon, receiver.centerX() - overlayIcon.getMinimumWidth() / 2, receiver.centerY() - overlayIcon.getMinimumHeight() / 2, Paints.getPorterDuffPaint(0xffffffff));
+        Drawables.draw(c, overlayIcon, receiver.centerX() - overlayIcon.getMinimumWidth() / 2, receiver.centerY() - overlayIcon.getMinimumHeight() / 2, Paints.whitePorterDuffPaint());
     }
   }
 }

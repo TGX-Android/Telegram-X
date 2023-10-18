@@ -33,6 +33,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
 import androidx.core.os.CancellationSignal;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -74,6 +75,7 @@ import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.ConnectionListener;
 import org.thunderdog.challegram.telegram.ConnectionState;
 import org.thunderdog.challegram.telegram.CounterChangeListener;
+import org.thunderdog.challegram.telegram.DateChangeListener;
 import org.thunderdog.challegram.telegram.MessageEditListener;
 import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
@@ -83,6 +85,7 @@ import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibChatList;
 import org.thunderdog.challegram.telegram.TdlibChatListSlice;
 import org.thunderdog.challegram.telegram.TdlibContactManager;
+import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibThread;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -137,7 +140,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   ForceTouchView.PreviewDelegate, LiveLocationHelper.Callback,
   BaseView.LongPressInterceptor, TdlibCache.UserStatusChangeListener,
   Settings.ChatListModeChangeListener, CounterChangeListener,
-  TdlibSettingsManager.PreferenceChangeListener, SelectDelegate, MoreDelegate {
+  TdlibSettingsManager.PreferenceChangeListener, SelectDelegate, MoreDelegate, DateChangeListener {
 
   private boolean progressVisible, initialLoadFinished;
   @Nullable
@@ -409,6 +412,8 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     return list;
   }
 
+  private TdlibMessageViewer.Viewport chatsViewport;
+
   @Override
   protected View onCreateView (Context context) {
     list();
@@ -417,6 +422,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     contentView = new ContentFrameLayout(context);
     contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
+    chatsViewport = tdlib.messageViewer().createViewport(new TdApi.MessageSourceChatList(), this);
     chatsView = (ChatsRecyclerView) Views.inflate(context(), R.layout.recycler_chats, contentView);
     chatsView.setMeasureListener((v, oldWidth, oldHeight, newWidth, newHeight) -> {
       if (newHeight != oldHeight && adapter.hasArchive() && hideArchive && adapter.getItemCount() > 0) {
@@ -519,6 +525,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     chatsView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     if (filter != null)
       chatsView.setTotalRes(filter.getTotalStringRes());
+    tdlib.ui().attachViewportToRecyclerView(chatsViewport, chatsView);
     contentView.addView(chatsView);
 
     Views.setScrollBarPosition(chatsView);
@@ -536,6 +543,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
     Settings.instance().addChatListModeListener(this);
     TGLegacyManager.instance().addEmojiListener(this);
+    tdlib.context().dateManager().addListener(this);
 
     list.initializeList(this, this::displayChats, chatsView.getInitialLoadCount(), () ->
       runOnUiThreadOptional(() -> {
@@ -980,7 +988,11 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   protected int getMenuId () {
-    return isBaseController() ? R.id.menu_passcode : R.id.menu_search;
+    return isBaseController() ? R.id.menu_passcode : isArchiveChatList() ? R.id.menu_archive : R.id.menu_search;
+  }
+
+  private boolean isArchiveChatList () {
+    return pickerDelegate == null && filter == null && chatList().getConstructor() == TdApi.ChatListArchive.CONSTRUCTOR;
   }
 
   @Override
@@ -1006,6 +1018,9 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       if (isBaseController()) {
         header.addLockButton(menu);
       }
+      header.addSearchButton(menu, this);
+    } else if (id == R.id.menu_archive) {
+      header.addButton(menu, R.id.menu_btn_settings, R.drawable.baseline_settings_24, 49f, this, getHeaderIconColorId());
       header.addSearchButton(menu, this);
     } else if (id == R.id.menu_search) {
       header.addSearchButton(menu, this);
@@ -1110,6 +1125,11 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   public void onMenuItemPressed (int id, View view) {
     if (id == R.id.menu_btn_search) {
       openSearchMode();
+    } else if (id == R.id.menu_btn_settings) {
+      if (isArchiveChatList()) {
+        SettingsArchiveChatListController c = new SettingsArchiveChatListController(context, tdlib);
+        navigateTo(c);
+      }
     } else if (id == R.id.menu_btn_clear) {
       clearSearchInput();
     } else if (id == R.id.menu_btn_more) {
@@ -2528,6 +2548,9 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     if (liveLocationHelper != null) {
       liveLocationHelper.destroy();
     }
+    if (chatsViewport != null) {
+      chatsViewport.performDestroy();
+    }
     if (archiveList != null) {
       archiveList.unsubscribeFromUpdates(archiveListListener);
     }
@@ -2544,6 +2567,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     list.unsubscribeFromUpdates(this);
     TGLegacyManager.instance().removeEmojiListener(this);
     tdlib.contacts().removeListener(this);
+    tdlib.context().dateManager().removeListener(this);
   }
 
   // Updates
@@ -2749,6 +2773,14 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         chatsView.refreshLastMessage(chatId, messageId, false);
       }
     });
+  }
+
+  @Override
+  @UiThread
+  public void onDateChanged () {
+    if (!isDestroyed() && chatsView != null) {
+      chatsView.updateRelativeDate();
+    }
   }
 
   @Override

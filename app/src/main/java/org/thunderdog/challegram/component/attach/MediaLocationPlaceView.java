@@ -34,8 +34,8 @@ import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
@@ -371,7 +371,7 @@ public class MediaLocationPlaceView extends FrameLayoutFix implements AttachDele
       c.drawCircle(cx, cy, Screen.dp(IMAGE_RADIUS), Paints.fillingPaint(ColorUtils.alphaColor(alpha, Theme.getColor(ColorId.fileRed))));
 
       if (progressFactor < 1f) {
-        Paint bitmapPaint = Paints.getPorterDuffPaint(0xffffffff);
+        Paint bitmapPaint = Paints.whitePorterDuffPaint();
         bitmapPaint.setAlpha((int) (255f * (1f - progressFactor) * alpha));
         Drawables.draw(c, iconSmall, cx - iconSmall.getMinimumWidth() / 2, cy - iconSmall.getMinimumHeight() / 2, bitmapPaint);
         bitmapPaint.setAlpha(255);
@@ -404,7 +404,7 @@ public class MediaLocationPlaceView extends FrameLayoutFix implements AttachDele
     if (letters == null || receiver.getCurrentFile() != null) {
       if (receiver.needPlaceholder()) {
         float iconAlpha = alpha - receiver.getDisplayAlpha();
-        Paint paint = Paints.getPorterDuffPaint(0xffffffff);
+        Paint paint = Paints.whitePorterDuffPaint();
         paint.setAlpha((int) (255f * iconAlpha));
         Drawables.draw(c, iconBig, cx - iconBig.getMinimumWidth() / 2, cy - iconBig.getMinimumHeight() / 2, paint);
         paint.setAlpha(255);

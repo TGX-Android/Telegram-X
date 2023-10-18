@@ -23,7 +23,6 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -40,7 +39,6 @@ import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.OverlayView;
-import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.StickersListener;
@@ -502,32 +500,31 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
     final int installedCount = getInstalledStickersCount();
     final boolean isEmoji = info.stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR;
     final boolean isPositive = installedCount != size;
-    final boolean disabled = isPositive && isEmoji && !tdlib.account().isPremium();
 
     if (info.stickerType.getConstructor() == TdApi.StickerTypeMask.CONSTRUCTOR) {
-      updateButton(Lang.plural(isPositive ? R.string.AddXMasks : R.string.RemoveXMasks, info.size), isPositive, animated, false);
+      updateButton(Lang.plural(isPositive ? R.string.AddXMasks : R.string.RemoveXMasks, info.size), isPositive, animated);
       return;
     }
 
     if (size == 1) {
       if (isEmoji) {
-        updateButton(Lang.plural(isPositive ? R.string.AddXEmoji : R.string.RemoveXEmoji, info.size), isPositive, animated, disabled);
+        updateButton(Lang.plural(isPositive ? R.string.AddXEmoji : R.string.RemoveXEmoji, info.size), isPositive, animated);
       } else {
-        updateButton(Lang.plural(isPositive ? R.string.AddXStickers : R.string.RemoveXStickers, info.size), isPositive, animated, false);
+        updateButton(Lang.plural(isPositive ? R.string.AddXStickers : R.string.RemoveXStickers, info.size), isPositive, animated);
       }
     } else {
       int num = installedCount == size ? installedCount : size - installedCount;
       if (isEmoji) {
-        updateButton(Lang.plural(isPositive ? R.string.AddXEmojiPacks : R.string.RemoveXEmojiPacks, num), isPositive, animated, disabled);
+        updateButton(Lang.plural(isPositive ? R.string.AddXEmojiPacks : R.string.RemoveXEmojiPacks, num), isPositive, animated);
       } else {
-        updateButton(Lang.plural(isPositive ? R.string.AddXStickerPacks : R.string.RemoveXStickerPacks, num), isPositive, animated, false);
+        updateButton(Lang.plural(isPositive ? R.string.AddXStickerPacks : R.string.RemoveXStickerPacks, num), isPositive, animated);
       }
     }
   }
 
-  private void updateButton (String str, boolean positive, boolean animated, boolean isDisabled) {
+  private void updateButton (String str, boolean positive, boolean animated) {
     str = str.toUpperCase();
-    int colorId = isDisabled ? ColorId.textLight : positive ? ColorId.textNeutral : ColorId.textNegative;
+    int colorId = positive ? ColorId.textNeutral : ColorId.textNegative;
     if (!textButton.getText().toString().equals(str) || textButton.getCurrentTextColor() != Theme.getColor(colorId)) {
       if (animated) {
         if (animator == null) {
@@ -661,14 +658,7 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
 
     final int size = stickerSets.size();
     final int installedCount = getInstalledStickersCount();
-    final boolean isEmoji = info.stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR;
     final boolean isPositive = installedCount != size;
-    final boolean disabled = isPositive && isEmoji && !tdlib.account().isPremium();
-
-    if (disabled) {
-      tooltipManager().builder(textButton).offset(rect -> rect.offset(0, Screen.dp(10))).show(tdlib, R.string.EmojiOnlyForPremium);
-      return;
-    }
 
     LongList stickerSetsToInstall = null;
     LongList stickerSetsToArchive = null;
@@ -753,25 +743,6 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
 
 
   /* * */
-
-  private TooltipOverlayView tooltipOverlayView;
-
-  private TooltipOverlayView tooltipManager () {
-    if (tooltipOverlayView == null) {
-      tooltipOverlayView = new TooltipOverlayView(getContext());
-      tooltipOverlayView.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-      tooltipOverlayView.setAvailabilityListener((overlayView, hasChildren) -> {
-        if (hasChildren) {
-          if (tooltipOverlayView.getParent() != null)
-            return;
-          addView(tooltipOverlayView);
-        } else {
-          removeView(tooltipOverlayView);
-        }
-      });
-    }
-    return tooltipOverlayView;
-  }
 
   private void onMultiStickerSetsLoaded (ArrayList<TdApi.StickerSet> sets) {
     for (TdApi.StickerSet set : sets) {

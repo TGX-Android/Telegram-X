@@ -49,6 +49,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Keyboard;
@@ -792,7 +793,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
 
   private void updateHint (boolean useOffsetLeft, CharSequence text, boolean isError) {
     int offsetLeft = useOffsetLeft ? Screen.dp(89f) : 0;
-    int textColorId = isError ? ColorId.textNegative : ColorId.textLight;
+    @PorterDuffColorId int textColorId = isError ? ColorId.textNegative : ColorId.textLight;
     if (offsetLeft != hintItem.getTextPaddingLeft() || hintItem.getTextColorId(ColorId.background_textLight) != textColorId || !StringUtils.equalsOrBothEmpty(hintItem.getString(), text)) {
       hintItem.setTextPaddingLeft(offsetLeft);
       hintItem.setTextColorId(textColorId);

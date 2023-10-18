@@ -616,6 +616,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       if (emojiLayout == null) {
         emojiLayout = new EmojiLayout(context());
         emojiLayout.initWithMediasEnabled(this, false, this, this, false); // FIXME shall we use dark mode?
+        emojiLayout.setAllowPremiumFeatures(tdlib.isSelfChat(getOutputChatId()));
         emojiLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
         bottomWrap.addView(emojiLayout);
         if (inputView != null) {
@@ -1573,7 +1574,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   @Override
   public boolean shouldDisallowScreenshots () {
-    return mode == MODE_SECRET || !stack.getCurrent().canBeSaved();
+    return mode == MODE_SECRET || !stack.getCurrent().canBeSaved() || super.shouldDisallowScreenshots();
   }
 
   @Override
@@ -2913,10 +2914,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       if (isLeft) {
         c.save();
         c.rotate(180, getMeasuredWidth() / 2, getMeasuredHeight() / 2);
-        Drawables.draw(c, backIcon, 0, y, Paints.getPorterDuffPaint(0xffffffff));
+        Drawables.draw(c, backIcon, 0, y, Paints.whitePorterDuffPaint());
         c.restore();
       } else {
-        Drawables.draw(c, backIcon, 0, y, Paints.getPorterDuffPaint(0xffffffff));
+        Drawables.draw(c, backIcon, 0, y, Paints.whitePorterDuffPaint());
       }
     }
   }
@@ -7879,6 +7880,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     } else if (viewId == R.id.btn_send) {
       if (currentSection != SECTION_CAPTION) {
         changeSection(SECTION_CAPTION, MODE_OK);
+      } else if (inputView != null && !tdlib.isSelfChat(getOutputChatId()) && !tdlib.hasPremium() && inputView.hasOnlyPremiumFeatures()) {
+        context().tooltipManager().builder(sendButton).show(tdlib, Strings.buildMarkdown(this, Lang.getString(R.string.MessageContainsPremiumFeatures), null)).hideDelayed();
       } else {
         send(v, Td.newSendOptions(), false, false);
       }
@@ -8463,11 +8466,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private void openSetSenderPopup (TdApi.Chat chat) {
     if (chat == null) return;
 
-    tdlib().send(new TdApi.GetChatAvailableMessageSenders(chat.id), result -> {
+    tdlib().send(new TdApi.GetChatAvailableMessageSenders(chat.id), (result, error) -> {
       UI.post(() -> {
-        if (result.getConstructor() == TdApi.ChatMessageSenders.CONSTRUCTOR) {
+        if (result != null) {
           final SetSenderController c = new SetSenderController(context, tdlib());
-          c.setArguments(new SetSenderController.Args(chat, ((TdApi.ChatMessageSenders) result).senders, chat.messageSenderId));
+          c.setArguments(new SetSenderController.Args(chat, result.senders, chat.messageSenderId));
           c.setShowOverEverything(true);
           c.setDelegate((s) -> setNewMessageSender(chat, s));
           c.show();
@@ -8477,7 +8480,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void setNewMessageSender (TdApi.Chat chat, TdApi.ChatMessageSender sender) {
-    tdlib().send(new TdApi.SetChatMessageSender(chat.id, sender.sender), o -> {
+    tdlib().send(new TdApi.SetChatMessageSender(chat.id, sender.sender), ignored -> {
       UI.post(() -> {
         if (senderSendIcon != null) {
           senderSendIcon.update(chat.messageSenderId);

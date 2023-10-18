@@ -13,6 +13,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 
 import me.vkryl.android.AnimatorUtils;
@@ -89,7 +90,7 @@ public class ToggleHeaderView2 extends View {
       entry.item.draw(c, getPaddingLeft(), textTop + Screen.dp(19) + offset2, entry.getVisibility(), Paints.getRegularTextPaint(14f, Theme.getColor(ColorId.textLight)));
     }
 
-    Drawables.draw(c, arrowDrawable, getTitleWidth() + Screen.dp(2), triangleTop, Paints.getPorterDuffPaint(Theme.getColor(ColorId.icon)));
+    Drawables.draw(c, arrowDrawable, getTitleWidth() + Screen.dp(2), triangleTop, PorterDuffPaint.get(ColorId.icon));
   }
 
 

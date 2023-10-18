@@ -37,8 +37,11 @@ import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
+import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
@@ -53,21 +56,18 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
   public static final float PADDING = 8f;
   private static final Interpolator OVERSHOOT_INTERPOLATOR = new OvershootInterpolator(3.2f);
 
-  private ImageReceiver imageReceiver;
-  private GifReceiver gifReceiver;
-  private FactorAnimator animator;
+  private final ImageReceiver imageReceiver;
+  private final GifReceiver gifReceiver;
+  private final FactorAnimator animator;
   private @Nullable TGStickerObj sticker;
   private @Nullable Drawable premiumStarDrawable;
   private Path contour;
   private Tdlib tdlib;
   private int padding;
+  private int forceHeight = -1;
 
   public StickerSmallView (Context context) {
-    super(context);
-    this.imageReceiver = new ImageReceiver(this, 0);
-    this.gifReceiver = new GifReceiver(this);
-    this.animator = new FactorAnimator(0, this, OVERSHOOT_INTERPOLATOR, 230l);
-    this.padding = Screen.dp(PADDING);
+    this(context, Screen.dp(PADDING));
   }
 
   public StickerSmallView (Context context, int padding) {
@@ -89,6 +89,10 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     measureReceivers();
   }
 
+  public void setForceHeight (int forceHeight) {
+    this.forceHeight = forceHeight;
+  }
+
   public void setSticker (@Nullable TGStickerObj sticker) {
     this.sticker = sticker;
     this.isAnimation = sticker != null && sticker.isAnimated();
@@ -101,6 +105,13 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     contour = sticker != null ? sticker.getContour(Math.min(imageReceiver.getWidth(), imageReceiver.getHeight())) : null;
     imageReceiver.requestFile(imageFile);
     gifReceiver.requestFile(gifFile);
+  }
+
+  private boolean isChosen;
+
+  public void setChosen (boolean chosen) {
+    isChosen = chosen;
+    invalidate();
   }
 
   public void setIsPremiumStar () {
@@ -185,8 +196,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     } else if (isTrending) {
       super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Screen.smallestSide() / 5, MeasureSpec.EXACTLY));
     } else {
-      //noinspection SuspiciousNameCombination
-      super.onMeasure(widthMeasureSpec, widthMeasureSpec);
+      super.onMeasure(widthMeasureSpec, forceHeight > 0 ? MeasureSpec.makeMeasureSpec(forceHeight, MeasureSpec.EXACTLY) : widthMeasureSpec);
     }
     measureReceivers();
   }
@@ -199,23 +209,47 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     contour = sticker != null ? sticker.getContour(Math.min(imageReceiver.getWidth(), imageReceiver.getHeight())) : null;
   }
 
-  private @ColorId int repaintingColorId = ColorId.iconActive;
+  private @PorterDuffColorId int themedColorId = ColorId.iconActive;
 
-  public void setRepaintingColorId (@ColorId int repaintingColorId) {
-    this.repaintingColorId = repaintingColorId;
+  public void setThemedColorId (@PorterDuffColorId int themedColorId) {
+    if (this.themedColorId != themedColorId) {
+      this.themedColorId = themedColorId;
+      invalidate();
+    }
   }
 
-  public int getRepaintingColorId () {
-    return repaintingColorId;
+  public @PorterDuffColorId int getThemedColorId () {
+    return themedColorId;
   }
+
+  private final Path tmpClipPath = new Path();
 
   @Override
   protected void onDraw (Canvas c) {
+    int restoreToCountClip = -1;
+    if (isChosen) {
+      float radius = Math.min(getMeasuredWidth(), getMeasuredHeight()) / 2f;
+      c.drawCircle(getMeasuredWidth() / 2f, getMeasuredHeight() / 2f, radius, Paints.fillingPaint(Theme.getColor(ColorId.fillingPositive)));
+
+      tmpClipPath.reset();
+      tmpClipPath.addCircle(getMeasuredWidth() / 2f, getMeasuredHeight() / 2f, radius - Screen.dp(1), Path.Direction.CW);
+      tmpClipPath.close();
+      restoreToCountClip = Views.save(c);
+      c.clipPath(tmpClipPath);
+    }
+
     float originalScale = sticker != null ? sticker.getDisplayScale() : 1f;
     boolean saved = originalScale != 1f || factor != 0f;
-    boolean repainting = sticker != null && sticker.isNeedRepainting();
+    boolean needThemedColorFilter = sticker != null && sticker.needThemedColorFilter();
+    if (needThemedColorFilter) {
+      imageReceiver.setThemedPorterDuffColorId(themedColorId);
+      gifReceiver.setThemedPorterDuffColorId(themedColorId);
+    } else {
+      imageReceiver.disablePorterDuffColorFilter();
+      gifReceiver.disablePorterDuffColorFilter();
+    }
+
     int restoreToCount = -1;
-    int repaintingRestoreToCount = -1;
     int cx = imageReceiver.centerX();
     int cy = imageReceiver.centerY();
     if (saved) {
@@ -223,11 +257,8 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
       float scale = originalScale * (MIN_SCALE + (1f - MIN_SCALE) * (1f - factor));
       c.scale(scale, scale, cx, cy);
     }
-    if (repainting) {
-      repaintingRestoreToCount = Views.saveRepainting(c, imageReceiver);
-    }
     if (premiumStarDrawable != null) {
-      Drawables.drawCentered(c, premiumStarDrawable, cx, cy, null);
+      Drawables.drawCentered(c, premiumStarDrawable, cx, cy, PorterDuffPaint.get(themedColorId));
     } else if (isAnimation) {
       if (gifReceiver.needPlaceholder()) {
         if (imageReceiver.needPlaceholder()) {
@@ -245,12 +276,13 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     if (Config.DEBUG_STICKER_OUTLINES) {
       imageReceiver.drawPlaceholderContour(c, contour);
     }
-    if (repainting) {
-      Views.restoreRepainting(c, imageReceiver, repaintingRestoreToCount, Theme.getColor(repaintingColorId));
-    }
     if (saved) {
       Views.restore(c, restoreToCount);
     }
+    if (isChosen) {
+      Views.restore(c, restoreToCountClip);
+    }
+    // c.drawRect(padding, padding, getMeasuredWidth() - padding, getMeasuredHeight() - padding, Paints.strokeSmallPaint(0XFF00FF00));
   }
 
   // Touch
@@ -283,6 +315,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
 
   public interface StickerMovementCallback {
     boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions);
+    default boolean onStickerLongClick (StickerSmallView view, TGStickerObj sticker) { return false; }
     long getStickerOutputChatId ();
     void setStickerPressed (StickerSmallView view, TGStickerObj sticker, boolean isPressed);
     boolean canFindChildViewUnder (StickerSmallView view, int recyclerX, int recyclerY);
@@ -298,7 +331,6 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     default StickerSmallView getStickerViewUnder (StickerSmallView v, int x, int y) { return null; }
     default TGReaction getReactionForPreview (StickerSmallView v) { return null; }
     default void onSetEmojiStatusFromPreview (StickerSmallView view, View clickView, TGStickerObj sticker, long emojiId, int duration) { }
-    default boolean isEmojiStatus () { return false; }
   }
 
   private @Nullable StickerMovementCallback callback;
@@ -468,6 +500,10 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
       return;
     }
 
+    if (callback != null && callback.onStickerLongClick(this, sticker)) {
+      return;
+    }
+
     getParent().requestDisallowInterceptTouchEvent(true);
     UI.getContext(getContext()).setOrientationLockFlagEnabled(BaseActivity.ORIENTATION_FLAG_STICKER, true);
 
@@ -507,7 +543,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
       }
     }
 
-    ((BaseActivity) getContext()).openStickerPreview(tdlib, this, sticker, left + width / 2, top + height / 2 + (callback != null ? callback.getStickersListTop() : 0), Math.min(width, height) - Screen.dp(PADDING) * 2, callback.getViewportHeight(), isSuggestion || emojiDisabled, callback != null && callback.isEmojiStatus());
+    ((BaseActivity) getContext()).openStickerPreview(tdlib, this, sticker, left + width / 2, top + height / 2 + (callback != null ? callback.getStickersListTop() : 0), Math.min(width, height) - Screen.dp(PADDING) * 2, callback.getViewportHeight(), isSuggestion || emojiDisabled);
   }
 
   private int getRealLeft () {
@@ -559,6 +595,16 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
 
   public long getStickerOutputChatId () {
     return callback != null ? callback.getStickerOutputChatId() : 0;
+  }
+
+  private StickerPreviewView.MenuStickerPreviewCallback menuStickerPreviewCallback;
+
+  public StickerPreviewView.MenuStickerPreviewCallback getMenuStickerPreviewCallback () {
+    return menuStickerPreviewCallback;
+  }
+
+  public void setMenuStickerPreviewCallback (StickerPreviewView.MenuStickerPreviewCallback menuStickerPreviewCallback) {
+    this.menuStickerPreviewCallback = menuStickerPreviewCallback;
   }
 
   private boolean previewDroppedButStillOpen;

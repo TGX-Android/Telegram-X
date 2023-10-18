@@ -21,7 +21,6 @@ import android.view.View;
 import androidx.annotation.IdRes;
 import androidx.annotation.StringRes;
 
-import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.charts.Chart;
@@ -37,6 +36,7 @@ import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -140,6 +140,8 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     }
   }
 
+  private TdlibMessageViewer.Viewport messageViewport;
+
   @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
     final long chatId = getArgumentsStrict().chatId;
@@ -151,6 +153,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     headerCell.setSubtitle(R.string.Stats);
     this.headerCell = headerCell;
 
+    this.messageViewport = tdlib.messageViewer().createViewport(new TdApi.MessageSourceSearch(), this);
     adapter = new SettingsAdapter(this) {
       @Override
       protected void setSeparatorOptions (ListItem item, int position, SeparatorView separatorView) {
@@ -218,23 +221,32 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
       }
     };
     recyclerView.setAdapter(adapter);
-    tdlib.client().send(new TdApi.GetChatStatistics(chatId, Theme.isDark()), result -> {
-      switch (result.getConstructor()) {
-        case TdApi.ChatStatisticsChannel.CONSTRUCTOR:
-          runOnUiThreadOptional(() -> {
-            setStatistics((TdApi.ChatStatisticsChannel) result);
-          });
-          break;
-        case TdApi.ChatStatisticsSupergroup.CONSTRUCTOR:
-          runOnUiThreadOptional(() -> {
-            setStatistics((TdApi.ChatStatisticsSupergroup) result);
-          });
-          break;
-        case TdApi.Error.CONSTRUCTOR:
-          UI.showError(result);
-          break;
+    tdlib.ui().attachViewportToRecyclerView(messageViewport, recyclerView);
+    tdlib.send(new TdApi.GetChatStatistics(chatId, Theme.isDark()), (chatStatistics, error) -> runOnUiThreadOptional(() -> {
+      if (error != null) {
+        UI.showError(error);
+      } else {
+        switch (chatStatistics.getConstructor()) {
+          case TdApi.ChatStatisticsChannel.CONSTRUCTOR:
+            setStatistics((TdApi.ChatStatisticsChannel) chatStatistics);
+            break;
+          case TdApi.ChatStatisticsSupergroup.CONSTRUCTOR:
+            setStatistics((TdApi.ChatStatisticsSupergroup) chatStatistics);
+            break;
+          default:
+            Td.assertChatStatistics_6744ad70();
+            throw Td.unsupported(chatStatistics);
+        }
       }
-    });
+    }));
+  }
+
+  @Override
+  public void destroy () {
+    super.destroy();
+    if (messageViewport != null) {
+      messageViewport.performDestroy();
+    }
   }
 
   @Override
@@ -463,10 +475,8 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
   private void loadInteractionMessages (TdApi.ChatStatisticsMessageInteractionInfo[] interactions, Runnable onMessagesLoaded) {
     AtomicInteger remaining = new AtomicInteger(interactions.length);
 
-    Client.ResultHandler handler = result -> {
-      if (result.getConstructor() == TdApi.Message.CONSTRUCTOR) {
-        TdApi.Message message = (TdApi.Message) result;
-
+    Tdlib.ResultHandler<TdApi.Message> handler = (message, error) -> {
+      if (message != null) {
         if (message.mediaAlbumId != 0) {
           if (!interactionMessageAlbums.containsKey(message.mediaAlbumId)) {
             interactionMessageAlbums.put(message.mediaAlbumId, new ArrayList<>());
@@ -492,7 +502,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     };
 
     for (TdApi.ChatStatisticsMessageInteractionInfo interaction : interactions) {
-      tdlib.client().send(new TdApi.GetMessageLocally(getArgumentsStrict().chatId, interaction.messageId), handler);
+      tdlib.send(new TdApi.GetMessageLocally(getArgumentsStrict().chatId, interaction.messageId), handler);
     }
   }
 
@@ -623,10 +633,9 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     IntList icons = new IntList(4);
     StringList strings = new StringList(4);
 
-    tdlib.client().send(new TdApi.GetChatMember(getArgumentsStrict().chatId, content.getSenderId()), result -> {
-      if (result.getConstructor() != TdApi.ChatMember.CONSTRUCTOR) return;
+    tdlib.send(new TdApi.GetChatMember(getArgumentsStrict().chatId, content.getSenderId()), (member, error) -> {
+      if (error != null) return;
 
-      TdApi.ChatMember member = (TdApi.ChatMember) result;
       TdApi.ChatMemberStatus myStatus = tdlib.chatStatus(getArgumentsStrict().chatId);
 
       if (myStatus != null) {

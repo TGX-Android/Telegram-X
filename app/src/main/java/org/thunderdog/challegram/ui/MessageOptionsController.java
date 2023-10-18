@@ -233,13 +233,13 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
 
       if (type == TYPE_EMOJI_PACK_INFO) {
         EmojiPacksInfoView textView = ((EmojiPacksInfoView) holder.itemView);
+        textView.setId(R.id.btn_emojiPackInfoButton);
         textView.setTextSize(15f);
         textView.setTextColorId(ColorId.textLight);
         textView.update(emojiPackFirstEmoji, emojiPackIds, new ClickableSpan() {
           @Override
           public void onClick (@NonNull View widget) {
-            tdlib.ui().showStickerSets(parent, emojiPackIds, true, null);
-            parent.hideWindowDelegate.run();
+            parent.listener.onClick(textView);
           }
         }, false);
       }

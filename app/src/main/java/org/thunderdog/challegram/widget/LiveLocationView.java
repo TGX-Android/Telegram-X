@@ -54,7 +54,7 @@ public class LiveLocationView extends View implements Destroyable {
     }
     int cx = getMeasuredWidth() / 2;
     int cy = getMeasuredHeight() / 2;
-    Drawables.draw(c, liveLocationBmp, cx - liveLocationBmp.getMinimumWidth() / 2, cy - liveLocationBmp.getMinimumHeight() / 2, Paints.getPorterDuffPaint(0xffffffff));
+    Drawables.draw(c, liveLocationBmp, cx - liveLocationBmp.getMinimumWidth() / 2, cy - liveLocationBmp.getMinimumHeight() / 2, Paints.whitePorterDuffPaint());
     long delay = DrawAlgorithms.drawWaves(c, cx, cy - Screen.dp(4f), 0xffffffff, true, nextScheduleTime);
     if (delay != -1) {
       nextScheduleTime = SystemClock.uptimeMillis() + delay;
