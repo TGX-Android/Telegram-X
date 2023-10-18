@@ -105,7 +105,7 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
     itemTouchHelper = RemoveHelper.attach(recyclerView, new ItemTouchHelperCallback());
 
-    TdApi.ChatFolderInfo[] chatFolders = tdlib.chatFolderInfos();
+    TdApi.ChatFolderInfo[] chatFolders = tdlib.chatFolders();
     int mainChatListPosition = tdlib.mainChatListPosition();
     int archiveChatListPosition = tdlib.settings().archiveChatListPosition();
     List<ListItem> chatFolderItemList = buildChatFolderItemList(chatFolders, mainChatListPosition, archiveChatListPosition);
@@ -519,7 +519,7 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
 
   private void deleteChatFolder (int chatFolderId) {
     int position = -1;
-    TdApi.ChatFolderInfo[] chatFolders = tdlib.chatFolderInfos();
+    TdApi.ChatFolderInfo[] chatFolders = tdlib.chatFolders();
     for (int index = 0; index < chatFolders.length; index++) {
       TdApi.ChatFolderInfo chatFolder = chatFolders[index];
       if (chatFolder.id == chatFolderId) {
@@ -550,7 +550,7 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
       return;
     int mainChatListPosition = 0;
     int archiveChatListPosition = 0;
-    IntList chatFoldersIds = new IntList(tdlib.chatFolderInfos().length);
+    IntList chatFoldersIds = new IntList(tdlib.chatFoldersCount());
     int folderPosition = 0;
     for (int index = firstIndex; index <= lastIndex; index++) {
       ListItem item = adapter.getItem(index);
@@ -712,7 +712,7 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
   }
 
   private void updateChatFolders () {
-    updateChatFolders(tdlib.chatFolderInfos(), tdlib.mainChatListPosition(), tdlib.settings().archiveChatListPosition());
+    updateChatFolders(tdlib.chatFolders(), tdlib.mainChatListPosition(), tdlib.settings().archiveChatListPosition());
   }
 
   private void updateChatFolders (TdApi.ChatFolderInfo[] chatFolders, int mainChatListPosition, int archiveChatListPosition) {

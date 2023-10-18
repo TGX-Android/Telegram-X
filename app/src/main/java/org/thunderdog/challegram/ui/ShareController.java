@@ -3410,7 +3410,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       TdApi.ChatFolderInfo chatFolderInfo = (TdApi.ChatFolderInfo) v.getTag();
       displayChatList(chatFolderInfo.title, new TdApi.ChatListFolder(chatFolderInfo.id));
     };
-    for (TdApi.ChatFolderInfo chatFolderInfo : tdlib.chatFolderInfos()) {
+    for (TdApi.ChatFolderInfo chatFolderInfo : tdlib.chatFolders()) {
       View itemView = menu.addItem(View.NO_ID, chatFolderInfo.title, TD.findFolderIcon(chatFolderInfo.icon, R.drawable.baseline_folder_24), /* icon */ null, onItemClickListener);
       itemView.setTag(chatFolderInfo);
     }

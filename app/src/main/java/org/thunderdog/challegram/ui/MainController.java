@@ -221,7 +221,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     tdlib.listeners().addOptionsListener(this);
     tdlib.listeners().subscribeToChatFoldersUpdates(this);
     if (Config.CHAT_FOLDERS_ENABLED) {
-      if (this.chatFolderInfos != tdlib.chatFolderInfos()) {
+      if (this.chatFolderInfos != tdlib.chatFolders()) {
         updatePagerSections();
       }
       tdlib.settings().addChatListPositionListener(chatListPositionListener = new ChatListPositionListener());
@@ -2066,7 +2066,11 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
                 TdApi.ChatFolder chatFolder = (TdApi.ChatFolder) result;
                 if (!Td.equalsTo(chatFolder.icon, icon)) {
                   chatFolder.icon = icon;
-                  tdlib.send(new TdApi.EditChatFolder(chatFolderId, chatFolder), TdApi.ChatFolderInfo.class);
+                  tdlib.send(new TdApi.EditChatFolder(chatFolderId, chatFolder), (chatFolderInfo, error) -> {
+                    if (error != null) {
+                      UI.showError(error);
+                    }
+                  });
                 }
                 break;
               case TdApi.Error.CONSTRUCTOR:
@@ -2227,7 +2231,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   }
 
   private void updatePagerSections () {
-    updatePagerSections(tdlib.chatFolderInfos(), tdlib.mainChatListPosition(), tdlib.settings().archiveChatListPosition());
+    updatePagerSections(tdlib.chatFolders(), tdlib.mainChatListPosition(), tdlib.settings().archiveChatListPosition());
   }
 
   private void updatePagerSections (TdApi.ChatFolderInfo[] chatFolders, int mainChatListPosition, int archiveChatListPosition) {
@@ -2441,7 +2445,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     @Override
     public void onArchiveChatListPositionChanged (int archiveChatListPosition) {
       if (tdlib.settings().isArchiveChatListEnabled()) {
-        updatePagerSections(tdlib.chatFolderInfos(), tdlib.mainChatListPosition(), archiveChatListPosition);
+        updatePagerSections(tdlib.chatFolders(), tdlib.mainChatListPosition(), archiveChatListPosition);
       }
     }
 

@@ -3414,6 +3414,24 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
+  public int chatFoldersCount () {
+    synchronized (dataLock) {
+      return chatFolders.length;
+    }
+  }
+
+  public TdApi.ChatFolderInfo[] chatFolders () {
+    synchronized (dataLock) {
+      return chatFolders;
+    }
+  }
+
+  public int mainChatListPosition () {
+    synchronized (dataLock) {
+      return mainChatListPosition;
+    }
+  }
+
   public TdApi.ChatFolderInfo chatFolderInfo (int chatFolderId) {
     synchronized (dataLock) {
       if (chatFolders != null) {
@@ -3423,6 +3441,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         }
       }
     }
+    return null;
   }
 
   public boolean hasFolders () {
@@ -11164,14 +11183,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     if (chatIds.length == 0) {
       return;
     }
-    send(new TdApi.GetChatFolder(chatFolderId), (result) -> {
-      switch (result.getConstructor()) {
-        case TdApi.ChatFolder.CONSTRUCTOR:
-          addChatsToChatFolder(delegate, chatFolderId, (TdApi.ChatFolder) result, chatIds);
-          break;
-        case TdApi.Error.CONSTRUCTOR:
-          UI.showError(result);
-          break;
+    send(new TdApi.GetChatFolder(chatFolderId), (chatFolder, error) -> {
+      if (error != null) {
+        UI.showError(chatFolder);
+      } else {
+        addChatsToChatFolder(delegate, chatFolderId, chatFolder, chatIds);
       }
     });
   }
@@ -11206,13 +11222,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         CharSequence text = Lang.getMarkdownString(delegate, R.string.ChatsInFolderLimitReached, chosenChatCountMax);
         UI.showCustomToast(text, Toast.LENGTH_LONG, 0);
       } else {
-        send(new TdApi.GetPremiumLimit(new TdApi.PremiumLimitTypeChatFolderChosenChatCount()), (result) -> {
+        send(new TdApi.GetPremiumLimit(new TdApi.PremiumLimitTypeChatFolderChosenChatCount()), (premiumLimit, error) -> {
           CharSequence text;
-          if (result.getConstructor() == TdApi.PremiumLimit.CONSTRUCTOR) {
-            TdApi.PremiumLimit premiumLimit = (TdApi.PremiumLimit) result;
-            text = Lang.getMarkdownString(delegate, R.string.PremiumRequiredChatsInFolder, premiumLimit.defaultValue, premiumLimit.premiumValue);
-          } else {
+          if (error != null) {
             text = Lang.getMarkdownString(delegate, R.string.ChatsInFolderLimitReached, chosenChatCountMax);
+          } else {
+            text = Lang.getMarkdownString(delegate, R.string.PremiumRequiredChatsInFolder, premiumLimit.defaultValue, premiumLimit.premiumValue);
           }
           UI.showCustomToast(text, Toast.LENGTH_LONG, 0);
         });
@@ -11221,7 +11236,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
     chatFolder.includedChatIds = includedChatIds.toArray();
     chatFolder.excludedChatIds = ArrayUtils.removeAll(chatFolder.excludedChatIds, chatIds);
-    send(new TdApi.EditChatFolder(chatFolderId, chatFolder), TdApi.ChatFolderInfo.class);
+    send(new TdApi.EditChatFolder(chatFolderId, chatFolder), (chatFolderInfo, error) -> {
+      if (error != null) {
+        UI.showError(error);
+      }
+    });
   }
 
   public void removeChatFromChatFolder (int chatFolderId, long chatId) {
@@ -11272,6 +11291,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     chatFolder.pinnedChatIds = pinnedChatIds.get();
     chatFolder.includedChatIds = includedChatIds.toArray();
     chatFolder.excludedChatIds = excludedChatIds.toArray();
-    send(new TdApi.EditChatFolder(chatFolderId, chatFolder), TdApi.ChatFolderInfo.class);
+    send(new TdApi.EditChatFolder(chatFolderId, chatFolder), (chatFolderInfo, error) -> {
+      if (error != null) {
+        UI.showError(error);
+      }
+    });
   }
 }

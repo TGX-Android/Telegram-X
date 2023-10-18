@@ -3621,7 +3621,6 @@ public class TdlibUi extends Handler {
       }
 
       case TdApi.InternalLinkTypeStory.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeChatFolderSettings.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatFolderInvite.CONSTRUCTOR:
       case TdApi.InternalLinkTypeDefaultMessageAutoDeleteTimerSettings.CONSTRUCTOR:
 
@@ -4811,7 +4810,7 @@ public class TdlibUi extends Handler {
     if (chatIds.length == 0)
       return;
 
-    TdApi.ChatFolderInfo[] chatFolders = tdlib.chatFolderInfos();
+    TdApi.ChatFolderInfo[] chatFolders = tdlib.chatFolders();
     List<ListItem> items = new ArrayList<>(chatFolders.length + 1);
     for (TdApi.ChatFolderInfo chatFolderInfo : chatFolders) {
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.chatFolder, TD.findFolderIcon(chatFolderInfo.icon, R.drawable.baseline_folder_24), chatFolderInfo.title).setIntValue(chatFolderInfo.id));
