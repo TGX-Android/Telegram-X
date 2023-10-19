@@ -649,6 +649,12 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     }
   }
 
+  public void updateAnchorPosition (boolean animated) {
+    if (selectionChangeListener != null) {
+      selectionChangeListener.onSelectionChanged(lastCallSelectionLeft, lastCallSelectionWidth, items.get(0).actualWidth, items.get(items.size() - 1).actualWidth, lastCallSelectionFactor, animated);
+    }
+  }
+
   /*public void resendSectionChangeEvent (boolean animated) {
     if (items != null && !items.isEmpty()) {
       selectionChangeListener.onSelectionChanged(lastCallSelectionLeft, lastCallSelectionWidth, items.get(0).actualWidth, items.get(items.size() - 1).actualWidth, lastCallSelectionFactor, animated);

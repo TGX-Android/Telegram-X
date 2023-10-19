@@ -26,6 +26,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.user.RemoveHelper;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
@@ -140,9 +141,12 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
             settingView.setOnClickListener(SettingsFoldersController.this);
             settingView.setOnLongClickListener(SettingsFoldersController.this);
             settingView.getToggler().setOnClickListener(v -> {
-              UI.forceVibrate(v, false);
               ListItem item = (ListItem) settingView.getTag();
               TdApi.ChatList chatList = getChatList(item);
+              if (Config.RESTRICT_HIDING_MAIN_LIST && isMainChatFolder(item) && settingView.getToggler().isEnabled()) {
+                return;
+              }
+              UI.forceVibrate(v, false);
               boolean enabled = settingView.getToggler().toggle(true);
               settingView.setVisuallyEnabled(enabled, true);
               settingView.setIconColorId(enabled ? ColorId.icon : ColorId.iconLight);
@@ -203,6 +207,9 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
           settingView.setVisuallyEnabled(isEnabled, false);
           settingView.getToggler().setRadioEnabled(isEnabled, false);
           settingView.setIconColorId(isEnabled ? ColorId.icon : ColorId.iconLight);
+          if (Config.RESTRICT_HIDING_MAIN_LIST) {
+            settingView.getToggler().setVisibility(isMainChatFolder(item) ? View.GONE : View.VISIBLE);
+          }
         } else if (customViewType == TYPE_RECOMMENDED_CHAT_FOLDER) {
           SettingView settingView = (SettingView) holder.itemView;
           settingView.setIcon(item.getIconResource());

@@ -1176,6 +1176,9 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     }
     switch (chatList.getConstructor()) {
       case TdApi.ChatListMain.CONSTRUCTOR: {
+        if (Config.RESTRICT_HIDING_MAIN_LIST && !isEnabled) {
+          return;
+        }
         setMainChatListEnabled(isEnabled);
         break;
       }

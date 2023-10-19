@@ -226,7 +226,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     Settings.instance().addChatFolderSettingsListener(this);
     if (Config.CHAT_FOLDERS_ENABLED) {
       if (this.chatFolderInfos != tdlib.chatFolders()) {
-        updatePagerSections();
+        updatePagerSections(true);
       }
       tdlib.settings().addChatListPositionListener(chatListPositionListener = new ChatListPositionListener());
     }
@@ -864,6 +864,15 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   @Override
   public void onPrepareToShow () {
     super.onPrepareToShow();
+    if (needUpdatePagerSections) {
+      needUpdatePagerSections = false;
+      updatePagerSections(true);
+      if (headerCell != null) {
+        ViewUtils.runJustBeforeBeingDrawn(headerCell.getView(), () ->
+          headerCell.getTopView().updateAnchorPosition(false)
+        );
+      }
+    }
     if (headerView != null) {
       headerView.updateLockButton(getMenuId());
     }
@@ -2184,12 +2193,18 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
   private void initPagerSections () {
     if (Config.CHAT_FOLDERS_ENABLED) {
-      updatePagerSections();
+      updatePagerSections(true);
     }
   }
 
-  private void updatePagerSections () {
-    updatePagerSections(tdlib.chatFolders(), tdlib.mainChatListPosition(), tdlib.settings().archiveChatListPosition());
+  private boolean needUpdatePagerSections;
+
+  private void updatePagerSections (boolean force) {
+    if (force || isAttachedToNavigationController()) {
+      updatePagerSections(tdlib.chatFolders(), tdlib.mainChatListPosition(), tdlib.settings().archiveChatListPosition());
+    } else {
+      needUpdatePagerSections = true;
+    }
   }
 
   private void updatePagerSections (TdApi.ChatFolderInfo[] chatFolders, int mainChatListPosition, int archiveChatListPosition) {
@@ -2411,13 +2426,13 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     @Override
     public void onArchiveChatListPositionChanged (Tdlib tdlib, int archiveChatListPosition) {
       if (tdlib.settings().isChatListEnabled(ChatPosition.CHAT_LIST_ARCHIVE)) {
-        updatePagerSections(tdlib.chatFolders(), tdlib.mainChatListPosition(), archiveChatListPosition);
+        updatePagerSections(false);
       }
     }
 
     @Override
     public void onChatListStateChanged (Tdlib tdlib, TdApi.ChatList chatList, boolean isEnabled) {
-      updatePagerSections();
+      updatePagerSections(false);
     }
 
     @Override
@@ -2447,7 +2462,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
   private void onFoldersAppearanceChanged () {
     if (hasFolders()) {
-      updatePagerSections();
+      updatePagerSections(false);
     }
   }
 
@@ -2511,9 +2526,9 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   @Override
   public void onChatFoldersChanged (TdApi.ChatFolderInfo[] chatFolders, int mainChatListPosition) {
     if (Config.CHAT_FOLDERS_ENABLED) {
-      runOnUiThreadOptional(() -> {
-        updatePagerSections(chatFolders, mainChatListPosition, tdlib.settings().archiveChatListPosition());
-      });
+      runOnUiThreadOptional(() ->
+        updatePagerSections(false)
+      );
     }
   }
 }
