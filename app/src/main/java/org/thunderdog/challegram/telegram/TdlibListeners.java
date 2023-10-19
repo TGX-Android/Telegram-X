@@ -1592,16 +1592,16 @@ public class TdlibListeners {
   }
 
   @AnyThread
-  public void notifyChatCountersChanged (TdApi.ChatList chatList, boolean availabilityChanged, int totalCount, int unreadCount, int unreadUnmutedCount) {
+  public void notifyChatCountersChanged (TdApi.ChatList chatList, TdlibCounter counter, boolean availabilityChanged, int totalCount, int unreadCount, int unreadUnmutedCount) {
     for (CounterChangeListener listener : totalCountersListeners) {
-      listener.onChatCounterChanged(chatList, availabilityChanged, totalCount, unreadCount, unreadUnmutedCount);
+      listener.onChatCounterChanged(chatList, counter, availabilityChanged, totalCount, unreadCount, unreadUnmutedCount);
     }
   }
 
   @AnyThread
-  public void notifyMessageCountersChanged (TdApi.ChatList chatList, int unreadCount, int unreadUnmutedCount) {
+  public void notifyMessageCountersChanged (TdApi.ChatList chatList, TdlibCounter counter, int unreadCount, int unreadUnmutedCount) {
     for (CounterChangeListener listener : totalCountersListeners) {
-      listener.onMessageCounterChanged(chatList, unreadCount, unreadUnmutedCount);
+      listener.onMessageCounterChanged(chatList, counter, unreadCount, unreadUnmutedCount);
     }
   }
 

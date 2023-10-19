@@ -92,7 +92,6 @@ import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
-import org.thunderdog.challegram.ui.ChatFoldersController;
 import org.thunderdog.challegram.ui.ChatJoinRequestsController;
 import org.thunderdog.challegram.ui.ChatLinkMembersController;
 import org.thunderdog.challegram.ui.ChatLinksController;
@@ -118,6 +117,7 @@ import org.thunderdog.challegram.ui.RequestController;
 import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.ui.Settings2FAController;
 import org.thunderdog.challegram.ui.SettingsController;
+import org.thunderdog.challegram.ui.SettingsFoldersController;
 import org.thunderdog.challegram.ui.SettingsLanguageController;
 import org.thunderdog.challegram.ui.SettingsLogOutController;
 import org.thunderdog.challegram.ui.SettingsNotificationController;
@@ -3676,7 +3676,7 @@ public class TdlibUi extends Handler {
         return;
       }
       case TdApi.InternalLinkTypeChatFolderSettings.CONSTRUCTOR: {
-        ChatFoldersController chatFolders = new ChatFoldersController(context.context(), context.tdlib());
+        SettingsFoldersController chatFolders = new SettingsFoldersController(context.context(), context.tdlib());
         context.context().navigation().navigateTo(chatFolders);
         break;
       }

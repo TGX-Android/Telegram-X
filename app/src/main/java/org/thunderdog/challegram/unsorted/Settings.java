@@ -50,6 +50,8 @@ import org.thunderdog.challegram.emoji.RecentEmoji;
 import org.thunderdog.challegram.emoji.RecentInfo;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.player.TGPlayerController;
+import org.thunderdog.challegram.telegram.ChatFolderOptions;
+import org.thunderdog.challegram.telegram.ChatFolderStyle;
 import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
@@ -233,6 +235,8 @@ public class Settings {
   private static final String KEY_CAMERA_ASPECT_RATIO = "settings_camera_ratio";
   private static final String KEY_CAMERA_TYPE = "settings_camera_type";
   private static final String KEY_CAMERA_VOLUME_CONTROL = "settings_camera_control";
+  private static final String KEY_CHAT_FOLDER_STYLE = "settings_folders_style";
+  private static final String KEY_CHAT_FOLDER_OPTIONS = "settings_folders_options";
 
   private static final String KEY_TDLIB_VERBOSITY = "settings_tdlib_verbosity";
   private static final String KEY_TDLIB_DEBUG_PREFIX = "settings_tdlib_allow_debug";
@@ -1210,6 +1214,65 @@ public class Settings {
         }
       }
     }
+  }
+
+
+  public interface ChatFolderSettingsListener {
+    default void onChatFolderOptionsChanged (@ChatFolderOptions int newOptions) {}
+    default void onChatFolderStyleChanged (@ChatFolderStyle int newStyle) {}
+  }
+  private final ReferenceList<ChatFolderSettingsListener> chatFolderSettingsListeners = new ReferenceList<>();
+
+  public void addChatFolderSettingsListener (ChatFolderSettingsListener listener) {
+    chatFolderSettingsListeners.add(listener);
+  }
+
+  public void removeChatFolderSettingsListener (ChatFolderSettingsListener listener) {
+    chatFolderSettingsListeners.remove(listener);
+  }
+
+  private Integer _chatFolderOptions, _chatFolderStyle;
+
+  public void setChatFolderOptions (@ChatFolderOptions int options) {
+    if (getChatFolderOptions() != options) {
+      if (options == TdlibSettingsManager.DEFAULT_CHAT_FOLDER_OPTIONS) {
+        pmc.remove(KEY_CHAT_FOLDER_OPTIONS);
+      } else {
+        pmc.putInt(KEY_CHAT_FOLDER_OPTIONS, options);
+      }
+      _chatFolderOptions = options;
+      for (ChatFolderSettingsListener listener : chatFolderSettingsListeners) {
+        listener.onChatFolderOptionsChanged(options);
+      }
+    }
+  }
+
+  public @ChatFolderOptions int getChatFolderOptions () {
+    if (_chatFolderOptions == null) {
+      _chatFolderOptions = pmc.getInt(KEY_CHAT_FOLDER_OPTIONS, TdlibSettingsManager.DEFAULT_CHAT_FOLDER_OPTIONS);
+    }
+    return _chatFolderOptions;
+  }
+
+  public void setChatFolderStyle (@ChatFolderStyle int style) {
+    if (getChatFolderStyle() != style) {
+      if (style == TdlibSettingsManager.DEFAULT_CHAT_FOLDER_STYLE) {
+        pmc.remove(KEY_CHAT_FOLDER_STYLE);
+      } else {
+        pmc.putInt(KEY_CHAT_FOLDER_STYLE, style);
+      }
+      _chatFolderStyle = style;
+      for (ChatFolderSettingsListener listener : chatFolderSettingsListeners) {
+        listener.onChatFolderStyleChanged(style);
+      }
+    }
+  }
+
+  public @ChatFolderStyle int getChatFolderStyle () {
+    if (_chatFolderStyle == null) {
+      _chatFolderStyle = pmc.getInt(KEY_CHAT_FOLDER_STYLE, TdlibSettingsManager.DEFAULT_CHAT_FOLDER_STYLE);
+    }
+    return _chatFolderStyle;
   }
 
   private long makeDefaultNewSettings () {

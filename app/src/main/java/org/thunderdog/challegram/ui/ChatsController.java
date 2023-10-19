@@ -85,6 +85,7 @@ import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibChatList;
 import org.thunderdog.challegram.telegram.TdlibChatListSlice;
 import org.thunderdog.challegram.telegram.TdlibContactManager;
+import org.thunderdog.challegram.telegram.TdlibCounter;
 import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibThread;
@@ -2831,7 +2832,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   // Counter updates
 
   @Override
-  public void onChatCounterChanged (@NonNull TdApi.ChatList chatList, boolean availabilityChanged, int totalCount, int unreadCount, int unreadUnmutedCount) {
+  public void onChatCounterChanged (@NonNull TdApi.ChatList chatList, TdlibCounter counter, boolean availabilityChanged, int totalCount, int unreadCount, int unreadUnmutedCount) {
     if (totalCount == 0 && chatList.getConstructor() != TdApi.ChatListMain.CONSTRUCTOR && Td.equalsTo(this.chatList, chatList)) {
       runOnUiThreadOptional(() -> {
         if (!isDestroyed() && !isBaseController()) {

@@ -433,7 +433,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
     if (needTdlib()) {
       TdlibManager.instance().player().addTrackChangeListener(this);
-      TdlibManager.instance().resetBadge();
+      TdlibManager.instance().resetBadge(false);
     }
 
     Lang.addLanguageListener(this);

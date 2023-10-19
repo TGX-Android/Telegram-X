@@ -1028,7 +1028,7 @@ public class SettingsController extends ViewController<Void> implements
       c.setArguments(this);
       navigateTo(c);
     } else if (viewId == R.id.btn_chatFolders) {
-      navigateTo(new ChatFoldersController(context, tdlib));
+      navigateTo(new SettingsFoldersController(context, tdlib));
     } else if (viewId == R.id.btn_faq) {
       tdlib.ui().openUrl(this, Lang.getString(R.string.url_faq), new TdlibUi.UrlOpenParameters().forceInstantView());
     } else if (viewId == R.id.btn_privacyPolicy) {

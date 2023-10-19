@@ -585,10 +585,13 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return getTotalUnreadBadgeCounter(TdlibAccount.NO_ID);
   }
 
-  public void resetBadge () {
+  public void resetBadge (boolean settingsChanged) {
     synchronized (counterLock) {
       updateBadgeInternal(true, false);
       dispatchUnreadCount(true);
+    }
+    if (settingsChanged) {
+      global.notifyBadgeSettingsChanged();
     }
   }
 
@@ -1866,7 +1869,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       activeAccounts.remove(position);
     }
     global().notifyAccountAddedOrRemoved(account, position, needAdd);
-    resetBadge();
+    resetBadge(false);
     increaseModCount(account);
     return true;
   }
