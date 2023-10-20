@@ -1994,7 +1994,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
             hAuthorEmojiStatus.draw(c, left + hAuthorNameT.getWidth() + Screen.dp(3), newTop, 1f, view.getEmojiStatusReceiver());
           }
           if (sender.hasChatMark() && hAuthorChatMark != null) {
-            int cmLeft = left + hAuthorNameT.getWidth() + Screen.dp(6f);
+            int cmLeft = left + hAuthorNameT.getWidth() + Screen.dp(3f)
+              + (hAuthorEmojiStatus != null ? hAuthorEmojiStatus.getWidth(Screen.dp(3)) : 0);
             RectF rct = Paints.getRectF();
             rct.set(cmLeft, newTop, cmLeft + hAuthorChatMark.getWidth() + Screen.dp(8f), newTop + hAuthorNameT.getLineHeight(false));
             c.drawRoundRect(rct, Screen.dp(2f), Screen.dp(2f), Paints.getProgressPaint(Theme.getColor(ColorId.textNegative), Screen.dp(1.5f)));
