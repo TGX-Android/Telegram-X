@@ -847,7 +847,7 @@ public class TdlibMessageViewer {
     return false;
   }
 
-  private LongSparseArray<LongSet> screenshotMessages = null;
+  private @Nullable LongSparseArray<LongSet> screenshotMessages = null;
 
   private void addScreenshotMessage (long chatId, long messageId) {
     if (screenshotMessages == null) {
@@ -885,7 +885,7 @@ public class TdlibMessageViewer {
         }
       }
     }
-    if (!screenshotMessages.isEmpty()) {
+    if (screenshotMessages != null && !screenshotMessages.isEmpty()) {
       for (int i = 0; i < screenshotMessages.size(); i++) {
         long chatId = screenshotMessages.keyAt(i);
         long[] messageIds = screenshotMessages.valueAt(i).toArray();
