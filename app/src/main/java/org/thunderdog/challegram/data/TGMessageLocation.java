@@ -51,6 +51,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.MapController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.text.Letters;
@@ -719,7 +720,7 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
 
     int mapCenterX = startX + previewWidth / 2;
     int mapCenterY = startY + previewHeight / 2;
-    c.save();
+    final int restoreToCount = Views.save(c);
     c.scale(.85f, .85f, mapCenterX, mapCenterY);
 
     Bitmap pinBgIcon = Icons.getLivePin();
@@ -792,7 +793,7 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
       c.drawCircle(mapCenterX, pinCenterY, pinRadius, Paints.fillingPaint(ColorUtils.alphaColor(.75f, 0xffffffff)));
     }
 
-    c.restore();
+    Views.restore(c, restoreToCount);
 
 
     if (!useBubbles && !useFullWidth) {

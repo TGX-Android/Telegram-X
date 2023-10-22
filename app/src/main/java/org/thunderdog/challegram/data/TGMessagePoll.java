@@ -715,13 +715,17 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
           cy = (int) (cy + (progressCy - cy) * moveFactor);
           scale = scale + (1f - scale) * moveFactor;
         }
-        if (scale != 1f) {
-          c.save();
+        final boolean needScale = scale != 1f;
+        final int restoreToCount;
+        if (needScale) {
+          restoreToCount = Views.save(c);
           c.scale(scale, scale, cx, lineY);
+        } else {
+          restoreToCount = -1;
         }
         SimplestCheckBox.draw(c, cx, cy, selectionFactor, null, option.checkBox, lineColor, contentColor, isQuiz && optionId != correctOptionId, squareFactor);
-        if (scale != 1f) {
-          c.restore();
+        if (needScale) {
+          Views.restore(c, restoreToCount);
         }
       }
 
@@ -731,10 +735,10 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
 
     if (highlightOptionId == HIGHLIGHT_BUTTON) {
       if (useBubble() && !useForward()) {
-        c.save();
+        final int restoreToCount = Views.save(c);
         c.clipRect(getActualLeftContentEdge(), startY, getActualRightContentEdge(), getBottomContentEdge());
         c.drawPath(getBubblePath(), Paints.fillingPaint(Theme.getColor(getPressColorId())));
-        c.restore();
+        Views.restore(c, restoreToCount);
       } else {
         int rightX = startX + maxWidth + (useBubbles() ? getBubblePaddingRight() : 0);
         c.drawRect(startX - (useBubbles() ? getBubbleContentPadding() : 0), startY, rightX, startY + Screen.dp(46f), Paints.fillingPaint(Theme.getColor(getPressColorId())));

@@ -1534,7 +1534,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     paint.setAlpha(255);
 
-    c.save();
+    final int restoreToCount = Views.save(c);
 
     offset = Screen.dp(18f);
     float shadowLeft, shadowTop, shadowRight, shadowBottom;
@@ -1586,7 +1586,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       cx = tx; cy = ty;
     }
 
-    c.restore();
+    Views.restore(c, restoreToCount);
   }
 
   public static void drawCornerFixes (Canvas c, TGMessage source, float factor, float left, float top, float right, float bottom, float topLeftRadius, float topRightRadius, float bottomRightRadius, float bottomLeftRadius) {
@@ -6699,7 +6699,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
 
     int positionOffset = -(int) (verticalFactor * height);
-    c.save();
+    final int restoreToCount = Views.save(c);
     c.clipRect(0, startY, view.getMeasuredWidth(), endY);
     for (int a = 0; a < actions.size(); a++) {
       SwipeQuickAction action = actions.get(a);
@@ -6712,7 +6712,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         height > Screen.dp(256) ? (int) (mInitialTouchY - getHeaderPadding() + xHeaderPadding) : (height / 2)
       );
     }
-    c.restore();
+    Views.restore(c, restoreToCount);
   }
 
   private float getTranslatePositionFactor (boolean isLeft, int position) {
@@ -6739,12 +6739,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     c.drawCircle(cx, cy, radius2, Paints.fillingPaint(ColorUtils.alphaColor(alpha, getBubbleButtonBackgroundColor())));
 
     if (icon != null) {
-      c.save();
+      final int restoreToCount = Views.save(c);
       c.scale((Lang.rtl() ? -.8f : .8f) * scale, .8f * scale, cx, cy);
       icon.setAlpha((int) (alpha * 255));
       Paint paint = Paints.getInlineBubbleIconPaint(ColorUtils.alphaColor(alpha, getBubbleButtonTextColor()));
       Drawables.draw(c, icon, cx - icon.getMinimumWidth() / 2f, cy - icon.getMinimumHeight() / 2f, paint);
-      c.restore();
+      Views.restore(c, restoreToCount);
     }
   }
 

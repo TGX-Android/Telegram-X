@@ -37,6 +37,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Text;
@@ -484,9 +485,12 @@ public class TGMessageFile extends TGMessage {
     final int backgroundColor = getContentBackgroundColor();
     final int contentReplaceColor = getContentReplaceColor();
     final boolean clip = useBubbles();
+    final int restoreToCount;
     if (clip) {
-      c.save();
+      restoreToCount = Views.save(c);
       c.clipRect(getActualLeftContentEdge(), getTopContentEdge(), getActualRightContentEdge(), getBottomContentEdge());
+    } else {
+      restoreToCount = -1;
     }
     for (ListAnimator.Entry<CaptionedFile> entry : files) {
       ImageReceiver imageReceiver = receiver.getImageReceiver(entry.item.receiverId);
@@ -521,7 +525,7 @@ public class TGMessageFile extends TGMessage {
       }
     }
     if (clip) {
-      c.restore();
+      Views.restore(c, restoreToCount);
     }
   }
 

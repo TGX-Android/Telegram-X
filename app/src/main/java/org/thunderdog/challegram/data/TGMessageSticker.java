@@ -658,10 +658,13 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
             int right = left + stickerWidth;
             int bottom = top + stickerHeight;
 
-            int saveScaleToCount = -1;
-            if (scale != 1f) {
+            final int saveScaleToCount;
+            boolean needRestore = scale != 1f;
+            if (needRestore) {
               saveScaleToCount = Views.save(c);
               c.scale(scale, scale, left + stickerWidth / 2f, top + stickerHeight / 2f);
+            } else {
+              saveScaleToCount = -1;
             }
 
             if (representation.sticker == null && representation.emojiInfo != null) {
@@ -690,7 +693,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
               }
               DrawAlgorithms.drawReceiver(c, preview, target, !representation.isAnimated(), false, left, top, right, bottom);
             }
-            if (scale != 1f) {
+            if (needRestore) {
               Views.restore(c, saveScaleToCount);
             }
           }
