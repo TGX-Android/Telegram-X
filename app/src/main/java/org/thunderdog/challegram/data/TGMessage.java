@@ -84,6 +84,7 @@ import org.thunderdog.challegram.telegram.TdlibEmojiManager;
 import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.PropertyId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeManager;
@@ -7019,7 +7020,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
-  public final @ColorId int getDecentColorId (@ColorId int defaultColorId) {
+  public final @PorterDuffColorId int getDecentColorId (@ColorId int defaultColorId) {
     return useBubbles() ? (isOutgoingBubble() ? ColorId.bubbleOut_time : ColorId.bubbleIn_time) : defaultColorId;
   }
 
@@ -7043,7 +7044,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return useBubbles() ? (isOutgoingBubble() ? ColorId.bubbleOut_pressed : ColorId.bubbleIn_pressed) : ColorId.messageSelection;
   }
 
-  public final @ColorId int getDecentIconColorId () {
+  public final @PorterDuffColorId int getDecentIconColorId () {
     return getDecentColorId(ColorId.iconLight);
   }
 
