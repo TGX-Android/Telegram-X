@@ -3357,10 +3357,25 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     replyData.load();
   }
 
-  public final void replaceReplyContent (long chatId, long messageId, TdApi.MessageContent newContent) {
-    if (Td.equalsTo(msg.replyTo, chatId, messageId) && replyData != null) {
+  public final int replaceMessagePreview (long chatId, long messageId, TdApi.MessageContent newContent) {
+    int height = getHeight();
+    int width = getWidth();
+    int contentWidth = getContentWidth();
+    boolean replyUpdated = Td.equalsTo(msg.replyTo, chatId, messageId) && replyData != null;
+    if (replyUpdated) {
       replyData.replaceMessageContent(messageId, newContent);
     }
+    if (handleMessagePreviewChange(chatId, messageId, newContent) || replyUpdated) {
+      if (width != getWidth() || contentWidth != getContentWidth()) {
+        buildMarkup();
+      }
+      return height == getHeight() ? MESSAGE_INVALIDATED : MESSAGE_CHANGED;
+    }
+    return MESSAGE_NOT_CHANGED;
+  }
+
+  protected boolean handleMessagePreviewChange (long chatId, long messageId, TdApi.MessageContent newContent) {
+    return false;
   }
 
   public final void replaceReplyTranslation (long chatId, long messageId, @Nullable TdApi.FormattedText translation) {
@@ -5088,7 +5103,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   @MessageChangeType
-  public int setMessageContent (long messageId, TdApi.MessageContent newContent) {
+  public int replaceMessageContent (long chatId, long messageId, TdApi.MessageContent newContent) {
+    if (msg.chatId != chatId || !isDescendantOrSelf(messageId)) {
+      return replaceMessagePreview(chatId, messageId, newContent);
+    }
     TdApi.Message message;
     boolean isBottomMessage;
     synchronized (this) {
@@ -5100,8 +5118,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         message = msg;
         isBottomMessage = true;
       } else {
-        return MESSAGE_NOT_CHANGED;
+        message = null;
+        isBottomMessage = false;
       }
+    }
+    if (message == null) {
+      return MESSAGE_NOT_CHANGED;
     }
     if ((flags & FLAG_UNSUPPORTED) != 0) {
       if (message.content.getConstructor() == TdApi.MessageUnsupported.CONSTRUCTOR && newContent.getConstructor() != TdApi.MessageUnsupported.CONSTRUCTOR) {

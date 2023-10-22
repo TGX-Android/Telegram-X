@@ -543,6 +543,9 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
             return true;
           }
         }
+        if (currentPreview.updateRelatedMessage(chatId, messageId, newContent, this)) {
+          return true;
+        }
       }
       if (chat.lastMessage.id == messageId) {
         chat.lastMessage.content = newContent;

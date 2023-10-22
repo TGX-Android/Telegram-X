@@ -1766,8 +1766,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
-  private void replaceMessageContent (TGMessage msg, int index, long messageId, TdApi.MessageContent content) {
-    switch (msg.setMessageContent(messageId, content)) {
+  private void replaceMessageContent (TGMessage msg, int index, long chatId, long messageId, TdApi.MessageContent content) {
+    switch (msg.replaceMessageContent(chatId, messageId, content)) {
       case TGMessage.MESSAGE_INVALIDATED: {
         invalidateViewAt(index);
         break;
@@ -1793,14 +1793,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     controller.onMessageChanged(chatId, messageId, content);
     ArrayList<TGMessage> items = adapter.getItems();
     if (!adapter.isEmpty() && items != null) {
-      int i = 0;
+      int index = 0;
       for (TGMessage item : items) {
-        if (item.isDescendantOrSelf(messageId)) {
-          replaceMessageContent(item, i, messageId, content);
-        } else {
-          item.replaceReplyContent(chatId, messageId, content);
-        }
-        i++;
+        replaceMessageContent(item, index, chatId, messageId, content);
+        index++;
       }
     }
     ThreadInfo messageThread = loader.getMessageThread();

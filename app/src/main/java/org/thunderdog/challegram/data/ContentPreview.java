@@ -89,6 +89,8 @@ public class ContentPreview {
   public final @Nullable TdApi.FormattedText formattedText;
   public final boolean isTranslatable;
   public final boolean hideAuthor;
+  public @Nullable TdApi.Message relatedMessage;
+  private @Nullable MessageContentBuilder relatedMessageBuilder;
 
   public ContentPreview (@Nullable Emoji emoji, @StringRes int placeholderTextRes) {
     this(emoji, placeholderTextRes, (TdApi.FormattedText) null);
@@ -133,6 +135,37 @@ public class ContentPreview {
     this.isTranslatable = isTranslatable;
     this.hideAuthor = hideAuthor;
     this.parentEmoji = parentEmoji;
+  }
+
+  private interface MessageContentBuilder {
+    ContentPreview runBuilder (TdApi.Message message);
+  }
+
+  private ContentPreview setRelatedMessage (@NonNull TdApi.Message message, @NonNull MessageContentBuilder refresher) {
+    this.relatedMessage = message;
+    this.relatedMessageBuilder = refresher;
+    return this;
+  }
+
+  public boolean updateRelatedMessage (long chatId, long messageId, TdApi.MessageContent content, RefreshCallback callback) {
+    if (relatedMessage != null && relatedMessage.chatId == chatId && relatedMessage.id == messageId) {
+      relatedMessage.content = content;
+      if (callback != null) {
+        ContentPreview newPreview;
+        if (relatedMessageBuilder != null) {
+          newPreview = relatedMessageBuilder.runBuilder(relatedMessage);
+        } else {
+          newPreview = null;
+        }
+        if (newPreview != null) {
+          callback.onContentPreviewChanged(chatId, messageId, newPreview, this);
+        } else {
+          callback.onContentPreviewNotChanged(chatId, messageId, this);
+        }
+      }
+      return true;
+    }
+    return false;
   }
 
   @NonNull
@@ -319,7 +352,15 @@ public class ContentPreview {
           return new ContentPreview(EMOJI_PIN, R.string.ChatContentPinned)
             .setRefresher((oldPreview, callback) -> tdlib.getMessage(chatId, pinnedMessageId, remotePinnedMessage -> {
             if (remotePinnedMessage != null) {
-              callback.onContentPreviewChanged(chatId, message.id, new ContentPreview(EMOJI_PIN, getContentPreview(tdlib, chatId, remotePinnedMessage, allowContent, isChatList, checkChatRestrictions)), oldPreview);
+              MessageContentBuilder builder = new MessageContentBuilder() {
+                @Override
+                public ContentPreview runBuilder (TdApi.Message message) {
+                  return new ContentPreview(EMOJI_PIN, getContentPreview(tdlib, chatId, message, allowContent, isChatList, checkChatRestrictions))
+                    .setRelatedMessage(message, this);
+                }
+              };
+              ContentPreview newPreview = builder.runBuilder(remotePinnedMessage);
+              callback.onContentPreviewChanged(chatId, message.id, newPreview, oldPreview);
             } else {
               callback.onContentPreviewNotChanged(chatId, message.id, oldPreview);
             }
@@ -344,7 +385,16 @@ public class ContentPreview {
               if (remoteGameMessage != null && Td.isGame(remoteGameMessage.content)) {
                 String newGameTitle = TD.getGameName(((TdApi.MessageGame) remoteGameMessage.content).game, false);
                 if (!StringUtils.isEmpty(newGameTitle)) {
-                  callback.onContentPreviewChanged(message.chatId, message.id, new ContentPreview(EMOJI_GAME, 0, Lang.plural(message.isOutgoing ? R.string.game_ActionYouScoredInGame : R.string.game_ActionScoredInGame, score.score, newGameTitle), true), oldPreview);
+                  MessageContentBuilder builder = new MessageContentBuilder() {
+                    @Override
+                    public ContentPreview runBuilder (TdApi.Message updatedMessage) {
+                      String newGameTitle = TD.getGameName(((TdApi.MessageGame) updatedMessage.content).game, false);
+                      return new ContentPreview(EMOJI_GAME, 0, Lang.plural(message.isOutgoing ? R.string.game_ActionYouScoredInGame : R.string.game_ActionScoredInGame, score.score, newGameTitle), true)
+                        .setRelatedMessage(updatedMessage, this);
+                    }
+                  };
+                  ContentPreview newContent = builder.runBuilder(remoteGameMessage);
+                  callback.onContentPreviewChanged(message.chatId, message.id, newContent, oldPreview);
                   return;
                 }
               }

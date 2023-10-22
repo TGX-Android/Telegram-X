@@ -105,22 +105,42 @@ abstract class TGMessageServiceImpl extends TGMessage {
     }
   }
 
+  private Filter<TdApi.Message> previewCallback;
+  private TdApi.Message previewMessage;
+
+  @Override
+  protected boolean handleMessagePreviewChange (long chatId, long messageId, TdApi.MessageContent newContent) {
+    if (previewMessage != null && previewMessage.chatId == chatId && previewMessage.id == messageId) {
+      previewMessage.content = newContent;
+      if (previewCallback.accept(previewMessage)) {
+        updateServiceMessage();
+        return true;
+      }
+    }
+    return false;
+  }
+
   public void setDisplayMessage (long chatId, long messageId, Filter<TdApi.Message> callback) {
     tdlib.client().send(new TdApi.GetMessage(chatId, messageId), result -> {
       if (result.getConstructor() == TdApi.Message.CONSTRUCTOR) {
         TdApi.Message message = (TdApi.Message) result;
         runOnUiThreadOptional(() -> {
           if (callback.accept(message)) {
-            // TODO subscribe to further updates
-            boolean hadTextMedia = hasTextMedia();
-            rebuildAndUpdateContent();
-            if (hadTextMedia || hasTextMedia()) {
-              invalidateTextMediaReceiver();
-            }
+            this.previewMessage = message;
+            this.previewCallback = callback;
+            updateServiceMessage();
           }
         });
       }
     });
+  }
+
+  private void updateServiceMessage () {
+    boolean hadTextMedia = hasTextMedia();
+    rebuildAndUpdateContent();
+    if (hadTextMedia || hasTextMedia()) {
+      invalidateTextMediaReceiver();
+    }
   }
 
   private boolean hasTextMedia () {
