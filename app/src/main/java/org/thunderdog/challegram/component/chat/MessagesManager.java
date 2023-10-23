@@ -731,9 +731,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       }
 
       @Override
-      public void onMessageViewed (TdlibMessageViewer.Viewport viewport, View view, TdApi.Message message, long flags, long viewId, boolean allowRequest) {
+      public boolean onMessageViewed (TdlibMessageViewer.Viewport viewport, View view, TdApi.Message message, long flags, long viewId, boolean allowRequest) {
         if (inSpecialMode() || !allowRequest)
-          return;
+          return false;
         MessageProvider provider = (MessageProvider) view;
         TGMessage msg = provider.getMessage();
         if (msg.markAsViewed() || msg.containsUnreadReactions()) {
@@ -744,7 +744,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           if (msg.containsUnreadReactions() && messageId > lastViewedReactionMessageId) {
             lastViewedReactionMessageId = messageId;
           }
+          return true;
         }
+        return false;
       }
 
       @Override

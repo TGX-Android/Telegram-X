@@ -222,7 +222,7 @@ public class TdlibMessageViewer {
     /**
      * @return True, if flags were changed or message wasn't previously visible
      */
-    public boolean addVisibleMessage (TdApi.Object rawMessage, @Flags long flags, long viewId) {
+    public boolean addVisibleMessage (TdApi.Object rawMessage, @Flags long flags, long viewId, boolean forceMarkAsRecent) {
       VisibleMessage visibleMessage;
       boolean isSponsored = rawMessage.getConstructor() == TdApi.SponsoredMessage.CONSTRUCTOR;
       if (isSponsored) {
@@ -235,7 +235,7 @@ public class TdlibMessageViewer {
       }
       if (visibleMessage != null) {
         visibleMessage.viewId = viewId;
-        if (visibleMessage.flags != flags || visibleMessage.visibility.isHidden()) {
+        if (visibleMessage.flags != flags || visibleMessage.visibility.isHidden() || forceMarkAsRecent) {
           long oldFlags = visibleMessage.flags;
           visibleMessage.flags = flags;
           visibleMessage.isRecentlyViewed = true;
@@ -512,20 +512,20 @@ public class TdlibMessageViewer {
       }
       VisibleMessage visibleMessage = visibleChat.removeVisibleMessage(message.chatId, oldMessageId);
       if (visibleMessage != null) {
-        return addVisibleMessage(message, visibleMessage.flags, visibleMessage.viewId);
+        return addVisibleMessage(message, visibleMessage.flags, visibleMessage.viewId, false);
       }
       return false;
     }
 
-    public boolean addVisibleMessage (TdApi.Message message, @Flags long flags, long viewId) {
-      return addVisibleMessageImpl(message.chatId, message, flags, viewId);
+    public boolean addVisibleMessage (TdApi.Message message, @Flags long flags, long viewId, boolean forceMarkAsRecent) {
+      return addVisibleMessageImpl(message.chatId, message, flags, viewId, forceMarkAsRecent);
     }
 
-    public boolean addVisibleMessage (long chatId, TdApi.SponsoredMessage sponsoredMessage, @Flags long flags, long viewId) {
-      return addVisibleMessageImpl(chatId, sponsoredMessage, flags, viewId);
+    public boolean addVisibleMessage (long chatId, TdApi.SponsoredMessage sponsoredMessage, @Flags long flags, long viewId, boolean forceMarkAsRecent) {
+      return addVisibleMessageImpl(chatId, sponsoredMessage, flags, viewId, forceMarkAsRecent);
     }
 
-    private boolean addVisibleMessageImpl (long chatId, TdApi.Object rawMessage, @Flags long flags, long viewId) {
+    private boolean addVisibleMessageImpl (long chatId, TdApi.Object rawMessage, @Flags long flags, long viewId, boolean forceMarkAsRecent) {
       if (isDestroyed()) {
         return false;
       }
@@ -533,7 +533,7 @@ public class TdlibMessageViewer {
       if (visibleChat == null) {
         visibleChat = new VisibleChat(this, chatId);
       }
-      if (visibleChat.addVisibleMessage(rawMessage, flags, viewId)) {
+      if (visibleChat.addVisibleMessage(rawMessage, flags, viewId, forceMarkAsRecent)) {
         if (visibleChat.visibility.markAsVisible()) {
           trackChat(visibleChat, true);
         }

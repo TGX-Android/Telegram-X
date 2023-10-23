@@ -4471,17 +4471,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return msg.unreadReactions != null && msg.unreadReactions.length > 0;
   }
 
-  public final void readReactions () {
-    synchronized (this) {
-      if (combinedMessages != null) {
-        for (TdApi.Message message : combinedMessages) {
-          message.unreadReactions = new TdApi.UnreadReaction[0];
-        }
-      }
-      msg.unreadReactions = new TdApi.UnreadReaction[0];
-    }
-  }
-
   public final boolean containsUnreadMention () {
     synchronized (this) {
       if (combinedMessages != null) {
@@ -4952,16 +4941,15 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       }
       result = true;
     }
-    if (containsUnreadReactions()) {
-      if (!BitwiseUtils.hasFlag(flags, FLAG_IGNORE_REACTIONS_VIEW)) {
-        highlightUnreadReactions();
-        highlight(true);
-        tdlib.ui().postDelayed(() -> {
-          flags = BitwiseUtils.setFlag(flags, FLAG_IGNORE_REACTIONS_VIEW, false);
-        }, 500L);
-        tdlib().ui().post(this::readReactions);
-      }
+    if (containsUnreadReactions() && !BitwiseUtils.hasFlag(flags, FLAG_IGNORE_REACTIONS_VIEW)) {
       flags |= FLAG_IGNORE_REACTIONS_VIEW;
+
+      highlightUnreadReactions();
+      highlight(true);
+      tdlib.ui().postDelayed(() -> {
+        flags = BitwiseUtils.setFlag(flags, FLAG_IGNORE_REACTIONS_VIEW, false);
+      }, 500L);
+
       result = true;
     }
     return result;

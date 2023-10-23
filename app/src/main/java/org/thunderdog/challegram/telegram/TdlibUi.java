@@ -6801,7 +6801,7 @@ public class TdlibUi extends Handler {
   }
 
   public interface MessageViewCallback {
-    void onMessageViewed (TdlibMessageViewer.Viewport viewport, View view, TdApi.Message message, @TdlibMessageViewer.Flags long flags, long viewId, boolean allowRequest);
+    boolean onMessageViewed (TdlibMessageViewer.Viewport viewport, View view, TdApi.Message message, @TdlibMessageViewer.Flags long flags, long viewId, boolean allowRequest);
     default boolean needForceRead (TdlibMessageViewer.Viewport viewport) {
       return false;
     }
@@ -6848,7 +6848,7 @@ public class TdlibUi extends Handler {
             if (provider.isSponsoredMessage()) {
               TdApi.SponsoredMessage sponsoredMessage = provider.getVisibleSponsoredMessage();
               long chatId = provider.getVisibleChatId();
-              if (sponsoredMessage != null && viewport.addVisibleMessage(chatId, sponsoredMessage, flags, viewId)) {
+              if (sponsoredMessage != null && viewport.addVisibleMessage(chatId, sponsoredMessage, flags, viewId, false)) {
                 if (callback != null) {
                   callback.onSponsoredMessageViewed(viewport, view, sponsoredMessage, flags, viewId, allowViewRequest);
                 }
@@ -6858,21 +6858,19 @@ public class TdlibUi extends Handler {
               List<TdApi.Message> mediaGroup = provider.getVisibleMediaGroup();
               if (mediaGroup != null) {
                 for (TdApi.Message message : mediaGroup) {
-                  if (viewport.addVisibleMessage(message, flags, viewId)) {
-                    if (callback != null) {
-                      callback.onMessageViewed(viewport, view, message, flags, viewId, allowViewRequest);
-                    }
+                  boolean forceMarkAsRecent = callback != null && callback.onMessageViewed(viewport, view, message, flags, viewId, allowViewRequest);
+                  if (viewport.addVisibleMessage(message, flags, viewId, forceMarkAsRecent)) {
                     viewedMessageCount++;
                   }
                 }
               }
             } else {
               TdApi.Message message = provider.getVisibleMessage();
-              if (message != null && viewport.addVisibleMessage(message, flags, viewId)) {
-                if (callback != null) {
-                  callback.onMessageViewed(viewport, view, message, flags, viewId, allowViewRequest);
+              if (message != null) {
+                boolean forceMarkAsRecent = callback != null && callback.onMessageViewed(viewport, view, message, flags, viewId, allowViewRequest);
+                if (viewport.addVisibleMessage(message, flags, viewId, forceMarkAsRecent)) {
+                  viewedMessageCount++;
                 }
-                viewedMessageCount++;
               }
             }
           }
