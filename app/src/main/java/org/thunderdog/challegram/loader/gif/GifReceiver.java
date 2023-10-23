@@ -810,7 +810,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
               Views.restore(c, restoreToCount);
             }
           } else if (scaleType != 0) {
-            c.save();
+            final int restoreToCount = Views.save(c);
             c.clipRect(drawRegion);
 
             if (drawRegion.left != 0 || drawRegion.top != 0) {
@@ -831,7 +831,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
             c.concat(bitmapMatrix);
             c.drawBitmap(frame.bitmap, 0f, 0f, paint);
 
-            c.restore();
+            Views.restore(c, restoreToCount);
           } else {
             Rect rect = Paints.getRect();
             rect.set((int) bitmapRect.left, (int) bitmapRect.top, (int) bitmapRect.right, (int) bitmapRect.bottom);

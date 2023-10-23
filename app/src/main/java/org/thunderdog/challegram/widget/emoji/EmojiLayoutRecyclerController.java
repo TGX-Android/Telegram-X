@@ -22,6 +22,7 @@ import android.view.ViewGroup;
 import androidx.annotation.IdRes;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.component.chat.EmojiView;
@@ -482,14 +483,16 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayoutRec
     if (this.ignoreRequests != ignoreRequests) {
       this.ignoreRequests = ignoreRequests;
       this.ignoreException = exceptSetId;
-      if (!ignoreRequests && manager!= null) {
+      if (!ignoreRequests && manager != null) {
         final int firstVisiblePosition = manager.findFirstVisibleItemPosition();
         final int lastVisiblePosition = manager.findLastVisibleItemPosition();
 
-        for (int i = lastVisiblePosition; i >= firstVisiblePosition; i--) {
-          MediaStickersAdapter.StickerItem item = adapter.getItem(i);
-          if (item != null && item.viewType == MediaStickersAdapter.StickerHolder.TYPE_STICKER && item.sticker != null) {
-            item.sticker.requestRequiredInformation();
+        if (firstVisiblePosition != RecyclerView.NO_POSITION && lastVisiblePosition != RecyclerView.NO_POSITION) {
+          for (int i = lastVisiblePosition; i >= firstVisiblePosition; i--) {
+            MediaStickersAdapter.StickerItem item = adapter.getItem(i);
+            if (item != null && item.viewType == MediaStickersAdapter.StickerHolder.TYPE_STICKER && item.sticker != null) {
+              item.sticker.requestRequiredInformation();
+            }
           }
         }
       }

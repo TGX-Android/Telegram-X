@@ -625,10 +625,12 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
   }
 
   private void closePreview () {
-    if (currentOpenPreview != null) {
-      UI.getContext(getContext()).closeForceTouch();
-      currentOpenPreview = null;
-    }
+    UI.post(() -> {
+      if (currentOpenPreview != null) {
+        UI.getContext(getContext()).closeForceTouch();
+        currentOpenPreview = null;
+      }
+    });
   }
 
   // Utils

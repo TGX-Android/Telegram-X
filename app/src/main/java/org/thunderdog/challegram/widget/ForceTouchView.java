@@ -472,10 +472,10 @@ public class ForceTouchView extends FrameLayoutFix implements
           view = new ImageView(getContext()) {
             @Override
             protected void onDraw (Canvas c) {
-              c.save();
+              final int restoreToCount = Views.save(c);
               c.scale(-1f, 1f, getMeasuredWidth() / 2f, getMeasuredHeight() / 2f);
               super.onDraw(c);
-              c.restore();
+              Views.restore(c, restoreToCount);
             }
           };
         } else if (actionItem.messageSender != null && actionItem.iconRes == 0) {
@@ -487,10 +487,10 @@ public class ForceTouchView extends FrameLayoutFix implements
             @Override
             protected void onDraw (Canvas c) {
               super.onDraw(c);
-              c.save();
+              final int restoreToCount = Views.save(c);
               c.translate((getMeasuredWidth() - receiver.getWidth()) / 2f, (getMeasuredHeight() - receiver.getHeight()) / 2f);
               receiver.draw(c);
-              c.restore();
+              Views.restore(c, restoreToCount);
             }
           };
           receiver.setUpdateListener(r -> view.invalidate());
