@@ -105,6 +105,7 @@ abstract class TGMessageServiceImpl extends TGMessage {
     }
   }
 
+  private ServiceMessageCreator originalMessageCreator;
   private Filter<TdApi.Message> previewCallback;
   private TdApi.Message previewMessage;
 
@@ -120,7 +121,20 @@ abstract class TGMessageServiceImpl extends TGMessage {
     return false;
   }
 
+  @Override
+  protected boolean handleMessagePreviewDelete (long chatId, long messageId) {
+    if (originalMessageCreator != null && previewMessage != null && previewMessage.chatId == chatId && previewMessage.id == messageId) {
+      previewMessage = null;
+      previewCallback = null;
+      setTextCreator(originalMessageCreator);
+      updateServiceMessage();
+      return true;
+    }
+    return false;
+  }
+
   public void setDisplayMessage (long chatId, long messageId, Filter<TdApi.Message> callback) {
+    originalMessageCreator = textCreator;
     tdlib.client().send(new TdApi.GetMessage(chatId, messageId), result -> {
       if (result.getConstructor() == TdApi.Message.CONSTRUCTOR) {
         TdApi.Message message = (TdApi.Message) result;

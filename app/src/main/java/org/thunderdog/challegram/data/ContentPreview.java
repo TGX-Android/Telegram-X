@@ -141,6 +141,10 @@ public class ContentPreview {
     ContentPreview runBuilder (TdApi.Message message);
   }
 
+  public boolean belongsToRelatedMessage (long chatId, long[] messageIds) {
+    return relatedMessage != null && relatedMessage.chatId == chatId && ArrayUtils.contains(messageIds, relatedMessage.id);
+  }
+
   private ContentPreview setRelatedMessage (@NonNull TdApi.Message message, @NonNull MessageContentBuilder refresher) {
     this.relatedMessage = message;
     this.relatedMessageBuilder = refresher;

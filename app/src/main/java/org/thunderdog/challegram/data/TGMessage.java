@@ -150,6 +150,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.LongList;
 import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.lambda.CancellableRunnable;
+import me.vkryl.core.lambda.FutureBool;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceList;
@@ -3358,15 +3359,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     replyData.load();
   }
 
-  public final int replaceMessagePreview (long chatId, long messageId, TdApi.MessageContent newContent) {
+  @MessageChangeType
+  private int performContentfulUpdate (FutureBool act) {
     int height = getHeight();
     int width = getWidth();
     int contentWidth = getContentWidth();
-    boolean replyUpdated = Td.equalsTo(msg.replyTo, chatId, messageId) && replyData != null;
-    if (replyUpdated) {
-      replyData.replaceMessageContent(messageId, newContent);
-    }
-    if (handleMessagePreviewChange(chatId, messageId, newContent) || replyUpdated) {
+    boolean updated = act.getBoolValue();
+    if (updated) {
       if (width != getWidth() || contentWidth != getContentWidth()) {
         buildMarkup();
       }
@@ -3375,19 +3374,39 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return MESSAGE_NOT_CHANGED;
   }
 
+  @MessageChangeType
+  public final int replaceMessagePreview (long chatId, long messageId, TdApi.MessageContent newContent) {
+    return performContentfulUpdate(() -> {
+      boolean replyUpdated = Td.equalsTo(msg.replyTo, chatId, messageId) && replyData != null;
+      if (replyUpdated) {
+        replyData.replaceMessageContent(messageId, newContent);
+      }
+      return handleMessagePreviewChange(chatId, messageId, newContent) || replyUpdated;
+    });
+  }
+
   protected boolean handleMessagePreviewChange (long chatId, long messageId, TdApi.MessageContent newContent) {
+    return false;
+  }
+
+  @MessageChangeType
+  public final int removeMessagePreview (long chatId, long messageId) {
+    return performContentfulUpdate(() -> {
+      boolean replyUpdated = Td.equalsTo(msg.replyTo, chatId, messageId) && replyData != null;
+      if (replyUpdated) {
+        replyData.deleteMessageContent(messageId);
+      }
+      return handleMessagePreviewDelete(chatId, messageId) || replyUpdated;
+    });
+  }
+
+  protected boolean handleMessagePreviewDelete (long chatId, long messageId) {
     return false;
   }
 
   public final void replaceReplyTranslation (long chatId, long messageId, @Nullable TdApi.FormattedText translation) {
     if (Td.equalsTo(msg.replyTo, chatId, messageId) && replyData != null) {
       replyData.replaceMessageTranslation(messageId, translation);
-    }
-  }
-
-  public final void removeReply (long chatId, long messageId) {
-    if (Td.equalsTo(msg.replyTo, chatId, messageId) && replyData != null) {
-      replyData.deleteMessageContent(messageId);
     }
   }
 

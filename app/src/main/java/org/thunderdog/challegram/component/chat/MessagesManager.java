@@ -1909,6 +1909,28 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
+  private void handleMessageChange (TGMessage msg, int index, long messageId, @TGMessage.MessageChangeType int changeType) {
+    switch (changeType) {
+      case TGMessage.MESSAGE_INVALIDATED: {
+        invalidateViewAt(index);
+        break;
+      }
+      case TGMessage.MESSAGE_CHANGED: {
+        getAdapter().notifyItemChanged(index);
+        break;
+      }
+      case TGMessage.MESSAGE_NOT_CHANGED: {
+        // Nothing to do
+        break;
+      }
+      case TGMessage.MESSAGE_REPLACE_REQUIRED: {
+        TdApi.Message message = msg.getMessage(messageId);
+        replaceMessage(msg, index, messageId, message);
+        break;
+      }
+    }
+  }
+
   public void updateMessagesDeleted (long chatId, long[] messageIds) {
     controller.removeReply(messageIds);
     controller.onMessagesDeleted(chatId, messageIds);
@@ -1922,14 +1944,17 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     ThreadInfo messageThread = loader.getMessageThread();
     long lastReadInboxMessageId = messageThread != null ? messageThread.getLastReadInboxMessageId() : chat.lastReadInboxMessageId;
 
-    int i = 0;
-    main: while (i < adapter.getMessageCount()) {
-      TGMessage item = adapter.getMessage(i);
+    int index = 0;
+    main: while (index < adapter.getMessageCount()) {
+      TGMessage item = adapter.getMessage(index);
 
       for (long messageId : messageIds) {
         switch (item.removeMessage(messageId)) {
           case TGMessage.REMOVE_NOTHING: {
-            item.removeReply(chatId, messageId);
+            @TGMessage.MessageChangeType int changeType = item.removeMessagePreview(chatId, messageId);
+            if (changeType != TGMessage.MESSAGE_NOT_CHANGED) {
+              handleMessageChange(item, index, messageId, changeType);
+            }
             break;
           }
           case TGMessage.REMOVE_COMBINATION: {
@@ -1947,7 +1972,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
             }
           }
           case TGMessage.REMOVE_COMPLETELY: {
-            TGMessage removed = adapter.removeItem(i);
+            TGMessage removed = adapter.removeItem(index);
             if (controller.unselectMessage(messageId, removed)) {
               selectedCount--;
               unselectedSomeMessages = true;
@@ -1964,7 +1989,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         }
       }
 
-      i++;
+      index++;
     }
 
     if (unselectedSomeMessages) {
