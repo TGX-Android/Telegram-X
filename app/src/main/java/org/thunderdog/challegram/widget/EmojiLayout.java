@@ -474,7 +474,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   }
 
   public void optimizeForDisplayTextFormattingLayout (boolean needOptimize) {
-    int visibility = needOptimize ? VISIBLE : GONE;
+    int visibility = needOptimize ? GONE : VISIBLE;
     // if (headerView != null) headerView.setVisibility(visibility);
     if (shadowView != null) shadowView.setVisibility(visibility);
     if (pager != null) pager.setVisibility(visibility);

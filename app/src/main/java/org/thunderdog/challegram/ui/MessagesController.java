@@ -4402,11 +4402,32 @@ public class MessagesController extends ViewController<MessagesController.Argume
     showMessageOptions(null, message, reactionType, newMessageOptionDelegate(message, null, null));
   }
 
+  private boolean isMessageOptionsVisible;
+
   private void showMessageOptions (Options options, TGMessage message, @Nullable TdApi.ReactionType reactionType, OptionDelegate optionsDelegate) {
-    MessageOptionsPagerController r = new MessageOptionsPagerController(context, tdlib, options, message, reactionType, optionsDelegate);
+    if (isMessageOptionsVisible) {
+      return;
+    }
+    isMessageOptionsVisible = true;
+
+    MessageOptionsPagerController r = new MessageOptionsPagerController(context, tdlib, options, message, reactionType, optionsDelegate) {
+      @Override
+      protected void onCustomShowComplete () {
+        super.onCustomShowComplete();
+        prepareToShowMessageOptions2();
+      }
+    };
     r.show();
-    r.setDismissListener(p -> {
-      onHideMessageOptions();
+    r.setDismissListener(new PopupLayout.DismissListener() {
+      @Override
+      public void onPopupDismiss (PopupLayout popup) {
+        isMessageOptionsVisible = false;
+      }
+
+      @Override
+      public void onPopupDismissPrepare (PopupLayout popup) {
+        onHideMessageOptions();
+      }
     });
     prepareToShowMessageOptions();
     hideCursorsForInputView();
@@ -4421,15 +4442,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (needShowKeyboardAfterHideMessageOptions) {    // показываем emoji-клавиатуру, чтобы скрыть системную
       openEmojiKeyboard();                            // делаем emojiLayout невидимым для оптимизации
     }                                                 // todo: если меню сообщения ниже EmojiLayout, то не скрывать?
+  }
+
+  private void prepareToShowMessageOptions2 () {
     if (needShowKeyboardAfterHideMessageOptions || needShowEmojiKeyboardAfterHideMessageOptions) {
-      emojiLayout.setVisibility(View.INVISIBLE);
+      emojiLayout.optimizeForDisplayTextFormattingLayout(true);
     }
   }
 
   private void onHideMessageOptions () {
     if (needShowEmojiKeyboardAfterHideMessageOptions) {
       if (emojiShown) {
-        emojiLayout.setVisibility(View.VISIBLE);
+        emojiLayout.optimizeForDisplayTextFormattingLayout(false);
       } else {
         openEmojiKeyboard();
       }
@@ -11382,7 +11406,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     textFormattingVisible = visible;
     if (emojiLayout != null && textFormattingLayout != null) {
       textFormattingLayout.setVisibility(visible ? View.VISIBLE : View.GONE);
-      emojiLayout.optimizeForDisplayTextFormattingLayout(!visible);
+      emojiLayout.optimizeForDisplayTextFormattingLayout(visible);
       if (visible) {
         textFormattingLayout.checkButtonsActive(false);
       }

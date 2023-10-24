@@ -3311,7 +3311,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     textFormattingVisible = visible;
     if (emojiLayout != null && textFormattingLayout != null) {
       textFormattingLayout.setVisibility(visible ? View.VISIBLE : View.GONE);
-      emojiLayout.optimizeForDisplayTextFormattingLayout(!visible);
+      emojiLayout.optimizeForDisplayTextFormattingLayout(visible);
       if (visible) {
         textFormattingLayout.checkButtonsActive(false);
       }
