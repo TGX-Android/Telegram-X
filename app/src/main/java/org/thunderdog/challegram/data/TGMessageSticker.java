@@ -106,6 +106,9 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
       }
       this.sticker = sticker;
       this.needThemedColorFilter = TD.needThemedColorFilter(sticker);
+      this.animatedFile = null;
+      this.staticFile = null;
+      this.preview = null;
 
       if (fitzpatrickType == 0 || !Td.isAnimated(sticker.format)) {
         this.preview = TD.toImageFile(tdlib, sticker.thumbnail);
@@ -170,7 +173,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
         receiver.getPreviewReceiver(key).clear();
         return;
       }
-      if (!invalidate) {
+      //if (!invalidate) {
         DoubleImageReceiver previewReceiver = receiver.getPreviewReceiver(key);
         if (preview == null || hasAnimationEnded()) {
           previewReceiver.clear();
@@ -180,16 +183,13 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
         } else {
           previewReceiver.requestFile(null, preview);
         }
+      //}
+      GifFile file = receiver.getGifReceiver(key).getCurrentFile();
+      if (file != animatedFile) {
+        receiver.getGifReceiver(key).requestFile(null);         // The new file may have the same id as
+        receiver.getGifReceiver(key).requestFile(animatedFile); // old file, but a different requestedSize
       }
-      if (isAnimated()) {
-        GifFile file = receiver.getGifReceiver(key).getCurrentFile();
-        if (file != animatedFile) {
-          receiver.getGifReceiver(key).requestFile(null);         // The new file may have the same id as
-          receiver.getGifReceiver(key).requestFile(animatedFile); // old file, but a different requestedSize
-        }
-      } else {
-        receiver.getImageReceiver(key).requestFile(staticFile);
-      }
+      receiver.getImageReceiver(key).requestFile(staticFile);
     }
 
     public void setSize (int width, int height) {
@@ -636,41 +636,41 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
       for (Representation representation : representation) {
         int left = (int) (leftDefault + stickerWidth * (representation.xIndex));
         int top = topDefault + stickerHeight * (representation.yIndex);
-        if (representation.outline != null) {
-          DoubleImageReceiver preview = receiver.getPreviewReceiver(index);
-          Receiver target = representation.isAnimated() ? receiver.getGifReceiver(index) : receiver.getImageReceiver(index);
-          if (target.needPlaceholder() && preview.needPlaceholder()) {
-            final int saveCount = Views.save(c);
-            c.translate(left, top);
-            c.drawPath(representation.outline, Paints.getPlaceholderPaint());
-            Views.restore(c, saveCount);
-          }
-          index++;
-        }
+
       }
 
       boolean needScale = representation.size() > 1 && specialType == SPECIAL_TYPE_ANIMATED_EMOJI;
-      for (int a = 0; a < 2; a++) {
+      for (int a = 0; a < 3; a++) {
         index = 0;
         for (Representation representation : representation) {
           final boolean isTgsSticker = representation.sticker != null && representation.sticker.format.getConstructor() == TdApi.StickerFormatTgs.CONSTRUCTOR;
-          if (isTgsSticker && a == 1 || !isTgsSticker && a == 0) {
-            final float scale = needScale && representation.sticker != null ? TextMedia.getScale(representation.sticker, stickerWidth) : 1f;
+          final float scale = needScale && representation.sticker != null ? TextMedia.getScale(representation.sticker, stickerWidth) : 1f;
+          int left = (int) (leftDefault + stickerWidth * (representation.xIndex));
+          int top = topDefault + stickerHeight * (representation.yIndex);
+          int right = left + stickerWidth;
+          int bottom = top + stickerHeight;
 
-            int left = (int) (leftDefault + stickerWidth * (representation.xIndex));
-            int top = topDefault + stickerHeight * (representation.yIndex);
-            int right = left + stickerWidth;
-            int bottom = top + stickerHeight;
+          final int saveScaleToCount;
+          boolean needRestore = scale != 1f;
+          if (needRestore) {
+            saveScaleToCount = Views.save(c);
+            c.scale(scale, scale, left + stickerWidth / 2f, top + stickerHeight / 2f);
+          } else {
+            saveScaleToCount = -1;
+          }
 
-            final int saveScaleToCount;
-            boolean needRestore = scale != 1f;
-            if (needRestore) {
-              saveScaleToCount = Views.save(c);
-              c.scale(scale, scale, left + stickerWidth / 2f, top + stickerHeight / 2f);
-            } else {
-              saveScaleToCount = -1;
+          if (a == 0 && representation.outline != null) {
+            DoubleImageReceiver preview = receiver.getPreviewReceiver(index);
+            Receiver target = representation.isAnimated() ? receiver.getGifReceiver(index) : receiver.getImageReceiver(index);
+            if (target.needPlaceholder() && preview.needPlaceholder()) {
+              final int saveCount = Views.save(c);
+              c.translate(left, top);
+              c.drawPath(representation.outline, Paints.getPlaceholderPaint());
+              Views.restore(c, saveCount);
             }
+          }
 
+          if (isTgsSticker && a == 2 || !isTgsSticker && a == 1) {
             if (representation.sticker == null && representation.emojiInfo != null) {
               tmpRect.set(left + Screen.dp(2), top + Screen.dp(2), right - Screen.dp(2), bottom - Screen.dp(2));
               Emoji.instance().draw(c, representation.emojiInfo, tmpRect);
@@ -697,25 +697,21 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
               }
               DrawAlgorithms.drawReceiver(c, preview, target, !representation.isAnimated(), false, left, top, right, bottom);
             }
-            if (needRestore) {
-              Views.restore(c, saveScaleToCount);
+          }
+          if (a == 2) {
+            if (Config.DEBUG_STICKER_OUTLINES) {
+              if (representation.outline != null) {
+                final int saveCount = Views.save(c);
+                c.translate(left, top);
+                c.drawPath(representation.outline, Paints.fillingPaint(0x99ff0000));
+                Views.restore(c, saveCount);
+              }
             }
           }
-          index++;
-        }
-      }
-
-      if (Config.DEBUG_STICKER_OUTLINES) {
-        for (Representation representation : representation) {
-          if (representation.outline == null) {
-            continue;
+          if (needRestore) {
+            Views.restore(c, saveScaleToCount);
           }
-          int left = (int) (leftDefault + stickerWidth * (representation.xIndex));
-          int top = topDefault + stickerHeight * (representation.yIndex);
-          final int saveCount = Views.save(c);
-          c.translate(left, top);
-          c.drawPath(representation.outline, Paints.fillingPaint(0x99ff0000));
-          Views.restore(c, saveCount);
+          index++;
         }
       }
     }
