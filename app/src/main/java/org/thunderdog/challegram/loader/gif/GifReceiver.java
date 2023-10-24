@@ -838,6 +838,9 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
             c.drawBitmap(frame.bitmap, rect, drawRegion, paint);
           }
           isFirstFrame = frame.no == 0;
+          if (Config.DEBUG_GIF_OPTIMIZATION_MODE) {
+            c.drawText("" + file.getRequestedSize(), (int) drawRegion.left, (int) drawRegion.top + Screen.dp(16), Paints.robotoStyleProvider(12f).getFakeBoldPaint());
+          }
         }
       }
       if (isFirstFrame) {

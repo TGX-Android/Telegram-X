@@ -182,7 +182,11 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
         }
       }
       if (isAnimated()) {
-        receiver.getGifReceiver(key).requestFile(animatedFile);
+        GifFile file = receiver.getGifReceiver(key).getCurrentFile();
+        if (file != animatedFile) {
+          receiver.getGifReceiver(key).requestFile(null);         // The new file may have the same id as
+          receiver.getGifReceiver(key).requestFile(animatedFile); // old file, but a different requestedSize
+        }
       } else {
         receiver.getImageReceiver(key).requestFile(staticFile);
       }
@@ -226,8 +230,8 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
 
   public TGMessageSticker (MessagesManager context, TdApi.Message msg, TdApi.MessageContent content, TdApi.MessageContent pendingContent) {
     super(context, msg);
-    this.animatedEmoji = content;
-    this.pendingEmoji = pendingContent;
+    this.animatedEmoji = checkContent(content);
+    this.pendingEmoji = checkContent(pendingContent);
     this.specialType = SPECIAL_TYPE_ANIMATED_EMOJI;
     updateAnimatedEmoji();
   }
@@ -303,7 +307,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
           return MESSAGE_REPLACE_REQUIRED;
         }
       }
-      this.pendingEmoji = content;
+      this.pendingEmoji = checkContent(content);
       if (updateAnimatedEmoji()) {
         rebuildContent();
         invalidateContentReceiver();
@@ -407,7 +411,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
         invalidateContentReceiver();
       }
     } else if (specialType == SPECIAL_TYPE_ANIMATED_EMOJI) {
-      this.animatedEmoji = newContent;
+      this.animatedEmoji = checkContent(newContent);
       if (updateAnimatedEmoji()) {
         rebuildContent();
         invalidateContentReceiver();
@@ -418,9 +422,9 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
   }
 
   protected boolean isSupportedMessageContent (TdApi.Message message, TdApi.MessageContent messageContent) {
-    if (messageContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
-      final boolean allowEmoji = !Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI);
-      return allowEmoji && NonBubbleEmojiLayout.isValidEmojiText(((TdApi.MessageText) messageContent).text);
+    final @EmojiMessageContentType int contentType = getEmojiMessageContentType(messageContent);
+    if (contentType == EmojiMessageContentType.NOT_EMOJI) {
+      return false;
     }
     return super.isSupportedMessageContent(message, messageContent);
   }
@@ -939,5 +943,11 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
         }
       }
     });
+  }
+
+  private static TdApi.MessageContent checkContent (TdApi.MessageContent content) {
+    final boolean allowAnimatedEmoji = !Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI);
+    return !allowAnimatedEmoji && TD.isStickerFromAnimatedEmojiPack(content) ?
+      new TdApi.MessageText(Td.textOrCaption(content), null): content;
   }
 }
