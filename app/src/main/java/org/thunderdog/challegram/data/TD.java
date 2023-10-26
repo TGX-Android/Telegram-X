@@ -4706,12 +4706,14 @@ public class TD {
       return null;
     if (text.entities == null || text.entities.length == 0)
       return text.text;
-    TdApi.Object result = Client.execute(new TdApi.GetMarkdownText(text));
-    if (!(result instanceof TdApi.FormattedText)) {
-      Log.w("getMarkdownText: %s", result);
+    TdApi.FormattedText formattedText;
+    try {
+      formattedText = Client.execute(new TdApi.GetMarkdownText(text));
+    } catch (Client.ExecutionError error) {
+      Log.w("getMarkdownText: %s", TD.toErrorString(error.error));
       return text.text;
     }
-    return toCharSequence((TdApi.FormattedText) result, true, true);
+    return toCharSequence(formattedText, true, true);
   }
 
   private static HtmlTag toHtmlTag (TdApi.TextEntityType entityType) {

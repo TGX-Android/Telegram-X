@@ -4759,7 +4759,7 @@ public class TdlibUi extends Handler {
         context.showOptions(Lang.getString(R.string.AreYouSureDeleteInviteLink), new int[] {R.id.btn_deleteLink, R.id.btn_cancel}, new String[] {Lang.getString(R.string.InviteLinkDelete), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
           if (id2 == R.id.btn_deleteLink) {
             if (onLinkDeleted != null) onLinkDeleted.run();
-            context.tdlib().client().send(new TdApi.DeleteRevokedChatInviteLink(chatId, link.inviteLink), null);
+            context.tdlib().client().send(new TdApi.DeleteRevokedChatInviteLink(chatId, link.inviteLink), tdlib.okHandler());
           }
 
           return true;

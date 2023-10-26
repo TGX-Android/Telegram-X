@@ -7898,11 +7898,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   public static TGMessage valueOfError (MessagesManager context, TdApi.Message msg, Throwable error) {
     String text = Lang.getString(R.string.FailureMessageText);
 
-    TdApi.Object entitiesObject = Client.execute(new TdApi.GetTextEntities(text));
     TdApi.TextEntity[] entities = null;
-    if (entitiesObject != null && entitiesObject.getConstructor() == TdApi.TextEntities.CONSTRUCTOR) {
-      entities = ((TdApi.TextEntities) entitiesObject).entities;
-    }
+    try {
+      TdApi.TextEntities result = Client.execute(new TdApi.GetTextEntities(text));
+      entities = result.entities;
+    } catch (Client.ExecutionError ignored) { }
 
     TdApi.TextEntity logEntity = new TdApi.TextEntity(-1, -1, new TdApi.TextEntityTypePreCode());
 

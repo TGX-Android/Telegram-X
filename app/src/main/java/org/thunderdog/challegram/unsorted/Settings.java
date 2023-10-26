@@ -574,12 +574,12 @@ public class Settings {
 
     public List<String> getModules () {
       List<String> modules;
-      TdApi.Object object = Client.execute(new TdApi.GetLogTags());
-      if (object instanceof TdApi.LogTags) {
-        String[] tags = ((TdApi.LogTags) object).tags;
+      try {
+        TdApi.LogTags logTags = Client.execute(new TdApi.GetLogTags());
+        String[] tags = logTags.tags;
         modules = new ArrayList<>(tags.length + (_modules != null ? _modules.size() : 0));
         Collections.addAll(modules, tags);
-      } else {
+      } catch (Client.ExecutionError error) {
         modules = new ArrayList<>(_modules != null ? _modules.size() : 0);
       }
       if (_modules != null) {
@@ -593,13 +593,21 @@ public class Settings {
     }
 
     private boolean setLogTagVerbosityLevel (String module, int verbosityLevel) {
-      TdApi.Object result = Client.execute(new TdApi.SetLogTagVerbosityLevel(module, verbosityLevel));
-      return result instanceof TdApi.Ok;
+      try {
+        Client.execute(new TdApi.SetLogTagVerbosityLevel(module, verbosityLevel));
+        return true;
+      } catch (Client.ExecutionError error) {
+        return false;
+      }
     }
 
     private boolean setLogVerbosityLevel (int globalVerbosityLevel) {
-      TdApi.Object result = Client.execute(new TdApi.SetLogVerbosityLevel(globalVerbosityLevel));
-      return result instanceof TdApi.Ok;
+      try {
+        Client.execute(new TdApi.SetLogVerbosityLevel(globalVerbosityLevel));
+        return true;
+      } catch (Client.ExecutionError error) {
+        return false;
+      }
     }
 
     public int getVerbosity (@Nullable String module) {
@@ -641,8 +649,9 @@ public class Settings {
         int defaultVerbosityLevel = value != null ? value[1] : queryLogVerbosityLevel(module);
         int currentVerbosityLevel = value != null ? value[0] : defaultVerbosityLevel;
         if (verbosity != currentVerbosityLevel) {
-          TdApi.Object result = Client.execute(new TdApi.SetLogTagVerbosityLevel(module, verbosity));
-          if (result instanceof TdApi.Ok) {
+          try {
+            TdApi.Ok ok = Client.execute(new TdApi.SetLogTagVerbosityLevel(module, verbosity));
+
             if (value != null)
               value[0] = verbosity;
             else
@@ -651,7 +660,7 @@ public class Settings {
               remove(verbosityKey + "_" + module);
             else
               putInt(verbosityKey + "_" + module, verbosity);
-          }
+          } catch (Client.ExecutionError ignored) { }
         }
       }
     }
@@ -669,10 +678,13 @@ public class Settings {
     }
 
     private int queryLogVerbosityLevel (@Nullable String module) {
-      TdApi.Object object = Client.execute(StringUtils.isEmpty(module) ? new TdApi.GetLogVerbosityLevel() : new TdApi.GetLogTagVerbosityLevel(module));
-      if (object instanceof TdApi.LogVerbosityLevel)
-        return ((TdApi.LogVerbosityLevel) object).verbosityLevel;
-      return TDLIB_LOG_VERBOSITY_UNKNOWN;
+      try {
+        TdApi.Function<TdApi.LogVerbosityLevel> function = StringUtils.isEmpty(module) ? new TdApi.GetLogVerbosityLevel() : new TdApi.GetLogTagVerbosityLevel(module);
+        TdApi.LogVerbosityLevel logVerbosityLevel = Client.execute(function);
+        return logVerbosityLevel.verbosityLevel;
+      } catch (Client.ExecutionError error) {
+        return TDLIB_LOG_VERBOSITY_UNKNOWN;
+      }
     }
 
     public void apply (boolean async) {
@@ -713,10 +725,11 @@ public class Settings {
           stream = new TdApi.LogStreamEmpty();
         }
       }
-      TdApi.Object result = Client.execute(new TdApi.SetLogStream(stream));
-      if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+      try {
+        Client.execute(new TdApi.SetLogStream(stream));
+      } catch (Client.ExecutionError error) {
         Runnable act = () -> {
-          Tracer.onTdlibFatalError(null, TdApi.SetLogStream.class, (TdApi.Error) result, new RuntimeException().getStackTrace());
+          Tracer.onTdlibFatalError(null, TdApi.SetLogStream.class, error.error, new RuntimeException().getStackTrace());
         };
         if (async) {
           UI.post(act);
