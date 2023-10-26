@@ -10545,6 +10545,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
             return new RestrictionStatus(chat.id, RESTRICTION_STATUS_RESTRICTED, 0);
           }
         }
+        if (!TD.checkRight(chat.permissions, rightId)) {
+          return new RestrictionStatus(chat.id, RESTRICTION_STATUS_RESTRICTED, 0);
+        }
         return null;
       }
       case TdApi.ChatTypeSecret.CONSTRUCTOR: {
@@ -10565,6 +10568,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
             if (userFullInfo != null && userFullInfo.hasRestrictedVoiceAndVideoNoteMessages) {
               return new RestrictionStatus(chat.id, RESTRICTION_STATUS_RESTRICTED, 0);
             }
+          }
+          if (!TD.checkRight(chat.permissions, rightId)) {
+            return new RestrictionStatus(chat.id, RESTRICTION_STATUS_RESTRICTED, 0);
           }
         }
         return new RestrictionStatus(chat.id, RESTRICTION_STATUS_UNAVAILABLE, 0);
