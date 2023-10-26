@@ -22,7 +22,11 @@ import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
 import androidx.viewpager.widget.PagerAdapter;
 
+import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.ViewController;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import me.vkryl.core.lambda.Destroyable;
 
@@ -41,6 +45,11 @@ public class ViewControllerPagerAdapter extends PagerAdapter implements Destroya
   public ViewControllerPagerAdapter (@NonNull ControllerProvider provider) {
     this.provider = provider;
     this.controllers = new SparseArrayCompat<>();
+    provider.getParentOrSelf().addAttachStateListener((context, navigation, isAttached) -> {
+      for (ViewController<?> c : visibleControllers) {
+        c.onAttachStateChanged(navigation, isAttached);
+      }
+    });
   }
 
   public void notifyItemInserted (int index) {
@@ -114,6 +123,8 @@ public class ViewControllerPagerAdapter extends PagerAdapter implements Destroya
     return POSITION_NONE;
   }
 
+  private final Set<ViewController<?>> visibleControllers = new HashSet<>();
+
   @Override
   @NonNull
   public Object instantiateItem (@NonNull ViewGroup container, int position) {
@@ -129,6 +140,7 @@ public class ViewControllerPagerAdapter extends PagerAdapter implements Destroya
     provider.onPrepareToShow(position, c);
     c.onPrepareToShow();
     container.addView(view);
+    visibleControllers.add(c);
     if (!c.getAttachState()) {
       c.onAttachStateChanged(provider.getParentOrSelf().navigationController(), true);
     }
@@ -139,6 +151,7 @@ public class ViewControllerPagerAdapter extends PagerAdapter implements Destroya
   public void destroyItem (ViewGroup container, int position, @NonNull Object object) {
     ViewController<?> c = (ViewController<?>) object;
     container.removeView(c.getValue());
+    visibleControllers.remove(c);
     if (c.getAttachState()) {
       c.onAttachStateChanged(provider.getParentOrSelf().navigationController(), false);
     }

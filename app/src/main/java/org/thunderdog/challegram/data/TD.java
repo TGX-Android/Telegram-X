@@ -2683,6 +2683,7 @@ public class TD {
       case "Invalid chat identifier specified": res = R.string.error_ChatInfoNotFound; break;
       case "Message must be non-empty": res = R.string.MessageInputEmpty; break;
       case "Not Found": res = R.string.error_NotFound; break;
+      case "Can't access the chat": res = R.string.errorChatInaccessible; break;
       case "The maximum number of pinned chats exceeded": return Lang.plural(R.string.ErrorPinnedChatsLimit, TdlibManager.instance().current().pinnedChatsMaxCount());
       default: {
         String lookup = StringUtils.toCamelCase(message);

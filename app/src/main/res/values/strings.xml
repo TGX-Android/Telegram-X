@@ -3119,6 +3119,8 @@
   <string name="error_ANONYMOUS_REACTIONS_DISABLED">Sorry, anonymous administrators cannot leave reactions or participate in polls.</string>
   <string name="error_PEER_ID_INVALID">Sorry, you don\'t have access to this chat or channel.</string>
   <string name="error_STICKERSET_INVALID">Sticker set not found or no longer exists.</string>
+  <string name="error_CHANNEL_PRIVATE">Chat is inaccessible</string>
+  <string name="errorChatInaccessible">Can\'t access the chat</string>
   <string name="error_CHANNELS_TOO_MUCH">Sorry, you are a member of too many groups or channels. Please leave some before joining a new one.</string>
   <string name="error_PHONE_NUMBER_BANNED">Sorry, this phone number is banned. Contact us at login@telegram.org if you need help.</string>
   <string name="error_CHANNELS_ADMIN_LOCATED_TOO_MUCH">Sorry, you have too many location-based groups already. Please delete one of your existing ones first.</string>

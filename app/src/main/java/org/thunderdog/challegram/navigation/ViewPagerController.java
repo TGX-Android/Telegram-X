@@ -45,6 +45,8 @@ import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.HashSet;
+import java.util.Set;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 
@@ -194,6 +196,11 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     }
 
     adapter = new ViewPagerAdapter(context, this);
+    addAttachStateListener((context1, navigation, isAttached) -> {
+      for (ViewController<?> c : adapter.visibleControllers) {
+        c.onAttachStateChanged(navigation, isAttached);
+      }
+    });
     pager = new RtlViewPager(context);
     pager.setLayoutParams(params);
     pager.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS : View.OVER_SCROLL_NEVER);
@@ -558,10 +565,13 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
       return parent.getPagerItemCount();
     }
 
+    private final Set<ViewController<?>> visibleControllers = new HashSet<>();
+
     @Override
     public void destroyItem (ViewGroup container, int position, @NonNull Object object) {
       ViewController<?> c = (ViewController<?>) object;
       container.removeView(c.getValue());
+      visibleControllers.remove(c);
       if (c.getAttachState()) {
         c.onAttachStateChanged(parent.navigationController, false);
       }
@@ -609,6 +619,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     public Object instantiateItem (@NonNull ViewGroup container, int position) {
       ViewController<?> c = prepareViewController(reversePosition(position));
       container.addView(c.getValue());
+      visibleControllers.add(c);
       if (!c.getAttachState()) {
         c.onAttachStateChanged(parent.navigationController, true);
       }

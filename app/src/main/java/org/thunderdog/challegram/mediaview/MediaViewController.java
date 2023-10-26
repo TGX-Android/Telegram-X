@@ -6189,11 +6189,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
           TextView textView = Views.newTextView(context(), 14f, Theme.getColor(ColorId.white), Gravity.LEFT, Views.TEXT_FLAG_SINGLE_LINE);
           textView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, Screen.dp(15f), Screen.dp(10f), Screen.dp(15f), 0));
-          textView.setText(R.string.QualityWorse);
+          textView.setText(Lang.getString(R.string.QualityWorse));
           qualityControlWrap.addView(textView);
           textView = Views.newTextView(context(), 14f, Theme.getColor(ColorId.white), Gravity.RIGHT, Views.TEXT_FLAG_SINGLE_LINE);
           textView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.RIGHT | Gravity.TOP, Screen.dp(15f), Screen.dp(10f), Screen.dp(15f), 0));
-          textView.setText(R.string.QualityBetter);
+          textView.setText(Lang.getString(R.string.QualityBetter));
           qualityControlWrap.addView(textView);
 
           qualityInfo = Views.newTextView(context(), 15f, Theme.getColor(ColorId.white), Gravity.CENTER, Views.TEXT_FLAG_SINGLE_LINE);

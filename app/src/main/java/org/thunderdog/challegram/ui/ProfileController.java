@@ -2411,6 +2411,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (needGroups != hasGroups) {
       if (needGroups) {
         SharedChatsController c = new SharedChatsController(context, tdlib);
+        registerController(c);
         controllers.add(c);
         pagerAdapter.notifyItemInserted(controllers.size() - 1);
         if (Config.USE_ICON_TABS) {
@@ -2422,9 +2423,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         int i = controllers.indexOf(existingGroupsController);
         if (i == -1)
           return;
-        controllers.remove(i);
+        ViewController<?> c = controllers.remove(i);
         pagerAdapter.notifyItemRemoved(i);
+        unregisterController(c);
         topCellView.getTopView().removeItemAt(i);
+        c.destroy();
       }
       pagerAdapter.notifyDataSetChanged();
     }
@@ -2527,6 +2530,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         SharedMembersController c = new SharedMembersController(context, tdlib)
           .setSpecificFilter(new TdApi.SupergroupMembersFilterRecent());
         controllers.add(c);
+        registerController(c);
         pagerAdapter.notifyItemInserted(controllers.size() - 1);
         if (Config.USE_ICON_TABS) {
           // topCellView.getTopView().addItem(c.getIcon());
@@ -2538,9 +2542,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         if (i == -1) {
           return;
         }
-        controllers.remove(i);
+        ViewController<?> c = controllers.remove(i);
+        unregisterController(c);
         topCellView.getTopView().removeLastItem();
         pagerAdapter.notifyItemRemoved(i);
+        c.destroy();
       }
       pagerAdapter.notifyDataSetChanged();
     }
@@ -5471,8 +5477,20 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           break;
         }
       }
+      for (ViewController<?> controller : controllers) {
+        registerController(controller);
+      }
     }
     return controllers;
+  }
+
+  private void registerController (ViewController<?> controller) {
+    controller.setParentWrapper(this);
+    controller.bindThemeListeners(this);
+  }
+
+  private void unregisterController (ViewController<?> controller) {
+    // TODO
   }
 
   @Override
@@ -5574,6 +5592,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (append) {
       SharedBaseController<?> c = SharedBaseController.valueOf(context, tdlib, filter);
       controllers.add(c);
+      registerController(c);
       pagerAdapter.notifyItemInserted(controllers.size() - 1);
       topCellView.getTopView().addItem(c.getName().toString().toUpperCase());
     } else {
@@ -5583,6 +5602,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
       c = SharedBaseController.valueOf(context, tdlib, filter);
       controllers.add(visualIndex, c);
+      registerController(c);
       pagerAdapter.notifyItemInserted(visualIndex);
       topCellView.getTopView().addItemAtIndex(c.getName().toString().toUpperCase(), visualIndex);
     }

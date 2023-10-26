@@ -45,6 +45,7 @@ import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.RateLimiter;
 import org.thunderdog.challegram.util.text.Letters;
 
 import java.lang.ref.Reference;
@@ -119,6 +120,9 @@ public class TdlibContactManager implements CleanupStartupDelegate {
 
   TdlibContactManager (Tdlib tdlib) {
     this.tdlib = tdlib;
+    this.checkLimiter = new RateLimiter(() -> {
+      tdlib.searchContacts(null, 5, newHandler());
+    }, 200L, null);
     this.handler = new ContactHandler(this);
     tdlib.listeners().addCleanupListener(this);
   }
@@ -401,8 +405,10 @@ public class TdlibContactManager implements CleanupStartupDelegate {
     }
   }
 
+  private final RateLimiter checkLimiter;
+
   private void checkRegisteredCount () {
-    tdlib.searchContacts(null, 5, newHandler());
+    checkLimiter.run();
   }
 
   @TdlibThread

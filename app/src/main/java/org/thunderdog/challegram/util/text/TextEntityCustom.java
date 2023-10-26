@@ -299,7 +299,7 @@ public class TextEntityCustom extends TextEntity {
   }
 
   @Override
-  public void performClick (View view, Text text, TextPart part, @Nullable Text.ClickCallback callback) {
+  public void performClick (View view, Text text, TextPart part, @Nullable Text.ClickCallback callback, boolean isFromLongPressMenu) {
     switch (linkType) {
       case LINK_TYPE_EMAIL: {
         if (callback == null || !callback.onEmailClick(link)) {
@@ -314,7 +314,7 @@ public class TextEntityCustom extends TextEntity {
         break;
       }
       case LINK_TYPE_URL: {
-        TdlibUi.UrlOpenParameters openParameters = this.openParameters(view, text, part);
+        TdlibUi.UrlOpenParameters openParameters = this.openParameters(view, text, part, isFromLongPressMenu);
         if (callback == null || !callback.onUrlClick(view, link, !StringUtils.equalsOrBothEmpty(text.getText(), link), openParameters)) {
           if (context != null) {
             context.openLinkAlert(link, modifyUrlOpenParameters(openParameters, callback, link));
@@ -335,7 +335,7 @@ public class TextEntityCustom extends TextEntity {
         break;
       }
       case LINK_TYPE_REFERENCE: {
-        if (callback == null || !(callback.onReferenceClick(view, link, referenceAnchorName, this.openParameters(view, text, part))) || callback.onAnchorClick(view, link)) {
+        if (callback == null || !(callback.onReferenceClick(view, link, referenceAnchorName, this.openParameters(view, text, part, isFromLongPressMenu))) || callback.onAnchorClick(view, link)) {
           // TODO open pop-up with ${referenceText}?
         }
         break;
@@ -410,7 +410,7 @@ public class TextEntityCustom extends TextEntity {
           TD.shareLink(new TdlibContext(context.context(), tdlib), copyText);
         }
       } else if (id == R.id.btn_openLink) {
-        performClick(view, text, part, clickCallback);
+        performClick(view, text, part, clickCallback, true);
       }
       return true;
     }, clickCallback != null ? clickCallback.getForcedTheme(view, text) : null);

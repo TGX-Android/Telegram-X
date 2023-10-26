@@ -1193,6 +1193,8 @@ public class MessagesLoader implements Client.ResultHandler {
   // Processing
 
   private TdApi.Message newMessage (final long chatId, final boolean isChannel, final TdApi.ChatEvent event) {
+    TdApi.Message relatedMessage = Td.findRelatedMessage(event.action);
+    boolean canBeSaved = relatedMessage == null || relatedMessage.canBeSaved;
     return new TdApi.Message(
       event.id,
       event.memberId,
@@ -1201,7 +1203,7 @@ public class MessagesLoader implements Client.ResultHandler {
       null,
       tdlib.isSelfSender(event.memberId),
       false, false,
-      false, false,
+      false, canBeSaved,
       false, false, false,
       false, false, false,
       false, false, false,

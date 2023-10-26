@@ -441,6 +441,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     if (getMeasuredHeight() != getCurrentHeight() && getMeasuredHeight() != 0) {
       requestLayout();
     }
+    checkEmojiListener();
     invalidate();
   }
 
@@ -622,7 +623,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   private boolean subscribedToEmojiUpdates;
 
   private void checkEmojiListener () {
-    boolean needEmojiListener = this.displayItemNameLayout != null || this.displayItemDataLayout != null || (this.displayItemNameText != null && this.displayItemNameText.hasMedia());
+    boolean needEmojiListener = this.displayItemNameLayout != null || this.displayItemDataLayout != null || (this.displayItemNameText != null && this.displayItemNameText.hasBuiltInEmoji()) || (this.text != null && this.text.hasBuiltInEmoji());
     if (this.subscribedToEmojiUpdates != needEmojiListener) {
       this.subscribedToEmojiUpdates = needEmojiListener;
       if (needEmojiListener) {

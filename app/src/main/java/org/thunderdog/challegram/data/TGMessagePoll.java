@@ -1433,7 +1433,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       }
       explanationPopup = buildContentHint(view, (targetView, outRect) -> {
         outRect.set(0, 0, questionText.getWidth(), questionText.getHeight());
-      }).icon(R.drawable.baseline_info_24).needBlink(true).chatTextSize(-2f).interceptTouchEvents(true).handleBackPress(true).show(tdlib, formattedText).addListener(this);
+      }, true).icon(R.drawable.baseline_info_24).needBlink(true).chatTextSize(-2f).interceptTouchEvents(true).handleBackPress(true).show(tdlib, formattedText).addListener(this);
     }
   }
 

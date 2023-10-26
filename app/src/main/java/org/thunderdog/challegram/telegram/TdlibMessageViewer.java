@@ -768,12 +768,11 @@ public class TdlibMessageViewer {
 
   private final List<Viewport> viewports = new ArrayList<>();
 
-  public Viewport createViewport (TdApi.MessageSource source, @Nullable ViewController<?> controller) {
+  public Viewport createViewport (TdApi.MessageSource source, @Nullable ViewController<?> target) {
     Viewport viewport = new Viewport(this, source);
-    if (controller != null) {
-      ViewController<?> target = controller.getParentOrSelf();
+    if (target != null) {
       viewport.addIgnoreLock(() ->
-        !target.getParentOrSelf().getAttachState()
+        !target.getAttachState()
       );
       target.addDisallowScreenshotReason(viewport::needRestrictScreenshots);
       target.addAttachStateListener(attachListener);
