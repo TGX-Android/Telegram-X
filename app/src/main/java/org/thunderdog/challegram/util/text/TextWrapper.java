@@ -179,6 +179,14 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable, Text.T
     return false;
   }
 
+  public boolean hasBuiltInEmoji () {
+    for (Text text : texts) {
+      if (text != null && text.hasBuiltInEmoji())
+        return true;
+    }
+    return false;
+  }
+
   public int getMaxMediaCount () {
     int count = 0;
     for (Text text : texts) {
@@ -231,6 +239,7 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable, Text.T
         Text.Builder b = new Text.Builder(this.text, maxWidth, textStyleProvider, colorTheme)
           .maxLineCount(maxLines)
           .entities(entities, this)
+          .viewProvider(viewProvider)
           .highlight(highlightText)
           .lineWidthProvider(lineWidthProvider)
           .textFlags(BitwiseUtils.setFlag(textFlags, Text.FLAG_BIG_EMOJI, false));

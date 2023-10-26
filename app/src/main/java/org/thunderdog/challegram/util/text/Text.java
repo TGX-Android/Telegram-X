@@ -645,6 +645,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return builtInEmojiCount;
   }
 
+  public boolean hasBuiltInEmoji () {
+    return getEmojiCount() > 0;
+  }
+
   @Override
   public boolean incrementEmojiCount () {
     builtInEmojiCount++;
