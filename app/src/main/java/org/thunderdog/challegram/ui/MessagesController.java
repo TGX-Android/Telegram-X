@@ -228,6 +228,7 @@ import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.Unlockable;
+import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.v.MessagesLayoutManager;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
@@ -4414,13 +4415,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
       @Override
       protected void onCustomShowComplete () {
         super.onCustomShowComplete();
-        prepareToShowMessageOptions2();
+        optimizeEmojiLayoutForOptionsWindow(true);
       }
     };
     r.show();
     r.setDismissListener(new PopupLayout.DismissListener() {
       @Override
       public void onPopupDismiss (PopupLayout popup) {
+        optimizeEmojiLayoutForOptionsWindow(false);
         isMessageOptionsVisible = false;
       }
 
@@ -4441,22 +4443,20 @@ public class MessagesController extends ViewController<MessagesController.Argume
     needShowEmojiKeyboardAfterHideMessageOptions = emojiShown;
     if (needShowKeyboardAfterHideMessageOptions) {    // показываем emoji-клавиатуру, чтобы скрыть системную
       openEmojiKeyboard();                            // делаем emojiLayout невидимым для оптимизации
+      emojiLayout.optimizeForDisplayMessageOptionsWindow(true);
     }                                                 // todo: если меню сообщения ниже EmojiLayout, то не скрывать?
   }
 
-  private void prepareToShowMessageOptions2 () {
+  private void optimizeEmojiLayoutForOptionsWindow (boolean needOptimize) {
     if (needShowKeyboardAfterHideMessageOptions || needShowEmojiKeyboardAfterHideMessageOptions) {
-      emojiLayout.optimizeForDisplayTextFormattingLayout(true);
+      emojiLayout.optimizeForDisplayMessageOptionsWindow(needOptimize);
     }
   }
 
   private void onHideMessageOptions () {
     if (needShowEmojiKeyboardAfterHideMessageOptions) {
-      if (emojiShown) {
-        emojiLayout.optimizeForDisplayTextFormattingLayout(false);
-      } else {
-        openEmojiKeyboard();
-      }
+      openEmojiKeyboard();
+      emojiLayout.optimizeForDisplayMessageOptionsWindow(false);
     } else if (needShowKeyboardAfterHideMessageOptions) {
       showKeyboard();
     }
@@ -11365,7 +11365,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       translationPopup = new TranslationControllerV2.Wrapper(context, tdlib, this);
       translationPopup.setArguments(new TranslationControllerV2.Args(message));
       translationPopup.setClickCallback(message.clickCallback());
-      translationPopup.setTextColorSet(message.getTextColorSet());
+      translationPopup.setTextColorSet(TextColorSets.Regular.NORMAL);
       translationPopup.show();
       translationPopup.setDismissListener(popup -> translationPopup = null);
       hideCursorsForInputView();
