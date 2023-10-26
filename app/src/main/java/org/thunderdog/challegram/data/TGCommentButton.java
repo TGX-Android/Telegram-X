@@ -240,6 +240,10 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
     return rect.contains(Math.round(x), Math.round(y));
   }
 
+  public void getRect (Rect rect) {
+    rect.set(this.rect);
+  }
+
   private static final int FLAG_CAUGHT = 0x01;
   private static final int FLAG_BLOCKED = 0x02;
 

@@ -1026,9 +1026,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
             boolean needAnimateChanges = needAnimateChanges();
             openingComments.setValue(false, needAnimateChanges);
             if (isChannel()) {
-              UI.showToast(R.string.ChannelPostDeleted, Toast.LENGTH_SHORT);
+              showCommentButtonError(Lang.getString(R.string.ChannelPostDeleted));
             } else {
-              UI.showError(result);
+              showCommentButtonError(TD.toErrorString(result));
             }
             break;
           }
@@ -1038,11 +1038,22 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
             break;
           }
           openingComments.setValue(false, needAnimateChanges());
-          UI.showError(result);
+          showCommentButtonError(TD.toErrorString(result));
           break;
         }
       }
     }));
+  }
+
+  private void showCommentButtonError (String text) {
+    View view = findCurrentView();
+    if (!needCommentButton() || view == null) {
+      UI.showToast(text, Toast.LENGTH_SHORT);
+      return;
+    }
+    buildContentHint(view, (targetView, outRect) ->
+      commentButton.getRect(outRect), false
+    ).show(tdlib, text).hideDelayed();
   }
 
   private int computeBubbleHeight () {
@@ -7209,18 +7220,24 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public TooltipOverlayView.TooltipInfo showContentHint (View view, TooltipOverlayView.LocationProvider locationProvider, TdApi.FormattedText text) {
-    return buildContentHint(view, locationProvider).show(tdlib, text);
+    return buildContentHint(view, locationProvider, true).show(tdlib, text);
   }
 
-  public TooltipOverlayView.TooltipBuilder buildContentHint (View view, TooltipOverlayView.LocationProvider locationProvider) {
+  public TooltipOverlayView.TooltipBuilder buildContentHint (View view, TooltipOverlayView.LocationProvider locationProvider, boolean applyContentOffset) {
     return context().tooltipManager().builder(view, currentViews)
       .locate((v, outRect) -> {
         if (locationProvider != null) {
           locationProvider.getTargetBounds(v, outRect);
-          outRect.offset(getContentX(), getContentY());
+          if (applyContentOffset) {
+            outRect.offset(getContentX(), getContentY());
+          }
         } else {
-          outRect.left = getContentX();
-          outRect.top = getContentY();
+          if (applyContentOffset) {
+            outRect.left = getContentX();
+            outRect.top = getContentY();
+          } else {
+            outRect.left = outRect.top = 0;
+          }
           outRect.right = outRect.left + getContentWidth();
           outRect.bottom = outRect.top + getContentHeight();
         }
