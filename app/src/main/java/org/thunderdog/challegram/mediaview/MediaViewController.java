@@ -4124,7 +4124,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         ThumbView thumbView = ThumbViewHolder.getThumbView(child);
         MediaItem item = thumbView.getItem();
         ThumbItems items = thumbView.getItems();
-        if (items != null && thumbView.preview.isInsideReceiver(x, y)) {
+        if (items != null && thumbView.getPreviewReceiver().isInsideReceiver(x, y)) {
           if (controller.fastShowMediaItem(item, items, items.indexOf(item), true)) {
             ViewUtils.onClick(this);
             return;
@@ -4140,6 +4140,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     private ThumbItems items;
     private MediaItem item;
+
+    private Receiver getPreviewReceiver () {
+      return item != null && item.isAvatar() ? avatarReceiver : this.preview;
+    }
 
     public ThumbView (Context context, RecyclerView drawTarget) {
       super(context);
@@ -4275,7 +4279,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       float expandFactor = items != null ? items.getExpandFactor(item) * expandAllowance : 0f;
       int thumbWidth = thumbStartWidth + (int) ((float) (thumbEndWidth - thumbStartWidth) * expandFactor);
 
-      Receiver preview = item != null && item.isAvatar() ? avatarReceiver : this.preview;
+      Receiver preview = getPreviewReceiver();
       if (alpha != 1f) {
         preview.setPaintAlpha(alpha);
       }
