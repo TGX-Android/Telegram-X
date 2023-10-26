@@ -399,7 +399,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   private long initializationTime;
-  private boolean listInitalized;
+  private boolean listInitalized, myUserLoaded;
 
   private ItemTouchHelper touchHelper;
   private LiveLocationHelper liveLocationHelper;
@@ -545,11 +545,21 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     TGLegacyManager.instance().addEmojiListener(this);
     tdlib.context().dateManager().addListener(this);
 
+    tdlib.awaitMyUserOrUnauthorizedState(() -> {
+      executeOnUiThreadOptional(() -> {
+        myUserLoaded = true;
+        if (!needAsynchronousAnimation()) {
+          executeScheduledAnimation();
+        }
+      });
+    });
     list.initializeList(this, this::displayChats, chatsView.getInitialLoadCount(), () ->
       runOnUiThreadOptional(() -> {
         this.listInitalized = true;
         checkListState();
-        executeScheduledAnimation();
+        if (!needAsynchronousAnimation()) {
+          executeScheduledAnimation();
+        }
       })
     );
 
@@ -2420,7 +2430,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public boolean needAsynchronousAnimation () {
-    return !listInitalized;
+    return !listInitalized || !myUserLoaded;
   }
 
   @Override

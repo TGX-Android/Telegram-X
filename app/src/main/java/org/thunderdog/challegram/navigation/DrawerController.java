@@ -598,7 +598,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     context.setExcludeHeader(true);
 
     context.setTdlib(account.tdlib());
-    context.setBoundUserId(account.tdlib().myUserId());
+    context.setBoundAccountId(account.id);
 
     return new ForceTouchView.ActionListener() {
       @Override

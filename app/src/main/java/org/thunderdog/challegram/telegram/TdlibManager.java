@@ -1334,7 +1334,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return accounts.get(accountId);
   }
 
-  public int accountIdForUserId (int userId, int startIndex) {
+  public int accountIdForUserId (long userId, int startIndex) {
     for (int i = startIndex; i < accounts.size(); i++) {
       if (accounts.get(i).getKnownUserId() == userId) {
         return i;

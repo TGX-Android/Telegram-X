@@ -9916,6 +9916,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       return false;
     }).onAddRemove(this::onJobAdded, this::onJobRemoved),
     initializationListeners = new ConditionalExecutor(() -> authorizationStatus() != Status.UNKNOWN).onAddRemove(this::onJobAdded, this::onJobRemoved), // Executed once received authorization state
+    myUserOrUnauthorizedListeners = new ConditionalExecutor(() -> {
+      int status = authorizationStatus();
+      return status != Status.UNKNOWN && (status == Status.UNAUTHORIZED || myUser() != null);
+    }).onAddRemove(this::onJobAdded, this::onJobRemoved),
     connectionListeners = new ConditionalExecutor(() -> authorizationStatus() != Status.UNKNOWN && connectionState == ConnectionState.CONNECTED).onAddRemove(this::onJobAdded, this::onJobRemoved), // Executed once connected
     notificationInitListeners = new ConditionalExecutor(() -> {
       final int status = authorizationStatus();
@@ -9929,6 +9933,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   @AnyThread
   public void awaitInitialization (@NonNull Runnable after) {
     initializationListeners.executeOrPostponeTask(after);
+  }
+
+  @AnyThread
+  public void awaitMyUserOrUnauthorizedState (@NonNull Runnable after) {
+    myUserOrUnauthorizedListeners.executeOrPostponeTask(after);
   }
 
   @AnyThread

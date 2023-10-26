@@ -586,10 +586,10 @@ public class MessagesLoader implements Client.ResultHandler {
     public final int date;
     public final int after;
     public final boolean out;
-    public final int senderUserId;
+    public final long senderUserId;
     public final TdApi.MessageContent content;
 
-    public PreviewMessage (int date, int after, boolean out, int senderUserId, TdApi.MessageContent content) {
+    public PreviewMessage (int date, int after, boolean out, long senderUserId, TdApi.MessageContent content) {
       this.date = date;
       this.after = after;
       this.out = out;
@@ -650,7 +650,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
   private static TdApi.User parsePreviewUser (Tdlib tdlib, JSONArray data, int lang) throws JSONException {
     int dataArrayLength = data.length();
-    int userId = data.getInt(0);
+    long userId = data.getLong(0);
     TdApi.User user = TD.newFakeUser(userId, parsePreviewString(data.getString(1), lang), dataArrayLength > 2 ? parsePreviewString(data.getString(2), lang) : null);
     String remoteId = dataArrayLength > 3 ? data.getString(3) : null;
     if (!StringUtils.isEmpty(remoteId) && !Strings.isValidLink(remoteId)) {
@@ -797,7 +797,7 @@ public class MessagesLoader implements Client.ResultHandler {
       boolean isOut = false;
       int date = 0;
       int after = 60;
-      int senderUserId = 0;
+      long senderUserId = 0;
       TdApi.FormattedText text = null;
       TdApi.Photo photo = null;
       TdApi.Sticker sticker = null;
@@ -931,9 +931,9 @@ public class MessagesLoader implements Client.ResultHandler {
       }
 
       if (data.has("left")) {
-        int userId;
+        long userId;
 
-        userId = data.getInt("left");
+        userId = data.getLong("left");
         left = new TdApi.MessageChatDeleteMember(userId);
         senderUserId = userId;
       }
