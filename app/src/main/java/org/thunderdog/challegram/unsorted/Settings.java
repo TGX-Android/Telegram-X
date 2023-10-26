@@ -176,7 +176,8 @@ public class Settings {
   private static final int VERSION_42 = 42; // drop __
   private static final int VERSION_43 = 43; // optimize recent custom emoji
   private static final int VERSION_44 = 44; // 8-bit -> 32-bit account flags
-  private static final int VERSION = VERSION_44;
+  private static final int VERSION_45 = 45; // Reset "Big emoji" setting to default
+  private static final int VERSION = VERSION_45;
 
   private static final AtomicBoolean hasInstance = new AtomicBoolean(false);
   private static volatile Settings instance;
@@ -650,7 +651,7 @@ public class Settings {
         int currentVerbosityLevel = value != null ? value[0] : defaultVerbosityLevel;
         if (verbosity != currentVerbosityLevel) {
           try {
-            TdApi.Ok ok = Client.execute(new TdApi.SetLogTagVerbosityLevel(module, verbosity));
+            Client.execute(new TdApi.SetLogTagVerbosityLevel(module, verbosity));
 
             if (value != null)
               value[0] = verbosity;
@@ -2043,6 +2044,23 @@ public class Settings {
       case VERSION_44: {
         upgradeAccountsConfig(TdlibAccount.VERSION_2);
         break;
+      }
+      case VERSION_45: {
+        resetOtherFlag(pmc, editor, FLAG_OTHER_DISABLE_BIG_EMOJI, false);
+        break;
+      }
+    }
+  }
+
+  private void resetOtherFlag (LevelDB pmc, SharedPreferences.Editor editor, int flag, boolean value) {
+    int defaultSettings = makeDefaultSettings();
+    int oldSettings = pmc.getInt(KEY_OTHER, defaultSettings);
+    int newSettings = BitwiseUtils.setFlag(oldSettings, flag, value);
+    if (oldSettings != newSettings) {
+      if (newSettings != defaultSettings) {
+        editor.putInt(KEY_OTHER, newSettings);
+      } else {
+        editor.remove(KEY_OTHER);
       }
     }
   }
