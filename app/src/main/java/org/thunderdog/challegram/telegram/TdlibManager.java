@@ -1041,10 +1041,6 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return new AccountConfig(currentAccount, accounts, preferredAccountId);
   }
 
-  private int binlogSize () {
-    return binlogSize(accounts.size());
-  }
-
   public static int binlogSize (int accountsNum) {
     return BINLOG_PREFIX_SIZE + accountsNum * TdlibAccount.SIZE_PER_ENTRY;
   }
@@ -1053,7 +1049,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     int saveCount = 0;
     final int accountNum = accounts.size();
 
-    final int binlogSize = binlogSize();
+    final int binlogSize = binlogSize(accountNum);
     final long currentLen = r.length();
 
     final boolean canOptimize;

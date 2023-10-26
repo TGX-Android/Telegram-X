@@ -51,7 +51,8 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
 
   public static final int VERSION_1 = 1;
   public static final int VERSION_2 = 2;
-  public static final int VERSION = VERSION_2;
+  public static final int VERSION_3 = 3;
+  public static final int VERSION = VERSION_3;
 
   private static final int FLAG_UNAUTHORIZED = 1;
   private static final int FLAG_DEBUG = 1 << 1;
@@ -126,15 +127,19 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   }
 
   private void restore (RandomAccessFile r, int version, boolean allowIntegrityChecks) throws IOException {
-    this.flags            = r.readByte();
-    this.knownUserId      = version == VERSION_2 ? r.readLong() : r.readInt();
+    if (version >= VERSION_3) {
+      this.flags = r.readInt();
+    } else {
+      this.flags = r.read();
+    }
+    this.knownUserId      = version >= VERSION_2 ? r.readLong() : r.readInt();
     this.modificationTime = r.readLong();
     this.order            = r.readInt();
     boolean integrityCheckFailed = false;
     if (allowIntegrityChecks) {
       if (BitwiseUtils.hasFlag(flags, FLAG_SERVICE | FLAG_DEBUG) && !Settings.instance().allowSpecialTdlibInstanceMode(id)) {
-        int flags = this.flags & ~FLAG_DEBUG;
-        flags &= ~FLAG_SERVICE;
+        int flags = BitwiseUtils.setFlag(this.flags, FLAG_SERVICE, false);
+        flags = BitwiseUtils.setFlag(flags, FLAG_DEBUG, false);
         this.flags = flags;
         integrityCheckFailed = true;
       }
@@ -142,10 +147,10 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
     Log.i(Log.TAG_ACCOUNTS, "restored accountId:%d flags:%d userId:%d time:%d order:%d integrity_check_failed:%b", id, flags, knownUserId, modificationTime, order, integrityCheckFailed);
   }
 
-  static final int SIZE_PER_ENTRY = 1 /*flags*/ + 8 /*knownUserId*/ + 8 /*modification_time*/ + 4 /*order*/;
+  static final int SIZE_PER_ENTRY = 4 /*flags*/ + 8 /*knownUserId*/ + 8 /*modification_time*/ + 4 /*order*/;
 
   void save (RandomAccessFile r) throws IOException {
-    r.write(flags);
+    r.writeInt(flags);
     r.writeLong(knownUserId);
     r.writeLong(modificationTime);
     r.writeInt(order);
@@ -153,7 +158,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
 
   int saveOrder (RandomAccessFile r, final int position) throws IOException {
     int skipSize =
-        1 /*flags*/
+        4 /*flags*/
       + 8 /*knownUserId*/
       + 8 /*modificationTime*/;
     r.seek(position + skipSize);
@@ -163,7 +168,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
 
   int saveFlags (RandomAccessFile r, final int position) throws IOException {
     r.seek(position);
-    r.write(flags);
+    r.writeInt(flags);
     return position + SIZE_PER_ENTRY;
   }
 
