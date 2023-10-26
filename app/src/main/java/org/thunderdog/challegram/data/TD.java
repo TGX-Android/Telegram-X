@@ -3195,10 +3195,6 @@ public class TD {
     return offset >= file.local.downloadOffset && offset <= file.local.downloadOffset + file.local.downloadedPrefixSize + ByteUnit.KIB.toBytes(512);
   }
 
-  public static boolean canVote (TdApi.Poll poll) {
-    return !needShowResults(poll);
-  }
-
   public static boolean isMultiChoice (TdApi.Poll poll) {
     return poll.type.getConstructor() == TdApi.PollTypeRegular.CONSTRUCTOR && ((TdApi.PollTypeRegular) poll.type).allowMultipleAnswers;
   }
@@ -3218,16 +3214,6 @@ public class TD {
   public static boolean hasSelectedOption (TdApi.Poll poll) {
     for (TdApi.PollOption option : poll.options) {
       if (option.isBeingChosen)
-        return true;
-    }
-    return false;
-  }
-
-  public static boolean needShowResults (TdApi.Poll poll) {
-    if (poll.isClosed)
-      return true;
-    for (TdApi.PollOption option : poll.options) {
-      if (option.isChosen)
         return true;
     }
     return false;

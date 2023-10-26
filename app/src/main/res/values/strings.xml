@@ -3116,6 +3116,7 @@
   <string name="error_APP_UPGRADE_NEEDED">This feature is not available. Please make sure the app is up-to-date, or wait for new updates.</string>
   <string name="error_NotFound">Page not found or no longer exists.</string>
   <string name="error_ChatInfoNotFound">Sorry, you don\'t have access to this chat or channel.</string>
+  <string name="error_ANONYMOUS_REACTIONS_DISABLED">Sorry, anonymous administrators cannot leave reactions or participate in polls.</string>
   <string name="error_PEER_ID_INVALID">Sorry, you don\'t have access to this chat or channel.</string>
   <string name="error_STICKERSET_INVALID">Sticker set not found or no longer exists.</string>
   <string name="error_CHANNELS_TOO_MUCH">Sorry, you are a member of too many groups or channels. Please leave some before joining a new one.</string>
