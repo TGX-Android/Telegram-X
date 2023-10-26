@@ -3978,7 +3978,7 @@ public class TdlibUi extends Handler {
       showDeleteChatConfirm(context, chatId, false, actionId == R.id.btn_removeChatFromListAndStop, after);
       return true;
     } else if (actionId == R.id.btn_removeChatFromListOrClearHistory) {
-      showDeleteChatConfirm(context, chatId, true, false, after);
+      showDeleteChatConfirm(context, chatId, true, tdlib.suggestStopBot(chatId), after);
       return true;
     } else if (actionId == R.id.btn_clearChatHistory) {
       showClearHistoryConfirm(context, chatId, after);
@@ -4219,14 +4219,14 @@ public class TdlibUi extends Handler {
 
   // Delete chats
 
-  private @StringRes int getDeleteChatStringRes (long chatId) {
+  private @StringRes int getDeleteChatStringRes (long chatId, boolean allowBlock) {
     TdApi.Chat chat = tdlib.chat(chatId);
     if (chat == null)
       return R.string.DeleteChat;
     switch (ChatId.getType(chatId)) {
       case TdApi.ChatTypePrivate.CONSTRUCTOR:
       case TdApi.ChatTypeSecret.CONSTRUCTOR: {
-        return tdlib.suggestStopBot(chat) ? R.string.DeleteAndStop : R.string.DeleteChat;
+        return allowBlock && tdlib.suggestStopBot(chat) ? R.string.DeleteAndStop : R.string.DeleteChat;
       }
       case TdApi.ChatTypeBasicGroup.CONSTRUCTOR: {
         TdApi.BasicGroup basicGroup = tdlib.chatToBasicGroup(chatId);
@@ -4293,12 +4293,12 @@ public class TdlibUi extends Handler {
     showDeleteChatConfirm(context, chatId, false, tdlib.suggestStopBot(chatId), null);
   }
 
-  private void showDeleteOrClearHistory (final ViewController<?> context, final long chatId, final CharSequence chatName, final Runnable onDelete, final boolean allowClearHistory, Runnable after) {
+  private void showDeleteOrClearHistory (final ViewController<?> context, final long chatId, final CharSequence chatName, final Runnable onDelete, final boolean allowClearHistory, final boolean allowBlock, Runnable after) {
     if (!allowClearHistory || !tdlib.canClearHistory(chatId)) {
       onDelete.run();
       return;
     }
-    context.showOptions(chatName, new int[] {R.id.btn_removeChatFromList, R.id.btn_clearChatHistory}, new String[] {Lang.getString(getDeleteChatStringRes(chatId)), Lang.getString(R.string.ClearHistory)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.templarian_baseline_broom_24}, (itemView, id) -> {
+    context.showOptions(chatName, new int[] {R.id.btn_removeChatFromList, R.id.btn_clearChatHistory}, new String[] {Lang.getString(getDeleteChatStringRes(chatId, allowBlock)), Lang.getString(R.string.ClearHistory)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.templarian_baseline_broom_24}, (itemView, id) -> {
       if (id == R.id.btn_removeChatFromList) {
         onDelete.run();
       } else if (id == R.id.btn_clearChatHistory) {
@@ -4393,7 +4393,7 @@ public class TdlibUi extends Handler {
               return true;
             });
           }
-        }, allowClearHistory, after);
+        }, allowClearHistory, deleteAndStop, after);
         break;
       }
       case TdApi.ChatTypeSecret.CONSTRUCTOR: {
@@ -4440,7 +4440,7 @@ public class TdlibUi extends Handler {
               return true;
             });
           }
-        }, allowClearHistory, after);
+        }, allowClearHistory, blockUser, after);
         break;
       }
       case TdApi.ChatTypeBasicGroup.CONSTRUCTOR: {
@@ -4456,11 +4456,11 @@ public class TdlibUi extends Handler {
                 return true;
               });
             }
-          }, allowClearHistory, after);
+          }, allowClearHistory, blockUser, after);
         break;
       }
       case TdApi.ChatTypeSupergroup.CONSTRUCTOR: {
-        showDeleteOrClearHistory(context, chatId, tdlib.chatTitle(chatId), () -> leaveJoinChat(context, chatId, false, after), allowClearHistory, after);
+        showDeleteOrClearHistory(context, chatId, tdlib.chatTitle(chatId), () -> leaveJoinChat(context, chatId, false, after), allowClearHistory, blockUser, after);
         break;
       }
     }
