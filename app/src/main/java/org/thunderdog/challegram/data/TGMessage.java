@@ -334,7 +334,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       @Override
       public void onClick (View v, TGReactions.MessageReactionEntry entry) {
         boolean hasReaction = messageReactions.hasReaction(entry.getReactionType());
-        if (!Config.PROTECT_ANONYMOUS_REACTIONS || hasReaction || messagesController().callNonAnonymousProtection(getId() + entry.hashCode(), TGMessage.this, getReactionBubbleLocationProvider(entry))) {
+        if (Config.DISABLE_ANONYMOUS_NON_OWNER_REACTIONS && !hasReaction && tdlib.isAnonymousAdminNonCreator(msg.chatId)) {
+          showReactionBubbleTooltip(v, entry, Lang.getString(R.string.error_ANONYMOUS_REACTIONS_DISABLED));
+        } else if (!Config.PROTECT_ANONYMOUS_REACTIONS || hasReaction || messagesController().callNonAnonymousProtection(getId() + entry.hashCode(), TGMessage.this, getReactionBubbleLocationProvider(entry))) {
           boolean needAnimation = messageReactions.toggleReaction(entry.getReactionType(), false, false, handler(v, entry, () -> {
           }));
           if (needAnimation) {
@@ -7213,8 +7215,15 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   public TooltipOverlayView.TooltipBuilder buildContentHint (View view, TooltipOverlayView.LocationProvider locationProvider) {
     return context().tooltipManager().builder(view, currentViews)
       .locate((v, outRect) -> {
-        locationProvider.getTargetBounds(v, outRect);
-        outRect.offset(getContentX(), getContentY());
+        if (locationProvider != null) {
+          locationProvider.getTargetBounds(v, outRect);
+          outRect.offset(getContentX(), getContentY());
+        } else {
+          outRect.left = getContentX();
+          outRect.top = getContentY();
+          outRect.right = outRect.left + getContentWidth();
+          outRect.bottom = outRect.top + getContentHeight();
+        }
       })
       .chatTextSize(-2f)
       .click(clickCallback())
@@ -8208,7 +8217,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         final boolean isOdd = a % 2 == 1;
         final SwipeQuickAction quickReaction = new SwipeQuickAction(reactionObj.getTitle(), reactionDrawable, () -> {
           boolean hasReaction = messageReactions.hasReaction(reactionType);
-          if (!Config.PROTECT_ANONYMOUS_REACTIONS || hasReaction || !canGetAddedReactions() || messagesController().callNonAnonymousProtection(getId() + reactionObj.hashCode(), null)) {
+          if (Config.DISABLE_ANONYMOUS_NON_OWNER_REACTIONS && !hasReaction && tdlib.isAnonymousAdminNonCreator(msg.chatId)) {
+            showContentHint(findCurrentView(), null, R.string.error_ANONYMOUS_REACTIONS_DISABLED);
+          } else if (!Config.PROTECT_ANONYMOUS_REACTIONS || hasReaction || !canGetAddedReactions() || messagesController().callNonAnonymousProtection(getId() + reactionObj.hashCode(), null)) {
             if (messageReactions.toggleReaction(reactionType, false, false, handler(findCurrentView(), null, () -> {}))) {
               scheduleSetReactionAnimation(new NextReactionAnimation(reactionObj, NextReactionAnimation.TYPE_QUICK));
             }
