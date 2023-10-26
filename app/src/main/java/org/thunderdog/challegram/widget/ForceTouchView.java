@@ -14,8 +14,6 @@
  */
 package org.thunderdog.challegram.widget;
 
-import static java.lang.annotation.RetentionPolicy.SOURCE;
-
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -63,7 +61,9 @@ import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
@@ -80,6 +80,7 @@ import org.thunderdog.challegram.util.SensitiveContentContainer;
 import org.thunderdog.challegram.util.text.Text;
 
 import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 
 import me.vkryl.android.AnimatorUtils;
@@ -314,10 +315,20 @@ public class ForceTouchView extends FrameLayoutFix implements
         headerView.setIgnoreCustomHeight();
         headerView.setInnerMargins(Screen.dp(8f), Screen.dp(8f));
         headerView.setTextColors(Theme.textAccentColor(), Theme.textDecentColor());
-        if (context.boundDataType == TYPE_CHAT && context.boundDataId != 0) {
-          setupChat(context.boundDataId, (ThreadInfo) context.boundArg1, headerView);
-        } else if (context.boundDataType == TYPE_USER && context.boundDataId != 0) {
-          setupUser((int) context.boundDataId, headerView);
+        if (context.boundDataType != 0 && context.boundDataId != 0) {
+          switch (context.boundDataType) {
+            case DataType.CHAT:
+              setupChat(context.boundDataId, (ThreadInfo) context.boundArg1, headerView);
+              break;
+            case DataType.USER:
+              setupUser(context.boundDataId, headerView);
+              break;
+            case DataType.ACCOUNT:
+              setupAccount((int) context.boundDataId, headerView);
+              break;
+            default:
+              throw new UnsupportedOperationException();
+          }
         } else {
           if (context.avatarSender != null) {
             headerView.getAvatarReceiver().requestMessageSender(tdlib, context.avatarSender, AvatarReceiver.Options.NONE);
@@ -999,14 +1010,18 @@ public class ForceTouchView extends FrameLayoutFix implements
 
   private static final float MAXIMIZE_FACTOR = 1.3f;
 
-  private static final int TYPE_NONE = 0;
-  private static final int TYPE_CHAT = 1;
-  private static final int TYPE_USER = 2;
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    DataType.CHAT, DataType.USER, DataType.ACCOUNT
+  })
+  private @interface DataType {
+    int CHAT = 1, USER = 2, ACCOUNT = 3;
+  }
 
   // Context
 
   public static class ForceTouchContext {
-    @Retention(SOURCE)
+    @Retention(RetentionPolicy.SOURCE)
     @IntDef({ANIMATION_TYPE_SCALE, ANIMATION_TYPE_EXPAND_VERTICALLY})
     public @interface AnimationType {}
 
@@ -1031,7 +1046,7 @@ public class ForceTouchView extends FrameLayoutFix implements
 
     private String title, subtitle;
 
-    private int boundDataType;
+    private @DataType int boundDataType;
     private long boundDataId;
     private @Nullable Object boundArg1;
 
@@ -1166,7 +1181,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     public void setBoundChatId (long chatId, @Nullable ThreadInfo messageThread) {
       this.needHeader = true;
       this.needHeaderAvatar = true;
-      this.boundDataType = TYPE_CHAT;
+      this.boundDataType = DataType.CHAT;
       this.boundDataId = chatId;
       this.boundArg1 = messageThread;
     }
@@ -1174,8 +1189,16 @@ public class ForceTouchView extends FrameLayoutFix implements
     public void setBoundUserId (long userId) {
       this.needHeader = userId != 0;
       this.needHeaderAvatar = true;
-      this.boundDataType = TYPE_USER;
+      this.boundDataType = DataType.USER;
       this.boundDataId = userId;
+      this.boundArg1 = 0;
+    }
+
+    public void setBoundAccountId (int accountId) {
+      this.needHeader = accountId != TdlibAccount.NO_ID;
+      this.needHeaderAvatar = true;
+      this.boundDataType = DataType.ACCOUNT;
+      this.boundDataId = accountId;
       this.boundArg1 = 0;
     }
 
@@ -1216,18 +1239,35 @@ public class ForceTouchView extends FrameLayoutFix implements
 
   // Header
 
-  private int boundDataType;
+  private @DataType int boundDataType;
   private TdApi.User boundUser;
   private TdApi.Chat boundChat;
+  private TdlibAccount boundAccount;
   private ThreadInfo boundMessageThread;
 
-  private void setupUser (int userId, ComplexHeaderView headerView) {
+  private void setupUser (long userId, ComplexHeaderView headerView) {
     TdApi.User user = tdlib.cache().user(userId);
     if (user == null) {
       throw new NullPointerException();
     }
 
-    this.boundDataType = TYPE_USER;
+    this.boundDataType = DataType.USER;
+    this.boundUser = user;
+    addUserListeners(user, true);
+
+    setHeaderUser(user);
+  }
+
+  private void setupAccount (int accountId, ComplexHeaderView headerView) {
+    TdlibAccount account = TdlibManager.instanceForAccountId(accountId).account(accountId);
+    TdApi.User user = account.getUser();
+    if (user == null) {
+      // TODO: it's possible to support, but there's no need,
+      // as it's possible to just wait for myUser to load before opening the preview
+      throw new UnsupportedOperationException();
+    }
+
+    this.boundDataType = DataType.USER;
     this.boundUser = user;
     addUserListeners(user, true);
 
@@ -1249,7 +1289,7 @@ public class ForceTouchView extends FrameLayoutFix implements
       throw new NullPointerException();
     }
 
-    this.boundDataType = TYPE_CHAT;
+    this.boundDataType = DataType.CHAT;
     this.boundChat = chat;
     this.boundMessageThread = messageThread;
     addChatListeners(chat, messageThread, true);
@@ -1271,15 +1311,21 @@ public class ForceTouchView extends FrameLayoutFix implements
   private void setChatAvatar () {
     if (!isDestroyed) {
       switch (boundDataType) {
-        case TYPE_CHAT: {
+        case DataType.CHAT: {
           if (boundChat != null) {
             headerView.getAvatarReceiver().requestChat(tdlib, boundChat.id, AvatarReceiver.Options.NONE);
           }
           break;
         }
-        case TYPE_USER: {
+        case DataType.USER: {
           if (boundUser != null) {
             headerView.getAvatarReceiver().requestUser(tdlib, boundUser.id, AvatarReceiver.Options.NONE);
+          }
+          break;
+        }
+        case DataType.ACCOUNT: {
+          if (boundAccount != null) {
+            headerView.getAvatarReceiver().requestAccount(tdlib, boundAccount.id, AvatarReceiver.Options.NONE);
           }
           break;
         }
@@ -1389,9 +1435,10 @@ public class ForceTouchView extends FrameLayoutFix implements
   @Override
   public void onUserUpdated (TdApi.User user) {
     switch (boundDataType) {
-      case TYPE_CHAT:
+      case DataType.CHAT:
         break;
-      case TYPE_USER:
+      case DataType.USER:
+      case DataType.ACCOUNT:
         setHeaderUser(user);
         break;
     }
@@ -1406,8 +1453,9 @@ public class ForceTouchView extends FrameLayoutFix implements
   @Override
   public void onUserStatusChanged (long userId, TdApi.UserStatus status, boolean uiOnly) {
     switch (boundDataType) {
-      case TYPE_CHAT:
-      case TYPE_USER:
+      case DataType.CHAT:
+      case DataType.USER:
+      case DataType.ACCOUNT:
         setChatSubtitle();
         break;
     }

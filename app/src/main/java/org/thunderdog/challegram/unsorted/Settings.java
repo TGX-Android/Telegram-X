@@ -175,7 +175,8 @@ public class Settings {
   private static final int VERSION_41 = 41; // clear all application log files
   private static final int VERSION_42 = 42; // drop __
   private static final int VERSION_43 = 43; // optimize recent custom emoji
-  private static final int VERSION = VERSION_43;
+  private static final int VERSION_44 = 44; // 8-bit -> 32-bit account flags
+  private static final int VERSION = VERSION_44;
 
   private static final AtomicBoolean hasInstance = new AtomicBoolean(false);
   private static volatile Settings instance;
@@ -1537,6 +1538,8 @@ public class Settings {
     return pmc;
   }
 
+  private boolean ignoreFurtherAccountConfigUpgrades;
+
   private void upgradePmc (LevelDB pmc, SharedPreferences.Editor editor, int version) {
     switch (version) {
       case VERSION_10: {
@@ -1966,36 +1969,7 @@ public class Settings {
           }
         }
 
-        File oldConfigFile = TdlibManager.getAccountConfigFile();
-        File backupFile = new File(oldConfigFile.getParentFile(), oldConfigFile.getName() + ".bak." + TdlibAccount.VERSION_1);
-        if (oldConfigFile.exists() && !backupFile.exists()) {
-          TdlibManager.AccountConfig config = null;
-          try (RandomAccessFile r = new RandomAccessFile(oldConfigFile, TdlibManager.MODE_R)) {
-            config = TdlibManager.readAccountConfig(null, r, TdlibAccount.VERSION_1, false);
-          } catch (IOException e) {
-            Log.e(e);
-          }
-          if (config != null) {
-            File newConfigFile = new File(oldConfigFile.getParentFile(), oldConfigFile.getName() + ".tmp");
-            try {
-              if (newConfigFile.exists() || newConfigFile.createNewFile()) {
-                try (RandomAccessFile r = new RandomAccessFile(newConfigFile, TdlibManager.MODE_RW)) {
-                  TdlibManager.writeAccountConfigFully(r, config);
-                } catch (IOException e) {
-                  Tracer.onLaunchError(e);
-                  throw new DeviceStorageError(e);
-                }
-              }
-              if (!oldConfigFile.renameTo(backupFile))
-                throw new DeviceStorageError("Cannot backup old config");
-              if (!newConfigFile.renameTo(oldConfigFile))
-                throw new DeviceStorageError("Cannot save new config");
-            } catch (Throwable t) {
-              Tracer.onLaunchError(t);
-              throw new DeviceStorageError(t);
-            }
-          }
-        }
+        upgradeAccountsConfig(TdlibAccount.VERSION_1);
         break;
       }
       case VERSION_39: {
@@ -2052,6 +2026,47 @@ public class Settings {
           }
         }
         break;
+      }
+      case VERSION_44: {
+        upgradeAccountsConfig(TdlibAccount.VERSION_2);
+        break;
+      }
+    }
+  }
+
+  private void upgradeAccountsConfig (int fromConfigVersion) {
+    if (ignoreFurtherAccountConfigUpgrades) {
+      return;
+    }
+    File oldConfigFile = TdlibManager.getAccountConfigFile();
+    File backupFile = new File(oldConfigFile.getParentFile(), oldConfigFile.getName() + ".bak." + fromConfigVersion);
+    if (oldConfigFile.exists() && !backupFile.exists()) {
+      TdlibManager.AccountConfig config = null;
+      try (RandomAccessFile r = new RandomAccessFile(oldConfigFile, TdlibManager.MODE_R)) {
+        config = TdlibManager.readAccountConfig(null, r, fromConfigVersion, false);
+      } catch (IOException e) {
+        Log.e(e);
+      }
+      if (config != null) {
+        File newConfigFile = new File(oldConfigFile.getParentFile(), oldConfigFile.getName() + ".tmp");
+        try {
+          if (newConfigFile.exists() || newConfigFile.createNewFile()) {
+            try (RandomAccessFile r = new RandomAccessFile(newConfigFile, TdlibManager.MODE_RW)) {
+              TdlibManager.writeAccountConfigFully(r, config);
+              ignoreFurtherAccountConfigUpgrades = true;
+            } catch (IOException e) {
+              Tracer.onLaunchError(e);
+              throw new DeviceStorageError(e);
+            }
+          }
+          if (!oldConfigFile.renameTo(backupFile))
+            throw new DeviceStorageError("Cannot backup old config");
+          if (!newConfigFile.renameTo(oldConfigFile))
+            throw new DeviceStorageError("Cannot save new config");
+        } catch (Throwable t) {
+          Tracer.onLaunchError(t);
+          throw new DeviceStorageError(t);
+        }
       }
     }
   }

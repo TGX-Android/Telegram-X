@@ -88,9 +88,9 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     private final float resultsVisibility, timerVisibility, hintVisibility;
     private final boolean resultsVisible, timerVisible, hintVisible;
 
-    public PollState (Tdlib tdlib, TdApi.Poll poll) {
+    public PollState (Tdlib tdlib, TdApi.Poll poll, boolean resultsVisible) {
       this.poll = poll;
-      this.resultsVisible = TD.needShowResults(poll);
+      this.resultsVisible = resultsVisible;
       this.resultsVisibility = resultsVisible ? 1f : 0f;
       this.timerVisible = !poll.isClosed && poll.openPeriod != 0;
       this.timerVisibility = timerVisible ? 1f : 0f;
@@ -345,7 +345,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     }*/
 
     this.clickHelper = new ClickHelper(this);
-    this.state = new PollState(tdlib, poll);
+    this.state = new PollState(tdlib, poll, needShowResults(poll));
     if (!poll.isAnonymous || isMultiChoicePoll()) {
       this.isButtonActive = new BoolAnimator(ANIMATOR_BUTTON, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 120l);
       this.button = new ReplaceAnimator<>(animator -> this.invalidate());
@@ -887,7 +887,27 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
   }
 
   private boolean canVote (boolean checkSelected) {
-    return TD.canVote(getPoll()) && (!checkSelected || (!isMultiChoicePoll() || !(!hasAnswer() && TD.hasSelectedOption(getPoll()))));
+    return canVote(getPoll()) && (!checkSelected || (!isMultiChoicePoll() || !(!hasAnswer() && TD.hasSelectedOption(getPoll()))));
+  }
+
+  private boolean canVote (TdApi.Poll poll) {
+    return !needShowResults(poll);
+  }
+
+  private boolean needShowResults (TdApi.Poll poll) {
+    if (poll.isClosed)
+      return true;
+    boolean haveVoters = false;
+    for (TdApi.PollOption option : poll.options) {
+      if (option.isChosen)
+        return true;
+      if (option.voterCount > 0) {
+        haveVoters = true;
+      }
+    }
+    // show results for anonymous admin
+    // FIXME TDLib/server: poll information never returned to anonymous admin
+    return haveVoters && tdlib.isAnonymousAdminNonCreator(msg.chatId);
   }
 
   @Override
@@ -930,7 +950,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     boolean animated = !changed && needAnimateChanges();
     if (animated) {
       resetPollAnimation(true);
-      futureState = new PollState(tdlib, updatedPoll);
+      futureState = new PollState(tdlib, updatedPoll, needShowResults(updatedPoll));
       setRecentVoters(updatedPoll.recentVoterIds, true);
       setButton(true);
       if (recentVoters != null) {
@@ -996,7 +1016,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       animator.animateTo(1f);
     } else {
       resetPollAnimation(false);
-      this.state = new PollState(tdlib, updatedPoll);
+      this.state = new PollState(tdlib, updatedPoll, needShowResults(updatedPoll));
       setRecentVoters(updatedPoll.recentVoterIds, false);
       if (recentVoters != null) {
         invalidateContentReceiver();
@@ -1101,7 +1121,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     if (futureState == null) {
       setTotalVoterCount(state.poll);
       setPollStatus(state.poll.isClosed ? POLL_STATUS_CLOSED : POLL_STATUS_ANONYMOUS);
-      setPercentages(TD.needShowResults(state.poll), state.poll.options);
+      setPercentages(needShowResults(state.poll), state.poll.options);
       int correctOptionId = state.poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR ? ((TdApi.PollTypeQuiz) state.poll.type).correctOptionId : -1;
       for (int optionId = 0; optionId < state.poll.options.length; optionId++) {
         options[optionId].selectionFactor = optionId == correctOptionId || state.poll.options[optionId].isChosen ? 1f : 0f;
@@ -1450,11 +1470,18 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
               }
               int[] selectedOptionIds = selectedOptions.get();
               int[] currentOptionIds = currentOptions.get();
-              if (!Config.PROTECT_ANONYMOUS_VOTING || isAnonymous() || messagesController().callNonAnonymousProtection(msg.id + R.id.btn_vote, this, makeVoteButtonLocationProvider())) {
+              if (!Config.PROTECT_ANONYMOUS_VOTING || isAnonymous() || messagesController().callNonAnonymousProtection(msg.id + R.id.btn_vote, this, makeVoteButtonLocationProvider(true))) {
+                Tdlib.ResultHandler<TdApi.Ok> handler = (ok, error) -> {
+                  if (error != null) {
+                    runOnUiThreadOptional(() -> {
+                      showContentHint(view, makeVoteButtonLocationProvider(false), TD.toFormattedText(TD.toErrorString(error), false));
+                    });
+                  }
+                };
                 if (Arrays.equals(selectedOptionIds, currentOptionIds)) {
-                  tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, null), tdlib.okHandler());
+                  tdlib.send(new TdApi.SetPollAnswer(msg.chatId, msg.id, null), handler);
                 } else {
-                  tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, selectedOptionIds), tdlib.okHandler());
+                  tdlib.send(new TdApi.SetPollAnswer(msg.chatId, msg.id, selectedOptionIds), handler);
                 }
               }
             } else if (itemId == R.id.btn_viewResults) {
@@ -1505,7 +1532,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       } else if (isMultiChoicePoll()) {
         selectUnselect(clickOptionId);
       } else {
-        chooseOption(clickOptionId);
+        chooseOption(view, clickOptionId);
       }
       clickOptionId = HIGHLIGHT_NONE;
     }
@@ -1515,12 +1542,19 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     return Math.max(Screen.dp(46f), Math.max(Screen.dp(8f), (Screen.dp(46f) / 2 - text.getLineHeight() / 2)) + text.getHeight() + Screen.dp(12f)) + Screen.separatorSize();
   }
 
-  private void chooseOption (final int optionId) {
-    if (!Config.PROTECT_ANONYMOUS_VOTING || isAnonymous() || messagesController().callNonAnonymousProtection(msg.id + optionId, this, makeButtonLocationProvider(optionId))) {
+  private void chooseOption (final View view, final int optionId) {
+    if (!Config.PROTECT_ANONYMOUS_VOTING || isAnonymous() || messagesController().callNonAnonymousProtection(msg.id + optionId, this, makeButtonLocationProvider(optionId, true))) {
+      Tdlib.ResultHandler<TdApi.Ok> handler = (ok, error) -> {
+        if (error != null) {
+          runOnUiThreadOptional(() -> {
+            showContentHint(view, makeButtonLocationProvider(optionId, false), TD.toFormattedText(TD.toErrorString(error), false));
+          });
+        }
+      };
       if (getPoll().options[optionId].isBeingChosen) {
-        tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, null), tdlib.okHandler());
+        tdlib.send(new TdApi.SetPollAnswer(msg.chatId, msg.id, null), handler);
       } else {
-        tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, new int[] {optionId}), tdlib.okHandler());
+        tdlib.send(new TdApi.SetPollAnswer(msg.chatId, msg.id, new int[] {optionId}), handler);
       }
     }
   }
@@ -1545,7 +1579,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     }
   }
 
-  private TooltipOverlayView.LocationProvider makeVoteButtonLocationProvider () {
+  private TooltipOverlayView.LocationProvider makeVoteButtonLocationProvider (boolean needOffset) {
     return (targetView, outRect) -> {
       int startY = questionText.getHeight() + Screen.dp(28f);
       for (OptionEntry option : options) {
@@ -1553,11 +1587,13 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
         startY += optionHeight;
       }
       outRect.set(0, startY, getContentMaxWidth(), startY + Screen.dp(50));
-      outRect.offset(getContentX(), getContentY());
+      if (needOffset) {
+        outRect.offset(getContentX(), getContentY());
+      }
     };
   }
 
-  private TooltipOverlayView.LocationProvider makeButtonLocationProvider (int selectedOptionId) {
+  private TooltipOverlayView.LocationProvider makeButtonLocationProvider (int selectedOptionId, boolean needOffset) {
     return (targetView, outRect) -> {
       int startY = questionText.getHeight() + Screen.dp(5f);
       int optionId = 0;
@@ -1566,7 +1602,9 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
         if (selectedOptionId == optionId) {
           startY += Screen.dp(15f + 12f);
           outRect.set(Screen.dp(0f), startY, Screen.dp(24f), startY + option.text.getLineHeight());
-          outRect.offset(getContentX(), getContentY());
+          if (needOffset) {
+            outRect.offset(getContentX(), getContentY());
+          }
           return;
         }
         startY += optionHeight;

@@ -406,7 +406,7 @@ public class TdlibNotificationChannelGroup {
           String groupId = channel.getGroup();
           if (StringUtils.isEmpty(groupId) || !groupId.startsWith(groupPrefix))
             continue;
-          int userId = StringUtils.parseInt(groupId.substring(groupPrefix.length()));
+          long userId = StringUtils.parseInt(groupId.substring(groupPrefix.length()));
           if (userId != accountUserId)
             continue;
           String id = channel.getId();
@@ -467,7 +467,7 @@ public class TdlibNotificationChannelGroup {
             android.app.NotificationChannelGroup group = groups.get(i);
             String groupId = group.getId();
             if (!StringUtils.isEmpty(groupId) && groupId.startsWith(prefix)) {
-              int userId = StringUtils.parseInt(groupId.substring(prefix.length()));
+              long userId = StringUtils.parseInt(groupId.substring(prefix.length()));
               if (userId == 0 || Arrays.binarySearch(userIds, userId) < 0) {
                 m.deleteNotificationChannelGroup(groupId);
               }

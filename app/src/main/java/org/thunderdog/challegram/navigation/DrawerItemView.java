@@ -213,13 +213,7 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
   }
 
   public void setAvatar (TdlibAccount account) {
-    AvatarPlaceholder.Metadata placeholder = account.getAvatarPlaceholderMetadata();
-    ImageFile imageFile = account.getAvatarFile(false);
-    if (imageFile != null) {
-      receiver.requestSpecific(tdlib, imageFile, AvatarReceiver.Options.NONE);
-    } else {
-      receiver.requestPlaceholder(tdlib, placeholder, AvatarReceiver.Options.NONE);
-    }
+    receiver.requestAccount(tdlib, account.id, AvatarReceiver.Options.NONE);
   }
 
   public void setError (boolean error, int errorIcon, boolean animated) {

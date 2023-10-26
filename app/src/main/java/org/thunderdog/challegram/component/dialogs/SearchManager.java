@@ -482,17 +482,6 @@ public class SearchManager {
   private ArrayList<TGFoundChat> localChats;
   private String localChatsQuery;
 
-  private static int indexOfLocalPrivateChat (ArrayList<TGFoundChat> chats, int userId) {
-    int i = 0;
-    for (TGFoundChat chat : chats) {
-      if (chat.getUserId() == userId) {
-        return i;
-      }
-      i++;
-    }
-    return -1;
-  }
-
   private boolean isFiltered () {
     return isFiltered(searchFlags);
   }
