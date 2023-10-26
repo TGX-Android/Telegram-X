@@ -2372,6 +2372,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     };
   }
 
+  public ResultHandler<TdApi.Ok> typedOkHandler () {
+    return (ok, error) -> {
+      if (error != null) {
+        UI.showError(error);
+      }
+    };
+  }
+
   public Client.ResultHandler okHandler (@Nullable Runnable after) {
     return after != null ? object -> {
       switch (object.getConstructor()) {

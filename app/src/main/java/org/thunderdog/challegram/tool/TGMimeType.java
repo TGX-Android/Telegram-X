@@ -29,13 +29,12 @@ public class TGMimeType {
      }
      if (BuildConfig.THEME_FILE_EXTENSION.equals(extension))
        return "text/plain";
-     TdApi.Object object = Client.execute(new TdApi.GetFileMimeType("file." + extension));
-     if (object != null && object.getConstructor() == TdApi.Text.CONSTRUCTOR) {
-       TdApi.Text text = (TdApi.Text) object;
-       if (!StringUtils.isEmpty(text.text)) {
-         return text.text;
+     try {
+       TdApi.Text mimeType = Client.execute(new TdApi.GetFileMimeType("file." + extension));
+       if (!StringUtils.isEmpty(mimeType.text)) {
+         return mimeType.text;
        }
-     }
+     } catch (Client.ExecutionError ignored) { }
      if ("heic".equals(extension)) {
        return "image/heic";
      }
@@ -70,13 +69,12 @@ public class TGMimeType {
     if (StringUtils.isEmpty(mimeType)) {
       return null;
     }
-    TdApi.Object object = Client.execute(new TdApi.GetFileExtension(mimeType));
-    if (object != null && object.getConstructor() == TdApi.Text.CONSTRUCTOR) {
-      TdApi.Text text = (TdApi.Text) object;
-      if (!StringUtils.isEmpty(text.text)) {
-        return text.text;
+    try {
+      TdApi.Text extension = Client.execute(new TdApi.GetFileExtension(mimeType));
+      if (!StringUtils.isEmpty(extension.text)) {
+        return extension.text;
       }
-    }
+    } catch (Client.ExecutionError ignored) { }
     if ("image/heic".equals(mimeType)) {
       return "heic";
     }

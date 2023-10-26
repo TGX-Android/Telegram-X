@@ -428,8 +428,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   }
 
   public static void setTestLabConfig () {
-    Client.execute(new TdApi.SetLogVerbosityLevel(5));
-    Client.execute(new TdApi.SetLogStream(new TdApi.LogStreamDefault()));
+    try {
+      Client.execute(new TdApi.SetLogVerbosityLevel(5));
+      Client.execute(new TdApi.SetLogStream(new TdApi.LogStreamDefault()));
+    } catch (Client.ExecutionError ignored) { }
     Log.setLogLevel(Log.LEVEL_VERBOSE);
   }
 
@@ -2240,8 +2242,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   private static long deleteLogFiles (int mode) {
     if (UI.TEST_MODE != UI.TEST_MODE_AUTO) {
-      Client.execute(new TdApi.SetLogVerbosityLevel(0));
-      Client.execute(new TdApi.SetLogStream(new TdApi.LogStreamEmpty()));
+      try {
+        Client.execute(new TdApi.SetLogVerbosityLevel(0));
+        Client.execute(new TdApi.SetLogStream(new TdApi.LogStreamEmpty()));
+      } catch (Client.ExecutionError ignored) { }
     }
 
     long removedSize;
@@ -2450,21 +2454,25 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   public static TdApi.LanguagePackStringValue getString (String languageDatabasePath, String key, @NonNull String languagePackId) {
     if (StringUtils.isEmpty(key))
       return null;
-    final TdApi.Object result = Client.execute(new TdApi.GetLanguagePackString(languageDatabasePath, BuildConfig.LANGUAGE_PACK, languagePackId, key));
-    if (result == null)
+    final TdApi.LanguagePackStringValue value;
+    try {
+      value = Client.execute(new TdApi.GetLanguagePackString(languageDatabasePath, BuildConfig.LANGUAGE_PACK, languagePackId, key));
+    } catch (Client.ExecutionError error) {
+      if (error.error.code != 404) {
+        Log.e("getString %s error:%s, languagePackId:%s", key, TD.toErrorString(error.error), languagePackId);
+      }
       return null;
-    switch (result.getConstructor()) {
+    }
+    switch (value.getConstructor()) {
       case TdApi.LanguagePackStringValueOrdinary.CONSTRUCTOR:
       case TdApi.LanguagePackStringValuePluralized.CONSTRUCTOR:
-        return (TdApi.LanguagePackStringValue) result;
+        return value;
       case TdApi.LanguagePackStringValueDeleted.CONSTRUCTOR:
         return null;
-      case TdApi.Error.CONSTRUCTOR:
-        if (((TdApi.Error) result).code != 404)
-          Log.e("getString %s error:%s, languagePackId:%s", key, TD.toErrorString(result), languagePackId);
-        return null;
+      default:
+        Td.assertLanguagePackStringValue_11536986();
+        throw Td.unsupported(value);
     }
-    return null;
   }
 
   private TdApi.LanguagePackStringValue getString (String key, @NonNull String languagePackId) {

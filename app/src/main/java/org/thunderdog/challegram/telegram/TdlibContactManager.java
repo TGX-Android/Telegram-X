@@ -405,6 +405,11 @@ public class TdlibContactManager implements CleanupStartupDelegate {
     tdlib.searchContacts(null, 5, newHandler());
   }
 
+  @TdlibThread
+  void notifyContactStatusChanged (long userId, boolean isContact) {
+    checkRegisteredCount();
+  }
+
   private Client.ResultHandler newHandler () {
     return object -> {
       switch (object.getConstructor()) {

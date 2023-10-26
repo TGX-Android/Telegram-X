@@ -441,27 +441,32 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
 
   @TdlibThread
   void onUpdateUser (TdApi.UpdateUser update) {
-    boolean statusChanged;
-    boolean isMe;
-    boolean hadUser;
+    final boolean statusChanged;
+    final boolean hadUser;
+    final boolean isContactChanged;
+    final boolean isContact;
     TdApi.User newUser = update.user;
     synchronized (dataLock) {
       TdApi.User oldUser = users.get(newUser.id);
-      if (hadUser = oldUser != null) {
+      hadUser = oldUser != null;
+      isContact = newUser.isContact;
+      if (hadUser) {
         statusChanged = !Td.equalsTo(oldUser.status, newUser.status);
+        isContactChanged = oldUser.isContact != newUser.isContact;
         Td.copyTo(newUser, oldUser);
         synchronized (onlineMutex) {
           oldUser.status = newUser.status;
         }
         newUser = oldUser;
       } else {
-        statusChanged = false;
+        statusChanged = isContactChanged = false;
         users.put(newUser.id, newUser);
       }
     }
 
     notifyUserListeners(newUser);
-    if (isMe = (newUser.id == myUserId)) {
+    boolean isMe = (newUser.id == myUserId);
+    if (isMe) {
       notifyMyUserListeners(myUserListeners.iterator(), newUser);
       tdlib.downloadMyUser(newUser);
       tdlib.context().onUpdateAccountProfile(tdlib.id(), newUser, true);
@@ -481,6 +486,10 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
         TdlibNotificationChannelGroup.updateGroup(newUser);
       }
       tdlib.context().onUpdateAccountProfile(tdlib.id(), newUser, !hadUser);
+    } else {
+      if (isContactChanged) {
+        tdlib.contacts().notifyContactStatusChanged(newUser.id, isContact);
+      }
     }
   }
 
