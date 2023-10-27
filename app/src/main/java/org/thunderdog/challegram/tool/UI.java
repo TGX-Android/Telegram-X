@@ -33,6 +33,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
 import android.widget.Toast;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.core.content.ContextCompat;
@@ -61,6 +62,8 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.Unlockable;
 
 import java.io.File;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -78,16 +81,19 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceList;
 
 public class UI {
-  public static final int STATE_UNKNOWN = -1;
-  public static final int STATE_RESUMED = 0;
-  public static final int STATE_PAUSED = 1;
-  public static final int STATE_DESTROYED = 2;
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    State.UNKNOWN, State.RESUMED, State.PAUSED, State.DESTROYED
+  })
+  public @interface State {
+    int UNKNOWN = -1, RESUMED = 0, PAUSED = 1, DESTROYED = 2;
+  }
 
   private static Context appContext;
   private static WeakReference<BaseActivity> uiContext;
   private static UIHandler _appHandler;
   private static Handler _progressHandler;
-  private static int uiState = STATE_UNKNOWN;
+  private static int uiState = State.UNKNOWN;
 
   private static Boolean isTablet;
 
@@ -236,7 +242,7 @@ public class UI {
 
   public static boolean setUiState (BaseActivity activity, int state) {
     WeakReference<BaseActivity> foundKey = null;
-    boolean foreground = state == UI.STATE_RESUMED;
+    boolean foreground = state == State.RESUMED;
     if (resumeStates == null) {
       if (foreground) {
         resumeStates = new HashMap<>();
@@ -265,12 +271,12 @@ public class UI {
         }
       }
     }
-    if (state == UI.STATE_DESTROYED) {
+    if (state == State.DESTROYED) {
       if (foundKey != null) {
         resumeStates.remove(foundKey);
       }
     } else {
-      Boolean value = state == UI.STATE_RESUMED;
+      Boolean value = state == State.RESUMED;
       if (foundKey != null) {
         resumeStates.put(foundKey, value);
       } else {
@@ -280,18 +286,18 @@ public class UI {
         resumeStates.put(new WeakReference<>(activity), value);
       }
     }
-    return setUiState(foreground ? UI.STATE_RESUMED : UI.STATE_PAUSED);
+    return setUiState(foreground ? State.RESUMED : State.PAUSED);
   }
 
   private static boolean setUiState (int state) {
     if (uiState != state) {
-      if ((state == STATE_PAUSED || state == STATE_DESTROYED) && uiState == STATE_RESUMED) {
+      if ((state == State.PAUSED || state == State.DESTROYED) && uiState == State.RESUMED) {
         lastResumeTime = System.currentTimeMillis();
       }
 
       boolean called = false;
-      if (uiState == STATE_RESUMED || state == STATE_RESUMED) {
-        called = TdlibManager.instance().watchDog().onBackgroundStateChanged(state != STATE_RESUMED);
+      if (uiState == State.RESUMED || state == State.RESUMED) {
+        called = TdlibManager.instance().watchDog().onBackgroundStateChanged(state != State.RESUMED);
       }
 
       uiState = state;
@@ -305,7 +311,7 @@ public class UI {
   }
 
   public static boolean wasResumedRecently (long resumeTimeLimitMs) {
-    return uiState == STATE_RESUMED || getResumeDiff() <= resumeTimeLimitMs;
+    return uiState == State.RESUMED || getResumeDiff() <= resumeTimeLimitMs;
   }
   
   public static UIHandler getAppHandler () {
@@ -334,7 +340,7 @@ public class UI {
 
   public static boolean isValid (BaseActivity activity) {
     if (activity != null) {
-      if (activity.getActivityState() == STATE_DESTROYED) {
+      if (activity.getActivityState() == State.DESTROYED) {
         return false;
       }
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
@@ -394,7 +400,7 @@ public class UI {
   }
 
   public static boolean isResumed () {
-    return uiState == STATE_RESUMED;
+    return uiState == State.RESUMED;
   }
 
   public static void forceVibrateError (View view) {

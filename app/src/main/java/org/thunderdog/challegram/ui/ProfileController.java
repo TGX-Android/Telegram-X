@@ -531,11 +531,17 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       case MODE_EDIT_CHANNEL:
       case MODE_EDIT_SUPERGROUP: {
         int count = 0;
+        if (canClearHistory())
+          count++;
         if (canDestroyChat())
           count++;
         if (count > 0) {
           IntList ids = new IntList(count);
           StringList strings = new StringList(count);
+          if (canClearHistory()) {
+            ids.append(R.id.btn_clearChatHistory);
+            strings.append(R.string.ClearHistory);
+          }
           if (canDestroyChat()) {
             ids.append(R.id.btn_destroyChat);
             strings.append(isChannel() ? R.string.DestroyChannel : R.string.DestroyGroup);
@@ -4414,11 +4420,15 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private boolean hasMoreItems () {
-    return canDestroyChat() && !tdlib.isUserChat(chat);
+    return (canDestroyChat() || canClearHistory()) && !tdlib.isUserChat(chat);
   }
 
   private boolean canDestroyChat () {
     return chat != null && chat.canBeDeletedForAllUsers;
+  }
+
+  private boolean canClearHistory () {
+    return isChannel() && tdlib.canClearHistory(getChatId());
   }
 
   private void destroyChat () {

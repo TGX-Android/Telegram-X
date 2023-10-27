@@ -196,11 +196,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     }
 
     adapter = new ViewPagerAdapter(context, this);
-    addAttachStateListener((context1, navigation, isAttached) -> {
-      for (ViewController<?> c : adapter.visibleControllers) {
-        c.onAttachStateChanged(navigation, isAttached);
-      }
-    });
+    addAttachStateListener(attachListener);
     pager = new RtlViewPager(context);
     pager.setLayoutParams(params);
     pager.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS : View.OVER_SCROLL_NEVER);
@@ -233,6 +229,12 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
 
     return contentView;
   }
+
+  private final ViewController.AttachListener attachListener = (context, navigation, isAttached) -> {
+    for (ViewController<?> c : adapter.visibleControllers) {
+      c.onAttachStateChanged(navigation, isAttached);
+    }
+  };
 
   protected boolean overridePagerParent () {
     return false;

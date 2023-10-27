@@ -18,7 +18,7 @@ object Config {
   const val MIN_SDK_VERSION = 16
   val JAVA_VERSION = org.gradle.api.JavaVersion.VERSION_11
   val EXOPLAYER_EXTENSIONS = arrayOf("ffmpeg", "flac", "opus", "vp9")
-  val SUPPORTED_ABI = arrayOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+  val SUPPORTED_ABI = arrayOf("armeabi-v7a", "arm64-v8a"/*, "x86"*/, "x86_64")
 }
 
 object LibraryVersions {
@@ -60,14 +60,14 @@ object Abi {
   const val UNIVERSAL = 0
   const val ARMEABI_V7A = 1
   const val ARM64_V8A = 2
-  const val X86 = 3
+  // const val X86 = 3
   const val X64 = 4
 
   val VARIANTS = mapOf(
     Pair(UNIVERSAL, AbiVariant("universal", displayName = "universal", sideLoadOnly = true, filters = arrayOf("arm64-v8a", "x86_64"))),
     Pair(ARMEABI_V7A, AbiVariant("arm32", "armeabi-v7a")),
     Pair(ARM64_V8A, AbiVariant("arm64", "arm64-v8a")),
-    Pair(X86, AbiVariant("x86", "x86")),
+    // Pair(X86, AbiVariant("x86", "x86")),
     Pair(X64, AbiVariant("x64", "x86_64", displayName = "x64"))
   )
 }

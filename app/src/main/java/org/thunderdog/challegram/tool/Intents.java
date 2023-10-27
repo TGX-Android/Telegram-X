@@ -282,7 +282,7 @@ public class Intents {
     if (uri != null) {
       try {
         BaseActivity context = UI.getUiContext();
-        if (UI.getUiState() == UI.STATE_RESUMED && openInAppBrowser(context, uri, false)) {
+        if (UI.getUiState() == UI.State.RESUMED && openInAppBrowser(context, uri, false)) {
           return true;
         }
 

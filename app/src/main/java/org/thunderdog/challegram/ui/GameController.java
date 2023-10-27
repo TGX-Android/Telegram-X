@@ -102,7 +102,7 @@ public class GameController extends WebkitController<GameController.Args> implem
 
   private void checkPlaying () {
     if (getArgumentsStrict().ownerController != null) {
-      getArgumentsStrict().ownerController.setBroadcastAction(isFocused() && !isDestroyed() && context.getActivityState() == UI.STATE_RESUMED ? TdApi.ChatActionStartPlayingGame.CONSTRUCTOR : TdApi.ChatActionCancel.CONSTRUCTOR);
+      getArgumentsStrict().ownerController.setBroadcastAction(isFocused() && !isDestroyed() && context.getActivityState() == UI.State.RESUMED ? TdApi.ChatActionStartPlayingGame.CONSTRUCTOR : TdApi.ChatActionCancel.CONSTRUCTOR);
     }
   }
 

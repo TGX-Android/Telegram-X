@@ -245,7 +245,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
 
   private void updateCounter () {
     Tdlib tdlib = currentTdlib();
-    boolean animated = getActivityState() == UI.STATE_RESUMED;
+    boolean animated = getActivityState() == UI.State.RESUMED;
     @Tdlib.ResolvableProblem int problemType = tdlib.findResolvableProblem();
     BackHeaderButton backButton = navigation.getHeaderView().getBackButton();
     if (problemType != Tdlib.ResolvableProblem.NONE) {

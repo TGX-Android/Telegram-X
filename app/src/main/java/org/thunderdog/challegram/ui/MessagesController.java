@@ -4219,7 +4219,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       ids.append(R.id.btn_setPasscode);
       strings.append(R.string.PasscodeTitle);
     }
-    tdlib.ui().addDeleteChatOptions(getChatId(), ids, strings, true, false);
+    tdlib.ui().addDeleteChatOptions(getChatId(), ids, strings, !tdlib.isChannel(chat.id), false);
 
     if (!messagesHidden) {
       if (ChatId.isUserChat(chat.id)) {
@@ -9486,7 +9486,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private CancellableRunnable broadcastActor;
 
   private void checkBroadcastingSomeAction () {
-    boolean needBroadcast = broadcastingAction != 0 && context.getActivityState() == UI.STATE_RESUMED && !isDestroyed();
+    boolean needBroadcast = broadcastingAction != 0 && context.getActivityState() == UI.State.RESUMED && !isDestroyed();
     if (this.broadcastingSomeAction != needBroadcast) {
       if (needBroadcast) {
         broadcastActor = new CancellableRunnable() {

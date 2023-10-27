@@ -540,7 +540,7 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
      */
     public void setPopup (@Nullable PopupLayout popupLayout, int windowType) {
       if (this.popupLayout != null && !this.popupLayout.isWindowHidden()) {
-        this.popupLayout.hideWindow(UI.getContext(this.popupLayout.getContext()).getActivityState() == UI.STATE_RESUMED);
+        this.popupLayout.hideWindow(UI.getContext(this.popupLayout.getContext()).getActivityState() == UI.State.RESUMED);
       }
       this.popupLayout = popupLayout;
       if (popupLayout != null) {

@@ -526,7 +526,7 @@ public class TGCallService extends Service implements
   private void acceptIncomingCall () {
     if (call != null) {
       tdlib.context().calls().acceptCall(this, tdlib, call.id);
-      if (UI.getUiState() != UI.STATE_RESUMED) {
+      if (UI.getUiState() != UI.State.RESUMED) {
         bringCallToFront();
       }
     }
@@ -553,10 +553,10 @@ public class TGCallService extends Service implements
     updateCurrentState();
     boolean isPendingIncoming = call != null && !call.isOutgoing && call.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR;
     if (isPendingIncoming) {
-      if (newState != UI.STATE_RESUMED && needShowIncomingNotification) {
+      if (newState != UI.State.RESUMED && needShowIncomingNotification) {
         needShowIncomingNotification = false;
         showIncomingNotification();
-      } else if (newState == UI.STATE_RESUMED) {
+      } else if (newState == UI.State.RESUMED) {
         needShowIncomingNotification = true;
         cleanupChannels((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE));
         U.stopForeground(this, true, TdlibNotificationManager.ID_INCOMING_CALL_NOTIFICATION);
@@ -661,7 +661,7 @@ public class TGCallService extends Service implements
   private static final @DrawableRes int CALL_ICON_RES = R.drawable.baseline_phone_24_white;
 
   private void showNotification () {
-    boolean needNotification = call != null && (call.isOutgoing || call.state.getConstructor() == TdApi.CallStateExchangingKeys.CONSTRUCTOR || call.state.getConstructor() == TdApi.CallStateReady.CONSTRUCTOR) && !TD.isFinished(call) && UI.getUiState() != UI.STATE_RESUMED;
+    boolean needNotification = call != null && (call.isOutgoing || call.state.getConstructor() == TdApi.CallStateExchangingKeys.CONSTRUCTOR || call.state.getConstructor() == TdApi.CallStateReady.CONSTRUCTOR) && !TD.isFinished(call) && UI.getUiState() != UI.State.RESUMED;
 
     if (needNotification == (ongoingCallNotification != null)) {
       return;
@@ -766,7 +766,7 @@ public class TGCallService extends Service implements
       return needNotification;
     }
 
-    if (UI.getUiState() == UI.STATE_RESUMED) {
+    if (UI.getUiState() == UI.State.RESUMED) {
       needShowIncomingNotification = true;
       Log.i("No need to show incoming notification right now, but may in future.");
       return true;
@@ -894,7 +894,7 @@ public class TGCallService extends Service implements
 
     if (!showIncomingNotification()) {
       Log.v(Log.TAG_VOIP, "Starting incall activity for incoming call");
-      if (UI.getUiState() != UI.STATE_RESUMED) {
+      if (UI.getUiState() != UI.State.RESUMED) {
         bringCallToFront();
       }
     }

@@ -255,12 +255,12 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     tdlib.listeners().addCleanupListener(this);
 
     UI.addStateListener(this);
-    this.refreshUiPaused = UI.getUiState() != UI.STATE_RESUMED;
+    this.refreshUiPaused = UI.getUiState() != UI.State.RESUMED;
   }
 
   @Override
   public void onUiStateChanged (int newState) {
-    setPauseStatusRefreshers(newState != UI.STATE_RESUMED);
+    setPauseStatusRefreshers(newState != UI.State.RESUMED);
   }
 
   public void getInviteText (@Nullable final RunnableData<TdApi.Text> callback) {

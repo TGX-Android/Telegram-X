@@ -285,7 +285,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   private View focusView;
-  private int activityState = UI.STATE_UNKNOWN;
+  private int activityState = UI.State.UNKNOWN;
 
   private RoundVideoController roundVideoController;
   private RecordAudioVideoController recordAudioVideoController;
@@ -356,7 +356,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       this.isWindowLight = !Theme.isDark();
     }
     // UI.resetSizes();
-    setActivityState(UI.STATE_RESUMED);
+    setActivityState(UI.State.RESUMED);
     TdlibManager.instance().watchDog().onActivityCreate(this);
     Passcode.instance().checkAutoLock();
 
@@ -562,7 +562,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     try {
       dialog = b.show();
     } catch (Throwable t) {
-      if (UI.getUiState() == UI.STATE_RESUMED)
+      if (UI.getUiState() == UI.State.RESUMED)
         UI.showToast("Failed to display system pop-up, see application log for details", Toast.LENGTH_SHORT);
       Log.e("Cannot show dialog", t);
       return null;
@@ -897,9 +897,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   private void setActivityState (int newState) {
     if (this.activityState != newState) {
       final int prevState = this.activityState;
-      boolean prevResumed = prevState == UI.STATE_RESUMED;
+      boolean prevResumed = prevState == UI.State.RESUMED;
       this.activityState = newState;
-      if (newState != UI.STATE_RESUMED) {
+      if (newState != UI.State.RESUMED) {
         if (prevResumed) {
           handler.removeMessages(DISPATCH_ACTIVITY_STATE);
         }
@@ -934,7 +934,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   @Override
   public void onPause () {
     blockFocus();
-    setActivityState(UI.STATE_PAUSED);
+    setActivityState(UI.State.PAUSED);
     if (camera != null) {
       camera.onActivityPause();
     }
@@ -984,7 +984,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   public void onResume () {
     boolean lockBefore = isPasscodeShowing;
     UI.setContext(this);
-    setActivityState(UI.STATE_RESUMED);
+    setActivityState(UI.State.RESUMED);
     Passcode.instance().checkAutoLock();
     checkPasscode(false);
     if (isPasscodeShowing && lockBefore && passcodeController != null) {
@@ -1072,7 +1072,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     TGLegacyManager.instance().removeEmojiListener(this);
     TdlibManager.instance().watchDog().onActivityDestroy(this);
     Intents.revokeFileReadPermissions();
-    setActivityState(UI.STATE_DESTROYED);
+    setActivityState(UI.State.DESTROYED);
     if (isPasscodeShowing && passcodeController != null) {
       passcodeController.onActivityDestroy();
     }
@@ -1281,8 +1281,8 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         break;
       }
       case DISPATCH_ACTIVITY_STATE: {
-        if (activityState == UI.STATE_RESUMED) {
-          if (!UI.setUiState(this, UI.STATE_RESUMED)) {
+        if (activityState == UI.State.RESUMED) {
+          if (!UI.setUiState(this, UI.State.RESUMED)) {
             TdlibManager.instance().watchDog().checkNetworkAvailability();
           }
         }
@@ -2633,7 +2633,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     return !(
       // getCurrentPopupWindow() != null ||
       (cameraAnimator != null && cameraAnimator.isAnimating()) ||
-      activityState != UI.STATE_RESUMED ||
+      activityState != UI.State.RESUMED ||
       recordAudioVideoController.isOpen() ||
       isCameraOwnershipTaken ||
       isNavigationBusy()
@@ -3225,7 +3225,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   private void checkAutoNightMode () {
-    setRegisterLightSensor(activityState == UI.STATE_RESUMED && Settings.instance().getNightMode() == Settings.NIGHT_MODE_AUTO);
+    setRegisterLightSensor(activityState == UI.State.RESUMED && Settings.instance().getNightMode() == Settings.NIGHT_MODE_AUTO);
     setSystemNightMode(getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK);
   }
 
@@ -3288,7 +3288,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   private boolean needsLightSensorChanges () {
-    return (lightSensorRegistered && lightSensor != null && activityState == UI.STATE_RESUMED && Settings.instance().getNightMode() == Settings.NIGHT_MODE_AUTO);
+    return (lightSensorRegistered && lightSensor != null && activityState == UI.State.RESUMED && Settings.instance().getNightMode() == Settings.NIGHT_MODE_AUTO);
   }
 
   @Override
