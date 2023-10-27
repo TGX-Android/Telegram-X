@@ -489,6 +489,9 @@
   <string name="pickFromGallery">Choose from Gallery</string>
   <string name="DeletePhoto">Remove photo</string>
   <string name="ClearHistory">Clear history</string>
+  <string name="ClearHistoryAll">Clear history for everyone</string>
+  <string name="ClearChannel">Delete all messages</string>
+  <string name="ClearSavedMessages">Delete all Saved Messages</string>
   <string name="Cancel">Cancel</string>
   <string name="AddMember">Add Members</string>
   <string name="AddMembers">Add members</string>
@@ -1671,8 +1674,12 @@
   <string name="DeleteMultipleFilesHint">Note: you will be able to download these files any time later.</string>
   <string name="FreedX">Freed %1$s of disk space</string>
   <string name="LinkPreview">Link Preview</string>
+  <string name="ClearChannelConfirm">Are you sure you want to clear history for this channell? This action cannot be undone.</string>
+  <string name="ClearChannelSecondaryConfirm">**No, seriously.**\n\nThis will delete **all messages** for **all subscribers**. There will be no way to restore them.</string>
+  <string name="ClearHistoryAllConfirm">Are you sure you want to clear history for this chat for all users? This action cannot be undone.</string>
   <string name="ClearHistoryConfirm">Are you sure you want to clear history for this chat? This action cannot be undone.</string>
   <string name="ClearSavedMessagesConfirm">Are you sure you want to clear all **Saved Messages**? This action cannot be undone.</string>
+  <string name="ClearSavedMessagesSecondaryConfirm">**No, seriously.**\n\nThis will delete **all Saved Messages**. There will be no way to restore them.</string>
   <string name="Channel">Channel</string>
   <string name="ThemeCyan">Cyan</string>
   <string name="ThemePink">Pink</string>

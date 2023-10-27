@@ -2816,16 +2816,24 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return chatId != 0 && canClearHistory(chat(chatId));
   }
 
-  public boolean canClearHistoryForEveryone (long chatId) {
-    return chatId != 0 && canClearHistoryForEveryone(chat(chatId));
-  }
-
   public boolean canClearHistory (TdApi.Chat chat) {
     return chat != null && chat.lastMessage != null && (chat.canBeDeletedOnlyForSelf || chat.canBeDeletedForAllUsers);
   }
 
-  public boolean canClearHistoryForEveryone (TdApi.Chat chat) {
+  public boolean canClearHistoryForAllUsers (long chatId) {
+    return chatId != 0 && canClearHistoryForAllUsers(chat(chatId));
+  }
+
+  public boolean canClearHistoryForAllUsers (TdApi.Chat chat) {
     return chat != null && chat.lastMessage != null && chat.canBeDeletedForAllUsers;
+  }
+
+  public boolean canClearHistoryOnlyForSelf (long chatId) {
+    return chatId != 0 && canClearHistoryOnlyForSelf(chat(chatId));
+  }
+
+  public boolean canClearHistoryOnlyForSelf (TdApi.Chat chat) {
+    return chat != null && chat.lastMessage != null && chat.canBeDeletedOnlyForSelf;
   }
 
   public boolean canAddToOtherChat (TdApi.Chat chat) {

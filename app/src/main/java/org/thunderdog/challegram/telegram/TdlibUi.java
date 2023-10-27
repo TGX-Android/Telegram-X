@@ -32,6 +32,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.IdRes;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
@@ -4252,7 +4253,11 @@ public class TdlibUi extends Handler {
   }
 
   private void showClearHistoryConfirm (ViewController<?> context, final long chatId, @Nullable Runnable after) {
-    if (tdlib.canRevokeChat(chatId) || tdlib.canClearHistoryForEveryone(chatId)) {
+    showClearHistoryConfirm(context, chatId, after, false);
+  }
+
+  private void showClearHistoryConfirm (ViewController<?> context, final long chatId, @Nullable Runnable after, boolean isSecondaryConfirm) {
+    if (tdlib.canRevokeChat(chatId) || (tdlib.canClearHistoryForAllUsers(chatId) && tdlib.canClearHistoryOnlyForSelf(chatId))) {
       context.showSettings(new SettingsWrapBuilder(R.id.btn_removeChatFromList)
         .setAllowResize(false)
         .addHeaderItem(tdlib.isSelfChat(chatId) ? Lang.getMarkdownString(context, R.string.ClearSavedMessagesConfirm) : Lang.getString(R.string.ClearHistoryConfirm))
@@ -4274,15 +4279,37 @@ public class TdlibUi extends Handler {
           U.run(after);
         }));
     } else {
+      final boolean revoke = !tdlib.canClearHistoryOnlyForSelf(chatId);
+      final boolean needSecondaryConfirm;
+      final CharSequence info;
+      final String confirmButton;
+      @DrawableRes int confirmButtonIcon = isSecondaryConfirm ? R.drawable.baseline_delete_forever_24 : R.drawable.templarian_baseline_broom_24;
+      if (tdlib.isSelfChat(chatId)) {
+        needSecondaryConfirm = true;
+        info = Lang.getMarkdownString(context, isSecondaryConfirm ? R.string.ClearSavedMessagesSecondaryConfirm : R.string.ClearSavedMessagesConfirm);
+        confirmButton = Lang.getString(isSecondaryConfirm ? R.string.ClearSavedMessages : R.string.ClearHistory);
+      } else if (tdlib.isChannel(chatId)) {
+        needSecondaryConfirm = true;
+        info = Lang.getMarkdownString(context, isSecondaryConfirm ? R.string.ClearChannelSecondaryConfirm : R.string.ClearChannelConfirm);
+        confirmButton = Lang.getString(isSecondaryConfirm ? R.string.ClearChannel : R.string.ClearHistoryAll);
+      } else {
+        needSecondaryConfirm = false;
+        info = Lang.getString(revoke ? R.string.ClearHistoryAllConfirm : R.string.ClearHistoryConfirm);
+        confirmButton = Lang.getString(revoke ? R.string.ClearHistoryAll : R.string.ClearHistory);
+      }
       context.showOptions(
-        tdlib.isSelfChat(chatId) ? Lang.getMarkdownString(context, R.string.ClearSavedMessagesConfirm) : Lang.getString(R.string.ClearHistoryConfirm),
+        info,
         new int[]{R.id.btn_clearChatHistory, R.id.btn_cancel},
-        new String[]{Lang.getString(R.string.ClearHistory), Lang.getString(R.string.Cancel)},
+        new String[]{confirmButton, Lang.getString(R.string.Cancel)},
         new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL},
-        new int[]{R.drawable.templarian_baseline_broom_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        new int[]{confirmButtonIcon, R.drawable.baseline_cancel_24}, (itemView, id) -> {
           if (id == R.id.btn_clearChatHistory) {
-            tdlib.client().send(new TdApi.DeleteChatHistory(chatId, false, false), tdlib.okHandler());
-            U.run(after);
+            if (needSecondaryConfirm) {
+              showClearHistoryConfirm(context, chatId, after, true);
+            } else {
+              tdlib.client().send(new TdApi.DeleteChatHistory(chatId, false, false), tdlib.okHandler());
+              U.run(after);
+            }
           }
           return true;
         });
