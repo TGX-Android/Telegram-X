@@ -4218,7 +4218,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       ids.append(R.id.btn_setPasscode);
       strings.append(R.string.PasscodeTitle);
     }
-    tdlib.ui().addDeleteChatOptions(getChatId(), ids, strings, true, false);
+    tdlib.ui().addDeleteChatOptions(getChatId(), ids, strings, !tdlib.isChannel(chat.id), false);
 
     if (!messagesHidden) {
       if (ChatId.isUserChat(chat.id)) {

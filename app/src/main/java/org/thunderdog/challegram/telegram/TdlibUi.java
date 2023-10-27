@@ -3979,7 +3979,7 @@ public class TdlibUi extends Handler {
       showDeleteChatConfirm(context, chatId, false, actionId == R.id.btn_removeChatFromListAndStop, after);
       return true;
     } else if (actionId == R.id.btn_removeChatFromListOrClearHistory) {
-      showDeleteChatConfirm(context, chatId, true, tdlib.suggestStopBot(chatId), after);
+      showDeleteChatConfirm(context, chatId, !tdlib.isChannel(chatId), tdlib.suggestStopBot(chatId), after);
       return true;
     } else if (actionId == R.id.btn_clearChatHistory) {
       showClearHistoryConfirm(context, chatId, after);
@@ -4304,10 +4304,10 @@ public class TdlibUi extends Handler {
         new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL},
         new int[]{confirmButtonIcon, R.drawable.baseline_cancel_24}, (itemView, id) -> {
           if (id == R.id.btn_clearChatHistory) {
-            if (needSecondaryConfirm) {
+            if (needSecondaryConfirm && !isSecondaryConfirm) {
               showClearHistoryConfirm(context, chatId, after, true);
             } else {
-              tdlib.client().send(new TdApi.DeleteChatHistory(chatId, false, false), tdlib.okHandler());
+              tdlib.client().send(new TdApi.DeleteChatHistory(chatId, false, revoke), tdlib.okHandler());
               U.run(after);
             }
           }
