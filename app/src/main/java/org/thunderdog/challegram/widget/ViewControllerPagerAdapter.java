@@ -30,7 +30,7 @@ import java.util.Set;
 
 import me.vkryl.core.lambda.Destroyable;
 
-public class ViewControllerPagerAdapter extends PagerAdapter implements Destroyable {
+public class ViewControllerPagerAdapter extends PagerAdapter implements Destroyable, ViewController.AttachListener {
   public interface ControllerProvider {
     int getControllerCount ();
     ViewController<?> createControllerForPosition (int position);
@@ -45,11 +45,14 @@ public class ViewControllerPagerAdapter extends PagerAdapter implements Destroya
   public ViewControllerPagerAdapter (@NonNull ControllerProvider provider) {
     this.provider = provider;
     this.controllers = new SparseArrayCompat<>();
-    provider.getParentOrSelf().addAttachStateListener((context, navigation, isAttached) -> {
-      for (ViewController<?> c : visibleControllers) {
-        c.onAttachStateChanged(navigation, isAttached);
-      }
-    });
+    provider.getParentOrSelf().addAttachStateListener(this);
+  }
+
+  @Override
+  public void onAttachStateChanged (ViewController<?> context, NavigationController navigation, boolean isAttached) {
+    for (ViewController<?> c : visibleControllers) {
+      c.onAttachStateChanged(navigation, isAttached);
+    }
   }
 
   public void notifyItemInserted (int index) {
