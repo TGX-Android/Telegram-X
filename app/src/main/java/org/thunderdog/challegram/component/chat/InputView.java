@@ -137,9 +137,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   private CharSequence placeholderTitleText;
   private CharSequence placeholderSubtitleText;
 
-  private BoolAnimator showPlaceholder = new BoolAnimator(0, (a, b, c, d) -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
-  private BoolAnimator hasSubPlaceholder = new BoolAnimator(0, (a, b, c, d) -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
-  private ReplaceAnimator<Text> subtitleReplaceAnimator = new ReplaceAnimator<>(a -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
+  private final BoolAnimator showPlaceholder = new BoolAnimator(0, (a, b, c, d) -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
+  private final BoolAnimator hasSubPlaceholder = new BoolAnimator(0, (a, b, c, d) -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
+  private final ReplaceAnimator<Text> subtitleReplaceAnimator = new ReplaceAnimator<>(a -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
 
   // TODO: get rid of chat-related logic inside of InputView
   private @Nullable MessagesController controller;
@@ -808,7 +808,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
     final boolean hasText = s.length() > 0;
     setAllowsAnyGravity(hasText);
-    showPlaceholder.setValue(!hasText, !hasText && UI.inUiThread());
+    showPlaceholder.setValue(!hasText, !hasText && needAnimateChanges());
   }
 
   @Override
@@ -854,6 +854,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     invalidate();
   }
 
+  private boolean needAnimateChanges () {
+    return UI.inUiThread() && boundController.getParentOrSelf().needsTempUpdates() && boundController.getParentOrSelf().isFocused();
+  }
+
   public void checkPlaceholderWidth () {
     if ((lastPlaceholderRes != 0 || !StringUtils.isEmpty(placeholderTitleText)) && controller != null) {
       int availWidth = Math.max(0, getMeasuredWidth() - controller.getHorizontalInputPadding() - getPaddingLeft());
@@ -866,9 +870,11 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         placeholderSubTitle = !StringUtils.isEmpty(placeholderSubtitleText) ? new Text.Builder(tdlib, placeholderSubtitleText, null, availWidth, Paints.robotoStyleProvider(Screen.px(getTextSize()) / 3f * 2f), TextColorSets.PLACEHOLDER, null)
           .singleLine().clipTextArea().build() : null;
 
-        subtitleReplaceAnimator.replace(placeholderSubTitle, UI.inUiThread());
+        boolean needAnimateChanges = needAnimateChanges();
 
-        hasSubPlaceholder.setValue(placeholderSubTitle != null, UI.inUiThread());
+        subtitleReplaceAnimator.replace(placeholderSubTitle, needAnimateChanges);
+
+        hasSubPlaceholder.setValue(placeholderSubTitle != null, needAnimateChanges);
 
         if (rawPlaceholderWidth <= availWidth) {
           //setHint(rawPlaceholder);
