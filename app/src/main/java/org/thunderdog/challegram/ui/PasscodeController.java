@@ -1026,7 +1026,7 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
   private boolean fingerUsed;
 
   private void checkFingerprintNeeded () {
-    boolean need = this.needFinger && context.getActivityState() == UI.STATE_RESUMED;
+    boolean need = this.needFinger && context.getActivityState() == UI.State.RESUMED;
     if (fingerUsed != need) {
       if (need) {
         FingerprintPassword.authenticate(this);

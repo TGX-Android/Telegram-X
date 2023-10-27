@@ -396,7 +396,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   @Override
   @UiThread
   public void onUiStateChanged (int newState) {
-    boolean hasUi = newState != UI.STATE_DESTROYED && newState != UI.STATE_UNKNOWN;
+    boolean hasUi = newState != UI.State.DESTROYED && newState != UI.State.UNKNOWN;
     if (this.hasUi != hasUi) {
       this.hasUi = hasUi;
       for (TdlibAccount account : accounts) {

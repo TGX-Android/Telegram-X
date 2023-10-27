@@ -2612,7 +2612,7 @@ public class TdlibUi extends Handler {
         showLinkTooltip(context.tdlib(), R.drawable.baseline_warning_24, TD.toErrorString(error), openParameters);
       } else {
         tdlib.ui().post(() -> {
-          if (context.context().getActivityState() != UI.STATE_DESTROYED) {
+          if (context.context().getActivityState() != UI.State.DESTROYED) {
             showLanguageInstallPrompt(context, info);
           }
         });

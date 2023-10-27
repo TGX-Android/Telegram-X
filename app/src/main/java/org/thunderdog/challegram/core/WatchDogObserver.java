@@ -170,7 +170,7 @@ public class WatchDogObserver {
 
   private void onChange (boolean isProbablyImage, boolean isExternal) {
     synchronized (this) {
-      if (isProbablyImage && UI.getUiState() == UI.STATE_RESUMED) {
+      if (isProbablyImage && UI.getUiState() == UI.State.RESUMED) {
         checkScreenshots(isExternal);
       }
     }

@@ -98,7 +98,7 @@ public class LiveLocationManager implements LocationHelper.LocationChangeListene
     // this.context = context;
     this.handler = new UiHandler(this);
     this.helper = new LocationHelper(UI.getAppContext(), this, false, true);
-    this.isResumed = UI.getUiState() == UI.STATE_RESUMED;
+    this.isResumed = UI.getUiState() == UI.State.RESUMED;
     UI.addStateListener(this);
   }
 
@@ -364,7 +364,7 @@ public class LiveLocationManager implements LocationHelper.LocationChangeListene
   @Override
   public void onUiStateChanged (int newState) {
     synchronized (this) {
-      boolean isResumed = newState == UI.STATE_RESUMED;
+      boolean isResumed = newState == UI.State.RESUMED;
       if (this.isResumed != isResumed) {
         this.isResumed = isResumed;
         rescheduleLocationWorker(); // changes timeout

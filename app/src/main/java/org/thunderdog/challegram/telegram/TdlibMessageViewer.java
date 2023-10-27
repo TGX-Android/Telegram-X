@@ -22,6 +22,7 @@ import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.TDLib;
@@ -173,6 +174,7 @@ public class TdlibMessageViewer {
     LongSet visibleProtectedMessageIds = new LongSet();
     LongSet refreshMessageIds = new LongSet();
     boolean haveRecentlyViewedMessages;
+    boolean awaitingUiResumeForRefresh, awaitingIgnoreLocksForRefresh;
     int maxRefreshDate;
   }
 
@@ -342,7 +344,7 @@ public class TdlibMessageViewer {
     }
 
     private void checkRefreshInteractionInfo () {
-      boolean needRefreshInteractionInfo = state.refreshMessageIds.size() > 0;
+      boolean needRefreshInteractionInfo = !viewport.isDestroyed() && state.refreshMessageIds.size() > 0;
       long maxMessageId = needRefreshInteractionInfo ? state.refreshMessageIds.max() : 0;
       int maxDate;
       if (needRefreshInteractionInfo) {
@@ -353,17 +355,23 @@ public class TdlibMessageViewer {
       } else {
         maxDate = 0;
       }
-      if (state.maxRefreshDate != maxDate) {
+      boolean forceRefresh = cancelPostponedRefresh();
+      if (state.maxRefreshDate != maxDate || (maxDate != 0 && forceRefresh)) {
         cancelRefresh();
         state.maxRefreshDate = maxDate;
         if (maxDate != 0) {
-          long refreshTimeout = timeTillNextRefresh(viewport.context.tdlib.currentTimeMillis() - TimeUnit.SECONDS.toMillis(maxDate));
+          long refreshTimeout = Math.max(1500L,
+            timeTillNextRefresh(viewport.context.tdlib.currentTimeMillis() - TimeUnit.SECONDS.toMillis(maxDate))
+          );
+          if (forceRefresh) {
+            refreshTimeout = Math.min(refreshTimeout, 3000L);
+          }
           scheduleRefresh(refreshTimeout);
         }
       }
     }
 
-    private final Runnable refreshAct = this::refreshInteractionInfo;
+    private final Runnable refreshAct = () -> refreshInteractionInfo(true);
 
     private void cancelRefresh () {
       if (state.maxRefreshDate != 0) {
@@ -373,22 +381,73 @@ public class TdlibMessageViewer {
     }
 
     private void scheduleRefresh (long timeoutMs) {
-      viewport.context.tdlib.ui().postDelayed(refreshAct, timeoutMs);
+      if (timeoutMs > 0) {
+        viewport.context.tdlib.ui().postDelayed(refreshAct, timeoutMs);
+      } else {
+        refreshInteractionInfo(true);
+      }
     }
 
-    private void refreshInteractionInfo () {
-      if (!state.refreshMessageIds.isEmpty() && !viewport.isDestroyed() && !viewport.needIgnore()) {
-        if (BuildConfig.DEBUG) {
-          UI.showToast("refresh views for" + state.refreshMessageIds.size() + " message(s)", Toast.LENGTH_SHORT);
+    protected void notifyViewportLockValueChanged () {
+      if (state.awaitingIgnoreLocksForRefresh && !viewport.needIgnore()) {
+        refreshInteractionInfo(false);
+      }
+    }
+
+    private final BaseActivity.SimpleStateListener activityListener = (activity, newState, prevState) -> {
+      if (newState == UI.State.RESUMED && state.awaitingUiResumeForRefresh) {
+        refreshInteractionInfo(false);
+      }
+    };
+
+    private boolean cancelPostponedRefresh () {
+      boolean result = state.awaitingIgnoreLocksForRefresh || state.awaitingUiResumeForRefresh;
+      state.awaitingIgnoreLocksForRefresh = false;
+      if (state.awaitingUiResumeForRefresh) {
+        if (viewport.activity != null) {
+          viewport.activity.removeSimpleStateListener(activityListener);
         }
-        viewport.refreshMessageInteractionInfo(chatId, state.refreshMessageIds.toArray(), null);
+        state.awaitingUiResumeForRefresh = false;
+      }
+      return result;
+    }
+
+    private void refreshInteractionInfo (boolean byTimeout) {
+      cancelPostponedRefresh();
+      if (!byTimeout) {
+        cancelRefresh();
+      } else {
+        state.maxRefreshDate = 0;
+      }
+      if (!state.refreshMessageIds.isEmpty() && !viewport.isDestroyed()) {
+        if (viewport.needIgnore()) {
+          state.awaitingIgnoreLocksForRefresh = true;
+          if (BuildConfig.DEBUG) {
+            UI.showToast("Scheduling views refresh until lock changes", Toast.LENGTH_SHORT);
+          }
+          return;
+        }
+        if (viewport.activity != null && viewport.activity.getActivityState() != UI.State.RESUMED) {
+          state.awaitingUiResumeForRefresh = true;
+          viewport.activity.addSimpleStateListener(activityListener);
+          if (BuildConfig.DEBUG) {
+            UI.showToast("Scheduling views refresh until activity resume", Toast.LENGTH_SHORT);
+          }
+          return;
+        }
+        if (BuildConfig.DEBUG) {
+          UI.showToast("refresh views for " + state.refreshMessageIds.size() + " message(s), byTimeout: " + byTimeout, Toast.LENGTH_SHORT);
+        }
+        viewport.refreshMessageInteractionInfo(chatId, state.refreshMessageIds.toArray(), success ->
+          viewport.runOnUiThreadOptional(this::checkRefreshInteractionInfo)
+        );
       }
     }
 
     private static long timeTillNextRefresh (long millis) {
       long seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
       if (seconds < 15) {
-        return millis % 3000; // once per 3 seconds for the first 15 seconds
+        return Math.abs(millis) % 3000; // once per 3 seconds for the first 15 seconds
       }
       if (seconds < 60) {
         return millis % 5000; // once per 5 seconds for 15-60 seconds
@@ -406,6 +465,9 @@ public class TdlibMessageViewer {
     @Override
     public void performDestroy () {
       cancelRefresh();
+      if (state.awaitingUiResumeForRefresh && viewport.activity != null) {
+        viewport.activity.removeSimpleStateListener(activityListener);
+      }
     }
   }
 
@@ -417,9 +479,10 @@ public class TdlibMessageViewer {
   }
 
   public static class Viewport implements Destroyable {
-    private TdlibMessageViewer context;
+    private final TdlibMessageViewer context;
 
     public final TdApi.MessageSource messageSource;
+    private final BaseActivity activity;
     public final List<VisibleChat> visibleChats = new ArrayList<>();
     private final ViewportState state = new ViewportState();
     private final List<FutureBool> ignoreLocks = new ArrayList<>();
@@ -458,9 +521,14 @@ public class TdlibMessageViewer {
       });
     }
 
-    public Viewport (TdlibMessageViewer context, TdApi.MessageSource messageSource) {
+    private final ViewController.AttachListener attachListener = (context, navigation, isAttached) -> {
+      notifyLockValueChanged();
+    };
+
+    public Viewport (TdlibMessageViewer context, TdApi.MessageSource messageSource, @Nullable BaseActivity activity) {
       this.context = context;
       this.messageSource = messageSource;
+      this.activity = activity;
     }
 
     public void addIgnoreLock (FutureBool act) {
@@ -473,6 +541,9 @@ public class TdlibMessageViewer {
 
     public void notifyLockValueChanged () {
       context.checkNeedRestrictScreenshots();
+      for (VisibleChat visibleChat : visibleChats) {
+        visibleChat.notifyViewportLockValueChanged();
+      }
     }
 
     private boolean needIgnore () {
@@ -763,20 +834,17 @@ public class TdlibMessageViewer {
     listeners.remove(listener);
   }
 
-  private final ViewController.AttachListener attachListener = (context, navigation, isAttached) ->
-    checkNeedRestrictScreenshots();
-
   private final List<Viewport> viewports = new ArrayList<>();
 
   public Viewport createViewport (TdApi.MessageSource source, @Nullable ViewController<?> target) {
-    Viewport viewport = new Viewport(this, source);
+    Viewport viewport = new Viewport(this, source, target != null ? target.context() : null);
     if (target != null) {
       viewport.addIgnoreLock(() ->
         !target.getAttachState()
       );
       target.addDisallowScreenshotReason(viewport::needRestrictScreenshots);
-      target.addAttachStateListener(attachListener);
-      target.addDestroyListener(() -> target.removeAttachStateListener(attachListener));
+      target.addAttachStateListener(viewport.attachListener);
+      target.addDestroyListener(() -> target.removeAttachStateListener(viewport.attachListener));
     }
     viewports.add(viewport);
     return viewport;

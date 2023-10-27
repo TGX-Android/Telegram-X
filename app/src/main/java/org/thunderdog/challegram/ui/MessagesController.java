@@ -9462,7 +9462,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private CancellableRunnable broadcastActor;
 
   private void checkBroadcastingSomeAction () {
-    boolean needBroadcast = broadcastingAction != 0 && context.getActivityState() == UI.STATE_RESUMED && !isDestroyed();
+    boolean needBroadcast = broadcastingAction != 0 && context.getActivityState() == UI.State.RESUMED && !isDestroyed();
     if (this.broadcastingSomeAction != needBroadcast) {
       if (needBroadcast) {
         broadcastActor = new CancellableRunnable() {

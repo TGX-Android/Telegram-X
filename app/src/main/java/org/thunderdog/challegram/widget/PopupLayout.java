@@ -321,7 +321,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
         return;
       }
       int state = context.getActivityState();
-      if (state == UI.STATE_RESUMED) {
+      if (state == UI.State.RESUMED) {
         try {
           window.showAtLocation(windowAnchorView = anchorView, Gravity.NO_GRAVITY, 0, 0);
           window.setBackgroundDrawable(new RootDrawable(UI.getContext(getContext())));
@@ -349,7 +349,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
             context.removeSimpleStateListener(this);
             return;
           }
-          if (newState == UI.STATE_RESUMED) {
+          if (newState == UI.State.RESUMED) {
             context.removeSimpleStateListener(this);
             if (!isTemporarilyHidden) {
               showSystemWindow(anchorView);
