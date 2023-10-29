@@ -8529,6 +8529,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
           .setSticker(nextSetReactionAnimation.reaction.staticCenterAnimationSicker(), false)
           .setAnimationEndListener(this::onQuickReactionAnimationFinish)
+          .setRepaintingColorIds(ColorId.text, ColorId.text)
           .setAnimatedPosition(
             new Point(startX, startY),
             new Point(finishX, finishY),
@@ -8546,6 +8547,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
           .setSticker(nextSetReactionAnimation.reaction.staticCenterAnimationSicker(), false)
           .setAnimationEndListener(this::onQuickReactionAnimationFinish)
+          .setRepaintingColorIds(ColorId.text, ColorId.text)
           .setAnimatedPosition(
             new Point(startX, startY),
             new Point(finishX, finishY),
@@ -8667,6 +8669,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       context().reactionsOverlayManager().addOverlay(
         new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
           .setSticker(overlaySticker, true)
+          .setRepaintingColorIds(ColorId.text, ColorId.text)
           .setUseDefaultSprayAnimation(tgReaction.isCustom())
           .setEmojiStatusEffect(tgReaction.isCustom() ? tgReaction.newCenterAnimationSicker() : null)
           .setPosition(new Point(bubbleX, bubbleY), Screen.dp(90))
