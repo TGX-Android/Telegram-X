@@ -394,11 +394,12 @@ public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterCh
   // Internal
 
   private void addChatToList (Entry entry, Tdlib.ChatChange changeInfo) {
-    int atIndex = Collections.binarySearch(this.list, entry, this);
-    if (atIndex >= 0)
-      throw new IllegalStateException();
-    atIndex = atIndex * -1 - 1;
+    int atIndex;
     synchronized (list) {
+      atIndex = Collections.binarySearch(this.list, entry, this);
+      if (atIndex >= 0)
+        throw new IllegalStateException();
+      atIndex = atIndex * -1 - 1;
       list.add(atIndex, entry);
     }
     for (RunnableData<TdApi.Chat> perChatCallback : perChatCallbacks) {

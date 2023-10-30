@@ -543,6 +543,9 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
             return true;
           }
         }
+        if (currentPreview.updateRelatedMessage(chatId, messageId, newContent, this)) {
+          return true;
+        }
       }
       if (chat.lastMessage.id == messageId) {
         chat.lastMessage.content = newContent;
@@ -555,7 +558,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
 
   public boolean updateMessagesDeleted (long chatId, long[] messageIds) {
     if (chat.id == chatId && chat.lastMessage != null) {
-      if (ArrayUtils.indexOf(messageIds, chat.lastMessage.id) >= 0) {
+      if (ArrayUtils.contains(messageIds, chat.lastMessage.id)) {
         chat.lastMessage = null;
         setText();
         return true;
@@ -566,7 +569,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
         if (album != null) {
           boolean albumChanged = false;
           for (int index = album.messages.size() - 1; index >= 0; index--) {
-            if (ArrayUtils.indexOf(messageIds, album.messages.get(index).id) >= 0) {
+            if (ArrayUtils.contains(messageIds, album.messages.get(index).id)) {
               album.messages.remove(index);
               albumChanged = true;
             }
@@ -578,6 +581,10 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
           if (albumChanged) {
             setContentPreview(ContentPreview.getAlbumPreview(tdlib, chat.lastMessage, album, true));
           }
+        }
+        if (currentPreview.belongsToRelatedMessage(chatId, messageIds)) {
+          setText();
+          return true;
         }
       }
       return true;

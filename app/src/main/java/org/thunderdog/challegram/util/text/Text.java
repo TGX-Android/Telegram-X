@@ -645,6 +645,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return builtInEmojiCount;
   }
 
+  public boolean hasBuiltInEmoji () {
+    return getEmojiCount() > 0;
+  }
+
   @Override
   public boolean incrementEmojiCount () {
     builtInEmojiCount++;
@@ -2856,9 +2860,9 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
           TextEntity entity = part.getClickableEntity();
           boolean done = false;
           if (clickListener != null) {
-            done = clickListener.onClick(view, this, part, entity != null ? entity.openParameters(view, this, part) : new TdlibUi.UrlOpenParameters().tooltip(part.newTooltipBuilder(view)));
+            done = clickListener.onClick(view, this, part, entity != null ? entity.openParameters(view, this, part, false) : new TdlibUi.UrlOpenParameters().tooltip(part.newTooltipBuilder(view)));
           } else if (entity != null) {
-            entity.performClick(view, this, part, callback);
+            entity.performClick(view, this, part, callback, false);
             done = true;
           }
           cancelTouch();

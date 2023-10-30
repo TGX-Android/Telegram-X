@@ -288,7 +288,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
         int moreSize = stickerSet.getFullSize() - stickerSet.getSize();
         collapseView.setText(Lang.pluralBold(showMoreRes, moreSize));
       } else {
-        collapseView.setText(R.string.ShowLessStickers);
+        collapseView.setText(Lang.getString(R.string.ShowLessStickers));
       }
       collapseView.setVisibility(View.VISIBLE);
     } else {

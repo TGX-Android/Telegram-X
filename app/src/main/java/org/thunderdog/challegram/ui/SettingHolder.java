@@ -1489,7 +1489,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
           secretState.setLayoutParams(params);
           secretState.setCompoundDrawablesWithIntrinsicBounds(secretIcon, null, null, null);
           secretState.setCompoundDrawablePadding(Screen.dp(8));
-          secretState.setText(R.string.SessionSecretChats);
+          secretState.setText(Lang.getString(R.string.SessionSecretChats));
           secretState.setTextColor(Theme.getColor(ColorId.textSecure));
           secretState.setAllCaps(true);
           secretState.setGravity(Gravity.CENTER_VERTICAL);

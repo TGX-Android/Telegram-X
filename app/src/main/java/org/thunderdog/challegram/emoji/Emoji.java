@@ -111,6 +111,7 @@ public class Emoji {
   }
 
   public final int emojiOriginalSize;
+  public final int sampleSize;
 
   private Emoji () {
     this.bitmaps = new EmojiBitmaps(Settings.instance().getEmojiPackIdentifier());
@@ -122,8 +123,8 @@ public class Emoji {
 
     this.defaultTone = Settings.instance().getEmojiDefaultTone();
 
-    final int sampleSize = EmojiBitmaps.calculateSampleSize();
-    emojiOriginalSize = (int) (30 * EmojiCode.SCALE) / sampleSize;
+    this.sampleSize = EmojiBitmaps.calculateSampleSize();
+    this.emojiOriginalSize = (int) (30 * EmojiCode.SCALE) / sampleSize;
 
     int totalCount = EmojiData.getTotalDataCount();
     this.rects = new HashMap<>(totalCount);

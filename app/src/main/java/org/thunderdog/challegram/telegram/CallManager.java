@@ -85,7 +85,7 @@ public class CallManager implements GlobalCallListener {
     if (currentCall == null || call == null) {
       this.currentCallTdlib = tdlib;
       this.currentCall = call;
-      this.currentCallAcknowledged = call == null || UI.getUiState() != UI.STATE_RESUMED || UI.isNavigationBusyWithSomething();
+      this.currentCallAcknowledged = call == null || UI.getUiState() != UI.State.RESUMED || UI.isNavigationBusyWithSomething();
       if (currentCallAcknowledged) {
         notifyCallListeners();
       }
@@ -98,7 +98,7 @@ public class CallManager implements GlobalCallListener {
         intent.putExtra("account_id", tdlib.id());
         intent.putExtra("call_id", call.id);
         serviceCancellationSignal = new CancellationSignal();
-        UI.startService(intent, UI.getUiState() != UI.STATE_RESUMED, true, serviceCancellationSignal);
+        UI.startService(intent, UI.getUiState() != UI.State.RESUMED, true, serviceCancellationSignal);
 
         navigateToCallController(currentCallTdlib, currentCall);
       }
@@ -218,7 +218,7 @@ public class CallManager implements GlobalCallListener {
 
   private boolean navigateToCallController (Tdlib tdlib, TdApi.Call call) {
     BaseActivity activity = UI.getUiContext();
-    if (activity != null && activity.getActivityState() == UI.STATE_RESUMED) {
+    if (activity != null && activity.getActivityState() == UI.State.RESUMED) {
       NavigationController navigation = UI.getNavigation();
       if (navigation != null) {
         ViewController<?> c = !navigation.isAnimating() ? navigation.getCurrentStackItem() : null;

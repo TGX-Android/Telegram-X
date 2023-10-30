@@ -28,6 +28,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.ReactionsListAnimator;
 import org.thunderdog.challegram.util.text.Counter;
@@ -904,14 +905,12 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     }
 
     public void drawReactionInBubble (MessageView view, Canvas c, float x, float y, float visibility, int appearTypeFlags) {
-      final boolean hasScaleSaved = visibility != 1f && (BitwiseUtils.hasFlag(appearTypeFlags, TYPE_APPEAR_SCALE_FLAG));
+      final boolean hasScale = visibility != 1f && (BitwiseUtils.hasFlag(appearTypeFlags, TYPE_APPEAR_SCALE_FLAG));
       final float alpha = BitwiseUtils.hasFlag(appearTypeFlags, TYPE_APPEAR_OPACITY_FLAG) ? visibility : 1f;
 
-      c.save();
+      final int restoreToCount = Views.save(c);
       c.translate(x, y);
-
-      if (hasScaleSaved) {
-        c.save();
+      if (hasScale) {
         c.scale(visibility, visibility, 0, 0);
       }
 
@@ -966,11 +965,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
         //}
       }
 
-      if (hasScaleSaved) {
-        c.restore();
-      }
-
-      c.restore();
+      Views.restore(c, restoreToCount);
     }
 
     public void setHidden (boolean isHidden) {

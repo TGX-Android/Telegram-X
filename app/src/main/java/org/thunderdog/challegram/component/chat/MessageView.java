@@ -1168,6 +1168,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     TdApi.ChatMemberStatus myStatus = m.tdlib().chatStatus(m.getChatId());
 
     RunnableData<TdApi.ChatMember> showOptions = (member) -> {
+      if (ids.isEmpty()) {
+        return;
+      }
       m.showOptions(null, ids.get(), strings.get(), colors.get(), icons.get(), (optionItemView, id) -> {
         int optionItemId = optionItemView.getId();
         if (optionItemId == R.id.btn_restrictMember) {

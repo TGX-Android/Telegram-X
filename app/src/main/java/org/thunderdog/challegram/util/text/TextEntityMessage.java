@@ -398,7 +398,7 @@ public class TextEntityMessage extends TextEntity {
   }
 
   @Override
-  public void performClick (View view, Text text, TextPart part, @Nullable Text.ClickCallback callback) {
+  public void performClick (View view, Text text, TextPart part, @Nullable Text.ClickCallback callback, boolean isFromLongPressMenu) {
     final ViewController<?> context = findRoot(view);
     if (context == null) {
       Log.v("performClick ignored, because ancestor not found");
@@ -412,7 +412,7 @@ public class TextEntityMessage extends TextEntity {
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR: {
 
         String link = Td.substring(text.getText(), clickableEntity);
-        TdlibUi.UrlOpenParameters openParameters = this.openParameters(view, text, part);
+        TdlibUi.UrlOpenParameters openParameters = this.openParameters(view, text, part, isFromLongPressMenu);
         if (callback == null || !callback.onUrlClick(view, link, false, openParameters)) {
           if (tdlib != null) {
             tdlib.ui().openUrl(context, link, modifyUrlOpenParameters(openParameters, callback, link));
@@ -422,7 +422,7 @@ public class TextEntityMessage extends TextEntity {
       }
       case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR: {
         String link = ((TdApi.TextEntityTypeTextUrl) clickableEntity.type).url;
-        TdlibUi.UrlOpenParameters openParameters = this.openParameters(view, text, part);
+        TdlibUi.UrlOpenParameters openParameters = this.openParameters(view, text, part, isFromLongPressMenu);
         if (callback == null || !callback.onUrlClick(view, link, true, openParameters)) {
           context.openLinkAlert(link, modifyUrlOpenParameters(openParameters, callback, link));
         }
@@ -439,7 +439,7 @@ public class TextEntityMessage extends TextEntity {
         String username = Td.substring(text.getText(), clickableEntity);
         if (callback == null || !callback.onUsernameClick(username)) {
           if (tdlib != null) {
-            tdlib.ui().openPublicChat(context, username, this.openParameters(view, text, part));
+            tdlib.ui().openPublicChat(context, username, this.openParameters(view, text, part, isFromLongPressMenu));
           }
         }
         break;
@@ -448,7 +448,7 @@ public class TextEntityMessage extends TextEntity {
         TdApi.TextEntityTypeMentionName mentionEntity = (TdApi.TextEntityTypeMentionName) clickableEntity.type;
         if (callback == null || !callback.onUserClick(mentionEntity.userId)) {
           if (tdlib != null) {
-            tdlib.ui().openPrivateProfile(context, mentionEntity.userId, this.openParameters(view, text, part));
+            tdlib.ui().openPrivateProfile(context, mentionEntity.userId, this.openParameters(view, text, part, isFromLongPressMenu));
           }
         }
         break;
@@ -657,7 +657,7 @@ public class TextEntityMessage extends TextEntity {
           TD.shareLink(new TdlibContext(context.context(), tdlib), copyText);
         }
       } else if (id == R.id.btn_openLink) {
-        performClick(itemView, text, part, clickCallback);
+        performClick(itemView, text, part, clickCallback, true);
       }
       return true;
     }, clickCallback != null ? clickCallback.getForcedTheme(view, text) : null);

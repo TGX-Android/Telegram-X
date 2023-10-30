@@ -2690,6 +2690,7 @@ public class TD {
       case "Invalid chat identifier specified": res = R.string.error_ChatInfoNotFound; break;
       case "Message must be non-empty": res = R.string.MessageInputEmpty; break;
       case "Not Found": res = R.string.error_NotFound; break;
+      case "Can't access the chat": res = R.string.errorChatInaccessible; break;
       case "The maximum number of pinned chats exceeded": return Lang.plural(R.string.ErrorPinnedChatsLimit, TdlibManager.instance().current().pinnedChatsMaxCount());
       default: {
         String lookup = StringUtils.toCamelCase(message);
@@ -3202,10 +3203,6 @@ public class TD {
     return offset >= file.local.downloadOffset && offset <= file.local.downloadOffset + file.local.downloadedPrefixSize + ByteUnit.KIB.toBytes(512);
   }
 
-  public static boolean canVote (TdApi.Poll poll) {
-    return !needShowResults(poll);
-  }
-
   public static boolean isMultiChoice (TdApi.Poll poll) {
     return poll.type.getConstructor() == TdApi.PollTypeRegular.CONSTRUCTOR && ((TdApi.PollTypeRegular) poll.type).allowMultipleAnswers;
   }
@@ -3225,16 +3222,6 @@ public class TD {
   public static boolean hasSelectedOption (TdApi.Poll poll) {
     for (TdApi.PollOption option : poll.options) {
       if (option.isBeingChosen)
-        return true;
-    }
-    return false;
-  }
-
-  public static boolean needShowResults (TdApi.Poll poll) {
-    if (poll.isClosed)
-      return true;
-    for (TdApi.PollOption option : poll.options) {
-      if (option.isChosen)
         return true;
     }
     return false;
@@ -4727,12 +4714,14 @@ public class TD {
       return null;
     if (text.entities == null || text.entities.length == 0)
       return text.text;
-    TdApi.Object result = Client.execute(new TdApi.GetMarkdownText(text));
-    if (!(result instanceof TdApi.FormattedText)) {
-      Log.w("getMarkdownText: %s", result);
+    TdApi.FormattedText formattedText;
+    try {
+      formattedText = Client.execute(new TdApi.GetMarkdownText(text));
+    } catch (Client.ExecutionError error) {
+      Log.w("getMarkdownText: %s", TD.toErrorString(error.error));
       return text.text;
     }
-    return toCharSequence((TdApi.FormattedText) result, true, true);
+    return toCharSequence(formattedText, true, true);
   }
 
   private static HtmlTag toHtmlTag (TdApi.TextEntityType entityType) {

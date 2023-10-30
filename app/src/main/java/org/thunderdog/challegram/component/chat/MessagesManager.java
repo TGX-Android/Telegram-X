@@ -731,9 +731,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       }
 
       @Override
-      public void onMessageViewed (TdlibMessageViewer.Viewport viewport, View view, TdApi.Message message, long flags, long viewId, boolean allowRequest) {
+      public boolean onMessageViewed (TdlibMessageViewer.Viewport viewport, View view, TdApi.Message message, long flags, long viewId, boolean allowRequest) {
         if (inSpecialMode() || !allowRequest)
-          return;
+          return false;
         MessageProvider provider = (MessageProvider) view;
         TGMessage msg = provider.getMessage();
         if (msg.markAsViewed() || msg.containsUnreadReactions()) {
@@ -744,7 +744,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           if (msg.containsUnreadReactions() && messageId > lastViewedReactionMessageId) {
             lastViewedReactionMessageId = messageId;
           }
+          return true;
         }
+        return false;
       }
 
       @Override
@@ -1766,8 +1768,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
-  private void replaceMessageContent (TGMessage msg, int index, long messageId, TdApi.MessageContent content) {
-    switch (msg.setMessageContent(messageId, content)) {
+  private void replaceMessageContent (TGMessage msg, int index, long chatId, long messageId, TdApi.MessageContent content) {
+    switch (msg.replaceMessageContent(chatId, messageId, content)) {
       case TGMessage.MESSAGE_INVALIDATED: {
         invalidateViewAt(index);
         break;
@@ -1793,14 +1795,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     controller.onMessageChanged(chatId, messageId, content);
     ArrayList<TGMessage> items = adapter.getItems();
     if (!adapter.isEmpty() && items != null) {
-      int i = 0;
+      int index = 0;
       for (TGMessage item : items) {
-        if (item.isDescendantOrSelf(messageId)) {
-          replaceMessageContent(item, i, messageId, content);
-        } else {
-          item.replaceReplyContent(chatId, messageId, content);
-        }
-        i++;
+        replaceMessageContent(item, index, chatId, messageId, content);
+        index++;
       }
     }
     ThreadInfo messageThread = loader.getMessageThread();
@@ -1913,6 +1911,28 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
+  private void handleMessageChange (TGMessage msg, int index, long messageId, @TGMessage.MessageChangeType int changeType) {
+    switch (changeType) {
+      case TGMessage.MESSAGE_INVALIDATED: {
+        invalidateViewAt(index);
+        break;
+      }
+      case TGMessage.MESSAGE_CHANGED: {
+        getAdapter().notifyItemChanged(index);
+        break;
+      }
+      case TGMessage.MESSAGE_NOT_CHANGED: {
+        // Nothing to do
+        break;
+      }
+      case TGMessage.MESSAGE_REPLACE_REQUIRED: {
+        TdApi.Message message = msg.getMessage(messageId);
+        replaceMessage(msg, index, messageId, message);
+        break;
+      }
+    }
+  }
+
   public void updateMessagesDeleted (long chatId, long[] messageIds) {
     controller.removeReply(messageIds);
     controller.onMessagesDeleted(chatId, messageIds);
@@ -1926,14 +1946,17 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     ThreadInfo messageThread = loader.getMessageThread();
     long lastReadInboxMessageId = messageThread != null ? messageThread.getLastReadInboxMessageId() : chat.lastReadInboxMessageId;
 
-    int i = 0;
-    main: while (i < adapter.getMessageCount()) {
-      TGMessage item = adapter.getMessage(i);
+    int index = 0;
+    main: while (index < adapter.getMessageCount()) {
+      TGMessage item = adapter.getMessage(index);
 
       for (long messageId : messageIds) {
         switch (item.removeMessage(messageId)) {
           case TGMessage.REMOVE_NOTHING: {
-            item.removeReply(chatId, messageId);
+            @TGMessage.MessageChangeType int changeType = item.removeMessagePreview(chatId, messageId);
+            if (changeType != TGMessage.MESSAGE_NOT_CHANGED) {
+              handleMessageChange(item, index, messageId, changeType);
+            }
             break;
           }
           case TGMessage.REMOVE_COMBINATION: {
@@ -1951,7 +1974,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
             }
           }
           case TGMessage.REMOVE_COMPLETELY: {
-            TGMessage removed = adapter.removeItem(i);
+            TGMessage removed = adapter.removeItem(index);
             if (controller.unselectMessage(messageId, removed)) {
               selectedCount--;
               unselectedSomeMessages = true;
@@ -1968,7 +1991,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         }
       }
 
-      i++;
+      index++;
     }
 
     if (unselectedSomeMessages) {

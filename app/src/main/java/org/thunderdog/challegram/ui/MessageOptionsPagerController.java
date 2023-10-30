@@ -786,6 +786,9 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
   private void onReactionClick (View v, TGReaction reaction, boolean isLongClick) {
     if (isLongClick) {
+      if (Config.DISABLE_ANONYMOUS_NON_OWNER_REACTIONS && tdlib.isAnonymousAdminNonCreator(state.message.getChatId())) {
+        return;
+      }
       int[] positionCords = new int[2];
       v.getLocationOnScreen(positionCords);
 
@@ -807,6 +810,10 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       int startY = positionCords[1] + v.getMeasuredHeight() / 2;
 
       boolean hasReaction = state.message.getMessageReactions().hasReaction(reaction.type);
+      if (Config.DISABLE_ANONYMOUS_NON_OWNER_REACTIONS && !hasReaction && tdlib.isAnonymousAdminNonCreator(state.message.getChatId())) {
+        tooltipManager().builder(v).show(tdlib, R.string.error_ANONYMOUS_REACTIONS_DISABLED).hideDelayed();
+        return;
+      }
       if (!Config.PROTECT_ANONYMOUS_REACTIONS || hasReaction || state.message.messagesController().callNonAnonymousProtection(state.message.getId() + reaction.getId(), tooltipManager().builder(v))) {
         if (state.message.getMessageReactions().toggleReaction(reaction.type, false, true, handler(v, () -> {
         }))) {

@@ -17,7 +17,9 @@ import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.PropertyId;
 import org.thunderdog.challegram.theme.Theme;
@@ -227,6 +229,18 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
 
   public boolean requestUser (Tdlib tdlib, long userId, @Options int options) {
     return requestData(tdlib, DataType.USER, userId, null, null, null, null, options);
+  }
+
+  public boolean requestAccount (Tdlib tdlib, int accountId, @Options int options) {
+    // TODO subscribe for updates
+    TdlibAccount account = TdlibManager.instanceForAccountId(accountId).account(accountId);
+    AvatarPlaceholder.Metadata placeholder = account.getAvatarPlaceholderMetadata();
+    ImageFile imageFile = account.getAvatarFile(false);
+    if (imageFile != null) {
+      return requestSpecific(tdlib, imageFile, options);
+    } else {
+      return requestPlaceholder(tdlib, placeholder, options);
+    }
   }
 
   public boolean isDisplayingUser (long userId) {

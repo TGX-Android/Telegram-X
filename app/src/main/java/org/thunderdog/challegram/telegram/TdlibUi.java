@@ -32,6 +32,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.IdRes;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
@@ -2613,7 +2614,7 @@ public class TdlibUi extends Handler {
         showLinkTooltip(context.tdlib(), R.drawable.baseline_warning_24, TD.toErrorString(error), openParameters);
       } else {
         tdlib.ui().post(() -> {
-          if (context.context().getActivityState() != UI.STATE_DESTROYED) {
+          if (context.context().getActivityState() != UI.State.DESTROYED) {
             showLanguageInstallPrompt(context, info);
           }
         });
@@ -3984,7 +3985,7 @@ public class TdlibUi extends Handler {
       showDeleteChatConfirm(context, chatId, false, actionId == R.id.btn_removeChatFromListAndStop, after);
       return true;
     } else if (actionId == R.id.btn_removeChatFromListOrClearHistory) {
-      showDeleteChatConfirm(context, chatId, true, false, after);
+      showDeleteChatConfirm(context, chatId, !tdlib.isChannel(chatId), tdlib.suggestStopBot(chatId), after);
       return true;
     } else if (actionId == R.id.btn_clearChatHistory) {
       showClearHistoryConfirm(context, chatId, after);
@@ -4225,14 +4226,14 @@ public class TdlibUi extends Handler {
 
   // Delete chats
 
-  private @StringRes int getDeleteChatStringRes (long chatId) {
+  private @StringRes int getDeleteChatStringRes (long chatId, boolean allowBlock) {
     TdApi.Chat chat = tdlib.chat(chatId);
     if (chat == null)
       return R.string.DeleteChat;
     switch (ChatId.getType(chatId)) {
       case TdApi.ChatTypePrivate.CONSTRUCTOR:
       case TdApi.ChatTypeSecret.CONSTRUCTOR: {
-        return tdlib.suggestStopBot(chat) ? R.string.DeleteAndStop : R.string.DeleteChat;
+        return allowBlock && tdlib.suggestStopBot(chat) ? R.string.DeleteAndStop : R.string.DeleteChat;
       }
       case TdApi.ChatTypeBasicGroup.CONSTRUCTOR: {
         TdApi.BasicGroup basicGroup = tdlib.chatToBasicGroup(chatId);
@@ -4258,7 +4259,11 @@ public class TdlibUi extends Handler {
   }
 
   private void showClearHistoryConfirm (ViewController<?> context, final long chatId, @Nullable Runnable after) {
-    if (tdlib.canRevokeChat(chatId) || tdlib.canClearHistoryForEveryone(chatId)) {
+    showClearHistoryConfirm(context, chatId, after, false);
+  }
+
+  private void showClearHistoryConfirm (ViewController<?> context, final long chatId, @Nullable Runnable after, boolean isSecondaryConfirm) {
+    if (tdlib.canRevokeChat(chatId) || (tdlib.canClearHistoryForAllUsers(chatId) && tdlib.canClearHistoryOnlyForSelf(chatId))) {
       context.showSettings(new SettingsWrapBuilder(R.id.btn_removeChatFromList)
         .setAllowResize(false)
         .addHeaderItem(tdlib.isSelfChat(chatId) ? Lang.getMarkdownString(context, R.string.ClearSavedMessagesConfirm) : Lang.getString(R.string.ClearHistoryConfirm))
@@ -4280,15 +4285,37 @@ public class TdlibUi extends Handler {
           U.run(after);
         }));
     } else {
+      final boolean revoke = !tdlib.canClearHistoryOnlyForSelf(chatId);
+      final boolean needSecondaryConfirm;
+      final CharSequence info;
+      final String confirmButton;
+      @DrawableRes int confirmButtonIcon = isSecondaryConfirm ? R.drawable.baseline_delete_forever_24 : R.drawable.templarian_baseline_broom_24;
+      if (tdlib.isSelfChat(chatId)) {
+        needSecondaryConfirm = true;
+        info = Lang.getMarkdownString(context, isSecondaryConfirm ? R.string.ClearSavedMessagesSecondaryConfirm : R.string.ClearSavedMessagesConfirm);
+        confirmButton = Lang.getString(isSecondaryConfirm ? R.string.ClearSavedMessages : R.string.ClearHistory);
+      } else if (tdlib.isChannel(chatId)) {
+        needSecondaryConfirm = true;
+        info = Lang.getMarkdownString(context, isSecondaryConfirm ? R.string.ClearChannelSecondaryConfirm : R.string.ClearChannelConfirm);
+        confirmButton = Lang.getString(isSecondaryConfirm ? R.string.ClearChannel : R.string.ClearHistoryAll);
+      } else {
+        needSecondaryConfirm = false;
+        info = Lang.getString(revoke ? R.string.ClearHistoryAllConfirm : R.string.ClearHistoryConfirm);
+        confirmButton = Lang.getString(revoke ? R.string.ClearHistoryAll : R.string.ClearHistory);
+      }
       context.showOptions(
-        tdlib.isSelfChat(chatId) ? Lang.getMarkdownString(context, R.string.ClearSavedMessagesConfirm) : Lang.getString(R.string.ClearHistoryConfirm),
+        info,
         new int[]{R.id.btn_clearChatHistory, R.id.btn_cancel},
-        new String[]{Lang.getString(R.string.ClearHistory), Lang.getString(R.string.Cancel)},
+        new String[]{confirmButton, Lang.getString(R.string.Cancel)},
         new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL},
-        new int[]{R.drawable.templarian_baseline_broom_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        new int[]{confirmButtonIcon, R.drawable.baseline_cancel_24}, (itemView, id) -> {
           if (id == R.id.btn_clearChatHistory) {
-            tdlib.client().send(new TdApi.DeleteChatHistory(chatId, false, false), tdlib.okHandler());
-            U.run(after);
+            if (needSecondaryConfirm && !isSecondaryConfirm) {
+              showClearHistoryConfirm(context, chatId, after, true);
+            } else {
+              tdlib.client().send(new TdApi.DeleteChatHistory(chatId, false, revoke), tdlib.okHandler());
+              U.run(after);
+            }
           }
           return true;
         });
@@ -4299,12 +4326,12 @@ public class TdlibUi extends Handler {
     showDeleteChatConfirm(context, chatId, false, tdlib.suggestStopBot(chatId), null);
   }
 
-  private void showDeleteOrClearHistory (final ViewController<?> context, final long chatId, final CharSequence chatName, final Runnable onDelete, final boolean allowClearHistory, Runnable after) {
+  private void showDeleteOrClearHistory (final ViewController<?> context, final long chatId, final CharSequence chatName, final Runnable onDelete, final boolean allowClearHistory, final boolean allowBlock, Runnable after) {
     if (!allowClearHistory || !tdlib.canClearHistory(chatId)) {
       onDelete.run();
       return;
     }
-    context.showOptions(chatName, new int[] {R.id.btn_removeChatFromList, R.id.btn_clearChatHistory}, new String[] {Lang.getString(getDeleteChatStringRes(chatId)), Lang.getString(R.string.ClearHistory)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.templarian_baseline_broom_24}, (itemView, id) -> {
+    context.showOptions(chatName, new int[] {R.id.btn_removeChatFromList, R.id.btn_clearChatHistory}, new String[] {Lang.getString(getDeleteChatStringRes(chatId, allowBlock)), Lang.getString(R.string.ClearHistory)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.templarian_baseline_broom_24}, (itemView, id) -> {
       if (id == R.id.btn_removeChatFromList) {
         onDelete.run();
       } else if (id == R.id.btn_clearChatHistory) {
@@ -4399,7 +4426,7 @@ public class TdlibUi extends Handler {
               return true;
             });
           }
-        }, allowClearHistory, after);
+        }, allowClearHistory, deleteAndStop, after);
         break;
       }
       case TdApi.ChatTypeSecret.CONSTRUCTOR: {
@@ -4446,7 +4473,7 @@ public class TdlibUi extends Handler {
               return true;
             });
           }
-        }, allowClearHistory, after);
+        }, allowClearHistory, blockUser, after);
         break;
       }
       case TdApi.ChatTypeBasicGroup.CONSTRUCTOR: {
@@ -4462,11 +4489,11 @@ public class TdlibUi extends Handler {
                 return true;
               });
             }
-          }, allowClearHistory, after);
+          }, allowClearHistory, blockUser, after);
         break;
       }
       case TdApi.ChatTypeSupergroup.CONSTRUCTOR: {
-        showDeleteOrClearHistory(context, chatId, tdlib.chatTitle(chatId), () -> leaveJoinChat(context, chatId, false, after), allowClearHistory, after);
+        showDeleteOrClearHistory(context, chatId, tdlib.chatTitle(chatId), () -> leaveJoinChat(context, chatId, false, after), allowClearHistory, blockUser, after);
         break;
       }
     }
@@ -4779,7 +4806,7 @@ public class TdlibUi extends Handler {
         context.showOptions(Lang.getString(R.string.AreYouSureDeleteInviteLink), new int[] {R.id.btn_deleteLink, R.id.btn_cancel}, new String[] {Lang.getString(R.string.InviteLinkDelete), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
           if (id2 == R.id.btn_deleteLink) {
             if (onLinkDeleted != null) onLinkDeleted.run();
-            context.tdlib().client().send(new TdApi.DeleteRevokedChatInviteLink(chatId, link.inviteLink), null);
+            context.tdlib().client().send(new TdApi.DeleteRevokedChatInviteLink(chatId, link.inviteLink), tdlib.okHandler());
           }
 
           return true;
@@ -6871,7 +6898,7 @@ public class TdlibUi extends Handler {
   }
 
   public interface MessageViewCallback {
-    void onMessageViewed (TdlibMessageViewer.Viewport viewport, View view, TdApi.Message message, @TdlibMessageViewer.Flags long flags, long viewId, boolean allowRequest);
+    boolean onMessageViewed (TdlibMessageViewer.Viewport viewport, View view, TdApi.Message message, @TdlibMessageViewer.Flags long flags, long viewId, boolean allowRequest);
     default boolean needForceRead (TdlibMessageViewer.Viewport viewport) {
       return false;
     }
@@ -6918,7 +6945,7 @@ public class TdlibUi extends Handler {
             if (provider.isSponsoredMessage()) {
               TdApi.SponsoredMessage sponsoredMessage = provider.getVisibleSponsoredMessage();
               long chatId = provider.getVisibleChatId();
-              if (sponsoredMessage != null && viewport.addVisibleMessage(chatId, sponsoredMessage, flags, viewId)) {
+              if (sponsoredMessage != null && viewport.addVisibleMessage(chatId, sponsoredMessage, flags, viewId, false)) {
                 if (callback != null) {
                   callback.onSponsoredMessageViewed(viewport, view, sponsoredMessage, flags, viewId, allowViewRequest);
                 }
@@ -6928,21 +6955,19 @@ public class TdlibUi extends Handler {
               List<TdApi.Message> mediaGroup = provider.getVisibleMediaGroup();
               if (mediaGroup != null) {
                 for (TdApi.Message message : mediaGroup) {
-                  if (viewport.addVisibleMessage(message, flags, viewId)) {
-                    if (callback != null) {
-                      callback.onMessageViewed(viewport, view, message, flags, viewId, allowViewRequest);
-                    }
+                  boolean forceMarkAsRecent = callback != null && callback.onMessageViewed(viewport, view, message, flags, viewId, allowViewRequest);
+                  if (viewport.addVisibleMessage(message, flags, viewId, forceMarkAsRecent)) {
                     viewedMessageCount++;
                   }
                 }
               }
             } else {
               TdApi.Message message = provider.getVisibleMessage();
-              if (message != null && viewport.addVisibleMessage(message, flags, viewId)) {
-                if (callback != null) {
-                  callback.onMessageViewed(viewport, view, message, flags, viewId, allowViewRequest);
+              if (message != null) {
+                boolean forceMarkAsRecent = callback != null && callback.onMessageViewed(viewport, view, message, flags, viewId, allowViewRequest);
+                if (viewport.addVisibleMessage(message, flags, viewId, forceMarkAsRecent)) {
+                  viewedMessageCount++;
                 }
-                viewedMessageCount++;
               }
             }
           }

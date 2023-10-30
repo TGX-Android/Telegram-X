@@ -2392,6 +2392,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     };
   }
 
+  public ResultHandler<TdApi.Ok> typedOkHandler () {
+    return (ok, error) -> {
+      if (error != null) {
+        UI.showError(error);
+      }
+    };
+  }
+
   public Client.ResultHandler okHandler (@Nullable Runnable after) {
     return after != null ? object -> {
       switch (object.getConstructor()) {
@@ -2856,16 +2864,24 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return chatId != 0 && canClearHistory(chat(chatId));
   }
 
-  public boolean canClearHistoryForEveryone (long chatId) {
-    return chatId != 0 && canClearHistoryForEveryone(chat(chatId));
-  }
-
   public boolean canClearHistory (TdApi.Chat chat) {
     return chat != null && chat.lastMessage != null && (chat.canBeDeletedOnlyForSelf || chat.canBeDeletedForAllUsers);
   }
 
-  public boolean canClearHistoryForEveryone (TdApi.Chat chat) {
+  public boolean canClearHistoryForAllUsers (long chatId) {
+    return chatId != 0 && canClearHistoryForAllUsers(chat(chatId));
+  }
+
+  public boolean canClearHistoryForAllUsers (TdApi.Chat chat) {
     return chat != null && chat.lastMessage != null && chat.canBeDeletedForAllUsers;
+  }
+
+  public boolean canClearHistoryOnlyForSelf (long chatId) {
+    return chatId != 0 && canClearHistoryOnlyForSelf(chat(chatId));
+  }
+
+  public boolean canClearHistoryOnlyForSelf (TdApi.Chat chat) {
+    return chat != null && chat.lastMessage != null && chat.canBeDeletedOnlyForSelf;
   }
 
   public boolean canAddToOtherChat (TdApi.Chat chat) {
@@ -10000,6 +10016,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       return false;
     }).onAddRemove(this::onJobAdded, this::onJobRemoved),
     initializationListeners = new ConditionalExecutor(() -> authorizationStatus() != Status.UNKNOWN).onAddRemove(this::onJobAdded, this::onJobRemoved), // Executed once received authorization state
+    myUserOrUnauthorizedListeners = new ConditionalExecutor(() -> {
+      int status = authorizationStatus();
+      return status != Status.UNKNOWN && (status == Status.UNAUTHORIZED || myUser() != null);
+    }).onAddRemove(this::onJobAdded, this::onJobRemoved),
     connectionListeners = new ConditionalExecutor(() -> authorizationStatus() != Status.UNKNOWN && connectionState == ConnectionState.CONNECTED).onAddRemove(this::onJobAdded, this::onJobRemoved), // Executed once connected
     notificationInitListeners = new ConditionalExecutor(() -> {
       final int status = authorizationStatus();
@@ -10013,6 +10033,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   @AnyThread
   public void awaitInitialization (@NonNull Runnable after) {
     initializationListeners.executeOrPostponeTask(after);
+  }
+
+  @AnyThread
+  public void awaitMyUserOrUnauthorizedState (@NonNull Runnable after) {
+    myUserOrUnauthorizedListeners.executeOrPostponeTask(after);
   }
 
   @AnyThread
@@ -10612,6 +10637,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
             return new RestrictionStatus(chat.id, RESTRICTION_STATUS_RESTRICTED, 0);
           }
         }
+        if (!TD.checkRight(chat.permissions, rightId)) {
+          return new RestrictionStatus(chat.id, RESTRICTION_STATUS_RESTRICTED, 0);
+        }
         return null;
       }
       case TdApi.ChatTypeSecret.CONSTRUCTOR: {
@@ -10632,6 +10660,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
             if (userFullInfo != null && userFullInfo.hasRestrictedVoiceAndVideoNoteMessages) {
               return new RestrictionStatus(chat.id, RESTRICTION_STATUS_RESTRICTED, 0);
             }
+          }
+          if (!TD.checkRight(chat.permissions, rightId)) {
+            return new RestrictionStatus(chat.id, RESTRICTION_STATUS_RESTRICTED, 0);
           }
         }
         return new RestrictionStatus(chat.id, RESTRICTION_STATUS_UNAVAILABLE, 0);

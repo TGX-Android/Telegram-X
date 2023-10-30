@@ -396,7 +396,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   @Override
   @UiThread
   public void onUiStateChanged (int newState) {
-    boolean hasUi = newState != UI.STATE_DESTROYED && newState != UI.STATE_UNKNOWN;
+    boolean hasUi = newState != UI.State.DESTROYED && newState != UI.State.UNKNOWN;
     if (this.hasUi != hasUi) {
       this.hasUi = hasUi;
       for (TdlibAccount account : accounts) {
@@ -428,8 +428,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   }
 
   public static void setTestLabConfig () {
-    Client.execute(new TdApi.SetLogVerbosityLevel(5));
-    Client.execute(new TdApi.SetLogStream(new TdApi.LogStreamDefault()));
+    try {
+      Client.execute(new TdApi.SetLogVerbosityLevel(5));
+      Client.execute(new TdApi.SetLogStream(new TdApi.LogStreamDefault()));
+    } catch (Client.ExecutionError ignored) { }
     Log.setLogLevel(Log.LEVEL_VERBOSE);
   }
 
@@ -1044,10 +1046,6 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return new AccountConfig(currentAccount, accounts, preferredAccountId);
   }
 
-  private int binlogSize () {
-    return binlogSize(accounts.size());
-  }
-
   public static int binlogSize (int accountsNum) {
     return BINLOG_PREFIX_SIZE + accountsNum * TdlibAccount.SIZE_PER_ENTRY;
   }
@@ -1056,7 +1054,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     int saveCount = 0;
     final int accountNum = accounts.size();
 
-    final int binlogSize = binlogSize();
+    final int binlogSize = binlogSize(accountNum);
     final long currentLen = r.length();
 
     final boolean canOptimize;
@@ -1337,7 +1335,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return accounts.get(accountId);
   }
 
-  public int accountIdForUserId (int userId, int startIndex) {
+  public int accountIdForUserId (long userId, int startIndex) {
     for (int i = startIndex; i < accounts.size(); i++) {
       if (accounts.get(i).getKnownUserId() == userId) {
         return i;
@@ -2247,8 +2245,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   private static long deleteLogFiles (int mode) {
     if (UI.TEST_MODE != UI.TEST_MODE_AUTO) {
-      Client.execute(new TdApi.SetLogVerbosityLevel(0));
-      Client.execute(new TdApi.SetLogStream(new TdApi.LogStreamEmpty()));
+      try {
+        Client.execute(new TdApi.SetLogVerbosityLevel(0));
+        Client.execute(new TdApi.SetLogStream(new TdApi.LogStreamEmpty()));
+      } catch (Client.ExecutionError ignored) { }
     }
 
     long removedSize;
@@ -2457,21 +2457,25 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   public static TdApi.LanguagePackStringValue getString (String languageDatabasePath, String key, @NonNull String languagePackId) {
     if (StringUtils.isEmpty(key))
       return null;
-    final TdApi.Object result = Client.execute(new TdApi.GetLanguagePackString(languageDatabasePath, BuildConfig.LANGUAGE_PACK, languagePackId, key));
-    if (result == null)
+    final TdApi.LanguagePackStringValue value;
+    try {
+      value = Client.execute(new TdApi.GetLanguagePackString(languageDatabasePath, BuildConfig.LANGUAGE_PACK, languagePackId, key));
+    } catch (Client.ExecutionError error) {
+      if (error.error.code != 404) {
+        Log.e("getString %s error:%s, languagePackId:%s", key, TD.toErrorString(error.error), languagePackId);
+      }
       return null;
-    switch (result.getConstructor()) {
+    }
+    switch (value.getConstructor()) {
       case TdApi.LanguagePackStringValueOrdinary.CONSTRUCTOR:
       case TdApi.LanguagePackStringValuePluralized.CONSTRUCTOR:
-        return (TdApi.LanguagePackStringValue) result;
+        return value;
       case TdApi.LanguagePackStringValueDeleted.CONSTRUCTOR:
         return null;
-      case TdApi.Error.CONSTRUCTOR:
-        if (((TdApi.Error) result).code != 404)
-          Log.e("getString %s error:%s, languagePackId:%s", key, TD.toErrorString(result), languagePackId);
-        return null;
+      default:
+        Td.assertLanguagePackStringValue_11536986();
+        throw Td.unsupported(value);
     }
-    return null;
   }
 
   private TdApi.LanguagePackStringValue getString (String key, @NonNull String languagePackId) {

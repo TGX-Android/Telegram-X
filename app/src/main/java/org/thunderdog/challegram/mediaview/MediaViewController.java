@@ -4124,7 +4124,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         ThumbView thumbView = ThumbViewHolder.getThumbView(child);
         MediaItem item = thumbView.getItem();
         ThumbItems items = thumbView.getItems();
-        if (items != null && thumbView.preview.isInsideReceiver(x, y)) {
+        if (items != null && thumbView.getPreviewReceiver().isInsideReceiver(x, y)) {
           if (controller.fastShowMediaItem(item, items, items.indexOf(item), true)) {
             ViewUtils.onClick(this);
             return;
@@ -4140,6 +4140,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     private ThumbItems items;
     private MediaItem item;
+
+    private Receiver getPreviewReceiver () {
+      return item != null && item.isAvatar() ? avatarReceiver : this.preview;
+    }
 
     public ThumbView (Context context, RecyclerView drawTarget) {
       super(context);
@@ -4275,7 +4279,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       float expandFactor = items != null ? items.getExpandFactor(item) * expandAllowance : 0f;
       int thumbWidth = thumbStartWidth + (int) ((float) (thumbEndWidth - thumbStartWidth) * expandFactor);
 
-      Receiver preview = item != null && item.isAvatar() ? avatarReceiver : this.preview;
+      Receiver preview = getPreviewReceiver();
       if (alpha != 1f) {
         preview.setPaintAlpha(alpha);
       }
@@ -6189,11 +6193,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
           TextView textView = Views.newTextView(context(), 14f, Theme.getColor(ColorId.white), Gravity.LEFT, Views.TEXT_FLAG_SINGLE_LINE);
           textView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, Screen.dp(15f), Screen.dp(10f), Screen.dp(15f), 0));
-          textView.setText(R.string.QualityWorse);
+          textView.setText(Lang.getString(R.string.QualityWorse));
           qualityControlWrap.addView(textView);
           textView = Views.newTextView(context(), 14f, Theme.getColor(ColorId.white), Gravity.RIGHT, Views.TEXT_FLAG_SINGLE_LINE);
           textView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.RIGHT | Gravity.TOP, Screen.dp(15f), Screen.dp(10f), Screen.dp(15f), 0));
-          textView.setText(R.string.QualityBetter);
+          textView.setText(Lang.getString(R.string.QualityBetter));
           qualityControlWrap.addView(textView);
 
           qualityInfo = Views.newTextView(context(), 15f, Theme.getColor(ColorId.white), Gravity.CENTER, Views.TEXT_FLAG_SINGLE_LINE);

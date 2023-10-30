@@ -84,6 +84,7 @@ import org.thunderdog.challegram.telegram.TdlibEmojiManager;
 import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.PropertyId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeManager;
@@ -149,6 +150,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.LongList;
 import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.lambda.CancellableRunnable;
+import me.vkryl.core.lambda.FutureBool;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceList;
@@ -332,7 +334,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       @Override
       public void onClick (View v, TGReactions.MessageReactionEntry entry) {
         boolean hasReaction = messageReactions.hasReaction(entry.getReactionType());
-        if (!Config.PROTECT_ANONYMOUS_REACTIONS || hasReaction || messagesController().callNonAnonymousProtection(getId() + entry.hashCode(), TGMessage.this, getReactionBubbleLocationProvider(entry))) {
+        if (Config.DISABLE_ANONYMOUS_NON_OWNER_REACTIONS && !hasReaction && tdlib.isAnonymousAdminNonCreator(msg.chatId)) {
+          showReactionBubbleTooltip(v, entry, Lang.getString(R.string.error_ANONYMOUS_REACTIONS_DISABLED));
+        } else if (!Config.PROTECT_ANONYMOUS_REACTIONS || hasReaction || messagesController().callNonAnonymousProtection(getId() + entry.hashCode(), TGMessage.this, getReactionBubbleLocationProvider(entry))) {
           boolean needAnimation = messageReactions.toggleReaction(entry.getReactionType(), false, false, handler(v, entry, () -> {
           }));
           if (needAnimation) {
@@ -1022,9 +1026,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
             boolean needAnimateChanges = needAnimateChanges();
             openingComments.setValue(false, needAnimateChanges);
             if (isChannel()) {
-              UI.showToast(R.string.ChannelPostDeleted, Toast.LENGTH_SHORT);
+              showCommentButtonError(Lang.getString(R.string.ChannelPostDeleted));
             } else {
-              UI.showError(result);
+              showCommentButtonError(TD.toErrorString(result));
             }
             break;
           }
@@ -1034,11 +1038,22 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
             break;
           }
           openingComments.setValue(false, needAnimateChanges());
-          UI.showError(result);
+          showCommentButtonError(TD.toErrorString(result));
           break;
         }
       }
     }));
+  }
+
+  private void showCommentButtonError (String text) {
+    View view = findCurrentView();
+    if (!needCommentButton() || view == null) {
+      UI.showToast(text, Toast.LENGTH_SHORT);
+      return;
+    }
+    buildContentHint(view, (targetView, outRect) ->
+      commentButton.getRect(outRect), false
+    ).show(tdlib, text).hideDelayed();
   }
 
   private int computeBubbleHeight () {
@@ -1534,7 +1549,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     paint.setAlpha(255);
 
-    c.save();
+    final int restoreToCount = Views.save(c);
 
     offset = Screen.dp(18f);
     float shadowLeft, shadowTop, shadowRight, shadowBottom;
@@ -1586,7 +1601,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       cx = tx; cy = ty;
     }
 
-    c.restore();
+    Views.restore(c, restoreToCount);
   }
 
   public static void drawCornerFixes (Canvas c, TGMessage source, float factor, float left, float top, float right, float bottom, float topLeftRadius, float topRightRadius, float bottomRightRadius, float bottomLeftRadius) {
@@ -3357,21 +3372,54 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     replyData.load();
   }
 
-  public final void replaceReplyContent (long chatId, long messageId, TdApi.MessageContent newContent) {
-    if (Td.equalsTo(msg.replyTo, chatId, messageId) && replyData != null) {
-      replyData.replaceMessageContent(messageId, newContent);
+  @MessageChangeType
+  private int performContentfulUpdate (FutureBool act) {
+    int height = getHeight();
+    int width = getWidth();
+    int contentWidth = getContentWidth();
+    boolean updated = act.getBoolValue();
+    if (updated) {
+      if (width != getWidth() || contentWidth != getContentWidth()) {
+        buildMarkup();
+      }
+      return height == getHeight() ? MESSAGE_INVALIDATED : MESSAGE_CHANGED;
     }
+    return MESSAGE_NOT_CHANGED;
+  }
+
+  @MessageChangeType
+  public final int replaceMessagePreview (long chatId, long messageId, TdApi.MessageContent newContent) {
+    return performContentfulUpdate(() -> {
+      boolean replyUpdated = Td.equalsTo(msg.replyTo, chatId, messageId) && replyData != null;
+      if (replyUpdated) {
+        replyData.replaceMessageContent(messageId, newContent);
+      }
+      return handleMessagePreviewChange(chatId, messageId, newContent) || replyUpdated;
+    });
+  }
+
+  protected boolean handleMessagePreviewChange (long chatId, long messageId, TdApi.MessageContent newContent) {
+    return false;
+  }
+
+  @MessageChangeType
+  public final int removeMessagePreview (long chatId, long messageId) {
+    return performContentfulUpdate(() -> {
+      boolean replyUpdated = Td.equalsTo(msg.replyTo, chatId, messageId) && replyData != null;
+      if (replyUpdated) {
+        replyData.deleteMessageContent(messageId);
+      }
+      return handleMessagePreviewDelete(chatId, messageId) || replyUpdated;
+    });
+  }
+
+  protected boolean handleMessagePreviewDelete (long chatId, long messageId) {
+    return false;
   }
 
   public final void replaceReplyTranslation (long chatId, long messageId, @Nullable TdApi.FormattedText translation) {
     if (Td.equalsTo(msg.replyTo, chatId, messageId) && replyData != null) {
       replyData.replaceMessageTranslation(messageId, translation);
-    }
-  }
-
-  public final void removeReply (long chatId, long messageId) {
-    if (Td.equalsTo(msg.replyTo, chatId, messageId) && replyData != null) {
-      replyData.deleteMessageContent(messageId);
     }
   }
 
@@ -4436,17 +4484,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return msg.unreadReactions != null && msg.unreadReactions.length > 0;
   }
 
-  public final void readReactions () {
-    synchronized (this) {
-      if (combinedMessages != null) {
-        for (TdApi.Message message : combinedMessages) {
-          message.unreadReactions = new TdApi.UnreadReaction[0];
-        }
-      }
-      msg.unreadReactions = new TdApi.UnreadReaction[0];
-    }
-  }
-
   public final boolean containsUnreadMention () {
     synchronized (this) {
       if (combinedMessages != null) {
@@ -4917,16 +4954,15 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       }
       result = true;
     }
-    if (containsUnreadReactions()) {
-      if (!BitwiseUtils.hasFlag(flags, FLAG_IGNORE_REACTIONS_VIEW)) {
-        highlightUnreadReactions();
-        highlight(true);
-        tdlib.ui().postDelayed(() -> {
-          flags = BitwiseUtils.setFlag(flags, FLAG_IGNORE_REACTIONS_VIEW, false);
-        }, 500L);
-        tdlib().ui().post(this::readReactions);
-      }
+    if (containsUnreadReactions() && !BitwiseUtils.hasFlag(flags, FLAG_IGNORE_REACTIONS_VIEW)) {
       flags |= FLAG_IGNORE_REACTIONS_VIEW;
+
+      highlightUnreadReactions();
+      highlight(true);
+      tdlib.ui().postDelayed(() -> {
+        flags = BitwiseUtils.setFlag(flags, FLAG_IGNORE_REACTIONS_VIEW, false);
+      }, 500L);
+
       result = true;
     }
     return result;
@@ -5088,7 +5124,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   @MessageChangeType
-  public int setMessageContent (long messageId, TdApi.MessageContent newContent) {
+  public int replaceMessageContent (long chatId, long messageId, TdApi.MessageContent newContent) {
+    if (msg.chatId != chatId || !isDescendantOrSelf(messageId)) {
+      return replaceMessagePreview(chatId, messageId, newContent);
+    }
     TdApi.Message message;
     boolean isBottomMessage;
     synchronized (this) {
@@ -5100,8 +5139,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         message = msg;
         isBottomMessage = true;
       } else {
-        return MESSAGE_NOT_CHANGED;
+        message = null;
+        isBottomMessage = false;
       }
+    }
+    if (message == null) {
+      return MESSAGE_NOT_CHANGED;
     }
     if ((flags & FLAG_UNSUPPORTED) != 0) {
       if (message.content.getConstructor() == TdApi.MessageUnsupported.CONSTRUCTOR && newContent.getConstructor() != TdApi.MessageUnsupported.CONSTRUCTOR) {
@@ -6699,7 +6742,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
 
     int positionOffset = -(int) (verticalFactor * height);
-    c.save();
+    final int restoreToCount = Views.save(c);
     c.clipRect(0, startY, view.getMeasuredWidth(), endY);
     for (int a = 0; a < actions.size(); a++) {
       SwipeQuickAction action = actions.get(a);
@@ -6712,7 +6755,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         height > Screen.dp(256) ? (int) (mInitialTouchY - getHeaderPadding() + xHeaderPadding) : (height / 2)
       );
     }
-    c.restore();
+    Views.restore(c, restoreToCount);
   }
 
   private float getTranslatePositionFactor (boolean isLeft, int position) {
@@ -6739,12 +6782,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     c.drawCircle(cx, cy, radius2, Paints.fillingPaint(ColorUtils.alphaColor(alpha, getBubbleButtonBackgroundColor())));
 
     if (icon != null) {
-      c.save();
+      final int restoreToCount = Views.save(c);
       c.scale((Lang.rtl() ? -.8f : .8f) * scale, .8f * scale, cx, cy);
       icon.setAlpha((int) (alpha * 255));
       Paint paint = Paints.getInlineBubbleIconPaint(ColorUtils.alphaColor(alpha, getBubbleButtonTextColor()));
       Drawables.draw(c, icon, cx - icon.getMinimumWidth() / 2f, cy - icon.getMinimumHeight() / 2f, paint);
-      c.restore();
+      Views.restore(c, restoreToCount);
     }
   }
 
@@ -6997,7 +7040,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
-  public final @ColorId int getDecentColorId (@ColorId int defaultColorId) {
+  public final @PorterDuffColorId int getDecentColorId (@ColorId int defaultColorId) {
     return useBubbles() ? (isOutgoingBubble() ? ColorId.bubbleOut_time : ColorId.bubbleIn_time) : defaultColorId;
   }
 
@@ -7021,7 +7064,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return useBubbles() ? (isOutgoingBubble() ? ColorId.bubbleOut_pressed : ColorId.bubbleIn_pressed) : ColorId.messageSelection;
   }
 
-  public final @ColorId int getDecentIconColorId () {
+  public final @PorterDuffColorId int getDecentIconColorId () {
     return getDecentColorId(ColorId.iconLight);
   }
 
@@ -7177,14 +7220,27 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public TooltipOverlayView.TooltipInfo showContentHint (View view, TooltipOverlayView.LocationProvider locationProvider, TdApi.FormattedText text) {
-    return buildContentHint(view, locationProvider).show(tdlib, text);
+    return buildContentHint(view, locationProvider, true).show(tdlib, text);
   }
 
-  public TooltipOverlayView.TooltipBuilder buildContentHint (View view, TooltipOverlayView.LocationProvider locationProvider) {
+  public TooltipOverlayView.TooltipBuilder buildContentHint (View view, TooltipOverlayView.LocationProvider locationProvider, boolean applyContentOffset) {
     return context().tooltipManager().builder(view, currentViews)
       .locate((v, outRect) -> {
-        locationProvider.getTargetBounds(v, outRect);
-        outRect.offset(getContentX(), getContentY());
+        if (locationProvider != null) {
+          locationProvider.getTargetBounds(v, outRect);
+          if (applyContentOffset) {
+            outRect.offset(getContentX(), getContentY());
+          }
+        } else {
+          if (applyContentOffset) {
+            outRect.left = getContentX();
+            outRect.top = getContentY();
+          } else {
+            outRect.left = outRect.top = 0;
+          }
+          outRect.right = outRect.left + getContentWidth();
+          outRect.bottom = outRect.top + getContentHeight();
+        }
       })
       .chatTextSize(-2f)
       .click(clickCallback())
@@ -7859,11 +7915,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   public static TGMessage valueOfError (MessagesManager context, TdApi.Message msg, Throwable error) {
     String text = Lang.getString(R.string.FailureMessageText);
 
-    TdApi.Object entitiesObject = Client.execute(new TdApi.GetTextEntities(text));
     TdApi.TextEntity[] entities = null;
-    if (entitiesObject != null && entitiesObject.getConstructor() == TdApi.TextEntities.CONSTRUCTOR) {
-      entities = ((TdApi.TextEntities) entitiesObject).entities;
-    }
+    try {
+      TdApi.TextEntities result = Client.execute(new TdApi.GetTextEntities(text));
+      entities = result.entities;
+    } catch (Client.ExecutionError ignored) { }
 
     TdApi.TextEntity logEntity = new TdApi.TextEntity(-1, -1, new TdApi.TextEntityTypePreCode());
 
@@ -8178,7 +8234,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         final boolean isOdd = a % 2 == 1;
         final SwipeQuickAction quickReaction = new SwipeQuickAction(reactionObj.getTitle(), reactionDrawable, () -> {
           boolean hasReaction = messageReactions.hasReaction(reactionType);
-          if (!Config.PROTECT_ANONYMOUS_REACTIONS || hasReaction || !canGetAddedReactions() || messagesController().callNonAnonymousProtection(getId() + reactionObj.hashCode(), null)) {
+          if (Config.DISABLE_ANONYMOUS_NON_OWNER_REACTIONS && !hasReaction && tdlib.isAnonymousAdminNonCreator(msg.chatId)) {
+            showContentHint(findCurrentView(), null, R.string.error_ANONYMOUS_REACTIONS_DISABLED);
+          } else if (!Config.PROTECT_ANONYMOUS_REACTIONS || hasReaction || !canGetAddedReactions() || messagesController().callNonAnonymousProtection(getId() + reactionObj.hashCode(), null)) {
             if (messageReactions.toggleReaction(reactionType, false, false, handler(findCurrentView(), null, () -> {}))) {
               scheduleSetReactionAnimation(new NextReactionAnimation(reactionObj, NextReactionAnimation.TYPE_QUICK));
             }
