@@ -76,6 +76,19 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
     stickerSuggestionsView = new RecyclerView(context) {
       @Override
       public boolean onTouchEvent (MotionEvent e) {
+        if (e.getAction() == MotionEvent.ACTION_DOWN) {
+          View v = manager.findViewByPosition(0);
+          if (v != null && v.getLeft() > e.getX()) {
+            return false;
+          }
+          int i = manager.findLastVisibleItemPosition();
+          if (i != -1) {
+            v = manager.findViewByPosition(i);
+            if (v != null && v.getRight() < e.getX()) {
+              return false;
+            }
+          }
+        }
         return areStickersVisible && getAlpha() == 1f && super.onTouchEvent(e);
       }
     };

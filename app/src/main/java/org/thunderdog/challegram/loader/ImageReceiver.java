@@ -1136,7 +1136,16 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     return false;
   }
 
-
+  public Paint getBitmapPaint () {
+    float alpha = (float) metadataPaint.getAlpha() / 255f;
+    if (porterDuffColorIsId && porterDuffColor == ColorId.NONE) {
+      return Paints.bitmapPaint(alpha);
+    } else if (porterDuffColorIsId) {
+      return PorterDuffPaint.get(porterDuffColor, porterDuffAlpha * alpha);
+    } else {
+      return Paints.getPorterDuffPaint(ColorUtils.alphaColor(porterDuffAlpha * alpha, porterDuffColor));
+    }
+  }
 
   @Override
   public void draw (Canvas c) {
@@ -1144,15 +1153,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
       return;
     }
 
-    float alpha = (float) metadataPaint.getAlpha() / 255f;
-    Paint paint;
-    if (porterDuffColorIsId && porterDuffColor == ColorId.NONE) {
-      paint = Paints.bitmapPaint(alpha);
-    } else if (porterDuffColorIsId) {
-      paint = PorterDuffPaint.get(porterDuffColor, porterDuffAlpha * alpha);
-    } else {
-      paint = Paints.getPorterDuffPaint(ColorUtils.alphaColor(porterDuffAlpha * alpha, porterDuffColor));
-    }
+    Paint paint = getBitmapPaint();
     if (roundPaint != null) {
       roundPaint.setColorFilter(paint.getColorFilter());
     }

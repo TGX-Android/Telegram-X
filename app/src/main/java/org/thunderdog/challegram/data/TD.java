@@ -5442,4 +5442,15 @@ public class TD {
 
     return false;
   }
+
+  public static boolean isStickerFromAnimatedEmojiPack (@Nullable TdApi.MessageContent content) {
+    if (content == null || content.getConstructor() != TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
+      return false;
+    }
+    return isStickerFromAnimatedEmojiPack(((TdApi.MessageAnimatedEmoji) content).animatedEmoji.sticker);
+  }
+
+  public static boolean isStickerFromAnimatedEmojiPack (@Nullable TdApi.Sticker sticker) {
+    return sticker != null && sticker.setId == TdConstants.TELEGRAM_ANIMATED_EMOJI_STICKER_SET_ID;
+  }
 }

@@ -314,14 +314,23 @@ public class ReactionsOverlayView extends ViewGroup {
           @PorterDuffColorId int colorId = factor == 0f ? repaintingColorIdStart : repaintingColorIdEnd;
           imageReceiver.setThemedPorterDuffColorId(colorId);
           gifReceiver.setThemedPorterDuffColorId(colorId);
+          if (animatedEmojiEffect != null) {
+            animatedEmojiEffect.setThemedPorterDuffColorId(colorId);
+          }
         } else {
           int color = ColorUtils.fromToArgb(Theme.getColor(repaintingColorIdStart), Theme.getColor(repaintingColorIdEnd), factor);
           imageReceiver.setPorterDuffColorFilter(color);
           gifReceiver.setPorterDuffColorFilter(color);
+          if (animatedEmojiEffect != null) {
+            animatedEmojiEffect.setThemedPorterDuffColorId(color);
+          }
         }
       } else {
         imageReceiver.disablePorterDuffColorFilter();
         gifReceiver.disablePorterDuffColorFilter();
+        if (animatedEmojiEffect != null) {
+          animatedEmojiEffect.disablePorterDuffColorFilter();
+        }
       }
 
       if (gifReceiver.needPlaceholder() || Config.DEBUG_REACTIONS_ANIMATIONS) {
@@ -403,7 +412,7 @@ public class ReactionsOverlayView extends ViewGroup {
       imageReceiver.destroy();
       gifReceiver.destroy();
       if (animatedEmojiEffect != null) {
-
+        animatedEmojiEffect.performDestroy();
       }
     }
   }
