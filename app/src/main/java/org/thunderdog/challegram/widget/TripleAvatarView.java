@@ -101,7 +101,7 @@ public class TripleAvatarView extends View implements Destroyable {
       TdApi.User user = tdlib.chatUser(users[index]);
 
       if (user == null || TD.isPhotoEmpty(user.profilePhoto)) {
-        placeholders[index] = new AvatarPlaceholder(AVATAR_SIZE / 2f, new AvatarPlaceholder.Metadata(TD.getAvatarColorId(user, tdlib.myUserId()), TD.getLetters(user)), null);
+        placeholders[index] = new AvatarPlaceholder(AVATAR_SIZE / 2f, new AvatarPlaceholder.Metadata(tdlib.cache().userAccentColor(user), TD.getLetters(user)), null);
         receiver.requestFile(null);
       } else {
         placeholders[index] = null;

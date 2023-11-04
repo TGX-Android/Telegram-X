@@ -2256,7 +2256,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (args.messageThread != null) {
         args.messageThread.saveTo(outState, keyPrefix + "thread");
       }
-      TD.saveFilter(outState, keyPrefix + "filter_", args.searchFilter);
+      Td.put(outState, keyPrefix + "filter_", args.searchFilter);
       if (args.constructor == 1 || args.constructor == 4) {
         outState.putInt(keyPrefix + "mode", args.highlightMode);
         if (args.highlightMessageId != null) {
@@ -2269,7 +2269,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       if (args.constructor == 3 || args.constructor == 4) {
         outState.putString(keyPrefix + "query", args.searchQuery);
-        TD.saveSender(outState, keyPrefix + "sender_", args.searchSender);
+        Td.put(outState, keyPrefix + "sender_", args.searchSender);
       }
       outState.putBoolean(keyPrefix + "scheduled", args.areScheduled);
       return true;
@@ -2288,7 +2288,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     ThreadInfo messageThread = ThreadInfo.restoreFrom(tdlib, in, keyPrefix + "thread");
     if (messageThread == ThreadInfo.INVALID)
       return false;
-    TdApi.SearchMessagesFilter filter = TD.restoreFilter(in, keyPrefix + "filter_");
+    TdApi.SearchMessagesFilter filter = Td.restoreSearchMessagesFilter(in, keyPrefix + "filter_");
     Arguments args = null;
     switch (constructor) {
       case 0: {
@@ -2309,13 +2309,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case 3: {
         String query = in.getString(keyPrefix + "query", null);
-        TdApi.MessageSender sender = TD.restoreSender(in, keyPrefix + "sender_");
+        TdApi.MessageSender sender = Td.restoreMessageSender(in, keyPrefix + "sender_");
         args = new Arguments(chatList, chat, query, sender, filter);
         break;
       }
       case 4: {
         String query = in.getString(keyPrefix + "query", null);
-        TdApi.MessageSender sender = TD.restoreSender(in, keyPrefix + "sender_");
+        TdApi.MessageSender sender = Td.restoreMessageSender(in, keyPrefix + "sender_");
         int highlightMode = in.getInt(keyPrefix + "mode", 0);
         long highlightMessageId = in.getLong(keyPrefix + "message_id", 0);
         long highlightMessageChatId = in.getLong(keyPrefix + "message_chat_id", 0);
@@ -2734,9 +2734,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (tdlib.canSendBasicMessage(chat)) {
       TdApi.DraftMessage draftMessage = getDraftMessage();
-      if (draftMessage != null && draftMessage.replyToMessageId != 0) {
+      if (draftMessage != null && draftMessage.replyTo != null && draftMessage.replyTo.getConstructor() == TdApi.InputMessageReplyToMessage.CONSTRUCTOR) {
         if (!ignoreDraftLoad) {
-          forceDraftReply(draftMessage.replyToMessageId);
+          TdApi.InputMessageReplyToMessage replyToMessage = (TdApi.InputMessageReplyToMessage) draftMessage.replyTo;
+          forceDraftReply(replyToMessage);
         }
       }
       updateSilentButton(tdlib.isChannel(chat.id));
@@ -3568,7 +3569,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     } else if (id == R.id.menu_btn_reply) {
       TdApi.Message m = getSingleSelectedMessage();
       if (m != null) {
-        showReply(m, true, true);
+        showReply(m, null, true, true);
         finishSelectMode(-1);
         if (inputView != null && inputView.isEmpty()) {
           Keyboard.show(inputView);
@@ -3895,14 +3896,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
         // TODO save local draft
       } else if (inputView != null && inputView.textChangedSinceChatOpened() && isFocused()) {
         final TdApi.FormattedText outputText = inputView.getOutputText(false);
-        final @Nullable TdApi.MessageReplyToMessage replyTo = getCurrentReplyId();
+        final @Nullable TdApi.InputMessageReplyToMessage replyTo = getCurrentReplyId();
         final long date = tdlib.currentTime(TimeUnit.SECONDS);
         final TdApi.InputMessageText inputMessageText = new TdApi.InputMessageText(
           outputText,
-          getCurrentAllowLinkPreview(),
+          getLinkPreviewOptions(),
           false
         );
-        final TdApi.DraftMessage draftMessage = new TdApi.DraftMessage(replyTo != null ? replyTo.messageId : 0, (int) date, inputMessageText);
+        final TdApi.DraftMessage draftMessage = new TdApi.DraftMessage(replyTo, (int) date, inputMessageText);
         final long outputChatId = messageThread != null ? messageThread.getChatId() : getChatId();
         final long messageThreadId = messageThread != null ? messageThread.getMessageThreadId() : 0;
         if (messageThread != null) {
@@ -5363,7 +5364,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         pinUnpinMessage(selectedMessage, id == R.id.btn_messagePin);
         return true;
       } else if (id == R.id.btn_messageReply) {
-        showReply(selectedMessage.getNewestMessage(), true, true);
+        showReply(selectedMessage.getNewestMessage(), null, true, true);
         if (inputView.isEmpty()) {
           Keyboard.show(inputView);
         }
@@ -6052,18 +6053,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  public @Nullable TdApi.MessageReplyToMessage getCurrentReplyId () {
-    return replyMessage != null ? new TdApi.MessageReplyToMessage(replyMessage.chatId, replyMessage.id) : null;
+  public @Nullable TdApi.InputMessageReplyToMessage getCurrentReplyId () {
+    return replyMessage != null ? new TdApi.InputMessageReplyToMessage(replyMessage.chatId, replyMessage.id, null) : null;
   }
 
-  public @Nullable TdApi.MessageReplyToMessage obtainReplyTo () {
+  public @Nullable TdApi.InputMessageReplyToMessage obtainReplyTo () {
     if (replyMessage == null || replyMessage.id == 0 || (flags & FLAG_REPLY_ANIMATING) != 0) {
       return null;
     }
     long chatId = replyMessage.chatId;
     long messageId = replyMessage.id;
     closeReply(true);
-    return new TdApi.MessageReplyToMessage(chatId, messageId);
+    return new TdApi.InputMessageReplyToMessage(chatId, messageId, null);
   }
 
   private void showCurrentReply () {
@@ -6085,7 +6086,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  public void showReply (TdApi.Message msg, boolean byUser, boolean showKeyboard) {
+  public void showReply (TdApi.Message msg, @Nullable TdApi.FormattedText quote, boolean byUser, boolean showKeyboard) {
     if (inPreviewMode || isInForceTouchMode()) {
       return;
     }
@@ -6148,24 +6149,27 @@ public class MessagesController extends ViewController<MessagesController.Argume
     obj.start();
   }
 
-  private void forceDraftReply (final long messageId) {
+  private void forceDraftReply (final TdApi.InputMessageReplyToMessage replyTo) {
     final long currentChatId = chat.id;
-    TGMessage foundMessage = manager.getAdapter().findMessageById(messageId);
-    if (foundMessage != null) {
-      forceReply(foundMessage.getMessage());
-      return;
+    if (replyTo.chatId == currentChatId) {
+      TGMessage foundMessage = manager.getAdapter().findMessageById(replyTo.messageId);
+      if (foundMessage != null) {
+        forceReply(foundMessage.getMessage(), replyTo.quote);
+        return;
+      }
     }
-    tdlib.client().send(new TdApi.GetMessage(currentChatId, messageId), object -> tdlib.ui().post(() -> {
+    tdlib.client().send(new TdApi.GetMessage(replyTo.chatId, replyTo.messageId), object -> tdlib.ui().post(() -> {
       if (object.getConstructor() == TdApi.Message.CONSTRUCTOR && chat != null && chat.id == currentChatId) {
         TdApi.DraftMessage draftMessage = getDraftMessage();
-        if (draftMessage != null && draftMessage.replyToMessageId == messageId) {
-          forceReply((TdApi.Message) object);
+        TdApi.InputMessageReplyTo currentReplyTo = draftMessage != null ? draftMessage.replyTo : null;
+        if (Td.equalsTo(replyTo, currentReplyTo)) {
+          forceReply((TdApi.Message) object, replyTo.quote);
         }
       }
     }));
   }
 
-  public void forceReply (TdApi.Message message) {
+  public void forceReply (TdApi.Message message, @Nullable TdApi.FormattedText quote) {
     if (message == null || chat == null || inPreviewMode || isInForceTouchMode()) {
       clearReply();
       return;
@@ -6363,9 +6367,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
       switch (editingMessage.content.getConstructor()) {
         case TdApi.MessageText.CONSTRUCTOR: {
           TdApi.MessageText oldMessageText = (TdApi.MessageText) editingMessage.content;
-          TdApi.InputMessageText newInputMessageText = new TdApi.InputMessageText(newText, getCurrentAllowLinkPreview(), false);
-          if (!Td.equalsTo(newInputMessageText.text, oldMessageText.text) || (newInputMessageText.disableWebPagePreview && oldMessageText.webPage != null) || (!newInputMessageText.disableWebPagePreview && oldMessageText.webPage == null && attachedPreview != null))
+          TdApi.LinkPreviewOptions oldLinkPreviewOptions = oldMessageText.linkPreviewOptions;
+          TdApi.LinkPreviewOptions newLinkPreviewOptions = getLinkPreviewOptions();
+          if (!Td.equalsTo(oldMessageText.text, newText) || !Td.equalsTo(oldLinkPreviewOptions, newLinkPreviewOptions)) {
             return true;
+          }
           break;
         }
         case TdApi.MessagePhoto.CONSTRUCTOR:
@@ -6538,16 +6544,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
       case TdApi.MessageText.CONSTRUCTOR:
       case TdApi.MessageAnimatedEmoji.CONSTRUCTOR: {
         TdApi.MessageText oldMessageText;
-
         if (editingMessage.content.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
-          oldMessageText = new TdApi.MessageText(Td.textOrCaption(editingMessage.content), null);
+          oldMessageText = new TdApi.MessageText(Td.textOrCaption(editingMessage.content), null, null);
         } else {
           oldMessageText = (TdApi.MessageText) editingMessage.content;
         }
-        TdApi.InputMessageText newInputMessageText = new TdApi.InputMessageText(newText, getCurrentAllowLinkPreview(), false);
-        if (!Td.equalsTo(newInputMessageText.text, oldMessageText.text) || (newInputMessageText.disableWebPagePreview && oldMessageText.webPage != null) || (!newInputMessageText.disableWebPagePreview && oldMessageText.webPage == null && attachedPreview != null)) {
+        TdApi.LinkPreviewOptions oldLinkPreviewOptions = oldMessageText.linkPreviewOptions;
+
+        TdApi.InputMessageText newInputMessageText = new TdApi.InputMessageText(newText, getLinkPreviewOptions(), false);
+        if (!Td.equalsTo(newInputMessageText.text, oldMessageText.text) || !Td.equalsTo(newInputMessageText.linkPreviewOptions, oldLinkPreviewOptions)) {
           final int maxLength = tdlib.maxMessageTextLength();
-          final int newTextLength = newText.text.codePointCount(0, newText.text.length());
+          final int newTextLength = newText != null ? newText.text.codePointCount(0, newText.text.length()) : 0;
           if (newTextLength > maxLength) {
             showBottomHint(Lang.pluralBold(R.string.EditMessageTextTooLong, newTextLength - maxLength), true);
             return;
@@ -7804,27 +7811,27 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return !isSecretChat() || Settings.instance().needTutorial(Settings.TUTORIAL_SECRET_LINK_PREVIEWS) || Settings.instance().needSecretLinkPreviews();
   }
 
-  private boolean getCurrentAllowLinkPreview () {
-    return allowSecretPreview() && dismissedLink != null && dismissedLink.equals(attachedLink);
+  private @NonNull TdApi.LinkPreviewOptions getLinkPreviewOptions () {
+    TdApi.LinkPreviewOptions options = new TdApi.LinkPreviewOptions(false, attachedLink, false, false, false);
+    if (allowSecretPreview() && dismissedLink != null && dismissedLink.equals(attachedLink)) {
+      options.isDisabled = true;
+      options.url = "";
+    }
+    return options;
   }
 
-  private boolean obtainAllowLinkPreview (boolean close) {
-    if (!allowSecretPreview()) {
-      return false;
-    }
-    if (dismissedLink != null) {
-      boolean equal = dismissedLink.equals(attachedLink);
+  private @NonNull TdApi.LinkPreviewOptions obtainLinkPreviewOptions (boolean close) {
+    TdApi.LinkPreviewOptions linkPreviewOptions = getLinkPreviewOptions();
+    if (linkPreviewOptions.isDisabled) {
       dismissedLink = null;
-      return !equal;
     }
     if (close) {
-      attachedLink = null;
-      dismissedLink = null;
+      attachedLink = dismissedLink = null;
       if (editingMessage == null && replyMessage == null) {
         closeReplyView();
       }
     }
-    return true;
+    return linkPreviewOptions;
   }
 
   public void ignoreLinkPreview (final String link, final TdApi.WebPage page) {
@@ -8320,7 +8327,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return showRestriction(view, restrictionText);
   }
 
-  private boolean sendContent (View view, @RightId int rightId, int defaultRes, int specificRes, int specificUntilRes, Future<TdApi.MessageReplyTo> replyTo, TdApi.MessageSendOptions initialSendOptions, Future<TdApi.InputMessageContent> content) {
+  private boolean sendContent (View view, @RightId int rightId, int defaultRes, int specificRes, int specificUntilRes, Future<TdApi.InputMessageReplyTo> replyTo, TdApi.MessageSendOptions initialSendOptions, Future<TdApi.InputMessageContent> content) {
     if (showRestriction(view, rightId, defaultRes, specificRes, specificUntilRes))
       return false;
     pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
@@ -8826,7 +8833,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public void sendText (boolean applyMarkdown, TdApi.MessageSendOptions sendOptions) {
     if (inputView != null) {
-      sendText(inputView.getOutputText(applyMarkdown), true, applyMarkdown, true, obtainAllowLinkPreview(false), sendOptions);
+      sendText(inputView.getOutputText(applyMarkdown), true, applyMarkdown, true, true, sendOptions);
     }
   }
 
@@ -8875,7 +8882,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     long chatId = getChatId();
     long messageThreadId = getMessageThreadId();
-    final @Nullable TdApi.MessageReplyTo replyTo = allowReply ? (clearInput ? getCurrentReplyId() : obtainReplyTo()) : null;
+    final @Nullable TdApi.InputMessageReplyTo replyTo = allowReply ? (clearInput ? getCurrentReplyId() : obtainReplyTo()) : null;
+    final TdApi.LinkPreviewOptions linkPreviewOptions = allowLinkPreview ? obtainLinkPreviewOptions(false) : new TdApi.LinkPreviewOptions(
+      true, "", false, false, false
+    );
 
     TdApi.InputMessageContent content;
     if (allowDice && tdlib.shouldSendAsDice(msg)) {
@@ -8898,7 +8908,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       content = new TdApi.InputMessageDice(msg.text.trim(), clearInput);
     } else {
-      content = new TdApi.InputMessageText(msg, !allowLinkPreview, clearInput);
+      content = new TdApi.InputMessageText(msg, linkPreviewOptions, clearInput);
     }
 
     final TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(initialSendOptions, obtainSilentMode());
@@ -8920,7 +8930,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
               obtainReplyTo();
             }
             if (allowLinkPreview) {
-              obtainAllowLinkPreview(true);
+              obtainLinkPreviewOptions(true);
             }
             inputView.setInput("", false, true);
           }
@@ -9012,7 +9022,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     shareMyContact(allowReply ? obtainReplyTo() : null);
   }
 
-  public void shareMyContact (@Nullable TdApi.MessageReplyTo forceReplyTo) {
+  public void shareMyContact (@Nullable TdApi.InputMessageReplyTo forceReplyTo) {
     if (hasWritePermission()) {
       TdApi.User user = tdlib.myUser();
       if (user != null) {
@@ -9071,7 +9081,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return false;
     }
     final long chatId = chat.id;
-    final TdApi.MessageReplyTo replyTo = allowReply ? obtainReplyTo() : null;
+    final TdApi.InputMessageReplyTo replyTo = allowReply ? obtainReplyTo() : null;
     TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(initialSendOptions, obtainSilentMode());
     if (record.getWaveform() == null) {
       Background.instance().post(() -> {
@@ -9247,7 +9257,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (audioPath != null) {
           final long chatId = chat.id;
           final boolean disableNotification = obtainSilentMode();
-          final TdApi.MessageReplyTo replyTo = obtainReplyTo();
+          final TdApi.InputMessageReplyTo replyTo = obtainReplyTo();
           Background.instance().post(() -> {
             AudioFile file;
 
@@ -9266,7 +9276,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     final long chatId = chat.id;
     final boolean isSecretChat = isSecretChat();
     final TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(initialSendOptions, obtainSilentMode());
-    final TdApi.MessageReplyTo replyTo = allowReply ? obtainReplyTo() : null;
+    final TdApi.InputMessageReplyTo replyTo = allowReply ? obtainReplyTo() : null;
     boolean allowAudio = tdlib.getRestrictionStatus(chat, RightId.SEND_AUDIO) == null;
     boolean allowDocs = tdlib.getRestrictionStatus(chat, RightId.SEND_DOCS) == null;
     boolean allowVideos = tdlib.getRestrictionStatus(chat, RightId.SEND_VIDEOS) == null;
@@ -9311,7 +9321,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     if (path != null) {
       final long chatId = chat.id;
-      final TdApi.MessageReplyTo replyTo = allowReply ? obtainReplyTo() : null;
+      final TdApi.InputMessageReplyTo replyTo = allowReply ? obtainReplyTo() : null;
       final boolean silent = obtainSilentMode();
       final boolean isSecret = isSecretChat();
 
@@ -9344,7 +9354,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     // TODO check RightId.SEND_PHOTOS / RightId.SEND_VIDEOS
 
     final long chatId = chat.id;
-    final TdApi.MessageReplyTo replyTo = obtainReplyTo();
+    final TdApi.InputMessageReplyTo replyTo = obtainReplyTo();
     final boolean isSecretChat = isSecretChat();
 
     Media.instance().post(() -> {
@@ -9875,21 +9885,26 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (isEditingMessage()) {
       return;
     }
-    if (draftMessage == null || draftMessage.replyToMessageId == 0) {
+    TdApi.InputMessageReplyToMessage replyToMessage =
+      draftMessage != null && draftMessage.replyTo != null && draftMessage.replyTo.getConstructor() == TdApi.InputMessageReplyToMessage.CONSTRUCTOR ?
+        (TdApi.InputMessageReplyToMessage) draftMessage.replyTo : null;
+    if (replyToMessage == null) {
       closeReply(false);
     } else {
-      TGMessage message = manager.getAdapter().findMessageById(draftMessage.replyToMessageId);
-      if (message != null) {
-        showReply(message.getMessage(), false, false);
+      TGMessage message;
+      if (getChatId() == replyToMessage.chatId) {
+        message = manager.getAdapter().findMessageById(replyToMessage.messageId);
       } else {
-        tdlib.client().send(new TdApi.GetMessage(chatId, draftMessage.replyToMessageId), object -> tdlib.ui().post(() -> {
-          //noinspection UnsafeOptInUsageError
+        message = null;
+      }
+      if (message != null) {
+        showReply(message.getMessage(), replyToMessage.quote, false, false);
+      } else {
+        tdlib.send(new TdApi.GetMessage(replyToMessage.chatId, replyToMessage.messageId), (remoteMessage, error) -> runOnUiThreadOptional(() -> {
           if (getChatId() == chatId && Td.equalsTo(getDraftMessage(), draftMessage)) {
-            if (object.getConstructor() == TdApi.Message.CONSTRUCTOR) {
-              showReply((TdApi.Message) object, false, false);
-            } else {
-              closeReply(false);
-            }
+            showReply(remoteMessage, replyToMessage.quote, false, false);
+          } else {
+            closeReply(false);
           }
         }));
       }

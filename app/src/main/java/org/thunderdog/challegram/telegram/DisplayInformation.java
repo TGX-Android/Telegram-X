@@ -19,9 +19,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
-import org.drinkmore.Tracer;
-import org.thunderdog.challegram.N;
-import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFileLocal;
 import org.thunderdog.challegram.tool.UI;
@@ -63,12 +60,13 @@ public class DisplayInformation {
   private String phoneNumber;
   private String profilePhotoSmallPath, profilePhotoBigPath;
   private EmojiStatusCache emojiStatusCache;
+  private int accentColorId;
 
   DisplayInformation (String prefix) {
     this.prefix = prefix;
   }
 
-  DisplayInformation (String prefix, TdApi.User user, @Nullable TdApi.Sticker emojiStatusFile, boolean isUpdate) {
+  DisplayInformation (String prefix, TdApi.User user, @Nullable TdApi.AccentColor accentColor, @Nullable TdApi.Sticker emojiStatusFile, boolean isUpdate) {
     this.prefix = prefix;
     this.flags = buildFlags(user);
     this.userId = user.id;
@@ -76,6 +74,7 @@ public class DisplayInformation {
     this.lastName = user.lastName;
     this.usernames = user.usernames;
     this.phoneNumber = user.phoneNumber;
+    this.accentColorId = user.accentColorId;
     if (user.profilePhoto != null) {
       this.profilePhotoSmallPath = TD.isFileLoaded(user.profilePhoto.small) ?
         user.profilePhoto.small.local.path :
@@ -116,6 +115,10 @@ public class DisplayInformation {
 
   public String getLastName () {
     return lastName;
+  }
+
+  public int getAccentColorId () {
+    return accentColorId;
   }
 
   @Nullable
@@ -228,6 +231,7 @@ public class DisplayInformation {
     editor.putLong(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_FLAGS, flags);
     editor.putString(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_NAME1, firstName);
     editor.putString(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_NAME2, lastName);
+    editor.putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_ACCENT_COLOR_ID, accentColorId);
     if (usernames != null) {
       editor
         .putString(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_USERNAME, usernames.editableUsername);
@@ -303,6 +307,9 @@ public class DisplayInformation {
           break;
         case Settings.KEY_ACCOUNT_INFO_SUFFIX_PHOTO_FULL:
           info.profilePhotoBigPath = toAbsolutePath(entry.asString());
+          break;
+        case Settings.KEY_ACCOUNT_INFO_SUFFIX_ACCENT_COLOR_ID:
+          info.accentColorId = entry.asInt();
           break;
         default:
           if (suffix.startsWith(Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_PREFIX)) {

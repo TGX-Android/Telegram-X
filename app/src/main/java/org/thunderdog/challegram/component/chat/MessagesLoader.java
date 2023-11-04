@@ -977,7 +977,7 @@ public class MessagesLoader implements Client.ResultHandler {
       else if (autoDeleteTime != null)
         content = autoDeleteTime;
       else if (text != null)
-        content = new TdApi.MessageText(text, null);
+        content = new TdApi.MessageText(text, null, null);
       else
         throw new JSONException("Invalid message: " + data);
       messages.add(new PreviewMessage(date, after, isOut, senderUserId, content));
@@ -1203,7 +1203,7 @@ public class MessagesLoader implements Client.ResultHandler {
       null,
       tdlib.isSelfSender(event.memberId),
       false, false,
-      false, canBeSaved,
+      false, false, canBeSaved,
       false, false, false,
       false, false, false,
       false, false, false,

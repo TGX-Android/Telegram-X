@@ -27,6 +27,9 @@ public interface ChatListener extends ForumTopicInfoListener {
   default void onChatThemeChanged (long chatId, String themeName) { }
 
   default void onChatBackgroundChanged (long chatId, @Nullable TdApi.ChatBackground background) { }
+  default void onChatAccentColorChanged (long chatId, int accentColorId) { }
+
+  default void onChatBackgroundCustomEmojiChanged (long chatId, long customEmojiId) { }
   default void onChatActionBarChanged (long chatId, TdApi.ChatActionBar actionBar) { }
   default void onChatPhotoChanged (long chatId, @Nullable TdApi.ChatPhotoInfo photo) { }
   default void onChatReadInbox (long chatId, long lastReadInboxMessageId, int unreadCount, boolean availabilityChanged) { }

@@ -1719,8 +1719,15 @@ public class ShareController extends TelegramViewController<ShareController.Args
       }
       case MODE_MESSAGES: {
         for (TdApi.Message message : args.messages) {
-          if (ChatId.isSecret(chatId) && !TD.canSendToSecretChat(message.content))
-            return Lang.getString(R.string.SecretChatForwardError);
+          if (ChatId.isSecret(chatId)) {
+            if (!TD.canSendToSecretChat(message.content))
+              return Lang.getString(R.string.SecretChatForwardError);
+            TdApi.ForwardMessages function = new TdApi.ForwardMessages(chatId, 0, message.chatId, new long[] {message.id}, new TdApi.MessageSendOptions(false, false, false, false, null, 0, true), needHideAuthor, needRemoveCaptions);
+            TdApi.Object check = tdlib.clientExecute(function, 1000L);
+            if (check instanceof TdApi.Error) {
+              return TD.toErrorString(check);
+            }
+          }
 
           if (message.content.getConstructor() == TdApi.MessagePoll.CONSTRUCTOR && !((TdApi.MessagePoll) message.content).poll.isAnonymous && tdlib.isChannel(chatId))
             return Lang.getString(R.string.PollPublicForwardHint);
@@ -3051,11 +3058,11 @@ public class ShareController extends TelegramViewController<ShareController.Args
       }
       TdApi.MessageSendOptions sendOptions = ChatId.isSecret(chatId) ? secretSendOptions : cloudSendOptions;
       if (hasComment) {
-        functions.addAll(TD.sendMessageText(chatId, 0, null, sendOptions, new TdApi.InputMessageText(comment, false, false), tdlib.maxMessageTextLength()));
+        functions.addAll(TD.sendMessageText(chatId, 0, null, sendOptions, new TdApi.InputMessageText(comment, null, false), tdlib.maxMessageTextLength()));
       }
       switch (mode) {
         case MODE_TEXT: {
-          functions.addAll(TD.sendMessageText(chatId, 0, null, sendOptions, new TdApi.InputMessageText(args.text, false, false), tdlib.maxMessageTextLength()));
+          functions.addAll(TD.sendMessageText(chatId, 0, null, sendOptions, new TdApi.InputMessageText(args.text, null, false), tdlib.maxMessageTextLength()));
           break;
         }
         case MODE_MESSAGES: {
@@ -3091,7 +3098,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           TdApi.FormattedText formattedCaption = StringUtils.isEmpty(args.telegramCaption) ? null : TD.newText(args.telegramCaption);
           TdApi.FormattedText messageCaption = formattedCaption != null && formattedCaption.text.codePointCount(0, formattedCaption.text.length()) <= tdlib.maxCaptionLength() ? formattedCaption : null;
           if (formattedCaption != null && messageCaption == null) {
-            functions.addAll(TD.sendMessageText(chatId, 0, null, sendOptions, new TdApi.InputMessageText(formattedCaption, false, false), tdlib.maxMessageTextLength()));
+            functions.addAll(TD.sendMessageText(chatId, 0, null, sendOptions, new TdApi.InputMessageText(formattedCaption, null, false), tdlib.maxMessageTextLength()));
           }
           for (MediaItem item : args.telegramFiles) {
             boolean last = item == args.telegramFiles[args.telegramFiles.length - 1];

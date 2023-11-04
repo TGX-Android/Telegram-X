@@ -26,8 +26,7 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.theme.ColorId;
-import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.text.Letters;
@@ -43,10 +42,8 @@ public class UserContext {
 
   private @Nullable ImageFile imageFile;
 
-  private @ColorId
-  int avatarColorId;
-  private @Nullable
-  Letters letters;
+  private TdlibAccentColor accentColor;
+  private @Nullable Letters letters;
 
   private int lettersWidth;
   private int nameWidth;
@@ -58,7 +55,7 @@ public class UserContext {
     if (user != null) {
       set(user);
     } else {
-      this.avatarColorId = TD.getAvatarColorId(-1, 0);
+      this.accentColor = tdlib.accentColor(TdlibAccentColor.InternalId.INACTIVE);
       this.letters = TD.getLetters();
       this.fullName = "User#" + userId;
     }
@@ -73,6 +70,7 @@ public class UserContext {
   public void set (TdApi.User user) {
     this.user = user;
     this.fullName = TD.getUserName(user.firstName, user.lastName);
+    this.accentColor = tdlib.cache().userAccentColor(user);
     if (user.profilePhoto != null) {
       if (imageFile == null || imageFile.getId() != user.profilePhoto.small.id) {
         this.imageFile = new ImageFile(tdlib, user.profilePhoto.small);
@@ -81,7 +79,6 @@ public class UserContext {
         this.imageFile.getFile().local.path = user.profilePhoto.small.local.path;
       }
     } else {
-      this.avatarColorId = TD.getAvatarColorId(user.id, tdlib.myUserId());
       this.letters = TD.getLetters(user);
     }
   }
@@ -120,17 +117,13 @@ public class UserContext {
     return imageFile;
   }
 
-  /*public int getAvatarColor () {
-    return avatarColor;
-  }*/
+  public TdlibAccentColor getAccentColor () {
+    return accentColor;
+  }
 
   @Nullable
   public Letters getLetters () {
     return letters;
-  }
-
-  public int getLettersWidth () {
-    return lettersWidth;
   }
 
   // Drawing-related shit
@@ -178,9 +171,9 @@ public class UserContext {
   }
 
   public void drawPlaceholder (Canvas c, int radius, int left, int top, float lettersSize) {
-    c.drawCircle(left + radius, top + radius, radius, Paints.fillingPaint(Theme.getColor(avatarColorId)));
+    c.drawCircle(left + radius, top + radius, radius, Paints.fillingPaint(accentColor.getPrimaryColor()));
     if (letters != null) {
-      Paints.drawLetters(c, letters, left + radius - lettersWidth / 2, top + radius + Screen.dp(5f), lettersSize);
+      Paints.drawLetters(c, letters, left + radius - lettersWidth / 2f, top + radius + Screen.dp(5f), lettersSize);
     }
   }
 }

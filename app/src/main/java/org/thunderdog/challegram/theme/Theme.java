@@ -37,6 +37,7 @@ import androidx.annotation.Nullable;
 import org.thunderdog.challegram.FillingDrawable;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.CircleDrawable;
 import org.thunderdog.challegram.support.RectDrawable;
@@ -50,6 +51,7 @@ import org.thunderdog.challegram.util.CustomStateListDrawable;
 import java.util.ArrayList;
 
 import me.vkryl.android.ViewUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 
 public class Theme {
@@ -1007,6 +1009,46 @@ public class Theme {
       stateListDrawable.addState(new int[]{android.R.attr.state_selected}, createRoundRectDrawable(Screen.dp(3), (color & 0x00ffffff) | 0x19000000));
       stateListDrawable.addState(StateSet.WILD_CARD, new ColorDrawable(0x00000000));
       return stateListDrawable;
+    }
+  }
+
+  public static long newComplexColor (boolean isId, int colorValue) {
+    return BitwiseUtils.mergeLong(isId ? 1 : 0, colorValue);
+  }
+
+  public static boolean isColorId (long complexColor) {
+    return BitwiseUtils.splitLongToFirstInt(complexColor) == 1;
+  }
+
+  public static int extractColorValue (long complexColor) {
+    return BitwiseUtils.splitLongToSecondInt(complexColor);
+  }
+
+  public static @ColorInt int toColorInt (long complexColor) {
+    int value = extractColorValue(complexColor);
+    if (isColorId(complexColor)) {
+      return getColor(value);
+    } else {
+      return value;
+    }
+  }
+
+  public static @ColorId int toColorInt (long complexColor, @ThemeId int themeId) {
+    int value = extractColorValue(complexColor);
+    if (isColorId(complexColor)) {
+      return getColor(value, themeId);
+    } else {
+      return value;
+    }
+  }
+
+  public static void applyComplexColor (Receiver receiver, long complexColor) {
+    if (isColorId(complexColor)) {
+      @ColorId int colorId = extractColorValue(complexColor);
+      receiver.setThemedPorterDuffColorId(colorId);
+    } else {
+      @ColorInt int color = extractColorValue(complexColor);
+      receiver.setPorterDuffColorFilter(color);
     }
   }
 }

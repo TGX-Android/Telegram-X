@@ -288,6 +288,9 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageContactRegistered.CONSTRUCTOR:
             case TdApi.MessageGameScore.CONSTRUCTOR:
             case TdApi.MessageGiftedPremium.CONSTRUCTOR:
+            case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
+            case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR:
+            case TdApi.MessagePremiumGiveaway.CONSTRUCTOR:
             case TdApi.MessageInviteVideoChatParticipants.CONSTRUCTOR:
             case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
             case TdApi.MessagePassportDataSent.CONSTRUCTOR:
@@ -314,7 +317,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              Td.assertMessageContent_cda9af31();
+              Td.assertMessageContent_ea2cfacf();
               throw Td.unsupported(message.content);
           }
           String format = Lang.getString(staticResId);
@@ -1525,6 +1528,65 @@ public final class TGMessageService extends TGMessageServiceImpl {
     if (chatPhoto != null) {
       setDisplayChatPhoto(chatPhoto);
     }
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventAccentColorChanged accentColorChanged) {
+    super(context, msg);
+    setTextCreator(() -> {
+      if (msg.isOutgoing) {
+        return getText(
+          R.string.EventLogAccentColorChangedYou,
+          new AccentColorArgument(tdlib.accentColor(accentColorChanged.oldAccentColorId)),
+          new AccentColorArgument(tdlib.accentColor(accentColorChanged.newAccentColorId))
+        );
+      } else {
+        return getText(
+          R.string.EventLogAccentColorChanged,
+          new SenderArgument(sender),
+          new AccentColorArgument(tdlib.accentColor(accentColorChanged.oldAccentColorId)),
+          new AccentColorArgument(tdlib.accentColor(accentColorChanged.newAccentColorId))
+        );
+      }
+    });
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventBackgroundCustomEmojiChanged backgroundEmojiChanged) {
+    super(context, msg);
+    setTextCreator(() -> {
+      if (backgroundEmojiChanged.newBackgroundCustomEmojiId == 0 || backgroundEmojiChanged.oldBackgroundCustomEmojiId == 0) {
+        boolean isUnset = backgroundEmojiChanged.newBackgroundCustomEmojiId == 0;
+        long backgroundCustomEmojiId = isUnset ?
+          backgroundEmojiChanged.oldBackgroundCustomEmojiId :
+          backgroundEmojiChanged.newBackgroundCustomEmojiId;
+        if (msg.isOutgoing) {
+          return getText(
+            isUnset ? R.string.EventLogEmojiUnsetYou : R.string.EventLogEmojiSetYou,
+            new CustomEmojiArgument(tdlib, backgroundCustomEmojiId)
+          );
+        } else {
+          return getText(
+            isUnset ? R.string.EventLogEmojiUnset : R.string.EventLogEmojiSet,
+            new SenderArgument(sender),
+            new CustomEmojiArgument(tdlib, backgroundCustomEmojiId)
+          );
+        }
+      } else {
+        if (msg.isOutgoing) {
+          return getText(
+            R.string.EventLogEmojiChangedYou,
+            new CustomEmojiArgument(tdlib, backgroundEmojiChanged.oldBackgroundCustomEmojiId),
+            new CustomEmojiArgument(tdlib, backgroundEmojiChanged.newBackgroundCustomEmojiId)
+          );
+        } else {
+          return getText(
+            R.string.EventLogEmojiChanged,
+            new SenderArgument(sender),
+            new CustomEmojiArgument(tdlib, backgroundEmojiChanged.oldBackgroundCustomEmojiId),
+            new CustomEmojiArgument(tdlib, backgroundEmojiChanged.newBackgroundCustomEmojiId)
+          );
+        }
+      }
+    });
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventSlowModeDelayChanged slowModeDelayChanged) {

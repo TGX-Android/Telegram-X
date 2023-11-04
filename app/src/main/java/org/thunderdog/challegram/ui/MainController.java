@@ -1312,7 +1312,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
       // If sendingText still unused, then add it to the beginning of send queue
       if (!StringUtils.isEmpty(sendingText)) {
-        out.addAll(0, TD.explodeText(new TdApi.InputMessageText(new TdApi.FormattedText(sendingText, null), false, false), tdlib.maxMessageTextLength()));
+        out.addAll(0, TD.explodeText(new TdApi.InputMessageText(new TdApi.FormattedText(sendingText, null), null, false), tdlib.maxMessageTextLength()));
       }
     }
     shareContents(tdlib, type, out, false);
@@ -1350,7 +1350,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     }
     // If sendingText still unused, then add it to the beginning of send queue
     if (!StringUtils.isEmpty(sendingText)) {
-      out.addAll(0, TD.explodeText(new TdApi.InputMessageText(new TdApi.FormattedText(sendingText, null), false, false), tdlib.maxMessageTextLength()));
+      out.addAll(0, TD.explodeText(new TdApi.InputMessageText(new TdApi.FormattedText(sendingText, null), null, false), tdlib.maxMessageTextLength()));
     }
 
     shareContents(tdlib, type, out, true);

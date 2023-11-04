@@ -22,7 +22,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Icons;
@@ -41,36 +41,36 @@ import me.vkryl.core.StringUtils;
 
 public class AvatarPlaceholder {
   public static class Metadata {
-    public final @ColorId int colorId;
+    public final @NonNull TdlibAccentColor accentColor;
     public final @Nullable String letters;
     public final @DrawableRes int drawableRes, extraDrawableRes;
 
-    public Metadata (int colorId, @Nullable Letters letters, int drawableRes, int extraDrawableRes) {
-      this(colorId, letters != null ? letters.text : null, drawableRes, extraDrawableRes);
+    public Metadata (TdlibAccentColor accentColor, @Nullable Letters letters, int drawableRes, int extraDrawableRes) {
+      this(accentColor, letters != null ? letters.text : null, drawableRes, extraDrawableRes);
     }
 
     public Metadata () {
-      this(ColorId.avatarInactive);
+      this(new TdlibAccentColor(TdlibAccentColor.InternalId.INACTIVE));
     }
 
-    public Metadata (int colorId) {
-      this(colorId, Strings.ELLIPSIS, 0, 0);
+    public Metadata (@NonNull TdlibAccentColor accentColor) {
+      this(accentColor, Strings.ELLIPSIS, 0, 0);
     }
 
-    public Metadata (int colorId, int iconRes) {
-      this(colorId, (Letters) null, iconRes, 0);
+    public Metadata (@NonNull TdlibAccentColor accentColor, int iconRes) {
+      this(accentColor, (Letters) null, iconRes, 0);
     }
 
-    public Metadata (int colorId, @Nullable Letters letters) {
-      this(colorId, letters, 0, 0);
+    public Metadata (@NonNull TdlibAccentColor accentColor, @Nullable Letters letters) {
+      this(accentColor, letters, 0, 0);
     }
 
-    public Metadata (int colorId, @Nullable String letters) {
-      this(colorId, letters, 0, 0);
+    public Metadata (@NonNull TdlibAccentColor accentColor, @Nullable String letters) {
+      this(accentColor, letters, 0, 0);
     }
 
-    public Metadata (int colorId, @Nullable String letters, int drawableRes, int extraDrawableRes) {
-      this.colorId = colorId;
+    public Metadata (@NonNull TdlibAccentColor accentColor, @Nullable String letters, int drawableRes, int extraDrawableRes) {
+      this.accentColor = accentColor;
       this.letters = letters;
       this.drawableRes = drawableRes;
       this.extraDrawableRes = extraDrawableRes;
@@ -78,7 +78,7 @@ public class AvatarPlaceholder {
 
     @Override
     public boolean equals (@Nullable Object obj) {
-      return obj instanceof Metadata && ((Metadata) obj).colorId == colorId && StringUtils.equalsOrBothEmpty(((Metadata) obj).letters, letters) && ((Metadata) obj).colorId == colorId;
+      return obj instanceof Metadata && ((Metadata) obj).accentColor.equals(this.accentColor) && StringUtils.equalsOrBothEmpty(((Metadata) obj).letters, this.letters);
     }
   }
 
@@ -89,8 +89,8 @@ public class AvatarPlaceholder {
   @NonNull
   public final Metadata metadata;
 
-  public AvatarPlaceholder (float radius, @ColorId int colorId) {
-    this(radius, new Metadata(colorId), null);
+  public AvatarPlaceholder (float radius, @NonNull TdlibAccentColor accentColor) {
+    this(radius, new Metadata(accentColor), null);
   }
 
   public AvatarPlaceholder (float radius, @Nullable Metadata metadata, @Nullable DrawableProvider provider) {
@@ -115,8 +115,8 @@ public class AvatarPlaceholder {
     return Screen.dp(radius);
   }
 
-  public int getColor () {
-    return Theme.getColor(metadata.colorId);
+  public TdlibAccentColor getAccentColor () {
+    return metadata.accentColor;
   }
 
   public void draw (Canvas c, float centerX, float centerY) {
@@ -134,8 +134,8 @@ public class AvatarPlaceholder {
   public void draw (Canvas c, float centerX, float centerY, float alpha, float radiusPx, boolean drawCircle) {
     if (alpha <= 0f)
       return;
-    if (drawCircle && metadata.colorId != 0) {
-      c.drawCircle(centerX, centerY, radiusPx, Paints.fillingPaint(ColorUtils.alphaColor(alpha, Theme.getColor(metadata.colorId))));
+    if (drawCircle) {
+      c.drawCircle(centerX, centerY, radiusPx, Paints.fillingPaint(ColorUtils.alphaColor(alpha, metadata.accentColor.getPrimaryColor())));
     }
     if (letters != null) {
       int currentRadiusPx = Screen.dp(this.radius);

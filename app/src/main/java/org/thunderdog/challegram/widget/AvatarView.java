@@ -20,6 +20,7 @@ import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
 
+import androidx.annotation.ColorInt;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
@@ -368,13 +369,13 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
     return (flags & FLAG_NO_ROUND) == 0;
   }
 
-  private void drawPlaceholder (Canvas c, @ColorId int colorId) {
+  private void drawPlaceholder (Canvas c, @ColorInt int color) {
     if (needRounds()) {
       c.drawCircle(receiver.centerX(), receiver.centerY(), receiver.getRadius(), Paints.fillingPaint(
-        Theme.getColor(colorId)
+        color
       ));
     } else {
-      c.drawRect(receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), Paints.fillingPaint(Theme.placeholderColor()));
+      c.drawRect(receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), Paints.fillingPaint(color));
     }
   }
 
@@ -383,7 +384,7 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
     if (account != null || getUserId() != 0 || getChatId() != 0) {
       if (hasPhoto) {
         if (receiver.needPlaceholder() && (preview == null || preview.needPlaceholder())) {
-          drawPlaceholder(c, ColorId.placeholder);
+          drawPlaceholder(c, Theme.placeholderColor());
         }
         if (preview != null && receiver.needPlaceholder()) {
           preview.draw(c);
@@ -393,20 +394,20 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
         if ((flags & FLAG_NEED_OVERLAY) == 0) {
           if (avatarPlaceholderMetadata != null) {
             if (avatarPlaceholder == null)
-              avatarPlaceholder = new AvatarPlaceholder(Screen.px(receiver.getWidth() / 2), avatarPlaceholderMetadata, null);
+              avatarPlaceholder = new AvatarPlaceholder(Screen.px(receiver.getWidth() / 2f), avatarPlaceholderMetadata, null);
             avatarPlaceholder.draw(c, receiver.centerX(), receiver.centerY());
           }
         } else {
-          drawPlaceholder(c, avatarPlaceholderMetadata != null ? avatarPlaceholderMetadata.colorId : ColorId.placeholder);
+          drawPlaceholder(c, avatarPlaceholderMetadata != null ? avatarPlaceholderMetadata.accentColor.getPrimaryColor() : Theme.placeholderColor());
         }
       }
     }
     if ((flags & FLAG_NEED_OVERLAY) != 0) {
       if (hasPhoto) {
-        drawPlaceholder(c, ColorId.statusBar);
+        drawPlaceholder(c, Theme.getColor(ColorId.statusBar));
       }
       if (overlayIcon != null)
-        Drawables.draw(c, overlayIcon, receiver.centerX() - overlayIcon.getMinimumWidth() / 2, receiver.centerY() - overlayIcon.getMinimumHeight() / 2, Paints.whitePorterDuffPaint());
+        Drawables.draw(c, overlayIcon, receiver.centerX() - overlayIcon.getMinimumWidth() / 2f, receiver.centerY() - overlayIcon.getMinimumHeight() / 2f, Paints.whitePorterDuffPaint());
     }
   }
 }

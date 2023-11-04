@@ -583,6 +583,9 @@ public class ContentPreview {
       case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
       case TdApi.MessagePassportDataSent.CONSTRUCTOR:
       case TdApi.MessageChatSetBackground.CONSTRUCTOR:
+      case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
+      case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR:
+      case TdApi.MessagePremiumGiveaway.CONSTRUCTOR:
         break;
 
       // Bots only. Unused
@@ -590,7 +593,7 @@ public class ContentPreview {
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_cda9af31();
+        Td.assertMessageContent_ea2cfacf();
         throw Td.unsupported(message.content);
     }
     Refresher refresher = null;
@@ -961,8 +964,16 @@ public class ContentPreview {
         return getNotificationPreview(TdApi.MessageChatSetBackground.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, ((TdApi.PushMessageContentChatSetBackground) push.content).isSame ? ARG_TRUE : ARG_NONE);
       case TdApi.PushMessageContentSuggestProfilePhoto.CONSTRUCTOR:
         return getNotificationPreview(TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, 0);
+
+      case TdApi.PushMessageContentPremiumGiftCode.CONSTRUCTOR:
+        return getNotificationPreview(TdApi.MessagePremiumGiftCode.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, ((TdApi.PushMessageContentPremiumGiftCode) push.content).monthCount);
+      case TdApi.PushMessageContentPremiumGiveaway.CONSTRUCTOR: {
+        TdApi.PushMessageContentPremiumGiveaway giveaway = (TdApi.PushMessageContentPremiumGiveaway) push.content;
+        // TODO support
+        return new ContentPreview(EMOJI_QUIZ, R.string.UnsupportedMessage);
+      }
       default:
-        Td.assertPushMessageContent_e86d33d2();
+        Td.assertPushMessageContent_b17e0a62();
         throw Td.unsupported(push.content);
     }
   }
@@ -1187,6 +1198,9 @@ public class ContentPreview {
       case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
       case TdApi.MessagePassportDataSent.CONSTRUCTOR:
       case TdApi.MessageChatSetBackground.CONSTRUCTOR:
+      case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
+      case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR:
+      case TdApi.MessagePremiumGiveaway.CONSTRUCTOR:
         // TODO support these previews
         return new ContentPreview(EMOJI_QUIZ, R.string.UnsupportedMessage);
         
@@ -1198,7 +1212,7 @@ public class ContentPreview {
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_cda9af31();
+        Td.assertMessageContent_ea2cfacf();
         throw new UnsupportedOperationException(Integer.toString(type));
     }
   }

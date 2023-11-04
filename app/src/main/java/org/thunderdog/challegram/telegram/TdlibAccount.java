@@ -31,7 +31,6 @@ import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageFileLocal;
-import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.unsorted.Settings;
 
@@ -476,12 +475,12 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   private ImageFile avatarSmallFile, avatarBigFile;
   private DisplayInformation displayInformation;
 
-  void storeUserInformation (@Nullable TdApi.User user, @Nullable TdApi.Sticker emojiStatus) {
+  void storeUserInformation (@Nullable TdApi.User user, @Nullable TdApi.AccentColor accentColor, @Nullable TdApi.Sticker emojiStatus) {
     avatarSmallFile = avatarBigFile = null;
     if (user != null && user.id == knownUserId) {
       String prefix = Settings.accountInfoPrefix(id);
       boolean isUpdate = Settings.instance().getLong(prefix, 0) == user.id;
-      displayInformation = new DisplayInformation(prefix, user, emojiStatus, isUpdate);
+      displayInformation = new DisplayInformation(prefix, user, accentColor, emojiStatus, isUpdate);
     } else {
       deleteDisplayInformation();
       counters.clear();
@@ -590,10 +589,13 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
     if (user != null)
       return tdlib.cache().userPlaceholderMetadata(user, false);
     DisplayInformation info = getDisplayInformation();
-    if (info != null)
-      return new AvatarPlaceholder.Metadata(TD.getAvatarColorId(knownUserId, knownUserId), TD.getLetters(info.getFirstName(), info.getLastName()));
-    if (knownUserId != 0)
-      return new AvatarPlaceholder.Metadata(TD.getAvatarColorId(knownUserId, knownUserId));
+    if (info != null) {
+      int accentColorId = info.getAccentColorId();
+      return new AvatarPlaceholder.Metadata(tdlib.accentColor(accentColorId), TD.getLetters(info.getFirstName(), info.getLastName()));
+    }
+    if (knownUserId != 0) {
+      return new AvatarPlaceholder.Metadata(TdlibAccentColor.defaultAccentColorForUserId(tdlib, knownUserId));
+    }
     return null;
   }
 

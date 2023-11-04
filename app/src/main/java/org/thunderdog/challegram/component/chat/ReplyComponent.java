@@ -43,7 +43,7 @@ import org.thunderdog.challegram.loader.ImageFileLocal;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.telegram.TdlibSender;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
@@ -78,7 +78,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
 
   private TdApi.MessageSender sender;
   private String senderName;
-  private @ColorId int nameColorId;
+  private TdlibAccentColor accentColor;
 
   private int maxWidth;
   private int flags;
@@ -325,8 +325,18 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     if (parent != null) {
       if (parent.separateReplyFromContent())
         return parent::getBubbleMediaReplyTextColor;
-      if (nameColorId != 0)
-        return () -> Theme.getColor(nameColorId);
+      if (accentColor != null)
+        return new TextColorSet() {
+          @Override
+          public int defaultTextColor () {
+            return accentColor.getNameColor();
+          }
+
+          @Override
+          public long mediaTextComplexColor () {
+            return accentColor.getNameComplexColor();
+          }
+        };
       if (isPsa())
         return parent.getChatAuthorPsaColorSet();
       return parent.getChatAuthorColorSet();
@@ -444,7 +454,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       } else {
         rectF.set(startX, startY, startX + lineWidth, startY + mHeight);
       }
-      c.drawRoundRect(rectF, lineWidth / 2f, lineWidth / 2f, Paints.fillingPaint(isWhite ? parent.getBubbleMediaReplyTextColor() : isOutBubble ? Theme.getColor(ColorId.bubbleOut_chatVerticalLine) : nameColorId != 0 ? Theme.getColor(nameColorId) : Theme.getColor(ColorId.messageVerticalLine)));
+      c.drawRoundRect(rectF, lineWidth / 2f, lineWidth / 2f, Paints.fillingPaint(isWhite ? parent.getBubbleMediaReplyTextColor() : isOutBubble ? Theme.getColor(ColorId.bubbleOut_chatVerticalLine) : accentColor != null ? accentColor.getPrimaryColor() : Theme.getColor(ColorId.messageVerticalLine)));
 
       return;
     }
@@ -639,10 +649,10 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
 
   private void setMessage (TdApi.Message msg, boolean forceRequestImage, boolean forceLocal) {
     currentMessage = msg;
-    if ((flags & FLAG_USE_COLORIZE) != 0 && !tdlib.isSelfSender(msg)) {
-      nameColorId = TD.getNameColorId(new TdlibSender(tdlib, msg.chatId, msg.senderId).getAvatarColorId());
+    if ((flags & FLAG_USE_COLORIZE) != 0) {
+      accentColor = tdlib.senderAccentColor(msg.senderId);
     } else {
-      nameColorId = ColorId.NONE;
+      accentColor = null;
     }
     boolean isPrivate = Td.isSecret(msg.content);
     Path contour = null;
@@ -777,24 +787,24 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     ContentPreview contentPreview = ContentPreview.getChatListPreview(tdlib, msg.chatId, msg, true);
     if (msg.forwardInfo != null && (parent != null && parent.getMessage().forwardInfo != null)) {
       switch (msg.forwardInfo.origin.getConstructor()) {
-        case TdApi.MessageForwardOriginUser.CONSTRUCTOR:
-          sender = new TdApi.MessageSenderUser(((TdApi.MessageForwardOriginUser) msg.forwardInfo.origin).senderUserId);
+        case TdApi.MessageOriginUser.CONSTRUCTOR:
+          sender = new TdApi.MessageSenderUser(((TdApi.MessageOriginUser) msg.forwardInfo.origin).senderUserId);
           senderName = null;
           break;
-        case TdApi.MessageForwardOriginChannel.CONSTRUCTOR: {
-          TdApi.MessageForwardOriginChannel channel = ((TdApi.MessageForwardOriginChannel) msg.forwardInfo.origin);
+        case TdApi.MessageOriginChannel.CONSTRUCTOR: {
+          TdApi.MessageOriginChannel channel = ((TdApi.MessageOriginChannel) msg.forwardInfo.origin);
           sender = new TdApi.MessageSenderChat(channel.chatId);
           senderName = !StringUtils.isEmpty(channel.authorSignature) ? channel.authorSignature : null;
           break;
         }
-        case TdApi.MessageForwardOriginChat.CONSTRUCTOR: {
-          TdApi.MessageForwardOriginChat chat = (TdApi.MessageForwardOriginChat) msg.forwardInfo.origin;
+        case TdApi.MessageOriginChat.CONSTRUCTOR: {
+          TdApi.MessageOriginChat chat = (TdApi.MessageOriginChat) msg.forwardInfo.origin;
           sender = new TdApi.MessageSenderChat(chat.senderChatId);
           senderName = chat.authorSignature;
           break;
         }
-        case TdApi.MessageForwardOriginHiddenUser.CONSTRUCTOR: {
-          senderName = ((TdApi.MessageForwardOriginHiddenUser) msg.forwardInfo.origin).senderName;
+        case TdApi.MessageOriginHiddenUser.CONSTRUCTOR: {
+          senderName = ((TdApi.MessageOriginHiddenUser) msg.forwardInfo.origin).senderName;
           sender = null;
           break;
         }

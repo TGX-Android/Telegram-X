@@ -22,7 +22,6 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.BackgroundColorSpan;
-import android.text.style.CharacterStyle;
 import android.view.Gravity;
 import android.widget.RelativeLayout;
 
@@ -389,7 +388,7 @@ public class Lang {
     }
   }
 
-  public static CharacterStyle newBoldSpan (boolean needFakeBold) {
+  public static Object newBoldSpan (boolean needFakeBold) {
     return TD.toDisplaySpan(new TdApi.TextEntityTypeBold(), null, needFakeBold);
   }
 
@@ -397,11 +396,11 @@ public class Lang {
     return (target, argStart, argEnd, argIndex, needFakeBold) -> newBoldSpan(needFakeBold);
   }
 
-  public static CharacterStyle newCodeSpan (boolean needFakeBold) {
+  public static Object newCodeSpan (boolean needFakeBold) {
     return TD.toDisplaySpan(new TdApi.TextEntityTypeCode(), null, needFakeBold);
   }
 
-  public static CharacterStyle newItalicSpan (boolean needFakeBold) {
+  public static Object newItalicSpan (boolean needFakeBold) {
     return TD.toDisplaySpan(new TdApi.TextEntityTypeItalic(), null, needFakeBold);
   }
 
@@ -417,11 +416,15 @@ public class Lang {
     return (target, argStart, argEnd, argIndex, needFakeBold) -> TD.toSpan(entity);
   }
 
-  public static CharacterStyle newUserSpan (TdlibDelegate context, long userId) {
-    return TD.toDisplaySpan(new TdApi.TextEntityTypeMentionName(userId)).setOnClickListener((view, span, clickedText) -> {
-      context.tdlib().ui().openPrivateProfile(context, userId, null);
-      return true;
-    });
+  public static Object newUserSpan (TdlibDelegate context, long userId) {
+    Object span = TD.toDisplaySpan(new TdApi.TextEntityTypeMentionName(userId));
+    if (span instanceof CustomTypefaceSpan) {
+      ((CustomTypefaceSpan) span).setOnClickListener((view, span1, clickedText) -> {
+        TD.handleLegacyClick(context, clickedText, span1);
+        return true;
+      });
+    }
+    return span;
   }
 
   public static CharSequence getString (@StringRes int resId, SpanCreator creator, Object... formatArgs) {
@@ -1064,6 +1067,9 @@ public class Lang {
       case TdApi.MessageGameScore.CONSTRUCTOR:
       case TdApi.MessageInvoice.CONSTRUCTOR:
       case TdApi.MessageGiftedPremium.CONSTRUCTOR:
+      case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
+      case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR:
+      case TdApi.MessagePremiumGiveaway.CONSTRUCTOR:
       case TdApi.MessageBasicGroupChatCreate.CONSTRUCTOR:
       case TdApi.MessageCall.CONSTRUCTOR:
       case TdApi.MessageChatAddMembers.CONSTRUCTOR:
@@ -1105,7 +1111,7 @@ public class Lang {
       case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
         break;
       default:
-        Td.assertMessageContent_cda9af31();
+        Td.assertMessageContent_ea2cfacf();
         throw Td.unsupported(message.content);
     }
     String format = Lang.getString(res);
@@ -1460,7 +1466,10 @@ public class Lang {
       while (matcher.find()) {
         int start = matcher.start();
         int end = matcher.end();
-        out.setSpan(new CustomTypefaceSpan(Fonts.getRobotoMedium(), ColorId.textNeutral).setEntityType(new TdApi.TextEntityTypeBold()).setFakeBold(Text.needFakeBold(str, start, end)), startIndex + start, startIndex + end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        CustomTypefaceSpan span = new CustomTypefaceSpan(Fonts.getRobotoMedium(), ColorId.textNeutral);
+        span.setTextEntityType(new TdApi.TextEntityTypeBold());
+        span.setFakeBold(Text.needFakeBold(str, start, end));
+        out.setSpan(span, startIndex + start, startIndex + end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
       }
       if (num >= 0) {
         int index = StringUtils.indexOf(out, "%1$s", startIndex);

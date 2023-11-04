@@ -33,7 +33,6 @@ import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.text.style.CharacterStyle;
 import android.text.style.StyleSpan;
 import android.text.style.URLSpan;
 import android.util.TypedValue;
@@ -430,9 +429,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     TextSelection selection = getTextSelection();
     if (selection != null && !selection.isEmpty()) {
       Editable editable = getText();
-      CharacterStyle[] spans = editable.getSpans(selection.start, selection.end, CharacterStyle.class);
+      Object[] spans = editable.getSpans(selection.start, selection.end, Object.class);
       if (spans != null) {
-        for (CharacterStyle span : spans) {
+        for (Object span : spans) {
           if (span instanceof NoCopySpan || span instanceof EmojiSpan || isComposingSpan(editable, span) || !TD.canConvertToEntityType(span)) {
             continue;
           }
@@ -449,10 +448,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   private void clearSpans (int start, int end, @Nullable TdApi.TextEntityType typeForRemove) {
     Editable editable = getText();
-    CharacterStyle[] spans = editable.getSpans(start, end, CharacterStyle.class);
+    Object[] spans = editable.getSpans(start, end, Object.class);
     boolean updated = false;
     if (spans != null) {
-      for (CharacterStyle existingSpan : spans) {
+      for (Object existingSpan : spans) {
         if (existingSpan instanceof NoCopySpan || existingSpan instanceof EmojiSpan || isComposingSpan(editable, existingSpan) || !TD.canConvertToEntityType(existingSpan)) {
           continue;
         }
@@ -516,12 +515,12 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     if (end - start <= 0 || !TD.canConvertToSpan(newType)) {
       return false;
     }
-    CharacterStyle newSpan = TD.toSpan(newType);
+    Object newSpan = TD.toSpan(newType);
     Editable editable = getText();
-    CharacterStyle[] existingSpansArray = editable.getSpans(start, end, CharacterStyle.class);
-    List<CharacterStyle> existingSpans = null;
+    Object[] existingSpansArray = editable.getSpans(start, end, Object.class);
+    List<Object> existingSpans = null;
     if (existingSpansArray != null && existingSpansArray.length > 0) {
-      for (CharacterStyle existingSpan : existingSpansArray) {
+      for (Object existingSpan : existingSpansArray) {
         if (existingSpan instanceof NoCopySpan || isComposingSpan(editable, existingSpan) || !TD.canConvertToEntityType(existingSpan)) {
           continue;
         }
@@ -586,7 +585,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       return true;
     }
     boolean canBeNested = Td.canBeNested(newType);
-    for (CharacterStyle existingSpan : existingSpans) {
+    for (Object existingSpan : existingSpans) {
       int existingSpanStart = editable.getSpanStart(existingSpan);
       int existingSpanEnd = editable.getSpanEnd(existingSpan);
       TdApi.TextEntityType[] existingTypes = TD.toEntityType(existingSpan);
@@ -1220,7 +1219,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     if (draftContent != null && draftContent.getConstructor() == TdApi.InputMessageText.CONSTRUCTOR) {
       TdApi.InputMessageText textDraft = (TdApi.InputMessageText) draftContent;
       draft = TD.toCharSequence(textDraft.text);
-      ignoreFirstLinkPreview = textDraft.disableWebPagePreview;
+      ignoreFirstLinkPreview = textDraft.linkPreviewOptions != null && textDraft.linkPreviewOptions.isDisabled;
     } else {
       draft = "";
       ignoreFirstLinkPreview = false;
@@ -1477,7 +1476,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         long timestamp = System.currentTimeMillis();
         long chatId = controller.getChatId();
         long messageThreadId = controller.getMessageThreadId();
-        TdApi.MessageReplyTo replyTo = controller.obtainReplyTo();
+        TdApi.InputMessageReplyTo replyTo = controller.obtainReplyTo();
         boolean silent = controller.obtainSilentMode();
         boolean needMenu = controller.areScheduledOnly();
 

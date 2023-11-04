@@ -74,7 +74,7 @@ public class TGMessageText extends TGMessage {
   }
 
   public TGMessageText (MessagesManager context, TdApi.Message msg, TdApi.FormattedText text) {
-    this(context, msg, new TdApi.MessageText(text, null), null);
+    this(context, msg, new TdApi.MessageText(text, null, null), null);
   }
 
   public TdApi.File getTargetFile () {
@@ -140,7 +140,7 @@ public class TGMessageText extends TGMessage {
         }
       }
       if (messageContent != null && Td.isAnimatedEmoji(messageContent) && !allowEmoji) {
-        messageContent = new TdApi.MessageText(Td.textOrCaption(messageContent), null);
+        messageContent = new TdApi.MessageText(Td.textOrCaption(messageContent), null, null);
       }
       if (this.pendingMessageText != messageContent) {
         if (messageContent != null && !Td.isText(messageContent))
@@ -357,7 +357,7 @@ public class TGMessageText extends TGMessage {
   protected boolean updateMessageContent (TdApi.Message message, TdApi.MessageContent newContent, boolean isBottomMessage) {
     TdApi.WebPage oldWebPage = Td.isText(this.msg.content) ? ((TdApi.MessageText) this.msg.content).webPage : null;
     this.msg.content = newContent;
-    TdApi.MessageText newText = Td.isText(newContent) ? (TdApi.MessageText) newContent : new TdApi.MessageText(Td.textOrCaption(newContent), null);
+    TdApi.MessageText newText = Td.isText(newContent) ? (TdApi.MessageText) newContent : new TdApi.MessageText(Td.textOrCaption(newContent), null, null);
     this.currentMessageText = newText;
     if (!isBeingEdited()) {
       setText(newText.text, false);

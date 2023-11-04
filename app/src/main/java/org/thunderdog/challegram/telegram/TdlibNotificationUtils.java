@@ -42,6 +42,7 @@ import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReader;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.theme.ThemeId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Intents;
@@ -62,7 +63,7 @@ public class TdlibNotificationUtils {
     if (tdlib.isSelfChat(chat)) {
       return buildSelfIcon(tdlib);
     } else {
-      return buildLargeIcon(tdlib, chat.photo != null ? chat.photo.small : null, tdlib.chatAvatarColorId(chat), tdlib.chatLetters(chat), true, allowDownload);
+      return buildLargeIcon(tdlib, chat.photo != null ? chat.photo.small : null, tdlib.chatAccentColor(chat), tdlib.chatLetters(chat), true, allowDownload);
     }
   }
 
@@ -104,7 +105,7 @@ public class TdlibNotificationUtils {
         bitmapPaint.setColor(color);
         if (Device.ROUND_NOTIFICAITON_IMAGE) {
           fillingPaint.setColor(color);
-          c.drawCircle(size / 2, size / 2, size / 2, fillingPaint);
+          c.drawCircle(size / 2f, size / 2f, size / 2f, fillingPaint);
         } else {
           c.drawColor(color);
         }
@@ -113,9 +114,9 @@ public class TdlibNotificationUtils {
         float scale = (float) size / (float) Screen.dp(44f);
         if (scale != 1f) {
           c.save();
-          c.scale(scale, scale, size / 2, size / 2);
+          c.scale(scale, scale, size / 2f, size / 2f);
         }
-        Drawables.draw(c, d, size / 2 - d.getMinimumWidth() / 2, size / 2 - d.getMinimumHeight() / 2, PorterDuffPaint.get(ColorId.avatar_content));
+        Drawables.draw(c, d, size / 2f - d.getMinimumWidth() / 2f, size / 2f - d.getMinimumHeight() / 2f, PorterDuffPaint.get(ColorId.avatar_content));
         if (scale != 1f) {
           c.restore();
         }
@@ -130,7 +131,7 @@ public class TdlibNotificationUtils {
     return bitmap;
   }
 
-  public static Bitmap buildLargeIcon (Tdlib tdlib, TdApi.File rawFile, @ColorId int colorId, Letters letters, boolean allowSyncDownload, boolean allowDownload) {
+  public static Bitmap buildLargeIcon (Tdlib tdlib, TdApi.File rawFile, TdlibAccentColor accentColor, Letters letters, boolean allowSyncDownload, boolean allowDownload) {
     Bitmap avatarBitmap = null;
     if (rawFile != null) {
       tdlib.files().syncFile(rawFile, null, 500);
@@ -188,23 +189,29 @@ public class TdlibNotificationUtils {
         Bitmap createdBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(createdBitmap);
 
-        final int color = Theme.getColor(colorId, tdlib.settings().globalTheme());
+        long complexColor = accentColor.getPrimaryComplexColor();
+        final @ThemeId int themeId = tdlib.settings().globalTheme();
+        final int color = Theme.toColorInt(complexColor, themeId);
 
         bitmapPaint.setColor(color);
         if (Device.ROUND_NOTIFICAITON_IMAGE) {
           fillingPaint.setColor(color);
-          c.drawCircle(size / 2, size / 2, size / 2, fillingPaint);
+          c.drawCircle(size / 2f, size / 2f, size / 2f, fillingPaint);
         } else {
           c.drawColor(color);
         }
 
         if (avatarBitmap == null) {
-          c.drawText(letters.text, size / 2 - U.measureText(letters.text, letters.needFakeBold ? lettersPaintFake : lettersPaint) / 2, size / 2 + Screen.dp(8f, MAX_DENSITY), letters.needFakeBold ? lettersPaintFake : lettersPaint);
+          final long lettersComplexColor = accentColor.getPrimaryContentComplexColor();
+          final int lettersColor = Theme.toColorInt(lettersComplexColor, themeId);
+          final Paint paint = letters.needFakeBold ? lettersPaintFake : lettersPaint;
+          paint.setColor(lettersColor);
+          c.drawText(letters.text, size / 2f - U.measureText(letters.text, letters.needFakeBold ? lettersPaintFake : lettersPaint) / 2, size / 2f + Screen.dp(8f, MAX_DENSITY), paint);
         } else {
           float scale = (float) size / (float) avatarBitmap.getWidth();
           c.save();
-          c.scale(scale, scale, size / 2, size / 2);
-          c.drawBitmap(avatarBitmap, size / 2 - avatarBitmap.getWidth() / 2, size / 2 - avatarBitmap.getHeight() / 2, bitmapPaint);
+          c.scale(scale, scale, size / 2f, size / 2f);
+          c.drawBitmap(avatarBitmap, size / 2f - avatarBitmap.getWidth() / 2f, size / 2f - avatarBitmap.getHeight() / 2f, bitmapPaint);
           c.restore();
         }
         bitmap = createdBitmap;

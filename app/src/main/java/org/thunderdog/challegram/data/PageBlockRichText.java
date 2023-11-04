@@ -35,6 +35,7 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -335,7 +336,7 @@ public class PageBlockRichText extends PageBlock {
     super(context, footer);
     setText(footer.footer, getFooterProvider(), TextColorSets.InstantView.FOOTER, openParameters);
     if (!isPost) {
-      this.backgroundColorId = 0;
+      this.backgroundColorId = ColorId.NONE;
     } else {
       this.paddingTop = 3f;
     }
@@ -400,8 +401,7 @@ public class PageBlockRichText extends PageBlock {
 
   private ImageFile avatarMiniThumbnail, avatarPreview, avatarFull;
   private boolean needAvatar;
-  private @ColorId
-  int avatarPlaceholderColorId;
+  private TdlibAccentColor accentColor;
 
   public PageBlockRichText (ViewController<?> context, TdApi.PageBlockEmbeddedPost embeddedPost, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, embeddedPost);
@@ -413,6 +413,7 @@ public class PageBlockRichText extends PageBlock {
 
     this.needAvatar = true;
     TdApi.PhotoSize size = Td.findSmallest(embeddedPost.authorPhoto);
+    accentColor = context.tdlib().accentColorForString(embeddedPost.author);
     if (size != null) {
       if (embeddedPost.authorPhoto.minithumbnail != null) {
         avatarMiniThumbnail = new ImageFileLocal(embeddedPost.authorPhoto.minithumbnail);
@@ -431,8 +432,6 @@ public class PageBlockRichText extends PageBlock {
       } else {
         avatarPreview.setNoBlur();
       }
-    } else {
-      avatarPlaceholderColorId = TD.getAvatarColorId(embeddedPost.author.hashCode(), 0);
     }
   }
 
@@ -581,7 +580,7 @@ public class PageBlockRichText extends PageBlock {
       int textLeft = getTextPaddingLeft();
       int textTop = getContentTop();
 
-      if (forceBackground && backgroundColorId != 0) {
+      if (forceBackground && backgroundColorId != ColorId.NONE) {
         c.drawRect(0, 0, viewWidth, getComputedHeight(), Paints.fillingPaint(Theme.getColor(backgroundColorId)));
       }
 
@@ -592,7 +591,7 @@ public class PageBlockRichText extends PageBlock {
         if (avatarPreview != null) {
           if (receiver.needPlaceholder()) {
             if (preview.needPlaceholder()) {
-              c.drawCircle(avatarLeft + avatarSize / 2, avatarTop + avatarSize / 2, avatarSize / 2, Paints.fillingPaint(Theme.placeholderColor()));
+              c.drawCircle(avatarLeft + avatarSize / 2f, avatarTop + avatarSize / 2f, avatarSize / 2f, Paints.fillingPaint(Theme.placeholderColor()));
             }
             preview.setBounds(avatarLeft, avatarTop, avatarLeft + avatarSize, avatarTop + avatarSize);
             preview.draw(c);
@@ -600,7 +599,7 @@ public class PageBlockRichText extends PageBlock {
           receiver.setBounds(avatarLeft, avatarTop, avatarLeft + avatarSize, avatarTop + avatarSize);
           receiver.draw(c);
         } else {
-          c.drawCircle(avatarLeft + avatarSize / 2, avatarTop + avatarSize / 2, avatarSize / 2, Paints.fillingPaint(Theme.getColor(avatarPlaceholderColorId)));
+          c.drawCircle(avatarLeft + avatarSize / 2f, avatarTop + avatarSize / 2f, avatarSize / 2f, Paints.fillingPaint(accentColor.getPrimaryColor()));
           // TODO letters
         }
       }
@@ -664,7 +663,7 @@ public class PageBlockRichText extends PageBlock {
         if (avatarFile != null && iconReceiver != null) {
           ImageReceiver r = iconReceiver.getImageReceiver(Integer.MAX_VALUE);
           r.setBounds(cx - avatarSize / 2, cy - avatarSize / 2, cx + avatarSize / 2, cy + avatarSize / 2);
-          r.setRadius(avatarSize / 2);
+          r.setRadius(avatarSize / 2f);
           r.setPaintAlpha(r.getPaintAlpha() * subtitleFactor);
           r.draw(c);
           r.restorePaintAlpha();

@@ -81,6 +81,7 @@ import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibChatList;
 import org.thunderdog.challegram.telegram.TdlibChatListSlice;
@@ -2007,7 +2008,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       }
 
       context.setTdlib(tdlib);
-      context.setHeaderAvatar(null, new AvatarPlaceholder.Metadata(ColorId.avatarArchive, R.drawable.baseline_archive_24));
+      context.setHeaderAvatar(null, new AvatarPlaceholder.Metadata(tdlib.accentColor(TdlibAccentColor.InternalId.ARCHIVE), R.drawable.baseline_archive_24));
       context.setHeader(Lang.getString(R.string.ArchiveTitle), Lang.plural(R.string.xChats, tdlib.getTotalChatsCount(ChatPosition.CHAT_LIST_ARCHIVE)));
 
       context.setMaximizeListener((target1, animateToWhenReady, arg) -> {

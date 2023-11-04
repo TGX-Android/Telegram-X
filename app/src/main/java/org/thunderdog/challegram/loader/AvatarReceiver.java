@@ -175,7 +175,16 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   // Public API
 
   public boolean requestPlaceholder (Tdlib tdlib, AvatarPlaceholder.Metadata specificPlaceholder, @Options int options) {
-    return requestData(tdlib, DataType.PLACEHOLDER, specificPlaceholder != null ? specificPlaceholder.colorId : 0, specificPlaceholder, null, null, null, options | Options.NO_UPDATES);
+    int nonZeroId;
+    if (specificPlaceholder != null) {
+      nonZeroId = specificPlaceholder.accentColor.getId();
+      if (nonZeroId >= 0) {
+        nonZeroId = nonZeroId + 1;
+      }
+    } else {
+      nonZeroId = 0;
+    }
+    return requestData(tdlib, DataType.PLACEHOLDER, nonZeroId, specificPlaceholder, null, null, null, options | Options.NO_UPDATES);
   }
 
   public boolean isDisplayingPlaceholder (AvatarPlaceholder.Metadata specificPlaceholder) {
@@ -1166,12 +1175,11 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
         }
       }
     } else if (requestedPlaceholder != null) {
-      int toColorId = Theme.avatarSmallToBig(requestedPlaceholder.colorId);
-      int placeholderColor = toColorId != 0 ? ColorUtils.fromToArgb(
-        Theme.getColor(requestedPlaceholder.colorId),
-        Theme.getColor(toColorId),
+      int placeholderColor = ColorUtils.fromToArgb(
+        requestedPlaceholder.accentColor.getPrimaryColor(),
+        requestedPlaceholder.accentColor.getPrimaryBigColor(),
         isFullScreen.getFloatValue()
-      ) : Theme.getColor(requestedPlaceholder.colorId);
+      );
       drawPlaceholderRounded(c, displayRadius, ColorUtils.alphaColor(alpha, placeholderColor));
       int avatarContentColorId = ColorId.avatar_content;
       float primaryContentAlpha = requestedPlaceholder.extraDrawableRes != 0 ? 1f - isFullScreen.getFloatValue() : 1f;

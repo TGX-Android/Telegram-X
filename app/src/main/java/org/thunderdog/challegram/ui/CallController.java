@@ -52,6 +52,7 @@ import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
@@ -637,13 +638,8 @@ public class CallController extends ViewController<CallController.Arguments> imp
     if (emojiStatusHelper != null) {
       this.emojiStatusHelper.updateEmoji(tdlib, user, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
         @Override
-        public int mediaTextColorOrId () {
-          return ColorId.white;
-        }
-
-        @Override
-        public boolean mediaTextColorIsId () {
-          return true;
+        public long mediaTextComplexColor () {
+          return Theme.newComplexColor(true, ColorId.white);
         }
       }, R.drawable.baseline_premium_star_28, 32);
     }

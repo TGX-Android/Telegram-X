@@ -85,6 +85,9 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     boolean needsInlineBots ();
 
     TdApi.FormattedText getOutputText (boolean applyMarkdown);
+    default TdApi.LinkPreviewOptions getOutputLinkPreviewOptions () {
+      return null;
+    }
 
     int showLinkPreviewWarning (int contextId, @Nullable String link);
   }
@@ -1388,7 +1391,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
           }
           UI.post(() -> {
             if (linkContextId == contextId) {
-              tdlib.send(new TdApi.GetWebPagePreview(callback.getOutputText(true)), (webPagePreview, error) -> {
+              tdlib.send(new TdApi.GetWebPagePreview(callback.getOutputText(true), callback.getOutputLinkPreviewOptions()), (webPagePreview, error) -> {
                 if (error != null) {
                   if (error.code != 404) { // 404 is "Web page is empty". Maybe something interesting
                     Log.w("Cannot load link preview: %s", TD.toErrorString(error));

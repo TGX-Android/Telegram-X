@@ -50,7 +50,6 @@ import org.thunderdog.challegram.emoji.EmojiInfo;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
-import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -590,6 +589,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR: // TODO
       case TdApi.TextEntityTypeBold.CONSTRUCTOR:
       case TdApi.TextEntityTypeCode.CONSTRUCTOR:
+      case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
       case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
       case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
       case TdApi.TextEntityTypePre.CONSTRUCTOR:
@@ -601,7 +601,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
         break;
       default:
-        Td.assertTextEntityType_542d164b();
+        Td.assertTextEntityType_91234a79();
         throw Td.unsupported(entity.type);
     }
     return false;
@@ -2923,14 +2923,9 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return isClickable ? theme.clickableTextColor(isPressed) : theme.defaultTextColor();
   }
 
-  public @PorterDuffColorId int getMediaTextColorOrId () {
+  public long getMediaTextComplexColor () {
     TextColorSet theme = pickTheme(null, null);
-    return theme.mediaTextColorOrId();
-  }
-
-  public boolean getMediaTextColorIsId () {
-    TextColorSet theme = pickTheme(null, null);
-    return theme.mediaTextColorIsId();
+    return theme.mediaTextComplexColor();
   }
 
   @ColorInt

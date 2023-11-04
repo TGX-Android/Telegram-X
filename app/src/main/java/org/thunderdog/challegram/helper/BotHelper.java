@@ -350,7 +350,7 @@ public class BotHelper implements Client.ResultHandler, Runnable, InlineSearchCo
         TdApi.ReplyMarkupShowKeyboard showKeyboard = (TdApi.ReplyMarkupShowKeyboard) markup;
         processShowKeyboard(messageId, showKeyboard);
         if (type == TYPE_GROUP || type == TYPE_SUPERGROUP) {
-          context.showReply(message, false, false); // FIXME?
+          context.showReply(message, null, false, false); // FIXME?
         }
         context.setCustomBotPlaceholder(showKeyboard.inputFieldPlaceholder);
         break;
@@ -371,9 +371,9 @@ public class BotHelper implements Client.ResultHandler, Runnable, InlineSearchCo
   private void processForceReply (TdApi.Message message, boolean personal) {
     if (personal) {
       context.showKeyboard();
-      context.showReply(message, false, false);
+      context.showReply(message, null, false, false);
     } else if (type == TYPE_PRIVATE) {
-      context.showReply(message, false, false);
+      context.showReply(message, null, false, false);
     }
     if (message != null) {
       context.tdlib().client().send(new TdApi.DeleteChatReplyMarkup(chatId, message.id), this);

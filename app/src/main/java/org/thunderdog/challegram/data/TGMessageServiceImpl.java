@@ -40,6 +40,9 @@ import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
+import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
+import org.thunderdog.challegram.telegram.TdlibEmojiManager;
 import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -52,6 +55,7 @@ import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextColorSetOverride;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextEntityCustom;
+import org.thunderdog.challegram.util.text.TextEntityMessage;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -407,6 +411,60 @@ abstract class TGMessageServiceImpl extends TGMessage {
     FormattedText buildArgument ();
   }
 
+  protected final class AccentColorArgument implements FormattedArgument {
+    private final TdlibAccentColor accentColor;
+
+    public AccentColorArgument (TdlibAccentColor accentColor) {
+      this.accentColor = accentColor;
+    }
+
+    @Override
+    public FormattedText buildArgument () {
+      final String text = accentColor.getTextRepresentation();
+      TextEntityCustom custom = new TextEntityCustom(
+        controller(),
+        tdlib,
+        text,
+        0, text.length(),
+        0,
+        openParameters()
+      );
+      customizeColor(custom, accentColor);
+      return new FormattedText(text, new TextEntity[] {custom});
+    }
+  }
+
+  protected final class CustomEmojiArgument implements FormattedArgument {
+    private final Tdlib tdlib;
+    private final long customEmojiId;
+    private final String text;
+
+    public CustomEmojiArgument (Tdlib tdlib, long customEmojiId) {
+      this.tdlib = tdlib;
+      this.customEmojiId = customEmojiId;
+      TdlibEmojiManager.Entry emoji = tdlib.emoji().find(customEmojiId);
+      if (emoji != null && !emoji.isNotFound()) {
+        this.text = emoji.value.emoji;
+      } else {
+        this.text = ContentPreview.EMOJI_INFO.textRepresentation;
+      }
+    }
+
+    @Override
+    public FormattedText buildArgument () {
+      String text = this.text;
+      TextEntityMessage custom = new TextEntityMessage(
+        tdlib,
+        text,
+        0, text.length(),
+        new TdApi.TextEntity(0, text.length(), new TdApi.TextEntityTypeCustomEmoji(customEmojiId)),
+        null,
+        openParameters()
+      );
+      return new FormattedText(text, new TextEntity[] {custom});
+    }
+  }
+
   protected final class SenderArgument implements FormattedArgument {
     private final TdlibSender sender;
     private final boolean onlyFirstName;
@@ -456,68 +514,64 @@ abstract class TGMessageServiceImpl extends TGMessage {
           }
         }
       });
-      int nameColorId = needColoredNames() ?
-        sender.getNameColorId() :
-        ColorId.messageAuthor;
-      if (useBubbles()) {
-        custom.setCustomColorSet(new TextColorSetOverride(defaultTextColorSet()) {
-          @Override
-          public int defaultTextColor () {
-            return ColorUtils.fromToArgb(
-              getBubbleDateTextColor(),
-              Theme.getColor(nameColorId),
-              messagesController().wallpaper().getBackgroundTransparency()
-            );
-          }
-
-          @Override
-          public int clickableTextColor (boolean isPressed) {
-            return defaultTextColor();
-          }
-
-          @Override
-          public int backgroundColorId (boolean isPressed) {
-            float transparency = messagesController().wallpaper().getBackgroundTransparency();
-            return isPressed && transparency == 1f ?
-              nameColorId :
-              0;
-          }
-
-          @Override
-          public int backgroundColor (boolean isPressed) {
-            int colorId = backgroundColorId(isPressed);
-            return colorId != 0 ?
-              ColorUtils.alphaColor(.2f, Theme.getColor(colorId)) :
-              0;
-          }
-        });
-      } else {
-        custom.setCustomColorSet(new TextColorSetOverride(defaultTextColorSet()) {
-          @Override
-          public int defaultTextColor () {
-            return Theme.getColor(nameColorId);
-          }
-
-          @Override
-          public int clickableTextColor (boolean isPressed) {
-            return defaultTextColor();
-          }
-
-          @Override
-          public int backgroundColorId (boolean isPressed) {
-            return isPressed ? nameColorId : 0;
-          }
-
-          @Override
-          public int backgroundColor (boolean isPressed) {
-            int colorId = backgroundColorId(isPressed);
-            return colorId != 0 ?
-              ColorUtils.alphaColor(.2f, Theme.getColor(colorId)) :
-              0;
-          }
-        });
-      }
+      TdlibAccentColor accentColor = needColoredNames() ? sender.getAccentColor() : tdlib.accentColor(TdlibAccentColor.InternalId.REGULAR);
+      customizeColor(custom, accentColor);
       return new FormattedText(text, new TextEntity[] {custom});
+    }
+  }
+
+  protected void customizeColor (TextEntity entity, TdlibAccentColor accentColor) {
+    if (useBubbles()) {
+      entity.setCustomColorSet(new TextColorSetOverride(defaultTextColorSet()) {
+        @Override
+        public int defaultTextColor () {
+          return ColorUtils.fromToArgb(
+            getBubbleDateTextColor(),
+            accentColor.getNameColor(),
+            messagesController().wallpaper().getBackgroundTransparency()
+          );
+        }
+
+        @Override
+        public int clickableTextColor (boolean isPressed) {
+          return defaultTextColor();
+        }
+
+        @Override
+        public int backgroundColorId (boolean isPressed) {
+          float transparency = messagesController().wallpaper().getBackgroundTransparency();
+          long complexColor = accentColor.getNameComplexColor();
+          return isPressed && transparency == 1f ? Theme.extractColorValue(complexColor) : 0;
+        }
+
+        @Override
+        public int backgroundColor (boolean isPressed) {
+          float transparency = messagesController().wallpaper().getBackgroundTransparency();
+          return isPressed && transparency == 1f ? ColorUtils.alphaColor(.2f, accentColor.getNameColor()) : 0;
+        }
+      });
+    } else {
+      entity.setCustomColorSet(new TextColorSetOverride(defaultTextColorSet()) {
+        @Override
+        public int defaultTextColor () {
+          return accentColor.getNameColor();
+        }
+
+        @Override
+        public int clickableTextColor (boolean isPressed) {
+          return defaultTextColor();
+        }
+
+        @Override
+        public int backgroundColorId (boolean isPressed) {
+          return isPressed ? Theme.extractColorValue(accentColor.getNameComplexColor()) : 0;
+        }
+
+        @Override
+        public int backgroundColor (boolean isPressed) {
+          return isPressed ? ColorUtils.alphaColor(.2f, accentColor.getNameColor()) : 0;
+        }
+      });
     }
   }
 

@@ -32,6 +32,7 @@ import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibEmojiManager;
 import org.thunderdog.challegram.telegram.TdlibThread;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
@@ -314,12 +315,8 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
     DoubleImageReceiver preview = content == null || content.needPlaceholder() ? receiver.getPreviewReceiver(displayMediaKey) : null;
     if (preview != null) {
       if (needRepainting) {
-        int color = source.getMediaTextColorOrId();
-        if (source.getMediaTextColorIsId()) {
-          preview.setThemedPorterDuffColorId(color);
-        } else {
-          preview.setPorterDuffColorFilter(color);
-        }
+        long complexColor = source.getMediaTextComplexColor();
+        Theme.applyComplexColor(preview, complexColor);
       } else {
         preview.disablePorterDuffColorFilter();
       }
@@ -333,12 +330,8 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
     }
     if (content != null) {
       if (needRepainting) {
-        int color = source.getMediaTextColorOrId();
-        if (source.getMediaTextColorIsId()) {
-          content.setThemedPorterDuffColorId(color);
-        } else {
-          content.setPorterDuffColorFilter(color);
-        }
+        long complexColor = source.getMediaTextComplexColor();
+        Theme.applyComplexColor(content, complexColor);
       } else {
         content.disablePorterDuffColorFilter();
       }

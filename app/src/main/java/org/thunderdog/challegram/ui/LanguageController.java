@@ -416,8 +416,9 @@ public class LanguageController extends RecyclerViewController<LanguageControlle
 
       String key = string.string.key;
       SpannableStringBuilder b = new SpannableStringBuilder(key);
-
-      b.setSpan(new CustomTypefaceSpan(Fonts.getRobotoItalic(), ColorId.textNeutral).setEntityType(new TdApi.TextEntityTypeItalic()), 0, key.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+      CustomTypefaceSpan italicSpan = new CustomTypefaceSpan(Fonts.getRobotoItalic(), ColorId.textNeutral);
+      italicSpan.setTextEntityType(new TdApi.TextEntityTypeItalic());
+      b.setSpan(italicSpan, 0, key.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
       showOptions(Spannable.Factory.getInstance().newSpannable(b), ids.get(), strings.get(), null, icons.get(), (itemView, id) -> {
         if (id == R.id.btn_string) {
           Intents.openLink(TD.getLanguageKeyLink(string.string.key));

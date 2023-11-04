@@ -79,6 +79,7 @@ import org.thunderdog.challegram.navigation.ReactionsOverlayView;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.telegram.TdlibEmojiManager;
 import org.thunderdog.challegram.telegram.TdlibSender;
@@ -388,20 +389,20 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         flags |= FLAG_SELF_CHAT;
         if (msg.forwardInfo != null) {
           switch (msg.forwardInfo.origin.getConstructor()) {
-            case TdApi.MessageForwardOriginUser.CONSTRUCTOR:
-              sender = new TdApi.MessageSenderUser(((TdApi.MessageForwardOriginUser) msg.forwardInfo.origin).senderUserId);
+            case TdApi.MessageOriginUser.CONSTRUCTOR:
+              sender = new TdApi.MessageSenderUser(((TdApi.MessageOriginUser) msg.forwardInfo.origin).senderUserId);
               break;
-            case TdApi.MessageForwardOriginChat.CONSTRUCTOR:
-              sender = new TdApi.MessageSenderChat(((TdApi.MessageForwardOriginChat) msg.forwardInfo.origin).senderChatId);
+            case TdApi.MessageOriginChat.CONSTRUCTOR:
+              sender = new TdApi.MessageSenderChat(((TdApi.MessageOriginChat) msg.forwardInfo.origin).senderChatId);
               break;
-            case TdApi.MessageForwardOriginChannel.CONSTRUCTOR:
-              TdApi.MessageForwardOriginChannel info = (TdApi.MessageForwardOriginChannel) msg.forwardInfo.origin;
+            case TdApi.MessageOriginChannel.CONSTRUCTOR:
+              TdApi.MessageOriginChannel info = (TdApi.MessageOriginChannel) msg.forwardInfo.origin;
               if ((msg.forwardInfo.fromChatId == 0 && msg.forwardInfo.fromMessageId == 0)) {
                 msg.forwardInfo.fromChatId = info.chatId;
                 msg.forwardInfo.fromMessageId = info.messageId;
               }
               break;
-            case TdApi.MessageForwardOriginHiddenUser.CONSTRUCTOR:
+            case TdApi.MessageOriginHiddenUser.CONSTRUCTOR:
               break;
           }
         }
@@ -422,7 +423,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       .drawable(R.drawable.baseline_bullhorn_16, 16f, 0, Gravity.CENTER_HORIZONTAL)
       .build();
     if (msg.isChannelPost || (msg.forwardInfo != null && (
-        msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginChannel.CONSTRUCTOR ||
+        msg.forwardInfo.origin.getConstructor() == TdApi.MessageOriginChannel.CONSTRUCTOR ||
         TD.getViewCount(msg.interactionInfo) > 1 ||
         tdlib.isChannel(msg.forwardInfo.fromChatId) ||
         this.sender.isChannel()
@@ -574,11 +575,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       signature = msg.authorSignature;
     } else if (forceForwardOrImportInfo() && msg.forwardInfo != null) {
       switch (msg.forwardInfo.origin.getConstructor()) {
-        case TdApi.MessageForwardOriginChannel.CONSTRUCTOR:
-          signature = ((TdApi.MessageForwardOriginChannel) msg.forwardInfo.origin).authorSignature;
+        case TdApi.MessageOriginChannel.CONSTRUCTOR:
+          signature = ((TdApi.MessageOriginChannel) msg.forwardInfo.origin).authorSignature;
           break;
-        case TdApi.MessageForwardOriginChat.CONSTRUCTOR:
-          signature = ((TdApi.MessageForwardOriginChat) msg.forwardInfo.origin).authorSignature;
+        case TdApi.MessageOriginChat.CONSTRUCTOR:
+          signature = ((TdApi.MessageOriginChat) msg.forwardInfo.origin).authorSignature;
           break;
         default:
           signature = null;
@@ -742,7 +743,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       maxIndex = MAXIMUM_COMMON_MERGE_COUNT;
     }
 
-    if (!(useBubbles && isChannel && msg.forwardInfo != null && msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginUser.CONSTRUCTOR) &&
+    if (!(useBubbles && isChannel && msg.forwardInfo != null && msg.forwardInfo.origin.getConstructor() == TdApi.MessageOriginUser.CONSTRUCTOR) &&
       msg.date - top.getMergeTime() < maxTimeDiff && top.getMergeIndex() < maxIndex) {
       flags &= ~FLAG_HEADER_ENABLED;
       mergeTime = top.getMergeTime();
@@ -883,7 +884,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   protected final boolean useForward () {
-    // && !((flags & FLAG_SELF_CHAT) == 0 && msg.forwardInfo.origin.getConstructor() != TdApi.MessageForwardOriginChannel.CONSTRUCTOR && msg.content != null && msg.content.getConstructor() == TdApi.MessageAudio.CONSTRUCTOR)
+    // && !((flags & FLAG_SELF_CHAT) == 0 && msg.forwardInfo.origin.getConstructor() != TdApi.MessageOriginChannel.CONSTRUCTOR && msg.content != null && msg.content.getConstructor() == TdApi.MessageAudio.CONSTRUCTOR)
     return msg.forwardInfo != null && (!useBubbles() || !separateReplyFromBubble()) && !forceForwardOrImportInfo();
   }
 
@@ -893,7 +894,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   private int getViewCountMode () {
     if (viewCounter != null) {
-      if (useForward() && !msg.isChannelPost && msg.forwardInfo != null && msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginChannel.CONSTRUCTOR) {
+      if (useForward() && !msg.isChannelPost && msg.forwardInfo != null && msg.forwardInfo.origin.getConstructor() == TdApi.MessageOriginChannel.CONSTRUCTOR) {
         return VIEW_COUNT_FORWARD;
       }
       if (useBubbles() || BitwiseUtils.hasFlag(flags, FLAG_HEADER_ENABLED)) {
@@ -2986,8 +2987,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
     return msg.forwardInfo != null && !isOutgoing() && (
       BitwiseUtils.hasFlag(flags, FLAG_SELF_CHAT) ||
-      (isChannelAutoForward() && msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginChannel.CONSTRUCTOR &&
-        msg.forwardInfo.fromChatId == ((TdApi.MessageForwardOriginChannel) msg.forwardInfo.origin).chatId) ||
+      (isChannelAutoForward() && msg.forwardInfo.origin.getConstructor() == TdApi.MessageOriginChannel.CONSTRUCTOR &&
+        msg.forwardInfo.fromChatId == ((TdApi.MessageOriginChannel) msg.forwardInfo.origin).chatId) ||
       (isPsa() && !sender.isUser() && useBubbles()) ||
       isRepliesChat());
   }
@@ -3078,7 +3079,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       .build();
   }
 
-  private Text makeName (String authorName, int nameColorId, boolean available, boolean isPsa, boolean hideName, long viaBotUserId, int maxWidth, boolean isForward) {
+  private Text makeName (String authorName, TdlibAccentColor accentColor, boolean available, boolean isPsa, boolean hideName, long viaBotUserId, int maxWidth, boolean isForward) {
     if (maxWidth <= 0)
       return null;
     boolean hasBot = viaBotUserId != 0;
@@ -3103,31 +3104,26 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     TextColorSet colorTheme;
     if (isPsa) {
       colorTheme = getChatAuthorPsaColorSet();
-    } else if (!isForward && needColoredNames() && nameColorId != 0) {
+    } else if (!isForward && needColoredNames() && accentColor != null) {
       colorTheme = new TextColorSetOverride(getChatAuthorColorSet()) {
         @Override
         public int clickableTextColor (boolean isPressed) {
-          return Theme.getColor(nameColorId);
+          return accentColor.getNameColor();
         }
 
         @Override
-        public int mediaTextColorOrId () {
-          return nameColorId;
-        }
-
-        @Override
-        public boolean mediaTextColorIsId () {
-          return true;
+        public long mediaTextComplexColor () {
+          return accentColor.getNameComplexColor();
         }
 
         @Override
         public int backgroundColor (boolean isPressed) {
-          return isPressed ? ColorUtils.alphaColor(.2f, Theme.getColor(nameColorId)) : 0;
+          return isPressed ? ColorUtils.alphaColor(.2f, accentColor.getPrimaryColor()) : 0;
         }
 
         @Override
         public int backgroundColorId (boolean isPressed) {
-          return isPressed ? nameColorId : 0;
+          return isPressed ? Theme.extractColorValue(accentColor.getPrimaryComplexColor()) : 0;
         }
       };
     } else {
@@ -3178,7 +3174,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         if (needDrawChannelIconInHeader()) {
           maxWidth -= isChannelHeaderCounter.getScaledWidth(Screen.dp(5));
         }
-        hAuthorNameT = makeName(authorName, forceForwardOrImportInfo() ? forwardInfo.getAuthorNameColorId() : sender.getNameColorId(), !(forceForwardOrImportInfo() && forwardInfo instanceof TGSourceHidden), isPsa, !needName(false), msg.forwardInfo == null || forceForwardOrImportInfo() ? msg.viaBotUserId : 0, maxWidth, false);
+        hAuthorNameT = makeName(authorName, forceForwardOrImportInfo() ? forwardInfo.getAuthorAccentColor() : sender.getAccentColor(), !(forceForwardOrImportInfo() && forwardInfo instanceof TGSourceHidden), isPsa, !needName(false), msg.forwardInfo == null || forceForwardOrImportInfo() ? msg.viaBotUserId : 0, maxWidth, false);
       } else {
         hAuthorNameT = null;
         hAuthorChatMark = null;
@@ -3269,7 +3265,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (needDrawChannelIconInHeader()) {
         nameMaxWidth -= isChannelHeaderCounter.getScaledWidth(Screen.dp(1));
       }
-      hAuthorNameT = makeName(authorName, forceForwardOrImportInfo() ? forwardInfo.getAuthorNameColorId() : sender.getNameColorId(), !(forceForwardOrImportInfo() && forwardInfo instanceof TGSourceHidden), isPsa, !needName(false), msg.forwardInfo == null || forceForwardOrImportInfo() ? msg.viaBotUserId : 0, nameMaxWidth, false);
+      hAuthorNameT = makeName(authorName, forceForwardOrImportInfo() ? forwardInfo.getAuthorAccentColor() : sender.getAccentColor(), !(forceForwardOrImportInfo() && forwardInfo instanceof TGSourceHidden), isPsa, !needName(false), msg.forwardInfo == null || forceForwardOrImportInfo() ? msg.viaBotUserId : 0, nameMaxWidth, false);
     } else {
       hAuthorNameT = null;
       hAuthorChatMark = null;
@@ -3288,24 +3284,24 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private void loadForward () {
     if (msg.forwardInfo != null) {
       switch (msg.forwardInfo.origin.getConstructor()) {
-        case TdApi.MessageForwardOriginUser.CONSTRUCTOR: {
-          forwardInfo = new TGSourceUser(this, (TdApi.MessageForwardOriginUser) msg.forwardInfo.origin);
+        case TdApi.MessageOriginUser.CONSTRUCTOR: {
+          forwardInfo = new TGSourceUser(this, (TdApi.MessageOriginUser) msg.forwardInfo.origin);
           break;
         }
-        case TdApi.MessageForwardOriginChat.CONSTRUCTOR: {
-          forwardInfo = new TGSourceChat(this, (TdApi.MessageForwardOriginChat) msg.forwardInfo.origin);
+        case TdApi.MessageOriginChat.CONSTRUCTOR: {
+          forwardInfo = new TGSourceChat(this, (TdApi.MessageOriginChat) msg.forwardInfo.origin);
           break;
         }
-        case TdApi.MessageForwardOriginChannel.CONSTRUCTOR: {
-          forwardInfo = new TGSourceChat(this, (TdApi.MessageForwardOriginChannel) msg.forwardInfo.origin);
+        case TdApi.MessageOriginChannel.CONSTRUCTOR: {
+          forwardInfo = new TGSourceChat(this, (TdApi.MessageOriginChannel) msg.forwardInfo.origin);
           break;
         }
-        case TdApi.MessageForwardOriginHiddenUser.CONSTRUCTOR: {
-          forwardInfo = new TGSourceHidden(this, (TdApi.MessageForwardOriginHiddenUser) msg.forwardInfo.origin);
+        case TdApi.MessageOriginHiddenUser.CONSTRUCTOR: {
+          forwardInfo = new TGSourceHidden(this, (TdApi.MessageOriginHiddenUser) msg.forwardInfo.origin);
           break;
         }
         default: {
-          Td.assertMessageForwardOrigin_715b9732();
+          Td.assertMessageOrigin_f2224a59();
           throw Td.unsupported(msg.forwardInfo.origin);
         }
       }
@@ -3349,7 +3345,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
 
     boolean isPsa = isPsa() && !forceForwardOrImportInfo();
-    fAuthorNameT = makeName(forwardInfo.getAuthorName(), 0, !(forwardInfo instanceof TGSourceHidden), isPsa, false, msg.viaBotUserId, (int) (isPsa ? totalMax : max), true);
+    fAuthorNameT = makeName(forwardInfo.getAuthorName(), forwardInfo.getAuthorAccentColor(), !(forwardInfo instanceof TGSourceHidden), isPsa, false, msg.viaBotUserId, (int) (isPsa ? totalMax : max), true);
     if (isPsa) {
       CharSequence text = Lang.getPsaNotificationType(controller(), msg.forwardInfo.publicServiceAnnouncementType);
       fPsaTextT = new Text.Builder(tdlib, text, openParameters(), (int) max, getNameStyleProvider(), getChatAuthorPsaColorSet(), null)
@@ -4856,7 +4852,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     return msg.canGetAddedReactions;
 
-    //return !isChannel() && messageReactions.getTotalCount() > 0 && (msg.forwardInfo == null || msg.forwardInfo.origin.getConstructor() != TdApi.MessageForwardOriginChannel.CONSTRUCTOR);
+    //return !isChannel() && messageReactions.getTotalCount() > 0 && (msg.forwardInfo == null || msg.forwardInfo.origin.getConstructor() != TdApi.MessageOriginChannel.CONSTRUCTOR);
   }
 
   public final boolean canBeDeletedOnlyForSelf () {
@@ -7271,7 +7267,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           TdApi.Message m = getMessage();
           TdApi.User user;
           if (m.forwardInfo != null) {
-            user = m.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginUser.CONSTRUCTOR ? ((TGSourceUser) getForwardInfo()).getUser() : null;
+            user = m.forwardInfo.origin.getConstructor() == TdApi.MessageOriginUser.CONSTRUCTOR ? ((TGSourceUser) getForwardInfo()).getUser() : null;
           } else {
             user = sender.isUser() ? tdlib.cache().user(sender.getUserId()) : null;
           }
@@ -7677,8 +7673,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (pendingContentIsCustomEmoji) {
         return new TGMessageSticker(context, msg, oldEmoji, pendingContent);
       } else {
-        return new TGMessageText(context, msg, new TdApi.MessageText(Td.textOrCaption(oldEmoji), null),
-          new TdApi.MessageText(Td.textOrCaption(pendingContent), null));
+        return new TGMessageText(context, msg, new TdApi.MessageText(Td.textOrCaption(oldEmoji), null, null),
+          new TdApi.MessageText(Td.textOrCaption(pendingContent), null, null));
       }
     } else if (oldContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
       TdApi.MessageText oldText = nonNull((TdApi.MessageText) oldContent);
@@ -7723,7 +7719,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR: {
           TdApi.MessageAnimatedEmoji emoji = nonNull((TdApi.MessageAnimatedEmoji) content);
           if (!allowEmoji) {
-            return new TGMessageText(context, msg, new TdApi.MessageText(Td.textOrCaption(emoji), null), null);
+            return new TGMessageText(context, msg, new TdApi.MessageText(Td.textOrCaption(emoji), null, null), null);
           } else {
             return new TGMessageSticker(context, msg, emoji, null);
           }
@@ -7887,6 +7883,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
         case TdApi.MessageUserShared.CONSTRUCTOR:
         case TdApi.MessageChatShared.CONSTRUCTOR:
+        case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
+        case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR:
+        case TdApi.MessagePremiumGiveaway.CONSTRUCTOR:
           break;
         case TdApi.MessageUnsupported.CONSTRUCTOR:
           unsupportedStringRes = R.string.UnsupportedMessageType;
@@ -7899,7 +7898,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           break;
         }
         default: {
-          Td.assertMessageContent_cda9af31();
+          Td.assertMessageContent_ea2cfacf();
           throw Td.unsupported(msg.content);
         }
       }
@@ -8204,7 +8203,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     SwipeQuickAction replyButton = null;
     if (canReply) {
       replyButton = new SwipeQuickAction(replyText, iQuickReply, () -> {
-        messagesController().showReply(getNewestMessage(), true, true);
+        messagesController().showReply(getNewestMessage(), null, true, true);
       }, true, false);
       rightActions.add(replyButton);
     }

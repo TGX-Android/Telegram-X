@@ -133,13 +133,8 @@ public final class TextColorSets {
     }
 
     @Override
-    default int mediaTextColorOrId () {
-      return defaultTextColorId();
-    }
-
-    @Override
-    default boolean mediaTextColorIsId () {
-      return true;
+    default long mediaTextComplexColor () {
+      return Theme.newComplexColor(true, defaultTextColorId());
     }
 
     @Override
@@ -227,13 +222,8 @@ public final class TextColorSets {
         }*/
 
         @Override
-        public int mediaTextColorOrId () {
-          return ColorId.messageAuthor;
-        }
-
-        @Override
-        public boolean mediaTextColorIsId () {
-          return true;
+        public long mediaTextComplexColor () {
+          return Theme.newComplexColor(true, ColorId.messageAuthor);
         }
 
         @Override
@@ -288,13 +278,8 @@ public final class TextColorSets {
         }
 
         @Override
-        public int mediaTextColorOrId () {
-          return ColorId.bubbleOut_messageAuthor;
-        }
-
-        @Override
-        public boolean mediaTextColorIsId () {
-          return true;
+        public long mediaTextComplexColor () {
+          return Theme.newComplexColor(true, ColorId.bubbleOut_messageAuthor);
         }
 
         @Override
@@ -356,13 +341,8 @@ public final class TextColorSets {
         }
 
         @Override
-        public int mediaTextColorOrId () {
-          return ColorId.messageAuthor;
-        }
-
-        @Override
-        public boolean mediaTextColorIsId () {
-          return true;
+        public long mediaTextComplexColor () {
+          return Theme.newComplexColor(true, ColorId.messageAuthor);
         }
 
         @Override

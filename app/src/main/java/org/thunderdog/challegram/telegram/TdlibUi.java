@@ -1822,7 +1822,7 @@ public class TdlibUi extends Handler {
       if (threadInfo != null)
         threadInfo.saveTo(outState, keyPrefix + "cp_messageThread");
       if (filter != null)
-        TD.saveFilter(outState, keyPrefix + "cp_filter", filter);
+        Td.put(outState, keyPrefix + "cp_filter", filter);
       return true;
     }
 
@@ -1837,7 +1837,7 @@ public class TdlibUi extends Handler {
       if (threadInfo == ThreadInfo.INVALID)
         return null;
       params.threadInfo = threadInfo;
-      params.filter = TD.restoreFilter(in, keyPrefix + "cp_filter");
+      params.filter = Td.restoreSearchMessagesFilter(in, keyPrefix + "cp_filter");
       return params;
     }
 
@@ -2474,7 +2474,7 @@ public class TdlibUi extends Handler {
                 tdlib.send(new TdApi.GetRepliedMessage(message.forwardInfo.fromChatId, message.forwardInfo.fromMessageId), (object) -> {
                   if (object.getConstructor() == TdApi.Message.CONSTRUCTOR) {
                     TdApi.Message repliedMessage = (TdApi.Message) object;
-                    message.replyTo = new TdApi.MessageReplyToMessage(repliedMessage.chatId, repliedMessage.id);
+                    message.replyTo = new TdApi.MessageReplyToMessage(repliedMessage.chatId, repliedMessage.id, null, false, null, repliedMessage.date, repliedMessage.content);
                   }
                   openMessage(context, messageThread.getChatId(), messageId, messageThread, openParameters);
                 });
@@ -3001,7 +3001,7 @@ public class TdlibUi extends Handler {
     final AtomicReference<TdApi.WebPage> foundWebPage = new AtomicReference<>();
     CancellableRunnable[] runnable = new CancellableRunnable[1];
 
-    tdlib.send(new TdApi.GetWebPagePreview(new TdApi.FormattedText(url, null)), (webPage, error) -> {
+    tdlib.send(new TdApi.GetWebPagePreview(new TdApi.FormattedText(url, null), null), (webPage, error) -> {
       if (error != null) {
         post(runnable[0]);
         return;
@@ -3633,6 +3633,7 @@ public class TdlibUi extends Handler {
       case TdApi.InternalLinkTypePremiumFeatures.CONSTRUCTOR:
       case TdApi.InternalLinkTypeRestorePurchases.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatBoost.CONSTRUCTOR:
+      case TdApi.InternalLinkTypePremiumGiftCode.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypePassportDataRequest.CONSTRUCTOR: {
         showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
@@ -3698,7 +3699,7 @@ public class TdlibUi extends Handler {
         return; // async
       }
       default: {
-        Td.assertInternalLinkType_1783a2fc();
+        Td.assertInternalLinkType_91894cfa();
         throw Td.unsupported(linkType);
       }
     }
@@ -5348,8 +5349,8 @@ public class TdlibUi extends Handler {
   public void showLanguageInstallPrompt (ViewController<?> c, CustomLangPackResult out, TdApi.Message sourceMessage) {
     if (sourceMessage != null) {
       TdApi.Chat sourceChat;
-      if (sourceMessage.forwardInfo != null && sourceMessage.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginChannel.CONSTRUCTOR) {
-        sourceChat = tdlib.chat(((TdApi.MessageForwardOriginChannel) sourceMessage.forwardInfo.origin).chatId);
+      if (sourceMessage.forwardInfo != null && sourceMessage.forwardInfo.origin.getConstructor() == TdApi.MessageOriginChannel.CONSTRUCTOR) {
+        sourceChat = tdlib.chat(((TdApi.MessageOriginChannel) sourceMessage.forwardInfo.origin).chatId);
       } else {
         sourceChat = (!sourceMessage.isOutgoing || sourceMessage.isChannelPost) ? tdlib.chat(sourceMessage.chatId) : null;
       }
@@ -5811,7 +5812,16 @@ public class TdlibUi extends Handler {
           tdlib.ui().post(() -> {
             CharSequence info;
             if (theme.author != null) {
-              info = Lang.getString(R.string.ThemeInstallAuthor, (target, argStart, argEnd, argIndex, fakeBold) -> argIndex == 1 ? new CustomTypefaceSpan(null, ColorId.textLink).setEntityType(new TdApi.TextEntityTypeMention()).setForcedTheme(theme) : Lang.newBoldSpan(fakeBold), theme.name, "@" + theme.author);
+              info = Lang.getString(R.string.ThemeInstallAuthor, (target, argStart, argEnd, argIndex, fakeBold) -> {
+                if (argIndex == 1) {
+                  CustomTypefaceSpan span = new CustomTypefaceSpan(null, ColorId.textLink);
+                  span.setTextEntityType(new TdApi.TextEntityTypeMention());
+                  span.setForcedTheme(theme);
+                  return span;
+                } else {
+                  return Lang.newBoldSpan(fakeBold);
+                }
+              }, theme.name, "@" + theme.author);
             } else {
               info = Lang.getStringBold(R.string.ThemeInstall, theme.name);
             }
