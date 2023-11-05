@@ -18,8 +18,10 @@ import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.view.View;
 
+import androidx.annotation.ColorInt;
+
 import org.thunderdog.challegram.charts.CubicBezierInterpolator;
-import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 
@@ -27,8 +29,9 @@ import java.util.ArrayList;
 
 import kotlin.random.Random;
 import me.vkryl.core.MathUtils;
+import me.vkryl.core.lambda.Destroyable;
 
-public class AnimatedEmojiEffect {
+public class AnimatedEmojiEffect implements Destroyable {
 
   public AnimatedEmojiDrawable animatedEmojiDrawable;
   Rect bounds = new Rect();
@@ -40,23 +43,23 @@ public class AnimatedEmojiEffect {
   boolean longAnimation;
   boolean firsDraw = true;
 
-  private AnimatedEmojiEffect(AnimatedEmojiDrawable animatedEmojiDrawable, boolean longAnimation) {
+  private AnimatedEmojiEffect (AnimatedEmojiDrawable animatedEmojiDrawable, boolean longAnimation) {
     this.animatedEmojiDrawable = animatedEmojiDrawable;
     this.longAnimation = longAnimation;
     startTime = System.currentTimeMillis();
   }
 
-  public static AnimatedEmojiEffect createFrom(AnimatedEmojiDrawable animatedEmojiDrawable, boolean longAnimation) {
+  public static AnimatedEmojiEffect createFrom (AnimatedEmojiDrawable animatedEmojiDrawable, boolean longAnimation) {
     return new AnimatedEmojiEffect(animatedEmojiDrawable, longAnimation);
   }
 
-  public void setBounds(int l, int t, int r, int b) {
+  public void setBounds (int l, int t, int r, int b) {
     bounds.set(l, t, r, b);
   }
 
   long lastGenerateTime;
 
-  public void draw(Canvas canvas) {
+  public void draw (Canvas canvas) {
     if (!longAnimation) {
       if (firsDraw) {
         for (int i = 0; i < 7; i++) {
@@ -90,17 +93,32 @@ public class AnimatedEmojiEffect {
     firsDraw = false;
   }
 
-  public boolean done() {
+  public boolean done () {
     return System.currentTimeMillis() - startTime > 2500;
   }
 
-  public void setView(View view) {
+  public void setView (View view) {
     animatedEmojiDrawable.attach();
     parentView = view;
   }
 
-  public void removeView() {
+  public void removeView () {
     animatedEmojiDrawable.detach();
+  }
+
+  @Override
+  public void performDestroy () {
+    animatedEmojiDrawable.performDestroy();
+  }
+
+  public void setThemedPorterDuffColorId (@PorterDuffColorId int colorId) {
+    animatedEmojiDrawable.setThemedPorterDuffColorId(colorId);
+  }
+  public void setPorterDuffColorFilter (@ColorInt int color) {
+    animatedEmojiDrawable.setPorterDuffColorFilter(color);
+  }
+  public void disablePorterDuffColorFilter () {
+    animatedEmojiDrawable.disablePorterDuffColorFilter();
   }
 
   private class Particle {
@@ -116,7 +134,7 @@ public class AnimatedEmojiEffect {
     boolean mirror;
     float randomRotation;
 
-    public void generate() {
+    public void generate () {
       progress = 0;
       float bestDistance = 0;
       float bestX = randX();
@@ -155,8 +173,6 @@ public class AnimatedEmojiEffect {
 
       fromY = bounds.height() * 0.45f + bounds.height() * 0.1f * (Math.abs(Random.Default.nextInt() % 100) / 100f);
 
-
-
       if (longAnimation) {
         fromSize = bounds.width() * 0.05f + bounds.width() * 0.1f * (Math.abs(Random.Default.nextInt() % 100) / 100f);
         toSize = fromSize * (1.5f + 1.5f * (Math.abs(Random.Default.nextInt() % 100) / 100f));
@@ -175,15 +191,15 @@ public class AnimatedEmojiEffect {
       randomRotation = 20 * ((Random.Default.nextInt() % 100) / 100f);
     }
 
-    private float randY() {
+    private float randY () {
       return (bounds.height() * 0.5f * (Math.abs(Random.Default.nextInt() % 100) / 100f));
     }
 
-    private long randDuration() {
+    private long randDuration () {
       return 1000 + Math.abs(Random.Default.nextInt() % 900);
     }
 
-    private float randX() {
+    private float randX () {
       if (longAnimation) {
         return bounds.width() * -0.25f + bounds.width() * 1.5f * (Math.abs(Random.Default.nextInt() % 100) / 100f);
       } else {
@@ -191,7 +207,7 @@ public class AnimatedEmojiEffect {
       }
     }
 
-    public void draw(Canvas canvas) {
+    public void draw (Canvas canvas) {
       progress += (float) Math.min(40, 1000f / Screen.refreshRate()) / duration;
       progress = MathUtils.clamp(progress);
       float progressInternal = CubicBezierInterpolator.EASE_OUT.getInterpolation(progress);
