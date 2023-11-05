@@ -92,6 +92,20 @@ public class ContentPreview {
   public @Nullable TdApi.Message relatedMessage;
   private @Nullable MessageContentBuilder relatedMessageBuilder;
 
+  public ContentPreview (ContentPreview copy, TdApi.FormattedText editedFormattedText) {
+    this.emoji = copy.emoji;
+    this.parentEmoji = copy.parentEmoji;
+    this.placeholderText = copy.placeholderText;
+    this.formattedText = editedFormattedText != null ? editedFormattedText : copy.formattedText;
+    this.isTranslatable = copy.isTranslatable;
+    this.hideAuthor = copy.hideAuthor;
+    this.relatedMessage = copy.relatedMessage;
+    this.relatedMessageBuilder = copy.relatedMessageBuilder;
+    this.refresher = copy.refresher;
+    this.isMediaGroup = copy.isMediaGroup;
+    this.album = copy.album;
+  }
+
   public ContentPreview (@Nullable Emoji emoji, @StringRes int placeholderTextRes) {
     this(emoji, placeholderTextRes, (TdApi.FormattedText) null);
   }

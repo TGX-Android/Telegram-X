@@ -2777,12 +2777,20 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           break;
         }
         case CLICK_TYPE_REPLY: {
-          if (replyData != null && replyData.hasValidMessage()) {
+          if (msg.replyTo != null && msg.replyTo.getConstructor() == TdApi.MessageReplyToMessage.CONSTRUCTOR) {
             TdApi.MessageReplyToMessage replyToMessage = (TdApi.MessageReplyToMessage) msg.replyTo;
             if (replyToMessage.chatId != msg.chatId) {
               if (isMessageThread() && isThreadHeader()) {
                 tdlib.ui().openMessage(controller(), replyToMessage.chatId, new MessageId(replyToMessage), openParameters());
+              } else if (replyToMessage.chatId == 0 || replyToMessage.messageId == 0) {
+                buildContentHint(view, getReplyLocationProvider(), false).show(tdlib, Lang.getString(R.string.MessageReplyPrivate));
               } else {
+                // FIXME: tap on reply to channel messsage in discussion chat
+                /*ThreadInfo threadInfo = messagesController().getMessageThread();
+                if (threadInfo != null && threadInfo.getContextChatId() == replyToMessage.chatId && msg.messageThreadId == threadInfo.getMessageThreadId()) {
+                  highlightOtherMessage(new MessageId(replyToMessage));
+                } else {
+                }*/
                 openMessageThread(new MessageId(replyToMessage));
               }
             } else if (isScheduled()) {
@@ -8847,6 +8855,18 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       }
       outRect.set(entry.getX(), entry.getY(), entry.getX() + entry.getBubbleWidth(), entry.getY() + entry.getBubbleHeight());
       outRect.offset(lastDrawReactionsX, lastDrawReactionsY);
+    };
+  }
+
+  private TooltipOverlayView.LocationProvider getReplyLocationProvider () {
+    return (targetView, outRect) -> {
+      if (replyData == null) {
+        return;
+      }
+      outRect.left = replyData.getLastX();
+      outRect.top = replyData.getLastY();
+      outRect.right = outRect.left + replyData.width(!useBubble());
+      outRect.bottom = outRect.top + ReplyComponent.height();
     };
   }
 
