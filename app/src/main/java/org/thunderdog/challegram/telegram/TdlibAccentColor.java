@@ -299,8 +299,8 @@ public final class TdlibAccentColor {
       // 2-3 colors are used only for stripe
       isId = false;
       color = ColorUtils.fromToArgb(
-        accentColor.lightThemeColors[0],
-        accentColor.darkThemeColors[0],
+        ColorUtils.color(255, accentColor.lightThemeColors[0]),
+        ColorUtils.color(255, accentColor.darkThemeColors[0]),
         Theme.getDarkFactor()
       );
     } else {

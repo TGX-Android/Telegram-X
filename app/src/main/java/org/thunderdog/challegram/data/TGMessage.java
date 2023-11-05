@@ -7918,7 +7918,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     try {
       TdApi.TextEntities result = Client.execute(new TdApi.GetTextEntities(text));
       entities = result.entities;
-    } catch (Client.ExecutionError ignored) { }
+    } catch (Client.ExecutionException ignored) { }
 
     TdApi.TextEntity logEntity = new TdApi.TextEntity(-1, -1, new TdApi.TextEntityTypePreCode());
 

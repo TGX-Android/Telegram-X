@@ -590,11 +590,12 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
       return tdlib.cache().userPlaceholderMetadata(user, false);
     DisplayInformation info = getDisplayInformation();
     if (info != null) {
-      int accentColorId = info.getAccentColorId();
-      return new AvatarPlaceholder.Metadata(tdlib.accentColor(accentColorId), TD.getLetters(info.getFirstName(), info.getLastName()));
+      TdlibAccentColor accentColor = info.getAccentColor();
+      return new AvatarPlaceholder.Metadata(accentColor, TD.getLetters(info.getFirstName(), info.getLastName()));
     }
     if (knownUserId != 0) {
-      return new AvatarPlaceholder.Metadata(TdlibAccentColor.defaultAccentColorForUserId(tdlib, knownUserId));
+      int accentColorId = TdlibAccentColor.defaultAccentColorIdForUserId(knownUserId);
+      return new AvatarPlaceholder.Metadata(new TdlibAccentColor(accentColorId));
     }
     return null;
   }

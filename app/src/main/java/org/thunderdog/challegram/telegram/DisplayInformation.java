@@ -61,6 +61,7 @@ public class DisplayInformation {
   private String profilePhotoSmallPath, profilePhotoBigPath;
   private EmojiStatusCache emojiStatusCache;
   private int accentColorId;
+  private TdApi.AccentColor accentColor;
 
   DisplayInformation (String prefix) {
     this.prefix = prefix;
@@ -75,6 +76,7 @@ public class DisplayInformation {
     this.usernames = user.usernames;
     this.phoneNumber = user.phoneNumber;
     this.accentColorId = user.accentColorId;
+    this.accentColor = accentColor;
     if (user.profilePhoto != null) {
       this.profilePhotoSmallPath = TD.isFileLoaded(user.profilePhoto.small) ?
         user.profilePhoto.small.local.path :
@@ -119,6 +121,16 @@ public class DisplayInformation {
 
   public int getAccentColorId () {
     return accentColorId;
+  }
+
+  public TdlibAccentColor getAccentColor () {
+    if (accentColorId < TdlibAccentColor.BUILT_IN_COLOR_COUNT) {
+      return new TdlibAccentColor(accentColorId);
+    }
+    if (accentColor != null) {
+      return new TdlibAccentColor(accentColor);
+    }
+    return new TdlibAccentColor(TdlibAccentColor.BuiltInId.RED);
   }
 
   @Nullable
@@ -232,6 +244,17 @@ public class DisplayInformation {
     editor.putString(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_NAME1, firstName);
     editor.putString(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_NAME2, lastName);
     editor.putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_ACCENT_COLOR_ID, accentColorId);
+    if (accentColor != null) {
+      if (accentColor.id != accentColorId)
+        throw new IllegalStateException(accentColor.id + " != " + accentColorId);
+      editor.putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_ACCENT_BUILT_IN_ACCENT_COLOR_ID, accentColor.builtInAccentColorId);
+      editor.putIntArray(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_LIGHT_THEME_COLORS, accentColor.lightThemeColors);
+      editor.putIntArray(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_DARK_THEME_COLORS, accentColor.darkThemeColors);
+    } else {
+      editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_ACCENT_BUILT_IN_ACCENT_COLOR_ID);
+      editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_LIGHT_THEME_COLORS);
+      editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_DARK_THEME_COLORS);
+    }
     if (usernames != null) {
       editor
         .putString(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_USERNAME, usernames.editableUsername);
@@ -310,6 +333,27 @@ public class DisplayInformation {
           break;
         case Settings.KEY_ACCOUNT_INFO_SUFFIX_ACCENT_COLOR_ID:
           info.accentColorId = entry.asInt();
+          if (info.accentColor != null) {
+            info.accentColor.id = info.accentColorId;
+          }
+          break;
+        case Settings.KEY_ACCOUNT_INFO_SUFFIX_ACCENT_BUILT_IN_ACCENT_COLOR_ID:
+        case Settings.KEY_ACCOUNT_INFO_SUFFIX_LIGHT_THEME_COLORS:
+        case Settings.KEY_ACCOUNT_INFO_SUFFIX_DARK_THEME_COLORS:
+          if (info.accentColor == null) {
+            info.accentColor = new TdApi.AccentColor(info.accentColorId, 0, null, null);
+          }
+          switch (suffix) {
+            case Settings.KEY_ACCOUNT_INFO_SUFFIX_ACCENT_BUILT_IN_ACCENT_COLOR_ID:
+              info.accentColor.builtInAccentColorId = entry.asInt();
+              break;
+            case Settings.KEY_ACCOUNT_INFO_SUFFIX_LIGHT_THEME_COLORS:
+              info.accentColor.lightThemeColors = entry.asIntArray();
+              break;
+            case Settings.KEY_ACCOUNT_INFO_SUFFIX_DARK_THEME_COLORS:
+              info.accentColor.darkThemeColors = entry.asIntArray();
+              break;
+          }
           break;
         default:
           if (suffix.startsWith(Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_PREFIX)) {

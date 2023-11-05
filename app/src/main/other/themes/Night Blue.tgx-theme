@@ -66,3 +66,11 @@ bubbleIn_fillingActive: #7D8E9826
 bubbleIn_fillingActiveContent: #FFF
 bubbleOut_fillingActive: #91AFC826
 bubbleOut_fillingActiveContent: #FFF
+
+avatarBlue, avatarBlue_big, nameBlue: #368AD1
+avatarCyan, avatarCyan_big, nameCyan: #309EBA
+avatarGreen, avatarGreen_big, nameGreen: #40A920
+avatarOrange, avatarOrange_big, nameOrange: #D67722
+avatarPink, avatarPink_big, namePink: #C7508B
+avatarRed, avatarRed_big, nameRed: #CC5049
+avatarViolet, avatarViolet_big: #955CDB

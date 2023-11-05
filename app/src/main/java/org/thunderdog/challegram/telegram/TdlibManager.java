@@ -431,7 +431,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     try {
       Client.execute(new TdApi.SetLogVerbosityLevel(5));
       Client.execute(new TdApi.SetLogStream(new TdApi.LogStreamDefault()));
-    } catch (Client.ExecutionError ignored) { }
+    } catch (Client.ExecutionException ignored) { }
     Log.setLogLevel(Log.LEVEL_VERBOSE);
   }
 
@@ -2245,7 +2245,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       try {
         Client.execute(new TdApi.SetLogVerbosityLevel(0));
         Client.execute(new TdApi.SetLogStream(new TdApi.LogStreamEmpty()));
-      } catch (Client.ExecutionError ignored) { }
+      } catch (Client.ExecutionException ignored) { }
     }
 
     long removedSize;
@@ -2457,7 +2457,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     final TdApi.LanguagePackStringValue value;
     try {
       value = Client.execute(new TdApi.GetLanguagePackString(languageDatabasePath, BuildConfig.LANGUAGE_PACK, languagePackId, key));
-    } catch (Client.ExecutionError error) {
+    } catch (Client.ExecutionException error) {
       if (error.error.code != 404) {
         Log.e("getString %s error:%s, languagePackId:%s", key, TD.toErrorString(error.error), languagePackId);
       }

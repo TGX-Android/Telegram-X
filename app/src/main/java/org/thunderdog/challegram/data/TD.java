@@ -4258,7 +4258,7 @@ public class TD {
     TdApi.FormattedText formattedText;
     try {
       formattedText = Client.execute(new TdApi.GetMarkdownText(text));
-    } catch (Client.ExecutionError error) {
+    } catch (Client.ExecutionException error) {
       Log.w("getMarkdownText: %s", TD.toErrorString(error.error));
       return text.text;
     }
