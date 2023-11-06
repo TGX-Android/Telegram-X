@@ -116,6 +116,7 @@ public class TdlibNotificationExtras {
   public final int maxNotificationId;
   public final int notificationGroupId;
   public final boolean needReply;
+  public final boolean forceExternalReply = false; // Keep this flag in case it will be needed in future
   public final boolean areMentions;
   public final long[] messageIds;
   public final long[] userIds;

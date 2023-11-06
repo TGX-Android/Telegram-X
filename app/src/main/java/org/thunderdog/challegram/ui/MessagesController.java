@@ -6078,17 +6078,24 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public @Nullable TdApi.InputMessageReplyToMessage getCurrentReplyId () {
-    return replyMessage != null ? new TdApi.InputMessageReplyToMessage(replyMessage.chatId, replyMessage.id, null) : null;
+    if (replyMessage != null) {
+      long chatId = replyMessage.chatId;
+      if (getChatId() == chatId && !tdlib.forceExternalReply(chatId)) {
+        chatId = 0;
+      }
+      long messageId = replyMessage.id;
+      return new TdApi.InputMessageReplyToMessage(chatId, messageId, null);
+    }
+    return null;
   }
 
   public @Nullable TdApi.InputMessageReplyToMessage obtainReplyTo () {
     if (replyMessage == null || replyMessage.id == 0 || (flags & FLAG_REPLY_ANIMATING) != 0) {
       return null;
     }
-    long chatId = replyMessage.chatId;
-    long messageId = replyMessage.id;
+    TdApi.InputMessageReplyToMessage replyTo = getCurrentReplyId();
     closeReply(true);
-    return new TdApi.InputMessageReplyToMessage(chatId, messageId, null);
+    return replyTo;
   }
 
   private void showCurrentReply () {
