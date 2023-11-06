@@ -332,9 +332,9 @@ public class TGMessageText extends TGMessage {
   private int getWebY () {
     float webPageOnTop = this.webPageOnTop.getFloatValue();
     if (Td.isEmpty(text) || webPageOnTop == 1f) {
-      return getContentY();
+      return getContentY() + getTextTopOffset();
     } else {
-      return getContentY() + (int) ((float) (wrapper.getHeight() + getTextTopOffset() + Screen.dp(6f)) * MathUtils.clamp(1f - webPageOnTop));
+      return getContentY() + getTextTopOffset() + (int) ((float) (wrapper.getHeight() + Screen.dp(6f)) * (1f - webPageOnTop));
     }
   }
 
@@ -441,26 +441,28 @@ public class TGMessageText extends TGMessage {
     float alpha = getTranslationLoadingAlphaValue();
     final int startXRtl = getStartXRtl(startX, maxWidth);
     final int endXPadding = Config.MOVE_BUBBLE_TIME_RTL_TO_LEFT ? 0 : getBubbleTimePartWidth();
-    final int textY = startY + getTextTopOffset();
     float webPageOnTop = this.webPageOnTop.getFloatValue();
     ComplexReceiver textMediaReceiver = view.getTextMediaReceiver();
     int webPageY = getWebY();
-    final int bottomTextY = webPage == null ? textY : webPageY + webPage.getHeight() + Screen.dp(6f) + getTextTopOffset();
-    if (webPageOnTop == 0f || webPage == null || receiver == null) {
-      wrapper.draw(c, startX, startXRtl, endXPadding, textY, null, alpha, textMediaReceiver);
-    } else if (webPageOnTop == 1f) {
-      wrapper.draw(c, startX, startXRtl, endXPadding, bottomTextY, null, alpha, textMediaReceiver);
-    } else {
-      wrapper.beginDrawBatch(textMediaReceiver, 1);
+    final int topTextY = startY + getTextTopOffset();
+    final int bottomTextY = webPage == null ? topTextY : webPageY + webPage.getHeight() + Screen.dp(6f) + Screen.dp(2f);
+    if (!Td.isEmpty(text)) {
+      if (webPageOnTop == 0f || webPage == null || receiver == null) {
+        wrapper.draw(c, startX, startXRtl, endXPadding, topTextY, null, alpha, textMediaReceiver);
+      } else if (webPageOnTop == 1f) {
+        wrapper.draw(c, startX, startXRtl, endXPadding, bottomTextY, null, alpha, textMediaReceiver);
+      } else {
+        wrapper.beginDrawBatch(textMediaReceiver, 1);
 
-      // top text
-      int topTextOffset = (int) ((float) (wrapper.getHeight() + getTextTopOffset() + Screen.dp(6f)) * MathUtils.clamp(webPageOnTop));
-      wrapper.draw(c, startX, startXRtl, endXPadding, textY - topTextOffset, null, alpha * MathUtils.clamp(1f - webPageOnTop), textMediaReceiver);
+        // top text
+        int topTextHeight = (int) ((float) (wrapper.getHeight() + Screen.dp(6f)) * MathUtils.clamp(webPageOnTop));
+        wrapper.draw(c, startX, startXRtl, endXPadding, topTextY - topTextHeight, null, alpha * MathUtils.clamp(1f - webPageOnTop), textMediaReceiver);
 
-      // bottom text
-      wrapper.draw(c, startX, startXRtl, endXPadding, bottomTextY, null, alpha * MathUtils.clamp(webPageOnTop), textMediaReceiver);
+        // bottom text
+        wrapper.draw(c, startX, startXRtl, endXPadding, bottomTextY, null, alpha * MathUtils.clamp(webPageOnTop), textMediaReceiver);
 
-      wrapper.finishDrawBatch(textMediaReceiver, 1);
+        wrapper.finishDrawBatch(textMediaReceiver, 1);
+      }
     }
     if (webPage != null && receiver != null) {
       int webPageX = Lang.rtl() ? startX + maxWidth - webPage.getWidth() : startX;
@@ -481,8 +483,8 @@ public class TGMessageText extends TGMessage {
     }
     if (webPage != null) {
       if (height > 0)
-        height += Screen.dp(8f);
-      height += webPage.getHeight();
+        height += Screen.dp(6f);
+      height += webPage.getHeight() + Screen.dp(2f);
     }
     return height;
   }
