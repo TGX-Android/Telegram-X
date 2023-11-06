@@ -2349,6 +2349,26 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
   private int lastStartX, lastEndX, lastEndXBottomPadding, lastStartY;
 
+  public void beginDrawBatch (@Nullable ComplexReceiver receiver, int externalBatchId) {
+    if (receiver != null) {
+      for (TextPart part : parts) {
+        part.beginDrawBatch(receiver, externalBatchId);
+      }
+    }
+  }
+
+  public void finishAllDrawBatches (@Nullable ComplexReceiver receiver) {
+    finishDrawBatch(receiver, 0);
+  }
+
+  public void finishDrawBatch (@Nullable ComplexReceiver receiver, int externalBatchId) {
+    if (receiver != null) {
+      for (TextPart part : parts) {
+        part.finishDrawBatch(receiver, externalBatchId);
+      }
+    }
+  }
+
   public void draw (Canvas c, int startX, int startY) {
     draw(c, startX, startY, null, 1f);
   }

@@ -561,7 +561,7 @@ public class TGMessageFile extends TGMessage {
   }
 
   @Override
-  protected int getAnimatedBottomLineWidth () {
+  protected int getAnimatedBottomLineWidth (int bubbleTimePartWidth) {
     return Math.round(filesList.get(filesList.size() - 1).lastLineWidth.get());
   }
 

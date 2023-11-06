@@ -358,6 +358,28 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable, Text.T
     }
   }
 
+  public final void beginDrawBatch (@Nullable ComplexReceiver receiver, int externalBatchId) {
+    if (receiver != null) {
+      final Text text = getCurrent();
+      if (text != null) {
+        text.beginDrawBatch(receiver, externalBatchId);
+      }
+    }
+  }
+
+  public final void finishAllDrawBatches (@Nullable ComplexReceiver receiver) {
+    finishDrawBatch(receiver, 0);
+  }
+
+  public final void finishDrawBatch (@Nullable ComplexReceiver receiver, int externalBatchId) {
+    if (receiver != null) {
+      final Text text = getCurrent();
+      if (text != null) {
+        text.finishDrawBatch(receiver, externalBatchId);
+      }
+    }
+  }
+
   public final void draw (Canvas c, int startX, int startY) {
     draw(c, startX, startY, null, 1f);
   }

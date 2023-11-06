@@ -44,6 +44,9 @@ import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
+import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.BoolAnimator;
+import me.vkryl.core.MathUtils;
 import me.vkryl.td.Td;
 
 public class TGMessageText extends TGMessage {
@@ -52,6 +55,10 @@ public class TGMessageText extends TGMessage {
 
   private TGWebPage webPage;
   private TdApi.MessageText currentMessageText, pendingMessageText;
+  private final BoolAnimator webPageOnTop = new BoolAnimator(0,
+    (id, factor, fraction, callee) -> invalidate(),
+    AnimatorUtils.DECELERATE_INTERPOLATOR, 180L
+  );
 
   public TGMessageText (MessagesManager context, TdApi.Message msg, TdApi.MessageText text, @Nullable TdApi.MessageText pendingMessageText) {
     super(context, msg);
@@ -59,10 +66,10 @@ public class TGMessageText extends TGMessage {
     this.pendingMessageText = pendingMessageText;
     if (this.pendingMessageText != null) {
       setText(this.pendingMessageText.text, false);
-      setWebPage(this.pendingMessageText.webPage);
+      setWebPage(this.pendingMessageText.webPage, this.pendingMessageText.linkPreviewOptions);
     } else {
       setText(text.text, false);
-      setWebPage(text.webPage);
+      setWebPage(text.webPage, text.linkPreviewOptions);
     }
   }
 
@@ -147,10 +154,10 @@ public class TGMessageText extends TGMessage {
         this.pendingMessageText = messageText;
         if (messageText != null) {
           setText(messageText.text, false);
-          setWebPage(messageText.webPage);
+          setWebPage(messageText.webPage, messageText.linkPreviewOptions);
         } else {
           setText(currentMessageText.text, false);
-          setWebPage(currentMessageText.webPage);
+          setWebPage(currentMessageText.webPage, currentMessageText.linkPreviewOptions);
         }
         rebuildContent();
         return (getHeight() == oldHeight ? MESSAGE_INVALIDATED : MESSAGE_CHANGED);
@@ -285,23 +292,25 @@ public class TGMessageText extends TGMessage {
 
     int webPageMaxWidth = getSmallestMaxContentWidth();
     if (pendingMessageText != null) {
-      if (setWebPage(pendingMessageText.webPage))
+      if (setWebPage(pendingMessageText.webPage, pendingMessageText.linkPreviewOptions))
         webPage.buildLayout(webPageMaxWidth);
-    } else if (Td.isText(msg.content) && setWebPage(((TdApi.MessageText) msg.content).webPage)) {
+    } else if (Td.isText(msg.content) && setWebPage(((TdApi.MessageText) msg.content).webPage, ((TdApi.MessageText) msg.content).linkPreviewOptions)) {
       webPage.buildLayout(webPageMaxWidth);
     } else if (webPage != null && webPage.getMaxWidth() != webPageMaxWidth) {
       webPage.buildLayout(webPageMaxWidth);
     }
   }
 
-  private boolean setWebPage (TdApi.WebPage page) {
+  private boolean setWebPage (TdApi.WebPage page, @Nullable TdApi.LinkPreviewOptions linkPreviewOptions) {
     if (page != null) {
       String url = text != null ? Td.findUrl(text, page.url, false) : page.url;
-      this.webPage = new TGWebPage(this, page, url);
+      this.webPage = new TGWebPage(this, page, url, linkPreviewOptions);
       this.webPage.setViewProvider(currentViews);
+      this.webPageOnTop.setValue(linkPreviewOptions != null && linkPreviewOptions.showAboveText, needAnimateChanges());
       return true;
     } else {
       this.webPage = null;
+      this.webPageOnTop.setValue(false, false);
     }
     return false;
   }
@@ -321,10 +330,11 @@ public class TGMessageText extends TGMessage {
   }
 
   private int getWebY () {
-    if (Td.isEmpty(text)) {
+    float webPageOnTop = this.webPageOnTop.getFloatValue();
+    if (Td.isEmpty(text) || webPageOnTop == 1f) {
       return getContentY();
     } else {
-      return getContentY() + wrapper.getHeight() + getTextTopOffset() + Screen.dp(6f);
+      return getContentY() + (int) ((float) (wrapper.getHeight() + getTextTopOffset() + Screen.dp(6f)) * MathUtils.clamp(1f - webPageOnTop));
     }
   }
 
@@ -339,9 +349,13 @@ public class TGMessageText extends TGMessage {
 
   @Override
   protected boolean onMessageContentChanged (TdApi.Message message, TdApi.MessageContent oldContent, TdApi.MessageContent newContent, boolean isBottomMessage) {
+    TdApi.MessageText oldMessageText = Td.isText(oldContent) ? (TdApi.MessageText) oldContent : null;
+    TdApi.MessageText newMessageText = Td.isText(newContent) ? (TdApi.MessageText) newContent : null;
     if (!Td.equalsTo(Td.textOrCaption(oldContent), Td.textOrCaption(newContent)) ||
-        !Td.equalsTo(Td.isText(oldContent) ? ((TdApi.MessageText) oldContent).webPage : null,
-                     Td.isText(newContent) ? ((TdApi.MessageText) newContent).webPage : null)
+        !Td.equalsTo(oldMessageText != null ? oldMessageText.webPage : null,
+                     newMessageText != null ? newMessageText.webPage : null) ||
+        !Td.equalsTo(oldMessageText != null ? oldMessageText.linkPreviewOptions : null,
+                     newMessageText != null ? newMessageText.linkPreviewOptions : null)
     ) {
       updateMessageContent(msg, newContent, isBottomMessage);
       return true;
@@ -357,7 +371,7 @@ public class TGMessageText extends TGMessage {
     this.currentMessageText = newText;
     if (!isBeingEdited()) {
       setText(newText.text, false);
-      setWebPage(newText.webPage);
+      setWebPage(newText.webPage, newText.linkPreviewOptions);
       rebuildContent();
       if (!Td.equalsTo(oldWebPage, newText.webPage)) {
         invalidateContent(this);
@@ -401,7 +415,7 @@ public class TGMessageText extends TGMessage {
   @Override
   public void requestPreview (DoubleImageReceiver receiver) {
     if (webPage != null) {
-      webPage.requestPreview(receiver, getContentX(), getWebY());
+      webPage.requestPreview(receiver);
     } else {
       receiver.clear();
     }
@@ -425,9 +439,32 @@ public class TGMessageText extends TGMessage {
   @Override
   protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth, Receiver preview, Receiver receiver) {
     float alpha = getTranslationLoadingAlphaValue();
-    wrapper.draw(c, startX, getStartXRtl(startX, maxWidth), Config.MOVE_BUBBLE_TIME_RTL_TO_LEFT ? 0 : getBubbleTimePartWidth(), startY + getTextTopOffset(), null, alpha, view.getTextMediaReceiver());
+    final int startXRtl = getStartXRtl(startX, maxWidth);
+    final int endXPadding = Config.MOVE_BUBBLE_TIME_RTL_TO_LEFT ? 0 : getBubbleTimePartWidth();
+    final int textY = startY + getTextTopOffset();
+    float webPageOnTop = this.webPageOnTop.getFloatValue();
+    ComplexReceiver textMediaReceiver = view.getTextMediaReceiver();
+    int webPageY = getWebY();
+    final int bottomTextY = webPage == null ? textY : webPageY + webPage.getHeight() + Screen.dp(6f) + getTextTopOffset();
+    if (webPageOnTop == 0f || webPage == null || receiver == null) {
+      wrapper.draw(c, startX, startXRtl, endXPadding, textY, null, alpha, textMediaReceiver);
+    } else if (webPageOnTop == 1f) {
+      wrapper.draw(c, startX, startXRtl, endXPadding, bottomTextY, null, alpha, textMediaReceiver);
+    } else {
+      wrapper.beginDrawBatch(textMediaReceiver, 1);
+
+      // top text
+      int topTextOffset = (int) ((float) (wrapper.getHeight() + getTextTopOffset() + Screen.dp(6f)) * MathUtils.clamp(webPageOnTop));
+      wrapper.draw(c, startX, startXRtl, endXPadding, textY - topTextOffset, null, alpha * MathUtils.clamp(1f - webPageOnTop), textMediaReceiver);
+
+      // bottom text
+      wrapper.draw(c, startX, startXRtl, endXPadding, bottomTextY, null, alpha * MathUtils.clamp(webPageOnTop), textMediaReceiver);
+
+      wrapper.finishDrawBatch(textMediaReceiver, 1);
+    }
     if (webPage != null && receiver != null) {
-      webPage.draw(view, c, Lang.rtl() ? startX + maxWidth - webPage.getWidth() : startX, getWebY(), preview, receiver, alpha, view.getTextMediaReceiver());
+      int webPageX = Lang.rtl() ? startX + maxWidth - webPage.getWidth() : startX;
+      webPage.draw(view, c, webPageX, webPageY, preview, receiver, alpha, textMediaReceiver);
     }
   }
 
@@ -457,14 +494,44 @@ public class TGMessageText extends TGMessage {
 
   @Override
   protected int getBottomLineContentWidth () {
-    if (webPage != null) {
-      return webPage.getLastLineWidth();
-    }
-    if (Lang.rtl() == wrapper.getLastLineIsRtl()) {
-      return wrapper.getLastLineWidth();
+    int textLastLineWidth = Lang.rtl() == wrapper.getLastLineIsRtl() ? wrapper.getLastLineWidth() : BOTTOM_LINE_EXPAND_HEIGHT;
+    float webPageOnTop = this.webPageOnTop.getFloatValue();
+    if (webPageOnTop == 0f || webPage == null) {
+      if (webPage != null) {
+        return webPage.getLastLineWidth();
+      } else {
+        return textLastLineWidth;
+      }
+    } else if (webPageOnTop == 1f) {
+      return textLastLineWidth;
     } else {
-      return BOTTOM_LINE_EXPAND_HEIGHT;
+      // Animated
+      return BOTTOM_LINE_DEFINE_BY_FACTOR;
     }
+  }
+
+  @Override
+  protected float getBubbleExpandFactor () {
+    int textLastLineWidth = Lang.rtl() == wrapper.getLastLineIsRtl() ? wrapper.getLastLineWidth() : BOTTOM_LINE_EXPAND_HEIGHT;
+    int webPageLastLineWidth = webPage != null ? webPage.getLastLineWidth() : textLastLineWidth;
+    float fromExpandFactor = webPageLastLineWidth == BOTTOM_LINE_EXPAND_HEIGHT ? 1f : 0f;
+    float toExpandFactor = textLastLineWidth == BOTTOM_LINE_EXPAND_HEIGHT ? 1f : 0f;
+    return MathUtils.fromTo(fromExpandFactor, toExpandFactor, webPageOnTop.getFloatValue());
+  }
+
+  @Override
+  protected int getAnimatedBottomLineWidth (int bubbleTimePartWidth) {
+    int textLastLineWidth = Lang.rtl() == wrapper.getLastLineIsRtl() ? wrapper.getLastLineWidth() : BOTTOM_LINE_EXPAND_HEIGHT;
+    int webPageLastLineWidth = webPage != null ? webPage.getLastLineWidth() : textLastLineWidth;
+    float factor = webPageOnTop.getFloatValue();
+    if (factor == 1f || webPage == null) {
+      return textLastLineWidth;
+    } else if (factor == 0f) {
+      return webPageLastLineWidth;
+    }
+    int fromLastLineWidth = webPageLastLineWidth == BOTTOM_LINE_EXPAND_HEIGHT ? webPage.getWidth() - bubbleTimePartWidth : webPageLastLineWidth;
+    int toLastLineWidth = textLastLineWidth == BOTTOM_LINE_KEEP_WIDTH ? wrapper.getWidth() - bubbleTimePartWidth : textLastLineWidth;
+    return MathUtils.fromTo(fromLastLineWidth, toLastLineWidth, factor);
   }
 
   /*@Override

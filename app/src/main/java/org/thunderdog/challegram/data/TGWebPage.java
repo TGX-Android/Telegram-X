@@ -129,6 +129,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   private final TGMessageText parent;
   private final TdApi.WebPage webPage;
   private final String url;
+  private final TdApi.LinkPreviewOptions linkPreviewOptions;
 
   private BaseComponent component;
   private int componentY;
@@ -138,7 +139,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   private @Nullable ArrayList<MediaItem> instantItems;
   private int instantPosition;
 
-  public TGWebPage (@NonNull TGMessageText parent, TdApi.WebPage webPage, String url) {
+  public TGWebPage (@NonNull TGMessageText parent, TdApi.WebPage webPage, String url, @Nullable TdApi.LinkPreviewOptions linkPreviewOptions) {
     if (paddingLeft == 0) {
       initSizes();
     }
@@ -146,6 +147,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       initPaints();
     }*/
     this.viewProvider = parent.currentViews;
+    this.linkPreviewOptions = linkPreviewOptions;
     this.parent = parent;
     this.webPage = webPage;
     this.url = url;
@@ -1044,7 +1046,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     }
   }
 
-  public void requestPreview (DoubleImageReceiver receiver, int startX, int startY) {
+  public void requestPreview (DoubleImageReceiver receiver) {
     if (simpleImageFile != null || simpleGifFile != null) {
       receiver.requestFile(null, simplePreview);
     } else if (mediaWrapper != null) {

@@ -158,7 +158,6 @@ import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
-import me.vkryl.td.TdConstants;
 
 public abstract class TGMessage implements InvalidateContentProvider, TdlibDelegate, FactorAnimator.Target, Comparable<TGMessage>, Counter.Callback, TGAvatars.Callback, TranslationsManager.Translatable {
   private static final int MAXIMUM_CHANNEL_MERGE_TIME_DIFF = 150;
@@ -3489,7 +3488,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     throw new RuntimeException();
   }
 
-  protected int getAnimatedBottomLineWidth () {
+  protected int getAnimatedBottomLineWidth (int bubbleTimePartWidth) {
     throw new RuntimeException();
   }
 
@@ -3517,8 +3516,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           case BOTTOM_LINE_KEEP_WIDTH:
             break;
           case BOTTOM_LINE_DEFINE_BY_FACTOR: {
-            final int extendedWidth = getAnimatedBottomLineWidth() + bubbleTimePartWidth;
-            final int fitBubbleWidth = Math.max(bubbleWidth, extendedWidth);
+            final int extendedWidth = getAnimatedBottomLineWidth(bubbleTimePartWidth);
+            final int fitBubbleWidth = Math.max(bubbleWidth, extendedWidth != -1 ? extendedWidth + bubbleTimePartWidth : bubbleWidth);
 
             float factor = getBubbleExpandFactor();
             if (factor > 0f) {
