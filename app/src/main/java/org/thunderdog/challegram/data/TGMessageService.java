@@ -89,6 +89,36 @@ public final class TGMessageService extends TGMessageServiceImpl {
     // TODO design for giftedPremium.sticker
   }
 
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessagePremiumGiftCode premiumGiftCode) {
+    super(context, msg);
+    setTextCreator(() -> {
+      if (msg.isOutgoing) {
+        return getPlural(
+          R.string.YouGiftedPremiumCode,
+          premiumGiftCode.monthCount
+        );
+      } else {
+        return getPlural(
+          R.string.GiftedPremiumCode,
+          premiumGiftCode.monthCount,
+          new SenderArgument(sender, isUserChat())
+        );
+      }
+    });
+    // TODO design for premiumGiftCode.sticker
+    // TODO show details of the gift code
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessagePremiumGiveawayCreated giveawayCreated) {
+    super(context, msg);
+    setTextCreator(() -> {
+      return getText(
+        R.string.BoostingGiveawayJustStarted,
+        new SenderArgument(sender)
+      );
+    });
+  }
+
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatSetTheme setTheme) {
     super(context, msg);
     setTextCreator(() -> {

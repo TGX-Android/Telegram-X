@@ -273,71 +273,78 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       buildHeader(webPage, maxWidth);
     }
 
-    if (needInstantPreview(webPage)) {
-      if (webPage.animation != null) {
-        buildGif(webPage, maxWidth);
-      } else if (webPage.video != null) {
-        buildVideo(webPage, maxWidth);
-      } else {
-        buildPhoto(webPage, maxWidth);
+    if (webPage.showLargeMedia || mediaWrapper == null) {
+      if (webPage.duration != 0) {
+        setDuration(Strings.buildDuration(webPage.duration));
+      } else if (webPage.sticker != null && Math.max(webPage.sticker.width, webPage.sticker.height) > STICKER_SIZE_LIMIT) {
+        setDuration(Strings.buildSize(webPage.sticker.sticker.size));
       }
-    } else {
-      switch (this.type) {
-        case TYPE_TELEGRAM_AD: {
-          break;
-        }
-        case TYPE_VIDEO: {
-          buildVideo(webPage, maxWidth);
-          break;
-        }
-        case TYPE_GIF: {
+      if (needInstantPreview(webPage)) {
+        if (webPage.animation != null) {
           buildGif(webPage, maxWidth);
-          break;
-        }
-        case TYPE_PHOTO: {
+        } else if (webPage.video != null) {
+          buildVideo(webPage, maxWidth);
+        } else {
           buildPhoto(webPage, maxWidth);
-          break;
         }
-        default: {
-          if (type == TYPE_TELEGRAM_BACKGROUND) {
-            String[] partedUrl = url.split("/bg/");
-            if (partedUrl.length == 2) {
-              this.component = new WallpaperComponent(parent, webPage, partedUrl[1]);
+      } else {
+        switch (this.type) {
+          case TYPE_TELEGRAM_AD: {
+            break;
+          }
+          case TYPE_VIDEO: {
+            buildVideo(webPage, maxWidth);
+            break;
+          }
+          case TYPE_GIF: {
+            buildGif(webPage, maxWidth);
+            break;
+          }
+          case TYPE_PHOTO: {
+            buildPhoto(webPage, maxWidth);
+            break;
+          }
+          default: {
+            if (type == TYPE_TELEGRAM_BACKGROUND) {
+              String[] partedUrl = url.split("/bg/");
+              if (partedUrl.length == 2) {
+                this.component = new WallpaperComponent(parent, webPage, partedUrl[1]);
+              } else if (webPage.document != null) {
+                this.component = new FileComponent(parent, parent.getMessage(), webPage.document);
+              } else {
+                this.component = null;
+              }
+            } else if (webPage.audio != null) {
+              this.component = new FileComponent(parent, parent.getMessage(), webPage.audio, null, null);
+            } else if (webPage.voiceNote != null) {
+              this.component = new FileComponent(parent, parent.getMessage(), webPage.voiceNote, null, null);
             } else if (webPage.document != null) {
               this.component = new FileComponent(parent, parent.getMessage(), webPage.document);
             } else {
               this.component = null;
             }
-          } else if (webPage.audio != null) {
-            this.component = new FileComponent(parent, parent.getMessage(), webPage.audio, null, null);
-          } else if (webPage.voiceNote != null) {
-            this.component = new FileComponent(parent, parent.getMessage(), webPage.voiceNote, null, null);
-          } else if (webPage.document != null) {
-            this.component = new FileComponent(parent, parent.getMessage(), webPage.document);
-          } else {
-            this.component = null;
-          }
-          if (this.component != null) {
-            this.component.setViewProvider(viewProvider);
-            this.component.buildLayout(maxWidth);
-            if (hasHeader()) {
-              height += contentPadding;
+            if (this.component != null) {
+              this.component.setViewProvider(viewProvider);
+              this.component.buildLayout(maxWidth);
+              if (hasHeader()) {
+                height += contentPadding;
+              }
+              this.componentY = height;
+              this.height += component.getHeight();
+            } else if (isSmallPhotoType(this.type)) {
+              if (mediaWrapper != null && height < imageY + imageHeight) {
+                height = imageY + imageHeight;
+              }
+              height += lineAdd;
+            } else if (webPage.video != null) {
+              buildVideo(webPage, maxWidth);
+            } else if (webPage.animation != null) {
+              buildGif(webPage, maxWidth);
+            } else if (webPage.photo != null || webPage.sticker != null) {
+              buildPhoto(webPage, maxWidth);
             }
-            this.componentY = height;
-            this.height += component.getHeight();
-          } else if (isSmallPhotoType(this.type)) {
-            if (mediaWrapper != null && height < imageY + imageHeight) {
-              height = imageY + imageHeight;
-            }
-            height += lineAdd;
-          } else if (webPage.video != null) {
-            buildVideo(webPage, maxWidth);
-          } else if (webPage.animation != null) {
-            buildGif(webPage, maxWidth);
-          } else if (webPage.photo != null || webPage.sticker != null) {
-            buildPhoto(webPage, maxWidth);
+            break;
           }
-          break;
         }
       }
     }
@@ -515,18 +522,29 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
 
   private Text siteName, title, description;
 
-  private void setSmallPhoto (TdApi.Photo photo) {
-    TdApi.PhotoSize small = Td.findSmallest(photo);
-
-    if (small == null) {
-      return;
+  private boolean setSmallMedia () {
+    if (webPage.sticker != null && (Math.max(webPage.sticker.width, webPage.sticker.height) <= STICKER_SIZE_LIMIT || Td.isAnimated(webPage.sticker.format))) {
+      // simple animated sticker
+      return false; // TODO
+    } else if (webPage.sticker != null) {
+      setSmallMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), TD.convertToPhoto(webPage.sticker), chatId, messageId, parent, false));
+      return true;
+    } else if (webPage.video != null) {
+      setSmallMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), webPage.video, chatId, messageId, parent, false));
+      return true;
+    } else if (webPage.photo != null) {
+      setSmallMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), webPage.photo, chatId, messageId, parent, false, false, EmbeddedService.parse(webPage)));
+      return true;
     }
+    return false;
+  }
 
+  private void setSmallMediaWrapper (MediaWrapper mediaWrapper) {
     isImageBig = false;
-
-    mediaWrapper = new MediaWrapper(parent.context(), parent.tdlib(), photo, chatId, messageId, parent, false, false, EmbeddedService.parse(webPage));
-    mediaWrapper.setViewProvider(viewProvider);
-    mediaWrapper.setHideLoader(true);
+    setMediaWrapper(mediaWrapper);
+    if (!mediaWrapper.isVideo()) {
+      mediaWrapper.setHideLoader(true);
+    }
     mediaWrapper.setOnClickListener(this);
     mediaWrapper.buildContent(imageSize, imageSize);
     mediaWrapper.setViewProvider(viewProvider);
@@ -653,18 +671,15 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     return false;
   }
 
-  private static float TEXT_PADDING = 4f, TEXT_PADDING_START = 2f;
+  private static final float TEXT_PADDING = 4f, TEXT_PADDING_START = 2f;
 
   private void buildHeader (TdApi.WebPage webPage, int maxWidth) {
     final int textMaxWidth;
-    if (!needInstantPreview(webPage) && isSmallPhotoType(type) && !TD.isPhotoEmpty(webPage.photo)) {
+    if (!webPage.showLargeMedia && setSmallMedia()) {
       textMaxWidth = maxWidth - imageMarginLeft - imageSize;
       imageX = availWidth - imageSize;
       imageY = imageOffset;
       imageWidth = imageHeight = imageSize;
-      if (mediaWrapper == null) {
-        setSmallPhoto(webPage.photo);
-      }
     } else {
       textMaxWidth = maxWidth;
     }
@@ -859,12 +874,11 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       height += contentHeight;
     } else {
       if (webPage.sticker != null) {
-        mediaWrapper = new MediaWrapper(parent.context(), parent.tdlib(), TD.convertToPhoto(webPage.sticker), chatId, messageId, parent, false);
-        setDuration(Strings.buildSize(webPage.sticker.sticker.size));
+        setMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), TD.convertToPhoto(webPage.sticker), chatId, messageId, parent, false));
       } else if (webPage.video != null) {
-        mediaWrapper = new MediaWrapper(parent.context(), parent.tdlib(), webPage.video, chatId, messageId, parent, false);
+        setMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), webPage.video, chatId, messageId, parent, false));
       } else if (webPage.photo != null) {
-        mediaWrapper = new MediaWrapper(parent.context(), parent.tdlib(), webPage.photo, chatId, messageId, parent, false, false, EmbeddedService.parse(webPage));
+        setMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), webPage.photo, chatId, messageId, parent, false, false, EmbeddedService.parse(webPage)));
       } else {
         throw new NullPointerException();
       }
@@ -908,9 +922,6 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
 
   private void buildVideo (final TdApi.WebPage webPage, int maxWidth) {
     if (webPage.video != null || webPage.photo != null) {
-      if (webPage.duration != 0) {
-        setDuration(Strings.buildDuration(webPage.duration));
-      }
       if (hasHeader()) {
         setBigPhoto(maxWidth, contentPadding, contentPadding + lineAdd);
       } else {
@@ -921,10 +932,18 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
 
   // GIF
 
+  private void setMediaWrapper (MediaWrapper mediaWrapper) {
+    MediaWrapper oldMediaWrapper = this.mediaWrapper;
+    this.mediaWrapper = mediaWrapper;
+    if (oldMediaWrapper != null) {
+      oldMediaWrapper.destroy();
+    }
+  }
+
   private void buildGif (TdApi.WebPage webPage, int maxWidth) {
     TdApi.Animation gif = webPage.animation;
 
-    mediaWrapper = new MediaWrapper(parent.context(), parent.tdlib(), gif, chatId, messageId, parent, false, false, false, EmbeddedService.parse(webPage));
+    setMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), gif, chatId, messageId, parent, false, false, false, EmbeddedService.parse(webPage)));
     mediaWrapper.setOnClickListener(this);
     mediaWrapper.setViewProvider(viewProvider);
     int maxHeight = parent.getSmallestMaxContentHeight();

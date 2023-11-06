@@ -7829,6 +7829,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageGiftedPremium.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageGiftedPremium) content);
         }
+        case TdApi.MessagePremiumGiftCode.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessagePremiumGiftCode) content);
+        }
         case TdApi.MessageChatSetTheme.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageChatSetTheme) content);
         }
@@ -7913,6 +7916,16 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageForumTopicIsHiddenToggled) content);
         }
+        case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessagePremiumGiveawayCreated) content);
+        }
+        case TdApi.MessagePremiumGiveaway.CONSTRUCTOR: {
+          if (BuildConfig.DEBUG) {
+            // uncomment once finished
+            return new TGMessageGiveaway(context, msg, (TdApi.MessagePremiumGiveaway) content);
+          }
+          break;
+        }
         // unsupported
         case TdApi.MessageInvoice.CONSTRUCTOR:
         case TdApi.MessagePassportDataSent.CONSTRUCTOR:
@@ -7921,9 +7934,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
         case TdApi.MessageUserShared.CONSTRUCTOR:
         case TdApi.MessageChatShared.CONSTRUCTOR:
-        case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
-        case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR:
-        case TdApi.MessagePremiumGiveaway.CONSTRUCTOR:
           break;
         case TdApi.MessageUnsupported.CONSTRUCTOR:
           unsupportedStringRes = R.string.UnsupportedMessageType;
