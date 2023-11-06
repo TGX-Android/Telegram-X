@@ -164,33 +164,9 @@ public class ReplyView extends FrameLayoutFix implements View.OnClickListener, D
     return reply.onTouchEvent(this, event) || super.onTouchEvent(event);
   }
 
-  public void setWebPage (String link, TdApi.WebPage page) {
+  public void setWebPage (String link, TdApi.WebPage webPage) {
     layoutIfNeeded();
-    if (page == null) {
-      reply.set(Lang.getString(R.string.GettingLinkInfo), new ContentPreview(link, false), null, null);
-    } else {
-      String title = Strings.any(page.title, page.siteName);
-      if (StringUtils.isEmpty(title)) {
-        if (page.photo != null || (page.sticker != null && Math.max(page.sticker.width, page.sticker.height) > TGWebPage.STICKER_SIZE_LIMIT)) {
-          title = Lang.getString(R.string.Photo);
-        } else if (page.video != null) {
-          title = Lang.getString(R.string.Video);
-        } else if (page.document != null || page.voiceNote != null) {
-          title = page.document != null ? page.document.fileName : Lang.getString(R.string.Audio);
-          if (StringUtils.isEmpty(title)) {
-            title = Lang.getString(R.string.File);
-          }
-        } else if (page.audio != null) {
-          title = TD.getTitle(page.audio) + " – " + TD.getSubtitle(page.audio);
-        } else if (page.sticker != null) {
-          title = Lang.getString(R.string.Sticker);
-        } else {
-          title = Lang.getString(R.string.LinkPreview);
-        }
-      }
-      String desc = !Td.isEmpty(page.description) ? page.description.text : page.displayUrl;
-      reply.set(title, new ContentPreview(desc, false), page.photo != null ? page.photo.minithumbnail : null, TD.getWebPagePreviewImage(page));
-    }
+    reply.set(link, webPage);
     invalidate();
   }
 

@@ -36,6 +36,7 @@ import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.data.MediaWrapper;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
+import org.thunderdog.challegram.data.TGWebPage;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -49,6 +50,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -134,16 +136,6 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       this.maxWidth = maxWidth;
       buildLayout();
     }
-  }
-
-  public void postLayout (final int maxWidth) {
-    Background.instance().post(() -> {
-      if (ReplyComponent.this.maxWidth != maxWidth) {
-        ReplyComponent.this.maxWidth = maxWidth;
-        buildLayout();
-        invalidate(false);
-      }
-    });
   }
 
   public void setCurrentView (@Nullable View view) {
@@ -490,6 +482,35 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     return Lang.getString(isChannel() ? R.string.LoadingChannel : R.string.LoadingUser);
   }
 
+  public void set (String url, TdApi.WebPage webPage) {
+    this.flags = BitwiseUtils.setFlag(flags, FLAG_FORCE_TITLE, true);
+    if (webPage == null) {
+      set(Lang.getString(R.string.GettingLinkInfo), new ContentPreview(url, false), null, null);
+    } else {
+      String title = Strings.any(webPage.title, webPage.siteName);
+      if (StringUtils.isEmpty(title)) {
+        if (webPage.photo != null || (webPage.sticker != null && Math.max(webPage.sticker.width, webPage.sticker.height) > TGWebPage.STICKER_SIZE_LIMIT)) {
+          title = Lang.getString(R.string.Photo);
+        } else if (webPage.video != null) {
+          title = Lang.getString(R.string.Video);
+        } else if (webPage.document != null || webPage.voiceNote != null) {
+          title = webPage.document != null ? webPage.document.fileName : Lang.getString(R.string.Audio);
+          if (StringUtils.isEmpty(title)) {
+            title = Lang.getString(R.string.File);
+          }
+        } else if (webPage.audio != null) {
+          title = TD.getTitle(webPage.audio) + " – " + TD.getSubtitle(webPage.audio);
+        } else if (webPage.sticker != null) {
+          title = Lang.getString(R.string.Sticker);
+        } else {
+          title = Lang.getString(R.string.LinkPreview);
+        }
+      }
+      String desc = !Td.isEmpty(webPage.description) ? webPage.description.text : webPage.displayUrl;
+      set(title, new ContentPreview(desc, false), webPage.photo != null ? webPage.photo.minithumbnail : null, TD.getWebPagePreviewImage(webPage));
+    }
+  }
+
   public void set (@Nullable CharSequence forcedTitle, @NonNull TdApi.Message msg) {
     setTitleImpl(getTitle(forcedTitle, msg));
     setMessage(msg, false, false);
@@ -606,14 +627,6 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   }
 
   public void setChannelTitle (final String title) {
-    Background.instance().post(() -> {
-      setTitleImpl(title);
-      buildTitle();
-      invalidate(false);
-    });
-  }
-
-  public void setTitle (final String title) {
     Background.instance().post(() -> {
       setTitleImpl(title);
       buildTitle();
