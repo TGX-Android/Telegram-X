@@ -423,6 +423,9 @@
   <string name="ChatContentLiveStreamInviteMulti_outgoing_one">Invited %1$s person to the live stream</string>
   <string name="ChatContentLiveStreamInviteMulti_outgoing_other">Invited %1$s people to the live stream</string>
 
+  <string name="ChatContentGiveaway_one"></string>
+  <string name="ChatContentGiveaway_other"></string>
+
   <string name="Audio">Audio</string>
   <string name="Voice">Voice</string>
   <string name="Photo">Photo</string>
@@ -1214,6 +1217,7 @@
   <string name="ActionPinnedGame">%1$s pinned %2$s</string>
   <string name="ActionPinnedGameNoName">%1$s pinned a **game**</string>
   <string name="ActionPinnedNoText">%1$s pinned a **message**</string>
+  <string name="ActionPinnedGiveaway">%1$s pinned a **giveaway**</string>
   <string name="ActionPinnedGeo">%1$s pinned a **location**</string>
   <string name="ActionPinnedPoll">%1$s pinned a **poll**</string>
   <string name="ActionPinnedQuiz">%1$s pinned a **quiz**</string>
@@ -4828,4 +4832,12 @@
   <string name="AvatarsInReactionsNever">Never</string>
 
   <string name="BoostingGiveawayJustStarted">%1$s just started a giveaway of Telegram Premium subscriptions for its followers.</string>
+
+  <string name="Giveaway">Giveaway</string>
+
+  <string name="xFutureWinnersOn_one">%1$s winner to be selected on %2$s</string>
+  <string name="xFutureWinnersOn_other">%1$s winners to be selected on %2$s</string>
+  <string name="xFutureWinners_one">%1$s winner to be selected</string>
+  <string name="xFutureWinners_other">%1$s winners to be selected</string>
+  <string name="format_giveawayInfo">%1$s: %2$s</string>
 </resources>

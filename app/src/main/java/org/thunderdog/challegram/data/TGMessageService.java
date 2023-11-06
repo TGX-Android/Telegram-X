@@ -101,7 +101,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
         return getPlural(
           R.string.GiftedPremiumCode,
           premiumGiftCode.monthCount,
-          new SenderArgument(sender, isUserChat())
+          new SenderArgument(new TdlibSender(tdlib, msg.chatId, premiumGiftCode.creatorId), isUserChat())
         );
       }
     });
