@@ -303,6 +303,7 @@ public class TextEntityMessage extends TextEntity {
     switch (type.getConstructor()) {
       case TdApi.TextEntityTypePre.CONSTRUCTOR:
       case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
+      case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
         return true;
     }
     return false;

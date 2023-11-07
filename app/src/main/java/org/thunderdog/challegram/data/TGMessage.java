@@ -2779,23 +2779,15 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           if (msg.replyTo != null && msg.replyTo.getConstructor() == TdApi.MessageReplyToMessage.CONSTRUCTOR) {
             TdApi.MessageReplyToMessage replyToMessage = (TdApi.MessageReplyToMessage) msg.replyTo;
             if (replyToMessage.chatId != msg.chatId) {
-              if (isMessageThread() && isThreadHeader()) {
-                tdlib.ui().openMessage(controller(), replyToMessage.chatId, new MessageId(replyToMessage), openParameters());
-              } else if (replyToMessage.chatId == 0 || replyToMessage.messageId == 0) {
+              if (replyToMessage.chatId == 0 || replyToMessage.messageId == 0) {
                 buildContentHint(view, getReplyLocationProvider(), false).show(tdlib, Lang.getString(R.string.MessageReplyPrivate));
               } else {
-                // FIXME: tap on reply to channel messsage in discussion chat
-                /*ThreadInfo threadInfo = messagesController().getMessageThread();
-                if (threadInfo != null && threadInfo.getContextChatId() == replyToMessage.chatId && msg.messageThreadId == threadInfo.getMessageThreadId()) {
-                  highlightOtherMessage(new MessageId(replyToMessage));
-                } else {
-                }*/
-                openMessageThread(new MessageId(replyToMessage));
+                tdlib.ui().openMessage(controller(), replyToMessage.chatId, new MessageId(replyToMessage), openParameters());
               }
             } else if (isScheduled()) {
               tdlib.ui().openMessage(controller(), replyToMessage.chatId, new MessageId(replyToMessage), openParameters());
             } else {
-              highlightOtherMessage(replyToMessage.messageId);
+              highlightOtherMessage(new MessageId(replyToMessage));
             }
           }
           break;
@@ -8303,7 +8295,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     if (canShare) {
       leftActions.add(new SwipeQuickAction(shareText, iQuickShare, () -> {
-        messagesController().shareMessages(getChatId(), getAllMessages());
+        messagesController().shareMessages(getChatId(), getAllMessages(), false);
       }, true, false));
     }
   }

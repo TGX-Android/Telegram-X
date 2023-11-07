@@ -210,7 +210,7 @@ public class ContentPreview {
       if (!StringUtils.isEmpty(message.restrictionReason)) {
         return new ContentPreview(EMOJI_ERROR, 0, message.restrictionReason, false);
       }
-      if (checkChatRestrictions) { // Otherwise lookup is handled by the caller
+      if (checkChatRestrictions && chatId != 0) { // Otherwise lookup is handled by the caller
         String restrictionReason = tdlib.chatRestrictionReason(chatId);
         if (restrictionReason != null) {
           return new ContentPreview(EMOJI_ERROR, 0, restrictionReason, false);

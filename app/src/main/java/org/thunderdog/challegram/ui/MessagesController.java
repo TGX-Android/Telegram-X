@@ -3554,17 +3554,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       if (selectedMessageIds != null) {
         int size = selectedMessageIds.size();
-        TdApi.Message singleMessage = getSingleSelectedMessage();
-        if (singleMessage != null) {
-          shareMessage(singleMessage);
-        } else if (size > 1) {
+        if (size > 0) {
           TdApi.Message[] messages = new TdApi.Message[size];
           for (int i = 0; i < size; i++) {
             long messageId = selectedMessageIds.keyAt(i);
             TdApi.Message message = selectedMessageIds.valueAt(i).getMessage(messageId);
             messages[i] = message;
           }
-          shareMessages(chat.id, messages);
+          shareMessages(chat.id, messages, true);
         }
       }
     } else if (id == R.id.menu_btn_reply) {
@@ -5431,7 +5428,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       } else if (id == R.id.btn_messageShare) {
         cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         if (selectedMessage.canBeForwarded()) {
-          shareMessages(selectedMessage.getChatId(), selectedMessage.getAllMessages());
+          shareMessages(selectedMessage.getChatId(), selectedMessage.getAllMessages(), false);
         }
         return true;
       } else if (id == R.id.btn_chatTranslate) {
@@ -6623,17 +6620,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   // Share utils
 
-  public void shareMessage (TdApi.Message msg) {
-    shareMessages(msg.chatId, new TdApi.Message[]{msg});
-  }
-
-  public void shareMessages (long chatId, TdApi.Message[] messages) {
+  public void shareMessages (long chatId, TdApi.Message[] messages, boolean isExplicitSelection) {
     if (messages == null || messages.length == 0) {
       return;
     }
     hideAllKeyboards();
     final ShareController c = new ShareController(context, tdlib);
-    c.setArguments(new ShareController.Args(messages).setAfter(() -> finishSelectMode(-1)));
+    c.setArguments(new ShareController.Args(messages).setDisallowReply(isExplicitSelection).setAfter(() -> finishSelectMode(-1)));
     c.show();
     hideCursorsForInputView();
   }

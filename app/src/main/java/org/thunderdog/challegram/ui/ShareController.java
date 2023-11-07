@@ -180,6 +180,8 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
     private boolean allowCopyLink;
 
+    private boolean disallowReply;
+
     private ShareProviderDelegate customDelegate;
 
     private Runnable after;
@@ -263,6 +265,11 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
     public Args setExport (String exportText) {
       this.exportText = exportText;
+      return this;
+    }
+
+    public Args setDisallowReply (boolean disallowReply) {
+      this.disallowReply = disallowReply;
       return this;
     }
 
@@ -3057,8 +3064,40 @@ public class ShareController extends TelegramViewController<ShareController.Args
         tdlib.client().send(new TdApi.CreatePrivateChat(myUserId, true), tdlib.silentHandler());
       }
       TdApi.MessageSendOptions sendOptions = ChatId.isSecret(chatId) ? secretSendOptions : cloudSendOptions;
+      boolean messageReplyIncluded = false;
       if (hasComment) {
-        functions.addAll(TD.sendMessageText(chatId, 0, null, sendOptions, new TdApi.InputMessageText(comment, null, false), tdlib.maxMessageTextLength()));
+        TdApi.InputMessageReplyToMessage replyTo = null;
+        if (!args.disallowReply && !ChatId.isSecret(chatId) && mode == MODE_MESSAGES && !(needHideAuthor || needRemoveCaptions) && args.messages[0].chatId != chatId) {
+          messageReplyIncluded = true;
+
+          long singleSourceChatId = 0, singleSourceMediaGroupId = 0, contentfulMediaMessageId = 0;
+          for (int index = 0; index < args.messages.length; index++) {
+            TdApi.Message message = args.messages[index];
+            if (!message.canBeRepliedInAnotherChat) {
+              messageReplyIncluded = false;
+              break;
+            }
+            if (index == 0) {
+              singleSourceChatId = message.chatId;
+              singleSourceMediaGroupId = message.mediaAlbumId;
+            } else if (singleSourceChatId != message.chatId || singleSourceMediaGroupId != message.mediaAlbumId || message.mediaAlbumId == 0) {
+              messageReplyIncluded = false;
+              break;
+            }
+            if (!Td.isEmpty(Td.textOrCaption(message.content))) {
+              if (contentfulMediaMessageId != 0) {
+                messageReplyIncluded = false;
+                break;
+              }
+              contentfulMediaMessageId = message.id;
+            }
+          }
+
+          if (messageReplyIncluded) {
+            replyTo = new TdApi.InputMessageReplyToMessage(args.messages[0].chatId, contentfulMediaMessageId != 0 ? contentfulMediaMessageId : args.messages[0].id, null);
+          }
+        }
+        functions.addAll(TD.sendMessageText(chatId, 0, replyTo, sendOptions, new TdApi.InputMessageText(comment, null, false), tdlib.maxMessageTextLength()));
       }
       switch (mode) {
         case MODE_TEXT: {
@@ -3066,7 +3105,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           break;
         }
         case MODE_MESSAGES: {
-          if (!TD.forwardMessages(chatId, 0, args.messages, needHideAuthor, needRemoveCaptions, sendOptions, functions))
+          if (!messageReplyIncluded && !TD.forwardMessages(chatId, 0, args.messages, needHideAuthor, needRemoveCaptions, sendOptions, functions))
             return;
           break;
         }
