@@ -331,11 +331,6 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
               }
               this.componentY = height;
               this.height += component.getHeight();
-            } else if (isSmallPhotoType(this.type)) {
-              if (mediaWrapper != null && height < imageY + imageHeight) {
-                height = imageY + imageHeight;
-              }
-              height += lineAdd;
             } else if (webPage.video != null) {
               buildVideo(webPage, maxWidth);
             } else if (webPage.animation != null) {
@@ -681,7 +676,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       imageX = availWidth - imageSize;
       imageY = imageOffset;
       imageWidth = imageHeight = imageSize;
-      minHeight = imageY + imageHeight;
+      minHeight = imageY + imageHeight + lineAdd;
     } else {
       textMaxWidth = maxWidth;
     }
