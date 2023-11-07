@@ -675,11 +675,13 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
 
   private void buildHeader (TdApi.WebPage webPage, int maxWidth) {
     final int textMaxWidth;
+    int minHeight = 0;
     if (!webPage.showLargeMedia && setSmallMedia()) {
       textMaxWidth = maxWidth - imageMarginLeft - imageSize;
       imageX = availWidth - imageSize;
       imageY = imageOffset;
       imageWidth = imageHeight = imageSize;
+      minHeight = imageY + imageHeight;
     } else {
       textMaxWidth = maxWidth;
     }
@@ -772,6 +774,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     }
 
     height += textHeight;
+    height = Math.max(height, minHeight);
 
     if (component != null) {
       height += component.getHeight();
