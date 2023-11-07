@@ -1448,6 +1448,11 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
         addIcon(R.drawable.baseline_share_arrow_16);
       } else if (lastMessage.importInfo != null) {
         addIcon(R.drawable.templarian_baseline_import_16);
+      } else if (lastMessage.replyTo != null && lastMessage.replyTo.getConstructor() == TdApi.MessageReplyToMessage.CONSTRUCTOR) {
+        TdApi.MessageReplyToMessage replyToMessage = (TdApi.MessageReplyToMessage) lastMessage.replyTo;
+        if (replyToMessage.chatId != lastMessage.chatId) {
+          addIcon(R.drawable.baseline_reply_16);
+        }
       }
     }
     if (preview.emoji != null) {
