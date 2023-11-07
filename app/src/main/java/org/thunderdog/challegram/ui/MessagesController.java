@@ -3561,7 +3561,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             TdApi.Message message = selectedMessageIds.valueAt(i).getMessage(messageId);
             messages[i] = message;
           }
-          shareMessages(chat.id, messages, true);
+          shareMessages(messages, true);
         }
       }
     } else if (id == R.id.menu_btn_reply) {
@@ -5428,7 +5428,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       } else if (id == R.id.btn_messageShare) {
         cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         if (selectedMessage.canBeForwarded()) {
-          shareMessages(selectedMessage.getChatId(), selectedMessage.getAllMessages(), false);
+          shareMessages(selectedMessage.getAllMessages(), false);
         }
         return true;
       } else if (id == R.id.btn_chatTranslate) {
@@ -6620,7 +6620,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   // Share utils
 
-  public void shareMessages (long chatId, TdApi.Message[] messages, boolean isExplicitSelection) {
+  public void shareMessages (TdApi.Message[] messages, boolean isExplicitSelection) {
     if (messages == null || messages.length == 0) {
       return;
     }

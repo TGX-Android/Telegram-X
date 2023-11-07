@@ -8295,7 +8295,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     if (canShare) {
       leftActions.add(new SwipeQuickAction(shareText, iQuickShare, () -> {
-        messagesController().shareMessages(getChatId(), getAllMessages(), false);
+        messagesController().shareMessages(getAllMessages(), false);
       }, true, false));
     }
   }
