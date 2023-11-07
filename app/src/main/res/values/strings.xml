@@ -4668,6 +4668,18 @@
   <string name="opened_round_hours_one">watched %1$s hour ago</string>
   <string name="opened_round_hours_other">watched %1$s hours ago</string>
 
+  <string name="message_edited_now">Edited just now</string>
+  <string name="message_edited_today">Edited today at %1$s</string>
+  <string name="message_edited_yesterday">Edited yesterday at %1$s</string>
+  <string name="message_edited_weekday">Edited on %1$s at %2$s</string>
+  <string name="message_edited_date">Edited on %1$s at %2$s</string>
+  <string name="message_edited_seconds_one">Edited %1$s second ago</string>
+  <string name="message_edited_seconds_other">Edited %1$s seconds ago</string>
+  <string name="message_edited_minutes_one">Edited %1$s minute ago</string>
+  <string name="message_edited_minutes_other">Edited %1$s minutes ago</string>
+  <string name="message_edited_hours_one">Edited %1$s hour ago</string>
+  <string name="message_edited_hours_other">Edited %1$s hours ago</string>
+
   <string name="reacted_now">reacted just now</string>
   <string name="reacted_today">reacted today at %1$s</string>
   <string name="reacted_yesterday">reacted yesterday at %1$s</string>
@@ -4801,4 +4813,6 @@
   <string name="AvatarsInReactionsAlways">Always</string>
   <string name="AvatarsInReactionsSmartFilter">Limited</string>
   <string name="AvatarsInReactionsNever">Never</string>
+
+  <string name="MessageRestrictedByTelegram">This is a service message from Telegram</string>
 </resources>

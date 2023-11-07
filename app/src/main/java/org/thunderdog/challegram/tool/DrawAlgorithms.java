@@ -430,7 +430,7 @@ public class DrawAlgorithms {
     }
   }
 
-  public static void drawCounter (Canvas c, float cx, float cy, int gravity, CounterAnimator<Text> counter, float textSize, boolean needBackground, TextColorSet colorSet, Drawable drawable, int drawableGravity, int drawableColorId, int drawableMargin, float alpha, float drawableAlpha, float scale) {
+  public static void drawCounter (Canvas c, float cx, float cy, int gravity, CounterAnimator<Text> counter, float textSize, boolean needBackground, TextColorSet colorSet, Drawable drawable, int drawableGravity, int drawableColorId, int drawableMargin, float alpha, float drawableAlpha, float scale, @Nullable RectF outputDrawRect) {
     scale = .6f + .4f * scale;
     final boolean needScale = scale != 1f;
 
@@ -441,7 +441,8 @@ public class DrawAlgorithms {
     } else {
       radius = addRadius = 0f;
     }
-    final float contentWidth = counter.getWidth() + (drawable != null ? drawable.getMinimumWidth() + drawableMargin : 0);
+    final float drawableWidth = (drawable != null ? drawable.getMinimumWidth() + drawableMargin : 0);
+    final float contentWidth = counter.getWidth() + drawableWidth;
     final float width = getCounterWidth(textSize, needBackground, counter, drawable != null ? drawable.getMinimumWidth() + drawableMargin : 0);
 
     final int backgroundColor = colorSet.backgroundColor(false);
@@ -465,6 +466,11 @@ public class DrawAlgorithms {
     if (needScale) {
       c.save();
       c.scale(scale, scale, rectF.centerX(), rectF.centerY());
+    }
+
+    if (outputDrawRect != null) {
+      outputDrawRect.set(rectF.left, rectF.top - drawableWidth / 2, rectF.right, rectF.bottom + drawableWidth / 2);
+      // c.drawRect(outputDrawRect, Paints.strokeSmallPaint(0xFF00FF00));
     }
 
     if (needBackground) {

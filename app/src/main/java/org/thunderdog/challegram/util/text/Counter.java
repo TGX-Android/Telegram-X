@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.util.text;
 
 import android.graphics.Canvas;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.View;
@@ -343,14 +344,26 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     draw(c, cx, cy, gravity, alpha, null, 0);
   }
 
+  public void draw (Canvas c, float cx, float cy, int gravity, float alpha, @Nullable RectF outDrawRect) {
+    draw(c, cx, cy, gravity, alpha, null, 0, outDrawRect);
+  }
+
   public void draw (Canvas c, float cx, float cy, int gravity, float alpha, DrawableProvider drawableProvider, @PorterDuffColorId int drawableColorId) {
     draw(c, cx, cy, gravity, alpha, alpha, drawableProvider, drawableColorId);
   }
 
+  public void draw (Canvas c, float cx, float cy, int gravity, float alpha, DrawableProvider drawableProvider, @PorterDuffColorId int drawableColorId, @Nullable RectF outDrawRect) {
+    draw(c, cx, cy, gravity, alpha, alpha, drawableProvider, drawableColorId, outDrawRect);
+  }
+
   public void draw (Canvas c, float cx, float cy, int gravity, float alpha, float drawableAlpha, DrawableProvider drawableProvider, @PorterDuffColorId int drawableColorId) {
+    draw(c, cx, cy, gravity, alpha, drawableAlpha, drawableProvider, drawableColorId, null);
+  }
+
+  public void draw (Canvas c, float cx, float cy, int gravity, float alpha, float drawableAlpha, DrawableProvider drawableProvider, @PorterDuffColorId int drawableColorId, @Nullable RectF outDrawRect) {
     if (alpha * getVisibility() > 0f) {
       Drawable drawable = getDrawable(drawableProvider, drawableColorId);
-      DrawAlgorithms.drawCounter(c, cx, cy, gravity, counter, textSize, BitwiseUtils.hasFlag(flags, FLAG_NEED_BACKGROUND),this, drawable, drawableGravity, drawableColorId, Screen.dp(drawableMarginDp), alpha * getVisibility(), drawableAlpha * getVisibility(), isVisible.getFloatValue());
+      DrawAlgorithms.drawCounter(c, cx, cy, gravity, counter, textSize, BitwiseUtils.hasFlag(flags, FLAG_NEED_BACKGROUND),this, drawable, drawableGravity, drawableColorId, Screen.dp(drawableMarginDp), alpha * getVisibility(), drawableAlpha * getVisibility(), isVisible.getFloatValue(), outDrawRect);
     }
   }
 
