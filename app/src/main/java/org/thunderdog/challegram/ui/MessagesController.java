@@ -153,6 +153,7 @@ import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.filegen.VideoGenerationInfo;
 import org.thunderdog.challegram.helper.BotHelper;
+import org.thunderdog.challegram.helper.InlineSearchContext;
 import org.thunderdog.challegram.helper.LiveLocationHelper;
 import org.thunderdog.challegram.helper.Recorder;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -6074,6 +6075,42 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  @Override
+  public void onToggleEnlarge (ReplyView view, View clickedView) {
+    if (showingLinkPreview() && findTargetContext().toggleEnlarge()) {
+      context
+        .tooltipManager()
+        .builder(clickedView)
+        .show(tdlib, Lang.getString(findTargetContext().options.forceLargeMedia ? R.string.LinkPreviewEnlarged : R.string.LinkPreviewMinimized))
+        .hideDelayed();
+      inputView.notifyWebPageOptionsChanged();
+    }
+  }
+
+  @Override
+  public void onToggleShowAbove (ReplyView view, View clickedView) {
+    if (showingLinkPreview() && findTargetContext().toggleShowAbove()) {
+      context
+        .tooltipManager()
+        .builder(clickedView)
+        .show(tdlib, Lang.getString(findTargetContext().options.showAboveText ? R.string.LinkPreviewShowAbove : R.string.LinkPreviewShowBelow))
+        .hideDelayed();
+      inputView.notifyWebPageOptionsChanged();
+    }
+  }
+
+  @Override
+  public void onChooseNextLinkPreview (ReplyView view, View clickedView) {
+    if (showingLinkPreview() && findTargetContext().chooseNextLinkPreview()) {
+      context
+        .tooltipManager()
+        .builder(clickedView)
+        .show(tdlib, Lang.getString(R.string.LinkPreviewChanged, !StringUtils.isEmpty(findTargetContext().options.url) ? findTargetContext().options.url : findTargetContext().linkPreview.primaryUrl))
+        .hideDelayed();
+      inputView.notifyWebPageOptionsChanged();
+    }
+  }
+
   public @Nullable TdApi.InputMessageReplyToMessage getCurrentReplyId () {
     if (replyMessage != null) {
       long chatId = replyMessage.chatId;
@@ -6217,9 +6254,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public void clearReply () {
     replyMessage = null;
-    dismissedLink = null;
-    attachedLink = null;
-    attachedPreview = null;
+    draftContext.reset();
     flags &= ~FLAG_REPLY_ANIMATING;
     setReplyFactor(0f);
     replyView.clear();
@@ -6229,7 +6264,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     tdlib.uiExecute(() -> {
       if (replyMessage != null && (flags & FLAG_REPLY_ANIMATING) == 0) {
         replyMessage = null;
-        if (editingMessage == null) {
+        if (!isEditingMessage()) {
           closeReplyView();
         }
         if (byUser) {
@@ -6292,7 +6327,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     obj = AnimatorUtils.simpleValueAnimator();
     obj.addUpdateListener(animation -> setReplyFactor(startFactor - startFactor * AnimatorUtils.getFraction(animation)));
     obj.setInterpolator(AnimatorUtils.DECELERATE_INTERPOLATOR);
-    obj.setDuration(200l);
+    obj.setDuration(200L);
     obj.addListener(new AnimatorListenerAdapter() {
       @Override
       public void onAnimationEnd (Animator animation) {
@@ -6385,19 +6420,20 @@ public class MessagesController extends ViewController<MessagesController.Argume
   // Edit utils
 
   public boolean isEditingMessage () {
-    return editingMessage != null;
+    return editContext != null;
   }
 
   public boolean hasEditedChanges () {
     if (isEditingMessage()) {
       TdApi.FormattedText newText = inputView != null ? inputView.getOutputText(true) : null;
+      TdApi.LinkPreviewOptions newOptions = inputView != null ? inputView.getOutputLinkPreviewOptions() : null;
 
-      switch (editingMessage.content.getConstructor()) {
+      //noinspection SwitchIntDef
+      switch (editContext.message.content.getConstructor()) {
         case TdApi.MessageText.CONSTRUCTOR: {
-          TdApi.MessageText oldMessageText = (TdApi.MessageText) editingMessage.content;
+          TdApi.MessageText oldMessageText = (TdApi.MessageText) editContext.message.content;
           TdApi.LinkPreviewOptions oldLinkPreviewOptions = oldMessageText.linkPreviewOptions;
-          TdApi.LinkPreviewOptions newLinkPreviewOptions = getLinkPreviewOptions();
-          if (!Td.equalsTo(oldMessageText.text, newText) || !Td.equalsTo(oldLinkPreviewOptions, newLinkPreviewOptions)) {
+          if (!Td.equalsTo(oldMessageText.text, newText) || !Td.equalsTo(oldLinkPreviewOptions, newOptions)) {
             return true;
           }
           break;
@@ -6408,8 +6444,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
         case TdApi.MessageVoiceNote.CONSTRUCTOR:
         case TdApi.MessageDocument.CONSTRUCTOR:
         case TdApi.MessageAnimation.CONSTRUCTOR: {
-          TdApi.FormattedText oldText = Td.textOrCaption(editingMessage.content);
+          TdApi.FormattedText oldText = Td.textOrCaption(editContext.message.content);
           return !Td.equalsTo(oldText, newText);
+        }
+        default: {
+          Td.assertMessageContent_ea2cfacf();
+          break;
         }
       }
     }
@@ -6418,23 +6458,107 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean isEditingCaption () {
-    return editingMessage != null && editingMessage.content.getConstructor() != TdApi.MessageText.CONSTRUCTOR;
+    return editContext != null && editContext.message.content.getConstructor() != TdApi.MessageText.CONSTRUCTOR;
   }
 
   @Nullable
-  public TdApi.WebPage getEditingWebPage (TdApi.FormattedText currentText) {
-    if (editingMessage != null && editingMessage.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
-      TdApi.MessageText messageText = (TdApi.MessageText) editingMessage.content;
+  public TdApi.WebPage getEditingWebPage (TdApi.FormattedText currentText, @NonNull InlineSearchContext.LinkPreview linkPreview) {
+    if (editContext != null && editContext.message.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
+      TdApi.MessageText messageText = (TdApi.MessageText) editContext.message.content;
       //noinspection UnsafeOptInUsageError
-      return Td.equalsTo(currentText, messageText.text, true) ? messageText.webPage : null;
+      if (Td.equalsTo(currentText, messageText.text, true) &&
+        Td.equalsTo(linkPreview.options, messageText.linkPreviewOptions)) {
+        return messageText.webPage;
+      }
     }
     return null;
   }
 
-  private TdApi.Message editingMessage;
+  private static class LinkPreviewContext {
+    private final TdApi.Message message;
+    private final TdApi.LinkPreviewOptions options = new TdApi.LinkPreviewOptions();
+    private InlineSearchContext.LinkPreview linkPreview;
+
+    public LinkPreviewContext (TdApi.Message message) {
+      this.message = message;
+      if (message != null) {
+        TdApi.FormattedText formattedText = Td.textOrCaption(message.content);
+        TdApi.LinkPreviewOptions linkPreviewOptions = Td.isText(message.content) ? ((TdApi.MessageText) message.content).linkPreviewOptions : null;
+        InlineSearchContext.LinkPreview linkPreview = new InlineSearchContext.LinkPreview(formattedText, linkPreviewOptions);
+        if (!linkPreview.isEmpty()) {
+          this.linkPreview = linkPreview;
+        }
+        Td.copyTo(linkPreviewOptions, this.options);
+      }
+    }
+
+    public boolean checkMessage (long chatId, long messageId) {
+      return message != null && message.chatId == chatId && message.id == messageId;
+    }
+
+    public void dismiss () {
+      Td.reset(options);
+      options.isDisabled = true;
+    }
+
+    public void reset () {
+      linkPreview = null;
+      Td.reset(options);
+    }
+
+    public boolean isVisible () {
+      if (options.isDisabled) {
+        return false;
+      }
+      return linkPreview != null && (!linkPreview.isNotFound() || linkPreview.hasAlternatives());
+    }
+
+    public TdApi.WebPage getWebPage () {
+      return linkPreview != null ? linkPreview.webPage : null;
+    }
+
+    private boolean isLoaded () {
+      return linkPreview != null && linkPreview.isValid();
+    }
+
+    public boolean toggleShowAbove () {
+      if (isLoaded()) {
+        options.showAboveText = !options.showAboveText;
+        return true;
+      }
+      return false;
+    }
+
+    public String getCurrentUrl () {
+      return !StringUtils.isEmpty(options.url) ? options.url : linkPreview != null ? linkPreview.primaryUrl : null;
+    }
+
+    public boolean chooseNextLinkPreview () {
+      if (linkPreview != null && linkPreview.hasAlternatives()) {
+        String url = getCurrentUrl();
+        int index = ArrayUtils.indexOf(linkPreview.uniqueUrls, url);
+        if (index != -1) {
+          String nextUrl = index + 1 < linkPreview.uniqueUrls.length ? linkPreview.uniqueUrls[index + 1] : "";
+          options.url = nextUrl;
+          return true;
+        }
+      }
+      return false;
+    }
+
+    public boolean toggleEnlarge () {
+      if (isLoaded() && linkPreview.webPage.hasLargeMedia) {
+        options.forceLargeMedia = !linkPreview.webPage.showLargeMedia;
+        options.forceSmallMedia = linkPreview.webPage.showLargeMedia;
+        options.url = linkPreview.webPage.url;
+        return true;
+      }
+      return false;
+    }
+  }
 
   private void showCurrentEdit () {
-    replyView.setReplyTo(editingMessage, Lang.getString(R.string.EditMessage));
+    replyView.setReplyTo(editContext.message, Lang.getString(R.string.EditMessage));
   }
 
   private void setInEditMode (boolean inEditMode, String futureText) {
@@ -6493,7 +6617,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void resetEditState () {
-    editingMessage = null;
+    editContext = null;
     if (inputView != null) {
       inputView.resetState();
       setInputBlockFlag(FLAG_INPUT_EDITING, false);
@@ -6502,9 +6626,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void editMessage (TdApi.Message msg) {
-    if (editingMessage != null || (flags & FLAG_REPLY_ANIMATING) != 0) {
+    if (isEditingMessage() || (flags & FLAG_REPLY_ANIMATING) != 0) {
       return;
     }
+    boolean needOpen = !showingLinkPreview() && replyMessage == null;
 
     needShowEmojiKeyboardAfterHideMessageOptions = false;
     saveDraft();
@@ -6515,12 +6640,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
       closeSearchMode(null);
     }
 
-    this.editingMessage = msg;
+    this.editContext = new LinkPreviewContext(msg);
     TdApi.FormattedText text = Td.textOrCaption(msg.content);
     setInEditMode(true, text.text);
     sendButton.setIsActive(!StringUtils.isEmpty(text.text) || isEditingCaption());
     replyView.setReplyTo(msg, Lang.getString(R.string.EditMessage));
-    if (!showingLinkPreview() && replyMessage == null) {
+    if (needOpen) {
       openReplyView();
     }
     if (inputView != null) {
@@ -6534,7 +6659,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void closeEdit () {
-    if (editingMessage == null || (flags & FLAG_REPLY_ANIMATING) != 0) {
+    if (!isEditingMessage() || (flags & FLAG_REPLY_ANIMATING) != 0) {
       return;
     }
 
@@ -6543,7 +6668,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       setInputBlockFlag(FLAG_INPUT_EDITING, false);
     }
     setInEditMode(false, "");
-    editingMessage = null;
+    editContext = null;
     if (inputView != null) {
       updateSendButton(inputView.getInput(), true);
     }
@@ -6558,28 +6683,29 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void saveMessage (boolean applyMarkdown) {
-    if (editingMessage == null || inputView == null) {
+    if (!isEditingMessage() || inputView == null) {
       return;
     }
 
-    //noinspection UnsafeOptInUsageError
-    TdApi.FormattedText newText = Td.trim(inputView.getOutputText(applyMarkdown));
-    //noinspection UnsafeOptInUsageError
-    if (Td.isEmpty(newText) && !isEditingMessage())
-      return;
+    TdApi.FormattedText newText = inputView.getOutputText(applyMarkdown);
+    TdApi.LinkPreviewOptions newOptions = inputView.getOutputLinkPreviewOptions();
 
-    switch (editingMessage.content.getConstructor()) {
+    switch (editContext.message.content.getConstructor()) {
       case TdApi.MessageText.CONSTRUCTOR:
       case TdApi.MessageAnimatedEmoji.CONSTRUCTOR: {
+        if (Td.isEmpty(newText)) {
+          return;
+        }
+
         TdApi.MessageText oldMessageText;
-        if (editingMessage.content.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
-          oldMessageText = new TdApi.MessageText(Td.textOrCaption(editingMessage.content), null, null);
+        if (editContext.message.content.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
+          oldMessageText = new TdApi.MessageText(Td.textOrCaption(editContext.message.content), null, null);
         } else {
-          oldMessageText = (TdApi.MessageText) editingMessage.content;
+          oldMessageText = (TdApi.MessageText) editContext.message.content;
         }
         TdApi.LinkPreviewOptions oldLinkPreviewOptions = oldMessageText.linkPreviewOptions;
 
-        TdApi.InputMessageText newInputMessageText = new TdApi.InputMessageText(newText, getLinkPreviewOptions(), false);
+        TdApi.InputMessageText newInputMessageText = new TdApi.InputMessageText(newText, newOptions, false);
         if (!Td.equalsTo(newInputMessageText.text, oldMessageText.text) || !Td.equalsTo(newInputMessageText.linkPreviewOptions, oldLinkPreviewOptions)) {
           final int maxLength = tdlib.maxMessageTextLength();
           final int newTextLength = newText != null ? newText.text.codePointCount(0, newText.text.length()) : 0;
@@ -6587,7 +6713,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
             showBottomHint(Lang.pluralBold(R.string.EditMessageTextTooLong, newTextLength - maxLength), true);
             return;
           }
-          tdlib.editMessageText(editingMessage.chatId, editingMessage.id, newInputMessageText, attachedPreview);
+          TdApi.WebPage webPage = editContext.getWebPage();
+          tdlib.editMessageText(editContext.message.chatId, editContext.message.id, newInputMessageText, webPage);
         }
         break;
       }
@@ -6597,7 +6724,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       case TdApi.MessageVoiceNote.CONSTRUCTOR:
       case TdApi.MessageDocument.CONSTRUCTOR:
       case TdApi.MessageAnimation.CONSTRUCTOR: {
-        TdApi.FormattedText oldText = Td.textOrCaption(editingMessage.content);
+        TdApi.FormattedText oldText = Td.textOrCaption(editContext.message.content);
         if (!Td.equalsTo(oldText, newText)) {
           String newString = newText.text.trim();
           final int maxLength = tdlib.maxCaptionLength();
@@ -6606,12 +6733,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
             showBottomHint(Lang.pluralBold(R.string.EditMessageCaptionTooLong, newCaptionLength - maxLength), true);
             return;
           }
-          tdlib.editMessageCaption(editingMessage.chatId, editingMessage.id, newText);
+          tdlib.editMessageCaption(editContext.message.chatId, editContext.message.id, newText);
         }
         break;
       }
       default: {
-        throw new UnsupportedOperationException(Integer.toString(editingMessage.content.getConstructor()));
+        Td.assertMessageContent_ea2cfacf();
+        throw Td.unsupported(editContext.message.content);
       }
     }
 
@@ -7291,14 +7419,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void onMessageChanged (long chatId, long messageId, TdApi.MessageContent content) {
-    if (editingMessage != null && editingMessage.chatId == chatId && editingMessage.id == messageId) {
-      if (!editingMessage.canBeEdited) {
+    if (isEditingMessage() && editContext.checkMessage(chatId, messageId)) {
+      if (!editContext.message.canBeEdited) {
         closeEdit();
       } else {
-        TdApi.MessageContent oldContent = editingMessage.content;
-        editingMessage.content = content;
-        replyView.setReplyTo(editingMessage, Lang.getString(R.string.EditMessage));
-        editingMessage.content = oldContent;
+        TdApi.MessageContent oldContent = editContext.message.content;
+        editContext.message.content = content;
+        replyView.setReplyTo(editContext.message, Lang.getString(R.string.EditMessage));
+        // This is required because we work with a reference from TGMessage, not a copy.
+        editContext.message.content = oldContent;
       }
     }
   }
@@ -7308,7 +7437,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void onMessagesDeleted (long chatId, long[] messageIds) {
-    if (editingMessage != null && editingMessage.chatId == chatId && ArrayUtils.indexOf(messageIds, editingMessage.id) != -1) {
+    if (isEditingMessage() && editContext.message.chatId == chatId && ArrayUtils.indexOf(messageIds, editContext.message.id) != -1) {
       closeEdit();
     }
   }
@@ -7813,14 +7942,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   // Link preview
 
-  private String attachedLink;
-  private TdApi.WebPage attachedPreview;
-  private String dismissedLink;
-
   private void closeLinkPreview () {
     if ((flags & FLAG_REPLY_ANIMATING) == 0) {
-      dismissedLink = attachedLink;
-      if (editingMessage != null) {
+      findTargetContext().dismiss();
+      if (isEditingMessage()) {
         showCurrentEdit();
       } else if (replyMessage != null) {
         showCurrentReply();
@@ -7835,47 +7960,49 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return !isSecretChat() || Settings.instance().needTutorial(Settings.TUTORIAL_SECRET_LINK_PREVIEWS) || Settings.instance().needSecretLinkPreviews();
   }
 
-  private @NonNull TdApi.LinkPreviewOptions getLinkPreviewOptions () {
-    TdApi.LinkPreviewOptions options = new TdApi.LinkPreviewOptions(false, attachedLink, false, false, false);
-    if (allowSecretPreview() && dismissedLink != null && dismissedLink.equals(attachedLink)) {
-      options.isDisabled = true;
-      options.url = "";
-    }
-    return options;
-  }
-
   private @NonNull TdApi.LinkPreviewOptions obtainLinkPreviewOptions (boolean close) {
     TdApi.LinkPreviewOptions linkPreviewOptions = getLinkPreviewOptions();
-    if (linkPreviewOptions.isDisabled) {
-      dismissedLink = null;
-    }
     if (close) {
-      attachedLink = dismissedLink = null;
-      if (editingMessage == null && replyMessage == null) {
+      findTargetContext().reset();
+      if (!isEditingMessage() && replyMessage == null) {
         closeReplyView();
       }
     }
     return linkPreviewOptions;
   }
 
-  public void ignoreLinkPreview (final String link, final TdApi.WebPage page) {
-    attachedLink = dismissedLink = link;
-    attachedPreview = page;
+  private final LinkPreviewContext draftContext = new LinkPreviewContext(null);
+  private LinkPreviewContext editContext;
+
+  private LinkPreviewContext findTargetContext () {
+    return isEditingMessage() ? editContext : draftContext;
   }
 
-  public void showLinkPreview (final String link, final TdApi.WebPage page) {
+  public @NonNull TdApi.LinkPreviewOptions getLinkPreviewOptions () {
+    return Td.copyOf(findTargetContext().options);
+  }
+
+  public boolean forceEnableLinkPreview (@NonNull InlineSearchContext.LinkPreview linkPreview) {
+    LinkPreviewContext target = findTargetContext();
+    if (target.linkPreview != null && target.linkPreview.options != null && target.linkPreview.options.isDisabled && target.linkPreview.hasChanges(linkPreview)) {
+      Td.reset(target.options);
+      return true;
+    }
+    return false;
+  }
+
+  public void showLinkPreview (@Nullable InlineSearchContext.LinkPreview linkPreview) {
     if (inPreviewMode || isInForceTouchMode()) {
       return;
     }
 
-    String previousLink = attachedLink;
+    LinkPreviewContext targetContext = findTargetContext();
+    boolean wasVisible = targetContext.isVisible();
+    InlineSearchContext.LinkPreview previousLinkPreview = targetContext.linkPreview;
+    targetContext.linkPreview = linkPreview;
 
-    attachedLink = link;
-    attachedPreview = page;
-    dismissedLink = null;
-
-    if (link == null) {
-      if (editingMessage != null) {
+    if (linkPreview == null || !targetContext.isVisible()) {
+      if (isEditingMessage()) {
         showCurrentEdit();
       } else if (replyMessage != null) {
         showCurrentReply();
@@ -7885,19 +8012,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
 
-    replyView.setWebPage(link, page);
+    replyView.setWebPage(linkPreview);
 
-    if (previousLink == null) {
+    if (previousLinkPreview == null || !wasVisible) {
       openReplyView();
     }
   }
 
   private boolean showingLinkPreview () {
-    return attachedLink != null && (dismissedLink == null || !dismissedLink.equals(attachedLink));
+    return findTargetContext().isVisible();
   }
 
   private void showCurrentLinkPreview () {
-    replyView.setWebPage(attachedLink, attachedPreview);
+    replyView.setWebPage(findTargetContext().linkPreview);
   }
 
   // Guess about the future RecyclerView height

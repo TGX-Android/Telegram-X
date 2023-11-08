@@ -17,6 +17,7 @@ package org.thunderdog.challegram.helper;
 import android.location.Location;
 import android.os.SystemClock;
 import android.text.Spanned;
+import android.text.TextUtils;
 
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
@@ -55,7 +56,9 @@ import org.thunderdog.challegram.util.CancellableResultHandler;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
@@ -70,7 +73,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
   public interface Callback {
     long provideInlineSearchChatId ();
     TdApi.Chat provideInlineSearchChat ();
-    TdApi.WebPage provideExistingWebPage (TdApi.FormattedText currentText);
+    TdApi.WebPage provideExistingWebPage (@NonNull TdApi.FormattedText fullText, @NonNull LinkPreview linkPreview);
     long provideInlineSearchChatUserId ();
     boolean isDisplayingItems ();
     void updateInlineMode (boolean isInInlineMode, boolean isInProgress);
@@ -80,7 +83,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     void hideInlineResults ();
     void showInlineStickers (ArrayList<TGStickerObj> stickers, String foundByEmoji, boolean isEmoji, boolean isMore);
     boolean needsLinkPreview ();
-    boolean showLinkPreview (@Nullable String link, @Nullable TdApi.WebPage webPage);
+    boolean showLinkPreview (@Nullable LinkPreview linkPreview);
 
     boolean needsInlineBots ();
 
@@ -88,8 +91,11 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     default TdApi.LinkPreviewOptions getOutputLinkPreviewOptions () {
       return null;
     }
+    default boolean forceEnableLinkPreview (LinkPreview newLinkPreview) {
+      return false;
+    }
 
-    int showLinkPreviewWarning (int contextId, @Nullable String link);
+    int showLinkPreviewWarning (int contextId, @NonNull LinkPreview linkPreview);
   }
 
   public interface CommandListProvider {
@@ -265,7 +271,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
       }
     }
 
-    processLinkPreview(probablyHasWebPagePreview ? newText : "");
+    processLinkPreview(probablyHasWebPagePreview);
   }
 
   // Common UI
@@ -1329,96 +1335,207 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
 
   // Links processor
 
-  private final ArrayList<String> lastLinks = new ArrayList<>(5);
-  private final ArrayList<String> currentLinks = new ArrayList<>(5);
+  private LinkPreview lastLinkPreview;
   private int linkContextId;
 
-  private void processLinkPreview (String input) {
-    currentLinks.clear();
+  private void processLinkPreview (boolean allowLinkPreview) {
+    allowLinkPreview = allowLinkPreview && callback.needsLinkPreview();
 
-    if (!StringUtils.isEmpty(input)) {
-      List<String> links = TD.findUrls(callback.getOutputText(true));
-      if (links != null && !links.isEmpty()) {
-        currentLinks.addAll(links);
+    TdApi.FormattedText formattedText;
+    TdApi.LinkPreviewOptions options;
+    if (allowLinkPreview) {
+      formattedText = callback.getOutputText(true);
+      options = callback.getOutputLinkPreviewOptions();
+    } else {
+      formattedText = null;
+      options = null;
+    }
+
+    LinkPreview linkPreview = new LinkPreview(formattedText, options);
+
+    if (!linkPreview.isEmpty() && linkPreview.options != null && callback.forceEnableLinkPreview(linkPreview)) {
+      Td.reset(linkPreview.options, true);
+      if (options != null) {
+        Td.reset(options, true);
       }
     }
 
-    int size = currentLinks.size();
-    if (lastLinks.size() == size) {
-      if (size == 0) {
+    if (lastLinkPreview != null) {
+      if (!lastLinkPreview.hasChanges(linkPreview)) {
+        // Nothing related to link preview changed, ignore.
         return;
       }
-      boolean changed = false;
-      int j = 0;
-      for (String str : lastLinks) {
-        if (!currentLinks.get(j++).equals(str)) {
-          changed = true;
-          break;
-        }
-      }
-      if (!changed) {
-        return;
+      if (lastLinkPreview.isValid() && lastLinkPreview.primaryUrl.equals(linkPreview.primaryUrl)) {
+        TdApi.WebPage webPage = Td.copyOf(lastLinkPreview.webPage);
+        linkPreview.setWebPage(webPage, true);
       }
     }
-
-    lastLinks.clear();
-    lastLinks.addAll(currentLinks);
 
     final int contextId = ++linkContextId;
-    if (size == 0 || !callback.needsLinkPreview()) {
-      closeLinkPreview();
+    this.lastLinkPreview = linkPreview;
+
+    if (!linkPreview.isEmpty() && !Td.isEmpty(formattedText)) {
+      processLinkPreview(contextId, formattedText, linkPreview);
     } else {
-      processLinkPreview(contextId, lastLinks.get(0));
+      closeLinkPreview();
     }
   }
 
-  public final void processLinkPreview (final int contextId, final String link) {
-    int result = WARNING_BLOCK;
-    if (!StringUtils.isEmpty(link)) {
-      result = callback.showLinkPreviewWarning(contextId, link);
+  public static class LinkPreview {
+    public final String primaryUrl;
+    public final String[] uniqueUrls;
+    public final @Nullable TdApi.LinkPreviewOptions options;
+
+    public TdApi.WebPage webPage;
+    public TdApi.Error error;
+
+    public LinkPreview (String primaryUrl, String[] uniqueUrls, @Nullable TdApi.LinkPreviewOptions options) {
+      this.primaryUrl = primaryUrl;
+      this.uniqueUrls = uniqueUrls;
+      this.options = options;
     }
-    if (result != WARNING_CONFIRM && callback.showLinkPreview(link, null)) {
+
+    public LinkPreview (TdApi.FormattedText formattedText, @Nullable TdApi.LinkPreviewOptions options) {
+      Set<String> uniqueUrls = new LinkedHashSet<>();
+      List<String> foundUrls = TD.findUrls(formattedText);
+      if (foundUrls != null && !foundUrls.isEmpty()) {
+        for (String url : foundUrls) {
+          if (!url.matches("^[a-zA-Z.-]\\.[a-zA-Z]+$")) {
+            uniqueUrls.add(url);
+          }
+        }
+      }
+
+      String primaryUrl = options != null ? options.url : null;
+      if (StringUtils.isEmpty(primaryUrl) && !uniqueUrls.isEmpty()) {
+        primaryUrl = uniqueUrls.iterator().next();
+      }
+
+      this.primaryUrl = primaryUrl;
+      this.uniqueUrls = uniqueUrls.isEmpty() ? null : uniqueUrls.toArray(new String[0]);
+      this.options = options != null ? Td.copyOf(options) : null;
+    }
+
+    public boolean isEmpty () {
+      return StringUtils.isEmpty(primaryUrl) && (uniqueUrls == null || uniqueUrls.length == 0);
+    }
+
+    public LinkPreview setWebPage (TdApi.WebPage webPage, boolean applyOptions) {
+      this.webPage = webPage;
+      if (applyOptions) {
+        Td.applyLinkPreviewOptions(webPage, options);
+      }
+      return this;
+    }
+
+    public LinkPreview setError (TdApi.Error error) {
+      this.error = error;
+      return this;
+    }
+
+    public LinkPreview copyOf () {
+      LinkPreview linkPreview = new LinkPreview(primaryUrl, uniqueUrls, options);
+      linkPreview.webPage = this.webPage;
+      linkPreview.error = this.error;
+      return linkPreview;
+    }
+
+    public boolean hasChanges (LinkPreview other) {
+      return !(
+        StringUtils.equalsOrBothEmpty(this.primaryUrl, other.primaryUrl) &&
+        Arrays.equals(this.uniqueUrls, other.uniqueUrls) &&
+        Td.equalsTo(this.options, other.options)
+      );
+    }
+
+    public boolean isLoading () {
+      return webPage == null && error == null;
+    }
+
+    public boolean isNotFound () {
+      return error != null;
+    }
+
+    public boolean isValid () {
+      return webPage != null;
+    }
+
+    public boolean isBigMedia () {
+      if (!isValid()) {
+        return false;
+      }
+      if (options != null) {
+        return options.forceLargeMedia || (!options.forceSmallMedia && webPage.showLargeMedia);
+      } else {
+        return webPage.showLargeMedia;
+      }
+    }
+
+    public boolean showAboveText () {
+      return isValid() && options != null && options.showAboveText;
+    }
+
+    public boolean hasAlternatives () {
+      return this.uniqueUrls.length > 1;
+    }
+  }
+
+  public final void processLinkPreview (final int contextId, @NonNull TdApi.FormattedText fullText, @NonNull LinkPreview linkPreview) {
+    int result = callback.showLinkPreviewWarning(contextId, linkPreview);
+    if (result == WARNING_BLOCK) {
+      dispatchLinkPreview(contextId, null);
+      return;
+    }
+    if (result != WARNING_CONFIRM && callback.showLinkPreview(linkPreview)) {
       switch (result) {
         case WARNING_BLOCK: {
-          dispatchLinkPreview(contextId, null, null);
+          dispatchLinkPreview(contextId, null);
           break;
         }
         case WARNING_OK: {
-          TdApi.WebPage webPage = callback.provideExistingWebPage(callback.getOutputText(false));
-          if (webPage != null) {
-            dispatchLinkPreview(contextId, link, webPage);
+          TdApi.WebPage webPage = linkPreview.webPage;
+          if (webPage == null) {
+            webPage = callback.provideExistingWebPage(fullText, linkPreview);
+            if (webPage != null) {
+              linkPreview.setWebPage(Td.copyOf(webPage), true);
+            }
+          }
+          if (linkPreview.isValid()) {
+            dispatchLinkPreview(contextId, linkPreview.copyOf());
             return;
           }
           UI.post(() -> {
             if (linkContextId == contextId) {
-              tdlib.send(new TdApi.GetWebPagePreview(callback.getOutputText(true), callback.getOutputLinkPreviewOptions()), (webPagePreview, error) -> {
+              tdlib.send(new TdApi.GetWebPagePreview(fullText, linkPreview.options), (webPagePreview, error) -> {
+                LinkPreview loadedLinkPreview;
                 if (error != null) {
                   if (error.code != 404) { // 404 is "Web page is empty". Maybe something interesting
-                    Log.w("Cannot load link preview: %s", TD.toErrorString(error));
+                    Log.i("Cannot load link preview: %s, urls: %s", TD.toErrorString(error), TextUtils.join(" ", linkPreview.uniqueUrls));
                   }
-                  dispatchLinkPreview(contextId, null, null);
+                  loadedLinkPreview = linkPreview.setError(error);
                 } else {
-                  dispatchLinkPreview(contextId, link, webPagePreview);
+                  loadedLinkPreview = linkPreview.setWebPage(webPagePreview, false);
                 }
+                dispatchLinkPreview(contextId, loadedLinkPreview.copyOf());
               });
             }
-          }, 400l);
+          }, 400L);
           break;
         }
       }
     }
   }
 
-  private void dispatchLinkPreview (final int contextId, final @Nullable String link, final @Nullable TdApi.WebPage webPage) {
+  private void dispatchLinkPreview (final int contextId, final LinkPreview linkPreview) {
     UI.post(() -> {
       if (linkContextId == contextId) {
-        callback.showLinkPreview(link, webPage);
+        callback.showLinkPreview(linkPreview);
       }
     });
   }
 
   private void closeLinkPreview () {
-    callback.showLinkPreview(null, null);
+    callback.showLinkPreview(null);
   }
 
   private boolean isInSelfChat () {

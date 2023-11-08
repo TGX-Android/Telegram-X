@@ -913,11 +913,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     return controller != null ? controller.getChatId() : inputListener != null && inputListener.canSearchInline(this) ? inputListener.provideInlineSearchChatId(this) : 0;
   }
 
-  @Override
-  public TdApi.WebPage provideExistingWebPage (TdApi.FormattedText currentText) {
-    return controller != null ? controller.getEditingWebPage(currentText) : null;
-  }
-
   private boolean isCaptionEditing () {
     return controller == null || controller.isEditingCaption();
   }
@@ -1006,24 +1001,31 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   @Override
-  public boolean showLinkPreview (@Nullable String link, @Nullable TdApi.WebPage webPage) {
-    if (controller == null) {
-      return false;
-    }
-    if (ignoreFirstLinkPreview) {
-      ignoreFirstLinkPreview = false;
-      controller.ignoreLinkPreview(link, webPage);
-      return false;
-    } else {
-      controller.showLinkPreview(link, webPage);
-      return true;
-    }
+  public TdApi.WebPage provideExistingWebPage (@NonNull TdApi.FormattedText formattedText,  @NonNull InlineSearchContext.LinkPreview linkPreview) {
+    return controller != null ? controller.getEditingWebPage(formattedText, linkPreview) : null;
   }
 
-  private AlertDialog linkWarningDialog;
+  @Override
+  public boolean showLinkPreview (@Nullable InlineSearchContext.LinkPreview linkPreview) {
+    if (controller != null) {
+      controller.showLinkPreview(linkPreview);
+      return true;
+    }
+    return false;
+  }
 
   @Override
-  public int showLinkPreviewWarning (final int contextId, @Nullable final String link) {
+  public boolean forceEnableLinkPreview (InlineSearchContext.LinkPreview newLinkPreview) {
+    return controller != null && controller.forceEnableLinkPreview(newLinkPreview);
+  }
+
+  public void notifyWebPageOptionsChanged () {
+    setTextChangedSinceChatOpened(true);
+    inlineContext.forceCheck();
+  }
+
+  @Override
+  public int showLinkPreviewWarning (int contextId, @NonNull InlineSearchContext.LinkPreview linkPreview) {
     if (controller == null || !controller.isSecretChat()) {
       return InlineSearchContext.WARNING_OK;
     }
@@ -1051,6 +1053,8 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     }
     return Settings.instance().needSecretLinkPreviews() ? InlineSearchContext.WARNING_OK : InlineSearchContext.WARNING_BLOCK;
   }
+
+  private AlertDialog linkWarningDialog;
 
   public void setIsInEditMessageMode (boolean isInEditMessageMode, String futureText) {
     this.inlineContext.setDisallowInlineResults(isInEditMessageMode, getText().toString().equals(futureText));
@@ -1156,7 +1160,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     setSelection(start + s.length());
   }
 
-  private boolean textChangedSinceChatOpened, ignoreFirstLinkPreview;
+  private boolean textChangedSinceChatOpened;
 
   public void setChat (TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable String customInputField, boolean isSilent) {
     textChangedSinceChatOpened = false;
@@ -1219,10 +1223,8 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     if (draftContent != null && draftContent.getConstructor() == TdApi.InputMessageText.CONSTRUCTOR) {
       TdApi.InputMessageText textDraft = (TdApi.InputMessageText) draftContent;
       draft = TD.toCharSequence(textDraft.text);
-      ignoreFirstLinkPreview = textDraft.linkPreviewOptions != null && textDraft.linkPreviewOptions.isDisabled;
     } else {
       draft = "";
-      ignoreFirstLinkPreview = false;
     }
     String current = getInput().trim();
     controller.setInputVisible(true, current.length() > 0);
@@ -1597,12 +1599,17 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   public final TdApi.FormattedText getOutputText (boolean applyMarkdown) {
     SpannableStringBuilder text = new SpannableStringBuilder(getText());
     BaseInputConnection.removeComposingSpans(text);
-    TdApi.FormattedText result = new TdApi.FormattedText(text.toString(), TD.toEntities(text, false));
+    TdApi.FormattedText formattedText = new TdApi.FormattedText(text.toString(), TD.toEntities(text, false));
     if (applyMarkdown) {
       //noinspection UnsafeOptInUsageError
-      Td.parseMarkdown(result);
+      Td.parseMarkdown(formattedText);
     }
-    return result;
+    return formattedText;
+  }
+
+  @Override
+  public TdApi.LinkPreviewOptions getOutputLinkPreviewOptions () {
+    return controller != null ? controller.getLinkPreviewOptions() : null;
   }
 
   public final boolean hasOnlyPremiumFeatures () {

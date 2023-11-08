@@ -37,6 +37,7 @@ import org.thunderdog.challegram.data.MediaWrapper;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGWebPage;
+import org.thunderdog.challegram.helper.InlineSearchContext;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -482,33 +483,34 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     return Lang.getString(isChannel() ? R.string.LoadingChannel : R.string.LoadingUser);
   }
 
-  public void set (String url, TdApi.WebPage webPage) {
+  public void set (@NonNull InlineSearchContext.LinkPreview linkPreview) {
     this.flags = BitwiseUtils.setFlag(flags, FLAG_FORCE_TITLE, true);
-    if (webPage == null) {
-      set(Lang.getString(R.string.GettingLinkInfo), new ContentPreview(url, false), null, null);
-    } else {
-      String title = Strings.any(webPage.title, webPage.siteName);
-      if (StringUtils.isEmpty(title)) {
-        if (webPage.photo != null || (webPage.sticker != null && Math.max(webPage.sticker.width, webPage.sticker.height) > TGWebPage.STICKER_SIZE_LIMIT)) {
-          title = Lang.getString(R.string.Photo);
-        } else if (webPage.video != null) {
-          title = Lang.getString(R.string.Video);
-        } else if (webPage.document != null || webPage.voiceNote != null) {
-          title = webPage.document != null ? webPage.document.fileName : Lang.getString(R.string.Audio);
-          if (StringUtils.isEmpty(title)) {
-            title = Lang.getString(R.string.File);
-          }
-        } else if (webPage.audio != null) {
-          title = TD.getTitle(webPage.audio) + " – " + TD.getSubtitle(webPage.audio);
-        } else if (webPage.sticker != null) {
-          title = Lang.getString(R.string.Sticker);
-        } else {
-          title = Lang.getString(R.string.LinkPreview);
-        }
-      }
-      String desc = !Td.isEmpty(webPage.description) ? webPage.description.text : webPage.displayUrl;
-      set(title, new ContentPreview(desc, false), webPage.photo != null ? webPage.photo.minithumbnail : null, TD.getWebPagePreviewImage(webPage));
+    if (linkPreview.isLoading() || linkPreview.isNotFound()) {
+      set(linkPreview.isNotFound() ? TD.toErrorString(linkPreview.error) : Lang.getString(R.string.GettingLinkInfo), new ContentPreview(linkPreview.primaryUrl, false), null, null);
+      return;
     }
+    TdApi.WebPage webPage = linkPreview.webPage;
+    String title = Strings.any(webPage.title, webPage.siteName);
+    if (StringUtils.isEmpty(title)) {
+      if (webPage.photo != null || (webPage.sticker != null && Math.max(webPage.sticker.width, webPage.sticker.height) > TGWebPage.STICKER_SIZE_LIMIT)) {
+        title = Lang.getString(R.string.Photo);
+      } else if (webPage.video != null) {
+        title = Lang.getString(R.string.Video);
+      } else if (webPage.document != null || webPage.voiceNote != null) {
+        title = webPage.document != null ? webPage.document.fileName : Lang.getString(R.string.Audio);
+        if (StringUtils.isEmpty(title)) {
+          title = Lang.getString(R.string.File);
+        }
+      } else if (webPage.audio != null) {
+        title = TD.getTitle(webPage.audio) + " – " + TD.getSubtitle(webPage.audio);
+      } else if (webPage.sticker != null) {
+        title = Lang.getString(R.string.Sticker);
+      } else {
+        title = Lang.getString(R.string.LinkPreview);
+      }
+    }
+    String desc = !Td.isEmpty(webPage.description) ? webPage.description.text : webPage.displayUrl;
+    set(title, new ContentPreview(desc, false), webPage.photo != null ? webPage.photo.minithumbnail : null, TD.getWebPagePreviewImage(webPage));
   }
 
   public void set (@Nullable CharSequence forcedTitle, @NonNull TdApi.Message msg) {
