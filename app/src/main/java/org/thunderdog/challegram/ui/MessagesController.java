@@ -228,7 +228,6 @@ import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.Unlockable;
-import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.v.MessagesLayoutManager;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
@@ -4403,33 +4402,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     showMessageOptions(null, message, reactionType, newMessageOptionDelegate(message, null, null));
   }
 
-  private boolean isMessageOptionsVisible;
-
   private void showMessageOptions (Options options, TGMessage message, @Nullable TdApi.ReactionType reactionType, OptionDelegate optionsDelegate) {
-    if (isMessageOptionsVisible) {
-      return;
-    }
-    isMessageOptionsVisible = true;
-
-    MessageOptionsPagerController r = new MessageOptionsPagerController(context, tdlib, options, message, reactionType, optionsDelegate) {
-      @Override
-      protected void onCustomShowComplete () {
-        super.onCustomShowComplete();
-        optimizeEmojiLayoutForOptionsWindow(true);
-      }
-    };
+    MessageOptionsPagerController r = new MessageOptionsPagerController(context, tdlib, options, message, reactionType, optionsDelegate);
     r.show();
-    r.setDismissListener(new PopupLayout.DismissListener() {
-      @Override
-      public void onPopupDismiss (PopupLayout popup) {
-        optimizeEmojiLayoutForOptionsWindow(false);
-        isMessageOptionsVisible = false;
-      }
-
-      @Override
-      public void onPopupDismissPrepare (PopupLayout popup) {
-        onHideMessageOptions();
-      }
+    r.setDismissListener(p -> {
+      onHideMessageOptions();
     });
     prepareToShowMessageOptions();
     hideCursorsForInputView();
@@ -4443,20 +4420,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
     needShowEmojiKeyboardAfterHideMessageOptions = emojiShown;
     if (needShowKeyboardAfterHideMessageOptions) {    // показываем emoji-клавиатуру, чтобы скрыть системную
       openEmojiKeyboard();                            // делаем emojiLayout невидимым для оптимизации
-      emojiLayout.optimizeForDisplayMessageOptionsWindow(true);
     }                                                 // todo: если меню сообщения ниже EmojiLayout, то не скрывать?
-  }
-
-  private void optimizeEmojiLayoutForOptionsWindow (boolean needOptimize) {
     if (needShowKeyboardAfterHideMessageOptions || needShowEmojiKeyboardAfterHideMessageOptions) {
-      emojiLayout.optimizeForDisplayMessageOptionsWindow(needOptimize);
+      emojiLayout.setVisibility(View.INVISIBLE);
     }
   }
 
   private void onHideMessageOptions () {
     if (needShowEmojiKeyboardAfterHideMessageOptions) {
-      openEmojiKeyboard();
-      emojiLayout.optimizeForDisplayMessageOptionsWindow(false);
+      if (emojiShown) {
+        emojiLayout.setVisibility(View.VISIBLE);
+      } else {
+        openEmojiKeyboard();
+      }
     } else if (needShowKeyboardAfterHideMessageOptions) {
       showKeyboard();
     }
@@ -11365,7 +11341,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       translationPopup = new TranslationControllerV2.Wrapper(context, tdlib, this);
       translationPopup.setArguments(new TranslationControllerV2.Args(message));
       translationPopup.setClickCallback(message.clickCallback());
-      translationPopup.setTextColorSet(TextColorSets.Regular.NORMAL);
+      translationPopup.setTextColorSet(message.getTextColorSet());
       translationPopup.show();
       translationPopup.setDismissListener(popup -> translationPopup = null);
       hideCursorsForInputView();
@@ -11406,7 +11382,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     textFormattingVisible = visible;
     if (emojiLayout != null && textFormattingLayout != null) {
       textFormattingLayout.setVisibility(visible ? View.VISIBLE : View.GONE);
-      emojiLayout.optimizeForDisplayTextFormattingLayout(visible);
+      emojiLayout.optimizeForDisplayTextFormattingLayout(!visible);
       if (visible) {
         textFormattingLayout.checkButtonsActive(false);
       }

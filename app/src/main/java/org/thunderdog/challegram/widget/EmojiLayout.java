@@ -422,18 +422,14 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     addView(shadowView);
     addView(circleButton);
 
-    checkBackground();
-    // NewEmoji.instance().loadAllEmoji();
-
-    setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-  }
-
-  private void checkBackground () {
     if (useDarkMode) {
       setBackgroundColor(Theme.getColor(ColorId.chatKeyboard, ThemeId.NIGHT_BLACK));
     } else {
-      ViewSupport.setThemedBackground(this, isOptimizedForDisplayMessageOptionsWindow ? ColorId.filling : ColorId.chatKeyboard, themeProvider);
+      ViewSupport.setThemedBackground(this, ColorId.chatKeyboard, themeProvider);
     }
+    // NewEmoji.instance().loadAllEmoji();
+
+    setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
   }
 
   public void setAllowPremiumFeatures (boolean allowPremiumFeatures) {
@@ -477,17 +473,9 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     }
   }
 
-  private boolean isOptimizedForDisplayMessageOptionsWindow;
-
-  public void optimizeForDisplayMessageOptionsWindow (boolean needOptimize) {
-    isOptimizedForDisplayMessageOptionsWindow = needOptimize;
-    optimizeForDisplayTextFormattingLayout(needOptimize);
-    checkBackground();
-  }
-
   public void optimizeForDisplayTextFormattingLayout (boolean needOptimize) {
-    int visibility = needOptimize ? GONE : VISIBLE;
-    if (headerView != null) headerView.setVisibility(needOptimize ? INVISIBLE : VISIBLE);
+    int visibility = needOptimize ? VISIBLE : GONE;
+    // if (headerView != null) headerView.setVisibility(visibility);
     if (shadowView != null) shadowView.setVisibility(visibility);
     if (pager != null) pager.setVisibility(visibility);
     if (circleButton != null) circleButton.setVisibility(visibility);

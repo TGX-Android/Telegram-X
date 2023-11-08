@@ -37,6 +37,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.NonBubbleEmojiLayout;
 import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -132,10 +133,11 @@ public class TGMessageText extends TGMessage {
   protected int onMessagePendingContentChanged (long chatId, long messageId, int oldHeight) {
     if (currentMessageText != null) {
       TdApi.MessageContent messageContent = tdlib.getPendingMessageText(chatId, messageId);
-      final @EmojiMessageContentType int contentType = getEmojiMessageContentType(messageContent);
       boolean allowEmoji = !Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI);
-      if (contentType != EmojiMessageContentType.NOT_EMOJI) {
-        return MESSAGE_REPLACE_REQUIRED;
+      if (messageContent != null && messageContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR && allowEmoji) {
+        if (NonBubbleEmojiLayout.isValidEmojiText(((TdApi.MessageText) messageContent).text)) {
+          return MESSAGE_REPLACE_REQUIRED;
+        }
       }
       if (messageContent != null && Td.isAnimatedEmoji(messageContent) && !allowEmoji) {
         messageContent = new TdApi.MessageText(Td.textOrCaption(messageContent), null);
@@ -330,10 +332,12 @@ public class TGMessageText extends TGMessage {
 
   @Override
   protected boolean isSupportedMessageContent (TdApi.Message message, TdApi.MessageContent messageContent) {
-    final @EmojiMessageContentType int contentType = getEmojiMessageContentType(messageContent);
-    if (messageContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR || messageContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
-      return contentType == EmojiMessageContentType.NOT_EMOJI;
+    final boolean allowEmoji = !Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI);
+    if (messageContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
+      return !(NonBubbleEmojiLayout.isValidEmojiText(((TdApi.MessageText) messageContent).text) && allowEmoji);
     }
+    if (messageContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR)
+      return !allowEmoji;
     return super.isSupportedMessageContent(message, messageContent);
   }
 
