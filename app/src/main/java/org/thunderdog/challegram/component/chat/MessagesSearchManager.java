@@ -19,7 +19,6 @@ import androidx.collection.LongSparseArray;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.jetbrains.annotations.Nullable;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.UI;
 
@@ -168,12 +167,7 @@ public class MessagesSearchManager {
           break;
         }
         default: {
-          if (isSecret) {
-            Log.unexpectedTdlibResponse(object, TdApi.SearchSecretMessages.class, TdApi.FoundMessages.class);
-          } else {
-            Log.unexpectedTdlibResponse(object, TdApi.SearchChatMessages.class, TdApi.Messages.class);
-          }
-          break;
+          throw new UnsupportedOperationException(object.toString());
         }
       }
     };

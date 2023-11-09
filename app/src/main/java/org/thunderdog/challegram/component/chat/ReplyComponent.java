@@ -27,7 +27,6 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
@@ -569,6 +568,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     switch (message.replyTo.getConstructor()) {
       case TdApi.MessageReplyToMessage.CONSTRUCTOR: {
         TdApi.MessageReplyToMessage replyToMessage = (TdApi.MessageReplyToMessage) message.replyTo;
+        this.isQuoteManual = replyToMessage.isQuoteManual;
         if (replyToMessage.origin != null) {
           handleOrigin(replyToMessage.origin);
         }
@@ -596,12 +596,21 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
           invalidate(mediaPreview != null);
           this.ignoreFailures = true;
         }
-        if (message.forwardInfo != null && message.forwardInfo.fromChatId != 0 && message.forwardInfo.fromMessageId != 0 && !parent.isRepliesChat()) {
-          function = new TdApi.GetRepliedMessage(message.forwardInfo.fromChatId, message.forwardInfo.fromMessageId);
+        if (replyToMessage.origin == null) {
+          if (message.forwardInfo != null && message.forwardInfo.fromChatId != 0 && message.forwardInfo.fromMessageId != 0 && !parent.isRepliesChat()) {
+            function = new TdApi.GetRepliedMessage(message.forwardInfo.fromChatId, message.forwardInfo.fromMessageId);
+          } else {
+            function = new TdApi.GetRepliedMessage(message.chatId, message.id);
+          }
+          if (replyToMessage.chatId != 0 && replyToMessage.messageId != 0) {
+            retryFunction = new TdApi.GetMessage(replyToMessage.chatId, replyToMessage.messageId);
+          } else {
+            retryFunction = null;
+          }
         } else {
-          function = new TdApi.GetRepliedMessage(message.chatId, message.id);
+          function = null;
+          retryFunction = null;
         }
-        retryFunction = new TdApi.GetMessage(replyToMessage.chatId, replyToMessage.messageId);
         break;
       }
       case TdApi.MessageReplyToStory.CONSTRUCTOR: {
@@ -615,9 +624,11 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
         throw Td.unsupported(message.replyTo);
       }
     }
-    flags |= FLAG_LOADING;
-    this.retryFunction = retryFunction;
-    tdlib.send(function, this);
+    if (function != null) {
+      flags |= FLAG_LOADING;
+      this.retryFunction = retryFunction;
+      tdlib.send(function, this);
+    }
   }
 
   private void parseContent (final TdApi.Message msg, final boolean forceRequestImage) {
@@ -648,9 +659,14 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   }
 
   private TdApi.Message currentMessage;
+  private TdApi.Error currentError;
 
   public boolean hasValidMessage () {
     return currentMessage != null;
+  }
+
+  public TdApi.Error getError () {
+    return currentError;
   }
 
   public boolean replaceMessageContent (long messageId, TdApi.MessageContent content) {
@@ -689,7 +705,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
 
   private String computeTitleText (String defaultText) {
     return BitwiseUtils.hasFlag(flags, FLAG_FORCE_TITLE) ? this.title :
-      sender == null ? StringUtils.isEmpty(senderName) ? defaultText : senderName :
+      sender == null ? StringUtils.isEmpty(senderName) ? (StringUtils.isEmpty(title) ? defaultText : title) : senderName :
       StringUtils.isEmpty(senderName) ? tdlib.senderName(sender, isMessageComponent()) :
       Lang.getString(isChannel() ? R.string.format_channelAndSignature : R.string.format_chatAndSignature, tdlib.senderName(sender, isMessageComponent()), senderName);
   }
@@ -842,16 +858,25 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     if (!Td.isEmpty(quote)) {
       contentPreview = new ContentPreview(contentPreview, quote);
     }
-    if (msg.forwardInfo != null && (parent != null && parent.getMessage().forwardInfo != null)) {
+    if (msg.forwardInfo != null /*&& (parent != null && parent.getMessage().forwardInfo != null)*/) {
       handleOrigin(msg.forwardInfo.origin);
-    } else if (msg.replyTo != null && msg.replyTo.getConstructor() == TdApi.MessageReplyToMessage.CONSTRUCTOR && ((TdApi.MessageReplyToMessage) msg.replyTo).origin != null) {
-      handleOrigin(((TdApi.MessageReplyToMessage) msg.replyTo).origin);
     } else if (msg.importInfo != null) {
-      senderName = msg.importInfo.senderName;
-      sender = null;
+      handleOrigin(new TdApi.MessageOriginHiddenUser(msg.importInfo.senderName));
     } else {
-      sender = msg.senderId;
-      senderName = tdlib.isFromAnonymousGroupAdmin(msg) ? msg.authorSignature : null;
+      switch (msg.senderId.getConstructor()) {
+        case TdApi.MessageSenderUser.CONSTRUCTOR: {
+          handleOrigin(new TdApi.MessageOriginUser(((TdApi.MessageSenderUser) msg.senderId).userId));
+          break;
+        }
+        case TdApi.MessageSenderChat.CONSTRUCTOR: {
+          handleOrigin(new TdApi.MessageOriginChat(((TdApi.MessageSenderChat) msg.senderId).chatId, tdlib.isFromAnonymousGroupAdmin(msg) ? msg.authorSignature : null));
+          break;
+        }
+        default: {
+          Td.assertMessageSender_439d4c9c();
+          throw Td.unsupported(msg.senderId);
+        }
+      }
     }
     String title = computeTitleText(null);
     if (Thread.currentThread() == Background.instance().thread() || forceLocal) {
@@ -896,7 +921,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
         throw Td.unsupported(origin);
       }
     }
-    if ((flags & FLAG_USE_COLORIZE) != 0 && sender != null) {
+    if (BitwiseUtils.hasFlag(flags, FLAG_USE_COLORIZE) && sender != null) {
       accentColor = tdlib.senderAccentColor(sender);
     } else {
       accentColor = null;
@@ -932,14 +957,15 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
           return;
         }
         if (!ignoreFailures) {
-          setContent(computeTitleText(Lang.getString(R.string.Error)), TD.errorCode(object) == 404 ? new ContentPreview(null, R.string.DeletedMessage) : new ContentPreview(null, 0, TD.toErrorString(object), true), null, false);
+          this.currentError = (TdApi.Error) object;
+          String errorTitle = Lang.getString(R.string.Error);
+          setContent((sender == null && StringUtils.isEmpty(senderName)) ? errorTitle : computeTitleText(errorTitle), TD.errorCode(object) == 404 ? new ContentPreview(null, R.string.DeletedMessage) : new ContentPreview(null, 0, TD.toErrorString(object), true), null, false);
           currentMessage = null;
         }
         break;
       }
       default: {
-        Log.unexpectedTdlibResponse(object, TdApi.GetMessage.class, TdApi.Message.class);
-        break;
+        throw new UnsupportedOperationException(object.toString());
       }
     }
     flags &= ~FLAG_LOADING;

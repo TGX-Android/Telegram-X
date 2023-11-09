@@ -292,10 +292,10 @@ public final class TdlibAccentColor {
     return InternalId.INACTIVE;
   }
 
-  private long getComplexColor (@UseCase int useCase) {
+  private long getComplexColor (@UseCase int useCase, boolean forceBuiltInColor) {
     boolean isId;
     int color;
-    if (accentColor != null) {
+    if (!forceBuiltInColor && accentColor != null) {
       // 2-3 colors are used only for stripe
       isId = false;
       color = ColorUtils.fromToArgb(
@@ -312,8 +312,8 @@ public final class TdlibAccentColor {
   }
 
   @ColorInt
-  private int getColor (@UseCase int useCase) {
-    long complexColor = getComplexColor(useCase);
+  private int getColor (@UseCase int useCase, boolean forceBuiltInColor) {
+    long complexColor = getComplexColor(useCase, forceBuiltInColor);
     return Theme.toColorInt(complexColor);
   }
 
@@ -350,11 +350,11 @@ public final class TdlibAccentColor {
 
   @ColorInt
   public int getPrimaryColor () {
-    return getColor(UseCase.PRIMARY);
+    return getColor(UseCase.PRIMARY, false);
   }
 
   public long getPrimaryComplexColor () {
-    return getComplexColor(UseCase.PRIMARY);
+    return getComplexColor(UseCase.PRIMARY, false);
   }
 
   @ColorInt
@@ -367,15 +367,15 @@ public final class TdlibAccentColor {
   }
 
   public int getPrimaryBigColor () {
-    return getColor(UseCase.PRIMARY_BIG);
+    return getColor(UseCase.PRIMARY_BIG, false);
   }
 
   public int getNameColor () {
-    return getColor(UseCase.NAME);
+    return getColor(UseCase.NAME, true);
   }
 
   public long getNameComplexColor () {
-    return getComplexColor(UseCase.NAME);
+    return getComplexColor(UseCase.NAME, true);
   }
 
   // Utils

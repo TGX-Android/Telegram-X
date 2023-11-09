@@ -1897,10 +1897,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public void searchContacts (@Nullable String searchQuery, int limit, Client.ResultHandler handler) {
+    Log.ensureReturnType(TdApi.SearchContacts.class, TdApi.Users.class);
     client().send(new TdApi.SearchContacts(searchQuery, limit), handler);
   }
 
   public void loadMoreChats (@NonNull TdApi.ChatList chatList, int limit, Client.ResultHandler handler) {
+    Log.ensureReturnType(TdApi.LoadChats.class, TdApi.Ok.class);
     client().send(new TdApi.LoadChats(chatList, limit), handler);
   }
 

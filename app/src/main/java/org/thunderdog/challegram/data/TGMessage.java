@@ -2778,16 +2778,20 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case CLICK_TYPE_REPLY: {
           if (msg.replyTo != null && msg.replyTo.getConstructor() == TdApi.MessageReplyToMessage.CONSTRUCTOR) {
             TdApi.MessageReplyToMessage replyToMessage = (TdApi.MessageReplyToMessage) msg.replyTo;
-            if (replyToMessage.chatId != msg.chatId) {
-              if (replyToMessage.chatId == 0 || replyToMessage.messageId == 0) {
-                buildContentHint(view, getReplyLocationProvider(), false).show(tdlib, Lang.getString(R.string.MessageReplyPrivate));
-              } else {
-                tdlib.ui().openMessage(controller(), replyToMessage.chatId, new MessageId(replyToMessage), openParameters());
-              }
-            } else if (isScheduled()) {
-              tdlib.ui().openMessage(controller(), replyToMessage.chatId, new MessageId(replyToMessage), openParameters());
+            if (replyData != null && replyData.getError() != null) {
+              buildContentHint(view, getReplyLocationProvider(), false).show(tdlib, TD.toErrorString(replyData.getError()));
             } else {
-              highlightOtherMessage(new MessageId(replyToMessage));
+              if (replyToMessage.chatId != msg.chatId) {
+                if (replyToMessage.chatId == 0 || replyToMessage.messageId == 0) {
+                  buildContentHint(view, getReplyLocationProvider(), false).show(tdlib, Lang.getString(R.string.MessageReplyPrivate));
+                } else {
+                  tdlib.ui().openMessage(controller(), replyToMessage.chatId, new MessageId(replyToMessage), openParameters());
+                }
+              } else if (isScheduled()) {
+                tdlib.ui().openMessage(controller(), replyToMessage.chatId, new MessageId(replyToMessage), openParameters());
+              } else {
+                highlightOtherMessage(new MessageId(replyToMessage));
+              }
             }
           }
           break;
@@ -3365,6 +3369,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   private void loadReply () {
     replyData = new ReplyComponent(this);
+    replyData.setUseColorize(!isOutgoingBubble());
     replyData.setViewProvider(currentViews);
     replyData.load();
   }

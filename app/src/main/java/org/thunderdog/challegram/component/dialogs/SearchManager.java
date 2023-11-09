@@ -629,8 +629,7 @@ public class SearchManager {
             break;
           }
           default: {
-            Log.unexpectedTdlibResponse(object, TdApi.SearchChats.class, TdApi.Chats.class, TdApi.Users.class, TdApi.Error.class);
-            return;
+            throw new UnsupportedOperationException(object.toString());
           }
         }
 
@@ -640,6 +639,7 @@ public class SearchManager {
           switch (++state[0]) {
             case 1:
               if (sentRequest = foundChatIds.size() < 100) {
+                Log.ensureReturnType(TdApi.SearchChatsOnServer.class, TdApi.Chats.class);
                 tdlib.client().send(new TdApi.SearchChatsOnServer(query, 100 - foundChatIds.size()), this);
               }
               break;
