@@ -243,6 +243,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   // forward values
 
   private String fTime;
+  private TdlibAccentColor fAuthorNameAccentColor;
   private Text fAuthorNameT, fPsaTextT;
   private float fTimeWidth;
 
@@ -2295,7 +2296,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
       RectF rectF = Paints.getRectF();
       rectF.set(lineLeft, lineTop, lineRight, lineBottom);
-      final int lineColor = getVerticalLineColor();
+      final int lineColor = APPLY_ACCENT_TO_FORWARDS && !isOutgoingBubble() && fAuthorNameAccentColor != null ? fAuthorNameAccentColor.getPrimaryColor() : getVerticalLineColor();
       c.drawRoundRect(rectF, lineWidth / 2f, lineWidth / 2f, Paints.fillingPaint(lineColor));
 
       if (mergeTop) {
@@ -3084,6 +3085,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       .build();
   }
 
+  private static final boolean APPLY_ACCENT_TO_FORWARDS = true;
+
   private Text makeName (String authorName, TdlibAccentColor accentColor, boolean available, boolean isPsa, boolean hideName, long viaBotUserId, int maxWidth, boolean isForward) {
     if (maxWidth <= 0)
       return null;
@@ -3109,7 +3112,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     TextColorSet colorTheme;
     if (isPsa) {
       colorTheme = getChatAuthorPsaColorSet();
-    } else if (!isForward && needColoredNames() && accentColor != null) {
+    } else if ((APPLY_ACCENT_TO_FORWARDS || !isForward) && needColoredNames() && accentColor != null) {
       colorTheme = new TextColorSetOverride(getChatAuthorColorSet()) {
         @Override
         public int clickableTextColor (boolean isPressed) {
@@ -3350,7 +3353,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
 
     boolean isPsa = isPsa() && !forceForwardOrImportInfo();
-    fAuthorNameT = makeName(forwardInfo.getAuthorName(), forwardInfo.getAuthorAccentColor(), !(forwardInfo instanceof TGSourceHidden), isPsa, false, msg.viaBotUserId, (int) (isPsa ? totalMax : max), true);
+    fAuthorNameAccentColor = forwardInfo.getAuthorAccentColor();
+    fAuthorNameT = makeName(forwardInfo.getAuthorName(), fAuthorNameAccentColor, !(forwardInfo instanceof TGSourceHidden), isPsa, false, msg.viaBotUserId, (int) (isPsa ? totalMax : max), true);
     if (isPsa) {
       CharSequence text = Lang.getPsaNotificationType(controller(), msg.forwardInfo.publicServiceAnnouncementType);
       fPsaTextT = new Text.Builder(tdlib, text, openParameters(), (int) max, getNameStyleProvider(), getChatAuthorPsaColorSet(), null)

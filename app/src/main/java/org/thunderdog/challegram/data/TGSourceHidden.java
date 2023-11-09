@@ -68,7 +68,11 @@ public class TGSourceHidden extends TGSource {
 
   @Override
   public TdlibAccentColor getAuthorAccentColor () {
-    return accentColor;
+    if (isImported) {
+      return accentColor;
+    } else {
+      return null;
+    }
   }
 
   @Override
