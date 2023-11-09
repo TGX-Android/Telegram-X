@@ -2362,7 +2362,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   protected final boolean needColoredNames () {
-    return !msg.isOutgoing && (TD.isMultiChat(chat) || isDemoGroupChat());
+    return !isOutgoingBubble();
   }
 
   private int getInternalBubbleStartX () {
