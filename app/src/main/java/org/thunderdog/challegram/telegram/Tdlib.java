@@ -62,6 +62,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.ui.EditRightsController;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.DrawableProvider;
@@ -10970,6 +10971,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   public boolean canSendBasicMessage (TdApi.Chat chat) {
     return canSendMessage(chat, RightId.SEND_BASIC_MESSAGES);
   }
+
+  public boolean canSendSendSomeMedia (TdApi.Chat chat) {
+    for (int rightId : EditRightsController.SEND_MEDIA_RIGHT_IDS) {
+      if (getRestrictionStatus(chat, rightId) == null) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   public boolean canSendMessage (TdApi.Chat chat, @RightId int kindResId) {
     switch (kindResId) {
       case RightId.SEND_BASIC_MESSAGES:

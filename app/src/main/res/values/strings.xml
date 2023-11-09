@@ -281,6 +281,7 @@
   <string name="SelectChat">Select Chat</string>
   <string name="Message">Message</string>
   <string name="MessageInputTextDisabled">Text is disabled</string>
+  <string name="MessageInputTextDisabledHint">Admins of this group disabled ability to send text messages.</string>
   <string name="MessageAnonymously">Send anonymously</string>
   <string name="MessageAsX">Send as %1$s</string>
   <string name="MessageReply">Reply</string>

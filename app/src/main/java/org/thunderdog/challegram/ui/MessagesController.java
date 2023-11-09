@@ -265,6 +265,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
+import me.vkryl.android.util.ClickHelper;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
@@ -330,6 +331,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private BotHelper botHelper;
 
   private @Nullable InputView inputView;
+  private final ClickHelper inputViewDisabledClickHelper = new ClickHelper(new ClickHelper.Delegate() {
+    @Override
+    public boolean needClickAt (View view, float x, float y) {
+      return !hasSendBasicMessagePermission();
+    }
+
+    @Override
+    public void onClickAt (View view, float x, float y) {
+      context().tooltipManager().builder(view).show(tdlib, R.string.MessageInputTextDisabledHint).hideDelayed();
+    }
+  });
   private SeparatorView bottomShadowView;
   private boolean enableOnResume;
 
@@ -698,6 +710,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         @Override
         public boolean onTouchEvent (MotionEvent event) {
           boolean r = super.onTouchEvent(event);
+          inputViewDisabledClickHelper.onTouchEvent(this, event);
           if (textFormattingLayout != null) {
             textFormattingLayout.onInputViewTouchEvent(event);
           }
@@ -2998,6 +3011,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void updateBottomBar (boolean isUpdate) {
+    setInputBlockFlag(FLAG_INPUT_TEXT_DISABLED, !tdlib.canSendBasicMessage(chat));
     if (isUpdate) {
       updateInputHint();
     }
@@ -3043,7 +3057,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           showActionJoinChatButton();
         } else if (messageThread != null) {
           CharSequence restrictionStatus = tdlib.getBasicMessageRestrictionText(chat);
-          if (restrictionStatus != null) {
+          if (restrictionStatus != null && !hasSendSomeMediaPermission()) {
             showActionButton(restrictionStatus, ACTION_EMPTY, false);
           } else {
             hideActionButton();
@@ -3055,7 +3069,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         showActionBotButton();
       } else {
         CharSequence restrictionStatus = tdlib.getBasicMessageRestrictionText(chat);
-        if (restrictionStatus != null) {
+        if (restrictionStatus != null && !hasSendSomeMediaPermission()) {
           showActionButton(restrictionStatus, ACTION_EMPTY, false);
         } else {
           hideActionButton();
@@ -5182,6 +5196,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
       tdlib.canSendMessage(chat, RightId.SEND_VIDEOS);
   }
 
+  public boolean hasSendMessagePermission (@RightId int rightId) {
+    return chat != null && tdlib.canSendMessage(chat, rightId) && !isEventLog();
+  }
+
+  public boolean hasSendBasicMessagePermission () {
+    return chat != null && tdlib.canSendBasicMessage(chat) && !isEventLog();
+  }
+
+  public boolean hasSendSomeMediaPermission () {
+    return chat != null && tdlib.canSendSendSomeMedia(chat) && !isEventLog();
+  }
+
   // test
 
   private OptionDelegate newMessageOptionDelegate (final MessageContext context) {
@@ -6442,6 +6468,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private static final int FLAG_INPUT_EDITING = 1;
   private static final int FLAG_INPUT_OFFSCREEN = 1 << 1;
   private static final int FLAG_INPUT_RECORDING = 1 << 2;
+  private static final int FLAG_INPUT_TEXT_DISABLED = 1 << 3;
 
   private int inputBlockFlags;
 
@@ -6460,8 +6487,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void setInputBlockFlag (int flag, boolean active) {
     if (setInputBlockFlags(BitwiseUtils.setFlag(inputBlockFlags, flag, active))) {
-      if (flag == FLAG_INPUT_OFFSCREEN && inputView != null) {
-        inputView.setEnabled(!active);
+      if ((flag == FLAG_INPUT_OFFSCREEN || flag == FLAG_INPUT_TEXT_DISABLED) && inputView != null) {
+        inputView.setEnabled(
+          !BitwiseUtils.hasFlag(inputBlockFlags, FLAG_INPUT_OFFSCREEN) &&
+          !BitwiseUtils.hasFlag(inputBlockFlags, FLAG_INPUT_TEXT_DISABLED)
+        );
       }
     }
   }
@@ -8893,7 +8923,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void sendText (TdApi.FormattedText msg, boolean clearInput, boolean allowDice, boolean allowReply, boolean allowLinkPreview, TdApi.MessageSendOptions initialSendOptions) {
-    if ((Td.isEmpty(msg) && !(clearInput && inputView != null && inputView.getText().length() > 0)) || !hasWritePermission() || (isSendingText && clearInput)) {
+    if ((Td.isEmpty(msg) && !(clearInput && inputView != null && inputView.getText().length() > 0)) || (isSendingText && clearInput)) {
+      return;
+    }
+    if (!hasSendBasicMessagePermission()) {
+      context().tooltipManager().builder(sendButton != null ? sendButton : inputView).show(tdlib, R.string.MessageInputTextDisabledHint).hideDelayed();
       return;
     }
 
@@ -9817,6 +9851,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
             navigateBack();
           }
         }
+      }
+    });
+  }
+
+  @Override
+  public void onChatPermissionsChanged (long chatId, TdApi.ChatPermissions permissions) {
+    tdlib.ui().post(() -> {
+      if (getChatId() == chatId) {
+        updateBottomBar(true);
       }
     });
   }
