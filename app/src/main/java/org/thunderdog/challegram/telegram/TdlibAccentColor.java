@@ -353,6 +353,11 @@ public final class TdlibAccentColor {
     return getColor(UseCase.PRIMARY, false);
   }
 
+  @ColorInt
+  public int getVerticalLineColor () {
+    return getPrimaryColor();
+  }
+
   public long getPrimaryComplexColor () {
     return getComplexColor(UseCase.PRIMARY, false);
   }

@@ -222,6 +222,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   // header values
 
   private String date;
+  private @Nullable TdlibAccentColor hAuthorAccentColor;
   private @Nullable Text hAuthorNameT, hPsaTextT, hAuthorChatMark;
   private @Nullable Text hAdminNameT;
   private @Nullable Letters uBadge;
@@ -2296,7 +2297,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
       RectF rectF = Paints.getRectF();
       rectF.set(lineLeft, lineTop, lineRight, lineBottom);
-      final int lineColor = APPLY_ACCENT_TO_FORWARDS && !isOutgoingBubble() && fAuthorNameAccentColor != null ? fAuthorNameAccentColor.getPrimaryColor() : getVerticalLineColor();
+      final int lineColor = APPLY_ACCENT_TO_FORWARDS && !isOutgoingBubble() && fAuthorNameAccentColor != null ? fAuthorNameAccentColor.getVerticalLineColor() : getVerticalLineColor();
       c.drawRoundRect(rectF, lineWidth / 2f, lineWidth / 2f, Paints.fillingPaint(lineColor));
 
       if (mergeTop) {
@@ -3182,8 +3183,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         if (needDrawChannelIconInHeader()) {
           maxWidth -= isChannelHeaderCounter.getScaledWidth(Screen.dp(5));
         }
-        hAuthorNameT = makeName(authorName, forceForwardOrImportInfo() ? forwardInfo.getAuthorAccentColor() : sender.getAccentColor(), !(forceForwardOrImportInfo() && forwardInfo instanceof TGSourceHidden), isPsa, !needName(false), msg.forwardInfo == null || forceForwardOrImportInfo() ? msg.viaBotUserId : 0, maxWidth, false);
+        hAuthorAccentColor = forceForwardOrImportInfo() ? forwardInfo.getAuthorAccentColor() : sender.getAccentColor();
+        hAuthorNameT = makeName(authorName, hAuthorAccentColor, !(forceForwardOrImportInfo() && forwardInfo instanceof TGSourceHidden), isPsa, !needName(false), msg.forwardInfo == null || forceForwardOrImportInfo() ? msg.viaBotUserId : 0, maxWidth, false);
       } else {
+        hAuthorAccentColor = null;
         hAuthorNameT = null;
         hAuthorChatMark = null;
         isChannelHeaderCounter.showHide(false, false);
@@ -3273,9 +3276,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (needDrawChannelIconInHeader()) {
         nameMaxWidth -= isChannelHeaderCounter.getScaledWidth(Screen.dp(1));
       }
-      hAuthorNameT = makeName(authorName, forceForwardOrImportInfo() ? forwardInfo.getAuthorAccentColor() : sender.getAccentColor(), !(forceForwardOrImportInfo() && forwardInfo instanceof TGSourceHidden), isPsa, !needName(false), msg.forwardInfo == null || forceForwardOrImportInfo() ? msg.viaBotUserId : 0, nameMaxWidth, false);
+      hAuthorAccentColor = forceForwardOrImportInfo() ? forwardInfo.getAuthorAccentColor() : sender.getAccentColor();
+      hAuthorNameT = makeName(authorName, hAuthorAccentColor, !(forceForwardOrImportInfo() && forwardInfo instanceof TGSourceHidden), isPsa, !needName(false), msg.forwardInfo == null || forceForwardOrImportInfo() ? msg.viaBotUserId : 0, nameMaxWidth, false);
     } else {
       hAuthorNameT = null;
+      hAuthorAccentColor = null;
       hAuthorChatMark = null;
       isChannelHeaderCounter.showHide(false, false);
     }
@@ -7016,16 +7021,71 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return pick(TextColorSets.Regular.LIGHT, TextColorSets.BubbleOut.LIGHT, TextColorSets.BubbleIn.LIGHT);
   }
 
+  @Nullable
+  public final TdlibAccentColor getContentAccentColor () {
+    if (needColoredNames() && !isChannelAutoForward() && ChatId.isMultiChat(msg.chatId) && !msg.isChannelPost) {
+      if (fAuthorNameAccentColor != null) {
+        return fAuthorNameAccentColor;
+      } else if (forwardInfo != null) {
+        return forwardInfo.getAuthorAccentColor();
+      }
+      if (hAuthorAccentColor != null) {
+        return hAuthorAccentColor;
+      } else {
+        return forceForwardOrImportInfo() ? forwardInfo.getAuthorAccentColor() : sender.getAccentColor();
+      }
+    }
+    return null;
+  }
+
+  public final TextColorSet overrideWithAccent (TextColorSet colorSet, boolean onlyClickable) {
+    TdlibAccentColor accentColor = getContentAccentColor();
+    if (accentColor != null) {
+      return new TextColorSetOverride(colorSet) {
+        @Override
+        public int defaultTextColor () {
+          return onlyClickable ? super.defaultTextColor() : accentColor.getNameColor();
+        }
+
+        @Override
+        public int clickableTextColor (boolean isPressed) {
+          return accentColor.getNameColor();
+        }
+
+        @Override
+        public int backgroundColor (boolean isPressed) {
+          return isPressed ? ColorUtils.alphaColor(.2f, accentColor.getNameColor()) : super.backgroundColor(false);
+        }
+
+        @Override
+        public int backgroundColorId (boolean isPressed) {
+          long complexColor = accentColor.getNameComplexColor();
+          return Theme.extractColorValue(complexColor);
+        }
+      };
+    }
+    return colorSet;
+  }
+
   public final TextColorSet getLinkColorSet () {
-    return pick(TextColorSets.Regular.LINK, TextColorSets.BubbleOut.LINK, TextColorSets.BubbleIn.LINK);
+    return overrideWithAccent(
+      pick(TextColorSets.Regular.LINK, TextColorSets.BubbleOut.LINK, TextColorSets.BubbleIn.LINK),
+      false
+    );
   }
 
   public final TextColorSet getTextColorSet () {
-    return pick(TextColorSets.Regular.NORMAL, TextColorSets.BubbleOut.NORMAL, TextColorSets.BubbleIn.NORMAL);
+    return overrideWithAccent(
+      pick(TextColorSets.Regular.NORMAL, TextColorSets.BubbleOut.NORMAL, TextColorSets.BubbleIn.NORMAL),
+      true
+    );
   }
 
   public final TextColorSet getChatAuthorColorSet () {
-    return pick(TextColorSets.Regular.MESSAGE_AUTHOR, TextColorSets.BubbleOut.MESSAGE_AUTHOR, TextColorSets.BubbleIn.MESSAGE_AUTHOR);
+    return overrideWithAccent(
+      pick(TextColorSets.Regular.MESSAGE_AUTHOR, TextColorSets.BubbleOut.MESSAGE_AUTHOR, TextColorSets.BubbleIn.MESSAGE_AUTHOR),
+      false
+    );
   }
 
   public final TextColorSet getChatAuthorPsaColorSet () {
@@ -7111,7 +7171,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   protected final int getVerticalLineColor () {
-    return Theme.getColor(isOutgoingBubble() ? ColorId.bubbleOut_chatVerticalLine : ColorId.messageVerticalLine);
+    if (isOutgoingBubble()) {
+      return Theme.getColor(ColorId.bubbleOut_chatVerticalLine);
+    }
+    TdlibAccentColor accentColor = getContentAccentColor();
+    if (accentColor != null) {
+      return accentColor.getVerticalLineColor();
+    }
+    return Theme.getColor(ColorId.messageVerticalLine);
   }
 
   protected final int getVerticalLineContentColor () {

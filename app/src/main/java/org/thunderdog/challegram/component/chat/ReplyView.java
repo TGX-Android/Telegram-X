@@ -207,6 +207,7 @@ public class ReplyView extends FrameLayoutFix implements View.OnClickListener, D
     this.linkPreview = linkPreview;
     updateVisibility();
     layoutIfNeeded();
+    reply.setUseColorize(false);
     reply.set(linkPreview);
     invalidate();
   }
@@ -232,6 +233,7 @@ public class ReplyView extends FrameLayoutFix implements View.OnClickListener, D
     this.linkPreview = null;
     updateVisibility();
     layoutIfNeeded();
+    reply.setUseColorize(true);
     reply.set(forcedTitle, msg);
     invalidate();
   }

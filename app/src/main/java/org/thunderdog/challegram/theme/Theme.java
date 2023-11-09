@@ -17,6 +17,7 @@ package org.thunderdog.challegram.theme;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.ColorStateList;
+import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.ColorDrawable;
@@ -43,6 +44,8 @@ import org.thunderdog.challegram.support.CircleDrawable;
 import org.thunderdog.challegram.support.RectDrawable;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.tool.Drawables;
+import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -1049,6 +1052,14 @@ public class Theme {
     } else {
       @ColorInt int color = extractColorValue(complexColor);
       receiver.setPorterDuffColorFilter(color);
+    }
+  }
+
+  public static Paint getComplexPorterDuffPaint (long complexColor, float alpha) {
+    if (isColorId(complexColor)) {
+      return PorterDuffPaint.get(extractColorValue(complexColor), alpha);
+    } else {
+      return Paints.getPorterDuffPaint(ColorUtils.alphaColor(alpha, extractColorValue(complexColor)));
     }
   }
 }

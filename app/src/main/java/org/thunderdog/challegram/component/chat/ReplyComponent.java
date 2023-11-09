@@ -210,7 +210,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     trimmedTitle = new Text.Builder(titleText, width, getTitleStyleProvider(isMessageComponent()), getTitleColorSet())
       .singleLine()
       .clipTextArea()
-      .allBold()
+      .allBold(sender != null || StringUtils.isEmpty(senderName))
       .allClickable()
       .viewProvider(viewProvider)
       .build();
@@ -315,23 +315,32 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     if (parent != null) {
       if (parent.separateReplyFromContent())
         return parent::getBubbleMediaReplyTextColor;
-      if (accentColor != null)
-        return new TextColorSet() {
-          @Override
-          public int defaultTextColor () {
-            return accentColor.getNameColor();
-          }
-
-          @Override
-          public long mediaTextComplexColor () {
-            return accentColor.getNameComplexColor();
-          }
-        };
       if (isPsa())
         return parent.getChatAuthorPsaColorSet();
+      if (useAccentColor())
+        return accentColorSet();
       return parent.getChatAuthorColorSet();
     }
+    if (useAccentColor())
+      return accentColorSet();
     return TextColorSets.Regular.NORMAL;
+  }
+
+  private TextColorSet accentColorSet () {
+    if (accentColor == null) {
+      throw new IllegalStateException();
+    }
+    return new TextColorSet() {
+      @Override
+      public int defaultTextColor () {
+        return accentColor.getNameColor();
+      }
+
+      @Override
+      public long mediaTextComplexColor () {
+        return accentColor.getNameComplexColor();
+      }
+    };
   }
 
   private TextColorSet getContentColorSet () {
@@ -452,7 +461,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       } else {
         rectF.set(startX, startY, startX + lineWidth, startY + mHeight);
       }
-      c.drawRoundRect(rectF, lineWidth / 2f, lineWidth / 2f, Paints.fillingPaint(isWhite ? parent.getBubbleMediaReplyTextColor() : isOutBubble ? Theme.getColor(ColorId.bubbleOut_chatVerticalLine) : accentColor != null ? accentColor.getPrimaryColor() : Theme.getColor(ColorId.messageVerticalLine)));
+      c.drawRoundRect(rectF, lineWidth / 2f, lineWidth / 2f, Paints.fillingPaint(isWhite ? parent.getBubbleMediaReplyTextColor() : isOutBubble ? Theme.getColor(ColorId.bubbleOut_chatVerticalLine) : useAccentColor() ? accentColor.getVerticalLineColor() : Theme.getColor(ColorId.messageVerticalLine)));
 
       return;
     }
@@ -468,7 +477,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     }
 
     Paints.getRectF().set(startX, startY, startX + lineWidth, startY + height);
-    c.drawRoundRect(Paints.getRectF(), lineWidth / 2f, lineWidth / 2f, Paints.fillingPaint(Theme.getColor(ColorId.messageVerticalLine)));
+    c.drawRoundRect(Paints.getRectF(), lineWidth / 2f, lineWidth / 2f, Paints.fillingPaint(useAccentColor() ? accentColor.getVerticalLineColor() : Theme.getColor(ColorId.messageVerticalLine)));
   }
 
   // Data workers
@@ -513,6 +522,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   }
 
   public void set (@Nullable CharSequence forcedTitle, @NonNull TdApi.Message msg) {
+    this.accentColor = tdlib.senderAccentColor(msg.senderId);
     setTitleImpl(getTitle(forcedTitle, msg));
     setMessage(msg, false, false);
   }
@@ -921,11 +931,11 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
         throw Td.unsupported(origin);
       }
     }
-    if (BitwiseUtils.hasFlag(flags, FLAG_USE_COLORIZE) && sender != null) {
-      accentColor = tdlib.senderAccentColor(sender);
-    } else {
-      accentColor = null;
-    }
+    accentColor = sender != null ? tdlib.senderAccentColor(sender) : null;
+  }
+
+  private boolean useAccentColor () {
+    return accentColor != null && BitwiseUtils.hasFlag(flags, FLAG_USE_COLORIZE);
   }
 
   private void setTitleImpl (CharSequence title) {
