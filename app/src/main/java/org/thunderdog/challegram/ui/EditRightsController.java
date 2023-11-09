@@ -21,6 +21,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
@@ -259,6 +260,8 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
             .show(this, tdlib, R.drawable.baseline_info_24, text);
         }
       }
+    } else if (viewId == R.id.btn_togglePermissionSendMediaGroup) {
+      toggleSendMediaGroupVisibility();
     } else if (viewId == R.id.btn_transferOwnership) {
       if (ChatId.isBasicGroup(getArgumentsStrict().chatId)) {
         showConfirm(Lang.getMarkdownString(this, R.string.UpgradeChatPrompt), Lang.getString(R.string.Proceed), this::onTransferOwnershipClick);
@@ -487,15 +490,28 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           view.setIgnoreEnabled(true);
           view.setEnabled(canEdit || getHintForToggleUnavailability(item) != null);
           view.setVisuallyEnabled(canEdit, isUpdate);
+
           boolean isToggler = item.getViewType() == ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER;
+          boolean needAddData = getArgumentsStrict().mode == MODE_CHAT_PERMISSIONS;
+
           if (isToggler) {
             view.getToggler().setUseNegativeState(true);
           }
           view.getToggler().setRadioEnabled(item.getBoolValue(), isUpdate);
           view.getToggler().setShowLock(!canEdit);
-          if (isToggler) {
+          if (needAddData) {
             view.setData(item.getBoolValue() ? R.string.AllMembers : (rightId == RightId.INVITE_USERS || rightId == RightId.CHANGE_CHAT_INFO || rightId == RightId.PIN_MESSAGES) ? R.string.OnlyAdminsSpecific : R.string.OnlyAdmins);
           }
+        } else if (viewId == R.id.btn_togglePermissionSendMediaGroup) {
+          boolean canEdit = hasAccessToEditRight(RightId.SEND_PHOTOS);
+          int count = getSendMediaRightCount();
+          view.setIgnoreEnabled(true);
+          view.setEnabled(canEdit || getHintForToggleUnavailability(item) != null);
+          view.setVisuallyEnabled(canEdit, isUpdate);
+          view.getToggler().setUseNegativeState(true);
+          view.getToggler().setRadioEnabled(item.getBoolValue(), isUpdate);
+          view.getToggler().setShowLock(!canEdit);
+          view.setData(Lang.pluralBold(R.string.xPermissionsSendMediaAllowed, count, SEND_MEDIA_RIGHT_IDS.length));
         } else if (viewId == R.id.btn_date) {
           boolean canEdit = hasAccessToEditRight(item);
           view.setIgnoreEnabled(true);
@@ -526,6 +542,14 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       @Override
       protected void setChatData (ListItem item, int position, BetterChatView chatView) {
         chatView.setChat((TGFoundChat) item.getData());
+      }
+
+      @Override
+      public void modifySettingView (int viewType, SettingView settingView) {
+        super.modifySettingView(viewType, settingView);
+        if (viewType == ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER || viewType == ListItem.TYPE_RADIO_SETTING_WITH_NEGATIVE_STATE) {
+          settingView.forcePadding(Screen.dp(73), 0);
+        }
       }
     };
 
@@ -687,6 +711,11 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       throw new UnsupportedOperationException();
     }
 
+    return hasAccessToEditRight(id);
+  }
+
+  private boolean hasAccessToEditRight (int id) {
+    Args args = getArgumentsStrict();
     if (args.mode == MODE_CHAT_PERMISSIONS) {
       if (tdlib.canRestrictMembers(args.chatId)) {
         TdApi.Chat chat = tdlib.chatStrict(args.chatId);
@@ -969,6 +998,18 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     }
   }
 
+  public static final int[] SEND_MEDIA_RIGHT_IDS = {
+    RightId.SEND_PHOTOS,
+    RightId.SEND_VIDEOS,
+    RightId.SEND_AUDIO,
+    RightId.SEND_DOCS,
+    RightId.SEND_VOICE_NOTES,
+    RightId.SEND_VIDEO_NOTES,
+    RightId.SEND_OTHER_MESSAGES,
+    RightId.SEND_POLLS,
+    RightId.EMBED_LINKS,
+  };
+
   private void buildCells () {
     Args args = getArgumentsStrict();
 
@@ -993,57 +1034,39 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
 
     boolean isChannel = tdlib.isChannel(args.chatId);
 
+    boolean allowEditSendMediaRights = false;
+    int insertSendMediaRightsPosition = -1;
+
     @RightId int[] rightIds;
     if (args.mode == MODE_CHAT_PERMISSIONS) {
       rightIds = new int[] {
         RightId.SEND_BASIC_MESSAGES,
-        RightId.SEND_PHOTOS,
-        RightId.SEND_VIDEOS,
-        RightId.SEND_AUDIO,
-        RightId.SEND_DOCS,
-        RightId.SEND_VOICE_NOTES,
-        RightId.SEND_VIDEO_NOTES,
-        RightId.SEND_OTHER_MESSAGES,
-        RightId.SEND_POLLS,
-        RightId.EMBED_LINKS,
         RightId.INVITE_USERS,
         RightId.PIN_MESSAGES,
         RightId.CHANGE_CHAT_INFO
       };
+      allowEditSendMediaRights = true;
+      insertSendMediaRightsPosition = RightId.SEND_BASIC_MESSAGES;
     } else if (args.mode == MODE_RESTRICTION) {
       if (args.senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
         rightIds = new int[] {
           RightId.SEND_BASIC_MESSAGES,
-          RightId.SEND_PHOTOS,
-          RightId.SEND_VIDEOS,
-          RightId.SEND_AUDIO,
-          RightId.SEND_DOCS,
-          RightId.SEND_VOICE_NOTES,
-          RightId.SEND_VIDEO_NOTES,
-          RightId.SEND_OTHER_MESSAGES,
-          RightId.SEND_POLLS,
-          RightId.EMBED_LINKS,
           RightId.INVITE_USERS,
           RightId.PIN_MESSAGES,
           RightId.CHANGE_CHAT_INFO
         };
+        allowEditSendMediaRights = true;
+        insertSendMediaRightsPosition = RightId.SEND_BASIC_MESSAGES;
       } else {
         rightIds = new int[] {
           RightId.READ_MESSAGES,
           RightId.SEND_BASIC_MESSAGES,
-          RightId.SEND_PHOTOS,
-          RightId.SEND_VIDEOS,
-          RightId.SEND_AUDIO,
-          RightId.SEND_DOCS,
-          RightId.SEND_VOICE_NOTES,
-          RightId.SEND_VIDEO_NOTES,
-          RightId.SEND_OTHER_MESSAGES,
-          RightId.SEND_POLLS,
-          RightId.EMBED_LINKS,
           RightId.INVITE_USERS,
           RightId.PIN_MESSAGES,
           RightId.CHANGE_CHAT_INFO
         };
+        allowEditSendMediaRights = true;
+        insertSendMediaRightsPosition = RightId.SEND_BASIC_MESSAGES;
       }
     } else if (isChannel) {
       rightIds = new int[] {
@@ -1093,11 +1116,21 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       }
       items.add(new ListItem(
         viewType,
-        R.id.btn_togglePermission, 0,
+        R.id.btn_togglePermission,
+        iconForRightId(rightId),
         stringForRightId(rightId, isChannel)
       ).setIntValue(rightId)
        .setBoolValue(getValueForId(rightId))
       );
+
+      if (rightId == insertSendMediaRightsPosition) {
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER,
+          R.id.btn_togglePermissionSendMediaGroup,
+          R.drawable.baseline_keyboard_arrow_down_24,
+          R.string.RightSendMedia
+        ).setBoolValue(getSendMediaRightCount() > 0));
+      }
     }
 
     if (args.mode == MODE_RESTRICTION) {
@@ -1341,6 +1374,36 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     throw new IllegalArgumentException(Integer.toString(id));
   }*/
 
+  private void toggleSendMediaGroupVisibility () {
+    final int index = adapter.indexOfViewById(R.id.btn_togglePermissionSendMediaGroup);
+    if (index == -1) {
+      return;
+    }
+    final boolean sendMediaGroupIsVisible = indexOfViewByRightId(SEND_MEDIA_RIGHT_IDS[0]) != -1;
+
+    if (!sendMediaGroupIsVisible) {
+      final Args args = getArgumentsStrict();
+      final boolean isChannel = tdlib.isChannel(args.chatId);
+      final int viewType = args.mode == MODE_CHAT_PERMISSIONS ?
+        ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER :
+        ListItem.TYPE_RADIO_SETTING_WITH_NEGATIVE_STATE;
+
+      ArrayList<ListItem> items = new ArrayList<>(SEND_MEDIA_RIGHT_IDS.length * 2);
+      for (@RightId int rightId : SEND_MEDIA_RIGHT_IDS) {
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+        items.add(new ListItem(viewType,
+          R.id.btn_togglePermission, 0,
+          stringForRightId(rightId, isChannel)
+        ).setIntValue(rightId)
+          .setBoolValue(getValueForId(rightId))
+        );
+      }
+      adapter.addItems(index + 1, items.toArray(new ListItem[0]));
+    } else {
+      adapter.removeRange(index + 1, SEND_MEDIA_RIGHT_IDS.length * 2);
+    }
+  }
+
   private void toggleValueForRightId (@RightId int id) {
     final boolean newValue = !getValueForId(id);
     switch (id) {
@@ -1484,6 +1547,15 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     checkTransferOwnership();
   }
 
+  private int getSendMediaRightCount () {
+    int res = 0;
+    for (int a = 0; a < SEND_MEDIA_RIGHT_IDS.length; a++) {
+      res += getValueForId(SEND_MEDIA_RIGHT_IDS[a]) ? 1 : 0;
+    }
+
+    return res;
+  }
+
   private void checkDoneButton () {
     if (!isNewRuleSet()) {
       setDoneVisible(hasAnyChanges());
@@ -1501,9 +1573,16 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           item.setBoolValue(value);
           adapter.updateValuedSettingByPosition(i);
         }
+      } else if (item.getId() == R.id.btn_togglePermissionSendMediaGroup) {
+        boolean value = getSendMediaRightCount() > 0;
+        if (value != item.getBoolValue()) {
+          item.setBoolValue(value);
+          adapter.updateValuedSettingByPosition(i);
+        }
       }
       i++;
     }
+    adapter.updateValuedSettingById(R.id.btn_togglePermissionSendMediaGroup);
   }
 
   private boolean checkDefaultRight (@RightId int id) {
@@ -1640,6 +1719,28 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         return R.string.RightAnonymous;
     }
     throw new UnsupportedOperationException(Lang.getResourceEntryName(id));
+  }
+
+  private @DrawableRes int iconForRightId (@RightId int id) {
+    switch (id) {
+      case RightId.READ_MESSAGES:
+        return R.drawable.baseline_eye_off_24;
+      case RightId.SEND_BASIC_MESSAGES:
+        return R.drawable.baseline_format_text_24;
+      case RightId.CHANGE_CHAT_INFO:
+      case RightId.EDIT_MESSAGES:
+        return R.drawable.baseline_edit_24;
+      case RightId.DELETE_MESSAGES:
+      case RightId.BAN_USERS:
+        return R.drawable.baseline_delete_24;
+      case RightId.INVITE_USERS:
+      case RightId.ADD_NEW_ADMINS:
+        return R.drawable.baseline_person_add_24;
+      case RightId.PIN_MESSAGES:
+        return R.drawable.deproko_baseline_pin_24;
+      default:
+        return 0;
+    }
   }
 
   private boolean canViewOrEditCustomTitle () {

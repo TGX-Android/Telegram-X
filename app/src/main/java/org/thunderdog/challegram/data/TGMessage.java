@@ -434,7 +434,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       .allBold(false)
       .callback(this)
       .drawable(R.drawable.baseline_warning_14, 14f, 0f, Gravity.CENTER_HORIZONTAL)
-      .colorSet(() -> Theme.getColor(ColorId.badgeFailed))
+      .colorSet(() -> Theme.getColor(ColorId.messageNegativeLine))
       .build();
     this.isRestricted.showHide(true, false);
     this.isChannelHeaderCounter = new Counter.Builder()
@@ -2817,11 +2817,17 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           break;
         }
         case CLICK_TYPE_MESSAGE_RESTRICTED_ICON: {
-          showMessageTooltip(() -> isRestrictedCounterLastDrawRect, Lang.getString(R.string.MessageRestrictedByTelegram), 2500);
+          showMessageTooltip((targetView, outRect) -> {
+            isRestrictedCounterLastDrawRect.round(outRect);
+            outRect.top -= Screen.dp(6);
+          }, Lang.getString(R.string.MessageRestrictedByTelegram), 2500);
           break;
         }
         case CLICK_TYPE_MESSAGE_EDITED_ICON: {
-          showMessageTooltip(() -> isEditedCounterLastDrawRect,
+          showMessageTooltip((targetView, outRect) -> {
+              isEditedCounterLastDrawRect.round(outRect);
+              outRect.top -= Screen.dp(6);
+            },
             Lang.getRelativeDate(
               msg.editDate, TimeUnit.SECONDS,
               tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS,
@@ -8975,9 +8981,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     languageSelectorTooltip = tooltipBuilder.show(tdlib, message).hideDelayed(3500, TimeUnit.MILLISECONDS);
   }
 
-  private TooltipOverlayView.TooltipInfo showMessageTooltip (Future<RectF> rect, String message, long msDuration) {
-    TooltipOverlayView.TooltipBuilder tooltipBuilder = context().tooltipManager().builder(findCurrentView())
-      .locate((targetView, outRect) -> rect.getValue().round(outRect));
+  private TooltipOverlayView.TooltipInfo showMessageTooltip (TooltipOverlayView.LocationProvider locate, String message, long msDuration) {
+    TooltipOverlayView.TooltipBuilder tooltipBuilder = context().tooltipManager().builder(findCurrentView()).locate(locate);
     return tooltipBuilder.show(tdlib, message).hideDelayed(msDuration, TimeUnit.MILLISECONDS);
   }
 

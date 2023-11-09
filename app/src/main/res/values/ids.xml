@@ -395,6 +395,7 @@
   <item type="id" name="btn_toggleJoinByRequest" />
   <item type="id" name="btn_toggleProtection" />
   <item type="id" name="btn_togglePermission" />
+  <item type="id" name="btn_togglePermissionSendMediaGroup" />
   <item type="id" name="btn_allMembers" />
   <item type="id" name="btn_onlyAdmins" />
   <item type="id" name="btn_hidden" />

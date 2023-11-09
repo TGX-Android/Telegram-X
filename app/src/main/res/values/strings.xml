@@ -280,6 +280,7 @@
   <string name="general_Messages">Messages</string>
   <string name="SelectChat">Select Chat</string>
   <string name="Message">Message</string>
+  <string name="MessageInputTextDisabled">Text is disabled</string>
   <string name="MessageAnonymously">Send anonymously</string>
   <string name="MessageAsX">Send as %1$s</string>
   <string name="MessageReply">Reply</string>
@@ -3405,6 +3406,8 @@
   <string name="format_nameAndSubtitleAndStatus">%1$s (%2$s)\n%3$s</string>
   <string name="format_doubleLines">%1$s\n\n%2$s</string>
 
+  <string name="xPermissionsSendMediaAllowed_one">Allowed %1$s/%2$s</string>
+  <string name="xPermissionsSendMediaAllowed_other">Allowed %1$s/%2$s</string>
   <string name="xPermissions_one">%1$s of %2$s</string>
   <string name="xPermissions_other">%1$s of %2$s</string>
   <string name="xReactions_one">%1$s of %2$s</string>
