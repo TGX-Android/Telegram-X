@@ -47,7 +47,7 @@ iv_textReferenceOutline: #FFF4
 iv_textReferenceOutlinePressed: #FFFFFF20
 messageSelection: #61A9E110
 messageVerticalLine: #538EBD
-nameInactive, themeNightBlack: #6A6A6A
+nameInactive, lineInactive, themeNightBlack: #6A6A6A
 notificationSecure, textSecure: #78E27E
 placeholder: #FFFFFF0C
 playerButtonActive: #58A6E0
@@ -66,11 +66,3 @@ bubbleIn_fillingActive: #7D8E9826
 bubbleIn_fillingActiveContent: #FFF
 bubbleOut_fillingActive: #91AFC826
 bubbleOut_fillingActiveContent: #FFF
-
-avatarBlue, avatarBlue_big, nameBlue: #368AD1
-avatarCyan, avatarCyan_big, nameCyan: #309EBA
-avatarGreen, avatarGreen_big, nameGreen: #40A920
-avatarOrange, avatarOrange_big, nameOrange: #D67722
-avatarPink, avatarPink_big, namePink: #C7508B
-avatarRed, avatarRed_big, nameRed: #CC5049
-avatarViolet, avatarViolet_big: #955CDB

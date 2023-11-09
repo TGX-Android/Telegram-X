@@ -7023,7 +7023,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   @Nullable
   public final TdlibAccentColor getContentAccentColor () {
-    if (needColoredNames() && !isChannelAutoForward() && ChatId.isMultiChat(msg.chatId) && !msg.isChannelPost) {
+    if (true) {
+      return null;
+    }
+    if (needColoredNames()) {
       if (fAuthorNameAccentColor != null) {
         return fAuthorNameAccentColor;
       } else if (forwardInfo != null) {

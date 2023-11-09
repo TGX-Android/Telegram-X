@@ -33,6 +33,8 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ListManager;
 import org.thunderdog.challegram.telegram.MessageListManager;
+import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -116,13 +118,13 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
         if (scrollItemCount <= 0)
           return;
 
-        float alpha = 1f;
+        final float alpha = 1f;
         float focusPosition = getFocusPosition();
 
         //
 
-        final int color = ColorUtils.alphaColor(alpha, Theme.chatVerticalLineColor());
-        final int backgroundColor = ColorUtils.alphaColor(.3f * alpha, color);
+        final int defaultFillColor = ColorUtils.alphaColor(alpha, Theme.chatVerticalLineColor());
+        final int defaultBackgroundColor = ColorUtils.alphaColor(.3f * alpha, defaultFillColor);
 
         //
 
@@ -158,20 +160,33 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
           float lineEndY = lineBeginY - (float) Math.ceil((lineHeight + spacingBetweenItems) * position);
           float lineStartY = lineEndY - lineHeight;
 
+          DataHolder data = null;
+          if (messagesAdapter != null && position >= 0 && position < messagesAdapter.getItemCount()) {
+            data = (DataHolder) messagesAdapter.getItems().get(position).getData();
+          }
+          final int fillColor, backgroundColor;
+          if (data != null && data.accentColor != null) {
+            fillColor = ColorUtils.alphaColor(alpha, data.accentColor.getVerticalLineColor());
+            backgroundColor = ColorUtils.alphaColor(.3f * alpha, fillColor);
+          } else {
+            fillColor = defaultFillColor;
+            backgroundColor = defaultBackgroundColor;
+          }
+
           boolean isFull = focusPosition == position || (position > (int) focusPosition && position < (int) (focusPosition + visibleItemCount));
 
           rectF.set(lineStartX, lineStartY, lineEndX, lineEndY);
-          c.drawRoundRect(rectF, strokeWidth, strokeWidth, Paints.fillingPaint(isFull ? color : backgroundColor));
+          c.drawRoundRect(rectF, strokeWidth, strokeWidth, Paints.fillingPaint(isFull ? fillColor : backgroundColor));
 
           if (!isFull) {
             if (position == (int) focusPosition && focusPosition > position) {
               rectF.set(lineStartX, lineStartY, lineEndX, lineEndY + (lineStartY - lineEndY) * (focusPosition - (float) position));
-              c.drawRoundRect(rectF, strokeWidth, strokeWidth, Paints.fillingPaint(color));
+              c.drawRoundRect(rectF, strokeWidth, strokeWidth, Paints.fillingPaint(fillColor));
             } else {
               float remain = focusPosition + visibleItemCount - position;
               if (remain > 0f && remain < 1f) {
                 rectF.set(lineStartX, lineEndY + (lineStartY - lineEndY) * remain, lineEndX, lineEndY);
-                c.drawRoundRect(rectF, strokeWidth, strokeWidth, Paints.fillingPaint(color));
+                c.drawRoundRect(rectF, strokeWidth, strokeWidth, Paints.fillingPaint(fillColor));
               }
             }
           }
@@ -348,7 +363,8 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     messagesAdapter = new SettingsAdapter(viewController, this, viewController) {
       @Override
       protected void setMessagePreview (ListItem item, int position, MessagePreviewView previewView) {
-        TdApi.Message message = (TdApi.Message) item.getData();
+        DataHolder data = (DataHolder) item.getData();
+        TdApi.Message message = data.message;
         previewView.setMessage(message, new TdApi.SearchMessagesFilterPinned(), item.getStringValue(), false);
         if (messageList == null) {
           // override message preview
@@ -437,9 +453,9 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
   public void onClick (View v) {
     if (v.getId() == R.id.message) {
       ListItem item = ((ListItem) v.getTag());
-      TdApi.Message message = (TdApi.Message) item.getData();
+      DataHolder data = (DataHolder) item.getData();
       if (messageListener != null) {
-        messageListener.onMessageClick(this, message);
+        messageListener.onMessageClick(this, data.message);
       }
     }
   }
@@ -473,7 +489,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
   }
 
   private long contextChatId;
-  private @Nullable TdApi.Message message;
+  private @Nullable TdApi.Message singleMessage;
   private @Nullable MessageListManager messageList;
 
   public void collapse (boolean animated) {
@@ -487,7 +503,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
       this.messageList.removeChangeListener(this);
       this.messageList = null;
     }
-    this.message = null;
+    this.singleMessage = null;
     this.messageList = messageList;
     collapse(false);
     canExpand.setValue(messageList != null && messageList.getTotalCount() > 1, false);
@@ -496,7 +512,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
       messageList.addChangeListener(this);
       List<ListItem> items = new ArrayList<>(messageList.getCount());
       for (TdApi.Message message : messageList) {
-        items.add(itemOf(message));
+        items.add(itemOf(messageList.tdlib(), message));
       }
       messagesAdapter.setItems(items, false);
       messageList.loadInitialChunk(null);
@@ -505,20 +521,20 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     }
   }
 
-  public void setMessage (@Nullable TdApi.Message message) {
-    if (this.message == message) {
+  public void setMessage (@Nullable Tdlib tdlib, @Nullable TdApi.Message message) {
+    if (this.singleMessage == message) {
       return;
     }
     if (this.messageList != null) {
       this.messageList.removeChangeListener(this);
       this.messageList = null;
     }
-    this.message = message;
+    this.singleMessage = message;
     collapse(false);
     canExpand.setValue(false, false);
     countAnimator.forceFactor(0);
-    if (message != null) {
-      messagesAdapter.setItems(new ListItem[] {itemOf(message)}, false);
+    if (tdlib != null && message != null) {
+      messagesAdapter.setItems(new ListItem[] {itemOf(tdlib, message)}, false);
     } else {
       messagesAdapter.setItems(new ListItem[0], false);
     }
@@ -538,8 +554,20 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     }
   }
 
-  private static ListItem itemOf (TdApi.Message message) {
-    return new ListItem(ListItem.TYPE_MESSAGE_PREVIEW, R.id.message).setData(message);
+  private static class DataHolder {
+    private final Tdlib tdlib;
+    private final TdApi.Message message;
+    private final TdlibAccentColor accentColor;
+
+    public DataHolder (Tdlib tdlib, TdApi.Message message) {
+      this.tdlib = tdlib;
+      this.message = message;
+      this.accentColor = tdlib.messageAccentColor(message);
+    }
+  }
+
+  private static ListItem itemOf (Tdlib tdlib, TdApi.Message message) {
+    return new ListItem(ListItem.TYPE_MESSAGE_PREVIEW, R.id.message).setData(new DataHolder(tdlib, message));
   }
 
   @Override
@@ -557,7 +585,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     ListItem[] messageList = new ListItem[items.size()];
     int index = 0;
     for (TdApi.Message message : items) {
-      messageList[index] = itemOf(message);
+      messageList[index] = itemOf(list.tdlib(), message);
       index++;
     }
     if (needsClear || messagesAdapter.getItems().isEmpty()) {
@@ -573,11 +601,11 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     if (needsClear || messagesAdapter.getItems().isEmpty()) {
       needsClear = false;
       messagesAdapter.setItems(new ListItem[] {
-        itemOf(item)
+        itemOf(list.tdlib(), item)
       }, false);
     } else {
       boolean scrollBy = ((LinearLayoutManager) recyclerView.getLayoutManager()).findFirstCompletelyVisibleItemPosition() == 0;
-      messagesAdapter.addItem(toIndex, itemOf(item));
+      messagesAdapter.addItem(toIndex, itemOf(list.tdlib(), item));
       if (scrollBy) {
         ((LinearLayoutManager) recyclerView.getLayoutManager()).scrollToPositionWithOffset(0, 0);
       }

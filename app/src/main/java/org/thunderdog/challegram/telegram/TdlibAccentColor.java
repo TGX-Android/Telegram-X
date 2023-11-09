@@ -119,88 +119,38 @@ public final class TdlibAccentColor {
   @IntDef({
     UseCase.PRIMARY,
     UseCase.PRIMARY_BIG,
-    UseCase.NAME
+    UseCase.NAME,
+    UseCase.LINE
   })
   private @interface UseCase {
-    int PRIMARY = 0, PRIMARY_BIG = 1, NAME = 2;
+    int PRIMARY = 0, PRIMARY_BIG = 1, NAME = 2, LINE = 3;
+  }
+
+  private static final int[][] builtInColorIds;
+
+  static {
+    builtInColorIds = new int[][] {
+      // 0 - red
+      new int[] {ColorId.avatarRed, ColorId.avatarRed_big, ColorId.nameRed, ColorId.lineRed},
+      // 1 - orange
+      new int[] {ColorId.avatarOrange, ColorId.avatarOrange_big, ColorId.nameOrange, ColorId.lineOrange},
+      // 2 - purple/violet
+      new int[] {ColorId.avatarViolet, ColorId.avatarViolet_big, ColorId.nameViolet, ColorId.lineViolet},
+      // 3 - green
+      new int[] {ColorId.avatarGreen, ColorId.avatarGreen_big, ColorId.nameGreen, ColorId.lineGreen},
+      // 4 - cyan
+      new int[] {ColorId.avatarCyan, ColorId.avatarCyan_big, ColorId.nameCyan, ColorId.lineCyan},
+      // 5 - blue
+      new int[] {ColorId.avatarBlue, ColorId.avatarBlue_big, ColorId.nameBlue, ColorId.lineBlue},
+      // 6 - pink.
+      new int[] {ColorId.avatarPink, ColorId.avatarPink_big, ColorId.namePink, ColorId.linePink},
+    };
   }
 
   private static @ColorId int accentColorIdToAppColorId (int accentColorId, @UseCase int useCase) {
     if (Td.isBuiltInColorId(accentColorId)) {
       @BuiltInId int builtInColorId = accentColorId;
-      switch (builtInColorId) {
-        case BuiltInId.RED: // 0 - red
-          switch (useCase) {
-            case UseCase.NAME:
-              return ColorId.nameRed;
-            case UseCase.PRIMARY:
-              return ColorId.avatarRed;
-            case UseCase.PRIMARY_BIG:
-              return ColorId.avatarRed_big;
-          }
-          break;
-        case BuiltInId.ORANGE: // 1 - orange
-          switch (useCase) {
-            case UseCase.NAME:
-              return ColorId.nameOrange;
-            case UseCase.PRIMARY:
-              return ColorId.avatarOrange;
-            case UseCase.PRIMARY_BIG:
-              return ColorId.avatarOrange_big;
-          }
-          break;
-        case BuiltInId.PURPLE_VIOLET: // 2 - purple/violet
-          switch (useCase) {
-            case UseCase.NAME:
-              return ColorId.nameViolet;
-            case UseCase.PRIMARY:
-              return ColorId.avatarViolet;
-            case UseCase.PRIMARY_BIG:
-              return ColorId.avatarViolet_big;
-          }
-          break;
-        case BuiltInId.GREEN: // 3 - green
-          switch (useCase) {
-            case UseCase.NAME:
-              return ColorId.nameGreen;
-            case UseCase.PRIMARY:
-              return ColorId.avatarGreen;
-            case UseCase.PRIMARY_BIG:
-              return ColorId.avatarGreen_big;
-          }
-          break;
-        case BuiltInId.CYAN: // 4 - cyan
-          switch (useCase) {
-            case UseCase.NAME:
-              return ColorId.nameCyan;
-            case UseCase.PRIMARY:
-              return ColorId.avatarCyan;
-            case UseCase.PRIMARY_BIG:
-              return ColorId.avatarCyan_big;
-          }
-          break;
-        case BuiltInId.BLUE: // 5 - blue
-          switch (useCase) {
-            case UseCase.NAME:
-              return ColorId.nameBlue;
-            case UseCase.PRIMARY:
-              return ColorId.avatarBlue;
-            case UseCase.PRIMARY_BIG:
-              return ColorId.avatarBlue_big;
-          }
-          break;
-        case BuiltInId.PINK: // 6 - pink.
-          switch (useCase) {
-            case UseCase.NAME:
-              return ColorId.namePink;
-            case UseCase.PRIMARY:
-              return ColorId.avatarPink;
-            case UseCase.PRIMARY_BIG:
-              return ColorId.avatarPink_big;
-          }
-          break;
-      }
-      throw new IllegalArgumentException(accentColorId + " " + useCase);
+      return builtInColorIds[builtInColorId][useCase];
     }
     if (accentColorId < 0) {
       @InternalId int internalAccentColorId = accentColorId;
@@ -208,6 +158,7 @@ public final class TdlibAccentColor {
         case InternalId.FILE_REGULAR:
           switch (useCase) {
             case UseCase.NAME:
+            case UseCase.LINE:
               break; // unsupported
             case UseCase.PRIMARY:
             case UseCase.PRIMARY_BIG:
@@ -217,6 +168,8 @@ public final class TdlibAccentColor {
           switch (useCase) {
             case UseCase.NAME:
               return ColorId.messageAuthor;
+            case UseCase.LINE:
+              return ColorId.messageVerticalLine;
             case UseCase.PRIMARY:
             case UseCase.PRIMARY_BIG:
               // Unsupported
@@ -230,11 +183,14 @@ public final class TdlibAccentColor {
               return ColorId.avatarInactive;
             case UseCase.PRIMARY_BIG:
               return ColorId.avatarInactive_big;
+            case UseCase.LINE:
+              return ColorId.lineInactive;
           }
           break;
         case InternalId.SAVED_MESSAGES:
           switch (useCase) {
             case UseCase.NAME:
+            case UseCase.LINE:
               break; // Unsupported
             case UseCase.PRIMARY:
               return ColorId.avatarSavedMessages;
@@ -246,6 +202,8 @@ public final class TdlibAccentColor {
           switch (useCase) {
             case UseCase.NAME:
               return ColorId.messageAuthor;
+            case UseCase.LINE:
+              return ColorId.messageVerticalLine;
             case UseCase.PRIMARY:
               return ColorId.avatarReplies;
             case UseCase.PRIMARY_BIG:
@@ -255,6 +213,7 @@ public final class TdlibAccentColor {
         case InternalId.ARCHIVE:
           switch (useCase) {
             case UseCase.NAME:
+            case UseCase.LINE:
               break; // unsupported
             case UseCase.PRIMARY:
             case UseCase.PRIMARY_BIG:
@@ -264,6 +223,7 @@ public final class TdlibAccentColor {
         case InternalId.ARCHIVE_PINNED:
           switch (useCase) {
             case UseCase.NAME:
+            case UseCase.LINE:
               break; // unsupported
             case UseCase.PRIMARY:
             case UseCase.PRIMARY_BIG:
@@ -355,7 +315,7 @@ public final class TdlibAccentColor {
 
   @ColorInt
   public int getVerticalLineColor () {
-    return getPrimaryColor();
+    return getColor(UseCase.LINE, true);
   }
 
   public long getPrimaryComplexColor () {

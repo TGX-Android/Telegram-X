@@ -3028,6 +3028,25 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
+  public TdlibAccentColor messageAccentColor (@NonNull TdApi.Message message) {
+    if (message.forwardInfo != null) {
+      switch (message.forwardInfo.origin.getConstructor()) {
+        case TdApi.MessageOriginChat.CONSTRUCTOR:
+          return chatAccentColor(((TdApi.MessageOriginChat) message.forwardInfo.origin).senderChatId);
+        case TdApi.MessageOriginUser.CONSTRUCTOR:
+          return cache().userAccentColor(((TdApi.MessageOriginUser) message.forwardInfo.origin).senderUserId);
+        case TdApi.MessageOriginChannel.CONSTRUCTOR:
+          return chatAccentColor(((TdApi.MessageOriginChannel) message.forwardInfo.origin).chatId);
+        case TdApi.MessageOriginHiddenUser.CONSTRUCTOR:
+          return null;
+        default:
+          Td.assertMessageOrigin_f2224a59();
+          throw Td.unsupported(message.forwardInfo.origin);
+      }
+    }
+    return senderAccentColor(message.senderId);
+  }
+
   public TdlibAccentColor chatAccentColor (long chatId) {
     int accentColorId = chatAccentColorId(chatId);
     return accentColor(accentColorId);

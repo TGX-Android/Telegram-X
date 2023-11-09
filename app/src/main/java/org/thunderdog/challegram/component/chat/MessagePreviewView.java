@@ -30,6 +30,7 @@ import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -289,12 +290,22 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     return !StringUtils.isEmpty(forcedTitle) ? forcedTitle : message != null ? tdlib.senderName(message, true, false) : null;
   }
 
+  @Nullable
+  private TdlibAccentColor getAccentColor () {
+    if (StringUtils.isEmpty(forcedTitle) && message != null) {
+      return tdlib.messageAccentColor(message);
+    } else {
+      return null;
+    }
+  }
+
   private boolean needBoldTitle () {
     return !StringUtils.isEmpty(forcedTitle) || (message != null && Td.getMessageAuthorId(message, true) != 0);
   }
 
   private void buildTitleText (int availWidth, boolean animated) {
     String title = getTitle();
+    TdlibAccentColor accentColor = getAccentColor();
     Text newText;
     if (!StringUtils.isEmpty(title)) {
       newText = new Text.Builder(tdlib,
@@ -302,7 +313,9 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
         null,
         availWidth,
         Paints.robotoStyleProvider(TEXT_SIZE),
-        TextColorSets.Regular.MESSAGE_AUTHOR,
+        accentColor != null ?
+          accentColor::getNameColor :
+          TextColorSets.Regular.MESSAGE_AUTHOR,
         null
       ).viewProvider(viewProvider)
        .singleLine()
