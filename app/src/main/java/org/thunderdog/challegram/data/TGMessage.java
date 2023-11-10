@@ -2730,6 +2730,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       result = footerText.performLongPress(view) || result;
     }
     clickHelper.cancel(view, x, y);
+    if (hAuthorNameT != null) {
+      hAuthorNameT.cancelTouch();
+    }
+    if (fAuthorNameT != null) {
+      fAuthorNameT.cancelTouch();
+    }
     return result;
   }
 
