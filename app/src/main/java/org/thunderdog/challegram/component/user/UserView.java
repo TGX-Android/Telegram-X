@@ -291,7 +291,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
 
   private void updateLetters () {
     if (unregisteredContact != null) {
-      avatarPlaceholder = new AvatarPlaceholder.Metadata(tdlib.accentColor(TdlibAccentColor.InternalId.INACTIVE), unregisteredContact.letters.text);
+      avatarPlaceholder = new AvatarPlaceholder.Metadata(tdlib.accentColor(TdlibAccentColor.InternalId.INACTIVE), unregisteredContact.letters);
     } else {
       avatarPlaceholder = null;
     }

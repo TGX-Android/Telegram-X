@@ -968,15 +968,15 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   }
 
   public AvatarPlaceholder.Metadata selfPlaceholderMetadata () {
-    return new AvatarPlaceholder.Metadata(tdlib.accentColor(TdlibAccentColor.InternalId.SAVED_MESSAGES), (String) null, R.drawable.baseline_bookmark_24, 0);
+    return new AvatarPlaceholder.Metadata(tdlib.accentColor(TdlibAccentColor.InternalId.SAVED_MESSAGES), null, R.drawable.baseline_bookmark_24, 0);
   }
 
   public AvatarPlaceholder.Metadata repliesPlaceholderMetadata () {
-    return new AvatarPlaceholder.Metadata(tdlib.accentColor(TdlibAccentColor.InternalId.REPLIES), (String) null, R.drawable.baseline_reply_24, R.drawable.baseline_reply_56);
+    return new AvatarPlaceholder.Metadata(tdlib.accentColor(TdlibAccentColor.InternalId.REPLIES), null, R.drawable.baseline_reply_24, R.drawable.baseline_reply_56);
   }
 
   public AvatarPlaceholder.Metadata deletedPlaceholderMetadata () {
-    return new AvatarPlaceholder.Metadata(tdlib.accentColor(TdlibAccentColor.InternalId.INACTIVE), (String) null, R.drawable.outline_person_cancel_24, R.drawable.outline_person_cancel_56);
+    return new AvatarPlaceholder.Metadata(tdlib.accentColor(TdlibAccentColor.InternalId.INACTIVE), null, R.drawable.baseline_ghost_24, R.drawable.baseline_ghost_56);
   }
 
   public AvatarPlaceholder.Metadata userPlaceholderMetadata (@Nullable TdApi.User user, boolean allowSavedMessages) {
@@ -999,7 +999,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
       /*tdlib.isRepliesChat(ChatId.fromUserId(user.id)) ? R.drawable.baseline_reply_56 :*/
       TD.isBot(user) ? R.drawable.deproko_baseline_bots_56 :
       R.drawable.baseline_person_56;
-    return new AvatarPlaceholder.Metadata(accentColor, avatarLetters != null ? avatarLetters.text : null, 0, extraDrawableRes);
+    return new AvatarPlaceholder.Metadata(accentColor, avatarLetters, 0, extraDrawableRes);
   }
 
   public AvatarPlaceholder userPlaceholder (long userId, boolean allowSavedMessages, float radius, @Nullable DrawableProvider provider) {

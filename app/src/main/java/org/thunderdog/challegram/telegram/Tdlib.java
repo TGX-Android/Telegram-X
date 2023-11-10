@@ -2940,7 +2940,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           break;
       }
     }
-    return new AvatarPlaceholder.Metadata(accentColor, avatarLetters != null ? avatarLetters.text : null, desiredDrawableRes, extraDrawableRes);
+    return new AvatarPlaceholder.Metadata(accentColor, avatarLetters, desiredDrawableRes, extraDrawableRes);
   }
 
   public Letters chatLetters (TdApi.Chat chat) {

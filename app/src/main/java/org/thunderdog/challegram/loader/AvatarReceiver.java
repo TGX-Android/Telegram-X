@@ -31,6 +31,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.DrawableProvider;
+import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 
@@ -1210,8 +1211,8 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   private Text displayingLetters;
   private float displayingLettersTextSize;
 
-  private void drawPlaceholderLetters (Canvas c, String letters, float alpha) {
-    if (StringUtils.isEmpty(letters)) {
+  private void drawPlaceholderLetters (Canvas c, Letters letters, float alpha) {
+    if (letters == null || StringUtils.isEmpty(letters.text)) {
       return;
     }
 
@@ -1219,9 +1220,9 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
 
     float textSizeDp = (int) ((primaryPlaceholderRadius != 0 ? primaryPlaceholderRadius : Screen.px(currentRadiusPx)) * .75f);
 
-    if (displayingLetters == null || !displayingLetters.getText().equals(letters) || displayingLettersTextSize != textSizeDp) {
+    if (displayingLetters == null || !displayingLetters.getText().equals(letters.text) || displayingLettersTextSize != textSizeDp) {
       displayingLetters = new Text.Builder(
-        letters, (int) (currentRadiusPx * 3), Paints.robotoStyleProvider(textSizeDp), TextColorSets.Regular.AVATAR_CONTENT)
+        letters.text, (int) (currentRadiusPx * 3), Paints.robotoStyleProvider(textSizeDp), TextColorSets.Regular.AVATAR_CONTENT)
         .allBold()
         .singleLine()
         .build();
@@ -1229,8 +1230,12 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     }
 
     float radiusPx = primaryPlaceholderRadius != 0f ? Screen.dp(primaryPlaceholderRadius) : currentRadiusPx;
-    float scale = radiusPx < currentRadiusPx ? radiusPx / (float) currentRadiusPx : 1f;
-    scale *= Math.min(1f, (radiusPx * 2f) / (float) (Math.max(displayingLetters.getWidth(), displayingLetters.getHeight())));
+    float scale = radiusPx < currentRadiusPx ? radiusPx / currentRadiusPx : 1f;
+    float size = Math.max(displayingLetters.getWidth(), displayingLetters.getHeight());
+    float maxSize = (float) Math.sqrt(2.0) * (currentRadiusPx - Screen.dp(1f));
+    if (size > maxSize) {
+      scale *= maxSize / size;
+    }
 
     float centerX = centerX();
     float centerY = centerY();
@@ -1257,7 +1262,11 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
       ((DrawableProvider) view).getSparseDrawable(resId, colorId) :
       Drawables.get(resId);
     float scale = radiusPx < currentRadiusPx ? radiusPx / currentRadiusPx : 1f;
-    scale *= Math.min(1f, (radiusPx * 2f) / (float) Math.max(drawable.getMinimumWidth(), drawable.getMinimumHeight()));
+    float size = Math.max(drawable.getMinimumWidth(), drawable.getMinimumHeight()) * scale;
+    float maxSize = (float) Math.sqrt(2.0) * (currentRadiusPx - Screen.dp(1f));
+    if (size > maxSize) {
+      scale *= maxSize / size;
+    }
     float centerX = centerX();
     float centerY = centerY();
     final boolean needRestore = scale != 1f;

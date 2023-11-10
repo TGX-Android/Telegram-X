@@ -42,43 +42,48 @@ import me.vkryl.core.StringUtils;
 public class AvatarPlaceholder {
   public static class Metadata {
     public final @NonNull TdlibAccentColor accentColor;
-    public final @Nullable String letters;
+    public final @Nullable Letters letters;
     public final @DrawableRes int drawableRes, extraDrawableRes;
-
-    public Metadata (TdlibAccentColor accentColor, @Nullable Letters letters, int drawableRes, int extraDrawableRes) {
-      this(accentColor, letters != null ? letters.text : null, drawableRes, extraDrawableRes);
-    }
 
     public Metadata () {
       this(new TdlibAccentColor(TdlibAccentColor.InternalId.INACTIVE));
     }
 
     public Metadata (@NonNull TdlibAccentColor accentColor) {
-      this(accentColor, Strings.ELLIPSIS, 0, 0);
+      this(accentColor, new Letters(Strings.ELLIPSIS), 0, 0);
     }
 
     public Metadata (@NonNull TdlibAccentColor accentColor, int iconRes) {
-      this(accentColor, (Letters) null, iconRes, 0);
+      this(accentColor, null, iconRes, 0);
     }
 
     public Metadata (@NonNull TdlibAccentColor accentColor, @Nullable Letters letters) {
       this(accentColor, letters, 0, 0);
     }
 
-    public Metadata (@NonNull TdlibAccentColor accentColor, @Nullable String letters) {
-      this(accentColor, letters, 0, 0);
-    }
-
-    public Metadata (@NonNull TdlibAccentColor accentColor, @Nullable String letters, int drawableRes, int extraDrawableRes) {
+    public Metadata (@NonNull TdlibAccentColor accentColor, @Nullable Letters letters, int drawableRes, int extraDrawableRes) {
       this.accentColor = accentColor;
-      this.letters = letters;
+      this.letters = letters != null && !StringUtils.isEmpty(letters.text) ? letters : null;
       this.drawableRes = drawableRes;
       this.extraDrawableRes = extraDrawableRes;
     }
 
     @Override
     public boolean equals (@Nullable Object obj) {
-      return obj instanceof Metadata && ((Metadata) obj).accentColor.equals(this.accentColor) && StringUtils.equalsOrBothEmpty(((Metadata) obj).letters, this.letters);
+      if (obj == this) {
+        return true;
+      }
+      if (obj == null) {
+        return false;
+      }
+      if (obj instanceof Metadata) {
+        Metadata other = (Metadata) obj;
+        return other.accentColor.equals(this.accentColor) && StringUtils.equalsOrBothEmpty(
+          other.letters != null ? other.letters.text : null,
+          this.letters != null ? this.letters.text : null
+        );
+      }
+      return false;
     }
   }
 
@@ -99,7 +104,7 @@ public class AvatarPlaceholder {
     }
     this.metadata = metadata;
     this.radius = radius;
-    this.letters = StringUtils.isEmpty(metadata.letters) ? null : new Text.Builder(metadata.letters, Screen.dp(radius) * 3, Paints.robotoStyleProvider((int) (radius * .75f)), TextColorSets.Regular.AVATAR_CONTENT).allBold().singleLine().build();
+    this.letters = metadata.letters == null ? null : new Text.Builder(metadata.letters.text, Screen.dp(radius) * 3, Paints.robotoStyleProvider((int) (radius * .75f)), TextColorSets.Regular.AVATAR_CONTENT).allBold().singleLine().build();
     if (provider != null) {
       this.drawable = provider.getSparseDrawable(metadata.drawableRes, ColorId.avatar_content);
     } else {
