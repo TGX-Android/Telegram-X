@@ -17,11 +17,13 @@ package org.thunderdog.challegram.component.chat;
 import android.graphics.Canvas;
 import android.graphics.Path;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Looper;
 import android.view.MotionEvent;
 import android.view.View;
 
+import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -48,6 +50,7 @@ import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
+import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -65,15 +68,11 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.Td;
 
-// It's a good idea to fully rework this component at some point to make it more flexible & animated
-// by using newer tools that were implemented after this component was created.
-@Deprecated
 public class ReplyComponent implements Client.ResultHandler, Destroyable {
   private static final int FLAG_ALLOW_TOUCH_EVENTS = 1 << 1;
   private static final int FLAG_FORCE_TITLE = 1 << 3;
   private static final int FLAG_LOADING = 1 << 4;
-  private static final int FLAG_PINNED_MESSAGE = 1 << 5;
-  private static final int FLAG_USE_COLORIZE = 1 << 7;
+  private static final int FLAG_USE_COLORIZE = 1 << 5;
 
   private final Tdlib tdlib;
   private final @Nullable TGMessage parent;
@@ -176,8 +175,17 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     }
   }
 
-  private int getContentWidth () {
-    return !hasPreview() ? maxWidth - paddingLeft - lineWidth - paddingLeft : maxWidth - paddingLeft - paddingLeft - lineWidth - lineWidth - (isMessageComponent() ? mHeight : height);
+  private static final float CORNER_PADDING = 1f;
+
+  private int getContentWidth (boolean isTitle) {
+    int maxWidth = this.maxWidth - paddingLeft - lineWidth - paddingLeft;
+    if (hasPreview()) {
+      maxWidth -= lineWidth + (isMessageComponent() ? mHeight : height);
+    }
+    if (isTitle && cornerDrawable != null) {
+      maxWidth -= cornerDrawable.getMinimumWidth() + Screen.dp(CORNER_PADDING);
+    }
+    return maxWidth;
   }
 
   public int width () {
@@ -185,7 +193,14 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   }
 
   public int width (boolean isWhite) {
-    return (!hasPreview() ? Math.max(getTextWidth(), getTitleWidth()) + paddingLeft + paddingLeft + lineWidth : Math.max(getTextWidth(), getTitleWidth()) + paddingLeft + lineWidth + lineWidth + paddingLeft + (isMessageComponent() ? mHeight : height)) + (isWhite ? Screen.dp(3f) : 0);
+    int contentWidth = Math.max(getTextWidth(), getTitleWidth() + (cornerDrawable != null ? cornerDrawable.getMinimumWidth() + Screen.dp(CORNER_PADDING) : 0)) + paddingLeft + paddingLeft + lineWidth;
+    if (hasPreview()) {
+      contentWidth += lineWidth + (isMessageComponent() ? mHeight : height);
+    }
+    if (isWhite) {
+      contentWidth += Screen.dp(3f);
+    }
+    return contentWidth;
   }
 
   private int getTextWidth () {
@@ -205,7 +220,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   }
 
   private void buildTitle () {
-    int width = getContentWidth();
+    int width = getContentWidth(true);
     String titleText = computeTitleText(Lang.getString(isChannel() ? R.string.LoadingChannel : R.string.LoadingUser));
     trimmedTitle = new Text.Builder(titleText, width, getTitleStyleProvider(isMessageComponent()), getTitleColorSet())
       .singleLine()
@@ -217,7 +232,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   }
 
   private void buildContent () {
-    int width = getContentWidth();
+    int width = getContentWidth(false);
 
     //noinspection UnsafeOptInUsageError
     Text trimmedContent = new Text.Builder(content != null ? content.buildText(true) : Lang.getString(R.string.LoadingMessage), width, isMessageComponent() ? TGMessage.getTextStyleProvider() : getTextStyleProvider(), getContentColorSet())
@@ -398,6 +413,16 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     lastY = startY;
 
     final boolean isOutBubble = isOutBubble();
+    final @ColorInt int lineColor;
+    if (isMessageComponent()) {
+      lineColor = isWhite ? parent.getBubbleMediaReplyTextColor() : isOutBubble ? Theme.getColor(ColorId.bubbleOut_chatVerticalLine) : useAccentColor() ? accentColor.getVerticalLineColor() : Theme.getColor(ColorId.messageVerticalLine);
+    } else {
+      lineColor = useAccentColor() ? accentColor.getVerticalLineColor() : Theme.getColor(ColorId.messageVerticalLine);
+    }
+
+    float cornerPositionX, cornerPositionY;
+    cornerPositionX = startX + width;
+    cornerPositionY = startY;
 
     RectF rectF = Paints.getRectF();
     if (isWhite) {
@@ -409,6 +434,11 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       rectF.right = startX + width;
       float mergeRadius = Theme.getBubbleMergeRadius();
       c.drawRoundRect(rectF, mergeRadius, mergeRadius, Paints.fillingPaint(parent.getBubbleMediaReplyBackgroundColor()));
+    }
+
+    if (cornerDrawable != null) {
+      // TODO: optimize
+      Drawables.draw(c, cornerDrawable, cornerPositionX - cornerDrawable.getMinimumWidth(), cornerPositionY, Paints.getPorterDuffPaint(lineColor));
     }
 
     if (hasPreview()) {
@@ -461,7 +491,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       } else {
         rectF.set(startX, startY, startX + lineWidth, startY + mHeight);
       }
-      c.drawRoundRect(rectF, lineWidth / 2f, lineWidth / 2f, Paints.fillingPaint(isWhite ? parent.getBubbleMediaReplyTextColor() : isOutBubble ? Theme.getColor(ColorId.bubbleOut_chatVerticalLine) : useAccentColor() ? accentColor.getVerticalLineColor() : Theme.getColor(ColorId.messageVerticalLine)));
+      c.drawRoundRect(rectF, lineWidth / 2f, lineWidth / 2f, Paints.fillingPaint(lineColor));
 
       return;
     }
@@ -477,7 +507,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     }
 
     Paints.getRectF().set(startX, startY, startX + lineWidth, startY + height);
-    c.drawRoundRect(Paints.getRectF(), lineWidth / 2f, lineWidth / 2f, Paints.fillingPaint(useAccentColor() ? accentColor.getVerticalLineColor() : Theme.getColor(ColorId.messageVerticalLine)));
+    c.drawRoundRect(Paints.getRectF(), lineWidth / 2f, lineWidth / 2f, Paints.fillingPaint(lineColor));
   }
 
   // Data workers
@@ -527,13 +557,6 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     setMessage(msg, false, false);
   }
 
-  public void set (@Nullable CharSequence forcedTitle, TdApi.Message msg, boolean isPinnedMessage) {
-    setTitleImpl(getTitle(forcedTitle, msg));
-    this.flags = BitwiseUtils.setFlag(flags, FLAG_FORCE_TITLE, !StringUtils.isEmpty(forcedTitle));
-    this.flags = BitwiseUtils.setFlag(flags, FLAG_PINNED_MESSAGE, isPinnedMessage);
-    setMessage(msg, false, false);
-  }
-
   public boolean onTouchEvent (View view, MotionEvent e) {
     return (flags & FLAG_ALLOW_TOUCH_EVENTS) != 0 && trimmedContent != null && trimmedContent.onTouchEvent(view, e);
   }
@@ -565,7 +588,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   private @Nullable TdApi.Function<?> retryFunction;
   private boolean ignoreFailures;
   private @Nullable TdApi.FormattedText quote;
-  private boolean isQuoteManual;
+  private Drawable cornerDrawable;
 
   public void load () {
     if (parent == null)
@@ -578,7 +601,11 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     switch (message.replyTo.getConstructor()) {
       case TdApi.MessageReplyToMessage.CONSTRUCTOR: {
         TdApi.MessageReplyToMessage replyToMessage = (TdApi.MessageReplyToMessage) message.replyTo;
-        this.isQuoteManual = replyToMessage.isQuoteManual;
+        if (replyToMessage.isQuoteManual) {
+          cornerDrawable = Drawables.load(R.drawable.baseline_format_quote_close_18);
+        } else {
+          cornerDrawable = null;
+        }
         if (replyToMessage.origin != null) {
           handleOrigin(replyToMessage.origin);
         }
@@ -1014,6 +1041,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
 
   @Override
   public void performDestroy () {
+    this.cornerDrawable = null;
     this.isDestroyed = true;
   }
 }
