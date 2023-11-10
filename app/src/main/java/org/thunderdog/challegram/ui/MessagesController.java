@@ -6216,22 +6216,27 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void forceDraftReply (final TdApi.InputMessageReplyToMessage replyTo) {
     final long currentChatId = chat.id;
-    if (replyTo.chatId == currentChatId) {
+    final long replyToChatId = replyTo.chatId == 0 ? currentChatId : replyTo.chatId;
+    if (replyToChatId == currentChatId) {
       TGMessage foundMessage = manager.getAdapter().findMessageById(replyTo.messageId);
       if (foundMessage != null) {
         forceReply(foundMessage.getMessage(), replyTo.quote);
         return;
       }
     }
-    tdlib.client().send(new TdApi.GetMessage(replyTo.chatId, replyTo.messageId), object -> tdlib.ui().post(() -> {
-      if (object.getConstructor() == TdApi.Message.CONSTRUCTOR && chat != null && chat.id == currentChatId) {
-        TdApi.DraftMessage draftMessage = getDraftMessage();
-        TdApi.InputMessageReplyTo currentReplyTo = draftMessage != null ? draftMessage.replyTo : null;
-        if (Td.equalsTo(replyTo, currentReplyTo)) {
-          forceReply((TdApi.Message) object, replyTo.quote);
-        }
+    tdlib.send(new TdApi.GetMessage(replyToChatId, replyTo.messageId), (foundReplyMessage, error) -> {
+      if (foundReplyMessage != null) {
+        runOnUiThreadOptional(() -> {
+          if (chat != null && chat.id == currentChatId) {
+            TdApi.DraftMessage draftMessage = getDraftMessage();
+            TdApi.InputMessageReplyTo currentReplyTo = draftMessage != null ? draftMessage.replyTo : null;
+            if (Td.equalsTo(replyTo, currentReplyTo)) {
+              forceReply(foundReplyMessage, replyTo.quote);
+            }
+          }
+        });
       }
-    }));
+    });
   }
 
   public void forceReply (TdApi.Message message, @Nullable TdApi.FormattedText quote) {
