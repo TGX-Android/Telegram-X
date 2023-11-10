@@ -679,6 +679,13 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     return currentError;
   }
 
+  public CharSequence toErrorText () {
+    if (currentError != null && currentError.code == 404) {
+      return Lang.getString(R.string.ReplyMessageDeletedHint);
+    }
+    return TD.toErrorString(currentError);
+  }
+
   public boolean replaceMessageContent (long messageId, TdApi.MessageContent content) {
     if (currentMessage != null && currentMessage.id == messageId) {
       currentMessage.content = content;

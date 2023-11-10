@@ -2789,7 +2789,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           if (msg.replyTo != null && msg.replyTo.getConstructor() == TdApi.MessageReplyToMessage.CONSTRUCTOR) {
             TdApi.MessageReplyToMessage replyToMessage = (TdApi.MessageReplyToMessage) msg.replyTo;
             if (replyData != null && replyData.getError() != null) {
-              buildContentHint(view, getReplyLocationProvider(), false).show(tdlib, TD.toErrorString(replyData.getError()));
+              buildContentHint(view, getReplyLocationProvider(), false).show(tdlib, replyData.toErrorText());
             } else {
               if (replyToMessage.chatId != msg.chatId) {
                 if (replyToMessage.chatId == 0 || replyToMessage.messageId == 0) {
