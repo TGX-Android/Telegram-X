@@ -59,6 +59,7 @@ import org.thunderdog.challegram.component.chat.EmojiToneHelper;
 import org.thunderdog.challegram.component.chat.InputView;
 import org.thunderdog.challegram.component.dialogs.SearchManager;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.InlineResult;
@@ -3067,7 +3068,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       boolean messageReplyIncluded = false;
       if (hasComment) {
         TdApi.InputMessageReplyToMessage replyTo = null;
-        if (!args.disallowReply && !ChatId.isSecret(chatId) && mode == MODE_MESSAGES && !(needHideAuthor || needRemoveCaptions) && args.messages[0].chatId != chatId) {
+        if (Config.FORCE_REPLY_WHEN_FORWARDING_WITH_COMMENT && !args.disallowReply && !ChatId.isSecret(chatId) && mode == MODE_MESSAGES && !(needHideAuthor || needRemoveCaptions) && args.messages[0].chatId != chatId) {
           messageReplyIncluded = true;
 
           long singleSourceChatId = 0, singleSourceMediaGroupId = 0, contentfulMediaMessageId = 0;

@@ -307,4 +307,5 @@ public class Config {
   public static final boolean DISABLE_ANONYMOUS_NON_OWNER_REACTIONS = true;
 
   public static final boolean KEEP_ORIGINAL_EMOJI_WHEN_INPUT_CUSTOM_EMOJI = true;
+  public static final boolean FORCE_REPLY_WHEN_FORWARDING_WITH_COMMENT = false;
 }
