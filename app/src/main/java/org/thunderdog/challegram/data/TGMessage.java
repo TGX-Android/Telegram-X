@@ -30,6 +30,8 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.SparseIntArray;
@@ -3105,7 +3107,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (hideName) {
         return null;
       }
-      text = authorName;
+      SpannableStringBuilder b = new SpannableStringBuilder(authorName);
+      b.setSpan(new TextEntityCustom(controller(), tdlib, authorName, 0, authorName.length(), TextEntityCustom.FLAG_CLICKABLE, openParameters()), 0, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+      text = b;
       allActive = true;
       allBold = available;
     } else if (textRes == R.string.PsaFromXViaBot || textRes == R.string.message_nameViaBot) { // author via bot
@@ -3133,12 +3137,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
         @Override
         public int backgroundColor (boolean isPressed) {
-          return isPressed ? ColorUtils.alphaColor(.2f, accentColor.getPrimaryColor()) : 0;
+          return isPressed ? ColorUtils.alphaColor(.2f, accentColor.getNameColor()) : 0;
         }
 
         @Override
         public int backgroundColorId (boolean isPressed) {
-          return isPressed ? Theme.extractColorValue(accentColor.getPrimaryComplexColor()) : 0;
+          return isPressed ? Theme.extractColorValue(accentColor.getNameComplexColor()) : 0;
         }
       };
     } else {
