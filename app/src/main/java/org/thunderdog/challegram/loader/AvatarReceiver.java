@@ -1216,7 +1216,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
       return;
     }
 
-    float currentRadiusPx = getWidth() / 2f;
+    float currentRadiusPx = Math.min(getWidth(), getHeight()) / 2f;
 
     float textSizeDp = (int) ((primaryPlaceholderRadius != 0 ? primaryPlaceholderRadius : Screen.px(currentRadiusPx)) * .75f);
 
@@ -1255,7 +1255,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   }
 
   private void drawPlaceholderDrawable (Canvas c, int resId, int colorId, float alpha) {
-    float currentRadiusPx = getWidth() / 2f;
+    float currentRadiusPx = Math.min(getWidth(), getHeight()) / 2f;
     float radiusPx = primaryPlaceholderRadius != 0f ? Screen.dp(primaryPlaceholderRadius) : currentRadiusPx;
     View view = getTargetView();
     Drawable drawable = view instanceof DrawableProvider ?
