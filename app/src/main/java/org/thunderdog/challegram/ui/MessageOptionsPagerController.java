@@ -408,7 +408,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   private int cachedHintHeight, cachedHintAvailWidth;
 
   private int getOptionItemsHeight () {
-    int optionItemsHeight = Screen.dp(54) * state.options.items.length;
+    int optionItemsHeight = state.options.items != null ? Screen.dp(54) * state.options.items.length : 0;
     int hintHeight;
     if (!StringUtils.isEmpty(state.options.info)) {
       int availWidth = Screen.currentWidth() - Screen.dp(16f) * 2; // FIXME: rely on parent view width
@@ -850,9 +850,8 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
   @Override
   public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
-    float pickerOffset = Math.min(getOptionItemsHeight(), getTargetHeight());
-
     if (id == REACTIONS_PICKER_VISIBILITY_ANIMATOR_ID) {
+      float pickerOffset = Math.min(getOptionItemsHeight(), getTargetHeight());
       invalidatePickerWrapper();
       contentView.setTranslationY(pickerOffset * factor);
       if (headerView != null) {
@@ -865,6 +864,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     }
 
     if (reactionsPickerBottomHeaderView != null) {
+      float pickerOffset = Math.min(getOptionItemsHeight(), getTargetHeight());
       reactionsPickerBottomHeaderView.setTranslationY(-pickerOffset * (1f - reactionsPickerVisibility.getFloatValue()) - keyboardHeight.getFactor());
     }
   }

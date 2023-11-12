@@ -157,6 +157,7 @@ import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
+import me.vkryl.td.TdConstants;
 
 public abstract class TGMessage implements InvalidateContentProvider, TdlibDelegate, FactorAnimator.Target, Comparable<TGMessage>, Counter.Callback, TGAvatars.Callback, TranslationsManager.Translatable {
   private static final int MAXIMUM_CHANNEL_MERGE_TIME_DIFF = 150;
@@ -2009,7 +2010,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
             hAuthorEmojiStatus.draw(c, left + hAuthorNameT.getWidth() + Screen.dp(3), newTop, 1f, view.getEmojiStatusReceiver());
           }
           if (sender.hasChatMark() && hAuthorChatMark != null) {
-            int cmLeft = left + hAuthorNameT.getWidth() + Screen.dp(6f);
+            int cmLeft = left + hAuthorNameT.getWidth() + Screen.dp(3f)
+              + (hAuthorEmojiStatus != null ? hAuthorEmojiStatus.getWidth(Screen.dp(3)) : 0);
             RectF rct = Paints.getRectF();
             rct.set(cmLeft, newTop, cmLeft + hAuthorChatMark.getWidth() + Screen.dp(8f), newTop + hAuthorNameT.getLineHeight(false));
             c.drawRoundRect(rct, Screen.dp(2f), Screen.dp(2f), Paints.getProgressPaint(Theme.getColor(ColorId.textNegative), Screen.dp(1.5f)));
@@ -7661,11 +7663,38 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   @Nullable
-  private static TGMessage checkPendingContent (MessagesManager context, TdApi.Message msg, TdApi.MessageContent oldContent, @Nullable TdApi.MessageContent pendingContent, boolean allowCustomEmoji) {
-    if (pendingContent == null) {
+  private static TGMessage checkPendingContent (MessagesManager context, TdApi.Message msg, TdApi.MessageContent oldContent, @Nullable TdApi.MessageContent pendingContent, boolean allowAnimatedEmoji, boolean allowNonBubbleEmoji) {
+    if (pendingContent == null || oldContent.getConstructor() != TdApi.MessageAnimatedEmoji.CONSTRUCTOR && oldContent.getConstructor() != TdApi.MessageText.CONSTRUCTOR) {
       return null;
     }
 
+    final @EmojiMessageContentType int emojiPendingContentType = getEmojiMessageContentType(pendingContent, allowAnimatedEmoji, allowNonBubbleEmoji);
+    if (emojiPendingContentType == EmojiMessageContentType.NOT_EMOJI) {
+      final TdApi.MessageText oldMessageText;
+      if (oldContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
+        TdApi.MessageAnimatedEmoji oldEmoji = nonNull((TdApi.MessageAnimatedEmoji) oldContent);
+        oldMessageText = new TdApi.MessageText(Td.textOrCaption(oldEmoji), null);
+      } else if (oldContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
+        oldMessageText = nonNull((TdApi.MessageText) oldContent);
+      } else {
+        throw new IllegalArgumentException("Wrong content type");
+      }
+
+      final TdApi.MessageText newMessageText;
+      if (pendingContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
+        TdApi.MessageAnimatedEmoji newEmoji = nonNull((TdApi.MessageAnimatedEmoji) pendingContent);
+        newMessageText = new TdApi.MessageText(Td.textOrCaption(newEmoji), null);
+      } else if (pendingContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
+        newMessageText = (TdApi.MessageText) pendingContent;
+      } else {
+        throw new IllegalArgumentException("Wrong content type");
+      }
+
+      return new TGMessageText(context, msg, oldMessageText, newMessageText);
+    } else {
+      return new TGMessageSticker(context, msg, oldContent, pendingContent);
+    }
+    /*
     final TdApi.MessageText pendingMessageText = pendingContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR ?
       ((TdApi.MessageText) pendingContent) : null;
     final TdApi.MessageAnimatedEmoji pendingMessageEmoji = pendingContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR ?
@@ -7690,6 +7719,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
 
     return null;
+    */
   }
 
   public static TGMessage valueOf (MessagesManager context, TdApi.Message msg, TdApi.MessageContent content) {
@@ -7711,10 +7741,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
       int unsupportedStringRes = R.string.UnsupportedMessage;
 
-      final boolean allowEmoji = !Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI);
+      final boolean allowAnimatedEmoji = !Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI);
+      final boolean allowNonBubbleEmoji = Settings.instance().useBigEmoji();
       final TdApi.MessageContent pendingContent = tdlib.getPendingMessageText(msg.chatId, msg.id);
 
-      TGMessage message = checkPendingContent(context, msg, content, pendingContent, allowEmoji);
+      TGMessage message = checkPendingContent(context, msg, content, pendingContent, allowAnimatedEmoji, allowNonBubbleEmoji);
       if (message != null) {
         return message;
       }
@@ -7722,7 +7753,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       switch (content.getConstructor()) {
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR: {
           TdApi.MessageAnimatedEmoji emoji = nonNull((TdApi.MessageAnimatedEmoji) content);
-          if (!allowEmoji) {
+          if (getEmojiMessageContentType(content, allowAnimatedEmoji, allowNonBubbleEmoji) == EmojiMessageContentType.NOT_EMOJI) {
             return new TGMessageText(context, msg, new TdApi.MessageText(Td.textOrCaption(emoji), null), null);
           } else {
             return new TGMessageSticker(context, msg, emoji, null);
@@ -7730,7 +7761,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         }
         case TdApi.MessageText.CONSTRUCTOR: {
           TdApi.MessageText messageText = nonNull((TdApi.MessageText) content);
-          if (allowEmoji && NonBubbleEmojiLayout.isValidEmojiText(messageText.text)) {
+          if (getEmojiMessageContentType(content, allowAnimatedEmoji, allowNonBubbleEmoji) != EmojiMessageContentType.NOT_EMOJI) {
             return new TGMessageSticker(context, msg, messageText, null);
           }
           return new TGMessageText(context, msg, nonNull((TdApi.MessageText) content), null);
@@ -8498,6 +8529,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
           .setSticker(nextSetReactionAnimation.reaction.staticCenterAnimationSicker(), false)
           .setAnimationEndListener(this::onQuickReactionAnimationFinish)
+          .setRepaintingColorIds(ColorId.text, ColorId.text)
           .setAnimatedPosition(
             new Point(startX, startY),
             new Point(finishX, finishY),
@@ -8515,6 +8547,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
           .setSticker(nextSetReactionAnimation.reaction.staticCenterAnimationSicker(), false)
           .setAnimationEndListener(this::onQuickReactionAnimationFinish)
+          .setRepaintingColorIds(ColorId.text, ColorId.text)
           .setAnimatedPosition(
             new Point(startX, startY),
             new Point(finishX, finishY),
@@ -8636,6 +8669,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       context().reactionsOverlayManager().addOverlay(
         new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
           .setSticker(overlaySticker, true)
+          .setRepaintingColorIds(ColorId.text, ColorId.text)
           .setUseDefaultSprayAnimation(tgReaction.isCustom())
           .setEmojiStatusEffect(tgReaction.isCustom() ? tgReaction.newCenterAnimationSicker() : null)
           .setPosition(new Point(bubbleX, bubbleY), Screen.dp(90))
@@ -9189,5 +9223,32 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
 
     return null;
+  }
+
+  /* * */
+
+  public static @EmojiMessageContentType int getEmojiMessageContentType (TdApi.MessageContent content) {
+    final boolean allowAnimatedEmoji = !Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI);
+    final boolean allowNonBubbleEmoji = Settings.instance().useBigEmoji();
+    return getEmojiMessageContentType(content, allowAnimatedEmoji, allowNonBubbleEmoji);
+  }
+
+  public static @EmojiMessageContentType int getEmojiMessageContentType (TdApi.MessageContent content, boolean allowAnimatedEmoji, boolean allowNonBubbleEmoji) {
+    if (content == null) {
+      return EmojiMessageContentType.NOT_EMOJI;
+    }
+
+    if (content.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
+      if (allowAnimatedEmoji && TD.isStickerFromAnimatedEmojiPack(content)) {
+        return EmojiMessageContentType.ANIMATED_EMOJI;
+      } else if (allowNonBubbleEmoji) {
+        return EmojiMessageContentType.NON_BUBBLE_EMOJI;
+      }
+    } else if (content.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
+      if (allowNonBubbleEmoji && NonBubbleEmojiLayout.isValidEmojiText(((TdApi.MessageText) content).text)) {
+        return EmojiMessageContentType.NON_BUBBLE_EMOJI;
+      }
+    }
+    return EmojiMessageContentType.NOT_EMOJI;
   }
 }

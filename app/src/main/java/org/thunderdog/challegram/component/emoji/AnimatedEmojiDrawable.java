@@ -21,6 +21,7 @@ import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 
+import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -31,6 +32,7 @@ import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.tool.Drawables;
 
 import me.vkryl.core.lambda.Destroyable;
@@ -111,6 +113,28 @@ public class AnimatedEmojiDrawable extends Drawable implements Destroyable {
     imageReceiver.setAlpha(i / 255f);
     if (drawable != null) {
       drawable.setAlpha(i);
+    }
+  }
+
+  public void setThemedPorterDuffColorId (@PorterDuffColorId int colorId) {
+    gifReceiver.setThemedPorterDuffColorId(colorId);
+    imageReceiver.setThemedPorterDuffColorId(colorId);
+    if (drawable != null) {
+      drawable.setColorFilter(imageReceiver.getBitmapPaint().getColorFilter());
+    }
+  }
+  public void setPorterDuffColorFilter (@ColorInt int color) {
+    gifReceiver.setPorterDuffColorFilter(color);
+    imageReceiver.setPorterDuffColorFilter(color);
+    if (drawable != null) {
+      drawable.setColorFilter(imageReceiver.getBitmapPaint().getColorFilter());
+    }
+  }
+  public void disablePorterDuffColorFilter () {
+    gifReceiver.disablePorterDuffColorFilter();
+    imageReceiver.disablePorterDuffColorFilter();
+    if (drawable != null) {
+      drawable.setColorFilter(null);
     }
   }
 

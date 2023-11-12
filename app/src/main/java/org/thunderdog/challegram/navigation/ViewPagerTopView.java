@@ -884,7 +884,9 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
               Drawables.draw(c, drawable, cx + horizontalPadding, viewHeight / 2 - drawable.getMinimumHeight() / 2, Paints.getPorterDuffPaint(color));
               item.counter.draw(c, cx + itemWidth - horizontalPadding - item.counter.getWidth() / 2f, viewHeight / 2f, Gravity.CENTER, textAlpha, backgroundAlpha, imageAlpha, item.provider, ColorId.NONE);
             } else {
-              item.counter.draw(c, cx + itemWidth / 2f, viewHeight / 2f, Gravity.CENTER, textAlpha, backgroundAlpha, imageAlpha, item.provider, 0);
+              float counterWidth = item.counter.getWidth();
+              float addX = -Math.min((itemWidth - counterWidth) / 2f + item.translationX, 0);
+              item.counter.draw(c, cx + itemWidth / 2f + addX, viewHeight / 2f, Gravity.CENTER, textAlpha, backgroundAlpha, imageAlpha, item.provider, 0);
             }
           } else if (item.ellipsizedStringLayout != null) {
             int stringX;
