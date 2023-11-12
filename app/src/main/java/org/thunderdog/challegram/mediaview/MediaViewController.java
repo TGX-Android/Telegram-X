@@ -225,7 +225,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     private long receiverChatId, messageThreadId;
 
-    private boolean areOnlyScheduled, deleteOnExit;
+    private boolean areOnlyScheduled, deleteOnExit, isProfilePhotoEditor;
 
     public Args (ViewController<?> parentController, int mode, MediaViewDelegate delegate, MediaSelectDelegate selectDelegate, MediaSendDelegate sendDelegate, MediaStack stack) {
       this.parentController = parentController;
@@ -242,6 +242,17 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     public Args setOnlyScheduled (boolean onlyScheduled) {
       this.areOnlyScheduled = onlyScheduled;
+      return this;
+    }
+
+    public Args setIsProfilePhotoEditor (boolean isProfilePhotoEditor) {
+      if (mode != MODE_GALLERY) {
+        throw new IllegalStateException();
+      }
+      this.isProfilePhotoEditor = isProfilePhotoEditor;
+      if (stack != null && stack.getCurrent() != null) {
+        this.stack.getCurrent().cropToSquare();
+      }
       return this;
     }
 
@@ -4907,6 +4918,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     switch (mode) {
       case MODE_GALLERY: {
+        final boolean inProfilePhotoEditMode = inProfilePhotoEditMode();
+
         TdApi.Chat chat = getArgumentsStrict().receiverChatId != 0 ? tdlib.chat(getArgumentsStrict().receiverChatId) : null;
 
         mediaView.setOffsets(0, 0, 0, 0, 0); // Screen.dp(56f)
@@ -4923,7 +4936,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
         sendButton = new EditButton(context);
         sendButton.setId(R.id.btn_send);
-        sendButton.setIcon(R.drawable.deproko_baseline_send_24, false, false);
+        sendButton.setIcon(inProfilePhotoEditMode ?
+          R.drawable.baseline_image_24 :
+          R.drawable.deproko_baseline_send_24, false, false);
         sendButton.setOnClickListener(this);
         sendButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(56f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT));
         sendButton.setBackgroundResource(R.drawable.bg_btn_header_light);
@@ -5209,10 +5224,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         captionWrapView.addView(captionView);
         captionWrapView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
 
-        bottomWrap.addView(captionWrapView);
-
-        bottomWrap.addView(captionDoneButton);
-        bottomWrap.addView(captionEmojiButton);
+        if (!inProfilePhotoEditMode) {
+          bottomWrap.addView(captionWrapView);
+          bottomWrap.addView(captionDoneButton);
+          bottomWrap.addView(captionEmojiButton);
+        }
 
         videoSliderView = new VideoControlView(context);
         videoSliderView.setSliderListener(this);
@@ -5320,7 +5336,6 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         checkView.setLayoutParams(fp);
         checkView.setOnClickListener(this);
         checkView.forceSetChecked(isCurrentItemSelected());
-        contentView.addView(checkView);
 
         fp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(30f), Gravity.RIGHT);
         fp.rightMargin = Screen.dp(78f);
@@ -5334,9 +5349,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         int count = getSelectedMediaCount();
         counterView.initCounter(Math.max(count, 1), false);
         forceCounterFactor(count == 0 ? 0f : 1f);
-        contentView.addView(counterView);
 
-        if (chat != null) {
+        if (!inProfilePhotoEditMode) {
+          contentView.addView(checkView);
+          contentView.addView(counterView);
+        }
+
+        if (chat != null || inProfilePhotoEditMode) {
           fp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.getStatusBarHeight());
           if (HeaderView.getTopOffset() > 0) {
             fp.leftMargin = Screen.dp(8f);
@@ -5357,7 +5376,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
           ImageView imageView = new ImageView(context);
           imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-          imageView.setImageResource(R.drawable.baseline_arrow_upward_18);
+          imageView.setImageResource(inProfilePhotoEditMode ?
+            R.drawable.dot_baseline_acc_personal_18 :
+            R.drawable.baseline_arrow_upward_18);
           imageView.setColorFilter(0xffffffff);
           imageView.setAlpha((float) 0xaa / (float) 0xff);
           imageView.setLayoutParams(lp);
@@ -5372,7 +5393,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           textView.setEllipsize(TextUtils.TruncateAt.END);
           textView.setTypeface(Fonts.getRobotoMedium());
           textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13f);
-          textView.setText(tdlib.chatTitle(chat));
+          textView.setText(inProfilePhotoEditMode ?
+            Lang.getString(R.string.ProfilePhoto) :
+            tdlib.chatTitle(chat));
           textView.setLayoutParams(lp);
           receiverView.addView(textView);
 
@@ -5544,6 +5567,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
 
     return contentView;
+  }
+
+  private boolean inProfilePhotoEditMode () {
+    return getArgumentsStrict().isProfilePhotoEditor;
   }
 
   private int controlsMargin;
@@ -6454,6 +6481,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       if (!inCrop) {
         prepareSectionToHide(SECTION_CROP);
         mediaView.setVisibility(View.VISIBLE);
+      } else if (inProfilePhotoEditMode()) {
+        setCropProportion(1, 1);
       }
       cropAnimator.setDuration(inCrop ? (currentCropState.isEmpty() ? CROP_OUT_DURATION : CROP_IN_DURATION) : 120l);
       cropAnimator.setValue(inCrop, true);
@@ -6614,6 +6643,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       cropLayout.addView(cropTargetView);
 
       cropAreaView = new CropAreaView(context());
+      cropAreaView.setProfilePhotoMode(inProfilePhotoEditMode());
       cropAreaView.setRectChangeListener((left, top, right, bottom) -> {
         if (inCrop) {
           currentCropState.setRect(left, top, right, bottom);
@@ -7454,7 +7484,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       sendButton.setIcon(R.drawable.baseline_check_24, true, false);
     } else {
       backButton.setIcon(R.drawable.baseline_arrow_back_24, true, false);
-      sendButton.setIcon(R.drawable.deproko_baseline_send_24, true, false);
+      sendButton.setIcon(inProfilePhotoEditMode() ?
+        R.drawable.baseline_image_24 :
+        R.drawable.deproko_baseline_send_24, true, false);
     }
   }
 
@@ -7905,7 +7937,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     } else if (viewId == R.id.btn_rotate) {
       rotateBy90Degrees();
     } else if (viewId == R.id.btn_proportion) {
-      if (allowDataChanges() && currentSection == SECTION_CROP) {
+      if (allowDataChanges() && currentSection == SECTION_CROP && !inProfilePhotoEditMode()) {
         IntList ids = new IntList(PROPORTION_MODES.length + 2);
         StringList strings = new StringList(PROPORTION_MODES.length + 2);
         IntList icons = new IntList(PROPORTION_MODES.length + 2);

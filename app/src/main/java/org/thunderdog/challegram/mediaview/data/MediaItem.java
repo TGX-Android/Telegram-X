@@ -1092,6 +1092,24 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     return sourceGalleryFile != null ? sourceGalleryFile.getCropState() : null;
   }
 
+  public void cropToSquare () {
+    if (width == 0 || height == 0) {
+      return;
+    }
+
+    CropState cropState = getCropState();
+    if (cropState == null) {
+      cropState = new CropState();
+    }
+
+    int size = Math.min(width, height);
+    double offsetH = ((double) (width - size) / width) / 2;
+    double offsetV = ((double) (height - size) / height) / 2;
+
+    cropState.setRect(offsetH, offsetV, 1f - offsetH, 1f - offsetV);
+    setCropState(cropState);
+  }
+
   public void setCropState (CropState state) {
     sourceGalleryFile.setCropState(state);
     if (filteredFile != null) {

@@ -1452,7 +1452,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
       MediaItem item = new MediaItem(context, tdlib, file);
       stack.set(item);
       MessagesController m = findOutputController();
-      MediaViewController.Args args = new MediaViewController.Args(CameraController.this, MediaViewController.MODE_GALLERY, new MediaViewDelegate() {
+      MediaViewController.Args args = MediaViewController.Args.fromGallery(CameraController.this, new MediaViewDelegate() {
         @Override
         public MediaViewThumbLocation getTargetLocation (int indexInStack, MediaItem item) {
           MediaViewThumbLocation location = new MediaViewThumbLocation(0, 0, contentView.getMeasuredWidth(), contentView.getMeasuredHeight());
@@ -1507,7 +1507,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
           ImageGalleryFile galleryFile = (ImageGalleryFile) images.get(0);
           return onSendMedia(galleryFile, options, disableMarkdown, asFiles, hasSpoiler);
         }
-      }, stack).setOnlyScheduled(m != null && m.areScheduledOnly());
+      }, stack, m != null && m.areScheduledOnly());
       if (m != null) {
         args.setReceiverChatId(m.getChatId());
       }
