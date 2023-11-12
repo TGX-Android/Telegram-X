@@ -10593,6 +10593,20 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return null;
   }
 
+  public CharSequence getSlowModeRestrictionText (long chatId) {
+    final int timeToSend = (int) cache().getSlowModeDelayExpiresIn(ChatId.toSupergroupId(chatId), TimeUnit.SECONDS);
+    if (timeToSend == 0) {
+      return null;
+    }
+
+    final int minutes = timeToSend / 60;
+    final int seconds = timeToSend % 60;
+
+    return (minutes > 0) ?
+      Lang.plural(R.string.xSlowModeRestrictionMinutes, minutes):
+      Lang.plural(R.string.xSlowModeRestrictionSeconds, seconds);
+  }
+
   public CharSequence getRestrictionText (TdApi.Chat chat, TdApi.Message message) {
     if (message != null) {
       switch (message.content.getConstructor()) {

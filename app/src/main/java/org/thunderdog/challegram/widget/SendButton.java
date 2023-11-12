@@ -21,33 +21,48 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
+import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.util.text.Counter;
+import org.thunderdog.challegram.util.text.TextColorSet;
+
+import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.lambda.CancellableRunnable;
+import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.td.ChatId;
 
 public class SendButton extends View implements FactorAnimator.Target, TooltipOverlayView.LocationProvider {
 
   private static Paint strokePaint;
   private final Drawable sendIcon;
+  private final Drawable sendIconBg;
 
   public SendButton (Context context, int sendIconRes) {
     super(context);
     sendIcon = Drawables.get(getResources(), sendIconRes);
+    sendIconBg = Drawables.get(getResources(), sendIconRes);
     if (strokePaint == null) {
       strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
       strokePaint.setStyle(Paint.Style.STROKE);
@@ -107,6 +122,7 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
     if (sendScale > 0f) {
       if (editFactor != 1f) {
         final Paint paint = Paints.getSendButtonPaint();
+        final Paint paintBg = PorterDuffPaint.get(ColorId.iconLight);
         final int sourceAlpha = Color.alpha(Theme.chatSendButtonColor());
         final boolean saved = editFactor != 0f || sendScale != 1f;
         if (saved) {
@@ -114,6 +130,7 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
           final float scale = Config.DEFAULT_ICON_SWITCH_SCALE + (1f - Config.DEFAULT_ICON_SWITCH_SCALE) * (1f - editFactor) * sendScale;
           c.scale(scale, scale, cx, cy);
           paint.setAlpha((int) ((float) sourceAlpha * (1f - editFactor) * sendScale));
+          paintBg.setAlpha((int) ((float) sourceAlpha * (1f - editFactor) * sendScale));
         }
         boolean rtl = Lang.rtl();
         if (rtl) {
@@ -121,9 +138,30 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
             c.save();
           c.scale(-1f, 1f, cx, cy);
         }
-        Drawables.draw(c, sendIcon, cx - sendIcon.getMinimumWidth() / 2, cy - sendIcon.getMinimumHeight() / 2, paint);
+
+        final int iconW = sendIcon.getMinimumWidth();
+        final int iconX = cx - iconW / 2;
+        final int iconY = cy - sendIcon.getMinimumHeight() / 2;
+
+        final float slowModeDelayProgress = slowModeCounterController != null ?
+          slowModeCounterController.getSlowModeDelayProgress() : 1f;
+
+        if (slowModeDelayProgress == 1f) {
+          Drawables.draw(c, sendIcon, iconX, iconY, paint);
+        } else {
+          int s = Views.save(c);
+          c.clipRect(iconW * slowModeDelayProgress + iconX, 0, getMeasuredWidth(), getMeasuredHeight());
+          Drawables.draw(c, sendIconBg, iconX, iconY, paintBg);
+          Views.restore(c, s);
+          s = Views.save(c);
+          c.clipRect(0, 0, iconW * slowModeDelayProgress + iconX, getMeasuredHeight());
+          Drawables.draw(c, sendIconBg, iconX, iconY, paint);
+          Views.restore(c, s);
+        }
+
         if (saved) {
           paint.setAlpha(sourceAlpha);
+          paintBg.setAlpha(sourceAlpha);
           c.restore();
         } else if (rtl) {
           c.restore();
@@ -289,6 +327,10 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
         c.restore();
       }
     }
+
+    if (slowModeCounterController != null) {
+      slowModeCounterController.counter.draw(c, cx + Screen.dp(5), cy + Screen.dp(10f), Gravity.CENTER, 1f);
+    }
   }
 
   public void forceState (boolean inEditMode, boolean isActive) {
@@ -366,6 +408,152 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
         animateInlineProgress();
         break;
       }
+    }
+  }
+
+  private SlowModeCounterController slowModeCounterController;
+
+  public SlowModeCounterController getSlowModeCounterController (Tdlib tdlib) {
+    if (slowModeCounterController == null) {
+      slowModeCounterController = new SlowModeCounterController(tdlib, this);
+    }
+    return slowModeCounterController;
+  }
+
+  public static class SlowModeCounterController implements TdlibCache.SupergroupDataChangeListener, Destroyable {
+    public final Counter counter;
+    private final Tdlib tdlib;
+    private final View view;
+    private long chatId;
+
+    public SlowModeCounterController (Tdlib tdlib, View v) {
+      this.tdlib = tdlib;
+      this.view = v;
+      this.counter = new Counter.Builder()
+        .callback((c, s) -> view.invalidate())
+        .textSize(11f)
+        .colorSet(new TextColorSet() {
+          @Override
+          public int defaultTextColor () {
+            return Theme.getColor(ColorId.textLight);
+          }
+
+          @Override
+          public int backgroundColor (boolean isPressed) {
+            return Theme.getColor(ColorId.filling);
+          }
+        })
+        .build();
+    }
+
+    public void setCurrentChat (long chatId) {
+      if (this.chatId == chatId) {
+        return;
+      }
+
+      stopSlowModeTimerUpdates();
+      final long oldChatId = this.chatId;
+      this.chatId = chatId;
+
+      if (oldChatId != 0) {
+        final long supergroupId = ChatId.toSupergroupId(oldChatId);
+        if (supergroupId != 0) {
+          tdlib.cache().unsubscribeFromSupergroupUpdates(supergroupId, this);
+        }
+      }
+
+      if (chatId != 0) {
+        final long supergroupId = ChatId.toSupergroupId(chatId);
+        if (supergroupId != 0) {
+          tdlib.cache().subscribeToSupergroupUpdates(supergroupId, this);
+        }
+      }
+      updateSlowModeTimer(false);
+    }
+
+    public float getSlowModeDelayProgress () {
+      return slowModeDelayProgress;
+    }
+
+    public void updateSlowModeTimer (boolean animated) {
+      if (!tdlib.isSupergroup(chatId)) {
+        setSlowModeTimer(0, 0, animated);
+        return;
+      }
+
+      final TdApi.SupergroupFullInfo info = tdlib.cache().supergroupFull(ChatId.toSupergroupId(chatId));
+      if (info == null) {
+        setSlowModeTimer(0, 0, animated);
+        return;
+      }
+
+      final long slowModeDelayExpiresIn = tdlib.cache().getSlowModeDelayExpiresIn(ChatId.toSupergroupId(chatId), TimeUnit.SECONDS);
+      setSlowModeTimer(slowModeDelayExpiresIn, info.slowModeDelay, animated);
+
+      if (slowModeDelayExpiresIn > 0) {
+        startSlowModeTimerUpdates();
+      }
+    }
+
+    private CancellableRunnable slowModeTimerUpdateRunnable;
+
+    private void startSlowModeTimerUpdates () {
+      stopSlowModeTimerUpdates();
+      UI.post(slowModeTimerUpdateRunnable = new CancellableRunnable() {
+        @Override
+        public void act () {
+          updateSlowModeTimer(true);
+        }
+      }, 500);
+    }
+
+    private void stopSlowModeTimerUpdates () {
+      if (slowModeTimerUpdateRunnable != null) {
+        slowModeTimerUpdateRunnable.cancel();
+        slowModeTimerUpdateRunnable = null;
+      }
+    }
+
+    private float slowModeDelayProgress = 1f;
+
+    private void setSlowModeTimer (long seconds, long slowModeDelaySeconds, boolean animated) {
+      this.slowModeDelayProgress = slowModeDelaySeconds == 0 ? 1f:
+        ((float) Math.max(slowModeDelaySeconds - seconds, 0)) / slowModeDelaySeconds;
+
+      this.counter.setCount(seconds, false, formatElapsedTime((int) seconds), animated);
+      this.view.invalidate();
+    }
+
+    public static String formatElapsedTime (int seconds) {
+      StringBuilder sb = new StringBuilder(5);
+
+      int minutes = seconds / 60;
+      int remainingSeconds = seconds % 60;
+
+      if (minutes > 0) {
+        sb.append(minutes);
+        sb.append(":");
+        if (remainingSeconds < 10) {
+          sb.append(0);
+        }
+      }
+      sb.append(remainingSeconds);
+
+      return sb.toString();
+    }
+
+    @Override
+    public void onSupergroupFullUpdated (long supergroupId, TdApi.SupergroupFullInfo newSupergroupFull) {
+      UI.post(() -> {
+        if (supergroupId == ChatId.toSupergroupId(chatId)) {
+          updateSlowModeTimer(true);
+        }
+      });
+    }
+
+    @Override
+    public void performDestroy () {
+      setCurrentChat(0);
     }
   }
 }

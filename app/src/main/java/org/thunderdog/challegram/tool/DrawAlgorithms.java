@@ -434,9 +434,10 @@ public class DrawAlgorithms {
     scale = .6f + .4f * scale;
     final boolean needScale = scale != 1f;
 
+    final float drawRectHeight = Screen.dp(textSize - 2f);
     final float radius, addRadius;
     if (needBackground) {
-      radius = Screen.dp(textSize - 2f);
+      radius = drawRectHeight;
       addRadius = Screen.dp(1.5f);
     } else {
       radius = addRadius = 0f;
@@ -469,7 +470,7 @@ public class DrawAlgorithms {
     }
 
     if (outputDrawRect != null) {
-      outputDrawRect.set(rectF.left, rectF.top - drawableWidth / 2, rectF.right, rectF.bottom + drawableWidth / 2);
+      outputDrawRect.set(rectF.left, cy - drawRectHeight, rectF.right, cy + drawRectHeight);
       // c.drawRect(outputDrawRect, Paints.strokeSmallPaint(0xFF00FF00));
     }
 

@@ -19,16 +19,19 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.DrawableRes;
 
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.widget.SendButton;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
@@ -345,5 +348,18 @@ public class EditButton extends View implements FactorAnimator.Target {
 
       c.drawCircle(centerX, getMeasuredHeight() - Screen.dp(9.5f), Screen.dp(2f), Paints.fillingPaint(color));
     }
+
+    if (slowModeCounterController != null) {
+      slowModeCounterController.counter.draw(c, centerX + Screen.dp(5), centerY + Screen.dp(10f), Gravity.CENTER, 1f);
+    }
+  }
+
+  private SendButton.SlowModeCounterController slowModeCounterController;
+
+  public SendButton.SlowModeCounterController getSlowModeCounterController (Tdlib tdlib) {
+    if (slowModeCounterController == null) {
+      slowModeCounterController = new SendButton.SlowModeCounterController(tdlib, this);
+    }
+    return slowModeCounterController;
   }
 }

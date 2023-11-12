@@ -4927,6 +4927,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         sendButton.setOnClickListener(this);
         sendButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(56f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT));
         sendButton.setBackgroundResource(R.drawable.bg_btn_header_light);
+        if (selectDelegate != null) {
+          sendButton.getSlowModeCounterController(tdlib).setCurrentChat(selectDelegate.getOutputChatId());
+        }
         editWrap.addView(sendButton);
 
         if (chat != null && chat.messageSenderId != null) {
@@ -8171,6 +8174,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       return;
     }
 
+    if (showSlowModeRestriction(sendButton)) {
+      return;
+    }
+
     if (initialSendOptions.schedulingState == null && getArgumentsStrict().areOnlyScheduled) {
       tdlib.ui().showScheduleOptions(this, getOutputChatId(), false, (modifiedSendOptions, disableMarkdown1) -> {
         send(view, modifiedSendOptions, disableMarkdown, asFiles);
@@ -8542,5 +8549,19 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   public @DrawableRes int getTargetIcon () {
     return (textInputHasSelection || (textFormattingVisible && emojiShown)) ? R.drawable.baseline_format_text_24 : R.drawable.deproko_baseline_insert_emoticon_26;
+  }
+
+  public boolean showSlowModeRestriction (View v) {
+    if (selectDelegate == null) {
+      return false;
+    }
+
+    CharSequence restriction = tdlib().getSlowModeRestrictionText(selectDelegate.getOutputChatId());
+    if (restriction != null) {
+      context().tooltipManager().builder(v).show(tdlib, restriction).hideDelayed();
+      return true;
+    }
+
+    return false;
   }
 }

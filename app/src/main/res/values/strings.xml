@@ -176,6 +176,11 @@
   <string name="xWeeksRelative_one">%1$s week</string>
   <string name="xWeeksRelative_other">%1$s weeks</string>
 
+  <string name="xSlowModeRestrictionSeconds_one">Slow mode is active. You can send the next message in %1$s second</string>
+  <string name="xSlowModeRestrictionSeconds_other">Slow mode is active. You can send the next message in %1$s seconds</string>
+  <string name="xSlowModeRestrictionMinutes_one">Slow mode is active. You can send the next message in %1$s minute</string>
+  <string name="xSlowModeRestrictionMinutes_other">Slow mode is active. You can send the next message in %1$s minutes</string>
+
   <string name="inXHours_one">in %1$s hour</string>
   <string name="inXHours_other">in %1$s hours</string>
   <string name="xChats_one">%1$s chat</string>

@@ -2673,6 +2673,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       clearSelectedMessageIds();
     }
 
+    if (sendButton != null) {
+      sendButton.getSlowModeCounterController(tdlib).setCurrentChat(getChatId());
+    }
     clearSwitchPmButton();
     clearReply();
 
@@ -3012,6 +3015,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void updateBottomBar (boolean isUpdate) {
     setInputBlockFlag(FLAG_INPUT_TEXT_DISABLED, !tdlib.canSendBasicMessage(chat));
+    if (sendButton != null) {
+      sendButton.getSlowModeCounterController(tdlib).updateSlowModeTimer(isUpdate);
+    }
+
     if (isUpdate) {
       updateInputHint();
     }
@@ -4116,6 +4123,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (reactionsButton != null) {
       reactionsButton.performDestroy();
+    }
+
+    if (sendButton != null) {
+      sendButton.getSlowModeCounterController(tdlib).performDestroy();
     }
 
     // messagesView.clear();
@@ -8326,7 +8337,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private boolean showGifRestriction (View view) {
-    return showRestriction(view, RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil);
+    return showSlowModeRestriction(view) || showRestriction(view, RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil);
   }
 
   public boolean showPhotoVideoRestriction (View view) { // TODO separate photos & videos
@@ -8339,6 +8350,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (photosStatus == null && videosStatus == null) {
       return false;
     }
+
+    if (showSlowModeRestriction(view)) {
+      return true;
+    }
+
     if (videosStatus == null || (videosStatus.isGlobal() && photosStatus != null && !photosStatus.isGlobal())) {
       // photo
       return showRestriction(view, RightId.SEND_PHOTOS, R.string.ChatDisabledPhoto, R.string.ChatRestrictedPhoto, R.string.ChatRestrictedPhotoUntil);
@@ -8353,6 +8369,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public boolean showRestriction (View view, @RightId int rightId) {
     CharSequence text = tdlib.getDefaultRestrictionText(chat, rightId);
     return showRestriction(view, text);
+  }
+
+  public boolean showSlowModeRestriction (View v) {
+    CharSequence restriction = tdlib().getSlowModeRestrictionText(getChatId());
+    if (restriction != null) {
+      showRestriction(v, restriction);
+      return true;
+    }
+
+    return false;
   }
 
   public boolean showRestriction (View view, CharSequence restrictionText) {
@@ -8375,7 +8401,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private boolean sendContent (View view, @RightId int rightId, int defaultRes, int specificRes, int specificUntilRes, Future<TdApi.MessageReplyTo> replyTo, TdApi.MessageSendOptions initialSendOptions, Future<TdApi.InputMessageContent> content) {
-    if (showRestriction(view, rightId, defaultRes, specificRes, specificUntilRes))
+    if (showSlowModeRestriction(view) || showRestriction(view, rightId, defaultRes, specificRes, specificUntilRes))
       return false;
     pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
       tdlib.sendMessage(chat.id, getMessageThreadId(), replyTo != null ? replyTo.getValue() : null, Td.newSendOptions(modifiedSendOptions, obtainSilentMode()), content.getValue(), null);
@@ -8931,6 +8957,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
 
+    if (showSlowModeRestriction(sendButton != null ? sendButton : inputView)) {
+      return;
+    }
+
     long chatId = getChatId();
     long messageThreadId = getMessageThreadId();
     final @Nullable TdApi.MessageReplyTo replyTo = allowReply ? (clearInput ? getCurrentReplyId() : obtainReplyTo()) : null;
@@ -9110,7 +9140,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void sendMusic (View view, List<MediaBottomFilesController.MusicEntry> musicFiles, boolean needGroupMedia, boolean allowReply, TdApi.MessageSendOptions initialSendOptions) {
-    if (!showRestriction(view, RightId.SEND_AUDIO)) {
+    if (!showSlowModeRestriction(view) && !showRestriction(view, RightId.SEND_AUDIO)) {
       TdApi.InputMessageContent[] content = new TdApi.InputMessageContent[musicFiles.size()];
       for (int i = 0; i < content.length; i++) {
         MediaBottomFilesController.MusicEntry musicFile = musicFiles.get(i);
@@ -9125,7 +9155,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean sendRecord (View view, final TGRecord record, boolean allowReply, TdApi.MessageSendOptions initialSendOptions) {
-    if (showRestriction(view, RightId.SEND_VOICE_NOTES)) {
+    if (showSlowModeRestriction(view) || showRestriction(view, RightId.SEND_VOICE_NOTES)) {
       return false;
     }
     final long chatId = chat.id;
@@ -9233,7 +9263,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       case Intents.ACTIVITY_RESULT_VIDEO_CAPTURE: {
         File file = Intents.takeLastOutputMedia();
         boolean isVideo = requestCode == Intents.ACTIVITY_RESULT_VIDEO_CAPTURE;
-        if (showRestriction(mediaButton, isVideo ? RightId.SEND_VIDEOS : RightId.SEND_PHOTOS)) {
+        if (showSlowModeRestriction(mediaButton) || showRestriction(mediaButton, isVideo ? RightId.SEND_VIDEOS : RightId.SEND_PHOTOS)) {
           return;
         }
         if (file != null) {
@@ -9298,7 +9328,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       case Intents.ACTIVITY_RESULT_AUDIO: {
         final Uri path = data.getData();
         if (path == null) break;
-        if (showRestriction(mediaButton, RightId.SEND_AUDIO)) {
+        if (showSlowModeRestriction(mediaButton) || showRestriction(mediaButton, RightId.SEND_AUDIO)) {
           return;
         }
         final String audioPath = U.tryResolveFilePath(path);
@@ -9321,6 +9351,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void sendFiles (View view, final List<String> paths, boolean needGroupMedia, boolean allowReply, TdApi.MessageSendOptions initialSendOptions) {
+    if (showSlowModeRestriction(view)) {
+      return;
+    }
+
     final long chatId = chat.id;
     final boolean isSecretChat = isSecretChat();
     final TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(initialSendOptions, obtainSilentMode());
@@ -9361,7 +9395,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void sendPhotoCompressed (final String path, final @Nullable TdApi.MessageSelfDestructType selfDestructType, final boolean allowReply) {
-    if (showRestriction(mediaButton, RightId.SEND_PHOTOS)) {
+    if (showSlowModeRestriction(mediaButton) || showRestriction(mediaButton, RightId.SEND_PHOTOS)) {
       return;
     }
     if (StringUtils.isEmpty(path)) {

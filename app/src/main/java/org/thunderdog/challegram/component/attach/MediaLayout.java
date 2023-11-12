@@ -84,11 +84,13 @@ import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.widget.AvatarView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
+import org.thunderdog.challegram.widget.SendButton;
 import org.thunderdog.challegram.widget.ShadowView;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.DeviceUtils;
@@ -96,6 +98,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 import me.vkryl.td.TdConstants;
 
@@ -975,6 +978,9 @@ public class MediaLayout extends FrameLayoutFix implements
     if (showKeyboardOnHide && target != null) {
       target.showKeyboard();
     }
+    if (sendButton != null) {
+      sendButton.getSlowModeCounterController(tdlib()).performDestroy();
+    }
     ThemeManager.instance().removeThemeListener(this);
     Lang.removeLanguageListener(this);
     if (target != null) {
@@ -1006,6 +1012,9 @@ public class MediaLayout extends FrameLayoutFix implements
     if (target != null && target.areScheduledOnly()) {
       tdlib().ui().showScheduleOptions(target, getTargetChatId(), false, sendCallback, null, null);
     } else {
+      if (showSlowModeRestriction(sendButton)) {
+        return;
+      }
       sendCallback.onSendRequested(Td.newSendOptions(), false);
     }
   }
@@ -1275,7 +1284,7 @@ public class MediaLayout extends FrameLayoutFix implements
   // Counter
 
   private CounterHeaderView counterView;
-  private ImageView sendButton;
+  private SendButton sendButton;
   private HapticMenuHelper sendMenu;
   private BackHeaderButton closeButton;
   private TextView counterHintView;
@@ -1347,16 +1356,14 @@ public class MediaLayout extends FrameLayoutFix implements
       groupMediaFactor = needGroupMedia ? 1f : 0f;
       bottomBar.addView(counterHintView);
 
-      sendButton = new ImageView(getContext()) {
+      sendButton = new SendButton(getContext(), R.drawable.deproko_baseline_send_24) {
         @Override
         public boolean onTouchEvent (MotionEvent e) {
           return isEnabled() && Views.isValid(this) && super.onTouchEvent(e);
         }
       };
       sendButton.setId(R.id.btn_send);
-      sendButton.setScaleType(ImageView.ScaleType.CENTER);
-      sendButton.setImageResource(R.drawable.deproko_baseline_send_24);
-      sendButton.setColorFilter(Theme.chatSendButtonColor());
+      sendButton.getSlowModeCounterController(tdlib()).setCurrentChat(getTargetChatId());
       themeListeners.addThemeFilterListener(sendButton, ColorId.chatSendButton);
       sendButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(55f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT));
       Views.setClickable(sendButton);
@@ -1901,5 +1908,18 @@ public class MediaLayout extends FrameLayoutFix implements
         }
       });
     });
+  }
+
+  public boolean showSlowModeRestriction (View v) {
+    CharSequence restriction = tdlib().getSlowModeRestrictionText(getTargetChatId());
+    if (restriction != null) {
+      parent.context().tooltipManager()
+        .builder(v)
+        .controller(parent)
+        .show(parent.tdlib(), restriction).hideDelayed();
+      return true;
+    }
+
+    return false;
   }
 }
