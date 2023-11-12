@@ -400,7 +400,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   private long initializationTime;
-  private boolean listInitalized, myUserLoaded;
+  private boolean listInitialized, myUserLoaded;
 
   private ItemTouchHelper touchHelper;
   private LiveLocationHelper liveLocationHelper;
@@ -2479,7 +2479,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public boolean needAsynchronousAnimation () {
-    return !listInitalized || !myUserLoaded;
+    return !listInitialized || !myUserLoaded;
   }
 
   @Override
