@@ -51,6 +51,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.MainActivity;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.component.MediaCollectorDelegate;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.dialogs.ChatView;
@@ -1561,6 +1562,52 @@ public class TdlibUi extends Handler {
   }
 
   // Change photo
+
+  public void showProfilePhotoOptions (ViewController<?> context, @Nullable MediaCollectorDelegate delegate) {
+    IntList ids = new IntList(4);
+    StringList strings = new StringList(4);
+    IntList colors = new IntList(4);
+    IntList icons = new IntList(4);
+
+    final TdApi.User user = tdlib.myUser();
+    if (user != null && user.profilePhoto != null) {
+      ids.append(R.id.btn_open);
+      strings.append(R.string.Open);
+      icons.append(R.drawable.baseline_visibility_24);
+      colors.append(ViewController.OPTION_COLOR_NORMAL);
+    }
+
+    ids.append(R.id.btn_changePhotoCamera);
+    strings.append(R.string.ChatCamera);
+    icons.append(R.drawable.baseline_camera_alt_24);
+    colors.append(ViewController.OPTION_COLOR_NORMAL);
+
+    ids.append(R.id.btn_changePhotoGallery);
+    strings.append(R.string.Gallery);
+    icons.append(R.drawable.baseline_image_24);
+    colors.append(ViewController.OPTION_COLOR_NORMAL);
+
+    final long profilePhotoToDelete = user != null && user.profilePhoto != null ? user.profilePhoto.id : 0;
+    if (user != null && user.profilePhoto != null) {
+      ids.append(R.id.btn_changePhotoDelete);
+      strings.append(R.string.Delete);
+      icons.append(R.drawable.baseline_delete_24);
+      colors.append(ViewController.OPTION_COLOR_RED);
+    }
+
+    context.showOptions(null, ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
+      if (id == R.id.btn_open) {
+        MediaViewController.openFromProfile(context, user, delegate);
+      } else if (id == R.id.btn_changePhotoCamera) {
+        UI.openCameraDelayed(context.context());
+      } else if (id == R.id.btn_changePhotoGallery) {
+        UI.openGalleryDelayed(context.context(), false);
+      } else if (id == R.id.btn_changePhotoDelete) {
+        tdlib.client().send(new TdApi.DeleteProfilePhoto(profilePhotoToDelete), tdlib.okHandler());
+      }
+      return true;
+    });
+  }
 
   public void showChangePhotoOptions (ViewController<?> context, boolean canDelete) {
     if (canDelete) {

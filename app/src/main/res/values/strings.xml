@@ -1280,6 +1280,10 @@
   <string name="Today">Today</string>
   <string name="Yesterday">Yesterday</string>
   <string name="PublicGroup">Public group</string>
+  <string name="PublicPhoto">Public Photo</string>
+  <string name="PublicPhotoSet">Photo set</string>
+  <string name="PublicPhotoNoSet">No Photo set</string>
+  <string name="PublicPhotoHint">Public Photo will be visible for everyone who is restricted from seeing your regular profile photo.</string>
   <string name="Group">Group</string>
   <string name="RenameContact">Rename contact</string>
   <string name="Themes">Themes</string>
