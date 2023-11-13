@@ -440,6 +440,10 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
     this.allowMaximizePreview = allowMaximize;
   }
 
+  public void setAllowMaximizePreview (boolean allowMaximizePreview) {
+    this.allowMaximizePreview = allowMaximizePreview;
+  }
+
   public final TdApi.ChatList getPreviewChatList () {
     return chatList;
   }

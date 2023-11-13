@@ -94,6 +94,8 @@
   <item type="id" name="more_btn_addToContacts" />
   <item type="id" name="more_btn_cloudChat" />
   <item type="id" name="more_btn_addToGroup" />
+  <item type="id" name="more_btn_addToFolder" />
+  <item type="id" name="more_btn_removeFromFolder" />
   <item type="id" name="more_btn_edit" />
   <item type="id" name="more_btn_delete" />
   <item type="id" name="more_btn_addMember" />
@@ -240,6 +242,9 @@
   <item type="id" name="controller_chatLinkMembers" />
   <item type="id" name="controller_sponsoredMessagesInfo" />
   <item type="id" name="controller_featureToggles" />
+  <item type="id" name="controller_chatFolders" />
+  <item type="id" name="controller_editChatFolders" />
+  <item type="id" name="controller_selectChats" />
 
   <item type="id" name="separator" />
 
@@ -298,14 +303,23 @@
   <item type="id" name="contact" />
   <item type="id" name="call" />
   <item type="id" name="bucket" />
+  <item type="id" name="chatFolder" />
+  <item type="id" name="recommendedChatFolder" />
+  <item type="id" name="chatType_contact" />
+  <item type="id" name="chatType_nonContact" />
+  <item type="id" name="chatType_group" />
+  <item type="id" name="chatType_channel" />
+  <item type="id" name="chatType_bot" />
+  <item type="id" name="chatType_muted" />
+  <item type="id" name="chatType_read" />
+  <item type="id" name="chatType_archived" />
+
   <item type="id" name="btn_chatTranslate" />
   <item type="id" name="btn_chatTranslateOff" />
-
   <item type="id" name="btn_chatTranslateStyle" />
   <item type="id" name="btn_chatTranslateStylePopup" />
   <item type="id" name="btn_chatTranslateStyleInline" />
   <item type="id" name="btn_chatTranslateStyleNone" />
-
   <item type="id" name="btn_chatDoNotTranslate" />
   <item type="id" name="btn_chatDoNotTranslateAppLang" />
   <item type="id" name="btn_chatDoNotTranslateSelected" />
@@ -320,6 +334,8 @@
   <item type="id" name="btn_unarchiveChat" />
   <item type="id" name="btn_markChatAsRead" />
   <item type="id" name="btn_markChatAsUnread" />
+  <item type="id" name="btn_addChatToFolder" />
+  <item type="id" name="btn_removeChatFromFolder" />
   <item type="id" name="btn_members" />
   <item type="id" name="btn_membersReading" />
   <item type="id" name="btn_membersWriting" />
@@ -1227,6 +1243,8 @@
   <item type="id" name="btn_downloadFile" />
   <item type="id" name="btn_pauseFile" />
 
+  <item type="id" name="btn_experiment" />
+
   <item type="id" name="btn_testingUtils" />
   <item type="id" name="btn_appLogs" />
 
@@ -1240,6 +1258,20 @@
   <item type="id" name="btn_messageUnblockMember" />
 
   <item type="id" name="btn_applyWallpaper" />
+  <item type="id" name="btn_chatFolders" />
+  <item type="id" name="btn_createNewFolder" />
+  <item type="id" name="btn_editFolder" />
+  <item type="id" name="btn_hideFolder" />
+  <item type="id" name="btn_removeFolder" />
+  <item type="id" name="btn_folderIncludeChats" />
+  <item type="id" name="btn_folderExcludeChats" />
+  <item type="id" name="btn_chatFolderStyle" />
+  <item type="id" name="btn_changeFolderIcon" />
+  <item type="id" name="btn_labelOnly" />
+  <item type="id" name="btn_iconOnly" />
+  <item type="id" name="btn_labelAndIcon" />
+  <item type="id" name="btn_countMutedChats" />
+  <item type="id" name="btn_displayFoldersAtTop" />
 
   <!--<item type="id" name="right_readMessages" />
   <item type="id" name="right_sendMessages" />

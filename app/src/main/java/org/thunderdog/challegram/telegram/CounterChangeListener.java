@@ -19,6 +19,6 @@ import androidx.annotation.NonNull;
 import org.drinkless.tdlib.TdApi;
 
 public interface CounterChangeListener {
-  default void onChatCounterChanged (@NonNull TdApi.ChatList chatList, boolean availabilityChanged, int totalCount, int unreadCount, int unreadUnmutedCount) { }
-  default void onMessageCounterChanged (@NonNull TdApi.ChatList chatList, int unreadCount, int unreadUnmutedCount) { }
+  default void onChatCounterChanged (@NonNull TdApi.ChatList chatList, TdlibCounter counter, boolean availabilityChanged, int totalCount, int unreadCount, int unreadUnmutedCount) { }
+  default void onMessageCounterChanged (@NonNull TdApi.ChatList chatList, TdlibCounter counter, int unreadCount, int unreadUnmutedCount) { }
 }

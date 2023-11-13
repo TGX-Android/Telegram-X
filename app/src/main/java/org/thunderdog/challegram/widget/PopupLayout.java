@@ -24,6 +24,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.WindowManager;
 import android.widget.PopupWindow;
 
@@ -908,6 +909,14 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
 
   public void addStatusBar () {
     useStatusBar = true;
+  }
+
+  public static PopupLayout parentOf (View view) {
+    ViewParent parent = view.getParent();
+    while (parent != null && !(parent instanceof PopupLayout)) {
+      parent = parent.getParent();
+    }
+    return (PopupLayout) parent;
   }
 
   // Drawing

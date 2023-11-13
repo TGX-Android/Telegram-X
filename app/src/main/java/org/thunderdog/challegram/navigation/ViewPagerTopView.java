@@ -18,6 +18,8 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
+import android.os.SystemClock;
+import android.text.Layout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -26,8 +28,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 
+import androidx.annotation.Dimension;
 import androidx.annotation.DrawableRes;
+import androidx.annotation.FloatRange;
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.Px;
 
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
@@ -36,7 +43,9 @@ import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.support.RippleSupport;
+import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PropertyId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -46,6 +55,8 @@ import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.Text;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,9 +66,16 @@ import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 
-public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener, View.OnClickListener, View.OnLongClickListener, Destroyable {
+public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener, View.OnClickListener, View.OnLongClickListener, Destroyable, TGLegacyManager.EmojiLoadListener {
+  public static final @Dimension(unit = Dimension.DP) float SELECTION_HEIGHT = 2f;
+  public static final @Dimension(unit = Dimension.DP) float ICON_SIZE = 24f;
+  public static final @Dimension(unit = Dimension.DP) float DEFAULT_ITEM_PADDING = 19f;
+  public static final @Dimension(unit = Dimension.DP) float COMPACT_ITEM_PADDING = 10f;
+  public static final @Dimension(unit = Dimension.DP) float DEFAULT_ITEM_SPACING = 6f;
+  public static final @Dimension(unit = Dimension.DP) float COMPACT_ITEM_SPACING = 4f;
+
   public static class Item {
-    public final String string;
+    public final CharSequence string;
     public final boolean needFakeBold;
     public final @DrawableRes int iconRes;
     public ImageReceiver imageReceiver;
@@ -68,52 +86,48 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     public final DrawableProvider provider;
     public final boolean hidden;
 
-    public Item (String string) {
-      this.string = string;
-      this.needFakeBold = Text.needFakeBold(string);
-      this.iconRes = 0;
-      this.counter = null;
-      this.provider = null;
-      this.hidden = false;
+    public Item (CharSequence string) {
+      this(string, 0, null, null, false);
     }
 
-    public Item (int iconRes) {
-      this.string = null;
-      this.needFakeBold = false;
-      this.iconRes = iconRes;
-      this.counter = null;
-      this.provider =null;
-      this.hidden = false;
+    public Item (@DrawableRes int iconRes) {
+      this(null, iconRes, null, null, false);
+    }
+
+    public Item (@DrawableRes int iconRes, Counter counter) {
+      this(null, iconRes, counter, null, false);
+    }
+
+    public Item (CharSequence string, Counter counter) {
+      this(string, 0, counter, null, false);
+    }
+
+    public Item (CharSequence string, @DrawableRes int iconRes, Counter counter) {
+      this(string, iconRes, counter, null, false);
     }
 
     public Item (Counter counter, DrawableProvider provider, int addWidth) {
-      this.string = null;
-      this.needFakeBold = false;
-      this.iconRes = 0;
-      this.counter = counter;
-      this.provider = provider;
+      this(null, 0, counter, provider, false);
       this.addWidth = addWidth;
-      this.hidden = false;
     }
 
     public Item (TGReaction reaction, Counter counter, DrawableProvider provider, int addWidth) {
-      this.string = null;
-      this.needFakeBold = false;
-      this.iconRes = 0;
-      this.counter = counter;
-      this.provider = provider;
+      this(null, 0, counter, provider, false);
       this.addWidth = addWidth;
       this.reaction = reaction;
-      this.hidden = false;
     }
 
     public Item () {
-      this.string = null;
-      this.needFakeBold = false;
-      this.iconRes = 0;
-      this.counter = null;
-      this.provider = null;
-      this.hidden = true;
+      this(null, 0, null, null, true);
+    }
+
+    private Item (CharSequence string, @DrawableRes int iconRes, Counter counter, DrawableProvider provider, boolean hidden) {
+      this.string = string;
+      this.needFakeBold = string != null && Text.needFakeBold(string);
+      this.iconRes = iconRes;
+      this.counter = counter;
+      this.provider = provider;
+      this.hidden = hidden;
     }
 
     private Drawable icon;
@@ -129,33 +143,43 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       return obj instanceof Item && ((Item) obj).iconRes == iconRes && StringUtils.equalsOrBothEmpty(((Item) obj).string, string) && (((Item) obj).counter == counter);
     }
 
-    private int width;
+    private int width, contentWidth;
     private int addWidth = 0;
+    private int minWidth = 0;
     private int staticWidth = -1;
     private int translationX = 0;
 
-    public void setStaticWidth (int staticWidth) {
+    public void setMinWidth (@Px int minWidth) {
+      this.minWidth = minWidth;
+    }
+
+    public void setStaticWidth (@Px int staticWidth) {
       this.staticWidth = staticWidth;
     }
 
-    public int calculateWidth (TextPaint paint) {
+    public int calculateWidth (TextPaint paint, @Px int horizontalSpacing) {
       final int width;
       if (staticWidth != -1) {
         width = staticWidth;
       } else if (counter != null) {
-        if (imageReceiver != null) {
+        if (string != null) {
+          width = (int) (U.measureEmojiText(string, paint) + counter.getScaledWidth(horizontalSpacing)) + (iconRes != 0 ? Screen.dp(ICON_SIZE) + horizontalSpacing : 0);
+        } else if (imageReceiver != null) {
           width = (int) counter.getWidth() + imageReceiverSize;
+        } else if (iconRes != 0) {
+          width = Screen.dp(ICON_SIZE) + (int) counter.getScaledWidth(horizontalSpacing);
         } else {
-          width = (int) counter.getWidth() + Screen.dp(6f);
+          width = (int) counter.getWidth()/* + Screen.dp(6f) */; // ???
         }
       } else if (string != null) {
-        width = (int) U.measureText(string, paint);
+        width = (int) U.measureEmojiText(string, paint) + (iconRes != 0 ? Screen.dp(ICON_SIZE) + horizontalSpacing : 0);
       } else if (iconRes != 0) {
-        width = Screen.dp(24f) + Screen.dp(6f);
+        width = Screen.dp(ICON_SIZE)/* + Screen.dp(6f)*/; // ???
       } else {
         width = 0;
       }
-      this.width = width + addWidth;
+      this.contentWidth = width + addWidth;
+      this.width = Math.max(contentWidth, minWidth);
       return this.width;
     }
 
@@ -163,40 +187,50 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       this.translationX = translationX;
     }
 
-    private String ellipsizedString;
+    private Layout ellipsizedStringLayout;
     private int actualWidth;
 
     public void trimString (int availWidth, TextPaint paint) {
       if (string != null) {
-        ellipsizedString = TextUtils.ellipsize(string, paint, availWidth, TextUtils.TruncateAt.END).toString();
-        actualWidth = (int) U.measureText(ellipsizedString, paint);
+        CharSequence ellipsizedString = TextUtils.ellipsize(string, paint, availWidth, TextUtils.TruncateAt.END);
+        ellipsizedStringLayout = U.createLayout(ellipsizedString, availWidth, paint);
+        actualWidth = ellipsizedStringLayout.getWidth(); // FIXME counter, icon
       } else {
-        ellipsizedString = null;
+        ellipsizedStringLayout = null;
         actualWidth = width;
       }
     }
 
-    public void untrimString () {
-      ellipsizedString = string;
+    public void untrimString (TextPaint paint) {
+      if (string != null) {
+        ellipsizedStringLayout = U.createLayout(string, (int) Math.ceil(U.measureEmojiText(string, paint)), paint);
+      } else {
+        ellipsizedStringLayout = null;
+      }
       actualWidth = width;
     }
   }
   private List<Item> items;
   private int maxItemWidth;
 
-  private int textPadding;
-  private ComplexReceiver complexReceiver;
+  private @Px int itemPadding;
+  private @Px int itemSpacing;
+  private final ComplexReceiver complexReceiver;
+  private CounterAlphaProvider counterAlphaProvider = DEFAULT_COUNTER_ALPHA_PROVIDER;
 
-  private @ColorId int
-    fromTextColorId = ColorId.NONE,
-    toTextColorId = ColorId.headerText;
-  private @ColorId int selectionColorId;
+  private @ColorId int fromTextColorId = ColorId.NONE, toTextColorId = ColorId.headerText;
+  private @PropertyId int fromTextColorAlphaId = PropertyId.NONE;
+
+  private @ColorId int selectionColorId = ColorId.NONE;
+  private @FloatRange(from = 0.0, to = 1.0) float selectionAlpha = 1f;
 
   public ViewPagerTopView (Context context) {
     super(context);
-    this.textPadding = Screen.dp(19f);
+    this.itemPadding = Screen.dp(DEFAULT_ITEM_PADDING);
+    this.itemSpacing = Screen.dp(DEFAULT_ITEM_SPACING);
     this.complexReceiver = new ComplexReceiver(this);
     setWillNotDraw(false);
+    TGLegacyManager.instance().addEmojiListener(this);
   }
 
   @Override
@@ -210,14 +244,37 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     }
   }
 
-  public void setTextPadding (int textPadding) {
-    this.textPadding = textPadding;
+  public void setItemPadding (@Px int itemPadding) {
+    if (this.itemPadding != itemPadding) {
+      this.itemPadding = itemPadding;
+      this.lastMeasuredWidth = 0;
+      requestLayout();
+    }
+  }
+
+  public void setItemSpacing (@Px int itemSpacing) {
+    if (this.itemSpacing != itemSpacing) {
+      this.itemSpacing = itemSpacing;
+      this.lastMeasuredWidth = 0;
+      requestLayout();
+    }
   }
 
   private boolean fitsParentWidth;
 
   public void setFitsParentWidth (boolean fits) {
     this.fitsParentWidth = fits;
+  }
+
+  private boolean drawSelectionAtTop;
+
+  public void setDrawSelectionAtTop (boolean drawSelectionAtTop) {
+    this.drawSelectionAtTop = drawSelectionAtTop;
+    invalidate();
+  }
+
+  public boolean isDrawSelectionAtTop () {
+    return drawSelectionAtTop;
   }
 
   private OnItemClickListener listener;
@@ -241,7 +298,37 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   private boolean isDark;
 
   public void setUseDarkBackground () {
-    isDark = true;
+    setUseDarkBackground(true);
+  }
+
+  public void setUseDarkBackground (boolean useDark) {
+    if (isDark != useDark) {
+      isDark = useDark;
+      int childCount = getChildCount();
+      for (int index = 0; index < childCount; index++) {
+        View childView = getChildAt(index);
+        if (childView instanceof BackgroundView) {
+          if (useDark) {
+            RippleSupport.setTransparentBlackSelector(childView);
+          } else {
+            RippleSupport.setTransparentWhiteSelector(childView);
+          }
+        }
+      }
+    }
+  }
+
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({SLIDE_OFF_DIRECTION_TOP, SLIDE_OFF_DIRECTION_BOTTOM})
+  public @interface SlideOffDirection { }
+
+  public static final int SLIDE_OFF_DIRECTION_TOP = -1;
+  public static final int SLIDE_OFF_DIRECTION_BOTTOM = 1;
+
+  private @SlideOffDirection int slideOffDirection = SLIDE_OFF_DIRECTION_BOTTOM;
+
+  public void setSlideOffDirection (@SlideOffDirection int slideOffDirection) {
+    this.slideOffDirection = slideOffDirection;
   }
 
   private BackgroundView newBackgroundView (int i) {
@@ -261,6 +348,14 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
 
   @Override
   public boolean onLongClick (View v) {
+    if (listener != null && v instanceof BackgroundView) {
+      BackgroundView backgroundView = (BackgroundView) v;
+      if (backgroundView.inSlideOff()) {
+        return false;
+      }
+      backgroundView.cancelSlideOff();
+      return listener.onPagerItemLongClick(backgroundView.index);
+    }
     return false;
   }
 
@@ -283,16 +378,19 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   }
 
   public void setItemAt (int index, String text) {
+    setItemAt(index, new Item(text));
+  }
+
+  public void setItemAt (int index, Item item) {
     Item oldItem = this.items.get(index);
-    Item item = new Item(text);
     this.items.set(index, item);
     onUpdateItems();
-    totalWidth -= oldItem.width + textPadding * 2;
+    totalWidth -= oldItem.width + itemPadding * 2;
 
     int textColor = Theme.headerTextColor();
     TextPaint paint = Paints.getViewPagerTextPaint(textColor, item.needFakeBold);
-    item.calculateWidth(paint);
-    totalWidth += item.width + textPadding * 2;
+    item.calculateWidth(paint, itemSpacing);
+    totalWidth += item.width + itemPadding * 2;
     maxItemWidth = totalWidth / items.size();
 
     this.lastMeasuredWidth = 0;
@@ -335,8 +433,8 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     int textColor = Theme.headerTextColor();
     for (Item item : items) {
       TextPaint paint = Paints.getViewPagerTextPaint(textColor, item.needFakeBold);
-      item.calculateWidth(paint);
-      totalWidth += item.width + textPadding * 2;
+      item.calculateWidth(paint, itemSpacing);
+      totalWidth += item.width + itemPadding * 2;
       addView(newBackgroundView(i));
       i++;
     }
@@ -348,7 +446,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   }
 
   public void addItemAtIndex (String item, int index) {
-    addItemAtIndex(new Item(item),  index);
+    addItemAtIndex(new Item(item), index);
   }
 
   public void addItem (int item) {
@@ -374,9 +472,9 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     int textColor = Theme.headerTextColor();
     TextPaint paint = Paints.getViewPagerTextPaint(textColor, item.needFakeBold);
 
-    item.calculateWidth(paint);
+    item.calculateWidth(paint, itemSpacing);
     int width = item.width;
-    totalWidth += width + textPadding * 2;
+    totalWidth += width + itemPadding * 2;
     maxItemWidth = totalWidth / items.size();
 
     commonItemWidth = calculateCommonItemWidth(width);
@@ -385,11 +483,11 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       selectionFactor++;
     }
 
-    final int availTextWidth = commonItemWidth - textPadding * 2;
+    final int availTextWidth = commonItemWidth - itemPadding * 2;
     if (!shouldWrapContent() && width < availTextWidth) {
       item.trimString(availTextWidth, paint);
     } else {
-      item.untrimString();
+      item.untrimString(paint);
     }
     addView(newBackgroundView(items.size() - 1));
     invalidate();
@@ -442,10 +540,16 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     }
   }
 
+  public void requestItemLayoutAt (int index) {
+    if (index >= 0 && index < items.size()) {
+      setItemAt(index, items.get(index));
+    }
+  }
+
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     if (shouldWrapContent()) {
-      int totalWidth = textPadding * 2 * items.size() + getTotalWidth();
+      int totalWidth = itemPadding * 2 * items.size() + getTotalWidth();
       super.onMeasure(MeasureSpec.makeMeasureSpec(totalWidth, MeasureSpec.EXACTLY), heightMeasureSpec);
       layout(totalWidth, true);
     } else {
@@ -478,13 +582,14 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     commonItemWidth = calculateCommonItemWidth(width);
     int textColor = Theme.headerTextColor();
 
-    final int availTextWidth = commonItemWidth - textPadding * 2;
+    final int availTextWidth = commonItemWidth - itemPadding * 2;
 
     for (Item item : items) {
+      TextPaint textPaint = Paints.getViewPagerTextPaint(textColor, item.needFakeBold);
       if (!wrapContent && item.width < availTextWidth) {
-        item.trimString(availTextWidth, Paints.getViewPagerTextPaint(textColor, item.needFakeBold));
+        item.trimString(availTextWidth, textPaint);
       } else {
-        item.untrimString();
+        item.untrimString(textPaint);
       }
     }
 
@@ -509,19 +614,19 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       float remainFactor = selectionFactor - (float) ((int) selectionFactor);
       int selectionIndex = MathUtils.clamp((int) selectionFactor, 0, items.size() - 1);
       if (remainFactor == 0f) {
-        selectionWidth = items.get(selectionIndex).actualWidth + textPadding * 2;
+        selectionWidth = items.get(selectionIndex).actualWidth + itemPadding * 2;
       } else {
-        int fromWidth = items.get(selectionIndex).actualWidth + textPadding * 2;
+        int fromWidth = items.get(selectionIndex).actualWidth + itemPadding * 2;
         int nextIndex = MathUtils.clamp((int) selectionFactor + 1, 0, items.size() - 1);
-        int toWidth = items.get(nextIndex).actualWidth + textPadding * 2;
+        int toWidth = items.get(nextIndex).actualWidth + itemPadding * 2;
         selectionWidth = fromWidth + (int) ((float) (toWidth - fromWidth) * remainFactor);
       }
       selectionLeft = 0;
       for (int i = 0; i < (int) selectionFactor; i++) {
-        selectionLeft += items.get(i).actualWidth + textPadding * 2;
+        selectionLeft += items.get(i).actualWidth + itemPadding * 2;
       }
       if (remainFactor != 0f) {
-        selectionLeft += (int) ((float) (items.get((int) selectionFactor).actualWidth + textPadding * 2) * remainFactor);
+        selectionLeft += (int) ((float) (items.get((int) selectionFactor).actualWidth + itemPadding * 2) * remainFactor);
       }
     } else {
       selectionLeft = (int) (selectionFactor * (float) commonItemWidth);
@@ -541,6 +646,12 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     float totalFactor = items.size() > 1 ? selectionFactor / (float) (items.size() - 1) : 0;
     if (callListener && selectionChangeListener != null && (lastCallSelectionLeft != selectionLeft || lastCallSelectionWidth != selectionWidth || lastCallSelectionFactor != totalFactor)) {
       selectionChangeListener.onSelectionChanged(lastCallSelectionLeft = selectionLeft, lastCallSelectionWidth = selectionWidth, items.get(0).actualWidth, items.get(items.size() - 1).actualWidth, lastCallSelectionFactor = totalFactor, !set);
+    }
+  }
+
+  public void updateAnchorPosition (boolean animated) {
+    if (selectionChangeListener != null) {
+      selectionChangeListener.onSelectionChanged(lastCallSelectionLeft, lastCallSelectionWidth, items.get(0).actualWidth, items.get(items.size() - 1).actualWidth, lastCallSelectionFactor, animated);
     }
   }
 
@@ -587,8 +698,13 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   }
 
   public boolean setTextFromToColorId (@ColorId int fromColorId, @ColorId int toColorId) {
-    if (this.fromTextColorId != fromColorId || this.toTextColorId != toColorId) {
+    return setTextFromToColorId(fromColorId, toColorId, PropertyId.NONE);
+  }
+
+  public boolean setTextFromToColorId (@ColorId int fromColorId, @ColorId int toColorId, @PropertyId int fromColorAlphaId) {
+    if (this.fromTextColorId != fromColorId || this.toTextColorId != toColorId || this.fromTextColorAlphaId != fromColorAlphaId) {
       this.fromTextColorId = fromColorId;
+      this.fromTextColorAlphaId = fromColorAlphaId;
       this.toTextColorId = toColorId;
       invalidate();
       return true;
@@ -597,8 +713,13 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   }
 
   public boolean setSelectionColorId (@ColorId int colorId) {
-    if (this.selectionColorId != colorId) {
+    return setSelectionColorId(colorId, 1f);
+  }
+
+  public boolean setSelectionColorId (@ColorId int colorId, @FloatRange(from = 0.0, to = 1.0) float alpha) {
+    if (this.selectionColorId != colorId || this.selectionAlpha != alpha) {
       this.selectionColorId = colorId;
+      this.selectionAlpha = alpha;
       invalidate();
       return true;
     }
@@ -666,14 +787,22 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
 
     if (overlayFactor != 1f) {
       int textToColor = Theme.getColor(toTextColorId);
-      int textFromColor = fromTextColorId != 0 ? Theme.getColor(fromTextColorId) : ColorUtils.alphaColor(Theme.getSubtitleAlpha(), Theme.getColor(ColorId.headerText));
-      int selectionColor = selectionColorId != 0 ? Theme.getColor(selectionColorId) : ColorUtils.alphaColor(.9f, Theme.getColor(ColorId.headerText));
+      int textFromColor = fromTextColorId != ColorId.NONE ?
+        ColorUtils.alphaColor(fromTextColorAlphaId != PropertyId.NONE ? Theme.getProperty(fromTextColorAlphaId) : 1f, Theme.getColor(fromTextColorId)) :
+        ColorUtils.alphaColor(Theme.getSubtitleAlpha(), Theme.getColor(ColorId.headerText));
+      int selectionColor = selectionColorId != ColorId.NONE ?
+        ColorUtils.alphaColor(selectionAlpha, Theme.getColor(selectionColorId)) :
+        ColorUtils.alphaColor(.9f, Theme.getColor(ColorId.headerText));
 
       boolean rtl = Lang.rtl();
 
+      int selectionHeight = Screen.dp(SELECTION_HEIGHT);
       int selectionLeft = rtl ? this.totalWidth - this.selectionLeft - this.selectionWidth : this.selectionLeft;
+      int selectionRight = selectionLeft + this.selectionWidth;
+      int selectionTop = this.drawSelectionAtTop ? 0 : viewHeight - selectionHeight;
+      int selectionBottom = selectionTop + selectionHeight;
 
-      c.drawRect(selectionLeft, viewHeight - Screen.dp(2f), selectionLeft + selectionWidth, viewHeight, Paints.fillingPaint(disabledFactor == 0f ? selectionColor : ColorUtils.fromToArgb(selectionColor, textFromColor, disabledFactor)));
+      c.drawRect(selectionLeft, selectionTop, selectionRight, selectionBottom, Paints.fillingPaint(disabledFactor == 0f ? selectionColor : ColorUtils.fromToArgb(selectionColor, textFromColor, disabledFactor)));
 
       int cx = rtl ? totalWidth : 0;
       int itemIndex = 0;
@@ -707,38 +836,72 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
 
         final int itemWidth;
         if (wrapContent) {
-          itemWidth = item.actualWidth + textPadding * 2;
+          itemWidth = item.actualWidth + itemPadding * 2;
         } else {
           itemWidth = commonItemWidth;
         }
         if (rtl)
           cx -= itemWidth;
         if (!item.hidden) {
+          int contentWidth = Math.min(item.contentWidth, item.actualWidth);
+          int horizontalPadding = Math.max(itemWidth - contentWidth, 0) / 2;
           int color = ColorUtils.fromToArgb(textFromColor, textToColor, factor * (1f - disabledFactor));
           if (item.counter != null) {
             float alphaFactor = 1f - MathUtils.clamp(Math.abs(selectionFactor - i));
-            float imageAlpha = .5f + .5f * alphaFactor;
+            float imageAlpha = counterAlphaProvider.getDrawableAlpha(item.counter, alphaFactor);
             if (items.get(0).hidden) {
               alphaFactor = Math.max(alphaFactor, 1f - MathUtils.clamp(selectionFactor));
               if (i == 1 && selectionFactor < 1) {
                 alphaFactor = 1f;
               }
             }
-            float counterAlpha = .5f + .5f * alphaFactor;
-            if (item.imageReceiver != null) {
+            float textAlpha = counterAlphaProvider.getTextAlpha(item.counter, alphaFactor);
+            float backgroundAlpha = counterAlphaProvider.getBackgroundAlpha(item.counter, alphaFactor);
+            if (item.ellipsizedStringLayout != null) {
+              int stringX;
+              if (item.iconRes != 0) {
+                Drawable drawable = item.getIcon();
+                Drawables.draw(c, drawable, cx + horizontalPadding, viewHeight / 2 - drawable.getMinimumHeight() / 2, Paints.getPorterDuffPaint(color));
+                stringX = cx + horizontalPadding + Screen.dp(ICON_SIZE) + itemSpacing;
+              } else {
+                stringX = cx + horizontalPadding;
+              }
+              int stringY = viewHeight / 2 - item.ellipsizedStringLayout.getHeight() / 2;
+              c.translate(stringX, stringY);
+              item.ellipsizedStringLayout.getPaint().setColor(color);
+              item.ellipsizedStringLayout.draw(c);
+              c.translate(-stringX, -stringY);
+              item.counter.draw(c, cx + itemWidth - horizontalPadding - item.counter.getWidth() / 2f, viewHeight / 2f, Gravity.CENTER, textAlpha, backgroundAlpha, imageAlpha, item.provider, ColorId.NONE);
+            } else if (item.imageReceiver != null) {
               int size = item.imageReceiverSize;
               int imgY = (viewHeight - size) / 2;
               item.imageReceiver.setAlpha(imageAlpha);
               item.imageReceiver.setBounds(cx, imgY, cx + size, imgY + size);
               item.imageReceiver.drawScaled(c, item.imageReceiverScale);
-              item.counter.draw(c, cx + size, viewHeight / 2f, Gravity.LEFT, counterAlpha, item.provider, 0);
+              item.counter.draw(c, cx + size, viewHeight / 2f, Gravity.LEFT, textAlpha, backgroundAlpha, imageAlpha, item.provider, 0);
+            } else if (item.iconRes != 0) {
+              Drawable drawable = item.getIcon();
+              Drawables.draw(c, drawable, cx + horizontalPadding, viewHeight / 2 - drawable.getMinimumHeight() / 2, Paints.getPorterDuffPaint(color));
+              item.counter.draw(c, cx + itemWidth - horizontalPadding - item.counter.getWidth() / 2f, viewHeight / 2f, Gravity.CENTER, textAlpha, backgroundAlpha, imageAlpha, item.provider, ColorId.NONE);
             } else {
               float counterWidth = item.counter.getWidth();
               float addX = -Math.min((itemWidth - counterWidth) / 2f + item.translationX, 0);
-              item.counter.draw(c, cx + itemWidth / 2f + addX, viewHeight / 2f, Gravity.CENTER, counterAlpha, imageAlpha, item.provider, 0);
+              item.counter.draw(c, cx + itemWidth / 2f + addX, viewHeight / 2f, Gravity.CENTER, textAlpha, backgroundAlpha, imageAlpha, item.provider, 0);
             }
-          } else if (item.ellipsizedString != null) {
-            c.drawText(item.ellipsizedString, cx + itemWidth / 2 - item.actualWidth / 2, viewHeight / 2 + Screen.dp(6f), Paints.getViewPagerTextPaint(color, item.needFakeBold));
+          } else if (item.ellipsizedStringLayout != null) {
+            int stringX;
+            if (item.iconRes != 0) {
+              Drawable drawable = item.getIcon();
+              Drawables.draw(c, drawable, cx + horizontalPadding, viewHeight / 2 - drawable.getMinimumHeight() / 2, Paints.getPorterDuffPaint(color));
+              stringX = cx + horizontalPadding + Screen.dp(ICON_SIZE) + itemSpacing;
+            } else {
+              stringX = cx + itemWidth / 2 - item.actualWidth / 2;
+            }
+            int stringY = viewHeight / 2 - item.ellipsizedStringLayout.getHeight() / 2;
+            c.translate(stringX, stringY);
+            item.ellipsizedStringLayout.getPaint().setColor(color);
+            item.ellipsizedStringLayout.draw(c);
+            c.translate(-stringX, -stringY);
           } else if (item.iconRes != 0) {
             Drawable drawable = item.getIcon();
             Drawables.draw(c, drawable, cx + itemWidth / 2 - drawable.getMinimumWidth() / 2, viewHeight / 2 - drawable.getMinimumHeight() / 2, Paints.getPorterDuffPaint(color));
@@ -777,8 +940,30 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     }
   }
 
+  private static final CounterAlphaProvider DEFAULT_COUNTER_ALPHA_PROVIDER = new CounterAlphaProvider() {
+  };
+
+  public interface CounterAlphaProvider {
+    default float getTextAlpha (Counter counter, @FloatRange(from = 0f, to = 1f) float alphaFactor) {
+      return .5f + .5f * alphaFactor;
+    }
+    default float getDrawableAlpha (Counter counter, @FloatRange(from = 0f, to = 1f) float alphaFactor) {
+      return .5f + .5f * alphaFactor;
+    }
+    default float getBackgroundAlpha (Counter counter, @FloatRange(from = 0f, to = 1f) float alphaFactor) {
+      return .5f + .5f * alphaFactor;
+    }
+  }
+
+  public void setCounterAlphaProvider (CounterAlphaProvider counterAlphaProvider) {
+    this.counterAlphaProvider = counterAlphaProvider;
+  }
+
   public interface OnItemClickListener {
     void onPagerItemClick (int index);
+    default boolean onPagerItemLongClick (int index) {
+      return false;
+    }
   }
 
   public interface OnSlideOffListener {
@@ -818,7 +1003,11 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       Views.setClickable(this);
     }
 
-    private boolean inSlideOff, needSlideOff;
+    private long touchDownTime;
+    private float touchDownY;
+    private float touchX;
+    private float touchY;
+    private boolean inSlideOff;
     private ViewParent lockedParent;
 
     @Override
@@ -828,61 +1017,78 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
         return ((View) getParent()).getAlpha() >= 1f && super.onTouchEvent(e);
       }
       super.onTouchEvent(e);
-      if (e.getAction() == MotionEvent.ACTION_DOWN) {
-        if (lockedParent != null) {
-          lockedParent.requestDisallowInterceptTouchEvent(false);
-          lockedParent = null;
-        }
-        needSlideOff = slideOffListener.onSlideOffPrepare(this, e, index);
-        if (needSlideOff) {
-          lockedParent = getParent();
-          if (lockedParent != null) {
-            lockedParent.requestDisallowInterceptTouchEvent(true);
-          }
-        }
-      }
-      if (!needSlideOff) {
-        return true;
-      }
       switch (e.getAction()) {
+        case MotionEvent.ACTION_DOWN:
+          touchX = e.getX();
+          touchY = e.getY();
+          touchDownY = e.getY();
+          touchDownTime = e.getDownTime();
+          break;
         case MotionEvent.ACTION_MOVE: {
-          int start = getMeasuredHeight();
-          boolean inSlideOff = e.getY() >= start;
-          if (this.inSlideOff != inSlideOff) {
-            this.inSlideOff = inSlideOff;
-            if (inSlideOff) {
-              slideOffListener.onSlideOffStart(this, e, index);
-            } else {
-              slideOffListener.onSlideOffFinish(this, e, index, false);
-            }
+          if (touchDownTime < 0L) {
+            break;
           }
-          if (inSlideOff) {
-            slideOffListener.onSlideOffMovement(this, e, index);
+          touchX = e.getX();
+          touchY = e.getY();
+          if (lockedParent == null) {
+            if (Math.abs(touchY - touchDownY) > Screen.getTouchSlop()) {
+              boolean needSlideOff = slideOffListener.onSlideOffPrepare(this, e, index);
+              if (needSlideOff) {
+                lockedParent = getParent();
+                if (lockedParent != null) {
+                  lockedParent.requestDisallowInterceptTouchEvent(true);
+                }
+              }
+            }
+          } else {
+            int start = getMeasuredHeight();
+            boolean inSlideOff = topView.slideOffDirection == SLIDE_OFF_DIRECTION_TOP ? touchY <= start : touchY >= start;
+            if (this.inSlideOff != inSlideOff) {
+              this.inSlideOff = inSlideOff;
+              if (inSlideOff) {
+                slideOffListener.onSlideOffStart(this, e, index);
+              } else {
+                slideOffListener.onSlideOffFinish(this, e, index, false);
+              }
+            }
+            if (inSlideOff) {
+              slideOffListener.onSlideOffMovement(this, e, index);
+            }
           }
           break;
         }
         case MotionEvent.ACTION_CANCEL:
-          if (inSlideOff) {
-            inSlideOff = false;
-            slideOffListener.onSlideOffFinish(this, e, index, false);
-          }
-          if (lockedParent != null) {
-            lockedParent.requestDisallowInterceptTouchEvent(false);
-            lockedParent = null;
-          }
+          finishSlideOff(e, slideOffListener, /* apply */ false);
           break;
         case MotionEvent.ACTION_UP:
-          if (inSlideOff) {
-            inSlideOff = false;
-            slideOffListener.onSlideOffFinish(this, e, index, true);
-          }
-          if (lockedParent != null) {
-            lockedParent.requestDisallowInterceptTouchEvent(false);
-            lockedParent = null;
-          }
+          finishSlideOff(e, slideOffListener, /* apply */ true);
           break;
       }
       return true;
+    }
+
+    public boolean inSlideOff() {
+      return inSlideOff;
+    }
+
+    public void cancelSlideOff () {
+      MotionEvent e = MotionEvent.obtain(touchDownTime, SystemClock.uptimeMillis(), MotionEvent.ACTION_CANCEL, touchX, touchY, /* metaState */ 0);
+      OnSlideOffListener slideOffListener = topView != null ? topView.onSlideOffListener : null;
+      finishSlideOff(e, slideOffListener, /* apply */ false);
+    }
+
+    public void finishSlideOff (MotionEvent e, @Nullable OnSlideOffListener slideOffListener, boolean apply) {
+      touchDownTime = Long.MIN_VALUE;
+      if (inSlideOff) {
+        inSlideOff = false;
+        if (slideOffListener != null) {
+          slideOffListener.onSlideOffFinish(this, e, index, apply);
+        }
+      }
+      if (lockedParent != null) {
+        lockedParent.requestDisallowInterceptTouchEvent(false);
+        lockedParent = null;
+      }
     }
 
     private ViewPagerTopView topView;
@@ -902,9 +1108,9 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       if (topView.shouldWrapContent()) {
         int left = 0;
         for (int i = 0; i < index; i++) {
-          left += topView.items.get(i).width + topView.textPadding * 2;
+          left += topView.items.get(i).width + topView.itemPadding * 2;
         }
-        int itemWidth = topView.items.get(index).width + topView.textPadding * 2;
+        int itemWidth = topView.items.get(index).width + topView.itemPadding * 2;
         if (Lang.rtl()) {
           left = MeasureSpec.getSize(widthMeasureSpec) - left - itemWidth;
         }
@@ -916,5 +1122,10 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
         setTranslationX(itemWidth * index);
       }
     }
+  }
+
+  @Override
+  public void onEmojiUpdated (boolean isPackSwitch) {
+    invalidate();
   }
 }

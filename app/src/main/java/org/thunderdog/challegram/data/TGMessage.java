@@ -1969,7 +1969,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         int top = bottom - commentButton.getAnimatedHeight(0, commentButton.getVisibility());
         if (needCommentButtonSeparator()) {
           int separatorColor = ColorUtils.alphaColor(0.15f * commentButton.getVisibility(), getDecentColor());
-          Paint separatorPaint = Config.COMMENTS_INLINE_BUTTON_SEPARATOR_1PX ? Paints.strokeSeparatorPaint(separatorColor) : Paints.strokeSmallPaint(separatorColor);
+          Paint separatorPaint = Paints.strokeSmallPaint(separatorColor);
           c.drawLine(left + Screen.dp(7f), top, right - Screen.dp(7f), top, separatorPaint);
         }
         commentButton.draw(view, c, view, left, top, right, bottom);

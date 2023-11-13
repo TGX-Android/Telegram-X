@@ -29,7 +29,7 @@ import org.thunderdog.challegram.widget.NoScrollTextView;
 import me.vkryl.android.widget.FrameLayoutFix;
 
 public class SimpleHeaderView extends FrameLayoutFix implements ColorSwitchPreparator, TextChangeDelegate {
-  private TextView title;
+  private final TextView title;
 
   public SimpleHeaderView (Context context) {
     super(context);

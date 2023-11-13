@@ -50,6 +50,8 @@ import org.thunderdog.challegram.emoji.RecentEmoji;
 import org.thunderdog.challegram.emoji.RecentInfo;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.player.TGPlayerController;
+import org.thunderdog.challegram.telegram.ChatFolderOptions;
+import org.thunderdog.challegram.telegram.ChatFolderStyle;
 import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
@@ -198,6 +200,7 @@ public class Settings {
   private static final String KEY_VERSION = "version";
   private static final String KEY_OTHER = "settings_other";
   private static final String KEY_OTHER_NEW = "settings_other2";
+  private static final String KEY_EXPERIMENTS = "settings_experiments";
   private static final @Deprecated String KEY_MARKDOWN_MODE = "settings_markdown";
   private static final String KEY_MAP_PROVIDER_TYPE = "settings_map_provider";
   private static final String KEY_MAP_PROVIDER_TYPE_CLOUD = "settings_map_provider_cloud";
@@ -235,6 +238,8 @@ public class Settings {
   private static final String KEY_CAMERA_ASPECT_RATIO = "settings_camera_ratio";
   private static final String KEY_CAMERA_TYPE = "settings_camera_type";
   private static final String KEY_CAMERA_VOLUME_CONTROL = "settings_camera_control";
+  private static final String KEY_CHAT_FOLDER_STYLE = "settings_folders_style";
+  private static final String KEY_CHAT_FOLDER_OPTIONS = "settings_folders_options";
 
   private static final String KEY_TDLIB_VERBOSITY = "settings_tdlib_verbosity";
   private static final String KEY_TDLIB_DEBUG_PREFIX = "settings_tdlib_allow_debug";
@@ -404,6 +409,10 @@ public class Settings {
   public static final long SETTING_FLAG_LIMIT_STICKERS_FPS = 1 << 14;
   public static final long SETTING_FLAG_EXPAND_RECENT_STICKERS = 1 << 15;
 
+  public static final long EXPERIMENT_FLAG_ALLOW_EXPERIMENTS = 1;
+  public static final long EXPERIMENT_FLAG_ENABLE_FOLDERS = 1 << 1;
+  public static final long EXPERIMENT_FLAG_SHOW_PEER_IDS = 1 << 2;
+
   private static final @Deprecated int DISABLED_FLAG_OTHER_NEED_RAISE_TO_SPEAK = 1 << 2;
   private static final @Deprecated int DISABLED_FLAG_OTHER_AUTODOWNLOAD_IN_BACKGROUND = 1 << 3;
   private static final @Deprecated int DISABLED_FLAG_OTHER_DEFAULT_CRASH_MANAGER = 1 << 5;
@@ -422,7 +431,7 @@ public class Settings {
   @Nullable
   private Integer _settings;
   @Nullable
-  private Long _newSettings;
+  private Long _newSettings, _experiments;
 
   public static final int NIGHT_MODE_NONE = 0;
   public static final int NIGHT_MODE_AUTO = 1;
@@ -912,6 +921,14 @@ public class Settings {
     return pmc.getInt(key, defValue);
   }
 
+  public int[] getIntArray (String key) {
+    return pmc.getIntArray(key);
+  }
+  
+  public void putIntArray (String key, int[] value) {
+    pmc.putIntArray(key, value);
+  }
+
   public void putFloat (String key, float value) {
     pmc.putFloat(key, value).apply();
   }
@@ -1219,6 +1236,65 @@ public class Settings {
     }
   }
 
+
+  public interface ChatFolderSettingsListener {
+    default void onChatFolderOptionsChanged (@ChatFolderOptions int newOptions) {}
+    default void onChatFolderStyleChanged (@ChatFolderStyle int newStyle) {}
+  }
+  private final ReferenceList<ChatFolderSettingsListener> chatFolderSettingsListeners = new ReferenceList<>();
+
+  public void addChatFolderSettingsListener (ChatFolderSettingsListener listener) {
+    chatFolderSettingsListeners.add(listener);
+  }
+
+  public void removeChatFolderSettingsListener (ChatFolderSettingsListener listener) {
+    chatFolderSettingsListeners.remove(listener);
+  }
+
+  private Integer _chatFolderOptions, _chatFolderStyle;
+
+  public void setChatFolderOptions (@ChatFolderOptions int options) {
+    if (getChatFolderOptions() != options) {
+      if (options == TdlibSettingsManager.DEFAULT_CHAT_FOLDER_OPTIONS) {
+        pmc.remove(KEY_CHAT_FOLDER_OPTIONS);
+      } else {
+        pmc.putInt(KEY_CHAT_FOLDER_OPTIONS, options);
+      }
+      _chatFolderOptions = options;
+      for (ChatFolderSettingsListener listener : chatFolderSettingsListeners) {
+        listener.onChatFolderOptionsChanged(options);
+      }
+    }
+  }
+
+  public @ChatFolderOptions int getChatFolderOptions () {
+    if (_chatFolderOptions == null) {
+      _chatFolderOptions = pmc.getInt(KEY_CHAT_FOLDER_OPTIONS, TdlibSettingsManager.DEFAULT_CHAT_FOLDER_OPTIONS);
+    }
+    return _chatFolderOptions;
+  }
+
+  public void setChatFolderStyle (@ChatFolderStyle int style) {
+    if (getChatFolderStyle() != style) {
+      if (style == TdlibSettingsManager.DEFAULT_CHAT_FOLDER_STYLE) {
+        pmc.remove(KEY_CHAT_FOLDER_STYLE);
+      } else {
+        pmc.putInt(KEY_CHAT_FOLDER_STYLE, style);
+      }
+      _chatFolderStyle = style;
+      for (ChatFolderSettingsListener listener : chatFolderSettingsListeners) {
+        listener.onChatFolderStyleChanged(style);
+      }
+    }
+  }
+
+  public @ChatFolderStyle int getChatFolderStyle () {
+    if (_chatFolderStyle == null) {
+      _chatFolderStyle = pmc.getInt(KEY_CHAT_FOLDER_STYLE, TdlibSettingsManager.DEFAULT_CHAT_FOLDER_STYLE);
+    }
+    return _chatFolderStyle;
+  }
+
   private long makeDefaultNewSettings () {
     long settings = 0;
 
@@ -1245,6 +1321,34 @@ public class Settings {
           listener.onSettingsChanged(newSettings, oldSettings);
         }
       }
+      return true;
+    }
+    return false;
+  }
+
+  private static long makeDefaultExperiments () {
+    // TODO: this flag allows implementing later a global toggle that enables/disables all experiments
+    // while preserving specific experiments toggle values.
+    return EXPERIMENT_FLAG_ALLOW_EXPERIMENTS;
+  }
+
+  private long getExperiments () {
+    if (_experiments == null)
+      _experiments = pmc.getLong(KEY_EXPERIMENTS, makeDefaultExperiments());
+    return _experiments;
+  }
+
+  public boolean isExperimentEnabled (long key) {
+    long experiments = getExperiments();
+    return BitwiseUtils.hasAllFlags(experiments, EXPERIMENT_FLAG_ALLOW_EXPERIMENTS | key);
+  }
+
+  public boolean setExperimentEnabled (long key, boolean enabled) {
+    long oldExperiments = getExperiments();
+    long newExperiments = BitwiseUtils.setFlag(oldExperiments, key, enabled);
+    if (oldExperiments != newExperiments) {
+      this._experiments = newExperiments;
+      pmc.putLong(KEY_EXPERIMENTS, newExperiments);
       return true;
     }
     return false;
@@ -6842,5 +6946,13 @@ public class Settings {
 
   public void setDefaultLanguageForTranslateDraft (String language) {
     pmc.putString(KEY_DEFAULT_LANGUAGE_FOR_TRANSLATE_DRAFT, language);
+  }
+
+  public boolean chatFoldersEnabled () {
+    return Config.CHAT_FOLDERS_ENABLED && isExperimentEnabled(EXPERIMENT_FLAG_ENABLE_FOLDERS);
+  }
+
+  public boolean showPeerIds () {
+    return isExperimentEnabled(EXPERIMENT_FLAG_SHOW_PEER_IDS);
   }
 }

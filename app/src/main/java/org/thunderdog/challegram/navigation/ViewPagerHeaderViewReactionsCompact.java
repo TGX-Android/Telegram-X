@@ -423,6 +423,11 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
   }
 
   @Override
+  public View getView () {
+    return this;
+  }
+
+  @Override
   public ViewPagerTopView getTopView () {
     return adapter.topView;
   }

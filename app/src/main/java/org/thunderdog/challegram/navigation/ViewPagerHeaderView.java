@@ -16,6 +16,7 @@ package org.thunderdog.challegram.navigation;
 
 import android.content.Context;
 import android.view.Gravity;
+import android.view.View;
 import android.view.ViewGroup;
 
 import org.thunderdog.challegram.theme.ColorId;
@@ -43,6 +44,11 @@ public class ViewPagerHeaderView extends SimpleHeaderView implements StretchyHea
   @Override
   public void checkRtl () {
     topView.checkRtl();
+  }
+
+  @Override
+  public View getView () {
+    return this;
   }
 
   @Override

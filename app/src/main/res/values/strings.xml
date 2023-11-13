@@ -84,6 +84,7 @@
   <string name="format_fileSizeAndDescription">%2$s, %1$s</string>
   <string name="format_fileSizeAndExtension">%1$s %2$s</string>
   <string name="format_filesAndFolders">%1$s, %2$s</string>
+  <string name="format_chatFoldersPositionAndStyle">%1$s, %2$s</string>
   <string name="format_contentAndModifyDate2">%1$s, %2$s</string>
   <string name="format_plus">+%1$d</string>
   <string name="format_minus">-%1$d</string>
@@ -96,6 +97,7 @@
   <string name="format_channelAndSignature">%1$s (%2$s)</string>
   <string name="format_minutesAndSeconds">%1$s and %2$s</string>
   <string name="format_chatAndSignature">%1$s (%2$s)</string>
+  <string name="format_folderAndFilter">%1$s / %2$s</string>
   <string name="messagesCount_one">%1$s</string>
   <string name="messagesCount_other">%1$s</string>
   <string name="format_notificationContentGroup">%1$s: %2$s</string>
@@ -1033,6 +1035,7 @@
   <string name="ComeAgainLater">Come again later</string>
   <string name="New">New</string>
   <string name="Add">Add</string>
+  <string name="PlusSign">+</string>
   <string name="AddMemberBtn">Add</string>
   <string name="BlockListEmpty">You haven\'t blocked anyone yet</string>
   <string name="QBlockUser">Block %1$s?</string>
@@ -3104,9 +3107,16 @@
   <string name="CategoryPrivate">Private</string>
   <string name="CategorySecret">Secret</string>
   <string name="CategoryGroup">Group Chats</string>
+  <string name="CategoryGroups">Groups</string>
   <string name="CategoryChannels">Channels</string>
   <string name="CategoryBots">Bots</string>
+  <string name="CategoryRead">Read</string>
   <string name="CategoryUnread">Unread</string>
+  <string name="CategoryMuted">Muted</string>
+  <string name="CategoryArchived">Archived</string>
+  <string name="CategoryContacts">Contacts</string>
+  <string name="CategoryNonContacts">Non-Contacts</string>
+
   <string name="xBots_one">%1$s bot</string>
   <string name="xBots_other">%1$s bots</string>
 
@@ -3138,6 +3148,7 @@
   <string name="NobodyLikesSpam2">Sorry, you can interact only with mutual contacts at the moment.</string> <!--PEER_FLOOD-->
   <string name="error_BOTS_TOO_MUCH">There are too many bots in this group. Please remove some of the bots you\'re not using first.</string>
   <string name="error_ADMINS_TOO_MUCH">Sorry, this group has too many admins. Please remove one of the existing admins first.</string>
+  <string name="error_FolderMustContainAtLeast1Chat">Folder must contain at least one chat</string>
 
   <string name="NotificationImportance">Notification Style</string>
   <string name="NotificationImportanceHigh">Sound and pop-up</string>
@@ -4600,9 +4611,12 @@
   <string name="ExperimentalBuildTitle">Caution: experimental build</string>
   <string name="ExperimentalBuildInfo">This version of **Telegram X** is not designed for long-term use.\n\nIt may completely stop working over a time and you cannot turn notifications on.\n\nIf you are looking for the proper Telegram X APK file, see https://t.me/tgx_log</string>
 
-  <string name="PremiumRequiredSticker">Sending this sticker requires a **Telegram Premium** subscription.</string>
+   <string name="PremiumRequiredSticker">Sending this sticker requires a **Telegram Premium** subscription.</string>
   <string name="PremiumRequiredVoiceVideo">This setting requires a **Telegram Premium** subscription.</string>
   <string name="PremiumRequired">This feature requires a **Telegram Premium** subscription.</string>
+  <string name="PremiumRequiredMoveFolder">Subscribe to **Telegram Premium** to move the "%1$s" folder.</string>
+  <string name="PremiumRequiredCreateFolder">You have reached the limit of **%1$d** folders. You can double the limit to **%2$d** folders by subscribing to **Telegram Premium**.</string>
+  <string name="PremiumRequiredChatsInFolder">Sorry, you can\'t add more than **%1$d** chats to a folder. You can increase this limit to **%2$d** by subscribing to **Telegram Premium**.</string>
 
   <string name="XRestrictedVoiceMessages">%1$s doesn\'t accept voice messages.</string>
   <string name="XRestrictedVideoMessages">%1$s doesn\'t accept video messages.</string>
@@ -4688,8 +4702,6 @@
 
   <string name="ShowLessStickers">show less</string>
 
-
-
   <string name="TranslateLangUnknown">Unknown</string>
   <string name="Translate">Translate</string>
   <string name="TranslationPaste">Paste translation</string>
@@ -4730,8 +4742,7 @@
   <string name="SetTodayAt">Set until today at %1$s</string>
   <string name="SetTomorrowAt">Set until tomorrow at %1$s</string>
   <string name="SetDateAt">Set until %1$s at %2$s</string>
-
-
+  
   <string name="TextFormatting">Text formatting</string>
   <string name="TextFormattingTools">Tools</string>
   <string name="TextFormattingTranslate">Translate</string>
@@ -4801,4 +4812,66 @@
   <string name="AvatarsInReactionsAlways">Always</string>
   <string name="AvatarsInReactionsSmartFilter">Limited</string>
   <string name="AvatarsInReactionsNever">Never</string>
+  
+  <string name="ShowXMore_one">%1$s more</string>
+  <string name="ShowXMore_other">%1$s more</string>
+  
+  <string name="ChatTypes">Chat types</string>
+  <string name="ChatFolders">Chat Folders</string>
+  <string name="ChatFoldersInfo">Create folders for different groups of chats and quickly switch between them.</string>
+  <string name="ChatFoldersSettings">Settings</string>
+  <string name="ChatFoldersAppearance">Appearance</string>
+  <string name="ChatFoldersPositionTop">Top</string>
+  <string name="ChatFoldersPositionBottom">Bottom</string>
+  <string name="ChatFolderChangeIcon">Change Icon</string>
+  <string name="ChatFolderAddChats">Add Chats</string>
+  <string name="ChatFolderLimitReached">You have reached the limit of **%1$d** folders.</string>
+  <string name="ChatsInFolderLimitReached">Sorry, you can\'t add more than **%1$d** chats to a folder. Please create a new one.</string>
+  <string name="NewFolder">New Folder</string>
+  <string name="CreateNewFolder">Create New Folder</string>
+  <string name="HideFolder">Hide Folder</string>
+  <string name="HideFolderInfo">To display %1$s folder again, go to %2$s > %3$s</string>
+  <string name="HideAllChats">Hide All Chats</string>
+  <string name="EditFolder">Edit Folder</string>
+  <string name="EditFolders">Edit Folders</string>
+  <string name="RemoveFolder">Remove Folder</string>
+  <string name="RemoveFolderConfirm">Are you sure you want to remove this folder? Your chats will not be deleted.</string>
+  <string name="FolderNoChatsToDisplay">**Folder is empty**\n\nNo chats currently belong to this folder.</string>
+  <string name="FolderRemoveInclusionConfirm">Are you sure you want to remove "%1$s" from the always included list?</string>
+  <string name="FolderRemoveExclusionConfirm">Are you sure you want to remove "%1$s" from the always excluded list?</string>
+  <string name="IncludeChats">Include Chats</string>
+  <string name="IncludeChatsInfo_one">You can select only one non-secret chat and only one secret chat.</string>
+  <string name="IncludeChatsInfo_other">You can select up to %1$s non-secret chats and the same number of secret chats.</string>
+  <string name="ExcludeChats">Exclude Chats</string>
+  <string name="ExcludeChatsInfo_one">You can select only one non-secret chat and only one secret chat</string>
+  <string name="ExcludeChatsInfo_other">You can select up to %1$s non-secret chats and the same number of secret chats.</string>
+  <string name="FolderIncludedChats">Included Chats</string>
+  <string name="FolderIncludedChatsInfo">Choose chats or types of chats that will appear in this folder.</string>
+  <string name="FolderExcludedChats">Excluded Chats</string>
+  <string name="FolderExcludedChatsInfo">Choose chats or types of chats that will **not** appear in this folder.</string>
+  <string name="FolderActionIncludeChats">Add Chats to Included</string>
+  <string name="FolderActionExcludeChats">Add Chats to Excluded</string>
+  <string name="FolderName">Folder name</string>
+  <string name="FolderNameHint">Name</string>
+  <string name="RecommendedFolders">Recommended Folders</string>
+  <string name="AddToFolder">Add to folder</string>
+  <string name="RemoveFromFolder">Remove from folder</string>
+  <string name="ChooseFolder">Choose a folder</string>
+  <string name="LocalFolderBadge">local folder</string>
+  <string name="MainListBadge">main list</string>
+  <string name="IconOnly">Icon only</string>
+  <string name="LabelOnly">Label only</string>
+  <string name="LabelAndIcon">Label with icon</string>
+  <string name="CountMutedChats">Count muted chats</string>
+  <string name="DisplayFoldersAtTheTop">Display folders at the top</string>
+  <string name="ChatsXShowMore_one">Show %1$s more</string>
+  <string name="ChatsXShowMore_other">Show %1$s more</string>
+
+  <string name="ExperimentalSettings">Experimental settings</string>
+  <string name="ExperimentalSettingsWarning">**Warning:** those are experimental settings. Some may not work. Others may break the app. Any of them might disappear without a trace.\n\nUse at your own risk.</string>
+  <string name="Experiment_PeerIds">Show Peer IDs in Profiles</string>
+  <string name="Experiment_PeerIdsInfo">Show peer IDs from API below their Bio / Description</string>
+  <string name="Experiment_ChatFolders">Enable Chat Folders</string>
+  <string name="Experiment_ChatFoldersInfo">Enable early access to folders. Appearance of this feature is planned to be changed in future versions of Telegram X, and it includes some unfinished work. Credit: [PR #297](https://github.com/TGX-Android/Telegram-X/pull/297) by nikita-toropov</string>
+
 </resources>

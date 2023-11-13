@@ -89,6 +89,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.reference.ReferenceList;
+import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
 public class SettingsController extends ViewController<Void> implements
@@ -573,10 +574,16 @@ public class SettingsController extends ViewController<Void> implements
           TdApi.FormattedText text;
           if (about == null) {
             text = TD.toFormattedText(Lang.getString(R.string.LoadingInformation), false);
-          } else if (Td.isEmpty(about)) {
-            text = TD.toFormattedText(Lang.getString(R.string.BioNone), false);
           } else {
-            text = about;
+            TdApi.FormattedText about = SettingsController.this.about;
+            if (Settings.instance().showPeerIds()) {
+              about = tdlib.addServiceInformation(ChatId.fromUserId(tdlib.myUserId()), about);
+            }
+            if (Td.isEmpty(about)) {
+              text = TD.toFormattedText(Lang.getString(R.string.BioNone), false);
+            } else {
+              text = about;
+            }
           }
           view.setText(obtainWrapper(text, ID_BIO));
         }
@@ -636,6 +643,10 @@ public class SettingsController extends ViewController<Void> implements
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_tweakSettings, R.drawable.baseline_extension_24, R.string.TweakSettings));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+    if (Settings.instance().chatFoldersEnabled()) {
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_chatFolders, R.drawable.baseline_folder_24, R.string.ChatFolders));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+    }
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_languageSettings, R.drawable.baseline_language_24, R.string.Language));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
@@ -1023,6 +1034,8 @@ public class SettingsController extends ViewController<Void> implements
       SettingsStickersAndEmojiController c = new SettingsStickersAndEmojiController(context, tdlib);
       c.setArguments(this);
       navigateTo(c);
+    } else if (viewId == R.id.btn_chatFolders) {
+      navigateTo(new SettingsFoldersController(context, tdlib));
     } else if (viewId == R.id.btn_faq) {
       tdlib.ui().openUrl(this, Lang.getString(R.string.url_faq), new TdlibUi.UrlOpenParameters().forceInstantView());
     } else if (viewId == R.id.btn_privacyPolicy) {
@@ -1199,6 +1212,11 @@ public class SettingsController extends ViewController<Void> implements
       strings.append(R.string.AppLogs);
       icons.append(R.drawable.baseline_build_24);
       colors.append(OPTION_COLOR_NORMAL);
+      
+      ids.append(R.id.btn_experiment);
+      strings.append(R.string.ExperimentalSettings);
+      icons.append(R.drawable.templarian_baseline_flask_24);
+      colors.append(OPTION_COLOR_NORMAL);
     }
 
     SpannableStringBuilder b = new SpannableStringBuilder();
@@ -1211,14 +1229,19 @@ public class SettingsController extends ViewController<Void> implements
         UI.copyText(U.getUsefulMetadata(tdlib), R.string.CopiedText);
       } else if (id == R.id.btn_pushService) {
         SettingsBugController c = new SettingsBugController(context, tdlib);
-        c.setArguments(new SettingsBugController.Args(SettingsBugController.SECTION_PUSH));
+        c.setArguments(new SettingsBugController.Args(SettingsBugController.Section.PUSH));
         navigateTo(c);
       } else if (id == R.id.btn_build) {
         navigateTo(new SettingsBugController(context, tdlib));
-      } else if (id == R.id.btn_tdlib) {
-        tdlib.getTesterLevel(level -> runOnUiThreadOptional(() ->
-          openTdlibLogs(level, null)
-        ));
+      } else if (id == R.id.btn_tdlib || id == R.id.btn_experiment) {
+        boolean isTdlib = id == R.id.btn_tdlib;
+        tdlib.getTesterLevel(level -> runOnUiThreadOptional(() -> {
+          if (isTdlib) {
+            openTdlibLogs(level, null);
+          } else {
+            openExperimentalSettings(level);
+          }
+        }));
       }
       return true;
     });

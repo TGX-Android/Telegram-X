@@ -244,6 +244,10 @@ public abstract class RecyclerViewController<T> extends TelegramViewController<T
     return ((LinearLayoutManager) recyclerView.getLayoutManager()).findFirstVisibleItemPosition();
   }
 
+  protected int findLastVisiblePosition () {
+    return ((LinearLayoutManager) recyclerView.getLayoutManager()).findLastVisibleItemPosition();
+  }
+
   protected int getViewTop (int position) {
     View view = recyclerView.getLayoutManager().findViewByPosition(position);
     return view != null ? view.getTop() : 0;
