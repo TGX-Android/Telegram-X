@@ -3570,7 +3570,7 @@ public class U {
     }
     return false;
   }
-  
+
   public static String[] getInputLanguages () {
     final List<String> inputLanguages = new ArrayList<>();
     InputMethodManager imm = (InputMethodManager) UI.getAppContext().getSystemService(Context.INPUT_METHOD_SERVICE);

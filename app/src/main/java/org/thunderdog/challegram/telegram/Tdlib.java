@@ -6957,7 +6957,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   public long telegramAntiSpamUserId () {
     return antiSpamBotUserId;
   }
-  
+
   public long telegramChannelBotUserId () {
     return channelBotUserId;
   }
