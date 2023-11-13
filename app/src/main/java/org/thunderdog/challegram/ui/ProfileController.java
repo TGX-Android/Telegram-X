@@ -2592,7 +2592,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private boolean hasDescription () {
-    return !StringUtils.isEmpty(getDescriptionValue());
+    return !StringUtils.isEmpty(getDescriptionValue()) || Settings.instance().showPeerIds();
   }
 
   private boolean setDescription () {
