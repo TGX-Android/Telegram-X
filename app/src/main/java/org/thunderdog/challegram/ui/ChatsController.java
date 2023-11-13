@@ -1203,7 +1203,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         icons.append(canUnarchive > 0 ? R.drawable.baseline_unarchive_24 : R.drawable.baseline_archive_24);
       }
 
-      if (Config.CHAT_FOLDERS_ENABLED) {
+      if (Settings.instance().chatFoldersEnabled()) {
         if (TD.isChatListMain(chatList()) || TD.isChatListArchive(chatList())) {
           ids.append(R.id.more_btn_addToFolder);
           strings.append(R.string.AddToFolder);

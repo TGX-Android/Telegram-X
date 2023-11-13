@@ -224,7 +224,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     tdlib.listeners().subscribeToChatFoldersUpdates(this);
     tdlib.context().global().addCountersListener(this);
     Settings.instance().addChatFolderSettingsListener(this);
-    if (Config.CHAT_FOLDERS_ENABLED) {
+    if (Settings.instance().chatFoldersEnabled()) {
       if (this.chatFolderInfos != tdlib.chatFolders()) {
         updatePagerSections(true);
       }
@@ -302,7 +302,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
           return verticalGravity == Gravity.BOTTOM ? -menu.getHeight() : view.getHeight();
         }
       });
-      if (Config.CHAT_FOLDERS_ENABLED) {
+      if (Settings.instance().chatFoldersEnabled()) {
         headerCell.getTopView().setCounterAlphaProvider(new ViewPagerTopView.CounterAlphaProvider() {
           @Override
           public float getTextAlpha (Counter counter, float alphaFactor) {
@@ -1440,7 +1440,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   private final LongSparseIntArray pagerChatListFilters = new LongSparseIntArray();
 
   private boolean hasFolders () {
-    return Config.CHAT_FOLDERS_ENABLED && !pagerChatLists.isEmpty();
+    return Settings.instance().chatFoldersEnabled() && !pagerChatLists.isEmpty();
   }
 
   @Override
@@ -2192,7 +2192,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   }
 
   private void initPagerSections () {
-    if (Config.CHAT_FOLDERS_ENABLED) {
+    if (Settings.instance().chatFoldersEnabled()) {
       updatePagerSections(true);
     }
   }
@@ -2525,7 +2525,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
   @Override
   public void onChatFoldersChanged (TdApi.ChatFolderInfo[] chatFolders, int mainChatListPosition) {
-    if (Config.CHAT_FOLDERS_ENABLED) {
+    if (Settings.instance().chatFoldersEnabled()) {
       runOnUiThreadOptional(() ->
         updatePagerSections(false)
       );

@@ -1243,6 +1243,8 @@
   <item type="id" name="btn_downloadFile" />
   <item type="id" name="btn_pauseFile" />
 
+  <item type="id" name="btn_experiment" />
+
   <item type="id" name="btn_testingUtils" />
   <item type="id" name="btn_appLogs" />
 

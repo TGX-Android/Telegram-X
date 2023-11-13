@@ -1254,6 +1254,8 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
       restore = new SettingsFoldersController(context, tdlib);
     } else if (id == R.id.controller_editChatFolders) {
       restore = new EditChatFolderController(context, tdlib);
+    } else if (id == R.id.controller_bug_killer) {
+      restore = new SettingsBugController(context, tdlib);
     } else {
       return null;
     }

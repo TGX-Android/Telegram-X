@@ -131,6 +131,7 @@ import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
+import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.Future;
 import me.vkryl.core.lambda.FutureBool;
@@ -2716,10 +2717,42 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     showWarning(Lang.getMarkdownString(this, R.string.TdlibLogsWarning), proceed -> {
       if (proceed) {
         SettingsBugController c = new SettingsBugController(context, tdlib);
-        c.setArguments(new SettingsBugController.Args(SettingsBugController.SECTION_TDLIB, crashInfo).setTesterLevel(testerLevel));
+        c.setArguments(new SettingsBugController.Args(SettingsBugController.Section.TDLIB, crashInfo).setTesterLevel(testerLevel));
         navigateTo(c);
       }
     });
+  }
+
+  public final void openExperimentalSettings (int testerLevel) {
+    showWarning(Lang.getMarkdownStringSecure(this, R.string.ExperimentalSettingsWarning), proceed -> {
+      if (proceed) {
+        SettingsBugController c = new SettingsBugController(context, tdlib);
+        c.setArguments(new SettingsBugController.Args(SettingsBugController.Section.EXPERIMENTS).setTesterLevel(testerLevel));
+        navigateTo(c);
+      }
+    });
+  }
+
+  private CancellableRunnable pendingActivityRestart;
+
+  public final void cancelPendingActivityRestart () {
+    if (pendingActivityRestart != null) {
+      pendingActivityRestart.cancel();
+      pendingActivityRestart = null;
+    }
+  }
+
+  public final void scheduleActivityRestart () {
+    cancelPendingActivityRestart();
+    pendingActivityRestart = new CancellableRunnable() {
+      @Override
+      public void act () {
+        pendingActivityRestart = null;
+        context.recreate();
+      }
+    };
+    pendingActivityRestart.removeOnCancel(UI.getAppHandler());
+    UI.getAppHandler().postDelayed(pendingActivityRestart, 300L);
   }
 
   public final boolean isSameTdlib (@NonNull Tdlib tdlib) {

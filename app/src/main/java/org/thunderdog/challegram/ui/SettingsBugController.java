@@ -16,12 +16,14 @@ package org.thunderdog.challegram.ui;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.SparseIntArray;
 import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.IdRes;
+import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 
 import com.google.firebase.FirebaseOptions;
@@ -66,6 +68,8 @@ import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 
 import java.io.File;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -86,19 +90,33 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
   Log.OutputListener,
   Settings.PushStatsListener,
   GlobalTokenStateListener {
-  public static final int SECTION_MAIN = 0;
-  public static final int SECTION_UTILITIES = 1;
-  public static final int SECTION_TDLIB = 2;
-  public static final int SECTION_ERROR = 3;
-  public static final int SECTION_PUSH = 4;
+
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    Section.MAIN,
+    Section.UTILITIES,
+    Section.TDLIB,
+    Section.ERROR,
+    Section.PUSH,
+    Section.EXPERIMENTS
+  })
+  public @interface Section {
+    int
+      MAIN = 0,
+      UTILITIES = 1,
+      TDLIB = 2,
+      ERROR = 3,
+      PUSH = 4,
+      EXPERIMENTS = 5;
+  }
 
   public static class Args {
-    public final int section;
+    public final @Section int section;
     public final Crash crash;
     private int testerLevel = Tdlib.TESTER_LEVEL_NONE;
     private boolean mainCrash;
 
-    public Args (int section) {
+    public Args (@Section int section) {
       this(section, null);
     }
 
@@ -106,13 +124,13 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       this.crash = crash;
       this.mainCrash = true;
       if (crash.getType() == Crash.Type.TDLIB) {
-        this.section = SECTION_TDLIB;
+        this.section = Section.TDLIB;
       } else {
-        this.section = SECTION_ERROR;
+        this.section = Section.ERROR;
       }
     }
 
-    public Args (int section, Crash crash) {
+    public Args (@Section int section, Crash crash) {
       this.section = section;
       this.crash = crash;
     }
@@ -127,7 +145,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
     super(context, tdlib);
   }
 
-  private int section = SECTION_MAIN;
+  private @Section int section = Section.MAIN;
   private int testerLevel = Tdlib.TESTER_LEVEL_NONE;
   private Crash crash;
   private boolean isMainCrash;
@@ -135,7 +153,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
   @Override
   public void setArguments (Args args) {
     super.setArguments(args);
-    this.section = args != null ? args.section : SECTION_MAIN;
+    this.section = args != null ? args.section : Section.MAIN;
     this.testerLevel = args != null ? args.testerLevel : Tdlib.TESTER_LEVEL_NONE;
     this.crash = args != null ? args.crash : null;
     this.isMainCrash = args != null && args.mainCrash;
@@ -152,21 +170,48 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       return Lang.getString(R.string.LaunchTitle);
     }
     switch (section) {
-      case SECTION_MAIN:
+      case Section.MAIN:
         return BuildConfig.VERSION_NAME;
-      case SECTION_UTILITIES:
+      case Section.UTILITIES:
         return Lang.getString(R.string.TestMode);
-      case SECTION_PUSH:
+      case Section.PUSH:
         return Lang.getString(R.string.PushServices);
-      case SECTION_TDLIB: {
+      case Section.TDLIB:
         return "TDLib " + getTdlibVersionSignature(false);
-      }
+      case Section.ERROR:
+        return Lang.getString(R.string.LaunchTitle);
+      case Section.EXPERIMENTS:
+        return Lang.getString(R.string.ExperimentalSettings);
     }
     throw new AssertionError(section);
   }
 
   @Override
   protected boolean needPersistentScrollPosition () {
+    return true;
+  }
+
+  @Override
+  public boolean saveInstanceState (Bundle outState, String keyPrefix) {
+    super.saveInstanceState(outState, keyPrefix);
+    Args args = getArguments();
+    if (args == null || args.section != Section.EXPERIMENTS) {
+      return false;
+    }
+    outState.putInt(keyPrefix + "section", args.section);
+    outState.putInt(keyPrefix + "level", args.testerLevel);
+    return true;
+  }
+
+  @Override
+  public boolean restoreInstanceState (Bundle in, String keyPrefix) {
+    super.restoreInstanceState(in, keyPrefix);
+    int section = in.getInt(keyPrefix + "section", Section.MAIN);
+    int testerLevel = in.getInt(keyPrefix + "level", Tdlib.TESTER_LEVEL_NONE);
+    if (section != Section.EXPERIMENTS) {
+      return false;
+    }
+    setArguments(new Args(section).setTesterLevel(testerLevel));
     return true;
   }
 
@@ -197,7 +242,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
   @Override
   protected void onFocusStateChanged () {
     super.onFocusStateChanged();
-    if (section == SECTION_TDLIB) {
+    if (section == Section.TDLIB) {
       if (isFocused()) {
         UI.post(new Runnable() {
           @Override
@@ -427,6 +472,8 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
           view.getToggler().setRadioEnabled(Settings.instance().forceTdlibRestart(), isUpdate);
         } else if (itemId == R.id.btn_switchRtl) {
           view.getToggler().setRadioEnabled(Lang.rtl(), isUpdate);
+        } else if (itemId == R.id.btn_experiment) {
+          view.getToggler().setRadioEnabled(Settings.instance().isExperimentEnabled(item.getLongValue()), isUpdate);
         } else if (itemId == R.id.btn_secret_pushToken) {
           switch (tdlib.context().getTokenState()) {
             case TdlibManager.TokenState.ERROR:
@@ -579,7 +626,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_update, R.drawable.baseline_system_update_24, R.string.LaunchAppCheckUpdate));
       }
-      if (section != SECTION_TDLIB) {
+      if (section != Section.TDLIB) {
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         if (crash.getType() == Crash.Type.DISK_FULL) {
           items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showError, R.drawable.baseline_info_24, R.string.LaunchAppViewError)/*.setTextColorId(ColorId.textNegative)*/);
@@ -601,7 +648,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
     }
 
     switch (section) {
-      case SECTION_ERROR: {
+      case Section.ERROR: {
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
         items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_tdlib, 0, R.string.TdlibLogs, false));
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -611,7 +658,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         break;
       }
-      case SECTION_MAIN: {
+      case Section.MAIN: {
         if (items.isEmpty())
           items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
         items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.AppLogs, false));
@@ -638,7 +685,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         }
         break;
       }
-      case SECTION_PUSH: {
+      case Section.PUSH: {
         if (tdlib == null)
           throw new IllegalStateException();
         if (!items.isEmpty()) {
@@ -660,7 +707,24 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         break;
       }
-      case SECTION_UTILITIES: {
+      case Section.EXPERIMENTS: {
+        if (!items.isEmpty()) {
+          items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+        }
+        items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_experiment, 0, R.string.Experiment_ChatFolders).setLongValue(Settings.EXPERIMENT_FLAG_ENABLE_FOLDERS));
+        items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+        items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownStringSecure(this, R.string.Experiment_ChatFoldersInfo)));
+
+        if (testerLevel >= Tdlib.TESTER_LEVEL_TESTER || Settings.instance().isExperimentEnabled(Settings.EXPERIMENT_FLAG_SHOW_PEER_IDS)) {
+          items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+          items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_experiment, 0, R.string.Experiment_PeerIds).setLongValue(Settings.EXPERIMENT_FLAG_SHOW_PEER_IDS));
+          items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+          items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.Experiment_PeerIdsInfo));
+        }
+
+        break;
+      }
+      case Section.UTILITIES: {
         if (!items.isEmpty()) {
           items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
         }
@@ -811,7 +875,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         break;
       }
-      case SECTION_TDLIB: {
+      case Section.TDLIB: {
         if (items.isEmpty())
           items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
 
@@ -872,7 +936,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
     adapter.setItems(items, false);
 
     switch (section) {
-      case SECTION_MAIN: {
+      case Section.MAIN: {
         if (tdlib != null) {
           getLogFiles();
           Log.addOutputListener(this);
@@ -906,7 +970,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         }
         break;
       }
-      case SECTION_PUSH: {
+      case Section.PUSH: {
         tdlib.context().global().addTokenStateListener(this);
         Settings.instance().addPushStatsListener(this);
         break;
@@ -937,7 +1001,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
   public void destroy () {
     super.destroy();
     Log.removeOutputListener(this);
-    if (section == SECTION_PUSH) {
+    if (section == Section.PUSH) {
       tdlib.context().global().removeTokenStateListener(this);
       Settings.instance().removePushStatsListener(this);
     }
@@ -1057,6 +1121,11 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       navigateTo(c);
     } else if (viewId == R.id.btn_switchRtl) {
       Settings.instance().setNeedRtl(Lang.packId(), adapter.toggleView(v));
+    } else if (viewId == R.id.btn_experiment) {
+      ListItem item = (ListItem) v.getTag();
+      if (Settings.instance().setExperimentEnabled(item.getLongValue(), adapter.toggleView(v))) {
+        scheduleActivityRestart();
+      }
     } else if (viewId == R.id.btn_secret_pushToken) {
       if (tdlib.context().getTokenState() == TdlibManager.TokenState.OK) {
         UI.copyText("Firebase: " + tdlib.context().getToken(), R.string.CopiedText);
@@ -1179,17 +1248,17 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       openTdlibLogs(testerLevel, crash);
     } else if (viewId == R.id.btn_pushService) {
       SettingsBugController c = new SettingsBugController(context, tdlib);
-      c.setArguments(new Args(SECTION_PUSH, crash).setTesterLevel(testerLevel));
+      c.setArguments(new Args(Section.PUSH, crash).setTesterLevel(testerLevel));
       navigateTo(c);
     } else if (viewId == R.id.btn_appLogs) {
       SettingsBugController c = new SettingsBugController(context, tdlib);
-      c.setArguments(new Args(SECTION_MAIN, crash).setTesterLevel(testerLevel));
+      c.setArguments(new Args(Section.MAIN, crash).setTesterLevel(testerLevel));
       navigateTo(c);
     } else if (viewId == R.id.btn_testingUtils) {
       RunnableBool callback = proceed -> {
         if (proceed) {
           SettingsBugController c = new SettingsBugController(context, tdlib);
-          c.setArguments(new Args(SECTION_UTILITIES, crash).setTesterLevel(testerLevel));
+          c.setArguments(new Args(Section.UTILITIES, crash).setTesterLevel(testerLevel));
           navigateTo(c);
         }
       };

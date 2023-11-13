@@ -42,6 +42,7 @@ import org.thunderdog.challegram.telegram.TdlibOptionListener;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.BaseView;
@@ -146,7 +147,7 @@ public class CallListController extends RecyclerViewController<Void> implements
         if (messages != null && ((LinearLayoutManager) recyclerView.getLayoutManager()).findLastVisibleItemPosition() >= adapter.getItems().size() - 5) {
           loadMore();
         }
-        if (Config.CHAT_FOLDERS_ENABLED && getParentOrSelf() == CallListController.this) {
+        if (Settings.instance().chatFoldersEnabled() && getParentOrSelf() == CallListController.this) {
           lastY += dy;
           if (dy < 0 && lastShowY - lastY >= Screen.getTouchSlop()) {
             setDoneVisible(true, true);
@@ -172,7 +173,7 @@ public class CallListController extends RecyclerViewController<Void> implements
   @Override
   public void onPrepareToShow () {
     super.onPrepareToShow();
-    if (Config.CHAT_FOLDERS_ENABLED && getParentOrSelf() == this) {
+    if (Settings.instance().chatFoldersEnabled() && getParentOrSelf() == this) {
       setDoneIcon(R.drawable.baseline_phone_24);
       setDoneVisible(true, false);
     }

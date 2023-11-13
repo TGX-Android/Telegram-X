@@ -2240,6 +2240,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         text = null;
       }
     }
+    if (Settings.instance().showPeerIds()) {
+      text = tdlib.addServiceInformation(getChatId(), text);
+    }
     if (this.currentAbout == null || !Td.equalsTo(this.currentAbout, text)) {
       currentAbout = text;
       if (text != null) {

@@ -4866,4 +4866,12 @@
   <string name="DisplayFoldersAtTheTop">Display folders at the top</string>
   <string name="ChatsXShowMore_one">Show %1$s more</string>
   <string name="ChatsXShowMore_other">Show %1$s more</string>
+
+  <string name="ExperimentalSettings">Experimental settings</string>
+  <string name="ExperimentalSettingsWarning">**Warning:** those are experimental settings. Some may not work. Others may break the app. Any of them might disappear without a trace.\n\nUse at your own risk.</string>
+  <string name="Experiment_PeerIds">Show Peer IDs in Profiles</string>
+  <string name="Experiment_PeerIdsInfo">Show peer IDs from API below their Bio / Description</string>
+  <string name="Experiment_ChatFolders">Enable Chat Folders</string>
+  <string name="Experiment_ChatFoldersInfo">Enable early access to folders. Appearance of this feature is planned to be changed in future versions of Telegram X, and it includes some unfinished work. Credit: [PR #297](https://github.com/TGX-Android/Telegram-X/pull/297) by nikita-toropov</string>
+
 </resources>

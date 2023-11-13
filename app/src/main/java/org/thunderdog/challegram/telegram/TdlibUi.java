@@ -4586,7 +4586,7 @@ public class TdlibUi extends Handler {
       icons.append(isArchived ? R.drawable.baseline_unarchive_24 : R.drawable.baseline_archive_24);
     }
 
-    if (Config.CHAT_FOLDERS_ENABLED && BuildConfig.DEBUG) {
+    if (Settings.instance().chatFoldersEnabled()) {
       if (TD.isChatListMain(chatList) || TD.isChatListArchive(chatList)) {
         ids.append(R.id.btn_addChatToFolder);
         strings.append(R.string.AddToFolder);

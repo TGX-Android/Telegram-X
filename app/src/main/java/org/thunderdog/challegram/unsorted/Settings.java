@@ -200,6 +200,7 @@ public class Settings {
   private static final String KEY_VERSION = "version";
   private static final String KEY_OTHER = "settings_other";
   private static final String KEY_OTHER_NEW = "settings_other2";
+  private static final String KEY_EXPERIMENTS = "settings_experiments";
   private static final @Deprecated String KEY_MARKDOWN_MODE = "settings_markdown";
   private static final String KEY_MAP_PROVIDER_TYPE = "settings_map_provider";
   private static final String KEY_MAP_PROVIDER_TYPE_CLOUD = "settings_map_provider_cloud";
@@ -408,6 +409,10 @@ public class Settings {
   public static final long SETTING_FLAG_LIMIT_STICKERS_FPS = 1 << 14;
   public static final long SETTING_FLAG_EXPAND_RECENT_STICKERS = 1 << 15;
 
+  public static final long EXPERIMENT_FLAG_ALLOW_EXPERIMENTS = 1;
+  public static final long EXPERIMENT_FLAG_ENABLE_FOLDERS = 1 << 1;
+  public static final long EXPERIMENT_FLAG_SHOW_PEER_IDS = 1 << 2;
+
   private static final @Deprecated int DISABLED_FLAG_OTHER_NEED_RAISE_TO_SPEAK = 1 << 2;
   private static final @Deprecated int DISABLED_FLAG_OTHER_AUTODOWNLOAD_IN_BACKGROUND = 1 << 3;
   private static final @Deprecated int DISABLED_FLAG_OTHER_DEFAULT_CRASH_MANAGER = 1 << 5;
@@ -426,7 +431,7 @@ public class Settings {
   @Nullable
   private Integer _settings;
   @Nullable
-  private Long _newSettings;
+  private Long _newSettings, _experiments;
 
   public static final int NIGHT_MODE_NONE = 0;
   public static final int NIGHT_MODE_AUTO = 1;
@@ -1316,6 +1321,34 @@ public class Settings {
           listener.onSettingsChanged(newSettings, oldSettings);
         }
       }
+      return true;
+    }
+    return false;
+  }
+
+  private static long makeDefaultExperiments () {
+    // TODO: this flag allows implementing later a global toggle that enables/disables all experiments
+    // while preserving specific experiments toggle values.
+    return EXPERIMENT_FLAG_ALLOW_EXPERIMENTS;
+  }
+
+  private long getExperiments () {
+    if (_experiments == null)
+      _experiments = pmc.getLong(KEY_EXPERIMENTS, makeDefaultExperiments());
+    return _experiments;
+  }
+
+  public boolean isExperimentEnabled (long key) {
+    long experiments = getExperiments();
+    return BitwiseUtils.hasAllFlags(experiments, EXPERIMENT_FLAG_ALLOW_EXPERIMENTS | key);
+  }
+
+  public boolean setExperimentEnabled (long key, boolean enabled) {
+    long oldExperiments = getExperiments();
+    long newExperiments = BitwiseUtils.setFlag(oldExperiments, key, enabled);
+    if (oldExperiments != newExperiments) {
+      this._experiments = newExperiments;
+      pmc.putLong(KEY_EXPERIMENTS, newExperiments);
       return true;
     }
     return false;
@@ -6913,5 +6946,13 @@ public class Settings {
 
   public void setDefaultLanguageForTranslateDraft (String language) {
     pmc.putString(KEY_DEFAULT_LANGUAGE_FOR_TRANSLATE_DRAFT, language);
+  }
+
+  public boolean chatFoldersEnabled () {
+    return Config.CHAT_FOLDERS_ENABLED && isExperimentEnabled(EXPERIMENT_FLAG_ENABLE_FOLDERS);
+  }
+
+  public boolean showPeerIds () {
+    return isExperimentEnabled(EXPERIMENT_FLAG_SHOW_PEER_IDS);
   }
 }
