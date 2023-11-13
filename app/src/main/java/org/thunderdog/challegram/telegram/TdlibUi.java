@@ -3677,8 +3677,12 @@ public class TdlibUi extends Handler {
         return;
       }
       case TdApi.InternalLinkTypeChatFolderSettings.CONSTRUCTOR: {
-        SettingsFoldersController chatFolders = new SettingsFoldersController(context.context(), context.tdlib());
-        context.context().navigation().navigateTo(chatFolders);
+        if (Settings.instance().chatFoldersEnabled()) {
+          SettingsFoldersController chatFolders = new SettingsFoldersController(context.context(), context.tdlib());
+          context.context().navigation().navigateTo(chatFolders);
+        } else {
+          showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
+        }
         break;
       }
       case TdApi.InternalLinkTypeUnknownDeepLink.CONSTRUCTOR: {
