@@ -31,6 +31,7 @@ import org.thunderdog.challegram.data.TGFoundMessage;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
@@ -94,8 +95,11 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
     }
   }
 
+  private TdlibMessageViewer.Viewport messageViewport;
+
   @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
+    messageViewport = tdlib.messageViewer().createViewport(new TdApi.MessageSourceSearch(), this);
     adapter = new SettingsAdapter(this) {
       @Override
       protected void setSeparatorOptions (ListItem item, int position, SeparatorView separatorView) {
@@ -172,29 +176,34 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
         previewView.setContentInset(Screen.dp(8));
       }
     };
+    tdlib.ui().attachViewportToRecyclerView(messageViewport, recyclerView);
     recyclerView.setAdapter(adapter);
 
     if (getArgumentsStrict().album != null) {
       setAlbum(getArgumentsStrict().album);
     } else {
-      tdlib.client().send(new TdApi.GetMessageStatistics(getArgumentsStrict().chatId, getArgumentsStrict().message.id, Theme.isDark()), result -> {
-        switch (result.getConstructor()) {
-          case TdApi.MessageStatistics.CONSTRUCTOR:
-            tdlib.client().send(new TdApi.GetMessagePublicForwards(getArgumentsStrict().chatId, getArgumentsStrict().message.id, "", 20), result2 -> {
-              if (result2.getConstructor() == TdApi.FoundMessages.CONSTRUCTOR) {
-                publicShares = (TdApi.FoundMessages) result2;
-              }
-
-              runOnUiThreadOptional(() -> {
-                setStatistics((TdApi.MessageStatistics) result);
-              });
-            });
-            break;
-          case TdApi.Error.CONSTRUCTOR:
-            UI.showError(result);
-            break;
+      long chatId = getArgumentsStrict().chatId;
+      long messageId = getArgumentsStrict().message.id;
+      tdlib.send(new TdApi.GetMessageStatistics(chatId, messageId, Theme.isDark()), (messageStatistics, error) -> runOnUiThreadOptional(() -> {
+        if (error != null) {
+          UI.showError(error);
+        } else {
+          tdlib.send(new TdApi.GetMessagePublicForwards(chatId, messageId, null, 20), (foundMessages, error1) -> runOnUiThreadOptional(() -> {
+            if (foundMessages != null) {
+              publicShares = foundMessages;
+            }
+            setStatistics(messageStatistics);
+          }));
         }
-      });
+      }));
+    }
+  }
+
+  @Override
+  public void destroy () {
+    super.destroy();
+    if (messageViewport != null) {
+      messageViewport.performDestroy();
     }
   }
 

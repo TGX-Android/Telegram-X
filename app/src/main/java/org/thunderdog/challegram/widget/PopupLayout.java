@@ -24,6 +24,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.WindowManager;
 import android.widget.PopupWindow;
 
@@ -321,7 +322,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
         return;
       }
       int state = context.getActivityState();
-      if (state == UI.STATE_RESUMED) {
+      if (state == UI.State.RESUMED) {
         try {
           window.showAtLocation(windowAnchorView = anchorView, Gravity.NO_GRAVITY, 0, 0);
           window.setBackgroundDrawable(new RootDrawable(UI.getContext(getContext())));
@@ -349,7 +350,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
             context.removeSimpleStateListener(this);
             return;
           }
-          if (newState == UI.STATE_RESUMED) {
+          if (newState == UI.State.RESUMED) {
             context.removeSimpleStateListener(this);
             if (!isTemporarilyHidden) {
               showSystemWindow(anchorView);
@@ -908,6 +909,14 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
 
   public void addStatusBar () {
     useStatusBar = true;
+  }
+
+  public static PopupLayout parentOf (View view) {
+    ViewParent parent = view.getParent();
+    while (parent != null && !(parent instanceof PopupLayout)) {
+      parent = parent.getParent();
+    }
+    return (PopupLayout) parent;
   }
 
   // Drawing

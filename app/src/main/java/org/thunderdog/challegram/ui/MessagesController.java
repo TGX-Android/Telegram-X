@@ -27,8 +27,6 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.location.Location;
 import android.location.LocationManager;
@@ -41,6 +39,7 @@ import android.text.InputType;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
+import android.text.style.ClickableSpan;
 import android.util.SparseIntArray;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -56,6 +55,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -118,6 +118,7 @@ import org.thunderdog.challegram.component.chat.RaiseHelper;
 import org.thunderdog.challegram.component.chat.ReplyView;
 import org.thunderdog.challegram.component.chat.SilentButton;
 import org.thunderdog.challegram.component.chat.StickerSuggestionAdapter;
+import org.thunderdog.challegram.component.chat.TdlibSingleUnreadReactionsManager;
 import org.thunderdog.challegram.component.chat.TopBarView;
 import org.thunderdog.challegram.component.chat.VoiceInputView;
 import org.thunderdog.challegram.component.chat.VoiceVideoButtonView;
@@ -132,9 +133,11 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.core.Media;
+import org.thunderdog.challegram.data.ContentPreview;
+import org.thunderdog.challegram.data.InlineResult;
 import org.thunderdog.challegram.data.InlineResultButton;
 import org.thunderdog.challegram.data.InlineResultCommand;
-import org.thunderdog.challegram.data.MessageListManager;
+import org.thunderdog.challegram.data.InlineResultSticker;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGAudio;
 import org.thunderdog.challegram.data.TGBotStart;
@@ -191,6 +194,7 @@ import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.telegram.GlobalAccountListener;
 import org.thunderdog.challegram.telegram.ListManager;
+import org.thunderdog.challegram.telegram.MessageListManager;
 import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.RightId;
@@ -224,6 +228,7 @@ import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.Unlockable;
+import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.v.MessagesLayoutManager;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
@@ -233,6 +238,7 @@ import org.thunderdog.challegram.widget.CircleButton;
 import org.thunderdog.challegram.widget.CollapseListView;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.EmojiLayout;
+import org.thunderdog.challegram.widget.EmojiPacksInfoView;
 import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
@@ -240,6 +246,7 @@ import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.RippleRevealView;
 import org.thunderdog.challegram.widget.SendButton;
 import org.thunderdog.challegram.widget.SeparatorView;
+import org.thunderdog.challegram.widget.TextFormattingLayout;
 import org.thunderdog.challegram.widget.TripleAvatarView;
 import org.thunderdog.challegram.widget.ViewPager;
 import org.thunderdog.challegram.widget.WallpaperParametersView;
@@ -258,7 +265,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
-import me.vkryl.android.widget.AnimatedFrameLayout;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
@@ -269,7 +275,6 @@ import me.vkryl.core.collection.LongList;
 import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Future;
-import me.vkryl.core.lambda.FutureLong;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.ChatId;
@@ -283,7 +288,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   ReplyView.Callback, RaiseHelper.Listener, VoiceInputView.Callback,
   TGLegacyManager.EmojiLoadListener, ChatHeaderView.Callback,
   ChatListener, NotificationSettingsListener, EmojiLayout.Listener,
-  MessageThreadListener,
+  MessageThreadListener, TdlibSingleUnreadReactionsManager.UnreadSingleReactionListener,
   TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener, TdlibCache.SecretChatDataChangeListener,
   TdlibCache.UserDataChangeListener,
   TdlibCache.UserStatusChangeListener,
@@ -295,7 +300,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
   RecordAudioVideoController.RecordStateListeners,
   ViewPager.OnPageChangeListener, ViewPagerTopView.OnItemClickListener,
   TGMessage.SelectableDelegate, GlobalAccountListener, EmojiToneHelper.Delegate, ComplexHeaderView.Callback, LiveLocationHelper.Callback, CreatePollController.Callback,
-  HapticMenuHelper.Provider, HapticMenuHelper.OnItemClickListener, TdlibSettingsManager.DismissRequestsListener {
+  HapticMenuHelper.Provider, HapticMenuHelper.OnItemClickListener, TdlibSettingsManager.DismissRequestsListener, InputView.SelectionChangeListener {
+
   private boolean reuseEnabled;
   private boolean destroyInstance;
 
@@ -328,6 +334,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private boolean enableOnResume;
 
   private EmojiLayout emojiLayout;
+  private TextFormattingLayout textFormattingLayout;
   private AttachLinearLayout attachButtons;
   private ImageView emojiButton;
   private VoiceVideoButtonView recordButton;
@@ -364,9 +371,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (!canSendWithoutMarkdown && tdlib.shouldSendAsDice(currentText) && !isEditingMessage()) {
       if (items == null)
         items = new ArrayList<>();
-      if (TD.EMOJI_DART.textRepresentation.equals(currentText.text)) {
+      if (ContentPreview.EMOJI_DART.textRepresentation.equals(currentText.text)) {
         items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendNoMarkdown, Lang.getString(R.string.SendDiceAsEmoji), R.drawable.baseline_gps_fixed_24));
-      } else if (TD.EMOJI_DICE.textRepresentation.equals(currentText.text)) {
+      } else if (ContentPreview.EMOJI_DICE.textRepresentation.equals(currentText.text)) {
         items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendNoMarkdown, Lang.getString(R.string.SendDiceAsEmoji), R.drawable.baseline_casino_24));
       } else {
         items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendNoMarkdown, Lang.getString(R.string.SendDiceAsEmoji), Drawables.emojiDrawable(currentText.text)));
@@ -378,6 +385,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (canSelectSender()) {
       items.add(0, createHapticSenderItem(R.id.btn_openSendersMenu, chat.messageSenderId, false, false));
     }
+    hideCursorsForInputView();
     return items;
   }
 
@@ -509,14 +517,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     int totalCount = manager != null ? manager.getKnownTotalMessageCount() : -1;
 
     if (previewSearchFilter != null) {
-      switch (previewSearchFilter.getConstructor()) {
-        case TdApi.SearchMessagesFilterPinned.CONSTRUCTOR: {
-          if (totalCount > 0) {
-            headerCell.setForcedSubtitle(Lang.pluralBold(R.string.XPinnedMessages, totalCount));
-          } else {
-            headerCell.setForcedSubtitle(Lang.getString(R.string.PinnedMessages));
-          }
-          break;
+      if (Td.isPinnedFilter(previewSearchFilter)) {
+        if (totalCount > 0) {
+          headerCell.setForcedSubtitle(Lang.pluralBold(R.string.XPinnedMessages, totalCount));
+        } else {
+          headerCell.setForcedSubtitle(Lang.getString(R.string.PinnedMessages));
         }
       }
       return;
@@ -689,6 +694,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
           super.onLayout(changed, left, top, right, bottom);
           updateButtonsY();
         }
+
+        @Override
+        public boolean onTouchEvent (MotionEvent event) {
+          boolean r = super.onTouchEvent(event);
+          if (textFormattingLayout != null) {
+            textFormattingLayout.onInputViewTouchEvent(event);
+          }
+          return r;
+        }
       };
       inputView.setNoPersonalizedLearning(Settings.instance().needsIncognitoMode(chat));
       inputView.setId(R.id.msg_input);
@@ -707,6 +721,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
         inputView.setEnabled(false);
         inputView.setInputPlaceholder(R.string.Message);
       }
+      inputView.setSelectionChangeListener(this);
+      inputView.setSpanChangeListener(this::onInputSpansChanged);
     }
 
     params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48f));
@@ -809,7 +825,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       @Override
       public void onShowAllRequest (PinnedMessagesBar view) {
         MessagesController c = new MessagesController(context, tdlib);
-        c.setArguments(new MessagesController.Arguments(null, chat, null, null, new TdApi.SearchMessagesFilterPinned()));
+        c.setArguments(new Arguments(null, chat, null, null, new TdApi.SearchMessagesFilterPinned()));
         navigateTo(c);
       }
     });
@@ -930,7 +946,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     fparams = FrameLayoutFix.newParams(Screen.dp(24f) * 2 + padding * 2, Screen.dp(24f) * 2 + padding * 2, Gravity.RIGHT | Gravity.BOTTOM);
     params.rightMargin = params.bottomMargin = Screen.dp(16f) - padding;
 
-    reactionsButton = new CircleButton(context());
+    reactionsButton = new CircleButton(context(), tdlib);
     reactionsButton.setId(R.id.btn_reaction);
     reactionsButton.setOnClickListener(this);
     addThemeInvalidateListener(reactionsButton);
@@ -1952,7 +1968,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       openMediaView(false, false);
     } else if (viewId == R.id.msg_send) {
       if (!leaveInlineMode()) {
-        if (isEditingMessage()) {
+        if (inputView != null && !isSelfChat() && !tdlib.hasPremium() && inputView.hasOnlyPremiumFeatures()) {
+          showBottomHint(Strings.buildMarkdown(this, Lang.getString(R.string.MessageContainsPremiumFeatures), null), false);
+        } else if (isEditingMessage()) {
           saveMessage(true);
         } else if (areScheduled) {
           tdlib.ui().showScheduleOptions(this, getChatId(), false, (modifiedSendOptions, disableMarkdown) -> send(modifiedSendOptions), null, null);
@@ -2024,6 +2042,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
               ShareController c = new ShareController(context(), tdlib());
               c.setArguments(new ShareController.Args(url.url));
               c.show();
+              hideCursorsForInputView();
             }
           });
         }
@@ -2054,8 +2073,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       manager.rebuildLayouts();
     } else if (id == R.id.btn_botHelp || id == R.id.btn_botSettings) {
       if (chat != null) {
-        if (tdlib.chatBlocked(chat.id)) {
-          tdlib.blockSender(tdlib.sender(chat.id), false, tdlib.okHandler());
+        if (tdlib.chatFullyBlocked(chat.id)) {
+          tdlib.unblockSender(tdlib.sender(chat.id), tdlib.okHandler());
         }
         if (actionMode == ACTION_BOT_START) {
           hideActionButton();
@@ -2598,7 +2617,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       TGBotStart start = (TGBotStart) item;
 
       if (start.isGame()) {
-        tdlib.sendMessage(chat.id, getMessageThreadId(), 0, Td.newSendOptions(obtainSilentMode()), new TdApi.InputMessageGame(start.getUserId(), start.getArgument()));
+        tdlib.sendMessage(chat.id, getMessageThreadId(), null, Td.newSendOptions(obtainSilentMode()), new TdApi.InputMessageGame(start.getUserId(), start.getArgument()));
       } else if (start.useDeepLinking()) {
         if (ChatId.isUserChat(chat.id)) {
           showActionBotButton(start.getArgument());
@@ -2799,6 +2818,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
     });
 
+    if (emojiLayout != null) {
+      emojiLayout.setAllowPremiumFeatures(isSelfChat());
+    }
+
     updateCounters(false);
     checkRestriction();
     checkLinkedChat();
@@ -2898,6 +2921,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void checkInlineResults () {
     context().setInlineResultsHidden(this, !isFocused() || pagerScrollOffset >= 1f);
+    context().setEmojiSuggestionsVisible(isFocused() && !(pagerScrollOffset >= 1f) && canShowEmojiSuggestions);
   }
 
   public void checkRoundVideo () {
@@ -3012,7 +3036,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       boolean joinSupergroupToSendMessages = messageThread == null || supergroup != null && supergroup.joinToSendMessages;
       if (secretChat != null && !TD.isSecretChatReady(secretChat)) {
         showSecretChatAction(secretChat);
-      } else if (tdlib.chatBlocked(chat) && tdlib.isUserChat(chat)) {
+      } else if (tdlib.chatFullyBlocked(chat.id) && tdlib.isUserChat(chat)) {
         showActionUnblockButton();
       } else if (tdlib.chatUserDeleted(chat) || (ChatId.isBasicGroup(chat.id) && (!tdlib.chatBasicGroupActive(chat.id) || TD.isNotInChat(status))) || (tdlib.isSupergroupChat(chat) && TD.isNotInChat(status) && joinSupergroupToSendMessages)) {
         if (tdlib.isSupergroupChat(chat) && status != null && TD.canReturnToChat(status)) {
@@ -3232,18 +3256,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     int baseY = Views.getLocationInWindow(navigationController.getValue())[1];
 
-    if (areStickersVisible) {
-      int locationY = Views.getLocationInWindow(stickerSuggestionsWrap)[1];
-      locationY -= baseY;
-      if (y >= locationY && y < locationY + stickerSuggestionsWrap.getMeasuredHeight()) {
-        int i = ((LinearLayoutManager) stickerSuggestionsView.getLayoutManager()).findFirstVisibleItemPosition();
-        if (i == 0) {
-          View view = stickerSuggestionsView.getLayoutManager().findViewByPosition(0);
-          return view == null || view.getLeft() >= 0;
-        }
-        return false;
-      }
-    }
+    /*if (areInlineResultsVisible()) {
+      return false;
+    }*/
 
     int bound = (getSlideBackBound());
 
@@ -3830,6 +3845,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       openKeyboard = false;
       Keyboard.show(inputView);
     }
+    // showEmojiSuggestionsIfTemporarilyHidden();
     // tdlib.context().changePreferredAccountId(tdlib.id(), TdlibManager.SWITCH_REASON_CHAT_FOCUS);
   }
 
@@ -3846,7 +3862,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public final boolean shouldDisallowScreenshots () {
-    return chat != null && (isSecretChat() || chat.hasProtectedContent || manager.hasVisibleProtectedContent());
+    return (chat != null && (isSecretChat() || chat.hasProtectedContent || manager.hasVisibleProtectedContent())) || super.shouldDisallowScreenshots();
   }
 
   @Override
@@ -3870,12 +3886,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  public void onChatOpenStateChanged (long chatId) {
-    if (!isDestroyed() && getChatId() == chatId && manager != null) {
-      manager.viewMessages();
-    }
-  }
-
   public boolean canSaveDraft () {
     return canWriteMessages() && getChatId() != 0 && !inPreviewMode() && !isInForceTouchMode();
   }
@@ -3886,14 +3896,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
         // TODO save local draft
       } else if (inputView != null && inputView.textChangedSinceChatOpened() && isFocused()) {
         final TdApi.FormattedText outputText = inputView.getOutputText(false);
-        final long replyToMessageId = getCurrentReplyId();
+        final @Nullable TdApi.MessageReplyToMessage replyTo = getCurrentReplyId();
         final long date = tdlib.currentTime(TimeUnit.SECONDS);
         final TdApi.InputMessageText inputMessageText = new TdApi.InputMessageText(
           outputText,
           getCurrentAllowLinkPreview(),
           false
         );
-        final TdApi.DraftMessage draftMessage = new TdApi.DraftMessage(replyToMessageId, (int) date, inputMessageText);
+        final TdApi.DraftMessage draftMessage = new TdApi.DraftMessage(replyTo != null ? replyTo.messageId : 0, (int) date, inputMessageText);
         final long outputChatId = messageThread != null ? messageThread.getChatId() : getChatId();
         final long messageThreadId = messageThread != null ? messageThread.getMessageThreadId() : 0;
         if (messageThread != null) {
@@ -3940,6 +3950,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (translationPopup != null) {
       translationPopup.hidePopupWindow(true);
     }
+    cancelSheduledKeyboardOpeningAndHideAllKeyboards();
+    // hideEmojiSuggestionsTemporarily();
     // closeEmojiKeyboard();
     // Media.instance().stopVoice();
   }
@@ -4088,6 +4100,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       requestsView.performDestroy();
     }
 
+    if (reactionsButton != null) {
+      reactionsButton.performDestroy();
+    }
+
     // messagesView.clear();
 
     closeVoicePreview(true);
@@ -4108,6 +4124,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
         liveLocation.destroy();
         liveLocation = null;
       }
+      if (pinnedMessagesBar != null)
+        pinnedMessagesBar.completeDestroy();
       if (topBar != null)
         topBar.performDestroy();
       if (replyView != null)
@@ -4201,7 +4219,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       ids.append(R.id.btn_setPasscode);
       strings.append(R.string.PasscodeTitle);
     }
-    tdlib.ui().addDeleteChatOptions(getChatId(), ids, strings, true, false);
+    tdlib.ui().addDeleteChatOptions(getChatId(), ids, strings, !tdlib.isChannel(chat.id), false);
 
     if (!messagesHidden) {
       if (ChatId.isUserChat(chat.id)) {
@@ -4294,12 +4312,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
               b.append(from);
               b.append(": ");
             }
-            b.append(TD.buildShortPreview(tdlib, msg.getMessage(), true));
+            ContentPreview contentPreview = ContentPreview.getChatListPreview(tdlib, msg.getChatId(), msg.getMessage(), true);
+            b.append(contentPreview.buildText(false));
             break;
           }
           case TdApi.MessageDice.CONSTRUCTOR: {
             String emoji = ((TdApi.MessageDice) msg.getMessage().content).emoji;
-            b.append(Lang.getString(TD.EMOJI_DART.textRepresentation.equals(emoji) ? R.string.SendDartHint : TD.EMOJI_DICE.textRepresentation.equals(emoji) ? R.string.SendDiceHint : R.string.SendUnknownDiceHint, emoji));
+            b.append(Lang.getString(ContentPreview.EMOJI_DART.textRepresentation.equals(emoji) ? R.string.SendDartHint : ContentPreview.EMOJI_DICE.textRepresentation.equals(emoji) ? R.string.SendDiceHint : R.string.SendUnknownDiceHint, emoji));
             break;
           }
         }
@@ -4335,6 +4354,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
         b.append(Lang.getString(R.string.SendFailureInfo, Strings.join(", ", (Object[]) errors)));
       }
     }
+    if (msg.isSponsoredMessage()) {
+      String additionalInfo = msg.getSponsoredMessage().additionalInfo;
+      if (!StringUtils.isEmpty(additionalInfo)) {
+        if (b.length() > 0) {
+          b.append('\n');
+        }
+        b.append(additionalInfo);
+      }
+    }
     if (!msg.canBeSaved()) {
       if (b.length() > 0) {
         // b.append("\n\n");
@@ -4365,6 +4393,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         } else {
           PopupLayout popupLayout = showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons, messageHandler);
           patchReadReceiptsOptions(popupLayout, messageContext);
+          patchUsedEmojiPacks(popupLayout, messageContext);
         }
       });
     });
@@ -4374,9 +4403,85 @@ public class MessagesController extends ViewController<MessagesController.Argume
     showMessageOptions(null, message, reactionType, newMessageOptionDelegate(message, null, null));
   }
 
+  private boolean isMessageOptionsVisible;
+
   private void showMessageOptions (Options options, TGMessage message, @Nullable TdApi.ReactionType reactionType, OptionDelegate optionsDelegate) {
-    MessageOptionsPagerController r = new MessageOptionsPagerController(context, tdlib, options, message, reactionType, optionsDelegate);
+    if (isMessageOptionsVisible) {
+      return;
+    }
+    isMessageOptionsVisible = true;
+
+    MessageOptionsPagerController r = new MessageOptionsPagerController(context, tdlib, options, message, reactionType, optionsDelegate) {
+      @Override
+      protected void onCustomShowComplete () {
+        super.onCustomShowComplete();
+        optimizeEmojiLayoutForOptionsWindow(true);
+      }
+    };
     r.show();
+    r.setDismissListener(new PopupLayout.DismissListener() {
+      @Override
+      public void onPopupDismiss (PopupLayout popup) {
+        optimizeEmojiLayoutForOptionsWindow(false);
+        isMessageOptionsVisible = false;
+      }
+
+      @Override
+      public void onPopupDismissPrepare (PopupLayout popup) {
+        onHideMessageOptions();
+      }
+    });
+    prepareToShowMessageOptions();
+    hideCursorsForInputView();
+  }
+
+  private boolean needShowKeyboardAfterHideMessageOptions;
+  private boolean needShowEmojiKeyboardAfterHideMessageOptions;
+
+  private void prepareToShowMessageOptions () {
+    needShowKeyboardAfterHideMessageOptions = getKeyboardState();
+    needShowEmojiKeyboardAfterHideMessageOptions = emojiShown;
+    if (needShowKeyboardAfterHideMessageOptions) {    // показываем emoji-клавиатуру, чтобы скрыть системную
+      openEmojiKeyboard();                            // делаем emojiLayout невидимым для оптимизации
+      emojiLayout.optimizeForDisplayMessageOptionsWindow(true);
+    }                                                 // todo: если меню сообщения ниже EmojiLayout, то не скрывать?
+  }
+
+  private void optimizeEmojiLayoutForOptionsWindow (boolean needOptimize) {
+    if (needShowKeyboardAfterHideMessageOptions || needShowEmojiKeyboardAfterHideMessageOptions) {
+      emojiLayout.optimizeForDisplayMessageOptionsWindow(needOptimize);
+    }
+  }
+
+  private void onHideMessageOptions () {
+    if (needShowEmojiKeyboardAfterHideMessageOptions) {
+      openEmojiKeyboard();
+      emojiLayout.optimizeForDisplayMessageOptionsWindow(false);
+    } else if (needShowKeyboardAfterHideMessageOptions) {
+      showKeyboard();
+    }
+  }
+
+
+  private void patchUsedEmojiPacks (PopupLayout layout, MessageContext messageContext) {
+    TGMessage message = messageContext.message;
+    long[] emojiPackIds = message.getUniqueEmojiPackIdList();
+    if (emojiPackIds.length == 0) {
+      return;
+    }
+
+    OptionsLayout optionsLayout = (OptionsLayout) layout.getChildAt(1);
+    EmojiPacksInfoView emojiPacksInfoView = new EmojiPacksInfoView(layout.getContext(), this, tdlib);
+    emojiPacksInfoView.update(message.getFirstEmojiId(), emojiPackIds, new ClickableSpan() {
+      @Override
+      public void onClick (@NonNull View widget) {
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
+        tdlib.ui().showStickerSets(MessagesController.this, emojiPackIds, true, null);
+        layout.hideWindow(true);
+      }
+    }, false);
+    optionsLayout.addView(emojiPacksInfoView, 1);
+
   }
 
   private void patchReadReceiptsOptions (PopupLayout layout, MessageContext messageContext) {
@@ -4677,7 +4782,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           b.append("]");
         }
       }
-      if (msg.replyToMessageId != 0) {
+      if (msg.replyTo != null) {
         String inReply = m.getInReplyTo();
         if (!StringUtils.isEmpty(inReply)) {
           b.append("\n[");
@@ -4693,7 +4798,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       TdApi.FormattedText text = Td.textOrCaption(msg.content);
       if (msg.content.getConstructor() != TdApi.MessageText.CONSTRUCTOR && msg.content.getConstructor() != TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
         b.append("\n[");
-        b.append(TD.buildShortPreview(tdlib, msg, false));
+        ContentPreview preview = ContentPreview.getChatListPreview(tdlib, msg.chatId, msg, true);
+        b.append(preview.buildText(false));
         b.append("]");
       }
       //noinspection UnsafeOptInUsageError
@@ -5082,6 +5188,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return newMessageOptionDelegate(context.message, context.messageSender, context.tag);
   }
 
+  private void cancelSheduledKeyboardOpeningAndHideAllKeyboards () {
+    if (needShowKeyboardAfterHideMessageOptions || needShowEmojiKeyboardAfterHideMessageOptions) {
+      needShowEmojiKeyboardAfterHideMessageOptions = false;
+      needShowKeyboardAfterHideMessageOptions = false;
+      hideAllKeyboards();
+    }
+  }
+
   private OptionDelegate newMessageOptionDelegate (final TGMessage selectedMessage, final TdApi.ChatMember selectedMessageSender, final Object selectedMessageTag) {
     return (itemView, id) -> {
       if (id == R.id.btn_cancel) {
@@ -5090,7 +5204,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (selectedMessage == null) {
         return false;
       }
-      if (id == R.id.btn_messageApplyLocalization) {
+      if (id == R.id.btn_emojiPackInfoButton) {
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
+        tdlib.ui().showStickerSets(MessagesController.this, ((EmojiPacksInfoView) itemView).getEmojiPacksIds(), true, null);
+        return true;
+      } else if (id == R.id.btn_messageApplyLocalization) {
         if (selectedMessage.getMessage().content.getConstructor() == TdApi.MessageDocument.CONSTRUCTOR) {
           TdApi.Document document = ((TdApi.MessageDocument) selectedMessage.getMessage().content).document;
           tdlib.ui().readCustomLanguage(this, document, langPack -> tdlib.ui().showLanguageInstallPrompt(this, langPack, selectedMessage.getMessage()), null);
@@ -5103,6 +5221,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         return true;
       } else if (id == R.id.btn_messageSponsorInfo) {
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         ModernActionedLayout mal = new ModernActionedLayout(this);
         mal.setController(new SponsoredMessagesInfoController(mal, R.string.SponsoredInfoMenu));
         mal.initCustom();
@@ -5134,6 +5253,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         tdlib.ui().addContact(this, contact);
         return true;
       } else if (id == R.id.btn_messageCallContact) {
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         TdApi.Contact contact = ((TdApi.MessageContact) selectedMessage.getMessage().content).contact;
         showCallOptions(contact.phoneNumber, contact.userId);
         return true;
@@ -5141,9 +5261,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
         tdlib.resendMessages(selectedMessage.getChatId(), selectedMessage.getIds());
         return true;
       } else if (id == R.id.btn_messageSendNow) {
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         tdlib.client().send(new TdApi.EditMessageSchedulingState(getChatId(), selectedMessage.getId(), null), tdlib.okHandler());
         return true;
       } else if (id == R.id.btn_messageReschedule) {
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         tdlib.ui().showScheduleOptions(this, getChatId(), false, (sendOptions, disableMarkdown) -> {
           if (sendOptions.schedulingState != null) {
             tdlib.client().send(new TdApi.EditMessageSchedulingState(getChatId(), selectedMessage.getId(), sendOptions.schedulingState), tdlib.okHandler());
@@ -5160,6 +5282,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         tdlib.ui().openMessage(this, chatId, new MessageId(chatId, messageId, otherMessageIds), selectedMessage.openParameters());
         return true;
       } else if (id == R.id.btn_messageShowInChatSearch) {
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         if (inOnlyFoundMode()) {
           long chatId = selectedMessage.getChatId();
           long messageId = selectedMessage.getSmallestId();
@@ -5169,6 +5292,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         return true;
       } else if (id == R.id.btn_messageDirections) {
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         TdApi.MessageContent content = selectedMessage.getMessage().content;
         switch (content.getConstructor()) {
           case TdApi.MessageVenue.CONSTRUCTOR: {
@@ -5184,28 +5308,34 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         return true;
       } else if (id == R.id.btn_messageFoursquare) {
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         String venueId = ((TdApi.MessageVenue) selectedMessage.getMessage().content).venue.id;
         tdlib.ui().openUrl(this, "https://foursquare.com/v/" + venueId, selectedMessage.openParameters());
         return true;
       } else if (id == R.id.btn_messageCall) {
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         tdlib.context().calls().makeCall(this, tdlib.calleeUserId(selectedMessage.getMessage()), null);
         return true;
       } else if (id == R.id.btn_messageDelete) {
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         tdlib.ui().showDeleteOptions(this, selectedMessage.getAllMessages(), null);
         return true;
       } else if (id == R.id.btn_messageReport) {
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         reportChat(selectedMessage.getAllMessages(), null);
         return true;
       } else if (id == R.id.btn_messageSelect) {
         selectAllMessages(selectedMessage, -1, -1);
         return true;
       } else if (id == R.id.btn_messageViewList) {//FIXME?
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         foundMessageId = new MessageId(selectedMessage.getMessage().chatId, selectedMessage.getMessage().id);
         searchFromUserMessageId = foundMessageId;
         manager.setHighlightMessageId(foundMessageId, MessagesManager.HIGHLIGHT_MODE_NORMAL);
         viewMessagesFromSender(selectedMessage.getMessage().senderId, true);
         return true;
       } else if (id == R.id.btn_messageRestrictMember) {
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         EditRightsController c = new EditRightsController(context, tdlib);
         c.setArguments(new EditRightsController.Args(selectedMessage.getChatId(), selectedMessage.getMessage().senderId, true, tdlib.chatStatus(selectedMessage.getChatId()), selectedMessageSender));
         navigateTo(c);
@@ -5220,6 +5350,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         return true;
       } else if (id == R.id.btn_messageMore) {
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         IntList ids = new IntList(3);
         IntList icons = new IntList(3);
         StringList strings = new StringList(3);
@@ -5245,6 +5376,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         return true;
       } else if (id == R.id.btn_messageStickerSet) {
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         ((TGMessageSticker) selectedMessage).openStickerSet();
       } else if (id == R.id.btn_messageFavoriteContent || id == R.id.btn_messageUnfavoriteContent) {
         boolean isFavorite = id == R.id.btn_messageFavoriteContent;
@@ -5261,10 +5393,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         return true;
       } else if (id == R.id.btn_messageReplies) {
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         selectedMessage.openMessageThread();
         return true;
       } else if (id == R.id.btn_messageReplyWithDice) {
-        sendDice(itemView, ((TdApi.MessageDice) selectedMessage.getMessage().content).emoji, 0);
+        sendDice(itemView, ((TdApi.MessageDice) selectedMessage.getMessage().content).emoji);
         return true;
       } else if (id == R.id.btn_copyTranslation || id == R.id.btn_messageCopy) {
         if (!selectedMessage.canBeSaved()) {
@@ -5295,11 +5428,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
         editMessage(message);
         return true;
       } else if (id == R.id.btn_messageShare) {
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         if (selectedMessage.canBeForwarded()) {
           shareMessages(selectedMessage.getChatId(), selectedMessage.getAllMessages());
         }
         return true;
       } else if (id == R.id.btn_chatTranslate) {
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         startTranslateMessages(selectedMessage);
         return true;
       } else if (id == R.id.btn_chatTranslateOff) {
@@ -5351,6 +5486,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         return true;
       } else if (id == R.id.btn_viewStatistics) {
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         TdApi.Message[] messages = selectedMessage.getAllMessages();
         MessageStatisticsController statsController = new MessageStatisticsController(context, tdlib);
         if (messages.length == 1) {
@@ -5380,6 +5516,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         return true;
       } else if (id == R.id.btn_stickerSetInfo) {
+        cancelSheduledKeyboardOpeningAndHideAllKeyboards();
         TdApi.MessageContent content = selectedMessage.getMessage().content;
         if (content.getConstructor() == TdApi.MessageSticker.CONSTRUCTOR) {
           TdApi.MessageSticker sticker = (TdApi.MessageSticker) content;
@@ -5681,8 +5818,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
             hideActionButton();
           }
         };
-        if (tdlib.chatBlocked(chat.id)) {
-          tdlib.blockSender(tdlib.sender(chat.id), false, result -> {
+        if (tdlib.chatFullyBlocked(chat.id)) {
+          tdlib.unblockSender(tdlib.sender(chat.id), result -> {
             if (TD.isOk(result)) {
               tdlib.ui().post(after);
             } else {
@@ -5710,7 +5847,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         break;
       }
       case ACTION_UNBAN_USER: {
-        tdlib.blockSender(tdlib.sender(chat.id), false, tdlib.okHandler());
+        tdlib.unblockSender(tdlib.sender(chat.id), tdlib.okHandler());
         break;
       }
       case ACTION_EMPTY: {
@@ -5844,6 +5981,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       reactionsCountView.setCounter(reactionCount, true, animate && reactionButtonFactor > 0f);
       setReactionButtonVisible(visible, animate);
     }
+    if (reactionCount > 0) {
+      reactionsButton.setUnreadReaction(tdlib.getSingleUnreadReaction(getChatId()));
+    }
   }
 
   private void setReactionButtonFactor (float factor) {
@@ -5936,17 +6076,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  public long getCurrentReplyId () {
-    return replyMessage != null ? replyMessage.id : 0;
+  public @Nullable TdApi.MessageReplyToMessage getCurrentReplyId () {
+    return replyMessage != null ? new TdApi.MessageReplyToMessage(replyMessage.chatId, replyMessage.id) : null;
   }
 
-  public long obtainReplyId () {
+  public @Nullable TdApi.MessageReplyToMessage obtainReplyTo () {
     if (replyMessage == null || replyMessage.id == 0 || (flags & FLAG_REPLY_ANIMATING) != 0) {
-      return 0;
+      return null;
     }
+    long chatId = replyMessage.chatId;
     long messageId = replyMessage.id;
     closeReply(true);
-    return messageId;
+    return new TdApi.MessageReplyToMessage(chatId, messageId);
   }
 
   private void showCurrentReply () {
@@ -6326,7 +6467,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean arePinnedMessages () {
-    return previewSearchFilter != null && previewSearchFilter.getConstructor() == TdApi.SearchMessagesFilterPinned.CONSTRUCTOR;
+    return previewSearchFilter != null && Td.isPinnedFilter(previewSearchFilter);
   }
 
   public void openPreviewMessage (TGMessage msg) {
@@ -6355,6 +6496,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
 
+    needShowEmojiKeyboardAfterHideMessageOptions = false;
     saveDraft();
 
     if (inSelectMode()) {
@@ -6479,6 +6621,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     final ShareController c = new ShareController(context, tdlib);
     c.setArguments(new ShareController.Args(messages).setAfter(() -> finishSelectMode(-1)));
     c.show();
+    hideCursorsForInputView();
   }
 
   // Markup utils
@@ -6528,7 +6671,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void hideAllKeyboards () {
     hideSoftwareKeyboard();
     closeCommandsKeyboard(false);
-    closeEmojiKeyboard();
+    closeEmojiKeyboard(true);
   }
 
   public void hideKeyboard (boolean personal) {
@@ -7009,7 +7152,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   // Silent mode
 
   public int getHorizontalInputPadding () {
-    return attachButtons.getVisibleChildrenWidth() + (canSelectSender() ? Screen.dp(47): 0);
+    return attachButtons.getVisibleChildrenWidth() + (canSelectSender() ? Screen.dp(47) : 0);
   }
 
   private void updateSilentButton (boolean visible) {
@@ -7279,6 +7422,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
           true, 0,
           settings.useDefaultSound, settings.soundId,
           settings.useDefaultShowPreview, settings.showPreview,
+          settings.useDefaultMuteStories, settings.muteStories,
+          settings.useDefaultStorySound, settings.storySoundId,
+          settings.useDefaultShowStorySender, settings.showStorySender,
           settings.useDefaultDisablePinnedMessageNotifications, settings.disablePinnedMessageNotifications,
           settings.useDefaultDisableMentionNotifications, settings.disableMentionNotifications
         );
@@ -7313,11 +7459,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
           }
 
           if (blockSender) {
-            tdlib.blockSender(tdlib.sender(chat.id), true, tdlib.okHandler());
+            tdlib.blockSender(tdlib.sender(chat.id), new TdApi.BlockListMain(), tdlib.okHandler());
           }
 
           if (reportSpam) {
-            tdlib.client().send(new TdApi.ReportChat(getChatId(), null, new TdApi.ChatReportReasonSpam(), null), tdlib.okHandler());
+            tdlib.client().send(new TdApi.ReportChat(getChatId(), null, new TdApi.ReportReasonSpam(), null), tdlib.okHandler());
           }
           if (deleteChat) {
             deleteAndLeave();
@@ -7368,7 +7514,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             );
             showOptions(title, new int[] {R.id.btn_reportChat, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ReportLocationAction), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_report_24, R.drawable.baseline_cancel_24}, (v, optionId) -> {
               if (optionId == R.id.btn_reportChat) {
-                tdlib.client().send(new TdApi.ReportChat(chatId, null, new TdApi.ChatReportReasonUnrelatedLocation(), null), tdlib.okHandler());
+                tdlib.client().send(new TdApi.ReportChat(chatId, null, new TdApi.ReportReasonUnrelatedLocation(), null), tdlib.okHandler());
                 dismissActionBar();
                 tdlib.ui().exitToChatScreen(this, chatId);
               }
@@ -7440,7 +7586,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           items.add(new TopBarView.Item(R.id.btn_shareMyContact, R.string.SharePhoneNumber, v -> {
             TdApi.User user = tdlib.myUser();
             if (user != null) {
-              showOptions(TD.getUserName(user) + ", " + Strings.formatPhone(user.phoneNumber), new int[]{R.id.btn_shareMyContact, R.id.btn_cancel}, new String[]{Lang.getString(R.string.SharePhoneNumberAction), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_BLUE, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_contact_phone_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
+              showOptions(TD.getUserName(user) + ", " + Strings.formatPhone(user.phoneNumber), new int[] {R.id.btn_shareMyContact, R.id.btn_cancel}, new String[] {Lang.getString(R.string.SharePhoneNumberAction), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_BLUE, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_contact_phone_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
                 if (id1 == R.id.btn_shareMyContact) {
                   tdlib.client().send(new TdApi.SharePhoneNumber(tdlib.chatUserId(chatId)), tdlib.okHandler());
                 }
@@ -7449,6 +7595,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
             }
           }));
           break;
+        }
+        case TdApi.ChatActionBarJoinRequest.CONSTRUCTOR: {
+          TdApi.ChatActionBarJoinRequest joinRequest = (TdApi.ChatActionBarJoinRequest) actionBar;
+          // TODO
+          break;
+        }
+        default: {
+          Td.assertChatActionBar_9b96400f();
+          throw Td.unsupported(actionBar);
         }
       }
     }
@@ -7563,10 +7718,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
     switch (id) {
-      case ANIMATOR_STICKERS: {
-        setStickersFactor(factor);
-        break;
-      }
       case ANIMATOR_SCROLL_TO_BOTTOM: {
         scrollToBottomButtonWrap.setAlpha(MathUtils.clamp(factor));
         checkScrollButtonOffsets();
@@ -7634,12 +7785,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         break;
       }
-      case ANIMATOR_STICKERS: {
-        if (finalFactor == 0f) {
-          onStickersDisappeared();
-        }
-        break;
-      }
     }
   }
 
@@ -7653,199 +7798,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void removeView (EmojiToneHelper context, View displayedView) {
     contentView.removeView(displayedView);
-  }
-
-  // Stickers suggestions
-
-  private AnimatedFrameLayout stickerSuggestionsWrap;
-  private RecyclerView stickerSuggestionsView;
-  private StickerSuggestionAdapter stickerSuggestionAdapter;
-  private boolean areStickersVisible;
-
-  @Override
-  public boolean onSendStickerSuggestion (View view, TGStickerObj sticker, TdApi.MessageSendOptions initialSendOptions) {
-    if (lastJunkTime == 0l || SystemClock.uptimeMillis() - lastJunkTime >= JUNK_MINIMUM_DELAY) {
-      if (showGifRestriction(view))
-        return false;
-      pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
-        if (sendSticker(view, sticker.getSticker(), sticker.getFoundByEmoji(), true, Td.newSendOptions(modifiedSendOptions, false, Config.REORDER_INSTALLED_STICKER_SETS))) {
-          lastJunkTime = SystemClock.uptimeMillis();
-          inputView.setInput("", false, true);
-        }
-      });
-      return true;
-    }
-    return false;
-  }
-
-  @Override
-  public int getStickerSuggestionsTop () {
-    return Views.getLocationInWindow(stickerSuggestionsWrap)[1]; // stickerSuggestionsWrap.getTop() + Views.getParentsTop(stickerSuggestionsWrap, 2);
-  }
-
-  @Override
-  public int getStickerSuggestionPreviewViewportHeight () {
-    return HeaderView.getSize(true) + messagesView.getMeasuredHeight();
-  }
-
-  public void hideStickerSuggestions () {
-    setStickersVisible(false);
-  }
-
-  private boolean choosingSuggestionSent;
-
-  public void showStickerSuggestions (@Nullable ArrayList<TGStickerObj> stickers, boolean isMore) {
-    if (stickers == null || stickers.isEmpty()) {
-      if (!isMore) {
-        setStickersVisible(false);
-      }
-      return;
-    }
-
-    if (stickerSuggestionsWrap == null) {
-      int stickersListTopHeight = Screen.dp(72f) + Screen.dp(2.5f);
-      int stickersListTotalHeight = stickersListTopHeight + Screen.dp(6.5f);
-      int stickerArrowHeight = Screen.dp(12f);
-
-      RelativeLayout.LayoutParams params;
-
-      params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, stickersListTotalHeight + stickerArrowHeight);
-      params.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
-      params.bottomMargin = -(Screen.dp(8f) + stickerArrowHeight);
-
-      stickerSuggestionsWrap = new AnimatedFrameLayout(context());
-      stickerSuggestionsWrap.setLayoutParams(params);
-
-      RecyclerView.LayoutManager manager = new LinearLayoutManager(context(), LinearLayoutManager.HORIZONTAL, false);
-      stickerSuggestionAdapter = new StickerSuggestionAdapter(this, this, manager, this) {
-        @Override
-        public void onStickerPreviewOpened (StickerSmallView view, TGStickerObj sticker) {
-          notifyChoosingEmoji(EmojiMediaType.STICKER, true);
-          if (areStickersVisible) {
-            choosingSuggestionSent = true;
-          }
-        }
-
-        @Override
-        public void onStickerPreviewChanged (StickerSmallView view, TGStickerObj otherOrThisSticker) {
-          notifyChoosingEmoji(EmojiMediaType.STICKER, true);
-          if (areStickersVisible) {
-            choosingSuggestionSent = true;
-          }
-        }
-
-        @Override
-        public void onStickerPreviewClosed (StickerSmallView view, TGStickerObj thisSticker) {
-          if (!choosingSuggestionSent) {
-            notifyChoosingEmoji(EmojiMediaType.STICKER, false);
-          }
-        }
-      };
-      stickerSuggestionAdapter.setStickers(stickers);
-      stickerSuggestionsView = new RecyclerView(context()) {
-        @Override
-        public boolean onTouchEvent (MotionEvent e) {
-          return areStickersVisible && getAlpha() == 1f && super.onTouchEvent(e);
-        }
-      };
-      stickerSuggestionsView.setItemAnimator(null);
-      stickerSuggestionsView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS : View.OVER_SCROLL_NEVER);
-      stickerSuggestionsView.setAdapter(stickerSuggestionAdapter);
-      stickerSuggestionsView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-        /*@Override
-        public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
-          if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
-            notifyChoosingEmoji(EmojiMediaType.STICKER, true);
-            choosingSuggestionSent = true;
-          }
-        }*/
-
-        @Override
-        public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
-          if (dx != 0) {
-            notifyChoosingEmoji(EmojiMediaType.STICKER, true);
-            choosingSuggestionSent = true;
-          }
-        }
-      });
-      stickerSuggestionsView.setLayoutManager(manager);
-      stickerSuggestionsView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, stickersListTotalHeight));
-      stickerSuggestionsWrap.addView(stickerSuggestionsView);
-
-      FrameLayoutFix.LayoutParams fparams;
-      fparams = FrameLayoutFix.newParams(Screen.dp(27f), stickerArrowHeight);
-      fparams.topMargin = stickersListTopHeight;
-      fparams.leftMargin = Screen.dp(55f) + Screen.dp(2.5f);
-
-      stickerSuggestionsWrap.setPivotX(fparams.leftMargin + Screen.dp(27f) / 2);
-      stickerSuggestionsWrap.setPivotY(stickersListTopHeight + stickerArrowHeight);
-
-      ImageView stickerSuggestionArrowView = new ImageView(context());
-      stickerSuggestionArrowView.setScaleType(ImageView.ScaleType.CENTER);
-      stickerSuggestionArrowView.setImageResource(R.drawable.stickers_back_arrow);
-      stickerSuggestionArrowView.setColorFilter(new PorterDuffColorFilter(Theme.headerFloatBackgroundColor(), PorterDuff.Mode.MULTIPLY));
-      addThemeSpecialFilterListener(stickerSuggestionArrowView, ColorId.overlayFilling);
-      stickerSuggestionArrowView.setLayoutParams(fparams);
-      stickerSuggestionsWrap.addView(stickerSuggestionArrowView);
-    } else if (isMore && stickerSuggestionAdapter.hasStickers() ) {
-      stickerSuggestionAdapter.addStickers(stickers);
-    } else {
-      stickerSuggestionAdapter.setStickers(stickers);
-    }
-
-    setStickersVisible(true);
-  }
-
-  private void setStickersVisible (boolean areVisible) {
-    if (this.areStickersVisible != areVisible) {
-      this.areStickersVisible = areVisible;
-      if (choosingSuggestionSent) {
-        if (!areVisible) {
-          notifyChoosingEmoji(EmojiMediaType.STICKER, false);
-        }
-        choosingSuggestionSent = false;
-      }
-      boolean onLayout = stickerSuggestionsWrap.getParent() == null && areVisible;
-      if (onLayout) {
-        contentView.addView(stickerSuggestionsWrap);
-      }
-      animateStickersFactor(areVisible ? 1f : 0f, onLayout);
-    }
-  }
-
-  private FactorAnimator stickersAnimator;
-  private static final int ANIMATOR_STICKERS = 1;
-
-  private void animateStickersFactor (float toFactor, boolean onLayout) {
-    if (stickersAnimator == null) {
-      stickersAnimator = new FactorAnimator(ANIMATOR_STICKERS, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l, stickersFactor);
-    }
-    if (toFactor == 1f && stickersFactor == 0f) {
-      stickersAnimator.setInterpolator(AnimatorUtils.OVERSHOOT_INTERPOLATOR);
-      stickersAnimator.setDuration(210l);
-    } else {
-      stickersAnimator.setInterpolator(AnimatorUtils.DECELERATE_INTERPOLATOR);
-      stickersAnimator.setDuration(100l);
-    }
-    stickersAnimator.animateTo(toFactor, onLayout ? stickerSuggestionsWrap : null);
-  }
-
-  private void onStickersDisappeared () {
-    stickerSuggestionAdapter.setStickers(null);
-    contentView.removeView(stickerSuggestionsWrap);
-  }
-
-  private float stickersFactor;
-
-  private void setStickersFactor (float factor) {
-    if (this.stickersFactor != factor) {
-      this.stickersFactor = factor;
-
-      final float scale = .8f + .2f * factor;
-      stickerSuggestionsWrap.setScaleX(scale);
-      stickerSuggestionsWrap.setScaleY(scale);
-      stickerSuggestionsWrap.setAlpha(Math.min(1f, Math.max(0f, factor)));
-    }
   }
 
   public void onUsernamePick (String username) {
@@ -8111,10 +8063,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (emojiLayout == null) {
         emojiLayout = new EmojiLayout(context());
         emojiLayout.initWithMediasEnabled(this, true, this, this, false);
+        emojiLayout.setAllowPremiumFeatures(isSelfChat());
         bottomWrap.addView(emojiLayout);
+        if (inputView != null) {
+          textFormattingLayout = new TextFormattingLayout(context(), this, inputView);
+          textFormattingLayout.setDelegate(this::closeTextFormattingKeyboard);
+          textFormattingLayout.setVisibility(View.GONE);
+          emojiLayout.addView(textFormattingLayout, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        }
         contentView.getViewTreeObserver().addOnPreDrawListener(emojiLayout);
       } else {
-        emojiLayout.setVisibility(View.VISIBLE);
+        emojiLayout.setVisibility(View.VISIBLE);    // todo: set invisible if message options is visible ?
       }
 
       // updateButtonsY();
@@ -8158,6 +8117,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
         hideSoftwareKeyboard();
       }
       updateEmojiStatus();
+      setTextFormattingLayoutVisible(textInputHasSelection);
+
+      if (inputView != null) {
+        inputView.setActionModeVisibility(!textInputHasSelection || !emojiShown);
+      }
     }
   }
 
@@ -8167,7 +8131,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         emojiLayout.setVisibility(View.GONE);
       }
       setEmojiShown(false, false);
-      emojiButton.setImageResource(EmojiLayout.getTargetIcon(true));
+      emojiButton.setImageResource(getTargetIcon(true));
     }
   }
 
@@ -8184,7 +8148,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         emojiLayout.showKeyboard(inputView);
       }
       setEmojiShown(false, true);
-      emojiButton.setImageResource(EmojiLayout.getTargetIcon(true));
+      emojiButton.setImageResource(getTargetIcon(true));
     }
   }
 
@@ -8209,6 +8173,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void onEnterEmoji (String emoji) {
     inputView.onEmojiSelected(emoji);
+  }
+
+  @Override
+  public void onEnterCustomEmoji (TGStickerObj sticker) {
+    inputView.onCustomEmojiSelected(sticker);
   }
 
   @Override
@@ -8285,6 +8254,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
     manager.onViewportMeasure();
   }
 
+  private final int[] cursorCoordinates = new int[2], symbolUnderCursorPosition = new int[2];
+
+  public int[] getInputCursorOffset () {
+    if (inputView == null) {
+      cursorCoordinates[0] = cursorCoordinates[1] = 0;
+      return cursorCoordinates;
+    }
+    inputView.getSymbolUnderCursorPosition(symbolUnderCursorPosition);
+    cursorCoordinates[0] = symbolUnderCursorPosition[0] + inputView.getLeft() + inputView.getPaddingLeft();
+    cursorCoordinates[1] = symbolUnderCursorPosition[1] - inputView.getLineHeight() + Screen.currentHeight() - getInputOffset(true) - Screen.dp(40);
+    return cursorCoordinates;
+  }
+
   public int getInputOffset (boolean excludeTranslation) {
     if (bottomWrap.getVisibility() == View.GONE) {
       return 0;
@@ -8310,7 +8292,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   // Send sticker
 
   private boolean sendContent (View view, int rightId, int defaultRes, int specificRes, int specificUntilRes, boolean canReply, TdApi.MessageSendOptions sendOptions, Future<TdApi.InputMessageContent> content) {
-    return sendContent(view, rightId, defaultRes, specificRes, specificUntilRes, canReply ? this::obtainReplyId : null, sendOptions, content);
+    return sendContent(view, rightId, defaultRes, specificRes, specificUntilRes, canReply ? this::obtainReplyTo : null, sendOptions, content);
   }
 
   private boolean showGifRestriction (View view) {
@@ -8362,11 +8344,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return showRestriction(view, restrictionText);
   }
 
-  private boolean sendContent (View view, @RightId int rightId, int defaultRes, int specificRes, int specificUntilRes, FutureLong replyToMessageId, TdApi.MessageSendOptions initialSendOptions, Future<TdApi.InputMessageContent> content) {
+  private boolean sendContent (View view, @RightId int rightId, int defaultRes, int specificRes, int specificUntilRes, Future<TdApi.MessageReplyTo> replyTo, TdApi.MessageSendOptions initialSendOptions, Future<TdApi.InputMessageContent> content) {
     if (showRestriction(view, rightId, defaultRes, specificRes, specificUntilRes))
       return false;
     pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
-      tdlib.sendMessage(chat.id, getMessageThreadId(), replyToMessageId != null ? replyToMessageId.getLongValue() : 0, Td.newSendOptions(modifiedSendOptions, obtainSilentMode()), content.getValue(), null);
+      tdlib.sendMessage(chat.id, getMessageThreadId(), replyTo != null ? replyTo.getValue() : null, Td.newSendOptions(modifiedSendOptions, obtainSilentMode()), content.getValue(), null);
     });
     return true;
   }
@@ -8376,6 +8358,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return false;
     }
     if (Td.isPremium(sticker) && tdlib.ui().showPremiumAlert(this, view, TdlibUi.PremiumFeature.STICKER)) {
+      return false;
+    }
+    if (Td.customEmojiId(sticker) != 0 && canWriteMessages() && inputView != null) {
+      inputView.onCustomEmojiSelected(sticker);
+      return false;
+    }
+    if (Td.customEmojiId(sticker) != 0 && canWriteMessages() && inputView != null) {
+      inputView.onCustomEmojiSelected(sticker);
       return false;
     }
     return sendContent(view, RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil, allowReply, initialSendOptions, () -> new TdApi.InputMessageSticker(new TdApi.InputFileId(sticker.sticker.id), null, 0, 0, emoji));
@@ -8389,13 +8379,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return sendContent(view, RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledGifs, R.string.ChatRestrictedGifs, R.string.ChatRestrictedGifsUntil, allowReply, Td.newSendOptions(), () -> TD.toInputMessageContent(animation));
   }
 
-  private void sendDice (View view, String emoji, long messageId) {
+  private void sendDice (View view, String emoji) {
     int disabledRes, restrictedRes, restrictedUntilRes;
-    if (TD.EMOJI_DART.textRepresentation.equals(emoji)) {
+    if (ContentPreview.EMOJI_DART.textRepresentation.equals(emoji)) {
       disabledRes = R.string.ChatDisabledDart;
       restrictedRes = R.string.ChatRestrictedDart;
       restrictedUntilRes = R.string.ChatRestrictedDartUntil;
-    } else if (TD.EMOJI_DICE.textRepresentation.equals(emoji)) {
+    } else if (ContentPreview.EMOJI_DICE.textRepresentation.equals(emoji)) {
       disabledRes = R.string.ChatDisabledDice;
       restrictedRes = R.string.ChatRestrictedDice;
       restrictedUntilRes = R.string.ChatRestrictedDiceUntil;
@@ -8404,7 +8394,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       restrictedRes = R.string.ChatRestrictedStickers;
       restrictedUntilRes = R.string.ChatRestrictedStickersUntil;
     }
-    sendContent(view, RightId.SEND_OTHER_MESSAGES, disabledRes, restrictedRes, restrictedUntilRes, () -> messageId, Td.newSendOptions(), () -> new TdApi.InputMessageDice(emoji, false));
+    sendContent(view, RightId.SEND_OTHER_MESSAGES, disabledRes, restrictedRes, restrictedUntilRes, null, Td.newSendOptions(), () -> new TdApi.InputMessageDice(emoji, false));
   }
 
   // Event log
@@ -8909,16 +8899,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     long chatId = getChatId();
     long messageThreadId = getMessageThreadId();
-    long replyToMessageId = allowReply ? (clearInput ? getCurrentReplyId() : obtainReplyId()) : 0;
+    final @Nullable TdApi.MessageReplyTo replyTo = allowReply ? (clearInput ? getCurrentReplyId() : obtainReplyTo()) : null;
 
     TdApi.InputMessageContent content;
     if (allowDice && tdlib.shouldSendAsDice(msg)) {
       int disabledRes, restrictedRes, restrictedUntilRes;
-      if (TD.EMOJI_DART.textRepresentation.equals(msg.text)) {
+      if (ContentPreview.EMOJI_DART.textRepresentation.equals(msg.text)) {
         disabledRes = R.string.ChatDisabledDart;
         restrictedRes = R.string.ChatRestrictedDart;
         restrictedUntilRes = R.string.ChatRestrictedDartUntil;
-      } else if (TD.EMOJI_DICE.textRepresentation.equals(msg.text)) {
+      } else if (ContentPreview.EMOJI_DICE.textRepresentation.equals(msg.text)) {
         disabledRes = R.string.ChatDisabledDice;
         restrictedRes = R.string.ChatRestrictedDice;
         restrictedUntilRes = R.string.ChatRestrictedDiceUntil;
@@ -8936,7 +8926,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     final TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(initialSendOptions, obtainSilentMode());
-    List<TdApi.SendMessage> functions = TD.sendMessageText(chatId, messageThreadId, replyToMessageId, finalSendOptions, content, tdlib.maxMessageTextLength());
+    List<TdApi.SendMessage> functions = TD.sendMessageText(chatId, messageThreadId, replyTo, finalSendOptions, content, tdlib.maxMessageTextLength());
     final boolean isSchedule = finalSendOptions.schedulingState != null;
 
     if (clearInput) {
@@ -8950,8 +8940,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (!isDestroyed()) {
           manager.setSentMessages(null);
           if (success) {
-            if (allowReply && replyToMessageId != 0 && getCurrentReplyId() == replyToMessageId) {
-              obtainReplyId();
+            if (allowReply && replyTo != null && Td.equalsTo(getCurrentReplyId(), replyTo)) {
+              obtainReplyTo();
             }
             if (allowLinkPreview) {
               obtainAllowLinkPreview(true);
@@ -9033,7 +9023,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
         tdlib.sendMessage(chat.id,
           getMessageThreadId(),
-          allowReply ? obtainReplyId() : 0,
+          allowReply ? obtainReplyTo() : null,
           Td.newSendOptions(modifiedSendOptions, obtainSilentMode()),
           new TdApi.InputMessageContact(new TdApi.Contact(user.phoneNumber, user.firstName, user.lastName, null, user.id)),
           null
@@ -9043,15 +9033,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void shareMyContact (boolean allowReply) {
-    shareMyContact(allowReply ? obtainReplyId() : 0);
+    shareMyContact(allowReply ? obtainReplyTo() : null);
   }
 
-  public void shareMyContact (long forceReplyMessageId) {
+  public void shareMyContact (@Nullable TdApi.MessageReplyTo forceReplyTo) {
     if (hasWritePermission()) {
       TdApi.User user = tdlib.myUser();
       if (user != null) {
         pickDateOrProceed(Td.newSendOptions(), (modifiedSendOptions, disableMarkdown) -> {
-          tdlib.sendMessage(chat.id, getMessageThreadId(), forceReplyMessageId, Td.newSendOptions(modifiedSendOptions, obtainSilentMode()), new TdApi.InputMessageContact(new TdApi.Contact(user.phoneNumber, user.firstName, user.lastName, null, user.id)), null);
+          tdlib.sendMessage(chat.id, getMessageThreadId(), forceReplyTo, Td.newSendOptions(modifiedSendOptions, obtainSilentMode()), new TdApi.InputMessageContact(new TdApi.Contact(user.phoneNumber, user.firstName, user.lastName, null, user.id)), null);
         });
       }
     }
@@ -9060,7 +9050,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void send (TdApi.InputMessageContent content, boolean allowReply, TdApi.MessageSendOptions initialSendOptions, RunnableData<TdApi.Message> after) {
     if (hasWritePermission()) { // FIXME RightId.SEND_POLLS
       pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
-        tdlib.sendMessage(chat.id, getMessageThreadId(), allowReply ? obtainReplyId() : 0, Td.newSendOptions(modifiedSendOptions, obtainSilentMode()), content, after);
+        tdlib.sendMessage(chat.id, getMessageThreadId(), allowReply ? obtainReplyTo() : null, Td.newSendOptions(modifiedSendOptions, obtainSilentMode()), content, after);
       });
     }
   }
@@ -9068,7 +9058,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void sendInlineQueryResult (long inlineQueryId, String id, boolean allowReply, boolean clearInput, TdApi.MessageSendOptions initialSendOptions) {
     if (hasWritePermission()) { // FIXME RightId.SEND_OTHER
       pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
-        tdlib.sendInlineQueryResult(chat.id, getMessageThreadId(), allowReply ? obtainReplyId() : 0, Td.newSendOptions(modifiedSendOptions, obtainSilentMode()), inlineQueryId, id);
+        tdlib.sendInlineQueryResult(chat.id, getMessageThreadId(), allowReply ? obtainReplyTo() : null, Td.newSendOptions(modifiedSendOptions, obtainSilentMode()), inlineQueryId, id);
         if (clearInput) {
           inputView.setInput("", false, true);
           inputView.getInlineSearchContext().resetInlineBotsCache();
@@ -9080,7 +9070,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void sendAudio (TdApi.Audio audio, boolean allowReply) {
     if (hasWritePermission()) {
       pickDateOrProceed(Td.newSendOptions(), (modifiedSendOptions, disableMarkdown) -> {
-        tdlib.sendMessage(chat.id, getMessageThreadId(), allowReply ? obtainReplyId() : 0, Td.newSendOptions(modifiedSendOptions, obtainSilentMode()), TD.toInputMessageContent(audio), null);
+        tdlib.sendMessage(chat.id, getMessageThreadId(), allowReply ? obtainReplyTo() : null, Td.newSendOptions(modifiedSendOptions, obtainSilentMode()), TD.toInputMessageContent(audio), null);
       });
     }
   }
@@ -9093,7 +9083,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         content[i] = tdlib.filegen().createThumbnail(new TdApi.InputMessageAudio(TD.createInputFile(musicFile.getPath(), musicFile.getMimeType()), null, (int) (musicFile.getDuration() / 1000l), musicFile.getTitle(), musicFile.getArtist(), null), isSecretChat());
       }
       TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(initialSendOptions, obtainSilentMode());
-      List<TdApi.Function<?>> functions = TD.toFunctions(chat.id, getMessageThreadId(), allowReply ? obtainReplyId() : 0, finalSendOptions, content, needGroupMedia);
+      List<TdApi.Function<?>> functions = TD.toFunctions(chat.id, getMessageThreadId(), allowReply ? obtainReplyTo() : null, finalSendOptions, content, needGroupMedia);
       for (TdApi.Function<?> function : functions) {
         tdlib.client().send(function, tdlib.messageHandler());
       }
@@ -9105,15 +9095,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return false;
     }
     final long chatId = chat.id;
-    final long replyMessageId = allowReply ? obtainReplyId() : 0;
+    final TdApi.MessageReplyTo replyTo = allowReply ? obtainReplyTo() : null;
     TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(initialSendOptions, obtainSilentMode());
     if (record.getWaveform() == null) {
       Background.instance().post(() -> {
         byte[] waveform = N.getWaveform(record.getPath());
-        tdlib.sendMessage(chatId, getMessageThreadId(), replyMessageId, finalSendOptions, new TdApi.InputMessageVoiceNote(record.toInputFile(), record.getDuration(), waveform, null), null);
+        tdlib.sendMessage(chatId, getMessageThreadId(), replyTo, finalSendOptions, new TdApi.InputMessageVoiceNote(record.toInputFile(), record.getDuration(), waveform, null), null);
       });
     } else {
-      tdlib.sendMessage(chatId, getMessageThreadId(), replyMessageId, finalSendOptions, new TdApi.InputMessageVoiceNote(record.toInputFile(), record.getDuration(), record.getWaveform(), null), null);
+      tdlib.sendMessage(chatId, getMessageThreadId(), replyTo, finalSendOptions, new TdApi.InputMessageVoiceNote(record.toInputFile(), record.getDuration(), record.getWaveform(), null), null);
     }
     return true;
   }
@@ -9266,7 +9256,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         } else if (requestCode == Intents.ACTIVITY_RESULT_GALLERY_FILE) {
           sendFiles(mediaButton, Collections.singletonList(imagePath), false, true, Td.newSendOptions());
         } else {
-          sendPhotoCompressed(imagePath, 0, true);
+          sendPhotoCompressed(imagePath, null, true);
         }
 
         break;
@@ -9281,14 +9271,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (audioPath != null) {
           final long chatId = chat.id;
           final boolean disableNotification = obtainSilentMode();
-          final long replyToMessageId = obtainReplyId();
+          final TdApi.MessageReplyTo replyTo = obtainReplyTo();
           Background.instance().post(() -> {
             AudioFile file;
 
             file = new AudioFile(audioPath);
             file.loadId3Tags();
 
-            tdlib.sendMessage(chatId, getMessageThreadId(), replyToMessageId, Td.newSendOptions(disableNotification), new TdApi.InputMessageAudio(TD.createInputFile(audioPath), null, file.getDuration(), file.getTitle(), file.getPerformer(), null));
+            tdlib.sendMessage(chatId, getMessageThreadId(), replyTo, Td.newSendOptions(disableNotification), new TdApi.InputMessageAudio(TD.createInputFile(audioPath), null, file.getDuration(), file.getTitle(), file.getPerformer(), null));
           });
         }
         break;
@@ -9300,7 +9290,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     final long chatId = chat.id;
     final boolean isSecretChat = isSecretChat();
     final TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(initialSendOptions, obtainSilentMode());
-    final long replyMessageId = allowReply ? obtainReplyId() : 0;
+    final TdApi.MessageReplyTo replyTo = allowReply ? obtainReplyTo() : null;
     boolean allowAudio = tdlib.getRestrictionStatus(chat, RightId.SEND_AUDIO) == null;
     boolean allowDocs = tdlib.getRestrictionStatus(chat, RightId.SEND_DOCS) == null;
     boolean allowVideos = tdlib.getRestrictionStatus(chat, RightId.SEND_VIDEOS) == null;
@@ -9329,14 +9319,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
         content.set(i, tdlib.filegen().createThumbnail(inputMessageContent, isSecretChat));
       }
 
-      List<TdApi.Function<?>> functions = TD.toFunctions(chatId, getMessageThreadId(), replyMessageId, finalSendOptions, content.toArray(new TdApi.InputMessageContent[0]), needGroupMedia);
+      List<TdApi.Function<?>> functions = TD.toFunctions(chatId, getMessageThreadId(), replyTo, finalSendOptions, content.toArray(new TdApi.InputMessageContent[0]), needGroupMedia);
       for (TdApi.Function<?> function : functions) {
         tdlib.client().send(function, tdlib.messageHandler());
       }
     });
   }
 
-  public void sendPhotoCompressed (final String path, final int ttl, final boolean allowReply) {
+  public void sendPhotoCompressed (final String path, final @Nullable TdApi.MessageSelfDestructType selfDestructType, final boolean allowReply) {
     if (showRestriction(mediaButton, RightId.SEND_PHOTOS)) {
       return;
     }
@@ -9345,7 +9335,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     if (path != null) {
       final long chatId = chat.id;
-      final long replyToMessageId = allowReply ? obtainReplyId() : 0;
+      final TdApi.MessageReplyTo replyTo = allowReply ? obtainReplyTo() : null;
       final boolean silent = obtainSilentMode();
       final boolean isSecret = isSecretChat();
 
@@ -9364,8 +9354,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
           height = sampledHeight;
         }
         TdApi.InputFileGenerated inputFile = PhotoGenerationInfo.newFile(path, U.getRotationForExifOrientation(orientation));
-        TdApi.InputMessagePhoto photo = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(inputFile, null, null, width, height, null, ttl, false), isSecret);
-        tdlib.sendMessage(chatId, getMessageThreadId(), replyToMessageId, Td.newSendOptions(silent), photo);
+        TdApi.InputMessagePhoto photo = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(inputFile, null, null, width, height, null, selfDestructType, false), isSecret);
+        tdlib.sendMessage(chatId, getMessageThreadId(), replyTo, Td.newSendOptions(silent), photo);
       });
     }
   }
@@ -9378,14 +9368,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
     // TODO check RightId.SEND_PHOTOS / RightId.SEND_VIDEOS
 
     final long chatId = chat.id;
-    final long replyToMessageId = obtainReplyId();
+    final TdApi.MessageReplyTo replyTo = obtainReplyTo();
     final boolean isSecretChat = isSecretChat();
 
     Media.instance().post(() -> {
       final TdApi.InputMessageContent[] inputContent = new TdApi.InputMessageContent[files.length];
       int i = 0;
       for (ImageGalleryFile file : files) {
-        if (file.getTTL() > 0 && asFiles)
+        if (file.getSelfDestructType() != null && asFiles)
           throw new IllegalArgumentException();
         TdApi.InputMessageContent content;
         if (file.isVideo()) {
@@ -9422,10 +9412,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
           TdApi.FormattedText caption = file.getCaption(true, !disableMarkdown);
           if (asFiles && !forceVideo) {
             content = tdlib.filegen().createThumbnail(TD.toInputMessageContent(file.getFilePath(), inputVideo, fileInfo, caption, hasSpoiler), isSecretChat);
-          } else if (sendAsAnimation && file.getTTL() == 0 && (files.length == 1 || !needGroupMedia)) {
+          } else if (sendAsAnimation && file.getSelfDestructType() == null && (files.length == 1 || !needGroupMedia)) {
             content = tdlib.filegen().createThumbnail(new TdApi.InputMessageAnimation(inputVideo, null, null, file.getVideoDuration(true), width, height, caption, hasSpoiler), isSecretChat);
           } else {
-            content = tdlib.filegen().createThumbnail(new TdApi.InputMessageVideo(inputVideo, null, null, file.getVideoDuration(true), width, height, U.canStreamVideo(inputVideo), caption, file.getTTL(), hasSpoiler), isSecretChat);
+            content = tdlib.filegen().createThumbnail(new TdApi.InputMessageVideo(inputVideo, null, null, file.getVideoDuration(true), width, height, U.canStreamVideo(inputVideo), caption, file.getSelfDestructType(), hasSpoiler), isSecretChat);
           }
         } else {
           int[] size = new int[2];
@@ -9446,13 +9436,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
           if (asFiles) {
             content = tdlib.filegen().createThumbnail(new TdApi.InputMessageDocument(inputFile, null, false, caption), isSecretChat);
           } else {
-            content = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(inputFile, null, null, width, height, caption, file.getTTL(), hasSpoiler), isSecretChat);
+            content = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(inputFile, null, null, width, height, caption, file.getSelfDestructType(), hasSpoiler), isSecretChat);
           }
         }
         inputContent[i] = content;
         i++;
       }
-      List<TdApi.Function<?>> functions = TD.toFunctions(chatId, getMessageThreadId(), replyToMessageId, options, inputContent, needGroupMedia);
+      List<TdApi.Function<?>> functions = TD.toFunctions(chatId, getMessageThreadId(), replyTo, options, inputContent, needGroupMedia);
       for (TdApi.Function<?> function : functions) {
         tdlib.client().send(function, tdlib.messageHandler());
       }
@@ -9496,7 +9486,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private CancellableRunnable broadcastActor;
 
   private void checkBroadcastingSomeAction () {
-    boolean needBroadcast = broadcastingAction != 0 && context.getActivityState() == UI.STATE_RESUMED && !isDestroyed();
+    boolean needBroadcast = broadcastingAction != 0 && context.getActivityState() == UI.State.RESUMED && !isDestroyed();
     if (this.broadcastingSomeAction != needBroadcast) {
       if (needBroadcast) {
         broadcastActor = new CancellableRunnable() {
@@ -9598,8 +9588,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
       switch (emojiType) {
         case EmojiMediaType.STICKER:
           action = TdApi.ChatActionChoosingSticker.CONSTRUCTOR;
+          if (suggestionYDiff > Screen.dp(50) || stickerPreviewIsVisible) {
+            hideEmojiSuggestionsTemporarily();
+          } else if (suggestionYDiff <= 0) {
+            showEmojiSuggestionsIfTemporarilyHidden();
+          }
           break;
         case EmojiMediaType.EMOJI:
+          if (suggestionXDiff > Screen.dp(50)) {
+            hideStickersSuggestionsTemporarily();
+          } else if (suggestionXDiff <= 0) {
+            showStickersSuggestionsIfTemporarilyHidden();
+          }
+          return;
         case EmojiMediaType.GIF:
         default:
           return;
@@ -9675,6 +9676,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public void subscribeToUpdates (long chatId) {
     tdlib.listeners().subscribeToChatUpdates(chatId, this);
+    tdlib.singleUnreadReactionsManager().subscribeToUnreadSingleReactionUpdates(chatId, this);
     if (chatId != getHeaderChatId()) {
       tdlib.listeners().subscribeToChatUpdates(getHeaderChatId(), this);
     }
@@ -9708,6 +9710,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public void unsubscribeFromUpdates (long chatId) {
     tdlib.listeners().unsubscribeFromChatUpdates(chatId, this);
+    tdlib.singleUnreadReactionsManager().unsubscribeFromUnreadSingleReactionUpdates(chatId, this);
     if (chatId != getHeaderChatId()) {
       tdlib.listeners().unsubscribeFromChatUpdates(getHeaderChatId(), this);
     }
@@ -9839,6 +9842,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void onChatUnreadReactionCount (long chatId, int unreadReactionCount, boolean availabilityChanged) {
     tdlib.ui().post(() -> {
+      if (getChatId() == chatId) {
+        updateCounters(true);
+      }
+    });
+  }
+
+  @Override
+  public void onUnreadSingleReactionUpdate (long chatId, @Nullable TdApi.UnreadReaction unreadReaction) {
+    UI.execute(() -> {
       if (getChatId() == chatId) {
         updateCounters(true);
       }
@@ -10216,7 +10228,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void setSearchByVisible (boolean isVisible) {
     searchByButton.setVisibility(isVisible ? View.VISIBLE : View.GONE);
-    searchSetTypeFilterButton.setTranslationX(isVisible ? 0: Screen.dp(-42.5f));
+    searchSetTypeFilterButton.setTranslationX(isVisible ? 0 : Screen.dp(-42.5f));
   }
 
   private TdApi.Function<?> jumpToDateRequest;
@@ -10821,14 +10833,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public HapticMenuHelper.MenuItem createHapticSenderItem (int id, TdApi.MessageSender sender, boolean useUsername, boolean isLocked) {
-    String title = useUsername ? tdlib.senderName(sender): Lang.getString(R.string.SendAs);
+    String title = useUsername ? tdlib.senderName(sender) : Lang.getString(R.string.SendAs);
     if (tdlib.isSelfSender(sender)) {
       return new HapticMenuHelper.MenuItem(id, title, Lang.getString(R.string.YourAccount), R.drawable.dot_baseline_acc_personal_24, tdlib, sender, false);
     } else if (!tdlib.isChannel(sender)) {
       return new HapticMenuHelper.MenuItem(id, title, Lang.getString(R.string.AnonymousAdmin), R.drawable.dot_baseline_acc_anon_24, tdlib, sender, false);
     } else {
       String username = tdlib.chatUsername(Td.getSenderId(sender));
-      String subtitle = useUsername && !StringUtils.isEmpty(username)? ("@" + username): tdlib.getMessageSenderTitle(sender);
+      String subtitle = useUsername && !StringUtils.isEmpty(username) ? ("@" + username) : tdlib.getMessageSenderTitle(sender);
       return new HapticMenuHelper.MenuItem(id, title, subtitle, 0, tdlib, sender, isLocked);
     }
   }
@@ -10836,22 +10848,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
   // Call methods
 
   public static void getChatAvailableMessagesSenders (Tdlib tdlib, long chatId, @NonNull RunnableData<TdApi.ChatMessageSenders> callback) {
-    tdlib.send(new TdApi.GetChatAvailableMessageSenders(chatId), result -> UI.post(() -> {
-      switch (result.getConstructor()) {
-        case TdApi.ChatMessageSenders.CONSTRUCTOR: {
-          callback.runWithData((TdApi.ChatMessageSenders) result);
-          break;
-        }
-        case TdApi.Error.CONSTRUCTOR: {
-          UI.showError(result);
-          break;
-        }
+    tdlib.send(new TdApi.GetChatAvailableMessageSenders(chatId), (result, error) -> UI.post(() -> {
+      if (error != null) {
+        UI.showError(error);
+      } else {
+        callback.runWithData(result);
       }
     }));
   }
 
   public static void setNewMessageSender (Tdlib tdlib, long chatId, TdApi.ChatMessageSender sender, @Nullable Runnable after) {
-    tdlib.send(new TdApi.SetChatMessageSender(chatId, sender.sender), o -> {
+    tdlib.send(new TdApi.SetChatMessageSender(chatId, sender.sender), ignored -> {
       if (after != null) {
         tdlib.ui().post(after);
       }
@@ -10882,10 +10889,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     boolean cameraVisible = isCameraButtonVisibleOnAttachPanel();
     boolean canSetSender = canSelectSender();
     if (cameraButton != null) {
-      cameraButton.setVisibility(cameraVisible ? View.VISIBLE: View.GONE);  //.setVisible(cameraVisible);
+      cameraButton.setVisibility(cameraVisible ? View.VISIBLE : View.GONE);  //.setVisible(cameraVisible);
     }
 
-    messageSenderButton.setVisibility((canSetSender && attachButtons.getVisibility() == View.VISIBLE) ? View.VISIBLE: View.GONE);
+    messageSenderButton.setVisibility((canSetSender && attachButtons.getVisibility() == View.VISIBLE) ? View.VISIBLE : View.GONE);
     if (canSetSender) {
       messageSenderButton.update(getChatMessageSender(), animated);
     }
@@ -10905,7 +10912,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean callNonAnonymousProtection (long hash, @Nullable TooltipOverlayView.TooltipBuilder tooltipBuilder) {
-    if (chat == null || chat.messageSenderId == null || tdlib.isSelfSender(chat.messageSenderId)) {
+    if (chat == null || tdlib.isSelfSender(chat.messageSenderId) || (chat.messageSenderId == null && !tdlib.isAnonymousAdmin(chat.id))) {
       return true;
     }
 
@@ -10968,6 +10975,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       c.setArguments(new SetSenderController.Args(chat, chatAvailableSenders, chat.messageSenderId));
       c.setDelegate(this::setNewMessageSender);
       c.show();
+      hideCursorsForInputView();
     });
   }
 
@@ -10982,7 +10990,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
       final int maxCount = 5;
       final boolean needMoreButton = chatAvailableSenders.length > maxCount;
-      final int senderButtonsCount = needMoreButton ? maxCount - 1: chatAvailableSenders.length;
+      final int senderButtonsCount = needMoreButton ? maxCount - 1 : chatAvailableSenders.length;
       List<HapticMenuHelper.MenuItem> items = new ArrayList<>(Math.min(chatAvailableSenders.length, maxCount));
 
       for (int i = 0; i < senderButtonsCount; i++) {
@@ -10993,6 +11001,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.MoreMessageSenders), R.drawable.baseline_more_horiz_24));
       }
 
+      hideCursorsForInputView();
       return items;
     }
 
@@ -11182,7 +11191,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     searchMessagesFilterMode = inSearchMode;
     if (searchShowOnlyFoundButton != null) {
-      searchShowOnlyFoundButton.setColorFilter(Theme.getColor(inSearchMode ? ColorId.iconActive: ColorId.icon));
+      searchShowOnlyFoundButton.setColorFilter(Theme.getColor(inSearchMode ? ColorId.iconActive : ColorId.icon));
     }
   }
 
@@ -11346,15 +11355,20 @@ public class MessagesController extends ViewController<MessagesController.Argume
   TranslationControllerV2.Wrapper translationPopup;
 
   public void startTranslateMessages (TGMessage message) {
-    if (message.translationStyleMode() == Settings.TRANSLATE_MODE_INLINE && !(message instanceof TGMessageBotInfo)) {
+    startTranslateMessages(message, false);
+  }
+
+  public void startTranslateMessages (TGMessage message, boolean forcePopup) {
+    if (message.translationStyleMode() == Settings.TRANSLATE_MODE_INLINE && !(message instanceof TGMessageBotInfo) && !forcePopup) {
       message.startTranslated();
     } else {
       translationPopup = new TranslationControllerV2.Wrapper(context, tdlib, this);
       translationPopup.setArguments(new TranslationControllerV2.Args(message));
       translationPopup.setClickCallback(message.clickCallback());
-      translationPopup.setTextColorSet(message.getTextColorSet());
+      translationPopup.setTextColorSet(TextColorSets.Regular.NORMAL);
       translationPopup.show();
       translationPopup.setDismissListener(popup -> translationPopup = null);
+      hideCursorsForInputView();
     }
   }
 
@@ -11362,4 +11376,290 @@ public class MessagesController extends ViewController<MessagesController.Argume
     message.stopTranslated();
   }
 
+  /**/
+
+  private boolean textInputHasSelection;
+  private boolean textFormattingVisible;
+
+  @Override
+  public void onInputSelectionChanged (InputView v, int start, int end) {
+    if (textFormattingLayout != null) {
+      textFormattingLayout.onInputViewSelectionChanged(start, end);
+    }
+  }
+
+  @Override
+  public void onInputSelectionExistChanged (InputView v, boolean hasSelection) {
+    textInputHasSelection = hasSelection;
+    if (!emojiShown) {
+      emojiButton.setImageResource(getTargetIcon(true));
+    }
+  }
+
+  public void onInputSpansChanged (InputView view) {
+    if (textFormattingLayout != null) {
+      textFormattingLayout.onInputViewSpansChanged();
+    }
+  }
+
+  private void setTextFormattingLayoutVisible (boolean visible) {
+    textFormattingVisible = visible;
+    if (emojiLayout != null && textFormattingLayout != null) {
+      textFormattingLayout.setVisibility(visible ? View.VISIBLE : View.GONE);
+      emojiLayout.optimizeForDisplayTextFormattingLayout(visible);
+      if (visible) {
+        textFormattingLayout.checkButtonsActive(false);
+      }
+    }
+  }
+
+  private void closeTextFormattingKeyboard () {
+    if (textFormattingVisible && emojiShown) {
+      closeEmojiKeyboard();
+    }
+  }
+
+  public @DrawableRes int getTargetIcon (boolean isMessage) {
+    return (textInputHasSelection || (textFormattingVisible && emojiShown)) ? R.drawable.baseline_format_text_24 : EmojiLayout.getTargetIcon(isMessage);
+  }
+
+  @Override
+  protected void onCreatePopupLayout (PopupLayout popupLayout) {
+    hideCursorsForInputView();
+  }
+
+  public void hideCursorsForInputView () {
+    if (inputView != null) {
+      inputView.hideSelectionCursors();
+    }
+  }
+
+  /* * */
+
+
+  private ArrayList<InlineResult<?>> stickerSuggestionItems;
+  private boolean canShowEmojiSuggestions;
+  private boolean isStickerSuggestionsTemporarilyHidden;
+
+  public void showStickerSuggestions (@Nullable ArrayList<TGStickerObj> stickers, boolean isMore) {
+    ArrayList<InlineResult<?>> items;
+    if (stickers != null) {
+      items = new ArrayList<>(stickers.size());
+      for (TGStickerObj sticker : stickers) {
+        items.add(new InlineResultSticker(context, tdlib, "x", new TdApi.InlineQueryResultSticker("x", sticker.getSticker())));
+      }
+    } else {
+      items = null;
+    }
+
+    if (!isMore) {
+      stickerSuggestionItems = items;
+      context.showInlineResults(this, tdlib, items, true, null, getInlineResultsStickerScrollListener(), getInlineResultsStickerMovementsCallback());
+    } else {
+      if (items != null && stickerSuggestionItems != null) {
+        stickerSuggestionItems.addAll(items);
+      }
+      context.addInlineResults(this, items, null, getInlineResultsStickerScrollListener(), getInlineResultsStickerMovementsCallback());
+    }
+  }
+
+  private String lastFoundByEmoji;
+  private boolean needSkipMoreEmojiSuggestions;
+
+  public void showEmojiSuggestions (@Nullable ArrayList<TGStickerObj> stickers, String foundByEmoji,  boolean isMore) {
+    if (StringUtils.equalsOrBothEmpty(lastFoundByEmoji, foundByEmoji)) {
+      if (!isMore || needSkipMoreEmojiSuggestions) {
+        if (context.hasEmojiSuggestions()) {
+          if (isFocused() && pagerScrollOffset < 1f) {
+            context.setEmojiSuggestionsVisible(true);
+          }
+          canShowEmojiSuggestions = true;
+        }
+        return;
+      }
+      needSkipMoreEmojiSuggestions = true;
+    } else {
+      lastFoundByEmoji = foundByEmoji;
+      needSkipMoreEmojiSuggestions = false;
+    }
+
+    if (stickers == null || stickers.isEmpty()) {
+      if (!isMore) {
+        context.setEmojiSuggestions(this, null, getInlineEmojiStickerScrollListener(), this::notifyChoosingEmoji);
+        context().setEmojiSuggestionsVisible(false);
+        canShowEmojiSuggestions = false;
+      }
+      return;
+    }
+
+    if (isMore && context.hasEmojiSuggestions() && context.isEmojiSuggestionsVisible()) {
+      context.addEmojiSuggestions(this, stickers);
+    } else {
+      context.setEmojiSuggestions(this, stickers, getInlineEmojiStickerScrollListener(), this::notifyChoosingEmoji);
+    }
+    if (isFocused() && pagerScrollOffset < 1f) {
+      context.setEmojiSuggestionsVisible(true);
+    }
+
+    canShowEmojiSuggestions = true;
+  }
+
+  private void showStickersSuggestionsIfTemporarilyHidden () {
+    if (isStickerSuggestionsTemporarilyHidden && stickerSuggestionItems != null) {
+      isStickerSuggestionsTemporarilyHidden = false;
+      context.showInlineResults(this, tdlib, stickerSuggestionItems, true, null, getInlineResultsStickerScrollListener(), getInlineResultsStickerMovementsCallback());
+    }
+  }
+
+  private void hideStickersSuggestionsTemporarily () {
+    isStickerSuggestionsTemporarilyHidden = true;
+    context.showInlineResults(this, tdlib, null, true, null);
+  }
+
+  private void showEmojiSuggestionsIfTemporarilyHidden () {
+    if (canShowEmojiSuggestions) {
+      context().setEmojiSuggestionsVisible(true);
+    }
+  }
+
+  private void hideEmojiSuggestionsTemporarily () {
+    context().setEmojiSuggestionsVisible(false);
+  }
+
+  private void hideEmojiAndStickerSuggestionsFinally () {
+    onHideEmojiAndStickerSuggestionsFinally();
+    context.showInlineResults(this, tdlib, null, false, null);
+  }
+
+  public void onHideEmojiAndStickerSuggestionsFinally () {
+    canShowEmojiSuggestions = false;
+    stickerSuggestionItems = null;
+    hideEmojiSuggestionsTemporarily();
+  }
+
+  private StickerSmallView.StickerMovementCallback getInlineResultsStickerMovementsCallback () {
+    return new StickerSmallView.StickerMovementCallback() {
+      @Override
+      public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions) {
+        if (onSendStickerSuggestion(clickView, sticker, sendOptions)) {
+          hideEmojiAndStickerSuggestionsFinally();
+          return true;
+        }
+
+        return false;
+      }
+
+      @Override
+      public long getStickerOutputChatId () {
+        return getOutputChatId();
+      }
+
+      @Override
+      public void setStickerPressed (StickerSmallView view, TGStickerObj sticker, boolean isPressed) {
+        InlineResultsWrap inlineResultsWrap = context.getInlineResultsView();
+        if (inlineResultsWrap != null) {
+          inlineResultsWrap.setStickerPressed(view, sticker, isPressed);
+        }
+      }
+
+      @Override
+      public boolean canFindChildViewUnder (StickerSmallView view, int recyclerX, int recyclerY) {
+        return true;
+      }
+
+      @Override
+      public boolean needsLongDelay (StickerSmallView view) {
+        return true;
+      }
+
+      @Override
+      public int getStickersListTop () {
+        return -getInputOffset(false);
+      }
+
+      @Override
+      public int getViewportHeight () {
+        return getStickerSuggestionPreviewViewportHeight();
+      }
+
+      @Override
+      public void onStickerPreviewOpened (StickerSmallView view, TGStickerObj sticker) {
+        notifyChoosingEmoji(EmojiMediaType.STICKER, stickerPreviewIsVisible = true);
+      }
+
+      @Override
+      public void onStickerPreviewChanged (StickerSmallView view, TGStickerObj otherOrThisSticker) {
+        notifyChoosingEmoji(EmojiMediaType.STICKER, stickerPreviewIsVisible = true);
+      }
+
+      @Override
+      public void onStickerPreviewClosed (StickerSmallView view, TGStickerObj thisSticker) {
+        notifyChoosingEmoji(EmojiMediaType.STICKER, stickerPreviewIsVisible = false);
+      }
+    };
+  }
+
+  private int suggestionXDiff = 0;
+  private int suggestionYDiff = 0;
+  private boolean stickerPreviewIsVisible;
+
+  private RecyclerView.OnScrollListener getInlineResultsStickerScrollListener () {
+    suggestionYDiff = 0;
+    return new RecyclerView.OnScrollListener() {
+      @Override
+      public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
+        if (dy == 0) return;
+        suggestionYDiff = recyclerView.computeVerticalScrollOffset();
+        notifyChoosingEmoji(EmojiMediaType.STICKER, true);
+      }
+    };
+  }
+
+  private RecyclerView.OnScrollListener getInlineEmojiStickerScrollListener () {
+    suggestionYDiff = 0;
+    return new RecyclerView.OnScrollListener() {
+      @Override
+      public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
+        if (dx == 0) return;
+        suggestionXDiff = recyclerView.computeHorizontalScrollOffset();
+        notifyChoosingEmoji(EmojiMediaType.EMOJI, true);
+      }
+    };
+  }
+
+  @Override
+  public boolean onSendStickerSuggestion (View view, TGStickerObj sticker, TdApi.MessageSendOptions initialSendOptions) {
+    if (lastJunkTime == 0l || SystemClock.uptimeMillis() - lastJunkTime >= JUNK_MINIMUM_DELAY) {
+      if (sticker.isCustomEmoji()) {
+        inputView.onCustomEmojiSelected(sticker, true);
+        return true;
+      }
+      if (showGifRestriction(view))
+        return false;
+      pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
+        if (sendSticker(view, sticker.getSticker(), sticker.getFoundByEmoji(), true, Td.newSendOptions(modifiedSendOptions, false, Config.REORDER_INSTALLED_STICKER_SETS))) {
+          lastJunkTime = SystemClock.uptimeMillis();
+          inputView.setInput("", false, true);
+        }
+      });
+      return true;
+    }
+    return false;
+  }
+
+  @Override
+  public int getStickerSuggestionsTop (boolean isEmoji) {
+    View v = context().getEmojiSuggestionsView();
+    return v != null ? Views.getLocationInWindow(v)[1] : 0;
+  }
+
+  @Override
+  public int getStickerSuggestionPreviewViewportHeight () {
+    return HeaderView.getSize(true) + messagesView.getMeasuredHeight();
+  }
+
+  @Override
+  public long getCurrentChatId () {
+    return getChatId();
+  }
 }

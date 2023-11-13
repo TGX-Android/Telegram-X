@@ -44,6 +44,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -155,9 +156,12 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
     tdlib.listeners().subscribeToMessageUpdates(chatId, this);
   }
 
+  private TdlibMessageViewer.Viewport messageViewport;
+
   @SuppressLint("InflateParams")
   @Override
   protected final View onCreateView (Context context) {
+    messageViewport = tdlib.messageViewer().createViewport(new TdApi.MessageSourceSearch(), this);
     recyclerView = (MediaRecyclerView) Views.inflate(context(), R.layout.recycler_sharedmedia, null);
     recyclerView.setOverScrollMode(RecyclerView.OVER_SCROLL_NEVER);
     addThemeInvalidateListener(recyclerView);
@@ -168,6 +172,7 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
     recyclerView.setHasFixedSize(true);
     recyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     recyclerView.setItemAnimator(null); // new CustomItemAnimator(Anim.DECELERATE_INTERPOLATOR, 180l));
+    tdlib.ui().attachViewportToRecyclerView(messageViewport, recyclerView);
     adapter = new SettingsAdapter(this, needsDefaultOnClick() ? this : null, this) {
       @Override
       protected void setInfo (ListItem item, int position, ListInfoView infoView) {
@@ -1366,6 +1371,9 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
     super.destroy();
     if (alternateParent != null) {
       tdlib.listeners().unsubscribeFromMessageUpdates(chatId, this);
+    }
+    if (messageViewport != null) {
+      messageViewport.performDestroy();
     }
     TGLegacyManager.instance().removeEmojiListener(adapter);
     Views.destroyRecyclerView(recyclerView);

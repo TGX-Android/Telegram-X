@@ -400,6 +400,7 @@ public abstract class InlineResult <T> implements MessageSourceProvider {
   // Static stuff
 
   public static InlineResult<?> valueOf (BaseActivity context, Tdlib tdlib, TdApi.Message message) {
+    //noinspection SwitchIntDef
     switch (message.content.getConstructor()) {
       case TdApi.MessageAudio.CONSTRUCTOR: {
         return new InlineResultCommon(context, tdlib, message, (TdApi.MessageAudio) message.content, null).setMessage(message);

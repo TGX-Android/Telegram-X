@@ -131,6 +131,7 @@ import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
+import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.Future;
 import me.vkryl.core.lambda.FutureBool;
@@ -344,7 +345,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   @CallSuper
   protected void handleLanguageDirectionChange () {
     if (searchHeaderView != null)
-      HeaderView.updateEditTextDirection(searchHeaderView, Screen.dp(68f), Screen.dp(49f));
+      HeaderView.updateEditTextDirection(searchHeaderView.editView(), Screen.dp(68f), Screen.dp(49f));
     if (counterHeaderView != null)
       HeaderView.updateLayoutMargins(counterHeaderView, Screen.dp(68f), 0);
     View headerCell = getCustomHeaderCell();
@@ -627,14 +628,14 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   protected void updateSearchMode (boolean inSearch, boolean needUpdateKeyboard) {
     if (inSearch) {
       cachedLockFocusView = lockFocusView;
-      lockFocusView = searchHeaderView;
+      lockFocusView = searchHeaderView.editView();
       if (needUpdateKeyboard) {
-        Keyboard.show(searchHeaderView);
+        Keyboard.show(searchHeaderView.editView());
       }
     } else {
       lockFocusView = cachedLockFocusView;
       if (needUpdateKeyboard) {
-        Keyboard.hide(searchHeaderView);
+        Keyboard.hide(searchHeaderView.editView());
       }
       cachedLockFocusView = null;
     }
@@ -744,7 +745,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       return getCounterHeaderView(headerView);
     }
     if ((flags & FLAG_IN_SEARCH_MODE) != 0) {
-      return getSearchHeaderView(headerView);
+      return getSearchHeaderView(headerView).view();
     }
     if ((flags & FLAG_IN_CUSTOM_MODE) != 0) {
       return getCustomModeHeaderView(headerView);
@@ -1043,7 +1044,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   // Search mode header
 
-  private HeaderEditText searchHeaderView;
+  private SearchEditTextDelegate searchHeaderView;
 
   protected void modifySearchHeaderView (HeaderEditText headerEditText) {
     // called only once
@@ -1053,11 +1054,24 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     return false;
   }
 
-  protected final HeaderEditText genSearchHeader (HeaderView headerView) {
-    return useGraySearchHeader() ? headerView.genGreySearchHeader(this) : headerView.genSearchHeader(useLightSearchHeader(), this);
+  protected SearchEditTextDelegate genSearchHeader (HeaderView headerView) {
+    HeaderEditText view = useGraySearchHeader() ? headerView.genGreySearchHeader(this) : headerView.genSearchHeader(useLightSearchHeader(), this);
+    return new SearchEditTextDelegate() {
+      @NonNull
+      @Override
+      public View view () {
+        return view;
+      }
+
+      @NonNull
+      @Override
+      public HeaderEditText editView () {
+        return view;
+      }
+    };
   }
 
-  protected HeaderEditText getSearchHeaderView (HeaderView headerView) {
+  protected SearchEditTextDelegate getSearchHeaderView (HeaderView headerView) {
     if (searchHeaderView == null) {
       FrameLayoutFix.LayoutParams params;
 
@@ -1072,7 +1086,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       }
 
       searchHeaderView = genSearchHeader(headerView);
-      searchHeaderView.addTextChangedListener(new TextWatcher() {
+      searchHeaderView.editView().addTextChangedListener(new TextWatcher() {
         @Override
         public void beforeTextChanged (CharSequence s, int start, int count, int after) {
 
@@ -1095,10 +1109,10 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
         }
       });
-      searchHeaderView.setHint(Lang.getString(bindLocaleChanger(getSearchHint(), searchHeaderView, true, false)));
-      searchHeaderView.setLayoutParams(params);
+      searchHeaderView.editView().setHint(Lang.getString(bindLocaleChanger(getSearchHint(), searchHeaderView.editView(), true, false)));
+      searchHeaderView.view().setLayoutParams(params);
 
-      modifySearchHeaderView(searchHeaderView);
+      modifySearchHeaderView(searchHeaderView.editView());
     }
     return searchHeaderView;
   }
@@ -1113,7 +1127,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   private String lastSearchInput = "";
 
-  protected void clearSearchInput () {
+  public void clearSearchInput () {
     clearSearchInput("", false);
   }
 
@@ -1122,9 +1136,9 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       if (reset) {
         lastSearchInput = text;
       }
-      searchHeaderView.setText(text);
+      searchHeaderView.editView().setText(text);
       if (!text.isEmpty()) {
-        searchHeaderView.setSelection(text.length());
+        searchHeaderView.editView().setSelection(text.length());
       }
       updateClearSearchButton(!text.isEmpty(), false);
     }
@@ -2073,6 +2087,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     popupLayout.addThemeListeners(this);
     popupLayout.showSimplePopupView(popupView, Math.min(Screen.currentHeight() / 2 + Screen.dp(56f), popupHeight));
 
+    onCreatePopupLayout(popupLayout);
     return settings;
   }
 
@@ -2212,6 +2227,8 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public static class OptionItem {
+    public static final OptionItem SEPARATOR = new OptionItem(0, null, 0, 0);
+
     public final int id;
     public final CharSequence name;
     public final int color;
@@ -2296,6 +2313,10 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         return item(new OptionItem.Builder().id(R.id.btn_cancel).name(R.string.Cancel).icon(R.drawable.baseline_cancel_24).build());
       }
 
+      public int itemCount () {
+        return items.size();
+      }
+
       public Options build () {
         return new Options(info, items.toArray(new OptionItem[0]));
       }
@@ -2367,8 +2388,24 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         }
       };
     }
+    int totalHeight = shadowView.getLayoutParams().height + optionsWrap.getTextHeight() + popupAdditionalHeight;
     int index = 0;
     for (OptionItem item : options.items) {
+      if (item == OptionItem.SEPARATOR) {
+        ShadowView shadowViewBottom = new ShadowView(context);
+        shadowViewBottom.setSimpleBottomTransparentShadow(false);
+        ViewSupport.setThemedBackground(shadowViewBottom, ColorId.background, this);
+        addThemeInvalidateListener(shadowViewBottom);
+        optionsWrap.addView(shadowViewBottom, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(6f)));
+
+        ShadowView shadowViewTop = new ShadowView(context);
+        shadowViewTop.setSimpleTopShadow(true, this);
+        addThemeInvalidateListener(shadowViewTop);
+        optionsWrap.addView(shadowViewTop, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(6f)));
+        index++;
+        totalHeight += shadowViewBottom.getLayoutParams().height + shadowViewTop.getLayoutParams().height;
+        continue;
+      }
       TextView text = OptionsLayout.genOptionView(context, item.id, item.name, item.color, item.icon, onClickListener, getThemeListeners(), forcedTheme);
       RippleSupport.setTransparentSelector(text);
       if (forcedTheme != null)
@@ -2379,12 +2416,14 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       }
       optionsWrap.addView(text);
       index++;
+      totalHeight += text.getLayoutParams().height;
     }
 
     // Window
 
-    popupLayout.showSimplePopupView(optionsWrap, shadowView.getLayoutParams().height + Screen.dp(54f) * options.items.length + optionsWrap.getTextHeight() + popupAdditionalHeight);
-
+    popupLayout.showSimplePopupView(optionsWrap, totalHeight);
+    onCreatePopupLayout(popupLayout);
+    
     return popupLayout;
   }
 
@@ -2420,6 +2459,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     }
 
     popupLayout.showSimplePopupView(optionsWrap, totalHeight);
+    onCreatePopupLayout(popupLayout);
     return popupLayout;
   }
 
@@ -2677,10 +2717,42 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     showWarning(Lang.getMarkdownString(this, R.string.TdlibLogsWarning), proceed -> {
       if (proceed) {
         SettingsBugController c = new SettingsBugController(context, tdlib);
-        c.setArguments(new SettingsBugController.Args(SettingsBugController.SECTION_TDLIB, crashInfo).setTesterLevel(testerLevel));
+        c.setArguments(new SettingsBugController.Args(SettingsBugController.Section.TDLIB, crashInfo).setTesterLevel(testerLevel));
         navigateTo(c);
       }
     });
+  }
+
+  public final void openExperimentalSettings (int testerLevel) {
+    showWarning(Lang.getMarkdownStringSecure(this, R.string.ExperimentalSettingsWarning), proceed -> {
+      if (proceed) {
+        SettingsBugController c = new SettingsBugController(context, tdlib);
+        c.setArguments(new SettingsBugController.Args(SettingsBugController.Section.EXPERIMENTS).setTesterLevel(testerLevel));
+        navigateTo(c);
+      }
+    });
+  }
+
+  private CancellableRunnable pendingActivityRestart;
+
+  public final void cancelPendingActivityRestart () {
+    if (pendingActivityRestart != null) {
+      pendingActivityRestart.cancel();
+      pendingActivityRestart = null;
+    }
+  }
+
+  public final void scheduleActivityRestart () {
+    cancelPendingActivityRestart();
+    pendingActivityRestart = new CancellableRunnable() {
+      @Override
+      public void act () {
+        pendingActivityRestart = null;
+        context.recreate();
+      }
+    };
+    pendingActivityRestart.removeOnCancel(UI.getAppHandler());
+    UI.getAppHandler().postDelayed(pendingActivityRestart, 300L);
   }
 
   public final boolean isSameTdlib (@NonNull Tdlib tdlib) {
@@ -3057,7 +3129,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   @CallSuper
   public void hideSoftwareKeyboard () {
     if (inSearchMode()) {
-      Keyboard.hide(searchHeaderView);
+      Keyboard.hide(searchHeaderView.editView());
     }
     if (lockFocusView != null) {
       Keyboard.hide(lockFocusView);
@@ -3348,6 +3420,10 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     // Override
   }
 
+  protected void onCreatePopupLayout (PopupLayout popupLayout) {
+    // Override
+  }
+
   @Override
   public void onPrepareToExitForceTouch (ForceTouchView.ForceTouchContext context) {
     onBlur();
@@ -3381,7 +3457,23 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   // Disabling screenshot
 
+  private List<FutureBool> disallowScreenshotReasons;
+
+  public void addDisallowScreenshotReason (FutureBool reason) {
+    if (disallowScreenshotReasons == null) {
+      disallowScreenshotReasons = new ArrayList<>();
+    }
+    disallowScreenshotReasons.add(reason);
+  }
+
   public boolean shouldDisallowScreenshots () {
+    if (disallowScreenshotReasons != null) {
+      for (FutureBool reason : disallowScreenshotReasons) {
+        if (reason.getBoolValue()) {
+          return true;
+        }
+      }
+    }
     return false;
   }
 
@@ -3405,4 +3497,11 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   public final void forceFastAnimationOnce () {
     forceFadeModeOnce = true;
   }
+
+
+  public interface SearchEditTextDelegate {
+    @NonNull View view();
+    @NonNull HeaderEditText editView();
+  }
+
 }

@@ -27,6 +27,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGWebPage;
 import org.thunderdog.challegram.loader.ComplexReceiver;
@@ -166,7 +167,7 @@ public class ReplyView extends FrameLayoutFix implements View.OnClickListener, D
   public void setWebPage (String link, TdApi.WebPage page) {
     layoutIfNeeded();
     if (page == null) {
-      reply.set(Lang.getString(R.string.GettingLinkInfo), new TD.ContentPreview(link, false), null, null);
+      reply.set(Lang.getString(R.string.GettingLinkInfo), new ContentPreview(link, false), null, null);
     } else {
       String title = Strings.any(page.title, page.siteName);
       if (StringUtils.isEmpty(title)) {
@@ -188,7 +189,7 @@ public class ReplyView extends FrameLayoutFix implements View.OnClickListener, D
         }
       }
       String desc = !Td.isEmpty(page.description) ? page.description.text : page.displayUrl;
-      reply.set(title, new TD.ContentPreview(desc, false), page.photo != null ? page.photo.minithumbnail : null, TD.getWebPagePreviewImage(page));
+      reply.set(title, new ContentPreview(desc, false), page.photo != null ? page.photo.minithumbnail : null, TD.getWebPagePreviewImage(page));
     }
     invalidate();
   }

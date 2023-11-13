@@ -86,10 +86,15 @@ public abstract class TextEntity {
   }
 
   @NonNull
-  public final TdlibUi.UrlOpenParameters openParameters (View view, Text text, TextPart part) {
-    if (this.openParameters != null && this.openParameters.tooltip != null)
+  public final TdlibUi.UrlOpenParameters openParameters (View view, Text text, TextPart part, boolean isFromLongPressMenu) {
+    if (!isFromLongPressMenu && this.openParameters != null && this.openParameters.tooltip != null)
       return this.openParameters;
-    TooltipOverlayView.TooltipBuilder b = part.newTooltipBuilder(view);
+    TooltipOverlayView.TooltipBuilder b;
+    if (isFromLongPressMenu) {
+      b = UI.getContext(view.getContext()).tooltipManager().builder(view);
+    } else {
+      b = part.newTooltipBuilder(view);
+    }
     // TODO highlight the text part & modify color, if needed
     return new TdlibUi.UrlOpenParameters(this.openParameters).tooltip(b);
   }
@@ -184,7 +189,7 @@ public abstract class TextEntity {
   }
   public abstract boolean isMonospace ();
   public abstract boolean isSmall ();
-  public abstract void performClick (View view, Text text, TextPart textPart, @Nullable Text.ClickCallback callback);
+  public abstract void performClick (View view, Text text, TextPart textPart, @Nullable Text.ClickCallback callback, boolean isFromLongPressMenu);
   public abstract boolean performLongPress (View view, Text text, TextPart textPart, boolean allowShare, @Nullable Text.ClickCallback callback);
   protected abstract boolean equals (TextEntity b, int compareMode, String originalText);
   public abstract boolean isEssential ();

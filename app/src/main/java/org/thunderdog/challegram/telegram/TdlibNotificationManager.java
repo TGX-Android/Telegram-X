@@ -1354,7 +1354,11 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   }
 
   private static TdApi.ScopeNotificationSettings newDefaults () {
-    return new TdApi.ScopeNotificationSettings(0, 0, true, false, false);
+    return new TdApi.ScopeNotificationSettings(
+      0, 0, true,
+      true, false, 0, true,
+      false, false
+    );
   }
 
   // Ringtone
@@ -1612,7 +1616,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       updated = Settings.instance().setNeedSplitNotificationCategories(true);
       updated = Settings.instance().setNeedHideSecretChats(false) || updated;
       if (Settings.instance().resetBadge()) {
-        tdlib.context().resetBadge();
+        tdlib.context().resetBadge(true);
       }
       if (updated) {
         tdlib.context().onUpdateAllNotifications();
@@ -2098,6 +2102,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       c = UI.getCurrentStackItem();
     } catch (IndexOutOfBoundsException ignored) { }
     if (((c instanceof MessagesController && ((MessagesController) c).compareChat(sentMessage.chatId)) || (c instanceof MainController)) && !c.isPaused()) {
+      //noinspection SwitchIntDef
       switch (sentMessage.content.getConstructor()) {
         case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
         case TdApi.MessageChatSetMessageAutoDeleteTime.CONSTRUCTOR: {

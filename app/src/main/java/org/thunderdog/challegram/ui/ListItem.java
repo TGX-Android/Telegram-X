@@ -24,11 +24,12 @@ import androidx.annotation.StringRes;
 
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.util.DrawModifier;
 
 import me.vkryl.core.ArrayUtils;
-import me.vkryl.core.StringUtils;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.StringUtils;
 
 public class ListItem {
   public static final int TYPE_CUSTOM = -1;
@@ -170,6 +171,7 @@ public class ListItem {
   private final int checkId;
   private int flags;
   private long longId;
+  private String highlight;
 
   private @Nullable String[] sliderValues;
   private int sliderValue;
@@ -177,7 +179,8 @@ public class ListItem {
   private @Nullable DrawModifier drawModifier;
 
   private String stringKey, stringValue;
-  private int textColorId, textPaddingLeft;
+  private @PorterDuffColorId int textColorId;
+  private int textPaddingLeft;
   private int intValue;
   private long longValue;
 
@@ -203,6 +206,10 @@ public class ListItem {
 
   public ListItem (int viewType, int id, int iconResource, int stringResource, boolean isSelected) {
     this(viewType, id, iconResource, stringResource, null, id, isSelected);
+  }
+
+  public ListItem (int viewType, int id, int iconResource, CharSequence string) {
+    this(viewType, id, iconResource, 0, string, id, false);
   }
 
   public ListItem (int viewType, int id, int iconResource, CharSequence string, boolean isSelected) {
@@ -249,7 +256,7 @@ public class ListItem {
     return TGTheme.getColor(getTextColorId(defColorId));
   }*/
 
-  public ListItem setTextColorId (@ColorId int colorId) {
+  public ListItem setTextColorId (@PorterDuffColorId int colorId) {
     this.textColorId = colorId;
     return this;
   }
@@ -413,6 +420,11 @@ public class ListItem {
     return this;
   }
 
+  public ListItem setHighlightValue (String highlight) {
+    this.highlight = highlight;
+    return this;
+  }
+
   public int decrementSelectionIndex () {
     if ((flags & FLAG_USE_SELECTION_INDEX) != 0) {
       intValue--;
@@ -509,6 +521,10 @@ public class ListItem {
 
   public int getStringResource () {
     return stringResource;
+  }
+
+  public String getHighlightValue () {
+    return highlight;
   }
 
   private int[] stringResources;

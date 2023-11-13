@@ -48,15 +48,19 @@ public class GifFile {
   public static final int FLAG_PLAY_ONCE = 1 << 2;
   public static final int FLAG_UNIQUE = 1 << 3;
   public static final int FLAG_DECODE_LAST_FRAME = 1 << 4;
+  public static final int FLAG_HIGH_PRIORITY_FOR_DECODE = 1 << 5;
 
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({
     OptimizationMode.NONE,
     OptimizationMode.STICKER_PREVIEW,
-    OptimizationMode.EMOJI
+    OptimizationMode.EMOJI,
+    OptimizationMode.EMOJI_PREVIEW
   })
   public @interface OptimizationMode {
-    int NONE = 0, STICKER_PREVIEW = 1, EMOJI = 2;
+    int NONE = 0, STICKER_PREVIEW = 1,
+      EMOJI = 2,          // for text media
+      EMOJI_PREVIEW = 3;  // for emoji keyboard
   }
 
   protected final Tdlib tdlib;
@@ -142,6 +146,19 @@ public class GifFile {
 
   public void setTotalFrameCount (long totalFrameCount) {
     this.totalFrameCount = totalFrameCount;
+    if (onTotalFrameCountLoadListener != null) {
+      tdlib.ui().post(() -> {
+        if (onTotalFrameCountLoadListener != null) {
+          onTotalFrameCountLoadListener.run();
+        }
+      });
+    }
+  }
+
+  private Runnable onTotalFrameCountLoadListener;
+
+  public void setOnTotalFrameCountLoadListener (Runnable onTotalFrameCountLoadListener) {
+    this.onTotalFrameCountLoadListener = onTotalFrameCountLoadListener;
   }
 
   public boolean hasFrame (long frameNo) {
@@ -192,6 +209,14 @@ public class GifFile {
     return false;
   }
 
+  public void setHighPriorityForDecode () {
+    flags = BitwiseUtils.setFlag(flags, FLAG_HIGH_PRIORITY_FOR_DECODE, true);
+  }
+
+  public boolean isHighPriorityForDecode () {
+    return BitwiseUtils.hasFlag(flags, FLAG_HIGH_PRIORITY_FOR_DECODE);
+  }
+
   public void setOptimizationMode (@OptimizationMode int optimizationMode) {
     this.optimizationMode = optimizationMode;
   }
@@ -201,7 +226,7 @@ public class GifFile {
   }
 
   public boolean isOneTimeCache () { // Delete cache file as soon as file no longer displayed
-    return optimizationMode == OptimizationMode.EMOJI || optimizationMode == OptimizationMode.STICKER_PREVIEW;
+    return optimizationMode == OptimizationMode.EMOJI || optimizationMode == OptimizationMode.STICKER_PREVIEW || optimizationMode == OptimizationMode.EMOJI_PREVIEW;
   }
 
   @Deprecated()

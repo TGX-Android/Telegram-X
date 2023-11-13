@@ -28,7 +28,7 @@
   <string name="network_LookupAttempt">Trying direct connection…</string>
   <string name="network_LookupAttemptProxy">Trying another proxy…</string>
   <string name="network_LookupFailed">No routes found, connecting directly…</string>
-  <string name="network_LookupFailedProxy">No routes found, using last proxy…</string>
+  <string name="network_LookupFailedProxy">No routes found, using the previous proxy…</string>
 
   <string name="AppNameAndVersion">Telegram X %1$s</string>
   <string name="language_code">en</string>
@@ -84,6 +84,7 @@
   <string name="format_fileSizeAndDescription">%2$s, %1$s</string>
   <string name="format_fileSizeAndExtension">%1$s %2$s</string>
   <string name="format_filesAndFolders">%1$s, %2$s</string>
+  <string name="format_chatFoldersPositionAndStyle">%1$s, %2$s</string>
   <string name="format_contentAndModifyDate2">%1$s, %2$s</string>
   <string name="format_plus">+%1$d</string>
   <string name="format_minus">-%1$d</string>
@@ -96,6 +97,7 @@
   <string name="format_channelAndSignature">%1$s (%2$s)</string>
   <string name="format_minutesAndSeconds">%1$s and %2$s</string>
   <string name="format_chatAndSignature">%1$s (%2$s)</string>
+  <string name="format_folderAndFilter">%1$s / %2$s</string>
   <string name="messagesCount_one">%1$s</string>
   <string name="messagesCount_other">%1$s</string>
   <string name="format_notificationContentGroup">%1$s: %2$s</string>
@@ -472,7 +474,7 @@
   <string name="passcode_fingerprint">Unlock with Fingerprint</string>
   <string name="LoadingInformation">Loading information…</string>
   <string name="BlockContact">Block</string>
-  <string name="BlockBot">Stop and Block</string>
+  <string name="BlockBot">Block Bot</string>
   <string name="Unblock">Unblock</string>
   <string name="UnblockBot">Unblock</string>
   <string name="RestartBot">Restart</string>
@@ -489,10 +491,13 @@
   <string name="pickFromGallery">Choose from Gallery</string>
   <string name="DeletePhoto">Remove photo</string>
   <string name="ClearHistory">Clear history</string>
+  <string name="ClearHistoryAll">Clear history for everyone</string>
+  <string name="ClearChannel">Delete all messages</string>
+  <string name="ClearSavedMessages">Delete all Saved Messages</string>
   <string name="Cancel">Cancel</string>
   <string name="AddMember">Add Members</string>
   <string name="AddMembers">Add members</string>
-  <string name="DeleteAndLeave">Delete and exit</string>
+  <string name="DeleteAndLeave">Delete and leave</string>
   <string name="justAdd">Just add to group</string>
   <string name="KickFromGroup">Remove from group</string>
   <string name="DeleteChat">Delete chat</string>
@@ -853,6 +858,7 @@
   <string name="MessageLifetime">Self-Destruct Timer</string>
   <string name="Done">Done</string>
   <string name="Off">Off</string>
+  <string name="TimerInstant">Immediately</string>
   <string name="Chats">Chats</string>
   <string name="Notifications">Notifications</string>
   <string name="NotificationsEnabled">Enabled</string>
@@ -893,6 +899,8 @@
   <string name="NoMusic">No Music</string>
   <string name="Other">Other</string>
   <string name="AutoplayGifs">Autoplay GIFs</string>
+  <string name="QuickTranslate">Quick translate</string>
+  <string name="QuickTranslateDesc">Swipe messages to show their translation.</string>
   <string name="RestrictOnWiFi">Restrict on Wi-Fi</string>
   <string name="RestrictOverMobile">Restrict on mobile data</string>
   <string name="RestrictOnRoaming">Restrict on roaming</string>
@@ -904,7 +912,7 @@
   <string name="NoRestrictions">No restrictions</string>
   <string name="Save">Save</string>
   <string name="PrivacyTitle">Privacy</string>
-  <string name="BlockedSenders">Blocked Senders</string>
+  <string name="BlockedSenders">Blocked Chats</string>
   <string name="LastSeen">Last Seen &amp; Online</string>
   <string name="GroupsAndChannels">Groups and Channels</string>
   <string name="SecurityTitle">Security</string>
@@ -1027,6 +1035,7 @@
   <string name="ComeAgainLater">Come again later</string>
   <string name="New">New</string>
   <string name="Add">Add</string>
+  <string name="PlusSign">+</string>
   <string name="AddMemberBtn">Add</string>
   <string name="BlockListEmpty">You haven\'t blocked anyone yet</string>
   <string name="QBlockUser">Block %1$s?</string>
@@ -1214,6 +1223,7 @@
   <string name="ActionPinnedVideo">%1$s pinned a **video**</string>
   <string name="ActionPinnedRound">%1$s pinned a **video message**</string>
   <string name="ActionPinnedVoice">%1$s pinned a **voice message**</string>
+  <string name="ActionPinnedStory">%1$s pinned a **story**</string>
   <string name="ActionPinnedContact">%1$s pinned a **contact**</string>
   <string name="UnknownTrack">Unknown Track</string>
   <string name="AudioUnknownArtist">Unknown Artist</string>
@@ -1260,7 +1270,7 @@
   <string name="TapToSetup">Tap to set</string>
   <string name="ViewGroupsInCommon">View groups in common</string>
   <string name="OpenChat">Open Chat</string>
-  <string name="DeleteAndStop">Delete and Stop</string>
+  <string name="DeleteAndStop">Delete and Block</string>
   <string name="DeleteContact">Delete contact</string>
   <string name="PastWeek">Past week</string>
   <string name="Today">Today</string>
@@ -1379,7 +1389,7 @@
   <string name="ChatPreview">Chat preview</string>
   <string name="AndroidVersionWarning">Sorry, this feature is available yet only on Android %1$s (%2$s) or higher</string>
   <string name="RemoveStickerSet">Remove sticker set %1$s?</string>
-  <string name="RemoveEmojiSet">Remove emoji set %1$s?</string>
+  <string name="RemoveEmojiSet">Remove emoji pack %1$s?</string>
   <string name="RemoveStickerSetAction">Remove</string>
   <string name="DeletePack">Delete pack</string>
   <string name="AddPack">Add pack</string>
@@ -1571,7 +1581,7 @@
   <string name="UseProxyPort">Port</string>
   <string name="ProxySettings">Proxy settings</string>
   <string name="ProxyAutoSwitch">Switch automatically</string>
-  <string name="ProxyAutoSwitchHint">Automatically try different connections when app takes too long to connect. This may increase time needed to establish connection on weak networks.</string>
+  <string name="ProxyAutoSwitchHint">Automatically try different connections when the app takes too long to connect. This may increase the time needed to establish connection on weak networks.</string>
   <string name="EnableProxyAlertTitle">Are you sure you want to enable this proxy?</string>
   <string name="EnableProxyAlertHint">You can change your proxy server later in Settings &gt; Data and Storage.</string>
   <string name="EnableProxyAlertHintMtproto">This proxy may display a sponsored channel in your chat list. This doesn\'t reveal any of your Telegram traffic.</string>
@@ -1622,6 +1632,10 @@
   <string name="OpenProfile">View Profile</string>
   <string name="OpenChannel">View Channel</string>
   <string name="OpenGroup">View Group</string>
+  <string name="AdOpenChannel">View Channel</string>
+  <string name="AdOpenPost">View Post</string>
+  <string name="AdOpenWebsite">Open Website</string>
+  <string name="AdOpenBot">Open Bot</string>
   <string name="OpenBot">View Bot</string>
   <string name="SendAsCopy">Send as copy</string>
   <string name="RemoveCaptions">Remove captions in copies</string>
@@ -1663,8 +1677,12 @@
   <string name="DeleteMultipleFilesHint">Note: you will be able to download these files any time later.</string>
   <string name="FreedX">Freed %1$s of disk space</string>
   <string name="LinkPreview">Link Preview</string>
+  <string name="ClearChannelConfirm">Are you sure you want to clear history for this channell? This action cannot be undone.</string>
+  <string name="ClearChannelSecondaryConfirm">**No, seriously.**\n\nThis will delete **all messages** for **all subscribers**. There will be no way to restore them.</string>
+  <string name="ClearHistoryAllConfirm">Are you sure you want to clear history for this chat for all users? This action cannot be undone.</string>
   <string name="ClearHistoryConfirm">Are you sure you want to clear history for this chat? This action cannot be undone.</string>
   <string name="ClearSavedMessagesConfirm">Are you sure you want to clear all **Saved Messages**? This action cannot be undone.</string>
+  <string name="ClearSavedMessagesSecondaryConfirm">**No, seriously.**\n\nThis will delete **all Saved Messages**. There will be no way to restore them.</string>
   <string name="Channel">Channel</string>
   <string name="ThemeCyan">Cyan</string>
   <string name="ThemePink">Pink</string>
@@ -1749,7 +1767,7 @@
   <string name="ReactionsAllowSome_other">%1$s allowed</string>
 
   <string name="QuickReactionEnable">Enable Quick Reaction</string>
-  <string name="QuickReactionEnableDesc">Availability of specific reactions depends on group\'s and channel\'s settings.</string>
+  <string name="QuickReactionEnableDesc">Some groups and channels may not allow specific reactions.</string>
 
   <string name="ReactionsDisabledDesc">Allow members to react to group messages</string>
   <string name="AvailableReactions">Available reactions</string>
@@ -1759,6 +1777,7 @@
   <string name="QuickReaction">Quick Reaction</string>
   <string name="QuickReactionDisabled">Disabled</string>
   <string name="BigReactionsInfo">Big reactions are interactive buttons under messages presenting each reaction</string>
+  <string name="ReactionAvatarsInfo">When limited, avatars display only in scenarios when you are likely to recognise the user.</string>
   <string name="BigReactions">Big Reactions</string>
   <string name="BigReactionsChats">Chats</string>
   <string name="BigReactionsChannels">Channels</string>
@@ -1793,6 +1812,10 @@
   <string name="RightEditMessages">Edit Messages</string>
   <string name="RightVoiceChats">Manage video chats</string>
   <string name="RightLiveStreams">Manage live streams</string>
+  <string name="RightTopics">Manage topics</string>
+  <string name="RightStoriesPost">Post Stories</string>
+  <string name="RightStoriesEdit">Edit Stories of Others</string>
+  <string name="RightStoriesDelete">Delete Stories of Others</string>
   <string name="RightAnonymous">Remain anonymous</string>
   <string name="NoGroupsToShow">No groups to show</string>
   <string name="GroupsWillBeShownHere">Groups in common will be shown here</string>
@@ -1974,7 +1997,11 @@
   <string name="EventLogPromotedPostMessages">Post messages</string>
   <string name="EventLogPromotedEditMessages">Edit messages</string>
   <string name="EventLogPromotedDeleteMessages">Delete messages</string>
+  <string name="EventLogPromotedPostStories">Post stories</string>
+  <string name="EventLogPromotedEditStories">Edit stories of others</string>
+  <string name="EventLogPromotedDeleteStories">Delete stories of others</string>
   <string name="EventLogPromotedAddAdmins">Add admins</string>
+  <string name="EventLogPromotedManageTopics">Manage topics</string>
   <string name="EventLogPromotedRemainAnonymous">Remain anonymous</string>
   <string name="EventLogPromotedManageVoiceChats">Manage video chats</string>
   <string name="EventLogPromotedManageLiveStreams">Manage live streams</string>
@@ -2046,8 +2073,8 @@
   <string name="EventLogForumTopicEditedNameYou">You changed topic name from %1$s to %2$s</string>
   <string name="EventLogForumTopicClosed">%1$s closed topic %2$s</string>
   <string name="EventLogForumTopicClosedYou">You closed topic %1$s</string>
-  <string name="EventLogForumTopicReopened">%1$s reopened topic %2$s</string>
-  <string name="EventLogForumTopicReopenedYou">You reopened topic %1$s</string>
+  <string name="EventLogForumTopicReopened">%1$s reopened the topic %2$s</string>
+  <string name="EventLogForumTopicReopenedYou">You reopened the topic %1$s</string>
   <string name="EventLogForumTopicHidden">%1$s made topic %2$s hidden</string>
   <string name="EventLogForumTopicHiddenYou">You made topic %1$s hidden</string>
   <string name="EventLogForumTopicUnhidden">%1$s made topic %2$s visible</string>
@@ -2095,6 +2122,7 @@
   <string name="RemoveFromFavorites">Remove from Favorites</string>
   <string name="HoldToAudio">Hold to record audio. Tap to switch to video.</string>
   <string name="HoldToVideo">Hold to record video. Tap to switch to audio.</string>
+  <string name="MessageContainsPremiumFeatures">Sending animated emoji requires **Telegram Premium**</string>
   <string name="SecretChatFeatureUnsupported">%1$s\'s Telegram client doesn\'t support this feature. They need to install an update first.</string>
   <string name="UseHqRoundVideos">Record HQ Round Videos</string>
   <string name="DiscardVideoMessageTitle">Discard Video Message</string>
@@ -2144,7 +2172,7 @@
   <string name="EditMarkdown">Edit Markdown</string>
   <string name="ForceBuiltinDecoding">Force built-in media decoding</string>
   <string name="CompressAudio">Compress audio in videos</string>
-  <string name="EditMarkdownHint2">Edit text in messages using the old-school way: `**`**bold**`**`, `__`__italic__`__`, `~~`~~strikethrough~~`~~`, ````monospace````, `||`||spoiler||`||`, `[`text`](`url`)`</string>
+  <string name="EditMarkdownHint2">Edit text in messages using shortcuts: `**`**bold**`**`, `__`__italic__`__`, `~~`~~strikethrough~~`~~`, ````monospace````, `||`||spoiler||`||`, `[`text`](`url`)`</string>
   <string name="MessageNotFound">Message not found</string>
   <string name="SyncHintTitle">Find Contacts</string>
   <string name="SyncHint">To help you connect with friends and family, allow %1$s access to your contacts.</string>
@@ -2169,6 +2197,7 @@
   <string name="SecretLinkPreviewAlert">Would you like to enable extended link previews in Secret Chats? Note that link previews are generated on Telegram servers.</string>
   <string name="SecretChatContextBotAlert">Please note that inline bots are provided by third-party developers. For the bot to work, the symbols you type after the bot\'s username are sent to the respective developer.</string>
   <string name="ClearRecentEmojiAction">Clear Recent Emoji</string>
+  <string name="ClearRecentReactionsAction">Clear Recent Reactions</string>
   <string name="PaintModeDoodle">Doodle</string>
   <string name="PaintModeArrow">Arrow</string>
   <string name="PaintModeRect">Rectangle</string>
@@ -2191,6 +2220,7 @@
   <string name="PhoneCall">Phone Call</string>
   <string name="SetAsCurrent">Set as current</string>
   <string name="ArchiveStickerSet">Archive sticker set %1$s? You can restore it later in Settings &gt; Stickers &gt; Archived.</string>
+  <string name="ArchiveEmojiSet">Archive emoji pack %1$s? You can restore it later in Settings &gt; Emoji &gt; Archived.</string>
   <string name="ArchiveStickerSetAction">Archive</string>
   <string name="ArchivePack">Archive pack</string>
   <string name="ClearDrawing">Clear drawing</string>
@@ -2252,7 +2282,7 @@
   <string name="AutoNightModeDescriptionSystemQ">Switch to night theme based on your system settings.</string>
   <string name="AutoNightModeDescriptionSystem">Switch to night theme based on the value provided by system.</string>
   <string name="PrivacyBots">Bots</string>
-  <string name="WebSessionsTitle">Logged in with Telegram</string>
+  <string name="WebSessionsTitle">Logged In with Telegram</string>
   <string name="NoActiveLogins">**No active logins**\n\nYou can log in on websites that support signing&#160;in&#160;with&#160;Telegram.</string>
   <string name="TerminateAllWebSessions">Disconnect All Websites</string>
   <string name="ClearOtherWebSessionsHelp">You can log in on websites that support signing in with Telegram.</string>
@@ -2452,6 +2482,9 @@
   <string name="SyncContactsDeleteButton">Delete Synced Contacts</string>
   <string name="SyncContactsDeleteInfo">This will remove your contacts from the Telegram servers. If \'Sync Contacts\' is enabled, contacts will be re-synced.</string>
   <string name="BotWebsiteAllowed">You allowed this bot to message you when you logged in on %1$s.</string>
+  <string name="BotWebappAllowed">You allowed this bot to message you in its web-app.</string>
+  <string name="BotAttachAllowed">You allowed this bot to message you when you added it to your attachment menu.</string>
+  <string name="BotAppAllowed">You allowed this bot to message you when launched its "%1$s" app.</string>
   <string name="QuickActionSettingNone">None</string>
   <string name="QuickActionSettingShare">Share</string>
   <string name="QuickActionSettingReply">Reply</string>
@@ -2521,7 +2554,7 @@
   <string name="LeaveReturnPublicLinkHintChannel">You will be able to return to this channel by its public link</string>
   <string name="LeaveReturnPublicLinkHintGroup">You will be able to return to this group by its public link</string>
   <string name="DeleteUserChatConfirm">Are you sure you want to delete the chat with %1$s? This action cannot be undone.</string>
-  <string name="DeleteAndStopBotConfirm">Are you sure you want to stop %1$s and delete the chat with it? This action cannot be undone.</string>
+  <string name="DeleteAndStopBotConfirm">Are you sure you want to block %1$s and delete the chat with it? This action cannot be undone.</string>
   <string name="DeleteSavedMessagesConfirm">Are you sure you want to delete all **Saved Messages**? This action cannot be undone.</string>
   <string name="DeleteSecretChatPendingConfirm">Are you sure you want to cancel the secret chat with %1$s?</string>
   <string name="DeleteSecretChatClosedConfirm">Are you sure you want to delete the secret chat with %1$s? This action cannot be undone.</string>
@@ -3074,9 +3107,16 @@
   <string name="CategoryPrivate">Private</string>
   <string name="CategorySecret">Secret</string>
   <string name="CategoryGroup">Group Chats</string>
+  <string name="CategoryGroups">Groups</string>
   <string name="CategoryChannels">Channels</string>
   <string name="CategoryBots">Bots</string>
+  <string name="CategoryRead">Read</string>
   <string name="CategoryUnread">Unread</string>
+  <string name="CategoryMuted">Muted</string>
+  <string name="CategoryArchived">Archived</string>
+  <string name="CategoryContacts">Contacts</string>
+  <string name="CategoryNonContacts">Non-Contacts</string>
+
   <string name="xBots_one">%1$s bot</string>
   <string name="xBots_other">%1$s bots</string>
 
@@ -3093,8 +3133,11 @@
   <string name="error_APP_UPGRADE_NEEDED">This feature is not available. Please make sure the app is up-to-date, or wait for new updates.</string>
   <string name="error_NotFound">Page not found or no longer exists.</string>
   <string name="error_ChatInfoNotFound">Sorry, you don\'t have access to this chat or channel.</string>
+  <string name="error_ANONYMOUS_REACTIONS_DISABLED">Sorry, anonymous administrators cannot leave reactions or participate in polls.</string>
   <string name="error_PEER_ID_INVALID">Sorry, you don\'t have access to this chat or channel.</string>
   <string name="error_STICKERSET_INVALID">Sticker set not found or no longer exists.</string>
+  <string name="error_CHANNEL_PRIVATE">Chat is inaccessible</string>
+  <string name="errorChatInaccessible">Can\'t access the chat</string>
   <string name="error_CHANNELS_TOO_MUCH">Sorry, you are a member of too many groups or channels. Please leave some before joining a new one.</string>
   <string name="error_PHONE_NUMBER_BANNED">Sorry, this phone number is banned. Contact us at login@telegram.org if you need help.</string>
   <string name="error_CHANNELS_ADMIN_LOCATED_TOO_MUCH">Sorry, you have too many location-based groups already. Please delete one of your existing ones first.</string>
@@ -3105,6 +3148,7 @@
   <string name="NobodyLikesSpam2">Sorry, you can interact only with mutual contacts at the moment.</string> <!--PEER_FLOOD-->
   <string name="error_BOTS_TOO_MUCH">There are too many bots in this group. Please remove some of the bots you\'re not using first.</string>
   <string name="error_ADMINS_TOO_MUCH">Sorry, this group has too many admins. Please remove one of the existing admins first.</string>
+  <string name="error_FolderMustContainAtLeast1Chat">Folder must contain at least one chat</string>
 
   <string name="NotificationImportance">Notification Style</string>
   <string name="NotificationImportanceHigh">Sound and pop-up</string>
@@ -3390,6 +3434,7 @@
   <string name="ChatDisabledDocs">Only admins can send files in this group</string>
   <string name="ChatDisabledPhoto">Only admins can send photos in this group</string>
   <string name="ChatDisabledVideo">Only admins can send videos in this group</string>
+  <string name="ChatDisabledStory">Only admins can send stories in this group</string>
   <string name="ChatDisabledOther">Only admins can send stickers and GIFs in this group</string>
   <string name="ChatDisabledVoice">Only admins can send voice messages in this group</string>
   <string name="ChatDisabledVideoNotes">Only admins can send video messages in this group</string>
@@ -3422,6 +3467,8 @@
   <string name="ChatRestrictedPhotoUntil">Admins have restricted you from sending photos in this group until %1$s</string>
   <string name="ChatRestrictedVideo">The admins of this group have restricted your ability to send videos.</string>
   <string name="ChatRestrictedVideoUntil">Admins have restricted you from sending videos in this group until %1$s</string>
+  <string name="ChatRestrictedStory">The admins of this group have restricted your ability to send stories.</string>
+  <string name="ChatRestrictedStoryUntil">Admins have restricted you from sending stories in this group until %1$s</string>
   <string name="ChatRestrictedOther">The admins of this group have restricted your ability to send stickers and GIFs.</string>
   <string name="ChatRestrictedOtherUntil">Admins have restricted you from sending stickers and GIFs in this group until %1$s</string>
   <string name="ChatRestrictedPolls">The admins of this group have restricted your ability to send polls.</string>
@@ -3571,6 +3618,8 @@
   <string name="PhoneNumber">Phone Number</string>
   <string name="WhoCanSeePhone">Who can see your Phone Number?</string>
   <string name="WhoCanSeePhoneInfo">Users who have your number saved in their contacts will also see it on Telegram.</string>
+  <string name="WhoCanSeeBio">Who can see your bio?</string>
+  <string name="WhoCanSeeBioInfo">You can restrict who can see can see the bio on your profile with granular precision.</string>
 
   <string name="PrivacyShowNumberExceptionOn">Visible</string>
   <string name="PrivacyShowNumberExceptionContacts">Visible only for contacts</string>
@@ -3581,6 +3630,16 @@
   <string name="PrivacyShowNumberContactsExcept">Only contacts (%1$s) can see your phone number</string>
   <string name="PrivacyShowNumberEverybody">Everybody can see your phone number</string>
   <string name="PrivacyShowNumberEverybodyExcept">Everybody (%1$s) can see your phone number</string>
+
+  <string name="PrivacyShowBioExceptionOn">Visible</string>
+  <string name="PrivacyShowBioExceptionContacts">Visible only for contacts</string>
+  <string name="PrivacyShowBioExceptionOff">Hidden</string>
+  <string name="PrivacyShowBioNobody">Nobody can see your bio</string>
+  <string name="PrivacyShowBioNobodyExcept">Nobody (%1$s) can see your bio</string>
+  <string name="PrivacyShowBioContacts">Only contacts can see your bio</string>
+  <string name="PrivacyShowBioContactsExcept">Only contacts (%1$s) can see your bio</string>
+  <string name="PrivacyShowBioEverybody">Everybody can see your bio</string>
+  <string name="PrivacyShowBioEverybodyExcept">Everybody (%1$s) can see your bio</string>
 
   <!--<string name="PrivacyAllowFindingNobody">Nobody can see your phone number</string>
   <string name="PrivacyAllowFindingNobodyExcept">Nobody (%1$s) can see your phone number</string>-->
@@ -3726,7 +3785,7 @@
   <string name="BlockUserConfirm">Are you sure you want to block %1$s?</string>
   <string name="BlockBotConfirm">Are you sure you want to stop and block %1$s?</string>
   <string name="BlockedUser">%1$s has been blocked.</string>
-  <string name="BlockedBot">%1$s has been stopped.</string>
+  <string name="BlockedBot">%1$s is now blocked.</string>
   <string name="UnblockedUser">%1$s has been unblocked.</string>
   <string name="UnblockedBot">%1$s has been unblocked.</string>
 
@@ -3995,6 +4054,7 @@
   <string name="EditPrivacyPhoto">Profile Photos</string>
   <string name="EditPrivacyStatus">Last Seen &amp; Online</string>
   <string name="EditPrivacyPhoneNumber">Phone Number</string>
+  <string name="EditPrivacyBio">Bio</string>
 
   <string name="EditPrivacyForward">Forward My Messages</string>
   <string name="EditPrivacyCall">Call Me</string>
@@ -4289,11 +4349,11 @@
   <string name="ChannelTtlDisabled">Choose a period of time after which posts will be automatically deleted for subscribers of the channel.</string>
   <string name="ChannelTtlEnabled">Automatically delete new posts after %1$s for subscribers of the channel.</string>
 
-  <string name="ChatBackgroundPreview">Chat Background Preview</string>
-  <string name="ChatBackgroundNotSupported">Sorry, this type of chat background is not yet supported.</string>
-  <string name="ChatBackgroundApply">Apply Chat Background</string>
-  <string name="ChatBackgroundView">View Chat Background</string>
-  <string name="ChatBackground">Chat Background</string>
+  <string name="ChatBackgroundPreview">Chat Wallpaper Preview</string>
+  <string name="ChatBackgroundNotSupported">Sorry, this type of chat wallpaper is not yet supported.</string>
+  <string name="ChatBackgroundApply">Apply Chat Wallpaper</string>
+  <string name="ChatBackgroundView">View Wallpaper</string>
+  <string name="ChatBackground">Chat Wallpaper</string>
   <string name="ChatBackgroundTypePattern">pattern</string>
   <string name="ChatBackgroundTypeSolid">solid color</string>
   <string name="ChatBackgroundTypeGradient">gradient</string>
@@ -4418,6 +4478,8 @@
   <string name="session_Device">Device: %1$s</string>
   <string name="session_App">App: %1$s</string>
   <string name="session_System">System: %1$s</string>
+
+  <string name="RecommendedSign">recommended</string>
 
   <string name="SponsoredSign">sponsored</string>
   <string name="SponsoredInfoMenu">What are sponsored messages?</string>
@@ -4549,9 +4611,12 @@
   <string name="ExperimentalBuildTitle">Caution: experimental build</string>
   <string name="ExperimentalBuildInfo">This version of **Telegram X** is not designed for long-term use.\n\nIt may completely stop working over a time and you cannot turn notifications on.\n\nIf you are looking for the proper Telegram X APK file, see https://t.me/tgx_log</string>
 
-  <string name="PremiumRequiredSticker">Sending this sticker requires **Telegram Premium** subscription.</string>
-  <string name="PremiumRequiredVoiceVideo">This setting requires **Telegram Premium** subscription.</string>
-  <string name="PremiumRequired">This feature requires **Telegram Premium** subscription.</string>
+   <string name="PremiumRequiredSticker">Sending this sticker requires a **Telegram Premium** subscription.</string>
+  <string name="PremiumRequiredVoiceVideo">This setting requires a **Telegram Premium** subscription.</string>
+  <string name="PremiumRequired">This feature requires a **Telegram Premium** subscription.</string>
+  <string name="PremiumRequiredMoveFolder">Subscribe to **Telegram Premium** to move the "%1$s" folder.</string>
+  <string name="PremiumRequiredCreateFolder">You have reached the limit of **%1$d** folders. You can double the limit to **%2$d** folders by subscribing to **Telegram Premium**.</string>
+  <string name="PremiumRequiredChatsInFolder">Sorry, you can\'t add more than **%1$d** chats to a folder. You can increase this limit to **%2$d** by subscribing to **Telegram Premium**.</string>
 
   <string name="XRestrictedVoiceMessages">%1$s doesn\'t accept voice messages.</string>
   <string name="XRestrictedVideoMessages">%1$s doesn\'t accept video messages.</string>
@@ -4637,10 +4702,9 @@
 
   <string name="ShowLessStickers">show less</string>
 
-
-
   <string name="TranslateLangUnknown">Unknown</string>
   <string name="Translate">Translate</string>
+  <string name="TranslationPaste">Paste translation</string>
   <string name="TranslateOff">Disable translation</string>
   <string name="Translation">Translation</string>
   <string name="TranslationCopy">Copy translation</string>
@@ -4654,7 +4718,7 @@
   <string name="ChatTranslateStyleDisabled">Disabled</string>
   <string name="ChatTranslateOriginal">Original</string>
   <string name="TranslateTryAgain">Try again later</string>
-  <string name="TranslateWait">Please wait...</string>
+  <string name="TranslateWait">Please wait…</string>
   <string name="TranslateOriginal">Original message</string>
   <string name="DoNotTranslate">Do not translate</string>
   <string name="ApplicationLanguage">Application language</string>
@@ -4678,6 +4742,137 @@
   <string name="SetTodayAt">Set until today at %1$s</string>
   <string name="SetTomorrowAt">Set until tomorrow at %1$s</string>
   <string name="SetDateAt">Set until %1$s at %2$s</string>
+  
+  <string name="TextFormatting">Text formatting</string>
+  <string name="TextFormattingTools">Tools</string>
+  <string name="TextFormattingTranslate">Translate</string>
+
+  <string name="xEmoji_one">%1$s emoji</string>
+  <string name="xEmoji_other">%1$s emoji</string>
+  <string name="xEmojiPacks_one">%1$s emoji pack</string>
+  <string name="xEmojiPacks_other">%1$s emoji packs</string>
+  <string name="xStickerPacks_one">%1$s sticker pack</string>
+  <string name="xStickerPacks_other">%1$s sticker packs</string>
+  <string name="AddXEmoji_one">Add %1$s emoji</string>
+  <string name="AddXEmoji_other">Add %1$s emoji</string>
+  <string name="RemoveXEmoji_one">Remove %1$s emoji</string>
+  <string name="RemoveXEmoji_other">Remove %1$s emoji</string>
+  <string name="AddXEmojiPacks_one">Add %1$s emoji pack</string>
+  <string name="AddXEmojiPacks_other">Add %1$s emoji packs</string>
+  <string name="RemoveXEmojiPacks_one">Remove %1$s emoji pack</string>
+  <string name="RemoveXEmojiPacks_other">Remove %1$s emoji packs</string>
+  <string name="AddXStickerPacks_one">Add %1$s sticker set</string>
+  <string name="AddXStickerPacks_other">Add %1$s sticker sets</string>
+  <string name="RemoveXStickerPacks_one">Remove %1$s sticker set</string>
+  <string name="RemoveXStickerPacks_other">Remove %1$s sticker sets</string>
+  <string name="EmojiOnlyForPremium">Available only with Telegram Premium subscription</string>
+  <string name="LoadingMessageEmojiPack">Loading…</string>
+  <string name="EmojiUsedFromSingle">Emoji used from %1$s pack</string>
+  <string name="EmojiUsedFromX">Emoji used from %1$s</string>
+  <string name="xEmojiPacksEmojiSingle">* %1$s</string>
+  <string name="ArchivedEmojiInfo">You can add up to %1$s emoji packs. Unused packs are archive when you add more.</string>
+
+  <string name="SuggestAnimatedEmoji">Suggest Animated Emoji</string>
+  <string name="EmojiPacks">Emoji Packs</string>
+  <string name="StickerPacks">Sticker Packs</string>
+  <string name="EmojiHeader">Emoji</string>
+  <string name="StickersAndEmoji">Stickers and Emoji</string>
+  <string name="PasteCustomEmoji">Paste Emoji</string>
+  <string name="ShareCustomEmoji">Share Emoji</string>
+  <string name="LoopAnimatedEmoji">Loop Animated Emoji</string>
+
+  <string name="ArchiveSettings">Archive Settings</string>
+  <string name="ArchiveSettingsDesc">Control what chats remain archived even if they are unmuted and get a new message.</string>
+
+  <string name="ArchiveSettingUnmutedChatsTitle">Unmuted chats</string>
+  <string name="ArchiveSettingUnmutedChats">Always keep archived</string>
+  <string name="ArchiveSettingUnmutedChatsDesc">Keep archived chats in the Archive even if they are unmuted and get a new message.</string>
+
+  <string name="ArchiveSettingFolderChatsTitle">Chats from folders</string>
+  <string name="ArchiveSettingFolderChats">Always keep archived</string>
+  <string name="ArchiveSettingFolderChatsDesc">Keep archived chats from folders in the Archive even if they are unmuted and get a new message.</string>
+
+  <string name="xStickerSetsInstalled_one">%1$s set installed</string>
+  <string name="xStickerSetsInstalled_other">%1$s set installed</string>
+  <string name="xStickerSetsInstalledUnknown">Sticker set settings</string>
+  <string name="xEmojiSetsInstalled_one">%1$s set installed</string>
+  <string name="xEmojiSetsInstalled_other">%1$s set installed</string>
+  <string name="xEmojiSetsInstalledUnknown">Emoji packs settings</string>
+  <string name="xStickersHide_one">Archive %1$s pack</string>
+  <string name="xStickersHide_other">Archive %1$s packs</string>
+  <string name="xStickersInstall_one">Install %1$s pack</string>
+  <string name="xStickersInstall_other">Install %1$s packs</string>
+
+  <string name="ReactionsPickerHeader">Reactions</string>
+
+  <string name="ShowXMoreEmoji_one">%1$s more</string>
+  <string name="ShowXMoreEmoji_other">%1$s more</string>
+
+  <string name="AvatarsInReactions">Avatars in Reactions</string>
+  <string name="AvatarsInReactionsAlways">Always</string>
+  <string name="AvatarsInReactionsSmartFilter">Limited</string>
+  <string name="AvatarsInReactionsNever">Never</string>
+  
+  <string name="ShowXMore_one">%1$s more</string>
+  <string name="ShowXMore_other">%1$s more</string>
+  
+  <string name="ChatTypes">Chat types</string>
+  <string name="ChatFolders">Chat Folders</string>
+  <string name="ChatFoldersInfo">Create folders for different groups of chats and quickly switch between them.</string>
+  <string name="ChatFoldersSettings">Settings</string>
+  <string name="ChatFoldersAppearance">Appearance</string>
+  <string name="ChatFoldersPositionTop">Top</string>
+  <string name="ChatFoldersPositionBottom">Bottom</string>
+  <string name="ChatFolderChangeIcon">Change Icon</string>
+  <string name="ChatFolderAddChats">Add Chats</string>
+  <string name="ChatFolderLimitReached">You have reached the limit of **%1$d** folders.</string>
+  <string name="ChatsInFolderLimitReached">Sorry, you can\'t add more than **%1$d** chats to a folder. Please create a new one.</string>
+  <string name="NewFolder">New Folder</string>
+  <string name="CreateNewFolder">Create New Folder</string>
+  <string name="HideFolder">Hide Folder</string>
+  <string name="HideFolderInfo">To display %1$s folder again, go to %2$s > %3$s</string>
+  <string name="HideAllChats">Hide All Chats</string>
+  <string name="EditFolder">Edit Folder</string>
+  <string name="EditFolders">Edit Folders</string>
+  <string name="RemoveFolder">Remove Folder</string>
+  <string name="RemoveFolderConfirm">Are you sure you want to remove this folder? Your chats will not be deleted.</string>
+  <string name="FolderNoChatsToDisplay">**Folder is empty**\n\nNo chats currently belong to this folder.</string>
+  <string name="FolderRemoveInclusionConfirm">Are you sure you want to remove "%1$s" from the always included list?</string>
+  <string name="FolderRemoveExclusionConfirm">Are you sure you want to remove "%1$s" from the always excluded list?</string>
+  <string name="IncludeChats">Include Chats</string>
+  <string name="IncludeChatsInfo_one">You can select only one non-secret chat and only one secret chat.</string>
+  <string name="IncludeChatsInfo_other">You can select up to %1$s non-secret chats and the same number of secret chats.</string>
+  <string name="ExcludeChats">Exclude Chats</string>
+  <string name="ExcludeChatsInfo_one">You can select only one non-secret chat and only one secret chat</string>
+  <string name="ExcludeChatsInfo_other">You can select up to %1$s non-secret chats and the same number of secret chats.</string>
+  <string name="FolderIncludedChats">Included Chats</string>
+  <string name="FolderIncludedChatsInfo">Choose chats or types of chats that will appear in this folder.</string>
+  <string name="FolderExcludedChats">Excluded Chats</string>
+  <string name="FolderExcludedChatsInfo">Choose chats or types of chats that will **not** appear in this folder.</string>
+  <string name="FolderActionIncludeChats">Add Chats to Included</string>
+  <string name="FolderActionExcludeChats">Add Chats to Excluded</string>
+  <string name="FolderName">Folder name</string>
+  <string name="FolderNameHint">Name</string>
+  <string name="RecommendedFolders">Recommended Folders</string>
+  <string name="AddToFolder">Add to folder</string>
+  <string name="RemoveFromFolder">Remove from folder</string>
+  <string name="ChooseFolder">Choose a folder</string>
+  <string name="LocalFolderBadge">local folder</string>
+  <string name="MainListBadge">main list</string>
+  <string name="IconOnly">Icon only</string>
+  <string name="LabelOnly">Label only</string>
+  <string name="LabelAndIcon">Label with icon</string>
+  <string name="CountMutedChats">Count muted chats</string>
+  <string name="DisplayFoldersAtTheTop">Display folders at the top</string>
+  <string name="ChatsXShowMore_one">Show %1$s more</string>
+  <string name="ChatsXShowMore_other">Show %1$s more</string>
+
+  <string name="ExperimentalSettings">Experimental settings</string>
+  <string name="ExperimentalSettingsWarning">**Warning:** those are experimental settings. Some may not work. Others may break the app. Any of them might disappear without a trace.\n\nUse at your own risk.</string>
+  <string name="Experiment_PeerIds">Show Peer IDs in Profiles</string>
+  <string name="Experiment_PeerIdsInfo">Show peer IDs from API below their Bio / Description</string>
+  <string name="Experiment_ChatFolders">Enable Chat Folders</string>
+  <string name="Experiment_ChatFoldersInfo">Enable early access to folders. Appearance of this feature is planned to be changed in future versions of Telegram X, and it includes some unfinished work. Credit: [PR #297](https://github.com/TGX-Android/Telegram-X/pull/297) by nikita-toropov</string>
 
   <!-- RESOLUTION STRING SECTION -->
 

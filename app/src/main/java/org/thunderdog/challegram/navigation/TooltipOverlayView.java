@@ -51,6 +51,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -269,7 +270,7 @@ public class TooltipOverlayView extends ViewGroup {
       this.listener = listener;
       final String currentLang = message.getCurrentTranslatedLanguage();
       originalLanguage = Lang.getLanguageName(message.getOriginalMessageLanguage(), Lang.getString(R.string.TranslateLangUnknown));
-      translatedLanguage = Lang.getLanguageName(message.getCurrentTranslatedLanguage(), currentLang != null ? currentLang: originalLanguage);
+      translatedLanguage = Lang.getLanguageName(message.getCurrentTranslatedLanguage(), currentLang != null ? currentLang : originalLanguage);
       arrowX = (int) U.measureText(originalLanguage, Paints.getRegularTextPaint(14));
       width = (int)(arrowX + U.measureText(translatedLanguage, Paints.getRegularTextPaint(14)) + Screen.dp(18));
       arrow = Drawables.get(R.drawable.round_keyboard_arrow_right_16);
@@ -312,7 +313,7 @@ public class TooltipOverlayView extends ViewGroup {
     public void draw (Canvas c, ColorProvider colorProvider, int left, int top, int right, int bottom, float alpha, ComplexReceiver iconReceiver) {
       c.drawText(originalLanguage, left, top + Screen.dp(14), Paints.getRegularTextPaint(14, Theme.getColor(ColorId.tooltip_text)));
       c.drawText(translatedLanguage, left + arrowX + Screen.dp(18), top + Screen.dp(14), Paints.getRegularTextPaint(14, Theme.getColor(ColorId.tooltip_textLink)));
-      Drawables.draw(c, arrow, left + arrowX + Screen.dp(1), top, Paints.getPorterDuffPaint(Theme.getColor(ColorId.tooltip_text)));
+      Drawables.draw(c, arrow, left + arrowX + Screen.dp(1), top, PorterDuffPaint.get(ColorId.tooltip_text));
     }
   }
 

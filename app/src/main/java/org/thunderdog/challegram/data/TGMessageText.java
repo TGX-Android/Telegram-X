@@ -23,7 +23,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.config.Config;
@@ -34,7 +33,6 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
-import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -55,8 +53,6 @@ public class TGMessageText extends TGMessage {
   private TGWebPage webPage;
   private TdApi.MessageText currentMessageText, pendingMessageText;
 
-  public TdApi.SponsoredMessage sponsoredMetadata;
-
   public TGMessageText (MessagesManager context, TdApi.Message msg, TdApi.MessageText text, @Nullable TdApi.MessageText pendingMessageText) {
     super(context, msg);
     this.currentMessageText = text;
@@ -70,10 +66,9 @@ public class TGMessageText extends TGMessage {
     }
   }
 
-  public TGMessageText (MessagesManager context, TdApi.Message msg, TdApi.SponsoredMessage text) {
-    super(context, msg);
-    this.sponsoredMetadata = text;
-    this.currentMessageText = (TdApi.MessageText) text.content;
+  public TGMessageText (MessagesManager context, long inChatId, TdApi.SponsoredMessage sponsoredMessage) {
+    super(context, inChatId, sponsoredMessage);
+    this.currentMessageText = (TdApi.MessageText) sponsoredMessage.content;
     setText(currentMessageText.text, false);
   }
 
@@ -112,6 +107,7 @@ public class TGMessageText extends TGMessage {
     Uri uri = null;
     for (TdApi.TextEntity entity : text.entities) {
       String url;
+      //noinspection SwitchIntDef
       switch (entity.type.getConstructor()) {
         case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
           url = Td.substring(text.text, entity);
@@ -136,11 +132,16 @@ public class TGMessageText extends TGMessage {
   protected int onMessagePendingContentChanged (long chatId, long messageId, int oldHeight) {
     if (currentMessageText != null) {
       TdApi.MessageContent messageContent = tdlib.getPendingMessageText(chatId, messageId);
-      if (messageContent != null && messageContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR && Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI)) {
+      final @EmojiMessageContentType int contentType = getEmojiMessageContentType(messageContent);
+      boolean allowEmoji = !Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI);
+      if (contentType != EmojiMessageContentType.NOT_EMOJI) {
+        return MESSAGE_REPLACE_REQUIRED;
+      }
+      if (messageContent != null && Td.isAnimatedEmoji(messageContent) && !allowEmoji) {
         messageContent = new TdApi.MessageText(Td.textOrCaption(messageContent), null);
       }
       if (this.pendingMessageText != messageContent) {
-        if (messageContent != null && messageContent.getConstructor() != TdApi.MessageText.CONSTRUCTOR)
+        if (messageContent != null && !Td.isText(messageContent))
           return MESSAGE_REPLACE_REQUIRED;
         TdApi.MessageText messageText = (TdApi.MessageText) messageContent;
         this.pendingMessageText = messageText;
@@ -173,9 +174,9 @@ public class TGMessageText extends TGMessage {
     boolean found = false;
     for (TdApi.TextEntity entity : text.entities) {
       String url;
-      if (entity.type.getConstructor() == TdApi.TextEntityTypeUrl.CONSTRUCTOR) {
+      if (Td.isUrl(entity.type)) {
         url = text.text.substring(entity.offset, entity.offset + entity.length);
-      } else if (entity.type.getConstructor() == TdApi.TextEntityTypeTextUrl.CONSTRUCTOR) {
+      } else if (Td.isTextUrl(entity.type)) {
         url = ((TdApi.TextEntityTypeTextUrl) entity.type).url;
       } else {
         continue;
@@ -286,7 +287,7 @@ public class TGMessageText extends TGMessage {
     if (pendingMessageText != null) {
       if (setWebPage(pendingMessageText.webPage))
         webPage.buildLayout(webPageMaxWidth);
-    } else if (msg.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR && setWebPage(((TdApi.MessageText) msg.content).webPage)) {
+    } else if (Td.isText(msg.content) && setWebPage(((TdApi.MessageText) msg.content).webPage)) {
       webPage.buildLayout(webPageMaxWidth);
     } else if (webPage != null && webPage.getMaxWidth() != webPageMaxWidth) {
       webPage.buildLayout(webPageMaxWidth);
@@ -329,16 +330,18 @@ public class TGMessageText extends TGMessage {
 
   @Override
   protected boolean isSupportedMessageContent (TdApi.Message message, TdApi.MessageContent messageContent) {
-    if (messageContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR)
-      return Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI);
+    final @EmojiMessageContentType int contentType = getEmojiMessageContentType(messageContent);
+    if (messageContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR || messageContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
+      return contentType == EmojiMessageContentType.NOT_EMOJI;
+    }
     return super.isSupportedMessageContent(message, messageContent);
   }
 
   @Override
   protected boolean onMessageContentChanged (TdApi.Message message, TdApi.MessageContent oldContent, TdApi.MessageContent newContent, boolean isBottomMessage) {
     if (!Td.equalsTo(Td.textOrCaption(oldContent), Td.textOrCaption(newContent)) ||
-        !Td.equalsTo(oldContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR ? ((TdApi.MessageText) oldContent).webPage : null,
-                     newContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR ? ((TdApi.MessageText) newContent).webPage : null)
+        !Td.equalsTo(Td.isText(oldContent) ? ((TdApi.MessageText) oldContent).webPage : null,
+                     Td.isText(newContent) ? ((TdApi.MessageText) newContent).webPage : null)
     ) {
       updateMessageContent(msg, newContent, isBottomMessage);
       return true;
@@ -348,9 +351,9 @@ public class TGMessageText extends TGMessage {
 
   @Override
   protected boolean updateMessageContent (TdApi.Message message, TdApi.MessageContent newContent, boolean isBottomMessage) {
-    TdApi.WebPage oldWebPage = this.msg.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR ? ((TdApi.MessageText) this.msg.content).webPage : null;
+    TdApi.WebPage oldWebPage = Td.isText(this.msg.content) ? ((TdApi.MessageText) this.msg.content).webPage : null;
     this.msg.content = newContent;
-    TdApi.MessageText newText = newContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR ? new TdApi.MessageText(Td.textOrCaption(newContent), null) : (TdApi.MessageText) newContent;
+    TdApi.MessageText newText = Td.isText(newContent) ? (TdApi.MessageText) newContent : new TdApi.MessageText(Td.textOrCaption(newContent), null);
     this.currentMessageText = newText;
     if (!isBeingEdited()) {
       setText(newText.text, false);
@@ -531,103 +534,6 @@ public class TGMessageText extends TGMessage {
   @Override
   public boolean onTouchEvent (MessageView view, MotionEvent e) {
     return super.onTouchEvent(view, e) || wrapper.onTouchEvent(view, e) || (webPage != null && webPage.onTouchEvent(view, e, getContentX(), getWebY(), clickCallback()));
-  }
-
-  // Sponsor-related stuff
-  // TODO: better be separated in a different object
-
-  @Override
-  public boolean isSponsored () {
-    return sponsoredMetadata != null;
-  }
-
-  public boolean isBotSponsor () {
-    return isSponsored() && sponsoredMetadata.link != null && sponsoredMetadata.link.getConstructor() == TdApi.InternalLinkTypeBotStart.CONSTRUCTOR;
-  }
-
-  public int getSponsorButtonName () {
-    if (!isSponsored() || sponsoredMetadata.link == null) {
-      return R.string.OpenChannel;
-    }
-
-    switch (sponsoredMetadata.link.getConstructor()) {
-      case TdApi.InternalLinkTypeMessage.CONSTRUCTOR: {
-        return R.string.OpenMessage;
-      }
-
-      case TdApi.InternalLinkTypeBotStart.CONSTRUCTOR: {
-        return R.string.OpenBot;
-      }
-
-      default: {
-        return R.string.OpenChannel;
-      }
-    }
-  }
-
-  public String getSponsoredButtonUrl () {
-    if (!isSponsored() || sponsoredMetadata.link == null) {
-      return tdlib.tMeUrl(tdlib.chatUsername(getSponsorChatId()));
-    }
-
-    switch (sponsoredMetadata.link.getConstructor()) {
-      case TdApi.InternalLinkTypeMessage.CONSTRUCTOR: {
-        TdApi.InternalLinkTypeMessage link = (TdApi.InternalLinkTypeMessage) sponsoredMetadata.link;
-        return link.url;
-      }
-
-      case TdApi.InternalLinkTypeBotStart.CONSTRUCTOR: {
-        TdApi.InternalLinkTypeBotStart link = (TdApi.InternalLinkTypeBotStart) sponsoredMetadata.link;
-        return tdlib.tMeStartUrl(link.botUsername, link.startParameter, false);
-      }
-
-      default: {
-        return tdlib.tMeUrl(tdlib.chatUsername(getSponsorChatId()));
-      }
-    }
-  }
-
-  public void callSponsorButton () {
-    if (!isSponsored()) {
-      return;
-    }
-
-    long sponsorId = getSponsorChatId();
-
-    if (sponsoredMetadata.link == null) {
-      tdlib.ui().openChat(this, sponsorId, new TdlibUi.ChatOpenParameters().keepStack());
-      return;
-    }
-
-    switch (sponsoredMetadata.link.getConstructor()) {
-      case TdApi.InternalLinkTypeMessage.CONSTRUCTOR: {
-        TdApi.InternalLinkTypeMessage link = (TdApi.InternalLinkTypeMessage) sponsoredMetadata.link;
-        tdlib.client().send(new TdApi.GetMessageLinkInfo(link.url), messageLinkResult -> {
-          if (messageLinkResult.getConstructor() == TdApi.MessageLinkInfo.CONSTRUCTOR) {
-            TdApi.MessageLinkInfo messageLinkInfo = (TdApi.MessageLinkInfo) messageLinkResult;
-            tdlib.ui().post(() -> {
-              tdlib.ui().openMessage(this, messageLinkInfo, null);
-            });
-          }
-        });
-        break;
-      }
-
-      case TdApi.InternalLinkTypeBotStart.CONSTRUCTOR: {
-        TdApi.InternalLinkTypeBotStart link = (TdApi.InternalLinkTypeBotStart) sponsoredMetadata.link;
-        tdlib.ui().openChat(this, sponsorId, new TdlibUi.ChatOpenParameters().shareItem(new TGBotStart(sponsorId, link.startParameter, false)).keepStack());
-        break;
-      }
-
-      default: {
-        tdlib.ui().openChat(this, sponsorId, new TdlibUi.ChatOpenParameters().keepStack());
-        break;
-      }
-    }
-  }
-
-  public long getSponsorChatId () {
-    return isSponsored() ? sponsoredMetadata.sponsorChatId : 0;
   }
 
   private TdApi.FormattedText translatedText;

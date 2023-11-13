@@ -33,6 +33,7 @@
   <item type="id" name="menu_chat" />
   <item type="id" name="menu_chatBulkActions" />
   <item type="id" name="menu_search" />
+  <item type="id" name="menu_archive" />
   <item type="id" name="menu_clear" />
   <item type="id" name="menu_emoji" />
   <item type="id" name="menu_editLangPack" />
@@ -48,6 +49,7 @@
   <item type="id" name="menu_btn_addContact" />
   <item type="id" name="menu_btn_done" />
   <item type="id" name="menu_btn_forward" />
+  <item type="id" name="menu_btn_settings" />
   <item type="id" name="menu_btn_copy" />
   <item type="id" name="menu_btn_archive" />
   <item type="id" name="menu_btn_help" />
@@ -92,6 +94,8 @@
   <item type="id" name="more_btn_addToContacts" />
   <item type="id" name="more_btn_cloudChat" />
   <item type="id" name="more_btn_addToGroup" />
+  <item type="id" name="more_btn_addToFolder" />
+  <item type="id" name="more_btn_removeFromFolder" />
   <item type="id" name="more_btn_edit" />
   <item type="id" name="more_btn_delete" />
   <item type="id" name="more_btn_addMember" />
@@ -171,6 +175,7 @@
   <item type="id" name="controller_call" />
   <item type="id" name="controller_people" />
   <item type="id" name="controller_settings" />
+  <item type="id" name="controller_archiveSettings" />
   <item type="id" name="controller_storageSettings" />
   <item type="id" name="controller_messages" />
   <item type="id" name="controller_wallpaper" />
@@ -237,6 +242,9 @@
   <item type="id" name="controller_chatLinkMembers" />
   <item type="id" name="controller_sponsoredMessagesInfo" />
   <item type="id" name="controller_featureToggles" />
+  <item type="id" name="controller_chatFolders" />
+  <item type="id" name="controller_editChatFolders" />
+  <item type="id" name="controller_selectChats" />
 
   <item type="id" name="separator" />
 
@@ -295,14 +303,23 @@
   <item type="id" name="contact" />
   <item type="id" name="call" />
   <item type="id" name="bucket" />
+  <item type="id" name="chatFolder" />
+  <item type="id" name="recommendedChatFolder" />
+  <item type="id" name="chatType_contact" />
+  <item type="id" name="chatType_nonContact" />
+  <item type="id" name="chatType_group" />
+  <item type="id" name="chatType_channel" />
+  <item type="id" name="chatType_bot" />
+  <item type="id" name="chatType_muted" />
+  <item type="id" name="chatType_read" />
+  <item type="id" name="chatType_archived" />
+
   <item type="id" name="btn_chatTranslate" />
   <item type="id" name="btn_chatTranslateOff" />
-
   <item type="id" name="btn_chatTranslateStyle" />
   <item type="id" name="btn_chatTranslateStylePopup" />
   <item type="id" name="btn_chatTranslateStyleInline" />
   <item type="id" name="btn_chatTranslateStyleNone" />
-
   <item type="id" name="btn_chatDoNotTranslate" />
   <item type="id" name="btn_chatDoNotTranslateAppLang" />
   <item type="id" name="btn_chatDoNotTranslateSelected" />
@@ -317,6 +334,8 @@
   <item type="id" name="btn_unarchiveChat" />
   <item type="id" name="btn_markChatAsRead" />
   <item type="id" name="btn_markChatAsUnread" />
+  <item type="id" name="btn_addChatToFolder" />
+  <item type="id" name="btn_removeChatFromFolder" />
   <item type="id" name="btn_members" />
   <item type="id" name="btn_membersReading" />
   <item type="id" name="btn_membersWriting" />
@@ -575,11 +594,14 @@
   <item type="id" name="btn_proxyQr" />
   <item type="id" name="btn_showAdvanced" />
   <item type="id" name="btn_autoplayGIFs" />
+  <item type="id" name="btn_quickTranslate" />
+  <item type="id" name="btn_translate" />
   <item type="id" name="btn_toggleCollapseRecentStickers" />
+  <item type="id" name="btn_emojiSuggestions" />
   <item type="id" name="btn_stickerSuggestions" />
-  <item type="id" name="btn_stickerSuggestionsAll" />
-  <item type="id" name="btn_stickerSuggestionsInstalled" />
-  <item type="id" name="btn_stickerSuggestionsNone" />
+  <item type="id" name="btn_stickerOrEmojiSuggestionsAll" />
+  <item type="id" name="btn_stickerOrEmojiSuggestionsInstalled" />
+  <item type="id" name="btn_stickerOrEmojiSuggestionsNone" />
   <item type="id" name="btn_switchPmButton" />
   <item type="id" name="btn_updateAutomatically" />
   <item type="id" name="btn_updateAutomaticallyWiFi" />
@@ -678,6 +700,7 @@
   <item type="id" name="btn_cacheSettings" />
   <item type="id" name="btn_deleteMember" />
   <item type="id" name="btn_circle" />
+  <item type="id" name="btn_circleBackspace" />
   <item type="id" name="btn_shareMyContact" />
   <item type="id" name="btn_showPinnedMessage" />
   <item type="id" name="btn_botHelp" />
@@ -755,6 +778,7 @@
   <item type="id" name="btn_openLink" />
   <item type="id" name="btn_copyLink" />
   <item type="id" name="btn_archive" />
+  <item type="id" name="btn_installStickerSet" />
   <item type="id" name="btn_shareLink" />
   <item type="id" name="btn_disabled" />
   <item type="id" name="membersList" />
@@ -1033,7 +1057,10 @@
   <item type="id" name="btn_events_contactJoined" />
   <item type="id" name="btn_events_sentScheduled" />
   <item type="id" name="btn_archiveMuteNonContacts" />
+  <item type="id" name="btn_keepUnmutedChatsArchived" />
+  <item type="id" name="btn_keepFolderChatsArchived" />
   <item type="id" name="btn_silenceNonContacts" />
+  <item type="id" name="btn_archiveSettings" />
   <item type="id" name="btn_events_pinnedMessages" />
   <item type="id" name="btn_events_mentions" />
 
@@ -1216,6 +1243,8 @@
   <item type="id" name="btn_downloadFile" />
   <item type="id" name="btn_pauseFile" />
 
+  <item type="id" name="btn_experiment" />
+
   <item type="id" name="btn_testingUtils" />
   <item type="id" name="btn_appLogs" />
 
@@ -1229,6 +1258,20 @@
   <item type="id" name="btn_messageUnblockMember" />
 
   <item type="id" name="btn_applyWallpaper" />
+  <item type="id" name="btn_chatFolders" />
+  <item type="id" name="btn_createNewFolder" />
+  <item type="id" name="btn_editFolder" />
+  <item type="id" name="btn_hideFolder" />
+  <item type="id" name="btn_removeFolder" />
+  <item type="id" name="btn_folderIncludeChats" />
+  <item type="id" name="btn_folderExcludeChats" />
+  <item type="id" name="btn_chatFolderStyle" />
+  <item type="id" name="btn_changeFolderIcon" />
+  <item type="id" name="btn_labelOnly" />
+  <item type="id" name="btn_iconOnly" />
+  <item type="id" name="btn_labelAndIcon" />
+  <item type="id" name="btn_countMutedChats" />
+  <item type="id" name="btn_displayFoldersAtTop" />
 
   <!--<item type="id" name="right_readMessages" />
   <item type="id" name="right_sendMessages" />
@@ -1291,4 +1334,25 @@
   <item type="id" name="btn_resolutionMedium" />
   <item type="id" name="btn_resolutionHigh" />
   <item type="id" name="btn_resolutionOption" />
+ 
+  <!-- * -->
+
+  <item type="id" name="view_emojiPacksCount" />
+  <item type="id" name="view_customEmojiSuggestions" />
+
+  <item type="id" name="btn_animatedEmojiSettings" />
+  <item type="id" name="btn_stickerSettingsAndEmoji" />
+  <item type="id" name="btn_avatarsInReactions" />
+  <item type="id" name="btn_avatarsInReactionsAlways" />
+  <item type="id" name="btn_avatarsInReactionsSmartFilter" />
+  <item type="id" name="btn_avatarsInReactionsNever" />
+  <item type="id" name="btn_emojiPackInfoButton" />
+
+  <item type="id" name="controller_stickersAndEmoji" />
+  <item type="id" name="controller_emojiLayoutStickers" />
+  <item type="id" name="controller_emojiLayoutStickersTrending" />
+  <item type="id" name="controller_emojiLayoutEmoji" />
+  <item type="id" name="controller_emojiLayoutEmojiTrending" />
+  <item type="id" name="controller_emojiLayoutReactions" />
+  <item type="id" name="controller_reactionsPicker" />
 </resources>

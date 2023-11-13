@@ -216,7 +216,7 @@ public class MessageSenderButton extends FrameLayout implements ReplaceAnimator.
     currentButtonView = oldButtonView;
     oldButtonView = swap;
 
-    currentButtonView.setDrawMode(tdlib, sender, sender != null ? MODE_CHAT_BUTTON: isAnonymous ? MODE_ANONYMOUS_BUTTON: MODE_PERSON_BUTTON);
+    currentButtonView.setDrawMode(tdlib, sender, sender != null ? MODE_CHAT_BUTTON : isAnonymous ? MODE_ANONYMOUS_BUTTON : MODE_PERSON_BUTTON);
     replaceAnimator.replace(currentButtonView, animated);
 
     invalidate();
@@ -305,7 +305,7 @@ public class MessageSenderButton extends FrameLayout implements ReplaceAnimator.
 
     public void setDrawMode (Tdlib tdlib, TdApi.MessageSender sender, int mode) {
       this.avatarView.setMessageSender(tdlib, sender);
-      this.avatarView.setVisibility(mode == MODE_CHAT_BUTTON ? View.VISIBLE: View.GONE);
+      this.avatarView.setVisibility(mode == MODE_CHAT_BUTTON ? View.VISIBLE : View.GONE);
       this.sender = sender;
       this.mode = mode;
 

@@ -37,6 +37,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Text;
@@ -118,7 +119,7 @@ public class TGMessageFile extends TGMessage {
     }
 
     private boolean updateCaption (boolean animated, boolean force) {
-      TdApi.FormattedText caption = translatedCaption != null ? translatedCaption: (this.pendingCaption != null ? this.pendingCaption : this.serverCaption);
+      TdApi.FormattedText caption = translatedCaption != null ? translatedCaption : (this.pendingCaption != null ? this.pendingCaption : this.serverCaption);
       if (!Td.equalsTo(this.effectiveCaption, caption) || force) {
         this.effectiveCaption = Td.isEmpty(caption) ? null : caption;
         if (this.captionWrapper != null) {
@@ -252,6 +253,7 @@ public class TGMessageFile extends TGMessage {
     FileComponent component;
     TdApi.FormattedText caption;
     boolean disallowTouch = true;
+    //noinspection SwitchIntDef
     switch (message.content.getConstructor()) {
       case TdApi.MessageDocument.CONSTRUCTOR: {
         TdApi.MessageDocument document = (TdApi.MessageDocument) message.content;
@@ -351,6 +353,7 @@ public class TGMessageFile extends TGMessage {
       boolean fileChanged = false;
       TdApi.FormattedText serverCaption;
       FileComponent component = file.component;
+      //noinspection SwitchIntDef
       switch (newContent.getConstructor()) {
         case TdApi.MessageAudio.CONSTRUCTOR: {
           TdApi.MessageAudio audio = (TdApi.MessageAudio) newContent;
@@ -482,9 +485,12 @@ public class TGMessageFile extends TGMessage {
     final int backgroundColor = getContentBackgroundColor();
     final int contentReplaceColor = getContentReplaceColor();
     final boolean clip = useBubbles();
+    final int restoreToCount;
     if (clip) {
-      c.save();
+      restoreToCount = Views.save(c);
       c.clipRect(getActualLeftContentEdge(), getTopContentEdge(), getActualRightContentEdge(), getBottomContentEdge());
+    } else {
+      restoreToCount = -1;
     }
     for (ListAnimator.Entry<CaptionedFile> entry : files) {
       ImageReceiver imageReceiver = receiver.getImageReceiver(entry.item.receiverId);
@@ -519,7 +525,7 @@ public class TGMessageFile extends TGMessage {
       }
     }
     if (clip) {
-      c.restore();
+      Views.restore(c, restoreToCount);
     }
   }
 
@@ -708,9 +714,12 @@ public class TGMessageFile extends TGMessage {
   @Nullable
   @Override
   public TdApi.FormattedText getTextToTranslateImpl () {
+    if (filesList == null) {
+      return null;
+    }
     if (filesList.size() == 1) {
       CaptionedFile file = filesList.get(0);
-      return file.hasCaption() ? getTranslationSafeText(file.serverCaption): null;
+      return file.hasCaption() ? getTranslationSafeText(file.serverCaption) : null;
     }
 
     TdApi.FormattedText resultText = new TdApi.FormattedText("", new TdApi.TextEntity[0]);
@@ -726,7 +735,7 @@ public class TGMessageFile extends TGMessage {
       }
     }
 
-    return filesWithCaption > 0? Td.trim(resultText): null;
+    return filesWithCaption > 0 ? Td.trim(resultText) : null;
   }
 
   @Override
@@ -735,10 +744,10 @@ public class TGMessageFile extends TGMessage {
     if (text != null) {
       translatedParts = new ArrayList<>(filesList.size());
       String sep = "\uD83D\uDCC4";
-      int indexStart = text.text.startsWith(sep) ? sep.length(): 0;
+      int indexStart = text.text.startsWith(sep) ? sep.length() : 0;
       while (true) {
         int index = text.text.indexOf(sep, indexStart);
-        TdApi.FormattedText part = (index == -1) ? Td.substring(text, indexStart): Td.substring(text, indexStart, index);
+        TdApi.FormattedText part = (index == -1) ? Td.substring(text, indexStart) : Td.substring(text, indexStart, index);
         translatedParts.add(Td.trim(part));
         if (index == -1) {
           break;
@@ -753,8 +762,8 @@ public class TGMessageFile extends TGMessage {
 
     for (int a = 0; a < filesList.size(); a++) {
       CaptionedFile file = filesList.get(a);
-      TdApi.FormattedText caption = translatedParts != null ? translatedParts.get(a): null;
-      file.translatedCaption = !Td.isEmpty(caption) ? caption: null;
+      TdApi.FormattedText caption = translatedParts != null ? translatedParts.get(a) : null;
+      file.translatedCaption = !Td.isEmpty(caption) ? caption : null;
       file.updateCaption(needAnimateChanges(), true);
     }
     rebuildAndUpdateContent();

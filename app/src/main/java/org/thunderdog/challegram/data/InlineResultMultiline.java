@@ -45,11 +45,12 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.Td;
 
-public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult> {
+public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult> implements Text.ClickCallback {
   private String title, description;
   private TdApi.TextEntity[] descriptionEntities;
   private boolean isEmail;
   private String url;
+  private TdApi.WebPage webPage;
 
   private final AvatarPlaceholder avatarPlaceholder;
 
@@ -89,17 +90,19 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
     setMessage(message);
 
     TdApi.FormattedText text = Td.textOrCaption(message.content);
-    TdApi.WebPage webPage = message.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR ? ((TdApi.MessageText) message.content).webPage : null;
+    TdApi.WebPage webPage = Td.isText(message.content) ? ((TdApi.MessageText) message.content).webPage : null;
 
     if (webPage != null) {
       this.title = Strings.any(webPage.title, webPage.document != null ? webPage.document.fileName : null, webPage.audio != null ? webPage.audio.title : null, webPage.siteName);
       this.description = webPage.description.text;
       this.descriptionEntities = webPage.description.entities;
+      this.webPage = webPage;
       String urlInText = Td.findUrl(text, webPage.url, true);
       this.url = !StringUtils.isEmpty(urlInText) ? urlInText : webPage.url;
     } else if (text != null) {
       TdApi.TextEntity effectiveEntity = null;
       main: for (TdApi.TextEntity entity : text.entities) {
+        //noinspection SwitchIntDef
         switch (entity.type.getConstructor()) {
           case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR: {
             if (effectiveEntity == null) {
@@ -136,7 +139,7 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
         }
       }
       if (effectiveEntity != null) {
-        if (effectiveEntity.type.getConstructor() == TdApi.TextEntityTypeUrl.CONSTRUCTOR) {
+        if (Td.isUrl(effectiveEntity.type)) {
           TdApi.FormattedText part1 = effectiveEntity.offset > 0 ? Td.substring(text, 0, effectiveEntity.offset) : null;
           TdApi.FormattedText part2 = effectiveEntity.offset + effectiveEntity.length < text.text.length() ? Td.substring(text, effectiveEntity.offset + effectiveEntity.length) : null;
           TdApi.FormattedText finalText = Td.trim(part1 != null && part2 != null ? Td.concat(part1, new TdApi.FormattedText("…", new TdApi.TextEntity[]{new TdApi.TextEntity(0, 1, new TdApi.TextEntityTypeTextUrl(url))}), part2) : part1 != null ? part1 : part2);
@@ -252,6 +255,9 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
       urlWrap = new TextWrapper(displayUrl, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL)
         .setEntities(TextEntity.valueOf(tdlib, displayUrl, new TdApi.TextEntity[] { new TdApi.TextEntity(0, displayUrl.length(), isEmail ? new TdApi.TextEntityTypeEmailAddress() : new TdApi.TextEntityTypeUrl() )}, null), null);
       urlWrap.setMaxLines(2);
+      if (webPage != null) {
+        urlWrap.setClickCallback(this);
+      }
       urlWrap.setViewProvider(currentViews);
       urlWrap.addTextFlags(Text.FLAG_CUSTOM_LONG_PRESS);
     }
@@ -265,6 +271,14 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
     if (urlWrap != null) {
       urlWrap.prepare(availWidth);
     }
+  }
+
+  @Override
+  public TdApi.WebPage findWebPage (String link) {
+    if (TGWebPage.isPreviewOf(webPage.url, link)) {
+      return webPage;
+    }
+    return null;
   }
 
   @Override

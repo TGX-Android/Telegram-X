@@ -25,6 +25,7 @@ import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.text.Editable;
+import android.text.Layout;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -48,12 +49,14 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.DiffMatchPatch;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewTranslator;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.util.TextSelection;
 import org.thunderdog.challegram.util.WebViewHolder;
 import org.thunderdog.challegram.util.text.Text;
@@ -862,6 +865,16 @@ public class Views {
     }
   }
 
+  public static int getTopMargin (View view) {
+    if (view != null) {
+      ViewGroup.LayoutParams params = view.getLayoutParams();
+      if (params instanceof ViewGroup.MarginLayoutParams) {
+        return ((ViewGroup.MarginLayoutParams) params).topMargin;
+      }
+    }
+    return 0;
+  }
+
   public static int getBottomMargin (View view) {
     if (view != null) {
       ViewGroup.LayoutParams params = view.getLayoutParams();
@@ -926,5 +939,65 @@ public class Views {
     if (flags != newFlags) {
       view.setPaintFlags(newFlags);
     }
+  }
+
+  public static int getRecyclerFirstElementTop (RecyclerView recyclerView) {
+    return getRecyclerViewElementTop(recyclerView, 0, 0);
+  }
+
+  public static int getRecyclerFirstElementTop (RecyclerView recyclerView, int valueIfPositionNotFound) {
+    return getRecyclerViewElementTop(recyclerView, 0, valueIfPositionNotFound);
+  }
+
+  public static int getRecyclerViewElementTop (RecyclerView recyclerView, int position) {
+    return getRecyclerViewElementTop(recyclerView, position, 0);
+  }
+
+  public static int getRecyclerViewElementTop (RecyclerView recyclerView, int position, int valueIfPositionNotFound) {
+    if (recyclerView == null || recyclerView.getLayoutManager() == null) {
+      return valueIfPositionNotFound;
+    }
+
+    View view = recyclerView.getLayoutManager().findViewByPosition(position);
+    if (view != null) {
+      return view.getTop() + recyclerView.getTop();
+    }
+
+    return valueIfPositionNotFound;
+  }
+
+  public static void getCharacterCoordinates(TextView textView, int offset, int[] coordinates) {
+    if (coordinates.length != 2)
+      throw new IllegalArgumentException();
+    coordinates[0] = coordinates[1] = 0;
+
+    Editable editable = textView.getEditableText();
+    Layout layout = textView.getLayout();
+
+    if (layout != null) {
+      int line = layout.getLineForOffset(offset);
+      int lineStartOffset = layout.getLineStart(line);
+      int xPos = (int) U.measureEmojiText(editable.subSequence(lineStartOffset, offset), layout.getPaint());
+      int yPos = layout.getLineBaseline(line) - textView.getScrollY();
+      coordinates[0] = xPos;
+      coordinates[1] = yPos;
+    }
+  }
+
+  public static int findFirstCompletelyVisibleItemPositionWithOffset (LinearLayoutManager manager, int topOffset) {
+    int i = manager.findFirstCompletelyVisibleItemPosition();
+    if (i == -1) {
+      i = manager.findFirstVisibleItemPosition();
+    }
+
+    View v = manager.findViewByPosition(i);
+    while (v != null) {
+      if (v.getTop() >= topOffset) {
+        return i;
+      }
+      v = manager.findViewByPosition(++i);
+    }
+
+    return -1;
   }
 }

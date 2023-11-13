@@ -82,6 +82,7 @@ import org.thunderdog.challegram.emoji.EmojiFilter;
 import org.thunderdog.challegram.emoji.EmojiInfo;
 import org.thunderdog.challegram.emoji.EmojiSpan;
 import org.thunderdog.challegram.emoji.EmojiUpdater;
+import org.thunderdog.challegram.emoji.PreserveCustomEmojiFilter;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.helper.InlineSearchContext;
 import org.thunderdog.challegram.loader.ComplexReceiver;
@@ -136,9 +137,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   private CharSequence placeholderTitleText;
   private CharSequence placeholderSubtitleText;
 
-  private BoolAnimator showPlaceholder = new BoolAnimator(0, (a, b, c, d) -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
-  private BoolAnimator hasSubPlaceholder = new BoolAnimator(0, (a, b, c, d) -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
-  private ReplaceAnimator<Text> subtitleReplaceAnimator = new ReplaceAnimator<>(a -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
+  private final BoolAnimator showPlaceholder = new BoolAnimator(0, (a, b, c, d) -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
+  private final BoolAnimator hasSubPlaceholder = new BoolAnimator(0, (a, b, c, d) -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
+  private final ReplaceAnimator<Text> subtitleReplaceAnimator = new ReplaceAnimator<>(a -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
 
   // TODO: get rid of chat-related logic inside of InputView
   private @Nullable MessagesController controller;
@@ -163,6 +164,16 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   private InputListener inputListener;
   private final RefreshRateLimiter refreshRateLimiter;
   private final ViewController<?> boundController;
+
+  public interface SelectionChangeListener {
+    void onInputSelectionExistChanged (InputView v, boolean hasSelection);
+    void onInputSelectionChanged (InputView v, int start, int end);
+  }
+
+  private SelectionChangeListener selectionChangeListener;
+  private boolean actionModeVisibility = true;
+  private ActionMode currentActionMode;
+  private boolean hasSelection;
 
   public InputView (Context context, Tdlib tdlib, ViewController<?> boundController) {
     super(context);
@@ -208,81 +219,130 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       public void afterTextChanged (Editable s) { }
     });
 
-    if (Config.USE_CUSTOM_INPUT_STYLING) {
-      setCustomSelectionActionModeCallback(new ActionMode.Callback() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      setCustomInsertionActionModeCallback(new ActionMode.Callback() {
         @Override
-        public boolean onCreateActionMode (ActionMode mode, Menu menu) {
-          MenuInflater inflater = mode.getMenuInflater();
-          if (inflater == null) {
-            return true;
-          }
-          inflater.inflate(R.menu.text, menu);
-          try {
-            for (int i = 0; i < menu.size(); i++) {
-              MenuItem item = menu.getItem(i);
-              final int overrideResId;
-              final TdApi.TextEntityType type;
-              final int itemId = item.getItemId();
-              if (itemId == R.id.btn_plain) {
-                overrideResId = R.string.TextFormatClear;
-                type = null;
-              } else if (itemId == R.id.btn_bold) {
-                overrideResId = R.string.TextFormatBold;
-                type = new TdApi.TextEntityTypeBold();
-              } else if (itemId == R.id.btn_italic) {
-                overrideResId = R.string.TextFormatItalic;
-                type = new TdApi.TextEntityTypeItalic();
-              } else if (itemId == R.id.btn_spoiler) {
-                overrideResId = R.string.TextFormatSpoiler;
-                type = new TdApi.TextEntityTypeSpoiler();
-              } else if (itemId == R.id.btn_underline) {
-                overrideResId = R.string.TextFormatUnderline;
-                type = new TdApi.TextEntityTypeUnderline();
-              } else if (itemId == R.id.btn_strikethrough) {
-                overrideResId = R.string.TextFormatStrikethrough;
-                type = new TdApi.TextEntityTypeStrikethrough();
-              } else if (itemId == R.id.btn_monospace) {
-                overrideResId = R.string.TextFormatMonospace;
-                type = new TdApi.TextEntityTypeCode();
-              } else if (itemId == R.id.btn_link) {
-                overrideResId = R.string.TextFormatLink;
-                type = null;
-              } else {
-                if (BuildConfig.DEBUG) {
-                  Log.i("Menu item: %s %s", UI.getAppContext().getResources().getResourceName(item.getItemId()), item.getTitle());
-                }
-                continue;
-              }
-              item.setTitle(type != null ? Lang.wrap(Lang.getString(overrideResId), Lang.entityCreator(type)) : Lang.getString(overrideResId));
-            }
-          } catch (Throwable ignored) { }
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            menu.removeItem(android.R.id.shareText);
-          }
-          if (!canClearTextFormat()) {
-            menu.removeItem(R.id.btn_plain);
-          }
+        public boolean onCreateActionMode (ActionMode actionMode, Menu menu) {
+          currentActionMode = actionMode;
           return true;
         }
 
         @Override
-        public boolean onPrepareActionMode (ActionMode mode, Menu menu) {
+        public boolean onPrepareActionMode (ActionMode actionMode, Menu menu) {
+          updateMenuVisibility(menu);
+          return true;
+        }
+
+        @Override
+        public boolean onActionItemClicked (ActionMode actionMode, MenuItem menuItem) {
           return false;
         }
 
         @Override
-        public boolean onActionItemClicked (ActionMode mode, MenuItem item) {
-          return setSpan(item.getItemId());
-        }
-
-        @Override
-        public void onDestroyActionMode (ActionMode mode) {
-
+        public void onDestroyActionMode (ActionMode actionMode) {
+          if (currentActionMode == actionMode) {
+            currentActionMode = null;
+          }
         }
       });
     }
 
+    setCustomSelectionActionModeCallback(new ActionMode.Callback() {
+      @Override
+      public boolean onCreateActionMode (ActionMode mode, Menu menu) {
+        currentActionMode = mode;
+        if (!Config.USE_CUSTOM_INPUT_STYLING) {
+          return true;
+        }
+
+        MenuInflater inflater = mode.getMenuInflater();
+        if (inflater == null) {
+          return true;
+        }
+        inflater.inflate(R.menu.text, menu);
+        try {
+          for (int i = 0; i < menu.size(); i++) {
+            MenuItem item = menu.getItem(i);
+            final int overrideResId;
+            final TdApi.TextEntityType type;
+            final int itemId = item.getItemId();
+            if (itemId == R.id.btn_plain) {
+              overrideResId = R.string.TextFormatClear;
+              type = null;
+            } else if (itemId == R.id.btn_bold) {
+              overrideResId = R.string.TextFormatBold;
+              type = new TdApi.TextEntityTypeBold();
+            } else if (itemId == R.id.btn_italic) {
+              overrideResId = R.string.TextFormatItalic;
+              type = new TdApi.TextEntityTypeItalic();
+            } else if (itemId == R.id.btn_spoiler) {
+              overrideResId = R.string.TextFormatSpoiler;
+              type = new TdApi.TextEntityTypeSpoiler();
+            } else if (itemId == R.id.btn_underline) {
+              overrideResId = R.string.TextFormatUnderline;
+              type = new TdApi.TextEntityTypeUnderline();
+            } else if (itemId == R.id.btn_strikethrough) {
+              overrideResId = R.string.TextFormatStrikethrough;
+              type = new TdApi.TextEntityTypeStrikethrough();
+            } else if (itemId == R.id.btn_monospace) {
+              overrideResId = R.string.TextFormatMonospace;
+              type = new TdApi.TextEntityTypeCode();
+            } else if (itemId == R.id.btn_link) {
+              overrideResId = R.string.TextFormatLink;
+              type = null;
+            } else {
+              if (BuildConfig.DEBUG) {
+                Log.i("Menu item: %s %s", UI.getAppContext().getResources().getResourceName(item.getItemId()), item.getTitle());
+              }
+              continue;
+            }
+            item.setTitle(type != null ? Lang.wrap(Lang.getString(overrideResId), Lang.entityCreator(type)) : Lang.getString(overrideResId));
+          }
+        } catch (Throwable ignored) { }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+          menu.removeItem(android.R.id.shareText);
+        }
+        if (!canClearTextFormat()) {
+          menu.removeItem(R.id.btn_plain);
+        }
+        return true;
+      }
+
+      @Override
+      public boolean onPrepareActionMode (ActionMode mode, Menu menu) {
+        updateMenuVisibility(menu);
+        return true;
+      }
+
+      @Override
+      public boolean onActionItemClicked (ActionMode mode, MenuItem item) {
+        return setSpan(item.getItemId());
+      }
+
+      @Override
+      public void onDestroyActionMode (ActionMode mode) {
+        if (currentActionMode == mode) {
+          currentActionMode = null;
+        }
+      }
+    });
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+        ((BaseActivity) getContext()).updateEmojiSuggestionsPosition(false);
+      });
+    }
+
     showPlaceholder.setValue(true, false);
+  }
+
+  private void updateMenuVisibility (Menu menu) {
+    final int menuSize = menu.size();
+    for (int i = 0; i < menuSize; i++) {
+      MenuItem item = menu.getItem(i);
+      if (item != null) {
+        item.setVisible(actionModeVisibility);
+      }
+    }
   }
 
   @Override
@@ -359,6 +419,13 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     return true;
   }
 
+  public void removeSpan (TdApi.TextEntityType type) {
+    TextSelection selection = getTextSelection();
+    if (selection != null && !selection.isEmpty()) {
+      clearSpans(selection.start, selection.end, type);
+    }
+  }
+
   public boolean canClearTextFormat () {
     TextSelection selection = getTextSelection();
     if (selection != null && !selection.isEmpty()) {
@@ -377,6 +444,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   private void clearSpans (int start, int end) {
+    clearSpans(start, end, null);
+  }
+
+  private void clearSpans (int start, int end, @Nullable TdApi.TextEntityType typeForRemove) {
     Editable editable = getText();
     CharacterStyle[] spans = editable.getSpans(start, end, CharacterStyle.class);
     boolean updated = false;
@@ -385,6 +456,23 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         if (existingSpan instanceof NoCopySpan || existingSpan instanceof EmojiSpan || isComposingSpan(editable, existingSpan) || !TD.canConvertToEntityType(existingSpan)) {
           continue;
         }
+
+        if (typeForRemove != null) {
+          boolean needContinue = true;
+          TdApi.TextEntityType[] textEntityTypes = TD.toEntityType(existingSpan);
+          if (textEntityTypes != null) {
+            for (TdApi.TextEntityType textEntityType : textEntityTypes) {
+              if (textEntityType.getConstructor() == typeForRemove.getConstructor()) {
+                needContinue = false;
+                break;
+              }
+            }
+          }
+          if (needContinue) {
+            continue;
+          }
+        }
+
         int existingSpanStart = editable.getSpanStart(existingSpan);
         int existingSpanEnd = editable.getSpanEnd(existingSpan);
         boolean reused = false;
@@ -411,24 +499,13 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         updated = true;
       }
     }
-    setSelection(end);
+    setSelection(start, end);
     if (updated) {
       inlineContext.forceCheck();
       if (spanChangeListener != null) {
         spanChangeListener.onSpansChanged(this);
       }
     }
-  }
-
-  private static boolean canBeNested (TdApi.TextEntityType type) {
-    switch (type.getConstructor()) {
-      case TdApi.TextEntityTypePre.CONSTRUCTOR:
-      case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
-      case TdApi.TextEntityTypeCode.CONSTRUCTOR: {
-        return false;
-      }
-    }
-    return true;
   }
 
   private static boolean isComposingSpan (Spanned spanned, Object span) {
@@ -508,7 +585,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       editable.setSpan(newSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
       return true;
     }
-    boolean canBeNested = canBeNested(newType);
+    boolean canBeNested = Td.canBeNested(newType);
     for (CharacterStyle existingSpan : existingSpans) {
       int existingSpanStart = editable.getSpanStart(existingSpan);
       int existingSpanEnd = editable.getSpanEnd(existingSpan);
@@ -520,7 +597,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         if (!((EmojiSpan) existingSpan).isCustomEmoji()) {
           throw new IllegalStateException(); // Unreachable
         }
-        if (!canBeNested || newType.getConstructor() == TdApi.TextEntityTypeTextUrl.CONSTRUCTOR) {
+        if (!canBeNested || Td.isTextUrl(newType)) {
           editable.removeSpan(existingSpan);
           if (existingSpan instanceof Destroyable) {
             ((Destroyable) existingSpan).performDestroy();
@@ -531,7 +608,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       }
       boolean moveExistingEntity = !canBeNested;
       for (TdApi.TextEntityType existingType : existingTypes) {
-        if (!canBeNested(existingType) || (existingType.getConstructor() == TdApi.TextEntityTypeTextUrl.CONSTRUCTOR && newType.getConstructor() == TdApi.TextEntityTypeTextUrl.CONSTRUCTOR)) {
+        if (!Td.canBeNested(existingType) || (Td.isTextUrl(existingType) && Td.isTextUrl(newType))) {
           moveExistingEntity = true;
         }
       }
@@ -578,7 +655,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       return;
     }
     boolean spansChanged = setSpanImpl(start, end, newType);
-    setSelection(end);
+    setSelection(start, end);
     if (spansChanged) {
       inlineContext.forceCheck();
       if (spanChangeListener != null) {
@@ -654,9 +731,45 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   @Override
   protected void onSelectionChanged (int selStart, int selEnd) {
     super.onSelectionChanged(selStart, selEnd);
+    if (selectionChangeListener != null) {
+      selectionChangeListener.onInputSelectionChanged(this, selStart, selEnd);
+    }
     if (inlineContext != null) {
       inlineContext.onCursorPositionChanged(selStart == selEnd ? selStart : -1);
     }
+    boolean newHasSelection = selStart != selEnd;
+    if (hasSelection != newHasSelection) {
+      hasSelection = newHasSelection;
+      if (selectionChangeListener != null) {
+        selectionChangeListener.onInputSelectionExistChanged(this, hasSelection);
+      }
+    }
+  }
+
+  public void setSelectionChangeListener (SelectionChangeListener selectionChangeListener) {
+    this.selectionChangeListener = selectionChangeListener;
+  }
+
+  public void setActionModeVisibility (boolean actionModeVisibility) {
+    this.actionModeVisibility = actionModeVisibility;
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      setShowSoftInputOnFocus(actionModeVisibility);
+    }
+
+    if (currentActionMode != null) {
+      currentActionMode.invalidate();
+    }
+  }
+
+  public void hideSelectionCursors () {
+    TextSelection selection = getTextSelection();
+    if (selection == null || selection.isEmpty()) return;
+    final int start = selection.start;
+    final int end = selection.end;
+
+    clearFocus();
+    requestFocus();
+    setSelection(start, end);
   }
 
   public boolean canFormatText () {
@@ -695,7 +808,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
     final boolean hasText = s.length() > 0;
     setAllowsAnyGravity(hasText);
-    showPlaceholder.setValue(!hasText, !hasText && UI.inUiThread());
+    showPlaceholder.setValue(!hasText, !hasText && needAnimateChanges());
   }
 
   @Override
@@ -741,21 +854,27 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     invalidate();
   }
 
+  private boolean needAnimateChanges () {
+    return UI.inUiThread() && boundController.getParentOrSelf().needsTempUpdates() && boundController.getParentOrSelf().isFocused();
+  }
+
   public void checkPlaceholderWidth () {
     if ((lastPlaceholderRes != 0 || !StringUtils.isEmpty(placeholderTitleText)) && controller != null) {
       int availWidth = Math.max(0, getMeasuredWidth() - controller.getHorizontalInputPadding() - getPaddingLeft());
       if (this.lastPlaceholderAvailWidth != availWidth) {
         this.lastPlaceholderAvailWidth = availWidth;
 
-        placeholderTitle = !StringUtils.isEmpty(placeholderTitleText)? new Text.Builder(tdlib, placeholderTitleText, null, availWidth, Paints.robotoStyleProvider(Screen.px(getTextSize())), TextColorSets.PLACEHOLDER, null)
-          .singleLine().clipTextArea().build(): null;
+        placeholderTitle = !StringUtils.isEmpty(placeholderTitleText) ? new Text.Builder(tdlib, placeholderTitleText, null, availWidth, Paints.robotoStyleProvider(Screen.px(getTextSize())), TextColorSets.PLACEHOLDER, null)
+          .singleLine().clipTextArea().build() : null;
 
         placeholderSubTitle = !StringUtils.isEmpty(placeholderSubtitleText) ? new Text.Builder(tdlib, placeholderSubtitleText, null, availWidth, Paints.robotoStyleProvider(Screen.px(getTextSize()) / 3f * 2f), TextColorSets.PLACEHOLDER, null)
-          .singleLine().clipTextArea().build(): null;
+          .singleLine().clipTextArea().build() : null;
 
-        subtitleReplaceAnimator.replace(placeholderSubTitle, UI.inUiThread());
+        boolean needAnimateChanges = needAnimateChanges();
 
-        hasSubPlaceholder.setValue(placeholderSubTitle != null, UI.inUiThread());
+        subtitleReplaceAnimator.replace(placeholderSubTitle, needAnimateChanges);
+
+        hasSubPlaceholder.setValue(placeholderSubTitle != null, needAnimateChanges);
 
         if (rawPlaceholderWidth <= availWidth) {
           //setHint(rawPlaceholder);
@@ -842,9 +961,13 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   @Override
-  public void showInlineStickers (ArrayList<TGStickerObj> stickers, boolean isMore) {
+  public void showInlineStickers (ArrayList<TGStickerObj> stickers, String foundByEmoji, boolean isEmoji, boolean isMore) {
     if (controller != null) {
-      controller.showStickerSuggestions(stickers, isMore);
+      if (!isEmoji) {
+        controller.showStickerSuggestions(stickers, isMore);
+      } else {
+        controller.showEmojiSuggestions(stickers, foundByEmoji, isMore);
+      }
     }
   }
 
@@ -874,7 +997,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   @Override
   public void hideInlineResults () {
     if (controller != null) {
-      controller.hideStickerSuggestions();
+      controller.onHideEmojiAndStickerSuggestionsFinally();
     }
     if (inputListener != null && inputListener.canSearchInline(this)) {
       inputListener.showInlineResults(this, null, false);
@@ -980,6 +1103,58 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       getText().replace(selection.start, selection.end, s);
     }
     setSelection(after);
+  }
+
+  public void onCustomEmojiSelected (TGStickerObj stickerObj) {
+    onCustomEmojiSelected(stickerObj, false);
+  }
+
+  public void onCustomEmojiSelected (TdApi.Sticker sticker) {
+    onCustomEmojiSelected(sticker, false);
+  }
+
+  public void onCustomEmojiSelected (TGStickerObj stickerObj, boolean needReplace) {
+    onCustomEmojiSelected(stickerObj.getSticker(), needReplace);
+  }
+
+  public void onCustomEmojiSelected (TdApi.Sticker stickerObj, boolean needReplace) {
+    TextSelection selection = getTextSelection();
+    if (selection == null)
+      return;
+
+    final String emoji = TD.stickerEmoji(stickerObj);
+    final Editable editable = getText();
+    final EmojiSpan oldEmojiSpan = needReplace ? Emoji.findPrecedingEmojiSpan(editable, selection.start) : null;
+
+    final int start = oldEmojiSpan != null ? editable.getSpanStart(oldEmojiSpan) : selection.start;
+    final int end = oldEmojiSpan != null ? editable.getSpanEnd(oldEmojiSpan) : selection.end;
+
+    if (oldEmojiSpan != null) {
+      editable.removeSpan(oldEmojiSpan);
+      if (oldEmojiSpan instanceof Destroyable) {
+        ((Destroyable) oldEmojiSpan).performDestroy();
+      }
+    }
+
+    if (oldEmojiSpan != null && needReplace && Config.KEEP_ORIGINAL_EMOJI_WHEN_INPUT_CUSTOM_EMOJI) {
+      editable.setSpan(Emoji.instance().newCustomSpan(emoji, null, this, tdlib, Td.customEmojiId(stickerObj)), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+      setSelection(start + emoji.length());
+      if (inlineContext != null) {
+        inlineContext.reset();
+      }
+      return;
+    }
+
+    SpannableString s = new SpannableString(emoji);
+    s.setSpan(Emoji.instance().newCustomSpan(emoji, null, this, tdlib,
+      Td.customEmojiId(stickerObj)), 0, s.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+    if (needReplace || start != end) {
+      editable.replace(start, end, s);
+    } else {
+      editable.insert(start, s);
+    }
+    setSelection(start + s.length());
   }
 
   private boolean textChangedSinceChatOpened, ignoreFirstLinkPreview;
@@ -1302,7 +1477,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         long timestamp = System.currentTimeMillis();
         long chatId = controller.getChatId();
         long messageThreadId = controller.getMessageThreadId();
-        long replyToMessageId = controller.obtainReplyId();
+        TdApi.MessageReplyTo replyTo = controller.obtainReplyTo();
         boolean silent = controller.obtainSilentMode();
         boolean needMenu = controller.areScheduledOnly();
 
@@ -1342,13 +1517,13 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
             content = tdlib.filegen().createThumbnail(new TdApi.InputMessageSticker(generated, null, imageWidth, imageHeight, null), isSecretChat);
           } else {
             TdApi.InputFileGenerated generated = PhotoGenerationInfo.newFile(path, 0, timestamp, false, 0);
-            content = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(generated, null, null, imageWidth, imageHeight, null, 0, false), isSecretChat);
+            content = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(generated, null, null, imageWidth, imageHeight, null, null, false), isSecretChat);
           }
           if (needMenu) {
             tdlib.ui().post(() -> {
               tdlib.ui().showScheduleOptions(controller, chatId, false,
                 (sendOptions, disableMarkdown) ->
-                  tdlib.sendMessage(chatId, messageThreadId, replyToMessageId,
+                  tdlib.sendMessage(chatId, messageThreadId, replyTo,
                     Td.newSendOptions(sendOptions, silent),
                     content,
                     null
@@ -1356,7 +1531,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
                 null, null);
             });
           } else {
-            tdlib.sendMessage(chatId, messageThreadId, replyToMessageId, Td.newSendOptions(silent), content);
+            tdlib.sendMessage(chatId, messageThreadId, replyTo, Td.newSendOptions(silent), content);
           }
         });
         // read and display inputContentInfo asynchronously.
@@ -1386,6 +1561,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   public void setMaxCodePointCount (int maxCodePointCount) {
     if (maxCodePointCount > 0) {
       setFilters(new InputFilter[] {
+        new PreserveCustomEmojiFilter(),
         new ExternalEmojiFilter(),
         new CodePointCountFilter(maxCodePointCount),
         new EmojiFilter(this),
@@ -1394,6 +1570,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       });
     } else {
       setFilters(new InputFilter[] {
+        new PreserveCustomEmojiFilter(),
         new ExternalEmojiFilter(),
         new EmojiFilter(this),
         new CharacterStyleFilter(true),
@@ -1429,6 +1606,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     return result;
   }
 
+  public final boolean hasOnlyPremiumFeatures () {
+    return TD.hasCustomEmoji(getOutputText(false));
+  }
+
   // Android-related workarounds
 
   @Override
@@ -1462,16 +1643,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         case android.R.id.paste: {
           CharSequence pasteText = U.getPasteText(getContext());
           if (pasteText != null) {
-            if (selection.isEmpty()) {
-              editable.insert(selection.start, pasteText);
-            } else {
-              editable.replace(selection.start, selection.end, pasteText);
-            }
-            if (pasteText instanceof Spanned) {
-              // TODO: should this be a part of EmojiFilter?
-              removeCustomEmoji(editable, selection.start, selection.start + pasteText.length());
-            }
-            setSelection(selection.start + pasteText.length());
+            paste(pasteText, false);
             return true;
           }
           break;
@@ -1481,6 +1653,36 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       Log.e("onTextContextMenuItem failed for id %s", t, Lang.getResourceEntryName(id));
     }
     return super.onTextContextMenuItem(id);
+  }
+
+  public void paste (TdApi.FormattedText pasteText, boolean needSelectPastedText) {
+    paste(TD.toCharSequence(pasteText), needSelectPastedText);
+  }
+
+  public void paste (CharSequence pasteText, boolean needSelectPastedText) {
+    paste(getTextSelection(), pasteText, needSelectPastedText);
+  }
+
+  private void paste (TextSelection selection, CharSequence pasteText, boolean needSelectPastedText) {
+    if (selection == null) return;
+    final int start = selection.start;
+    final int end = selection.end;
+
+    Editable editable = getText();
+    if (selection.isEmpty()) {
+      editable.insert(start, pasteText);
+    } else {
+      editable.replace(start, end, pasteText);
+    }
+    if (pasteText instanceof Spanned) {
+      // TODO: should this be a part of EmojiFilter?
+      removeCustomEmoji(editable, start, start + pasteText.length());
+    }
+    if (needSelectPastedText) {
+      setSelection(start, start + pasteText.length());
+    } else {
+      setSelection(start + pasteText.length());
+    }
   }
 
   private static void removeCustomEmoji (Editable editable, int start, int end) {
@@ -1555,5 +1757,37 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     if (visibility == View.VISIBLE) {
       doBugfix();
     }
+  }
+
+  private final int[]
+    cords1 = new int[2],
+    cords2 = new int[2],
+    cords3 = new int[2];
+
+  public void getSymbolUnderCursorPosition (int[] coordinates) {
+    TextSelection selection = getTextSelection();
+    if (selection == null) {
+      coordinates[0] = coordinates[1] = 0;
+      return;
+    }
+
+    Views.getCharacterCoordinates(this, selection.start, cords1);
+    cords2[0] = cords1[0];
+    cords2[1] = cords1[1];
+    int[] cords2 = this.cords2;
+
+    for (int a = selection.start - 1; a >= 0; a--) {
+      Views.getCharacterCoordinates(this, a, cords3);
+      if (cords3[1] != cords1[1]) {
+        cords2[0] /= 2;
+        break;
+      }
+      if (cords3[0] == cords1[0]) continue;
+      cords2 = cords3;
+      break;
+    }
+
+    coordinates[0] = (cords1[0] + cords2[0]) / 2;
+    coordinates[1] = cords1[1];
   }
 }

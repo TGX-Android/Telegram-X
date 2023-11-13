@@ -52,8 +52,22 @@ public class RippleSupport {
     }
   }
 
+  public static void setSimpleWhiteBackground (@NonNull View view, @ColorId int backgroundColorId, float radius, @Nullable ViewController<?> themeProvider) {
+    ViewUtils.setBackground(view, Theme.fillingSelector(backgroundColorId, radius));
+    if (themeProvider != null) {
+      themeProvider.addThemeInvalidateListener(view);
+    }
+  }
+
   public static void setTransparentSelector (View view) {
     ViewUtils.setBackground(view, Theme.transparentSelector());
+  }
+
+  public static void setTransparentSelector (View view, float radius, @Nullable ViewController<?> themeProvider) {
+    ViewUtils.setBackground(view, Theme.transparentRoundSelector(radius));
+    if (themeProvider != null) {
+      themeProvider.addThemeInvalidateListener(view);
+    }
   }
 
   public static void setTransparentBlackSelector (View view) {

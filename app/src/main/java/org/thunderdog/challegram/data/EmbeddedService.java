@@ -143,7 +143,7 @@ public class EmbeddedService {
   }
 
   public static EmbeddedService parse (TdApi.WebPage webPage) {
-    EmbeddedService service = parse(webPage.url, webPage.embedWidth, webPage.embedHeight, webPage.photo, webPage.embedUrl);
+    EmbeddedService service = parse(webPage.url, webPage.embedWidth, webPage.embedHeight, webPage.photo, webPage.embedUrl, true);
     if (service != null)
       return service;
     if ("iframe".equals(webPage.embedType) && !StringUtils.isEmpty(webPage.embedUrl)) {
@@ -160,10 +160,25 @@ public class EmbeddedService {
   }
 
   public static EmbeddedService parse (TdApi.PageBlockEmbedded embedded) {
-    return parse(embedded.url, embedded.width, embedded.height, embedded.posterPhoto, null);
+    return parse(embedded.url, embedded.width, embedded.height, embedded.posterPhoto, null, false);
   }
 
-  private static EmbeddedService parse (String webPageUrl, int width, int height, TdApi.Photo thumbnail, @Nullable String embedUrl) {
+  private static String buildYouTubeEmbedUrl (Uri uri, String videoId, boolean allowAutoplay) {
+    String time = uri.getQueryParameter("t");
+    Uri.Builder b = new Uri.Builder()
+      .scheme("https")
+      .authority("www.youtube.com")
+      .path("embed/" + videoId);
+    if (allowAutoplay) {
+      b.appendQueryParameter("autoplay", "1");
+    }
+    if (!StringUtils.isEmpty(time)) {
+      b.appendQueryParameter("start", time);
+    }
+    return b.build().toString();
+  }
+
+  private static EmbeddedService parse (String webPageUrl, int width, int height, TdApi.Photo thumbnail, @Nullable String embedUrl, boolean allowAutoplay) {
     if (StringUtils.isEmpty(webPageUrl))
       return null;
     try {
@@ -189,7 +204,7 @@ public class EmbeddedService {
           // https://www.youtube.com/watch?v=zg-HMBwYckc&feature=player_embedded
           viewType = TYPE_YOUTUBE;
           if (segments.length == 1 && "watch".equals(segments[0]) && !StringUtils.isEmpty(viewIdentifier = uri.getQueryParameter("v"))) {
-            embedUrl = "https://www.youtube.com/embed/" + viewIdentifier;
+            embedUrl = buildYouTubeEmbedUrl(uri, viewIdentifier, allowAutoplay);
           }
           break;
         }
@@ -197,7 +212,7 @@ public class EmbeddedService {
           // https://youtu.be/zg-HMBwYckc
           viewType = TYPE_YOUTUBE;
           if (segments.length == 1 && !StringUtils.isEmpty(viewIdentifier = segments[0])) {
-            embedUrl = "https://www.youtube.com/embed/" + viewIdentifier;
+            embedUrl = buildYouTubeEmbedUrl(uri, viewIdentifier, allowAutoplay);
           }
           break;
         }
@@ -312,7 +327,7 @@ public class EmbeddedService {
 
   // Creates embed data from a page's URL (if the site is supported by TGX in-app parser)
   public static EmbeddedService parseUrl (String pageUrl) {
-    return parse(pageUrl, 0, 0, null, null);
+    return parse(pageUrl, 0, 0, null, null, true);
   }
 
   // If YouTube URL and YouTube app is installed - better wait for Telegram preview to get a webpage

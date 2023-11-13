@@ -49,6 +49,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Keyboard;
@@ -71,6 +72,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableBool;
+import me.vkryl.td.Td;
 
 public class PhoneController extends EditBaseController<Void> implements SettingsAdapter.TextChangeListener, MaterialEditTextGroup.FocusListener, MaterialEditTextGroup.TextChangeListener, View.OnClickListener, Menu {
 
@@ -791,7 +793,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
 
   private void updateHint (boolean useOffsetLeft, CharSequence text, boolean isError) {
     int offsetLeft = useOffsetLeft ? Screen.dp(89f) : 0;
-    int textColorId = isError ? ColorId.textNegative : ColorId.textLight;
+    @PorterDuffColorId int textColorId = isError ? ColorId.textNegative : ColorId.textLight;
     if (offsetLeft != hintItem.getTextPaddingLeft() || hintItem.getTextColorId(ColorId.background_textLight) != textColorId || !StringUtils.equalsOrBothEmpty(hintItem.getString(), text)) {
       hintItem.setTextPaddingLeft(offsetLeft);
       hintItem.setTextColorId(textColorId);
@@ -935,7 +937,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
               if (message instanceof Spannable) {
                 CustomTypefaceSpan[] spans = ((Spannable) message).getSpans(0, message.length(), CustomTypefaceSpan.class);
                 for (CustomTypefaceSpan span : spans) {
-                  if (span.getEntityType() != null && span.getEntityType().getConstructor() == TdApi.TextEntityTypeItalic.CONSTRUCTOR) {
+                  if (span.getEntityType() != null && Td.isItalic(span.getEntityType())) {
                     span.setTypeface(null);
                     span.setColorId(ColorId.textLink);
                     span.setEntityType(new TdApi.TextEntityTypeEmailAddress());

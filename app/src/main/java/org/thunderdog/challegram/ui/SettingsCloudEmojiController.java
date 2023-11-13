@@ -54,8 +54,8 @@ public class SettingsCloudEmojiController extends SettingsCloudController<Settin
   @Override
   protected void applySetting (Settings.EmojiPack setting) {
     Emoji.instance().changeEmojiPack(setting);
-    if (getThemeController() != null) {
-      getThemeController().updateSelectedEmoji();
+    if (getStickersAndEmojiController() != null) {
+      getStickersAndEmojiController().updateSelectedEmoji();
     }
   }
 }

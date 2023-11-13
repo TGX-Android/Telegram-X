@@ -24,6 +24,7 @@ import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
+import android.content.res.Resources;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -51,6 +52,7 @@ import android.opengl.GLES20;
 import android.opengl.GLUtils;
 import android.os.Build;
 import android.os.Environment;
+import android.os.LocaleList;
 import android.os.Parcelable;
 import android.os.PowerManager;
 import android.os.StatFs;
@@ -69,10 +71,13 @@ import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
+import android.view.inputmethod.InputMethodSubtype;
 import android.webkit.MimeTypeMap;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.CheckResult;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.os.EnvironmentCompat;
@@ -141,6 +146,8 @@ import java.security.MessageDigest;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -149,6 +156,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
@@ -156,6 +165,7 @@ import java.util.zip.GZIPInputStream;
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGL11;
 
+import me.vkryl.android.LocaleUtils;
 import me.vkryl.android.SdkVersion;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
@@ -163,6 +173,7 @@ import me.vkryl.core.FileUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
+import me.vkryl.core.collection.LongList;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.util.LocalVar;
@@ -412,7 +423,7 @@ public class U {
       String output = out.toString();
       if (!output.trim().isEmpty()) {
         String[] devicePoints = output.split("\n");
-        for (String voldPoint: devicePoints) {
+        for (String voldPoint : devicePoints) {
           String path = voldPoint.split(" ")[2];
           if (!StringUtils.equalsOrBothEmpty(ignorePath, path)) {
             if (results == null) {
@@ -703,8 +714,10 @@ public class U {
   public static void recycle (@Nullable Bitmap bitmap) {
     if (bitmap != null) {
       try {
-        if (!bitmap.isRecycled())
-          bitmap.recycle();
+        synchronized (bitmap) {
+          if (!bitmap.isRecycled())
+            bitmap.recycle();
+        }
       } catch (Throwable ignored) { }
     }
   }
@@ -3556,5 +3569,153 @@ public class U {
       return true;
     }
     return false;
+  }
+
+  public static String[] getInputLanguages () {
+    final List<String> inputLanguages = new ArrayList<>();
+    InputMethodManager imm = (InputMethodManager) UI.getAppContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+    if (imm != null) {
+      String inputLanguageCode = null;
+      try {
+        inputLanguageCode = toLanguageCode(imm.getCurrentInputMethodSubtype());
+      } catch (Throwable ignored) { }
+      if (StringUtils.isEmpty(inputLanguageCode)) {
+        try {
+          inputLanguageCode = toLanguageCode(imm.getLastInputMethodSubtype());
+        } catch (Throwable ignored) { }
+      }
+      if (!StringUtils.isEmpty(inputLanguageCode)) {
+        inputLanguages.add(inputLanguageCode);
+      }
+
+      /*if (Strings.isEmpty(inputLanguageCode)) {
+        try {
+          String id = android.provider.Settings.Secure.getString(
+            UI.getAppContext().getContentResolver(),
+            android.provider.Settings.Secure.DEFAULT_INPUT_METHOD
+          );
+          if (!Strings.isEmpty(id)) {
+            List<InputMethodInfo> list = imm.getInputMethodList();
+            lookup:
+            for (InputMethodInfo info : list) {
+              if (id.equals(info.getId())) {
+                List<InputMethodSubtype> subtypes = imm.getEnabledInputMethodSubtypeList(info, true);
+                for (InputMethodSubtype subtype : subtypes) {
+                  String languageCode = toLanguageCode(subtype);
+                  if (!Strings.isEmpty(languageCode)) {
+                    inputLanguageCode = languageCode;
+                    break lookup;
+                  }
+                }
+              }
+            }
+          }
+        } catch (Throwable ignored) { }
+      }
+      if (Strings.isEmpty(inputLanguageCode) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        try {
+          LocaleList localeList = ((InputView) callback).getImeHintLocales();
+          if (localeList != null) {
+            for (int i = 0; i < localeList.size(); i++) {
+              inputLanguageCode = U.toBcp47Language(localeList.get(i));
+              if (!Strings.isEmpty(inputLanguageCode))
+                break;
+            }
+          }
+        } catch (Throwable ignored) { }
+      }*/
+    }
+    if (inputLanguages.isEmpty()) {
+      try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+          LocaleList locales = Resources.getSystem().getConfiguration().getLocales();
+          for (int i = 0; i < locales.size(); i++) {
+            String code = LocaleUtils.toBcp47Language(locales.get(i));
+            if (!StringUtils.isEmpty(code) && !inputLanguages.contains(code))
+              inputLanguages.add(code);
+          }
+        } else {
+          String code = LocaleUtils.toBcp47Language(Resources.getSystem().getConfiguration().locale);
+          if (!StringUtils.isEmpty(code)) {
+            inputLanguages.add(code);
+          }
+        }
+      } catch (Throwable ignored) { }
+    }
+    if (!inputLanguages.isEmpty()) {
+      return inputLanguages.toArray(new String[0]);
+    } else {
+      return null;
+    }
+  }
+
+  private static String toLanguageCode (InputMethodSubtype ims) {
+    if (ims != null) {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        String languageTag = ims.getLanguageTag();
+        if (!StringUtils.isEmpty(languageTag)) {
+          return languageTag;
+        }
+      }
+      String locale = ims.getLocale();
+      if (!StringUtils.isEmpty(locale)) {
+        Locale l = U.getDisplayLocaleOfSubtypeLocale(locale);
+        if (l != null) {
+          return LocaleUtils.toBcp47Language(l);
+        }
+      }
+    }
+    return null;
+  }
+
+  @CheckResult
+  public static long[] removeAll (long[] items, Set<Long> itemsToRemove) {
+    if (itemsToRemove.isEmpty() || items.length == 0) {
+      return items;
+    }
+    LongList itemList = new LongList(items.length);
+    for (long item : items) {
+      if (!itemsToRemove.contains(item)) {
+        itemList.append(item);
+      }
+    }
+    return itemList.get();
+  }
+
+  @CheckResult
+  public static long[] toArray(Collection<Long> collection) {
+    if (collection.isEmpty()) {
+      return ArrayUtils.EMPTY_LONGS;
+    }
+    int index = 0;
+    long[] array = new long[collection.size()];
+    for (long element : collection) {
+      array[index++] = element;
+    }
+    return array;
+  }
+
+  public static Set<Integer> unmodifiableTreeSetOf (int[] array) {
+    if (array.length == 0)
+      return Collections.emptySet();
+    if (array.length == 1)
+      return Collections.singleton(array[0]);
+    Set<Integer> set = new TreeSet<>();
+    for (int value : array) {
+      set.add(value);
+    }
+    return Collections.unmodifiableSet(set);
+  }
+
+  public static Set<Long> unmodifiableTreeSetOf (long[] array) {
+    if (array.length == 0)
+      return Collections.emptySet();
+    if (array.length == 1)
+      return Collections.singleton(array[0]);
+    Set<Long> set = new TreeSet<>();
+    for (long value : array) {
+      set.add(value);
+    }
+    return Collections.unmodifiableSet(set);
   }
 }

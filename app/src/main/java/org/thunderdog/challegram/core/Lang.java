@@ -37,6 +37,7 @@ import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
+import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.emoji.Emoji;
@@ -78,6 +79,7 @@ import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.ChatId;
+import me.vkryl.td.Td;
 
 @SuppressWarnings(value = "SpellCheckingInspection")
 public class Lang {
@@ -990,13 +992,17 @@ public class Lang {
     }
     String text = TD.getTextFromMessageSpoilerless(message);
     if (!needPerson) {
-      if (StringUtils.isEmpty(text))
-        text = Lang.lowercase(TD.buildShortPreview(tdlib, message, true));
+      if (StringUtils.isEmpty(text)) {
+        ContentPreview preview = ContentPreview.getNotificationPreview(tdlib, message.chatId, message, true);
+        text = Lang.lowercase(preview.buildText(false));
+      }
       return Lang.getString(R.string.format_pinned, text);
     }
     if (userName == null) {
-      if (StringUtils.isEmpty(text))
-        text = Lang.lowercase(TD.buildShortPreview(tdlib, message, true));
+      if (StringUtils.isEmpty(text)) {
+        ContentPreview preview = ContentPreview.getNotificationPreview(tdlib, message.chatId, message, true);
+        text = Lang.lowercase(preview.buildText(false));
+      }
       return Lang.getString(R.string.NewPinnedMessage, text);
     }
     if (!StringUtils.isEmpty(text)) {
@@ -1042,6 +1048,9 @@ public class Lang {
       case TdApi.MessageVideoNote.CONSTRUCTOR:
         res = R.string.ActionPinnedRound;
         break;
+      case TdApi.MessageStory.CONSTRUCTOR:
+        res = R.string.ActionPinnedStory;
+        break;
       case TdApi.MessageGame.CONSTRUCTOR: {
         String gameName = TD.getGameName(((TdApi.MessageGame) message.content).game, true);
         if (!StringUtils.isEmpty(gameName))
@@ -1049,6 +1058,12 @@ public class Lang {
         res = R.string.ActionPinnedGameNoName;
         break;
       }
+      case TdApi.MessageText.CONSTRUCTOR:
+      case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
+      case TdApi.MessageDice.CONSTRUCTOR:
+      case TdApi.MessageGameScore.CONSTRUCTOR:
+      case TdApi.MessageInvoice.CONSTRUCTOR:
+      case TdApi.MessageGiftedPremium.CONSTRUCTOR:
       case TdApi.MessageBasicGroupChatCreate.CONSTRUCTOR:
       case TdApi.MessageCall.CONSTRUCTOR:
       case TdApi.MessageChatAddMembers.CONSTRUCTOR:
@@ -1063,18 +1078,35 @@ public class Lang {
       case TdApi.MessageContactRegistered.CONSTRUCTOR:
       case TdApi.MessageCustomServiceAction.CONSTRUCTOR:
       case TdApi.MessageSupergroupChatCreate.CONSTRUCTOR:
-      case TdApi.MessageText.CONSTRUCTOR:
       case TdApi.MessageUnsupported.CONSTRUCTOR:
-      case TdApi.MessageGameScore.CONSTRUCTOR:
-      case TdApi.MessageInvoice.CONSTRUCTOR:
       case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
       case TdApi.MessagePassportDataSent.CONSTRUCTOR:
       case TdApi.MessagePaymentSuccessful.CONSTRUCTOR:
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessagePinMessage.CONSTRUCTOR:
       case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
-      case TdApi.MessageWebsiteConnected.CONSTRUCTOR:
+      case TdApi.MessageBotWriteAccessAllowed.CONSTRUCTOR:
+      case TdApi.MessageChatJoinByRequest.CONSTRUCTOR:
+      case TdApi.MessageChatSetBackground.CONSTRUCTOR:
+      case TdApi.MessageChatSetTheme.CONSTRUCTOR:
+      case TdApi.MessageChatShared.CONSTRUCTOR:
+      case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
+      case TdApi.MessageForumTopicEdited.CONSTRUCTOR:
+      case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
+      case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
+      case TdApi.MessageInviteVideoChatParticipants.CONSTRUCTOR:
+      case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR:
+      case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
+      case TdApi.MessageUserShared.CONSTRUCTOR:
+      case TdApi.MessageVideoChatEnded.CONSTRUCTOR:
+      case TdApi.MessageVideoChatScheduled.CONSTRUCTOR:
+      case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
+      case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
+      case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
         break;
+      default:
+        Td.assertMessageContent_cda9af31();
+        throw Td.unsupported(message.content);
     }
     String format = Lang.getString(res);
     int startIndex = format.indexOf("**");
@@ -3774,7 +3806,7 @@ public class Lang {
       };
 
       StringList list = new StringList(supportedLanguagesForTranslate.length);
-      for (String lang: supportedLanguagesForTranslate) {
+      for (String lang : supportedLanguagesForTranslate) {
         if (Lang.getLanguageName(lang, null) != null) {
           list.append(lang);
         }
@@ -3786,7 +3818,7 @@ public class Lang {
 
   public static @Nullable String getDefaultLanguageToTranslateV2 (@Nullable String sourceLanguage) {
     ArrayList<String> recents = Settings.instance().getTranslateLanguageRecents();
-    for (String lang: recents) {
+    for (String lang : recents) {
       if (!StringUtils.equalsOrBothEmpty(lang, sourceLanguage)) {
         return lang;
       }
@@ -3802,7 +3834,7 @@ public class Lang {
     }
 
     String[] notTranslatableLanguages = Settings.instance().getAllNotTranslatableLanguages();
-    for (String lang: notTranslatableLanguages) {
+    for (String lang : notTranslatableLanguages) {
       if (!StringUtils.equalsOrBothEmpty(lang, sourceLanguage)) {
         return lang;
       }

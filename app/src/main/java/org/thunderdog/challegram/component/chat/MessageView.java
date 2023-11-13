@@ -33,6 +33,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageBotInfo;
@@ -100,10 +101,11 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private final AvatarReceiver avatarReceiver;
   private final GifReceiver gifReceiver;
   private final ComplexReceiver avatarsReceiver;
+  private final ComplexReceiver reactionAvatarsReceiver;
   private final ComplexReceiver emojiStatusReceiver;
   private final ComplexReceiver reactionsComplexReceiver, textMediaReceiver, replyTextMediaReceiver;
   private final DoubleImageReceiver replyReceiver;
-  private final RefreshRateLimiter refreshRateLimiter;
+  private final RefreshRateLimiter refreshRateLimiter, highRefreshRateLimiter;
   private ComplexReceiver footerTextMediaReceiver;
 
   private ImageReceiver contentReceiver;
@@ -112,14 +114,23 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private MessageViewGroup parentMessageViewGroup;
   private MessagesManager manager;
 
+
   public MessageView (Context context) {
     super(context);
     this.refreshRateLimiter = new RefreshRateLimiter(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
-    avatarReceiver = new AvatarReceiver(this);
-    avatarsReceiver = new ComplexReceiver(this);
-    gifReceiver = new GifReceiver(this); // TODO use refreshRateLimiter?
+    this.highRefreshRateLimiter = new RefreshRateLimiter(this, 60.0f);
+    this.highRefreshRateLimiter.attachOtherRefreshLimiter(refreshRateLimiter);
+
+    avatarReceiver = new AvatarReceiver(this)
+      .setUpdateListener(refreshRateLimiter.passThroughUpdateListener());
+    avatarsReceiver = new ComplexReceiver(this)
+      .setUpdateListener(refreshRateLimiter.passThroughComplexUpdateListener());
+    reactionAvatarsReceiver = new ComplexReceiver(this)
+      .setUpdateListener(refreshRateLimiter.passThroughComplexUpdateListener());
+    gifReceiver = new GifReceiver(this)
+      .setUpdateListener(refreshRateLimiter.passThroughUpdateListener());
     reactionsComplexReceiver = new ComplexReceiver()
-      .setUpdateListener(new RefreshRateLimiter(this, 60.0f)); // Limit by 60fps
+      .setUpdateListener(highRefreshRateLimiter);
     textMediaReceiver = new ComplexReceiver()
       .setUpdateListener(refreshRateLimiter);
     emojiStatusReceiver = new ComplexReceiver()
@@ -127,7 +138,8 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     replyTextMediaReceiver = new ComplexReceiver()
       .setUpdateListener(refreshRateLimiter);
     //noinspection ContantConditions
-    replyReceiver = new DoubleImageReceiver(this, Config.USE_SCALED_ROUNDINGS ? Screen.dp(Theme.getImageRadius()) : 0);
+    replyReceiver = new DoubleImageReceiver(this, Config.USE_SCALED_ROUNDINGS ? Screen.dp(Theme.getImageRadius()) : 0)
+      .setUpdateListener(refreshRateLimiter);
 
     setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     if (Config.HARDWARE_MESSAGE_LAYER) {
@@ -155,6 +167,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   public void performDestroy () {
     avatarReceiver.destroy();
     avatarsReceiver.performDestroy();
+    reactionAvatarsReceiver.performDestroy();
     replyReceiver.destroy();
     replyTextMediaReceiver.performDestroy();
     gifReceiver.destroy();
@@ -184,7 +197,8 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   }
 
   public void setUseComplexReceiver () {
-    complexReceiver = new ComplexReceiver(this);
+    complexReceiver = new ComplexReceiver(this)
+      .setUpdateListener(refreshRateLimiter.passThroughComplexUpdateListener());
     flags |= FLAG_USE_COMPLEX_RECEIVER;
   }
 
@@ -286,6 +300,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     message.requestAvatar(avatarReceiver);
     message.requestReactions(reactionsComplexReceiver);
     message.requestCommentsResources(avatarsReceiver, false);
+    message.requestReactionsResources(reactionAvatarsReceiver, false);
     message.requestAllTextMedia(this);
 
     if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
@@ -408,6 +423,10 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     return avatarsReceiver;
   }
 
+  public ComplexReceiver getReactionAvatarsReceiver () {
+    return reactionAvatarsReceiver;
+  }
+
   public ImageReceiver getContentReceiver () {
     return contentReceiver;
   }
@@ -453,6 +472,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       isAttached = true;
       avatarReceiver.attach();
       avatarsReceiver.attach();
+      reactionAvatarsReceiver.attach();
       gifReceiver.attach();
       reactionsComplexReceiver.attach();
       textMediaReceiver.attach();
@@ -474,6 +494,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       isAttached = false;
       avatarReceiver.detach();
       avatarsReceiver.detach();
+      reactionAvatarsReceiver.detach();
       gifReceiver.detach();
       reactionsComplexReceiver.detach();
       textMediaReceiver.detach();
@@ -556,7 +577,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     boolean isSent = !msg.isNotSent();
 
     if (msg.isEventLog()) {
-      showEventLogOptions(m, msg);
+      msg.checkTranslatableText(() -> showEventLogOptions(m, msg));
       return true;
     }
 
@@ -587,11 +608,21 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
     // Promotion
 
-    if (msg.isSponsored()) {
+    if (msg.isSponsoredMessage()) {
       ids.append(R.id.btn_messageCopy);
       strings.append(R.string.Copy);
       icons.append(R.drawable.baseline_content_copy_24);
 
+      if (msg.isTranslated()) {
+        ids.append(R.id.btn_chatTranslateOff);
+        strings.append(R.string.TranslateOff);
+        icons.append(R.drawable.baseline_translate_off_24);
+      } else if (!isMore && msg.isTranslatable() && msg.translationStyleMode() != Settings.TRANSLATE_MODE_NONE) {
+        ids.append(R.id.btn_chatTranslate);
+        strings.append(R.string.Translate);
+        icons.append(R.drawable.baseline_translate_24);
+      }
+      
       ids.append(R.id.btn_messageSponsorInfo);
       strings.append(R.string.SponsoredInfoMenu);
       icons.append(R.drawable.baseline_info_24);
@@ -630,6 +661,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         icons.append(R.drawable.outline_forum_24);
       }
 
+      //noinspection SwitchIntDef
       switch (content.getConstructor()) {
         case TdApi.MessagePoll.CONSTRUCTOR: {
           TdApi.Poll poll = ((TdApi.MessagePoll) content).poll;
@@ -732,14 +764,14 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         if (msg.getMessage().content.getConstructor() == TdApi.MessageDice.CONSTRUCTOR && !msg.tdlib().hasRestriction(msg.getMessage().chatId, RightId.SEND_OTHER_MESSAGES)) {
           String emoji = ((TdApi.MessageDice) msg.getMessage().content).emoji;
           ids.append(R.id.btn_messageReplyWithDice);
-          if (TD.EMOJI_DART.textRepresentation.equals(emoji)) {
+          if (ContentPreview.EMOJI_DART.textRepresentation.equals(emoji)) {
             strings.append(R.string.SendDart);
-          } else if (TD.EMOJI_DICE.textRepresentation.equals(emoji)) {
+          } else if (ContentPreview.EMOJI_DICE.textRepresentation.equals(emoji)) {
             strings.append(R.string.SendDice);
           } else {
             strings.append(R.string.SendUnknownDice);
           }
-          icons.append(TD.EMOJI_DART.textRepresentation.equals(emoji) ? R.drawable.baseline_gps_fixed_24 : R.drawable.baseline_casino_24);
+          icons.append(ContentPreview.EMOJI_DART.textRepresentation.equals(emoji) ? R.drawable.baseline_gps_fixed_24 : R.drawable.baseline_casino_24);
         }
 
         ids.append(R.id.btn_messageReply);
@@ -998,7 +1030,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       }
     }
 
-    if (msg.canBeReported() && !msg.isFakeMessage()) {
+    if (msg.canBeReported() && !msg.isFakeMessage() && !msg.isSponsoredMessage()) {
       if (isMore) {
         ids.append(R.id.btn_messageReport);
         strings.append(R.string.MessageReport);
@@ -1136,6 +1168,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     TdApi.ChatMemberStatus myStatus = m.tdlib().chatStatus(m.getChatId());
 
     RunnableData<TdApi.ChatMember> showOptions = (member) -> {
+      if (ids.isEmpty()) {
+        return;
+      }
       m.showOptions(null, ids.get(), strings.get(), colors.get(), icons.get(), (optionItemView, id) -> {
         int optionItemId = optionItemView.getId();
         if (optionItemId == R.id.btn_restrictMember) {
@@ -1173,6 +1208,8 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           m.navigateTo(c2);
         } else if (optionItemId == R.id.btn_blockSender) {
           m.tdlib().ui().kickMember(m, m.getChatId(), sender, member.status);
+        } else if (optionItemId == R.id.btn_chatTranslate) {
+          manager.controller().startTranslateMessages(msg, true);
         }
 
         return true;
@@ -1197,6 +1234,13 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         ids.append(R.id.btn_messageCopy);
         strings.append(R.string.Copy);
         icons.append(R.drawable.baseline_content_copy_24);
+        colors.append(ViewController.OPTION_COLOR_NORMAL);
+      }
+
+      if (msg.isTranslatable() && msg.translationStyleMode() != Settings.TRANSLATE_MODE_NONE) {
+        ids.append(R.id.btn_chatTranslate);
+        strings.append(R.string.Translate);
+        icons.append(R.drawable.baseline_translate_24);
         colors.append(ViewController.OPTION_COLOR_NORMAL);
       }
 
@@ -1395,7 +1439,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   }
 
   private boolean startSwipeIfNeeded (float diffX) {
-    if (msg == null || msg.isNotSent() || !msg.canSwipe() || msg.isSponsored() || UI.getContext(getContext()).getRecordAudioVideoController().isOpen()) {
+    if (msg == null || msg.isNotSent() || !msg.canSwipe() || msg.isSponsoredMessage() || UI.getContext(getContext()).getRecordAudioVideoController().isOpen()) {
       return false;
     }
     MessagesController m = msg.messagesController();
@@ -1404,10 +1448,12 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       return false;
     }
     if (touchX > MessagesController.getSlideBackBound()) {
-      msg.checkAvailableReactions(() -> {
+      msg.checkTranslatableText(() -> {
+        msg.checkAvailableReactions(() -> {
           if ((msg.getRightQuickReactions().size() > 0 && diffX < 0) || (msg.getLeftQuickReactions().size() > 0 && diffX > 0)) {
             m.startSwipe(findTargetView());
           }
+        });
       });
       return true;
     }

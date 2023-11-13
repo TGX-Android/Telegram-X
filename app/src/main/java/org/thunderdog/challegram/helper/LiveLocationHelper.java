@@ -124,7 +124,7 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
           TdApi.Message[] msgs = ((TdApi.Messages) object).messages;
           messages.ensureCapacity(msgs.length);
           for (TdApi.Message message : msgs) {
-            if (message.content.getConstructor() != TdApi.MessageLocation.CONSTRUCTOR || ((TdApi.MessageLocation) message.content).expiresIn == 0) {
+            if (!Td.isLocation(message.content) || ((TdApi.MessageLocation) message.content).expiresIn == 0) {
               continue;
             }
             messages.add(message);
@@ -819,21 +819,21 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
 
   @Override
   public void onNewMessage (TdApi.Message message) {
-    if (!message.isOutgoing && message.sendingState == null && message.schedulingState == null && message.content.getConstructor() == TdApi.MessageLocation.CONSTRUCTOR && ((TdApi.MessageLocation) message.content).livePeriod > 0 && ((TdApi.MessageLocation) message.content).expiresIn > 0) {
+    if (!message.isOutgoing && message.sendingState == null && message.schedulingState == null && Td.isLocation(message.content) && ((TdApi.MessageLocation) message.content).livePeriod > 0 && ((TdApi.MessageLocation) message.content).expiresIn > 0) {
       UI.post(() -> addChatMessage(message));
     }
   }
 
   @Override
   public void onMessageSendSucceeded (TdApi.Message message, long oldMessageId) {
-    if (message.content.getConstructor() == TdApi.MessageLocation.CONSTRUCTOR && message.schedulingState == null && ((TdApi.MessageLocation) message.content).livePeriod > 0 && ((TdApi.MessageLocation) message.content).expiresIn > 0) {
+    if (Td.isLocation(message.content) && message.schedulingState == null && ((TdApi.MessageLocation) message.content).livePeriod > 0 && ((TdApi.MessageLocation) message.content).expiresIn > 0) {
       UI.post(() -> addChatMessage(message));
     }
   }
 
   @Override
   public void onMessageContentChanged (long chatId, long messageId, TdApi.MessageContent newContent) {
-    if (newContent.getConstructor() == TdApi.MessageLocation.CONSTRUCTOR && ((TdApi.MessageLocation) newContent).livePeriod > 0) {
+    if (Td.isLocation(newContent) && ((TdApi.MessageLocation) newContent).livePeriod > 0) {
       UI.post(() -> editChatMessage(messageId, (TdApi.MessageLocation) newContent));
     }
   }

@@ -42,6 +42,7 @@ import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
@@ -569,7 +570,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
         break;
       }
       case TYPE_TELEGRAM_AD: {
-        parent.callSponsorButton();
+        parent.openSponsoredMessage();
         break;
       }
       case TGWebPage.TYPE_PHOTO:
@@ -602,13 +603,17 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   }
 
   public boolean isPreviewOf (String url) {
+    return isPreviewOf(webPage.url, url);
+  }
+
+  public static boolean isPreviewOf (String webPageUrl, String url) {
     if (StringUtils.isEmpty(url))
       return false;
     if (!url.contains("://"))
       url = "https://" + url;
     try {
       Uri uri = Uri.parse(url);
-      Uri webPageUri = Uri.parse(webPage.url);
+      Uri webPageUri = Uri.parse(webPageUrl);
 
       String host = uri.getHost().toLowerCase(Locale.ROOT).replaceAll("^(?:www\\.|m\\.)", "");
       String webPageHost = webPageUri.getHost().toLowerCase(Locale.ROOT).replaceAll("^(?:www\\.|m\\.)", "");
@@ -953,48 +958,48 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   private TGInlineKeyboard rippleButton;
 
   private void buildRippleButton () {
-    int message = 0;
+    int stringRes = 0;
     int icon = 0;
 
     if (needInstantView()) {
-      message = R.string.InstantView;
+      stringRes = R.string.InstantView;
       icon = R.drawable.deproko_baseline_instantview_24;
     } else {
       switch (type) {
         case TYPE_TELEGRAM_USER:
-          message = R.string.OpenProfile;
+          stringRes = R.string.OpenProfile;
           break;
         case TYPE_TELEGRAM_MESSAGE:
         case TYPE_TELEGRAM_ALBUM:
           if (parent.tdlib().isTmeUrl(url))
-            message = R.string.OpenMessage;
+            stringRes = R.string.OpenMessage;
           break;
         case TYPE_TELEGRAM_CHANNEL:
-          message = R.string.OpenChannel;
+          stringRes = R.string.OpenChannel;
           break;
         case TYPE_TELEGRAM_MEGAGROUP:
-          message = R.string.OpenGroup;
+          stringRes = R.string.OpenGroup;
           break;
         case TYPE_TELEGRAM_BOT:
-          message = R.string.OpenBot;
+          stringRes = R.string.OpenBot;
           break;
         case TYPE_TELEGRAM_AD:
-          message = parent.getSponsorButtonName();
+          stringRes = parent.getSponsoredMessageButtonResId();
           break;
         case TYPE_TELEGRAM_CHAT:
-          message = R.string.OpenChat;
+          stringRes = R.string.OpenChat;
           break;
         case TYPE_TELEGRAM_BACKGROUND:
-          message = R.string.ChatBackgroundView;
+          stringRes = R.string.ChatBackgroundView;
           break;
       }
     }
 
-    if (message != 0) {
+    if (stringRes != 0) {
       rippleButtonY = height + Screen.dp(6f);
       height = rippleButtonY + TGInlineKeyboard.getButtonHeight();
       rippleButton = new TGInlineKeyboard(parent, false);
-      rippleButton.setCustom(icon, Lang.getString(message), availWidth - paddingLeft, type != TYPE_TELEGRAM_AD, this);
+      rippleButton.setCustom(icon, Lang.getString(stringRes), availWidth - paddingLeft, type != TYPE_TELEGRAM_AD, this);
     }
   }
 
@@ -1004,7 +1009,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       button.makeActive();
       button.showProgressDelayed();
       String anchor = parent.findUriFragment(webPage);
-      parent.tdlib().client().send(new TdApi.GetWebPageInstantView(url, false), getInstantViewCallback(view, button, webPage, anchor));
+      parent.tdlib().send(new TdApi.GetWebPageInstantView(url, false), getInstantViewCallback(view, button, webPage, anchor));
     } else {
       open(view, false);
     }
@@ -1019,16 +1024,11 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
         return false;
       }
 
-      String url;
-
-      if (parent.isSponsored()) {
-        url = parent.getSponsoredButtonUrl();
-      } else {
-        String username = parent.tdlib.chatUsername(parent.getSponsorChatId());
-        url = parent.tdlib.tMeUrl(username);
+      String url = parent.getSponsoredMessageUrl();
+      if (!StringUtils.isEmpty(url)) {
+        c.showCopyUrlOptions(url, parent.openParameters(), null);
+        return true;
       }
-
-      c.showCopyUrlOptions(url, parent.openParameters(), null);
     }
 
     return false;
@@ -1286,83 +1286,74 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
 
   // Instant view
 
-  private Client.ResultHandler getInstantViewCallback (final View view, final TGInlineKeyboard.Button button, final TdApi.WebPage instantViewSource, final String anchor) {
+  private void runOnUiThread (Runnable runnable) {
+    parent.tdlib().ui().post(runnable);
+  }
+
+  private Tdlib.ResultHandler<TdApi.WebPageInstantView> getInstantViewCallback (final View view, final TGInlineKeyboard.Button button, final TdApi.WebPage instantViewSource, final String anchor) {
     final int currentContextId = button.getContextId();
     final boolean[] signal = new boolean[1];
-    return new Client.ResultHandler() {
+    return new Tdlib.ResultHandler<>() {
       @Override
-      public void onResult (TdApi.Object object) {
-        switch (object.getConstructor()) {
-          case TdApi.WebPageInstantView.CONSTRUCTOR: {
-            final TdApi.WebPageInstantView instantView = (TdApi.WebPageInstantView) object;
-
-            if (!TD.hasInstantView(instantView.version)) {
-              parent.tdlib().ui().post(() -> {
-                if (currentContextId == button.getContextId()) {
-                  button.makeInactive();
-                  button.showTooltip(view, R.string.InstantViewUnsupported);
-                }
-              });
-              break;
+      public void onResult (TdApi.WebPageInstantView instantView, @Nullable TdApi.Error error) {
+        if (error != null) {
+          runOnUiThread(() -> {
+            if (currentContextId != button.getContextId()) {
+              return;
             }
-
-            if (instantView.pageBlocks == null || instantView.pageBlocks.length == 0) {
-              boolean retry = !signal[0] && !instantView.isFull;
-              if (retry) {
-                signal[0] = true;
-                parent.tdlib().client().send(new TdApi.GetWebPageInstantView(instantViewSource.url, false), this);
-              } else {
-                parent.tdlib().ui().post(() -> {
-                  if (currentContextId == button.getContextId()) {
-                    button.makeInactive();
-                    button.showTooltip(view, "TDLib: instantView.pageBlocks returned null " + (signal[0] ? "twice isFull == " + instantView.isFull : "with isFull == " + instantView.isFull));
-                  }
-                });
-              }
-
-              break;
-            }
-
-            parent.tdlib().ui().post(() -> {
-              if (currentContextId != button.getContextId()) {
-                return;
-              }
-
-              button.makeInactive();
-
-              InstantViewController controller = new InstantViewController(parent.controller().context(), parent.tdlib());
-              controller.setArguments(new InstantViewController.Args(instantViewSource, instantView, anchor));
-              try {
-                controller.show();
-              } catch (UnsupportedOperationException e) {
-                Log.w("Unsupported Instant View block:%s", e, instantViewSource.url);
-                button.showTooltip(view, R.string.InstantViewUnsupported);
-                controller.destroy();
-              } catch (Throwable t) {
-                Log.e("Unable to open Instant View, url:%s", t, instantViewSource.url);
-                button.showTooltip(view, R.string.InstantViewError);
-                controller.destroy();
-              }
-            });
-
-            break;
-          }
-          case TdApi.Error.CONSTRUCTOR: {
-            parent.tdlib().ui().post(() -> {
-              if (currentContextId != button.getContextId()) {
-                return;
-              }
-              button.makeInactive();
-              button.showTooltip(view, TD.toErrorString(object));
-            });
-            break;
-          }
-          default: {
-            Log.unexpectedTdlibResponse(object, TdApi.GetWebPageInstantView.class, TdApi.WebPageInstantView.class);
-            parent.tdlib().ui().post(button::makeInactive);
-            break;
-          }
+            button.makeInactive();
+            button.showTooltip(view, TD.toErrorString(error));
+          });
+          return;
         }
+
+        if (!TD.hasInstantView(instantView.version)) {
+          parent.tdlib().ui().post(() -> {
+            if (currentContextId == button.getContextId()) {
+              button.makeInactive();
+              button.showTooltip(view, R.string.InstantViewUnsupported);
+            }
+          });
+          return;
+        }
+
+        if (instantView.pageBlocks == null || instantView.pageBlocks.length == 0) {
+          boolean retry = !signal[0] && !instantView.isFull;
+          if (retry) {
+            signal[0] = true;
+            parent.tdlib().send(new TdApi.GetWebPageInstantView(instantViewSource.url, false), this);
+          } else {
+            runOnUiThread(() -> {
+              if (currentContextId == button.getContextId()) {
+                button.makeInactive();
+                button.showTooltip(view, "TDLib: instantView.pageBlocks returned null " + (signal[0] ? "twice isFull == " + instantView.isFull : "with isFull == " + instantView.isFull));
+              }
+            });
+          }
+          return;
+        }
+
+        runOnUiThread(() -> {
+          if (currentContextId != button.getContextId()) {
+            return;
+          }
+
+          button.makeInactive();
+
+          InstantViewController controller = new InstantViewController(parent.controller().context(), parent.tdlib());
+          controller.setArguments(new InstantViewController.Args(instantViewSource, instantView, anchor));
+          try {
+            controller.show();
+          } catch (UnsupportedOperationException e) {
+            Log.w("Unsupported Instant View block:%s", e, instantViewSource.url);
+            button.showTooltip(view, R.string.InstantViewUnsupported);
+            controller.destroy();
+          } catch (Throwable t) {
+            Log.e("Unable to open Instant View, url:%s", t, instantViewSource.url);
+            button.showTooltip(view, R.string.InstantViewError);
+            controller.destroy();
+          }
+        });
       }
     };
   }

@@ -193,13 +193,6 @@ public abstract class PreviewLayout extends FrameLayoutFix implements View.OnCli
       PreviewLayout popup = null;
       switch (service.type) {
         case EmbeddedService.TYPE_YOUTUBE:
-          if (YouTube.isYoutubeAppInstalled() && !StringUtils.isEmpty(BuildConfig.YOUTUBE_API_KEY)) {
-            popup = new YouTubePreviewLayout(context, parent);
-          } else {
-            popup = new WebViewPreviewLayout(context, parent);
-          }
-
-          break;
         case EmbeddedService.TYPE_SOUNDCLOUD:
         case EmbeddedService.TYPE_DAILYMOTION:
         case EmbeddedService.TYPE_VIMEO:

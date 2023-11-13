@@ -49,6 +49,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -65,6 +66,7 @@ import org.thunderdog.challegram.component.chat.EmojiToneHelper;
 import org.thunderdog.challegram.component.chat.InlineResultsWrap;
 import org.thunderdog.challegram.component.chat.InputView;
 import org.thunderdog.challegram.component.preview.FlingDetector;
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.InlineResult;
@@ -146,6 +148,7 @@ import org.thunderdog.challegram.widget.FileProgressComponent;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ShadowView;
+import org.thunderdog.challegram.widget.TextFormattingLayout;
 import org.thunderdog.challegram.widget.VideoTimelineView;
 
 import java.io.File;
@@ -178,7 +181,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   PopupLayout.AnimatedPopupProvider, FactorAnimator.Target, View.OnClickListener,
   MediaStackCallback, MediaFiltersAdapter.Callback, Watcher, RotationControlView.Callback, MediaView.ClickListener,
   EmojiLayout.Listener, InputView.InputListener, InlineResultsWrap.OffsetProvider,
-  MediaCellView.Callback, SliderView.Listener, TGLegacyManager.EmojiLoadListener, Menu, MoreDelegate, PopupLayout.TouchSectionProvider, FlingDetector.Callback, CallManager.CurrentCallListener, ColorPreviewView.BrushChangeListener, PaintState.UndoStateListener, MediaView.FactorChangeListener, EmojiToneHelper.Delegate, MessageListener {
+  MediaCellView.Callback, SliderView.Listener, TGLegacyManager.EmojiLoadListener, Menu, MoreDelegate,
+  PopupLayout.TouchSectionProvider, FlingDetector.Callback, CallManager.CurrentCallListener,
+  ColorPreviewView.BrushChangeListener, PaintState.UndoStateListener, MediaView.FactorChangeListener,
+  EmojiToneHelper.Delegate, MessageListener, InputView.SelectionChangeListener {
 
   private static final long REVEAL_ANIMATION_DURATION = /*BuildConfig.DEBUG ? 1800l :*/ 180;
   private static final long REVEAL_OPEN_ANIMATION_DURATION = /*BuildConfig.DEBUG ? 1800l :*/ 180l;
@@ -557,13 +563,14 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private EmojiLayout emojiLayout;
+  private TextFormattingLayout textFormattingLayout;
 
   private boolean emojiShown, emojiState;
 
   private void processEmojiClick () {
     if (emojiShown) {
       setInCaption(emojiState || getKeyboardState());
-      closeEmojiKeyboard(false);
+      closeEmojiKeyboard();
     } else {
       openEmojiKeyboard();
       setInCaption();
@@ -577,6 +584,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   @Override
   public void onEnterEmoji (String emoji) {
     ((InputView) captionView).onEmojiSelected(emoji);
+  }
+
+  @Override
+  public void onEnterCustomEmoji (TGStickerObj sticker) {
+    ((InputView) captionView).onCustomEmojiSelected(sticker);
   }
 
   @Override
@@ -604,8 +616,15 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       if (emojiLayout == null) {
         emojiLayout = new EmojiLayout(context());
         emojiLayout.initWithMediasEnabled(this, false, this, this, false); // FIXME shall we use dark mode?
+        emojiLayout.setAllowPremiumFeatures(tdlib.isSelfChat(getOutputChatId()));
         emojiLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
         bottomWrap.addView(emojiLayout);
+        if (inputView != null) {
+          textFormattingLayout = new TextFormattingLayout(context(), this, inputView);
+          textFormattingLayout.setDelegate(this::closeTextFormattingKeyboard);
+          textFormattingLayout.setVisibility(View.GONE);
+          emojiLayout.addView(textFormattingLayout, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        }
         popupView.getViewTreeObserver().addOnPreDrawListener(emojiLayout);
       } else if (emojiLayout.getParent() == null) {
         bottomWrap.addView(emojiLayout);
@@ -613,7 +632,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
       emojiState = getKeyboardState();
 
-      emojiShown = true;
+      setEmojiShown(true);
       if (emojiState) {
         captionEmojiButton.setImageResource(R.drawable.baseline_keyboard_24);
         emojiLayout.hideKeyboard((EditText) captionView);
@@ -634,26 +653,22 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private void forceCloseEmojiKeyboard () {
     if (emojiShown) {
       removeEmojiView();
-      emojiShown = false;
-      captionEmojiButton.setImageResource(R.drawable.deproko_baseline_insert_emoticon_26);
+      setEmojiShown(false);
+      captionEmojiButton.setImageResource(getTargetIcon());
       setInCaption();
     }
   }
 
-  private void closeEmojiKeyboard (boolean eventually) {
+  private void closeEmojiKeyboard () {
     if (emojiShown) {
       if (emojiLayout != null) {
         removeEmojiView();
         if (emojiState) {
-          if (eventually) {
-            emojiLayout.showKeyboard((EditText) captionView);
-          } else {
-            emojiLayout.showKeyboard((EditText) captionView);
-          }
+          emojiLayout.showKeyboard((EditText) captionView);
         }
       }
-      emojiShown = false;
-      captionEmojiButton.setImageResource(R.drawable.deproko_baseline_insert_emoticon_26);
+      setEmojiShown(false);
+      captionEmojiButton.setImageResource(getTargetIcon());
     }
   }
 
@@ -854,7 +869,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   public boolean onKeyboardStateChanged (boolean visible) {
     if (mode == MODE_GALLERY) {
       if (visible && !getKeyboardState()) {
-        closeEmojiKeyboard(true);
+        closeEmojiKeyboard();
       }
       boolean res = super.onKeyboardStateChanged(visible);
       if (emojiLayout != null) {
@@ -1559,7 +1574,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   @Override
   public boolean shouldDisallowScreenshots () {
-    return mode == MODE_SECRET || !stack.getCurrent().canBeSaved();
+    return mode == MODE_SECRET || !stack.getCurrent().canBeSaved() || super.shouldDisallowScreenshots();
   }
 
   @Override
@@ -1641,11 +1656,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       ShareController c;
       if (item.getMessage() != null) {
         c = new ShareController(context, tdlib);
-        if (item.getMessage().content.getConstructor() != TdApi.MessageText.CONSTRUCTOR) {
-          c.setArguments(new ShareController.Args(item.getMessage()));
-        } else {
+        if (Td.isText(item.getMessage().content)) {
           TdApi.WebPage webPage = ((TdApi.MessageText) item.getMessage().content).webPage;
           c.setArguments(new ShareController.Args(item, webPage.displayUrl, webPage.displayUrl));
+        } else {
+          c.setArguments(new ShareController.Args(item.getMessage()));
         }
       } else if (item.getShareFile() != null) {
         c = new ShareController(context, tdlib);
@@ -1916,7 +1931,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     switch (mode) {
       case MODE_MESSAGES: {
         TdApi.Message message = item.getMessage();
-        if (message != null && message.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
+        if (message != null && Td.isText(message.content)) {
           TdApi.MessageText messageText = (TdApi.MessageText) message.content;
           if (messageText.webPage != null) {
             if (!StringUtils.isEmpty(messageText.webPage.author)) {
@@ -2189,7 +2204,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         skipCount--;
         continue;
       }
-      if (TD.isSecret(msg) || (!ChatId.isSecret(msg.chatId) && msg.selfDestructTime != 0)) // skip self-destructing images
+      if (Td.isSecret(msg.content)) // skip self-destructing images
         continue;
 
       MediaItem item = MediaItem.valueOf(context(), tdlib, msg);
@@ -2899,10 +2914,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       if (isLeft) {
         c.save();
         c.rotate(180, getMeasuredWidth() / 2, getMeasuredHeight() / 2);
-        Drawables.draw(c, backIcon, 0, y, Paints.getPorterDuffPaint(0xffffffff));
+        Drawables.draw(c, backIcon, 0, y, Paints.whitePorterDuffPaint());
         c.restore();
       } else {
-        Drawables.draw(c, backIcon, 0, y, Paints.getPorterDuffPaint(0xffffffff));
+        Drawables.draw(c, backIcon, 0, y, Paints.whitePorterDuffPaint());
       }
     }
   }
@@ -2927,6 +2942,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private FrameLayoutFix bottomWrap;
   private LinearLayout captionWrapView;
   private View captionView;
+  private InputView inputView;
   private ImageView captionEmojiButton, captionDoneButton;
   private @Nullable VideoControlView videoSliderView;
 
@@ -4108,7 +4124,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         ThumbView thumbView = ThumbViewHolder.getThumbView(child);
         MediaItem item = thumbView.getItem();
         ThumbItems items = thumbView.getItems();
-        if (items != null && thumbView.preview.isInsideReceiver(x, y)) {
+        if (items != null && thumbView.getPreviewReceiver().isInsideReceiver(x, y)) {
           if (controller.fastShowMediaItem(item, items, items.indexOf(item), true)) {
             ViewUtils.onClick(this);
             return;
@@ -4124,6 +4140,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     private ThumbItems items;
     private MediaItem item;
+
+    private Receiver getPreviewReceiver () {
+      return item != null && item.isAvatar() ? avatarReceiver : this.preview;
+    }
 
     public ThumbView (Context context, RecyclerView drawTarget) {
       super(context);
@@ -4259,7 +4279,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       float expandFactor = items != null ? items.getExpandFactor(item) * expandAllowance : 0f;
       int thumbWidth = thumbStartWidth + (int) ((float) (thumbEndWidth - thumbStartWidth) * expandFactor);
 
-      Receiver preview = item != null && item.isAvatar() ? avatarReceiver : this.preview;
+      Receiver preview = getPreviewReceiver();
       if (alpha != 1f) {
         preview.setPaintAlpha(alpha);
       }
@@ -5073,6 +5093,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
                 isDown = false;
                 break;
             }
+            if (textFormattingLayout != null) {
+              textFormattingLayout.onInputViewTouchEvent(event);
+            }
             return res;
           }
 
@@ -5117,6 +5140,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           if (!ignoreCaptionUpdate) {
             stack.getCurrent().setCaption(v.getOutputText(false));
           }
+          if (textFormattingLayout != null) {
+            textFormattingLayout.onInputViewSpansChanged();
+          }
         });
         captionView.setHint(Lang.getString(R.string.AddCaption));
         captionView.setMaxLines(4);
@@ -5128,7 +5154,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         captionView.setTypeface(Fonts.getRobotoRegular());
         captionView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         captionView.setInputType(captionView.getInputType() | EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES | EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE);
+        captionView.setSelectionChangeListener(this);
         this.captionView = captionView;
+        this.inputView = captionView;
 
         captionDoneButton = new ImageView(context);
         captionDoneButton.setId(R.id.btn_caption_done);
@@ -6165,11 +6193,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
           TextView textView = Views.newTextView(context(), 14f, Theme.getColor(ColorId.white), Gravity.LEFT, Views.TEXT_FLAG_SINGLE_LINE);
           textView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, Screen.dp(15f), Screen.dp(10f), Screen.dp(15f), 0));
-          textView.setText(R.string.QualityWorse);
+          textView.setText(Lang.getString(R.string.QualityWorse));
           qualityControlWrap.addView(textView);
           textView = Views.newTextView(context(), 14f, Theme.getColor(ColorId.white), Gravity.RIGHT, Views.TEXT_FLAG_SINGLE_LINE);
           textView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.RIGHT | Gravity.TOP, Screen.dp(15f), Screen.dp(10f), Screen.dp(15f), 0));
-          textView.setText(R.string.QualityBetter);
+          textView.setText(Lang.getString(R.string.QualityBetter));
           qualityControlWrap.addView(textView);
 
           qualityInfo = Views.newTextView(context(), 15f, Theme.getColor(ColorId.white), Gravity.CENTER, Views.TEXT_FLAG_SINGLE_LINE);
@@ -7448,8 +7476,23 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     cropOrStickerButton.setEdited(allowEditState && hasAppliedCrop(), animated);
     paintOrMuteButton.setEdited(hasAppliedPaints(), animated);
     if (stopwatchButton != null) {
-      int ttl = stack.getCurrent().getTTL();
-      String value = ttl != 0 ? TdlibUi.getDuration(ttl, TimeUnit.SECONDS, false) : null;
+      TdApi.MessageSelfDestructType selfDestructType = stack.getCurrent().getSelfDestructType();
+      String value;
+      if (selfDestructType != null) {
+        switch (selfDestructType.getConstructor()) {
+          case TdApi.MessageSelfDestructTypeImmediately.CONSTRUCTOR:
+            value = TdlibUi.getDuration(0, TimeUnit.SECONDS, false); // FIXME
+            break;
+          case TdApi.MessageSelfDestructTypeTimer.CONSTRUCTOR:
+            value = TdlibUi.getDuration(((TdApi.MessageSelfDestructTypeTimer) selfDestructType).selfDestructTime, TimeUnit.SECONDS, false);
+            break;
+          default:
+            Td.assertMessageSelfDestructType_58882d8c();
+            throw Td.unsupported(selfDestructType);
+        }
+      } else {
+        value = null;
+      }
       if (animated) {
         stopwatchButton.setValue(value, false);
       } else {
@@ -7841,6 +7884,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     } else if (viewId == R.id.btn_send) {
       if (currentSection != SECTION_CAPTION) {
         changeSection(SECTION_CAPTION, MODE_OK);
+      } else if (inputView != null && !tdlib.isSelfChat(getOutputChatId()) && !tdlib.hasPremium() && inputView.hasOnlyPremiumFeatures()) {
+        context().tooltipManager().builder(sendButton).show(tdlib, Strings.buildMarkdown(this, Lang.getString(R.string.MessageContainsPremiumFeatures), null)).hideDelayed();
       } else {
         send(v, Td.newSendOptions(), false, false);
       }
@@ -7998,12 +8043,24 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private void showTTLOptions () {
     final MediaItem item = stack.getCurrent();
-    tdlib.ui().showTTLPicker(context(), item.getTTL(), true, true, item.isVideo() ? R.string.MessageLifetimeVideo : R.string.MessageLifetimePhoto, result -> {
+    tdlib.ui().showTTLPicker(context(), item.getSelfDestructType(), true, true, item.isVideo() ? R.string.MessageLifetimeVideo : R.string.MessageLifetimePhoto, result -> {
       if (stack.getCurrent() == item) {
-        int newTTL = result.getTtlTime();
-        item.setTTL(newTTL);
-        stopwatchButton.setValue(newTTL != 0 ? TdlibUi.getDuration(newTTL, TimeUnit.SECONDS, false) : null);
-        if (newTTL != 0) {
+        TdApi.MessageSelfDestructType selfDestructType;
+        String textRepresentation;
+        if (result.isOff()) {
+          selfDestructType = null;
+          textRepresentation = null;
+        } else if (result.isImmediate()) {
+          selfDestructType = new TdApi.MessageSelfDestructTypeImmediately();
+          textRepresentation = TdlibUi.getDuration(0, TimeUnit.SECONDS, false); // FIXME
+        } else {
+          int newTTL = result.getTtlTime();
+          textRepresentation = TdlibUi.getDuration(newTTL, TimeUnit.SECONDS, false);
+          selfDestructType = new TdApi.MessageSelfDestructTypeTimer(newTTL);
+        }
+        item.setSelfDestructType(selfDestructType);
+        stopwatchButton.setValue(textRepresentation);
+        if (selfDestructType != null) {
           selectMediaIfItsNot();
         }
       }
@@ -8165,7 +8222,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     Args args = new Args(context, MODE_MESSAGES, stack);
     args.reverseMode = stack.getReverseModeHint(true);
     args.forceThumbs = stack.getForceThumbsHint(true);
-    args.forceOpenIn = forceOpenIn || (filter != null && filter.getConstructor() == TdApi.SearchMessagesFilterDocument.CONSTRUCTOR);
+    args.forceOpenIn = forceOpenIn || (filter != null && Td.isDocumentFilter(filter));
     args.filter = filter;
     if (context instanceof MediaCollectorDelegate) {
       ((MediaCollectorDelegate) context).modifyMediaArguments(item, args);
@@ -8337,6 +8394,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
 
     TdApi.SearchMessagesFilter filter = null;
+    //noinspection SwitchIntDef
     switch (msg.content.getConstructor()) {
       case TdApi.MessagePhoto.CONSTRUCTOR: {
         filter = new TdApi.SearchMessagesFilterPhotoAndVideo();
@@ -8412,11 +8470,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private void openSetSenderPopup (TdApi.Chat chat) {
     if (chat == null) return;
 
-    tdlib().send(new TdApi.GetChatAvailableMessageSenders(chat.id), result -> {
+    tdlib().send(new TdApi.GetChatAvailableMessageSenders(chat.id), (result, error) -> {
       UI.post(() -> {
-        if (result.getConstructor() == TdApi.ChatMessageSenders.CONSTRUCTOR) {
+        if (result != null) {
           final SetSenderController c = new SetSenderController(context, tdlib());
-          c.setArguments(new SetSenderController.Args(chat, ((TdApi.ChatMessageSenders) result).senders, chat.messageSenderId));
+          c.setArguments(new SetSenderController.Args(chat, result.senders, chat.messageSenderId));
           c.setShowOverEverything(true);
           c.setDelegate((s) -> setNewMessageSender(chat, s));
           c.show();
@@ -8426,12 +8484,63 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void setNewMessageSender (TdApi.Chat chat, TdApi.ChatMessageSender sender) {
-    tdlib().send(new TdApi.SetChatMessageSender(chat.id, sender.sender), o -> {
+    tdlib().send(new TdApi.SetChatMessageSender(chat.id, sender.sender), ignored -> {
       UI.post(() -> {
         if (senderSendIcon != null) {
           senderSendIcon.update(chat.messageSenderId);
         }
       });
     });
+  }
+
+  private void setEmojiShown (boolean emojiShown) {
+    if (this.emojiShown != emojiShown) {
+      this.emojiShown = emojiShown;
+      setTextFormattingLayoutVisible(textInputHasSelection);
+      if (inputView != null) {
+        inputView.setActionModeVisibility(!textInputHasSelection || !emojiShown);
+      }
+    }
+  }
+
+  /**/
+
+  private boolean textInputHasSelection;
+  private boolean textFormattingVisible;
+
+  @Override
+  public void onInputSelectionChanged (InputView v, int start, int end) {
+    if (textFormattingLayout != null) {
+      textFormattingLayout.onInputViewSelectionChanged(start, end);
+    }
+  }
+
+  @Override
+  public void onInputSelectionExistChanged (InputView v, boolean hasSelection) {
+    textInputHasSelection = hasSelection;
+    if (!emojiShown) {
+      captionEmojiButton.setImageResource(getTargetIcon());
+    }
+  }
+
+  private void setTextFormattingLayoutVisible (boolean visible) {
+    textFormattingVisible = visible;
+    if (emojiLayout != null && textFormattingLayout != null) {
+      textFormattingLayout.setVisibility(visible ? View.VISIBLE : View.GONE);
+      emojiLayout.optimizeForDisplayTextFormattingLayout(visible);
+      if (visible) {
+        textFormattingLayout.checkButtonsActive(false);
+      }
+    }
+  }
+
+  private void closeTextFormattingKeyboard () {
+    if (textFormattingVisible && emojiShown) {
+      closeEmojiKeyboard();
+    }
+  }
+
+  public @DrawableRes int getTargetIcon () {
+    return (textInputHasSelection || (textFormattingVisible && emojiShown)) ? R.drawable.baseline_format_text_24 : R.drawable.deproko_baseline_insert_emoticon_26;
   }
 }

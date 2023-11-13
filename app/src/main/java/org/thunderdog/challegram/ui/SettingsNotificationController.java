@@ -36,6 +36,7 @@ import android.widget.Toast;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.IdRes;
+import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.collection.SparseArrayCompat;
@@ -81,6 +82,8 @@ import org.thunderdog.challegram.widget.InfiniteRecyclerView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.RadioView;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -92,6 +95,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.td.ChatId;
+import me.vkryl.td.Td;
 
 public class SettingsNotificationController extends RecyclerViewController<SettingsNotificationController.Args> implements
   View.OnClickListener, View.OnLongClickListener,
@@ -102,13 +106,22 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   public static class Args {
     public final long chatId;
     public final TdApi.NotificationSettingsScope scope;
+    public final @Section int section;
+
+    public Args (@Section int section, long chatId) {
+      this.section = section;
+      this.chatId = chatId;
+      this.scope = null;
+    }
 
     public Args (long chatId) {
+      this.section = Section.DEFAULT;
       this.chatId = chatId;
       this.scope = null;
     }
 
     public Args (TdApi.NotificationSettingsScope scope) {
+      this.section = Section.DEFAULT;
       this.scope = scope;
       this.chatId = 0;
     }
@@ -171,6 +184,15 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
 
   @Override
   public CharSequence getName () {
+    if (specificSection != Section.DEFAULT) {
+      switch (specificSection) {
+        case Section.APP_BADGE:
+          return Lang.getString(R.string.BadgeCounter);
+        case Section.DEFAULT:
+        default:
+          throw new IllegalStateException(Integer.toString(specificSection));
+      }
+    }
     if (customChatId != 0)
       return Lang.getString(R.string.CustomNotifications);
     if (scope != null) {
@@ -193,6 +215,15 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   private long customChatId, callChatId;
   private boolean customHasMore;
   private TdApi.NotificationSettingsScope scope;
+  private int specificSection = Section.DEFAULT;
+
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    Section.DEFAULT, Section.APP_BADGE
+  })
+  public @interface Section {
+    int DEFAULT = 0, APP_BADGE = 1;
+  }
 
   private void setCustomChatId (long chatId) {
     this.customChatId = chatId;
@@ -224,6 +255,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         setScope(null);
         break;
       default:
+        Td.assertNotificationSettingsScope_edff9c28();
         throw new UnsupportedOperationException("constructor == " + scopeConstructor);
     }
   }
@@ -237,6 +269,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     super.setArguments(args);
     setCustomChatId(args.chatId);
     setScope(args.scope);
+    this.specificSection = args.section;
   }
 
   private ArrayList<RingtoneItem> getCallRingtones () {
@@ -755,6 +788,8 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
      .setLongValue(account.getKnownUserId());
   }
 
+  private TdApi.ArchiveChatListSettings archiveChatListSettings;
+
   @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
     adapter = new SettingsAdapter(this) {
@@ -949,7 +984,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         } else if (itemId == R.id.btn_silenceNonContacts) {
           view.getToggler().setRadioEnabled(tdlib.settings().needMuteNonContacts(), isUpdate);
         } else if (itemId == R.id.btn_archiveMuteNonContacts) {
-          view.getToggler().setRadioEnabled(tdlib.autoArchiveEnabled(), isUpdate);
+          view.getToggler().setRadioEnabled(archiveChatListSettings != null && archiveChatListSettings.archiveAndMuteNewChatsFromUnknownUsers, isUpdate);
         } else if (itemId == R.id.btn_repeatNotifications) {
           int minutes = tdlib.notifications().getRepeatNotificationMinutes();
           if (minutes == 0) {
@@ -969,7 +1004,16 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     ArrayList<ListItem> items = new ArrayList<>();
     boolean hasOptions = false;
 
-    if (customChatId != 0) {
+    if (specificSection != Section.DEFAULT) {
+      switch (specificSection) {
+        case Section.APP_BADGE:
+          addBadgeCounterItems(items);
+          break;
+        case Section.DEFAULT:
+        default:
+          throw new IllegalStateException(Integer.toString(specificSection));
+      }
+    } else if (customChatId != 0) {
       if (hasVibrateAndSound = needVibrateAndSoundSettings()) {
         items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_customChat_vibrate, 0, R.string.Vibrate));
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -1093,6 +1137,11 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
             // items.add(new SettingItem(SettingItem.TYPE_HEADER, 0, 0, R.string.NotificationAdvanced));
             break;
           }
+          case TdApi.NotificationSettingsScopeChannelChats.CONSTRUCTOR:
+            break;
+          default:
+            Td.assertNotificationSettingsScope_edff9c28();
+            throw Td.unsupported(scope);
         }
 
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -1155,6 +1204,11 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+        items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_archiveSettings, 0, R.string.ArchiveSettings));
+        items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+        items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ArchiveSettingsDesc));
+
+        items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
         items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_inApp_chatSounds, 0, R.string.InChatSound));
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.InChatSoundInfo));
@@ -1188,11 +1242,17 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
 
         items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.UnknownChats));
 
-        if (tdlib.autoArchiveAvailable() || tdlib.autoArchiveEnabled()) {
+        if (tdlib.autoArchiveAvailable()) {
           items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
           items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_archiveMuteNonContacts, 0, R.string.ArchiveNonContacts));
           items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
           items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ArchiveNonContactsInfo));
+          tdlib.send(new TdApi.GetArchiveChatListSettings(), (archiveSettings, error) -> runOnUiThreadOptional(() -> {
+            if (archiveSettings != null) {
+              this.archiveChatListSettings = archiveSettings;
+              adapter.updateValuedSettingById(R.id.btn_archiveMuteNonContacts);
+            }
+          }));
         }
 
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -1202,17 +1262,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
 
         items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.BadgeCounter));
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-        items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_appBadgeCountMuted, 0, R.string.BadgeCounterMuted).setIntValue(Settings.BADGE_FLAG_MUTED));
-        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-        items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_appBadgeCountArchive, 0, R.string.BadgeCounterArchive).setIntValue(Settings.BADGE_FLAG_ARCHIVED));
-        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-        items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_appBadgeCountMessages, 0, R.string.BadgeCounterMessages).setIntValue(Settings.BADGE_FLAG_MESSAGES));
-        items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-        items.add(new ListItem(ListItem.TYPE_DESCRIPTION, R.id.btn_appBadgeCountMessagesInfo, 0, (Settings.instance().getBadgeFlags() & Settings.BADGE_FLAG_MESSAGES) != 0 ? R.string.BadgeCounterMessagesOff : R.string.BadgeCounterMessagesOn));
-        /*items.add(new SettingItem(SettingItem.TYPE_SHADOW_TOP));
-        items.add(new SettingItem(SettingItem.TYPE_RADIO_SETTING, R.id.btn_appBadge, 0, R.string.BadgeCounterSetting));
-        items.add(new SettingItem(SettingItem.TYPE_SHADOW_BOTTOM));
-        items.add(new SettingItem(SettingItem.TYPE_DESCRIPTION, 0, 0, R.string.AppBadgeHint));*/
+        addBadgeCounterItems(items);
 
         items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.NotificationAdvanced));
         boolean split = Settings.instance().needSplitNotificationCategories();
@@ -1244,6 +1294,20 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     }
   }
 
+  private static void addBadgeCounterItems (List<ListItem> items) {
+    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_appBadgeCountMuted, 0, R.string.BadgeCounterMuted).setIntValue(Settings.BADGE_FLAG_MUTED));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_appBadgeCountArchive, 0, R.string.BadgeCounterArchive).setIntValue(Settings.BADGE_FLAG_ARCHIVED));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_appBadgeCountMessages, 0, R.string.BadgeCounterMessages).setIntValue(Settings.BADGE_FLAG_MESSAGES));
+    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, R.id.btn_appBadgeCountMessagesInfo, 0, (Settings.instance().getBadgeFlags() & Settings.BADGE_FLAG_MESSAGES) != 0 ? R.string.BadgeCounterMessagesOff : R.string.BadgeCounterMessagesOn));
+    /*items.add(new SettingItem(SettingItem.TYPE_SHADOW_TOP));
+    items.add(new SettingItem(SettingItem.TYPE_RADIO_SETTING, R.id.btn_appBadge, 0, R.string.BadgeCounterSetting));
+    items.add(new SettingItem(SettingItem.TYPE_SHADOW_BOTTOM));
+    items.add(new SettingItem(SettingItem.TYPE_DESCRIPTION, 0, 0, R.string.AppBadgeHint));*/
+  }
+
   @Override
   public void onContactRegisteredNotificationsDisabled (boolean areDisabled) {
     runOnUiThreadOptional(() -> adapter.updateValuedSettingById(R.id.btn_events_contactJoined), this::isCommonScreen);
@@ -1257,6 +1321,14 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   @Override
   public void onNotificationGlobalSettingsChanged () {
     runOnUiThreadOptional(() -> adapter.updateValuedSettingById(R.id.btn_archiveMuteNonContacts), this::isCommonScreen);
+  }
+
+  @Override
+  public void onArchiveChatListSettingsChanged (TdApi.ArchiveChatListSettings settings) {
+    runOnUiThreadOptional(() -> {
+      this.archiveChatListSettings = settings;
+      adapter.updateValuedSettingById(R.id.btn_archiveMuteNonContacts);
+    });
   }
 
   private void checkContentPreview (boolean showPreview, int afterId, int id) {
@@ -1499,6 +1571,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       int flag = item.getIntValue();
       int flags = Settings.instance().getBadgeFlags();
       int newFlags = BitwiseUtils.setFlag(flags, flag, enabled);
+      /* No longer needed as unmuted chats may remain archived
       switch (item.getIntValue()) {
         case Settings.BADGE_FLAG_MUTED:
           if (!enabled) {
@@ -1510,9 +1583,9 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
             newFlags = BitwiseUtils.setFlag(newFlags, Settings.BADGE_FLAG_MUTED, true);
           }
           break;
-      }
+      }*/
       if (Settings.instance().setBadgeFlags(newFlags)) {
-        tdlib.context().resetBadge();
+        tdlib.context().resetBadge(true);
         switch (flag) {
           case Settings.BADGE_FLAG_MESSAGES: {
             int i = adapter.indexOfViewById(R.id.btn_appBadgeCountMessagesInfo);
@@ -1810,7 +1883,17 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     } else if (viewId == R.id.btn_silenceNonContacts) {
       tdlib.settings().setUserPreference(TdlibSettingsManager.PREFERENCE_MUTE_NON_CONTACTS, adapter.toggleView(v));
     } else if (viewId == R.id.btn_archiveMuteNonContacts) {
-      tdlib.setAutoArchiveEnabled(adapter.toggleView(v));
+      if (archiveChatListSettings != null) {
+        archiveChatListSettings.archiveAndMuteNewChatsFromUnknownUsers = adapter.toggleView(v);
+        tdlib.send(new TdApi.SetArchiveChatListSettings(archiveChatListSettings), (ok, error) -> {
+          if (ok != null) {
+            tdlib.listeners().notifyArchiveChatListSettingsChanged(archiveChatListSettings);
+          }
+        });
+      }
+    } else if (viewId == R.id.btn_archiveSettings) {
+      SettingsArchiveChatListController c = new SettingsArchiveChatListController(context, tdlib);
+      navigateTo(c);
     } else if (viewId == R.id.btn_events_pinnedMessages) {
       boolean disabled = !adapter.toggleView(v);
       tdlib.notifications().setDefaultDisablePinnedMessages(tdlib.notifications().scopeGroup(), disabled);
@@ -1970,7 +2053,8 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
               forcedFileName = tdlib.id() + "_channel.ogg";
               break;
             default:
-              throw new UnsupportedOperationException(scope.toString());
+              Td.assertNotificationSettingsScope_edff9c28();
+              throw Td.unsupported(scope);
           }
         }
         Uri uri = TdlibNotificationManager.fixSoundUri(originalUri, true, forcedFileName);
@@ -2098,7 +2182,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   }
 
   private boolean isCommonScreen () {
-    return scope == null && customChatId == 0;
+    return scope == null && customChatId == 0 && specificSection == Section.DEFAULT;
   }
 
   @Override

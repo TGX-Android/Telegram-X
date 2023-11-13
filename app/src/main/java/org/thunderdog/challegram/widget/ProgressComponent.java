@@ -91,7 +91,7 @@ public class ProgressComponent implements Runnable, FactorAnimator.Target, Destr
 
   @Override
   public void onActivityStateChanged (BaseActivity activity, int newState, int prevState) {
-    setUiResumed(newState == UI.STATE_RESUMED);
+    setUiResumed(newState == UI.State.RESUMED);
   }
 
   @Override

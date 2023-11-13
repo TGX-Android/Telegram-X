@@ -118,7 +118,6 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextWrapper;
 import org.thunderdog.challegram.v.CustomRecyclerView;
-import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.widget.AvatarView;
 import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.CircleButton;
@@ -484,7 +483,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public final boolean shouldDisallowScreenshots () {
-    return ChatId.isSecret(chat.id) || (chat.hasProtectedContent && !isEditing());
+    return ChatId.isSecret(chat.id) || (chat.hasProtectedContent && !isEditing()) || super.shouldDisallowScreenshots();
   }
 
   @Override
@@ -532,11 +531,17 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       case MODE_EDIT_CHANNEL:
       case MODE_EDIT_SUPERGROUP: {
         int count = 0;
+        if (canClearHistory())
+          count++;
         if (canDestroyChat())
           count++;
         if (count > 0) {
           IntList ids = new IntList(count);
           StringList strings = new StringList(count);
+          if (canClearHistory()) {
+            ids.append(R.id.btn_clearChatHistory);
+            strings.append(R.string.ClearHistory);
+          }
           if (canDestroyChat()) {
             ids.append(R.id.btn_destroyChat);
             strings.append(isChannel() ? R.string.DestroyChannel : R.string.DestroyGroup);
@@ -586,9 +591,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     //if (!isBot || !((TdApi.UserTypeBot) user.type).isInline) {
-    if (!user.isSupport || tdlib.chatBlocked(chatId)) {
+    boolean isFullyBlocked = tdlib.chatFullyBlocked(chatId);
+    if (!user.isSupport || isFullyBlocked) {
       ids.append(R.id.more_btn_block);
-      strings.append(tdlib.chatBlocked(chatId) ? isBot ? R.string.UnblockBot : R.string.Unblock : isBot ? R.string.BlockBot : R.string.BlockContact);
+      strings.append(isFullyBlocked ? isBot ? R.string.UnblockBot : R.string.Unblock : isBot ? R.string.BlockBot : R.string.BlockContact);
     }
     //}
 
@@ -597,7 +603,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       strings.append(R.string.PasscodeTitle);
     }
 
-    if (!tdlib.chatBlocked(chatId)) {
+    if (!tdlib.chatFullyBlocked(chatId)) {
       ids.append(R.id.more_btn_privacy);
       strings.append(R.string.EditPrivacy);
     }
@@ -645,7 +651,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         ids.append(R.id.more_btn_viewAdmins);
         strings.append(R.string.ViewAdmins);
       }
-      if (!tdlib.chatBlocked(getChatId())) {
+      if (!tdlib.chatFullyBlocked(getChatId())) {
         ids.append(R.id.more_btn_privacy);
         strings.append(R.string.EditPrivacy);
       }
@@ -695,12 +701,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           } else if (id == R.id.more_btn_privacy) {
             openPrivacyExceptions();
           } else if (id == R.id.more_btn_block) {
-            final boolean needBlock = !tdlib.chatBlocked(chat.id);
+            final boolean needBlock = !tdlib.chatFullyBlocked(chat.id);
             final boolean isBot = tdlib.isBotChat(chat.id);
             if (needBlock) {
               showOptions(Lang.getStringBold(isBot ? R.string.BlockBotConfirm : R.string.BlockUserConfirm, tdlib.chatTitle(chat.id)), new int[] {R.id.btn_blockSender, R.id.btn_cancel}, new String[] {Lang.getString(isBot ? R.string.BlockBot : R.string.BlockContact), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_block_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
                 if (!isDestroyed() && id1 == R.id.btn_blockSender) {
-                  tdlib.blockSender(tdlib.sender(chat.id), true, result -> {
+                  tdlib.blockSender(tdlib.sender(chat.id), new TdApi.BlockListMain(), result -> {
                     if (TD.isOk(result)) {
                       UI.showToast(Lang.getStringBold(isBot ? R.string.BlockedBot : R.string.BlockedUser, tdlib.chatTitle(chat.id)), Toast.LENGTH_SHORT);
                     } else {
@@ -711,7 +717,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
                 return true;
               });
             } else {
-              tdlib.blockSender(tdlib.sender(chat.id), false, result -> {
+              tdlib.unblockSender(tdlib.sender(chat.id), result -> {
                 if (TD.isOk(result)) {
                   UI.showToast(Lang.getStringBold(isBot ? R.string.UnblockedBot : R.string.UnblockedUser, tdlib.chatTitle(chat.id)), Toast.LENGTH_SHORT);
                 } else {
@@ -777,7 +783,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     } else if (id == R.id.btn_copyLink) {
       String username = getProfileUsername();
       if (!StringUtils.isEmpty(username)) {
-        UI.copyText(TD.getLink(username), R.string.CopiedLink);
+        UI.copyText(tdlib.tMeUrl(username), R.string.CopiedLink);
       }
     } else if (id == R.id.btn_share) {
       if (!share(false)) {
@@ -1266,7 +1272,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       lickView.setTranslationY(y - headerHeight + getTopViewTopPadding());
       lickShadow.setTranslationY(y - (headerHeight * expandFactor));
       if (getSearchTransformFactor() != 0f) {
-        HeaderEditText editText = getSearchHeaderView(headerView);
+        View editText = getSearchHeaderView(headerView).view();
         editText.setTranslationY(Math.max(0f, lickShadow.getTranslationY() - HeaderView.getSize(false)));
       }
     }
@@ -2222,7 +2228,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private boolean setDescription (String text) {
-    TdApi.TextEntity[] entities = Td.findEntities(text, (e) -> e.type.getConstructor() != TdApi.TextEntityTypeBotCommand.CONSTRUCTOR);
+    TdApi.TextEntity[] entities = Td.findEntities(text, (e) -> !Td.isBotCommand(e.type));
     return setDescription(new TdApi.FormattedText(text, entities));
   }
 
@@ -2233,6 +2239,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       } else {
         text = null;
       }
+    }
+    if (Settings.instance().showPeerIds()) {
+      text = tdlib.addServiceInformation(getChatId(), text);
     }
     if (this.currentAbout == null || !Td.equalsTo(this.currentAbout, text)) {
       currentAbout = text;
@@ -2411,6 +2420,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (needGroups != hasGroups) {
       if (needGroups) {
         SharedChatsController c = new SharedChatsController(context, tdlib);
+        registerController(c);
         controllers.add(c);
         pagerAdapter.notifyItemInserted(controllers.size() - 1);
         if (Config.USE_ICON_TABS) {
@@ -2422,9 +2432,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         int i = controllers.indexOf(existingGroupsController);
         if (i == -1)
           return;
-        controllers.remove(i);
+        ViewController<?> c = controllers.remove(i);
         pagerAdapter.notifyItemRemoved(i);
+        unregisterController(c);
         topCellView.getTopView().removeItemAt(i);
+        c.destroy();
       }
       pagerAdapter.notifyDataSetChanged();
     }
@@ -2527,6 +2539,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         SharedMembersController c = new SharedMembersController(context, tdlib)
           .setSpecificFilter(new TdApi.SupergroupMembersFilterRecent());
         controllers.add(c);
+        registerController(c);
         pagerAdapter.notifyItemInserted(controllers.size() - 1);
         if (Config.USE_ICON_TABS) {
           // topCellView.getTopView().addItem(c.getIcon());
@@ -2538,9 +2551,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         if (i == -1) {
           return;
         }
-        controllers.remove(i);
+        ViewController<?> c = controllers.remove(i);
+        unregisterController(c);
         topCellView.getTopView().removeLastItem();
         pagerAdapter.notifyItemRemoved(i);
+        c.destroy();
       }
       pagerAdapter.notifyDataSetChanged();
     }
@@ -2577,7 +2592,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private boolean hasDescription () {
-    return !StringUtils.isEmpty(getDescriptionValue());
+    return !StringUtils.isEmpty(getDescriptionValue()) || Settings.instance().showPeerIds();
   }
 
   private boolean setDescription () {
@@ -3642,7 +3657,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     TdApi.ChatMemberStatus myStatus = supergroup != null ? supergroup.status : group.status;
 
     int itemCount = 0;
-    if ((supergroupFull != null && supergroupFull.canSetUsername) || (group != null && TD.isCreator(group.status))) { // TODO TDLib: canSetUsername for basicGroupFull
+    if (canSetUsername()) {
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_channelType, 0, mode == MODE_EDIT_CHANNEL ? R.string.ChannelLink : R.string.GroupLink));
       itemCount++;
@@ -4408,11 +4423,15 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private boolean hasMoreItems () {
-    return canDestroyChat() && !tdlib.isUserChat(chat);
+    return (canDestroyChat() || canClearHistory()) && !tdlib.isUserChat(chat);
   }
 
   private boolean canDestroyChat () {
     return chat != null && chat.canBeDeletedForAllUsers;
+  }
+
+  private boolean canClearHistory () {
+    return isChannel() && tdlib.canClearHistory(getChatId());
   }
 
   private void destroyChat () {
@@ -4488,7 +4507,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     } else if (viewId == R.id.btn_useExplicitDice) {
       Settings.instance().setNewSetting(((ListItem) v.getTag()).getLongId(), baseAdapter.toggleView(v));
     } else if (viewId == R.id.btn_username) {
-      boolean canSetUsername = supergroupFull != null && supergroupFull.canSetUsername;
+      boolean canSetUsername = canSetUsername();
       boolean canInviteUsers = chat != null && tdlib.canManageInviteLinks(chat);
 
       int size = 3;
@@ -4590,6 +4609,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     } else if (viewId == R.id.btn_toggleJoinByRequest) {
       toggleJoinByRequests(v);
     }
+  }
+
+  private boolean canSetUsername () {
+    return (supergroup != null && TD.isCreator(supergroup.status)) || (group != null && TD.isCreator(group.status));
   }
 
   private TranslationControllerV2.Wrapper translationPopup;
@@ -5467,8 +5490,20 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           break;
         }
       }
+      for (ViewController<?> controller : controllers) {
+        registerController(controller);
+      }
     }
     return controllers;
+  }
+
+  private void registerController (ViewController<?> controller) {
+    controller.setParentWrapper(this);
+    controller.bindThemeListeners(this);
+  }
+
+  private void unregisterController (ViewController<?> controller) {
+    // TODO
   }
 
   @Override
@@ -5477,19 +5512,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private void getMessageCount (TdApi.SearchMessagesFilter filter, boolean returnLocal) {
-    tdlib.client().send(new TdApi.GetChatMessageCount(getChatId(), filter, returnLocal), result -> {
+    tdlib.send(new TdApi.GetChatMessageCount(getChatId(), filter, returnLocal), (messageCount, error) -> {
       int count;
-      switch (result.getConstructor()) {
-        case TdApi.Count.CONSTRUCTOR:
-          count = ((TdApi.Count) result).count;
-          break;
-        case TdApi.Error.CONSTRUCTOR:
-          Log.e("TDLib error getMessageCount chatId:%d, filter:%s, returnLocal:%b", getChatId(), filter, returnLocal);
-          count = -1;
-          break;
-        default:
-          Log.unexpectedTdlibResponse(result, TdApi.GetChatMessageCount.class, TdApi.Count.class, TdApi.Error.class);
-          return;
+      if (error != null) {
+        Log.e("TDLib error getMessageCount chatId:%d, filter:%s, returnLocal:%b: %s", getChatId(), filter, returnLocal, TD.toErrorString(error));
+        count = -1;
+      } else {
+        count = messageCount.count;
       }
       if (returnLocal) {
         tdlib.ui().post(() -> {
@@ -5576,6 +5605,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (append) {
       SharedBaseController<?> c = SharedBaseController.valueOf(context, tdlib, filter);
       controllers.add(c);
+      registerController(c);
       pagerAdapter.notifyItemInserted(controllers.size() - 1);
       topCellView.getTopView().addItem(c.getName().toString().toUpperCase());
     } else {
@@ -5585,6 +5615,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
       c = SharedBaseController.valueOf(context, tdlib, filter);
       controllers.add(visualIndex, c);
+      registerController(c);
       pagerAdapter.notifyItemInserted(visualIndex);
       topCellView.getTopView().addItemAtIndex(c.getName().toString().toUpperCase(), visualIndex);
     }
@@ -5614,6 +5645,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private static TdApi.SearchMessagesFilter[] filtersOrder, filtersOrder2;
 
   private static boolean isSyncTab (TdApi.SearchMessagesFilter filter) {
+    //noinspection SwitchIntDef
     switch (filter.getConstructor()) {
       case TdApi.SearchMessagesFilterPhotoAndVideo.CONSTRUCTOR:
       case TdApi.SearchMessagesFilterPhoto.CONSTRUCTOR:
@@ -6251,7 +6283,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   @Override
-  public void onMessageSendFailed (final TdApi.Message message, final long oldMessageId, int errorCode, String errorMessage) {
+  public void onMessageSendFailed (final TdApi.Message message, final long oldMessageId, TdApi.Error error) {
     runOnUiThreadOptional(() -> {
       if (chat.id == message.chatId) {
         removeMessages(new long[]{oldMessageId});

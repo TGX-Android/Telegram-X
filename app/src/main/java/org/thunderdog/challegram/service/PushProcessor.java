@@ -53,31 +53,32 @@ public class PushProcessor {
     this.context = context;
   }
 
-  public void processPush (long pushId, String payload, long sentTime, int ttl) {
-    Settings.instance().trackPushMessageReceived(sentTime, System.currentTimeMillis(), ttl);
-
-    // Trying to find accountId for the push
-    TdApi.Object result = Client.execute(new TdApi.GetPushReceiverId(payload));
-    final int accountId;
-    if (result instanceof TdApi.PushReceiverId) {
-      long pushReceiverId = ((TdApi.PushReceiverId) result).id;
-      accountId = Settings.instance().findAccountByReceiverId(pushReceiverId);
+  private static int determineAccountId (long pushId, String payload, long sentTime) {
+    try {
+      TdApi.PushReceiverId receiverId = Client.execute(new TdApi.GetPushReceiverId(payload));
+      long pushReceiverId = receiverId.id;
+      int accountId = Settings.instance().findAccountByReceiverId(pushReceiverId);
       if (accountId != TdlibAccount.NO_ID) {
         TDLib.Tag.notifications(pushId, accountId, "Found account for receiverId: %d, payload: %s, sentTime: %d", pushReceiverId, payload, sentTime);
       } else {
         TDLib.Tag.notifications(pushId, accountId, "Couldn't find account for receiverId: %d. Sending to all accounts, payload: %s, sentTime: %d", pushReceiverId, payload, sentTime);
       }
-    } else {
-      accountId = TdlibAccount.NO_ID;
-      if (StringUtils.isEmpty(payload) || payload.equals("{}") || payload.equals("{\"badge\":\"0\"}")) {
-        TDLib.Tag.notifications(pushId, accountId, "Empty payload: %s, error: %s. Quitting task.", payload, TD.toErrorString(result));
-        return;
-      } else {
-        TDLib.Tag.notifications(pushId, accountId, "Couldn't fetch receiverId: %s, payload: %s. Sending to all instances.", TD.toErrorString(result), payload);
-      }
+      return accountId;
+    } catch (Client.ExecutionError error) {
+      TDLib.Tag.notifications(pushId, TdlibAccount.NO_ID, "Couldn't fetch receiverId: %s, payload: %s. Sending to all instances.", TD.toErrorString(error.error), payload);
+      return TdlibAccount.NO_ID;
     }
+  }
 
-    TdlibManager.instanceForAccountId(accountId).runWithWakeLock(manager -> processPush(manager, pushId, payload, accountId));
+  public void processPush (long pushId, String payload, long sentTime, int ttl) {
+    Settings.instance().trackPushMessageReceived(sentTime, System.currentTimeMillis(), ttl);
+
+    final int accountId = determineAccountId(pushId, payload, sentTime);
+    if (accountId == TdlibAccount.NO_ID && (StringUtils.isEmpty(payload) || payload.equals("{}") || payload.equals("{\"badge\":\"0\"}"))) {
+      TDLib.Tag.notifications(pushId, accountId, "Empty payload: %s. Quitting task.", payload);
+    } else {
+      TdlibManager.instanceForAccountId(accountId).runWithWakeLock(manager -> processPush(manager, pushId, payload, accountId));
+    }
   }
 
   private boolean hasActiveNetwork () {

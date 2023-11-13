@@ -2,7 +2,9 @@ package org.thunderdog.challegram.widget;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.drawable.GradientDrawable;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -17,7 +19,6 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
-import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -25,21 +26,22 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.ui.MessageOptionsPagerController;
 import org.thunderdog.challegram.util.text.Counter;
 
-import java.util.Set;
-
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.MathUtils;
 
 public class ReactionsSelectorRecyclerView extends RecyclerView {
+  private final GradientDrawable gradientDrawableRight;
+  private final MessageOptionsPagerController.State state;
+  private boolean needDrawBorderGradient;
+  private ReactionsAdapter adapter;
 
-  public ReactionsSelectorRecyclerView (@NonNull Context context) {
+  public ReactionsSelectorRecyclerView (@NonNull Context context, MessageOptionsPagerController.State state) {
     super(context);
-  }
-
-  public void setMessage (TGMessage message) {
-    Set<String> chosen = message.getMessageReactions().getChosen();
-    TdApi.AvailableReaction[] reactions = message.getMessageAvailableReactions();
+    this.state = state;
+    this.gradientDrawableRight = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{ 0, lastColor = Theme.backgroundColor() });
 
     LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false) {
       @Override
@@ -49,30 +51,56 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
     };
 
     setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? OVER_SCROLL_IF_CONTENT_SCROLLS : OVER_SCROLL_NEVER);
-    setPadding(Screen.dp(9), Screen.dp(8), Screen.dp(9), Screen.dp(8));
+    setPadding(Screen.dp(9), Screen.dp(7), Screen.dp(9), Screen.dp(7));
     setClipToPadding(false);
     setHasFixedSize(true);
+    addItemDecoration(new ItemDecoration() {
+      @Override
+      public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull State state) {
+        outRect.set(Screen.dp(-1), 0, Screen.dp(-1), 0);
+      }
+    });
 
     setLayoutManager(linearLayoutManager);
-    setAdapter(adapter = new ReactionsAdapter(getContext(), message));
+    setAdapter(adapter = new ReactionsAdapter(getContext(), state));
+  }
 
-    int index = -1;
-    for (int a = 0; a < reactions.length; a++) {
-      String reactionKey = TD.makeReactionKey(reactions[a].type);
-      if (chosen.contains(reactionKey)) {
-        index = a;
-        break;
-      }
+  public void setNeedDrawBorderGradient (boolean needDrawBorderGradient) {
+    this.needDrawBorderGradient = needDrawBorderGradient;
+    this.invalidate();
+  }
+
+  @Override
+  protected void dispatchDraw (Canvas canvas) {
+    super.dispatchDraw(canvas);
+    if (!needDrawBorderGradient) {
+      return;
     }
 
-    if (index != -1) {
-      linearLayoutManager.scrollToPositionWithOffset(index, Screen.currentWidth() / 2 - Screen.dp(38) / 2);
+    checkGradients();
+    float s = computeHorizontalScrollRange() - computeHorizontalScrollOffset() - computeHorizontalScrollExtent();
+    int alpha = (int) (MathUtils.clamp(s / Screen.dp(20f)) * 255);
+
+    gradientDrawableRight.setAlpha(alpha);
+    gradientDrawableRight.setBounds(getMeasuredWidth() - Screen.dp(35), 0, getMeasuredWidth(), getMeasuredHeight());
+    gradientDrawableRight.draw(canvas);
+  }
+
+  @Override
+  public void onScrolled (int dx, int dy) {
+    super.onScrolled(dx, dy);
+    if (needDrawBorderGradient) {
+      invalidate();
     }
   }
 
-  ReactionsAdapter adapter;
-  public void setDelegate (ReactionSelectDelegate delegate) {
-    adapter.setDelegate(delegate);
+  private int lastColor;
+
+  private void checkGradients () {
+    int color = Theme.backgroundColor();
+    if (color != lastColor) {
+      gradientDrawableRight.setColors(new int[]{ 0, lastColor = Theme.backgroundColor() });
+    }
   }
 
   private static class ReactionView extends FrameLayoutFix {
@@ -85,13 +113,13 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
 
     public ReactionView (Context context) {
       super(context);
-      stickerView = new StickerSmallView(context, Screen.dp(-1)) {
+      stickerView = new StickerSmallView(context, 0) {
         @Override
         public boolean dispatchTouchEvent (MotionEvent event) {
           return false;
         }
       };
-      stickerView.setLayoutParams(newParams(Screen.dp(38), Screen.dp(38), Gravity.LEFT | Gravity.CENTER_VERTICAL));
+      stickerView.setLayoutParams(newParams(Screen.dp(40), Screen.dp(40), Gravity.LEFT | Gravity.CENTER_VERTICAL));
       addView(stickerView);
 
       rectF = new RectF();
@@ -125,24 +153,24 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
 
     @Override
     protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-      int width = Screen.dp(38f);
+      int width = Screen.dp(40f);
       int padding = Screen.dp(1);
       if (useCounter) {
         width += counter.getScaledWidth(Screen.dp(6));
       }
 
-      rectF.set(padding, padding, width - padding, Screen.dp(37));
+      rectF.set(0, Screen.dp(1), width, Screen.dp(39));
 
-      super.onMeasure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), heightMeasureSpec);
+      super.onMeasure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(Screen.dp(40), MeasureSpec.EXACTLY));
     }
 
     @Override
     protected void dispatchDraw (Canvas c) {
       if (chosen) {
-        c.drawRoundRect(rectF, Screen.dp(18), Screen.dp(18), Paints.fillingPaint(Theme.getColor(ColorId.fillingPositive)));
+        c.drawRoundRect(rectF, Screen.dp(19), Screen.dp(19), Paints.fillingPaint(Theme.getColor(ColorId.fillingPositive)));
       }
       if (useCounter) {
-        counter.draw(c, Screen.dp(35), getMeasuredHeight() / 2f, Gravity.LEFT, 1f);
+        counter.draw(c, Screen.dp(36), getMeasuredHeight() / 2f, Gravity.LEFT, 1f);
       }
       super.dispatchDraw(c);
     }
@@ -167,19 +195,14 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
     private final Context context;
     private final TGMessage message;
     private final TdApi.AvailableReaction[] reactions;
-    private final Set<String> chosen;
-    private ReactionSelectDelegate delegate;
+    private final MessageOptionsPagerController.State state;
 
-    ReactionsAdapter (Context context, TGMessage message) {
+    ReactionsAdapter (Context context, MessageOptionsPagerController.State state) {
       this.context = context;
-      this.tdlib = message.tdlib();
-      this.reactions = message.getMessageAvailableReactions();
-      this.message = message;
-      this.chosen = message.getMessageReactions().getChosen();
-    }
-
-    public void setDelegate (ReactionSelectDelegate delegate) {
-      this.delegate = delegate;
+      this.tdlib = state.tdlib;
+      this.message = state.message;
+      this.state = state;
+      this.reactions = state.availableReactions;
     }
 
     @NonNull
@@ -199,14 +222,10 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
       final boolean needUseCounter = (message.isChannel() || !message.canGetAddedReactions()) && !message.useReactionBubbles();
       view.setReaction(reaction, tdReaction, needUseCounter);
       view.setOnClickListener((v) -> {
-        if (delegate != null) {
-          delegate.onClick(v, reaction);
-        }
+        state.onReactionClickListener.onReactionClick(v, reaction, false);
       });
       view.setOnLongClickListener((v) -> {
-        if (delegate != null) {
-          delegate.onLongClick(v, reaction);
-        }
+        state.onReactionClickListener.onReactionClick(v, reaction, true);
         return true;
       });
     }
@@ -231,10 +250,5 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
     public void onViewRecycled (ReactionHolder holder) {
       ((ReactionView) holder.itemView).stickerView.performDestroy();
     }
-  }
-
-  public interface ReactionSelectDelegate {
-    void onClick (View v, TGReaction reaction);
-    void onLongClick (View v, TGReaction reaction);
   }
 }

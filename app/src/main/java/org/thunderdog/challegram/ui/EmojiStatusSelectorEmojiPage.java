@@ -36,8 +36,6 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.dialogs.SearchManager;
-import org.thunderdog.challegram.component.emoji.AnimatedEmojiDrawable;
-import org.thunderdog.challegram.component.emoji.AnimatedEmojiEffect;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.core.Lang;
@@ -55,12 +53,12 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
-import org.thunderdog.challegram.util.ScrollJumpCompensator;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.ClearButton;
 import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ViewPager;
+import org.thunderdog.challegram.widget.decoration.ItemDecorationFirstViewTop;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
@@ -89,6 +87,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
   private EmojiLayout emojiCustomListLayout;
   private EmojiStatusListController emojiCustomListController;
   private CustomRecyclerView customRecyclerView;
+  private ItemDecorationFirstViewTop emojiStatusPickerTopDecoration;
   private ForegroundSearchByEmojiView foregroundEmojiLayout;
   private HeaderButtons headerButtons;
 
@@ -136,13 +135,14 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     emojiCustomListController.getValue();
     emojiCustomListController.setOnStickersLoadListener(parent::launchOpenAnimation);
 
+    emojiStatusPickerTopDecoration = ItemDecorationFirstViewTop.attach(customRecyclerView, parent::getContentOffset);
     customRecyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
       @Override
       public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
         final int position = parent.getChildAdapterPosition(view);
         final int itemCount = parent.getAdapter().getItemCount();
         if (position == itemCount - 1) {
-          int bottom = getKeyboardState() ? Keyboard.getSize(Keyboard.getSize()): 0;
+          int bottom = getKeyboardState() ? Keyboard.getSize(Keyboard.getSize()) : 0;
           outRect.set(0, 0, 0, bottom);
         }
       }
@@ -166,9 +166,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
         return super.onTouchEvent(event);
       }
     };
-    foregroundEmojiLayout.setOnClickListener(v -> {
-      closeEmojiSelectMode();
-    });
+    foregroundEmojiLayout.setOnClickListener(v -> closeEmojiSelectMode());
     parent.foregroundView.addView(foregroundEmojiLayout);
 
     UI.post(parent::launchOpenAnimation, 150);
@@ -177,8 +175,8 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
   private int destX, destY;
 
   @Override
-  public boolean onSetEmojiStatus (@Nullable View view, TGStickerObj sticker, int duration) {
-    tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(sticker.getCustomEmojiId()), duration), tdlib.okHandler());
+  public boolean onSetEmojiStatus (@Nullable View view, TGStickerObj sticker, TdApi.EmojiStatus emojiStatus) {
+    tdlib.client().send(new TdApi.SetEmojiStatus(emojiStatus), tdlib.okHandler());
     parent.hidePopupWindow(true);
     if (view == null) return true;
 
@@ -191,7 +189,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     context().reactionsOverlayManager().addOverlay(
       new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
         .setSticker(sticker, false)
-        .setRepaintingColors(Theme.getColor(ColorId.iconActive), Theme.getColor(ColorId.white))
+        .setRepaintingColorIds(ColorId.iconActive, ColorId.white)
         .setAnimationEndListener(this::onSetStatusAnimationFinish)
         .setAnimatedPosition(
           new Point(startX, startY),
@@ -215,7 +213,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     context().reactionsOverlayManager().addOverlay(
       new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
         .setSticker(scheduledClickSticker, true)
-        .setRepaintingColors(Theme.getColor(ColorId.iconActive), Theme.getColor(ColorId.white))
+        .setRepaintingColorIds(ColorId.iconActive, ColorId.white)
         .setEmojiStatusEffect(scheduledClickEffectSticker)
         .setUseDefaultSprayAnimation(true)
         .setPosition(new Point(destX, destY), Screen.dp(90))
@@ -318,10 +316,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
 
   @Override
   public boolean needTopDecorationOffsets (RecyclerView parent) {
-    if (isScrollOffsetDisabled() && this.parent.getLickViewFactor() == 1f) {
-      return false;
-    }
-    return super.needTopDecorationOffsets(parent);
+    return false;
   }
 
   @Override
@@ -339,18 +334,6 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
 
 
 
-
-
-  private void smoothScrollBy (int y) {
-    if (y == 0) {
-      customRecyclerView.stopScroll();
-    }
-    customRecyclerView.smoothScrollBy(0, y);
-  }
-
-
-
-
   /* * */
 
   private String emojiSearchRequest;
@@ -359,7 +342,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
   public void onEnterEmoji (String emoji) {
     closeEmojiSelectMode();
     setSearchInput(emojiSearchRequest = emoji);
-    getSearchHeaderView(headerView).setEnabled(false);
+    getSearchHeaderView(headerView).editView().setEnabled(false);
   }
 
   private boolean inEmojiSelectMode;
@@ -383,8 +366,8 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
   protected void onEnterSearchMode () {
     super.onEnterSearchMode();
     searchModeVisibility.setValue(true, true);
-    getSearchHeaderView(headerView).setEnabled(true);
-    scheduleScrollOffsetDisable();
+    getSearchHeaderView(headerView).editView().setEnabled(true);
+    emojiStatusPickerTopDecoration.scheduleDisableDecorationOffset();
   }
 
   @Override
@@ -392,7 +375,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     super.onAfterLeaveSearchMode();
     if (!inEmojiSelectMode) {
       emojiCustomListController.search(currentSearchInput = null, emojiSearchRequest = null);
-      UI.post(() -> setScrollOffsetDisabled(false), 250);
+      UI.post(emojiStatusPickerTopDecoration::enableDecorationOffset, 250);
       searchModeVisibility.setValue(false, true);
     }
   }
@@ -402,54 +385,14 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     super.onSearchInputChanged(currentSearchInput = input);
     if (StringUtils.isEmpty(input)) {
       searchModeVisibility.setValue(true, true);
-      getSearchHeaderView(headerView).setEnabled(true);
-      Keyboard.show(getSearchHeaderView(headerView));
+      getSearchHeaderView(headerView).editView().setEnabled(true);
+      Keyboard.show(getSearchHeaderView(headerView).editView());
       if (!StringUtils.isEmpty(emojiSearchRequest)) {
         emojiSearchRequest = null;
       }
     }
     searchFieldIsNotEmpty.setValue(!StringUtils.isEmpty(input), true);
     emojiCustomListController.search(currentSearchInput, emojiSearchRequest);
-  }
-
-
-
-
-
-  /* Scroll offset lock */
-
-  private boolean isScrollOffsetDisabled;
-  private boolean isScrollOffsetDisableScheduled;
-
-  public void scheduleScrollOffsetDisable () {
-    isScrollOffsetDisableScheduled = true;
-    final int top = parent.getTopEdge();
-    if (top > 0) {
-      runOnUiThread(() -> smoothScrollBy(top), 50);
-    } else {
-      setScrollOffsetDisabled(true);
-    }
-  }
-
-  public boolean isScrollOffsetDisableScheduled () {
-    return isScrollOffsetDisableScheduled;
-  }
-
-  public boolean isScrollOffsetDisabled () {
-    return isScrollOffsetDisabled;
-  }
-
-  private void setScrollOffsetDisabled (boolean offsetDisabled) {
-    if (isScrollOffsetDisabled == offsetDisabled) return;
-    isScrollOffsetDisabled = offsetDisabled;
-    isScrollOffsetDisableScheduled &= offsetDisabled;
-
-    LinearLayoutManager manager = (LinearLayoutManager) customRecyclerView.getLayoutManager();
-    int firstVisiblePosition = manager != null ? manager.findFirstVisibleItemPosition(): -1;
-    customRecyclerView.invalidateItemDecorations();
-    if (firstVisiblePosition == 0) {
-      ScrollJumpCompensator.compensate(customRecyclerView, parent.getContentOffset() * (offsetDisabled ? -1: 1));
-    }
   }
 
 
@@ -484,7 +427,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
 
   @Override
   public CharSequence getName () {
-    return Lang.getString(inEmojiSelectMode ? R.string.FilterByEmoji: R.string.SelectEmojiStatus);
+    return Lang.getString(inEmojiSelectMode ? R.string.FilterByEmoji : R.string.SelectEmojiStatus);
   }
 
   @Override
@@ -595,10 +538,10 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
 
     private void setFactors (float clearVisibility, float searchVisibility, float emojiVisibility, float keyboardVisibility, boolean updateViewVisibility) {
       if (updateViewVisibility) {
-        clearButton.setVisibility(clearVisibility > 0f ? VISIBLE: GONE);
-        searchButton.setVisibility(searchVisibility > 0f ? VISIBLE: GONE);
-        emojiButton.setVisibility(emojiVisibility > 0f ? VISIBLE: GONE);
-        keyboardButton.setVisibility(keyboardVisibility > 0f ? VISIBLE: GONE);
+        clearButton.setVisibility(clearVisibility > 0f ? VISIBLE : GONE);
+        searchButton.setVisibility(searchVisibility > 0f ? VISIBLE : GONE);
+        emojiButton.setVisibility(emojiVisibility > 0f ? VISIBLE : GONE);
+        keyboardButton.setVisibility(keyboardVisibility > 0f ? VISIBLE : GONE);
       }
       clearButton.setAlpha(clearVisibility);
       searchButton.setAlpha(searchVisibility);
@@ -629,7 +572,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
       super(context);
 
       foregroundEmojiLayout = new EmojiLayout(context);
-      foregroundEmojiLayout.initWithMediasEnabled(controller, false, controller, controller, false);
+      foregroundEmojiLayout.initWithMediasEnabled(controller, false, false, controller, controller, false, true);
       foregroundEmojiLayout.setCircleVisible(false, false);
       foregroundEmojiLayout.setBackgroundColor(Theme.fillingColor());
 
@@ -783,29 +726,8 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     }
 
     @Override
-    protected void setDefaultListenersAndDecorators (BottomSheetBaseControllerPage controller) {
-      controller.getRecyclerView().addOnScrollListener(new RecyclerView.OnScrollListener() {
-        @Override
-        public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
-          super.onScrollStateChanged(recyclerView, newState);
-          if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-            if (fragment.isScrollOffsetDisableScheduled()) {
-              if (getLickViewFactor() == 1f) {
-                fragment.setScrollOffsetDisabled(true);
-              } else {
-                fragment.onScrollToTopRequested();
-              }
-            }
-          }
-        }
-      });
-      super.setDefaultListenersAndDecorators(controller);
-    }
-
-    @Override
     public boolean needsTempUpdates () {
       return true;
     }
   }
-
 }

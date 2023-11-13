@@ -32,6 +32,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.data.MediaWrapper;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
@@ -62,6 +63,9 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.Td;
 
+// It's a good idea to fully rework this component at some point to make it more flexible & animated
+// by using newer tools that were implemented after this component was created.
+@Deprecated
 public class ReplyComponent implements Client.ResultHandler, Destroyable {
   private static final int FLAG_ALLOW_TOUCH_EVENTS = 1 << 1;
   private static final int FLAG_FORCE_TITLE = 1 << 3;
@@ -80,7 +84,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   private int flags;
 
   private String title;
-  private TD.ContentPreview content;
+  private ContentPreview content;
   private ImageFile miniThumbnail;
   private ImageFile preview;
   private Path contour;
@@ -123,6 +127,10 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
 
   public String getAuthor () {
     return sender != null ? tdlib.senderName(sender) : senderName;
+  }
+
+  public TdApi.MessageSender getSender () {
+    return sender;
   }
 
   public void layout (int maxWidth) {
@@ -482,7 +490,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     return (flags & FLAG_ALLOW_TOUCH_EVENTS) != 0 && trimmedContent != null && trimmedContent.onTouchEvent(view, e);
   }
 
-  public void set (String title, TD.ContentPreview content, TdApi.Minithumbnail miniThumbnail, TdApi.File file) {
+  public void set (String title, ContentPreview content, TdApi.Minithumbnail miniThumbnail, TdApi.File file) {
     ImageFile image;
     if (file == null || TD.isFileEmpty(file)) {
       image = null;
@@ -506,36 +514,56 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     setContent(title, content, false, null, preview, image, false, false);
   }
 
-  private @Nullable TdApi.Function<TdApi.Message> retryFunction;
+  private @Nullable TdApi.Function<?> retryFunction;
 
   public void load () {
     if (parent == null)
       return;
     TdApi.Message message = parent.getMessage();
-    if (message.chatId == message.replyInChatId && message.replyToMessageId != 0) {
-      TdApi.Message foundMessage = parent.manager().getAdapter().tryFindMessage(message.replyInChatId, message.replyToMessageId);
-      if (foundMessage != null) {
-        setMessage(foundMessage, false, true);
-        return;
+    if (message.replyTo == null) {
+      return;
+    }
+    final TdApi.Function<?> function, retryFunction;
+    switch (message.replyTo.getConstructor()) {
+      case TdApi.MessageReplyToMessage.CONSTRUCTOR: {
+        TdApi.MessageReplyToMessage replyToMessage = (TdApi.MessageReplyToMessage) message.replyTo;
+        if (message.chatId == replyToMessage.chatId) {
+          TdApi.Message foundMessage = parent.manager().getAdapter().tryFindMessage(replyToMessage.chatId, replyToMessage.messageId);
+          if (foundMessage != null) {
+            setMessage(foundMessage, false, true);
+            return;
+          }
+        }
+        if (message.forwardInfo != null && message.forwardInfo.fromChatId != 0 && message.forwardInfo.fromMessageId != 0 && !parent.isRepliesChat()) {
+          function = new TdApi.GetRepliedMessage(message.forwardInfo.fromChatId, message.forwardInfo.fromMessageId);
+        } else {
+          function = new TdApi.GetRepliedMessage(message.chatId, message.id);
+        }
+        retryFunction = new TdApi.GetMessage(replyToMessage.chatId, replyToMessage.messageId);
+        break;
+      }
+      case TdApi.MessageReplyToStory.CONSTRUCTOR: {
+        TdApi.MessageReplyToStory replyToStory = (TdApi.MessageReplyToStory) message.replyTo;
+        function = new TdApi.GetStory(replyToStory.storySenderChatId, replyToStory.storyId, true);
+        retryFunction = new TdApi.GetStory(replyToStory.storySenderChatId, replyToStory.storyId, false);
+        break;
+      }
+      default: {
+        Td.assertMessageReplyTo_699c5345();
+        throw Td.unsupported(message.replyTo);
       }
     }
     flags |= FLAG_LOADING;
-    final TdApi.Function<TdApi.Message> function;
-    if (message.forwardInfo != null && message.forwardInfo.fromChatId != 0 && message.forwardInfo.fromMessageId != 0 && !parent.isRepliesChat()) {
-      function = new TdApi.GetRepliedMessage(message.forwardInfo.fromChatId, message.forwardInfo.fromMessageId);
-    } else {
-      function = new TdApi.GetRepliedMessage(message.chatId, message.id);
-    }
-    if (message.replyInChatId != 0 && message.replyToMessageId != 0) {
-      retryFunction = new TdApi.GetMessage(message.replyInChatId, message.replyToMessageId);
-    } else {
-      retryFunction = null;
-    }
+    this.retryFunction = retryFunction;
     tdlib.send(function, this);
   }
 
   private void parseContent (final TdApi.Message msg, final boolean forceRequestImage) {
     Background.instance().post(() -> setMessage(msg, forceRequestImage, false));
+  }
+
+  private void parseContent (final TdApi.Story story, final boolean forceRequestImage) {
+    Background.instance().post(() -> setStory(story, forceRequestImage, false));
   }
 
   public void setChannelTitle (final String title) {
@@ -554,10 +582,10 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     });
   }
 
-  private void setContent (final String title, final TD.ContentPreview content, boolean hasSpoiler, final Path contour, final ImageFile miniThumbnail, final ImageFile preview, final boolean previewCircle, final boolean forceRequest) {
+  private void setContent (final String title, final ContentPreview content, boolean hasSpoiler, final Path contour, final ImageFile miniThumbnail, final ImageFile preview, final boolean previewCircle, final boolean forceRequest) {
     Background.instance().post(() -> {
       ReplyComponent.this.currentMessage = null;
-      ReplyComponent.this.content = new TD.ContentPreview(translatedText, content);
+      ReplyComponent.this.content = new ContentPreview(translatedText, content);
       setTitleImpl(title);
       ReplyComponent.this.contour = contour;
       ReplyComponent.this.miniThumbnail = miniThumbnail;
@@ -597,13 +625,17 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
 
   public boolean deleteMessageContent (long messageId) {
     if (currentMessage != null && currentMessage.id == messageId) {
-      setContent(Lang.getString(R.string.Error), new TD.ContentPreview(null, R.string.DeletedMessage), false, null, null, null, false, true);
+      setContent(Lang.getString(R.string.Error), new ContentPreview(null, R.string.DeletedMessage), false, null, null, null, false, true);
       return true;
     }
     return false;
   }
 
   // private boolean isPrivate;
+
+  private void setStory (TdApi.Story story, boolean forceRequestImage, boolean forceLocal) {
+    // TODO
+  }
 
   private void setMessage (TdApi.Message msg, boolean forceRequestImage, boolean forceLocal) {
     currentMessage = msg;
@@ -612,7 +644,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     } else {
       nameColorId = ColorId.NONE;
     }
-    boolean isPrivate = msg.selfDestructTime != 0;
+    boolean isPrivate = Td.isSecret(msg.content);
     Path contour = null;
     TdApi.Thumbnail thumbnail = null;
     TdApi.PhotoSize photoSize = null;
@@ -742,7 +774,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     } else {
       miniPreview = null;
     }
-    TD.ContentPreview contentPreview = TD.getChatListPreview(tdlib, msg.chatId, msg);
+    ContentPreview contentPreview = ContentPreview.getChatListPreview(tdlib, msg.chatId, msg, true);
     if (msg.forwardInfo != null && (parent != null && parent.getMessage().forwardInfo != null)) {
       switch (msg.forwardInfo.origin.getConstructor()) {
         case TdApi.MessageForwardOriginUser.CONSTRUCTOR:
@@ -766,16 +798,13 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
           sender = null;
           break;
         }
-        case TdApi.MessageForwardOriginMessageImport.CONSTRUCTOR: {
-          TdApi.MessageForwardOriginMessageImport messageImport = (TdApi.MessageForwardOriginMessageImport) msg.forwardInfo.origin;
-          senderName = messageImport.senderName;
-          sender = null;
-          break;
-        }
         default: {
           throw new IllegalArgumentException(msg.forwardInfo.origin.toString());
         }
       }
+    } else if (msg.importInfo != null) {
+      senderName = msg.importInfo.senderName;
+      sender = null;
     } else {
       sender = msg.senderId;
       senderName = tdlib.isFromAnonymousGroupAdmin(msg) ? msg.authorSignature : null;
@@ -785,7 +814,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       StringUtils.isEmpty(senderName) ? tdlib.senderName(sender, isMessageComponent()) :
       Lang.getString(isChannel() ? R.string.format_channelAndSignature : R.string.format_chatAndSignature, tdlib.senderName(sender, isMessageComponent()), senderName);
     if (Thread.currentThread() == Background.instance().thread() || forceLocal) {
-      this.content = new TD.ContentPreview(translatedText, contentPreview);
+      this.content = new ContentPreview(translatedText, contentPreview);
       setTitleImpl(title);
       this.miniThumbnail = miniPreview;
       this.contour = contour;
@@ -796,6 +825,9 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       invalidate(forceRequestImage || !isMessageComponent() || miniPreview != null || preview != null);
     } else {
       setContent(title, contentPreview, hasSpoiler, contour, miniPreview, preview, previewCircle, false);
+    }
+    if (parent != null) {
+      UI.execute(() -> parent.updateReactionAvatars(true));
     }
   }
 
@@ -816,6 +848,10 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
         parseContent((TdApi.Message) object, false);
         break;
       }
+      case TdApi.Story.CONSTRUCTOR: {
+        parseContent((TdApi.Story) object, false);
+        break;
+      }
       case TdApi.Error.CONSTRUCTOR: {
         if (retryFunction != null) {
           TdApi.Function<?> function = retryFunction;
@@ -823,7 +859,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
           tdlib.client().send(function, this);
           return;
         }
-        setContent(Lang.getString(R.string.Error), TD.errorCode(object) == 404 ? new TD.ContentPreview(null, R.string.DeletedMessage) : new TD.ContentPreview(null, 0, TD.toErrorString(object), true), false, null, null, null, false, false);
+        setContent(Lang.getString(R.string.Error), TD.errorCode(object) == 404 ? new ContentPreview(null, R.string.DeletedMessage) : new ContentPreview(null, 0, TD.toErrorString(object), true), false, null, null, null, false, false);
         currentMessage = null;
         break;
       }

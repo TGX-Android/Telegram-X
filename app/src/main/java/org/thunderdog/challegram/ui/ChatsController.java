@@ -33,6 +33,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
 import androidx.core.os.CancellationSignal;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -74,6 +75,7 @@ import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.ConnectionListener;
 import org.thunderdog.challegram.telegram.ConnectionState;
 import org.thunderdog.challegram.telegram.CounterChangeListener;
+import org.thunderdog.challegram.telegram.DateChangeListener;
 import org.thunderdog.challegram.telegram.MessageEditListener;
 import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
@@ -83,6 +85,8 @@ import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibChatList;
 import org.thunderdog.challegram.telegram.TdlibChatListSlice;
 import org.thunderdog.challegram.telegram.TdlibContactManager;
+import org.thunderdog.challegram.telegram.TdlibCounter;
+import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibThread;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -137,7 +141,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   ForceTouchView.PreviewDelegate, LiveLocationHelper.Callback,
   BaseView.LongPressInterceptor, TdlibCache.UserStatusChangeListener,
   Settings.ChatListModeChangeListener, CounterChangeListener,
-  TdlibSettingsManager.PreferenceChangeListener, SelectDelegate, MoreDelegate {
+  TdlibSettingsManager.PreferenceChangeListener, SelectDelegate, MoreDelegate, DateChangeListener {
 
   private boolean progressVisible, initialLoadFinished;
   @Nullable
@@ -147,7 +151,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     return chat != null && (filter == null || filter.accept(chat)) && ChatPosition.findPosition(chat, chatList()) != null ? chat : null;
   }
 
-  public ChatFilter getFilter () {
+  public @Nullable ChatFilter getFilter () {
     return filter;
   }
 
@@ -396,7 +400,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   private long initializationTime;
-  private boolean listInitalized;
+  private boolean listInitialized, myUserLoaded;
 
   private ItemTouchHelper touchHelper;
   private LiveLocationHelper liveLocationHelper;
@@ -409,6 +413,8 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     return list;
   }
 
+  private TdlibMessageViewer.Viewport chatsViewport;
+
   @Override
   protected View onCreateView (Context context) {
     list();
@@ -417,6 +423,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     contentView = new ContentFrameLayout(context);
     contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
+    chatsViewport = tdlib.messageViewer().createViewport(new TdApi.MessageSourceChatList(), this);
     chatsView = (ChatsRecyclerView) Views.inflate(context(), R.layout.recycler_chats, contentView);
     chatsView.setMeasureListener((v, oldWidth, oldHeight, newWidth, newHeight) -> {
       if (newHeight != oldHeight && adapter.hasArchive() && hideArchive && adapter.getItemCount() > 0) {
@@ -519,6 +526,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     chatsView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     if (filter != null)
       chatsView.setTotalRes(filter.getTotalStringRes());
+    tdlib.ui().attachViewportToRecyclerView(chatsViewport, chatsView);
     contentView.addView(chatsView);
 
     Views.setScrollBarPosition(chatsView);
@@ -536,12 +544,23 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
     Settings.instance().addChatListModeListener(this);
     TGLegacyManager.instance().addEmojiListener(this);
+    tdlib.context().dateManager().addListener(this);
 
+    tdlib.awaitMyUserOrUnauthorizedState(() -> {
+      executeOnUiThreadOptional(() -> {
+        myUserLoaded = true;
+        if (!needAsynchronousAnimation()) {
+          executeScheduledAnimation();
+        }
+      });
+    });
     list.initializeList(this, this::displayChats, chatsView.getInitialLoadCount(), () ->
       runOnUiThreadOptional(() -> {
-        this.listInitalized = true;
+        this.listInitialized = true;
         checkListState();
-        executeScheduledAnimation();
+        if (!needAsynchronousAnimation()) {
+          executeScheduledAnimation();
+        }
       })
     );
 
@@ -980,7 +999,11 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   protected int getMenuId () {
-    return isBaseController() ? R.id.menu_passcode : R.id.menu_search;
+    return isBaseController() ? R.id.menu_passcode : isArchiveChatList() ? R.id.menu_archive : R.id.menu_search;
+  }
+
+  private boolean isArchiveChatList () {
+    return pickerDelegate == null && filter == null && chatList().getConstructor() == TdApi.ChatListArchive.CONSTRUCTOR;
   }
 
   @Override
@@ -1006,6 +1029,9 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       if (isBaseController()) {
         header.addLockButton(menu);
       }
+      header.addSearchButton(menu, this);
+    } else if (id == R.id.menu_archive) {
+      header.addButton(menu, R.id.menu_btn_settings, R.drawable.baseline_settings_24, 49f, this, getHeaderIconColorId());
       header.addSearchButton(menu, this);
     } else if (id == R.id.menu_search) {
       header.addSearchButton(menu, this);
@@ -1110,9 +1136,18 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   public void onMenuItemPressed (int id, View view) {
     if (id == R.id.menu_btn_search) {
       openSearchMode();
+    } else if (id == R.id.menu_btn_settings) {
+      if (isArchiveChatList()) {
+        SettingsArchiveChatListController c = new SettingsArchiveChatListController(context, tdlib);
+        navigateTo(c);
+      }
     } else if (id == R.id.menu_btn_clear) {
       clearSearchInput();
-    } else if (id == R.id.menu_btn_more) {// Archive / unarchive
+    } else if (id == R.id.menu_btn_more) {
+      if (selectedChats == null || selectedChats.isEmpty()) {
+        return;
+      }
+      // Archive / unarchive
       // Mark as Read / Unread
       // Report
       // Clear History
@@ -1148,7 +1183,8 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         }
         if (tdlib.canReportChatSpam(chat))
           canReportSpam++;
-        if (tdlib.chatBlocked(chat)) {
+        TdApi.BlockList blockList = tdlib.chatBlockList(chat);
+        if (blockList != null && blockList.getConstructor() == TdApi.BlockListMain.CONSTRUCTOR) {
           canUnblock++;
         } else {
           canBlock++;
@@ -1165,6 +1201,18 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         ids.append(R.id.more_btn_archiveUnarchive);
         strings.append(canUnarchive > 0 ? R.string.Unarchive : R.string.Archive);
         icons.append(canUnarchive > 0 ? R.drawable.baseline_unarchive_24 : R.drawable.baseline_archive_24);
+      }
+
+      if (Settings.instance().chatFoldersEnabled()) {
+        if (TD.isChatListMain(chatList()) || TD.isChatListArchive(chatList())) {
+          ids.append(R.id.more_btn_addToFolder);
+          strings.append(R.string.AddToFolder);
+          icons.append(R.drawable.templarian_baseline_folder_plus_24);
+        } else if (TD.isChatListFolder(chatList())) {
+          ids.append(R.id.more_btn_removeFromFolder);
+          strings.append(R.string.RemoveFromFolder);
+          icons.append(R.drawable.templarian_baseline_folder_remove_24);
+        }
       }
 
       if (canMarkAsRead > 0) {
@@ -1511,7 +1559,20 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void onMoreItemPressed (int id) {
-    if (id == R.id.more_btn_archiveUnarchive ||
+    if (id == R.id.more_btn_addToFolder) {
+      long[] selectedChatIds = ArrayUtils.keys(selectedChats);
+      tdlib.ui().showAddChatsToFolderOptions(this, selectedChatIds, this::onSelectionActionComplete);
+      // break;
+    } else if (id == R.id.more_btn_removeFromFolder) {
+      TdApi.ChatList chatList = chatList();
+      if (TD.isChatListFolder(chatList)) {
+        int chatFolderId = ((TdApi.ChatListFolder) chatList).chatFolderId;
+        long[] selectedChatIds = ArrayUtils.keys(selectedChats);
+        tdlib.removeChatsFromChatFolder(chatFolderId, selectedChatIds);
+      }
+      onSelectionActionComplete();
+      // break;
+    } else if (id == R.id.more_btn_archiveUnarchive ||
       id == R.id.more_btn_markAsRead ||
       id == R.id.more_btn_markAsUnread ||
       id == R.id.more_btn_report ||
@@ -1607,7 +1668,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         if (isUnblock) {
           for (int i = selectedChats.size() - 1; i >= 0; i--) {
             long chatId = selectedChats.keyAt(i);
-            tdlib.blockSender(tdlib.sender(chatId), false, tdlib.okHandler());
+            tdlib.unblockSender(tdlib.sender(chatId), tdlib.okHandler());
           }
         } else {
           showOptions(
@@ -1620,7 +1681,8 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
               if (optionId == R.id.btn_unblockSender || optionId == R.id.btn_blockSender) {
                 for (int i = selectedChats.size() - 1; i >= 0; i--) {
                   long chatId = selectedChats.keyAt(i);
-                  tdlib.blockSender(tdlib.sender(chatId), optionId == R.id.btn_blockSender, tdlib.okHandler(after));
+                  TdApi.MessageSender sender = tdlib.sender(chatId);
+                  tdlib.blockSender(sender, optionId == R.id.btn_blockSender ? new TdApi.BlockListMain() : null, tdlib.okHandler(after));
                 }
               }
               return true;
@@ -2234,14 +2296,37 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         if (parentController != null) {
           parentController.navigateTo(c);
         }
+      } else if (viewId == R.id.btn_editFolder) {
+        int chatFolderId = ((TdApi.ChatListFolder) chatList()).chatFolderId;
+        tdlib.send(new TdApi.GetChatFolder(chatFolderId), (result) -> runOnUiThreadOptional(() -> {
+          if (parentController == null)
+            return;
+          switch (result.getConstructor()) {
+            case TdApi.ChatFolder.CONSTRUCTOR:
+              TdApi.ChatFolder chatFolder = (TdApi.ChatFolder) result;
+              EditChatFolderController c = new EditChatFolderController(context, tdlib);
+              c.setArguments(new EditChatFolderController.Arguments(chatFolderId, chatFolder));
+              parentController.navigateTo(c);
+              break;
+            case TdApi.Error.CONSTRUCTOR:
+              UI.showError(result);
+              break;
+          }
+        }));
       }
     }, this);
     ArrayList<ListItem> items = new ArrayList<>(5);
 
+    TdApi.ChatList chatList = chatList();
     if (filter != null) {
       items.add(new ListItem(ListItem.TYPE_EMPTY, 0, 0, filter.getEmptyStringRes()));
-    } else if (chatList() instanceof TdApi.ChatListArchive) {
+    } else if (chatList instanceof TdApi.ChatListArchive) {
       items.add(new ListItem(ListItem.TYPE_EMPTY, 0, 0, R.string.NoArchive));
+    } else if (chatList instanceof TdApi.ChatListFolder) {
+      items.add(new ListItem(ListItem.TYPE_ICONIZED_EMPTY, R.id.changePhoneText, R.drawable.baseline_folder_96, Lang.getMarkdownString(this, R.string.FolderNoChatsToDisplay)));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_BUTTON, R.id.btn_editFolder, 0, R.string.EditFolder));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     } else if (archiveList != null && archiveList.totalCount() > 0) {
       items.add(new ListItem(ListItem.TYPE_ICONIZED_EMPTY, R.id.changePhoneText, R.drawable.baseline_archive_96, Lang.getMarkdownString(this, R.string.OpenArchiveHint), false));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -2394,7 +2479,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public boolean needAsynchronousAnimation () {
-    return !listInitalized;
+    return !listInitialized || !myUserLoaded;
   }
 
   @Override
@@ -2474,6 +2559,9 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     if (liveLocationHelper != null) {
       liveLocationHelper.destroy();
     }
+    if (chatsViewport != null) {
+      chatsViewport.performDestroy();
+    }
     if (archiveList != null) {
       archiveList.unsubscribeFromUpdates(archiveListListener);
     }
@@ -2490,6 +2578,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     list.unsubscribeFromUpdates(this);
     TGLegacyManager.instance().removeEmojiListener(this);
     tdlib.contacts().removeListener(this);
+    tdlib.context().dateManager().removeListener(this);
   }
 
   // Updates
@@ -2698,6 +2787,14 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   @Override
+  @UiThread
+  public void onDateChanged () {
+    if (!isDestroyed() && chatsView != null) {
+      chatsView.updateRelativeDate();
+    }
+  }
+
+  @Override
   public void onMessageSendSucceeded (final TdApi.Message message, final long oldMessageId) {
     runOnUiThreadOptional(() -> {
       if (chatsView != null) {
@@ -2745,7 +2842,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   // Counter updates
 
   @Override
-  public void onChatCounterChanged (@NonNull TdApi.ChatList chatList, boolean availabilityChanged, int totalCount, int unreadCount, int unreadUnmutedCount) {
+  public void onChatCounterChanged (@NonNull TdApi.ChatList chatList, TdlibCounter counter, boolean availabilityChanged, int totalCount, int unreadCount, int unreadUnmutedCount) {
     if (totalCount == 0 && chatList.getConstructor() != TdApi.ChatListMain.CONSTRUCTOR && Td.equalsTo(this.chatList, chatList)) {
       runOnUiThreadOptional(() -> {
         if (!isDestroyed() && !isBaseController()) {

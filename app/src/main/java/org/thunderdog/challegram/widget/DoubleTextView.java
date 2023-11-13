@@ -49,6 +49,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.EmojiStatusHelper;
+import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.TextColorSets;
 
 import me.vkryl.core.lambda.Destroyable;
@@ -198,7 +199,7 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
   private void checkButton () {
     if (button == null) {
       RelativeLayout.LayoutParams params;
-      params = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(28f));
+      params = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(28f));
       params.addRule(Lang.rtl() ? RelativeLayout.ALIGN_PARENT_LEFT : RelativeLayout.ALIGN_PARENT_RIGHT);
       params.addRule(RelativeLayout.CENTER_VERTICAL);
       params.rightMargin = params.leftMargin = Screen.dp(19f);
@@ -248,10 +249,10 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
   private @Nullable Path stickerSetContour;
   private boolean useAvatarReceiver;
 
-  public void setStickerSet (@NonNull TGStickerSetInfo stickerSet) {
+  public void setStickerSet (@NonNull TGStickerSetInfo stickerSet, String highlight) {
     needPlaceholder = false;
-    titleView.setText(stickerSet.getTitle());
-    subtitleView.setText(Lang.plural(stickerSet.isMasks() ? R.string.xMasks : R.string.xStickers, stickerSet.getSize()));
+    titleView.setText(Highlight.toSpannable(stickerSet.getTitle(), highlight));
+    subtitleView.setText(Lang.plural(stickerSet.isMasks() ? R.string.xMasks : stickerSet.isEmoji() ? R.string.xEmoji : R.string.xStickers, stickerSet.getSize()));
     receiver.getImageReceiver(0).requestFile(stickerSet.getPreviewImage());
     receiver.getGifReceiver(0).requestFile(stickerSet.getPreviewAnimation());
     receiver.getAvatarReceiver(0).clear();
@@ -300,6 +301,8 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
 
   @Override
   protected void onDraw (Canvas c) {
+    final boolean needThemedColorFilter = stickerSetInfo != null && stickerSetInfo.needThemedColorFilter();
+
     if (useAvatarReceiver) {
       AvatarReceiver avatarReceiver = receiver.getAvatarReceiver(0);
       if (avatarReceiver.needPlaceholder()) {
@@ -308,12 +311,22 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
       avatarReceiver.draw(c);
     } else if (stickerSetInfo != null && stickerSetInfo.isAnimated()) {
       GifReceiver gifReceiver = receiver.getGifReceiver(0);
+      if (needThemedColorFilter) {
+        gifReceiver.setThemedPorterDuffColorId(ColorId.iconActive);
+      } else {
+        gifReceiver.disablePorterDuffColorFilter();
+      }
       if (gifReceiver.needPlaceholder()) {
         gifReceiver.drawPlaceholderContour(c, stickerSetContour);
       }
       gifReceiver.draw(c);
     } else {
       ImageReceiver imageReceiver = receiver.getImageReceiver(0);
+      if (needThemedColorFilter) {
+        imageReceiver.setThemedPorterDuffColorId(ColorId.iconActive);
+      } else {
+        imageReceiver.disablePorterDuffColorFilter();
+      }
       if (imageReceiver.needPlaceholder()) {
         if (stickerSetContour != null) {
           imageReceiver.drawPlaceholderContour(c, stickerSetContour);

@@ -156,6 +156,10 @@ public class SnackBar extends RelativeLayout {
     }
   }
 
+  public float getVisibilityFactor () {
+    return isShowing.getFloatValue();
+  }
+
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     super.onMeasure(widthMeasureSpec, heightMeasureSpec);

@@ -22,8 +22,8 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.Nullable;
+import androidx.core.util.ObjectsCompat;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
@@ -127,8 +127,8 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
 
   private final Tdlib tdlib;
 
-  private String rawText;
-  private TextEntity[] entities;
+  private @Nullable String rawText;
+  private @Nullable TextEntity[] entities;
 
   private final ReplaceAnimator<TextEntry> text = new ReplaceAnimator<>(animator -> {
     if (getMeasuredHeight() != getCurrentHeight())
@@ -223,7 +223,7 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
     if (sequence instanceof Spannable && (entities == null || entities.length == 0)) {
       entities = TD.collectAllEntities(null, tdlib, sequence, false, null);
     }
-    if ((rawText == null && text != null) || (rawText != null && !rawText.equals(text))) {
+    if (!ObjectsCompat.equals(rawText, text)) {
       this.rawText = text;
       this.entities = entities;
       cancelAsyncLayout();
@@ -478,9 +478,12 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
 
   @Override
   public void performDestroy () {
+    TGLegacyManager.instance().removeEmojiListener(this);
     for (ListAnimator.Entry<TextEntry> entry : text) {
       entry.item.performDestroy();
     }
     text.clear(false);
+    rawText = null;
+    entities = null;
   }
 }

@@ -13,6 +13,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 
 import me.vkryl.android.AnimatorUtils;
@@ -51,10 +52,10 @@ public class ToggleHeaderView2 extends View {
 
   private void trimTexts () {
     int avail = getMeasuredWidth() - textPadding - Screen.dp(12f);
-    for (ListAnimator.Entry<TrimmedText> entry: titleR) {
+    for (ListAnimator.Entry<TrimmedText> entry : titleR) {
       entry.item.measure(avail, Paints.getMediumTextPaint(18f, Theme.headerTextColor(), false));
     }
-    for (ListAnimator.Entry<TrimmedText> entry: subtitleR) {
+    for (ListAnimator.Entry<TrimmedText> entry : subtitleR) {
       entry.item.measure(avail, Paints.getRegularTextPaint(14f, Theme.getColor(ColorId.textLight)));
     }
   }
@@ -67,7 +68,7 @@ public class ToggleHeaderView2 extends View {
 
   public float getTitleWidth () {
     float width = 0f;
-    for (ListAnimator.Entry<TrimmedText> entry: titleR) {
+    for (ListAnimator.Entry<TrimmedText> entry : titleR) {
       width += entry.item.getWidth() * entry.getVisibility();
     }
 
@@ -76,20 +77,20 @@ public class ToggleHeaderView2 extends View {
 
   @Override
   protected void onDraw (Canvas c) {
-    for (ListAnimator.Entry<TrimmedText> entry: titleR) {
+    for (ListAnimator.Entry<TrimmedText> entry : titleR) {
       final int offset2 = (int) ((!entry.isAffectingList() ?
         ((entry.getVisibility() - 1f) * Screen.dp(18)):
         ((1f - entry.getVisibility()) * Screen.dp(18))));
       entry.item.draw(c, getPaddingLeft(), textTop + offset2, entry.getVisibility(), Paints.getMediumTextPaint(18f, Theme.getColor(ColorId.text), false));
     }
-    for (ListAnimator.Entry<TrimmedText> entry: subtitleR) {
+    for (ListAnimator.Entry<TrimmedText> entry : subtitleR) {
       final int offset2 = (int) ((!entry.isAffectingList() ?
         ((entry.getVisibility() - 1f) * Screen.dp(14)):
         ((1f - entry.getVisibility()) * Screen.dp(14))));
       entry.item.draw(c, getPaddingLeft(), textTop + Screen.dp(19) + offset2, entry.getVisibility(), Paints.getRegularTextPaint(14f, Theme.getColor(ColorId.textLight)));
     }
 
-    Drawables.draw(c, arrowDrawable, getTitleWidth() + Screen.dp(2), triangleTop, Paints.getPorterDuffPaint(Theme.getColor(ColorId.icon)));
+    Drawables.draw(c, arrowDrawable, getTitleWidth() + Screen.dp(2), triangleTop, PorterDuffPaint.get(ColorId.icon));
   }
 
 
@@ -115,7 +116,7 @@ public class ToggleHeaderView2 extends View {
     }
 
     public float getWidth () {
-      return textTrimmed != null ? textTrimmedWidth: textWidth;
+      return textTrimmed != null ? textTrimmedWidth : textWidth;
     }
 
     public void draw (Canvas canvas, int x, int y, float alpha, TextPaint paint) {

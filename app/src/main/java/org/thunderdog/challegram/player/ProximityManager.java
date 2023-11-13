@@ -42,6 +42,8 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 
+import me.vkryl.td.Td;
+
 public class ProximityManager implements Settings.RaiseToSpeakListener, SensorEventListener, UI.StateListener {
   public interface Delegate {
     void onUpdateAttributes ();
@@ -57,7 +59,7 @@ public class ProximityManager implements Settings.RaiseToSpeakListener, SensorEv
   }
 
   private boolean isPlayingVideo () {
-    return playbackObject != null && playbackObject.content.getConstructor() == TdApi.MessageVideoNote.CONSTRUCTOR;
+    return playbackObject != null && Td.isVideoNote(playbackObject.content);
   }
 
   public void setPlaybackObject (@Nullable TdApi.Message playbackObject) {
@@ -67,7 +69,7 @@ public class ProximityManager implements Settings.RaiseToSpeakListener, SensorEv
     if (hadObject != hasObject) {
       if (hasObject) {
         Settings.instance().addRaiseToSpeakListener(this);
-        uiPaused = UI.getUiState() != UI.STATE_RESUMED;
+        uiPaused = UI.getUiState() != UI.State.RESUMED;
         UI.addStateListener(this);
         this.isVideo = isPlayingVideo();
         setEarpieceMode(Settings.instance().getEarpieceMode(isVideo));
@@ -124,7 +126,7 @@ public class ProximityManager implements Settings.RaiseToSpeakListener, SensorEv
 
   @Override
   public void onUiStateChanged (int newState) {
-    boolean isPaused = newState != UI.STATE_RESUMED;
+    boolean isPaused = newState != UI.State.RESUMED;
     if (this.uiPaused != isPaused) {
       this.uiPaused = isPaused;
       checkProximitySensorEnabled();

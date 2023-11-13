@@ -34,6 +34,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.SessionListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
@@ -240,8 +241,8 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
 
     if (isFull) {
       b.append('\n').append(Lang.getString(R.string.SessionLastActiveDate, versionCreator, Lang.getTimestamp(session.lastActiveDate, TimeUnit.SECONDS)));
-      if (!StringUtils.isEmpty(session.ip) || !StringUtils.isEmpty(session.country)) {
-        b.append('\n').append(Strings.concatIpLocation(Lang.codify(session.ip), session.country));
+      if (!StringUtils.isEmpty(session.ipAddress) || !StringUtils.isEmpty(session.location)) {
+        b.append('\n').append(Strings.concatIpLocation(Lang.codify(session.ipAddress), session.location));
       }
     }
     return b;
@@ -255,7 +256,7 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
         if (item.getViewType() == ListItem.TYPE_VALUED_SETTING_COMPACT) {
           view.forcePadding(Screen.dp(63f), 0);
         }
-        int iconColorId = item.getTextColorId(ColorId.NONE);
+        @PorterDuffColorId int iconColorId = item.getTextColorId(ColorId.NONE);
         if (iconColorId == ColorId.textNegative) {
           iconColorId = ColorId.iconNegative;
         }
@@ -278,8 +279,8 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
           timeView.setText("");
           titleView.setText(getTitle(sessions.currentSession));
           subtextView.setText(getAppName(sessions.currentSession));
-          if (!StringUtils.isEmpty(sessions.currentSession.ip) || !StringUtils.isEmpty(sessions.currentSession.country)) {
-            locationView.setText(Strings.concatIpLocation(sessions.currentSession.ip, sessions.currentSession.country));
+          if (!StringUtils.isEmpty(sessions.currentSession.ipAddress) || !StringUtils.isEmpty(sessions.currentSession.location)) {
+            locationView.setText(Strings.concatIpLocation(sessions.currentSession.ipAddress, sessions.currentSession.location));
           } else {
             locationView.setText(Lang.getString(R.string.SessionUnknown));
           }
@@ -298,8 +299,8 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
           timeView.setText(date);
           titleView.setText(getTitle(session));
           subtextView.setText(getAppName(session));
-          if (!StringUtils.isEmpty(session.ip) || !StringUtils.isEmpty(session.country)) {
-            locationView.setText(Strings.concatIpLocation(session.ip, session.country));
+          if (!StringUtils.isEmpty(session.ipAddress) || !StringUtils.isEmpty(session.location)) {
+            locationView.setText(Strings.concatIpLocation(session.ipAddress, session.location));
           } else {
             locationView.setText(Lang.getString(R.string.SessionUnknown));
           }

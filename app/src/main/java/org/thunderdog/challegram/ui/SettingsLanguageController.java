@@ -298,7 +298,7 @@ public class SettingsLanguageController extends RecyclerViewController<Void> imp
     if (languageInfo == null || languageInfo.isOfficial)
       return;
     boolean isCustom = Td.isLocal(languageInfo);
-    showOptions(Lang.getStringBold(isCustom ? R.string.DeleteLanguageConfirm : R.string.LanguageDeleteConfirm, languageInfo.nativeName, languageInfo.name, TD.getLink(languageInfo)), new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getString(isCustom ? R.string.RemoveLanguage : R.string.LanguageDelete), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+    showOptions(Lang.getStringBold(isCustom ? R.string.DeleteLanguageConfirm : R.string.LanguageDeleteConfirm, languageInfo.nativeName, languageInfo.name, tdlib.tMeLanguageUrl(languageInfo.id)), new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getString(isCustom ? R.string.RemoveLanguage : R.string.LanguageDelete), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_delete) {
         removeLanguage(item, languageInfo);
       }

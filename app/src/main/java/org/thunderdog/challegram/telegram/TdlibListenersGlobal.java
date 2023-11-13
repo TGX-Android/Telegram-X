@@ -96,7 +96,7 @@ public class TdlibListenersGlobal {
 
   void notifyUpdateMessageSendFailed (Tdlib tdlib, TdApi.UpdateMessageSendFailed update) {
     for (GlobalMessageListener listener : messageListeners) {
-      listener.onMessageSendFailed(tdlib, update.message, update.oldMessageId, update.errorCode, update.errorMessage);
+      listener.onMessageSendFailed(tdlib, update.message, update.oldMessageId, update.error);
     }
   }
 
@@ -117,6 +117,12 @@ public class TdlibListenersGlobal {
   void notifyTotalCounterChanged (@NonNull TdApi.ChatList chatList, boolean isReset) {
     for (GlobalCountersListener listener : countersListeners) {
       listener.onTotalUnreadCounterChanged(chatList, isReset);
+    }
+  }
+
+  void notifyBadgeSettingsChanged () {
+    for (GlobalCountersListener listener : countersListeners) {
+      listener.onBadgeSettingsChanged();
     }
   }
 

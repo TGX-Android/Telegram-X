@@ -50,6 +50,7 @@ import org.thunderdog.challegram.emoji.EmojiInfo;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -599,6 +600,9 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
       case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
         break;
+      default:
+        Td.assertTextEntityType_542d164b();
+        throw Td.unsupported(entity.type);
     }
     return false;
   }
@@ -639,6 +643,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   @Override
   public int getEmojiCount () {
     return builtInEmojiCount;
+  }
+
+  public boolean hasBuiltInEmoji () {
+    return getEmojiCount() > 0;
   }
 
   @Override
@@ -2852,9 +2860,9 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
           TextEntity entity = part.getClickableEntity();
           boolean done = false;
           if (clickListener != null) {
-            done = clickListener.onClick(view, this, part, entity != null ? entity.openParameters(view, this, part) : new TdlibUi.UrlOpenParameters().tooltip(part.newTooltipBuilder(view)));
+            done = clickListener.onClick(view, this, part, entity != null ? entity.openParameters(view, this, part, false) : new TdlibUi.UrlOpenParameters().tooltip(part.newTooltipBuilder(view)));
           } else if (entity != null) {
-            entity.performClick(view, this, part, callback);
+            entity.performClick(view, this, part, callback, false);
             done = true;
           }
           cancelTouch();
@@ -2915,13 +2923,14 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return isClickable ? theme.clickableTextColor(isPressed) : theme.defaultTextColor();
   }
 
-  public int getEmojiSize () {
-    return emojiSize;
+  public @PorterDuffColorId int getMediaTextColorOrId () {
+    TextColorSet theme = pickTheme(null, null);
+    return theme.mediaTextColorOrId();
   }
 
-  public int getEmojiStatusColor () {
+  public boolean getMediaTextColorIsId () {
     TextColorSet theme = pickTheme(null, null);
-    return theme.emojiStatusColor();
+    return theme.mediaTextColorIsId();
   }
 
   @ColorInt

@@ -191,6 +191,10 @@ public class ChatsRecyclerView extends CustomRecyclerView implements ClickHelper
     }
   }
 
+  public void updateRelativeDate () {
+    adapter.updateRelativeDate();
+    invalidateAll();
+  }
   public void updateMessageSendSucceeded (TdApi.Message message, long oldMessageId) {
     int updated = adapter.updateMessageSendSucceeded(message, oldMessageId);
     if (updated != -1) {

@@ -263,6 +263,9 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageContact.CONSTRUCTOR:
               staticResId = R.string.ActionPinnedContact;
               break;
+            case TdApi.MessageStory.CONSTRUCTOR:
+              staticResId = R.string.ActionPinnedStory;
+              break;
             case TdApi.MessageDice.CONSTRUCTOR: // TODO?
               // unreachable
             case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
@@ -278,6 +281,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageChatJoinByLink.CONSTRUCTOR:
             case TdApi.MessageChatJoinByRequest.CONSTRUCTOR:
             case TdApi.MessageChatSetTheme.CONSTRUCTOR:
+            case TdApi.MessageChatSetBackground.CONSTRUCTOR:
             case TdApi.MessageChatSetMessageAutoDeleteTime.CONSTRUCTOR:
             case TdApi.MessageChatUpgradeFrom.CONSTRUCTOR:
             case TdApi.MessageChatUpgradeTo.CONSTRUCTOR:
@@ -299,11 +303,19 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
             case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
             case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
-            case TdApi.MessageWebsiteConnected.CONSTRUCTOR:
+            case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
+            case TdApi.MessageForumTopicEdited.CONSTRUCTOR:
+            case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
+            case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
+            case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
+            case TdApi.MessageUserShared.CONSTRUCTOR:
+            case TdApi.MessageChatShared.CONSTRUCTOR:
+            case TdApi.MessageBotWriteAccessAllowed.CONSTRUCTOR:
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              throw new UnsupportedOperationException(message.content.toString());
+              Td.assertMessageContent_cda9af31();
+              throw Td.unsupported(message.content);
           }
           String format = Lang.getString(staticResId);
           int startIndex = format.indexOf("**");
@@ -598,14 +610,46 @@ public final class TGMessageService extends TGMessageServiceImpl {
     });
   }
 
-  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageWebsiteConnected websiteConnected) {
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageBotWriteAccessAllowed botWriteAccessAllowed) {
     super(context, msg);
-    setTextCreator(() ->
-      getText(
-        R.string.BotWebsiteAllowed,
-        new BoldArgument(websiteConnected.domainName)
-      )
-    );
+    switch (botWriteAccessAllowed.reason.getConstructor()) {
+      case TdApi.BotWriteAccessAllowReasonConnectedWebsite.CONSTRUCTOR: {
+        TdApi.BotWriteAccessAllowReasonConnectedWebsite connectedWebsite = (TdApi.BotWriteAccessAllowReasonConnectedWebsite) botWriteAccessAllowed.reason;
+        setTextCreator(() ->
+          getText(
+            R.string.BotWebsiteAllowed,
+            new BoldArgument(connectedWebsite.domainName)
+          )
+        );
+        break;
+      }
+      case TdApi.BotWriteAccessAllowReasonAddedToAttachmentMenu.CONSTRUCTOR: {
+        setTextCreator(() ->
+          getText(R.string.BotAttachAllowed)
+        );
+        break;
+      }
+      case TdApi.BotWriteAccessAllowReasonLaunchedWebApp.CONSTRUCTOR: {
+        TdApi.BotWriteAccessAllowReasonLaunchedWebApp launchedWebApp = (TdApi.BotWriteAccessAllowReasonLaunchedWebApp) botWriteAccessAllowed.reason;
+        setTextCreator(() ->
+          getText(
+            R.string.BotAppAllowed,
+            new BoldArgument(launchedWebApp.webApp.title)
+          )
+        );
+        break;
+      }
+      case TdApi.BotWriteAccessAllowReasonAcceptedRequest.CONSTRUCTOR: {
+        setTextCreator(() ->
+          getText(R.string.BotWebappAllowed)
+        );
+        break;
+      }
+      default: {
+        Td.assertBotWriteAccessAllowReason_d7597302();
+        throw Td.unsupported(botWriteAccessAllowed.reason);
+      }
+    }
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatSetMessageAutoDeleteTime setMessageAutoDeleteTime) {
@@ -690,7 +734,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
     });
     if (gameScore.gameMessageId != 0) {
       setDisplayMessage(msg.chatId, gameScore.gameMessageId, (message) -> {
-        if (message.content.getConstructor() != TdApi.MessageGame.CONSTRUCTOR) {
+        if (!Td.isGame(message.content)) {
           return false;
         }
         setTextCreator(() -> {
@@ -731,7 +775,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
         paymentSuccessful.invoiceChatId,
         paymentSuccessful.invoiceMessageId,
         message -> {
-          if (message.content.getConstructor() != TdApi.MessageInvoice.CONSTRUCTOR) {
+          if (!Td.isInvoice(message.content)) {
             return false;
           }
           setTextCreator(() ->
@@ -919,8 +963,8 @@ public final class TGMessageService extends TGMessageServiceImpl {
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventMessageEdited messageEdited) {
     super(context, msg);
     setTextCreator(() -> {
-      if (messageEdited.newMessage.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR ||
-          messageEdited.newMessage.content.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
+      if (Td.isText(messageEdited.newMessage.content) ||
+          Td.isAnimatedEmoji(messageEdited.newMessage.content)) {
         return getText(R.string.EventLogEditedMessages, new SenderArgument(sender));
       } else if (Td.isEmpty(Td.textOrCaption(messageEdited.newMessage.content))) {
         return getText(R.string.EventLogRemovedCaption, new SenderArgument(sender));
@@ -934,7 +978,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
     super(context, msg);
     setTextCreator(() -> {
       final boolean isQuiz =
-        pollStopped.message.content.getConstructor() == TdApi.MessagePoll.CONSTRUCTOR &&
+        Td.isPoll(pollStopped.message.content) &&
         ((TdApi.MessagePoll) pollStopped.message.content).poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR;
       return getText(
         isQuiz ?

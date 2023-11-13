@@ -333,7 +333,7 @@ public class ThemeManager implements FactorAnimator.Target, GlobalAccountListene
       final boolean newDark = newTheme.isDark();
       if (wasDark != newDark && Settings.instance().getNightMode() != Settings.NIGHT_MODE_NONE) {
         BaseActivity activity = UI.getUiContext();
-        if (activity == null || activity.getActivityState() != UI.STATE_RESUMED) {
+        if (activity == null || activity.getActivityState() != UI.State.RESUMED) {
           Settings.instance().setAutoNightMode(Settings.NIGHT_MODE_NONE);
         } else {
           AlertDialog.Builder b = new AlertDialog.Builder(activity, Theme.dialogTheme());
@@ -355,7 +355,7 @@ public class ThemeManager implements FactorAnimator.Target, GlobalAccountListene
     ThemeTemporary tempTheme = new ThemeTemporary(currentTheme(true), newTheme);
     this._currentTheme = tempTheme;
 
-    boolean animated = UI.wasResumedRecently(1000) || UI.getUiState() == UI.STATE_RESUMED;
+    boolean animated = UI.wasResumedRecently(1000) || UI.getUiState() == UI.State.RESUMED;
     if (animated) {
       if (themeAnimator == null)
         themeAnimator = new FactorAnimator(0, this, AnimatorUtils.DECELERATE_INTERPOLATOR, Config.DEBUG_NAV_ANIM ? 1000 : 200);

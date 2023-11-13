@@ -22,16 +22,21 @@ import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
 import androidx.viewpager.widget.PagerAdapter;
 
+import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.ViewController;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import me.vkryl.core.lambda.Destroyable;
 
-public class ViewControllerPagerAdapter extends PagerAdapter implements Destroyable {
+public class ViewControllerPagerAdapter extends PagerAdapter implements Destroyable, ViewController.AttachListener {
   public interface ControllerProvider {
     int getControllerCount ();
     ViewController<?> createControllerForPosition (int position);
     void onPrepareToShow (int position, ViewController<?> controller);
     void onAfterHide (int position, ViewController<?> controller);
+    ViewController<?> getParentOrSelf ();
   }
 
   private final ControllerProvider provider;
@@ -40,6 +45,14 @@ public class ViewControllerPagerAdapter extends PagerAdapter implements Destroya
   public ViewControllerPagerAdapter (@NonNull ControllerProvider provider) {
     this.provider = provider;
     this.controllers = new SparseArrayCompat<>();
+    provider.getParentOrSelf().addAttachStateListener(this);
+  }
+
+  @Override
+  public void onAttachStateChanged (ViewController<?> context, NavigationController navigation, boolean isAttached) {
+    for (ViewController<?> c : visibleControllers) {
+      c.onAttachStateChanged(navigation, isAttached);
+    }
   }
 
   public void notifyItemInserted (int index) {
@@ -113,6 +126,8 @@ public class ViewControllerPagerAdapter extends PagerAdapter implements Destroya
     return POSITION_NONE;
   }
 
+  private final Set<ViewController<?>> visibleControllers = new HashSet<>();
+
   @Override
   @NonNull
   public Object instantiateItem (@NonNull ViewGroup container, int position) {
@@ -128,6 +143,10 @@ public class ViewControllerPagerAdapter extends PagerAdapter implements Destroya
     provider.onPrepareToShow(position, c);
     c.onPrepareToShow();
     container.addView(view);
+    visibleControllers.add(c);
+    if (!c.getAttachState()) {
+      c.onAttachStateChanged(provider.getParentOrSelf().navigationController(), true);
+    }
     return c;
   }
 
@@ -135,6 +154,10 @@ public class ViewControllerPagerAdapter extends PagerAdapter implements Destroya
   public void destroyItem (ViewGroup container, int position, @NonNull Object object) {
     ViewController<?> c = (ViewController<?>) object;
     container.removeView(c.getValue());
+    visibleControllers.remove(c);
+    if (c.getAttachState()) {
+      c.onAttachStateChanged(provider.getParentOrSelf().navigationController(), false);
+    }
     provider.onAfterHide(position, c);
     c.onCleanAfterHide();
   }

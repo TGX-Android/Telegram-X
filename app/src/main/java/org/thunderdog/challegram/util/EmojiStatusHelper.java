@@ -34,9 +34,12 @@ import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextMedia;
@@ -71,7 +74,7 @@ public class EmojiStatusHelper implements Destroyable {
   }
 
   public void invalidateEmojiStatusReceiver (@Nullable TextMedia specificMedia) {
-    invalidateEmojiStatusReceiver(emojiStatusDrawable != null ? emojiStatusDrawable.emojiStatus: null, specificMedia);
+    invalidateEmojiStatusReceiver(emojiStatusDrawable != null ? emojiStatusDrawable.emojiStatus : null, specificMedia);
   }
 
   public void invalidateEmojiStatusReceiver (Text text, @Nullable TextMedia specificMedia) {
@@ -130,11 +133,11 @@ public class EmojiStatusHelper implements Destroyable {
   }
 
   public int getLastDrawX () {
-    return emojiStatusDrawable != null ? emojiStatusDrawable.lastDrawX: 0;
+    return emojiStatusDrawable != null ? emojiStatusDrawable.lastDrawX : 0;
   }
 
   public int getLastDrawY () {
-    return emojiStatusDrawable != null ? emojiStatusDrawable.lastDrawY: 0;
+    return emojiStatusDrawable != null ? emojiStatusDrawable.lastDrawY : 0;
   }
 
   public void attach () {
@@ -155,11 +158,11 @@ public class EmojiStatusHelper implements Destroyable {
   }
 
   public int getWidth () {
-    return emojiStatusDrawable != null ? emojiStatusDrawable.getWidth(): 0;
+    return emojiStatusDrawable != null ? emojiStatusDrawable.getWidth() : 0;
   }
 
   public int getWidth (int offset) {
-    return emojiStatusDrawable != null ? emojiStatusDrawable.getWidth(offset): 0;
+    return emojiStatusDrawable != null ? emojiStatusDrawable.getWidth(offset) : 0;
   }
 
   public void draw (Canvas c, int startX, int startY) {
@@ -228,7 +231,7 @@ public class EmojiStatusHelper implements Destroyable {
     private final @Nullable ImageReceiver preview;
     private final @Nullable ImageReceiver imageReceiver;
     private final @Nullable GifReceiver gifReceiver;
-    private final boolean needRepainting;
+    private final boolean needThemedColorFilter;
     private int lastDrawX, lastDrawY;
     private float lastDrawScale = 1f;
     private boolean ignoreDraw;
@@ -240,11 +243,11 @@ public class EmojiStatusHelper implements Destroyable {
       this.textColorSet = textColorSet;
       this.textMediaListener = textMediaListener;
       this.clickListener = clickListener;
-      this.starDrawable = emojiStatus == null && needDrawEmojiStatus ? Drawables.get(defaultStarIconId): null;
+      this.starDrawable = emojiStatus == null && needDrawEmojiStatus ? Drawables.get(defaultStarIconId) : null;
       this.preview = null;
       this.imageReceiver = null;
       this.gifReceiver = null;
-      this.needRepainting = false;
+      this.needThemedColorFilter = false;
     }
 
     private EmojiStatusDrawable (View v, @Nullable String sharedUsageId, boolean isPremium, @Nullable TdApi.Sticker sticker, @Nullable Text.ClickListener clickListener, @Nullable TextColorSet textColorSet, int defaultStarIconId, int textSize) {
@@ -254,8 +257,8 @@ public class EmojiStatusHelper implements Destroyable {
       this.textColorSet = textColorSet;
       this.textMediaListener = null;
       this.clickListener = clickListener;
-      this.starDrawable = needDrawEmojiStatus && (sticker == null || !TD.isFileLoaded(sticker.sticker)) ? Drawables.get(defaultStarIconId): null;
-      this.needRepainting = TD.needRepainting(sticker);
+      this.starDrawable = needDrawEmojiStatus && (sticker == null || !TD.isFileLoaded(sticker.sticker)) ? Drawables.get(defaultStarIconId) : null;
+      this.needThemedColorFilter = TD.needThemedColorFilter(sticker);
 
       if (sticker != null && TD.isFileLoaded(sticker.sticker)) {
         this.imageReceiver = new ImageReceiver(v, 0);
@@ -341,10 +344,10 @@ public class EmojiStatusHelper implements Destroyable {
         return emojiStatus.onTouchEvent(v, e);
       }
 
-      int width = starDrawable != null ? starDrawable.getMinimumWidth():
-        imageReceiver != null ? imageReceiver.getWidth(): 0;
-      int height = starDrawable != null ? starDrawable.getMinimumHeight():
-        imageReceiver != null ? imageReceiver.getHeight(): 0;
+      int width = starDrawable != null ? starDrawable.getMinimumWidth() :
+        imageReceiver != null ? imageReceiver.getWidth() : 0;
+      int height = starDrawable != null ? starDrawable.getMinimumHeight() :
+        imageReceiver != null ? imageReceiver.getHeight() : 0;
 
       if (clickListener == null || width == 0 || height == 0) return false;
 
@@ -392,18 +395,36 @@ public class EmojiStatusHelper implements Destroyable {
     public void draw (Canvas c, int startX, int startY, float alpha, float scale, ComplexReceiver emojiStatusReceiver) {
       if (ignoreDraw) return;
 
-      if (scale != 1f) {
-        c.save();
+      final boolean isScaled = scale != 1f;
+      int restoreToCount = -1;
+      if (isScaled) {
+        restoreToCount = Views.save(c);
         c.scale(scale, scale, startX, startY);
       }
       lastDrawX = startX;
       lastDrawY = startY;
       lastDrawScale = scale;
       if (imageReceiver != null && gifReceiver != null && preview != null) {
-        if (needRepainting) {
-          c.saveLayerAlpha(startX, startY, startX + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), startY + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), 255, Canvas.ALL_SAVE_FLAG);
+        if (!needThemedColorFilter) {
+          gifReceiver.disablePorterDuffColorFilter();
+          imageReceiver.disablePorterDuffColorFilter();
+          preview.disablePorterDuffColorFilter();
+        } else if (textColorSet != null) {
+          int color = textColorSet.mediaTextColorOrId();
+          if (textColorSet.mediaTextColorIsId()) {
+            gifReceiver.setThemedPorterDuffColorId(color);
+            imageReceiver.setThemedPorterDuffColorId(color);
+            preview.setThemedPorterDuffColorId(color);
+          } else {
+            gifReceiver.setPorterDuffColorFilter(color);
+            imageReceiver.setPorterDuffColorFilter(color);
+            preview.setPorterDuffColorFilter(color);
+          }
+        } else {
+          gifReceiver.setThemedPorterDuffColorId(ColorId.icon);
+          imageReceiver.setThemedPorterDuffColorId(ColorId.icon);
+          preview.setThemedPorterDuffColorId(ColorId.icon);
         }
-
         imageReceiver.setBounds(startX, startY, startX + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), startY + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)));
         preview.setBounds(startX, startY, startX + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), startY + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)));
         gifReceiver.setBounds(startX, startY, startX + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), startY + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)));
@@ -418,20 +439,19 @@ public class EmojiStatusHelper implements Destroyable {
           }
           imageReceiver.draw(c);
         }
-        if (needRepainting) {
-          if (textColorSet != null) {
-            c.drawRect(startX, startY, startX + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), startY + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), Paints.getSrcInPaint(textColorSet.emojiStatusColor()));
-          }
-          c.restore();
-        }
       } else if (emojiStatus != null) {
         emojiStatus.draw(c, startX, startY, null, alpha, emojiStatusReceiver);
       } else if (starDrawable != null && textColorSet != null) {
-        Paint p = Paints.getPorterDuffPaint(ColorUtils.alphaColor(alpha, textColorSet.emojiStatusColor()));
+        Paint p;
+        if (textColorSet.mediaTextColorIsId()) {
+          p = PorterDuffPaint.get(textColorSet.mediaTextColorOrId(), alpha);
+        } else {
+          p = Paints.getPorterDuffPaint(ColorUtils.alphaColor(alpha, textColorSet.mediaTextColorOrId()));
+        }
         Drawables.draw(c, starDrawable, startX, startY + (Screen.dp(textSize + 2) - starDrawable.getMinimumHeight()) / 2f, p);
       }
-      if (scale != 1f) {
-        c.restore();
+      if (isScaled) {
+        Views.restore(c, restoreToCount);
       }
     }
 

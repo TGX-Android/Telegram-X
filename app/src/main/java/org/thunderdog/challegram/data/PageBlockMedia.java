@@ -453,7 +453,7 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
       final int x = ((view.getMeasuredWidth() - getMinimumContentPadding(true) - getMinimumContentPadding(false)) / 2 - wrapper.getCellWidth() / 2) + getMinimumContentPadding(true);
       wrapper.draw(view, c, x, getContentTop(), preview, receiver, 1f);
       if (!StringUtils.isEmpty(url)) {
-        Drawables.draw(c, linkIcon, receiver.getRight() - linkIcon.getMinimumWidth() - Screen.dp(9f), receiver.getTop() + Screen.dp(9f), Paints.getPorterDuffPaint(0xffffffff));
+        Drawables.draw(c, linkIcon, receiver.getRight() - linkIcon.getMinimumWidth() - Screen.dp(9f), receiver.getTop() + Screen.dp(9f), Paints.whitePorterDuffPaint());
       }
     }
   }

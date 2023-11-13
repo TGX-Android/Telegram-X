@@ -21,8 +21,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
@@ -37,11 +35,14 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.mediaview.crop.CropState;
 import org.thunderdog.challegram.mediaview.paint.PaintState;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.UI;
 
 import me.vkryl.android.AnimatorUtils;
+import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 
@@ -65,7 +66,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
 
   private final Rect drawRegion, bitmapRect;
 
-  private final Paint bitmapPaint;
+  private final Paint metadataPaint;
   private Matrix bitmapMatrix;
 
   private Paint roundPaint; // rounded corners
@@ -87,7 +88,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
       float density = UI.getResources().getDisplayMetrics().density;
       ANIMATION_ENABLED = density >= 2.0f; //(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && density >= 2f) || (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP && density > 2f);
     }
-    this.bitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG);
+    this.metadataPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG);
     this.view = view;
     this.reference = new WatcherReference(this);
     this.drawRegion = new Rect();
@@ -98,9 +99,11 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     }
   }
 
+  /** @noinspection unchecked*/
   @Override
-  public void setUpdateListener (ReceiverUpdateListener listener) {
+  public final ImageReceiver setUpdateListener (ReceiverUpdateListener listener) {
     this.updateListener = listener;
+    return this;
   }
 
   @Override
@@ -248,35 +251,15 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     return sourceHeight;
   }
 
-  private boolean hasColorFilter;
-  private int colorFilter;
+  private int porterDuffColor = ColorId.NONE;
+  private float porterDuffAlpha;
+  private boolean porterDuffColorIsId = true;
 
   @Override
-  public void setColorFilter (int colorFilter) {
-    if (!this.hasColorFilter || this.colorFilter != colorFilter) {
-      this.hasColorFilter = true;
-      this.colorFilter = colorFilter;
-
-      PorterDuffColorFilter duffColorFilter = new PorterDuffColorFilter(colorFilter, PorterDuff.Mode.SRC_IN);
-      this.bitmapPaint.setColorFilter(duffColorFilter);
-      if (repeatPaint != null) {
-        this.repeatPaint.setColorFilter(duffColorFilter);
-      }
-
-      invalidate();
-    }
-  }
-
-  @Override
-  public void disableColorFilter () {
-    if (this.hasColorFilter) {
-      this.hasColorFilter = false;
-      this.bitmapPaint.setColorFilter(null);
-      if (repeatPaint != null) {
-        this.repeatPaint.setColorFilter(null);
-      }
-      invalidate();
-    }
+  public void setPorterDuffColorFilter (int colorOrColorId, float alpha, boolean colorIsId) {
+    this.porterDuffColor = colorOrColorId;
+    this.porterDuffAlpha = alpha;
+    this.porterDuffColorIsId = colorIsId;
   }
 
   public void setAnimationDisabled (boolean animationDisabled) {
@@ -297,7 +280,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
         if (repeatPaint != null) {
           repeatPaint.setAlpha((int) (255f * alpha));
         }
-        bitmapPaint.setAlpha((int) (255f * alpha));
+        metadataPaint.setAlpha((int) (255f * alpha));
       }
 
       invalidate();
@@ -322,7 +305,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
 
       if (roundPaint == null) {
         roundPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
-        roundPaint.setAlpha(bitmapPaint.getAlpha());
+        roundPaint.setAlpha(metadataPaint.getAlpha());
         shaderMatrix = new Matrix();
         bitmapRectF = new RectF();
         roundRect = new RectF();
@@ -635,6 +618,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     return bottom;
   }
 
+  @Override
   public void setAlpha (@FloatRange(from = 0.0, to = 1.0) float alpha) {
     if (ANIMATION_ENABLED && !animationDisabled && this.alpha != alpha) {
       this.alpha = alpha;
@@ -645,7 +629,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
         if (repeatPaint != null) {
           repeatPaint.setAlpha((int) (255f * alpha));
         }
-        bitmapPaint.setAlpha((int) (255f * alpha));
+        metadataPaint.setAlpha((int) (255f * alpha));
       }
       invalidate();
     }
@@ -671,7 +655,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
       if (repeatPaint != null) {
         repeatPaint.setAlpha((int) (255f * alpha));
       }
-      bitmapPaint.setAlpha((int) (255f * alpha));
+      metadataPaint.setAlpha((int) (255f * alpha));
     }
   }
 
@@ -874,8 +858,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
         if (bitmapChanged) {
           if (repeatPaint == null) {
             repeatPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG);
-            repeatPaint.setAlpha(bitmapPaint.getAlpha());
-            repeatPaint.setColorFilter(bitmapPaint.getColorFilter());
+            repeatPaint.setAlpha(metadataPaint.getAlpha());
           }
 
           bitmapShader = new BitmapShader(bitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
@@ -1081,18 +1064,19 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
 
   @Override
   public float getPaintAlpha () {
-    return (float) (repeatPaint != null ? repeatPaint.getAlpha() : roundPaint != null ? roundPaint.getAlpha() : bitmapPaint.getAlpha()) / 255f;
+    return (float) (repeatPaint != null ? repeatPaint.getAlpha() : roundPaint != null ? roundPaint.getAlpha() : metadataPaint.getAlpha()) / 255f;
   }
 
   @Override
   public void setPaintAlpha (float factor) {
-    savedAlpha = Color.rgb(repeatPaint != null ? repeatPaint.getAlpha() : 0, roundPaint != null ? roundPaint.getAlpha() : 0, bitmapPaint.getAlpha());
+    int bitmapAlpha = metadataPaint.getAlpha();
+    savedAlpha = Color.rgb(repeatPaint != null ? repeatPaint.getAlpha() : bitmapAlpha, roundPaint != null ? roundPaint.getAlpha() : bitmapAlpha, bitmapAlpha);
     final int alpha = (int) (255f * MathUtils.clamp(factor));
     if (roundPaint != null)
       roundPaint.setAlpha(alpha);
     if (repeatPaint != null)
       repeatPaint.setAlpha(alpha);
-    bitmapPaint.setAlpha(alpha);
+    metadataPaint.setAlpha(alpha);
   }
 
   @Override
@@ -1101,7 +1085,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
       repeatPaint.setAlpha(Color.red(savedAlpha));
     if (roundPaint != null)
       roundPaint.setAlpha(Color.green(savedAlpha));
-    bitmapPaint.setAlpha(Color.blue(savedAlpha));
+    metadataPaint.setAlpha(Color.blue(savedAlpha));
     savedAlpha = 0;
   }
 
@@ -1152,103 +1136,124 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     return false;
   }
 
+  public Paint getBitmapPaint () {
+    float alpha = (float) metadataPaint.getAlpha() / 255f;
+    if (porterDuffColorIsId && porterDuffColor == ColorId.NONE) {
+      return Paints.bitmapPaint(alpha);
+    } else if (porterDuffColorIsId) {
+      return PorterDuffPaint.get(porterDuffColor, porterDuffAlpha * alpha);
+    } else {
+      return Paints.getPorterDuffPaint(ColorUtils.alphaColor(porterDuffAlpha * alpha, porterDuffColor));
+    }
+  }
+
   @Override
   public void draw (Canvas c) {
-    if (U.isValidBitmap(bitmap)) {
-      final int rotation = getVisualRotation();
-      if (radius != 0) {
-        if (rotation != 0) {
-          c.save();
-          c.rotate(rotation, left + (right - left) / 2f, top + (bottom - top) / 2f);
-        }
-        drawRoundRect(c, roundRect, radius, radius, roundPaint);
-        if (rotation != 0) {
-          c.restore();
-        }
-      } else if (file.getScaleType() == ImageFile.CENTER_REPEAT) {
+    if (!U.isValidBitmap(bitmap)) {
+      return;
+    }
+
+    Paint paint = getBitmapPaint();
+    if (roundPaint != null) {
+      roundPaint.setColorFilter(paint.getColorFilter());
+    }
+    if (repeatPaint != null) {
+      repeatPaint.setColorFilter(paint.getColorFilter());
+    }
+
+    final int rotation = getVisualRotation();
+    if (radius != 0) {
+      if (rotation != 0) {
         c.save();
-        c.drawRect(left, top, right, bottom, repeatPaint);
+        c.rotate(rotation, left + (right - left) / 2f, top + (bottom - top) / 2f);
+      }
+      drawRoundRect(c, roundRect, radius, radius, roundPaint);
+      if (rotation != 0) {
         c.restore();
-      } else {
-        PaintState paintState = file.getPaintState();
-        float scaleType = file.getScaleType();
-        if (scaleType == ImageFile.CENTER_CROP || scaleType == ImageFile.FIT_CENTER) {
-          // c.drawRect(left, top, right, bottom, Paints.fillingPaint(0xaa00ff00));
-          boolean hasCrop = displayCrop != null;
-          float degrees = 0f;
-          if (hasCrop) {
-            degrees = displayCrop.getDegreesAroundCenter();
-            hasCrop = degrees != 0f || !displayCrop.isRegionEmpty();
+      }
+    } else if (file.getScaleType() == ImageFile.CENTER_REPEAT) {
+      c.save();
+      c.drawRect(left, top, right, bottom, repeatPaint);
+      c.restore();
+    } else {
+      PaintState paintState = file.getPaintState();
+      float scaleType = file.getScaleType();
+      if (scaleType == ImageFile.CENTER_CROP || scaleType == ImageFile.FIT_CENTER) {
+        // c.drawRect(left, top, right, bottom, Paints.fillingPaint(0xaa00ff00));
+        boolean hasCrop = displayCrop != null;
+        float degrees = 0f;
+        if (hasCrop) {
+          degrees = displayCrop.getDegreesAroundCenter();
+          hasCrop = degrees != 0f || !displayCrop.isRegionEmpty();
+        }
+
+        c.save();
+        c.clipRect(left, top, right, bottom);
+        if (left != 0 || top != 0) {
+          c.translate(left, top);
+        }
+        if (rotation != 0) {
+          c.rotate(rotation, (right - left) / 2f, (bottom - top) / 2f);
+        }
+
+        if (hasCrop) {
+          c.concat(bitmapMatrix);
+          Rect rect = Paints.getRect();
+          if (cropApplyFactor < 1f || degrees != 0f || paintState != null) {
+            int left = croppedRect.left - bitmapRect.left;
+            int top = croppedRect.top - bitmapRect.top;
+            c.clipRect(left, top, left + croppedRect.width(), top + croppedRect.height());
           }
+          rect.set(0, 0, bitmapRect.width(), bitmapRect.height());
+          if (degrees != 0f) {
+            c.translate(-bitmapRect.left, -bitmapRect.top);
 
-          c.save();
-          c.clipRect(left, top, right, bottom);
-          if (left != 0 || top != 0) {
-            c.translate(left, top);
-          }
-          if (rotation != 0) {
-            c.rotate(rotation, (right - left) / 2f, (bottom - top) / 2f);
-          }
+            float w = bitmap.getWidth();
+            float h = bitmap.getHeight();
+            double rad = Math.toRadians(degrees);
+            float sin = (float) Math.abs(Math.sin(rad));
+            float cos = (float) Math.abs(Math.cos(rad));
 
-          if (hasCrop) {
-            c.concat(bitmapMatrix);
-            Rect rect = Paints.getRect();
-            if (cropApplyFactor < 1f || degrees != 0f || paintState != null) {
-              int left = croppedRect.left - bitmapRect.left;
-              int top = croppedRect.top - bitmapRect.top;
-              c.clipRect(left, top, left + croppedRect.width(), top + croppedRect.height());
-            }
-            rect.set(0, 0, bitmapRect.width(), bitmapRect.height());
-            if (degrees != 0f) {
-              c.translate(-bitmapRect.left, -bitmapRect.top);
+            // W = w·|cos φ| + h·|sin φ|
+            // H = w·|sin φ| + h·|cos φ|
 
-              float w = bitmap.getWidth();
-              float h = bitmap.getHeight();
-              double rad = Math.toRadians(degrees);
-              float sin = (float) Math.abs(Math.sin(rad));
-              float cos = (float) Math.abs(Math.cos(rad));
+            float W = w * cos + h * sin;
+            float H = w * sin + h * cos;
 
-              // W = w·|cos φ| + h·|sin φ|
-              // H = w·|sin φ| + h·|cos φ|
+            float scale = Math.max(W / w, H / h);
+            float cx = w / 2;
+            float cy = h / 2;
+            c.rotate(degrees, cx, cy);
+            c.scale(scale, scale, cx, cy);
 
-              float W = w * cos + h * sin;
-              float H = w * sin + h * cos;
-
-              float scale = Math.max(W / w, H / h);
-              float cx = w / 2;
-              float cy = h / 2;
-              c.rotate(degrees, cx, cy);
-              c.scale(scale, scale, cx, cy);
-
-              drawBitmap(c, bitmap, 0, 0, bitmapPaint);
-              if (paintState != null) {
-                paintState.draw(c, 0, 0, bitmap.getWidth(), bitmap.getHeight());
-              }
-            } else {
-              drawBitmap(c, bitmap, bitmapRect, rect, bitmapPaint);
-              if (paintState != null) {
-                c.clipRect(rect);
-                DrawAlgorithms.drawPainting(c, bitmap, bitmapRect, rect, paintState);
-              }
-            }
-          } else {
-            c.concat(bitmapMatrix);
-            drawBitmap(c, bitmap, 0, 0, bitmapPaint);
+            drawBitmap(c, bitmap, 0, 0, paint);
             if (paintState != null) {
-              c.clipRect(0, 0, bitmap.getWidth(), bitmap.getHeight());
               paintState.draw(c, 0, 0, bitmap.getWidth(), bitmap.getHeight());
             }
+          } else {
+            drawBitmap(c, bitmap, bitmapRect, rect, paint);
+            if (paintState != null) {
+              c.clipRect(rect);
+              DrawAlgorithms.drawPainting(c, bitmap, bitmapRect, rect, paintState);
+            }
           }
-
-          c.restore();
         } else {
-          drawBitmap(c, bitmap, bitmapRect, drawRegion, bitmapPaint);
+          c.concat(bitmapMatrix);
+          drawBitmap(c, bitmap, 0, 0, paint);
           if (paintState != null) {
-            c.save();
-            c.clipRect(drawRegion);
-            DrawAlgorithms.drawPainting(c, bitmap, bitmapRect, drawRegion, paintState);
-            c.restore();
+            c.clipRect(0, 0, bitmap.getWidth(), bitmap.getHeight());
+            paintState.draw(c, 0, 0, bitmap.getWidth(), bitmap.getHeight());
           }
+        }
+
+        c.restore();
+      } else {
+        drawBitmap(c, bitmap, bitmapRect, drawRegion, paint);
+        if (paintState != null) {
+          c.save();
+          c.clipRect(drawRegion);
+          DrawAlgorithms.drawPainting(c, bitmap, bitmapRect, drawRegion, paintState);
+          c.restore();
         }
       }
     }

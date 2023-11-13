@@ -605,23 +605,13 @@ public class ContactsController extends TelegramViewController<ContactsControlle
       userIds[i] = pickedChats.get(i).getUserId();
     }
 
-    tdlib.client().send(new TdApi.AddChatMembers(chat.id, userIds), object -> {
-      switch (object.getConstructor()) {
-        case TdApi.Ok.CONSTRUCTOR: {
-          UI.unlock(ContactsController.this);
-          tdlib.ui().openChat(ContactsController.this, chat, null);
-          break;
-        }
-        case TdApi.Error.CONSTRUCTOR: {
-          UI.showError(object);
-          UI.unlock(ContactsController.this);
-          break;
-        }
-        default: {
-          Log.unexpectedTdlibResponse(object, TdApi.AddChatMembers.class, TdApi.Ok.class);
-          UI.unlock(ContactsController.this);
-          break;
-        }
+    tdlib.send(new TdApi.AddChatMembers(chat.id, userIds), (ok, error) -> {
+      if (error != null) {
+        UI.showError(error);
+        UI.unlock(ContactsController.this);
+      } else {
+        UI.unlock(ContactsController.this);
+        tdlib.ui().openChat(ContactsController.this, chat, null);
       }
     });
   }

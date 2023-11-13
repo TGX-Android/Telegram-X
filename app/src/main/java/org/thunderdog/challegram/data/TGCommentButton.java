@@ -136,7 +136,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
   }
 
   public void requestResources (@Nullable ComplexReceiver complexReceiver, boolean isUpdate) {
-    this.avatars.requestFiles(complexReceiver, isUpdate);
+    this.avatars.requestFiles(complexReceiver, isUpdate, false);
   }
 
   public void setViewMode (@ViewMode int viewMode, boolean animated) {
@@ -240,6 +240,10 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
     return rect.contains(Math.round(x), Math.round(y));
   }
 
+  public void getRect (Rect rect) {
+    rect.set(this.rect);
+  }
+
   private static final int FLAG_CAUGHT = 0x01;
   private static final int FLAG_BLOCKED = 0x02;
 
@@ -277,11 +281,11 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
   @Override public void onClickAt (View view, float x, float y) {
     if (context.isRepliesChat()) {
       TdApi.MessageForwardInfo forwardInfo = context.msg.forwardInfo;
-      MessageId replyToMessageId = new MessageId(context.msg.replyInChatId, context.msg.replyToMessageId);
+      MessageId replyToMessageId = MessageId.valueOf(context.msg.replyTo);
       if (forwardInfo != null && forwardInfo.fromChatId != 0 && forwardInfo.fromMessageId != 0) {
         MessageId replyMessageId = new MessageId(forwardInfo.fromChatId, forwardInfo.fromMessageId);
         context.openMessageThread(replyMessageId, replyToMessageId);
-      } else {
+      } else if (replyToMessageId != null) {
         context.openMessageThread(replyToMessageId);
       }
     } else {
@@ -436,7 +440,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
 
     int avatarsX = right - (useBubbles ? Screen.dp(16f) : Screen.dp(38f));
     int avatarsY = rect.centerY();
-    avatars.draw(view, c, avatarsX, avatarsY, Gravity.RIGHT, alpha);
+    avatars.draw(view, c, view.getAvatarsReceiver(), avatarsX, avatarsY, Gravity.RIGHT, alpha);
 
     int badgeX = avatarsX - Math.round(avatars.getAnimatedWidth()) - Screen.dp(8f) - Screen.dp(BADGE_RADIUS);
     int badgeY = rect.centerY();
@@ -497,7 +501,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
 
     int avatarsX = right - Screen.dp(6f);
     int avatarsY = rect.centerY();
-    avatars.draw(view, c, avatarsX, avatarsY, Gravity.RIGHT, alpha);
+    avatars.draw(view, c, view.getAvatarsReceiver(), avatarsX, avatarsY, Gravity.RIGHT, alpha);
 
     float badgeX = avatarsX - avatars.getAnimatedWidth() - Screen.dp(8f) - Screen.dp(BADGE_RADIUS);
     float badgeY = rect.centerY();
@@ -507,7 +511,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
   }
 
   private void drawText (@NonNull Canvas c, float x, float cy, float alpha) {
-    DrawAlgorithms.drawCounter(c, x, cy, Gravity.LEFT, counterAnimator, getTextSize(), false, this, null, Gravity.LEFT, 0, 0, alpha, 0, 1f);
+    DrawAlgorithms.drawCounter(c, x, cy, Gravity.LEFT, counterAnimator, getTextSize(), alpha, /* colorSet */ this, /* scale */ 1f);
   }
 
   private void drawSelection (@NonNull Canvas c, float selectionFactor, int selectionColor) {
@@ -626,11 +630,12 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
   private void openCommentsPreviewAsync (int x, int y) {
     MessageId messageId, fallbackMessageId;
     if (context.isRepliesChat()) {
+      MessageId replyToMessageId = MessageId.valueOf(context.msg.replyTo);
       if (context.msg.forwardInfo != null) {
         messageId = new MessageId(context.msg.forwardInfo.fromChatId, context.msg.forwardInfo.fromMessageId);
-        fallbackMessageId = new MessageId(context.msg.replyInChatId, context.msg.replyToMessageId);
+        fallbackMessageId = replyToMessageId;
       } else {
-        messageId = new MessageId(context.msg.replyInChatId, context.msg.replyToMessageId);
+        messageId = replyToMessageId;
         fallbackMessageId = null;
       }
     } else {
@@ -642,37 +647,36 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
         return;
       }
     }
-    openCommentsPreviewAsync(messageId, fallbackMessageId, x, y);
+    if (messageId != null) {
+      openCommentsPreviewAsync(messageId, fallbackMessageId, x, y);
+    }
   }
 
   private void openCommentsPreviewAsync (@NonNull MessageId messageId, @Nullable MessageId fallbackMessageId, int x, int y) {
     cancelAsyncPreview();
     TdApi.GetMessageThread messageThreadQuery = new TdApi.GetMessageThread(messageId.getChatId(), messageId.getMessageId());
     currentMessageThreadQuery = messageThreadQuery;
-    context.tdlib().send(messageThreadQuery, (result) -> context.runOnUiThreadOptional(() -> {
+    context.tdlib().send(messageThreadQuery, (messageThreadInfo, error) -> context.runOnUiThreadOptional(() -> {
       if (messageThreadQuery != currentMessageThreadQuery) {
         return;
       }
       currentMessageThreadQuery = null;
-      switch (result.getConstructor()) {
-        case TdApi.MessageThreadInfo.CONSTRUCTOR:
-          openCommentsPreviewAsync((TdApi.MessageThreadInfo) result, x, y);
-          break;
-        case TdApi.Error.CONSTRUCTOR:
-          if ("MSG_ID_INVALID".equals(TD.errorText(result))) {
-            if (context.isChannel()) {
-              UI.showToast(R.string.ChannelPostDeleted, Toast.LENGTH_SHORT);
-            } else {
-              UI.showError(result);
-            }
-            break;
+      if (error != null) {
+        if ("MSG_ID_INVALID".equals(TD.errorText(error))) {
+          if (context.isChannel()) {
+            UI.showToast(R.string.ChannelPostDeleted, Toast.LENGTH_SHORT);
+          } else {
+            UI.showError(error);
           }
-          if (fallbackMessageId != null) {
-            openCommentsPreviewAsync(fallbackMessageId, null, x, y);
-            break;
-          }
-          UI.showError(result);
-          break;
+          return;
+        }
+        if (fallbackMessageId != null) {
+          openCommentsPreviewAsync(fallbackMessageId, null, x, y);
+          return;
+        }
+        UI.showError(error);
+      } else {
+        openCommentsPreviewAsync(messageThreadInfo, x, y);
       }
     }));
   }

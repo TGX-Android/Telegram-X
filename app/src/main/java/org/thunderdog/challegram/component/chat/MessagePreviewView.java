@@ -22,7 +22,7 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.config.Config;
-import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 import org.thunderdog.challegram.support.RippleSupport;
@@ -31,6 +31,8 @@ import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.telegram.TdlibMessageViewer;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -43,6 +45,8 @@ import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.widget.AttachDelegate;
 import org.thunderdog.challegram.widget.BaseView;
 
+import java.util.List;
+
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.android.animator.ReplaceAnimator;
@@ -54,7 +58,7 @@ import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 
-public class MessagePreviewView extends BaseView implements AttachDelegate, Destroyable, ChatListener, MessageListener, TdlibCache.UserDataChangeListener, TGLegacyManager.EmojiLoadListener {
+public class MessagePreviewView extends BaseView implements AttachDelegate, Destroyable, ChatListener, MessageListener, TdlibCache.UserDataChangeListener, TGLegacyManager.EmojiLoadListener, TdlibUi.MessageProvider {
   private static class TextEntry extends ListAnimator.MeasurableEntry<Text> implements Destroyable {
     public Drawable drawable;
     public ComplexReceiver receiver;
@@ -104,7 +108,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   private String forcedTitle;
   private boolean ignoreAlbumRefreshers, useAvatarFallback;
 
-  private TD.ContentPreview contentPreview;
+  private ContentPreview contentPreview;
 
   public void setMessage (@Nullable TdApi.Message message, @Nullable TdApi.SearchMessagesFilter filter, @Nullable String forcedTitle, boolean ignoreAlbumRefreshers) {
     this.ignoreAlbumRefreshers = ignoreAlbumRefreshers;
@@ -167,7 +171,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   }
 
   private void buildPreview () {
-    this.contentPreview = TD.getChatListPreview(tdlib, message.chatId, message);
+    this.contentPreview = ContentPreview.getChatListPreview(tdlib, message.chatId, message, true);
     if (contentPreview.hasRefresher() && !(ignoreAlbumRefreshers && contentPreview.isMediaGroup())) {
       contentPreview.refreshContent((chatId, messageId, newPreview, oldPreview) -> {
         tdlib.runOnUiThread(() -> {
@@ -515,5 +519,27 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   @Override
   public void onEmojiUpdated (boolean isPackSwitch) {
     invalidate();
+  }
+
+  @Override
+  public boolean isMediaGroup () {
+    Tdlib.Album album = contentPreview != null ? contentPreview.getAlbum() : null;
+    return album != null;
+  }
+
+  @Override
+  public List<TdApi.Message> getVisibleMediaGroup () {
+    Tdlib.Album album = contentPreview != null ? contentPreview.getAlbum() : null;
+    return album != null ? album.messages : null;
+  }
+
+  @Override
+  public TdApi.Message getVisibleMessage () {
+    return message;
+  }
+
+  @Override
+  public int getVisibleMessageFlags () {
+    return TdlibMessageViewer.Flags.NO_SENSITIVE_SCREENSHOT_NOTIFICATION;
   }
 }

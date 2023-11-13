@@ -41,7 +41,7 @@ import me.vkryl.core.StringUtils;
 
 public class AvatarPlaceholder {
   public static class Metadata {
-    public final @ColorId int colorId;
+    public final @ColorId int colorId, iconColorId;
     public final @Nullable String letters;
     public final @DrawableRes int drawableRes, extraDrawableRes;
 
@@ -61,6 +61,10 @@ public class AvatarPlaceholder {
       this(colorId, (Letters) null, iconRes, 0);
     }
 
+    public Metadata (int colorId, int iconRes, int iconColorId) {
+      this(colorId, null, iconRes, 0, iconColorId);
+    }
+
     public Metadata (int colorId, @Nullable Letters letters) {
       this(colorId, letters, 0, 0);
     }
@@ -70,7 +74,12 @@ public class AvatarPlaceholder {
     }
 
     public Metadata (int colorId, @Nullable String letters, int drawableRes, int extraDrawableRes) {
+      this(colorId, letters, drawableRes, extraDrawableRes, ColorId.avatar_content);
+    }
+
+    public Metadata (int colorId, @Nullable String letters, int drawableRes, int extraDrawableRes, int iconColorId) {
       this.colorId = colorId;
+      this.iconColorId = iconColorId;
       this.letters = letters;
       this.drawableRes = drawableRes;
       this.extraDrawableRes = extraDrawableRes;
@@ -165,7 +174,7 @@ public class AvatarPlaceholder {
       } else {
         saveCount = -1;
       }
-      Drawables.draw(c, drawable, centerX - drawable.getMinimumWidth() / 2f, centerY - drawable.getMinimumHeight() / 2f, PorterDuffPaint.get(ColorId.avatar_content, alpha));
+      Drawables.draw(c, drawable, centerX - drawable.getMinimumWidth() / 2f, centerY - drawable.getMinimumHeight() / 2f, PorterDuffPaint.get(metadata.iconColorId, alpha));
       if (needRestore) {
         Views.restore(c, saveCount);
       }

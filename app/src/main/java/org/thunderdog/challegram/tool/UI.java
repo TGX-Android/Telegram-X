@@ -23,13 +23,17 @@ import android.content.res.Resources;
 import android.os.Build;
 import android.os.CancellationSignal;
 import android.os.Handler;
+import android.os.LocaleList;
 import android.os.Looper;
 import android.text.format.DateFormat;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
+import android.view.inputmethod.InputMethodSubtype;
 import android.widget.Toast;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.core.content.ContextCompat;
@@ -38,6 +42,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
@@ -57,13 +62,17 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.Unlockable;
 
 import java.io.File;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
 import me.vkryl.android.DeviceUtils;
+import me.vkryl.android.LocaleUtils;
 import me.vkryl.android.SdkVersion;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.util.InvalidateDelegate;
@@ -72,16 +81,19 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceList;
 
 public class UI {
-  public static final int STATE_UNKNOWN = -1;
-  public static final int STATE_RESUMED = 0;
-  public static final int STATE_PAUSED = 1;
-  public static final int STATE_DESTROYED = 2;
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    State.UNKNOWN, State.RESUMED, State.PAUSED, State.DESTROYED
+  })
+  public @interface State {
+    int UNKNOWN = -1, RESUMED = 0, PAUSED = 1, DESTROYED = 2;
+  }
 
   private static Context appContext;
   private static WeakReference<BaseActivity> uiContext;
   private static UIHandler _appHandler;
   private static Handler _progressHandler;
-  private static int uiState = STATE_UNKNOWN;
+  private static int uiState = State.UNKNOWN;
 
   private static Boolean isTablet;
 
@@ -230,7 +242,7 @@ public class UI {
 
   public static boolean setUiState (BaseActivity activity, int state) {
     WeakReference<BaseActivity> foundKey = null;
-    boolean foreground = state == UI.STATE_RESUMED;
+    boolean foreground = state == State.RESUMED;
     if (resumeStates == null) {
       if (foreground) {
         resumeStates = new HashMap<>();
@@ -259,12 +271,12 @@ public class UI {
         }
       }
     }
-    if (state == UI.STATE_DESTROYED) {
+    if (state == State.DESTROYED) {
       if (foundKey != null) {
         resumeStates.remove(foundKey);
       }
     } else {
-      Boolean value = state == UI.STATE_RESUMED;
+      Boolean value = state == State.RESUMED;
       if (foundKey != null) {
         resumeStates.put(foundKey, value);
       } else {
@@ -274,18 +286,18 @@ public class UI {
         resumeStates.put(new WeakReference<>(activity), value);
       }
     }
-    return setUiState(foreground ? UI.STATE_RESUMED : UI.STATE_PAUSED);
+    return setUiState(foreground ? State.RESUMED : State.PAUSED);
   }
 
   private static boolean setUiState (int state) {
     if (uiState != state) {
-      if ((state == STATE_PAUSED || state == STATE_DESTROYED) && uiState == STATE_RESUMED) {
+      if ((state == State.PAUSED || state == State.DESTROYED) && uiState == State.RESUMED) {
         lastResumeTime = System.currentTimeMillis();
       }
 
       boolean called = false;
-      if (uiState == STATE_RESUMED || state == STATE_RESUMED) {
-        called = TdlibManager.instance().watchDog().onBackgroundStateChanged(state != STATE_RESUMED);
+      if (uiState == State.RESUMED || state == State.RESUMED) {
+        called = TdlibManager.instance().watchDog().onBackgroundStateChanged(state != State.RESUMED);
       }
 
       uiState = state;
@@ -299,7 +311,7 @@ public class UI {
   }
 
   public static boolean wasResumedRecently (long resumeTimeLimitMs) {
-    return uiState == STATE_RESUMED || getResumeDiff() <= resumeTimeLimitMs;
+    return uiState == State.RESUMED || getResumeDiff() <= resumeTimeLimitMs;
   }
   
   public static UIHandler getAppHandler () {
@@ -328,7 +340,7 @@ public class UI {
 
   public static boolean isValid (BaseActivity activity) {
     if (activity != null) {
-      if (activity.getActivityState() == STATE_DESTROYED) {
+      if (activity.getActivityState() == State.DESTROYED) {
         return false;
       }
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
@@ -388,7 +400,7 @@ public class UI {
   }
 
   public static boolean isResumed () {
-    return uiState == STATE_RESUMED;
+    return uiState == State.RESUMED;
   }
 
   public static void forceVibrateError (View view) {
@@ -463,10 +475,6 @@ public class UI {
         showToast(string, Toast.LENGTH_SHORT);
       }
     }
-  }
-
-  public static void showWeird (TdApi.Object response, Class<? extends TdApi.Function<?>> function, Class<?>... objects) {
-    Log.unexpectedTdlibResponse(response, function, objects);
   }
 
   public static void showApiLevelWarning (int apiLevel) {
@@ -758,5 +766,101 @@ public class UI {
     if (context != null) {
       context.getWindow().setSoftInputMode(inputMode);
     }
+  }
+
+  // todo: move to other place?
+
+  private static String toLanguageCode (InputMethodSubtype ims) {
+    if (ims != null) {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        String languageTag = ims.getLanguageTag();
+        if (!StringUtils.isEmpty(languageTag)) {
+          return languageTag;
+        }
+      }
+      String locale = ims.getLocale();
+      if (!StringUtils.isEmpty(locale)) {
+        Locale l = U.getDisplayLocaleOfSubtypeLocale(locale);
+        if (l != null) {
+          return LocaleUtils.toBcp47Language(l);
+        }
+      }
+    }
+    return null;
+  }
+
+  @Nullable
+  public static String[] getInputLanguages () {
+    final List<String> inputLanguages = new ArrayList<>();
+    InputMethodManager imm = (InputMethodManager) UI.getAppContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+    if (imm != null) {
+      String inputLanguageCode = null;
+      try {
+        inputLanguageCode = toLanguageCode(imm.getCurrentInputMethodSubtype());
+      } catch (Throwable ignored) { }
+      if (StringUtils.isEmpty(inputLanguageCode)) {
+        try {
+          inputLanguageCode = toLanguageCode(imm.getLastInputMethodSubtype());
+        } catch (Throwable ignored) { }
+      }
+      if (!StringUtils.isEmpty(inputLanguageCode)) {
+        inputLanguages.add(inputLanguageCode);
+      }
+
+      /*if (Strings.isEmpty(inputLanguageCode)) {
+        try {
+          String id = android.provider.Settings.Secure.getString(
+            UI.getAppContext().getContentResolver(),
+            android.provider.Settings.Secure.DEFAULT_INPUT_METHOD
+          );
+          if (!Strings.isEmpty(id)) {
+            List<InputMethodInfo> list = imm.getInputMethodList();
+            lookup:
+            for (InputMethodInfo info : list) {
+              if (id.equals(info.getId())) {
+                List<InputMethodSubtype> subtypes = imm.getEnabledInputMethodSubtypeList(info, true);
+                for (InputMethodSubtype subtype : subtypes) {
+                  String languageCode = toLanguageCode(subtype);
+                  if (!Strings.isEmpty(languageCode)) {
+                    inputLanguageCode = languageCode;
+                    break lookup;
+                  }
+                }
+              }
+            }
+          }
+        } catch (Throwable ignored) { }
+      }
+      if (Strings.isEmpty(inputLanguageCode) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        try {
+          LocaleList localeList = ((InputView) callback).getImeHintLocales();
+          if (localeList != null) {
+            for (int i = 0; i < localeList.size(); i++) {
+              inputLanguageCode = U.toBcp47Language(localeList.get(i));
+              if (!Strings.isEmpty(inputLanguageCode))
+                break;
+            }
+          }
+        } catch (Throwable ignored) { }
+      }*/
+    }
+    if (inputLanguages.isEmpty()) {
+      try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+          LocaleList locales = Resources.getSystem().getConfiguration().getLocales();
+          for (int i = 0; i < locales.size(); i++) {
+            String code = LocaleUtils.toBcp47Language(locales.get(i));
+            if (!StringUtils.isEmpty(code) && !inputLanguages.contains(code))
+              inputLanguages.add(code);
+          }
+        } else {
+          String code = LocaleUtils.toBcp47Language(Resources.getSystem().getConfiguration().locale);
+          if (!StringUtils.isEmpty(code)) {
+            inputLanguages.add(code);
+          }
+        }
+      } catch (Throwable ignored) { }
+    }
+    return inputLanguages.isEmpty() ? null : inputLanguages.toArray(new String[0]);
   }
 }

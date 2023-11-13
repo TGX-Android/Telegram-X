@@ -99,7 +99,7 @@ public class RoundVideoController extends BasePlaybackController implements
 
   @Override
   protected boolean isSupported (TdApi.Message message) {
-    return message.content.getConstructor() == TdApi.MessageVideoNote.CONSTRUCTOR;
+    return Td.isVideoNote(message.content);
   }
 
   @Override

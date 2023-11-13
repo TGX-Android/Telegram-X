@@ -19,14 +19,14 @@ import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.View;
 
+import androidx.annotation.Dimension;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -40,9 +40,9 @@ import me.vkryl.android.animator.BounceAnimator;
 import me.vkryl.android.animator.CounterAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.animator.ListAnimator;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
-import me.vkryl.core.BitwiseUtils;
 
 public final class Counter implements FactorAnimator.Target, CounterAnimator.Callback<Text>, TextColorSet  {
   public static Callback newCallback (View view) {
@@ -61,12 +61,14 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
 
   private static final int FLAG_ALL_BOLD = 1;
   private static final int FLAG_NEED_BACKGROUND = 1 << 1;
+  private static final int FLAG_OUTLINE_AFFECTS_BACKGROUND_SIZE = 1 << 2;
 
   public static class Builder {
     public Builder () { }
 
-    private float textSize = 13f;
-    private int flags = FLAG_ALL_BOLD | FLAG_NEED_BACKGROUND;
+    private @Dimension(unit = Dimension.DP) float textSize = 13f;
+    private @Dimension(unit = Dimension.DP) float backgroundPadding = 3f;
+    private int flags = FLAG_ALL_BOLD | FLAG_NEED_BACKGROUND | FLAG_OUTLINE_AFFECTS_BACKGROUND_SIZE;
     private Callback callback;
 
     private int drawableRes;
@@ -92,7 +94,12 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
       return this;
     }
 
-    public Builder textSize (float textSize) {
+    public Builder outlineAffectsBackgroundSize (boolean outlineAffectsBackgroundSize) {
+      this.flags = BitwiseUtils.setFlag(flags, FLAG_OUTLINE_AFFECTS_BACKGROUND_SIZE, outlineAffectsBackgroundSize);
+      return this;
+    }
+
+    public Builder textSize (@Dimension(unit = Dimension.DP) float textSize) {
       this.textSize = textSize;
       return this;
     }
@@ -148,11 +155,16 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
       return this;
     }
 
+    public Builder backgroundPadding (@Dimension(unit = Dimension.DP) float backgroundPadding) {
+      this.backgroundPadding = backgroundPadding;
+      return this;
+    }
+
     public Counter build () {
       return new Counter(textSize, callback, flags,
         textColorId, mutedTextColorId, failedTextColorId, outlineColorId,
         drawableRes, drawableWidthDp, drawableMarginDp, drawableGravity,
-        colorSet, extendedDrawable, visibleIfZero
+        colorSet, extendedDrawable, visibleIfZero, backgroundPadding
       );
     }
   }
@@ -176,7 +188,8 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
   private final Drawable extendedDrawable;
   private final float drawableWidthDp, drawableMarginDp;
   private final int drawableGravity;
-  private boolean visibleIfZero;
+  private final boolean visibleIfZero;
+  private final @Dimension(unit = Dimension.DP) float backgroundPadding;
 
   @ColorId
   private final int textColorId, mutedTextColorId, failedTextColorId, outlineColorId;
@@ -186,7 +199,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
   private Counter (float textSize, Callback callback, int flags,
                    @ColorId int textColorId, @ColorId int mutedTextColorId, @ColorId int failedTextColorId, @ColorId int outlineColorId,
                    @DrawableRes int drawableRes, float drawableWidthDp, float drawableMarginDp, int drawableGravity,
-                   @Nullable TextColorSet colorSet, Drawable counterDrawable, boolean visibleIfZero) {
+                   @Nullable TextColorSet colorSet, Drawable counterDrawable, boolean visibleIfZero, @Dimension(unit = Dimension.DP) float backgroundPadding) {
     this.textSize = textSize;
     this.callback = callback;
     this.flags = flags;
@@ -201,6 +214,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     this.colorSet = colorSet;
     this.extendedDrawable = counterDrawable;
     this.visibleIfZero = visibleIfZero;
+    this.backgroundPadding = backgroundPadding;
   }
 
   public int getColor (float muteFactor, int mainColorId, int mutedColorId, int failedColorId) {
@@ -252,7 +266,15 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     }
   }
 
-  public void setCount (int count, boolean muted, boolean animated) {
+  public boolean getVisibilityTarget () {
+    return isVisibleTarget;
+  }
+
+  public void setCount (long count, boolean muted, boolean animated) {
+    setCount(count, muted, null, animated);
+  }
+
+  public void setCount (long count, boolean muted, @Nullable String textRepresentation, boolean animated) {
     if (animated && (callback == null || !callback.needAnimateChanges(this)))
       animated = false;
     if (animated && !UI.inUiThread())
@@ -266,7 +288,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     } else if (count == Tdlib.CHAT_FAILED && drawableRes == 0) {
       counter.setCounter(count, "!", animateChanges);
     } else if (count > 0 || (visibleIfZero && count == 0)) {
-      counter.setCounter(count, Strings.buildCounter(count), animateChanges);
+      counter.setCounter(count, textRepresentation != null ? textRepresentation : Strings.buildCounter(count), animateChanges);
     } else {
       counter.hideCounter(animateChanges);
     }
@@ -300,7 +322,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
   }
 
   public float getWidth () {
-    return DrawAlgorithms.getCounterWidth(textSize, BitwiseUtils.hasFlag(flags, FLAG_NEED_BACKGROUND), counter, getDrawableWidth());
+    return DrawAlgorithms.getCounterWidth(textSize, BitwiseUtils.hasFlag(flags, FLAG_NEED_BACKGROUND), counter, getDrawableWidth(), Screen.dp(backgroundPadding));
   }
 
   public float getTargetWidth () {
@@ -309,7 +331,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
       targetTotalWidth += entry.isAffectingList() ? entry.item.getWidth() : 0f;
     }
 
-    return DrawAlgorithms.getCounterWidth(textSize, BitwiseUtils.hasFlag(flags, FLAG_NEED_BACKGROUND), targetTotalWidth, getDrawableWidth());
+    return DrawAlgorithms.getCounterWidth(textSize, BitwiseUtils.hasFlag(flags, FLAG_NEED_BACKGROUND), targetTotalWidth, getDrawableWidth(), Screen.dp(backgroundPadding));
   }
 
   public float getScaledWidth (int addWidth) {
@@ -337,13 +359,15 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
   }
 
   public void draw (Canvas c, float cx, float cy, int gravity, float alpha, DrawableProvider drawableProvider, @PorterDuffColorId int drawableColorId) {
-    draw(c, cx, cy, gravity, alpha, alpha, drawableProvider, drawableColorId);
+    draw(c, cx, cy, gravity, alpha, alpha, alpha, drawableProvider, drawableColorId);
   }
 
-  public void draw (Canvas c, float cx, float cy, int gravity, float alpha, float drawableAlpha, DrawableProvider drawableProvider, @PorterDuffColorId int drawableColorId) {
-    if (alpha * getVisibility() > 0f) {
+  public void draw (Canvas c, float cx, float cy, int gravity, float textAlpha, float backgroundAlpha, float drawableAlpha, DrawableProvider drawableProvider, @PorterDuffColorId int drawableColorId) {
+    boolean needBackground = BitwiseUtils.hasFlag(flags, FLAG_NEED_BACKGROUND);
+    boolean outlineAffectsBackgroundSize = needBackground && BitwiseUtils.hasFlag(flags, FLAG_OUTLINE_AFFECTS_BACKGROUND_SIZE);
+    if (textAlpha * getVisibility() > 0f || (needBackground && backgroundAlpha * getVisibility() > 0f)) {
       Drawable drawable = getDrawable(drawableProvider, drawableColorId);
-      DrawAlgorithms.drawCounter(c, cx, cy, gravity, counter, textSize, BitwiseUtils.hasFlag(flags, FLAG_NEED_BACKGROUND),this, drawable, drawableGravity, drawableColorId, Screen.dp(drawableMarginDp), alpha * getVisibility(), drawableAlpha * getVisibility(), isVisible.getFloatValue());
+      DrawAlgorithms.drawCounter(c, cx, cy, gravity, counter, textSize, textAlpha * getVisibility(), needBackground, outlineAffectsBackgroundSize, Screen.dp(backgroundPadding), this, drawable, drawableGravity, drawableColorId, Screen.dp(drawableMarginDp), backgroundAlpha * getVisibility(), drawableAlpha * getVisibility(), isVisible.getFloatValue());
     }
   }
 
@@ -376,7 +400,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
 
   @Override
   public int outlineColor (boolean isPressed) {
-    return outlineColorId != 0 ? Theme.getColor(outlineColorId) : 0;
+    return colorSet != null ? colorSet.outlineColor(isPressed) : (outlineColorId != 0 ? Theme.getColor(outlineColorId) : 0);
   }
 
   @Override

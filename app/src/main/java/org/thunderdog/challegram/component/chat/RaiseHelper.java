@@ -398,7 +398,7 @@ public class RaiseHelper implements SensorEventListener {
     if (inRaise) {
       BaseActivity context = UI.getUiContext();
       inRaise = !TdlibManager.instance().calls().hasActiveCall();
-      if (inRaise && !this.inRaiseMode && (context != null && context.getActivityState() == UI.STATE_RESUMED && !context.isActivityBusyWithSomething())) {
+      if (inRaise && !this.inRaiseMode && (context != null && context.getActivityState() == UI.State.RESUMED && !context.isActivityBusyWithSomething())) {
         ViewController<?> c = context.navigation().getCurrentStackItem();
         inRaise = c instanceof MessagesController && ((MessagesController) c).isEmojiInputEmpty();
       }

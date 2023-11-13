@@ -324,7 +324,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
     String arg1 = matcher.group(2);
     String arg2 = matcher.group(3);
     String arg3 = matcher.group(4);
-    String arg4 = groupCount > 5 ? matcher.group(5): null;
+    String arg4 = groupCount > 5 ? matcher.group(5) : null;
     int alpha = arg4 != null ? parseAlpha(arg4) : 255;
     switch (type) {
       case "rgb":
@@ -1490,7 +1490,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
       case ColorId.badge:
       case ColorId.badgeMuted:
       case ColorId.badgeFailed:
-        modifier.setCounter(id == ColorId.badgeFailed ? Tdlib.CHAT_FAILED: 1);
+        modifier.setCounter(id == ColorId.badgeFailed ? Tdlib.CHAT_FAILED : 1);
         modifier.noColorPreview = true;
         break;
       case ColorId.textSelectionHighlight:
@@ -1662,7 +1662,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
             rectF.set(cx, cy, cx + width, cy + avatarRadius + avatarRadius);
             c.drawRoundRect(rectF, avatarRadius, avatarRadius, Paints.fillingPaint(theme.getColor(ColorId.headerRemoveBackground)));
             c.drawCircle(cx + avatarRadius, cy + avatarRadius, avatarRadius, Paints.fillingPaint(theme.getColor(ColorId.headerRemoveBackgroundHighlight)));
-            Drawables.draw(c, icon, cx + avatarRadius - icon.getMinimumWidth() / 2, cy + avatarRadius - icon.getMinimumHeight() / 2, Paints.getPorterDuffPaint(0xffffffff));
+            Drawables.draw(c, icon, cx + avatarRadius - icon.getMinimumWidth() / 2, cy + avatarRadius - icon.getMinimumHeight() / 2, Paints.whitePorterDuffPaint());
             c.drawText(text, cx + avatarRadius * 2 + padding, cy + avatarRadius + Screen.dp(5f), paint);
           }
         });
@@ -1885,18 +1885,15 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
     if (entities != null) {
       List<Object> spans = new ArrayList<>();
       for (TdApi.TextEntity entity : entities) {
-        switch (entity.type.getConstructor()) {
-          case TdApi.TextEntityTypeMention.CONSTRUCTOR: {
-            String username = text.subSequence(entity.offset + 1, entity.offset + entity.length).toString();
-            spans.add(new ClickableSpan() {
-              @Override
-              public void onClick (@NonNull View widget) {
-                tdlib.ui().switchInline(ThemeListController.this, username, "", true);
-              }
-            });
-            spans.add(new CustomTypefaceSpan(null, ColorId.textLink).setEntityType(entity.type).setRemoveUnderline(true));
-            break;
-          }
+        if (Td.isMention(entity.type)) {
+          String username = text.subSequence(entity.offset + 1, entity.offset + entity.length).toString();
+          spans.add(new ClickableSpan() {
+            @Override
+            public void onClick (@NonNull View widget) {
+              tdlib.ui().switchInline(ThemeListController.this, username, "", true);
+            }
+          });
+          spans.add(new CustomTypefaceSpan(null, ColorId.textLink).setEntityType(entity.type).setRemoveUnderline(true));
         }
         if (!spans.isEmpty()) {
           if (!(text instanceof SpannableStringBuilder)) {

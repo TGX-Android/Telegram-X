@@ -281,7 +281,7 @@ public class CameraControlButton extends View implements FactorAnimator.Target {
       }
     }
 
-    Paint paint = isSmall ? Paints.getIconGrayPorterDuffPaint() : Paints.getPorterDuffPaint(0xffffffff);
+    Paint paint = isSmall ? Paints.getIconGrayPorterDuffPaint() : Paints.whitePorterDuffPaint();
     if (changeFactor == 0f) {
       Drawables.draw(c, icon, cx - icon.getMinimumWidth() / 2, cy - icon.getMinimumHeight() / 2, paint);
     } else {

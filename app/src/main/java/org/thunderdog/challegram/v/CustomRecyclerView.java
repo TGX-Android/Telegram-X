@@ -167,6 +167,10 @@ public class CustomRecyclerView extends RecyclerView implements Animated {
     this.interceptEvents = true;
   }
 
+  public boolean isScrollDisabled () {
+    return scrollDisabled;
+  }
+
   public void setScrollDisabled (boolean isDisabled, boolean intercept) {
     this.scrollDisabled = isDisabled;
     this.interceptEvents = intercept;

@@ -50,6 +50,8 @@ import org.thunderdog.challegram.emoji.RecentEmoji;
 import org.thunderdog.challegram.emoji.RecentInfo;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.player.TGPlayerController;
+import org.thunderdog.challegram.telegram.ChatFolderOptions;
+import org.thunderdog.challegram.telegram.ChatFolderStyle;
 import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
@@ -174,7 +176,10 @@ public class Settings {
   private static final int VERSION_40 = 40; // drop legacy crash management ids
   private static final int VERSION_41 = 41; // clear all application log files
   private static final int VERSION_42 = 42; // drop __
-  private static final int VERSION = VERSION_42;
+  private static final int VERSION_43 = 43; // optimize recent custom emoji
+  private static final int VERSION_44 = 44; // 8-bit -> 32-bit account flags
+  private static final int VERSION_45 = 45; // Reset "Big emoji" setting to default
+  private static final int VERSION = VERSION_45;
 
   private static final AtomicBoolean hasInstance = new AtomicBoolean(false);
   private static volatile Settings instance;
@@ -195,10 +200,13 @@ public class Settings {
   private static final String KEY_VERSION = "version";
   private static final String KEY_OTHER = "settings_other";
   private static final String KEY_OTHER_NEW = "settings_other2";
+  private static final String KEY_EXPERIMENTS = "settings_experiments";
   private static final @Deprecated String KEY_MARKDOWN_MODE = "settings_markdown";
   private static final String KEY_MAP_PROVIDER_TYPE = "settings_map_provider";
   private static final String KEY_MAP_PROVIDER_TYPE_CLOUD = "settings_map_provider_cloud";
   private static final String KEY_STICKER_MODE = "settings_sticker";
+  private static final String KEY_EMOJI_MODE = "settings_emoji";
+  private static final String KEY_REACTION_AVATARS_MODE = "settings_reaction_avatars";
   private static final String KEY_AUTO_UPDATE_MODE = "settings_auto_update";
   private static final String KEY_INCOGNITO = "settings_incognito";
   private static final String KEY_NIGHT_MODE = "settings_night_mode";
@@ -224,12 +232,15 @@ public class Settings {
   private static final String KEY_CHAT_DO_NOT_TRANSLATE_MODE = "settings_chat_do_not_translate_mode";
   private static final String KEY_CHAT_DO_NOT_TRANSLATE_LIST = "settings_chat_do_not_translate_list";
   private static final String KEY_CHAT_TRANSLATE_RECENTS = "language_recents";
+  private static final String KEY_DEFAULT_LANGUAGE_FOR_TRANSLATE_DRAFT = "language_draft_translate";
   private static final String KEY_INSTANT_VIEW = "settings_iv_mode";
   private static final String KEY_RESOLUTION_OPTION = "settings_resolution_options";
   private static final String KEY_RESTRICT_CONTENT = "settings_restrict_content";
   private static final String KEY_CAMERA_ASPECT_RATIO = "settings_camera_ratio";
   private static final String KEY_CAMERA_TYPE = "settings_camera_type";
   private static final String KEY_CAMERA_VOLUME_CONTROL = "settings_camera_control";
+  private static final String KEY_CHAT_FOLDER_STYLE = "settings_folders_style";
+  private static final String KEY_CHAT_FOLDER_OPTIONS = "settings_folders_options";
 
   private static final String KEY_TDLIB_VERBOSITY = "settings_tdlib_verbosity";
   private static final String KEY_TDLIB_DEBUG_PREFIX = "settings_tdlib_allow_debug";
@@ -364,6 +375,7 @@ public class Settings {
   private static final int FLAG_OTHER_NO_CHAT_QUICK_REPLY = 1 << 11;
   private static final int FLAG_OTHER_SEND_BY_ENTER = 1 << 12;
   private static final int FLAG_OTHER_HIDE_CHAT_KEYBOARD = 1 << 13;
+  private static final int FLAG_OTHER_USE_QUICK_TRANSLATION = 1 << 14;
   private static final int FLAG_OTHER_DISABLE_PREVIEW_CHATS_ON_HOLD = 1 << 15;
   private static final int FLAG_OTHER_NEED_GROUP_MEDIA = 1 << 16;
   private static final int FLAG_OTHER_DISABLE_INAPP_BROWSER = 1 << 17;
@@ -388,6 +400,7 @@ public class Settings {
   public static final long SETTING_FLAG_FORCE_EXO_PLAYER_EXTENSIONS = 1 << 7;
   public static final long SETTING_FLAG_NO_AUDIO_COMPRESSION = 1 << 8;
   public static final long SETTING_FLAG_DOWNLOAD_BETAS = 1 << 9;
+  public static final long SETTING_FLAG_NO_ANIMATED_EMOJI_LOOP = 1 << 10;
 
   public static final long SETTING_FLAG_CAMERA_NO_FLIP = 1 << 10;
   public static final long SETTING_FLAG_CAMERA_KEEP_DISCARDED_MEDIA = 1 << 11;
@@ -396,6 +409,10 @@ public class Settings {
   public static final long SETTING_FLAG_NO_EMBEDS = 1 << 13;
   public static final long SETTING_FLAG_LIMIT_STICKERS_FPS = 1 << 14;
   public static final long SETTING_FLAG_EXPAND_RECENT_STICKERS = 1 << 15;
+
+  public static final long EXPERIMENT_FLAG_ALLOW_EXPERIMENTS = 1;
+  public static final long EXPERIMENT_FLAG_ENABLE_FOLDERS = 1 << 1;
+  public static final long EXPERIMENT_FLAG_SHOW_PEER_IDS = 1 << 2;
 
   private static final @Deprecated int DISABLED_FLAG_OTHER_NEED_RAISE_TO_SPEAK = 1 << 2;
   private static final @Deprecated int DISABLED_FLAG_OTHER_AUTODOWNLOAD_IN_BACKGROUND = 1 << 3;
@@ -415,7 +432,7 @@ public class Settings {
   @Nullable
   private Integer _settings;
   @Nullable
-  private Long _newSettings;
+  private Long _newSettings, _experiments;
 
   public static final int NIGHT_MODE_NONE = 0;
   public static final int NIGHT_MODE_AUTO = 1;
@@ -436,8 +453,14 @@ public class Settings {
   public static final int STICKER_MODE_ONLY_INSTALLED = 1;
   public static final int STICKER_MODE_NONE = 2;
 
-  @Nullable
-  private Integer _stickerMode;
+  @Nullable private Integer _stickerMode;
+  @Nullable private Integer _emojiMode;
+
+  public static final int REACTION_AVATARS_MODE_NEVER = 0;
+  public static final int REACTION_AVATARS_MODE_SMART_FILTER = 1;
+  public static final int REACTION_AVATARS_MODE_ALWAYS = 2;
+
+  @Nullable private Integer _reactionAvatarsMode;
 
   public static final int AUTO_UPDATE_MODE_PROMPT = 0;
   public static final int AUTO_UPDATE_MODE_NEVER = 1;
@@ -562,12 +585,12 @@ public class Settings {
 
     public List<String> getModules () {
       List<String> modules;
-      TdApi.Object object = Client.execute(new TdApi.GetLogTags());
-      if (object instanceof TdApi.LogTags) {
-        String[] tags = ((TdApi.LogTags) object).tags;
+      try {
+        TdApi.LogTags logTags = Client.execute(new TdApi.GetLogTags());
+        String[] tags = logTags.tags;
         modules = new ArrayList<>(tags.length + (_modules != null ? _modules.size() : 0));
         Collections.addAll(modules, tags);
-      } else {
+      } catch (Client.ExecutionError error) {
         modules = new ArrayList<>(_modules != null ? _modules.size() : 0);
       }
       if (_modules != null) {
@@ -581,13 +604,21 @@ public class Settings {
     }
 
     private boolean setLogTagVerbosityLevel (String module, int verbosityLevel) {
-      TdApi.Object result = Client.execute(new TdApi.SetLogTagVerbosityLevel(module, verbosityLevel));
-      return result instanceof TdApi.Ok;
+      try {
+        Client.execute(new TdApi.SetLogTagVerbosityLevel(module, verbosityLevel));
+        return true;
+      } catch (Client.ExecutionError error) {
+        return false;
+      }
     }
 
     private boolean setLogVerbosityLevel (int globalVerbosityLevel) {
-      TdApi.Object result = Client.execute(new TdApi.SetLogVerbosityLevel(globalVerbosityLevel));
-      return result instanceof TdApi.Ok;
+      try {
+        Client.execute(new TdApi.SetLogVerbosityLevel(globalVerbosityLevel));
+        return true;
+      } catch (Client.ExecutionError error) {
+        return false;
+      }
     }
 
     public int getVerbosity (@Nullable String module) {
@@ -629,8 +660,9 @@ public class Settings {
         int defaultVerbosityLevel = value != null ? value[1] : queryLogVerbosityLevel(module);
         int currentVerbosityLevel = value != null ? value[0] : defaultVerbosityLevel;
         if (verbosity != currentVerbosityLevel) {
-          TdApi.Object result = Client.execute(new TdApi.SetLogTagVerbosityLevel(module, verbosity));
-          if (result instanceof TdApi.Ok) {
+          try {
+            Client.execute(new TdApi.SetLogTagVerbosityLevel(module, verbosity));
+
             if (value != null)
               value[0] = verbosity;
             else
@@ -639,7 +671,7 @@ public class Settings {
               remove(verbosityKey + "_" + module);
             else
               putInt(verbosityKey + "_" + module, verbosity);
-          }
+          } catch (Client.ExecutionError ignored) { }
         }
       }
     }
@@ -657,10 +689,13 @@ public class Settings {
     }
 
     private int queryLogVerbosityLevel (@Nullable String module) {
-      TdApi.Object object = Client.execute(StringUtils.isEmpty(module) ? new TdApi.GetLogVerbosityLevel() : new TdApi.GetLogTagVerbosityLevel(module));
-      if (object instanceof TdApi.LogVerbosityLevel)
-        return ((TdApi.LogVerbosityLevel) object).verbosityLevel;
-      return TDLIB_LOG_VERBOSITY_UNKNOWN;
+      try {
+        TdApi.Function<TdApi.LogVerbosityLevel> function = StringUtils.isEmpty(module) ? new TdApi.GetLogVerbosityLevel() : new TdApi.GetLogTagVerbosityLevel(module);
+        TdApi.LogVerbosityLevel logVerbosityLevel = Client.execute(function);
+        return logVerbosityLevel.verbosityLevel;
+      } catch (Client.ExecutionError error) {
+        return TDLIB_LOG_VERBOSITY_UNKNOWN;
+      }
     }
 
     public void apply (boolean async) {
@@ -701,10 +736,11 @@ public class Settings {
           stream = new TdApi.LogStreamEmpty();
         }
       }
-      TdApi.Object result = Client.execute(new TdApi.SetLogStream(stream));
-      if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+      try {
+        Client.execute(new TdApi.SetLogStream(stream));
+      } catch (Client.ExecutionError error) {
         Runnable act = () -> {
-          Tracer.onTdlibFatalError(null, TdApi.SetLogStream.class, (TdApi.Error) result, new RuntimeException().getStackTrace());
+          Tracer.onTdlibFatalError(null, TdApi.SetLogStream.class, error.error, new RuntimeException().getStackTrace());
         };
         if (async) {
           UI.post(act);
@@ -889,6 +925,14 @@ public class Settings {
 
   public int getInt (String key, int defValue) {
     return pmc.getInt(key, defValue);
+  }
+
+  public int[] getIntArray (String key) {
+    return pmc.getIntArray(key);
+  }
+  
+  public void putIntArray (String key, int[] value) {
+    pmc.putIntArray(key, value);
   }
 
   public void putFloat (String key, float value) {
@@ -1198,6 +1242,65 @@ public class Settings {
     }
   }
 
+
+  public interface ChatFolderSettingsListener {
+    default void onChatFolderOptionsChanged (@ChatFolderOptions int newOptions) {}
+    default void onChatFolderStyleChanged (@ChatFolderStyle int newStyle) {}
+  }
+  private final ReferenceList<ChatFolderSettingsListener> chatFolderSettingsListeners = new ReferenceList<>();
+
+  public void addChatFolderSettingsListener (ChatFolderSettingsListener listener) {
+    chatFolderSettingsListeners.add(listener);
+  }
+
+  public void removeChatFolderSettingsListener (ChatFolderSettingsListener listener) {
+    chatFolderSettingsListeners.remove(listener);
+  }
+
+  private Integer _chatFolderOptions, _chatFolderStyle;
+
+  public void setChatFolderOptions (@ChatFolderOptions int options) {
+    if (getChatFolderOptions() != options) {
+      if (options == TdlibSettingsManager.DEFAULT_CHAT_FOLDER_OPTIONS) {
+        pmc.remove(KEY_CHAT_FOLDER_OPTIONS);
+      } else {
+        pmc.putInt(KEY_CHAT_FOLDER_OPTIONS, options);
+      }
+      _chatFolderOptions = options;
+      for (ChatFolderSettingsListener listener : chatFolderSettingsListeners) {
+        listener.onChatFolderOptionsChanged(options);
+      }
+    }
+  }
+
+  public @ChatFolderOptions int getChatFolderOptions () {
+    if (_chatFolderOptions == null) {
+      _chatFolderOptions = pmc.getInt(KEY_CHAT_FOLDER_OPTIONS, TdlibSettingsManager.DEFAULT_CHAT_FOLDER_OPTIONS);
+    }
+    return _chatFolderOptions;
+  }
+
+  public void setChatFolderStyle (@ChatFolderStyle int style) {
+    if (getChatFolderStyle() != style) {
+      if (style == TdlibSettingsManager.DEFAULT_CHAT_FOLDER_STYLE) {
+        pmc.remove(KEY_CHAT_FOLDER_STYLE);
+      } else {
+        pmc.putInt(KEY_CHAT_FOLDER_STYLE, style);
+      }
+      _chatFolderStyle = style;
+      for (ChatFolderSettingsListener listener : chatFolderSettingsListeners) {
+        listener.onChatFolderStyleChanged(style);
+      }
+    }
+  }
+
+  public @ChatFolderStyle int getChatFolderStyle () {
+    if (_chatFolderStyle == null) {
+      _chatFolderStyle = pmc.getInt(KEY_CHAT_FOLDER_STYLE, TdlibSettingsManager.DEFAULT_CHAT_FOLDER_STYLE);
+    }
+    return _chatFolderStyle;
+  }
+
   private long makeDefaultNewSettings () {
     long settings = 0;
 
@@ -1224,6 +1327,34 @@ public class Settings {
           listener.onSettingsChanged(newSettings, oldSettings);
         }
       }
+      return true;
+    }
+    return false;
+  }
+
+  private static long makeDefaultExperiments () {
+    // TODO: this flag allows implementing later a global toggle that enables/disables all experiments
+    // while preserving specific experiments toggle values.
+    return EXPERIMENT_FLAG_ALLOW_EXPERIMENTS;
+  }
+
+  private long getExperiments () {
+    if (_experiments == null)
+      _experiments = pmc.getLong(KEY_EXPERIMENTS, makeDefaultExperiments());
+    return _experiments;
+  }
+
+  public boolean isExperimentEnabled (long key) {
+    long experiments = getExperiments();
+    return BitwiseUtils.hasAllFlags(experiments, EXPERIMENT_FLAG_ALLOW_EXPERIMENTS | key);
+  }
+
+  public boolean setExperimentEnabled (long key, boolean enabled) {
+    long oldExperiments = getExperiments();
+    long newExperiments = BitwiseUtils.setFlag(oldExperiments, key, enabled);
+    if (oldExperiments != newExperiments) {
+      this._experiments = newExperiments;
+      pmc.putLong(KEY_EXPERIMENTS, newExperiments);
       return true;
     }
     return false;
@@ -1530,6 +1661,8 @@ public class Settings {
   public LevelDB pmc () {
     return pmc;
   }
+
+  private boolean ignoreFurtherAccountConfigUpgrades;
 
   private void upgradePmc (LevelDB pmc, SharedPreferences.Editor editor, int version) {
     switch (version) {
@@ -1960,36 +2093,7 @@ public class Settings {
           }
         }
 
-        File oldConfigFile = TdlibManager.getAccountConfigFile();
-        File backupFile = new File(oldConfigFile.getParentFile(), oldConfigFile.getName() + ".bak." + TdlibAccount.VERSION_1);
-        if (oldConfigFile.exists() && !backupFile.exists()) {
-          TdlibManager.AccountConfig config = null;
-          try (RandomAccessFile r = new RandomAccessFile(oldConfigFile, TdlibManager.MODE_R)) {
-            config = TdlibManager.readAccountConfig(null, r, TdlibAccount.VERSION_1, false);
-          } catch (IOException e) {
-            Log.e(e);
-          }
-          if (config != null) {
-            File newConfigFile = new File(oldConfigFile.getParentFile(), oldConfigFile.getName() + ".tmp");
-            try {
-              if (newConfigFile.exists() || newConfigFile.createNewFile()) {
-                try (RandomAccessFile r = new RandomAccessFile(newConfigFile, TdlibManager.MODE_RW)) {
-                  TdlibManager.writeAccountConfigFully(r, config);
-                } catch (IOException e) {
-                  Tracer.onLaunchError(e);
-                  throw new DeviceStorageError(e);
-                }
-              }
-              if (!oldConfigFile.renameTo(backupFile))
-                throw new DeviceStorageError("Cannot backup old config");
-              if (!newConfigFile.renameTo(oldConfigFile))
-                throw new DeviceStorageError("Cannot save new config");
-            } catch (Throwable t) {
-              Tracer.onLaunchError(t);
-              throw new DeviceStorageError(t);
-            }
-          }
-        }
+        upgradeAccountsConfig(TdlibAccount.VERSION_1);
         break;
       }
       case VERSION_39: {
@@ -2014,6 +2118,96 @@ public class Settings {
           editor.remove(TdlibSettingsManager.key(TdlibSettingsManager.__DEVICE_TDLIB_VERSION_KEY, accountId));
         }
         break;
+      }
+      case VERSION_43: {
+        String[] emojis = pmc.getStringArray(KEY_EMOJI_RECENTS);
+        if (emojis != null && emojis.length > 0) {
+          Map<String, RecentInfo> infos = new HashMap<>();
+          getBinaryMap(KEY_EMOJI_COUNTERS, infos, RecentInfo.class);
+
+          int changedCount = 0;
+          int changedEmojiCounters = 0;
+          for (int index = 0; index < emojis.length; index++) {
+            final String oldEmoji = emojis[index];
+            // Save 15*2 bytes per recent custom emoji by simply reducing prefix size
+            if (oldEmoji.startsWith(Emoji.CUSTOM_EMOJI_CACHE_OLD)) {
+              String newEmoji = Emoji.CUSTOM_EMOJI_CACHE + oldEmoji.substring(Emoji.CUSTOM_EMOJI_CACHE_OLD.length());
+              emojis[index] = newEmoji;
+              changedCount++;
+
+              RecentInfo recentInfo = infos.remove(oldEmoji);
+              if (recentInfo != null) {
+                infos.put(newEmoji, recentInfo);
+                changedEmojiCounters++;
+              }
+            }
+          }
+          if (changedCount > 0) {
+            pmc.putStringArray(KEY_EMOJI_RECENTS, emojis);
+          }
+          if (changedEmojiCounters > 0) {
+            saveBinaryMap(KEY_EMOJI_COUNTERS, infos);
+          }
+        }
+        break;
+      }
+      case VERSION_44: {
+        upgradeAccountsConfig(TdlibAccount.VERSION_2);
+        break;
+      }
+      case VERSION_45: {
+        resetOtherFlag(pmc, editor, FLAG_OTHER_DISABLE_BIG_EMOJI, false);
+        break;
+      }
+    }
+  }
+
+  private void resetOtherFlag (LevelDB pmc, SharedPreferences.Editor editor, int flag, boolean value) {
+    int defaultSettings = makeDefaultSettings();
+    int oldSettings = pmc.getInt(KEY_OTHER, defaultSettings);
+    int newSettings = BitwiseUtils.setFlag(oldSettings, flag, value);
+    if (oldSettings != newSettings) {
+      if (newSettings != defaultSettings) {
+        editor.putInt(KEY_OTHER, newSettings);
+      } else {
+        editor.remove(KEY_OTHER);
+      }
+    }
+  }
+
+  private void upgradeAccountsConfig (int fromConfigVersion) {
+    if (ignoreFurtherAccountConfigUpgrades) {
+      return;
+    }
+    File oldConfigFile = TdlibManager.getAccountConfigFile();
+    File backupFile = new File(oldConfigFile.getParentFile(), oldConfigFile.getName() + ".bak." + fromConfigVersion);
+    if (oldConfigFile.exists() && !backupFile.exists()) {
+      TdlibManager.AccountConfig config = null;
+      try (RandomAccessFile r = new RandomAccessFile(oldConfigFile, TdlibManager.MODE_R)) {
+        config = TdlibManager.readAccountConfig(null, r, fromConfigVersion, false);
+      } catch (IOException e) {
+        Log.e(e);
+      }
+      if (config != null) {
+        File newConfigFile = new File(oldConfigFile.getParentFile(), oldConfigFile.getName() + ".tmp");
+        try {
+          if (newConfigFile.exists() || newConfigFile.createNewFile()) {
+            try (RandomAccessFile r = new RandomAccessFile(newConfigFile, TdlibManager.MODE_RW)) {
+              TdlibManager.writeAccountConfigFully(r, config);
+              ignoreFurtherAccountConfigUpgrades = true;
+            } catch (IOException e) {
+              Tracer.onLaunchError(e);
+              throw new DeviceStorageError(e);
+            }
+          }
+          if (!oldConfigFile.renameTo(backupFile))
+            throw new DeviceStorageError("Cannot backup old config");
+          if (!newConfigFile.renameTo(oldConfigFile))
+            throw new DeviceStorageError("Cannot save new config");
+        } catch (Throwable t) {
+          Tracer.onLaunchError(t);
+          throw new DeviceStorageError(t);
+        }
       }
     }
   }
@@ -2397,7 +2591,8 @@ public class Settings {
       case TdApi.ChatSourceMtprotoProxy.CONSTRUCTOR:
         return needTutorial(TUTORIAL_PROXY_SPONSOR);
       default:
-        throw new UnsupportedOperationException(source.toString());
+        Td.assertChatSource_12b21238();
+        throw Td.unsupported(source);
     }
   }
 
@@ -2497,6 +2692,14 @@ public class Settings {
     setSetting(FLAG_OTHER_AUTOPLAY_GIFS, autoplayGIFs);
   }
 
+  public void setUseQuickTranslation (boolean useQuickTranslation) {
+    setSetting(FLAG_OTHER_USE_QUICK_TRANSLATION, useQuickTranslation);
+  }
+
+  public boolean needUseQuickTranslation () {
+    return checkSetting(FLAG_OTHER_USE_QUICK_TRANSLATION);
+  }
+
   public boolean forceArabicNumbers () {
     return checkSetting(FLAG_OTHER_FORCE_ARABIC_NUMBERS);
   }
@@ -2584,6 +2787,32 @@ public class Settings {
     } else {
       putInt(KEY_STICKER_MODE, mode);
     }
+  }
+
+  public int getEmojiMode () {
+    if (_emojiMode == null)
+      _emojiMode = pmc.getInt(KEY_EMOJI_MODE, STICKER_MODE_ALL);
+    return _emojiMode;
+  }
+
+  public void setEmojiMode (int mode) {
+    this._emojiMode = mode;
+    if (mode == STICKER_MODE_ALL) {
+      remove(KEY_EMOJI_MODE);
+    } else {
+      putInt(KEY_EMOJI_MODE, mode);
+    }
+  }
+
+  public int getReactionAvatarsMode () {
+    if (_reactionAvatarsMode == null)
+      _reactionAvatarsMode = pmc.getInt(KEY_REACTION_AVATARS_MODE, REACTION_AVATARS_MODE_SMART_FILTER);
+    return _reactionAvatarsMode;
+  }
+
+  public void setReactionAvatarsMode (int mode) {
+    this._reactionAvatarsMode = mode;
+    putInt(KEY_REACTION_AVATARS_MODE, mode);
   }
 
   public int getAutoUpdateMode () {
@@ -4367,8 +4596,11 @@ public class Settings {
         return ((TdApi.ProxyTypeHttp) type).username;
       case TdApi.ProxyTypeMtproto.CONSTRUCTOR:
         return null;
+      default: {
+        Td.assertProxyType_bc1a1076();
+        throw Td.unsupported(type);
+      }
     }
-    throw new UnsupportedOperationException(type.toString());
   }
 
   public static String getProxyPassword (@NonNull TdApi.ProxyType type) {
@@ -4379,8 +4611,11 @@ public class Settings {
         return ((TdApi.ProxyTypeHttp) type).password;
       case TdApi.ProxyTypeMtproto.CONSTRUCTOR:
         return null;
+      default: {
+        Td.assertProxyType_bc1a1076();
+        throw Td.unsupported(type);
+      }
     }
-    throw new UnsupportedOperationException(type.toString());
   }
 
   public static int getProxyDefaultOrder (@NonNull TdApi.ProxyType type) {
@@ -4391,8 +4626,10 @@ public class Settings {
         return 2;
       case TdApi.ProxyTypeHttp.CONSTRUCTOR:
         return 3;
+      default:
+        Td.assertProxyType_bc1a1076();
+        throw Td.unsupported(type);
     }
-    throw new UnsupportedOperationException(type.toString());
   }
 
   private static @Proxy.Type int getProxyType (@NonNull TdApi.ProxyType type) {
@@ -4403,8 +4640,10 @@ public class Settings {
         return Proxy.TYPE_MTPROTO;
       case TdApi.ProxyTypeHttp.CONSTRUCTOR:
         return Proxy.TYPE_HTTP;
+      default:
+        Td.assertProxyType_bc1a1076();
+        throw Td.unsupported(type);
     }
-    throw new UnsupportedOperationException(type.toString());
   }
 
   private static byte[] serializeProxy (@NonNull TdApi.InternalLinkTypeProxy proxy) {
@@ -4761,7 +5000,8 @@ public class Settings {
           stringRes = R.string.ProxyHttp;
           break;
         default:
-          throw new UnsupportedOperationException(proxy.type.toString());
+          Td.assertProxyType_bc1a1076();
+          throw Td.unsupported(proxy.type);
       }
       return Lang.getString(stringRes, (target, argStart, argEnd, argIndex, needFakeBold) -> new CustomTypefaceSpan(null, ColorId.textLight), name);
     }
@@ -6235,6 +6475,7 @@ public class Settings {
       boolean isValidSetting = false, hideName = false;
       if (document.caption != null && document.caption.entities != null && document.caption.entities.length > 0) {
         for (TdApi.TextEntity entity : document.caption.entities) {
+          //noinspection SwitchIntDef
           switch (entity.type.getConstructor()) {
             case TdApi.TextEntityTypeHashtag.CONSTRUCTOR: {
               String hashtag = Td.substring(document.caption.text, entity);
@@ -6627,8 +6868,8 @@ public class Settings {
   public String getPushMessageStats () {
     return
       "total: " + getReceivedPushMessageCountTotal() + " " +
-        "by_token: " + getReceivedPushMessageCountByToken() + " " +
-        "by_app_version: " + getReceivedPushMessageCountByAppVersion() + " ";
+      "by_token: " + getReceivedPushMessageCountByToken() + " " +
+      "by_app_version: " + getReceivedPushMessageCountByAppVersion() + " ";
   }
 
   public long getReceivedPushMessageCountTotal () {
@@ -6715,5 +6956,21 @@ public class Settings {
 
   public long getReportedPushServiceErrorDate () {
     return pmc.getLong(KEY_PUSH_REPORTED_ERROR_DATE, 0);
+  }
+
+  public String getDefaultLanguageForTranslateDraft () {
+    return pmc.getString(KEY_DEFAULT_LANGUAGE_FOR_TRANSLATE_DRAFT, "en");
+  }
+
+  public void setDefaultLanguageForTranslateDraft (String language) {
+    pmc.putString(KEY_DEFAULT_LANGUAGE_FOR_TRANSLATE_DRAFT, language);
+  }
+
+  public boolean chatFoldersEnabled () {
+    return Config.CHAT_FOLDERS_ENABLED && isExperimentEnabled(EXPERIMENT_FLAG_ENABLE_FOLDERS);
+  }
+
+  public boolean showPeerIds () {
+    return isExperimentEnabled(EXPERIMENT_FLAG_SHOW_PEER_IDS);
   }
 }

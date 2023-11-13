@@ -10,10 +10,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
- * File created on 15/02/2018
+ * File created on 13/09/2023
  */
-package org.thunderdog.challegram.telegram;
+package org.thunderdog.challegram.loader;
 
-public interface DayChangeListener {
-  void onDayChanged ();
+public interface ComplexReceiverProvider {
+  ComplexReceiver getComplexReceiver ();
 }

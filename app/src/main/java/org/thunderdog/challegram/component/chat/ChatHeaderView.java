@@ -111,7 +111,7 @@ public class ChatHeaderView extends ComplexHeaderView {
       setUseRedHighlight(false);
       attachChatStatus(messageThread.getChatId(), messageThread.getMessageThreadId());
     } else {
-      setEmojiStatus(tdlib.isSelfChat(chat) ? null: tdlib.chatUser(chat));
+      setEmojiStatus(tdlib.isSelfChat(chat) ? null : tdlib.chatUser(chat));
       setText(tdlib.chatTitle(chat), !StringUtils.isEmpty(forcedSubtitle) ? forcedSubtitle : tdlib.status().chatStatus(chat));
       setExpandedSubtitle(tdlib.status().chatStatusExpanded(chat));
       setUseRedHighlight(tdlib.isRedTeam(chat.id));

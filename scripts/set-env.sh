@@ -54,22 +54,21 @@ if [ ! "$IGNORE_SDK" ]; then
     fi
   fi
 
-  NDK_VERSION=$(scripts/./read-property.sh version.properties version.ndk)
   CMAKE_VERSION=$(scripts/./read-property.sh version.properties version.cmake)
-  if [[ ! "$NDK_VERSION" =~ ^[_0-9\.]+$ ]]; then
-    echo "${STYLE_ERROR}Invalid NDK version: $NDK_VERSION!${STYLE_END}"
+  if [[ ! "$CMAKE_VERSION" =~ ^[_0-9\.]+$ ]]; then
+    echo "${STYLE_ERROR}Invalid CMake version: $CMAKE_VERSION!${STYLE_END}"
     exit 1
   fi
 
-  ANDROID_NDK="$ANDROID_SDK_ROOT/ndk/$NDK_VERSION"
+  ANDROID_NDK_VERSION_PRIMARY=$(scripts/./read-property.sh version.properties version.ndk_primary)
+  ANDROID_NDK_VERSION_LEGACY=$(scripts/./read-property.sh version.properties version.ndk_legacy)
 
-  CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$BUILD_PLATFORM/bin/clang"
-  CXX="$ANDROID_NDK/toolchains/llvm/prebuilt/$BUILD_PLATFORM/bin/clang++"
-  LD="$ANDROID_NDK/toolchains/llvm/prebuilt/$BUILD_PLATFORM/bin/ld.lld"
+  test -d "$ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_VERSION_PRIMARY" || echo -e "${STYLE_WARN}Android NDK $ANDROID_NDK_VERSION_PRIMARY is not installed.${STYLE_END}"
+  test -d "$ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_VERSION_LEGACY" || echo -e "${STYLE_WARN}Android NDK $ANDROID_NDK_VERSION_LEGACY is not installed.${STYLE_END}"
 
-  PATH="$ANDROID_NDK/prebuilt/$BUILD_PLATFORM/bin:$ANDROID_SDK_ROOT/cmake/$CMAKE_VERSION/bin:$ANDROID_NDK:$ANDROID_SDK_ROOT/tools/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
+  PATH="$ANDROID_SDK_ROOT/cmake/$CMAKE_VERSION/bin:$ANDROID_SDK_ROOT/tools/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
 
-  (test -d "$ANDROID_SDK_ROOT" && (test -d "$ANDROID_NDK" || echo -e "${STYLE_WARN}Android NDK $NDK_VERSION is not installed.${STYLE_END}")) || echo -e "${STYLE_WARN}Android SDK is not installed.${STYLE_END}"
+  (test -d "$ANDROID_SDK_ROOT") || echo -e "${STYLE_WARN}Android SDK is not installed.${STYLE_END}"
 fi
 
 # Export
@@ -78,13 +77,10 @@ export CPU_COUNT
 export BUILD_PLATFORM
 
 if [ ! "$IGNORE_SDK" ]; then
-  export NDK_VERSION
   export CMAKE_VERSION
-  export ANDROID_NDK
+  export ANDROID_NDK_VERSION_LEGACY
+  export ANDROID_NDK_VERSION_PRIMARY
   export ANDROID_SDK_ROOT
-  export CC
-  export CXX
-  export LD
 fi
 
 export STYLE_END

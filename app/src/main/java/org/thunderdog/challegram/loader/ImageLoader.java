@@ -127,7 +127,7 @@ public class ImageLoader {
               });
             } else {
               if (!Config.DEBUG_DISABLE_DOWNLOAD) {
-                tdlib.client().send(new TdApi.DownloadFile(fileId, 32, 0, 0, false), tdlib.imageLoadHandler());
+                tdlib.send(new TdApi.DownloadFile(fileId, 32, 0, 0, false), tdlib.imageLoadHandler());
               }
             }
           } else {
@@ -171,7 +171,7 @@ public class ImageLoader {
       onLoad(tdlib, file);
     } else {
       if (!Config.DEBUG_DISABLE_DOWNLOAD) {
-        tdlib.client().send(new TdApi.DownloadFile(file.id, 1, 0, 0, false), tdlib.imageLoadHandler());
+        tdlib.send(new TdApi.DownloadFile(file.id, 1, 0, 0, false), tdlib.imageLoadHandler());
       }
     }
   }

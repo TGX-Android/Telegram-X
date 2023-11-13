@@ -197,7 +197,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     if (StringUtils.isEmpty(text))
       return;
     performSyncTask(context, extras.accountId, "reply", (tdlib, onDone) -> {
-      tdlib.sendMessage(extras.chatId, extras.messageThreadId, extras.needReply ? extras.messageIds[extras.messageIds.length - 1] : 0, Td.newSendOptions(), new TdApi.InputMessageText(new TdApi.FormattedText(text.toString(), null), false, false), sendingMessage -> {
+      tdlib.sendMessage(extras.chatId, extras.messageThreadId, extras.needReply ? new TdApi.MessageReplyToMessage(extras.chatId, extras.messageIds[extras.messageIds.length - 1]) : null, Td.newSendOptions(), new TdApi.InputMessageText(new TdApi.FormattedText(text.toString(), null), false, false), sendingMessage -> {
         if (sendingMessage == null) {
           UI.showToast(R.string.NotificationReplyFailed, Toast.LENGTH_SHORT);
           if (onDone != null) {
@@ -315,6 +315,8 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   private @Nullable String tdlibCommitHash, tdlibVersion;
 
+  private final DateManager dateManager = new DateManager(this);
+
   private TdlibManager (int firstInstanceId, boolean forceService) {
     Client.setLogMessageHandler(0, (verbosityLevel, errorMessage) -> {
       if (verbosityLevel == 0) {
@@ -344,6 +346,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
     checkDeviceToken();
     saveCrashes();
+  }
+
+  public DateManager dateManager () {
+    return dateManager;
   }
 
   void setTdlibCommitHash (@NonNull String commitHash) {
@@ -390,7 +396,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   @Override
   @UiThread
   public void onUiStateChanged (int newState) {
-    boolean hasUi = newState != UI.STATE_DESTROYED && newState != UI.STATE_UNKNOWN;
+    boolean hasUi = newState != UI.State.DESTROYED && newState != UI.State.UNKNOWN;
     if (this.hasUi != hasUi) {
       this.hasUi = hasUi;
       for (TdlibAccount account : accounts) {
@@ -422,8 +428,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   }
 
   public static void setTestLabConfig () {
-    Client.execute(new TdApi.SetLogVerbosityLevel(5));
-    Client.execute(new TdApi.SetLogStream(new TdApi.LogStreamDefault()));
+    try {
+      Client.execute(new TdApi.SetLogVerbosityLevel(5));
+      Client.execute(new TdApi.SetLogStream(new TdApi.LogStreamDefault()));
+    } catch (Client.ExecutionError ignored) { }
     Log.setLogLevel(Log.LEVEL_VERBOSE);
   }
 
@@ -579,10 +587,13 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return getTotalUnreadBadgeCounter(TdlibAccount.NO_ID);
   }
 
-  public void resetBadge () {
+  public void resetBadge (boolean settingsChanged) {
     synchronized (counterLock) {
       updateBadgeInternal(true, false);
       dispatchUnreadCount(true);
+    }
+    if (settingsChanged) {
+      global.notifyBadgeSettingsChanged();
     }
   }
 
@@ -1035,10 +1046,6 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return new AccountConfig(currentAccount, accounts, preferredAccountId);
   }
 
-  private int binlogSize () {
-    return binlogSize(accounts.size());
-  }
-
   public static int binlogSize (int accountsNum) {
     return BINLOG_PREFIX_SIZE + accountsNum * TdlibAccount.SIZE_PER_ENTRY;
   }
@@ -1047,7 +1054,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     int saveCount = 0;
     final int accountNum = accounts.size();
 
-    final int binlogSize = binlogSize();
+    final int binlogSize = binlogSize(accountNum);
     final long currentLen = r.length();
 
     final boolean canOptimize;
@@ -1328,7 +1335,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return accounts.get(accountId);
   }
 
-  public int accountIdForUserId (int userId, int startIndex) {
+  public int accountIdForUserId (long userId, int startIndex) {
     for (int i = startIndex; i < accounts.size(); i++) {
       if (accounts.get(i).getKnownUserId() == userId) {
         return i;
@@ -1815,16 +1822,11 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
               pendingRequests.incrementAndGet();
             }
             TDLib.Tag.td_init("Reporting crash %d: %s", crash.id, saveFunction);
-            tdlib.send(saveFunction, result -> {
-              switch (result.getConstructor()) {
-                case TdApi.Ok.CONSTRUCTOR: {
-                  Settings.instance().markCrashAsSaved(crash);
-                  break;
-                }
-                case TdApi.Error.CONSTRUCTOR: {
-                  TDLib.Tag.td_init("Can't report crash %d: %s", crash.id, TD.toErrorString(result));
-                  break;
-                }
+            tdlib.send(saveFunction, (ok, error) -> {
+              if (error != null) {
+                TDLib.Tag.td_init("Can't report crash %d: %s", crash.id, TD.toErrorString(error));
+              } else {
+                Settings.instance().markCrashAsSaved(crash);
               }
               synchronized (pendingRequests) {
                 pendingRequests.decrementAndGet();
@@ -1865,7 +1867,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       activeAccounts.remove(position);
     }
     global().notifyAccountAddedOrRemoved(account, position, needAdd);
-    resetBadge();
+    resetBadge(false);
     increaseModCount(account);
     return true;
   }
@@ -2243,8 +2245,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   private static long deleteLogFiles (int mode) {
     if (UI.TEST_MODE != UI.TEST_MODE_AUTO) {
-      Client.execute(new TdApi.SetLogVerbosityLevel(0));
-      Client.execute(new TdApi.SetLogStream(new TdApi.LogStreamEmpty()));
+      try {
+        Client.execute(new TdApi.SetLogVerbosityLevel(0));
+        Client.execute(new TdApi.SetLogStream(new TdApi.LogStreamEmpty()));
+      } catch (Client.ExecutionError ignored) { }
     }
 
     long removedSize;
@@ -2453,21 +2457,25 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   public static TdApi.LanguagePackStringValue getString (String languageDatabasePath, String key, @NonNull String languagePackId) {
     if (StringUtils.isEmpty(key))
       return null;
-    final TdApi.Object result = Client.execute(new TdApi.GetLanguagePackString(languageDatabasePath, BuildConfig.LANGUAGE_PACK, languagePackId, key));
-    if (result == null)
+    final TdApi.LanguagePackStringValue value;
+    try {
+      value = Client.execute(new TdApi.GetLanguagePackString(languageDatabasePath, BuildConfig.LANGUAGE_PACK, languagePackId, key));
+    } catch (Client.ExecutionError error) {
+      if (error.error.code != 404) {
+        Log.e("getString %s error:%s, languagePackId:%s", key, TD.toErrorString(error.error), languagePackId);
+      }
       return null;
-    switch (result.getConstructor()) {
+    }
+    switch (value.getConstructor()) {
       case TdApi.LanguagePackStringValueOrdinary.CONSTRUCTOR:
       case TdApi.LanguagePackStringValuePluralized.CONSTRUCTOR:
-        return (TdApi.LanguagePackStringValue) result;
+        return value;
       case TdApi.LanguagePackStringValueDeleted.CONSTRUCTOR:
         return null;
-      case TdApi.Error.CONSTRUCTOR:
-        if (((TdApi.Error) result).code != 404)
-          Log.e("getString %s error:%s, languagePackId:%s", key, TD.toErrorString(result), languagePackId);
-        return null;
+      default:
+        Td.assertLanguagePackStringValue_11536986();
+        throw Td.unsupported(value);
     }
-    return null;
   }
 
   private TdApi.LanguagePackStringValue getString (String key, @NonNull String languagePackId) {

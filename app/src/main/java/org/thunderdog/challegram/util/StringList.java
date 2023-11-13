@@ -68,4 +68,8 @@ public class StringList {
   public boolean isEmpty () {
     return list.isEmpty();
   }
+
+  public void clear () {
+    list.clear();
+  }
 }

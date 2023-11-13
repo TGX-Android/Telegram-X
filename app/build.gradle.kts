@@ -35,18 +35,15 @@ task<me.vkryl.task.CheckEmojiKeyboardTask>("checkEmojiKeyboard") {
 val isExperimentalBuild = extra["experimental"] as Boolean? ?: false
 val properties = extra["properties"] as Properties
 val projectName = extra["app_name"] as String
+val versions = extra["versions"] as Properties
 
 android {
   namespace = "org.thunderdog.challegram"
 
   defaultConfig {
-    val versions = extra["versions"] as Properties
-
-    val ndkVersion = versions.getProperty("version.ndk")
     val jniVersion = versions.getProperty("version.jni")
     val leveldbVersion = versions.getProperty("version.leveldb")
 
-    buildConfigString("NDK_VERSION", ndkVersion)
     buildConfigString("JNI_VERSION", jniVersion)
     buildConfigString("LEVELDB_VERSION", leveldbVersion)
 
@@ -64,7 +61,6 @@ android {
     buildConfigString("EMOJI_BUILTIN_ID", Emoji.BUILTIN_ID)
 
     buildConfigString("LANGUAGE_PACK", Telegram.LANGUAGE_PACK)
-    buildConfigString("YOUTUBE_API_KEY", properties.getProperty("youtube.api_key", ""))
 
     buildConfigString("THEME_FILE_EXTENSION", App.THEME_EXTENSION)
   }
@@ -110,7 +106,15 @@ android {
         dimension = "abi"
         versionCode = (abi + 1)
         minSdk = variant.minSdkVersion
-        buildConfigBool("WEBP_ENABLED", variant.minSdkVersion < 19)
+        val ndkVersionKey = if (variant.is64Bit) {
+          "version.ndk_primary"
+        } else {
+          "version.ndk_legacy"
+        }
+        ndkVersion = versions.getProperty(ndkVersionKey)
+        ndkPath = File(sdkDirectory, "ndk/$ndkVersion").absolutePath
+        buildConfigString("NDK_VERSION", ndkVersion)
+        buildConfigBool("WEBP_ENABLED", true) // variant.minSdkVersion < 19
         buildConfigBool("SIDE_LOAD_ONLY", variant.sideLoadOnly)
         ndk.abiFilters.clear()
         ndk.abiFilters.addAll(variant.filters)
@@ -193,7 +197,7 @@ dependencies {
   // AndroidX: https://developer.android.com/jetpack/androidx/releases/
   implementation("androidx.activity:activity:1.7.2")
   implementation("androidx.palette:palette:1.0.0")
-  implementation("androidx.recyclerview:recyclerview:1.3.0")
+  implementation("androidx.recyclerview:recyclerview:1.3.1")
   implementation("androidx.viewpager:viewpager:1.0.0")
   implementation("androidx.work:work-runtime:2.8.1")
   implementation("androidx.browser:browser:1.5.0")
@@ -221,32 +225,29 @@ dependencies {
   // Play In-App Updates: https://developer.android.com/reference/com/google/android/play/core/release-notes-in_app_updates
   implementation("com.google.android.play:app-update:2.1.0")
   // ExoPlayer: https://github.com/google/ExoPlayer/blob/release-v2/RELEASENOTES.md
-  implementation("com.google.android.exoplayer:exoplayer-core:2.18.7")
+  implementation("com.google.android.exoplayer:exoplayer-core:2.19.1")
   // 17.x version requires minSdk 19 or higher
   implementation("com.google.mlkit:language-id:16.1.1")
   // The Checker Framework: https://checkerframework.org/CHANGELOG.md
-  compileOnly("org.checkerframework:checker-qual:3.32.0")
+  compileOnly("org.checkerframework:checker-qual:3.39.0")
   // OkHttp: https://github.com/square/okhttp/blob/master/CHANGELOG.md
-  implementation("com.squareup.okhttp3:okhttp:4.9.3")
+  implementation("com.squareup.okhttp3:okhttp:4.10.0")
   // ShortcutBadger: https://github.com/leolin310148/ShortcutBadger
   implementation("me.leolin:ShortcutBadger:1.1.22@aar")
   // ReLinker: https://github.com/KeepSafe/ReLinker/blob/master/CHANGELOG.md
   implementation("com.getkeepsafe.relinker:relinker:1.4.5")
-  // Konfetti: https://github.com/DanielMartinus/Konfetti/blob/master/README.md
-  implementation("nl.dionsegijn:konfetti-xml:2.0.2")
+  // Konfetti: https://github.com/DanielMartinus/Konfetti/blob/main/README.md
+  implementation("nl.dionsegijn:konfetti-xml:2.0.3")
   // Transcoder: https://github.com/natario1/Transcoder/blob/master/docs/_about/changelog.md
   implementation("com.github.natario1:Transcoder:ba8f098c94")
   // https://github.com/mikereedell/sunrisesunsetlib-java
   implementation("com.luckycatlabs:SunriseSunsetCalculator:1.2")
 
   // ZXing: https://github.com/zxing/zxing/blob/master/CHANGES
-  implementation("com.google.zxing:core:3.4.1")
+  implementation("com.google.zxing:core:3.5.2")
 
   // subsampling-scale-image-view: https://github.com/davemorrissey/subsampling-scale-image-view
   implementation("com.davemorrissey.labs:subsampling-scale-image-view-androidx:3.10.0")
-
-  // YouTube: https://developers.google.com/youtube/android/player/
-  implementation(files("thirdparty/YouTubeAndroidPlayerApi.jar"))
 
   // TODO: upgrade to "com.googlecode.mp4parser:isoparser:1.1.22" or latest
   // mp4parser: https://github.com/sannies/mp4parser/releases

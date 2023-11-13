@@ -51,8 +51,7 @@ class EmojiBitmaps {
     }
   }
 
-  private static Bitmap loadAsset (String filePath, boolean isAsset) {
-    final int sampleSize = calculateSampleSize();
+  private static Bitmap loadAsset (String filePath, boolean isAsset, int sampleSize) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && Config.MODERN_IMAGE_DECODER_ENABLED) {
       try {
         android.graphics.ImageDecoder.Source source;
@@ -126,13 +125,14 @@ class EmojiBitmaps {
   private void loadEmoji (int page1, int page2) {
     String fileSuffix = String.format(Locale.US, "%d_%d.png", page1, page2);
 
+    final int sampleSize = Emoji.instance().sampleSize;
     Bitmap result = null;
     if (!BuildConfig.EMOJI_BUILTIN_ID.equals(identifier)) {
       File file = new File(new File(Emoji.getEmojiPackDirectory(), identifier), fileSuffix);
-      result = loadAsset(file.getPath(), false);
+      result = loadAsset(file.getPath(), false, sampleSize);
     }
     if (result == null) {
-      result = loadAsset(String.format(Locale.US, "emoji/v%d_%s", (12 + BuildConfig.EMOJI_VERSION), fileSuffix), true);
+      result = loadAsset(String.format(Locale.US, "emoji/v%d_%s", (12 + BuildConfig.EMOJI_VERSION), fileSuffix), true, sampleSize);
     }
     Bitmap resultFinal = result;
     UI.post(() -> {

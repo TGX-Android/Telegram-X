@@ -62,6 +62,7 @@ import androidx.activity.ComponentActivity;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
 import org.drinkmore.Tracer;
@@ -99,6 +100,7 @@ import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibManager;
+import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.PropertyId;
@@ -130,6 +132,7 @@ import org.thunderdog.challegram.widget.DragDropLayout;
 import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.NetworkStatusBarView;
 import org.thunderdog.challegram.widget.PopupLayout;
+import org.thunderdog.challegram.widget.StickersSuggestionsLayout;
 
 import java.lang.ref.Reference;
 import java.util.ArrayList;
@@ -164,6 +167,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   protected Invalidator invalidator;
 
   private final ReferenceList<ActivityListener> activityListeners = new ReferenceList<>();
+
+  private final TdlibMessageViewer.Listener messageViewListener = (manager, needRestrictScreenshots) ->
+    checkDisallowScreenshots();
 
   private int currentOrientation;
   private boolean mHasSoftwareKeys;
@@ -235,6 +241,16 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (tooltipIndex != -1) {
       i = i == -1 ? tooltipIndex : Math.min(tooltipIndex, i);
     }
+
+    if (view == inlineResultsView) {
+      View customEmojiSuggestonsView = rootView.findViewById(R.id.view_customEmojiSuggestions);
+      int customEmojiSuggestionsIndex = customEmojiSuggestonsView != null ?
+        rootView.indexOfChild(customEmojiSuggestonsView) : -1;
+      if (customEmojiSuggestionsIndex != -1) {
+        i = i == -1 ? customEmojiSuggestionsIndex : Math.min(customEmojiSuggestionsIndex, i);
+      }
+    }
+
     if (i != -1) {
       rootView.addView(view, i);
     } else {
@@ -269,7 +285,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   private View focusView;
-  private int activityState = UI.STATE_UNKNOWN;
+  private int activityState = UI.State.UNKNOWN;
 
   private RoundVideoController roundVideoController;
   private RecordAudioVideoController recordAudioVideoController;
@@ -294,10 +310,12 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       if (this.tdlib != null) {
         wasOnline = this.tdlib.isOnline();
         this.tdlib.setOnline(false);
+        this.tdlib.messageViewer().removeListener(messageViewListener);
       }
       this.tdlib = tdlib;
       recordAudioVideoController.setTdlib(tdlib);
       tdlib.setOnline(wasOnline);
+      tdlib.messageViewer().addListener(messageViewListener);
       if (drawer != null) {
         drawer.onCurrentTdlibChanged(tdlib);
       }
@@ -338,7 +356,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       this.isWindowLight = !Theme.isDark();
     }
     // UI.resetSizes();
-    setActivityState(UI.STATE_RESUMED);
+    setActivityState(UI.State.RESUMED);
     TdlibManager.instance().watchDog().onActivityCreate(this);
     Passcode.instance().checkAutoLock();
 
@@ -415,7 +433,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
     if (needTdlib()) {
       TdlibManager.instance().player().addTrackChangeListener(this);
-      TdlibManager.instance().resetBadge();
+      TdlibManager.instance().resetBadge(false);
     }
 
     Lang.addLanguageListener(this);
@@ -544,7 +562,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     try {
       dialog = b.show();
     } catch (Throwable t) {
-      if (UI.getUiState() == UI.STATE_RESUMED)
+      if (UI.getUiState() == UI.State.RESUMED)
         UI.showToast("Failed to display system pop-up, see application log for details", Toast.LENGTH_SHORT);
       Log.e("Cannot show dialog", t);
       return null;
@@ -879,9 +897,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   private void setActivityState (int newState) {
     if (this.activityState != newState) {
       final int prevState = this.activityState;
-      boolean prevResumed = prevState == UI.STATE_RESUMED;
+      boolean prevResumed = prevState == UI.State.RESUMED;
       this.activityState = newState;
-      if (newState != UI.STATE_RESUMED) {
+      if (newState != UI.State.RESUMED) {
         if (prevResumed) {
           handler.removeMessages(DISPATCH_ACTIVITY_STATE);
         }
@@ -916,7 +934,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   @Override
   public void onPause () {
     blockFocus();
-    setActivityState(UI.STATE_PAUSED);
+    setActivityState(UI.State.PAUSED);
     if (camera != null) {
       camera.onActivityPause();
     }
@@ -966,7 +984,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   public void onResume () {
     boolean lockBefore = isPasscodeShowing;
     UI.setContext(this);
-    setActivityState(UI.STATE_RESUMED);
+    setActivityState(UI.State.RESUMED);
     Passcode.instance().checkAutoLock();
     checkPasscode(false);
     if (isPasscodeShowing && lockBefore && passcodeController != null) {
@@ -1054,7 +1072,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     TGLegacyManager.instance().removeEmojiListener(this);
     TdlibManager.instance().watchDog().onActivityDestroy(this);
     Intents.revokeFileReadPermissions();
-    setActivityState(UI.STATE_DESTROYED);
+    setActivityState(UI.State.DESTROYED);
     if (isPasscodeShowing && passcodeController != null) {
       passcodeController.onActivityDestroy();
     }
@@ -1263,8 +1281,8 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         break;
       }
       case DISPATCH_ACTIVITY_STATE: {
-        if (activityState == UI.STATE_RESUMED) {
-          if (!UI.setUiState(this, UI.STATE_RESUMED)) {
+        if (activityState == UI.State.RESUMED) {
+          if (!UI.setUiState(this, UI.State.RESUMED)) {
             TdlibManager.instance().watchDog().checkNetworkAvailability();
           }
         }
@@ -1817,7 +1835,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   private StickerPreviewView stickerPreview;
   private StickerSmallView stickerPreviewControllerView;
 
-  public void openStickerPreview (Tdlib tdlib, StickerSmallView stickerView, TGStickerObj sticker, int cx, int cy, int maxWidth, int viewportHeight, boolean disableEmojis, boolean isEmojiStatus) {
+  public void openStickerPreview (Tdlib tdlib, StickerSmallView stickerView, TGStickerObj sticker, int cx, int cy, int maxWidth, int viewportHeight, boolean disableEmojis) {
     if (stickerPreview != null) {
       return;
     }
@@ -1827,7 +1845,6 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     stickerPreview = new StickerPreviewView(this);
     stickerPreview.setControllerView(stickerPreviewControllerView);
     stickerPreview.setSticker(tdlib, sticker, cx, cy, maxWidth, viewportHeight, disableEmojis);
-    stickerPreview.setIsEmojiStatus(isEmojiStatus);
 
     stickerPreviewWindow = new PopupLayout(this);
     stickerPreviewWindow.setBackListener(stickerPreview);
@@ -1911,6 +1928,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       forceTouchView.initWithContext(context);
     } catch (Throwable t) {
       Log.e("Unable to open force touch preview", t);
+      if (BuildConfig.DEBUG && t instanceof RuntimeException) {
+        throw (RuntimeException) t;
+      }
       return false;
     }
 
@@ -1946,9 +1966,13 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   // Inline results
 
+  private StickersSuggestionsLayout emojiSuggestionsWrap;
   private InlineResultsWrap inlineResultsView;
 
   public void updateHackyOverlaysPositions () {
+    if (emojiSuggestionsWrap != null && emojiSuggestionsWrap.getParent() != null) {
+      emojiSuggestionsWrap.updatePosition(true);
+    }
     if (inlineResultsView != null && inlineResultsView.getParent() != null) {
       inlineResultsView.updatePosition(true);
     }
@@ -1962,6 +1986,10 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   public void showInlineResults (ViewController<?> context, Tdlib tdlib, @Nullable ArrayList<InlineResult<?>> results, boolean needBackground, @Nullable InlineResultsWrap.LoadMoreCallback callback) {
+    showInlineResults(context, tdlib, results, needBackground, callback, null, null);
+  }
+
+  public void showInlineResults (ViewController<?> context, Tdlib tdlib, @Nullable ArrayList<InlineResult<?>> results, boolean needBackground, @Nullable InlineResultsWrap.LoadMoreCallback callback, @Nullable RecyclerView.OnScrollListener scrollCallback, @Nullable StickerSmallView.StickerMovementCallback stickerMovementCallback) {
     if (inlineResultsView == null) {
       if (results == null || results.isEmpty()) {
         return;
@@ -1974,12 +2002,16 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       addToRoot(inlineResultsView, false);
     }
 
-    inlineResultsView.showItems(context, results, needBackground, callback, !context.isFocused());
+    inlineResultsView.showItems(context, results, needBackground, callback, scrollCallback, stickerMovementCallback, !context.isFocused());
   }
 
   public void addInlineResults (ViewController<?> context, ArrayList<InlineResult<?>> results, InlineResultsWrap.LoadMoreCallback callback) {
+    addInlineResults(context, results, callback, null, null);
+  }
+
+  public void addInlineResults (ViewController<?> context, ArrayList<InlineResult<?>> results, InlineResultsWrap.LoadMoreCallback callback, @Nullable RecyclerView.OnScrollListener scrollCallback, @Nullable StickerSmallView.StickerMovementCallback stickerMovementCallback) {
     if (inlineResultsView != null) {
-      inlineResultsView.addItems(context, results, callback);
+      inlineResultsView.addItems(context, results, callback, scrollCallback, stickerMovementCallback);
     }
   }
 
@@ -1992,6 +2024,56 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   public boolean areInlineResultsVisible () {
     return inlineResultsView != null && inlineResultsView.isDisplayingItems();
+  }
+
+  @Nullable
+  public InlineResultsWrap getInlineResultsView () {
+    return inlineResultsView;
+  }
+
+  public void setEmojiSuggestions (MessagesController context, @Nullable ArrayList<TGStickerObj> stickers, @Nullable RecyclerView.OnScrollListener scrollCallback, StickersSuggestionsLayout.Delegate choosingDelegate) {
+    if (emojiSuggestionsWrap == null) {
+      emojiSuggestionsWrap = new StickersSuggestionsLayout(context.context());
+      emojiSuggestionsWrap.setId(R.id.view_customEmojiSuggestions);
+      emojiSuggestionsWrap.init(context, true);
+    }
+    emojiSuggestionsWrap.setChoosingDelegate(choosingDelegate);
+    emojiSuggestionsWrap.setOnScrollListener(scrollCallback);
+    emojiSuggestionsWrap.setStickers(context, stickers);
+  }
+
+  public void updateEmojiSuggestionsPosition (boolean needTranslate) {
+    if (emojiSuggestionsWrap != null) {
+      emojiSuggestionsWrap.updatePosition(needTranslate);
+    }
+  }
+
+  public void addEmojiSuggestions (MessagesController context, ArrayList<TGStickerObj> stickers) {
+    if (emojiSuggestionsWrap != null && stickers != null && !stickers.isEmpty()) {
+      emojiSuggestionsWrap.addStickers(context, stickers);
+    }
+  }
+
+  public void setEmojiSuggestionsVisible (boolean visible) {
+    if (emojiSuggestionsWrap != null) {
+      if (visible) {
+        emojiSuggestionsWrap.updatePosition(false);
+      }
+      emojiSuggestionsWrap.setStickersVisible(visible);
+    }
+  }
+
+  public boolean hasEmojiSuggestions () {
+    return emojiSuggestionsWrap != null && emojiSuggestionsWrap.hasStickers();
+  }
+
+  public boolean isEmojiSuggestionsVisible () {
+    return emojiSuggestionsWrap != null && emojiSuggestionsWrap.isStickersVisible();
+  }
+
+  @Nullable
+  public StickersSuggestionsLayout getEmojiSuggestionsView () {
+    return emojiSuggestionsWrap;
   }
 
   // etc
@@ -2466,6 +2548,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
     boolean disallowScreenshots = false;
     disallowScreenshots = (navigation.shouldDisallowScreenshots() || Passcode.instance().shouldDisallowScreenshots());
+    if (tdlib != null && tdlib.messageViewer().needRestrictScreenshots()) {
+      disallowScreenshots = true;
+    }
     for (PopupLayout popupLayout : windows) {
       boolean shouldDisallowScreenshots = popupLayout.shouldDisallowScreenshots();
       popupLayout.checkWindowFlags();
@@ -2548,7 +2633,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     return !(
       // getCurrentPopupWindow() != null ||
       (cameraAnimator != null && cameraAnimator.isAnimating()) ||
-      activityState != UI.STATE_RESUMED ||
+      activityState != UI.State.RESUMED ||
       recordAudioVideoController.isOpen() ||
       isCameraOwnershipTaken ||
       isNavigationBusy()
@@ -3140,7 +3225,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   private void checkAutoNightMode () {
-    setRegisterLightSensor(activityState == UI.STATE_RESUMED && Settings.instance().getNightMode() == Settings.NIGHT_MODE_AUTO);
+    setRegisterLightSensor(activityState == UI.State.RESUMED && Settings.instance().getNightMode() == Settings.NIGHT_MODE_AUTO);
     setSystemNightMode(getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK);
   }
 
@@ -3203,7 +3288,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   private boolean needsLightSensorChanges () {
-    return (lightSensorRegistered && lightSensor != null && activityState == UI.STATE_RESUMED && Settings.instance().getNightMode() == Settings.NIGHT_MODE_AUTO);
+    return (lightSensorRegistered && lightSensor != null && activityState == UI.State.RESUMED && Settings.instance().getNightMode() == Settings.NIGHT_MODE_AUTO);
   }
 
   @Override

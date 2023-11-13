@@ -198,8 +198,13 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
   public void setEmojiStatus (TdlibAccount account) {
     TextColorSet colorSet = new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
       @Override
-      public int emojiStatusColor () {
-        return Theme.getColor(ColorId.iconActive);
+      public int mediaTextColorOrId () {
+        return ColorId.iconActive;
+      }
+
+      @Override
+      public boolean mediaTextColorIsId () {
+        return true;
       }
     };
     emojiStatusHelper.setSharedUsageId("account_" + account.id);
@@ -208,13 +213,7 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
   }
 
   public void setAvatar (TdlibAccount account) {
-    AvatarPlaceholder.Metadata placeholder = account.getAvatarPlaceholderMetadata();
-    ImageFile imageFile = account.getAvatarFile(false);
-    if (imageFile != null) {
-      receiver.requestSpecific(tdlib, imageFile, AvatarReceiver.Options.NONE);
-    } else {
-      receiver.requestPlaceholder(tdlib, placeholder, AvatarReceiver.Options.NONE);
-    }
+    receiver.requestAccount(tdlib, account.id, AvatarReceiver.Options.NONE);
   }
 
   public void setError (boolean error, int errorIcon, boolean animated) {
@@ -323,7 +322,7 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
     if (trimmedText != null) {
       trimmedText.draw(c, textLeft, textLeft + trimmedText.getWidth(), 0, Screen.dp(17f));
     }
-    emojiStatusHelper.draw(c, textLeft + (trimmedText != null ? trimmedText.getWidth() + Screen.dp(6): 0), Screen.dp(17f));
+    emojiStatusHelper.draw(c, textLeft + (trimmedText != null ? trimmedText.getWidth() + Screen.dp(6) : 0), Screen.dp(17f));
     if (receiver != null) {
       layoutReceiver();
       if (receiver.needPlaceholder()) {

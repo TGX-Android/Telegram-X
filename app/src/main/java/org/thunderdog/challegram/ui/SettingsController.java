@@ -28,10 +28,8 @@ import androidx.collection.SparseArrayCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.attach.MediaLayout;
@@ -90,13 +88,15 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
+import me.vkryl.core.reference.ReferenceList;
+import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
 public class SettingsController extends ViewController<Void> implements
   View.OnClickListener, ComplexHeaderView.Callback,
   Menu, MoreDelegate, OptionDelegate,
   TdlibCache.MyUserDataChangeListener, ConnectionListener, StickersListener, MediaLayout.MediaGalleryCallback,
-  ActivityResultHandler, Client.ResultHandler, View.OnLongClickListener, SessionListener, GlobalTokenStateListener {
+  ActivityResultHandler, View.OnLongClickListener, SessionListener, GlobalTokenStateListener {
   private ComplexHeaderView headerCell;
   private ComplexRecyclerView contentView;
   private SettingsAdapter adapter;
@@ -121,7 +121,8 @@ public class SettingsController extends ViewController<Void> implements
   public void onFocus () {
     super.onFocus();
     contentView.setFactorLocked(false);
-    preloadStickers();
+    stickerSetsPreloader.preloadStickers();
+    emojiPacksPreloader.preloadStickers();
     if (!oneShot) {
       oneShot = true;
       tdlib.listeners().subscribeToStickerUpdates(this);
@@ -573,10 +574,16 @@ public class SettingsController extends ViewController<Void> implements
           TdApi.FormattedText text;
           if (about == null) {
             text = TD.toFormattedText(Lang.getString(R.string.LoadingInformation), false);
-          } else if (Td.isEmpty(about)) {
-            text = TD.toFormattedText(Lang.getString(R.string.BioNone), false);
           } else {
-            text = about;
+            TdApi.FormattedText about = SettingsController.this.about;
+            if (Settings.instance().showPeerIds()) {
+              about = tdlib.addServiceInformation(ChatId.fromUserId(tdlib.myUserId()), about);
+            }
+            if (Td.isEmpty(about)) {
+              text = TD.toFormattedText(Lang.getString(R.string.BioNone), false);
+            } else {
+              text = about;
+            }
           }
           view.setText(obtainWrapper(text, ID_BIO));
         }
@@ -630,12 +637,16 @@ public class SettingsController extends ViewController<Void> implements
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_privacySettings, R.drawable.baseline_lock_24, R.string.PrivacySettings));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_stickerSettingsAndEmoji, R.drawable.deproko_baseline_stickers_filled_24, R.string.StickersAndEmoji));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_themeSettings, R.drawable.baseline_palette_24, R.string.ThemeSettings));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_tweakSettings, R.drawable.baseline_extension_24, R.string.TweakSettings));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
-    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_stickerSettings, R.drawable.deproko_baseline_stickers_filled_24, R.string.Stickers));
-    items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+    if (Settings.instance().chatFoldersEnabled()) {
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_chatFolders, R.drawable.baseline_folder_24, R.string.ChatFolders));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+    }
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_languageSettings, R.drawable.baseline_language_24, R.string.Language));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
@@ -808,18 +819,6 @@ public class SettingsController extends ViewController<Void> implements
     if (this.about == null || !Td.equalsTo(this.about, about)) {
       this.about = about;
       adapter.updateValuedSettingById(R.id.btn_bio);
-    }
-  }
-
-  @Override
-  public void onResult (TdApi.Object object) {
-    switch (object.getConstructor()) {
-      case TdApi.Error.CONSTRUCTOR:
-        UI.showError(object);
-        break;
-      default:
-        Log.unexpectedTdlibResponse(object, TdApi.GetUserFullInfo.class, TdApi.UserFullInfo.class, TdApi.Error.class);
-        break;
     }
   }
 
@@ -1031,10 +1030,12 @@ public class SettingsController extends ViewController<Void> implements
       navigateTo(new SettingsPrivacyController(context, tdlib));
     } else if (viewId == R.id.btn_help) {
       supportOpen = tdlib.ui().openSupport(this);
-    } else if (viewId == R.id.btn_stickerSettings) {
-      SettingsStickersController c = new SettingsStickersController(context, tdlib);
+    } else if (viewId == R.id.btn_stickerSettingsAndEmoji) {
+      SettingsStickersAndEmojiController c = new SettingsStickersAndEmojiController(context, tdlib);
       c.setArguments(this);
       navigateTo(c);
+    } else if (viewId == R.id.btn_chatFolders) {
+      navigateTo(new SettingsFoldersController(context, tdlib));
     } else if (viewId == R.id.btn_faq) {
       tdlib.ui().openUrl(this, Lang.getString(R.string.url_faq), new TdlibUi.UrlOpenParameters().forceInstantView());
     } else if (viewId == R.id.btn_privacyPolicy) {
@@ -1211,6 +1212,11 @@ public class SettingsController extends ViewController<Void> implements
       strings.append(R.string.AppLogs);
       icons.append(R.drawable.baseline_build_24);
       colors.append(OPTION_COLOR_NORMAL);
+      
+      ids.append(R.id.btn_experiment);
+      strings.append(R.string.ExperimentalSettings);
+      icons.append(R.drawable.templarian_baseline_flask_24);
+      colors.append(OPTION_COLOR_NORMAL);
     }
 
     SpannableStringBuilder b = new SpannableStringBuilder();
@@ -1223,14 +1229,19 @@ public class SettingsController extends ViewController<Void> implements
         UI.copyText(U.getUsefulMetadata(tdlib), R.string.CopiedText);
       } else if (id == R.id.btn_pushService) {
         SettingsBugController c = new SettingsBugController(context, tdlib);
-        c.setArguments(new SettingsBugController.Args(SettingsBugController.SECTION_PUSH));
+        c.setArguments(new SettingsBugController.Args(SettingsBugController.Section.PUSH));
         navigateTo(c);
       } else if (id == R.id.btn_build) {
         navigateTo(new SettingsBugController(context, tdlib));
-      } else if (id == R.id.btn_tdlib) {
-        tdlib.getTesterLevel(level -> runOnUiThreadOptional(() ->
-          openTdlibLogs(level, null)
-        ));
+      } else if (id == R.id.btn_tdlib || id == R.id.btn_experiment) {
+        boolean isTdlib = id == R.id.btn_tdlib;
+        tdlib.getTesterLevel(level -> runOnUiThreadOptional(() -> {
+          if (isTdlib) {
+            openTdlibLogs(level, null);
+          } else {
+            openExperimentalSettings(level);
+          }
+        }));
       }
       return true;
     });
@@ -1238,68 +1249,111 @@ public class SettingsController extends ViewController<Void> implements
 
   @Override
   public void onInstalledStickerSetsUpdated (long[] stickerSetIds, TdApi.StickerType stickerType) {
-    if (stickerType.getConstructor() == TdApi.StickerTypeRegular.CONSTRUCTOR) {
+    if (stickerType.getConstructor() == TdApi.StickerTypeRegular.CONSTRUCTOR || stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR) {
       runOnUiThreadOptional(() -> {
-        allStickerSets = null;
-        hasPreloadedStickers = false;
-        preloadStickers();
+        stickerSetsPreloader.reloadStickersIfEqualTypes(stickerType);
+        emojiPacksPreloader.reloadStickersIfEqualTypes(stickerType);
       });
     }
   }
 
   // Stickers preloading
 
-  private @Nullable ArrayList<TGStickerSetInfo> allStickerSets;
-
-  public @Nullable ArrayList<TGStickerSetInfo> getStickerSets () {
-    return allStickerSets;
-  }
-
   public interface StickerSetLoadListener {
-    void onStickerSetsLoaded (ArrayList<TGStickerSetInfo> stickerSets);
+    void onStickerSetsLoaded (ArrayList<TGStickerSetInfo> stickerSets, TdApi.StickerType type);
   }
 
-  private @Nullable StickerSetLoadListener stickerSetListener;
 
-  public void setStickerSetListener (@Nullable StickerSetLoadListener listener) {
-    this.stickerSetListener = listener;
+  private final StickerSetsPreloader stickerSetsPreloader = new StickerSetsPreloader(this, new TdApi.StickerTypeRegular());
+  private final StickerSetsPreloader emojiPacksPreloader = new StickerSetsPreloader(this, new TdApi.StickerTypeCustomEmoji());
+
+  public void addStickerSetListener (boolean isEmoji, StickerSetLoadListener listener) {
+    (isEmoji ? emojiPacksPreloader : stickerSetsPreloader).addStickerSetListener(listener);
   }
 
-  private void setStickerSets (@Nullable ArrayList<TGStickerSetInfo> stickerSets) {
-    this.allStickerSets = stickerSets;
-    if (stickerSetListener != null) {
-      stickerSetListener.onStickerSetsLoaded(stickerSets);
+  public void removeStickerSetListener (boolean isEmoji, StickerSetLoadListener listener) {
+    (isEmoji ? emojiPacksPreloader : stickerSetsPreloader).removeStickerSetListener(listener);
+  }
+
+  public @Nullable ArrayList<TGStickerSetInfo> getStickerSets (boolean isEmoji) {
+    return (isEmoji ? emojiPacksPreloader : stickerSetsPreloader).getStickerSets();
+  }
+
+  public int getStickerSetsCount (boolean isEmoji) {
+    ArrayList<TGStickerSetInfo> sets = getStickerSets(isEmoji);
+    return sets != null ? sets.size() : -1;
+  }
+
+  private static class StickerSetsPreloader {
+    private final ReferenceList<StickerSetLoadListener> listeners = new ReferenceList<>(false);
+
+    private final ViewController<?> context;
+    private final Tdlib tdlib;
+    private final TdApi.StickerType type;
+
+    private @Nullable ArrayList<TGStickerSetInfo> allStickerSets;
+    private boolean hasPreloadedStickers;
+
+    public StickerSetsPreloader (ViewController<?> context, TdApi.StickerType type) {
+      this.context = context;
+      this.tdlib = context.tdlib();
+      this.type = type;
     }
-  }
 
-  private boolean hasPreloadedStickers;
-
-  private void preloadStickers () {
-    if (hasPreloadedStickers) {
-      return;
+    public @Nullable ArrayList<TGStickerSetInfo> getStickerSets () {
+      return allStickerSets;
     }
-    hasPreloadedStickers = true;
-    tdlib.client().send(new TdApi.GetInstalledStickerSets(new TdApi.StickerTypeRegular()), object -> {
-      if (!isDestroyed()) {
-        switch (object.getConstructor()) {
-          case TdApi.StickerSets.CONSTRUCTOR: {
-            TdApi.StickerSetInfo[] stickerSets = ((TdApi.StickerSets) object).sets;
-            final ArrayList<TGStickerSetInfo> parsedStickerSets = new ArrayList<>(stickerSets.length);
-            for (TdApi.StickerSetInfo stickerSet : stickerSets) {
-              parsedStickerSets.add(new TGStickerSetInfo(tdlib, stickerSet));
+
+    public void reloadStickersIfEqualTypes (TdApi.StickerType type) {
+      if (this.type.getConstructor() == type.getConstructor()) {
+        allStickerSets = null;
+        hasPreloadedStickers = false;
+        preloadStickers();
+      }
+    }
+
+    public void preloadStickers () {
+      if (hasPreloadedStickers) {
+        return;
+      }
+      hasPreloadedStickers = true;
+      tdlib.client().send(new TdApi.GetInstalledStickerSets(type), object -> {
+        if (!context.isDestroyed()) {
+          switch (object.getConstructor()) {
+            case TdApi.StickerSets.CONSTRUCTOR: {
+              TdApi.StickerSetInfo[] stickerSets = ((TdApi.StickerSets) object).sets;
+              final ArrayList<TGStickerSetInfo> parsedStickerSets = new ArrayList<>(stickerSets.length);
+              for (TdApi.StickerSetInfo stickerSet : stickerSets) {
+                parsedStickerSets.add(new TGStickerSetInfo(tdlib, stickerSet));
+              }
+              parsedStickerSets.trimToSize();
+              context.runOnUiThreadOptional(() ->
+                setStickerSets(parsedStickerSets)
+              );
+              break;
             }
-            parsedStickerSets.trimToSize();
-            runOnUiThreadOptional(() ->
-              setStickerSets(parsedStickerSets)
-            );
-            break;
-          }
-          case TdApi.Error.CONSTRUCTOR: {
-            UI.showError(object);
-            break;
+            case TdApi.Error.CONSTRUCTOR: {
+              UI.showError(object);
+              break;
+            }
           }
         }
+      });
+    }
+
+    private void setStickerSets (@Nullable ArrayList<TGStickerSetInfo> stickerSets) {
+      this.allStickerSets = stickerSets;
+      for (StickerSetLoadListener listener : listeners) {
+        listener.onStickerSetsLoaded(stickerSets, type);
       }
-    });
+    }
+
+    public void addStickerSetListener (StickerSetLoadListener listener) {
+      this.listeners.add(listener);
+    }
+
+    public void removeStickerSetListener (StickerSetLoadListener listener) {
+      this.listeners.remove(listener);
+    }
   }
 }

@@ -10,7 +10,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-package org.thunderdog.challegram.data;
+package org.thunderdog.challegram.telegram;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
@@ -18,9 +18,7 @@ import androidx.annotation.UiThread;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
-import org.thunderdog.challegram.telegram.ListManager;
-import org.thunderdog.challegram.telegram.MessageListener;
-import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.data.TD;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,7 +30,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableInt;
 import me.vkryl.td.Td;
 
-public class MessageListManager extends ListManager<TdApi.Message> implements MessageListener, Comparator<TdApi.Message> {
+public final class MessageListManager extends ListManager<TdApi.Message> implements MessageListener, Comparator<TdApi.Message> {
   public interface ChangeListener extends ListManager.ListChangeListener<TdApi.Message> { }
 
   private final long chatId;
@@ -119,19 +117,13 @@ public class MessageListManager extends ListManager<TdApi.Message> implements Me
 
   private void fetchMessageCount (boolean local, @Nullable RunnableInt callback) {
     if (!hasComplexFilter() && filter != null) {
-      tdlib.client().send(new TdApi.GetChatMessageCount(chatId, filter, local), result -> {
+      tdlib.send(new TdApi.GetChatMessageCount(chatId, filter, local), (chatMessageCount, error) -> {
         final int count;
-        switch (result.getConstructor()) {
-          case TdApi.Count.CONSTRUCTOR:
-            count = ((TdApi.Count) result).count;
-            break;
-          case TdApi.Error.CONSTRUCTOR:
-            Log.e("GetChatMessageCount: %s, filter:%s, chatId:%s", TD.toErrorString(result), filter, chatId);
-            count = -1;
-            break;
-          default:
-            Log.unexpectedTdlibResponse(result, TdApi.GetChatMessageCount.class, TdApi.Count.class);
-            throw new AssertionError(result.toString());
+        if (error != null) {
+          Log.e("GetChatMessageCount: %s, filter:%s, chatId:%s", TD.toErrorString(error), filter, chatId);
+          count = -1;
+        } else {
+          count = chatMessageCount.count;
         }
         if (callback != null) {
           runOnUiThread(() ->
@@ -356,7 +348,7 @@ public class MessageListManager extends ListManager<TdApi.Message> implements Me
   }
 
   @Override
-  public void onMessageSendFailed (TdApi.Message message, long oldMessageId, int errorCode, String errorMessage) {
+  public void onMessageSendFailed (TdApi.Message message, long oldMessageId, TdApi.Error error) {
     if (message.chatId == chatId) {
       runOnUiThreadIfReady(() ->
         replaceMessage(message, oldMessageId, CAUSE_SEND_FAILED)
@@ -411,7 +403,7 @@ public class MessageListManager extends ListManager<TdApi.Message> implements Me
               removeMessageAt(index);
             }
           }
-        } else if (filter != null && filter.getConstructor() == TdApi.SearchMessagesFilterPinned.CONSTRUCTOR && isPinned) {
+        } else if (filter != null && Td.isPinnedFilter(filter) && isPinned) {
           fetchMessage(messageId, true);
         }
       });

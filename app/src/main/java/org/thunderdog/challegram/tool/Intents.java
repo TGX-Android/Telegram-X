@@ -260,23 +260,29 @@ public class Intents {
     }
   }
 
-  public static void openLink (String url) {
-    if (!StringUtils.isEmpty(url)) {
-      Uri uri = Strings.wrapHttps(url);
-      if (uri != null && !openLink(uri)) {
-        String scheme = uri.getScheme();
-        if (Strings.isValidLink(scheme) && scheme.contains("/")) {
-          openLink("http://" + uri);
-        }
-      }
+  public static boolean openLink (String url) {
+    if (StringUtils.isEmpty(url)) {
+      return false;
     }
+    Uri uri = Strings.wrapHttps(url);
+    if (uri == null) {
+      return false;
+    }
+    if (openLink(uri)) {
+      return true;
+    }
+    String scheme = uri.getScheme();
+    if (Strings.isValidLink(scheme) && scheme.contains("/")) {
+      return openLink("http://" + uri);
+    }
+    return false;
   }
 
   private static boolean openLink (Uri uri) {
     if (uri != null) {
       try {
         BaseActivity context = UI.getUiContext();
-        if (UI.getUiState() == UI.STATE_RESUMED && openInAppBrowser(context, uri, false)) {
+        if (UI.getUiState() == UI.State.RESUMED && openInAppBrowser(context, uri, false)) {
           return true;
         }
 

@@ -28,7 +28,6 @@ import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 
 import org.thunderdog.challegram.BaseActivity;
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.EmbeddedService;
 import org.thunderdog.challegram.navigation.ViewController;

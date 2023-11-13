@@ -15,10 +15,14 @@
 
 package org.thunderdog.challegram.util.text;
 
-import android.util.Pair;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
 import android.util.SparseArray;
 
 import androidx.annotation.Nullable;
+
+import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.util.CustomTypefaceSpan;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -95,6 +99,17 @@ public class Highlight {
     return -1;
   }
 
+  private static boolean isSeparatorCodePoint (int codePoint) {
+    int codePointType = Character.getType(codePoint);
+    switch (codePointType) {
+      case Character.SPACE_SEPARATOR:
+      case Character.LINE_SEPARATOR:
+      case Character.CONTROL:
+        return true;
+    }
+    return false;
+  }
+
   private static boolean isWeakCodePoint (int codePoint) {
     int codePointType = Character.getType(codePoint);
     if (Text.isSplitterCodePointType(codePoint, codePointType, true)) {
@@ -111,6 +126,7 @@ public class Highlight {
       case Character.SPACE_SEPARATOR:
       case Character.LINE_SEPARATOR:
       case Character.PARAGRAPH_SEPARATOR:
+      case Character.CONTROL:
         return true;
     }
     return false;
@@ -133,15 +149,9 @@ public class Highlight {
       int highlightIndex = 0;
       while (highlightIndex < highlightLength && matchingLength < (end - index)) {
         int highlightCodePoint = highlight.codePointAt(highlightStart + highlightIndex);
-        int highlightCodePointType = Character.getType(highlightCodePoint);
-        boolean highlightCodePointIsSeparator =
-          highlightCodePointType == Character.SPACE_SEPARATOR ||
-          highlightCodePointType == Character.LINE_SEPARATOR;
+        boolean highlightCodePointIsSeparator = isSeparatorCodePoint(highlightCodePoint);
         int contentCodePoint = text.codePointAt(index + matchingLength);
-        int contentCodePointType = Character.getType(contentCodePoint);
-        boolean contentCodePointIsSeparator =
-          contentCodePointType == Character.SPACE_SEPARATOR ||
-          contentCodePointType == Character.LINE_SEPARATOR;
+        boolean contentCodePointIsSeparator = isSeparatorCodePoint(contentCodePoint);
         if (highlightCodePoint == contentCodePoint || (highlightCodePointIsSeparator && contentCodePointIsSeparator) || StringUtils.normalizeCodePoint(highlightCodePoint) == StringUtils.normalizeCodePoint(contentCodePoint)) {
           // easy path: code points are equal or similar
           matchingLength += Character.charCount(contentCodePoint);
@@ -384,5 +394,17 @@ public class Highlight {
       mostRelevantHighlightKey = KEY_NONE;
       highlights.clear();
     }
+  }
+
+  public static CharSequence toSpannable (String text, String highlight) {
+    Highlight h = valueOf(text, highlight);
+    if (h == null) {
+      return text;
+    }
+    SpannableStringBuilder b = new SpannableStringBuilder(text);
+    for (Highlight.Part part : h.parts) {
+      b.setSpan(new CustomTypefaceSpan(null, ColorId.textSearchQueryHighlight), part.start, part.end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
+    return b;
   }
 }

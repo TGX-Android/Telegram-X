@@ -39,6 +39,7 @@ import org.thunderdog.challegram.data.TGFoundChat;
 import org.thunderdog.challegram.data.TGFoundMessage;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -69,6 +70,7 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
   // Search chats
 
   private CustomRecyclerView chatSearchView;
+  private TdlibMessageViewer.Viewport chatSearchViewport;
   private SettingsAdapter chatSearchAdapter;
   private SearchManager chatSearchManager;
   private boolean chatSearchDisallowScreenshots;
@@ -114,6 +116,8 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
 
   protected void modifyFoundChat (TGFoundChat chat) { }
 
+  protected void modifyFoundChatView (ListItem item, int position, BetterChatView chatView) { }
+
   protected boolean needChatSearchManagerPreparation () {
     // Disable if it's not needed
     return true;
@@ -141,8 +145,11 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
 
   protected final CustomRecyclerView generateChatSearchView (@Nullable ViewGroup parent) {
     final boolean noChatSearch = (getChatSearchFlags() & SearchManager.FLAG_NO_CHATS) != 0;
+    chatSearchViewport = tdlib.messageViewer().createViewport(new TdApi.MessageSourceSearch(), this);
+    chatSearchViewport.addIgnoreLock(() -> !this.isSearchContentVisible);
     chatSearchView = (CustomRecyclerView) Views.inflate(context(), R.layout.recycler_custom, parent);
     Views.setScrollBarPosition(chatSearchView);
+    tdlib.ui().attachViewportToRecyclerView(chatSearchViewport, chatSearchView);
     chatSearchView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
       public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
@@ -399,6 +406,7 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
         } else if (itemId == R.id.search_message) {
           chatView.setMessage((TGFoundMessage) item.getData());
         }
+        TelegramViewController.this.modifyFoundChatView(item, position, chatView);
       }
 
       @Override
@@ -889,6 +897,7 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
     if (this.isSearchContentVisible != isVisible) {
       this.isSearchContentVisible = isVisible;
       chatSearchView.setScrollDisabled(!isVisible);
+      chatSearchViewport.notifyLockValueChanged();
       context().checkDisallowScreenshots();
     }
   }
@@ -1081,7 +1090,7 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
   @Override
   @CallSuper
   public boolean shouldDisallowScreenshots () {
-    return isSearchContentVisible && chatSearchDisallowScreenshots;
+    return (isSearchContentVisible && chatSearchDisallowScreenshots) || super.shouldDisallowScreenshots();
   }
 
   protected final void invalidateChatSearchResults () {
@@ -1129,6 +1138,9 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
     if (chatSearchManager != null) {
       TGLegacyManager.instance().removeEmojiListener(chatSearchAdapter);
       Views.destroyRecyclerView(chatSearchView);
+    }
+    if (chatSearchViewport != null) {
+      chatSearchViewport.performDestroy();
     }
   }
 }

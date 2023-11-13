@@ -143,7 +143,8 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   private final ArrayList<TdApi.Message> outputLocations = new ArrayList<>();
 
   private boolean loadingMyUser;
-  private final Client.ResultHandler meHandler, dataHandler;
+  private final Tdlib.ResultHandler<TdApi.User> meHandler;
+  private final Client.ResultHandler dataHandler;
 
   private final LongSparseIntArray pendingStatusRefresh = new LongSparseIntArray();
   private final Handler onlineHandler;
@@ -206,20 +207,11 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   TdlibCache (Tdlib tdlib) {
     this.tdlib = tdlib;
 
-    this.meHandler = object -> {
-      switch (object.getConstructor()) {
-        case TdApi.User.CONSTRUCTOR: {
-          loadingMyUser = false;
-          break;
-        }
-        case TdApi.Error.CONSTRUCTOR: {
-          UI.showError(object);
-          break;
-        }
-        default: {
-          Log.unexpectedTdlibResponse(object, TdApi.GetMe.class, TdApi.User.class, TdApi.Error.class);
-          break;
-        }
+    this.meHandler = (user, error) -> {
+      if (error != null) {
+        UI.showError(error);
+      } else {
+        loadingMyUser = false;
       }
     };
     this.dataHandler = object -> {
@@ -253,8 +245,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
           break;
         }
         default: {
-          Log.unexpectedTdlibResponse(object, TdApi.GetUserFullInfo.class, TdApi.UserFullInfo.class, TdApi.BasicGroupFullInfo.class, TdApi.SupergroupFullInfo.class, TdApi.Error.class, TdApi.User.class);
-          break;
+          throw new UnsupportedOperationException(object.toString());
         }
       }
     };
@@ -264,12 +255,12 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     tdlib.listeners().addCleanupListener(this);
 
     UI.addStateListener(this);
-    this.refreshUiPaused = UI.getUiState() != UI.STATE_RESUMED;
+    this.refreshUiPaused = UI.getUiState() != UI.State.RESUMED;
   }
 
   @Override
   public void onUiStateChanged (int newState) {
-    setPauseStatusRefreshers(newState != UI.STATE_RESUMED);
+    setPauseStatusRefreshers(newState != UI.State.RESUMED);
   }
 
   public void getInviteText (@Nullable final RunnableData<TdApi.Text> callback) {
@@ -436,7 +427,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
         tdlib.downloadMyUser(myUser);
       } else if (!loadingMyUser) {
         loadingMyUser = true;
-        tdlib.client().send(new TdApi.GetMe(), meHandler);
+        tdlib.send(new TdApi.GetMe(), meHandler);
       }
     } else {
       notifyMyUserListeners(myUserListeners.iterator(), null);
@@ -450,27 +441,32 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
 
   @TdlibThread
   void onUpdateUser (TdApi.UpdateUser update) {
-    boolean statusChanged;
-    boolean isMe;
-    boolean hadUser;
+    final boolean statusChanged;
+    final boolean hadUser;
+    final boolean isContactChanged;
+    final boolean isContact;
     TdApi.User newUser = update.user;
     synchronized (dataLock) {
       TdApi.User oldUser = users.get(newUser.id);
-      if (hadUser = oldUser != null) {
+      hadUser = oldUser != null;
+      isContact = newUser.isContact;
+      if (hadUser) {
         statusChanged = !Td.equalsTo(oldUser.status, newUser.status);
+        isContactChanged = oldUser.isContact != newUser.isContact;
         Td.copyTo(newUser, oldUser);
         synchronized (onlineMutex) {
           oldUser.status = newUser.status;
         }
         newUser = oldUser;
       } else {
-        statusChanged = false;
+        statusChanged = isContactChanged = false;
         users.put(newUser.id, newUser);
       }
     }
 
     notifyUserListeners(newUser);
-    if (isMe = (newUser.id == myUserId)) {
+    boolean isMe = (newUser.id == myUserId);
+    if (isMe) {
       notifyMyUserListeners(myUserListeners.iterator(), newUser);
       tdlib.downloadMyUser(newUser);
       tdlib.context().onUpdateAccountProfile(tdlib.id(), newUser, true);
@@ -490,6 +486,10 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
         TdlibNotificationChannelGroup.updateGroup(newUser);
       }
       tdlib.context().onUpdateAccountProfile(tdlib.id(), newUser, !hadUser);
+    } else {
+      if (isContactChanged) {
+        tdlib.contacts().notifyContactStatusChanged(newUser.id, isContact);
+      }
     }
   }
 
@@ -1385,7 +1385,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   }
 
   void addOutputLocationMessage (TdApi.Message message) {
-    if (message.sendingState != null || !message.canBeEdited || !message.isOutgoing || message.content.getConstructor() != TdApi.MessageLocation.CONSTRUCTOR) {
+    if (message.sendingState != null || !message.canBeEdited || !message.isOutgoing || !Td.isLocation(message.content)) {
       return;
     }
     TdApi.MessageLocation location = (TdApi.MessageLocation) message.content;
@@ -1551,7 +1551,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
             case TdApi.Message.CONSTRUCTOR: {
               TdApi.Message resultMessage = (TdApi.Message) object;
               message.editDate = resultMessage.editDate;
-              if (resultMessage.content.getConstructor() == TdApi.MessageLocation.CONSTRUCTOR) {
+              if (Td.isLocation(resultMessage.content)) {
                 TdApi.MessageLocation in = (TdApi.MessageLocation) resultMessage.content;
                 TdApi.MessageLocation out = (TdApi.MessageLocation) message.content;
                 out.expiresIn = in.livePeriod;

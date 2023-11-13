@@ -18,6 +18,7 @@ import android.content.Context;
 import android.view.View;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -34,13 +35,14 @@ import org.thunderdog.challegram.data.CallSection;
 import org.thunderdog.challegram.data.TGFoundChat;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.ViewController;
-import org.thunderdog.challegram.telegram.DayChangeListener;
+import org.thunderdog.challegram.telegram.DateChangeListener;
 import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibOptionListener;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.BaseView;
@@ -57,12 +59,13 @@ import java.util.List;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
+import me.vkryl.td.Td;
 
 public class CallListController extends RecyclerViewController<Void> implements
   View.OnClickListener,
   Client.ResultHandler,
   MessageListener,
-  DayChangeListener,
+  DateChangeListener,
   View.OnLongClickListener,
   BaseView.ActionListProvider, TdlibOptionListener {
   public CallListController (Context context, Tdlib tdlib) {
@@ -72,6 +75,11 @@ public class CallListController extends RecyclerViewController<Void> implements
   @Override
   public int getId () {
     return R.id.controller_call_list;
+  }
+
+  @Override
+  public CharSequence getName () {
+    return Lang.getString(R.string.Calls);
   }
 
   private SettingsAdapter adapter;
@@ -131,10 +139,27 @@ public class CallListController extends RecyclerViewController<Void> implements
     buildCells();
     recyclerView.setAdapter(adapter);
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+      private float lastY;
+      private float lastShowY;
+
       @Override
-      public void onScrolled (RecyclerView recyclerView, int dx, int dy) {
+      public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
         if (messages != null && ((LinearLayoutManager) recyclerView.getLayoutManager()).findLastVisibleItemPosition() >= adapter.getItems().size() - 5) {
           loadMore();
+        }
+        if (Settings.instance().chatFoldersEnabled() && getParentOrSelf() == CallListController.this) {
+          lastY += dy;
+          if (dy < 0 && lastShowY - lastY >= Screen.getTouchSlop()) {
+            setDoneVisible(true, true);
+            lastShowY = lastY;
+          } else if (lastY - lastShowY > Screen.getTouchSlopBig()) {
+            setDoneVisible(false, true);
+            lastShowY = lastY;
+          }
+          if (Math.abs(lastY - lastShowY) > Screen.getTouchSlopBig()) {
+            lastY = 0;
+            lastShowY = 0;
+          }
         }
       }
     });
@@ -142,6 +167,28 @@ public class CallListController extends RecyclerViewController<Void> implements
     tdlib.client().send(new TdApi.SearchCallMessages(null, Screen.calculateLoadingItems(Screen.dp(72f), 20), false), this);
     tdlib.client().send(new TdApi.GetTopChats(new TdApi.TopChatCategoryCalls(), 30), this);
     tdlib.listeners().subscribeForAnyUpdates(this);
+    tdlib.context().dateManager().addListener(this);
+  }
+
+  @Override
+  public boolean needAsynchronousAnimation () {
+    return messages == null;
+  }
+
+  @Override
+  public void onPrepareToShow () {
+    super.onPrepareToShow();
+    if (Settings.instance().chatFoldersEnabled() && getParentOrSelf() == this) {
+      setDoneIcon(R.drawable.baseline_phone_24);
+      setDoneVisible(true, false);
+    }
+  }
+
+  @Override
+  protected void onDoneClick () {
+    ContactsController c = new ContactsController(context, tdlib);
+    c.initWithMode(ContactsController.MODE_CALL);
+    navigateTo(c);
   }
 
   @Override
@@ -500,6 +547,7 @@ public class CallListController extends RecyclerViewController<Void> implements
     if (StringUtils.isEmpty(nextOffset)) {
       endReached = true;
     }
+    executeScheduledAnimation();
   }
 
   private boolean isLoadingMore;
@@ -549,6 +597,7 @@ public class CallListController extends RecyclerViewController<Void> implements
   public void destroy () {
     super.destroy();
     tdlib.listeners().unsubscribeFromAnyUpdates(this);
+    tdlib.context().dateManager().removeListener(this);
   }
 
   @Override
@@ -696,7 +745,7 @@ public class CallListController extends RecyclerViewController<Void> implements
   }
 
   private static boolean filter (TdApi.Message message) {
-    return message.content.getConstructor() == TdApi.MessageCall.CONSTRUCTOR && message.sendingState == null && message.schedulingState == null;
+    return Td.isCall(message.content) && message.sendingState == null && message.schedulingState == null;
   }
 
   @Override
@@ -733,7 +782,7 @@ public class CallListController extends RecyclerViewController<Void> implements
   }*/
 
   @Override
-  public void onDayChanged () {
+  public void onDateChanged () {
     buildSections();
   }
 

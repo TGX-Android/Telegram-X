@@ -65,6 +65,7 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.CallController;
 import org.thunderdog.challegram.ui.CreateChannelController;
 import org.thunderdog.challegram.ui.CreateGroupController;
+import org.thunderdog.challegram.ui.EditChatFolderController;
 import org.thunderdog.challegram.ui.EditNameController;
 import org.thunderdog.challegram.ui.IntroController;
 import org.thunderdog.challegram.ui.ListItem;
@@ -81,6 +82,7 @@ import org.thunderdog.challegram.ui.SettingsBugController;
 import org.thunderdog.challegram.ui.SettingsCacheController;
 import org.thunderdog.challegram.ui.SettingsController;
 import org.thunderdog.challegram.ui.SettingsDataController;
+import org.thunderdog.challegram.ui.SettingsFoldersController;
 import org.thunderdog.challegram.ui.SettingsNetworkStatsController;
 import org.thunderdog.challegram.ui.SettingsNotificationController;
 import org.thunderdog.challegram.ui.SettingsPrivacyController;
@@ -245,7 +247,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
 
   private void updateCounter () {
     Tdlib tdlib = currentTdlib();
-    boolean animated = getActivityState() == UI.STATE_RESUMED;
+    boolean animated = getActivityState() == UI.State.RESUMED;
     @Tdlib.ResolvableProblem int problemType = tdlib.findResolvableProblem();
     BackHeaderButton backButton = navigation.getHeaderView().getBackButton();
     if (problemType != Tdlib.ResolvableProblem.NONE) {
@@ -343,8 +345,10 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
   }
 
   private void processAuthorizationStateChange (TdlibAccount account, TdApi.AuthorizationState authorizationState, @Tdlib.Status int status) {
+    ViewController<?> current = navigation.isEmpty() ? null : navigation.getStack().getCurrent();
+    boolean currentScreenBelongsToTargetAccount = current != null && current.isSameAccount(account);
     if (this.account.id != account.id) {
-      if (navigation.isEmpty() || !navigation.getCurrentStackItem().isSameAccount(account)) {
+      if (navigation.isEmpty() || !currentScreenBelongsToTargetAccount) {
         return;
       }
     }
@@ -352,8 +356,6 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
       initController(this.account.tdlib(), this.account.tdlib().authorizationStatus());
       return;
     }
-
-    ViewController<?> current = navigation.getStack().getCurrent();
 
     if (status == Tdlib.Status.READY) {
       ViewController<?> first = navigation.getStack().get(0);
@@ -369,10 +371,15 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
       return;
     }
 
-    if (status == Tdlib.Status.UNAUTHORIZED && this.account.id == account.id) {
-      int nextAccountId = tdlib.context().findNextAccountId(this.account.id);
-      if (nextAccountId != TdlibAccount.NO_ID) {
-        tdlib.context().changePreferredAccountId(nextAccountId, TdlibManager.SWITCH_REASON_UNAUTHORIZED);
+    if (status == Tdlib.Status.UNAUTHORIZED) {
+      if (this.account.id == account.id) {
+        int nextAccountId = tdlib.context().findNextAccountId(account.id);
+        if (nextAccountId != TdlibAccount.NO_ID) {
+          tdlib.context().changePreferredAccountId(nextAccountId, TdlibManager.SWITCH_REASON_UNAUTHORIZED);
+          return;
+        }
+      } else if (currentScreenBelongsToTargetAccount && !current.isUnauthorized() && tdlib.context().hasActiveAccounts()) {
+        // MainController shall be shown in onAccountSwitched
         return;
       }
     }
@@ -526,11 +533,12 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
   }
 
   private void showExperimentalAlert () {
-    if (BuildConfig.EXPERIMENTAL) {
+    if (BuildConfig.EXPERIMENTAL && !BuildConfig.DEBUG) {
       ViewController<?> c = navigation.getCurrentStackItem();
       if (c != null) {
         c.openAlert(R.string.ExperimentalBuildTitle,
           Strings.buildMarkdown(c, Lang.getStringSecure(R.string.ExperimentalBuildInfo), (view, span, clickedText) -> {
+            //noinspection SwitchIntDef
             switch (span.getEntityType().getConstructor()) {
               case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
                 UI.openUrl(clickedText);
@@ -1242,6 +1250,12 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
       restore = new PrivacyExceptionController(context, tdlib);
     } else if (id == R.id.controller_networkStats) {
       restore = new SettingsNetworkStatsController(context, tdlib);
+    } else if (id == R.id.controller_chatFolders) {
+      restore = new SettingsFoldersController(context, tdlib);
+    } else if (id == R.id.controller_editChatFolders) {
+      restore = new EditChatFolderController(context, tdlib);
+    } else if (id == R.id.controller_bug_killer) {
+      restore = new SettingsBugController(context, tdlib);
     } else {
       return null;
     }
@@ -1439,6 +1453,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     // Log.e("%s", Strings.getHexColor(U.compositeColor(Theme.headerColor(), Theme.getColor(ColorId.statusBar)), false));
     tdlib.contacts().makeSilentPermissionCheck(this);
     tdlib.context().global().notifyResolvableProblemAvailabilityMightHaveChanged();
+    tdlib.context().dateManager().checkCurrentDate();
     UI.startNotificationService();
     if (!madeEmulatorChecks && !Settings.instance().isEmulator()) {
       madeEmulatorChecks = true;

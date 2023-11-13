@@ -37,13 +37,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.base.TogglerView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.GlobalAccountListener;
 import org.thunderdog.challegram.telegram.GlobalCountersListener;
@@ -65,6 +63,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.ui.CallListController;
 import org.thunderdog.challegram.ui.ChatsController;
 import org.thunderdog.challegram.ui.FeatureToggles;
 import org.thunderdog.challegram.ui.ListItem;
@@ -259,6 +258,9 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     }
 
     items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_contacts, R.drawable.baseline_perm_contact_calendar_24, R.string.Contacts));
+    if (Settings.instance().chatFoldersEnabled()) {
+      items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_calls, R.drawable.baseline_call_24, R.string.Calls));
+    }
     items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_savedMessages, R.drawable.baseline_bookmark_24, R.string.SavedMessages));
     this.settingsErrorIcon = getSettingsErrorIcon();
     items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_settings, R.drawable.baseline_settings_24, R.string.Settings));
@@ -600,7 +602,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     context.setExcludeHeader(true);
 
     context.setTdlib(account.tdlib());
-    context.setBoundUserId(account.tdlib().myUserId());
+    context.setBoundAccountId(account.id);
 
     return new ForceTouchView.ActionListener() {
       @Override
@@ -658,28 +660,18 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     }
     if (!creatingStorageChat) {
       creatingStorageChat = true;
-      tdlib.client().send(new TdApi.CreatePrivateChat(userId, true), object -> {
-        switch (object.getConstructor()) {
-          case TdApi.Chat.CONSTRUCTOR: {
-            final long chatId = TD.getChatId(object);
-            tdlib.ui().post(() -> {
-              creatingStorageChat = false;
-              if (factor == 1f) {
-                openChat(tdlib, chatId);
-              }
-            });
-            break;
-          }
-          case TdApi.Error.CONSTRUCTOR: {
+      tdlib.send(new TdApi.CreatePrivateChat(userId, true), (remoteChat, error) -> {
+        if (error != null) {
+          creatingStorageChat = false;
+          UI.showError(error);
+        } else {
+          final long chatId = remoteChat.id;
+          tdlib.ui().post(() -> {
             creatingStorageChat = false;
-            UI.showError(object);
-            break;
-          }
-          default: {
-            creatingStorageChat = false;
-            Log.unexpectedTdlibResponse(object, TdApi.CreatePrivateChat.class, TdApi.Chat.class);
-            break;
-          }
+            if (factor == 1f) {
+              openChat(tdlib, chatId);
+            }
+          });
         }
       });
     }
@@ -837,6 +829,8 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     } else if (viewId == R.id.btn_contacts) {
       openContacts();
       // openEmptyChat();
+    } else if (viewId == R.id.btn_calls) {
+      openCallList();
     } else if (viewId == R.id.btn_reportBug) {
       if (Test.NEED_CLICK) {
         Test.onClick(context);
@@ -971,6 +965,10 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
       c.setNeedSearch();
       openController(c);
     });
+  }
+
+  private void openCallList() {
+    openController(new CallListController(context, context.currentTdlib()));
   }
 
   private boolean ignoreClose;

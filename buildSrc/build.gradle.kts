@@ -45,10 +45,11 @@ configurations.all {
 
 dependencies {
   compileOnly(gradleApi())
+  // 8.1.0-8.1.2 create APKs that do not launch on Android 4.x (armeabi-v7a)
   implementation("com.android.tools.build:gradle:8.0.2")
-  implementation("com.google.gms:google-services:4.3.15")
+  implementation("com.google.gms:google-services:4.4.0")
   implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}")
-  implementation("com.squareup.okhttp3:okhttp:4.9.3")
-  implementation("com.squareup.okhttp3:logging-interceptor:4.9.3")
+  implementation("com.squareup.okhttp3:okhttp:4.10.0")
+  implementation("com.squareup.okhttp3:logging-interceptor:4.10.0")
   implementation("com.beust:klaxon:5.6")
 }

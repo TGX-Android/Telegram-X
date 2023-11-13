@@ -785,7 +785,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
             Args args = getArgumentsStrict();
             inShareProgress = true;
             adapter.updateValuedSettingById(R.id.liveLocationSelf);
-            tdlib.sendMessage(args.chatId, args.messageThreadId, 0, Td.newSendOptions(tdlib.chatDefaultDisableNotifications(args.chatId)), new TdApi.InputMessageLocation(new TdApi.Location(myLocation.latitude, myLocation.longitude, myLocation.accuracy), arg1, myLocation.heading, 0));
+            tdlib.sendMessage(args.chatId, args.messageThreadId, null, Td.newSendOptions(tdlib.chatDefaultDisableNotifications(args.chatId)), new TdApi.InputMessageLocation(new TdApi.Location(myLocation.latitude, myLocation.longitude, myLocation.accuracy), arg1, myLocation.heading, 0));
           }
         });
         break;
@@ -1705,7 +1705,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
         if (messages.length > 0) {
           final ArrayList<LocationPoint<T>> list = new ArrayList<>(messages.length);
           for (TdApi.Message message : messages) {
-            if (message.content.getConstructor() != TdApi.MessageLocation.CONSTRUCTOR) {
+            if (!Td.isLocation(message.content)) {
               continue;
             }
             if (message.isOutgoing || tdlib.isSelfSender(message)) {
@@ -1742,7 +1742,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
     if (isDestroyed()) {
       return;
     }
-    if (message.content.getConstructor() != TdApi.MessageLocation.CONSTRUCTOR) {
+    if (!Td.isLocation(message.content)) {
       return;
     }
     if (message.schedulingState != null || tdlib.isSelfSender(message)) {
@@ -1787,13 +1787,13 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
 
   @Override
   public void onMessageContentChanged (long chatId, long messageId, TdApi.MessageContent newContent) {
-    if (newContent.getConstructor() == TdApi.MessageLocation.CONSTRUCTOR) {
+    if (Td.isLocation(newContent)) {
       updateMessageIfNeeded(chatId, messageId, (TdApi.MessageLocation) newContent);
     }
   }
 
   @Override
-  public void onMessageSendFailed (TdApi.Message message, long oldMessageId, int errorCode, String errorMessage) { }
+  public void onMessageSendFailed (TdApi.Message message, long oldMessageId, TdApi.Error error) { }
 
   @Override
   public int compare (LocationPoint<T> o1, LocationPoint<T> o2) {

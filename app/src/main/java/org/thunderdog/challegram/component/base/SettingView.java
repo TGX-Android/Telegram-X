@@ -32,6 +32,7 @@ import android.widget.FrameLayout;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.Px;
 import androidx.annotation.StringRes;
 
 import org.drinkless.tdlib.TdApi;
@@ -40,16 +41,19 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ComplexReceiver;
+import org.thunderdog.challegram.loader.ComplexReceiverProvider;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
@@ -79,7 +83,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 
-public class SettingView extends FrameLayoutFix implements FactorAnimator.Target, TGLegacyManager.EmojiLoadListener, AttachDelegate, Destroyable, RemoveHelper.RemoveDelegate, TextColorSet, TooltipOverlayView.LocationProvider {
+public class SettingView extends FrameLayoutFix implements FactorAnimator.Target, TGLegacyManager.EmojiLoadListener, AttachDelegate, Destroyable, RemoveHelper.RemoveDelegate, TextColorSet, TooltipOverlayView.LocationProvider, ComplexReceiverProvider {
   public static final int TYPE_INFO = 0x01;
   public static final int TYPE_SETTING = 0x02;
   public static final int TYPE_RADIO = 0x03;
@@ -238,8 +242,21 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     return receiver;
   }
 
+  @Override
   public ComplexReceiver getComplexReceiver () {
     return complexReceiver;
+  }
+
+  public @Px float getMeasuredNameTop () {
+    return pTop;
+  }
+
+  public @Px float getMeasuredNameStart () {
+    return pLeft;
+  }
+
+  public @Px int getMeasuredNameWidth () {
+    return displayItemNameWidth;
   }
 
   public void setTextColorId (@ColorId int textColorId) {
@@ -437,6 +454,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     if (getMeasuredHeight() != getCurrentHeight() && getMeasuredHeight() != 0) {
       requestLayout();
     }
+    checkEmojiListener();
     invalidate();
   }
 
@@ -618,7 +636,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   private boolean subscribedToEmojiUpdates;
 
   private void checkEmojiListener () {
-    boolean needEmojiListener = this.displayItemNameLayout != null || this.displayItemDataLayout != null || (this.displayItemNameText != null && this.displayItemNameText.hasMedia());
+    boolean needEmojiListener = this.displayItemNameLayout != null || this.displayItemDataLayout != null || (this.displayItemNameText != null && this.displayItemNameText.hasBuiltInEmoji()) || (this.text != null && this.text.hasBuiltInEmoji());
     if (this.subscribedToEmojiUpdates != needEmojiListener) {
       this.subscribedToEmojiUpdates = needEmojiListener;
       if (needEmojiListener) {
@@ -694,6 +712,14 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     isEnabled.setValue(enabled, animated);
   }
 
+  public boolean isVisuallyEnabled () {
+    return isEnabled.getValue();
+  }
+
+  public float getVisuallyEnabledFactor () {
+    return isEnabled.getFloatValue();
+  }
+
   private static void drawText (Canvas c, CharSequence text, Layout layout, float x, float y, int textY, Paint paint, boolean rtl, int viewWidth, float textWidth, Text wrap, TextColorSet textColorSet, EmojiStatusHelper emojiStatusHelper) {
     if (wrap != null) {
       wrap.draw(c, (int) x, (int) (viewWidth - x), 0, textY, textColorSet != null ? textColorSet : TextColorSets.Regular.NEGATIVE);
@@ -708,9 +734,9 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     }
   }
 
-  private int iconColorId;
+  private @PorterDuffColorId int iconColorId = ColorId.NONE;
 
-  public void setIconColorId (int colorId) {
+  public void setIconColorId (@PorterDuffColorId int colorId) {
     if (this.iconColorId != colorId) {
       this.iconColorId = colorId;
       if (icon != null)
@@ -799,7 +825,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     int width = getMeasuredWidth();
     if (icon != null) {
       int x = (int) (rtl ? width - pIconLeft - icon.getMinimumWidth() : pIconLeft) + Screen.dp(24f) / 2 - icon.getMinimumWidth() / 2;
-      Drawables.draw(c, icon, x, pIconTop, lastIconResource == 0 ? Paints.getBitmapPaint() : iconColorId != 0 ? Paints.getPorterDuffPaint(Theme.getColor(iconColorId)) : Paints.getIconGrayPorterDuffPaint());
+      Drawables.draw(c, icon, x, pIconTop, lastIconResource == 0 ? Paints.getBitmapPaint() : iconColorId != 0 ? PorterDuffPaint.get(iconColorId) : Paints.getIconGrayPorterDuffPaint());
       // c.drawBitmap(icon, x, pIconTop, paint);
       if (overlay != null) {
         c.save();

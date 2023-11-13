@@ -342,6 +342,9 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
         case GifFile.OptimizationMode.STICKER_PREVIEW:
           resolution = Math.min(Math.max(EmojiMediaListController.getEstimateColumnResolution(), StickersListController.getEstimateColumnResolution()), 160);
           break;
+        case GifFile.OptimizationMode.EMOJI_PREVIEW:
+          resolution = Math.min(Screen.dp(40), 120);
+          break;
         case GifFile.OptimizationMode.NONE:
           resolution = Math.min(Screen.dp(TGMessageSticker.MAX_STICKER_SIZE), 384);
           break;
@@ -349,7 +352,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
           throw new UnsupportedOperationException();
       }
       width = height = file.getRequestedSize() != 0 ? Math.min(file.getRequestedSize(), resolution) : resolution;
-      error = totalFrameCount <= 0 || frameRate <= 0 || durationSeconds <= 0;
+      error = totalFrameCount <= 0 || frameRate <= 0 || (durationSeconds <= 0 && totalFrameCount > 1);
       if (totalFrameCount == 1) {
         file.setIsStill(true);
       }

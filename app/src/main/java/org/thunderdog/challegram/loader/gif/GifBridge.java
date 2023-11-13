@@ -66,7 +66,7 @@ public class GifBridge {
     for (int i = 0; i < emojiThreads.length; i++) {
       emojiThreads[i] = new GifThread(i);
     }
-    lottieThreads = new GifThread[3];
+    lottieThreads = new GifThread[5];
     for (int i = 0; i < lottieThreads.length; i++) {
       lottieThreads[i] = new GifThread(i);
     }
@@ -74,6 +74,9 @@ public class GifBridge {
 
   private GifThread obtainFrameThread (GifFile file) {
     if (file.getGifType() == GifFile.TYPE_TG_LOTTIE) {
+      if (file.isHighPriorityForDecode()) {
+        return lottieThreads[lottieThreads.length - 1];
+      }
       return lottieThreads[file.getOptimizationMode()];
     } else {
       // TODO rework to executors

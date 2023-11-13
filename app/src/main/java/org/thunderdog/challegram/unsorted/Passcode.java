@@ -136,7 +136,7 @@ public class Passcode implements UI.StateListener {
 
   @Override
   public void onUiStateChanged (int newState) {
-    if (newState == UI.STATE_PAUSED) {
+    if (newState == UI.State.PAUSED) {
       trackUserActivity(true);
     }
   }
@@ -268,7 +268,7 @@ public class Passcode implements UI.StateListener {
   public boolean isLockedAndVisible () {
     if (isLocked()) {
       BaseActivity activity = UI.getUiContext();
-      return UI.getUiState() != UI.STATE_RESUMED || activity == null || activity.isPasscodeShowing();
+      return UI.getUiState() != UI.State.RESUMED || activity == null || activity.isPasscodeShowing();
     }
     return false;
   }

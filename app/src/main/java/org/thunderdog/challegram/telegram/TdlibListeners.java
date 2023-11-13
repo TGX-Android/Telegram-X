@@ -40,12 +40,13 @@ public class TdlibListeners {
   final ReferenceList<MessageListener> messageListeners;
   final ReferenceList<MessageEditListener> messageEditListeners;
   final ReferenceList<ChatListener> chatListeners;
+  final ReferenceList<ChatFoldersListener> chatFoldersListeners;
   final ReferenceMap<String, ChatListListener> chatListListeners;
+  final ReferenceList<StoryListener> storyListeners;
   final ReferenceList<NotificationSettingsListener> settingsListeners;
   final ReferenceList<StickersListener> stickersListeners;
   final ReferenceList<AnimationsListener> animationsListeners;
   final ReferenceList<ConnectionListener> connectionListeners;
-  final ReferenceList<DayChangeListener> dayListeners;
   final ReferenceList<AuthorizationListener> authorizationListeners;
   final ReferenceList<CleanupStartupDelegate> componentDelegates;
   final ReferenceList<TdlibOptionListener> optionListeners;
@@ -64,6 +65,7 @@ public class TdlibListeners {
   final ReferenceLongMap<MessageListener> messageChatListeners;
   final ReferenceLongMap<MessageEditListener> messageEditChatListeners;
   final ReferenceLongMap<ChatListener> specificChatListeners;
+  final ReferenceMap<String, StoryListener> specificStoryListeners;
   final ReferenceMap<String, ForumTopicInfoListener> specificForumTopicListeners;
   final ReferenceLongMap<NotificationSettingsListener> chatSettingsListeners;
   final ReferenceIntMap<FileUpdateListener> fileUpdateListeners;
@@ -79,12 +81,13 @@ public class TdlibListeners {
     this.messageListeners = new ReferenceList<>();
     this.messageEditListeners = new ReferenceList<>();
     this.chatListeners = new ReferenceList<>();
+    this.storyListeners = new ReferenceList<>();
     this.chatListListeners = new ReferenceMap<>(true);
+    this.chatFoldersListeners = new ReferenceList<>(true);
     this.settingsListeners = new ReferenceList<>(true);
     this.stickersListeners = new ReferenceList<>(true);
     this.animationsListeners = new ReferenceList<>();
     this.connectionListeners = new ReferenceList<>(true);
-    this.dayListeners = new ReferenceList<>();
     this.authorizationListeners = new ReferenceList<>(true);
     this.componentDelegates = new ReferenceList<>(true);
     this.optionListeners = new ReferenceList<>(true);
@@ -105,6 +108,7 @@ public class TdlibListeners {
     this.messageChatListeners = new ReferenceLongMap<>();
     this.messageEditChatListeners = new ReferenceLongMap<>();
     this.specificChatListeners = new ReferenceLongMap<>();
+    this.specificStoryListeners = new ReferenceMap<>();
     this.specificForumTopicListeners = new ReferenceMap<>(true);
     this.chatSettingsListeners = new ReferenceLongMap<>(true);
     this.fileUpdateListeners = new ReferenceIntMap<>();
@@ -152,9 +156,6 @@ public class TdlibListeners {
       }
       if (any instanceof ConnectionListener) {
         connectionListeners.add((ConnectionListener) any);
-      }
-      if (any instanceof DayChangeListener) {
-        dayListeners.add((DayChangeListener) any);
       }
       if (any instanceof TdlibOptionListener) {
         optionListeners.add((TdlibOptionListener) any);
@@ -206,9 +207,6 @@ public class TdlibListeners {
       }
       if (any instanceof ConnectionListener) {
         connectionListeners.remove((ConnectionListener) any);
-      }
-      if (any instanceof DayChangeListener) {
-        dayListeners.remove((DayChangeListener) any);
       }
       if (any instanceof TdlibOptionListener) {
         optionListeners.remove((TdlibOptionListener) any);
@@ -423,6 +421,16 @@ public class TdlibListeners {
   }
 
   @AnyThread
+  public void subscribeToChatFoldersUpdates (ChatFoldersListener listener) {
+    chatFoldersListeners.add(listener);
+  }
+
+  @AnyThread
+  public void unsubscribeFromChatFoldersUpdates (ChatFoldersListener listener) {
+    chatFoldersListeners.remove(listener);
+  }
+
+  @AnyThread
   public void addReactionLoadListener (String reactionKey, ReactionLoadListener listener) {
     reactionLoadListeners.add(reactionKey, listener);
   }
@@ -585,7 +593,7 @@ public class TdlibListeners {
   private static void updateMessageSendFailed (TdApi.UpdateMessageSendFailed update, @Nullable Iterator<MessageListener> list) {
     if (list != null) {
       while (list.hasNext()) {
-        list.next().onMessageSendFailed(update.message, update.oldMessageId, update.errorCode, update.errorMessage);
+        list.next().onMessageSendFailed(update.message, update.oldMessageId, update.error);
       }
     }
   }
@@ -835,7 +843,7 @@ public class TdlibListeners {
     }
   }
 
-  void updateMessageUnreadReactions (TdApi.UpdateMessageUnreadReactions update, boolean counterChanged, boolean availabilityChanged) {
+  void updateMessageUnreadReactions (TdApi.UpdateMessageUnreadReactions update, boolean counterChanged, boolean availabilityChanged, TdApi.Chat chat, TdlibChatList[] chatLists) {
     List<TdApi.Message> messages = pendingMessages.get(update.chatId + "_" + update.messageId);
     if (messages != null) {
       for (TdApi.Message message : messages) {
@@ -847,6 +855,17 @@ public class TdlibListeners {
     if (counterChanged) {
       updateChatUnreadReactionCount(update.chatId, update.unreadReactionCount, availabilityChanged, chatListeners.iterator());
       updateChatUnreadReactionCount(update.chatId, update.unreadReactionCount, availabilityChanged, specificChatListeners.iterator(update.chatId));
+    }
+    if (counterChanged) {
+      updateChatUnreadReactionCount(update.chatId, update.unreadReactionCount, availabilityChanged, chatListeners.iterator());
+      updateChatUnreadReactionCount(update.chatId, update.unreadReactionCount, availabilityChanged, specificChatListeners.iterator(update.chatId));
+      if (chatLists != null) {
+        for (TdlibChatList chatList : chatLists) {
+          iterateChatListListeners(chatList, listener ->
+            listener.onChatListItemChanged(chatList, chat, availabilityChanged ? ChatListListener.ItemChangeType.UNREAD_AVAILABILITY_CHANGED : ChatListListener.ItemChangeType.READ_INBOX)
+          );
+        }
+      }
     }
   }
 
@@ -1156,10 +1175,12 @@ public class TdlibListeners {
     }
   }
 
-  // updateChatFilters
+  // updateChatFolders
 
-  void updateChatFilters (TdApi.UpdateChatFolders update) {
-    // TODO?
+  void updateChatFolders (TdApi.UpdateChatFolders update) {
+    for (ChatFoldersListener listener : chatFoldersListeners) {
+      listener.onChatFoldersChanged(update.chatFolders, update.mainChatListPosition);
+    }
   }
 
   // updateChatAvailableReactions
@@ -1265,6 +1286,104 @@ public class TdlibListeners {
   void updateChatMessageAutoDeleteTime (TdApi.UpdateChatMessageAutoDeleteTime update) {
     updateChatMessageAutoDeleteTime(update.chatId, update.messageAutoDeleteTime, chatListeners.iterator());
     updateChatMessageAutoDeleteTime(update.chatId, update.messageAutoDeleteTime, specificChatListeners.iterator(update.chatId));
+  }
+
+  // updateChatActiveStories
+
+  private static void updateChatActiveStories (TdApi.ChatActiveStories activeStories, @Nullable Iterator<ChatListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onChatActiveStoriesChanged(activeStories);
+      }
+    }
+  }
+
+  void updateChatActiveStories (TdApi.UpdateChatActiveStories update) {
+    updateChatActiveStories(update.activeStories, chatListeners.iterator());
+    updateChatActiveStories(update.activeStories, specificChatListeners.iterator(update.activeStories.chatId));
+  }
+
+  // updateStory
+
+  private static String uniqueStoryKey (TdApi.Story story) {
+    return uniqueStoryKey(story.senderChatId, story.id);
+  }
+
+  private static String uniqueStoryKey (long storySenderChatId, int storyId) {
+    return storySenderChatId + "_" + storyId;
+  }
+
+  private static void updateStory (TdApi.Story story, @Nullable Iterator<StoryListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onStoryUpdated(story);
+      }
+    }
+  }
+
+  void updateStory (TdApi.UpdateStory update) {
+    updateStory(update.story, storyListeners.iterator());
+    updateStory(update.story, specificStoryListeners.iterator(uniqueStoryKey(update.story)));
+  }
+
+  // updateStoryDeleted
+
+  private static void updateStoryDeleted (long storySenderChatId, int storyId, @Nullable Iterator<StoryListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onStoryDeleted(storySenderChatId, storyId);
+      }
+    }
+  }
+
+  void updateStoryDeleted (TdApi.UpdateStoryDeleted update) {
+    updateStoryDeleted(update.storySenderChatId, update.storyId, storyListeners.iterator());
+    updateStoryDeleted(update.storySenderChatId, update.storyId, specificStoryListeners.iterator(uniqueStoryKey(update.storySenderChatId, update.storyId)));
+  }
+
+  // updateStorySendSucceeded
+
+  private static void updateStorySendSucceeded (TdApi.Story story, int oldStoryId, @Nullable Iterator<StoryListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onStorySendSucceeded(story, oldStoryId);
+      }
+    }
+  }
+
+  void updateStorySendSucceeded (TdApi.UpdateStorySendSucceeded update) {
+    updateStorySendSucceeded(update.story, update.oldStoryId, storyListeners.iterator());
+    updateStorySendSucceeded(update.story, update.oldStoryId, specificStoryListeners.iterator(uniqueStoryKey(update.story.senderChatId, update.oldStoryId)));
+  }
+
+  // updateStorySendFailed
+
+  private static void updateStorySendFailed (TdApi.Story story, TdApi.Error error, @Nullable TdApi.CanSendStoryResult errorType, @Nullable Iterator<StoryListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onStorySendFailed(story, error, errorType);
+      }
+    }
+  }
+
+  void updateStorySendFailed (TdApi.UpdateStorySendFailed update) {
+    updateStorySendFailed(update.story, update.error, update.errorType, storyListeners.iterator());
+    updateStorySendFailed(update.story, update.error, update.errorType, specificStoryListeners.iterator(uniqueStoryKey(update.story)));
+  }
+
+  // updateStoryStealthMode
+
+  private static void updateStoryStealthMode (int activeUntilDate, int cooldownUntilDate, @Nullable Iterator<StoryListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onStoryStealthModeUpdated(activeUntilDate, cooldownUntilDate);
+      }
+    }
+  }
+
+  void updateStoryStealthMode (TdApi.UpdateStoryStealthMode update) {
+    updateStoryStealthMode(update.activeUntilDate, update.cooldownUntilDate, storyListeners.iterator());
+    updateStoryStealthMode(update.activeUntilDate, update.cooldownUntilDate, specificStoryListeners.combinedIterator());
   }
 
   // updateChatVoiceChat
@@ -1374,17 +1493,17 @@ public class TdlibListeners {
 
   // updateChatIsBlocked
 
-  private static void updateChatIsBlocked (long chatId, boolean isBlocked, @Nullable Iterator<ChatListener> list) {
+  private static void updateChatBlockList (long chatId, @Nullable TdApi.BlockList blockList, @Nullable Iterator<ChatListener> list) {
     if (list != null) {
       while (list.hasNext()) {
-        list.next().onChatBlocked(chatId, isBlocked);
+        list.next().onChatBlockListChanged(chatId, blockList);
       }
     }
   }
 
-  void updateChatIsBlocked (TdApi.UpdateChatIsBlocked update) {
-    updateChatIsBlocked(update.chatId, update.isBlocked, chatListeners.iterator());
-    updateChatIsBlocked(update.chatId, update.isBlocked, specificChatListeners.iterator(update.chatId));
+  void updateChatBlockList (TdApi.UpdateChatBlockList update) {
+    updateChatBlockList(update.chatId, update.blockList, chatListeners.iterator());
+    updateChatBlockList(update.chatId, update.blockList, specificChatListeners.iterator(update.chatId));
   }
 
   // updateChatClientDataChanged
@@ -1466,16 +1585,23 @@ public class TdlibListeners {
   }
 
   @AnyThread
-  public void notifyChatCountersChanged (TdApi.ChatList chatList, boolean availabilityChanged, int totalCount, int unreadCount, int unreadUnmutedCount) {
-    for (CounterChangeListener listener : totalCountersListeners) {
-      listener.onChatCounterChanged(chatList, availabilityChanged, totalCount, unreadCount, unreadUnmutedCount);
+  public void notifyArchiveChatListSettingsChanged (TdApi.ArchiveChatListSettings archiveChatListSettings) {
+    for (NotificationSettingsListener listener : settingsListeners) {
+      listener.onArchiveChatListSettingsChanged(archiveChatListSettings);
     }
   }
 
   @AnyThread
-  public void notifyMessageCountersChanged (TdApi.ChatList chatList, int unreadCount, int unreadUnmutedCount) {
+  public void notifyChatCountersChanged (TdApi.ChatList chatList, TdlibCounter counter, boolean availabilityChanged, int totalCount, int unreadCount, int unreadUnmutedCount) {
     for (CounterChangeListener listener : totalCountersListeners) {
-      listener.onMessageCounterChanged(chatList, unreadCount, unreadUnmutedCount);
+      listener.onChatCounterChanged(chatList, counter, availabilityChanged, totalCount, unreadCount, unreadUnmutedCount);
+    }
+  }
+
+  @AnyThread
+  public void notifyMessageCountersChanged (TdApi.ChatList chatList, TdlibCounter counter, int unreadCount, int unreadUnmutedCount) {
+    for (CounterChangeListener listener : totalCountersListeners) {
+      listener.onMessageCounterChanged(chatList, counter, unreadCount, unreadUnmutedCount);
     }
   }
 

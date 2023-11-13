@@ -403,7 +403,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     this.file = file;
     if (file != null && file.local != null) {
       this.isDownloaded = file.local.isDownloadingCompleted;
-      this.useGenerationProgress = !file.local.isDownloadingCompleted && !file.remote.isUploadingCompleted && message != null && message.content.getConstructor() != TdApi.MessagePhoto.CONSTRUCTOR;
+      this.useGenerationProgress = !file.local.isDownloadingCompleted && !file.remote.isUploadingCompleted && message != null && !Td.isPhoto(message.content);
     } else {
       this.isDownloaded = this.useGenerationProgress = false;
     }
@@ -1483,7 +1483,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
         drawPlayPause(c, cx, cy, playPauseAlpha, true);
       } else if (currentBitmapRes != 0 && (currentBitmapRes != downloadedIconRes || !hideDownloadedIcon) && !(isVideoStreaming() && isVideoStreamingCloudNeeded)) {
         boolean ignoreScale = isVideoStreaming() && !isVideoStreamingSmallUi() && vsOnDownloadedAnimator != null && vsOnDownloadedAnimator.isAnimating();
-        Paint bitmapPaint = Paints.getPorterDuffPaint(0xffffffff);
+        Paint bitmapPaint = Paints.whitePorterDuffPaint();
 
         final float initScaleFactor = bitmapChangeFactor <= .5f ? (bitmapChangeFactor / .5f) : (1f - (bitmapChangeFactor - .5f) / .5f);
         final float scaleFactor = (ignoreScale) ? 0f : initScaleFactor;

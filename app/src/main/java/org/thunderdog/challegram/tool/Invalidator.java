@@ -129,7 +129,7 @@ public class Invalidator implements Handler.Callback, ReferenceList.FullnessList
   }
 
   private void checkLooping () {
-    boolean isLooping = this.isFull && context.getActivityState() == UI.STATE_RESUMED;
+    boolean isLooping = this.isFull && context.getActivityState() == UI.State.RESUMED;
     if (this.isLooping != isLooping) {
       this.isLooping = isLooping;
       if (isLooping) {

@@ -30,12 +30,9 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.emoji.EmojiFilter;
 import org.thunderdog.challegram.filegen.SimpleGenerationInfo;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -64,7 +61,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.TdConstants;
 
-public class CreateChannelController extends ViewController<String[]> implements EditHeaderView.ReadyCallback, OptionDelegate, ActivityResultHandler, Client.ResultHandler, TextView.OnEditorActionListener {
+public class CreateChannelController extends ViewController<String[]> implements EditHeaderView.ReadyCallback, OptionDelegate, ActivityResultHandler, TextView.OnEditorActionListener {
   public CreateChannelController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
@@ -296,7 +293,20 @@ public class CreateChannelController extends ViewController<String[]> implements
 
     UI.showProgress(Lang.getString(R.string.ProgressCreateChannel), null, 300l);
 
-    tdlib.client().send(new TdApi.CreateNewSupergroupChat(title, false, true, desc, null, 0, false), this);
+    tdlib.send(new TdApi.CreateNewSupergroupChat(title, false, true, desc, null, 0, false), (remoteChat, error) -> {
+      UI.hideProgress();
+      if (error != null) {
+        UI.showError(error);
+        chat = null;
+      } else {
+        long chatId = remoteChat.id;
+        chat = tdlib.chatStrict(chatId);
+        if (currentPhoto != null) {
+          tdlib.client().send(new TdApi.SetChatPhoto(chat.id, new TdApi.InputChatPhotoStatic(new TdApi.InputFileGenerated(currentPhoto, SimpleGenerationInfo.makeConversion(currentPhoto), 0))), tdlib.okHandler());
+        }
+      }
+      UI.post(() -> channelCreated(chat));
+    });
   }
 
   public void channelCreated (TdApi.Chat chat) {
@@ -314,35 +324,6 @@ public class CreateChannelController extends ViewController<String[]> implements
   }
 
   private TdApi.Chat chat;
-
-  @Override
-  public void onResult (TdApi.Object object) {
-    UI.hideProgress();
-    switch (object.getConstructor()) {
-      case TdApi.Ok.CONSTRUCTOR: {
-        // Do nothing. Photo's been set
-        return;
-      }
-      case TdApi.Chat.CONSTRUCTOR: {
-        long chatId = TD.getChatId(object);
-        chat = tdlib.chatStrict(chatId);
-        if (currentPhoto != null) {
-          tdlib.client().send(new TdApi.SetChatPhoto(chat.id, new TdApi.InputChatPhotoStatic(new TdApi.InputFileGenerated(currentPhoto, SimpleGenerationInfo.makeConversion(currentPhoto), 0))), this);
-        }
-        break;
-      }
-      case TdApi.Error.CONSTRUCTOR: {
-        UI.showError(object);
-        chat = null;
-        break;
-      }
-      default: {
-        Log.unexpectedTdlibResponse(object, TdApi.CreateNewSupergroupChat.class, TdApi.Ok.class, TdApi.Chat.class, TdApi.Error.class);
-        return;
-      }
-    }
-    UI.post(() -> channelCreated(chat));
-  }
 
   @Override
   public void destroy () {

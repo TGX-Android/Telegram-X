@@ -40,8 +40,8 @@ import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibBadgeCounter;
 import org.thunderdog.challegram.telegram.TdlibManager;
-import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -152,6 +152,18 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
 
   private int getTextColor (float factor) {
     return ColorUtils.fromToArgb(ColorUtils.compositeColor(Theme.headerTextColor(), Theme.getColor(ColorId.drawerText)), Theme.getColor(ColorId.white), factor);
+  }
+
+  private int getMediaTextColorOrId (float factor) {
+    if (factor == 1f) {
+      return ColorId.white;
+    } else {
+      return getTextColor(factor);
+    }
+  }
+
+  private boolean getMediaTextColorIsId (float factor) {
+    return factor == 1f;
   }
 
   // Clicks
@@ -448,6 +460,16 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
     @Override
     public int defaultTextColor () {
       return context.getTextColor(lastAvatarFactor);
+    }
+
+    @Override
+    public int mediaTextColorOrId () {
+      return context.getMediaTextColorOrId(lastAvatarFactor);
+    }
+
+    @Override
+    public boolean mediaTextColorIsId () {
+      return context.getMediaTextColorIsId(lastAvatarFactor);
     }
   }
 

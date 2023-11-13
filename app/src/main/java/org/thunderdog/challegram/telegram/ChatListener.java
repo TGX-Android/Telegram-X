@@ -14,6 +14,7 @@
  */
 package org.thunderdog.challegram.telegram;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
@@ -34,15 +35,16 @@ public interface ChatListener extends ForumTopicInfoListener {
   default void onChatReadOutbox (long chatId, long lastReadOutboxMessageId) { }
   default void onChatMarkedAsUnread (long chatId, boolean isMarkedAsUnread) { }
   default void onChatIsTranslatableChanged (long chatId, boolean isTranslatable) { }
-  default void onChatBlocked (long chatId, boolean isBlocked) { }
+  default void onChatBlockListChanged (long chatId, @Nullable TdApi.BlockList blockList) { }
   default void onChatOnlineMemberCountChanged (long chatId, int onlineMemberCount) { }
   default void onChatMessageTtlSettingChanged (long chatId, int messageTtlSetting) { }
+  default void onChatActiveStoriesChanged (@NonNull TdApi.ChatActiveStories activeStories) { }
   default void onChatVideoChatChanged (long chatId, TdApi.VideoChat videoChat) { }
   default void onChatPendingJoinRequestsChanged (long chatId, TdApi.ChatJoinRequestsInfo pendingJoinRequests) { }
   default void onChatReplyMarkupChanged (long chatId, long replyMarkupMessageId) { }
   default void onChatDraftMessageChanged (long chatId, @Nullable TdApi.DraftMessage draftMessage) { }
   default void onChatUnreadMentionCount(long chatId, int unreadMentionCount, boolean availabilityChanged) { }
-  default void onChatUnreadReactionCount(long chatId, int unreadReactionCount, boolean availabilityChanged) { }
+  default void onChatUnreadReactionCount (long chatId, int unreadReactionCount, boolean availabilityChanged) { }
   default void onChatDefaultDisableNotifications (long chatId, boolean defaultDisableNotifications) { }
   default void onChatDefaultMessageSenderIdChanged (long chatId, TdApi.MessageSender senderId) { }
   default void onChatClientDataChanged (long chatId, @Nullable String clientData)                             { }

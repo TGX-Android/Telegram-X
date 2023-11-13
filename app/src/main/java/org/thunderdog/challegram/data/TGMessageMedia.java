@@ -178,7 +178,7 @@ public class TGMessageMedia extends TGMessage {
 
   @Override
   protected boolean preferFullWidth () {
-    return UI.isPortrait() && !UI.isTablet() && isChannel() && !isEventLog() && msg.content.getConstructor() != TdApi.MessageAnimation.CONSTRUCTOR && (!mosaicWrapper.isSingular() || mosaicWrapper.getAspectRatio() >= (mosaicWrapper.getSingularItem().isGif() ? MIN_RATIO_GIF : MIN_RATIO));
+    return UI.isPortrait() && !UI.isTablet() && isChannel() && !isEventLog() && !Td.isAnimation(msg.content) && (!mosaicWrapper.isSingular() || mosaicWrapper.getAspectRatio() >= (mosaicWrapper.getSingularItem().isGif() ? MIN_RATIO_GIF : MIN_RATIO));
   }
 
   @Override
@@ -210,7 +210,7 @@ public class TGMessageMedia extends TGMessage {
     synchronized (this) {
       ArrayList<TdApi.Message> combinedMessages = getCombinedMessagesUnsafely();
       if (combinedMessages != null && !combinedMessages.isEmpty()) {
-        TdApi.Message captionMessage = TD.getAlbumCaptionMessage(tdlib, combinedMessages);
+        TdApi.Message captionMessage = ContentPreview.getAlbumCaptionMessage(tdlib, combinedMessages);
         if (captionMessage != null) {
           caption = tdlib.getPendingFormattedText(captionMessage.chatId, captionMessage.id);
           if (caption != null) {
@@ -278,7 +278,7 @@ public class TGMessageMedia extends TGMessage {
         this.wrapper.performDestroy();
       }
       if (!Td.isEmpty(caption)) {
-        TdApi.FormattedText fText = translatedText != null ? translatedText: caption;
+        TdApi.FormattedText fText = translatedText != null ? translatedText : caption;
         this.wrapper = new TextWrapper(fText.text, getTextStyleProvider(), getTextColorSet())
           .setEntities(TextEntity.valueOf(tdlib, fText, openParameters()), (wrapper, text, specificMedia) -> {
             if (this.wrapper == wrapper) {
@@ -344,7 +344,7 @@ public class TGMessageMedia extends TGMessage {
 
   @Override
   protected boolean onMessageContentChanged (TdApi.Message message, TdApi.MessageContent oldContent, TdApi.MessageContent newContent, boolean isBottomMessage) {
-    if (message.viaBotUserId != 0 && oldContent.getConstructor() == TdApi.MessagePhoto.CONSTRUCTOR) {
+    if (message.viaBotUserId != 0 && Td.isPhoto(oldContent)) {
       updateMessageContent(message, newContent, isBottomMessage);
       return true;
     }

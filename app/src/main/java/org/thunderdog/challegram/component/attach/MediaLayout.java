@@ -71,6 +71,7 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
@@ -1838,7 +1839,7 @@ public class MediaLayout extends FrameLayoutFix implements
       if (isAnonymous) {
         c.drawCircle(cx, cy, Screen.dp(15f / 2f), Paints.fillingPaint(Theme.iconLightColor()));
         Drawable drawable = Drawables.get(getResources(), R.drawable.infanf_baseline_incognito_11);
-        Drawables.draw(c, drawable, cx - Screen.dp(5.5f), cy - Screen.dp(5.5f), Paints.getPorterDuffPaint(Theme.getColor(ColorId.badgeMutedText)));
+        Drawables.draw(c, drawable, cx - Screen.dp(5.5f), cy - Screen.dp(5.5f), PorterDuffPaint.get(ColorId.badgeMutedText));
       }
 
       super.onDraw(c);
@@ -1856,21 +1857,21 @@ public class MediaLayout extends FrameLayoutFix implements
     }
 
     private void update (TdApi.MessageSender sender, boolean isPersonal, boolean isAnonymous) {
-      this.senderAvatarView.setVisibility(sender != null ? VISIBLE: GONE);
+      this.senderAvatarView.setVisibility(sender != null ? VISIBLE : GONE);
       this.senderAvatarView.setMessageSender(tdlib, sender);
       this.isAnonymous = isAnonymous;
       this.isPersonal = isPersonal;
-      setVisibility(!isPersonal ? VISIBLE: GONE);
+      setVisibility(!isPersonal ? VISIBLE : GONE);
       invalidate();
     }
 
     public HapticMenuHelper.MenuItem createHapticSenderItem (TdApi.Chat chat) {
       if (isAnonymous()) {
-        return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib.getMessageSenderTitle(chat.messageSenderId): null, R.drawable.dot_baseline_acc_anon_24);
+        return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib.getMessageSenderTitle(chat.messageSenderId) : null, R.drawable.dot_baseline_acc_anon_24);
       } else if (isPersonal()) {
-        return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib.getMessageSenderTitle(chat.messageSenderId): null, R.drawable.dot_baseline_acc_personal_24);
+        return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib.getMessageSenderTitle(chat.messageSenderId) : null, R.drawable.dot_baseline_acc_personal_24);
       } else {
-        return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib.getMessageSenderTitle(chat.messageSenderId): null, 0, tdlib, chat != null ? chat.messageSenderId: null, false);
+        return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib.getMessageSenderTitle(chat.messageSenderId) : null, 0, tdlib, chat != null ? chat.messageSenderId : null, false);
       }
     }
   }
@@ -1879,11 +1880,11 @@ public class MediaLayout extends FrameLayoutFix implements
     TdApi.Chat chat = getTargetChat();
     if (chat == null) return;
 
-    tdlib().send(new TdApi.GetChatAvailableMessageSenders(getTargetChatId()), result -> {
+    tdlib().send(new TdApi.GetChatAvailableMessageSenders(getTargetChatId()), (result, error) -> {
       UI.post(() -> {
-        if (result.getConstructor() == TdApi.ChatMessageSenders.CONSTRUCTOR) {
+        if (result != null) {
           final SetSenderController c = new SetSenderController(getContext(), tdlib());
-          c.setArguments(new SetSenderController.Args(chat, ((TdApi.ChatMessageSenders) result).senders, chat.messageSenderId));
+          c.setArguments(new SetSenderController.Args(chat, result.senders, chat.messageSenderId));
           c.setDelegate(this::setNewMessageSender);
           c.show();
         }
@@ -1892,7 +1893,7 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   private void setNewMessageSender (TdApi.ChatMessageSender sender) {
-    tdlib().send(new TdApi.SetChatMessageSender(getTargetChatId(), sender.sender), o -> {
+    tdlib().send(new TdApi.SetChatMessageSender(getTargetChatId(), sender.sender), ignored -> {
       UI.post(() -> {
         TdApi.Chat chat = getTargetChat();
         if (senderSendIcon != null) {

@@ -29,9 +29,14 @@ import org.thunderdog.challegram.theme.ColorId;
 public class Config {
   public static final boolean SUPPORT_SYSTEM_UNDERLINE_SPAN = true;
 
-  public static final boolean COMMENTS_INLINE_BUTTON_SEPARATOR_1PX = false;
   public static final @Dimension(unit = Dimension.DP) int COMMENTS_BUBBLE_BUTTON_MIN_WIDTH = 200;
   public static final boolean SHOW_CHANNEL_POST_REPLY_INFO_IN_COMMENTS = true;
+  public static final boolean CHAT_FOLDERS_ENABLED = true;
+  public static final boolean CHAT_FOLDERS_SMART_CHAT_DELETION_ENABLED = true;
+  public static final boolean CHAT_FOLDERS_HIDE_BOTTOM_BAR_ON_SCROLL = true;
+  public static final boolean CHAT_FOLDERS_APPEARANCE_IS_GLOBAL = true;
+  public static final boolean RESTRICT_HIDING_MAIN_LIST = true;
+  public static final boolean SEARCH_MESSAGES_ONLY_IN_SELECTED_FOLDER = BuildConfig.EXPERIMENTAL;
 
   public static final boolean NEED_SILENT_BROADCAST = false;
 
@@ -186,6 +191,7 @@ public class Config {
 
   public static boolean useCloudPlayback (TdApi.Message playPauseFile) {
     if (USE_CLOUD_PLAYER && playPauseFile != null) {
+      //noinspection SwitchIntDef
       switch (playPauseFile.content.getConstructor()) {
         case TdApi.MessageAudio.CONSTRUCTOR:
           TdApi.Audio audio = ((TdApi.MessageAudio) playPauseFile.content).audio;
@@ -268,6 +274,7 @@ public class Config {
   public static final boolean DISABLE_PASSWORD_INVISIBILITY = true;
 
   public static final boolean DEBUG_STICKER_OUTLINES = false; // BuildConfig.DEBUG;
+  public static final boolean DEBUG_GIF_OPTIMIZATION_MODE = false;
 
   public static final int SUPPORTED_INSTANT_VIEW_VERSION = 2;
   public static final boolean INSTANT_VIEW_WRONG_LAYOUT = false;
@@ -279,7 +286,6 @@ public class Config {
   public static final boolean VIDEO_CLOUD_PLAYBACK_AVAILABLE = true;
 
   public static final float MAX_ANIMATED_EMOJI_REFRESH_RATE = 30.0f;
-  public static final boolean LOOP_BIG_CUSTOM_EMOJI = false;
 
   public static final String FILE_PROVIDER_AUTHORITY = BuildConfig.APPLICATION_ID + ".provider";
 
@@ -299,4 +305,11 @@ public class Config {
 
   public static final int VOIP_CONNECTION_MIN_LAYER = 65;
   public static final boolean FORCE_DIRECT_TGVOIP = false;
+
+  public static final boolean ALLOW_SPONSORED_MESSAGE_LINK_COPY = true;
+  public static final boolean PROTECT_ANONYMOUS_VOTING = false;
+  public static final boolean PROTECT_ANONYMOUS_REACTIONS = false;
+  public static final boolean DISABLE_ANONYMOUS_NON_OWNER_REACTIONS = true;
+
+  public static final boolean KEEP_ORIGINAL_EMOJI_WHEN_INPUT_CUSTOM_EMOJI = true;
 }
