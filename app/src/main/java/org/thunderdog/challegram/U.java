@@ -2406,9 +2406,9 @@ public class U {
       "Build: `" + Build.FINGERPRINT + "`\n" +
       "Package: " + UI.getAppContext().getPackageName() + "\n" +
       "Locale: " + locale + (!locale.equals(appLocale) ? " (app: " + appLocale + ")" : "");
-    String installerName = AppInstallationUtil.getInstallerPackageName();
+    String installerName = AppInstallationUtil.getInstallerPrettyName();
     if (!StringUtils.isEmpty(installerName)) {
-      metadata += "\nInstaller: " + (AppInstallationUtil.VENDOR_GOOGLE_PLAY.equals(installerName) ? "Google Play" : installerName);
+      metadata += "\nInstaller: " + installerName;
     }
     String fingerprint = U.getApkFingerprint("SHA1");
     if (!StringUtils.isEmpty(fingerprint)) {

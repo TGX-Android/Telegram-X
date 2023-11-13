@@ -96,6 +96,22 @@ public class AppInstallationUtil {
     }
   }
 
+  public static @Nullable String getInstallerPrettyName () {
+    switch (getInstallerId()) {
+      case InstallerId.UNKNOWN:
+        return getInstallerPackageName();
+      case InstallerId.GOOGLE_PLAY:
+        return "Google Play";
+      case InstallerId.GALAXY_STORE:
+        return "Galaxy Store";
+      case InstallerId.HUAWEI_APPGALLERY:
+        return "Huawei AppGallery";
+      case InstallerId.AMAZON_APPSTORE:
+        return "Amazon AppStore";
+    }
+    throw new UnsupportedOperationException();
+  }
+
   // Checks whether app is installed from unofficial source (e.g. directly via an APK)
 
   public static boolean isAppSideLoaded () {
