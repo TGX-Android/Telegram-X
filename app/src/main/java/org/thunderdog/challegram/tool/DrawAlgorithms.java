@@ -448,7 +448,6 @@ public class DrawAlgorithms {
     } else {
       radius = outlineWidth = 0f;
     }
-    final float drawableWidth = (drawable != null ? drawable.getMinimumWidth() + drawableMargin : 0);
     final float contentWidth = counter.getWidth() + (drawable != null ? drawable.getMinimumWidth() + drawableMargin : 0);
     final float width = getCounterWidth(textSize, needBackground, counter, drawable != null ? drawable.getMinimumWidth() + drawableMargin : 0, backgroundPadding);
 
