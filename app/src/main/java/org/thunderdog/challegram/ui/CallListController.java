@@ -171,6 +171,11 @@ public class CallListController extends RecyclerViewController<Void> implements
   }
 
   @Override
+  public boolean needAsynchronousAnimation () {
+    return messages == null;
+  }
+
+  @Override
   public void onPrepareToShow () {
     super.onPrepareToShow();
     if (Settings.instance().chatFoldersEnabled() && getParentOrSelf() == this) {
@@ -542,6 +547,7 @@ public class CallListController extends RecyclerViewController<Void> implements
     if (StringUtils.isEmpty(nextOffset)) {
       endReached = true;
     }
+    executeScheduledAnimation();
   }
 
   private boolean isLoadingMore;
