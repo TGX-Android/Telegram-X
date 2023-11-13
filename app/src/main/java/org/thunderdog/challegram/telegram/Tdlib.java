@@ -65,6 +65,7 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.AppInstallationUtil;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.UserProvider;
 import org.thunderdog.challegram.util.WrapperProvider;
@@ -478,7 +479,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private int pinnedChatsMaxCount = 5, pinnedArchivedChatsMaxCount = 100, pinnedForumTopicMaxCount = 5;
   private int favoriteStickersMaxCount = 5;
   private double emojiesAnimatedZoom = .75f;
-  private boolean youtubePipDisabled, qrLoginCamera, dialogFiltersTooltip, dialogFiltersEnabled;
+  private boolean youtubePipDisabled, qrLoginCamera, dialogFiltersTooltip, dialogFiltersEnabled, forceUrgentInAppUpdate;
   private String qrLoginCode;
   private String[] diceEmoji, activeEmojiReactions;
   private TdApi.ReactionType defaultReactionType;
@@ -5768,9 +5769,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
     long timeZoneOffset = timeZoneOffset();
     params.put("package_id", UI.getAppContext().getPackageName());
-    String installerName = U.getInstallerPackageName();
+    String installerName = AppInstallationUtil.getInstallerPackageName();
     if (!StringUtils.isEmpty(installerName)) {
       params.put("installer", installerName);
+    }
+    if (BuildConfig.DEBUG) {
+      params.put("debug", true);
     }
     String fingerprint = U.getApkFingerprint("SHA1", false);
     if (!StringUtils.isEmpty(fingerprint)) {
@@ -5854,7 +5858,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       updateNotificationParameters(client);
       client.send(new TdApi.SetOption("storage_max_files_size", new TdApi.OptionValueInteger(Integer.MAX_VALUE)), okHandler);
       client.send(new TdApi.SetOption("ignore_default_disable_notification", new TdApi.OptionValueBoolean(true)), okHandler);
-      client.send(new TdApi.SetOption("ignore_platform_restrictions", new TdApi.OptionValueBoolean(U.isAppSideLoaded())), okHandler);
+      client.send(new TdApi.SetOption("ignore_platform_restrictions", new TdApi.OptionValueBoolean(AppInstallationUtil.isAppSideLoaded())), okHandler);
     }
     checkConnectionParams(client, true);
 
@@ -5885,6 +5889,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
+  public boolean hasUrgentInAppUpdate () {
+    return forceUrgentInAppUpdate;
+  }
+
   private void processApplicationConfig (TdApi.JsonValue config) {
     if (!(config instanceof TdApi.JsonValueObject))
       return;
@@ -5895,6 +5903,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       switch (member.key) {
         case "test":
           // Nothing to do?
+          break;
+        case "force_inapp_update":
+          this.forceUrgentInAppUpdate = member.value instanceof TdApi.JsonValueBoolean && ((TdApi.JsonValueBoolean) member.value).value;
           break;
         case "ios_disable_parallel_channel_reset":
         case "small_queue_max_active_operations_count": // Number
@@ -6673,7 +6684,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public boolean youtubePipEnabled () {
-    return !youtubePipDisabled || U.isAppSideLoaded();
+    return !youtubePipDisabled || AppInstallationUtil.isAppSideLoaded();
   }
 
   public RtcServer[] rtcServers () {

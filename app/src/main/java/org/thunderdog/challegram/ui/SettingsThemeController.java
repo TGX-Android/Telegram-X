@@ -55,6 +55,7 @@ import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.AppInstallationUtil;
 import org.thunderdog.challegram.util.AppUpdater;
 import org.thunderdog.challegram.util.DrawableModifier;
 import org.thunderdog.challegram.util.Permissions;
@@ -528,7 +529,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       }*/
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
-      if (U.isAppSideLoaded()) {
+      if (AppInstallationUtil.isAppSideLoaded()) {
         items.addAll(Arrays.asList(
           new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.InAppUpdates),
           new ListItem(ListItem.TYPE_SHADOW_TOP),
@@ -552,7 +553,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.Chats));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
 
-      boolean sideLoaded = U.isAppSideLoaded();
+      boolean sideLoaded = AppInstallationUtil.isAppSideLoaded();
       if (tdlib.canIgnoreSensitiveContentRestriction() && (sideLoaded || tdlib.ignoreSensitiveContentRestrictions())) {
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_restrictSensitiveContent, 0, R.string.DisplaySensitiveContent));

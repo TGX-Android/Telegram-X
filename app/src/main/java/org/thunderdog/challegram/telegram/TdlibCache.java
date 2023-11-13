@@ -41,6 +41,7 @@ import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.util.AppInstallationUtil;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.voip.annotation.CallState;
@@ -266,16 +267,16 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   public void getInviteText (@Nullable final RunnableData<TdApi.Text> callback) {
     getDownloadUrl(httpUrl -> {
       if (callback != null) {
-        String text = Lang.getString(R.string.InviteText, BuildConfig.PROJECT_NAME, httpUrl.url);
+        String text = Lang.getString(R.string.InviteText, BuildConfig.PROJECT_NAME, httpUrl);
         callback.runWithData(new TdApi.Text(text));
       }
     });
   }
 
-  public void getDownloadUrl (@Nullable final RunnableData<TdApi.HttpUrl> callback) {
+  public void getDownloadUrl (@Nullable final RunnableData<String> callback) {
     if (downloadUrl != null) {
       if (callback != null) {
-        callback.runWithData(downloadUrl);
+        callback.runWithData(AppInstallationUtil.getDownloadUrl(downloadUrl.url));
       }
       return;
     }
@@ -283,32 +284,22 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
       @Override
       public void act () {
         if (callback != null) {
-          callback.runWithData(new TdApi.HttpUrl(BuildConfig.DOWNLOAD_URL));
+          callback.runWithData(AppInstallationUtil.getDownloadUrl(null));
         }
         cancel();
       }
     };
-    tdlib.client().send(new TdApi.GetApplicationDownloadLink(), object -> {
-      switch (object.getConstructor()) {
-        case TdApi.HttpUrl.CONSTRUCTOR: {
-          TdApi.HttpUrl httpUrl = (TdApi.HttpUrl) object;
-          if (Strings.isValidLink(httpUrl.url)) {
-            tdlib.ui().post(() -> {
-              downloadUrl = httpUrl;
-              if (callback != null && fallback.isPending()) {
-                callback.runWithData(httpUrl);
-                fallback.cancel();
-              }
-            });
-          } else {
-            tdlib.ui().post(fallback);
+    tdlib.send(new TdApi.GetApplicationDownloadLink(), (httpUrl, error) -> {
+      if (error != null || !Strings.isValidLink(httpUrl.url)) {
+        tdlib.ui().post(fallback);
+      } else {
+        tdlib.ui().post(() -> {
+          downloadUrl = httpUrl;
+          if (callback != null && fallback.isPending()) {
+            callback.runWithData(AppInstallationUtil.getDownloadUrl(httpUrl.url));
+            fallback.cancel();
           }
-          break;
-        }
-        case TdApi.Error.CONSTRUCTOR: {
-          tdlib.ui().post(fallback);
-          break;
-        }
+        });
       }
     });
     if (tdlib.context().watchDog().isOnline()) {
