@@ -1984,7 +1984,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (options.itemCount() > 0) {
       options.item(OptionItem.SEPARATOR);
     }
-    options.item(new OptionItem(R.id.btn_chatFolders, Lang.getString(R.string.EditFolders), OPTION_COLOR_NORMAL, Build.VERSION.SDK_INT >= Build.VERSION_CODES.N ? R.drawable.baseline_edit_folders :  R.drawable.baseline_rule_folder_24));
+    options.item(new OptionItem(R.id.btn_chatFolders, Lang.getString(R.string.EditFolders), OPTION_COLOR_NORMAL, R.drawable.baseline_edit_folders_24));
     showOptions(options.build(), (v, id) -> {
       if (id == R.id.btn_editFolder) {
         tdlib.send(new TdApi.GetChatFolder(chatFolderId), (result) -> runOnUiThreadOptional(() -> {

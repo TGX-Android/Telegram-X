@@ -196,7 +196,7 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
 
     if (chatFolderId != NO_CHAT_FOLDER_ID) {
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_removeFolder, R.drawable.baseline_folder_delete_24, R.string.RemoveFolder).setTextColorId(ColorId.textNegative));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_removeFolder, R.drawable.baseline_delete_forever_24, R.string.RemoveFolder).setTextColorId(ColorId.textNegative));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_PADDING).setHeight(Screen.dp(12f)));
     }

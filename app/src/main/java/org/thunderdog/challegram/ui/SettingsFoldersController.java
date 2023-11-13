@@ -442,7 +442,7 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
       context()
         .tooltipManager()
         .builder(viewHolder.itemView)
-        .icon(R.drawable.msg_folder_reorder)
+        .icon(R.drawable.dotvhs_baseline_folders_reorder_24)
         .controller(this)
         .show(tdlib, Strings.buildMarkdown(this, markdown))
         .hideDelayed();
