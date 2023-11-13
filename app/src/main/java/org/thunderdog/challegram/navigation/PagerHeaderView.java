@@ -14,6 +14,9 @@
  */
 package org.thunderdog.challegram.navigation;
 
+import android.view.View;
+
 public interface PagerHeaderView extends RtlCheckListener {
+  View getView();
   ViewPagerTopView getTopView ();
 }

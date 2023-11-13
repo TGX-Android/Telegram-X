@@ -521,7 +521,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
   }
 
   private void drawText (@NonNull Canvas c, float x, float cy, float alpha) {
-    DrawAlgorithms.drawCounter(c, x, cy, Gravity.LEFT, counterAnimator, getTextSize(), false, this, null, Gravity.LEFT, 0, 0, alpha, 0, 1f);
+    DrawAlgorithms.drawCounter(c, x, cy, Gravity.LEFT, counterAnimator, getTextSize(), alpha, /* colorSet */ this, /* scale */ 1f);
   }
 
   private void drawSelection (@NonNull Canvas c, float selectionFactor, int selectionColor) {
@@ -794,7 +794,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
             messageThread.getChatId(), messageIds,
             new TdApi.MessageSourceMessageThreadHistory(),
             true
-          ), c.tdlib().okHandler());
+          ), c.tdlib().typedOkHandler());
         }
       };
       forceTouchContext.setButtons(actionListener, controller, ids, icons, hints);

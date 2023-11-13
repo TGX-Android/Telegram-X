@@ -1616,7 +1616,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       updated = Settings.instance().setNeedSplitNotificationCategories(true);
       updated = Settings.instance().setNeedHideSecretChats(false) || updated;
       if (Settings.instance().resetBadge()) {
-        tdlib.context().resetBadge();
+        tdlib.context().resetBadge(true);
       }
       if (updated) {
         tdlib.context().onUpdateAllNotifications();

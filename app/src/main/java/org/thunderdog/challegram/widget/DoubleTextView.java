@@ -199,7 +199,7 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
   private void checkButton () {
     if (button == null) {
       RelativeLayout.LayoutParams params;
-      params = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(28f));
+      params = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(28f));
       params.addRule(Lang.rtl() ? RelativeLayout.ALIGN_PARENT_LEFT : RelativeLayout.ALIGN_PARENT_RIGHT);
       params.addRule(RelativeLayout.CENTER_VERTICAL);
       params.rightMargin = params.leftMargin = Screen.dp(19f);

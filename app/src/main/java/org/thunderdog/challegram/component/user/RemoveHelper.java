@@ -20,6 +20,7 @@ import android.graphics.drawable.Drawable;
 import android.view.View;
 
 import androidx.annotation.DrawableRes;
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -175,6 +176,9 @@ public class RemoveHelper implements FactorAnimator.Target {
     boolean onMove (RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target);
     void onCompleteMovement (int fromPosition, int toPosition);
     boolean isLongPressDragEnabled ();
+    default boolean canDropOver (RecyclerView recyclerView, RecyclerView.ViewHolder current, RecyclerView.ViewHolder target) {
+      return true;
+    }
   }
 
   public static ItemTouchHelper attach (RecyclerView recyclerView, final Callback callback) {
@@ -245,6 +249,14 @@ public class RemoveHelper implements FactorAnimator.Target {
         }
 
         return false;
+      }
+
+      @Override
+      public boolean canDropOver (@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder current, @NonNull RecyclerView.ViewHolder target) {
+        if (callback instanceof ExtendedCallback) {
+          return ((ExtendedCallback) callback).canDropOver(recyclerView, current, target);
+        }
+        return super.canDropOver(recyclerView, current, target);
       }
 
       private void reallyMoved (int from, int to) {

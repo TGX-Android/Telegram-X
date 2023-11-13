@@ -87,10 +87,9 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView implements D
     emojiSearchTypesAdapter.setOnSectionClickListener(onSelectCategoryListener);
     setAdapter(emojiSearchTypesAdapter);
 
-    controller.tdlib().send(new TdApi.GetEmojiCategories(new TdApi.EmojiCategoryTypeDefault()), object -> {
-      if (object.getConstructor() == TdApi.EmojiCategories.CONSTRUCTOR) {
-        TdApi.EmojiCategories categories = (TdApi.EmojiCategories) object;
-        UI.post(() -> emojiSearchTypesAdapter.requestEmojiCategories(categories.categories, receiverForPriorityLoading));
+    controller.tdlib().send(new TdApi.GetEmojiCategories(new TdApi.EmojiCategoryTypeDefault()), (emojiCategories, error) -> {
+      if (emojiCategories != null) {
+        UI.post(() -> emojiSearchTypesAdapter.requestEmojiCategories(emojiCategories.categories, receiverForPriorityLoading));
       }
     });
   }

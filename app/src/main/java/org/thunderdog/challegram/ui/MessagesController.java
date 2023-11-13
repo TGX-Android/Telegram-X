@@ -11005,19 +11005,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public static void setNewMessageSender (Tdlib tdlib, long chatId, TdApi.ChatMessageSender sender, @Nullable Runnable after) {
-    tdlib.send(new TdApi.SetChatMessageSender(chatId, sender.sender), ignored -> {
-      if (after != null) {
-        tdlib.ui().post(after);
-      }
-    });
+    tdlib.send(new TdApi.SetChatMessageSender(chatId, sender.sender), tdlib.typedOkHandler(after));
   }
 
   private void setNewMessageSender (TdApi.ChatMessageSender sender) {
-    tdlib.send(new TdApi.SetChatMessageSender(getChatId(), sender.sender), tdlib.okHandler());
+    tdlib.send(new TdApi.SetChatMessageSender(getChatId(), sender.sender), tdlib.typedOkHandler());
   }
 
   private void setNewMessageSender (TdApi.MessageSender sender) {
-    tdlib.send(new TdApi.SetChatMessageSender(getChatId(), sender), tdlib.okHandler());
+    tdlib.send(new TdApi.SetChatMessageSender(getChatId(), sender), tdlib.typedOkHandler());
   }
 
   private void getChatAvailableMessagesSenders (Runnable after) {

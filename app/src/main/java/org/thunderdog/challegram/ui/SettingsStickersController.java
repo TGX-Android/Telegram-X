@@ -288,7 +288,7 @@ public class SettingsStickersController extends ViewPagerController<SettingsCont
         return y < getTopView().getMeasuredHeight();
       }
     };
-    searchHeaderCell.getTopView().setTextPadding(Screen.dp(12f));
+    searchHeaderCell.getTopView().setItemPadding(Screen.dp(12f));
     searchHeaderCell.getTopView().setOnItemClickListener(this);
     searchHeaderCell.getTopView().setItems(getPagerSections());
     searchHeaderCell.getTopView().setSelectionFactor(lastSelectionFactor);

@@ -144,7 +144,7 @@
     <item name="inputNegative" />
 
     <item name="inlineOutline" tinted="true" />
-    <item name="inlineText" tinted="true" />
+    <item name="inlineText" porterDuff="true" tinted="true" />
     <item name="inlineIcon" porterDuff="true" tinted="true" />
     <item name="inlineContentActive" />
 

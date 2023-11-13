@@ -27,7 +27,9 @@ import android.graphics.Typeface;
 import android.os.Looper;
 import android.text.TextPaint;
 
+import androidx.annotation.ColorInt;
 import androidx.annotation.Nullable;
+import androidx.annotation.Px;
 import androidx.annotation.UiThread;
 import androidx.collection.SparseArrayCompat;
 
@@ -468,6 +470,27 @@ public class Paints {
     return buttonOuterPaint;
   }
 
+  private static @Nullable Paint counterOutlinePaint;
+  private static @Px float lastCounterOutlineWidth;
+  private static @ColorInt int lastCounterOutlineColor;
+
+  public static Paint getCounterOutlinePaint (@Px float width, @ColorInt int color) {
+    if (counterOutlinePaint == null) {
+      counterOutlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
+      counterOutlinePaint.setStyle(Paint.Style.STROKE);
+      counterOutlinePaint.setColor(lastCounterOutlineColor = color);
+      counterOutlinePaint.setStrokeWidth(lastCounterOutlineWidth = width);
+    } else {
+      if (lastCounterOutlineColor != color) {
+        counterOutlinePaint.setColor(lastCounterOutlineColor = color);
+      }
+      if (lastCounterOutlineWidth != width) {
+        counterOutlinePaint.setStrokeWidth(lastCounterOutlineWidth = width);
+      }
+    }
+    return counterOutlinePaint;
+  }
+
   private static Paint
     unreadSeparationPaint,
     inlineIconPDPaint3,
@@ -722,6 +745,12 @@ public class Paints {
       rectF = new RectF();
     }
     return rectF;
+  }
+
+  public static RectF getRectF (float left, float top, float right, float bottom) {
+    RectF rect = getRectF();
+    rect.set(left, top, right, bottom);
+    return rect;
   }
 
   private static Path path;

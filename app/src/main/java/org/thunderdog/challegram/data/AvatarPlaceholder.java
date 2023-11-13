@@ -42,6 +42,7 @@ import me.vkryl.core.StringUtils;
 public class AvatarPlaceholder {
   public static class Metadata {
     public final @NonNull TdlibAccentColor accentColor;
+    public final @ColorId int iconColorId;
     public final @Nullable Letters letters;
     public final @DrawableRes int drawableRes, extraDrawableRes;
 
@@ -62,10 +63,15 @@ public class AvatarPlaceholder {
     }
 
     public Metadata (@NonNull TdlibAccentColor accentColor, @Nullable Letters letters, int drawableRes, int extraDrawableRes) {
+      this(accentColor, letters, drawableRes, extraDrawableRes, ColorId.avatar_content);
+    }
+
+    public Metadata (@NonNull TdlibAccentColor accentColor, @Nullable Letters letters, int drawableRes, int extraDrawableRes, @ColorId int iconColorId) {
       this.accentColor = accentColor;
       this.letters = letters != null && !StringUtils.isEmpty(letters.text) ? letters : null;
       this.drawableRes = drawableRes;
       this.extraDrawableRes = extraDrawableRes;
+      this.iconColorId = iconColorId;
     }
 
     @Override
@@ -170,7 +176,7 @@ public class AvatarPlaceholder {
       } else {
         saveCount = -1;
       }
-      Drawables.draw(c, drawable, centerX - drawable.getMinimumWidth() / 2f, centerY - drawable.getMinimumHeight() / 2f, PorterDuffPaint.get(ColorId.avatar_content, alpha));
+      Drawables.draw(c, drawable, centerX - drawable.getMinimumWidth() / 2f, centerY - drawable.getMinimumHeight() / 2f, PorterDuffPaint.get(metadata.iconColorId, alpha));
       if (needRestore) {
         Views.restore(c, saveCount);
       }

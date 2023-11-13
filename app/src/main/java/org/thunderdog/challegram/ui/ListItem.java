@@ -23,6 +23,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.util.DrawModifier;
@@ -180,6 +181,7 @@ public class ListItem {
 
   private String stringKey, stringValue;
   private @PorterDuffColorId int textColorId;
+  private TdlibAccentColor accentColor;
   private int textPaddingLeft;
   private int intValue;
   private long longValue;
@@ -206,6 +208,10 @@ public class ListItem {
 
   public ListItem (int viewType, int id, int iconResource, int stringResource, boolean isSelected) {
     this(viewType, id, iconResource, stringResource, null, id, isSelected);
+  }
+
+  public ListItem (int viewType, int id, int iconResource, CharSequence string) {
+    this(viewType, id, iconResource, 0, string, id, false);
   }
 
   public ListItem (int viewType, int id, int iconResource, CharSequence string, boolean isSelected) {
@@ -254,6 +260,15 @@ public class ListItem {
 
   public ListItem setTextColorId (@PorterDuffColorId int colorId) {
     this.textColorId = colorId;
+    return this;
+  }
+
+  public TdlibAccentColor getAccentColor () {
+    return accentColor;
+  }
+
+  public ListItem setAccentColor (TdlibAccentColor accentColor) {
+    this.accentColor = accentColor;
     return this;
   }
 

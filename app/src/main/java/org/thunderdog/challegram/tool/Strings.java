@@ -1001,6 +1001,10 @@ public class Strings {
     return str;
   }
 
+  public static CharSequence buildMarkdown (TdlibDelegate context, CharSequence text) {
+    return buildMarkdown(context, text, null);
+  }
+
   public static CharSequence buildMarkdown (TdlibDelegate context, CharSequence text, @Nullable CustomTypefaceSpan.OnClickListener onClickListener) {
     if (text == null)
       return null;

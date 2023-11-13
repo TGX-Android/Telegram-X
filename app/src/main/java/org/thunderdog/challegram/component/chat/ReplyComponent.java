@@ -664,7 +664,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     if (function != null) {
       flags |= FLAG_LOADING;
       this.retryFunction = retryFunction;
-      tdlib.send(function, this);
+      tdlib.client().send(function, this);
     }
   }
 
