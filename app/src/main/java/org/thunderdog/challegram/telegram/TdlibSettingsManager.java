@@ -25,6 +25,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.theme.ChatStyle;
 import org.thunderdog.challegram.theme.TGBackground;
@@ -40,10 +41,12 @@ import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.collection.IntSet;
 import me.vkryl.core.collection.LongSparseLongArray;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.util.Blob;
 import me.vkryl.leveldb.LevelDB;
+import me.vkryl.td.ChatPosition;
 import me.vkryl.td.Td;
 
 public class TdlibSettingsManager implements CleanupStartupDelegate {
@@ -157,6 +160,15 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     editor.remove(key(THEME_GLOBAL_THEME_NIGHT_KEY, accountId));
     editor.remove(key(THEME_GLOBAL_THEME_DAYLIGHT_KEY, accountId));
     editor.remove(key(LOCAL_CHAT_IDS_COUNT, accountId));
+    editor.remove(key(MAIN_CHAT_LIST_ENABLED, accountId));
+    editor.remove(key(ARCHIVE_CHAT_LIST_ENABLED, accountId));
+    editor.remove(key(ARCHIVE_CHAT_LIST_POSITION, accountId));
+    editor.remove(key(DISABLED_CHAT_FILTER_IDS, accountId));
+    if (!Config.CHAT_FOLDERS_APPEARANCE_IS_GLOBAL) {
+      editor.remove(key(CHAT_FOLDER_BADGE, accountId));
+      editor.remove(key(CHAT_FOLDER_STYLE, accountId));
+      editor.remove(key(CHAT_FOLDER_OPTIONS, accountId));
+    }
     // editor.remove(key(PEER_TO_PEER_KEY, accountId));
     Settings.instance().removeScrollPositions(accountId, editor);
     String dismissPrefix = key(DISMISS_MESSAGE_PREFIX, accountId);
@@ -183,6 +195,13 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     _forcePlainModeInChannels = null;
     _userPreferences = null;
     _localChatIdsCount = null;
+    _mainChatListEnabled = null;
+    _archiveChatListEnabled = null;
+    _archiveChatListPosition = null;
+    _disabledChatFolderIds = null;
+    _chatFolderBadgeFlags = null;
+    _chatFolderStyle = null;
+    _chatFolderOptions = null;
     remoteToLocalChatIds.clear();
     localToRemoteChatIds.clear();
 
@@ -1045,5 +1064,271 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
 
   public boolean hasNotificationProblems () {
     return getNotificationProblemCount() > 0;
+  }
+
+  // user-specific
+  private @Nullable Boolean _mainChatListEnabled;
+  private @Nullable Boolean _archiveChatListEnabled;
+  private @Nullable Integer _archiveChatListPosition;
+  private @Nullable IntSet _disabledChatFolderIds;
+  private static final String MAIN_CHAT_LIST_ENABLED = "main_chat_list_enabled";
+  private static final String ARCHIVE_CHAT_LIST_ENABLED = "archive_chat_list_enabled";
+  private static final String ARCHIVE_CHAT_LIST_POSITION = "archive_chat_list_position";
+  private static final String DISABLED_CHAT_FILTER_IDS = "disabled_chat_filter_ids";
+  // may be global
+  private @Nullable Integer _chatFolderBadgeFlags;
+  private @Nullable Integer _chatFolderOptions;
+  private @Nullable Integer _chatFolderStyle;
+  private static final String CHAT_FOLDER_STYLE = "chat_folder_style";
+  private static final String CHAT_FOLDER_BADGE = "chat_folder_badge";
+  private static final String CHAT_FOLDER_OPTIONS = "chat_folder_options";
+  private static final int DEFAULT_ARCHIVE_CHAT_LIST_POSITION = Integer.MAX_VALUE;
+  private static final boolean DEFAULT_MAIN_CHAT_LIST_ENABLED = true;
+  private static final boolean DEFAULT_ARCHIVE_CHAT_LIST_ENABLED = false;
+  public static final int DEFAULT_CHAT_FOLDER_OPTIONS = ChatFolderOptions.DISPLAY_AT_TOP;
+  public static final int DEFAULT_CHAT_FOLDER_STYLE = ChatFolderStyle.LABEL_AND_ICON;
+  private static final int DEFAULT_CHAT_FOLDER_BADGE_FLAGS = 0;
+
+  private boolean isMainChatListEnabled () {
+    if (_mainChatListEnabled == null) {
+      _mainChatListEnabled = Settings.instance().getBoolean(key(MAIN_CHAT_LIST_ENABLED, tdlib.accountId()), DEFAULT_MAIN_CHAT_LIST_ENABLED);
+    }
+    return _mainChatListEnabled;
+  }
+
+  private void setMainChatListEnabled (boolean isMainChatListEnabled) {
+    if (isMainChatListEnabled() != isMainChatListEnabled) {
+      _mainChatListEnabled = isMainChatListEnabled;
+      Settings.instance().putBoolean(key(MAIN_CHAT_LIST_ENABLED, tdlib.accountId()), isMainChatListEnabled);
+      if (chatListPositionListeners != null) {
+        for (ChatListPositionListener chatListPositionListener : chatListPositionListeners) {
+          chatListPositionListener.onChatListStateChanged(tdlib, ChatPosition.CHAT_LIST_MAIN, isMainChatListEnabled);
+        }
+      }
+    }
+  }
+
+  private boolean isArchiveChatListEnabled () {
+    if (_archiveChatListEnabled == null) {
+      _archiveChatListEnabled = Settings.instance().getBoolean(key(ARCHIVE_CHAT_LIST_ENABLED, tdlib.accountId()), DEFAULT_ARCHIVE_CHAT_LIST_ENABLED);
+    }
+    return _archiveChatListEnabled;
+  }
+
+  private void setArchiveChatListEnabled (boolean isArchiveChatListEnabled) {
+    if (isArchiveChatListEnabled() != isArchiveChatListEnabled) {
+      _archiveChatListEnabled = isArchiveChatListEnabled;
+      Settings.instance().putBoolean(key(ARCHIVE_CHAT_LIST_ENABLED, tdlib.accountId()), isArchiveChatListEnabled);
+      if (chatListPositionListeners != null) {
+        for (ChatListPositionListener chatListPositionListener : chatListPositionListeners) {
+          chatListPositionListener.onChatListStateChanged(tdlib, ChatPosition.CHAT_LIST_ARCHIVE, isArchiveChatListEnabled);
+        }
+      }
+    }
+  }
+
+  public int archiveChatListPosition () {
+    if (_archiveChatListPosition == null) {
+      _archiveChatListPosition = Settings.instance().getInt(key(ARCHIVE_CHAT_LIST_POSITION, tdlib.accountId()), DEFAULT_ARCHIVE_CHAT_LIST_POSITION);
+    }
+    return _archiveChatListPosition;
+  }
+
+  public void setArchiveChatListPosition (int position) {
+    if (archiveChatListPosition() != position) {
+      _archiveChatListPosition = position;
+      Settings.instance().putInt(key(ARCHIVE_CHAT_LIST_POSITION, tdlib.accountId()), position);
+      if (chatListPositionListeners != null) {
+        for (ChatListPositionListener chatListPositionListener : chatListPositionListeners) {
+          chatListPositionListener.onArchiveChatListPositionChanged(tdlib, position);
+        }
+      }
+    }
+  }
+
+  public boolean isChatFolderEnabled (int chatFolderId) {
+    IntSet disabledChatFolderIds = disabledChatFolderIds();
+    return !disabledChatFolderIds.has(chatFolderId);
+  }
+
+  public boolean isChatListEnabled (TdApi.ChatList chatList) {
+    switch (chatList.getConstructor()) {
+      case TdApi.ChatListMain.CONSTRUCTOR: {
+        return isMainChatListEnabled();
+      }
+      case TdApi.ChatListArchive.CONSTRUCTOR: {
+        return isArchiveChatListEnabled();
+      }
+      case TdApi.ChatListFolder.CONSTRUCTOR: {
+        int chatFolderId = ((TdApi.ChatListFolder) chatList).chatFolderId;
+        return isChatFolderEnabled(chatFolderId);
+      }
+      default: {
+        Td.assertChatList_db6c93ab();
+        throw Td.unsupported(chatList);
+      }
+    }
+  }
+
+  public void setChatListEnabled (TdApi.ChatList chatList, boolean isEnabled) {
+    if (isChatListEnabled(chatList) == isEnabled) {
+      return;
+    }
+    switch (chatList.getConstructor()) {
+      case TdApi.ChatListMain.CONSTRUCTOR: {
+        if (Config.RESTRICT_HIDING_MAIN_LIST && !isEnabled) {
+          return;
+        }
+        setMainChatListEnabled(isEnabled);
+        break;
+      }
+      case TdApi.ChatListArchive.CONSTRUCTOR: {
+        setArchiveChatListEnabled(isEnabled);
+        break;
+      }
+      case TdApi.ChatListFolder.CONSTRUCTOR: {
+        int chatFolderId = ((TdApi.ChatListFolder) chatList).chatFolderId;
+        IntSet disabledChatFolderIds = disabledChatFolderIds();
+        if (isEnabled) {
+          disabledChatFolderIds.remove(chatFolderId);
+        } else {
+          disabledChatFolderIds.add(chatFolderId);
+        }
+        if (disabledChatFolderIds.isEmpty()) {
+          Settings.instance().remove(key(DISABLED_CHAT_FILTER_IDS, tdlib.accountId()));
+        } else {
+          Settings.instance().putIntArray(key(DISABLED_CHAT_FILTER_IDS, tdlib.accountId()), disabledChatFolderIds.toArray());
+        }
+        break;
+      }
+      default: {
+        Td.assertChatList_db6c93ab();
+        throw Td.unsupported(chatList);
+      }
+    }
+    if (chatListPositionListeners != null) {
+      for (ChatListPositionListener chatListPositionListener : chatListPositionListeners) {
+        chatListPositionListener.onChatListStateChanged(tdlib, chatList, isEnabled);
+      }
+    }
+  }
+
+  private IntSet disabledChatFolderIds () {
+    if (_disabledChatFolderIds == null) {
+      int[] disabledChatFolderIds = Settings.instance().getIntArray(key(DISABLED_CHAT_FILTER_IDS, tdlib.accountId()));
+      _disabledChatFolderIds = disabledChatFolderIds != null ? new IntSet(disabledChatFolderIds) : new IntSet(0);
+    }
+    return _disabledChatFolderIds;
+  }
+
+  public interface ChatListPositionListener {
+    default void onChatListStateChanged (Tdlib tdlib, TdApi.ChatList chatList, boolean isEnabled) { }
+    default void onArchiveChatListPositionChanged (Tdlib tdlib, int archiveChatListPosition) { }
+    default void onBadgeFlagsChanged (Tdlib tdlib, int newFlags) { }
+    default void onChatFolderStyleChanged (Tdlib tdlib, @ChatFolderStyle int newStyle) { }
+    default void onChatFolderOptionsChanged (Tdlib tdlib, @ChatFolderOptions int newOptions) { }
+  }
+
+  private @Nullable ReferenceList<ChatListPositionListener> chatListPositionListeners;
+
+  public void addChatListPositionListener (ChatListPositionListener listener) {
+    if (chatListPositionListeners == null) {
+      chatListPositionListeners = new ReferenceList<>();
+    }
+    chatListPositionListeners.add(listener);
+  }
+
+  public void removeChatListPositionListener (ChatListPositionListener listener) {
+    if (chatListPositionListeners != null) {
+      chatListPositionListeners.remove(listener);
+    }
+  }
+
+  public int getChatFolderBadgeFlags () {
+    if (Config.CHAT_FOLDERS_APPEARANCE_IS_GLOBAL) {
+      return Settings.instance().getBadgeFlags();
+    } else {
+      if (_chatFolderBadgeFlags == null) {
+        _chatFolderBadgeFlags = Settings.instance().getInt(key(CHAT_FOLDER_BADGE, tdlib.accountId()), DEFAULT_CHAT_FOLDER_BADGE_FLAGS);
+      }
+      return _chatFolderBadgeFlags;
+    }
+  }
+
+  public void setChatFolderBadgeFlags (int flags) {
+    if (Config.CHAT_FOLDERS_APPEARANCE_IS_GLOBAL) {
+      if (Settings.instance().setBadgeFlags(flags)) {
+        tdlib.context().resetBadge(true);
+      }
+    } else {
+      if (getChatFolderBadgeFlags() == flags) {
+        return;
+      }
+      Settings.instance().putInt(key(CHAT_FOLDER_BADGE, tdlib.accountId()), flags);
+      _chatFolderBadgeFlags = flags;
+      if (chatListPositionListeners != null) {
+        for (ChatListPositionListener chatListPositionListener : chatListPositionListeners) {
+          chatListPositionListener.onBadgeFlagsChanged(tdlib, flags);
+        }
+      }
+    }
+  }
+
+  public @ChatFolderStyle int chatFolderStyle () {
+    if (Config.CHAT_FOLDERS_APPEARANCE_IS_GLOBAL) {
+      return Settings.instance().getChatFolderStyle();
+    } else {
+      if (_chatFolderStyle == null) {
+        _chatFolderStyle = Settings.instance().getInt(key(CHAT_FOLDER_STYLE, tdlib.accountId()), DEFAULT_CHAT_FOLDER_STYLE);
+      }
+      return _chatFolderStyle;
+    }
+  }
+
+  public void setChatFolderStyle (@ChatFolderStyle int chatFolderStyle) {
+    if (Config.CHAT_FOLDERS_APPEARANCE_IS_GLOBAL) {
+      Settings.instance().setChatFolderStyle(chatFolderStyle);
+    } else {
+      if (chatFolderStyle() != chatFolderStyle) {
+        _chatFolderStyle = chatFolderStyle;
+        Settings.instance().putInt(key(CHAT_FOLDER_STYLE, tdlib.accountId()), chatFolderStyle);
+        if (chatListPositionListeners != null) {
+          for (ChatListPositionListener chatListPositionListener : chatListPositionListeners) {
+            chatListPositionListener.onChatFolderStyleChanged(tdlib, chatFolderStyle);
+          }
+        }
+      }
+    }
+  }
+
+  public int chatFolderOptions () {
+    if (Config.CHAT_FOLDERS_APPEARANCE_IS_GLOBAL) {
+      return Settings.instance().getChatFolderOptions();
+    } else {
+      if (_chatFolderOptions == null) {
+        _chatFolderOptions = Settings.instance().getInt(key(CHAT_FOLDER_OPTIONS, tdlib.accountId()), DEFAULT_CHAT_FOLDER_OPTIONS);
+      }
+      return _chatFolderOptions;
+    }
+  }
+
+  public void setChatFolderOptions (@ChatFolderOptions int options) {
+    if (Config.CHAT_FOLDERS_APPEARANCE_IS_GLOBAL) {
+      Settings.instance().setChatFolderOptions(options);
+    } else {
+      if (chatFolderOptions() != options) {
+        Settings.instance().putInt(key(CHAT_FOLDER_OPTIONS, tdlib.accountId()), options);
+        _chatFolderOptions = options;
+      }
+    }
+  }
+
+  public boolean displayFoldersAtTop () {
+    return BitwiseUtils.hasFlag(chatFolderOptions(), ChatFolderOptions.DISPLAY_AT_TOP);
+  }
+
+  public void setDisplayFoldersAtTop (boolean displayFoldersAtTop) {
+    int options = BitwiseUtils.setFlag(chatFolderOptions(), ChatFolderOptions.DISPLAY_AT_TOP, displayFoldersAtTop);
+    setChatFolderOptions(options);
   }
 }

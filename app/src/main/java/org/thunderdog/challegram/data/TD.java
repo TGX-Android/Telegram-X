@@ -44,6 +44,8 @@ import android.util.SparseIntArray;
 import android.view.View;
 import android.widget.Toast;
 
+import androidx.annotation.DrawableRes;
+import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RawRes;
@@ -97,18 +99,23 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.html.HtmlEncoder;
 import me.vkryl.android.html.HtmlParser;
 import me.vkryl.android.html.HtmlTag;
 import me.vkryl.android.text.AcceptFilter;
+import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.FileUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.collection.IntList;
 import me.vkryl.core.collection.LongList;
 import me.vkryl.core.collection.LongSet;
+import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.Future;
 import me.vkryl.core.unit.ByteUnit;
 import me.vkryl.td.ChatId;
@@ -671,7 +678,7 @@ public class TD {
     return getFileColorId(doc.fileName, doc.mimeType, isOutBubble);
   }
 
-  public static int getFileColorId (String fileName, @Nullable  String mimeType, boolean isOutBubble) {
+  public static int getFileColorId (String fileName, @Nullable String mimeType, boolean isOutBubble) {
     String mime = mimeType != null ? mimeType.toLowerCase() : null;
     int i = fileName.lastIndexOf('.');
     String ext = i != -1 ? fileName.substring(i + 1).toLowerCase() : "";
@@ -3535,7 +3542,7 @@ public class TD {
         switch (status.getConstructor()) {
           case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
           case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
-              return true;
+            return true;
         }
         return false;
       case TdApi.SupergroupMembersFilterRestricted.CONSTRUCTOR:
@@ -3921,7 +3928,7 @@ public class TD {
   }
 
   public static boolean canEditText (TdApi.MessageContent content) {
-     return canBeEdited(content) && !Td.isLocation(content);
+    return canBeEdited(content) && !Td.isLocation(content);
   }
 
   public static boolean canBeEdited (TdApi.MessageContent content) {
@@ -5453,4 +5460,375 @@ public class TD {
   public static boolean isStickerFromAnimatedEmojiPack (@Nullable TdApi.Sticker sticker) {
     return sticker != null && sticker.setId == TdConstants.TELEGRAM_ANIMATED_EMOJI_STICKER_SET_ID;
   }
+  
+  public static boolean isChatListMain (@Nullable TdApi.ChatList chatList) {
+    return chatList != null && chatList.getConstructor() == TdApi.ChatListMain.CONSTRUCTOR;
+  }
+
+  public static boolean isChatListArchive (@Nullable TdApi.ChatList chatList) {
+    return chatList != null && chatList.getConstructor() == TdApi.ChatListArchive.CONSTRUCTOR;
+  }
+
+  public static boolean isChatListFolder (@Nullable TdApi.ChatList chatList) {
+    return chatList != null && chatList.getConstructor() == TdApi.ChatListFolder.CONSTRUCTOR;
+  }
+
+  public static void saveChatFolder (Bundle bundle, String prefix, @Nullable TdApi.ChatFolder chatFolder) {
+    if (chatFolder == null) {
+      return;
+    }
+    bundle.putString(prefix + "_title", chatFolder.title);
+    if (chatFolder.icon != null) {
+      bundle.putString(prefix + "_iconName", chatFolder.icon.name);
+    }
+    bundle.putLongArray(prefix + "_pinnedChatIds", chatFolder.pinnedChatIds);
+    bundle.putLongArray(prefix + "_includedChatIds", chatFolder.includedChatIds);
+    bundle.putLongArray(prefix + "_excludedChatIds", chatFolder.excludedChatIds);
+    bundle.putIntArray(prefix + "_includedChatTypes", includedChatTypes(chatFolder));
+    bundle.putIntArray(prefix + "_excludedChatTypes", excludedChatTypes(chatFolder));
+  }
+
+  public static @Nullable TdApi.ChatFolder restoreChatFolder (Bundle bundle, String prefix) {
+    String title = bundle.getString(prefix + "_title");
+    if (title == null) {
+      return null;
+    }
+    TdApi.ChatFolder chatFolder = newChatFolder(title);
+    String iconName = bundle.getString(prefix + "_iconName", null);
+    if (iconName != null) {
+      chatFolder.icon = new TdApi.ChatFolderIcon(iconName);
+    }
+    chatFolder.pinnedChatIds = bundle.getLongArray(prefix + "_pinnedChatIds");
+    chatFolder.includedChatIds = bundle.getLongArray(prefix + "_includedChatIds");
+    chatFolder.excludedChatIds = bundle.getLongArray(prefix + "_excludedChatIds");
+    int[] includedChatTypes = bundle.getIntArray(prefix + "_includedChatTypes");
+    int[] excludedChatTypes = bundle.getIntArray(prefix + "_excludedChatTypes");
+    updateIncludedChatTypes(chatFolder, (chatType) -> ArrayUtils.contains(includedChatTypes, chatType));
+    updateExcludedChatTypes(chatFolder, (chatType) -> ArrayUtils.contains(excludedChatTypes, chatType));
+    return chatFolder;
+  }
+
+  public static TdApi.ChatFolder newChatFolder () {
+    return new TdApi.ChatFolder("", null, false, ArrayUtils.EMPTY_LONGS, ArrayUtils.EMPTY_LONGS, ArrayUtils.EMPTY_LONGS, false, false, false, false, false, false, false, false);
+  }
+
+  public static TdApi.ChatFolder newChatFolder (String title) {
+    TdApi.ChatFolder chatFolder = newChatFolder();
+    chatFolder.title = title;
+    return chatFolder;
+  }
+
+  public static TdApi.ChatFolder newChatFolder (long[] includedChatIds) {
+    TdApi.ChatFolder chatFolder = newChatFolder();
+    chatFolder.includedChatIds = includedChatIds;
+    return chatFolder;
+  }
+
+  public static void updateIncludedChats (TdApi.ChatFolder chatFolder, Set<Long> chatIds) {
+    updateIncludedChats(chatFolder, null, chatIds);
+  }
+
+  public static void updateIncludedChats (TdApi.ChatFolder chatFolder, @Nullable TdApi.ChatFolder originChatFolder, Set<Long> chatIds) {
+    if (chatIds.isEmpty()) {
+      chatFolder.pinnedChatIds = ArrayUtils.EMPTY_LONGS;
+      chatFolder.includedChatIds = ArrayUtils.EMPTY_LONGS;
+    } else {
+      LongList pinnedChatIds = new LongList(chatIds.size());
+      LongList includedChatIds = new LongList(chatIds.size());
+      for (long chatId : chatIds) {
+        if (ArrayUtils.contains(chatFolder.pinnedChatIds, chatId) || (originChatFolder != null && ArrayUtils.contains(originChatFolder.pinnedChatIds, chatId))) {
+          pinnedChatIds.append(chatId);
+        } else {
+          includedChatIds.append(chatId);
+        }
+      }
+      chatFolder.pinnedChatIds = pinnedChatIds.get();
+      chatFolder.includedChatIds = includedChatIds.get();
+    }
+    chatFolder.excludedChatIds = U.removeAll(chatFolder.excludedChatIds, chatIds);
+  }
+
+  public static void updateExcludedChats (TdApi.ChatFolder chatFolder, Set<Long> chatIds) {
+    chatFolder.pinnedChatIds = U.removeAll(chatFolder.pinnedChatIds, chatIds);
+    chatFolder.includedChatIds = U.removeAll(chatFolder.includedChatIds, chatIds);
+    chatFolder.excludedChatIds = U.toArray(chatIds);
+  }
+
+  public static TdApi.ChatFolder copyOf (TdApi.ChatFolder folder) {
+    return new TdApi.ChatFolder(
+      folder.title,
+      folder.icon,
+      folder.isShareable,
+      folder.pinnedChatIds,
+      folder.includedChatIds,
+      folder.excludedChatIds,
+      folder.excludeMuted,
+      folder.excludeRead,
+      folder.excludeArchived,
+      folder.includeContacts,
+      folder.includeNonContacts,
+      folder.includeBots,
+      folder.includeGroups,
+      folder.includeChannels
+    );
+  }
+
+  public static boolean contentEquals (TdApi.ChatFolder lhs, TdApi.ChatFolder rhs) {
+    if (lhs == rhs) {
+      return true;
+    }
+    return Objects.equals(lhs.title, rhs.title) &&
+      Objects.equals(lhs.icon != null ? lhs.icon.name : null, rhs.icon != null ? rhs.icon.name : null) &&
+      lhs.includeContacts == rhs.includeContacts &&
+      lhs.includeNonContacts == rhs.includeNonContacts &&
+      lhs.includeGroups == rhs.includeGroups &&
+      lhs.includeChannels == rhs.includeChannels &&
+      lhs.includeBots == rhs.includeBots &&
+      lhs.excludeMuted == rhs.excludeMuted &&
+      lhs.excludeRead == rhs.excludeRead &&
+      lhs.excludeArchived == rhs.excludeArchived &&
+      lhs.pinnedChatIds.length == rhs.pinnedChatIds.length &&
+      lhs.includedChatIds.length == rhs.includedChatIds.length &&
+      lhs.excludedChatIds.length == rhs.excludedChatIds.length &&
+      Arrays.equals(lhs.pinnedChatIds, rhs.pinnedChatIds) &&
+      U.unmodifiableTreeSetOf(lhs.includedChatIds).equals(U.unmodifiableTreeSetOf(rhs.includedChatIds)) &&
+      U.unmodifiableTreeSetOf(lhs.excludedChatIds).equals(U.unmodifiableTreeSetOf(rhs.excludedChatIds));
+  }
+
+  public static int countIncludedChatTypes (@Nullable TdApi.ChatFolder chatFolder) {
+    if (chatFolder == null)
+      return 0;
+    int count = 0;
+    if (chatFolder.includeContacts) count++;
+    if (chatFolder.includeNonContacts) count++;
+    if (chatFolder.includeGroups) count++;
+    if (chatFolder.includeChannels) count++;
+    if (chatFolder.includeBots) count++;
+    return count;
+  }
+
+  public static int countExcludedChatTypes (@Nullable TdApi.ChatFolder chatFolder) {
+    if (chatFolder == null)
+      return 0;
+    int count = 0;
+    if (chatFolder.excludeMuted) count++;
+    if (chatFolder.excludeRead) count++;
+    if (chatFolder.excludeArchived) count++;
+    return count;
+  }
+
+  public static int[] includedChatTypes (@Nullable TdApi.ChatFolder chatFolder) {
+    if (chatFolder == null)
+      return ArrayUtils.EMPTY_INTS;
+    IntList chatTypes = new IntList(countIncludedChatTypes(chatFolder));
+    if (chatFolder.includeContacts) chatTypes.append(R.id.chatType_contact);
+    if (chatFolder.includeNonContacts) chatTypes.append(R.id.chatType_nonContact);
+    if (chatFolder.includeGroups) chatTypes.append(R.id.chatType_group);
+    if (chatFolder.includeChannels) chatTypes.append(R.id.chatType_channel);
+    if (chatFolder.includeBots) chatTypes.append(R.id.chatType_bot);
+    return chatTypes.get();
+  }
+
+  public static int[] excludedChatTypes (@Nullable TdApi.ChatFolder chatFolder) {
+    if (chatFolder == null)
+      return ArrayUtils.EMPTY_INTS;
+    IntList chatTypes = new IntList(countExcludedChatTypes(chatFolder));
+    if (chatFolder.excludeMuted) chatTypes.append(R.id.chatType_muted);
+    if (chatFolder.excludeRead) chatTypes.append(R.id.chatType_read);
+    if (chatFolder.excludeArchived) chatTypes.append(R.id.chatType_archived);
+    return chatTypes.get();
+  }
+
+  public static void updateIncludedChatTypes (TdApi.ChatFolder chatFolder, Set<Integer> chatTypes) {
+    updateIncludedChatTypes(chatFolder, chatTypes::contains);
+  }
+
+  public static void updateIncludedChatTypes (TdApi.ChatFolder chatFolder, Filter<Integer> filter) {
+    chatFolder.includeContacts = filter.accept(R.id.chatType_contact);
+    chatFolder.includeNonContacts = filter.accept(R.id.chatType_nonContact);
+    chatFolder.includeGroups = filter.accept(R.id.chatType_group);
+    chatFolder.includeChannels = filter.accept(R.id.chatType_channel);
+    chatFolder.includeBots = filter.accept(R.id.chatType_bot);
+  }
+
+  public static void updateExcludedChatTypes (TdApi.ChatFolder chatFolder, Set<Integer> chatTypes) {
+    updateExcludedChatTypes(chatFolder, chatTypes::contains);
+  }
+
+  public static void updateExcludedChatTypes (TdApi.ChatFolder chatFolder, Filter<Integer> filter) {
+    chatFolder.excludeMuted = filter.accept(R.id.chatType_muted);
+    chatFolder.excludeRead = filter.accept(R.id.chatType_read);
+    chatFolder.excludeArchived = filter.accept(R.id.chatType_archived);
+  }
+
+  public static final int[] CHAT_TYPES = {
+    R.id.chatType_contact,
+    R.id.chatType_nonContact,
+    R.id.chatType_group,
+    R.id.chatType_channel,
+    R.id.chatType_bot,
+    R.id.chatType_muted,
+    R.id.chatType_read,
+    R.id.chatType_archived
+  };
+
+  public static final int[] CHAT_TYPES_TO_INCLUDE = {
+    R.id.chatType_contact,
+    R.id.chatType_nonContact,
+    R.id.chatType_group,
+    R.id.chatType_channel,
+    R.id.chatType_bot
+  };
+
+  public static final int[] CHAT_TYPES_TO_EXCLUDE = {
+    R.id.chatType_muted,
+    R.id.chatType_read,
+    R.id.chatType_archived
+  };
+
+  public static @StringRes int chatTypeName (@IdRes int chatType) {
+    if (chatType == R.id.chatType_contact) return R.string.CategoryContacts;
+    if (chatType == R.id.chatType_nonContact) return R.string.CategoryNonContacts;
+    if (chatType == R.id.chatType_group) return R.string.CategoryGroups;
+    if (chatType == R.id.chatType_channel) return R.string.CategoryChannels;
+    if (chatType == R.id.chatType_bot) return R.string.CategoryBots;
+    if (chatType == R.id.chatType_muted) return R.string.CategoryMuted;
+    if (chatType == R.id.chatType_read) return R.string.CategoryRead;
+    if (chatType == R.id.chatType_archived) return R.string.CategoryArchived;
+    throw new IllegalArgumentException();
+  }
+
+  public static @DrawableRes int chatTypeIcon16 (@IdRes int chatType) {
+    if (chatType == R.id.chatType_contact) return R.drawable.baseline_account_circle_16;
+    if (chatType == R.id.chatType_nonContact) return R.drawable.baseline_help_16;
+    if (chatType == R.id.chatType_group) return R.drawable.baseline_group_16;
+    if (chatType == R.id.chatType_channel) return R.drawable.baseline_bullhorn_16;
+    if (chatType == R.id.chatType_bot) return R.drawable.deproko_baseline_bots_16;
+    if (chatType == R.id.chatType_muted) return R.drawable.baseline_notifications_off_16;
+    if (chatType == R.id.chatType_read) return R.drawable.andrejsharapov_baseline_message_check_16;
+    if (chatType == R.id.chatType_archived) return R.drawable.baseline_archive_16;
+    throw new IllegalArgumentException();
+  }
+
+  public static @DrawableRes int chatTypeIcon24 (@IdRes int chatType) {
+    if (chatType == R.id.chatType_contact) return R.drawable.baseline_account_circle_24;
+    if (chatType == R.id.chatType_nonContact) return R.drawable.baseline_help_24;
+    if (chatType == R.id.chatType_group) return R.drawable.baseline_group_24;
+    if (chatType == R.id.chatType_channel) return R.drawable.baseline_bullhorn_24;
+    if (chatType == R.id.chatType_bot) return R.drawable.deproko_baseline_bots_24;
+    if (chatType == R.id.chatType_muted) return R.drawable.baseline_notifications_off_24;
+    if (chatType == R.id.chatType_read) return R.drawable.andrejsharapov_baseline_message_check_24;
+    if (chatType == R.id.chatType_archived) return R.drawable.baseline_archive_24;
+    throw new IllegalArgumentException();
+  }
+
+  public static @ColorId int chatTypeColor (@IdRes int chatType) {
+    if (chatType == R.id.chatType_contact) return ColorId.avatarBlue;
+    if (chatType == R.id.chatType_nonContact) return ColorId.avatarCyan;
+    if (chatType == R.id.chatType_group) return ColorId.avatarGreen;
+    if (chatType == R.id.chatType_channel) return ColorId.avatarOrange;
+    if (chatType == R.id.chatType_bot) return ColorId.avatarRed;
+    if (chatType == R.id.chatType_muted) return ColorId.avatarPink;
+    if (chatType == R.id.chatType_read) return ColorId.avatarBlue;
+    if (chatType == R.id.chatType_archived) return ColorId.avatarArchive;
+    throw new IllegalArgumentException();
+  }
+
+  public static @Nullable TdApi.ChatFolderIcon chatTypeIcon (@IdRes int chatType) {
+    if (chatType == R.id.chatType_contact || chatType == R.id.chatType_nonContact) {
+      return new TdApi.ChatFolderIcon("Private");
+    }
+    if (chatType == R.id.chatType_group) {
+      return new TdApi.ChatFolderIcon( "Groups");
+    }
+    if (chatType == R.id.chatType_channel) {
+      return new TdApi.ChatFolderIcon("Channels");
+    }
+    if (chatType == R.id.chatType_bot) {
+      return new TdApi.ChatFolderIcon("Bots");
+    }
+    return null;
+  }
+
+  public static @DrawableRes int findFolderIcon (TdApi.ChatFolderIcon icon, @DrawableRes int defaultIcon) {
+    if (icon != null && !StringUtils.isEmpty(icon.name)) {
+      return iconByName(icon.name, defaultIcon);
+    } else {
+      return defaultIcon;
+    }
+  }
+
+  public static @DrawableRes int iconByName (String iconName, @DrawableRes int defaultIcon) {
+    if (StringUtils.isEmpty(iconName))
+      return defaultIcon;
+    switch (iconName) {
+      case "All":
+        return R.drawable.baseline_forum_24;
+      case "Unmuted":
+        return R.drawable.baseline_notifications_24;
+      case "Bots":
+        return R.drawable.deproko_baseline_bots_24;
+      case "Channels":
+        return R.drawable.baseline_bullhorn_24;
+      case "Groups":
+        return R.drawable.baseline_group_24;
+      case "Private":
+        return R.drawable.baseline_person_24;
+      case "Setup":
+        return R.drawable.baseline_assignment_24;
+      case "Cat":
+        return R.drawable.templarian_baseline_cat_24;
+      case "Crown":
+        return R.drawable.baseline_crown_circle_24;
+      case "Favorite":
+        return R.drawable.baseline_star_24;
+      case "Flower":
+        return R.drawable.baseline_local_florist_24;
+      case "Game":
+        return R.drawable.baseline_sports_esports_24;
+      case "Home":
+        return R.drawable.baseline_home_24;
+      case "Love":
+        return R.drawable.baseline_favorite_24;
+      case "Mask":
+        return R.drawable.deproko_baseline_masks_24;
+      case "Party":
+        return R.drawable.baseline_party_popper_24;
+      case "Sport":
+        return R.drawable.baseline_sports_soccer_24;
+      case "Study":
+        return R.drawable.baseline_school_24;
+      case "Work":
+        return R.drawable.baseline_work_24;
+      case "Airplane":
+        // return R.drawable.baseline_flight_24;
+        return R.drawable.baseline_logo_telegram_24;
+      case "Book":
+        return R.drawable.baseline_book_24;
+      case "Light":
+        return R.drawable.deproko_baseline_lamp_filled_24;
+      case "Like":
+        return R.drawable.baseline_thumb_up_24;
+      case "Money":
+        return R.drawable.baseline_currency_bitcoin_24;
+      case "Note":
+        return R.drawable.baseline_music_note_24;
+      case "Palette":
+        // return R.drawable.baseline_palette_24;
+        return R.drawable.baseline_brush_24;
+      case "Unread":
+        return R.drawable.baseline_mark_chat_unread_24;
+      case "Travel":
+        // return R.drawable.baseline_explore_24;
+        return R.drawable.baseline_flight_24;
+      case "Custom":
+        return R.drawable.baseline_folder_24;
+      case "Trade":
+        return R.drawable.baseline_finance_24;
+      default:
+        return defaultIcon;
+    }
+  }
+
+  public static final String[] ICON_NAMES = {"All", "Unread", "Unmuted", "Bots", "Channels", "Groups", "Private", "Custom", "Setup", "Cat", "Crown", "Favorite", "Flower", "Game", "Home", "Love", "Mask", "Party", "Sport", "Study", "Trade", "Travel", "Work", "Airplane", "Book", "Light", "Like", "Money", "Note", "Palette"};
 }

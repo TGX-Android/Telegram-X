@@ -29,6 +29,7 @@ import android.view.ViewGroup;
 import android.view.animation.Interpolator;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
@@ -85,11 +86,26 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
   private @Nullable ThemeDelegate forcedTheme;
   private final ComplexReceiver complexAvatarReceiver;
 
+  private final LinearLayout itemsLayout;
+
   public MenuMoreWrap (Context context) {
+    this(context, /* scrollable */ false);
+  }
+
+  public MenuMoreWrap (Context context, boolean scrollable) {
     super(context);
     setWillNotDraw(false);
     complexAvatarReceiver = new ComplexReceiver(this);
     factorAnimator.forceFactor(-1);
+    if (scrollable) {
+      itemsLayout = new LinearLayout(context);
+      itemsLayout.setOrientation(LinearLayout.VERTICAL);
+      ScrollView scrollView = new ScrollView(context);
+      scrollView.addView(itemsLayout, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+      addView(scrollView, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+    } else {
+      itemsLayout = this;
+    }
   }
 
   public void updateDirection () {
@@ -338,7 +354,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
 
     Views.setClickable(frameLayout);
     RippleSupport.setTransparentSelector(frameLayout);
-    addView(frameLayout);
+    itemsLayout.addView(frameLayout);
     frameLayout.measure(MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
     frameLayout.setTag(frameLayout.getMeasuredWidth());
     return frameLayout;
@@ -386,7 +402,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     }
     Views.setClickable(menuItem);
     RippleSupport.setTransparentSelector(menuItem);
-    addView(menuItem);
+    itemsLayout.addView(menuItem);
     menuItem.measure(MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
     menuItem.setTag(menuItem.getMeasuredWidth());
     return menuItem;
@@ -446,7 +462,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     Views.animate(this, START_SCALE, START_SCALE, 0f, 120l, 0l, AnimatorUtils.ACCELERATE_INTERPOLATOR, listener);
   }
 
-  private Runnable pendingAction;
+  private @Nullable Runnable pendingAction;
 
   @Override
   public void runOnceViewBecomesReady (View view, Runnable action) {
@@ -462,7 +478,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     }
   }
 
-  private FactorAnimator factorAnimator = new FactorAnimator(0, (a, b, c, d) -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 250L);
+  private final FactorAnimator factorAnimator = new FactorAnimator(0, (a, b, c, d) -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 250L);
   private int lastSelectedIndex = -1;
 
   public void processMoveEvent (View v, float x, float y, float startX, float startY) {
@@ -521,7 +537,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
       canvas.restore();
     }
 
-    if (lastSelectedIndex != -1) {
+    if (lastSelectedIndex != -1 && itemsLayout == this) {
       int childCount = getChildCount();
       for (int i = 0; i < childCount; i++) {
         final float alpha = MathUtils.clamp(1f - Math.abs(factorAnimator.getFactor() - i));

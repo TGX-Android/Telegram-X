@@ -45,7 +45,7 @@ public class BubbleLayout extends AnimatedLinearLayout implements FactorAnimator
   private float maxAllowedVisibility = 1f;
 
   private final @Nullable ViewController<?> themeProvider;
-  private final boolean top;
+  private boolean top;
 
   public BubbleLayout (@NonNull Context context, @Nullable ViewController<?> themeProvider, boolean top) {
     super(context);
@@ -61,13 +61,7 @@ public class BubbleLayout extends AnimatedLinearLayout implements FactorAnimator
     if (themeProvider != null) {
       themeProvider.addThemeInvalidateListener(this);
     }
-    int paddingTop = Screen.dp(2);
-    int paddingBottom = Screen.dp(4f) + Screen.dp(8f) + Screen.dp(1f);
-    if (top) {
-      setPadding(Screen.dp(1f), paddingBottom - Screen.dp(4f) - Screen.dp(2f), Screen.dp(1), paddingTop + Screen.dp(2f));
-    } else {
-      setPadding(Screen.dp(1f), paddingTop, Screen.dp(1), paddingBottom);
-    }
+    setDefaultPadding();
     ViewUtils.setBackground(this, new Drawable() {
       @Override
       public void draw (@NonNull Canvas c) {
@@ -75,7 +69,7 @@ public class BubbleLayout extends AnimatedLinearLayout implements FactorAnimator
         int viewHeight = getMeasuredHeight();
         int cornerWidth = Screen.dp(18f);
         int cornerHeight = Screen.dp(8f);
-        if (top) {
+        if (BubbleLayout.this.top) {
           backgroundDrawable.setBounds(0, cornerHeight - Screen.dp(2f), viewWidth, viewHeight);
           backgroundDrawable.draw(c);
 
@@ -218,4 +212,22 @@ public class BubbleLayout extends AnimatedLinearLayout implements FactorAnimator
     setAlpha(MathUtils.clamp(factor));
   }
 
+  public boolean setTop (boolean top) {
+    if (this.top != top) {
+      this.top = top;
+      requestLayout();
+      return true;
+    }
+    return false;
+  }
+
+  public void setDefaultPadding () {
+    int paddingTop = Screen.dp(2);
+    int paddingBottom = Screen.dp(4f) + Screen.dp(8f) + Screen.dp(1f);
+    if (top) {
+      setPadding(Screen.dp(1f), paddingBottom - Screen.dp(4f) - Screen.dp(2f), Screen.dp(1), paddingTop + Screen.dp(2f));
+    } else {
+      setPadding(Screen.dp(1f), paddingTop, Screen.dp(1), paddingBottom);
+    }
+  }
 }

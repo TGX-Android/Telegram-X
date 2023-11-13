@@ -78,6 +78,14 @@ public class TdlibChatListSlice {
     }
   }
 
+  public TdlibChatList sourceList () {
+    return sourceList;
+  }
+
+  public TdApi.ChatList chatList () {
+    return sourceList.chatList();
+  }
+
   public boolean needProgressPlaceholder () {
     return displayCount == 0 && !sourceList.isEndReached();
   }

@@ -120,6 +120,12 @@ public class TdlibListenersGlobal {
     }
   }
 
+  void notifyBadgeSettingsChanged () {
+    for (GlobalCountersListener listener : countersListeners) {
+      listener.onBadgeSettingsChanged();
+    }
+  }
+
   // Self user
 
   /*public void addSelfUserListener (GlobalSelfUserListener listener) {

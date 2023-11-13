@@ -51,6 +51,7 @@ import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
@@ -81,12 +82,14 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
   private static final int FLAG_SECRET = 1 << 1;
   private static final int FLAG_ONLINE = 1 << 2;
   private static final int FLAG_SELF_CHAT = 1 << 3;
+  private static final int FLAG_NO_SUBTITLE = 1 << 4;
 
   private int flags;
 
   private final AvatarReceiver avatarReceiver;
   private final ComplexReceiver subtitleMediaReceiver;
   private final EmojiStatusHelper emojiStatusHelper;
+  private @Nullable SimplestCheckBoxHelper checkBoxHelper;
 
   private FormattedText title;
   private Highlight titleHighlight;
@@ -139,6 +142,15 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     emojiStatusHelper.performDestroy();
     setChatImpl(null);
     setMessageImpl(null);
+  }
+
+  public void setIsChecked (boolean isChecked, boolean animated) {
+    if (isChecked != (checkBoxHelper != null && checkBoxHelper.isChecked())) {
+      if (checkBoxHelper == null) {
+        checkBoxHelper = new SimplestCheckBoxHelper(this, avatarReceiver);
+      }
+      checkBoxHelper.setIsChecked(isChecked, animated);
+    }
   }
 
   @SuppressWarnings("WrongConstant")
@@ -231,6 +243,14 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     }
   }
 
+  public void setNoSubtitle (boolean noSubtitle) {
+    int flags = BitwiseUtils.setFlag(this.flags, FLAG_NO_SUBTITLE, noSubtitle);
+    if (this.flags != flags) {
+      this.flags = flags;
+      invalidate();
+    }
+  }
+
   public void setAvatar (ImageFile avatar, AvatarPlaceholder.Metadata avatarPlaceholderMetadata) {
     if (avatar != null) {
       avatarReceiver.requestSpecific(tdlib, avatar, AvatarReceiver.Options.NONE);
@@ -275,7 +295,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     int width = getMeasuredWidth();
     float avail = width - Screen.dp(72f) - ChatView.getTimePaddingRight();
     if (timeWidth != 0) {
-      avail -= timeWidth +  ChatView.getTimePaddingLeft();
+      avail -= timeWidth + ChatView.getTimePaddingLeft();
     }
     if ((flags & FLAG_SECRET) != 0) {
       avail -= Screen.dp(15f);
@@ -388,14 +408,23 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
       avatarReceiver.drawPlaceholder(c);
     }
     avatarReceiver.draw(c);
-
-    int titleTop = Screen.dp(12f) + Screen.dp(1f);
+    final float checkFactor = checkBoxHelper != null ? checkBoxHelper.getCheckFactor() : 0f;
+    if (checkFactor > 0f) {
+      DrawAlgorithms.drawSimplestCheckBox(c, avatarReceiver, checkFactor);
+    }
+    boolean noSubtitle = BitwiseUtils.hasFlag(flags, FLAG_NO_SUBTITLE);
     int titleLeft = Screen.dp(72f);
+    int titleTop;
+    if (noSubtitle) {
+      titleTop = (getHeight() - displayTitle.getHeight()) / 2;
+    } else {
+      titleTop = Screen.dp(12f) + Screen.dp(1f);
+    }
     if (displayTitle != null) {
       boolean isSecret = (flags & FLAG_SECRET) != 0;
       Paint paint = ChatView.getTitlePaint((flags & FLAG_FAKE_TITLE) != 0);
       if (isSecret) {
-        Drawables.drawRtl(c, Icons.getSecureDrawable(), titleLeft - Screen.dp(6f), Screen.dp(12f), Paints.getGreenPorterDuffPaint(), width, rtl);
+        Drawables.drawRtl(c, Icons.getSecureDrawable(), titleLeft - Screen.dp(6f), titleTop - Screen.dp(1f), Paints.getGreenPorterDuffPaint(), width, rtl);
         titleLeft += Screen.dp(15f);
         paint.setColor(Theme.getColor(ColorId.textSecure));
       }
@@ -403,18 +432,20 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
       titleLeft += displayTitle.getWidth();
     }
     emojiStatusHelper.draw(c, titleLeft + Screen.dp(6), titleTop);
-    int subtitleOffset = -Screen.dp(1f);
-    if (displaySubtitle != null) {
-      int subtitleLeft = Screen.dp(72f);
-      if (subtitleIcon != 0) {
-        subtitleLeft += Screen.dp(20f);
+    if (!noSubtitle) {
+      int subtitleOffset = -Screen.dp(1f);
+      if (displaySubtitle != null) {
+        int subtitleLeft = Screen.dp(72f);
+        if (subtitleIcon != 0) {
+          subtitleLeft += Screen.dp(20f);
+        }
+        int subtitleTop = Screen.dp(39f) + subtitleOffset;
+        TextColorSet colorSet = BitwiseUtils.hasFlag(flags, FLAG_ONLINE) ? TextColorSets.Regular.NEUTRAL : null;
+        displaySubtitle.draw(c, subtitleLeft, subtitleTop, colorSet, 1f, subtitleMediaReceiver);
       }
-      int subtitleTop = Screen.dp(39f) + subtitleOffset;
-      TextColorSet colorSet = BitwiseUtils.hasFlag(flags, FLAG_ONLINE) ? TextColorSets.Regular.NEUTRAL : null;
-      displaySubtitle.draw(c, subtitleLeft, subtitleTop,  colorSet, 1f, subtitleMediaReceiver);
-    }
-    if (subtitleIcon != 0) {
-      Drawables.drawRtl(c, subtitleIconDrawable, Screen.dp(72f), Screen.dp(subtitleIcon == R.drawable.baseline_call_missed_18 ? 40f : 39f) + subtitleOffset, PorterDuffPaint.get(subtitleIconColorId), width, rtl);
+      if (subtitleIcon != 0) {
+        Drawables.drawRtl(c, subtitleIconDrawable, Screen.dp(72f), Screen.dp(subtitleIcon == R.drawable.baseline_call_missed_18 ? 40f : 39f) + subtitleOffset, PorterDuffPaint.get(subtitleIconColorId), width, rtl);
+      }
     }
     if (time != null) {
       c.drawText(time, rtl ? ChatView.getTimePaddingRight() : width - ChatView.getTimePaddingRight() - timeWidth, Screen.dp(28f), ChatView.getTimePaint());
@@ -587,7 +618,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
   }
 
   @Override
-  public void onChatReadInbox(long chatId, long lastReadInboxMessageId, int unreadCount, boolean availabilityChanged) {
+  public void onChatReadInbox (long chatId, long lastReadInboxMessageId, int unreadCount, boolean availabilityChanged) {
     updateChat(chatId);
   }
 

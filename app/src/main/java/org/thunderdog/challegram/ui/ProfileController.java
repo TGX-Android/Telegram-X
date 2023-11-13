@@ -2240,6 +2240,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         text = null;
       }
     }
+    if (Settings.instance().showPeerIds()) {
+      text = tdlib.addServiceInformation(getChatId(), text);
+    }
     if (this.currentAbout == null || !Td.equalsTo(this.currentAbout, text)) {
       currentAbout = text;
       if (text != null) {
@@ -2589,7 +2592,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private boolean hasDescription () {
-    return !StringUtils.isEmpty(getDescriptionValue());
+    return !StringUtils.isEmpty(getDescriptionValue()) || Settings.instance().showPeerIds();
   }
 
   private boolean setDescription () {

@@ -931,9 +931,17 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     }
   }
 
+  public void updateCheckOptionByLongId (long id, boolean isChecked) {
+    int index = indexOfViewByLongId(id);
+    if (index != -1) {
+      setCheckInternal(index, isChecked);
+    }
+  }
+
   private void setCheckInternal (int index, boolean isChecked) {
     boolean needNotify = false;
-    items.get(index).setSelected(isChecked);
+    ListItem item = items.get(index);
+    item.setSelected(isChecked);
     for (RecyclerView parentView : parentViews) {
       View view = parentView.getLayoutManager().findViewByPosition(index);
       if (view == null) {
@@ -941,7 +949,12 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         continue;
       }
 
-      if (view instanceof SettingView && ((SettingView) view).getChildCount() > 0 && view.getId() == items.get(index).getId()) {
+      if (view instanceof BetterChatView && view.getId() == item.getId()) {
+        ((BetterChatView) view).setIsChecked(isChecked, true);
+        continue;
+      }
+
+      if (view instanceof SettingView && ((SettingView) view).getChildCount() > 0 && view.getId() == item.getId()) {
         View child = ((SettingView) view).getChildAt(0);
         if (child instanceof CheckBoxView) {
           ((CheckBoxView) child).setChecked(isChecked, true);
@@ -955,7 +968,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
 
       if (view instanceof FrameLayoutFix &&
         ((FrameLayoutFix) view).getChildCount() == 2 &&
-        view.getId() == items.get(index).getId()) {
+        view.getId() == item.getId()) {
         switch (items.get(index).getViewType()) {
           case ListItem.TYPE_DRAWER_ITEM_WITH_RADIO:
           case ListItem.TYPE_DRAWER_ITEM_WITH_RADIO_SEPARATED: {
@@ -970,7 +983,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         }
       }
 
-      if (view instanceof DrawerItemView && items.get(index).getViewType() == ListItem.TYPE_DRAWER_ITEM_WITH_AVATAR) {
+      if (view instanceof DrawerItemView && item.getViewType() == ListItem.TYPE_DRAWER_ITEM_WITH_AVATAR) {
         ((DrawerItemView) view).setChecked(isChecked, true);
       }
 

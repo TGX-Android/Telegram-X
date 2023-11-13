@@ -23,5 +23,7 @@ public interface GlobalCountersListener {
   @UiThread
   default void onUnreadCountersChanged (Tdlib tdlib, @NonNull TdApi.ChatList chatList, int count, boolean isMuted) { }
   @UiThread
-  void onTotalUnreadCounterChanged (@NonNull TdApi.ChatList chatList, boolean isReset);
+  default void onTotalUnreadCounterChanged (@NonNull TdApi.ChatList chatList, boolean isReset) { }
+  @UiThread
+  default void onBadgeSettingsChanged () { }
 }

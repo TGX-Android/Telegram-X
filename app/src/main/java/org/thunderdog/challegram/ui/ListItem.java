@@ -208,6 +208,10 @@ public class ListItem {
     this(viewType, id, iconResource, stringResource, null, id, isSelected);
   }
 
+  public ListItem (int viewType, int id, int iconResource, CharSequence string) {
+    this(viewType, id, iconResource, 0, string, id, false);
+  }
+
   public ListItem (int viewType, int id, int iconResource, CharSequence string, boolean isSelected) {
     this(viewType, id, iconResource, 0, string, id, isSelected);
   }
