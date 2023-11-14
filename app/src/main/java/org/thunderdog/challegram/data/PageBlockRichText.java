@@ -289,7 +289,7 @@ public class PageBlockRichText extends PageBlock {
             showChatLinkSubtitle(publicChat, time, openParameters);
           } else if (publicChat.type.getConstructor() == TdApi.ChatTypeSupergroup.CONSTRUCTOR) {
             context.tdlib().cache().supergroupFull(ChatId.toSupergroupId(publicChat.id), fullInfo -> {
-              int fullMemberCount = fullInfo.memberCount;
+              int fullMemberCount = fullInfo != null ? fullInfo.memberCount : 0;
               if (fullMemberCount > 1) {
                 showChatLinkSubtitle(publicChat, time, openParameters);
               }
