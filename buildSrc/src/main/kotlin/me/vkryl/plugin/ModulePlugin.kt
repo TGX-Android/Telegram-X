@@ -88,6 +88,9 @@ open class ModulePlugin : Plugin<Project> {
     val appId = getOrSample("app.id")
     val appName = getOrSample("app.name")
     val appDownloadUrl = getOrSample("app.download_url")
+    val galaxyStoreUrl = properties.getProperty("app.galaxy_download_url", null)
+    val huaweiAppGalleryUrl = properties.getProperty("app.huawei_download_url", null)
+    val amazonAppStoreUrl = properties.getProperty("app.amazon_download_url", null)
     val isExampleBuild = appId.startsWith("com.example.") || appId.startsWith("org.example.")
     val isExperimentalBuild = isExampleBuild || keystore == null || properties.getProperty("app.experimental", "false") == "true"
     val dontObfuscate = isExampleBuild || properties.getProperty("app.dontobfuscate", "false") == "true"
@@ -281,6 +284,9 @@ open class ModulePlugin : Plugin<Project> {
               buildConfigString("SAFETYNET_API_KEY", safetyNetToken)
 
               buildConfigString("DOWNLOAD_URL", appDownloadUrl)
+              buildConfigString("GALAXY_STORE_URL", galaxyStoreUrl)
+              buildConfigString("HUAWEI_APPGALLERY_URL", huaweiAppGalleryUrl)
+              buildConfigString("AMAZON_APPSTORE_URL", amazonAppStoreUrl)
 
               buildConfigString("OPENSSL_VERSION", openSslVersion)
               buildConfigString("OPENSSL_VERSION_FULL", openSslVersionFull)
