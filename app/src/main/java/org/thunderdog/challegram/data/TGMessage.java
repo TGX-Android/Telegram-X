@@ -2240,7 +2240,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
       int forwardX = forwardTextLeft + (isPsa ? (fPsaTextT != null ? fPsaTextT.getWidth() : 0) : (fAuthorNameT != null ? fAuthorNameT.getWidth() : 0)) + Screen.dp(6f);
       TextPaint mTimePaint = useBubbles ? Paints.colorPaint(mTimeBubble(), getDecentColor()) : mTime(true);
-      c.drawText(fTime, forwardX, forwardTextTop, mTimePaint);
+      if (fTime != null) {
+        // TODO: investigate the real cause, as it must never be null at this point
+        c.drawText(fTime, forwardX, forwardTextTop, mTimePaint);
+      }
       if (getViewCountMode() == VIEW_COUNT_FORWARD) {
         forwardX += Screen.dp(2f) + fTimeWidth + Screen.dp(COUNTER_ADD_MARGIN);
         int iconTop = forwardTextTop - Screen.dp(3f);
