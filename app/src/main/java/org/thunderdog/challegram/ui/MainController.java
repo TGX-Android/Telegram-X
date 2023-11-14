@@ -583,8 +583,13 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       boolean needArchive = pagerItemId == MAIN_PAGER_ITEM_ID && (menuNeedArchive || (!tdlib.settings().isChatListEnabled(ChatPosition.CHAT_LIST_ARCHIVE) && tdlib.hasArchivedChats()));
       menu.getChildAt(FILTER_ARCHIVE).setVisibility(needArchive ? View.VISIBLE : View.GONE);
 
-      int pagerItemPosition = getPagerItemPosition(pagerItemId);
-      TdApi.ChatList chatList = pagerChatLists.get(pagerItemPosition);
+      TdApi.ChatList chatList;
+      if (pagerItemId == MAIN_PAGER_ITEM_ID) {
+        chatList = selectedFilter == FILTER_ARCHIVE || menuNeedArchive ? ChatPosition.CHAT_LIST_ARCHIVE : ChatPosition.CHAT_LIST_MAIN;
+      } else {
+        int pagerItemPosition = getPagerItemPosition(pagerItemId);
+        chatList = hasFolders() && pagerItemPosition < pagerChatLists.size() ? pagerChatLists.get(pagerItemPosition) : null;;
+      }
 
       boolean hasUnreadChats = chatList != null && tdlib.hasUnreadChats(chatList);
       boolean needUnread = selectedFilter == FILTER_UNREAD || hasUnreadChats;
