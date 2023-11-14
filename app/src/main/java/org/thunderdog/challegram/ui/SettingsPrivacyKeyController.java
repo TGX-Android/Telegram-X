@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.ui;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -36,12 +35,13 @@ import org.thunderdog.challegram.navigation.ActivityResultHandler;
 import org.thunderdog.challegram.telegram.PrivacySettings;
 import org.thunderdog.challegram.telegram.PrivacySettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
-import org.thunderdog.challegram.util.AvatarModifier;
+import org.thunderdog.challegram.util.ProfilePhotoDrawModifier;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.NoUnderlineClickableSpan;
 import org.thunderdog.challegram.util.UserPickerMultiDelegate;
@@ -55,7 +55,8 @@ import me.vkryl.core.collection.LongList;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
-public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.UserPrivacySetting> implements View.OnClickListener, UserPickerMultiDelegate, PrivacySettingsListener, ActivityResultHandler {
+public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.UserPrivacySetting> implements View.OnClickListener, UserPickerMultiDelegate, PrivacySettingsListener, ActivityResultHandler,
+  TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener {
 
   public SettingsPrivacyKeyController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -469,6 +470,9 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
 
   @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
+    tdlib.cache().subscribeToUserUpdates(tdlib.myUserId(), this);
+
+
     adapter = new SettingsAdapter(this) {
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
@@ -482,11 +486,11 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
         }
 
         if (itemId == R.id.btn_setProfilePhoto) {
-          final TdApi.User myUser = tdlib.myUser();
-          final boolean hasAvatar = myUser != null && myUser.profilePhoto != null;
+          final TdApi.UserFullInfo myUserFull = tdlib.myUserFull();
+          final boolean hasAvatar = myUserFull != null && myUserFull.publicPhoto != null;
 
           view.setData(Lang.getString(hasAvatar ? R.string.PublicPhotoSet : R.string.PublicPhotoNoSet));
-          view.setDrawModifier(new AvatarModifier().requestFiles(view.getComplexReceiver(), tdlib, tdlib.mySender()));
+          view.setDrawModifier(new ProfilePhotoDrawModifier().requestFiles(view.getComplexReceiver(), tdlib));
         } else {
           view.setDrawModifier(null);
         }
@@ -518,6 +522,20 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
   }
 
   @Override
+  public void onUserFullUpdated (long userId, TdApi.UserFullInfo userFull) {
+    UI.post(() -> {
+      if (userId == tdlib.myUserId() && !isDestroyed()) {
+        adapter.updateValuedSettingById(R.id.btn_setProfilePhoto);
+      }
+    });
+  }
+
+  @Override
+  public void onUserStatusChanged (long userId, TdApi.UserStatus status, boolean uiOnly) {
+
+  }
+
+  @Override
   public void onBlur () {
     super.onBlur();
     saveChanges();
@@ -540,6 +558,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
   public void destroy () {
     super.destroy();
     tdlib.listeners().unsubscribeFromPrivacyUpdates(this);
+    tdlib.cache().unsubscribeFromAnyUpdates(this);
   }
 
   private int userPickMode;
@@ -622,14 +641,21 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
         updateRulesState(changedPrivacyRules);
       }
     } else if (viewId == R.id.btn_setProfilePhoto) {
-      tdlib.ui().showProfilePhotoOptions(this, null);
+      getAvatarPickerManager().showMenuForProfile(null, true);
     }
   }
 
   @Override
   public void onActivityResult (int requestCode, int resultCode, Intent data) {
-    if (resultCode == Activity.RESULT_OK) {
-      tdlib.ui().handlePhotoChange(requestCode, data, null);
+    getAvatarPickerManager().handleActivityResult(requestCode, resultCode, data, TdlibUi.AvatarPickerManager.MODE_PROFILE_PUBLIC, null, null);
+  }
+
+  private TdlibUi.AvatarPickerManager avatarPickerManager;
+
+  private TdlibUi.AvatarPickerManager getAvatarPickerManager () {
+    if (avatarPickerManager == null) {
+      avatarPickerManager = new TdlibUi.AvatarPickerManager(this);
     }
+    return avatarPickerManager;
   }
 }

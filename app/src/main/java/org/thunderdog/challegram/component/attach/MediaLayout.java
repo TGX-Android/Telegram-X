@@ -90,7 +90,6 @@ import org.thunderdog.challegram.widget.ShadowView;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.DeviceUtils;
@@ -98,7 +97,6 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 import me.vkryl.td.TdConstants;
 
@@ -121,6 +119,7 @@ public class MediaLayout extends FrameLayoutFix implements
   public static final int MODE_LOCATION = 1;
   public static final int MODE_GALLERY = 2;
   public static final int MODE_CUSTOM_POPUP = 3;
+  public static final int MODE_AVATAR_PICKER = 4;
 
   private int mode;
   private @Nullable MediaCallback callback;
@@ -135,7 +134,7 @@ public class MediaLayout extends FrameLayoutFix implements
   private @Nullable ShadowView shadowView;
   private MediaBottomBaseController<?> currentController;
 
-  private ViewGroup customBottomBar;
+  private View customBottomBar;
 
   private final ThemeListenerList themeListeners = new ThemeListenerList();
 
@@ -152,6 +151,10 @@ public class MediaLayout extends FrameLayoutFix implements
 
   public void initDefault (MessagesController target) {
     init(MODE_DEFAULT, target);
+  }
+
+  public int getMode () {
+    return mode;
   }
 
   private boolean rtl, needVote;
@@ -172,6 +175,7 @@ public class MediaLayout extends FrameLayoutFix implements
         index = 0;
         break;
       }
+      case MODE_AVATAR_PICKER:
       case MODE_GALLERY: {
         items = new MediaBottomBar.BarItem[] {
           new MediaBottomBar.BarItem(R.drawable.baseline_location_on_24, R.string.Gallery, ColorId.attachPhoto, Screen.dp(1f))
@@ -269,15 +273,19 @@ public class MediaLayout extends FrameLayoutFix implements
     addView(controllerView);
 
     if (mode == MODE_DEFAULT) {
-      addView(customBottomBar = currentController.createCustomBottomBar());
-      themeListeners.addThemeInvalidateListener(customBottomBar);
-      customBottomBar.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
-      customBottomBar.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.EXACTLY);
+      setCustomBottomBar(currentController.createCustomBottomBar());
     }
 
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     ThemeManager.instance().addThemeListener(this);
     Lang.addLanguageListener(this);
+  }
+
+  public void setCustomBottomBar (View bottomBar) {
+    addView(customBottomBar = bottomBar);
+    themeListeners.addThemeInvalidateListener(customBottomBar);
+    customBottomBar.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
+    customBottomBar.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.EXACTLY);
   }
 
   @Override
@@ -383,6 +391,7 @@ public class MediaLayout extends FrameLayoutFix implements
       case MODE_LOCATION: {
         return new MediaBottomLocationController(this);
       }
+      case MODE_AVATAR_PICKER:
       case MODE_GALLERY: {
         return new MediaBottomGalleryController(this);
       }
@@ -719,7 +728,7 @@ public class MediaLayout extends FrameLayoutFix implements
     int height = getBottomBarHeight();
     float factor = Math.max(bottomBarFactor, counterFactor);
     float y = height - (int) ((float) height * factor);
-    if (!inSpecificMode()) {
+    if (!inSpecificMode() || mode == MODE_AVATAR_PICKER) {
       if (bottomBar != null) {
         if (currentController != null) {
           currentController.onUpdateBottomBarFactor(bottomBarFactor, counterFactor, y);
@@ -728,6 +737,9 @@ public class MediaLayout extends FrameLayoutFix implements
         onCurrentColorChanged();
       }
       if (customBottomBar != null) {
+        if (currentController != null && mode == MODE_AVATAR_PICKER) {
+          currentController.onUpdateBottomBarFactor(bottomBarFactor, counterFactor, y);
+        }
         customBottomBar.setTranslationY(y);
         onCurrentColorChanged();
       }
@@ -953,9 +965,8 @@ public class MediaLayout extends FrameLayoutFix implements
   @Override
   public void onPopupDismiss (PopupLayout popup) {
     if (cameraOpenOptions != null) {
-      MessagesController c = parentMessageController();
-      if (c != null && !c.isDestroyed()) {
-        c.openInAppCamera(cameraOpenOptions);
+      if (parent != null && (parent instanceof MessagesController || mode == MODE_AVATAR_PICKER) && !parent.isDestroyed()) {
+        parent.openInAppCamera(cameraOpenOptions);
       }
     }
     performDestroy();
@@ -1125,6 +1136,10 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   public boolean sendPhotosOrVideos (View view, ArrayList<ImageFile> images, boolean areRemote, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean disableAnimation) {
+    if (mode == MODE_AVATAR_PICKER) {
+      parent.context().forceCloseCamera();
+    }
+
     if (images == null || images.isEmpty()) {
       return false;
     }
@@ -1711,6 +1726,10 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   public void setCounter (int count) {
+    if (mode == MODE_AVATAR_PICKER) {
+      return;
+    }
+
     boolean init = counterFactor == 0f && count == 1;
     if (init) {
       prepareCounter();
@@ -1794,7 +1813,7 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   public boolean needCameraButton () {
-    return (parent instanceof MessagesController) && !((MessagesController) parent).isCameraButtonVisibleOnAttachPanel();
+    return mode == MODE_AVATAR_PICKER || (parent instanceof MessagesController) && !((MessagesController) parent).isCameraButtonVisibleOnAttachPanel();
   }
 
   public static class SenderSendIcon extends FrameLayout {

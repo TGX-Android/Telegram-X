@@ -250,9 +250,6 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         throw new IllegalStateException();
       }
       this.isProfilePhotoEditor = isProfilePhotoEditor;
-      if (stack != null && stack.getCurrent() != null) {
-        this.stack.getCurrent().cropToSquare();
-      }
       return this;
     }
 
@@ -6262,7 +6259,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           proportionButton.setOnClickListener(this);
           proportionButton.setIcon(R.drawable.baseline_image_aspect_ratio_24, false, false);
           proportionButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(56f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.LEFT));
-          cropControlsWrap.addView(proportionButton);
+          //if (!inProfilePhotoEditMode()) {
+            cropControlsWrap.addView(proportionButton);
+          //}
 
           params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
           params.leftMargin = Screen.dp(56f);
@@ -7921,6 +7920,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         changeSection(SECTION_CAPTION, MODE_OK);
       } else if (inputView != null && !tdlib.isSelfChat(getOutputChatId()) && !tdlib.hasPremium() && inputView.hasOnlyPremiumFeatures()) {
         context().tooltipManager().builder(sendButton).show(tdlib, Strings.buildMarkdown(this, Lang.getString(R.string.MessageContainsPremiumFeatures), null)).hideDelayed();
+      } else if (needShowCropSectionInsteadSend()) {
+        changeSection(SECTION_CROP, MODE_OK);
       } else {
         send(v, Td.newSendOptions(), false, false);
       }
@@ -8072,6 +8073,24 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     } else if (viewId == R.id.paint_undo) {
       undoLastPaintAction();
     }
+  }
+
+  private boolean needShowCropSectionInsteadSend () {
+    if (!inProfilePhotoEditMode()) {
+      return false;
+    }
+
+    if (cropAreaView == null) {
+      return true;
+    }
+
+    final CropState cropState = obtainCropState(true);
+
+    double targetWidth = (cropAreaView.getTargetWidth() * (cropState.getRight() - cropState.getLeft()));
+    double targetHeight = (cropAreaView.getTargetHeight() * (cropState.getBottom() - cropState.getTop()));
+    double proportion = Math.max(targetWidth, targetHeight) / Math.min(targetWidth, targetHeight);
+
+    return Math.abs(proportion - 1d) > 0.02d;
   }
 
   // TTL

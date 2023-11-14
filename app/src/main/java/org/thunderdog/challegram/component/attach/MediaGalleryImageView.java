@@ -81,6 +81,12 @@ public class MediaGalleryImageView extends BaseView implements Destroyable, Fact
   }
 
   private boolean isInvisible;
+  private boolean isAlwaysInvisible;
+
+  public void setAlwaysInvisible (boolean alwaysInvisible) {
+    isAlwaysInvisible = alwaysInvisible;
+    invalidate();
+  }
 
   public void setInvisible (boolean isInvisible, boolean needInvalidate) {
     if (this.isInvisible != isInvisible) {
@@ -322,7 +328,7 @@ public class MediaGalleryImageView extends BaseView implements Destroyable, Fact
       c.restore();
     }
 
-    if (!isInvisible) {
+    if (!isInvisible && !isAlwaysInvisible) {
       final int centerX = receiver.centerX() + (int) ((float) receiver.getWidth() * (1f - SCALE)) / 2;
       final int centerY = receiver.centerY() - (int) ((float) receiver.getHeight() * (1f - SCALE)) / 2;
       final int radius = Screen.dp(9f + 2f * factor);

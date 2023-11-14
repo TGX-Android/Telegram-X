@@ -1192,6 +1192,9 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
         if (left != 0 || top != 0) {
           c.translate(left, top);
         }
+        /*if (hasCrop && displayCrop.needMirror()) {
+          c.scale(displayCrop.needMirrorHorizontally() ? -1 : 1, displayCrop.needMirrorVertically() ? -1 : 1, (right - left) / 2f, (bottom - top) / 2f);
+        }*/
         if (rotation != 0) {
           c.rotate(rotation, (right - left) / 2f, (bottom - top) / 2f);
         }

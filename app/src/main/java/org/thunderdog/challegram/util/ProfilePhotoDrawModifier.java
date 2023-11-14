@@ -25,17 +25,21 @@ import org.thunderdog.challegram.loader.ComplexReceiverProvider;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;
 
-public class AvatarModifier implements DrawModifier {
+import me.vkryl.td.Td;
+
+public class ProfilePhotoDrawModifier implements DrawModifier {
   @Override
   public void afterDraw (View view, Canvas c) {
     ComplexReceiver complexReceiver = view instanceof ComplexReceiverProvider ? ((ComplexReceiverProvider) view).getComplexReceiver() : null;
     if (complexReceiver == null) return;
 
+    AvatarReceiver avatarReceiver = complexReceiver.getAvatarReceiver(0);
+    if (avatarReceiver.isEmpty()) return;
+
     int size = Screen.dp(48);
     int x = view.getMeasuredWidth() - size - Screen.dp(20);
     int y = Screen.dp(8);
 
-    AvatarReceiver avatarReceiver = complexReceiver.getAvatarReceiver(0);
     avatarReceiver.setBounds(x, y, x + size, y + size);
     if (avatarReceiver.needPlaceholder()) {
       avatarReceiver.drawPlaceholder(c);
@@ -43,8 +47,20 @@ public class AvatarModifier implements DrawModifier {
     avatarReceiver.draw(c);
   }
 
-  public AvatarModifier requestFiles (ComplexReceiver complexReceiver, Tdlib tdlib, TdApi.MessageSender sender) {
-    complexReceiver.getAvatarReceiver(0).requestMessageSender(tdlib, sender, AvatarReceiver.Options.NONE);
+  public ProfilePhotoDrawModifier requestFiles (ComplexReceiver complexReceiver, Tdlib tdlib) {
+    AvatarReceiver avatarReceiver = complexReceiver.getAvatarReceiver(0);
+
+    TdApi.UserFullInfo info = tdlib.myUserFull();
+    if (info != null && info.publicPhoto != null && info.publicPhoto.sizes != null && info.publicPhoto.sizes.length > 0) {
+      TdApi.ChatPhotoInfo chatPhotoInfo = new TdApi.ChatPhotoInfo(
+        Td.findSmallest(info.publicPhoto.sizes).photo,
+        Td.findBiggest(info.publicPhoto.sizes).photo,
+        info.publicPhoto.minithumbnail, info.publicPhoto.animation != null, false);
+      avatarReceiver.requestSpecific(tdlib, chatPhotoInfo, AvatarReceiver.Options.NO_UPDATES);
+    } else {
+      avatarReceiver.clear();
+    }
+
     return this;
   }
 

@@ -592,6 +592,9 @@
   <string name="Gallery">Gallery</string>
   <string name="ChatCamera">Camera</string>
 
+  <string name="SetProfilePhoto">Set Profile Photo</string>
+  <string name="SetPublicPhoto">Set Public Photo</string>
+
   <string name="MessageSearchFilterAll">All message types</string>
   <string name="MessageSearchFilterText">Text messages</string>
   <string name="MessageSearchFilterPhoto">Photos</string>

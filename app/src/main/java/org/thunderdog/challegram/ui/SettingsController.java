@@ -97,12 +97,15 @@ public class SettingsController extends ViewController<Void> implements
   Menu, MoreDelegate, OptionDelegate,
   TdlibCache.MyUserDataChangeListener, ConnectionListener, StickersListener, MediaLayout.MediaGalleryCallback,
   ActivityResultHandler, View.OnLongClickListener, SessionListener, GlobalTokenStateListener {
+
+  private final TdlibUi.AvatarPickerManager avatarPickerManager;
   private ComplexHeaderView headerCell;
   private ComplexRecyclerView contentView;
   private SettingsAdapter adapter;
 
   public SettingsController (Context context, Tdlib tdlib) {
     super(context, tdlib);
+    avatarPickerManager = new TdlibUi.AvatarPickerManager(this);
   }
 
   @Override
@@ -246,14 +249,12 @@ public class SettingsController extends ViewController<Void> implements
   }
 
   private void changeProfilePhoto () {
-    tdlib.ui().showProfilePhotoOptions(this, headerCell);
+    avatarPickerManager.showMenuForProfile(headerCell, false);
   }
 
   @Override
   public void onActivityResult (int requestCode, int resultCode, Intent data) {
-    if (resultCode == Activity.RESULT_OK) {
-      tdlib.ui().handlePhotoChange(requestCode, data, null);
-    }
+    avatarPickerManager.handleActivityResult(requestCode, resultCode, data, TdlibUi.AvatarPickerManager.MODE_PROFILE, null, null);
   }
 
   private boolean hasNotificationError;

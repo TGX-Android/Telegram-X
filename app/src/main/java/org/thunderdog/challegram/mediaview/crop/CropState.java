@@ -186,7 +186,10 @@ public class CropState {
   }
 
   public void setFlags (int flags) {
-    this.flags = flags;
+    if (this.flags != flags) {
+      this.flags = flags;
+      invokeCallbacks(false);
+    }
   }
 
   public double getLeft () {
