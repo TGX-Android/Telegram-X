@@ -15,7 +15,6 @@ package org.thunderdog.challegram.util;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.IntentSender;
-import android.os.Build;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
@@ -37,7 +36,6 @@ import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -85,12 +83,15 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
 
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({
+    FlowType.NONE,
     FlowType.TELEGRAM_CHANNEL,
     FlowType.GOOGLE_PLAY
   })
   public @interface FlowType {
-    int TELEGRAM_CHANNEL = 1;
-    int GOOGLE_PLAY = 2;
+    int
+      NONE = 0,
+      TELEGRAM_CHANNEL = 1,
+      GOOGLE_PLAY = 2;
   }
 
   private final BaseActivity context;
@@ -119,7 +120,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
     this.context = context;
     this.listeners = new ReferenceList<>();
     AppUpdateManager appUpdateManager = null;
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !BuildConfig.SIDE_LOAD_ONLY) {
+    if (AppInstallationUtil.allowInAppGooglePlayUpdates()) {
       try {
         appUpdateManager = AppUpdateManagerFactory.create(context);
       } catch (Throwable t) {
@@ -182,7 +183,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
     // TODO: add server config to force
     return googlePlayUpdateManager == null ||
       forceTelegramChannelFlow ||
-      (googlePlayFlowError && U.isAppSideLoaded());
+      (googlePlayFlowError && AppInstallationUtil.isAppSideLoaded());
   }
 
   private void setState (@State int state) {
@@ -218,7 +219,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
           }
           case UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS:
           case UpdateAvailability.UPDATE_NOT_AVAILABLE: {
-            if (U.isAppSideLoaded()) {
+            if (AppInstallationUtil.isAppSideLoaded()) {
               onGooglePlayFlowError();
             } else {
               onUpdateUnavailable();
@@ -303,7 +304,11 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
 
   private void checkForTelegramChannelUpdates () {
     Tdlib tdlib = context.hasTdlib() ? context.currentTdlib() : null;
-    if (BuildConfig.EXPERIMENTAL || tdlib == null || tdlib.context().inRecoveryMode() || !tdlib.isAuthorized()) {
+    if (tdlib == null || tdlib.context().inRecoveryMode() || !tdlib.isAuthorized()) {
+      onUpdateUnavailable();
+      return;
+    }
+    if (!AppInstallationUtil.allowInAppTelegramUpdates() && !tdlib.hasUrgentInAppUpdate()) {
       onUpdateUnavailable();
       return;
     }
@@ -430,6 +435,9 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
   public void offerUpdate () {
     if (!updateOffered) {
       switch (flowType) {
+        case FlowType.NONE:
+          // Do nothing.
+          break;
         case FlowType.GOOGLE_PLAY: {
           updateOffered = offerGooglePlayUpdate();
           break;
@@ -447,6 +455,9 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
       return;
     }
     switch (flowType) {
+      case FlowType.NONE:
+        // Do nothing.
+        break;
       case FlowType.GOOGLE_PLAY: {
         updateOffered = offerGooglePlayUpdate();
         break;
@@ -472,6 +483,9 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
       return;
     }
     switch (flowType) {
+      case FlowType.NONE:
+        // Do nothing.
+        break;
       case FlowType.TELEGRAM_CHANNEL: {
         // TODO guide on how to allow installing APKs
         UI.openFile(new TdlibContext(context, telegramChannelTdlib), telegramChannelFile.document.fileName, new File(telegramChannelFile.document.document.local.path), telegramChannelFile.document.mimeType, 0);
