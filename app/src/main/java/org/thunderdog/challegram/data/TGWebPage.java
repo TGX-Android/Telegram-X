@@ -504,7 +504,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     return description != null && description.hasMedia();
   }
 
-  public void requestTextMedia (ComplexReceiver receiver, int startKey) {
+  public void requestTextMedia (ComplexReceiver receiver, long startKey) {
     if (hasMedia()) {
       description.requestMedia(receiver, startKey, Integer.MAX_VALUE);
     } else {
@@ -615,6 +615,10 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
 
   public TdApi.WebPage getWebPage () {
     return webPage;
+  }
+
+  public @Nullable TdApi.LinkPreviewOptions getLinkPreviewOptions () {
+    return linkPreviewOptions;
   }
 
   public boolean isPreviewOf (String url) {

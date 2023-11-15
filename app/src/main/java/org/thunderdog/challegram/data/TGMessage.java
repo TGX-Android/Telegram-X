@@ -165,6 +165,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private static final int MAXIMUM_CHANNEL_MERGE_TIME_DIFF = 150;
   private static final int MAXIMUM_COMMON_MERGE_TIME_DIFF = 900;
 
+  protected static final long TEXT_CROSS_FADE_DURATION_MS = 200L;
+
   private static final int MAXIMUM_CHANNEL_MERGE_COUNT = 19;
   private static final int MAXIMUM_COMMON_MERGE_COUNT = 14;
 
@@ -283,7 +285,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   private final Path bubblePath, bubbleClipPath;
   private float topRightRadius, topLeftRadius, bottomLeftRadius, bottomRightRadius;
-  private final RectF bubblePathRect, bubbleClipPathRect;
+  protected final RectF bubblePathRect, bubbleClipPathRect;
 
   private boolean needSponsorSmallPadding;
 
@@ -3502,7 +3504,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return bottomLineContentWidth > 0 && (bottomLineContentWidth + bubbleTimePartWidth > maxLineWidth);
   }
 
-  protected float getBubbleExpandFactor () {
+  protected float getIntermediateBubbleExpandFactor () {
     throw new RuntimeException();
   }
 
@@ -3537,7 +3539,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
             final int extendedWidth = getAnimatedBottomLineWidth(bubbleTimePartWidth);
             final int fitBubbleWidth = Math.max(bubbleWidth, extendedWidth != -1 ? extendedWidth + bubbleTimePartWidth : bubbleWidth);
 
-            float factor = getBubbleExpandFactor();
+            float factor = getIntermediateBubbleExpandFactor();
             if (factor > 0f) {
               bubbleWidth = MathUtils.fromTo(fitBubbleWidth, expandedBubbleWidth, factor);
               int newBubbleHeight = MathUtils.fromTo(bubbleHeight, expandedBubbleHeight, factor);

@@ -143,7 +143,7 @@ public final class TGAvatars implements FactorAnimator.Target {
           receiver.requestMessageSender(tdlib, entry.senderId, AvatarReceiver.Options.NONE);
         }
         if (!isUpdate && !neverClear) {
-          complexReceiver.clearReceivers((receiverType, receiver, key) -> receiverType == ComplexReceiver.RECEIVER_TYPE_AVATAR && entriesIds != null && entriesIds.contains(key));
+          complexReceiver.clearReceivers((receiverType, receiver, key) -> receiverType == ComplexReceiver.ReceiverType.AVATAR && entriesIds != null && entriesIds.contains(key));
         }
       } else if (!neverClear) {
         complexReceiver.clear();

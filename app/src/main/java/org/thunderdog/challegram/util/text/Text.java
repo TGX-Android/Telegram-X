@@ -771,7 +771,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   }
 
   private interface MediaCreator {
-    TextMedia onCreateMedia (String keyId, int id);
+    TextMedia onCreateMedia (String keyId, long id);
   }
 
   private TextMedia newOrExistingMedia (@Nullable String keyId, int start, int end, MediaCreator creator) {
@@ -779,7 +779,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       throw new IllegalStateException();
     if (media == null)
       media = new LinkedHashMap<>();
-    final int nextMediaId = media.size();
+    final long nextMediaId = media.size();
     if (keyId == null) {
       keyId = "_" + nextMediaId + "x" + (start != end ? start + ".."  + end : start);
     }
@@ -2198,7 +2198,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       // Force parent to call requestMedia() instead
       return false;
     }
-    final int displayMediaKey = specificMedia.getDisplayMediaKey();
+    final long displayMediaKey = specificMedia.getDisplayMediaKey();
     if (displayMediaKey == -1 || media.get(specificMedia.keyId) != specificMedia) {
       return false; // Don't invalidate what wasn't requested
     }
@@ -2214,15 +2214,15 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return requestMedia(textMediaReceiver, -1, -1);
   }
 
-  public int requestMedia (ComplexReceiver textMediaReceiver, int keyOffset, int maxKeyCount) {
+  public int requestMedia (ComplexReceiver textMediaReceiver, long keyOffset, long maxKeyCount) {
     if (!hasMedia())
       return 0;
     boolean clear = keyOffset == -1 && maxKeyCount == -1;
     if (clear) {
       keyOffset = 0;
-      maxKeyCount = Integer.MAX_VALUE;
+      maxKeyCount = Long.MAX_VALUE;
     }
-    int maxMediaId = -1;
+    long maxMediaId = -1;
     int mediaCount = 0;
     for (Map.Entry<String, TextMedia> entry : media.entrySet()) {
       TextMedia media = entry.getValue();

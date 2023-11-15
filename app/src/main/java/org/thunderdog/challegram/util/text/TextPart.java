@@ -360,7 +360,7 @@ public class TextPart {
 
   public @Nullable GifReceiver findTargetReceiver (@Nullable ComplexReceiver receiver) {
     if (receiver != null && media != null && !media.isNotFoundCustomEmoji() && media.isAnimated()) {
-      final int displayMediaKey = media.getDisplayMediaKey();
+      final long displayMediaKey = media.getDisplayMediaKey();
       return receiver.getGifReceiver(displayMediaKey);
     }
     return null;
@@ -407,7 +407,7 @@ public class TextPart {
         }
         return;
       }
-      final int displayMediaKey = media.getDisplayMediaKey();
+      final long displayMediaKey = media.getDisplayMediaKey();
       final int iconY = y + textPaint.baselineShift - (isCustomEmoji() ? Screen.dp(1.5f) : 0);
       final int height = this.height == -1 ? (int) width : this.height;
       if (receiver != null && displayMediaKey != -1) {

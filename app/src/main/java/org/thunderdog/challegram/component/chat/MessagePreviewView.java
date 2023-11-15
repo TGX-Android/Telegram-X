@@ -238,7 +238,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   private int lastTextWidth;
 
   private int getTextHorizontalOffset () {
-    return (int) (mediaPreview.getMetadata().getTotalWidth() + mediaPreview.getMetadata().getVisibility() * Screen.dp(PADDING_SIZE)) + Screen.dp(getLinePadding());
+    return (int) (mediaPreview.getMetadata().getTotalWidth() + mediaPreview.getMetadata().getTotalVisibility() * Screen.dp(PADDING_SIZE)) + Screen.dp(getLinePadding());
   }
 
   private int contentInset;

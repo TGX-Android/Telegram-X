@@ -205,7 +205,7 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable, Text.T
     requestMedia(receiver, -1, -1);
   }
 
-  public void requestMedia (ComplexReceiver receiver, int startKey, int maxMediaCount) {
+  public void requestMedia (ComplexReceiver receiver, long startKey, long maxMediaCount) {
     Text text = getCurrent();
     if (text != null) {
       text.requestMedia(receiver, startKey, maxMediaCount);
