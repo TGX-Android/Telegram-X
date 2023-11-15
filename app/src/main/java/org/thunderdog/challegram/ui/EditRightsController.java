@@ -639,6 +639,9 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         if (!tdlib.canRestrictMembers(args.chatId)) {
           return null; // No need to explain
         }
+        if (tdlib.isBroadcastGroup(args.chatId)) {
+          return Lang.getMarkdownString(this, R.string.BroadcastWriteHint);
+        }
         if (currentValue)
           return null;
         TdApi.Chat chat = tdlib.chatStrict(args.chatId);
@@ -731,7 +734,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
             }
             break;
         }
-        return true;
+        return !tdlib.isBroadcastGroup(args.chatId);
       }
       return false;
     }
