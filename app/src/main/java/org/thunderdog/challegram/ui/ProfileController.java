@@ -2674,7 +2674,16 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       } else {
         ListItem descriptionItem = newDescriptionItem();
         setDescription();
-        addTopItem(descriptionItem, baseAdapter.indexOfViewById(R.id.btn_username) != -1 ? 1 : 0);
+
+        // Description is supposed to be below username, which is supposed to be below peer id
+        int cumulIndex = 0;
+        if (baseAdapter.indexOfViewById(R.id.btn_peer_id) != -1) {
+          cumulIndex++;
+        }
+        if (baseAdapter.indexOfViewById(R.id.btn_username) != -1) {
+          cumulIndex++;
+        }
+        addTopItem(descriptionItem, cumulIndex);
       }
     } else if (hasDescription) {
       if (setDescription()) {
