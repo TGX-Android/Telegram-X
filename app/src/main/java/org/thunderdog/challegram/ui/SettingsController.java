@@ -980,7 +980,7 @@ public class SettingsController extends ViewController<Void> implements
       navigateTo(c);
     } else if (viewId == R.id.btn_peer_id) {
       long myId = tdlib.myUserId(true);
-      if (myId!= 0) {
+      if (myId != 0) {
         UI.copyText(Long.toString(myId), R.string.CopiedMyUserId);
       }
     } else if (viewId == R.id.btn_languageSettings) {
