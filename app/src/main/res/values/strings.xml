@@ -4805,6 +4805,8 @@
 
   <string name="ReactionsPickerHeader">Reactions</string>
 
+  <string name="BroadcastWriteHint">Only admins can write messages in broadcast groups.</string>
+
   <string name="ShowXMoreEmoji_one">%1$s more</string>
   <string name="ShowXMoreEmoji_other">%1$s more</string>
 

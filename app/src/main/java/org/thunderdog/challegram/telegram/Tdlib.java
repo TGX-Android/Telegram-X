@@ -10471,6 +10471,22 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return false;
   }
 
+  public boolean canEditSlowMode (long chatId) {
+    if (canRestrictMembers(chatId)) {
+      TdApi.Supergroup supergroup = chatToSupergroup(chatId);
+      if (supergroup != null) {
+        return !supergroup.isChannel && !supergroup.isBroadcastGroup;
+      }
+      return ChatId.isBasicGroup(chatId) && canUpgradeChat(chatId);
+    }
+    return false;
+  }
+
+  public boolean isBroadcastGroup (long chatId) {
+    TdApi.Supergroup supergroup = chatToSupergroup(chatId);
+    return supergroup != null && supergroup.isBroadcastGroup;
+  }
+
   public boolean canDeleteMessages (long chatId) {
     TdApi.ChatMemberStatus status = chatStatus(chatId);
     if (status != null) {
