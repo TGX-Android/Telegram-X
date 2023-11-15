@@ -2350,11 +2350,15 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     int addedCount = 0;
     if (Settings.instance().showPeerIds()) {
       items.add(newPeerIdItem());
+      addedCount++;
     }
 
     if (Td.hasUsername(user)) {
       final ListItem usernameItem = newUsernameItem();
       if (usernameItem != null) {
+        if (addedCount > 0) {
+          items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+        }
         items.add(usernameItem);
         addedCount++;
       }
@@ -2898,11 +2902,15 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
     if (Settings.instance().showPeerIds()) {
       items.add(newPeerIdItem());
+      addedCount++;
     }
 
     if (isPublic) {
       ListItem usernameItem = newUsernameItem();
       if (usernameItem != null) {
+        if (addedCount > 0) {
+          items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+        }
         items.add(usernameItem);
         addedCount++;
       }
@@ -2979,11 +2987,15 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
     if (Settings.instance().showPeerIds()) {
       items.add(newPeerIdItem());
+      addedCount++;
     }
 
     if (isPublic) {
       ListItem usernameItem = newUsernameItem();
       if (usernameItem != null) {
+        if (addedCount > 0) {
+          items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+        }
         items.add(usernameItem);
         addedCount++;
       }
