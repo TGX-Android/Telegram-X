@@ -81,6 +81,7 @@ import org.thunderdog.challegram.util.text.TextWrapper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.widget.FrameLayoutFix;
@@ -569,6 +570,12 @@ public class SettingsController extends ViewController<Void> implements
           } else {
             view.setData("@" + myUsernames.editableUsername); // TODO multi-username support
           }
+        } else if (itemId == R.id.btn_peer_id) {
+          if (myId != null) {
+            view.setData(Long.toString(myId));
+          } else {
+            view.setData(R.string.LoadingInformation);
+          }
         } else if (itemId == R.id.btn_phone) {
           view.setData(myPhone);
         } else if (itemId == R.id.btn_bio) {
@@ -577,9 +584,6 @@ public class SettingsController extends ViewController<Void> implements
             text = TD.toFormattedText(Lang.getString(R.string.LoadingInformation), false);
           } else {
             TdApi.FormattedText about = SettingsController.this.about;
-            if (Settings.instance().showPeerIds()) {
-              about = tdlib.addServiceInformation(ChatId.fromUserId(tdlib.myUserId()), about);
-            }
             if (Td.isEmpty(about)) {
               text = TD.toFormattedText(Lang.getString(R.string.BioNone), false);
             } else {
@@ -596,6 +600,10 @@ public class SettingsController extends ViewController<Void> implements
     ArrayUtils.ensureCapacity(items, 27);
 
     items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET));
+    if (Settings.instance().showPeerIds()) {
+      items.add(new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_peer_id, R.drawable.baseline_code_24, R.string.UserId).setContentStrings(R.string.LoadingInformation, R.string.LoadingInformation));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+    }
     items.add(new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_username, R.drawable.baseline_alternate_email_24, R.string.Username).setContentStrings(R.string.LoadingUsername, R.string.SetUpUsername));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_phone, R.drawable.baseline_phone_24, R.string.Phone));
@@ -862,6 +870,9 @@ public class SettingsController extends ViewController<Void> implements
     }
     runOnUiThreadOptional(() -> {
       updateHeader();
+      if (setUserId(myUser)) {
+        adapter.updateValuedSettingById(R.id.btn_peer_id);
+      }
       if (setUsername(myUser)) {
         adapter.updateValuedSettingById(R.id.btn_username);
       }
@@ -877,6 +888,7 @@ public class SettingsController extends ViewController<Void> implements
     setBio(newBio);
   }
 
+  private @Nullable Long myId;
   private @Nullable TdApi.Usernames myUsernames;
   private String myPhone, originalPhoneNumber;
   private @Nullable TdApi.FormattedText about;
@@ -885,6 +897,13 @@ public class SettingsController extends ViewController<Void> implements
     TdApi.User user = tdlib.myUser();
     setUsername(user);
     setPhoneNumber(user);
+    setUserId(user);
+  }
+
+  private boolean setUserId(@Nullable TdApi.User myUser) {
+    Long oldId = myId;
+    myId = myUser != null ? myUser.id : null;
+    return !Objects.equals(oldId, myId);
   }
 
   private boolean setUsername (@Nullable TdApi.User myUser) {
@@ -974,6 +993,10 @@ public class SettingsController extends ViewController<Void> implements
       EditBioController c = new EditBioController(context, tdlib);
       c.setArguments(new EditBioController.Arguments(about != null ? about.text : "", 0));
       navigateTo(c);
+    } else if (viewId == R.id.btn_peer_id) {
+      if (myId != null) {
+        UI.copyText(Long.toString(myId), R.string.CopiedMyUserId);
+      }
     } else if (viewId == R.id.btn_languageSettings) {
       navigateTo(new SettingsLanguageController(context, tdlib));
     } else if (viewId == R.id.btn_notificationSettings) {

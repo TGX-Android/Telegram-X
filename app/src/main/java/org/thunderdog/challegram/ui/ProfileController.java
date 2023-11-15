@@ -765,6 +765,34 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     return tdlib.chatUsername(chat.id);
   }
 
+  private long getPeerId () {
+    return user != null ? user.id : secretChat != null ? secretChat.id : chat != null ? chat.id : 0;
+  }
+
+  private int getPeerTypeStringResourceId () {
+    if (user != null) {
+      if (user.type.getConstructor() == TdApi.UserTypeBot.CONSTRUCTOR) {
+        return R.string.BotId;
+      } else {
+        return R.string.UserId;
+      }
+    } else if (secretChat != null) {
+      return R.string.SecretChatId;
+    } else if (chat != null) {
+      if (isBasicGroup()) {
+        return R.string.BasicGroupId;
+      } else if (isSupergroup()) {
+        return R.string.SuperGroupId;
+      } else if (isChannel()) {
+        return R.string.ChannelId;
+      } else {
+        return R.string.ChatId;
+      }
+    } else {
+      return R.string.PeerId;
+    }
+  }
+
   @Override
   public boolean onOptionItemPressed (View optionItemView, int id) {
     if (id == R.id.btn_copyText) {
@@ -1684,6 +1712,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           view.setData(Lang.plural(R.string.xGroups, userFull.groupInCommonCount));
         } else if (itemId == R.id.btn_encryptionKey) {
           view.setData(R.string.PictureAndText);
+        } else if (itemId == R.id.btn_peer_id) {
+          view.setName(getPeerTypeStringResourceId());
+          view.setData(Long.toString(getPeerId()));
         } else if (itemId == R.id.btn_description) {
           view.setText(aboutWrapper);
           if (canEditDescription() && !hasDescription()) {
@@ -2240,9 +2271,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         text = null;
       }
     }
-    if (Settings.instance().showPeerIds()) {
-      text = tdlib.addServiceInformation(getChatId(), text);
-    }
     if (this.currentAbout == null || !Td.equalsTo(this.currentAbout, text)) {
       currentAbout = text;
       if (text != null) {
@@ -2294,6 +2322,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     return new ListItem(ListItem.TYPE_INFO_MULTILINE, R.id.btn_description, R.drawable.baseline_info_24, isUserMode() && !TD.isBot(user) ? R.string.UserBio : R.string.Description);
   }
 
+  private ListItem newPeerIdItem () {
+    return new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_peer_id, R.drawable.baseline_code_24, R.string.PeerId);
+  }
+
   private ListItem newEncryptionKeyItem () {
     return new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_encryptionKey, R.drawable.baseline_vpn_key_24, R.string.EncryptionKey);
   }
@@ -2308,6 +2340,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET));
 
     int addedCount = 0;
+    if (Settings.instance().showPeerIds()) {
+      items.add(newPeerIdItem());
+    }
+
     if (Td.hasUsername(user)) {
       final ListItem usernameItem = newUsernameItem();
       if (usernameItem != null) {
@@ -2592,7 +2628,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private boolean hasDescription () {
-    return !StringUtils.isEmpty(getDescriptionValue()) || Settings.instance().showPeerIds();
+    return !StringUtils.isEmpty(getDescriptionValue());
   }
 
   private boolean setDescription () {
@@ -2852,6 +2888,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
     int addedCount = 0;
 
+    if (Settings.instance().showPeerIds()) {
+      items.add(newPeerIdItem());
+    }
+
     if (isPublic) {
       ListItem usernameItem = newUsernameItem();
       if (usernameItem != null) {
@@ -2928,6 +2968,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET));
 
     int addedCount = 0;
+
+    if (Settings.instance().showPeerIds()) {
+      items.add(newPeerIdItem());
+    }
 
     if (isPublic) {
       ListItem usernameItem = newUsernameItem();
@@ -4506,6 +4550,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       tdlib.ui().handleProfileClick(this, v, v.getId(), user, false);
     } else if (viewId == R.id.btn_useExplicitDice) {
       Settings.instance().setNewSetting(((ListItem) v.getTag()).getLongId(), baseAdapter.toggleView(v));
+    } else if (viewId == R.id.btn_peer_id) {
+       UI.copyText(Long.toString(getPeerId()), R.string.CopiedPeerId);
     } else if (viewId == R.id.btn_username) {
       boolean canSetUsername = canSetUsername();
       boolean canInviteUsers = chat != null && tdlib.canManageInviteLinks(chat);
