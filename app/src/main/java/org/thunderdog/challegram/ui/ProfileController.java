@@ -3752,7 +3752,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.HideMembersDesc));
     }
 
-    if (tdlib.canRestrictMembers(chat.id) && (tdlib.isSupergroup(chat.id) || (ChatId.isBasicGroup(chat.id) && tdlib.canUpgradeChat(chat.id)))) {
+    if (tdlib.canEditSlowMode(chat.id)) {
       int slowModeValue = supergroupFull != null ? supergroupFull.slowModeDelay : 0;
       items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.SlowMode));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
