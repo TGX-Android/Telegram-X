@@ -571,11 +571,7 @@ public class SettingsController extends ViewController<Void> implements
             view.setData("@" + myUsernames.editableUsername); // TODO multi-username support
           }
         } else if (itemId == R.id.btn_peer_id) {
-          if (myId != null) {
-            view.setData(Long.toString(myId));
-          } else {
-            view.setData(R.string.LoadingInformation);
-          }
+          view.setData(Long.toString(tdlib.myUserId(true)));
         } else if (itemId == R.id.btn_phone) {
           view.setData(myPhone);
         } else if (itemId == R.id.btn_bio) {
@@ -870,9 +866,6 @@ public class SettingsController extends ViewController<Void> implements
     }
     runOnUiThreadOptional(() -> {
       updateHeader();
-      if (setUserId(myUser)) {
-        adapter.updateValuedSettingById(R.id.btn_peer_id);
-      }
       if (setUsername(myUser)) {
         adapter.updateValuedSettingById(R.id.btn_username);
       }
@@ -888,7 +881,6 @@ public class SettingsController extends ViewController<Void> implements
     setBio(newBio);
   }
 
-  private @Nullable Long myId;
   private @Nullable TdApi.Usernames myUsernames;
   private String myPhone, originalPhoneNumber;
   private @Nullable TdApi.FormattedText about;
@@ -897,13 +889,6 @@ public class SettingsController extends ViewController<Void> implements
     TdApi.User user = tdlib.myUser();
     setUsername(user);
     setPhoneNumber(user);
-    setUserId(user);
-  }
-
-  private boolean setUserId(@Nullable TdApi.User myUser) {
-    Long oldId = myId;
-    myId = myUser != null ? myUser.id : null;
-    return !Objects.equals(oldId, myId);
   }
 
   private boolean setUsername (@Nullable TdApi.User myUser) {
@@ -994,7 +979,8 @@ public class SettingsController extends ViewController<Void> implements
       c.setArguments(new EditBioController.Arguments(about != null ? about.text : "", 0));
       navigateTo(c);
     } else if (viewId == R.id.btn_peer_id) {
-      if (myId != null) {
+      long myId = tdlib.myUserId(true);
+      if (myId!= 0) {
         UI.copyText(Long.toString(myId), R.string.CopiedMyUserId);
       }
     } else if (viewId == R.id.btn_languageSettings) {
