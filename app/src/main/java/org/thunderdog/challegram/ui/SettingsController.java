@@ -81,7 +81,6 @@ import org.thunderdog.challegram.util.text.TextWrapper;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.widget.FrameLayoutFix;
