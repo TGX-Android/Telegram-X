@@ -4883,8 +4883,6 @@
   <string name="ChatId">Chat ID</string>
   <string name="BasicGroupId">Basic Group ID</string>
   <string name="SuperGroupId">Supergroup ID</string>
-  <string name="MegaGroupId">MegaGroup ID</string>
-  <string name="GigaGroupId">GigaGroup ID</string>
   <string name="ChannelId">Channel ID</string>
 
 </resources>
