@@ -766,27 +766,35 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private long getPeerId () {
-    return user != null ? user.id : secretChat != null ? secretChat.id : chat != null ? chat.id : 0;
+    if (secretChat != null) {
+      return secretChat.id;
+    } else if (group != null) {
+      return group.id;
+    } else if (supergroup != null) {
+      return supergroup.id;
+    } else if (user != null) {
+      return user.id;
+    } else {
+      return 0;
+    }
   }
 
   private int getPeerTypeStringResourceId () {
-    if (user != null) {
+    if (secretChat != null) {
+      return R.string.SecretChatId;
+    } else if (group != null) {
+      return R.string.BasicGroupId;
+    } else if (supergroup != null) {
+      if (isChannel()) {
+        return R.string.ChannelId;
+      } else {
+        return R.string.SuperGroupId;
+      }
+    } else if (user != null) {
       if (user.type.getConstructor() == TdApi.UserTypeBot.CONSTRUCTOR) {
         return R.string.BotId;
       } else {
         return R.string.UserId;
-      }
-    } else if (secretChat != null) {
-      return R.string.SecretChatId;
-    } else if (chat != null) {
-      if (isBasicGroup()) {
-        return R.string.BasicGroupId;
-      } else if (isSupergroup()) {
-        return R.string.SuperGroupId;
-      } else if (isChannel()) {
-        return R.string.ChannelId;
-      } else {
-        return R.string.ChatId;
       }
     } else {
       return R.string.PeerId;
