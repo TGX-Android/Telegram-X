@@ -57,6 +57,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.MessageId;
+import me.vkryl.td.Td;
 
 public class PinnedMessagesBar extends ViewGroup implements Destroyable, MessageListManager.ChangeListener, View.OnClickListener {
   private CustomRecyclerView recyclerView;
@@ -80,6 +81,8 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
 
   private int lastKnownViewHeight;
 
+  private final RecyclerView.ItemAnimator itemAnimator = new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
+
   public PinnedMessagesBar (@NonNull Context context) {
     super(context);
 
@@ -100,7 +103,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     addView(showAllButton);
 
     recyclerView = (CustomRecyclerView) Views.inflate(context, R.layout.recycler_custom, null);
-    recyclerView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180l));
+    recyclerView.setItemAnimator(itemAnimator);
     recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? RecyclerView.OVER_SCROLL_IF_CONTENT_SCROLLS : RecyclerView.OVER_SCROLL_NEVER);
     recyclerView.setVerticalScrollBarEnabled(false);
     Views.setScrollBarPosition(recyclerView);
@@ -108,15 +111,19 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     recyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
       @Override
       public void onDrawOver (@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
-        if (messagesAdapter.getItems().isEmpty())
+        if (messagesAdapter.getItems().isEmpty()) {
+          setOverScrollDisabled(true);
           return;
+        }
 
         int viewportHeight = getRecyclerHeight();
 
         int itemHeight = SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW);
         int scrollItemCount = messageList != null ? messageList.getTotalCount() : messagesAdapter.getItems().size();
-        if (scrollItemCount <= 0)
+        if (scrollItemCount <= 0) {
+          setOverScrollDisabled(true);
           return;
+        }
 
         final float alpha = 1f;
         float focusPosition = getFocusPosition();
@@ -149,6 +156,8 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
 
         final int fromPosition = Math.max(0, (int) (focusPosition - Math.ceil(visibleLineCount * scrollFactor)));
         final int toPosition = Math.min(scrollItemCount, (int) Math.ceil(focusPosition) + visibleLineCount + 1);
+
+        setOverScrollDisabled(fromPosition == 0 && toPosition == scrollItemCount);
 
         RectF rectF = Paints.getRectF();
 
@@ -218,6 +227,12 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     setWillNotDraw(false);
   }
 
+  private boolean ignoreAlbums;
+
+  public void setIgnoreAlbums (boolean ignoreAlbums) {
+    this.ignoreAlbums = ignoreAlbums;
+  }
+
   public void setCollapseButtonVisible (boolean isVisible) {
     collapseButton.setVisibility(isVisible ? View.VISIBLE : View.GONE);
     updateContentInsets();
@@ -226,7 +241,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
   public void setAnimationsDisabled (boolean animationsDisabled) {
     if (this.animationsDisabled != animationsDisabled) {
       this.animationsDisabled = animationsDisabled;
-      recyclerView.setItemAnimator(animationsDisabled ? null : new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180l));
+      recyclerView.setItemAnimator(animationsDisabled ? null : itemAnimator);
     }
   }
 
@@ -271,6 +286,15 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     }
   }
 
+  private boolean overScrollDisabled;
+
+  private void setOverScrollDisabled (boolean isDisabled) {
+    if (this.overScrollDisabled != isDisabled) {
+      this.overScrollDisabled = isDisabled;
+      recyclerView.setOverScrollMode(isDisabled ? RecyclerView.OVER_SCROLL_NEVER : RecyclerView.OVER_SCROLL_IF_CONTENT_SCROLLS);
+    }
+  }
+
   @CallSuper
   protected void onViewportChanged () {
     updateContentInsets();
@@ -305,15 +329,6 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
       float expand = getExpandFactor();
       if (expand == 1f || expand == 0f) {
         updateContentInsets();
-        /*LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
-        int first = manager.findFirstVisibleItemPosition();
-        int last = manager.findLastCompletelyVisibleItemPosition();
-        if (first > 0) {
-          messagesAdapter.notifyItemRangeChanged(0, first);
-        }
-        if (last < messagesAdapter.getItemCount()) {
-          messagesAdapter.notifyItemRangeChanged(last + 1, messagesAdapter.getItemCount() - (last + 1));
-        }*/
       }
     }
   }
@@ -326,9 +341,15 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     int newHeight = getTotalHeight();
     super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(newHeight, MeasureSpec.EXACTLY));
+    int horizontalPadding = getPaddingLeft() + getPaddingRight();
+    if (horizontalPadding != 0) {
+      int width = getDefaultSize(getSuggestedMinimumWidth(), widthMeasureSpec) - horizontalPadding;
+      widthMeasureSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY);
+    }
     recyclerView.measure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(getRecyclerHeight(), MeasureSpec.EXACTLY));
-    collapseButton.measure(MeasureSpec.makeMeasureSpec(Screen.dp(40f), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(MathUtils.fromTo(SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW), Screen.dp(36f), getExpandFactor()), MeasureSpec.EXACTLY));
     showAllButton.measure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Screen.dp(36f), MeasureSpec.EXACTLY));
+
+    collapseButton.measure(MeasureSpec.makeMeasureSpec(Screen.dp(40f), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(MathUtils.fromTo(SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW), Screen.dp(36f), getExpandFactor()), MeasureSpec.EXACTLY));
     if (newHeight != lastKnownViewHeight) {
       lastKnownViewHeight = newHeight;
       onViewportChanged();
@@ -337,6 +358,8 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
 
   @Override
   protected void onLayout (boolean changed, int l, int t, int r, int b) {
+    l += getPaddingLeft();
+    r -= getPaddingRight();
     showAllButton.layout(l, b - Screen.dp(36f), r, b);
     recyclerView.layout(l, t, r, getRecyclerHeight());
     collapseButton.layout(r - collapseButton.getMeasuredWidth(), b - collapseButton.getMeasuredHeight(), r, b);
@@ -361,21 +384,39 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
   public void initialize (@NonNull ViewController<?> viewController) {
     messageViewport = viewController.tdlib().messageViewer().createViewport(new TdApi.MessageSourceSearch(), viewController);
     messagesAdapter = new SettingsAdapter(viewController, this, viewController) {
+      @Nullable
+      @Override
+      protected View createModifiedView (ViewGroup parent, int viewType, View view) {
+        if (viewType == ListItem.TYPE_MESSAGE_PREVIEW && messageListener != null) {
+          messageListener.onCreateMessagePreview(PinnedMessagesBar.this, (MessagePreviewView) view);
+        }
+        return null;
+      }
+
       @Override
       protected void setMessagePreview (ListItem item, int position, MessagePreviewView previewView) {
         DataHolder data = (DataHolder) item.getData();
-        TdApi.Message message = data.message;
-        previewView.setMessage(message, new TdApi.SearchMessagesFilterPinned(), item.getStringValue(), false);
-        if (messageList == null) {
-          // override message preview
-          MessageId highlightMessageId;
-          //noinspection ConstantConditions
-          if (viewController.tdlib().isChannelAutoForward(message) && message.forwardInfo.fromChatId == contextChatId) {
-            highlightMessageId = new MessageId(message.forwardInfo.fromChatId, message.forwardInfo.fromMessageId);
-          } else {
-            highlightMessageId = new MessageId(message.chatId, message.id);
+        if (data.message != null) {
+          TdApi.Message message = data.message;
+          TdApi.FormattedText quote = data.quote;
+          previewView.setMessage(message, quote, new TdApi.SearchMessagesFilterPinned(), item.getStringValue(), ignoreAlbums ? MessagePreviewView.Options.IGNORE_ALBUM_REFRESHERS : MessagePreviewView.Options.NONE);
+          if (messageList == null) {
+            // override message preview
+            MessageId highlightMessageId;
+            //noinspection ConstantConditions
+            if (data.tdlib.isChannelAutoForward(message) && message.forwardInfo.fromChatId == contextChatId) {
+              highlightMessageId = new MessageId(message.forwardInfo.fromChatId, message.forwardInfo.fromMessageId);
+            } else {
+              highlightMessageId = new MessageId(message.chatId, message.id);
+            }
+            previewView.setPreviewChatId(null, highlightMessageId.getChatId(), null, highlightMessageId, null);
           }
-          previewView.setPreviewChatId(null, highlightMessageId.getChatId(), null, highlightMessageId, null);
+          if (messageListener != null) {
+            messageListener.onMessageDisplayed(PinnedMessagesBar.this, previewView, message);
+          }
+        } else {
+          // TODO web preview
+          previewView.clear();
         }
         updateContentInset(previewView, position);
       }
@@ -438,9 +479,11 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
   }
 
   public interface MessageListener {
-    void onMessageClick (PinnedMessagesBar view, TdApi.Message message);
-    void onDismissRequest (PinnedMessagesBar view);
-    void onShowAllRequest (PinnedMessagesBar view);
+    void onMessageClick (PinnedMessagesBar view, TdApi.Message message, @Nullable TdApi.FormattedText quote);
+    default void onDismissRequest (PinnedMessagesBar view) { }
+    default void onShowAllRequest (PinnedMessagesBar view) { }
+    default void onCreateMessagePreview (PinnedMessagesBar view, MessagePreviewView previewView) { }
+    default void onMessageDisplayed (PinnedMessagesBar view, MessagePreviewView previewView, TdApi.Message message) { }
   }
 
   private MessageListener messageListener;
@@ -455,7 +498,11 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
       ListItem item = ((ListItem) v.getTag());
       DataHolder data = (DataHolder) item.getData();
       if (messageListener != null) {
-        messageListener.onMessageClick(this, data.message);
+        if (data.message != null) {
+          messageListener.onMessageClick(this, data.message, data.quote);
+        } else {
+          // TODO
+        }
       }
     }
   }
@@ -490,6 +537,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
 
   private long contextChatId;
   private @Nullable TdApi.Message singleMessage;
+  private @Nullable TdApi.FormattedText singleMessageQuote;
   private @Nullable MessageListManager messageList;
 
   public void collapse (boolean animated) {
@@ -501,9 +549,9 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
       return;
     if (this.messageList != null) {
       this.messageList.removeChangeListener(this);
-      this.messageList = null;
     }
     this.singleMessage = null;
+    this.singleMessageQuote = null;
     this.messageList = messageList;
     collapse(false);
     canExpand.setValue(messageList != null && messageList.getTotalCount() > 1, false);
@@ -522,7 +570,11 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
   }
 
   public void setMessage (@Nullable Tdlib tdlib, @Nullable TdApi.Message message) {
-    if (this.singleMessage == message) {
+    setMessage(tdlib, message, null);
+  }
+
+  public void setMessage (@Nullable Tdlib tdlib, @Nullable TdApi.Message message, @Nullable TdApi.FormattedText quote) {
+    if (this.singleMessage == message && Td.equalsTo(singleMessageQuote, quote)) {
       return;
     }
     if (this.messageList != null) {
@@ -530,11 +582,12 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
       this.messageList = null;
     }
     this.singleMessage = message;
+    this.singleMessageQuote = quote;
     collapse(false);
     canExpand.setValue(false, false);
     countAnimator.forceFactor(0);
     if (tdlib != null && message != null) {
-      messagesAdapter.setItems(new ListItem[] {itemOf(tdlib, message)}, false);
+      messagesAdapter.setItems(new ListItem[] {itemOf(tdlib, message, quote)}, false);
     } else {
       messagesAdapter.setItems(new ListItem[0], false);
     }
@@ -557,17 +610,23 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
   private static class DataHolder {
     private final Tdlib tdlib;
     private final TdApi.Message message;
+    private final @Nullable TdApi.FormattedText quote;
     private final TdlibAccentColor accentColor;
 
-    public DataHolder (Tdlib tdlib, TdApi.Message message) {
+    public DataHolder (Tdlib tdlib, TdApi.Message message, @Nullable TdApi.FormattedText quote) {
       this.tdlib = tdlib;
       this.message = message;
+      this.quote = quote;
       this.accentColor = tdlib.messageAccentColor(message);
     }
   }
 
   private static ListItem itemOf (Tdlib tdlib, TdApi.Message message) {
-    return new ListItem(ListItem.TYPE_MESSAGE_PREVIEW, R.id.message).setData(new DataHolder(tdlib, message));
+    return itemOf(tdlib, message, null);
+  }
+
+  private static ListItem itemOf (Tdlib tdlib, TdApi.Message message, @Nullable TdApi.FormattedText quote) {
+    return new ListItem(ListItem.TYPE_MESSAGE_PREVIEW, R.id.message).setData(new DataHolder(tdlib, message, quote));
   }
 
   @Override

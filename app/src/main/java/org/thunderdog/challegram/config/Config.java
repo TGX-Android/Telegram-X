@@ -313,4 +313,5 @@ public class Config {
 
   public static final boolean KEEP_ORIGINAL_EMOJI_WHEN_INPUT_CUSTOM_EMOJI = true;
   public static final boolean FORCE_REPLY_WHEN_FORWARDING_WITH_COMMENT = false;
+  public static final boolean DEBUG_VIEW_MESSAGES = false;
 }

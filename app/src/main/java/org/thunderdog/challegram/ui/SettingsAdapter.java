@@ -35,7 +35,6 @@ import androidx.collection.SparseArrayCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.charts.BaseChartView;
 import org.thunderdog.challegram.charts.Chart;
@@ -1318,7 +1317,8 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
   // adapter stuff
 
   @Override
-  public SettingHolder onCreateViewHolder (ViewGroup parent, int viewType) {
+  @NonNull
+  public SettingHolder onCreateViewHolder (@NonNull ViewGroup parent, int viewType) {
     switch (viewType) {
       case ListItem.TYPE_CUSTOM_SINGLE: {
         return initCustom(parent);
@@ -1329,7 +1329,19 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         }
       }
     }
-    return SettingHolder.create(context, tdlib, viewType, this, onClickListener, onLongClickListener, themeProvider, innerOnScrollListener, clickHelperDelegate);
+    SettingHolder holder = SettingHolder.create(context, tdlib, viewType, this, onClickListener, onLongClickListener, themeProvider, innerOnScrollListener, clickHelperDelegate);
+    View modifiedView = createModifiedView(parent, viewType, holder.itemView);
+    if (modifiedView != null) {
+      SettingHolder modifiedHolder = new SettingHolder(modifiedView);
+      modifiedHolder.setIsRecyclable(holder.isRecyclable());
+      return modifiedHolder;
+    }
+    return holder;
+  }
+
+  protected @Nullable View createModifiedView (ViewGroup parent, int viewType, View view) {
+    // Must be consistent for the adapter instance (not per-item).
+    return null;
   }
 
   @Override

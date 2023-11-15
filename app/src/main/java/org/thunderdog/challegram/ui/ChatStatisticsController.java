@@ -187,7 +187,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
         }
 
         RippleSupport.setSimpleWhiteBackground(previewView);
-        previewView.setMessage(container.message, null, statString.toString(), false);
+        previewView.setMessage(container.message, null, statString.toString(), MessagePreviewView.Options.NONE);
         previewView.setContentInset(Screen.dp(8));
       }
 

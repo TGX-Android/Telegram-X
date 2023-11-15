@@ -18,9 +18,11 @@ import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.ViewGroup;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.loader.ComplexReceiver;
@@ -35,6 +37,8 @@ import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
@@ -46,6 +50,8 @@ import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.widget.AttachDelegate;
 import org.thunderdog.challegram.widget.BaseView;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.List;
 
 import me.vkryl.android.AnimatorUtils;
@@ -54,6 +60,7 @@ import me.vkryl.android.animator.ReplaceAnimator;
 import me.vkryl.android.util.SingleViewProvider;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.MessageId;
@@ -61,13 +68,25 @@ import me.vkryl.td.Td;
 
 public class MessagePreviewView extends BaseView implements AttachDelegate, Destroyable, ChatListener, MessageListener, TdlibCache.UserDataChangeListener, TGLegacyManager.EmojiLoadListener, TdlibUi.MessageProvider {
   private static class TextEntry extends ListAnimator.MeasurableEntry<Text> implements Destroyable {
-    public Drawable drawable;
+    public final Drawable drawable;
     public ComplexReceiver receiver;
+    public TdlibAccentColor accentColor;
 
-    public TextEntry (Text text, Drawable drawable, ComplexReceiver receiver) {
+    public TextEntry (Text text, Drawable drawable, ComplexReceiver receiver, TdlibAccentColor accentColor) {
       super(text);
       this.drawable = drawable;
       this.receiver = receiver;
+      this.accentColor = accentColor;
+    }
+
+    public @PorterDuffColorId int getNameColorId (@PorterDuffColorId int fallbackColorId) {
+      if (accentColor != null) {
+        long complexColor = accentColor.getNameComplexColor();
+        if (Theme.isColorId(complexColor)) {
+          return Theme.extractColorValue(complexColor);
+        }
+      }
+      return fallbackColorId;
     }
 
     @Override
@@ -106,14 +125,33 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   private final ViewProvider viewProvider = new SingleViewProvider(this);
 
   private TdApi.Message message;
+  private @Nullable TdApi.FormattedText messageQuote;
   private String forcedTitle;
-  private boolean ignoreAlbumRefreshers, useAvatarFallback;
+  private boolean useAvatarFallback;
+  private int displayOptions;
+
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef(value = {
+    Options.NONE,
+    Options.IGNORE_ALBUM_REFRESHERS,
+    Options.DISABLE_MESSAGE_PREVIEW
+  }, flag = true)
+  public @interface Options {
+    int
+      NONE = 0,
+      IGNORE_ALBUM_REFRESHERS = 1,
+      DISABLE_MESSAGE_PREVIEW = 1 << 1;
+  }
 
   private ContentPreview contentPreview;
 
-  public void setMessage (@Nullable TdApi.Message message, @Nullable TdApi.SearchMessagesFilter filter, @Nullable String forcedTitle, boolean ignoreAlbumRefreshers) {
-    this.ignoreAlbumRefreshers = ignoreAlbumRefreshers;
-    if (this.message == message) {
+  public void setMessage (@Nullable TdApi.Message message, @Nullable TdApi.SearchMessagesFilter filter, @Nullable String forcedTitle, @Options int options) {
+    setMessage(message, null, filter, forcedTitle, options);
+  }
+
+  public void setMessage (@Nullable TdApi.Message message, @Nullable TdApi.FormattedText quote, @Nullable TdApi.SearchMessagesFilter filter, @Nullable String forcedTitle, @Options int options) {
+    this.displayOptions = options;
+    if (this.message == message && Td.equalsTo(this.messageQuote, quote)) {
       setForcedTitle(forcedTitle);
       return;
     }
@@ -121,16 +159,20 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
       unsubscribeFromUpdates(this.message);
     }
     this.message = message;
+    this.messageQuote = quote;
     this.forcedTitle = forcedTitle;
     if (message != null) {
       subscribeToUpdates(message);
       buildPreview();
-      setPreviewChatId(null, message.chatId, null, new MessageId(message.chatId, message.id), filter);
     } else {
-      clearPreviewChat();
       this.contentPreview = null;
       this.mediaPreview.replace(null, false);
       this.mediaPreview.measure(false);
+    }
+    if (message != null && BitwiseUtils.hasFlag(options, Options.DISABLE_MESSAGE_PREVIEW)) {
+      setPreviewChatId(null, message.chatId, null, new MessageId(message.chatId, message.id), filter);
+    } else {
+      clearPreviewChat();
     }
     invalidate();
   }
@@ -146,7 +188,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     this.useAvatarFallback = useAvatarFallback;
   }
 
-  private final ReplaceAnimator<Text> titleText = new ReplaceAnimator<>(ignored -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
+  private final ReplaceAnimator<TextEntry> titleText = new ReplaceAnimator<>(ignored -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
   private final ReplaceAnimator<TextEntry> contentText = new ReplaceAnimator<>(ignored -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
   private final ReplaceAnimator<MediaEntry> mediaPreview = new ReplaceAnimator<>(ignored -> {
     buildText(true);
@@ -172,8 +214,12 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   }
 
   private void buildPreview () {
-    this.contentPreview = ContentPreview.getChatListPreview(tdlib, message.chatId, message, true);
-    if (contentPreview.hasRefresher() && !(ignoreAlbumRefreshers && contentPreview.isMediaGroup())) {
+    if (messageQuote != null) {
+      this.contentPreview = new ContentPreview(messageQuote, false);
+    } else {
+      this.contentPreview = ContentPreview.getChatListPreview(tdlib, message.chatId, message, true);
+    }
+    if (contentPreview.hasRefresher() && !(BitwiseUtils.hasFlag(displayOptions, Options.IGNORE_ALBUM_REFRESHERS) && contentPreview.isMediaGroup())) {
       contentPreview.refreshContent((chatId, messageId, newPreview, oldPreview) -> {
         tdlib.runOnUiThread(() -> {
           if (this.contentPreview == oldPreview) {
@@ -227,8 +273,8 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
       this.lastTextWidth = textWidth;
       if (textWidth > 0) {
         if (isLayout && !titleText.isEmpty()) {
-          for (ListAnimator.Entry<Text> entry : titleText) {
-            entry.item.changeMaxWidth(textWidth);
+          for (ListAnimator.Entry<TextEntry> entry : titleText) {
+            entry.item.content.changeMaxWidth(textWidth);
           }
         } else {
           buildTitleText(textWidth, false);
@@ -303,9 +349,27 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     return !StringUtils.isEmpty(forcedTitle) || (message != null && Td.getMessageAuthorId(message, true) != 0);
   }
 
+  private static final float CORNER_PADDING = 3f;
+
   private void buildTitleText (int availWidth, boolean animated) {
     String title = getTitle();
     TdlibAccentColor accentColor = getAccentColor();
+
+    Drawable drawable;
+    if (messageQuote != null) {
+      @ColorId int colorId = ColorId.messageAuthor;
+      if (accentColor != null) {
+        long complexColor = accentColor.getNameComplexColor();
+        if (Theme.isColorId(complexColor)) {
+          colorId = Theme.extractColorValue(complexColor);
+        }
+      }
+      drawable = getSparseDrawable(R.drawable.baseline_format_quote_close_16, colorId);
+      availWidth -= drawable.getMinimumWidth() + Screen.dp(CORNER_PADDING);
+    } else {
+      drawable = null;
+    }
+
     Text newText;
     if (!StringUtils.isEmpty(title)) {
       newText = new Text.Builder(tdlib,
@@ -325,7 +389,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     } else {
       newText = null;
     }
-    this.titleText.replace(newText, animated);
+    this.titleText.replace(newText != null || drawable != null ? new TextEntry(newText, drawable, null, accentColor) : null, animated);
   }
 
   private void updateContentText () {
@@ -371,7 +435,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
       newText = null;
       receiver = null;
     }
-    this.contentText.replace(newText != null || iconRes != 0 ? new TextEntry(newText, getSparseDrawable(iconRes, ColorId.icon), receiver) : null, animated);
+    this.contentText.replace(newText != null || iconRes != 0 ? new TextEntry(newText, getSparseDrawable(iconRes, ColorId.icon), receiver, null) : null, animated);
   }
 
   @Override
@@ -391,8 +455,19 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
       entry.item.content.draw(this, c, entry.item.receiver, textX - entry.item.content.getWidth() - Screen.dp(PADDING_SIZE), (SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW) - Screen.dp(IMAGE_HEIGHT)) / 2f, entry.getVisibility());
     }
     int contextTextY = Screen.dp(7f) + Screen.dp(TEXT_SIZE) + Screen.dp(5f);
-    for (ListAnimator.Entry<Text> entry : titleText) {
-      entry.item.draw(c, textX, Screen.dp(7f), null, entry.getVisibility());
+    for (ListAnimator.Entry<TextEntry> entry : titleText) {
+      int titleY = Screen.dp(7f);
+      if (entry.item.content != null) {
+        entry.item.content.draw(c, textX, titleY, null, entry.getVisibility());
+      }
+      if (entry.item.drawable != null) {
+        float textCenterY = titleY + (entry.item.content != null ? entry.item.content.getLineHeight(false) : Screen.dp(TEXT_SIZE)) / 2f;
+        float iconX = textX + Math.max(
+          (entry.item.content != null ? entry.item.content.getWidth() + Screen.dp(CORNER_PADDING) : 0),
+          contentText.getMetadata().getTotalWidth() - entry.item.drawable.getMinimumWidth()
+        );
+        Drawables.draw(c, entry.item.drawable, iconX, textCenterY - entry.item.drawable.getMinimumHeight() / 2f, PorterDuffPaint.get(entry.item.getNameColorId(ColorId.messageAuthor), entry.getVisibility()));
+      }
     }
     for (ListAnimator.Entry<TextEntry> entry : contentText) {
       if (entry.item.drawable != null) {
@@ -523,9 +598,13 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     }
   }
 
+  public void clear () {
+    setMessage(null, null, null, Options.NONE);
+  }
+
   @Override
   public void performDestroy () {
-    setMessage(null, null, null, false);
+    clear();
     TGLegacyManager.instance().removeEmojiListener(this);
   }
 

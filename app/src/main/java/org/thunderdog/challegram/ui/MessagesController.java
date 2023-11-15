@@ -14,9 +14,6 @@
  */
 package org.thunderdog.challegram.ui;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
-import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
@@ -115,7 +112,7 @@ import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.chat.MessagesSearchManagerMiddleware;
 import org.thunderdog.challegram.component.chat.PinnedMessagesBar;
 import org.thunderdog.challegram.component.chat.RaiseHelper;
-import org.thunderdog.challegram.component.chat.ReplyView;
+import org.thunderdog.challegram.component.chat.ReplyBarView;
 import org.thunderdog.challegram.component.chat.SilentButton;
 import org.thunderdog.challegram.component.chat.StickerSuggestionAdapter;
 import org.thunderdog.challegram.component.chat.TdlibSingleUnreadReactionsManager;
@@ -286,7 +283,7 @@ import me.vkryl.td.TdConstants;
 public class MessagesController extends ViewController<MessagesController.Arguments> implements
   Menu, Unlockable, View.OnClickListener,
   ActivityResultHandler, MoreDelegate, CommandKeyboardLayout.Callback, MediaCollectorDelegate, SelectDelegate,
-  ReplyView.Callback, RaiseHelper.Listener, VoiceInputView.Callback,
+  ReplyBarView.Callback, RaiseHelper.Listener, VoiceInputView.Callback,
   TGLegacyManager.EmojiLoadListener, ChatHeaderView.Callback,
   ChatListener, NotificationSettingsListener, EmojiLayout.Listener,
   MessageThreadListener, TdlibSingleUnreadReactionsManager.UnreadSingleReactionListener,
@@ -315,7 +312,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private int flags;
-  private static final int FLAG_REPLY_ANIMATING = 0x01;
 
   private @Nullable TdApi.Chat chat;
   private @Nullable TdApi.ChatList openedFromChatList;
@@ -729,12 +725,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
     params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48f));
     params.addRule(RelativeLayout.ALIGN_TOP, R.id.msg_bottom);
 
-    replyView = new ReplyView(context(), tdlib);
-    ViewSupport.setThemedBackground(replyView, ColorId.filling, this);
-    replyView.setId(R.id.msg_bottomReply);
-    replyView.initWithCallback(this, this);
-    replyView.setOnClickListener(this);
-    replyView.setLayoutParams(params);
+    replyBarView = new ReplyBarView(context(), tdlib);
+    ViewSupport.setThemedBackground(replyBarView, ColorId.filling, this);
+    replyBarView.setId(R.id.msg_bottomReply);
+    replyBarView.setAnimationsDisabled(true);
+    replyBarView.initWithCallback(this, this);
+    replyBarView.setOnClickListener(this);
+    replyBarView.setLayoutParams(params);
 
     params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
     params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
@@ -814,7 +811,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     pinnedMessagesBar.initialize(this);
     pinnedMessagesBar.setMessageListener(new PinnedMessagesBar.MessageListener() {
       @Override
-      public void onMessageClick (PinnedMessagesBar view, TdApi.Message message) {
+      public void onMessageClick (PinnedMessagesBar view, TdApi.Message message, TdApi.FormattedText quote) {
         highlightMessage(new MessageId(message.chatId, message.id));
       }
 
@@ -1363,7 +1360,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       contentView.addView(wallpaperViewBlurPreview);
     }
     if (!inPreviewMode) {
-      contentView.addView(replyView);
+      contentView.addView(replyBarView);
     }
     contentView.addView(bottomWrap);
     contentView.addView(messagesView);
@@ -1911,8 +1908,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     } else if (viewId == R.id.btn_viewScheduled) {
       viewScheduledMessages(false);
     } else if (viewId == R.id.msg_bottomReply) {
-      if (replyMessage != null) {
-        highlightMessage(new MessageId(replyMessage.chatId, replyMessage.id));
+      if (reply != null) {
+        highlightMessage(reply.toMessageId());
       }
     } else if (viewId == R.id.btn_mute) {
       if (chat != null) {
@@ -3142,7 +3139,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (visible) {
       bottomWrap.setVisibility(View.VISIBLE);
       bottomShadowView.setVisibility(View.VISIBLE);
-      replyView.setVisibility(View.VISIBLE);
+      replyBarView.setVisibility(View.VISIBLE);
       emojiButton.setVisibility(View.VISIBLE);
       if (notEmpty) {
         attachButtons.setVisibility(View.INVISIBLE);
@@ -3158,7 +3155,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     } else {
       hideActionButton();
       bottomWrap.setVisibility(View.GONE);
-      replyView.setVisibility(View.GONE);
+      replyBarView.setVisibility(View.GONE);
       bottomShadowView.setVisibility(View.GONE);
       emojiButton.setVisibility(View.GONE);
       attachButtons.setVisibility(View.GONE);
@@ -3179,8 +3176,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       emojiScheduled = true;
       return;
     }
-    if (replyView != null) {
-      replyView.invalidate();
+    if (replyBarView != null) {
+      replyBarView.invalidate();
     }
     if (messagesView != null) {
       LinearLayoutManager manager = (LinearLayoutManager) messagesView.getLayoutManager();
@@ -4125,10 +4122,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       if (pinnedMessagesBar != null)
         pinnedMessagesBar.completeDestroy();
+      if (replyBarView != null)
+        replyBarView.completeDestroy();
       if (topBar != null)
         topBar.performDestroy();
-      if (replyView != null)
-        replyView.performDestroy();
+      if (replyBarView != null)
+        replyBarView.performDestroy();
       recordButton.performDestroy();
       if (inputView != null)
         inputView.performDestroy();
@@ -6048,8 +6047,32 @@ public class MessagesController extends ViewController<MessagesController.Argume
     showMessagesListIfNeeded();
   }
 
-  private TdApi.Message replyMessage;
-  private ReplyView replyView;
+  private static class ReplyInfo {
+    public final Tdlib tdlib;
+    public final TdApi.Message message;
+    public final @Nullable TdApi.FormattedText quote;
+
+    public ReplyInfo (Tdlib tdlib, TdApi.Message message, @Nullable TdApi.FormattedText quote) {
+      this.tdlib = tdlib;
+      this.message = message;
+      this.quote = quote;
+    }
+
+    public MessageId toMessageId () {
+      return new MessageId(message.chatId, message.id);
+    }
+
+    public TdApi.InputMessageReplyToMessage toInputMessageReply (long inChatId) {
+      long chatId = message.chatId;
+      if (inChatId == chatId && !tdlib.forceExternalReply(chatId)) {
+        chatId = 0;
+      }
+      return new TdApi.InputMessageReplyToMessage(chatId, message.id, quote);
+    }
+  }
+
+  private ReplyInfo reply;
+  private ReplyBarView replyBarView;
 
   private CollapseListView topBar;
   private TopBarView actionView;
@@ -6064,67 +6087,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private JoinRequestsView requestsView;
   private CollapseListView.Item requestsItem;
 
-  @Override
-  public void onCloseReply (ReplyView view) {
-    if (showingLinkPreview()) {
-      closeLinkPreview();
-    } else if (isEditingMessage()) {
-      closeEdit();
-    } else {
-      closeReply(true);
-    }
-  }
-
-  @Override
-  public void onToggleEnlarge (ReplyView view, View clickedView) {
-    if (showingLinkPreview() && findTargetContext().toggleEnlarge()) {
-      context
-        .tooltipManager()
-        .builder(clickedView)
-        .show(tdlib, Lang.getString(findTargetContext().options.forceLargeMedia ? R.string.LinkPreviewEnlarged : R.string.LinkPreviewMinimized))
-        .hideDelayed();
-      inputView.notifyWebPageOptionsChanged();
-    }
-  }
-
-  @Override
-  public void onToggleShowAbove (ReplyView view, View clickedView) {
-    if (showingLinkPreview() && findTargetContext().toggleShowAbove()) {
-      context
-        .tooltipManager()
-        .builder(clickedView)
-        .show(tdlib, Lang.getString(findTargetContext().options.showAboveText ? R.string.LinkPreviewShowAbove : R.string.LinkPreviewShowBelow))
-        .hideDelayed();
-      inputView.notifyWebPageOptionsChanged();
-    }
-  }
-
-  @Override
-  public void onChooseNextLinkPreview (ReplyView view, View clickedView) {
-    if (showingLinkPreview() && findTargetContext().chooseNextLinkPreview()) {
-      context
-        .tooltipManager()
-        .builder(clickedView)
-        .show(tdlib, Lang.getString(R.string.LinkPreviewChanged, !StringUtils.isEmpty(findTargetContext().options.url) ? findTargetContext().options.url : findTargetContext().linkPreview.primaryUrl))
-        .hideDelayed();
-      inputView.notifyWebPageOptionsChanged();
-    }
-  }
-
   public @Nullable TdApi.InputMessageReplyToMessage getCurrentReplyId () {
-    if (replyMessage != null) {
-      long chatId = replyMessage.chatId;
-      if (getChatId() == chatId && !tdlib.forceExternalReply(chatId)) {
-        chatId = 0;
-      }
-      long messageId = replyMessage.id;
-      return new TdApi.InputMessageReplyToMessage(chatId, messageId, null);
+    if (reply != null) {
+      return reply.toInputMessageReply(getChatId());
     }
     return null;
   }
 
   public @Nullable TdApi.InputMessageReplyToMessage obtainReplyTo () {
-    if (replyMessage == null || replyMessage.id == 0 || (flags & FLAG_REPLY_ANIMATING) != 0) {
+    if (reply == null) {
       return null;
     }
     TdApi.InputMessageReplyToMessage replyTo = getCurrentReplyId();
@@ -6132,19 +6103,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return replyTo;
   }
 
-  private void showCurrentReply () {
-    replyView.setReplyTo(replyMessage, tdlib.isChannel(chat.id) ? chat.title : null);
-  }
-
-  public void removeReply (long[] messageIds) {
-    if (replyMessage != null) {
+  public void removeReply (long chatId, long[] messageIds) {
+    if (reply != null) {
       for (long msgId : messageIds) {
-        if (msgId == replyMessage.id) {
-          if (showingLinkPreview() || isEditingMessage()) {
-            replyMessage = null;
-          } else {
-            closeReply(true);
-          }
+        if (reply.message.chatId == chatId && msgId == reply.message.id) {
+          reply = null;
+          updateReplyBarVisibility(true);
           break;
         }
       }
@@ -6156,11 +6120,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
     if (msg == null || msg.id == 0) {
-      if (showingLinkPreview()) {
-        showCurrentLinkPreview();
-      } else {
-        closeReply(byUser);
-      }
+      this.reply = null;
+      updateReplyBarVisibility(true);
       return;
     }
     if (inSearchMode()) {
@@ -6169,18 +6130,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     } else if (inSelectMode()) {
       finishSelectMode(-1);
     }
+    collapsePinnedMessagesBar(true);
     // TODO show keyboard properly
-    if ((flags & FLAG_REPLY_ANIMATING) == 0 && (replyMessage == null || replyMessage.id != msg.id)) {
-      if (!showingLinkPreview()) {
-        replyView.setReplyTo(msg, tdlib.isChannel(chat.id) ? chat.title : null);
-      }
-
-      if (replyMessage != null || showingLinkPreview() || isEditingMessage()) {
-        replyMessage = msg;
-      } else {
-        replyMessage = msg;
-        openReplyView();
-      }
+    if (reply == null || reply.message.id != msg.id || reply.message.chatId != msg.chatId || !Td.equalsTo(reply.quote, quote)) {
+      this.reply = new ReplyInfo(tdlib, msg, quote);
+      updateReplyBarVisibility(true);
 
       if (byUser) {
         inputView.setTextChangedSinceChatOpened(true);
@@ -6192,26 +6146,52 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  private void openReplyView () {
-    flags |= FLAG_REPLY_ANIMATING;
+  private void updateReplyBarVisibility (boolean animated) {
+    boolean shouldBeVisible = true;
+    if (showingLinkPreview()) {
+      replyBarView.showWebPage(findTargetContext().linkPreview, isEditingMessage() ? editContext.message : null);
+    } else if (isEditingMessage()) {
+      replyBarView.setEditingMessage(editContext.message);
+    } else if (reply != null) {
+      replyBarView.setReplyTo(reply.message, reply.quote);
+    } else {
+      shouldBeVisible = false;
+    }
+    final float toFactor = shouldBeVisible ? 1f : 0f;
+    if (animated && replyBarVisible.getFloatValue() != toFactor) {
+      setForceHw(true); // Resets back in onFactorChangeFinished
+    }
+    replyBarVisible.setValue(shouldBeVisible, animated);
+  }
 
-    setForceHw(true);
+  @Override
+  public void onDismissReplyBar (ReplyBarView view) {
+    if (showingLinkPreview()) {
+      closeLinkPreview();
+    } else if (isEditingMessage()) {
+      closeEdit();
+    } else {
+      closeReply(true);
+    }
+  }
 
-    ValueAnimator obj;
-    final float startFactor = getReplyFactor();
-    final float diffFactor = 1f - startFactor;
-    obj = AnimatorUtils.simpleValueAnimator();
-    obj.addUpdateListener(animation -> setReplyFactor(startFactor + diffFactor * AnimatorUtils.getFraction(animation)));
-    obj.setInterpolator(AnimatorUtils.DECELERATE_INTERPOLATOR);
-    obj.setDuration(200l);
-    obj.addListener(new AnimatorListenerAdapter() {
-      @Override
-      public void onAnimationEnd (Animator animation) {
-        setForceHw(false);
-        flags &= ~FLAG_REPLY_ANIMATING;
+  private TooltipOverlayView.TooltipInfo anotherChatHint;
+
+  @Override
+  public void onMessageHighlightRequested (ReplyBarView view, TdApi.Message message, @Nullable TdApi.FormattedText quote) {
+    if (message.chatId == getChatId()) {
+      highlightMessage(new MessageId(message.chatId, message.id));
+    } else {
+      if (anotherChatHint != null && anotherChatHint.isVisible()) {
+        tdlib.ui().openMessage(this, message.chatId, new MessageId(message.chatId, message.id), new TdlibUi.UrlOpenParameters().controller(this));
+        return;
       }
-    });
-    obj.start();
+      anotherChatHint = context()
+        .tooltipManager()
+        .builder(view)
+        .show(this, tdlib, R.drawable.baseline_info_24, Lang.getString(R.string.AnotherChatReplyHint))
+        .hideDelayed();
+    }
   }
 
   private void forceDraftReply (final TdApi.InputMessageReplyToMessage replyTo) {
@@ -6245,33 +6225,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
 
-    if (!showingLinkPreview()) {
-      replyView.setReplyTo(message, tdlib.isChannel(chat.id) ? chat.title : null);
-    }
-
-    if (replyMessage != null || showingLinkPreview()) {
-      replyMessage = message;
-    } else {
-      replyMessage = message;
-      setReplyFactor(1f);
-    }
+    reply = new ReplyInfo(tdlib, message, quote);
+    updateReplyBarVisibility(false);
   }
 
-  public void clearReply () {
-    replyMessage = null;
+  private void clearReply () {
+    reply = null;
     draftContext.reset();
-    flags &= ~FLAG_REPLY_ANIMATING;
-    setReplyFactor(0f);
-    replyView.clear();
+    updateReplyBarVisibility(false);
   }
 
   public void closeReply (final boolean byUser) {
     tdlib.uiExecute(() -> {
-      if (replyMessage != null && (flags & FLAG_REPLY_ANIMATING) == 0) {
-        replyMessage = null;
-        if (!isEditingMessage()) {
-          closeReplyView();
-        }
+      if (reply != null) {
+        reply = null;
+        updateReplyBarVisibility(true);
         if (byUser) {
           inputView.setTextChangedSinceChatOpened(true);
           saveDraft();
@@ -6293,9 +6261,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (originalLayerType1 != View.LAYER_TYPE_HARDWARE) {
           Views.setLayerType(messagesView, View.LAYER_TYPE_HARDWARE);
         }
-        originalLayerType2 = replyView.getLayerType();
+        originalLayerType2 = replyBarView.getLayerType();
         if (originalLayerType2 != View.LAYER_TYPE_HARDWARE) {
-          Views.setLayerType(replyView, View.LAYER_TYPE_HARDWARE);
+          Views.setLayerType(replyBarView, View.LAYER_TYPE_HARDWARE);
         }
         originalLayerType3 = bottomShadowView.getLayerType();
         if (originalLayerType3 != View.LAYER_TYPE_HARDWARE) {
@@ -6306,7 +6274,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           Views.setLayerType(messagesView, originalLayerType1);
         }
         if (originalLayerType2 != View.LAYER_TYPE_HARDWARE) {
-          Views.setLayerType(replyView, originalLayerType2);
+          Views.setLayerType(replyBarView, originalLayerType2);
         }
         if (originalLayerType3 != View.LAYER_TYPE_HARDWARE) {
           Views.setLayerType(bottomShadowView, originalLayerType3);
@@ -6315,39 +6283,28 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  private void closeReplyView () {
-    flags |= FLAG_REPLY_ANIMATING;
-
-    if (isSendingText) {
-      setReplyFactor(0f);
-      replyView.clear();
-      flags &= ~FLAG_REPLY_ANIMATING;
-      return;
+  private final BoolAnimator replyBarVisible = new BoolAnimator(0, new FactorAnimator.Target() {
+    @Override
+    public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
+      if (replyBarView != null) {
+        replyBarView.setAnimationsDisabled(factor == 0f);
+      }
+      updateReplyView();
     }
 
-    setForceHw(true);
-
-    ValueAnimator obj;
-    final float startFactor = getReplyFactor();
-    obj = AnimatorUtils.simpleValueAnimator();
-    obj.addUpdateListener(animation -> setReplyFactor(startFactor - startFactor * AnimatorUtils.getFraction(animation)));
-    obj.setInterpolator(AnimatorUtils.DECELERATE_INTERPOLATOR);
-    obj.setDuration(200L);
-    obj.addListener(new AnimatorListenerAdapter() {
-      @Override
-      public void onAnimationEnd (Animator animation) {
+    @Override
+    public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
+      if (finalFactor == 1f || finalFactor == 0f) {
         setForceHw(false);
-        replyView.clear();
-        flags &= ~FLAG_REPLY_ANIMATING;
       }
-    });
-    obj.start();
-  }
-
-  private float replyFactor;
+      if (finalFactor == 0f) {
+        replyBarView.reset();
+      }
+    }
+  }, AnimatorUtils.DECELERATE_INTERPOLATOR, 200L);
 
   private float getReplyOffset () {
-    return replyFactor * (1f - getSearchTransformFactor()) * (float) (replyView.getLayoutParams().height);
+    return replyBarVisible.getFloatValue() * (1f - getSearchTransformFactor()) * (float) (replyBarView.getLayoutParams().height);
   }
 
   private float getButtonsOffset () {
@@ -6378,13 +6335,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return y;
   }
 
-  public void setReplyFactor (float factor) {
-    if (this.replyFactor != factor) {
-      this.replyFactor = factor;
-      updateReplyView();
-    }
-  }
-
   private void checkScrollButtonOffsets () {
     if (isInForceTouchMode()) {
       return;
@@ -6413,13 +6363,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     float y = -getReplyOffset();
     messagesView.setTranslationY(y);
     bottomShadowView.setTranslationY(y);
-    replyView.setTranslationY(y);
+    replyBarView.setTranslationY(y);
     checkScrollButtonOffsets();
     onMessagesFrameChanged();
-  }
-
-  public float getReplyFactor () {
-    return replyFactor;
   }
 
   // Edit utils
@@ -6435,6 +6381,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
       //noinspection SwitchIntDef
       switch (editContext.message.content.getConstructor()) {
+        case TdApi.MessageAnimatedEmoji.CONSTRUCTOR: {
+          TdApi.FormattedText oldText = Td.textOrCaption(editContext.message.content);
+          if (!Td.equalsTo(oldText, newText) || !Td.equalsTo(null, newOptions)) {
+            return true;
+          }
+          break;
+        }
         case TdApi.MessageText.CONSTRUCTOR: {
           TdApi.MessageText oldMessageText = (TdApi.MessageText) editContext.message.content;
           TdApi.LinkPreviewOptions oldLinkPreviewOptions = oldMessageText.linkPreviewOptions;
@@ -6562,10 +6515,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  private void showCurrentEdit () {
-    replyView.setReplyTo(editContext.message, Lang.getString(R.string.EditMessage));
-  }
-
   private void setInEditMode (boolean inEditMode, String futureText) {
     sendButton.setInEditMode(inEditMode);
     messageSenderButton.setAnimateVisible(!inEditMode);
@@ -6631,10 +6580,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void editMessage (TdApi.Message msg) {
-    if (isEditingMessage() || (flags & FLAG_REPLY_ANIMATING) != 0) {
+    if (isEditingMessage()) {
       return;
     }
-    boolean needOpen = !showingLinkPreview() && replyMessage == null;
 
     needShowEmojiKeyboardAfterHideMessageOptions = false;
     saveDraft();
@@ -6649,10 +6597,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     TdApi.FormattedText text = Td.textOrCaption(msg.content);
     setInEditMode(true, text.text);
     sendButton.setIsActive(!StringUtils.isEmpty(text.text) || isEditingCaption());
-    replyView.setReplyTo(msg, Lang.getString(R.string.EditMessage));
-    if (needOpen) {
-      openReplyView();
-    }
+    updateReplyBarVisibility(true);
     if (inputView != null) {
       TdApi.FormattedText pendingText = tdlib.getPendingFormattedText(msg.chatId, msg.id);
       if (pendingText != null) {
@@ -6664,7 +6609,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void closeEdit () {
-    if (!isEditingMessage() || (flags & FLAG_REPLY_ANIMATING) != 0) {
+    if (!isEditingMessage()) {
       return;
     }
 
@@ -6678,13 +6623,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       updateSendButton(inputView.getInput(), true);
     }
 
-    if (showingLinkPreview()) {
-      showCurrentLinkPreview();
-    } else if (replyMessage != null) {
-      showCurrentReply();
-    } else {
-      closeReplyView();
-    }
+    updateReplyBarVisibility(true);
   }
 
   private void saveMessage (boolean applyMarkdown) {
@@ -7430,7 +7369,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       } else {
         TdApi.MessageContent oldContent = editContext.message.content;
         editContext.message.content = content;
-        replyView.setReplyTo(editContext.message, Lang.getString(R.string.EditMessage));
+        updateReplyBarVisibility(true);
         // This is required because we work with a reference from TGMessage, not a copy.
         editContext.message.content = oldContent;
       }
@@ -7468,54 +7407,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
       navigateBack();
     }
   }
-
-  /*private void updatePinnedMessageView () {
-    if (topWrap != null) {
-      float factor = pinnedMessageFactor * (1f - getSearchTransformFactor());
-      int height = Screen.dp(48f);
-      int translationY = -height + (int) ((float) height * factor) + getLiveLocationOffset();
-      topWrap.setTranslationY(translationY);
-      topBasePinnedMessageShadow.setAlpha(Math.max(liveLocation != null ? liveLocation.getVisibilityFactor() : 0f, factor));
-      if (needPinnedMessageOffset) {
-        float offsetFactor = factor - lastPinnedMessageOffsetFactor;
-        lastPinnedMessageOffsetFactor = factor;
-        messagesView.scrollBy(0, -(int) ((float) getPinnedMessageHeight() * offsetFactor));
-      }
-    }
-  }*/
-
-  /*public int getPinnedMessageHeight () {
-    return Screen.dp(48f);
-  }*/
-
-  /*private boolean needPinnedMessageOffset;
-  private float lastPinnedMessageOffsetFactor;
-
-  private void setPinnedMessageVisible (boolean isVisible, boolean animated) {
-    if (this.isPinnedMessageVisible != isVisible) {
-      this.isPinnedMessageVisible = isVisible;
-      final float toFactor = isVisible ? 1f : 0f;
-
-      needPinnedMessageOffset = false;
-      if (isVisible && manager.canApplyRecyclerOffsets()) {
-        if (animated) {
-          needPinnedMessageOffset = true;
-          lastPinnedMessageOffsetFactor = this.pinnedMessageFactor;
-        } else {
-          try {
-            messagesView.scrollBy(0, -getPinnedMessageHeight());
-          } catch (Throwable t) {
-            Log.e("messagesView.scrollBy failed", t);
-          }
-        }
-      }
-      if (animated) {
-        animatePinnedFactor(toFactor);
-      } else {
-        forcePinnedFactor(toFactor);
-      }
-    }
-  }*/
 
   // Live location
 
@@ -7948,17 +7839,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   // Link preview
 
   private void closeLinkPreview () {
-    if ((flags & FLAG_REPLY_ANIMATING) == 0) {
-      findTargetContext().dismiss();
-      if (isEditingMessage()) {
-        showCurrentEdit();
-      } else if (replyMessage != null) {
-        showCurrentReply();
-      } else {
-        closeReplyView();
-      }
-      inputView.setTextChangedSinceChatOpened(true);
-    }
+    findTargetContext().dismiss();
+    updateReplyBarVisibility(true);
+    inputView.setTextChangedSinceChatOpened(true);
   }
 
   private boolean allowSecretPreview () {
@@ -7969,9 +7852,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     TdApi.LinkPreviewOptions linkPreviewOptions = getLinkPreviewOptions();
     if (close) {
       findTargetContext().reset();
-      if (!isEditingMessage() && replyMessage == null) {
-        closeReplyView();
-      }
+      updateReplyBarVisibility(true);
     }
     return linkPreviewOptions;
   }
@@ -8006,30 +7887,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     InlineSearchContext.LinkPreview previousLinkPreview = targetContext.linkPreview;
     targetContext.linkPreview = linkPreview;
 
-    if (linkPreview == null || !targetContext.isVisible()) {
-      if (isEditingMessage()) {
-        showCurrentEdit();
-      } else if (replyMessage != null) {
-        showCurrentReply();
-      } else {
-        closeReplyView();
-      }
-      return;
-    }
-
-    replyView.setWebPage(linkPreview);
-
-    if (previousLinkPreview == null || !wasVisible) {
-      openReplyView();
-    }
+    updateReplyBarVisibility(true);
   }
 
   private boolean showingLinkPreview () {
     return findTargetContext().isVisible();
-  }
-
-  private void showCurrentLinkPreview () {
-    replyView.setWebPage(findTargetContext().linkPreview);
   }
 
   // Guess about the future RecyclerView height
@@ -9693,9 +9555,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
       }
     };
-    long messageThreadId = getMessageThreadId();
-    if (messageThreadId == 0 && replyMessage != null) {
-      messageThreadId = replyMessage.messageThreadId != 0 ? replyMessage.messageThreadId : replyMessage.id;
+    long messageThreadId;
+    if (isEditingMessage()) {
+      messageThreadId = editContext.message.messageThreadId;
+    } else {
+      messageThreadId = getMessageThreadId();
+      if (messageThreadId == 0 && reply != null) {
+        messageThreadId = reply.message.messageThreadId != 0 ? reply.message.messageThreadId : reply.message.id;
+      }
     }
     if (set) {
       int time = (int) (SystemClock.uptimeMillis() / 1000l);

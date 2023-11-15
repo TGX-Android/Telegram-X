@@ -75,7 +75,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   private static final int FLAG_USE_COLORIZE = 1 << 5;
 
   private final Tdlib tdlib;
-  private final @Nullable TGMessage parent;
+  private final @NonNull TGMessage parent;
 
   private TdApi.MessageSender sender;
   private String senderName;
@@ -91,14 +91,6 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   private Text trimmedTitle, trimmedContent;
 
   private ViewProvider viewProvider;
-
-  public ReplyComponent (@NonNull Tdlib tdlib) {
-    if (lineWidth == 0) {
-      initSizes();
-    }
-    this.tdlib = tdlib;
-    this.parent = null;
-  }
 
   public ReplyComponent (@NonNull TGMessage message) {
     if (lineWidth == 0) {
@@ -155,7 +147,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     }
     viewProvider.invalidate();
   }
-  
+
   private boolean isMessageComponent () {
     return parent != null;
   }
@@ -245,7 +237,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
           if (isMessageComponent()) {
             parent.invalidateReplyTextMediaReceiver(text, specificMedia);
           } else {
-            viewProvider.performWithViews((view) -> {
+            /*viewProvider.performWithViews((view) -> {
               if (view instanceof ReplyView) {
                 ComplexReceiver receiver = ((ReplyView) view).getTextMediaReceiver();
                 if (!text.invalidateMediaContent(receiver, specificMedia)) {
@@ -254,7 +246,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
               } else {
                 throw new UnsupportedOperationException();
               }
-            });
+            });*/
           }
         }
       )

@@ -138,21 +138,15 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     gifReceiver.destroy();
   }
 
-  private float factor;
-
   private void resetStickerState () {
-    animator.forceFactor(0f, true);
-    factor = 0f;
+    animator.forceFactor(0f);
   }
 
   private static final float MIN_SCALE = .82f;
 
   @Override
   public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
-    if (this.factor != factor) {
-      this.factor = factor;
-      invalidate();
-    }
+    invalidate();
   }
 
   @Override
@@ -226,6 +220,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
 
   @Override
   protected void onDraw (Canvas c) {
+    float factor = animator.getFactor();
     int restoreToCountClip = -1;
     if (isChosen) {
       float radius = Math.min(getMeasuredWidth(), getMeasuredHeight()) / 2f;
