@@ -4906,4 +4906,19 @@
   <string name="Experiment_ChatFolders">Enable Chat Folders</string>
   <string name="Experiment_ChatFoldersInfo">Enable early access to folders. Appearance of this feature is planned to be changed in future versions of Telegram X, and it includes some unfinished work. Credit: [PR #297](https://github.com/TGX-Android/Telegram-X/pull/297) by nikita-toropov</string>
 
+  <string name="MessagesFilter">Messages Filter</string>
+  <string name="MessagesFilterDesc">When enabled, content of messages that match at least one of the criteria below, will be hidden and minimized.</string>
+
+  <string name="MessagesFilterGroupsAndChats">Groups and Chats</string>
+  <string name="MessagesFilterHideBlockedSenders">Blocked senders in groups</string>
+  <string name="MessagesFilterHideBlockedSendersDesc">Hide message content in group chats, if it comes from a blocked sender.</string>
+  <string name="MessagesFilterHideBlockedSendersMentions">Mentions of blocked chats</string>
+  <string name="MessagesFilterHideBlockedSendersMentionsDesc">Hide message content, if it includes a reply, mention or direct link to the blocked chat.</string>
+
+  <string name="MessagesFilterChannels">Channels</string>
+  <string name="MessagesFilterChannelsManage">Manage Filtered Channels</string>
+  <string name="MessagesFilterBlockedSendersManage">Manage Blocked Senders</string>
+
+  <string name="MessagesFilterShowMessage">Show Message</string>
+
 </resources>

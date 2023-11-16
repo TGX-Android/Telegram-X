@@ -5436,6 +5436,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       } else if (id == R.id.btn_messageReplyWithDice) {
         sendDice(itemView, ((TdApi.MessageDice) selectedMessage.getMessage().content).emoji);
         return true;
+      } else if (id == R.id.btn_messageChangeMessageFilterVisibility) {
+        selectedMessage.setIsHiddenByMessagesFilter(!selectedMessage.isHiddenByMessagesFilter(), true);
+        return true;
       } else if (id == R.id.btn_copyTranslation || id == R.id.btn_messageCopy) {
         if (!selectedMessage.canBeSaved()) {
           context().tooltipManager().builder(itemView).show(tdlib, R.string.ChannelNoCopy).hideDelayed();

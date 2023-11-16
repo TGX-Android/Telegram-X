@@ -240,6 +240,7 @@ public class Settings {
   private static final String KEY_CAMERA_VOLUME_CONTROL = "settings_camera_control";
   private static final String KEY_CHAT_FOLDER_STYLE = "settings_folders_style";
   private static final String KEY_CHAT_FOLDER_OPTIONS = "settings_folders_options";
+  private static final String KEY_MESSAGES_FILTER_FLAGS = "settings_messages_filter";
 
   private static final String KEY_TDLIB_VERBOSITY = "settings_tdlib_verbosity";
   private static final String KEY_TDLIB_DEBUG_PREFIX = "settings_tdlib_allow_debug";
@@ -431,7 +432,7 @@ public class Settings {
   @Nullable
   private Integer _settings;
   @Nullable
-  private Long _newSettings, _experiments;
+  private Long _newSettings, _experiments, _messagesFilter;
 
   public static final int NIGHT_MODE_NONE = 0;
   public static final int NIGHT_MODE_AUTO = 1;
@@ -1294,6 +1295,28 @@ public class Settings {
     }
     return _chatFolderStyle;
   }
+
+  public static final long MESSAGES_FILTER_ENABLED = 1;
+  public static final long MESSAGES_FILTER_HIDE_BLOCKED_SENDERS = 1 << 1;
+  public static final long MESSAGES_FILTER_HIDE_BLOCKED_SENDERS_MENTIONS = 1 << 2;
+
+  private long getMessagesFilterSettings () {
+    if (_messagesFilter == null)
+      _messagesFilter = pmc.getLong(KEY_MESSAGES_FILTER_FLAGS, 0);
+    return _messagesFilter;
+  }
+
+  public boolean getMessagesFilterSetting (long flag) {
+    final boolean filterEnabled = flag != MESSAGES_FILTER_ENABLED ?
+      getMessagesFilterSetting(MESSAGES_FILTER_ENABLED) : true;
+    return filterEnabled && BitwiseUtils.hasFlag(getMessagesFilterSettings(), flag);
+  }
+
+  public void setMessagesFilterSetting (long flag, boolean enabled) {
+    _messagesFilter = BitwiseUtils.setFlag(getMessagesFilterSettings(), flag, enabled);
+    pmc.putLong(KEY_MESSAGES_FILTER_FLAGS, _messagesFilter);
+  }
+
 
   private long makeDefaultNewSettings () {
     long settings = 0;

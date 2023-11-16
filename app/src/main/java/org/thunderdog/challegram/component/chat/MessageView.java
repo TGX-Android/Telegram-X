@@ -30,6 +30,7 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
@@ -605,6 +606,14 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     int messageCount = msg.getMessageCount();
     boolean isSent = !msg.isNotSent();
     Object tag = null;
+
+    final boolean isHiddenByMessagesFilter = msg.isHiddenByMessagesFilter();
+
+    if (!isMore && (isHiddenByMessagesFilter || BuildConfig.DEBUG)) {
+      ids.append(R.id.btn_messageChangeMessageFilterVisibility);
+      strings.append(Lang.getString(R.string.MessagesFilterShowMessage));
+      icons.append(R.drawable.baseline_history_24);
+    }
 
     // Promotion
 
@@ -1502,7 +1511,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         } else {
           preventLongPress();
         }
-        if (c.inSelectMode() || !msg.onTouchEvent(this, e)) {
+        if (c.inSelectMode() || msg.isHiddenByMessagesFilter() || !msg.onTouchEvent(this, e)) {
           flags |= FLAG_CAUGHT_CLICK;
         } else {
           flags |= FLAG_CAUGHT_MESSAGE_TOUCH;

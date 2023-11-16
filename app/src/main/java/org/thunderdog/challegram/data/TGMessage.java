@@ -61,6 +61,7 @@ import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessageViewGroup;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.chat.ReplyComponent;
+import org.thunderdog.challegram.component.chat.filter.MessageFilterProcessingState;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
@@ -150,7 +151,6 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.LongList;
 import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.lambda.CancellableRunnable;
-import me.vkryl.core.lambda.Future;
 import me.vkryl.core.lambda.FutureBool;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
@@ -303,6 +303,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   public static final int REACTIONS_DRAW_MODE_ONLY_ICON = 2;
 
   private final TranslationsManager mTranslationsManager;
+  private final @Nullable MessageFilterProcessingState mMessageFilterProcessingState;
 
   protected TGMessage (MessagesManager manager, TdApi.Message msg) {
     this(manager, msg, null);
@@ -444,7 +445,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       .drawable(R.drawable.baseline_bullhorn_16, 16f, 0, Gravity.CENTER_HORIZONTAL)
       .build();
     if (msg.isChannelPost || (msg.forwardInfo != null && (
-        msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginChannel.CONSTRUCTOR ||
+      msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginChannel.CONSTRUCTOR ||
         TD.getViewCount(msg.interactionInfo) > 1 ||
         tdlib.isChannel(msg.forwardInfo.fromChatId) ||
         this.sender.isChannel()
@@ -546,6 +547,20 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     checkHighlightedText();
 
     UI.post(() -> updateReactionAvatars(false));
+
+    this.isHiddenByFilter = new BoolAnimator(IS_HIDDEN_BY_MESSAGE_FILTER_ANIMATOR_ID, (a, b, c, d) -> {
+      if (BitwiseUtils.hasFlag(flags, FLAG_LAYOUT_BUILT)) {
+        notifyBubbleChanged();
+        invalidate();
+      }
+    }, AnimatorUtils.DECELERATE_INTERPOLATOR, 320L);
+
+    final boolean needUseMessagesFilter = !tdlib.isUserChat(msg.chatId)
+      && tdlib.myUserId() != Td.getSenderId(msg.senderId)
+      && Settings.instance().getMessagesFilterSetting(Settings.MESSAGES_FILTER_ENABLED);
+
+    this.mMessageFilterProcessingState = needUseMessagesFilter ?
+      new MessageFilterProcessingState(this, msg) : null;
   }
 
   private static @NonNull <T> T nonNull (@Nullable T value) {
@@ -908,6 +923,26 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     // && !((flags & FLAG_SELF_CHAT) == 0 && msg.forwardInfo.origin.getConstructor() != TdApi.MessageForwardOriginChannel.CONSTRUCTOR && msg.content != null && msg.content.getConstructor() == TdApi.MessageAudio.CONSTRUCTOR)
     return msg.forwardInfo != null && (!useBubbles() || !separateReplyFromBubble()) && !forceForwardOrImportInfo();
   }
+
+
+
+  //
+
+  private static final int IS_HIDDEN_BY_MESSAGE_FILTER_ANIMATOR_ID = 2;
+
+  private static final int HIDDEN_BY_MESSAGE_FILTER_HEIGHT = 35;
+
+  private final BoolAnimator isHiddenByFilter;
+
+  public void setIsHiddenByMessagesFilter (boolean hidden, boolean animated) {
+    isHiddenByFilter.setValue(hidden, BitwiseUtils.hasFlag(flags, FLAG_LAYOUT_BUILT) && UI.inUiThread() && animated);
+  }
+
+  public boolean isHiddenByMessagesFilter () {
+    return isHiddenByFilter.getValue();
+  }
+
+
 
   private static final int VIEW_COUNT_HIDDEN = 0;
   private static final int VIEW_COUNT_MAIN = 1;
@@ -1332,6 +1367,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public int computeHeight () {
+    final int headerPadding = getHeaderPadding();
     if (useBubbles()) {
       int height = bottomContentEdge + getPaddingBottom() + getExtraPadding();
       if (inlineKeyboard != null && !inlineKeyboard.isEmpty()) {
@@ -1347,7 +1383,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (commentButton.isBubble()) {
         height += commentButton.getAnimatedHeight(Screen.dp(5f), commentButton.getVisibility());
       }
-      return height;
+      return MathUtils.fromTo(height, Screen.dp(HIDDEN_BY_MESSAGE_FILTER_HEIGHT) + headerPadding, isHiddenByFilter.getFloatValue());
     } else {
       int height = pContentY + getContentHeight() + getPaddingBottom() + getExtraPadding();
       if (inlineKeyboard != null && !inlineKeyboard.isEmpty()) {
@@ -1363,7 +1399,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (commentButton.isVisible() && commentButton.isInline()) {
         height += commentButton.getAnimatedHeight(useReactionBubbles ? -Screen.dp(2f) : 0, commentButton.getVisibility());
       }
-      return height;
+      return MathUtils.fromTo(height, Screen.dp(HIDDEN_BY_MESSAGE_FILTER_HEIGHT) + headerPadding, isHiddenByFilter.getFloatValue());
     }
   }
 
@@ -1898,6 +1934,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     checkEdges();
 
+    final float isHiddenFactor = isHiddenByFilter.getFloatValue();
+    if (isHiddenFactor == 1f) {
+      drawHiddenMessage(view, c, isHiddenFactor);
+      return;
+    }
+
     // "Unread messages" / "Discussion started" badge
     if ((flags & FLAG_SHOW_BADGE) != 0) {
       int top = 0;
@@ -2389,6 +2431,19 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     startSetReactionAnimationIfReady();
     highlightUnreadReactionsIfNeeded();
+    if (isHiddenFactor > 0f) {
+      drawHiddenMessage(view, c, isHiddenFactor);
+    }
+  }
+
+  public final void drawHiddenMessage (MessageView view, Canvas c, float isHiddenFactor) {
+    final int viewWidth = view.getMeasuredWidth();
+    final int viewHeight = view.getMeasuredHeight();
+    final int y = getHeaderPadding();
+
+    c.drawRect(0, y, viewWidth, viewHeight, Paints.fillingPaint(ColorUtils.alphaColor(isHiddenFactor, Theme.getColor(ColorId.filling))));
+    // c.drawRect(0, y, viewWidth, y + 1, Paints.fillingPaint(ColorUtils.alphaColor(isHiddenFactor, Theme.getColor(ColorId.separator))));
+    c.drawRect(0, viewHeight - 1, viewWidth, viewHeight, Paints.fillingPaint(ColorUtils.alphaColor(isHiddenFactor, Theme.getColor(ColorId.separator))));
   }
 
   protected final boolean needColoredNames () {
@@ -6011,6 +6066,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (replyData != null)
       replyData.performDestroy();
     messageReactions.performDestroy();
+    if (mMessageFilterProcessingState != null) {
+      mMessageFilterProcessingState.performDestroy();
+    }
     setViewAttached(false);
     onMessageContainerDestroyed();
   }
