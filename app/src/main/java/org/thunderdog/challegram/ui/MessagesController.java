@@ -6095,12 +6095,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public @Nullable TdApi.InputMessageReplyToMessage obtainReplyTo () {
-    if (reply == null) {
-      return null;
+    if (reply != null) {
+      TdApi.InputMessageReplyToMessage replyTo = getCurrentReplyId();
+      closeReply(true, false);
+      return replyTo;
     }
-    TdApi.InputMessageReplyToMessage replyTo = getCurrentReplyId();
-    closeReply(true);
-    return replyTo;
+    return null;
   }
 
   public void removeReply (long chatId, long[] messageIds) {
@@ -6169,9 +6169,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (showingLinkPreview()) {
       closeLinkPreview();
     } else if (isEditingMessage()) {
-      closeEdit();
+      closeEdit(false);
     } else {
-      closeReply(true);
+      closeReply(true, true);
     }
   }
 
@@ -6235,11 +6235,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     updateReplyBarVisibility(false);
   }
 
-  public void closeReply (final boolean byUser) {
+  public void closeReply (final boolean byUser, boolean animated) {
     tdlib.uiExecute(() -> {
       if (reply != null) {
         reply = null;
-        updateReplyBarVisibility(true);
+        updateReplyBarVisibility(animated);
         if (byUser) {
           inputView.setTextChangedSinceChatOpened(true);
           saveDraft();
@@ -6608,7 +6608,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     Keyboard.show(inputView);
   }
 
-  private void closeEdit () {
+  private void closeEdit (boolean isSaved) {
     if (!isEditingMessage()) {
       return;
     }
@@ -6623,6 +6623,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       updateSendButton(inputView.getInput(), true);
     }
 
+    // Intentionally doesn't match the send logic (where there's no animation after send).
+    // For the exact match, !isSaved could be passed here instead.
     updateReplyBarVisibility(true);
   }
 
@@ -6687,7 +6689,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
     }
 
-    closeEdit();
+    closeEdit(true);
   }
 
   // Share utils
@@ -7365,7 +7367,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onMessageChanged (long chatId, long messageId, TdApi.MessageContent content) {
     if (isEditingMessage() && editContext.checkMessage(chatId, messageId)) {
       if (!editContext.message.canBeEdited) {
-        closeEdit();
+        closeEdit(false);
       } else {
         TdApi.MessageContent oldContent = editContext.message.content;
         editContext.message.content = content;
@@ -7382,7 +7384,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public void onMessagesDeleted (long chatId, long[] messageIds) {
     if (isEditingMessage() && editContext.message.chatId == chatId && ArrayUtils.indexOf(messageIds, editContext.message.id) != -1) {
-      closeEdit();
+      closeEdit(false);
     }
   }
 
@@ -7852,7 +7854,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     TdApi.LinkPreviewOptions linkPreviewOptions = getLinkPreviewOptions();
     if (close) {
       findTargetContext().reset();
-      updateReplyBarVisibility(true);
+      updateReplyBarVisibility(false);
     }
     return linkPreviewOptions;
   }
@@ -9912,7 +9914,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       draftMessage != null && draftMessage.replyTo != null && draftMessage.replyTo.getConstructor() == TdApi.InputMessageReplyToMessage.CONSTRUCTOR ?
         (TdApi.InputMessageReplyToMessage) draftMessage.replyTo : null;
     if (replyToMessage == null) {
-      closeReply(false);
+      closeReply(false, true);
     } else {
       TGMessage message;
       if (getChatId() == replyToMessage.chatId) {
@@ -9927,7 +9929,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           if (getChatId() == chatId && Td.equalsTo(getDraftMessage(), draftMessage)) {
             showReply(remoteMessage, replyToMessage.quote, false, false);
           } else {
-            closeReply(false);
+            closeReply(false, true);
           }
         }));
       }

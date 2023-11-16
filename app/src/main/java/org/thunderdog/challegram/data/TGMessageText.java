@@ -194,15 +194,21 @@ public class TGMessageText extends TGMessage {
           return MESSAGE_REPLACE_REQUIRED;
         TdApi.MessageText messageText = (TdApi.MessageText) messageContent;
         this.pendingMessageText = messageText;
-        boolean changed;
+        final boolean textChanged, webPageChanged;
         if (messageText != null) {
-          changed = setText(messageText.text, false);
-          changed = setWebPage(messageText.webPage, messageText.linkPreviewOptions) || changed;
+          textChanged = setText(messageText.text, false);
+          webPageChanged = setWebPage(messageText.webPage, messageText.linkPreviewOptions);
         } else {
-          changed = setText(currentMessageText.text, false);
-          changed = setWebPage(currentMessageText.webPage, currentMessageText.linkPreviewOptions) || changed;
+          textChanged = setText(currentMessageText.text, false);
+          webPageChanged = setWebPage(currentMessageText.webPage, currentMessageText.linkPreviewOptions);
         }
-        return changed ? MESSAGE_INVALIDATED : MESSAGE_NOT_CHANGED;
+        if (!textChanged && !webPageChanged) {
+          return MESSAGE_NOT_CHANGED;
+        }
+        if (webPageChanged) {
+          rebuildContent();
+        }
+        return (getHeight() == oldHeight ? MESSAGE_INVALIDATED : MESSAGE_CHANGED);
       }
     }
     return MESSAGE_NOT_CHANGED;
@@ -251,6 +257,8 @@ public class TGMessageText extends TGMessage {
 
   private boolean setText (TdApi.FormattedText text, boolean parseEntities, boolean forceUpdate, boolean animated) {
     if (this.text == null || !Td.equalsTo(this.text, text) || forceUpdate) {
+      animated = animated && Config.ENABLE_TEXT_ANIMATIONS && needAnimateChanges();
+
       this.text = text;
       TextColorSet colorSet = isErrorMessage() ? TextColorSets.Regular.NEGATIVE : getTextColorSet();
       TextWrapper.TextMediaListener textMediaListener = (wrapper, updatedText, specificTextMedia) -> {
@@ -288,7 +296,6 @@ public class TGMessageText extends TGMessage {
       if (hadMedia) {
         textMediaKeyOffset += lastWrapper.getMaxMediaCount();
       }
-      animated = animated && needAnimateChanges();
       wrapper.prepare(getContentMaxWidth());
       this.effectiveWrapper = wrapper;
       this.visibleText.replace(wrapper, animated);
@@ -423,16 +430,19 @@ public class TGMessageText extends TGMessage {
 
   @Override
   protected boolean updateMessageContent (TdApi.Message message, TdApi.MessageContent newContent, boolean isBottomMessage) {
-    TdApi.WebPage oldWebPage = Td.isText(this.msg.content) ? ((TdApi.MessageText) this.msg.content).webPage : null;
     this.msg.content = newContent;
     TdApi.MessageText newText = Td.isText(newContent) ? (TdApi.MessageText) newContent : new TdApi.MessageText(Td.textOrCaption(newContent), null, null);
     this.currentMessageText = newText;
     if (!isBeingEdited()) {
-      setText(newText.text, false);
-      setWebPage(newText.webPage, newText.linkPreviewOptions);
-      if (!Td.equalsTo(oldWebPage, newText.webPage)) {
+      boolean textChanged = setText(newText.text, false);
+      boolean webPageChanged = setWebPage(newText.webPage, newText.linkPreviewOptions);
+      if (webPageChanged) {
+        rebuildContent();
         invalidateContent(this);
         invalidatePreviewReceiver();
+      }
+      if (webPageChanged || textChanged) {
+        invalidate();
       }
     }
     return true;
