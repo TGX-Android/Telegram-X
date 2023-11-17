@@ -4880,7 +4880,6 @@
   <string name="UserId">User ID</string>
   <string name="SecretChatId">Secret Chat ID</string>
   <string name="BotId">Bot ID</string>
-  <string name="ChatId">Chat ID</string>
   <string name="BasicGroupId">Group ID</string>
   <string name="SuperGroupId">Supergroup ID</string>
   <string name="ChannelId">Channel ID</string>
