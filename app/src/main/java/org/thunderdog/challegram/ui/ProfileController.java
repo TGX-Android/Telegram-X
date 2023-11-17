@@ -2331,7 +2331,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private ListItem newPeerIdItem () {
-    return new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_peer_id, R.drawable.baseline_code_24, R.string.PeerId);
+    return new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_peer_id, R.drawable.baseline_identifier_24, R.string.PeerId);
   }
 
   private ListItem newEncryptionKeyItem () {
