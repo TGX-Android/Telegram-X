@@ -2499,13 +2499,16 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         removeTopItem(index);
       } else {
         index = 0;
+        if (baseAdapter.indexOfViewById(R.id.btn_peer_id) != -1) {
+          index++;
+        }
         if (baseAdapter.indexOfViewById(R.id.btn_username) != -1) {
           index++;
         }
         if (baseAdapter.indexOfViewById(R.id.btn_description) != -1) {
           index++;
         }
-        addTopItem(newPhoneItem(), index); // after username, if exists
+        addTopItem(newPhoneItem(), index); // after peer_id, username, description
       }
     } else if (hasPhone) {
       updateValuedItem(R.id.btn_phone);
@@ -2665,25 +2668,24 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private void checkDescription () {
     if (isEditing())
       return;
-    int index = baseAdapter.indexOfViewById(R.id.btn_description);
-    boolean hadDescription = index != -1;
+    int foundIndex = baseAdapter.indexOfViewById(R.id.btn_description);
+    boolean hadDescription = foundIndex != -1;
     boolean hasDescription = hasDescription() || canEditDescription();
     if (hadDescription != hasDescription) {
       if (hadDescription) {
-        removeTopItem(index);
+        removeTopItem(foundIndex);
       } else {
         ListItem descriptionItem = newDescriptionItem();
         setDescription();
 
-        // Description is supposed to be below username, which is supposed to be below peer id
-        int cumulIndex = 0;
+        int index = 0;
         if (baseAdapter.indexOfViewById(R.id.btn_peer_id) != -1) {
-          cumulIndex++;
+          index++;
         }
         if (baseAdapter.indexOfViewById(R.id.btn_username) != -1) {
-          cumulIndex++;
+          index++;
         }
-        addTopItem(descriptionItem, cumulIndex);
+        addTopItem(descriptionItem, index); // after peer_id, username
       }
     } else if (hasDescription) {
       if (setDescription()) {
@@ -2703,14 +2705,21 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       return;
     long chatId = getChatId();
     if (chatId == Tdlib.TRENDING_STICKERS_CHAT_ID && Config.EXPLICIT_DICE_AVAILABLE) {
-      int index = baseAdapter.indexOfViewById(R.id.btn_useExplicitDice);
+      int foundIndex = baseAdapter.indexOfViewById(R.id.btn_useExplicitDice);
       boolean hasEasterEgg = isMember() && testerLevel >= Tdlib.TESTER_LEVEL_READER;
-      boolean hadEasterEgg = index != -1;
+      boolean hadEasterEgg = foundIndex != -1;
       if (hadEasterEgg != hasEasterEgg) {
         if (hadEasterEgg) {
-          removeTopItem(index);
+          removeTopItem(foundIndex);
         } else {
-          addTopItem(newExplicitDiceItem(), baseAdapter.indexOfViewById(R.id.btn_username) != -1 ? 1 : 0);
+          int index = 0;
+          if (baseAdapter.indexOfViewById(R.id.btn_peer_id) != -1) {
+            index++;
+          }
+          if (baseAdapter.indexOfViewById(R.id.btn_username) != -1) {
+            index++;
+          }
+          addTopItem(newExplicitDiceItem(), index); // after peer_id, username
         }
       }
       if (isMember() && testerLevel == -1) {
@@ -2742,12 +2751,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         return;
       }
     }
-    int index = baseAdapter.indexOfViewById(R.id.btn_username);
-    boolean hadUsername = index != -1;
+    int foundIndex = baseAdapter.indexOfViewById(R.id.btn_username);
+    boolean hadUsername = foundIndex != -1;
     boolean hasUsername = Td.hasUsername(usernames);
     if (hadUsername != hasUsername) {
       if (hadUsername) {
-        removeTopItem(index);
+        removeTopItem(foundIndex);
         switch (mode) {
           case MODE_SUPERGROUP: {
             if (tdlib.canCreateInviteLink(chat)) {
@@ -2766,7 +2775,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       } else {
         ListItem usernameItem = newUsernameItem();
         if (usernameItem != null) {
-          addTopItem(usernameItem, 0);
+          int index = 0;
+          if (baseAdapter.indexOfViewById(R.id.btn_peer_id) != -1) {
+            index++;
+          }
+          addTopItem(usernameItem, index);
 
           switch (mode) {
             case MODE_SUPERGROUP: {
@@ -2858,7 +2871,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
     if (hadKey != hasKey) {
       if (hasKey) {
-        addTopItem(newEncryptionKeyItem(), 3);
+        addTopItem(newEncryptionKeyItem(), baseHeaderItemCount);
       } else {
         removeTopItem(index);
       }
