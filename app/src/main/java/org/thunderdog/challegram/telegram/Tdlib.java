@@ -1666,6 +1666,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return accountId;
   }
 
+  public boolean isProduction () {
+    return instanceMode == Mode.NORMAL;
+  }
+
   private boolean isDebugInstance () {
     return instanceMode == Mode.DEBUG;
   }
@@ -5772,6 +5776,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     String installerName = AppInstallationUtil.getInstallerPackageName();
     if (!StringUtils.isEmpty(installerName)) {
       params.put("installer", installerName);
+    }
+    String initiatorName = AppInstallationUtil.getInitiatorPackageName();
+    if (!StringUtils.isEmpty(initiatorName) && !initiatorName.equals(installerName)) {
+      params.put("initiator", initiatorName);
     }
     if (BuildConfig.DEBUG) {
       params.put("debug", true);

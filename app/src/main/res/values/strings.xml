@@ -3323,8 +3323,6 @@
   <string name="RecurringPayment">Recurring payment</string>
   <string name="PaidX">You successfully paid %1$s</string>
 
-  <string name="MarketUrl">https://play.google.com/store/apps/details?id=org.thunderdog.challegram</string>
-
   <string name="NotificationChannelOther">Other</string>
   <string name="RetrievingMessages">Checking for new messages</string>
   <string name="RetrievingText">Account: %1$s</string>

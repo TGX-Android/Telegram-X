@@ -23,7 +23,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.collection.SparseArrayCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -660,8 +662,47 @@ public class SettingsController extends ViewController<Void> implements
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_checkUpdates, R.drawable.baseline_google_play_24, AppInstallationUtil.isAppSideLoaded() ? R.string.AppOnGooglePlay : R.string.CheckForUpdates));
-    if (AppInstallationUtil.getInstallerId() == AppInstallationUtil.InstallerId.GOOGLE_PLAY) {
+    AppInstallationUtil.DownloadUrl downloadUrl = AppInstallationUtil.getDownloadUrl(null);
+    @DrawableRes int downloadIconRes;
+    @StringRes int downloadStringRes = R.string.CheckForUpdates;
+    if (tdlib.hasUrgentInAppUpdate() && tdlib.isProduction()) {
+      downloadIconRes = R.drawable.baseline_warning_24;
+      downloadUrl = new AppInstallationUtil.DownloadUrl(downloadUrl.installerId, tdlib.tMeUrl(BuildConfig.TELEGRAM_UPDATES_CHANNEL));
+    } else {
+      switch (downloadUrl.installerId) {
+        case AppInstallationUtil.InstallerId.UNKNOWN: {
+          if (!StringUtils.isEmpty(BuildConfig.GOOGLE_PLAY_URL)) {
+            downloadUrl = new AppInstallationUtil.DownloadUrl(AppInstallationUtil.InstallerId.GOOGLE_PLAY, BuildConfig.GOOGLE_PLAY_URL);
+            downloadIconRes = R.drawable.baseline_google_play_24;
+            downloadStringRes = R.string.AppOnGooglePlay;
+          } else {
+            downloadIconRes = R.drawable.baseline_update_24;
+          }
+          break;
+        }
+        case AppInstallationUtil.InstallerId.GOOGLE_PLAY: {
+          downloadIconRes = R.drawable.baseline_google_play_24;
+          break;
+        }
+        case AppInstallationUtil.InstallerId.GALAXY_STORE: {
+          downloadIconRes = R.drawable.baseline_galaxy_store_24;
+          break;
+        }
+        case AppInstallationUtil.InstallerId.HUAWEI_APPGALLERY: {
+          downloadIconRes = R.drawable.baseline_huawei_24;
+          break;
+        }
+        case AppInstallationUtil.InstallerId.AMAZON_APPSTORE: {
+          downloadIconRes = R.drawable.baseline_amazon_24;
+          break;
+        }
+        default:
+          throw new UnsupportedOperationException();
+      }
+    }
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_checkUpdates, downloadIconRes, downloadStringRes)
+      .setData(downloadUrl));
+    if (downloadUrl.installerId == AppInstallationUtil.InstallerId.GOOGLE_PLAY) {
       items.add(new ListItem(ListItem.TYPE_SEPARATOR));
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_subscribeToBeta, R.drawable.templarian_baseline_flask_24, R.string.SubscribeToBeta));
     }
@@ -942,8 +983,9 @@ public class SettingsController extends ViewController<Void> implements
     
   }
 
-  private void viewGooglePlay () {
-    tdlib.ui().openUrl(this, BuildConfig.MARKET_URL, new TdlibUi.UrlOpenParameters().disableInstantView());
+  private void openInstallerPage (@Nullable AppInstallationUtil.DownloadUrl downloadUrl) {
+    String url = downloadUrl != null ? downloadUrl.url : BuildConfig.DOWNLOAD_URL;
+    tdlib.ui().openUrl(this, url, new TdlibUi.UrlOpenParameters().disableInstantView());
   }
 
   private void viewSourceCode (boolean isTdlib) {
@@ -981,7 +1023,7 @@ public class SettingsController extends ViewController<Void> implements
     } else if (viewId == R.id.btn_devices) {
       navigateTo(new SettingsSessionsController(context, tdlib));
     } else if (viewId == R.id.btn_checkUpdates) {
-      viewGooglePlay();
+      openInstallerPage(((AppInstallationUtil.DownloadUrl) ((ListItem) v.getTag()).getData()));
     } else if (viewId == R.id.btn_subscribeToBeta) {
       tdlib.ui().subscribeToBeta(this);
     } else if (viewId == R.id.btn_sourceCodeChanges) {// TODO provide an ability to view changes in PRs if they are present in both builds

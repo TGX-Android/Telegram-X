@@ -818,15 +818,6 @@ public class U {
     }
   }
 
-  public static String getMarketUrl () {
-    String url = Lang.getStringSecure(R.string.MarketUrl);
-    return Strings.isValidLink(url) ? url : BuildConfig.MARKET_URL;
-  }
-
-  /*public static boolean isAfter (int hour, int minute, int second, int afterHour, int afterMinute, int afterSecond) {
-    return hour > afterHour || (hour == afterHour && (minute > afterMinute || (minute == afterMinute && second > afterSecond)));
-  }*/
-
   public static String getOtherNotificationChannel () {
     return getNotificationChannel("other", R.string.NotificationChannelOther);
   }
