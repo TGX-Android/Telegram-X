@@ -4934,7 +4934,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         sendButton = new EditButton(context);
         sendButton.setId(R.id.btn_send);
         sendButton.setIcon(inProfilePhotoEditMode ?
-          R.drawable.baseline_image_24 :
+          R.drawable.dot_baseline_image_check_24 :
           R.drawable.deproko_baseline_send_24, false, false);
         sendButton.setOnClickListener(this);
         sendButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(56f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT));
@@ -5374,7 +5374,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           ImageView imageView = new ImageView(context);
           imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
           imageView.setImageResource(inProfilePhotoEditMode ?
-            R.drawable.dot_baseline_acc_personal_18 :
+            R.drawable.dot_baseline_account_circle_18 :
             R.drawable.baseline_arrow_upward_18);
           imageView.setColorFilter(0xffffffff);
           imageView.setAlpha((float) 0xaa / (float) 0xff);

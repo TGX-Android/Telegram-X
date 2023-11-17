@@ -506,7 +506,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           boolean canEdit = hasAccessToEditRight(RightId.SEND_PHOTOS);
           int count = getSendMediaRightCount();
           view.setIgnoreEnabled(true);
-          view.setEnabled(canEdit || getHintForToggleUnavailability(item) != null);
+          view.setEnabled(true /*canEdit || getHintForToggleUnavailability(item) != null*/);
           view.setVisuallyEnabled(canEdit, isUpdate);
           view.getToggler().setUseNegativeState(true);
           view.getToggler().setRadioEnabled(item.getBoolValue(), isUpdate);
@@ -535,6 +535,22 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
             view.setName(canViewMessages ? R.string.RestrictUntil : R.string.BlockUntil);
           } else {
             view.setName(canViewMessages ? R.string.RestrictFor : R.string.BlockFor);
+          }
+        }
+        if (view.getToggler() != null) {
+          if (viewId == R.id.btn_togglePermissionSendMediaGroup) {
+            view.getToggler().setOnClickListener(v -> {
+              ListItem i = (ListItem) view.getTag();
+              if (i.getId() == R.id.btn_togglePermissionSendMediaGroup) {
+                toggleSendMediaRights();
+              } else {
+                view.performClick();
+              }
+            });
+            view.getToggler().setClickable(true);
+          } else {
+            view.getToggler().setOnClickListener(null);
+            view.getToggler().setClickable(false);
           }
         }
       }
@@ -570,6 +586,21 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
 
     if (ChatId.isBasicGroup(getArgumentsStrict().chatId)) {
       tdlib.cache().subscribeToGroupUpdates(ChatId.toBasicGroupId(getArgumentsStrict().chatId), this);
+    }
+  }
+
+  private void toggleSendMediaRights () {
+    ListItem item = adapter.findItemById(R.id.btn_togglePermissionSendMediaGroup);
+    if (item == null) {
+      return;
+    }
+
+    boolean newValue = !item.getBoolValue();
+    for (int rightId : SEND_MEDIA_RIGHT_IDS) {
+      boolean canEdit = hasAccessToEditRight(rightId);
+      if (canEdit) {
+        setValueForRightId(rightId, newValue);
+      }
     }
   }
 
@@ -1409,6 +1440,14 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
 
   private void toggleValueForRightId (@RightId int id) {
     final boolean newValue = !getValueForId(id);
+    setValueForRightId(id, newValue);
+  }
+
+  private void setValueForRightId (@RightId int id, boolean newValue) {
+    if (getValueForId(id) == newValue) {
+      return;
+    }
+
     switch (id) {
       case RightId.READ_MESSAGES: {
         setCanViewMessages(newValue);
@@ -1732,15 +1771,39 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         return R.drawable.baseline_format_text_24;
       case RightId.CHANGE_CHAT_INFO:
       case RightId.EDIT_MESSAGES:
+      case RightId.EDIT_STORIES:
         return R.drawable.baseline_edit_24;
+      case RightId.DELETE_STORIES:
       case RightId.DELETE_MESSAGES:
-      case RightId.BAN_USERS:
         return R.drawable.baseline_delete_24;
+      case RightId.BAN_USERS:
+        return R.drawable.baseline_block_24;
       case RightId.INVITE_USERS:
-      case RightId.ADD_NEW_ADMINS:
         return R.drawable.baseline_person_add_24;
+      case RightId.ADD_NEW_ADMINS:
+        return R.drawable.baseline_stars_24;
       case RightId.PIN_MESSAGES:
         return R.drawable.deproko_baseline_pin_24;
+      case RightId.REMAIN_ANONYMOUS:
+        return R.drawable.dot_baseline_acc_anon_24;
+
+      case RightId.MANAGE_VIDEO_CHATS:
+        return R.drawable.baseline_video_chat_24;
+      case RightId.MANAGE_TOPICS:
+        return R.drawable.baseline_format_list_bulleted_type_24;
+
+      case RightId.POST_STORIES:  // todo
+
+
+      case RightId.SEND_AUDIO:
+      case RightId.SEND_DOCS:
+      case RightId.SEND_PHOTOS:
+      case RightId.SEND_VIDEOS:
+      case RightId.SEND_VOICE_NOTES:
+      case RightId.SEND_VIDEO_NOTES:
+      case RightId.SEND_OTHER_MESSAGES:
+      case RightId.SEND_POLLS:
+      case RightId.EMBED_LINKS:
       default:
         return 0;
     }

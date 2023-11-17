@@ -26,6 +26,7 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
@@ -525,21 +526,12 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
     }
 
     public static String formatElapsedTime (int seconds) {
-      StringBuilder sb = new StringBuilder(5);
-
-      int minutes = seconds / 60;
-      int remainingSeconds = seconds % 60;
-
+      final int minutes = seconds / 60;
       if (minutes > 0) {
-        sb.append(minutes);
-        sb.append(":");
-        if (remainingSeconds < 10) {
-          sb.append(0);
-        }
+        return Lang.plural(R.string.SlowModeMinutesShort, minutes);
+      } else {
+        return Integer.toString(seconds);
       }
-      sb.append(remainingSeconds);
-
-      return sb.toString();
     }
 
     @Override

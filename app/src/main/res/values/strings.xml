@@ -4264,6 +4264,8 @@
   <string name="SlowModeHours_one">Members will be able to send only one message every %1$s hour.</string>
   <string name="SlowModeHours_other">Members will be able to send only one message every %1$s hours.</string>
   <string name="SlowModeOff">Off</string>
+  <string name="SlowModeMinutesShort_one">%1$sm</string>
+  <string name="SlowModeMinutesShort_other">%1$sm</string>
 
   <string name="InviteLinks">Invite Links</string>
   <string name="PrimaryInviteLinkMenu">Primary Invite Link</string>
