@@ -4819,51 +4819,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
-  public TdApi.FormattedText addServiceInformation (long chatId, TdApi.FormattedText existingPrefix) {
-    String prefix;
-    long value;
-    switch (ChatId.getType(chatId)) {
-      case TdApi.ChatTypePrivate.CONSTRUCTOR: {
-        prefix = "user";
-        value = ChatId.toUserId(chatId);
-        break;
-      }
-      case TdApi.ChatTypeSecret.CONSTRUCTOR: {
-        prefix = "secret";
-        value = ChatId.toSecretChatId(chatId);
-        break;
-      }
-      case TdApi.ChatTypeBasicGroup.CONSTRUCTOR: {
-        prefix = "group";
-        value = ChatId.toBasicGroupId(chatId);
-        break;
-      }
-      case TdApi.ChatTypeSupergroup.CONSTRUCTOR: {
-        prefix = isSupergroup(chatId) ? "supergroup" : "channel";
-        value = ChatId.toSupergroupId(chatId);
-        break;
-      }
-      default: {
-        Td.assertChatType_e562ec7d();
-        return existingPrefix;
-      }
-    }
-
-    String suffix = "#" + value;
-    TdApi.FormattedText formattedSuffix = new TdApi.FormattedText(prefix + " " + suffix, new TdApi.TextEntity[2]);
-    formattedSuffix.entities[0] = new TdApi.TextEntity(0, formattedSuffix.text.length(), new TdApi.TextEntityTypeItalic());
-    formattedSuffix.entities[1] = new TdApi.TextEntity(formattedSuffix.text.length() - suffix.length(), suffix.length(), new TdApi.TextEntityTypeHashtag());
-    if (!Td.isEmpty(existingPrefix)) {
-      return Td.concat(
-        existingPrefix,
-        new TdApi.FormattedText("\n", null),
-        formattedSuffix
-      );
-    } else {
-      return formattedSuffix;
-    }
-  }
-
   public void forwardMessage (long chatId, long messageThreadId, long fromChatId, long messageId, TdApi.MessageSendOptions options) {
     client().send(new TdApi.ForwardMessages(chatId, messageThreadId, fromChatId, new long[] {messageId}, options, false, false, false), messageHandler());
   }

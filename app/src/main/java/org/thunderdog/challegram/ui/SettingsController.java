@@ -571,6 +571,8 @@ public class SettingsController extends ViewController<Void> implements
           } else {
             view.setData("@" + myUsernames.editableUsername); // TODO multi-username support
           }
+        } else if (itemId == R.id.btn_peer_id) {
+          view.setData(Strings.buildCounter(tdlib.myUserId(true)));
         } else if (itemId == R.id.btn_phone) {
           view.setData(myPhone);
         } else if (itemId == R.id.btn_bio) {
@@ -579,9 +581,6 @@ public class SettingsController extends ViewController<Void> implements
             text = TD.toFormattedText(Lang.getString(R.string.LoadingInformation), false);
           } else {
             TdApi.FormattedText about = SettingsController.this.about;
-            if (Settings.instance().showPeerIds()) {
-              about = tdlib.addServiceInformation(ChatId.fromUserId(tdlib.myUserId()), about);
-            }
             if (Td.isEmpty(about)) {
               text = TD.toFormattedText(Lang.getString(R.string.BioNone), false);
             } else {
@@ -598,6 +597,10 @@ public class SettingsController extends ViewController<Void> implements
     ArrayUtils.ensureCapacity(items, 27);
 
     items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET));
+    if (Settings.instance().showPeerIds()) {
+      items.add(new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_peer_id, R.drawable.baseline_code_24, R.string.UserId).setContentStrings(R.string.LoadingInformation, R.string.LoadingInformation));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+    }
     items.add(new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_username, R.drawable.baseline_alternate_email_24, R.string.Username).setContentStrings(R.string.LoadingUsername, R.string.SetUpUsername));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_phone, R.drawable.baseline_phone_24, R.string.Phone));
@@ -1016,6 +1019,11 @@ public class SettingsController extends ViewController<Void> implements
       EditBioController c = new EditBioController(context, tdlib);
       c.setArguments(new EditBioController.Arguments(about != null ? about.text : "", 0));
       navigateTo(c);
+    } else if (viewId == R.id.btn_peer_id) {
+      long myId = tdlib.myUserId(true);
+      if (myId != 0) {
+        UI.copyText(Long.toString(myId), R.string.CopiedMyUserId);
+      }
     } else if (viewId == R.id.btn_languageSettings) {
       navigateTo(new SettingsLanguageController(context, tdlib));
     } else if (viewId == R.id.btn_notificationSettings) {

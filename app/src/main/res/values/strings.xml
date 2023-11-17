@@ -445,6 +445,8 @@
   <string name="PasscodeSettingDisabled">Disabled</string>
   <string name="passcode_confirm_invisible">%1$s (invisible)</string>
   <string name="copied_phone">Phone number has been copied to the clipboard</string>
+  <string name="CopiedMyUserId">Your ID has been copied to the clipboard</string>
+  <string name="CopiedPeerId">Peer ID has been copied to the clipboard</string>
   <string name="CopiedUsername">Username has been copied to the clipboard</string>
   <string name="CopiedLink">Link has been copied to the clipboard</string>
   <string name="CopiedLinkPrivate">Link has been copied to the clipboard. It works only for members of this chat.</string>
@@ -4870,8 +4872,16 @@
   <string name="ExperimentalSettings">Experimental settings</string>
   <string name="ExperimentalSettingsWarning">**Warning:** those are experimental settings. Some may not work. Others may break the app. Any of them might disappear without a trace.\n\nUse at your own risk.</string>
   <string name="Experiment_PeerIds">Show Peer IDs in Profiles</string>
-  <string name="Experiment_PeerIdsInfo">Show peer IDs from API below their Bio / Description</string>
+  <string name="Experiment_PeerIdsInfo">Show API identifiers of users and chats in their profiles</string>
   <string name="Experiment_ChatFolders">Enable Chat Folders</string>
   <string name="Experiment_ChatFoldersInfo">Enable early access to folders. Appearance of this feature is planned to be changed in future versions of Telegram X, and it includes some unfinished work. Credit: [PR #297](https://github.com/TGX-Android/Telegram-X/pull/297) by nikita-toropov</string>
+
+  <string name="PeerId">Peer ID</string>
+  <string name="UserId">User ID</string>
+  <string name="SecretChatId">Secret Chat ID</string>
+  <string name="BotId">Bot ID</string>
+  <string name="BasicGroupId">Group ID</string>
+  <string name="SuperGroupId">Supergroup ID</string>
+  <string name="ChannelId">Channel ID</string>
 
 </resources>
