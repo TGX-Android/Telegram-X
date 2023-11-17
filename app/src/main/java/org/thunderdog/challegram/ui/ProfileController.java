@@ -1722,7 +1722,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           view.setData(R.string.PictureAndText);
         } else if (itemId == R.id.btn_peer_id) {
           view.setName(getPeerTypeStringResourceId());
-          view.setData(Long.toString(getPeerId()));
+          view.setData(Strings.buildCounter(getPeerId()));
         } else if (itemId == R.id.btn_description) {
           view.setText(aboutWrapper);
           if (canEditDescription() && !hasDescription()) {

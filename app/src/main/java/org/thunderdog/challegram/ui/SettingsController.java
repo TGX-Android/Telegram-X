@@ -572,7 +572,7 @@ public class SettingsController extends ViewController<Void> implements
             view.setData("@" + myUsernames.editableUsername); // TODO multi-username support
           }
         } else if (itemId == R.id.btn_peer_id) {
-          view.setData(Long.toString(tdlib.myUserId(true)));
+          view.setData(Strings.buildCounter(tdlib.myUserId(true)));
         } else if (itemId == R.id.btn_phone) {
           view.setData(myPhone);
         } else if (itemId == R.id.btn_bio) {
