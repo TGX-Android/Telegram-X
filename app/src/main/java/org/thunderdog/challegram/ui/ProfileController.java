@@ -2499,7 +2499,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         removeTopItem(index);
       } else {
         index = 0;
-        if (baseAdapter.indexOfViewById(R.id.btn_peer_id) != -1) {
+        if (Settings.instance().showPeerIds() && baseAdapter.indexOfViewById(R.id.btn_peer_id) != -1) {
           index++;
         }
         if (baseAdapter.indexOfViewById(R.id.btn_username) != -1) {
@@ -2679,7 +2679,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         setDescription();
 
         int index = 0;
-        if (baseAdapter.indexOfViewById(R.id.btn_peer_id) != -1) {
+        if (Settings.instance().showPeerIds() && baseAdapter.indexOfViewById(R.id.btn_peer_id) != -1) {
           index++;
         }
         if (baseAdapter.indexOfViewById(R.id.btn_username) != -1) {
@@ -2713,7 +2713,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           removeTopItem(foundIndex);
         } else {
           int index = 0;
-          if (baseAdapter.indexOfViewById(R.id.btn_peer_id) != -1) {
+          if (Settings.instance().showPeerIds() && baseAdapter.indexOfViewById(R.id.btn_peer_id) != -1) {
             index++;
           }
           if (baseAdapter.indexOfViewById(R.id.btn_username) != -1) {
@@ -2776,7 +2776,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         ListItem usernameItem = newUsernameItem();
         if (usernameItem != null) {
           int index = 0;
-          if (baseAdapter.indexOfViewById(R.id.btn_peer_id) != -1) {
+          if (Settings.instance().showPeerIds() && baseAdapter.indexOfViewById(R.id.btn_peer_id) != -1) {
             index++;
           }
           addTopItem(usernameItem, index);
