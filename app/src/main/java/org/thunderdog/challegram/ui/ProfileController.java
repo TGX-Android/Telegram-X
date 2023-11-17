@@ -765,6 +765,42 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     return tdlib.chatUsername(chat.id);
   }
 
+  private long getPeerId () {
+    if (secretChat != null) {
+      return secretChat.id;
+    } else if (group != null) {
+      return group.id;
+    } else if (supergroup != null) {
+      return supergroup.id;
+    } else if (user != null) {
+      return user.id;
+    } else {
+      return 0;
+    }
+  }
+
+  private int getPeerTypeStringResourceId () {
+    if (secretChat != null) {
+      return R.string.SecretChatId;
+    } else if (group != null) {
+      return R.string.BasicGroupId;
+    } else if (supergroup != null) {
+      if (isChannel()) {
+        return R.string.ChannelId;
+      } else {
+        return R.string.SuperGroupId;
+      }
+    } else if (user != null) {
+      if (user.type.getConstructor() == TdApi.UserTypeBot.CONSTRUCTOR) {
+        return R.string.BotId;
+      } else {
+        return R.string.UserId;
+      }
+    } else {
+      return R.string.PeerId;
+    }
+  }
+
   @Override
   public boolean onOptionItemPressed (View optionItemView, int id) {
     if (id == R.id.btn_copyText) {
@@ -1684,6 +1720,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           view.setData(Lang.plural(R.string.xGroups, userFull.groupInCommonCount));
         } else if (itemId == R.id.btn_encryptionKey) {
           view.setData(R.string.PictureAndText);
+        } else if (itemId == R.id.btn_peer_id) {
+          view.setName(getPeerTypeStringResourceId());
+          view.setData(Strings.buildCounter(getPeerId()));
         } else if (itemId == R.id.btn_description) {
           view.setText(aboutWrapper);
           if (canEditDescription() && !hasDescription()) {
@@ -2240,9 +2279,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         text = null;
       }
     }
-    if (Settings.instance().showPeerIds()) {
-      text = tdlib.addServiceInformation(getChatId(), text);
-    }
     if (this.currentAbout == null || !Td.equalsTo(this.currentAbout, text)) {
       currentAbout = text;
       if (text != null) {
@@ -2294,6 +2330,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     return new ListItem(ListItem.TYPE_INFO_MULTILINE, R.id.btn_description, R.drawable.baseline_info_24, isUserMode() && !TD.isBot(user) ? R.string.UserBio : R.string.Description);
   }
 
+  private ListItem newPeerIdItem () {
+    return new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_peer_id, R.drawable.baseline_identifier_24, R.string.PeerId);
+  }
+
   private ListItem newEncryptionKeyItem () {
     return new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_encryptionKey, R.drawable.baseline_vpn_key_24, R.string.EncryptionKey);
   }
@@ -2308,9 +2348,17 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET));
 
     int addedCount = 0;
+    if (Settings.instance().showPeerIds()) {
+      items.add(newPeerIdItem());
+      addedCount++;
+    }
+
     if (Td.hasUsername(user)) {
       final ListItem usernameItem = newUsernameItem();
       if (usernameItem != null) {
+        if (addedCount > 0) {
+          items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+        }
         items.add(usernameItem);
         addedCount++;
       }
@@ -2451,13 +2499,16 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         removeTopItem(index);
       } else {
         index = 0;
+        if (Settings.instance().showPeerIds() && baseAdapter.indexOfViewById(R.id.btn_peer_id) != -1) {
+          index++;
+        }
         if (baseAdapter.indexOfViewById(R.id.btn_username) != -1) {
           index++;
         }
         if (baseAdapter.indexOfViewById(R.id.btn_description) != -1) {
           index++;
         }
-        addTopItem(newPhoneItem(), index); // after username, if exists
+        addTopItem(newPhoneItem(), index); // after peer_id, username, description
       }
     } else if (hasPhone) {
       updateValuedItem(R.id.btn_phone);
@@ -2592,7 +2643,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private boolean hasDescription () {
-    return !StringUtils.isEmpty(getDescriptionValue()) || Settings.instance().showPeerIds();
+    return !StringUtils.isEmpty(getDescriptionValue());
   }
 
   private boolean setDescription () {
@@ -2617,16 +2668,24 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private void checkDescription () {
     if (isEditing())
       return;
-    int index = baseAdapter.indexOfViewById(R.id.btn_description);
-    boolean hadDescription = index != -1;
+    int foundIndex = baseAdapter.indexOfViewById(R.id.btn_description);
+    boolean hadDescription = foundIndex != -1;
     boolean hasDescription = hasDescription() || canEditDescription();
     if (hadDescription != hasDescription) {
       if (hadDescription) {
-        removeTopItem(index);
+        removeTopItem(foundIndex);
       } else {
         ListItem descriptionItem = newDescriptionItem();
         setDescription();
-        addTopItem(descriptionItem, baseAdapter.indexOfViewById(R.id.btn_username) != -1 ? 1 : 0);
+
+        int index = 0;
+        if (Settings.instance().showPeerIds() && baseAdapter.indexOfViewById(R.id.btn_peer_id) != -1) {
+          index++;
+        }
+        if (baseAdapter.indexOfViewById(R.id.btn_username) != -1) {
+          index++;
+        }
+        addTopItem(descriptionItem, index); // after peer_id, username
       }
     } else if (hasDescription) {
       if (setDescription()) {
@@ -2646,14 +2705,21 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       return;
     long chatId = getChatId();
     if (chatId == Tdlib.TRENDING_STICKERS_CHAT_ID && Config.EXPLICIT_DICE_AVAILABLE) {
-      int index = baseAdapter.indexOfViewById(R.id.btn_useExplicitDice);
+      int foundIndex = baseAdapter.indexOfViewById(R.id.btn_useExplicitDice);
       boolean hasEasterEgg = isMember() && testerLevel >= Tdlib.TESTER_LEVEL_READER;
-      boolean hadEasterEgg = index != -1;
+      boolean hadEasterEgg = foundIndex != -1;
       if (hadEasterEgg != hasEasterEgg) {
         if (hadEasterEgg) {
-          removeTopItem(index);
+          removeTopItem(foundIndex);
         } else {
-          addTopItem(newExplicitDiceItem(), baseAdapter.indexOfViewById(R.id.btn_username) != -1 ? 1 : 0);
+          int index = 0;
+          if (Settings.instance().showPeerIds() && baseAdapter.indexOfViewById(R.id.btn_peer_id) != -1) {
+            index++;
+          }
+          if (baseAdapter.indexOfViewById(R.id.btn_username) != -1) {
+            index++;
+          }
+          addTopItem(newExplicitDiceItem(), index); // after peer_id, username
         }
       }
       if (isMember() && testerLevel == -1) {
@@ -2685,12 +2751,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         return;
       }
     }
-    int index = baseAdapter.indexOfViewById(R.id.btn_username);
-    boolean hadUsername = index != -1;
+    int foundIndex = baseAdapter.indexOfViewById(R.id.btn_username);
+    boolean hadUsername = foundIndex != -1;
     boolean hasUsername = Td.hasUsername(usernames);
     if (hadUsername != hasUsername) {
       if (hadUsername) {
-        removeTopItem(index);
+        removeTopItem(foundIndex);
         switch (mode) {
           case MODE_SUPERGROUP: {
             if (tdlib.canCreateInviteLink(chat)) {
@@ -2709,7 +2775,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       } else {
         ListItem usernameItem = newUsernameItem();
         if (usernameItem != null) {
-          addTopItem(usernameItem, 0);
+          int index = 0;
+          if (Settings.instance().showPeerIds() && baseAdapter.indexOfViewById(R.id.btn_peer_id) != -1) {
+            index++;
+          }
+          addTopItem(usernameItem, index);
 
           switch (mode) {
             case MODE_SUPERGROUP: {
@@ -2801,7 +2871,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
     if (hadKey != hasKey) {
       if (hasKey) {
-        addTopItem(newEncryptionKeyItem(), 3);
+        addTopItem(newEncryptionKeyItem(), baseHeaderItemCount);
       } else {
         removeTopItem(index);
       }
@@ -2852,9 +2922,17 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
     int addedCount = 0;
 
+    if (Settings.instance().showPeerIds()) {
+      items.add(newPeerIdItem());
+      addedCount++;
+    }
+
     if (isPublic) {
       ListItem usernameItem = newUsernameItem();
       if (usernameItem != null) {
+        if (addedCount > 0) {
+          items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+        }
         items.add(usernameItem);
         addedCount++;
       }
@@ -2929,9 +3007,17 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
     int addedCount = 0;
 
+    if (Settings.instance().showPeerIds()) {
+      items.add(newPeerIdItem());
+      addedCount++;
+    }
+
     if (isPublic) {
       ListItem usernameItem = newUsernameItem();
       if (usernameItem != null) {
+        if (addedCount > 0) {
+          items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+        }
         items.add(usernameItem);
         addedCount++;
       }
@@ -4506,6 +4592,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       tdlib.ui().handleProfileClick(this, v, v.getId(), user, false);
     } else if (viewId == R.id.btn_useExplicitDice) {
       Settings.instance().setNewSetting(((ListItem) v.getTag()).getLongId(), baseAdapter.toggleView(v));
+    } else if (viewId == R.id.btn_peer_id) {
+       UI.copyText(Long.toString(getPeerId()), R.string.CopiedPeerId);
     } else if (viewId == R.id.btn_username) {
       boolean canSetUsername = canSetUsername();
       boolean canInviteUsers = chat != null && tdlib.canManageInviteLinks(chat);

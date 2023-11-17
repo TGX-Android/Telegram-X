@@ -59,6 +59,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.camera.CameraController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Test;
+import org.thunderdog.challegram.util.AppInstallationUtil;
 import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
@@ -394,7 +395,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       default:
         return null;
     }
-    return Lang.getMarkdownStringSecure(this, resId, getDiskAvailableInfo(), U.getMarketUrl());
+    return Lang.getMarkdownStringSecure(this, resId, getDiskAvailableInfo(), AppInstallationUtil.getDownloadUrl(null).url);
   }
 
   @Override

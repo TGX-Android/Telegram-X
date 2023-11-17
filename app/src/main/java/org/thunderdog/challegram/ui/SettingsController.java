@@ -23,7 +23,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.collection.SparseArrayCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -569,6 +571,8 @@ public class SettingsController extends ViewController<Void> implements
           } else {
             view.setData("@" + myUsernames.editableUsername); // TODO multi-username support
           }
+        } else if (itemId == R.id.btn_peer_id) {
+          view.setData(Strings.buildCounter(tdlib.myUserId(true)));
         } else if (itemId == R.id.btn_phone) {
           view.setData(myPhone);
         } else if (itemId == R.id.btn_bio) {
@@ -577,9 +581,6 @@ public class SettingsController extends ViewController<Void> implements
             text = TD.toFormattedText(Lang.getString(R.string.LoadingInformation), false);
           } else {
             TdApi.FormattedText about = SettingsController.this.about;
-            if (Settings.instance().showPeerIds()) {
-              about = tdlib.addServiceInformation(ChatId.fromUserId(tdlib.myUserId()), about);
-            }
             if (Td.isEmpty(about)) {
               text = TD.toFormattedText(Lang.getString(R.string.BioNone), false);
             } else {
@@ -596,6 +597,10 @@ public class SettingsController extends ViewController<Void> implements
     ArrayUtils.ensureCapacity(items, 27);
 
     items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET));
+    if (Settings.instance().showPeerIds()) {
+      items.add(new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_peer_id, R.drawable.baseline_code_24, R.string.UserId).setContentStrings(R.string.LoadingInformation, R.string.LoadingInformation));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+    }
     items.add(new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_username, R.drawable.baseline_alternate_email_24, R.string.Username).setContentStrings(R.string.LoadingUsername, R.string.SetUpUsername));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_phone, R.drawable.baseline_phone_24, R.string.Phone));
@@ -660,8 +665,47 @@ public class SettingsController extends ViewController<Void> implements
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_checkUpdates, R.drawable.baseline_google_play_24, AppInstallationUtil.isAppSideLoaded() ? R.string.AppOnGooglePlay : R.string.CheckForUpdates));
-    if (AppInstallationUtil.getInstallerId() == AppInstallationUtil.InstallerId.GOOGLE_PLAY) {
+    AppInstallationUtil.DownloadUrl downloadUrl = AppInstallationUtil.getDownloadUrl(null);
+    @DrawableRes int downloadIconRes;
+    @StringRes int downloadStringRes = R.string.CheckForUpdates;
+    if (tdlib.hasUrgentInAppUpdate() && tdlib.isProduction()) {
+      downloadIconRes = R.drawable.baseline_warning_24;
+      downloadUrl = new AppInstallationUtil.DownloadUrl(downloadUrl.installerId, tdlib.tMeUrl(BuildConfig.TELEGRAM_UPDATES_CHANNEL));
+    } else {
+      switch (downloadUrl.installerId) {
+        case AppInstallationUtil.InstallerId.UNKNOWN: {
+          if (!StringUtils.isEmpty(BuildConfig.GOOGLE_PLAY_URL)) {
+            downloadUrl = new AppInstallationUtil.DownloadUrl(AppInstallationUtil.InstallerId.GOOGLE_PLAY, BuildConfig.GOOGLE_PLAY_URL);
+            downloadIconRes = R.drawable.baseline_google_play_24;
+            downloadStringRes = R.string.AppOnGooglePlay;
+          } else {
+            downloadIconRes = R.drawable.baseline_update_24;
+          }
+          break;
+        }
+        case AppInstallationUtil.InstallerId.GOOGLE_PLAY: {
+          downloadIconRes = R.drawable.baseline_google_play_24;
+          break;
+        }
+        case AppInstallationUtil.InstallerId.GALAXY_STORE: {
+          downloadIconRes = R.drawable.baseline_galaxy_store_24;
+          break;
+        }
+        case AppInstallationUtil.InstallerId.HUAWEI_APPGALLERY: {
+          downloadIconRes = R.drawable.baseline_huawei_24;
+          break;
+        }
+        case AppInstallationUtil.InstallerId.AMAZON_APPSTORE: {
+          downloadIconRes = R.drawable.baseline_amazon_24;
+          break;
+        }
+        default:
+          throw new UnsupportedOperationException();
+      }
+    }
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_checkUpdates, downloadIconRes, downloadStringRes)
+      .setData(downloadUrl));
+    if (downloadUrl.installerId == AppInstallationUtil.InstallerId.GOOGLE_PLAY) {
       items.add(new ListItem(ListItem.TYPE_SEPARATOR));
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_subscribeToBeta, R.drawable.templarian_baseline_flask_24, R.string.SubscribeToBeta));
     }
@@ -942,8 +986,9 @@ public class SettingsController extends ViewController<Void> implements
     
   }
 
-  private void viewGooglePlay () {
-    tdlib.ui().openUrl(this, BuildConfig.MARKET_URL, new TdlibUi.UrlOpenParameters().disableInstantView());
+  private void openInstallerPage (@Nullable AppInstallationUtil.DownloadUrl downloadUrl) {
+    String url = downloadUrl != null ? downloadUrl.url : BuildConfig.DOWNLOAD_URL;
+    tdlib.ui().openUrl(this, url, new TdlibUi.UrlOpenParameters().disableInstantView());
   }
 
   private void viewSourceCode (boolean isTdlib) {
@@ -974,6 +1019,11 @@ public class SettingsController extends ViewController<Void> implements
       EditBioController c = new EditBioController(context, tdlib);
       c.setArguments(new EditBioController.Arguments(about != null ? about.text : "", 0));
       navigateTo(c);
+    } else if (viewId == R.id.btn_peer_id) {
+      long myId = tdlib.myUserId(true);
+      if (myId != 0) {
+        UI.copyText(Long.toString(myId), R.string.CopiedMyUserId);
+      }
     } else if (viewId == R.id.btn_languageSettings) {
       navigateTo(new SettingsLanguageController(context, tdlib));
     } else if (viewId == R.id.btn_notificationSettings) {
@@ -981,7 +1031,7 @@ public class SettingsController extends ViewController<Void> implements
     } else if (viewId == R.id.btn_devices) {
       navigateTo(new SettingsSessionsController(context, tdlib));
     } else if (viewId == R.id.btn_checkUpdates) {
-      viewGooglePlay();
+      openInstallerPage(((AppInstallationUtil.DownloadUrl) ((ListItem) v.getTag()).getData()));
     } else if (viewId == R.id.btn_subscribeToBeta) {
       tdlib.ui().subscribeToBeta(this);
     } else if (viewId == R.id.btn_sourceCodeChanges) {// TODO provide an ability to view changes in PRs if they are present in both builds
