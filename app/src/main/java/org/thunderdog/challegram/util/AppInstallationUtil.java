@@ -79,12 +79,44 @@ public class AppInstallationUtil {
     return InstallerId.UNKNOWN;
   }
 
-  // Checks installer id for current app installation
+  // Checks initiator and installer id for current app installation
+
+  @Nullable
+  public static String getInitiatorPackageName () {
+    final String packageName = UI.getAppContext().getPackageName();
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      try {
+        android.content.pm.InstallSourceInfo sourceInfo = UI.getAppContext().getPackageManager().getInstallSourceInfo(packageName);
+        String initiatingId = sourceInfo.getInitiatingPackageName();
+        if (!StringUtils.isEmpty(initiatingId)) {
+          return initiatingId;
+        }
+      } catch (Throwable t) {
+        Log.v("Unable to determine initiator package name", t);
+      }
+    }
+    return null;
+  }
 
   @Nullable
   public static String getInstallerPackageName () {
+    final String packageName = UI.getAppContext().getPackageName();
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      try {
+        android.content.pm.InstallSourceInfo sourceInfo = UI.getAppContext().getPackageManager().getInstallSourceInfo(packageName);
+        String installerId = sourceInfo.getInstallingPackageName();
+        if (!StringUtils.isEmpty(installerId)) {
+          return installerId;
+        }
+        String initiatingId = sourceInfo.getInitiatingPackageName();
+        if (!StringUtils.isEmpty(initiatingId)) {
+          return initiatingId;
+        }
+      } catch (Throwable t) {
+        Log.v("Unable to determine installer package via modern API", t);
+      }
+    }
     try {
-      String packageName = UI.getAppContext().getPackageName();
       String installerPackageName = UI.getAppContext().getPackageManager().getInstallerPackageName(packageName);
       if (StringUtils.isEmpty(installerPackageName)) {
         return null;
@@ -144,35 +176,50 @@ public class AppInstallationUtil {
 
   // Do not allow non-store URLs for compliance
 
+  public static class DownloadUrl {
+    public final @InstallerId int installerId;
+    public final String url;
+
+    public DownloadUrl (int installerId, String url) {
+      this.installerId = installerId;
+      this.url = url;
+    }
+  }
+
   @SuppressWarnings("ConstantConditions")
-  public static @NonNull String getDownloadUrl (@Nullable String remoteDownloadUrl) {
-    switch (getInstallerId()) {
-      case InstallerId.UNKNOWN:
-      case InstallerId.GOOGLE_PLAY: // primary distribution channel, no need to force URL.
+  public static @NonNull DownloadUrl getDownloadUrl (@Nullable String remoteDownloadUrl) {
+    @InstallerId int installerId = getInstallerId();
+    switch (installerId) {
+      case InstallerId.UNKNOWN: // primary distribution channel, no need to force URL.
+        break;
+      case InstallerId.GOOGLE_PLAY:
+        if (!StringUtils.isEmpty(BuildConfig.GOOGLE_PLAY_URL)) {
+          return new DownloadUrl(installerId, BuildConfig.GOOGLE_PLAY_URL);
+        }
         break;
 
       case InstallerId.GALAXY_STORE:
         if (!StringUtils.isEmpty(BuildConfig.GALAXY_STORE_URL)) {
-          return BuildConfig.GALAXY_STORE_URL;
+          return new DownloadUrl(installerId, BuildConfig.GALAXY_STORE_URL);
         }
         break;
       case InstallerId.HUAWEI_APPGALLERY:
         if (!StringUtils.isEmpty(BuildConfig.HUAWEI_APPGALLERY_URL)) {
-          return BuildConfig.HUAWEI_APPGALLERY_URL;
+          return new DownloadUrl(installerId, BuildConfig.HUAWEI_APPGALLERY_URL);
         }
         break;
       case InstallerId.AMAZON_APPSTORE:
         if (!StringUtils.isEmpty(BuildConfig.AMAZON_APPSTORE_URL)) {
-          return BuildConfig.AMAZON_APPSTORE_URL;
+          return new DownloadUrl(installerId, BuildConfig.AMAZON_APPSTORE_URL);
         }
         break;
     }
     if (remoteDownloadUrl != null) {
-      return remoteDownloadUrl;
+      return new DownloadUrl(InstallerId.UNKNOWN, remoteDownloadUrl);
     }
     if (StringUtils.isEmpty(BuildConfig.DOWNLOAD_URL)) {
       throw new UnsupportedOperationException();
     }
-    return BuildConfig.DOWNLOAD_URL;
+    return new DownloadUrl(InstallerId.UNKNOWN, BuildConfig.DOWNLOAD_URL);
   }
 }

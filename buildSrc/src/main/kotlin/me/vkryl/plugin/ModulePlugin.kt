@@ -88,6 +88,7 @@ open class ModulePlugin : Plugin<Project> {
     val appId = getOrSample("app.id")
     val appName = getOrSample("app.name")
     val appDownloadUrl = getOrSample("app.download_url")
+    val googlePlayUrl = properties.getProperty("app.google_download_url", null)
     val galaxyStoreUrl = properties.getProperty("app.galaxy_download_url", null)
     val huaweiAppGalleryUrl = properties.getProperty("app.huawei_download_url", null)
     val amazonAppStoreUrl = properties.getProperty("app.amazon_download_url", null)
@@ -279,11 +280,11 @@ open class ModulePlugin : Plugin<Project> {
               applicationId = appId
 
               buildConfigString("PROJECT_NAME", appName)
-              buildConfigString("MARKET_URL", "https://play.google.com/store/apps/details?id=${appId}")
 
               buildConfigString("SAFETYNET_API_KEY", safetyNetToken)
 
               buildConfigString("DOWNLOAD_URL", appDownloadUrl)
+              buildConfigString("GOOGLE_PLAY_URL", googlePlayUrl)
               buildConfigString("GALAXY_STORE_URL", galaxyStoreUrl)
               buildConfigString("HUAWEI_APPGALLERY_URL", huaweiAppGalleryUrl)
               buildConfigString("AMAZON_APPSTORE_URL", amazonAppStoreUrl)
