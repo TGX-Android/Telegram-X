@@ -275,10 +275,17 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     });
   }
 
-  public void getDownloadUrl (@Nullable final RunnableData<String> callback) {
+  private AppInstallationUtil.DownloadUrl toDownloadUrl (@Nullable TdApi.HttpUrl url) {
+    if (url != null && tdlib.hasUrgentInAppUpdate()) {
+      return new AppInstallationUtil.DownloadUrl(AppInstallationUtil.InstallerId.UNKNOWN, url.url);
+    }
+    return AppInstallationUtil.getDownloadUrl(url != null ? url.url : null);
+  }
+
+  public void getDownloadUrl (@Nullable final RunnableData<AppInstallationUtil.DownloadUrl> callback) {
     if (downloadUrl != null) {
       if (callback != null) {
-        callback.runWithData(AppInstallationUtil.getDownloadUrl(downloadUrl.url));
+        callback.runWithData(toDownloadUrl(downloadUrl));
       }
       return;
     }
@@ -286,7 +293,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
       @Override
       public void act () {
         if (callback != null) {
-          callback.runWithData(AppInstallationUtil.getDownloadUrl(null));
+          callback.runWithData(toDownloadUrl(null));
         }
         cancel();
       }
@@ -298,7 +305,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
         tdlib.ui().post(() -> {
           downloadUrl = httpUrl;
           if (callback != null && fallback.isPending()) {
-            callback.runWithData(AppInstallationUtil.getDownloadUrl(httpUrl.url));
+            callback.runWithData(toDownloadUrl(httpUrl));
             fallback.cancel();
           }
         });
