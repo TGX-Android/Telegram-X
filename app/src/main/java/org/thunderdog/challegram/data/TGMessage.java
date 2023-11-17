@@ -935,7 +935,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private final BoolAnimator isHiddenByFilter;
 
   public void setIsHiddenByMessagesFilter (boolean hidden, boolean animated) {
-    isHiddenByFilter.setValue(hidden, BitwiseUtils.hasFlag(flags, FLAG_LAYOUT_BUILT) && UI.inUiThread() && animated);
+    isHiddenByFilter.setValue(hidden, BitwiseUtils.hasFlag(flags, FLAG_LAYOUT_BUILT) && currentViews.hasAnyTargetToInvalidate() && UI.inUiThread() && animated);
   }
 
   public boolean isHiddenByMessagesFilter () {
@@ -3502,6 +3502,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     replyData.load();
   }
 
+  public void onReplyLoaded () {
+    if (mMessageFilterProcessingState != null) {
+      mMessageFilterProcessingState.setReplySenderId(replyData.getSender());
+    }
+  }
+
   @MessageChangeType
   private int performContentfulUpdate (FutureBool act) {
     int height = getHeight();
@@ -4699,6 +4705,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       } else {
         combinedMessages.add(0, message);
       }
+      if (mMessageFilterProcessingState != null) {
+        mMessageFilterProcessingState.combineWith(message);
+      }
       onMessageCombinedWithOtherMessage(message, atBottom, local);
       forceCancelGlobalAnimation(true);
     }
@@ -5304,6 +5313,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
     if (message == null) {
       return MESSAGE_NOT_CHANGED;
+    }
+    if (mMessageFilterProcessingState != null) {
+      mMessageFilterProcessingState.updateMessageContent(messageId, newContent);
     }
     if ((flags & FLAG_UNSUPPORTED) != 0) {
       if (message.content.getConstructor() == TdApi.MessageUnsupported.CONSTRUCTOR && newContent.getConstructor() != TdApi.MessageUnsupported.CONSTRUCTOR) {

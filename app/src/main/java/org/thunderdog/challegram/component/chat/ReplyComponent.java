@@ -813,6 +813,9 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       sender == null ? senderName :
       StringUtils.isEmpty(senderName) ? tdlib.senderName(sender, isMessageComponent()) :
       Lang.getString(isChannel() ? R.string.format_channelAndSignature : R.string.format_chatAndSignature, tdlib.senderName(sender, isMessageComponent()), senderName);
+    if (parent != null) {
+      UI.execute(parent::onReplyLoaded);
+    }
     if (Thread.currentThread() == Background.instance().thread() || forceLocal) {
       this.content = new ContentPreview(translatedText, contentPreview);
       setTitleImpl(title);

@@ -23,11 +23,13 @@ import java.lang.annotation.RetentionPolicy;
 @IntDef({
   FilterReason.PENDING,
   FilterReason.NONE,
-  FilterReason.BLOCKED_SENDER
+  FilterReason.BLOCKED_SENDER,
+  FilterReason.BLOCKED_SENDER_MENTION
 })
 public @interface FilterReason {
   int
     PENDING = -1,
     NONE = 0,
-    BLOCKED_SENDER = 1;
+    BLOCKED_SENDER = 1,
+    BLOCKED_SENDER_MENTION = 2;
 }
