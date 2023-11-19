@@ -2943,6 +2943,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private LinearLayout editButtons;
   private EditButton cropOrStickerButton;
   private EditButton paintOrMuteButton;
+  private EditButton mirrorButton;
   private EditButton adjustOrTextButton;
   private StopwatchHeaderButton stopwatchButton;
   private @Nullable MediaLayout.SenderSendIcon senderSendIcon;
@@ -6237,6 +6238,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       }
       case SECTION_CROP: {
         if (cropControlsWrap == null) {
+          final boolean inProfilePhotoEditMode = inProfilePhotoEditMode();
           FrameLayoutFix.LayoutParams params;
 
           params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, getSectionHeight(SECTION_CROP), Gravity.BOTTOM);
@@ -6259,12 +6261,19 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           proportionButton.setOnClickListener(this);
           proportionButton.setIcon(R.drawable.baseline_image_aspect_ratio_24, false, false);
           proportionButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(56f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.LEFT));
-          //if (!inProfilePhotoEditMode()) {
+          if (!inProfilePhotoEditMode) {
             cropControlsWrap.addView(proportionButton);
-          //}
+          }
+
+          mirrorButton = new EditButton(context());
+          mirrorButton.setId(R.id.btn_mirrorHorizontal);
+          mirrorButton.setOnClickListener(this);
+          mirrorButton.setIcon(R.drawable.dot_baseline_flip_horizontal_24, false, false);
+          mirrorButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(56f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.LEFT, inProfilePhotoEditMode ? 0 : Screen.dp(56), 0, 0, 0));
+          cropControlsWrap.addView(mirrorButton);
 
           params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-          params.leftMargin = Screen.dp(56f);
+          params.leftMargin = Screen.dp(inProfilePhotoEditMode ? 56f : (56f * 2));
           params.rightMargin = Screen.dp(56f);
 
           rotationControlView = new RotationControlView(context());
@@ -6670,6 +6679,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     proportionButton.setActive(false, false);
     int cropRotation = MathUtils.modulo(this.cropRotation + (oldCropState != null ? oldCropState.getRotateBy() : 0), 360);
     cropTargetView.resetState(cropBitmap, cropRotation, currentCropState.getDegreesAroundCenter(), currentPaintState);
+    cropTargetView.setMirrorHorizontally(currentCropState.hasFlag(CropState.FLAG_MIRROR_HORIZONTALLY));
+    mirrorButton.setActive(currentCropState.hasFlag(CropState.FLAG_MIRROR_HORIZONTALLY), false);
     rotationControlView.reset(currentCropState.getDegreesAroundCenter(), false);
     cropAreaView.resetProportion();
     cropAreaView.resetState(U.getWidth(cropBitmap, cropRotation), U.getHeight(cropBitmap, cropRotation), currentCropState.getLeft(), currentCropState.getTop(), currentCropState.getRight(), currentCropState.getBottom(), false);
@@ -6710,6 +6721,12 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     proportionButton.setActive(big != 0 && small != 0, true);
   }
 
+  private void setMirrorHorizontally (boolean newValue) {
+    cropTargetView.setMirrorHorizontally(newValue);
+    currentCropState.setFlags(BitwiseUtils.setFlag(currentCropState.getFlags(), CropState.FLAG_MIRROR_HORIZONTALLY, newValue));
+    mirrorButton.setActive(newValue, true);
+  }
+
   private float cropStartDegrees, cropEndDegrees;
   private boolean resetCropDegrees;
 
@@ -6735,6 +6752,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     proportionButton.setActive(false, true);
     resettingCrop = resetCropDegrees || rotatingByDegrees != 0;
     closeCropAfterReset = !zero;
+    setMirrorHorizontally(!zero && oldCropState != null && oldCropState.needMirrorHorizontally());
     if (zero || oldCropState == null || oldCropState.isEmpty()) {
       if (cropAreaView.resetArea(resettingCrop, !zero)) {
         resettingCrop = true;
@@ -7937,6 +7955,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       }
     } else if (viewId == R.id.btn_rotate) {
       rotateBy90Degrees();
+    } else if (viewId == R.id.btn_mirrorHorizontal) {
+      setMirrorHorizontally(!currentCropState.hasFlag(CropState.FLAG_MIRROR_HORIZONTALLY));
     } else if (viewId == R.id.btn_proportion) {
       if (allowDataChanges() && currentSection == SECTION_CROP && !inProfilePhotoEditMode()) {
         IntList ids = new IntList(PROPORTION_MODES.length + 2);

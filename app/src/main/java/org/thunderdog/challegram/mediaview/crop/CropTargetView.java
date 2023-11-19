@@ -160,6 +160,14 @@ public class CropTargetView extends View {
     }
   }
 
+  private boolean needMirrorHorizontally;
+
+  public void setMirrorHorizontally (boolean mirrorHorizontally) {
+    this.needMirrorHorizontally = mirrorHorizontally;
+    invalidate();
+  }
+
+
   @Override
   protected void onDraw (Canvas c) {
     // c.drawColor(0xffff0000);
@@ -174,7 +182,7 @@ public class CropTargetView extends View {
       c.scale(rotationScale, rotationScale, cx, cy);
     }
 
-    DrawAlgorithms.drawScaledBitmap(getMeasuredWidth(), getMeasuredHeight(), c, bitmap, rotation, paintState);
+    DrawAlgorithms.drawScaledBitmap(getMeasuredWidth(), getMeasuredHeight(), c, bitmap, rotation, needMirrorHorizontally, paintState);
 
     if (saved) {
       c.restore();

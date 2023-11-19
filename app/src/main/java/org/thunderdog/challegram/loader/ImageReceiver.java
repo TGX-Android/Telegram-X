@@ -1229,12 +1229,12 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
             c.rotate(degrees, cx, cy);
             c.scale(scale, scale, cx, cy);
 
-            drawBitmap(c, bitmap, 0, 0, paint);
+            drawBitmap(c, bitmap, 0, 0, displayCrop != null && displayCrop.needMirrorHorizontally(), paint);
             if (paintState != null) {
               paintState.draw(c, 0, 0, bitmap.getWidth(), bitmap.getHeight());
             }
           } else {
-            drawBitmap(c, bitmap, bitmapRect, rect, paint);
+            drawBitmap(c, bitmap, bitmapRect, rect, displayCrop != null && displayCrop.needMirrorHorizontally(), paint);
             if (paintState != null) {
               c.clipRect(rect);
               DrawAlgorithms.drawPainting(c, bitmap, bitmapRect, rect, paintState);
@@ -1242,7 +1242,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
           }
         } else {
           c.concat(bitmapMatrix);
-          drawBitmap(c, bitmap, 0, 0, paint);
+          drawBitmap(c, bitmap, 0, 0, displayCrop != null && displayCrop.needMirrorHorizontally(), paint);
           if (paintState != null) {
             c.clipRect(0, 0, bitmap.getWidth(), bitmap.getHeight());
             paintState.draw(c, 0, 0, bitmap.getWidth(), bitmap.getHeight());
@@ -1251,7 +1251,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
 
         c.restore();
       } else {
-        drawBitmap(c, bitmap, bitmapRect, drawRegion, paint);
+        drawBitmap(c, bitmap, bitmapRect, drawRegion, displayCrop != null && displayCrop.needMirrorHorizontally(), paint);
         if (paintState != null) {
           c.save();
           c.clipRect(drawRegion);
@@ -1266,18 +1266,36 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     void onComplete (ImageReceiver receiver, ImageFile imageFile);
   }
 
-  private static void drawBitmap (Canvas c, Bitmap bitmap, float left, float top, Paint paint) {
+  private static void drawBitmap (Canvas c, Bitmap bitmap, float left, float top, boolean needMirrorHorizontally, Paint paint) {
     try {
+      c.save();
+      c.scale(needMirrorHorizontally ? -1 : 1, 1, left + bitmap.getWidth() / 2f, 0);
       c.drawBitmap(bitmap, left, top, paint);
+      c.restore();
     } catch (Throwable t) {
       Log.e(Log.TAG_IMAGE_LOADER, "Unable to draw bitmap", t);
       Tracer.onOtherError(t);
     }
   }
 
-  private static void drawBitmap (Canvas c, Bitmap bitmap, Rect rect, Rect drawRegion, Paint paint) {
+  private static final Rect tmpRect = new Rect();
+
+  private static void drawBitmap (Canvas c, Bitmap bitmap, Rect rect, Rect drawRegion, boolean needMirrorHorizontally, Paint paint) {
     try {
-      c.drawBitmap(bitmap, rect, drawRegion, paint);
+      c.save();
+      c.scale(needMirrorHorizontally ? -1 : 1, 1, drawRegion.centerX(), 0);
+      tmpRect.set(rect);
+
+      if (needMirrorHorizontally) {
+        int width = bitmap.getWidth();
+        int left = rect.left;
+        int right = rect.right;
+        tmpRect.left = width - right;
+        tmpRect.right = width - left;
+      }
+
+      c.drawBitmap(bitmap, tmpRect, drawRegion, paint);
+      c.restore();
     } catch (Throwable t) {
       Log.e(Log.TAG_IMAGE_LOADER, "Unable to draw bitmap", t);
       Tracer.onOtherError(t);
