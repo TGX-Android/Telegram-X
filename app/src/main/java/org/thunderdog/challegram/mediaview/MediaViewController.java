@@ -8225,7 +8225,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       return;
     }
 
-    if (showSlowModeRestriction(sendButton)) {
+    if (initialSendOptions.schedulingState == null && showSlowModeRestriction(sendButton)) {
       return;
     }
 

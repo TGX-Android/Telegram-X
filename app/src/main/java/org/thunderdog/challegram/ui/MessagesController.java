@@ -8340,7 +8340,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private boolean showGifRestriction (View view) {
-    return showSlowModeRestriction(view) || showRestriction(view, RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil);
+    return showSlowModeRestriction(view, null) || showRestriction(view, RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil);
   }
 
   public boolean showPhotoVideoRestriction (View view) { // TODO separate photos & videos
@@ -8354,7 +8354,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return false;
     }
 
-    if (showSlowModeRestriction(view)) {
+    if (showSlowModeRestriction(view, null)) {
       return true;
     }
 
@@ -8374,8 +8374,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return showRestriction(view, text);
   }
 
-  public boolean showSlowModeRestriction (View v) {
-    CharSequence restriction = tdlib().getSlowModeRestrictionText(getChatId());
+  public boolean showSlowModeRestriction (View v, @Nullable TdApi.MessageSendOptions sendOptions) {
+    CharSequence restriction = tdlib().getSlowModeRestrictionText(getChatId(), sendOptions != null ? sendOptions.schedulingState : null);
     if (restriction != null) {
       showRestriction(v, restriction);
       return true;
@@ -8404,7 +8404,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private boolean sendContent (View view, @RightId int rightId, int defaultRes, int specificRes, int specificUntilRes, Future<TdApi.MessageReplyTo> replyTo, TdApi.MessageSendOptions initialSendOptions, Future<TdApi.InputMessageContent> content) {
-    if (showSlowModeRestriction(view) || showRestriction(view, rightId, defaultRes, specificRes, specificUntilRes))
+    if (showSlowModeRestriction(view, initialSendOptions) || showRestriction(view, rightId, defaultRes, specificRes, specificUntilRes))
       return false;
     pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
       tdlib.sendMessage(chat.id, getMessageThreadId(), replyTo != null ? replyTo.getValue() : null, Td.newSendOptions(modifiedSendOptions, obtainSilentMode()), content.getValue(), null);
@@ -8960,10 +8960,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
 
-    if (showSlowModeRestriction(sendButton != null ? sendButton : inputView)) {
-      return;
-    }
-
     long chatId = getChatId();
     long messageThreadId = getMessageThreadId();
     final @Nullable TdApi.MessageReplyTo replyTo = allowReply ? (clearInput ? getCurrentReplyId() : obtainReplyTo()) : null;
@@ -8995,6 +8991,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     final TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(initialSendOptions, obtainSilentMode());
     List<TdApi.SendMessage> functions = TD.sendMessageText(chatId, messageThreadId, replyTo, finalSendOptions, content, tdlib.maxMessageTextLength());
     final boolean isSchedule = finalSendOptions.schedulingState != null;
+
+    if (showSlowModeRestriction(sendButton != null ? sendButton : inputView, finalSendOptions)) {
+      return;
+    }
 
     if (clearInput) {
       final int expectedCount = functions.size();
@@ -9143,7 +9143,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void sendMusic (View view, List<MediaBottomFilesController.MusicEntry> musicFiles, boolean needGroupMedia, boolean allowReply, TdApi.MessageSendOptions initialSendOptions) {
-    if (!showSlowModeRestriction(view) && !showRestriction(view, RightId.SEND_AUDIO)) {
+    if (!showSlowModeRestriction(view, initialSendOptions) && !showRestriction(view, RightId.SEND_AUDIO)) {
       TdApi.InputMessageContent[] content = new TdApi.InputMessageContent[musicFiles.size()];
       for (int i = 0; i < content.length; i++) {
         MediaBottomFilesController.MusicEntry musicFile = musicFiles.get(i);
@@ -9158,7 +9158,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean sendRecord (View view, final TGRecord record, boolean allowReply, TdApi.MessageSendOptions initialSendOptions) {
-    if (showSlowModeRestriction(view) || showRestriction(view, RightId.SEND_VOICE_NOTES)) {
+    if (showSlowModeRestriction(view, initialSendOptions) || showRestriction(view, RightId.SEND_VOICE_NOTES)) {
       return false;
     }
     final long chatId = chat.id;
@@ -9266,7 +9266,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       case Intents.ACTIVITY_RESULT_VIDEO_CAPTURE: {
         File file = Intents.takeLastOutputMedia();
         boolean isVideo = requestCode == Intents.ACTIVITY_RESULT_VIDEO_CAPTURE;
-        if (showSlowModeRestriction(mediaButton) || showRestriction(mediaButton, isVideo ? RightId.SEND_VIDEOS : RightId.SEND_PHOTOS)) {
+        if (showSlowModeRestriction(mediaButton, null) || showRestriction(mediaButton, isVideo ? RightId.SEND_VIDEOS : RightId.SEND_PHOTOS)) {
           return;
         }
         if (file != null) {
@@ -9331,7 +9331,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       case Intents.ACTIVITY_RESULT_AUDIO: {
         final Uri path = data.getData();
         if (path == null) break;
-        if (showSlowModeRestriction(mediaButton) || showRestriction(mediaButton, RightId.SEND_AUDIO)) {
+        if (showSlowModeRestriction(mediaButton, null) || showRestriction(mediaButton, RightId.SEND_AUDIO)) {
           return;
         }
         final String audioPath = U.tryResolveFilePath(path);
@@ -9354,7 +9354,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void sendFiles (View view, final List<String> paths, boolean needGroupMedia, boolean allowReply, TdApi.MessageSendOptions initialSendOptions) {
-    if (showSlowModeRestriction(view)) {
+    if (showSlowModeRestriction(view, initialSendOptions)) {
       return;
     }
 
@@ -9398,7 +9398,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void sendPhotoCompressed (final String path, final @Nullable TdApi.MessageSelfDestructType selfDestructType, final boolean allowReply) {
-    if (showSlowModeRestriction(mediaButton) || showRestriction(mediaButton, RightId.SEND_PHOTOS)) {
+    if (showSlowModeRestriction(mediaButton, null) || showRestriction(mediaButton, RightId.SEND_PHOTOS)) {
       return;
     }
     if (StringUtils.isEmpty(path)) {

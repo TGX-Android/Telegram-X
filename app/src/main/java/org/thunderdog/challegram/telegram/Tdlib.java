@@ -10720,6 +10720,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public CharSequence getSlowModeRestrictionText (long chatId) {
+    return getSlowModeRestrictionText(chatId, null);
+  }
+
+  public CharSequence getSlowModeRestrictionText (long chatId, @Nullable TdApi.MessageSchedulingState schedulingState) {
+    if (schedulingState != null) {
+      return null;
+    }
+
     final int timeToSend = (int) cache().getSlowModeDelayExpiresIn(ChatId.toSupergroupId(chatId), TimeUnit.SECONDS);
     if (timeToSend == 0) {
       return null;

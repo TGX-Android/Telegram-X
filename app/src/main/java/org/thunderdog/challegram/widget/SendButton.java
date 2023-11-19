@@ -330,7 +330,7 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
     }
 
     if (slowModeCounterController != null) {
-      slowModeCounterController.counter.draw(c, cx + Screen.dp(5), cy + Screen.dp(10f), Gravity.CENTER, 1f);
+      slowModeCounterController.draw(c, cx, cy);
     }
   }
 
@@ -416,35 +416,50 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
 
   public SlowModeCounterController getSlowModeCounterController (Tdlib tdlib) {
     if (slowModeCounterController == null) {
-      slowModeCounterController = new SlowModeCounterController(tdlib, this);
+      slowModeCounterController = new SlowModeCounterController(tdlib, this, new TextColorSet() {
+        @Override
+        public int defaultTextColor () {
+          return Theme.getColor(ColorId.textLight);
+        }
+
+        @Override
+        public int backgroundColor (boolean isPressed) {
+          return Theme.getColor(ColorId.filling);
+        }
+      }, true);
     }
     return slowModeCounterController;
   }
 
   public static class SlowModeCounterController implements TdlibCache.SupergroupDataChangeListener, Destroyable {
     public final Counter counter;
+    public final RectF lastCounterDrawRect = new RectF();
     private final Tdlib tdlib;
     private final View view;
     private long chatId;
 
-    public SlowModeCounterController (Tdlib tdlib, View v) {
+    public SlowModeCounterController (Tdlib tdlib, View v, TextColorSet textColorSet, boolean needBackground) {
       this.tdlib = tdlib;
       this.view = v;
-      this.counter = new Counter.Builder()
+
+      Counter.Builder builder = new Counter.Builder()
         .callback((c, s) -> view.invalidate())
         .textSize(11f)
-        .colorSet(new TextColorSet() {
-          @Override
-          public int defaultTextColor () {
-            return Theme.getColor(ColorId.textLight);
-          }
+        .colorSet(textColorSet);
 
-          @Override
-          public int backgroundColor (boolean isPressed) {
-            return Theme.getColor(ColorId.filling);
-          }
-        })
-        .build();
+      if (!needBackground) {
+        builder.noBackground();
+      }
+
+      this.counter = builder.build();
+    }
+
+    public boolean isVisible () {
+      return counter.getVisibility() > 0f;
+    }
+
+    public void draw (Canvas c, float cx, float cy) {
+      counter.draw(c, cx + Screen.dp(5), cy + Screen.dp(10f), Gravity.CENTER, 1f, lastCounterDrawRect);
     }
 
     public void setCurrentChat (long chatId) {

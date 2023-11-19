@@ -4846,6 +4846,7 @@
   <string name="AvatarsInReactionsNever">Never</string>
 
   <string name="MessageRestrictedByTelegram">This is a service message from Telegram</string>
+  <string name="MessageUnsupportedHint">This message is unsupported in the installed version of Telegram X.</string>
 
   <string name="ShowXMore_one">%1$s more</string>
   <string name="ShowXMore_other">%1$s more</string>

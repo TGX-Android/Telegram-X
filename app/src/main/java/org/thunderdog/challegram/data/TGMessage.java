@@ -229,7 +229,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   // counters
 
-  private final Counter viewCounter, replyCounter, shareCounter, isPinned, isEdited, isRestricted;
+  private final Counter viewCounter, replyCounter, shareCounter, isPinned, isEdited, isRestricted, isUnsupported;
   private Counter shrinkedReactionsCounter, reactionsCounter;
   private final ReactionsCounterDrawable reactionsCounterDrawable;
   private final Counter isChannelHeaderCounter;
@@ -438,6 +438,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       .colorSet(() -> Theme.getColor(ColorId.messageNegativeLine))
       .build();
     this.isRestricted.showHide(true, false);
+    this.isUnsupported = new Counter.Builder()
+      .noBackground()
+      .allBold(false)
+      .callback(this)
+      .drawable(R.drawable.baseline_info_14, 14f, 0f, Gravity.CENTER_HORIZONTAL)
+      .build();
+    this.isUnsupported.showHide(true, false);
     this.isChannelHeaderCounter = new Counter.Builder()
       .noBackground()
       .allBold(false)
@@ -2146,8 +2153,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       }
 
       if (shouldShowMessageRestrictedWarning()) {
-        isRestricted.draw(c, right, top, Gravity.RIGHT, 1f, view, 0, isRestrictedCounterLastDrawRect);
-        right -= isRestricted.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN));
+        if (isRestrictedByTelegram()) {
+          isRestricted.draw(c, right, top, Gravity.RIGHT, 1f, view, 0, isRestrictedCounterLastDrawRect);
+          right -= isRestricted.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN));
+        } else {
+          isUnsupported.draw(c, right, top, Gravity.RIGHT, 1f, view, ColorId.iconLight, isRestrictedCounterLastDrawRect);
+          right -= isUnsupported.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN));
+        }
       }
 
       isPinned.draw(c, right, top, Gravity.RIGHT, 1f, view, getTimePartIconColorId());
@@ -2821,27 +2833,34 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return e.getY() < findTopEdge();
   }
 
+  private static boolean checkClickOnRect (RectF rectF, float x, float y, float accuracy) {
+    RectF rect = Paints.getRectF();
+    rect.set(rectF);
+    rect.inset(-accuracy, -accuracy);
+    return rect.contains(x, y);
+  }
+
   private int getClickType (MessageView view, float x, float y) {
     if (isTranslated()) {
-      if (isTranslatedCounterLastDrawRect.contains(x, y)) {
+      if (checkClickOnRect(isTranslatedCounterLastDrawRect, x, y, Screen.dp(4))) {
         return CLICK_TYPE_TRANSLATE_MESSAGE_ICON;
       }
     }
 
     if (needDrawChannelIconInHeader() && hAuthorNameT != null) {
-      if (isChannelHeaderCounterLastDrawRect.contains(x, y)) {
+      if (checkClickOnRect(isChannelHeaderCounterLastDrawRect, x, y, Screen.dp(4))) {
         return CLICK_TYPE_CHANNEL_MESSAGE_ICON;
       }
     }
 
     if (shouldShowMessageRestrictedWarning()) {
-      if (isRestrictedCounterLastDrawRect.contains(x, y)) {
+      if (checkClickOnRect(isRestrictedCounterLastDrawRect, x, y, Screen.dp(4))) {
         return CLICK_TYPE_MESSAGE_RESTRICTED_ICON;
       }
     }
 
     if (shouldShowEdited()) {
-      if (isEditedCounterLastDrawRect.contains(x, y)) {
+      if (checkClickOnRect(isEditedCounterLastDrawRect, x, y, Screen.dp(4))) {
         return CLICK_TYPE_MESSAGE_EDITED_ICON;
       }
     }
@@ -2877,7 +2896,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           showMessageTooltip((targetView, outRect) -> {
             isRestrictedCounterLastDrawRect.round(outRect);
             outRect.top -= Screen.dp(6);
-          }, Lang.getString(R.string.MessageRestrictedByTelegram), 2500);
+          }, Lang.getString(isRestrictedByTelegram() ?
+            R.string.MessageRestrictedByTelegram :
+            R.string.MessageUnsupportedHint), 2500);
           break;
         }
         case CLICK_TYPE_MESSAGE_EDITED_ICON: {
@@ -3356,7 +3377,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     max -= isPinned.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN)) + Screen.dp(COUNTER_ADD_MARGIN);
     if (shouldShowMessageRestrictedWarning()) {
-      max -= isRestricted.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN)) + Screen.dp(COUNTER_ADD_MARGIN);
+      if (isRestrictedByTelegram()) {
+        max -= isRestricted.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN)) + Screen.dp(COUNTER_ADD_MARGIN);
+      } else {
+        max -= isUnsupported.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN)) + Screen.dp(COUNTER_ADD_MARGIN);
+      }
     }
     if (replyCounter.getVisibility() > 0f) {
       max -= replyCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
@@ -3955,8 +3980,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     startX += isPinned.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN));
 
     if (shouldShowMessageRestrictedWarning()) {
-      isRestricted.draw(c, startX, counterY, Gravity.LEFT, 1f, view, 0, isRestrictedCounterLastDrawRect);
-      startX += isRestricted.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN));
+      if (isRestrictedByTelegram()) {
+        isRestricted.draw(c, startX, counterY, Gravity.LEFT, 1f, view, 0, isRestrictedCounterLastDrawRect);
+        startX += isRestricted.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN));
+      } else {
+        isUnsupported.draw(c, startX, counterY, Gravity.LEFT, 1f, view, iconColorId, isRestrictedCounterLastDrawRect);
+        startX += isUnsupported.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN));
+      }
     }
 
     if (shouldShowEdited()) {
@@ -4046,7 +4076,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
     width += isPinned.getScaledOrTargetWidth(Screen.dp(COUNTER_ICON_MARGIN), isTarget);
     if (shouldShowMessageRestrictedWarning()) {
-      width += isRestricted.getScaledOrTargetWidth(Screen.dp(COUNTER_ICON_MARGIN), isTarget);
+      if (isRestrictedByTelegram()) {
+        width += isRestricted.getScaledOrTargetWidth(Screen.dp(COUNTER_ICON_MARGIN), isTarget);
+      } else {
+        width += isUnsupported.getScaledOrTargetWidth(Screen.dp(COUNTER_ICON_MARGIN), isTarget);
+      }
     }
     if (reactionsDrawMode == REACTIONS_DRAW_MODE_FLAT) {
       width += reactionsCounterDrawable.getMinimumWidth() + messageReactions.getVisibility() * Screen.dp(3);
