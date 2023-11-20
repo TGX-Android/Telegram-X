@@ -1142,6 +1142,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         setImageRotateFactor(factor);
         break;
       }
+      case ANIMATOR_IMAGE_FLIP: {
+        setImageMirrorHorizontallyFactor(factor);
+        break;
+      }
       case ANIMATOR_PAINT_HIDE: {
         setHidePaint(factor);
         break;
@@ -1258,6 +1262,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       }
       case ANIMATOR_IMAGE_ROTATE: {
         applyImageRotation();
+        break;
+      }
+      case ANIMATOR_IMAGE_FLIP: {
+        applyImageMirrorHorizontally();
         break;
       }
       case ANIMATOR_THUMBS: {
@@ -6642,6 +6650,41 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     cropTargetView.setDegreesAroundCenter(newValue);
   }
 
+  /**/
+
+  private static final int ANIMATOR_IMAGE_FLIP = 192;
+
+  private BoolAnimator imageFlipAnimator;
+
+  private boolean imageMirrorHorizontallyAnimate (boolean needMirror, boolean animated) {
+    if (imageFlipAnimator == null) {
+      imageFlipAnimator = new BoolAnimator(ANIMATOR_IMAGE_FLIP, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 250L, !needMirror);
+    } else if (!imageFlipAnimator.isAnimating()) {
+      imageFlipAnimator.setValue(!needMirror, false);
+    } else {
+      return false;
+    }
+    currentCropState.setFlags(BitwiseUtils.setFlag(currentCropState.getFlags(), CropState.FLAG_MIRROR_HORIZONTALLY, needMirror));
+    imageFlipAnimator.setValue(needMirror, animated);
+    return true;
+  }
+
+  private void setImageMirrorHorizontallyFactor (float factor) {
+    cropTargetView.setMirrorHorizontallyFactor(factor);
+  }
+
+  private void applyImageMirrorHorizontally () {
+    cropTargetView.setMirrorHorizontallyFactor(currentCropState.hasFlag(CropState.FLAG_MIRROR_HORIZONTALLY) ? 1 : 0);
+  }
+
+  private void cancelImageMirrorHorizontally () {
+    if (imageFlipAnimator != null) {
+      imageFlipAnimator.cancel();
+    }
+  }
+
+  /**/
+
   private CropState currentCropState;
   private CropState oldCropState;
 
@@ -6700,7 +6743,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     proportionButton.setActive(false, false);
     int cropRotation = MathUtils.modulo(this.cropRotation + (oldCropState != null ? oldCropState.getRotateBy() : 0), 360);
     cropTargetView.resetState(cropBitmap, cropRotation, currentCropState.getDegreesAroundCenter(), currentPaintState);
-    cropTargetView.setMirrorHorizontally(currentCropState.hasFlag(CropState.FLAG_MIRROR_HORIZONTALLY));
+    cropTargetView.setMirrorHorizontallyFactor(currentCropState.hasFlag(CropState.FLAG_MIRROR_HORIZONTALLY) ? 1f : 0f);
     mirrorButton.setActive(currentCropState.hasFlag(CropState.FLAG_MIRROR_HORIZONTALLY), false);
     rotationControlView.reset(currentCropState.getDegreesAroundCenter(), false);
     cropAreaView.resetProportion();
@@ -6743,9 +6786,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void setMirrorHorizontally (boolean newValue) {
-    cropTargetView.setMirrorHorizontally(newValue);
-    currentCropState.setFlags(BitwiseUtils.setFlag(currentCropState.getFlags(), CropState.FLAG_MIRROR_HORIZONTALLY, newValue));
-    mirrorButton.setActive(newValue, true);
+    if (imageMirrorHorizontallyAnimate(newValue, true)) {
+      mirrorButton.setActive(newValue, true);
+    }
   }
 
   private float cropStartDegrees, cropEndDegrees;
@@ -6760,6 +6803,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
 
     cancelImageRotation();
+    cancelImageMirrorHorizontally();
 
     cropStartDegrees = currentCropState.getDegreesAroundCenter();
     cropEndDegrees = zero || oldCropState == null ? 0 : oldCropState.getDegreesAroundCenter();

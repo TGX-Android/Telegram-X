@@ -6956,18 +6956,13 @@ public class TdlibUi extends Handler {
       b.item(new ViewController.OptionItem(R.id.btn_changePhotoGallery, Lang.getString(isPublic ? R.string.SetPublicPhoto : R.string.SetProfilePhoto),
         ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_image_24));
 
-      if (profilePhotoToDelete != 0) {
-        b.item(new ViewController.OptionItem(R.id.btn_changePhotoDelete, Lang.getString(R.string.Delete),
-          ViewController.OPTION_COLOR_RED, R.drawable.baseline_delete_24));
-      }
-
       showOptions(b.build(), (itemView, id) -> {
         if (id == R.id.btn_open) {
           MediaViewController.openFromProfile(context, user, delegate);
         } else if (id == R.id.btn_changePhotoGallery) {
-          openMediaView(false, false, AvatarPickerMode.PROFILE, f -> onProfilePhotoReceived(f, isPublic));
-        } else if (id == R.id.btn_changePhotoDelete) {
-          deleteProfilePhoto(profilePhotoToDelete);
+          openMediaView(false, false, AvatarPickerMode.PROFILE, f -> onProfilePhotoReceived(f, isPublic),
+            profilePhotoToDelete != 0 ? Lang.getString(isPublic ? R.string.RemovePublicPhoto : R.string.RemoveProfilePhoto) : null,
+            ColorId.textNegative, () -> showDeletePhotoConfirm(() -> deleteProfilePhoto(profilePhotoToDelete)));
         }
         return true;
       });
@@ -6978,6 +6973,7 @@ public class TdlibUi extends Handler {
         return;
       }
 
+      final boolean isChannel = tdlib.isChannel(chat.id);
       ViewController.Options.Builder b = new ViewController.Options.Builder();
 
       if (chat.photo != null && allowOpenPhoto) {
@@ -6985,23 +6981,18 @@ public class TdlibUi extends Handler {
           ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_visibility_24));
       }
 
-      b.item(new ViewController.OptionItem(R.id.btn_changePhotoGallery, Lang.getString(R.string.SetProfilePhoto),
+      b.item(new ViewController.OptionItem(R.id.btn_changePhotoGallery, Lang.getString(isChannel ? R.string.SetChannelPhoto : R.string.SetGroupPhoto),
         ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_image_24));
 
-      if (chat.photo != null) {
-        b.item(new ViewController.OptionItem(R.id.btn_changePhotoDelete, Lang.getString(R.string.Delete),
-          ViewController.OPTION_COLOR_RED, R.drawable.baseline_delete_24));
-      }
-
+      final boolean canDelete = chat.photo != null;
       showOptions(b.build(), (itemView, id) -> {
         if (id == R.id.btn_open) {
           if (chat.photo != null && !TD.isFileEmpty(chat.photo.small)) {
             MediaViewController.openFromChat(context, chat, delegate);
           }
         } else if (id == R.id.btn_changePhotoGallery) {
-          openMediaView(false, false, tdlib.isChannel(chat.id) ? AvatarPickerMode.CHANNEL : AvatarPickerMode.GROUP, f -> onChatPhotoReceived(f, chat.id));
-        } else if (id == R.id.btn_changePhotoDelete) {
-          setChatPhoto(chat.id, null);
+          openMediaView(false, false, isChannel ? AvatarPickerMode.CHANNEL : AvatarPickerMode.GROUP, f -> onChatPhotoReceived(f, chat.id),
+            canDelete ? Lang.getString(isChannel ? R.string.RemoveChannelPhoto : R.string.RemoveGroupPhoto) : null, ColorId.textNegative, () -> showDeletePhotoConfirm(() -> setChatPhoto(chat.id, null)));
         }
         return true;
       });
@@ -7010,21 +7001,25 @@ public class TdlibUi extends Handler {
     public void showMenuForNonCreatedChat (EditHeaderView headerView, boolean isChannel) {
       ViewController.Options.Builder b = new ViewController.Options.Builder();
 
-      b.item(new ViewController.OptionItem(R.id.btn_changePhotoGallery, Lang.getString(R.string.SetProfilePhoto),
+      b.item(new ViewController.OptionItem(R.id.btn_changePhotoGallery, Lang.getString(isChannel ? R.string.SetChannelPhoto : R.string.SetGroupPhoto),
         ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_image_24));
 
-      if (headerView.getImageFile() != null) {
-        b.item(new ViewController.OptionItem(R.id.btn_changePhotoDelete, Lang.getString(R.string.DeletePhoto),
-          ViewController.OPTION_COLOR_RED, R.drawable.baseline_remove_circle_24));
-      }
-
+      final boolean canDelete = headerView.getImageFile() != null;
       showOptions(b.build(), (itemView, id) -> {
         if (id == R.id.btn_changePhotoGallery) {
-          openMediaView(false, false, isChannel ? AvatarPickerMode.CHANNEL : AvatarPickerMode.GROUP, headerView::setPhoto);
-        } else if (id == R.id.btn_changePhotoDelete) {
-          headerView.setPhoto(null);
+          openMediaView(false, false, isChannel ? AvatarPickerMode.CHANNEL : AvatarPickerMode.GROUP, headerView::setPhoto,
+          canDelete ? Lang.getString(isChannel ? R.string.RemoveChannelPhoto : R.string.RemoveGroupPhoto) : null, ColorId.textNegative, () -> showDeletePhotoConfirm(() -> headerView.setPhoto(null)));
         }
         return true;
+      });
+    }
+
+    private void showDeletePhotoConfirm (Runnable onConfirm) {
+      context.showConfirm(Lang.getString(R.string.RemovePhotoConfirm), Lang.getString(R.string.Delete), R.drawable.baseline_delete_24, ViewController.OPTION_COLOR_RED, () -> {
+        onConfirm.run();
+        if (currentMediaLayout != null) {
+          currentMediaLayout.hide(false);
+        }
       });
     }
 
@@ -7040,18 +7035,24 @@ public class TdlibUi extends Handler {
 
     /* Picker */
 
+    private MediaLayout currentMediaLayout;
     private boolean openingMediaLayout;
 
-    private void openMediaView (boolean ignorePermissionRequest, boolean noMedia, @AvatarPickerMode int avatarPickerMode, RunnableData<ImageGalleryFile> callback) {
+    private void openMediaView (boolean ignorePermissionRequest, boolean noMedia, @AvatarPickerMode int avatarPickerMode, RunnableData<ImageGalleryFile> callback, String customButtonText, @ColorId int customButtonColorId, Runnable customButtonCallback) {
       if (openingMediaLayout) {
         return;
       }
 
-      if (!ignorePermissionRequest && context.context().permissions().requestReadExternalStorage(Permissions.ReadType.IMAGES_AND_VIDEOS, grantType -> openMediaView(true, grantType == Permissions.GrantResult.NONE, avatarPickerMode, callback))) {
+      if (!ignorePermissionRequest && context.context().permissions().requestReadExternalStorage(Permissions.ReadType.IMAGES_AND_VIDEOS, grantType -> openMediaView(true, grantType == Permissions.GrantResult.NONE, avatarPickerMode, callback, customButtonText, customButtonColorId, customButtonCallback))) {
         return;
       }
 
-      final MediaLayout mediaLayout = new MediaLayout(context);
+      final MediaLayout mediaLayout = new MediaLayout(context) {
+        @Override
+        public int getCameraButtonOffset () {
+          return !StringUtils.isEmpty(customButtonText) ? super.getCameraButtonOffset() : 0;
+        }
+      };
       mediaLayout.init(MediaLayout.MODE_AVATAR_PICKER, null);
       mediaLayout.setAvatarPickerMode(avatarPickerMode);
       mediaLayout.setCallback(new MediaLayout.MediaGalleryCallback() {
@@ -7072,14 +7073,12 @@ public class TdlibUi extends Handler {
       }
 
 
-      {
-        final int colorId = ColorId.textNeutral;
+      if (!StringUtils.isEmpty(customButtonText)) {
+        TextView button = Views.newTextView(context.context(), 16, Theme.getColor(customButtonColorId), Gravity.CENTER, Views.TEXT_FLAG_BOLD | Views.TEXT_FLAG_HORIZONTAL_PADDING);
+        context.addThemeTextColorListener(button, customButtonColorId);
 
-        TextView button = Views.newTextView(context.context(), 16, Theme.getColor(colorId), Gravity.CENTER, Views.TEXT_FLAG_BOLD | Views.TEXT_FLAG_HORIZONTAL_PADDING);
-        context.addThemeTextColorListener(button, colorId);
-
-        //button.setText("TEST");
-        button.setOnClickListener(v -> {});
+        button.setText(customButtonText.toUpperCase());
+        button.setOnClickListener(v -> customButtonCallback.run());
 
         RippleSupport.setSimpleWhiteBackground(button, context);
         Views.setClickable(button);
@@ -7095,6 +7094,8 @@ public class TdlibUi extends Handler {
         }
         openingMediaLayout = false;
       }, 300L);
+
+      currentMediaLayout = mediaLayout;
     }
 
 

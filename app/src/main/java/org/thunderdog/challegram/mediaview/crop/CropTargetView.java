@@ -160,10 +160,10 @@ public class CropTargetView extends View {
     }
   }
 
-  private boolean needMirrorHorizontally;
+  private float mirrorHorizontallyFactor = 0;
 
-  public void setMirrorHorizontally (boolean mirrorHorizontally) {
-    this.needMirrorHorizontally = mirrorHorizontally;
+  public void setMirrorHorizontallyFactor (float mirrorHorizontallyFactor) {
+    this.mirrorHorizontallyFactor = mirrorHorizontallyFactor;
     invalidate();
   }
 
@@ -182,7 +182,7 @@ public class CropTargetView extends View {
       c.scale(rotationScale, rotationScale, cx, cy);
     }
 
-    DrawAlgorithms.drawScaledBitmap(getMeasuredWidth(), getMeasuredHeight(), c, bitmap, rotation, needMirrorHorizontally, paintState);
+    DrawAlgorithms.drawScaledBitmap(getMeasuredWidth(), getMeasuredHeight(), c, bitmap, rotation, mirrorHorizontallyFactor, paintState);
 
     if (saved) {
       c.restore();

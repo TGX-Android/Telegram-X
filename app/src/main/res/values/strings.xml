@@ -595,7 +595,14 @@
   <string name="ChatCamera">Camera</string>
 
   <string name="SetProfilePhoto">Set Profile Photo</string>
+  <string name="SetGroupPhoto">Set Group Photo</string>
+  <string name="SetChannelPhoto">Set Channel Photo</string>
   <string name="SetPublicPhoto">Set Public Photo</string>
+  <string name="RemoveProfilePhoto">Remove Profile Photo</string>
+  <string name="RemoveGroupPhoto">Remove Group Photo</string>
+  <string name="RemoveChannelPhoto">Remove Channel Photo</string>
+  <string name="RemovePublicPhoto">Remove Public Photo</string>
+  <string name="RemovePhotoConfirm">Delete current photo?</string>
 
   <string name="MessageSearchFilterAll">All message types</string>
   <string name="MessageSearchFilterText">Text messages</string>

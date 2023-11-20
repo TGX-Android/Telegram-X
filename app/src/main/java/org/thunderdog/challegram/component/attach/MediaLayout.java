@@ -298,6 +298,10 @@ public class MediaLayout extends FrameLayoutFix implements
     customBottomBar.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.EXACTLY);
   }
 
+  public View getCustomBottomBar () {
+    return customBottomBar;
+  }
+
   @Override
   public void onLanguagePackEvent (int event, int arg1) {
     if (Lang.hasDirectionChanged(event, arg1)) {
@@ -746,10 +750,10 @@ public class MediaLayout extends FrameLayoutFix implements
         bottomBar.setTranslationY(y);
         onCurrentColorChanged();
       }
+      if (currentController != null && mode == MODE_AVATAR_PICKER) {
+        currentController.onUpdateBottomBarFactor(bottomBarFactor, counterFactor, y);
+      }
       if (customBottomBar != null) {
-        if (currentController != null && mode == MODE_AVATAR_PICKER) {
-          currentController.onUpdateBottomBarFactor(bottomBarFactor, counterFactor, y);
-        }
         customBottomBar.setTranslationY(y);
         onCurrentColorChanged();
       }
@@ -1824,6 +1828,10 @@ public class MediaLayout extends FrameLayoutFix implements
 
   public boolean needCameraButton () {
     return mode == MODE_AVATAR_PICKER || (parent instanceof MessagesController) && !((MessagesController) parent).isCameraButtonVisibleOnAttachPanel();
+  }
+
+  public int getCameraButtonOffset () {
+    return Screen.dp(60);
   }
 
   public static class SenderSendIcon extends FrameLayout {

@@ -233,7 +233,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
     if (mediaLayout.needCameraButton()) {
       cameraBadgeView = new CircleCounterBadgeView(this, R.id.btn_camera, this::onCameraButtonClick, null);
       cameraBadgeView.init(R.drawable.deproko_baseline_camera_26, 48f, 4f, ColorId.circleButtonChat, ColorId.circleButtonChatIcon);
-      cameraBadgeView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(CircleCounterBadgeView.BUTTON_WRAPPER_WIDTH), Screen.dp(74f), Gravity.BOTTOM | Gravity.RIGHT, 0, 0, Screen.dp(12), Screen.dp(12 + 60)));
+      cameraBadgeView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(CircleCounterBadgeView.BUTTON_WRAPPER_WIDTH), Screen.dp(74f), Gravity.BOTTOM | Gravity.RIGHT, 0, 0, Screen.dp(12), Screen.dp(12) + mediaLayout.getCameraButtonOffset()));
       contentView.addView(cameraBadgeView);
     }
 

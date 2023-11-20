@@ -599,10 +599,10 @@ public class DrawAlgorithms {
     final int viewWidth = view.getMeasuredWidth();
     final int viewHeight = view.getMeasuredHeight();
 
-    drawScaledBitmap(viewWidth, viewHeight, c, bitmap, rotation, false, null);
+    drawScaledBitmap(viewWidth, viewHeight, c, bitmap, rotation, 0f, null);
   }
 
-  public static void drawScaledBitmap (final int viewWidth, final int viewHeight, Canvas c, Bitmap bitmap, int rotation, boolean needMirrorHorizontally, @Nullable PaintState paintState) {
+  public static void drawScaledBitmap (final int viewWidth, final int viewHeight, Canvas c, Bitmap bitmap, int rotation, float mirrorHorizontallyFactor, @Nullable PaintState paintState) {
     if (bitmap != null && !bitmap.isRecycled()) {
       int bitmapWidth, bitmapHeight;
 
@@ -618,7 +618,7 @@ public class DrawAlgorithms {
         int x = viewWidth / 2 - bitmapWidth / 2;
         int y = viewHeight / 2 - bitmapHeight / 2;
         c.save();
-        c.scale(needMirrorHorizontally ? -1 : 1, 1, viewWidth / 2f, viewHeight / 2f);
+        c.scale(MathUtils.fromTo(1f, -1f, mirrorHorizontallyFactor), 1, viewWidth / 2f, viewHeight / 2f);
         c.drawBitmap(bitmap, x, y, Paints.getBitmapPaint());
         c.restore();
         if (paintState != null) {
@@ -637,7 +637,7 @@ public class DrawAlgorithms {
         Rect dst = Paints.getRect();
         dst.set(0, 0, viewWidth, viewHeight);
         c.save();
-        c.scale(needMirrorHorizontally ? -1 : 1, 1, viewWidth / 2f, viewHeight / 2f);
+        c.scale(MathUtils.fromTo(1f, -1f, mirrorHorizontallyFactor), 1, viewWidth / 2f, viewHeight / 2f);
         c.drawBitmap(bitmap, null, dst, Paints.getBitmapPaint());
         c.restore();
         if (paintState != null && !paintState.isEmpty()) {
