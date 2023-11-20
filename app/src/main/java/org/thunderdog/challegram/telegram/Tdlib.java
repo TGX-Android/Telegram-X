@@ -3323,10 +3323,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return supergroup != null && supergroup.isForum;
   }
 
-  public boolean forceExternalReply (long chatId) {
-    return isForum(chatId);
-  }
-
   public @Nullable TdApi.BlockList chatBlockList (TdApi.Chat chat) {
     return chat != null ? chatBlockList(chat.id) : null;
   }

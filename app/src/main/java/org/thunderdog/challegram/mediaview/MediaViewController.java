@@ -1203,7 +1203,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         break;
       }
       case ANIMATOR_SECTION: {
-        applySection();
+        if (finalFactor == 1f) {
+          applySection();
+        }
         break;
       }
       case ANIMATOR_CAPTION: {
@@ -1240,7 +1242,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         break;
       }
       case ANIMATOR_IMAGE_ROTATE: {
-        applyImageRotation();
+        if (finalFactor == 1f) {
+          applyImageRotation();
+        }
         break;
       }
       case ANIMATOR_THUMBS: {

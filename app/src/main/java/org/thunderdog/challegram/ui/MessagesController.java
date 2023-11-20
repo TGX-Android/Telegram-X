@@ -6062,9 +6062,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return new MessageId(message.chatId, message.id);
     }
 
-    public TdApi.InputMessageReplyToMessage toInputMessageReply (long inChatId) {
-      long chatId = message.chatId;
-      if (inChatId == chatId && !tdlib.forceExternalReply(chatId)) {
+    public TdApi.InputMessageReplyToMessage toInputMessageReply (long inChatId, long inMessageThreadId) {
+      long chatId;
+      if (inChatId != message.chatId || (message.isTopicMessage && inMessageThreadId != 0 && message.messageThreadId != inMessageThreadId)) {
+        chatId = message.chatId;
+      } else {
         chatId = 0;
       }
       return new TdApi.InputMessageReplyToMessage(chatId, message.id, quote);
@@ -6089,7 +6091,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public @Nullable TdApi.InputMessageReplyToMessage getCurrentReplyId () {
     if (reply != null) {
-      return reply.toInputMessageReply(getChatId());
+      return reply.toInputMessageReply(messageThread != null ? messageThread.getChatId() : getChatId(), getMessageThreadId());
     }
     return null;
   }
