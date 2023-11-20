@@ -83,7 +83,7 @@ public class CreateGroupController extends ViewController<Void> implements EditH
     headerCell = new EditHeaderView(context, this);
     headerCell.setInputOptions(R.string.GroupName, InputType.TYPE_TEXT_FLAG_CAP_WORDS);
     headerCell.setOnPhotoClickListener(() -> {
-      avatarPickerManager.showMenuForNonCreatedChat(headerCell);
+      avatarPickerManager.showMenuForNonCreatedChat(headerCell, false);
     });
     headerCell.setImeOptions(EditorInfo.IME_ACTION_DONE);
     headerCell.setReadyCallback(this);

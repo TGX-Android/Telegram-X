@@ -51,6 +51,7 @@ import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.loader.ImageReader;
 import org.thunderdog.challegram.loader.ImageStrictCache;
+import org.thunderdog.challegram.mediaview.AvatarPickerMode;
 import org.thunderdog.challegram.mediaview.MediaSelectDelegate;
 import org.thunderdog.challegram.mediaview.MediaSendDelegate;
 import org.thunderdog.challegram.mediaview.MediaSpoilerSendDelegate;
@@ -127,7 +128,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
   private boolean qrCodeConfirmed;
   private int qrSubtitleRes;
   private boolean qrModeDebug;
-  private boolean forAvatarPicker;
+  private @AvatarPickerMode int avatarPickerMode = AvatarPickerMode.NONE;
 
   public void setQrListener (@Nullable QrCodeListener qrCodeListener, @StringRes int subtitleRes, boolean qrModeDebug) {
     this.qrCodeListener = qrCodeListener;
@@ -139,8 +140,8 @@ public class CameraController extends ViewController<Void> implements CameraDele
     }
   }
 
-  public void setIsAvatarPicker (boolean forAvatarPicker) {
-    this.forAvatarPicker = forAvatarPicker;
+  public void setAvatarPickerMode (@AvatarPickerMode int avatarPickerMode) {
+    this.avatarPickerMode = avatarPickerMode;
   }
 
   public void setMediaEditorDelegates (MediaViewDelegate delegate, MediaSelectDelegate selectDelegate, MediaSendDelegate sendDelegate) {
@@ -1523,7 +1524,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
           ImageGalleryFile galleryFile = (ImageGalleryFile) images.get(0);
           return onSendMedia(galleryFile, options, disableMarkdown, asFiles, hasSpoiler);
         }
-      }, stack, m != null && m.areScheduledOnly()).setIsProfilePhotoEditor(forAvatarPicker);
+      }, stack, m != null && m.areScheduledOnly()).setAvatarPickerMode(avatarPickerMode);
       if (m != null) {
         args.setReceiverChatId(m.getChatId());
       }

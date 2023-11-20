@@ -68,6 +68,7 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.mediaview.AvatarPickerMode;
 import org.thunderdog.challegram.mediaview.MediaSelectDelegate;
 import org.thunderdog.challegram.mediaview.MediaSendDelegate;
 import org.thunderdog.challegram.mediaview.MediaViewDelegate;
@@ -3297,7 +3298,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     public CameraController.QrCodeListener qrCodeListener;
     public @StringRes int qrModeSubtitle;
     public boolean qrModeDebug;
-    public boolean isAvatarPicker;
+    public @AvatarPickerMode int avatarPickerMode;
 
     public MediaViewDelegate delegate;
     public MediaSelectDelegate selectDelegate;
@@ -3343,8 +3344,8 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       return this;
     }
 
-    public CameraOpenOptions setIsAvatarPicker (boolean avatarPicker) {
-      isAvatarPicker = avatarPicker;
+    public CameraOpenOptions setAvatarPickerMode (@AvatarPickerMode int avatarPickerMode) {
+      this.avatarPickerMode = avatarPickerMode;
       return this;
     }
 

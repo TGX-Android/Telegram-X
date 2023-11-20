@@ -147,7 +147,7 @@ public class CreateChannelController extends ViewController<String[]> implements
     headerCell = new EditHeaderView(context, this);
     headerCell.setInputOptions(R.string.ChannelName, InputType.TYPE_TEXT_FLAG_CAP_WORDS);
     headerCell.setOnPhotoClickListener(() -> {
-      avatarPickerManager.showMenuForNonCreatedChat(headerCell);
+      avatarPickerManager.showMenuForNonCreatedChat(headerCell, true);
     });
     headerCell.setNextField(R.id.edit_description);
     headerCell.setReadyCallback(this);

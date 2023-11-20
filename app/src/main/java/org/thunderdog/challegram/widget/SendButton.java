@@ -497,8 +497,9 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
         return;
       }
 
-      final TdApi.SupergroupFullInfo info = tdlib.cache().supergroupFull(ChatId.toSupergroupId(chatId));
+      final TdApi.SupergroupFullInfo info = tdlib.cache().supergroupFull(ChatId.toSupergroupId(chatId), false);
       if (info == null) {
+        tdlib.cache().supergroupFull(ChatId.toSupergroupId(chatId));
         setSlowModeTimer(0, 0, animated);
         return;
       }

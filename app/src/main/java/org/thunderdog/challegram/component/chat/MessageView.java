@@ -612,7 +612,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     if (!isMore && (isHiddenByMessagesFilter || BuildConfig.DEBUG)) {
       ids.append(R.id.btn_messageChangeMessageFilterVisibility);
       strings.append(Lang.getString(R.string.MessagesFilterShowMessage));
-      icons.append(R.drawable.baseline_history_24);
+      icons.append(R.drawable.baseline_visibility_24);
     }
 
     // Promotion

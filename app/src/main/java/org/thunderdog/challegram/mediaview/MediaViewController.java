@@ -184,7 +184,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   MediaCellView.Callback, SliderView.Listener, TGLegacyManager.EmojiLoadListener, Menu, MoreDelegate,
   PopupLayout.TouchSectionProvider, FlingDetector.Callback, CallManager.CurrentCallListener,
   ColorPreviewView.BrushChangeListener, PaintState.UndoStateListener, MediaView.FactorChangeListener,
-  EmojiToneHelper.Delegate, MessageListener, InputView.SelectionChangeListener {
+  EmojiToneHelper.Delegate, MessageListener, InputView.SelectionChangeListener, PopupLayout.ShowListener {
 
   private static final long REVEAL_ANIMATION_DURATION = /*BuildConfig.DEBUG ? 1800l :*/ 180;
   private static final long REVEAL_OPEN_ANIMATION_DURATION = /*BuildConfig.DEBUG ? 1800l :*/ 180l;
@@ -225,7 +225,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     private long receiverChatId, messageThreadId;
 
-    private boolean areOnlyScheduled, deleteOnExit, isProfilePhotoEditor;
+    private boolean areOnlyScheduled, deleteOnExit;
 
     public Args (ViewController<?> parentController, int mode, MediaViewDelegate delegate, MediaSelectDelegate selectDelegate, MediaSendDelegate sendDelegate, MediaStack stack) {
       this.parentController = parentController;
@@ -245,11 +245,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       return this;
     }
 
-    public Args setIsProfilePhotoEditor (boolean isProfilePhotoEditor) {
+    private @AvatarPickerMode int avatarPickerMode;
+
+    public Args setAvatarPickerMode (@AvatarPickerMode int isProfilePhotoEditor) {
       if (mode != MODE_GALLERY) {
         throw new IllegalStateException();
       }
-      this.isProfilePhotoEditor = isProfilePhotoEditor;
+      this.avatarPickerMode = isProfilePhotoEditor;
       return this;
     }
 
@@ -1156,6 +1158,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         setAutoThumbScrollFactor(factor);
         break;
       }
+    }
+  }
+
+  @Override
+  public void onPopupCompletelyShown (PopupLayout popup) {
+    if (inProfilePhotoEditMode()) {
+      UI.post(this::openCrop);
     }
   }
 
@@ -4651,6 +4660,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     popupView = new PopupLayout(context);
     popupView.setOverlayStatusBar(true);
+    popupView.setShowListener(this);
     if (mode == MODE_SECRET) {
       popupView.setIgnoreHorizontal();
     }
@@ -4934,9 +4944,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
         sendButton = new EditButton(context);
         sendButton.setId(R.id.btn_send);
-        sendButton.setIcon(inProfilePhotoEditMode ?
-          R.drawable.dot_baseline_image_check_24 :
-          R.drawable.deproko_baseline_send_24, false, false);
+        setDefaultSendButtonIcon(false);
         sendButton.setOnClickListener(this);
         sendButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(56f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT));
         sendButton.setBackgroundResource(R.drawable.bg_btn_header_light);
@@ -5374,9 +5382,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
           ImageView imageView = new ImageView(context);
           imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-          imageView.setImageResource(inProfilePhotoEditMode ?
-            R.drawable.dot_baseline_account_circle_18 :
-            R.drawable.baseline_arrow_upward_18);
+          imageView.setImageResource(getResId(
+            R.drawable.baseline_arrow_upward_18,
+            R.drawable.dot_baseline_account_circle_18,
+            R.drawable.dot_baseline_group_circle_18,
+            R.drawable.dot_baseline_channel_circle_18));
           imageView.setColorFilter(0xffffffff);
           imageView.setAlpha((float) 0xaa / (float) 0xff);
           imageView.setLayoutParams(lp);
@@ -5385,15 +5395,14 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
           lp.leftMargin = Screen.dp(6f);
 
+          final int textRes = getResId(0, R.string.ProfilePhoto, R.string.GroupPhoto, R.string.ChannelPhoto);
           TextView textView = new NoScrollTextView(context);
           textView.setTextColor(0xaaffffff);
           textView.setSingleLine(true);
           textView.setEllipsize(TextUtils.TruncateAt.END);
           textView.setTypeface(Fonts.getRobotoMedium());
           textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13f);
-          textView.setText(inProfilePhotoEditMode ?
-            Lang.getString(R.string.ProfilePhoto) :
-            tdlib.chatTitle(chat));
+          textView.setText(textRes != 0 ? Lang.getString(textRes) : (chat != null ? tdlib.chatTitle(chat) : null));
           textView.setLayoutParams(lp);
           receiverView.addView(textView);
 
@@ -5567,8 +5576,20 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     return contentView;
   }
 
+  private int getResId (int defaultResId, int profileResId, int groupResId, int channelResId) {
+    final int mode = getArgumentsStrict().avatarPickerMode;
+    if (mode == AvatarPickerMode.PROFILE) {
+      return profileResId;
+    } else if (mode == AvatarPickerMode.CHANNEL) {
+      return channelResId;
+    } else if (mode == AvatarPickerMode.GROUP) {
+      return groupResId;
+    }
+    return defaultResId;
+  }
+
   private boolean inProfilePhotoEditMode () {
-    return getArgumentsStrict().isProfilePhotoEditor;
+    return getArgumentsStrict().avatarPickerMode != AvatarPickerMode.NONE;
   }
 
   private int controlsMargin;
@@ -7501,10 +7522,17 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       sendButton.setIcon(R.drawable.baseline_check_24, true, false);
     } else {
       backButton.setIcon(R.drawable.baseline_arrow_back_24, true, false);
-      sendButton.setIcon(inProfilePhotoEditMode() ?
-        R.drawable.baseline_image_24 :
-        R.drawable.deproko_baseline_send_24, true, false);
+      setDefaultSendButtonIcon(true);
     }
+  }
+
+  private void setDefaultSendButtonIcon (boolean animated) {
+    sendButton.setIcon(getResId(
+      R.drawable.deproko_baseline_send_24,
+      R.drawable.dot_baseline_profile_accept_24,
+      R.drawable.dot_baseline_group_accept_24,
+      R.drawable.dot_baseline_channel_accept_24
+    ), animated, false);
   }
 
   private boolean hasAppliedFilters () {

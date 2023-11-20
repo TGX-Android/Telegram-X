@@ -2595,16 +2595,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void shareItem (Object item) {
-    if (!hasWritePermission()) { // FIXME right
-      return;
-    }
-
     if (item instanceof InlineResultButton) {
+      if (!hasSendBasicMessagePermission()) {
+        return;
+      }
       processSwitchPm((InlineResultButton) item);
       return;
     }
 
     if (item instanceof TGSwitchInline) {
+      if (!hasSendBasicMessagePermission()) {
+        return;
+      }
       if (inputView != null) {
         inputView.setInput(item.toString(), true, false);
       }
@@ -2622,6 +2624,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     if (item instanceof TGRecord) {
+      if (!hasSendMessagePermission(RightId.SEND_VOICE_NOTES)) {
+        return;
+      }
       processRecord((TGRecord) item);
       return;
     }
@@ -7732,7 +7737,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     final String username = Td.primaryUsername(user);
 
-    if (switchInline.targetChat.getConstructor() == TdApi.TargetChatCurrent.CONSTRUCTOR && canWriteMessages() && hasWritePermission()) { // FIXME rightId.SEND_OTHER_MESSAGES
+    if (switchInline.targetChat.getConstructor() == TdApi.TargetChatCurrent.CONSTRUCTOR && canWriteMessages() && hasSendMessagePermission(RightId.SEND_OTHER_MESSAGES)) {
       if (inputView != null) {
         inputView.setInput("@" + username + " " + switchInline.query, true, true);
       }
@@ -9086,7 +9091,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void sendContact (TdApi.User user, boolean allowReply, TdApi.MessageSendOptions initialSendOptions) {
-    if (hasWritePermission()) {
+    if (hasSendMessagePermission(RightId.SEND_BASIC_MESSAGES)) {
       pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
         tdlib.sendMessage(chat.id,
           getMessageThreadId(),
@@ -9104,7 +9109,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void shareMyContact (@Nullable TdApi.MessageReplyTo forceReplyTo) {
-    if (hasWritePermission()) {
+    if (hasSendMessagePermission(RightId.SEND_BASIC_MESSAGES)) {
       TdApi.User user = tdlib.myUser();
       if (user != null) {
         pickDateOrProceed(Td.newSendOptions(), (modifiedSendOptions, disableMarkdown) -> {
@@ -9123,7 +9128,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void sendInlineQueryResult (long inlineQueryId, String id, boolean allowReply, boolean clearInput, TdApi.MessageSendOptions initialSendOptions) {
-    if (hasWritePermission()) { // FIXME RightId.SEND_OTHER
+    if (hasSendMessagePermission(RightId.SEND_OTHER_MESSAGES)) {
       pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
         tdlib.sendInlineQueryResult(chat.id, getMessageThreadId(), allowReply ? obtainReplyTo() : null, Td.newSendOptions(modifiedSendOptions, obtainSilentMode()), inlineQueryId, id);
         if (clearInput) {
@@ -9135,7 +9140,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void sendAudio (TdApi.Audio audio, boolean allowReply) {
-    if (hasWritePermission()) {
+    if (hasSendMessagePermission(RightId.SEND_AUDIO)) {
       pickDateOrProceed(Td.newSendOptions(), (modifiedSendOptions, disableMarkdown) -> {
         tdlib.sendMessage(chat.id, getMessageThreadId(), allowReply ? obtainReplyTo() : null, Td.newSendOptions(modifiedSendOptions, obtainSilentMode()), TD.toInputMessageContent(audio), null);
       });
@@ -10213,6 +10218,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private boolean sendShowingVoice (View view, TdApi.MessageSendOptions sendOptions) {
     if (!isVoiceShowing) {
+      return false;
+    }
+    if (showSlowModeRestriction(view, sendOptions) || showRestriction(view, RightId.SEND_VOICE_NOTES)) {
       return false;
     }
     TGRecord record = voiceInputView.getRecord();

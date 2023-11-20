@@ -49,6 +49,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
+import org.thunderdog.challegram.mediaview.AvatarPickerMode;
 import org.thunderdog.challegram.navigation.ActivityResultHandler;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.BackListener;
@@ -122,6 +123,7 @@ public class MediaLayout extends FrameLayoutFix implements
   public static final int MODE_AVATAR_PICKER = 4;
 
   private int mode;
+  private @AvatarPickerMode int avatarPickerMode = AvatarPickerMode.NONE;
   private @Nullable MediaCallback callback;
 
   // Data
@@ -155,6 +157,14 @@ public class MediaLayout extends FrameLayoutFix implements
 
   public int getMode () {
     return mode;
+  }
+
+  public int getAvatarPickerMode () {
+    return avatarPickerMode;
+  }
+
+  public void setAvatarPickerMode (@AvatarPickerMode int avatarPickerMode) {
+    this.avatarPickerMode = avatarPickerMode;
   }
 
   private boolean rtl, needVote;

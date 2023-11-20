@@ -942,7 +942,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private final BoolAnimator isHiddenByFilter;
 
   public void setIsHiddenByMessagesFilter (boolean hidden, boolean animated) {
-    isHiddenByFilter.setValue(hidden, BitwiseUtils.hasFlag(flags, FLAG_LAYOUT_BUILT) && currentViews.hasAnyTargetToInvalidate() && UI.inUiThread() && animated);
+    isHiddenByFilter.setValue(hidden && !isSponsoredMessage(), BitwiseUtils.hasFlag(flags, FLAG_LAYOUT_BUILT) && currentViews.hasAnyTargetToInvalidate() && UI.inUiThread() && animated);
   }
 
   public boolean isHiddenByMessagesFilter () {

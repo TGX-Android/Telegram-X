@@ -73,6 +73,7 @@ import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.filegen.SimpleGenerationInfo;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
+import org.thunderdog.challegram.mediaview.AvatarPickerMode;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.navigation.EditHeaderView;
 import org.thunderdog.challegram.navigation.HeaderView;
@@ -6964,7 +6965,7 @@ public class TdlibUi extends Handler {
         if (id == R.id.btn_open) {
           MediaViewController.openFromProfile(context, user, delegate);
         } else if (id == R.id.btn_changePhotoGallery) {
-          openMediaView(false, false, f -> onProfilePhotoReceived(f, isPublic));
+          openMediaView(false, false, AvatarPickerMode.PROFILE, f -> onProfilePhotoReceived(f, isPublic));
         } else if (id == R.id.btn_changePhotoDelete) {
           deleteProfilePhoto(profilePhotoToDelete);
         }
@@ -6998,7 +6999,7 @@ public class TdlibUi extends Handler {
             MediaViewController.openFromChat(context, chat, delegate);
           }
         } else if (id == R.id.btn_changePhotoGallery) {
-          openMediaView(false, false, f -> onChatPhotoReceived(f, chat.id));
+          openMediaView(false, false, tdlib.isChannel(chat.id) ? AvatarPickerMode.CHANNEL : AvatarPickerMode.GROUP, f -> onChatPhotoReceived(f, chat.id));
         } else if (id == R.id.btn_changePhotoDelete) {
           setChatPhoto(chat.id, null);
         }
@@ -7006,7 +7007,7 @@ public class TdlibUi extends Handler {
       });
     }
 
-    public void showMenuForNonCreatedChat (EditHeaderView headerView) {
+    public void showMenuForNonCreatedChat (EditHeaderView headerView, boolean isChannel) {
       ViewController.Options.Builder b = new ViewController.Options.Builder();
 
       b.item(new ViewController.OptionItem(R.id.btn_changePhotoGallery, Lang.getString(R.string.SetProfilePhoto),
@@ -7019,7 +7020,7 @@ public class TdlibUi extends Handler {
 
       showOptions(b.build(), (itemView, id) -> {
         if (id == R.id.btn_changePhotoGallery) {
-          openMediaView(false, false, headerView::setPhoto);
+          openMediaView(false, false, isChannel ? AvatarPickerMode.CHANNEL : AvatarPickerMode.GROUP, headerView::setPhoto);
         } else if (id == R.id.btn_changePhotoDelete) {
           headerView.setPhoto(null);
         }
@@ -7041,17 +7042,18 @@ public class TdlibUi extends Handler {
 
     private boolean openingMediaLayout;
 
-    private void openMediaView (boolean ignorePermissionRequest, boolean noMedia, RunnableData<ImageGalleryFile> callback) {
+    private void openMediaView (boolean ignorePermissionRequest, boolean noMedia, @AvatarPickerMode int avatarPickerMode, RunnableData<ImageGalleryFile> callback) {
       if (openingMediaLayout) {
         return;
       }
 
-      if (!ignorePermissionRequest && context.context().permissions().requestReadExternalStorage(Permissions.ReadType.IMAGES_AND_VIDEOS, grantType -> openMediaView(true, grantType == Permissions.GrantResult.NONE, callback))) {
+      if (!ignorePermissionRequest && context.context().permissions().requestReadExternalStorage(Permissions.ReadType.IMAGES_AND_VIDEOS, grantType -> openMediaView(true, grantType == Permissions.GrantResult.NONE, avatarPickerMode, callback))) {
         return;
       }
 
       final MediaLayout mediaLayout = new MediaLayout(context);
       mediaLayout.init(MediaLayout.MODE_AVATAR_PICKER, null);
+      mediaLayout.setAvatarPickerMode(avatarPickerMode);
       mediaLayout.setCallback(new MediaLayout.MediaGalleryCallback() {
         @Override
         public void onSendVideo (ImageGalleryFile file, boolean isFirst) {

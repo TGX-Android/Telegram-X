@@ -45,6 +45,7 @@ import org.thunderdog.challegram.core.Media;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
+import org.thunderdog.challegram.mediaview.AvatarPickerMode;
 import org.thunderdog.challegram.mediaview.MediaSelectDelegate;
 import org.thunderdog.challegram.mediaview.MediaSendDelegate;
 import org.thunderdog.challegram.mediaview.MediaViewController;
@@ -256,7 +257,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   private void onCameraButtonClick (View v) {
     if (mediaLayout.getMode() == MediaLayout.MODE_AVATAR_PICKER) {
       mediaLayout.hidePopupAndOpenCamera(new ViewController.CameraOpenOptions().anchor(v)
-        .setIsAvatarPicker(true).setMediaEditorDelegates(this, this, this));
+        .setAvatarPickerMode(mediaLayout.getAvatarPickerMode()).setMediaEditorDelegates(this, this, this));
       return;
     }
 
@@ -574,7 +575,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
       MediaViewController controller = new MediaViewController(context, tdlib);
       controller.setArguments(
         MediaViewController.Args.fromGallery(this, this, this, this, stack, mediaLayout.areScheduledOnly())
-          .setReceiverChatId(mediaLayout.getTargetChatId()).setIsProfilePhotoEditor(inAvatarPickerMode())
+          .setReceiverChatId(mediaLayout.getTargetChatId()).setAvatarPickerMode(mediaLayout.getAvatarPickerMode())
       );
       controller.open();
 
@@ -585,7 +586,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   }
 
   private boolean inAvatarPickerMode () {
-    return mediaLayout.getMode() == MediaLayout.MODE_AVATAR_PICKER;
+    return mediaLayout.getAvatarPickerMode() != AvatarPickerMode.NONE;
   }
 
   @Override

@@ -3045,7 +3045,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       camera = new CameraController(this);
     }
     camera.setMode(options.mode, options.readyListener);
-    camera.setIsAvatarPicker(options.isAvatarPicker);
+    camera.setAvatarPickerMode(options.avatarPickerMode);
     camera.setQrListener(options.qrCodeListener, options.qrModeSubtitle, options.qrModeDebug);
     camera.setMediaEditorDelegates(options.delegate, options.selectDelegate, options.sendDelegate);
     if (needCreateCamera) {

@@ -923,11 +923,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
   @Override
   public boolean accept (TdApi.Chat chat) {
-    if (tdlib.chatAvailable(chat)) {
-      Tdlib.RestrictionStatus restrictionStatus = tdlib.getRestrictionStatus(chat, RightId.SEND_BASIC_MESSAGES);
-      return restrictionStatus == null || !restrictionStatus.isGlobal();
-    }
-    return false;
+    return tdlib.chatAvailable(chat);
   }
 
   @Override
