@@ -1142,8 +1142,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         setImageRotateFactor(factor);
         break;
       }
-      case ANIMATOR_IMAGE_FLIP: {
-        setImageMirrorHorizontallyFactor(factor);
+      case ANIMATOR_IMAGE_FLIP_HORIZONTALLY:
+      case ANIMATOR_IMAGE_FLIP_VERTICALLY: {
+        setImageMirrorFactors();
         break;
       }
       case ANIMATOR_PAINT_HIDE: {
@@ -1264,8 +1265,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         applyImageRotation();
         break;
       }
-      case ANIMATOR_IMAGE_FLIP: {
-        applyImageMirrorHorizontally();
+      case ANIMATOR_IMAGE_FLIP_HORIZONTALLY:
+      case ANIMATOR_IMAGE_FLIP_VERTICALLY: {
+        applyImageMirror();
         break;
       }
       case ANIMATOR_THUMBS: {
@@ -6652,35 +6654,36 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   /**/
 
-  private static final int ANIMATOR_IMAGE_FLIP = 192;
+  private static final int ANIMATOR_IMAGE_FLIP_HORIZONTALLY = 192;
+  private static final int ANIMATOR_IMAGE_FLIP_VERTICALLY = 193;
+  private final BoolAnimator imageFlipAnimatorHorizontally = new BoolAnimator(ANIMATOR_IMAGE_FLIP_HORIZONTALLY, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 250L);
+  private final BoolAnimator imageFlipAnimatorVertically = new BoolAnimator(ANIMATOR_IMAGE_FLIP_VERTICALLY, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 250L);
 
-  private BoolAnimator imageFlipAnimator;
+  private boolean imageMirrorAnimate (int mirrorFlag, boolean needMirror, boolean animated) {
+    final BoolAnimator animator = mirrorFlag == CropState.FLAG_MIRROR_HORIZONTALLY ?
+      imageFlipAnimatorHorizontally : imageFlipAnimatorVertically;
 
-  private boolean imageMirrorHorizontallyAnimate (boolean needMirror, boolean animated) {
-    if (imageFlipAnimator == null) {
-      imageFlipAnimator = new BoolAnimator(ANIMATOR_IMAGE_FLIP, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 250L, !needMirror);
-    } else if (!imageFlipAnimator.isAnimating()) {
-      imageFlipAnimator.setValue(!needMirror, false);
+    if (!animator.isAnimating()) {
+      animator.setValue(!needMirror, false);
     } else {
       return false;
     }
-    currentCropState.setFlags(BitwiseUtils.setFlag(currentCropState.getFlags(), CropState.FLAG_MIRROR_HORIZONTALLY, needMirror));
-    imageFlipAnimator.setValue(needMirror, animated);
+    currentCropState.setFlags(BitwiseUtils.setFlag(currentCropState.getFlags(), mirrorFlag, needMirror));
+    animator.setValue(needMirror, animated);
     return true;
   }
 
-  private void setImageMirrorHorizontallyFactor (float factor) {
-    cropTargetView.setMirrorHorizontallyFactor(factor);
+  private void setImageMirrorFactors () {
+    cropTargetView.setMirrorFactors(imageFlipAnimatorHorizontally.getFloatValue(), imageFlipAnimatorVertically.getFloatValue());
   }
 
-  private void applyImageMirrorHorizontally () {
-    cropTargetView.setMirrorHorizontallyFactor(currentCropState.hasFlag(CropState.FLAG_MIRROR_HORIZONTALLY) ? 1 : 0);
+  private void applyImageMirror () {
+    cropTargetView.setMirrorFactors(currentCropState.hasFlag(CropState.FLAG_MIRROR_HORIZONTALLY) ? 1 : 0, currentCropState.hasFlag(CropState.FLAG_MIRROR_VERTICALLY) ? 1 : 0);
   }
 
-  private void cancelImageMirrorHorizontally () {
-    if (imageFlipAnimator != null) {
-      imageFlipAnimator.cancel();
-    }
+  private void cancelImageMirrorAnimations () {
+    imageFlipAnimatorHorizontally.cancel();
+    imageFlipAnimatorVertically.cancel();
   }
 
   /**/
@@ -6743,8 +6746,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     proportionButton.setActive(false, false);
     int cropRotation = MathUtils.modulo(this.cropRotation + (oldCropState != null ? oldCropState.getRotateBy() : 0), 360);
     cropTargetView.resetState(cropBitmap, cropRotation, currentCropState.getDegreesAroundCenter(), currentPaintState);
-    cropTargetView.setMirrorHorizontallyFactor(currentCropState.hasFlag(CropState.FLAG_MIRROR_HORIZONTALLY) ? 1f : 0f);
-    mirrorButton.setActive(currentCropState.hasFlag(CropState.FLAG_MIRROR_HORIZONTALLY), false);
+    cropTargetView.setMirrorFactors(currentCropState.hasFlag(CropState.FLAG_MIRROR_HORIZONTALLY) ? 1f : 0f, currentCropState.hasFlag(CropState.FLAG_MIRROR_VERTICALLY) ? 1f : 0f);
+    mirrorButton.setActive(currentCropState.needMirror(), false);
     rotationControlView.reset(currentCropState.getDegreesAroundCenter(), false);
     cropAreaView.resetProportion();
     cropAreaView.resetState(U.getWidth(cropBitmap, cropRotation), U.getHeight(cropBitmap, cropRotation), currentCropState.getLeft(), currentCropState.getTop(), currentCropState.getRight(), currentCropState.getBottom(), false);
@@ -6785,8 +6788,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     proportionButton.setActive(big != 0 && small != 0, true);
   }
 
+  public int getMirrorHorizontallyFlag () {
+    return stack != null && stack.getCurrent() != null && stack.getCurrent().isRotated() ?
+      CropState.FLAG_MIRROR_VERTICALLY : CropState.FLAG_MIRROR_HORIZONTALLY;
+  }
+
   private void setMirrorHorizontally (boolean newValue) {
-    if (imageMirrorHorizontallyAnimate(newValue, true)) {
+    if (imageMirrorAnimate(getMirrorHorizontallyFlag(), newValue, true)) {
       mirrorButton.setActive(newValue, true);
     }
   }
@@ -6803,7 +6811,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
 
     cancelImageRotation();
-    cancelImageMirrorHorizontally();
+    cancelImageMirrorAnimations();
 
     cropStartDegrees = currentCropState.getDegreesAroundCenter();
     cropEndDegrees = zero || oldCropState == null ? 0 : oldCropState.getDegreesAroundCenter();
@@ -6817,7 +6825,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     proportionButton.setActive(false, true);
     resettingCrop = resetCropDegrees || rotatingByDegrees != 0;
     closeCropAfterReset = !zero;
-    setMirrorHorizontally(!zero && oldCropState != null && oldCropState.needMirrorHorizontally());
+    setMirrorHorizontally(!zero && oldCropState != null && oldCropState.hasFlag(getMirrorHorizontallyFlag()));
     if (zero || oldCropState == null || oldCropState.isEmpty()) {
       if (cropAreaView.resetArea(resettingCrop, !zero)) {
         resettingCrop = true;
@@ -8028,7 +8036,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     } else if (viewId == R.id.btn_rotate) {
       rotateBy90Degrees();
     } else if (viewId == R.id.btn_mirrorHorizontal) {
-      setMirrorHorizontally(!currentCropState.hasFlag(CropState.FLAG_MIRROR_HORIZONTALLY));
+      setMirrorHorizontally(!currentCropState.hasFlag(getMirrorHorizontallyFlag()));
     } else if (viewId == R.id.btn_proportion) {
       if (allowDataChanges() && currentSection == SECTION_CROP && !inProfilePhotoEditMode()) {
         IntList ids = new IntList(PROPORTION_MODES.length + 2);

@@ -599,10 +599,10 @@ public class DrawAlgorithms {
     final int viewWidth = view.getMeasuredWidth();
     final int viewHeight = view.getMeasuredHeight();
 
-    drawScaledBitmap(viewWidth, viewHeight, c, bitmap, rotation, 0f, null);
+    drawScaledBitmap(viewWidth, viewHeight, c, bitmap, rotation, 0f, 0f, null);
   }
 
-  public static void drawScaledBitmap (final int viewWidth, final int viewHeight, Canvas c, Bitmap bitmap, int rotation, float mirrorHorizontallyFactor, @Nullable PaintState paintState) {
+  public static void drawScaledBitmap (final int viewWidth, final int viewHeight, Canvas c, Bitmap bitmap, int rotation, float mirrorHorizontallyFactor, float mirrorVerticallyFactor, @Nullable PaintState paintState) {
     if (bitmap != null && !bitmap.isRecycled()) {
       int bitmapWidth, bitmapHeight;
 
@@ -613,12 +613,12 @@ public class DrawAlgorithms {
         float scaleX = (float) viewHeight / (float) bitmapWidth;
         float scaleY = (float) viewWidth / (float) bitmapHeight;
         c.save();
-        c.scale(scaleX, scaleY, viewWidth / 2, viewHeight / 2);
-        c.rotate(rotation, viewWidth / 2, viewHeight / 2);
+        c.scale(scaleX, scaleY, viewWidth / 2f, viewHeight / 2f);
+        c.rotate(rotation, viewWidth / 2f, viewHeight / 2f);
         int x = viewWidth / 2 - bitmapWidth / 2;
         int y = viewHeight / 2 - bitmapHeight / 2;
         c.save();
-        c.scale(MathUtils.fromTo(1f, -1f, mirrorHorizontallyFactor), 1, viewWidth / 2f, viewHeight / 2f);
+        c.scale(MathUtils.fromTo(1f, -1f, mirrorHorizontallyFactor), MathUtils.fromTo(1f, -1f, mirrorVerticallyFactor), viewWidth / 2f, viewHeight / 2f);
         c.drawBitmap(bitmap, x, y, Paints.getBitmapPaint());
         c.restore();
         if (paintState != null) {
@@ -631,13 +631,13 @@ public class DrawAlgorithms {
         if (saved) {
           c.save();
           if (rotation != 0) {
-            c.rotate(rotation, viewWidth / 2, viewHeight / 2);
+            c.rotate(rotation, viewWidth / 2f, viewHeight / 2f);
           }
         }
         Rect dst = Paints.getRect();
         dst.set(0, 0, viewWidth, viewHeight);
         c.save();
-        c.scale(MathUtils.fromTo(1f, -1f, mirrorHorizontallyFactor), 1, viewWidth / 2f, viewHeight / 2f);
+        c.scale(MathUtils.fromTo(1f, -1f, mirrorHorizontallyFactor), MathUtils.fromTo(1f, -1f, mirrorVerticallyFactor), viewWidth / 2f, viewHeight / 2f);
         c.drawBitmap(bitmap, null, dst, Paints.getBitmapPaint());
         c.restore();
         if (paintState != null && !paintState.isEmpty()) {

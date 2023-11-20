@@ -417,9 +417,20 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     return sourceHeight;
   }
 
+  private int getVisualRotationWithoutCropState () {
+    if (file != null) {
+      return Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && file instanceof ImageGalleryFile && ((ImageGalleryFile) file).needThumb() ? 0 : file.getVisualRotation();
+    }
+    return 0;
+  }
+
+  private boolean needSwapMirrorAxis () {
+    return file != null && U.isRotated(Math.abs(getVisualRotationWithoutCropState() - file.getVisualRotation()));
+  }
+
   private int getVisualRotation () {
     if (file != null) {
-      int rotation = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && file instanceof ImageGalleryFile && ((ImageGalleryFile) file).needThumb() ? 0 : file.getVisualRotation();
+      int rotation = getVisualRotationWithoutCropState();
       if (displayCrop != null) {
         rotation = MathUtils.modulo(rotation + displayCrop.getRotateBy(), 360);
       }
@@ -1178,8 +1189,9 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     } else {
       PaintState paintState = file.getPaintState();
       float scaleType = file.getScaleType();
-      final boolean needMirrorHorizontally = displayCrop != null && (/*U.isRotated(rotation) ? displayCrop.needMirrorVertically() :*/ displayCrop.needMirrorHorizontally());
-      final boolean needMirrorVertically = displayCrop != null && (/*U.isRotated(rotation) ? displayCrop.needMirrorHorizontally() :*/ displayCrop.needMirrorVertically());
+      final boolean needSwapMirrorAxis = needSwapMirrorAxis();
+      final boolean needMirrorHorizontally = displayCrop != null && (needSwapMirrorAxis ? displayCrop.needMirrorVertically() : displayCrop.needMirrorHorizontally());
+      final boolean needMirrorVertically = displayCrop != null && (needSwapMirrorAxis ? displayCrop.needMirrorHorizontally() : displayCrop.needMirrorVertically());
       if (scaleType == ImageFile.CENTER_CROP || scaleType == ImageFile.FIT_CENTER) {
         // c.drawRect(left, top, right, bottom, Paints.fillingPaint(0xaa00ff00));
         boolean hasCrop = displayCrop != null;
