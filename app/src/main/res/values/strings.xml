@@ -1836,6 +1836,8 @@
   <string name="RightVoiceChats">Manage video chats</string>
   <string name="RightLiveStreams">Manage live streams</string>
   <string name="RightTopics">Manage topics</string>
+  <string name="RightStories">Stories</string>
+  <string name="RightMessages">Messages</string>
   <string name="RightStoriesPost">Post Stories</string>
   <string name="RightStoriesEdit">Edit Stories of Others</string>
   <string name="RightStoriesDelete">Delete Stories of Others</string>
