@@ -483,12 +483,23 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
           if (firstVisiblePosition != RecyclerView.NO_POSITION) {
             View view = manager.findViewByPosition(firstVisiblePosition);
             if (view != null) {
-              int offsetY = Math.max(0, view.getBottom() - recyclerView.getMeasuredHeight());
-              if (offsetY != 0) {
-                if (offsetY > view.getMeasuredHeight() / 2) {
-                  recyclerView.smoothScrollBy(0, offsetY - view.getMeasuredHeight());
-                } else {
-                  recyclerView.smoothScrollBy(0, offsetY);
+              if (reverseLayout) {
+                int offsetY = Math.max(0, view.getBottom() - recyclerView.getMeasuredHeight());
+                if (offsetY != 0) {
+                  if (offsetY > view.getMeasuredHeight() / 2) {
+                    recyclerView.smoothScrollBy(0, offsetY - view.getMeasuredHeight());
+                  } else {
+                    recyclerView.smoothScrollBy(0, offsetY);
+                  }
+                }
+              } else {
+                int offsetY = Math.min(0, view.getTop());
+                if (offsetY != 0) {
+                  if (-offsetY > view.getMeasuredHeight() / 2) {
+                    recyclerView.smoothScrollBy(0, view.getMeasuredHeight() + offsetY);
+                  } else {
+                    recyclerView.smoothScrollBy(0, offsetY);
+                  }
                 }
               }
             }
