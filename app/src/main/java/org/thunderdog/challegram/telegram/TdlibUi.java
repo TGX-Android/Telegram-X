@@ -7053,8 +7053,8 @@ public class TdlibUi extends Handler {
           return !StringUtils.isEmpty(customButtonText) ? super.getCameraButtonOffset() : 0;
         }
       };
-      mediaLayout.init(MediaLayout.MODE_AVATAR_PICKER, null);
       mediaLayout.setAvatarPickerMode(avatarPickerMode);
+      mediaLayout.init(MediaLayout.MODE_AVATAR_PICKER, null);
       mediaLayout.setCallback(new MediaLayout.MediaGalleryCallback() {
         @Override
         public void onSendVideo (ImageGalleryFile file, boolean isFirst) {
