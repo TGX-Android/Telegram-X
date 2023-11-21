@@ -407,7 +407,9 @@ public class MediaLayout extends FrameLayoutFix implements
       }
       case MODE_AVATAR_PICKER:
       case MODE_GALLERY: {
-        return new MediaBottomGalleryController(this);
+        MediaBottomGalleryController c = new MediaBottomGalleryController(this);
+        c.setArguments(new MediaBottomGalleryController.Arguments(mode == MODE_GALLERY));
+        return c;
       }
     }
     if (rtl) {
