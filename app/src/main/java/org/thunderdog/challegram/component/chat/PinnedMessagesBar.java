@@ -29,6 +29,9 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.config.Config;
+import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.helper.InlineSearchContext;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ListManager;
@@ -48,6 +51,7 @@ import org.thunderdog.challegram.ui.SettingsAdapter;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import me.vkryl.android.AnimatorUtils;
@@ -55,6 +59,7 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
+import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
@@ -83,8 +88,12 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
 
   private final RecyclerView.ItemAnimator itemAnimator = new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
 
-  public PinnedMessagesBar (@NonNull Context context) {
+  private final boolean reverseLayout;
+
+  public PinnedMessagesBar (@NonNull Context context, boolean reverseLayout) {
     super(context);
+
+    this.reverseLayout = reverseLayout;
 
     showAllButton = new TopBarView(context);
     showAllButton.setAlpha(0f);
@@ -107,7 +116,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? RecyclerView.OVER_SCROLL_IF_CONTENT_SCROLLS : RecyclerView.OVER_SCROLL_NEVER);
     recyclerView.setVerticalScrollBarEnabled(false);
     Views.setScrollBarPosition(recyclerView);
-    recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, true));
+    recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, reverseLayout));
     recyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
       @Override
       public void onDrawOver (@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
@@ -126,7 +135,6 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
         }
 
         final float alpha = 1f;
-        float focusPosition = getFocusPosition();
 
         //
 
@@ -136,6 +144,15 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
         //
 
         final float visibleItemCount = Math.min(scrollItemCount, (float) viewportHeight / (float) itemHeight);
+
+        //
+
+        float focusPosition = getFocusPosition();
+        if (!reverseLayout) {
+          focusPosition = scrollItemCount - 1 - focusPosition;
+        }
+
+        //
 
         final int lineX = Screen.dp(10f);
         final float strokeWidth = Screen.dp(1.5f);
@@ -169,13 +186,19 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
           float lineEndY = lineBeginY - (float) Math.ceil((lineHeight + spacingBetweenItems) * position);
           float lineStartY = lineEndY - lineHeight;
 
-          DataHolder data = null;
-          if (messagesAdapter != null && position >= 0 && position < messagesAdapter.getItemCount()) {
-            data = (DataHolder) messagesAdapter.getItems().get(position).getData();
+          int dataPosition;
+          if (reverseLayout) {
+            dataPosition = position;
+          } else {
+            dataPosition = scrollItemCount - 1 - position;
+          }
+          Entry entry = null;
+          if (messagesAdapter != null && dataPosition >= 0 && dataPosition < messagesAdapter.getItemCount()) {
+            entry = (Entry) messagesAdapter.getItems().get(dataPosition).getData();
           }
           final int fillColor, backgroundColor;
-          if (data != null && data.accentColor != null) {
-            fillColor = ColorUtils.alphaColor(alpha, data.accentColor.getVerticalLineColor());
+          if (entry != null && entry.accentColor != null) {
+            fillColor = ColorUtils.alphaColor(alpha, entry.accentColor.getVerticalLineColor());
             backgroundColor = ColorUtils.alphaColor(.3f * alpha, fillColor);
           } else {
             fillColor = defaultFillColor;
@@ -263,7 +286,12 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
       if (view instanceof MessagePreviewView) {
         int adapterPosition = recyclerView.getChildAdapterPosition(view);
         if (adapterPosition != RecyclerView.NO_POSITION) {
-          int scrollY = view.getBottom() - viewportHeight;
+          int scrollY;
+          if (reverseLayout) {
+            scrollY = view.getBottom() - viewportHeight;
+          } else {
+            scrollY = -view.getTop();
+          }
           return adapterPosition + (float) scrollY / (float) itemHeight;
         }
       }
@@ -395,8 +423,23 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
 
       @Override
       protected void setMessagePreview (ListItem item, int position, MessagePreviewView previewView) {
-        DataHolder data = (DataHolder) item.getData();
-        if (data.message != null) {
+        Entry data = (Entry) item.getData();
+        if (data.isLinkPreview()) {
+          InlineSearchContext.LinkPreview linkPreview = data.linkPreview;
+          String url = data.linkPreviewUrl;
+          TdApi.MessageText messageText = new TdApi.MessageText(new TdApi.FormattedText(url, null), linkPreview.webPage, linkPreview.options);
+          TdApi.Message message = TD.newFakeMessage(0, new TdApi.MessageSenderUser(data.tdlib.myUserId()), messageText);
+          String forcedTitle;
+          TdApi.FormattedText quote = null;
+          if (linkPreview.isLoading()) {
+            forcedTitle = Lang.getString(R.string.GettingLinkInfo);
+          } else if (linkPreview.isNotFound()) {
+            forcedTitle = Lang.getString(R.string.NoLinkInfo);
+          } else {
+            forcedTitle = !StringUtils.isEmpty(linkPreview.webPage.title) ? linkPreview.webPage.title : linkPreview.webPage.siteName;
+          }
+          previewView.setMessage(message, null, null, forcedTitle, MessagePreviewView.Options.IGNORE_ALBUM_REFRESHERS);
+        } else if (data.isMessage()) {
           TdApi.Message message = data.message;
           TdApi.FormattedText quote = data.quote;
           previewView.setMessage(message, quote, new TdApi.SearchMessagesFilterPinned(), item.getStringValue(), ignoreAlbums ? MessagePreviewView.Options.IGNORE_ALBUM_REFRESHERS : MessagePreviewView.Options.NONE);
@@ -480,6 +523,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
 
   public interface MessageListener {
     void onMessageClick (PinnedMessagesBar view, TdApi.Message message, @Nullable TdApi.FormattedText quote);
+    default void onLinkPreviewClick (PinnedMessagesBar view, InlineSearchContext.LinkPreview linkPreview, String url) { }
     default void onDismissRequest (PinnedMessagesBar view) { }
     default void onShowAllRequest (PinnedMessagesBar view) { }
     default void onCreateMessagePreview (PinnedMessagesBar view, MessagePreviewView previewView) { }
@@ -496,10 +540,12 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
   public void onClick (View v) {
     if (v.getId() == R.id.message) {
       ListItem item = ((ListItem) v.getTag());
-      DataHolder data = (DataHolder) item.getData();
+      Entry entry = (Entry) item.getData();
       if (messageListener != null) {
-        if (data.message != null) {
-          messageListener.onMessageClick(this, data.message, data.quote);
+        if (entry.isLinkPreview()) {
+          messageListener.onLinkPreviewClick(this, entry.linkPreview, entry.linkPreviewUrl);
+        } else if (entry.isMessage()) {
+          messageListener.onMessageClick(this, entry.message, entry.quote);
         } else {
           // TODO
         }
@@ -535,23 +581,98 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     return itemHeight + Math.round((float) itemHeight * countAnimator.getFactor() * getExpandFactor());
   }
 
+  public static class Entry implements Destroyable {
+    public final Tdlib tdlib;
+
+    public final TdApi.Message message;
+    public final @Nullable TdApi.FormattedText quote;
+    public final TdlibAccentColor accentColor;
+
+    public final InlineSearchContext.LinkPreview linkPreview;
+    public final String linkPreviewUrl;
+
+    public Entry (Tdlib tdlib, TdApi.Message message, @Nullable TdApi.FormattedText quote) {
+      this.tdlib = tdlib;
+      this.message = message;
+      this.linkPreview = null;
+      this.linkPreviewUrl = null;
+      this.quote = quote;
+      this.accentColor = tdlib.messageAccentColor(message);
+    }
+
+    public Entry (Tdlib tdlib, @NonNull InlineSearchContext.LinkPreview linkPreview, String linkPreviewUrl, @Nullable TdApi.Message editingMessage) {
+      this.tdlib = tdlib;
+      this.linkPreview = linkPreview;
+      this.linkPreviewUrl = linkPreviewUrl;
+      this.message = editingMessage;
+      this.accentColor = editingMessage != null ? tdlib.messageAccentColor(editingMessage) : null;
+      this.quote = null;
+    }
+
+    public boolean isLinkPreview () {
+      return linkPreview != null;
+    }
+
+    public boolean isMessage () {
+      return linkPreview == null && message != null;
+    }
+
+    public void subscribeToUpdates () {
+      // TODO subscribe to updates
+    }
+
+    @Override
+    public void performDestroy () {
+      // TODO
+    }
+
+    @Override
+    public boolean equals (@Nullable Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof Entry)) {
+        return false;
+      }
+      Entry b = (Entry) obj;
+      if (isMessage() != b.isMessage() || isLinkPreview() != b.isLinkPreview()) {
+        return false;
+      }
+      if (isLinkPreview()) {
+        return StringUtils.equalsTo(this.linkPreviewUrl, b.linkPreviewUrl) && Td.equalsTo(this.linkPreview.webPage, b.linkPreview.webPage);
+      } else if (isMessage()) {
+        return this.message.chatId == b.message.chatId && this.message.id == b.message.id;
+      } else {
+        throw new UnsupportedOperationException();
+      }
+    }
+  }
+
   private long contextChatId;
-  private @Nullable TdApi.Message singleMessage;
-  private @Nullable TdApi.FormattedText singleMessageQuote;
+  private @Nullable List<Entry> staticList;
   private @Nullable MessageListManager messageList;
 
   public void collapse (boolean animated) {
     this.isExpanded.setValue(false, animated);
   }
 
+  private void clearMessageList () {
+    if (this.staticList != null) {
+      for (Entry entry : staticList) {
+        entry.performDestroy();
+      }
+      this.staticList = null;
+    }
+    if (this.messageList != null) {
+      this.messageList.removeChangeListener(this);
+      this.messageList = null;
+    }
+  }
+
   public void setMessageList (@Nullable MessageListManager messageList) {
     if (this.messageList == messageList)
       return;
-    if (this.messageList != null) {
-      this.messageList.removeChangeListener(this);
-    }
-    this.singleMessage = null;
-    this.singleMessageQuote = null;
+    clearMessageList();
     this.messageList = messageList;
     collapse(false);
     canExpand.setValue(messageList != null && messageList.getTotalCount() > 1, false);
@@ -573,23 +694,43 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     setMessage(tdlib, message, null);
   }
 
-  public void setMessage (@Nullable Tdlib tdlib, @Nullable TdApi.Message message, @Nullable TdApi.FormattedText quote) {
-    if (this.singleMessage == message && Td.equalsTo(singleMessageQuote, quote)) {
+  public void setStaticMessageList (@Nullable List<Entry> entries) {
+    if (entries == null || entries.isEmpty()) {
+      setMessageList(null);
       return;
     }
-    if (this.messageList != null) {
-      this.messageList.removeChangeListener(this);
-      this.messageList = null;
+    if (this.staticList != null && this.staticList.size() == entries.size()) {
+      boolean contentEquals = true;
+      for (int i = 0; i < entries.size(); i++) {
+        Entry oldEntry = this.staticList.get(i);
+        Entry newEntry = entries.get(i);
+        // TODO better check
+        if (!oldEntry.equals(newEntry)) {
+          contentEquals = false;
+          break;
+        }
+      }
+      if (contentEquals) {
+        return;
+      }
     }
-    this.singleMessage = message;
-    this.singleMessageQuote = quote;
+    clearMessageList();
     collapse(false);
     canExpand.setValue(false, false);
     countAnimator.forceFactor(0);
+    List<ListItem> items = new ArrayList<>(entries.size());
+    for (Entry entry : entries) {
+      entry.subscribeToUpdates();
+      items.add(itemOf(entry));
+    }
+    messagesAdapter.setItems(items, false);
+  }
+
+  public void setMessage (@Nullable Tdlib tdlib, @Nullable TdApi.Message message, @Nullable TdApi.FormattedText quote) {
     if (tdlib != null && message != null) {
-      messagesAdapter.setItems(new ListItem[] {itemOf(tdlib, message, quote)}, false);
+      setStaticMessageList(Collections.singletonList(new Entry(tdlib, message, quote)));
     } else {
-      messagesAdapter.setItems(new ListItem[0], false);
+      setMessageList(null);
     }
   }
 
@@ -607,26 +748,12 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     }
   }
 
-  private static class DataHolder {
-    private final Tdlib tdlib;
-    private final TdApi.Message message;
-    private final @Nullable TdApi.FormattedText quote;
-    private final TdlibAccentColor accentColor;
-
-    public DataHolder (Tdlib tdlib, TdApi.Message message, @Nullable TdApi.FormattedText quote) {
-      this.tdlib = tdlib;
-      this.message = message;
-      this.quote = quote;
-      this.accentColor = tdlib.messageAccentColor(message);
-    }
+  private static ListItem itemOf (@NonNull Entry entry) {
+    return new ListItem(ListItem.TYPE_MESSAGE_PREVIEW, R.id.message).setData(entry);
   }
 
   private static ListItem itemOf (Tdlib tdlib, TdApi.Message message) {
-    return itemOf(tdlib, message, null);
-  }
-
-  private static ListItem itemOf (Tdlib tdlib, TdApi.Message message, @Nullable TdApi.FormattedText quote) {
-    return new ListItem(ListItem.TYPE_MESSAGE_PREVIEW, R.id.message).setData(new DataHolder(tdlib, message, quote));
+    return new ListItem(ListItem.TYPE_MESSAGE_PREVIEW, R.id.message).setData(new Entry(tdlib, message, null));
   }
 
   @Override

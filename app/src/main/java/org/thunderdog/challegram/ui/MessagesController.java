@@ -800,7 +800,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     toastAlertView.setPadding(Screen.dp(16f), Screen.dp(8f), Screen.dp(16f), Screen.dp(8f));
     toastAlertView.setHeightChangeListener((v, newHeight) -> topBar.notifyItemHeightChanged(toastAlertItem));
 
-    pinnedMessagesBar = new PinnedMessagesBar(context) {
+    pinnedMessagesBar = new PinnedMessagesBar(context, true) {
       @Override
       protected void onViewportChanged () {
         super.onViewportChanged();

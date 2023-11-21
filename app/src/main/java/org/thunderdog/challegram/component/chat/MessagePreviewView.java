@@ -627,7 +627,10 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
 
   @Override
   public TdApi.Message getVisibleMessage () {
-    return message;
+    if (message != null && message.chatId != 0) {
+      return message;
+    }
+    return null;
   }
 
   @Override

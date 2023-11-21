@@ -677,6 +677,7 @@
   <string name="NoMediaYet">No photos or videos yet</string>
   <string name="AttachAudio">Voice Message</string>
   <string name="GettingLinkInfo">Getting Link Info…</string>
+  <string name="NoLinkInfo">Link Info Missing</string>
   <string name="ChatsAndContacts">Chats and Contacts</string>
   <string name="GlobalSearch">Global Search</string>
   <string name="Global">Global</string>

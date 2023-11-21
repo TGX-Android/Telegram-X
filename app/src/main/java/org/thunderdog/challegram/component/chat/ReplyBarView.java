@@ -35,6 +35,9 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.Destroyable;
@@ -75,7 +78,7 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
 
     FrameLayoutFix.LayoutParams params;
 
-    pinnedMessagesBar = new PinnedMessagesBar(getContext());
+    pinnedMessagesBar = new PinnedMessagesBar(getContext(), false);
     pinnedMessagesBar.setPadding(Screen.dp(49.5f), 0, 0, 0);
     pinnedMessagesBar.setCollapseButtonVisible(false);
     pinnedMessagesBar.setIgnoreAlbums(true);
@@ -134,7 +137,11 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
   }
 
   public void showWebPage (@NonNull InlineSearchContext.LinkPreview linkPreview, @Nullable TdApi.Message editingMessage) {
-
+    List<PinnedMessagesBar.Entry> entryList = new ArrayList<>(linkPreview.uniqueUrls.length);
+    for (String url : linkPreview.uniqueUrls) {
+      entryList.add(new PinnedMessagesBar.Entry(tdlib, linkPreview, url, editingMessage));
+    }
+    pinnedMessagesBar.setStaticMessageList(entryList);
   }
 
   public void setReplyTo (TdApi.Message msg, @Nullable TdApi.FormattedText quote) {
