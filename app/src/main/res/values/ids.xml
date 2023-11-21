@@ -88,6 +88,7 @@
   <item type="id" name="more_btn_viewStats" />
   <item type="id" name="more_btn_block" />
   <item type="id" name="more_btn_privacy" />
+  <item type="id" name="more_btn_messagesFilter" />
   <item type="id" name="more_btn_unblock" />
   <item type="id" name="more_btn_clearCache" />
   <item type="id" name="more_btn_clearHistory" />
@@ -154,6 +155,7 @@
   <item type="id" name="controller_notificationSettings" />
   <item type="id" name="controller_themeSettings" />
   <item type="id" name="controller_messagesFilterSettings" />
+  <item type="id" name="controller_messagesFilterChannelSettings" />
   <item type="id" name="controller_theme" />
   <item type="id" name="controller_themeColors" />
   <item type="id" name="controller_networkStats" />
@@ -274,6 +276,7 @@
   <item type="id" name="search_chat_top" />
   <item type="id" name="search_message" />
   <item type="id" name="search_counter" />
+  <item type="id" name="channel_filtered" />
 
   <item type="id" name="btn_color" />
   <item type="id" name="btn_property" />
@@ -1103,6 +1106,11 @@
   <item type="id" name="btn_messageMore" />
   <item type="id" name="btn_messageCopy" />
   <item type="id" name="btn_messageCopyLink" />
+
+  <item type="id" name="btn_chatMessageLinksFilter" />
+  <item type="id" name="btn_chatMessageLinksFilterInternal" />
+  <item type="id" name="btn_chatMessageLinksFilterExternal" />
+
   <item type="id" name="btn_messageReply" />
   <item type="id" name="btn_messageReplies" />
   <item type="id" name="btn_messageReplyWithDice" />

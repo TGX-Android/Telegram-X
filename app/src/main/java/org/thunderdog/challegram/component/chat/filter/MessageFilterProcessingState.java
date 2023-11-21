@@ -35,11 +35,13 @@ import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.Td;
 
 public class MessageFilterProcessingState implements Destroyable, MessagesFilterProvider.MessageSenderUpdatesListener,
-  MessagesFilterProvider.UsernameResolverUpdatesListener {
+  MessagesFilterProvider.UsernameResolverUpdatesListener, MessagesFilterProvider.ChatCustomFilterSettingsUpdatesListener {
   private final Tdlib tdlib;
   private final TGMessage message;
 
+  private final long chatId;
   private final long senderId;
+
   private final Set<Long> resolvedMentions = new HashSet<>();
   private boolean senderIsBlocked;
 
@@ -48,6 +50,7 @@ public class MessageFilterProcessingState implements Destroyable, MessagesFilter
     this.tdlib = tgMessage.tdlib();
     this.message = tgMessage;
 
+    this.chatId = message.chatId;
     this.senderId = Td.getSenderId(message.senderId);
     this.senderIsBlocked = tdlib.chatFullyBlocked(senderId);
 
@@ -55,6 +58,14 @@ public class MessageFilterProcessingState implements Destroyable, MessagesFilter
     checkContent();
 
     subscribeToSenderId(senderId);
+    tdlib.messagesFilterProvider().subscribeToChatCustomFilterSettingsUpdates(chatId, this);
+  }
+
+  @Override
+  public void onChatFilterSettingsUpdate (long chatId) {
+    if (this.chatId == chatId) {
+      checkCurrentFilterReason();
+    }
   }
 
   @Override
@@ -116,6 +127,25 @@ public class MessageFilterProcessingState implements Destroyable, MessagesFilter
       for (Long chatId : resolvedMentions) {
         if (tdlib.chatFullyBlocked(chatId)) {
           setReason(FilterReason.BLOCKED_SENDER_MENTION);
+          return;
+        }
+      }
+    }
+
+    if (messageContent != null) {
+      if (Settings.instance().isChatFilterEnabled(chatId, Settings.FILTER_TYPE_LINKS_EXTERNAL)) {
+        if (!messageContent.externalLinks.isEmpty()) {
+          setReason(FilterReason.CONTAINS_EXTERNAL_LINK);
+          return;
+        }
+      }
+      if (Settings.instance().isChatFilterEnabled(chatId, Settings.FILTER_TYPE_LINKS_INTERNAL)) {
+        if (!messageContent.internalLinks.isEmpty()) {
+          setReason(FilterReason.CONTAINS_INTERNAL_LINK);
+          return;
+        }
+        if (!messageContent.mentionsUsername.isEmpty()) {   // todo: ignore self-mention
+          setReason(FilterReason.CONTAINS_INTERNAL_LINK);
           return;
         }
       }
@@ -334,6 +364,11 @@ public class MessageFilterProcessingState implements Destroyable, MessagesFilter
     }
   }
 
+  @FilterReason
+  public int getCurrentFilterReason () {
+    return reason;
+  }
+
   public boolean needHideMessage () {
     return state == FilterState.LAST_STATE_HIDDEN || state == FilterState.HIDDEN;
   }
@@ -349,5 +384,6 @@ public class MessageFilterProcessingState implements Destroyable, MessagesFilter
     }
     unsubscribeFromAllSenderIds();
     unsubscribeFromAllFromUsernameResolvers();
+    tdlib.messagesFilterProvider().unsubscribeFromChatCustomFilterSettingsUpdates(chatId, this);
   }
 }

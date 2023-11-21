@@ -41,6 +41,35 @@ public class MessagesFilterProvider implements ChatListener {
   }
 
 
+  /**/
+
+  public interface ChatCustomFilterSettingsUpdatesListener {
+    void onChatFilterSettingsUpdate (long chatId);
+  }
+
+  private final ReferenceLongMap<ChatCustomFilterSettingsUpdatesListener> chatCustomFilterSettingsUpdatesListeners = new ReferenceLongMap<>();
+
+  public void subscribeToChatCustomFilterSettingsUpdates (long chatId, ChatCustomFilterSettingsUpdatesListener listener) {
+    chatCustomFilterSettingsUpdatesListeners.add(chatId, listener);
+  }
+
+  public void unsubscribeFromChatCustomFilterSettingsUpdates (long chatId, ChatCustomFilterSettingsUpdatesListener listener) {
+    chatCustomFilterSettingsUpdatesListeners.remove(chatId, listener);
+  }
+
+  public void updateChatCustomFilterSettings (long chatId) {
+    updateChatCustomFilterSettings(chatId, chatCustomFilterSettingsUpdatesListeners.iterator(chatId));
+  }
+
+  private static void updateChatCustomFilterSettings (long chatId, @Nullable Iterator<ChatCustomFilterSettingsUpdatesListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onChatFilterSettingsUpdate(chatId);
+      }
+    }
+  }
+
+
 
   /* * */
 

@@ -31,6 +31,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 
+import com.google.common.primitives.Longs;
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy;
 
 import org.drinkless.tdlib.Client;
@@ -96,6 +97,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -6977,5 +6979,86 @@ public class Settings {
 
   public boolean showPeerIds () {
     return isExperimentEnabled(EXPERIMENT_FLAG_SHOW_PEER_IDS);
+  }
+
+
+
+
+  /* Messages Filter */
+
+  private static final String KEY_FILTERED_CHATS = "filtered_chat_ids";
+  private static final String KEY_CHAT_FILTER_FLAGS = "chat_filter_flags_";
+
+  public static final int FILTER_TYPE_LINKS_INTERNAL = 1;
+  public static final int FILTER_TYPE_LINKS_EXTERNAL = 1 << 1;
+
+  private final HashMap<Long, Long> filterFlagsCache = new HashMap<>();
+  private final HashSet<Long> filteredChatIds = new HashSet<>();
+  private boolean messagesFilterInited;
+
+  private void initMessagesFilterSettings () {
+    if (messagesFilterInited) {
+      return;
+    }
+
+    final long[] chatIds = pmc.getLongArray(KEY_FILTERED_CHATS);
+    if (chatIds != null) {
+      for (long chatId : chatIds) {
+        filteredChatIds.add(chatId);
+      }
+    }
+    messagesFilterInited = true;
+  }
+
+  private long getChatEnabledFilters (long chatId) {
+    initMessagesFilterSettings();
+
+    Long cached = filterFlagsCache.get(chatId);
+    if (cached != null) {
+      return cached;
+    } else {
+      long flags = pmc.getLong(KEY_CHAT_FILTER_FLAGS + chatId, 0);
+      filterFlagsCache.put(chatId, flags);
+      return flags;
+    }
+  }
+
+  private void setChatEnabledFilters (long chatId, long enabledFilters) {
+    initMessagesFilterSettings();
+
+    final boolean contains = filteredChatIds.contains(chatId);
+    final String key = KEY_CHAT_FILTER_FLAGS + chatId;
+
+    filterFlagsCache.put(chatId, enabledFilters);
+
+    LevelDB editor = pmc.edit();
+    if (enabledFilters != 0) {
+      pmc.putLong(key, enabledFilters);
+      if (!contains) {
+        filteredChatIds.add(chatId);
+        editor.putLongArray(KEY_FILTERED_CHATS, Longs.toArray(filteredChatIds));
+      }
+    } else {
+      pmc.remove(key);
+      if (contains) {
+        filteredChatIds.remove(chatId);
+        editor.putLongArray(KEY_FILTERED_CHATS, Longs.toArray(filteredChatIds));
+      }
+    }
+
+    editor.apply();
+  }
+
+  public long[] getFilteredChatIds () {
+    initMessagesFilterSettings();
+    return Longs.toArray(filteredChatIds);
+  }
+
+  public boolean isChatFilterEnabled (long chatId, int flag) {
+    return BitwiseUtils.hasFlag(getChatEnabledFilters(chatId), flag);
+  }
+
+  public void setChatLinksFilterEnabled (long chatId, int flag, boolean enabled) {
+    setChatEnabledFilters(chatId, BitwiseUtils.setFlag(getChatEnabledFilters(chatId), flag, enabled));
   }
 }

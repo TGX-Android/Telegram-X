@@ -4935,8 +4935,16 @@
 
   <string name="MessagesFilterChannels">Channels</string>
   <string name="MessagesFilterChannelsManage">Manage Filtered Channels</string>
+  <string name="MessagesFilterFilteredChannels">Filtered Channels</string>
   <string name="MessagesFilterBlockedSendersManage">Manage Blocked Senders</string>
 
   <string name="MessagesFilterShowMessage">Show Message</string>
+
+  <string name="ChatMessagesFilterInfo">Hides all messages with links to other chats, channels or external sites.</string>
+  <string name="ChatMessagesFilterInternal">Telegram links</string>
+  <string name="ChatMessagesFilterExternal">External links</string>
+  <string name="ChatMessagesFilterNone">None</string>
+
+  <string name="MessagesFilterUnknownChat">Unknown Chat</string>
 
 </resources>

@@ -14,7 +14,10 @@
  */
 package org.thunderdog.challegram.component.chat.filter;
 
+import android.net.Uri;
+
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.data.TD;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -25,10 +28,8 @@ import me.vkryl.td.Td;
 class Content {
   public final Set<String> mentionsUsername = new HashSet<>();
   public final Set<Long> mentionsId = new HashSet<>();
-  public final Set<String> links = new HashSet<>();
-
-  // private final Set<String> internalLinks = new HashSet<>();
-  // private final Set<String> externalLinks = new HashSet<>();
+  public final Set<String> internalLinks = new HashSet<>();
+  public final Set<String> externalLinks = new HashSet<>();
 
   public Content () {}
 
@@ -64,6 +65,10 @@ class Content {
   }
 
   private void addLink (String link) {
-    links.add(link);
+    if (TD.isTelegramOwnedHost(Uri.parse(link), false)) {
+      internalLinks.add(link);
+    } else {
+      externalLinks.add(link);
+    }
   }
 }

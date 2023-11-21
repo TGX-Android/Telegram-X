@@ -90,14 +90,6 @@ public class SettingsMessagesFilterController extends RecyclerViewController<Voi
   private void buildSettingsCells (ArrayList<ListItem> items) {
     final int size = items.size();
 
-    /*
-    items.add(new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.MessagesFilterChannels));
-    items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_messageFilterFilteredChannelsManage, 0, R.string.MessagesFilterChannelsManage));
-    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-    items.add(new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.MessagesFilterGroupsAndChats));
-    */
-
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_messageFilterHideBlockedSenders, 0, R.string.MessagesFilterHideBlockedSenders));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
@@ -110,6 +102,8 @@ public class SettingsMessagesFilterController extends RecyclerViewController<Voi
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_blockedSenders, 0, R.string.MessagesFilterBlockedSendersManage));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_messageFilterFilteredChannelsManage, 0, R.string.MessagesFilterChannelsManage));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     settingCellsCount = items.size() - size;
@@ -132,7 +126,10 @@ public class SettingsMessagesFilterController extends RecyclerViewController<Voi
   @Override
   public void onClick (View v) {
     final int id = v.getId();
-    if (id == R.id.btn_blockedSenders) {
+    if (id == R.id.btn_messageFilterFilteredChannelsManage) {
+      SettingsMessagesFilterChannelsController c = new SettingsMessagesFilterChannelsController(context, tdlib);
+      navigateTo(c);
+    } else if (id == R.id.btn_blockedSenders) {
       SettingsBlockedController c = new SettingsBlockedController(context, tdlib);
       c.setArguments(new TdApi.BlockListMain());
       navigateTo(c);

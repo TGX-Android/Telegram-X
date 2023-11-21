@@ -24,12 +24,16 @@ import java.lang.annotation.RetentionPolicy;
   FilterReason.PENDING,
   FilterReason.NONE,
   FilterReason.BLOCKED_SENDER,
-  FilterReason.BLOCKED_SENDER_MENTION
+  FilterReason.BLOCKED_SENDER_MENTION,
+  FilterReason.CONTAINS_INTERNAL_LINK,
+  FilterReason.CONTAINS_EXTERNAL_LINK
 })
 public @interface FilterReason {
   int
     PENDING = -1,
     NONE = 0,
     BLOCKED_SENDER = 1,
-    BLOCKED_SENDER_MENTION = 2;
+    BLOCKED_SENDER_MENTION = 2,
+    CONTAINS_INTERNAL_LINK = 3,
+    CONTAINS_EXTERNAL_LINK = 4;
 }
