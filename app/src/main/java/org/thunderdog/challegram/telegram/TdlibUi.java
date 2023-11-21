@@ -6956,13 +6956,21 @@ public class TdlibUi extends Handler {
       b.item(new ViewController.OptionItem(R.id.btn_changePhotoGallery, Lang.getString(isPublic ? R.string.SetPublicPhoto : R.string.SetProfilePhoto),
         ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_image_24));
 
+      final Runnable deleteRunnable = () -> showDeletePhotoConfirm(() -> deleteProfilePhoto(profilePhotoToDelete));
+      if (profilePhotoToDelete != 0 && !isPublic) {
+        b.item(new ViewController.OptionItem(R.id.btn_changePhotoDelete, Lang.getString(R.string.Delete),
+          ViewController.OPTION_COLOR_RED, R.drawable.baseline_delete_24));
+      }
+
       showOptions(b.build(), (itemView, id) -> {
         if (id == R.id.btn_open) {
           MediaViewController.openFromProfile(context, user, delegate);
         } else if (id == R.id.btn_changePhotoGallery) {
           openMediaView(false, false, AvatarPickerMode.PROFILE, f -> onProfilePhotoReceived(f, isPublic),
             profilePhotoToDelete != 0 ? Lang.getString(isPublic ? R.string.RemovePublicPhoto : R.string.RemoveProfilePhoto) : null,
-            ColorId.textNegative, () -> showDeletePhotoConfirm(() -> deleteProfilePhoto(profilePhotoToDelete)));
+            ColorId.textNegative, deleteRunnable);
+        } else if (id == R.id.btn_changePhotoDelete) {
+          deleteRunnable.run();
         }
         return true;
       });
