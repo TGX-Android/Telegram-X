@@ -487,6 +487,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       @SuppressWarnings("WrongConstant")
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         final int viewId = item.getId();
+        boolean needRotateIcon = false;
         if (viewId == R.id.btn_togglePermission) {
           @RightId int rightId = item.getIntValue();
           boolean canEdit = hasAccessToEditRight(item);
@@ -517,6 +518,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
             view.getToggler().setRadioEnabled(item.getBoolValue(), isUpdate);
             view.getToggler().setShowLock(!canEdit);
             view.setData(Lang.pluralBold(R.string.xPermissionsSendMediaAllowed, count, option.groupRightIds.length));
+            needRotateIcon = adapter.indexOfViewByIdAndValue(R.id.btn_togglePermission, option.groupRightIds[0]) != -1;
           }
         } else if (viewId == R.id.btn_date) {
           boolean canEdit = hasAccessToEditRight(item);
@@ -562,6 +564,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
             view.getToggler().setClickable(false);
           }
         }
+        view.setIconRotated(needRotateIcon, isUpdate);
       }
 
       @Override
@@ -1113,7 +1116,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           .setIntValue(rightId).setBoolValue(getValueForId(rightId)));
       } else {
         items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER,
-          R.id.btn_togglePermissionGroup, R.drawable.baseline_keyboard_arrow_down_24, option.name
+          R.id.btn_togglePermissionGroup, R.drawable.round_keyboard_arrow_right_24, option.name
         ).setIntValue(option.groupRightIds[0]).setData(option).setBoolValue(getRightsGroupEnabledCount(option.groupRightIds) > 0));
       }
     }
@@ -1829,6 +1832,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     } else {
       adapter.removeRange(index + 1, rights.length * 2);
     }
+    adapter.updateValuedSettingByPosition(index);
   }
 
   public static final int[] SEND_MEDIA_RIGHT_IDS = {
