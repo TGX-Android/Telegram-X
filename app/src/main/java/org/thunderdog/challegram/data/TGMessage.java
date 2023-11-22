@@ -4559,7 +4559,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (msg.mediaAlbumId == 0 || msg.mediaAlbumId != message.mediaAlbumId ||
       !Td.equalsTo(msg.selfDestructType, message.selfDestructType) ||
       ((msg.forwardInfo == null) != (message.forwardInfo == null)) ||
-      ((msg.forwardInfo != null && message.forwardInfo != null && !Td.equalsTo(msg.forwardInfo.origin, message.forwardInfo.origin))) ||
+      ((msg.forwardInfo != null && message.forwardInfo != null && !Td.equalsTo(msg.forwardInfo.origin, message.forwardInfo.origin, false))) ||
       isHot() || isEventLog() || isSponsoredMessage()) {
       return false;
     }
