@@ -609,7 +609,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
     final boolean isHiddenByMessagesFilter = msg.isHiddenByMessagesFilter();
 
-    if (!isMore && (isHiddenByMessagesFilter || BuildConfig.DEBUG)) {
+    if (!isMore && (isHiddenByMessagesFilter /*|| BuildConfig.DEBUG*/)) {
       ids.append(R.id.btn_messageChangeMessageFilterVisibility);
       strings.append(Lang.getString(R.string.MessagesFilterShowMessage));
       icons.append(R.drawable.baseline_visibility_24);

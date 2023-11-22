@@ -1375,8 +1375,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public int computeHeight () {
     final int headerPadding = getHeaderPadding();
+    final int extraPadding = getExtraPadding();
     if (useBubbles()) {
-      int height = bottomContentEdge + getPaddingBottom() + getExtraPadding();
+      int height = bottomContentEdge + getPaddingBottom() + extraPadding;
       if (inlineKeyboard != null && !inlineKeyboard.isEmpty()) {
         height += inlineKeyboard.getHeight() + TGInlineKeyboard.getButtonSpacing();
       }
@@ -1390,9 +1391,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (commentButton.isBubble()) {
         height += commentButton.getAnimatedHeight(Screen.dp(5f), commentButton.getVisibility());
       }
-      return MathUtils.fromTo(height, Screen.dp(HIDDEN_BY_MESSAGE_FILTER_HEIGHT) + headerPadding, isHiddenByFilter.getFloatValue());
+      return MathUtils.fromTo(height, Screen.dp(HIDDEN_BY_MESSAGE_FILTER_HEIGHT) + extraPadding + headerPadding, isHiddenByFilter.getFloatValue());
     } else {
-      int height = pContentY + getContentHeight() + getPaddingBottom() + getExtraPadding();
+      int height = pContentY + getContentHeight() + getPaddingBottom() + extraPadding;
       if (inlineKeyboard != null && !inlineKeyboard.isEmpty()) {
         height += inlineKeyboard.getHeight() + xPaddingBottom;
       }
@@ -1406,7 +1407,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (commentButton.isVisible() && commentButton.isInline()) {
         height += commentButton.getAnimatedHeight(useReactionBubbles ? -Screen.dp(2f) : 0, commentButton.getVisibility());
       }
-      return MathUtils.fromTo(height, Screen.dp(HIDDEN_BY_MESSAGE_FILTER_HEIGHT) + headerPadding, isHiddenByFilter.getFloatValue());
+      return MathUtils.fromTo(height, Screen.dp(HIDDEN_BY_MESSAGE_FILTER_HEIGHT) + extraPadding + headerPadding, isHiddenByFilter.getFloatValue());
     }
   }
 
