@@ -384,7 +384,18 @@ public class EditButton extends View implements FactorAnimator.Target {
 
   private SendButton.SlowModeCounterController slowModeCounterController;
 
+  public void destroySlowModeCounterController () {
+    if (slowModeCounterController != null) {
+      slowModeCounterController.performDestroy();
+      slowModeCounterController = null;
+    }
+  }
+
   public SendButton.SlowModeCounterController getSlowModeCounterController (Tdlib tdlib) {
+    if (slowModeCounterController != null && slowModeCounterController.tdlib() != tdlib) {
+      destroySlowModeCounterController();
+    }
+
     if (slowModeCounterController == null) {
       slowModeCounterController = new SendButton.SlowModeCounterController(tdlib, this, () -> getCurrentIconColor(), true);
     }

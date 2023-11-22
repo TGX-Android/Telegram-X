@@ -5678,6 +5678,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (captionView instanceof Destroyable) {
       ((Destroyable) captionView).performDestroy();
     }
+    if (sendButton != null) {
+      sendButton.destroySlowModeCounterController();
+    }
     subscribeToChatId(0);
   }
 

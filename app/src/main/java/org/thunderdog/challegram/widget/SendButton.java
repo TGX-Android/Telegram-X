@@ -414,7 +414,18 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
 
   private SlowModeCounterController slowModeCounterController;
 
+  public void destroySlowModeCounterController () {
+    if (slowModeCounterController != null) {
+      slowModeCounterController.performDestroy();
+      slowModeCounterController = null;
+    }
+  }
+
   public SlowModeCounterController getSlowModeCounterController (Tdlib tdlib) {
+    if (slowModeCounterController != null && slowModeCounterController.tdlib != tdlib) {
+      destroySlowModeCounterController();
+    }
+
     if (slowModeCounterController == null) {
       slowModeCounterController = new SlowModeCounterController(tdlib, this, new TextColorSet() {
         @Override
@@ -452,6 +463,10 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
       }
 
       this.counter = builder.build();
+    }
+
+    public Tdlib tdlib () {
+      return tdlib;
     }
 
     public boolean isVisible () {

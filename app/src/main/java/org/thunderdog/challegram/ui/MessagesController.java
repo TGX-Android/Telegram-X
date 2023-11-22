@@ -4131,7 +4131,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     if (sendButton != null) {
-      sendButton.getSlowModeCounterController(tdlib).performDestroy();
+      sendButton.destroySlowModeCounterController();
     }
 
     // messagesView.clear();

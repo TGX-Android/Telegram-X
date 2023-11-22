@@ -1006,7 +1006,7 @@ public class MediaLayout extends FrameLayoutFix implements
       target.showKeyboard();
     }
     if (sendButton != null) {
-      sendButton.getSlowModeCounterController(tdlib()).performDestroy();
+      sendButton.destroySlowModeCounterController();
     }
     ThemeManager.instance().removeThemeListener(this);
     Lang.removeLanguageListener(this);
