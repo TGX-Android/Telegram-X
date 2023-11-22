@@ -9120,7 +9120,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void send (TdApi.InputMessageContent content, boolean allowReply, TdApi.MessageSendOptions initialSendOptions, RunnableData<TdApi.Message> after) {
-    if (hasWritePermission()) { // FIXME RightId.SEND_POLLS
+    if (tdlib().getRestrictionText(chat, content) == null) {
       pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
         tdlib.sendMessage(chat.id, getMessageThreadId(), allowReply ? obtainReplyTo() : null, Td.newSendOptions(modifiedSendOptions, obtainSilentMode()), content, after);
       });
@@ -9181,7 +9181,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void forwardMessage (TdApi.Message message) { // TODO remove all related to Forward stuff to replace with ShareLayout
-    if (hasWritePermission()) {
+    if (tdlib.getRestrictionText(chat, message) == null) {
       tdlib.forwardMessage(chat.id, getMessageThreadId(), message.chatId, message.id, Td.newSendOptions(obtainSilentMode()));
     }
   }

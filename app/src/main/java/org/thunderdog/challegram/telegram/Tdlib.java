@@ -10867,9 +10867,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.InputMessageText.CONSTRUCTOR:
         case TdApi.InputMessageVenue.CONSTRUCTOR:
         case TdApi.InputMessageContact.CONSTRUCTOR:
+        case TdApi.InputMessageStory.CONSTRUCTOR:
           return getBasicMessageRestrictionText(chat);
+        default:
+          Td.assertInputMessageContent_4e99a3f();
+          throw Td.unsupported(content);
       }
-      throw new UnsupportedOperationException(content.toString());
     }
     // Assuming if null is passed, we want to check if we can write text messages
     return getBasicMessageRestrictionText(chat);

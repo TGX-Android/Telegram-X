@@ -431,7 +431,9 @@ public class RecordAudioVideoController implements
       this.sendButton.setImageResource(R.drawable.deproko_baseline_send_24);
       Views.setClickable(sendButton);
       this.sendButton.setOnClickListener(v -> {
-        sendVideo(Td.newSendOptions());
+        if (!targetController.showSlowModeRestriction(v, null)) {
+          sendVideo(Td.newSendOptions());
+        }
       });
       this.sendButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(55f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT));
       this.inputOverlayView.addView(sendButton);
@@ -996,7 +998,8 @@ public class RecordAudioVideoController implements
   }
 
   public boolean finishRecording (boolean needPreview) {
-    return stopRecording(canSendRecording() ? (needPreview ? CLOSE_MODE_PREVIEW : (hasValidOutputTarget() && targetController.areScheduledOnly()) ? CLOSE_MODE_PREVIEW_SCHEDULE : CLOSE_MODE_SEND) : CLOSE_MODE_CANCEL, true);
+    boolean forcePreview = tdlib.getSlowModeRestrictionText(targetChatId) != null;
+    return stopRecording(canSendRecording() ? (needPreview || forcePreview ? CLOSE_MODE_PREVIEW : (hasValidOutputTarget() && targetController.areScheduledOnly()) ? CLOSE_MODE_PREVIEW_SCHEDULE : CLOSE_MODE_SEND) : CLOSE_MODE_CANCEL, true);
   }
 
   private boolean stopRecording (int closeMode, boolean showPrompt) {
