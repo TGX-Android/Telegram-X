@@ -17,7 +17,6 @@ package org.thunderdog.challegram.helper;
 import android.location.Location;
 import android.os.SystemClock;
 import android.text.Spanned;
-import android.text.TextUtils;
 
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
@@ -56,6 +55,7 @@ import org.thunderdog.challegram.util.CancellableResultHandler;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -66,14 +66,9 @@ import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
 public class InlineSearchContext implements LocationHelper.LocationChangeListener, InlineResultsWrap.LoadMoreCallback {
-  public static final int WARNING_OK = 0;
-  public static final int WARNING_CONFIRM = 1;
-  public static final int WARNING_BLOCK = 2;
-
   public interface Callback {
     long provideInlineSearchChatId ();
     TdApi.Chat provideInlineSearchChat ();
-    TdApi.WebPage provideExistingWebPage (@NonNull TdApi.FormattedText fullText, @NonNull LinkPreview linkPreview);
     long provideInlineSearchChatUserId ();
     boolean isDisplayingItems ();
     void updateInlineMode (boolean isInInlineMode, boolean isInProgress);
@@ -82,20 +77,13 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     void addInlineResults (ArrayList<InlineResult<?>> items);
     void hideInlineResults ();
     void showInlineStickers (ArrayList<TGStickerObj> stickers, String foundByEmoji, boolean isEmoji, boolean isMore);
-    boolean needsLinkPreview ();
-    boolean showLinkPreview (@Nullable LinkPreview linkPreview);
+
+    boolean enableLinkPreview ();
+    void showLinkPreview (@Nullable FoundUrls foundUrls);
 
     boolean needsInlineBots ();
 
     TdApi.FormattedText getOutputText (boolean applyMarkdown);
-    default TdApi.LinkPreviewOptions getOutputLinkPreviewOptions () {
-      return null;
-    }
-    default boolean forceEnableLinkPreview (LinkPreview newLinkPreview) {
-      return false;
-    }
-
-    int showLinkPreviewWarning (int contextId, @NonNull LinkPreview linkPreview);
   }
 
   public interface CommandListProvider {
@@ -134,7 +122,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
   private boolean canHandlePositionChange;
   private int lastHandledPosition;
   private int lastKnownCursorPosition;
-  private ViewController<?> boundController;
+  private final ViewController<?> boundController;
 
   public InlineSearchContext (BaseActivity context, Tdlib tdlib, @NonNull Callback callback, ViewController<?> boundController) {
     this.context = context;
@@ -1335,68 +1323,11 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
 
   // Links processor
 
-  private LinkPreview lastLinkPreview;
-  private int linkContextId;
+  public static final class FoundUrls {
+    public final @NonNull Set<String> set;
+    public final @NonNull String[] urls;
 
-  private void processLinkPreview (boolean allowLinkPreview) {
-    allowLinkPreview = allowLinkPreview && callback.needsLinkPreview();
-
-    TdApi.FormattedText formattedText;
-    TdApi.LinkPreviewOptions options;
-    if (allowLinkPreview) {
-      formattedText = callback.getOutputText(true);
-      options = callback.getOutputLinkPreviewOptions();
-    } else {
-      formattedText = null;
-      options = null;
-    }
-
-    LinkPreview linkPreview = new LinkPreview(formattedText, options);
-
-    if (!linkPreview.isEmpty() && linkPreview.options != null && callback.forceEnableLinkPreview(linkPreview)) {
-      Td.reset(linkPreview.options, true);
-      if (options != null) {
-        Td.reset(options, true);
-      }
-    }
-
-    if (lastLinkPreview != null) {
-      if (!lastLinkPreview.hasChanges(linkPreview)) {
-        // Nothing related to link preview changed, ignore.
-        return;
-      }
-      if (lastLinkPreview.isValid() && lastLinkPreview.primaryUrl.equals(linkPreview.primaryUrl)) {
-        TdApi.WebPage webPage = Td.copyOf(lastLinkPreview.webPage);
-        linkPreview.setWebPage(webPage, true);
-      }
-    }
-
-    final int contextId = ++linkContextId;
-    this.lastLinkPreview = linkPreview;
-
-    if (!linkPreview.isEmpty() && !Td.isEmpty(formattedText)) {
-      processLinkPreview(contextId, formattedText, linkPreview);
-    } else {
-      closeLinkPreview();
-    }
-  }
-
-  public static class LinkPreview {
-    public final String primaryUrl;
-    public final String[] uniqueUrls;
-    public final @Nullable TdApi.LinkPreviewOptions options;
-
-    public TdApi.WebPage webPage;
-    public TdApi.Error error;
-
-    public LinkPreview (String primaryUrl, String[] uniqueUrls, @Nullable TdApi.LinkPreviewOptions options) {
-      this.primaryUrl = primaryUrl;
-      this.uniqueUrls = uniqueUrls;
-      this.options = options;
-    }
-
-    public LinkPreview (TdApi.FormattedText formattedText, @Nullable TdApi.LinkPreviewOptions options) {
-      Set<String> uniqueUrls = new LinkedHashSet<>();
+    private static void findUniqueUrls (Set<String> uniqueUrls, @NonNull TdApi.FormattedText formattedText) {
       List<String> foundUrls = TD.findUrls(formattedText);
       if (foundUrls != null && !foundUrls.isEmpty()) {
         for (String url : foundUrls) {
@@ -1405,137 +1336,107 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
           }
         }
       }
+    }
 
-      String primaryUrl = options != null ? options.url : null;
-      if (StringUtils.isEmpty(primaryUrl) && !uniqueUrls.isEmpty()) {
-        primaryUrl = uniqueUrls.iterator().next();
+    public FoundUrls () {
+      this.set = Collections.emptySet();
+      this.urls = new String[0];
+    }
+
+    private static FoundUrls emptyResult;
+
+    public static FoundUrls emptyResult () {
+      if (emptyResult == null) {
+        emptyResult = new FoundUrls();
       }
+      return emptyResult;
+    }
 
-      this.primaryUrl = primaryUrl;
-      this.uniqueUrls = uniqueUrls.isEmpty() ? null : uniqueUrls.toArray(new String[0]);
-      this.options = options != null ? Td.copyOf(options) : null;
+    public FoundUrls (@NonNull TdApi.FormattedText formattedText) {
+      this.set = new LinkedHashSet<>();
+      findUniqueUrls(this.set, formattedText);
+      this.urls = set.toArray(new String[0]);
+    }
+
+    public FoundUrls (@NonNull TdApi.MessageText messageText) {
+      this.set = new LinkedHashSet<>();
+      findUniqueUrls(this.set, messageText.text);
+      String specificUrl =
+        messageText.linkPreviewOptions != null && !messageText.linkPreviewOptions.isDisabled && !StringUtils.isEmpty(messageText.linkPreviewOptions.url) ?
+        messageText.linkPreviewOptions.url :
+        messageText.webPage != null ? messageText.webPage.url :
+            null;
+      if (!StringUtils.isEmpty(specificUrl)) {
+        // Make sure there is existing url
+        this.set.add(specificUrl);
+      }
+      this.urls = set.toArray(new String[0]);
     }
 
     public boolean isEmpty () {
-      return StringUtils.isEmpty(primaryUrl) && (uniqueUrls == null || uniqueUrls.length == 0);
+      return set.isEmpty();
     }
 
-    public LinkPreview setWebPage (TdApi.WebPage webPage, boolean applyOptions) {
-      this.webPage = webPage;
-      if (applyOptions) {
-        Td.applyLinkPreviewOptions(webPage, options);
+    public int size () {
+      return set.size();
+    }
+
+    @Override
+    public boolean equals (@Nullable Object obj) {
+      if (obj == this) {
+        return true;
       }
-      return this;
-    }
-
-    public LinkPreview setError (TdApi.Error error) {
-      this.error = error;
-      return this;
-    }
-
-    public LinkPreview copyOf () {
-      LinkPreview linkPreview = new LinkPreview(primaryUrl, uniqueUrls, options);
-      linkPreview.webPage = this.webPage;
-      linkPreview.error = this.error;
-      return linkPreview;
-    }
-
-    public boolean hasChanges (LinkPreview other) {
-      return !(
-        StringUtils.equalsOrBothEmpty(this.primaryUrl, other.primaryUrl) &&
-        Arrays.equals(this.uniqueUrls, other.uniqueUrls) &&
-        Td.equalsTo(this.options, other.options)
-      );
-    }
-
-    public boolean isLoading () {
-      return webPage == null && error == null;
-    }
-
-    public boolean isNotFound () {
-      return error != null;
-    }
-
-    public boolean isValid () {
-      return webPage != null;
-    }
-
-    public boolean isBigMedia () {
-      if (!isValid()) {
+      if (!(obj instanceof FoundUrls)) {
         return false;
       }
-      if (options != null) {
-        return options.forceLargeMedia || (!options.forceSmallMedia && webPage.showLargeMedia);
-      } else {
-        return webPage.showLargeMedia;
-      }
-    }
-
-    public boolean showAboveText () {
-      return isValid() && options != null && options.showAboveText;
-    }
-
-    public boolean hasAlternatives () {
-      return this.uniqueUrls.length > 1;
+      FoundUrls other = (FoundUrls) obj;
+      return Arrays.equals(this.urls, other.urls);
     }
   }
 
-  public final void processLinkPreview (final int contextId, @NonNull TdApi.FormattedText fullText, @NonNull LinkPreview linkPreview) {
-    int result = callback.showLinkPreviewWarning(contextId, linkPreview);
-    if (result == WARNING_BLOCK) {
-      dispatchLinkPreview(contextId, null);
+  private FoundUrls lastFoundUrls;
+  private int linkContextId;
+
+  private void processLinkPreview (boolean allowLinkPreview) {
+    allowLinkPreview = allowLinkPreview && callback.enableLinkPreview();
+
+    boolean isPrivacyCritical = ChatId.isSecret(callback.provideInlineSearchChatId());
+    boolean needPrivacyPrompt = isPrivacyCritical && Settings.instance().needTutorial(Settings.TUTORIAL_SECRET_LINK_PREVIEWS);
+    if (allowLinkPreview && isPrivacyCritical && !needPrivacyPrompt && !Settings.instance().needSecretLinkPreviews()) {
+      // As an optimization, do not look up for any URLs at all in secret chats when link previews are forbidden.
+      allowLinkPreview = false;
+    }
+
+    TdApi.FormattedText formattedText = allowLinkPreview ? callback.getOutputText(true) : null;
+    FoundUrls foundUrls = !Td.isEmpty(formattedText) ? new FoundUrls(formattedText) : null;
+
+    boolean wasEmpty = (lastFoundUrls == null || lastFoundUrls.isEmpty());
+    boolean nowEmpty = foundUrls == null || foundUrls.isEmpty();
+
+    if (wasEmpty == nowEmpty && (foundUrls == null || foundUrls.equals(lastFoundUrls))) {
+      // Nothing changed
       return;
     }
-    if (result != WARNING_CONFIRM && callback.showLinkPreview(linkPreview)) {
-      switch (result) {
-        case WARNING_BLOCK: {
-          dispatchLinkPreview(contextId, null);
-          break;
-        }
-        case WARNING_OK: {
-          TdApi.WebPage webPage = linkPreview.webPage;
-          if (webPage == null) {
-            webPage = callback.provideExistingWebPage(fullText, linkPreview);
-            if (webPage != null) {
-              linkPreview.setWebPage(Td.copyOf(webPage), true);
-            }
-          }
-          if (linkPreview.isValid()) {
-            dispatchLinkPreview(contextId, linkPreview.copyOf());
-            return;
-          }
-          UI.post(() -> {
-            if (linkContextId == contextId) {
-              tdlib.send(new TdApi.GetWebPagePreview(fullText, linkPreview.options), (webPagePreview, error) -> {
-                LinkPreview loadedLinkPreview;
-                if (error != null) {
-                  if (error.code != 404) { // 404 is "Web page is empty". Maybe something interesting
-                    Log.i("Cannot load link preview: %s, urls: %s", TD.toErrorString(error), TextUtils.join(" ", linkPreview.uniqueUrls));
-                  }
-                  loadedLinkPreview = linkPreview.setError(error);
-                } else {
-                  loadedLinkPreview = linkPreview.setWebPage(webPagePreview, false);
-                }
-                dispatchLinkPreview(contextId, loadedLinkPreview.copyOf());
-              });
-            }
-          }, 400L);
-          break;
-        }
-      }
+
+    final int contextId = ++linkContextId;
+    this.lastFoundUrls = foundUrls;
+
+    if (nowEmpty) {
+      callback.showLinkPreview(null);
+      return;
     }
-  }
 
-  private void dispatchLinkPreview (final int contextId, final LinkPreview linkPreview) {
-    UI.post(() -> {
-      if (linkContextId == contextId) {
-        callback.showLinkPreview(linkPreview);
-      }
-    });
-  }
+    if (needPrivacyPrompt) {
+      callback.showLinkPreview(null);
+      boundController.openSecretLinkPreviewAlert(isAccepted -> {
+        if (linkContextId == contextId && isAccepted) {
+          callback.showLinkPreview(foundUrls);
+        }
+      });
+      return;
+    }
 
-  private void closeLinkPreview () {
-    callback.showLinkPreview(null);
+    callback.showLinkPreview(foundUrls);
   }
 
   private boolean isInSelfChat () {

@@ -1766,6 +1766,44 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     showAlert(b);
   }
 
+  private AlertDialog linkWarningDialog;
+  private List<RunnableBool> linkWarningCallbacks;
+
+  public final void openSecretLinkPreviewAlert (@Nullable RunnableBool onAcceptWarning) {
+    if (onAcceptWarning != null) {
+      if (this.linkWarningCallbacks == null) {
+        this.linkWarningCallbacks = new ArrayList<>();
+      }
+      this.linkWarningCallbacks.add(onAcceptWarning);
+    }
+    if (linkWarningDialog != null && linkWarningDialog.isShowing()) {
+      return;
+    }
+    RunnableBool after = isAccepted -> {
+      linkWarningDialog = null;
+      Settings.instance().markTutorialAsComplete(Settings.TUTORIAL_SECRET_LINK_PREVIEWS);
+      Settings.instance().setUseSecretLinkPreviews(isAccepted);
+      List<RunnableBool> callbacks = linkWarningCallbacks;
+      this.linkWarningCallbacks = null;
+      if (callbacks != null) {
+        for (RunnableBool callback : callbacks) {
+          callback.runWithBool(isAccepted);
+        }
+      }
+    };
+    AlertDialog.Builder b = new AlertDialog.Builder(context(), Theme.dialogTheme());
+    b.setTitle(Lang.getString(R.string.AppName));
+    b.setMessage(Lang.getString(R.string.SecretLinkPreviewAlert));
+    b.setPositiveButton(Lang.getString(R.string.SecretLinkPreviewEnable), (dialog, which) ->
+      after.runWithBool(true)
+    );
+    b.setNegativeButton(Lang.getString(R.string.SecretLinkPreviewDisable), (dialog, which) ->
+      after.runWithBool(false)
+    );
+    b.setCancelable(false);
+    linkWarningDialog = showAlert(b);
+  }
+
   public void openLinkAlert (final String url, @Nullable TdlibUi.UrlOpenParameters options) {
     tdlib.ui().openUrl(this, url, options == null ? new TdlibUi.UrlOpenParameters().requireOpenPrompt() : options.requireOpenPrompt());
   }

@@ -34,6 +34,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.ui.MessagesController;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -136,12 +137,13 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
     return btn;
   }
 
-  public void showWebPage (@NonNull InlineSearchContext.LinkPreview linkPreview, @Nullable TdApi.Message editingMessage) {
-    List<PinnedMessagesBar.Entry> entryList = new ArrayList<>(linkPreview.uniqueUrls.length);
-    for (String url : linkPreview.uniqueUrls) {
-      entryList.add(new PinnedMessagesBar.Entry(tdlib, linkPreview, url, editingMessage));
+  public void showWebPage (@NonNull MessagesController.MessageInputContext context, int selectedUrlIndex) {
+    InlineSearchContext.FoundUrls foundUrls = context.getFoundUrls();
+    List<PinnedMessagesBar.Entry> entryList = new ArrayList<>();
+    for (String url : foundUrls.urls) {
+      entryList.add(new PinnedMessagesBar.Entry(tdlib, context, url));
     }
-    pinnedMessagesBar.setStaticMessageList(entryList);
+    pinnedMessagesBar.setStaticMessageList(entryList, selectedUrlIndex);
   }
 
   public void setReplyTo (TdApi.Message msg, @Nullable TdApi.FormattedText quote) {

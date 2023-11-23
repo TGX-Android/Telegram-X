@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.component.chat;
 
-import android.app.AlertDialog;
 import android.content.ClipDescription;
 import android.content.Context;
 import android.graphics.BitmapFactory;
@@ -918,8 +917,15 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   @Override
-  public boolean needsLinkPreview () {
+  public boolean enableLinkPreview () {
     return !isCaptionEditing() && tdlib.canAddWebPagePreviews(controller.getChat());
+  }
+
+  @Override
+  public void showLinkPreview (@Nullable InlineSearchContext.FoundUrls foundUrls) {
+    if (controller != null) {
+      controller.showLinkPreview(foundUrls);
+    }
   }
 
   @Override
@@ -999,62 +1005,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       ((BaseActivity) getContext()).showInlineResults(controller, tdlib, null, false, null);
     }
   }
-
-  @Override
-  public TdApi.WebPage provideExistingWebPage (@NonNull TdApi.FormattedText formattedText,  @NonNull InlineSearchContext.LinkPreview linkPreview) {
-    return controller != null ? controller.getEditingWebPage(formattedText, linkPreview) : null;
-  }
-
-  @Override
-  public boolean showLinkPreview (@Nullable InlineSearchContext.LinkPreview linkPreview) {
-    if (controller != null) {
-      controller.showLinkPreview(linkPreview);
-      return true;
-    }
-    return false;
-  }
-
-  @Override
-  public boolean forceEnableLinkPreview (InlineSearchContext.LinkPreview newLinkPreview) {
-    return controller != null && controller.forceEnableLinkPreview(newLinkPreview);
-  }
-
-  public void notifyWebPageOptionsChanged () {
-    setTextChangedSinceChatOpened(true);
-    inlineContext.forceCheck();
-  }
-
-  @Override
-  public int showLinkPreviewWarning (int contextId, @NonNull InlineSearchContext.LinkPreview linkPreview) {
-    if (controller == null || !controller.isSecretChat()) {
-      return InlineSearchContext.WARNING_OK;
-    }
-    if (Settings.instance().needTutorial(Settings.TUTORIAL_SECRET_LINK_PREVIEWS)) {
-      if (linkWarningDialog == null || !linkWarningDialog.isShowing()) {
-        AlertDialog.Builder b = new AlertDialog.Builder(controller.context(), Theme.dialogTheme());
-        b.setTitle(Lang.getString(R.string.AppName));
-        b.setMessage(Lang.getString(R.string.SecretLinkPreviewAlert));
-        b.setPositiveButton(Lang.getString(R.string.SecretLinkPreviewEnable), (dialog, which) -> {
-          linkWarningDialog = null;
-          Settings.instance().markTutorialAsComplete(Settings.TUTORIAL_SECRET_LINK_PREVIEWS);
-          Settings.instance().setUseSecretLinkPreviews(true);
-          inlineContext.forceCheck();
-        });
-        b.setNegativeButton(Lang.getString(R.string.SecretLinkPreviewDisable), (dialog, which) -> {
-          linkWarningDialog = null;
-          Settings.instance().markTutorialAsComplete(Settings.TUTORIAL_SECRET_LINK_PREVIEWS);
-          Settings.instance().setUseSecretLinkPreviews(false);
-          inlineContext.forceCheck();
-        });
-        b.setCancelable(false);
-        linkWarningDialog = controller.showAlert(b);
-      }
-      return InlineSearchContext.WARNING_CONFIRM;
-    }
-    return Settings.instance().needSecretLinkPreviews() ? InlineSearchContext.WARNING_OK : InlineSearchContext.WARNING_BLOCK;
-  }
-
-  private AlertDialog linkWarningDialog;
 
   public void setIsInEditMessageMode (boolean isInEditMessageMode, String futureText) {
     this.inlineContext.setDisallowInlineResults(isInEditMessageMode, getText().toString().equals(futureText));
@@ -1605,11 +1555,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       Td.parseMarkdown(formattedText);
     }
     return formattedText;
-  }
-
-  @Override
-  public TdApi.LinkPreviewOptions getOutputLinkPreviewOptions () {
-    return controller != null ? controller.getLinkPreviewOptions() : null;
   }
 
   public final boolean hasOnlyPremiumFeatures () {
