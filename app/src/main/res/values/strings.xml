@@ -4926,27 +4926,4 @@
   <string name="SuperGroupId">Supergroup ID</string>
   <string name="ChannelId">Channel ID</string>
 
-  <string name="MessagesFilter">Messages Filter</string>
-  <string name="MessagesFilterDesc">When enabled, content of messages that match at least one of the criteria below, will be hidden and minimized.</string>
-
-  <string name="MessagesFilterGroupsAndChats">Groups and Chats</string>
-  <string name="MessagesFilterHideBlockedSenders">Blocked senders in groups</string>
-  <string name="MessagesFilterHideBlockedSendersDesc">Hide message content in group chats, if it comes from a blocked sender.</string>
-  <string name="MessagesFilterHideBlockedSendersMentions">Mentions of blocked chats</string>
-  <string name="MessagesFilterHideBlockedSendersMentionsDesc">Hide message content, if it includes a reply, mention or direct link to the blocked chat.</string>
-
-  <string name="MessagesFilterChannels">Channels</string>
-  <string name="MessagesFilterChannelsManage">Manage Filtered Channels</string>
-  <string name="MessagesFilterFilteredChannels">Filtered Channels</string>
-  <string name="MessagesFilterBlockedSendersManage">Manage Blocked Senders</string>
-
-  <string name="MessagesFilterShowMessage">Show Message</string>
-
-  <string name="ChatMessagesFilterInfo">Hides all messages with links to other chats, channels or external sites.</string>
-  <string name="ChatMessagesFilterInternal">Telegram links</string>
-  <string name="ChatMessagesFilterExternal">External links</string>
-  <string name="ChatMessagesFilterNone">None</string>
-
-  <string name="MessagesFilterUnknownChat">Unknown Chat</string>
-
 </resources>
