@@ -61,7 +61,6 @@ import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessageViewGroup;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.chat.ReplyComponent;
-import org.thunderdog.challegram.component.chat.filter.MessageFilterProcessingState;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
@@ -303,7 +302,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   public static final int REACTIONS_DRAW_MODE_ONLY_ICON = 2;
 
   private final TranslationsManager mTranslationsManager;
-  private final @Nullable MessageFilterProcessingState mMessageFilterProcessingState;
 
   protected TGMessage (MessagesManager manager, TdApi.Message msg) {
     this(manager, msg, null);
@@ -561,13 +559,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         invalidate();
       }
     }, AnimatorUtils.DECELERATE_INTERPOLATOR, 320L);
-
-    final boolean needUseMessagesFilter = !tdlib.isUserChat(msg.chatId)
-      && tdlib.myUserId() != Td.getSenderId(msg.senderId)
-      && Settings.instance().getMessagesFilterSetting(Settings.MESSAGES_FILTER_ENABLED);
-
-    this.mMessageFilterProcessingState = needUseMessagesFilter ?
-      new MessageFilterProcessingState(this, msg) : null;
   }
 
   private static @NonNull <T> T nonNull (@Nullable T value) {
@@ -3529,9 +3520,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public void onReplyLoaded () {
-    if (mMessageFilterProcessingState != null) {
-      mMessageFilterProcessingState.setReplySenderId(replyData.getSender());
-    }
+
   }
 
   @MessageChangeType
@@ -4740,9 +4729,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       } else {
         combinedMessages.add(0, message);
       }
-      if (mMessageFilterProcessingState != null) {
-        mMessageFilterProcessingState.combineWith(message);
-      }
       onMessageCombinedWithOtherMessage(message, atBottom, local);
       forceCancelGlobalAnimation(true);
     }
@@ -5348,9 +5334,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
     if (message == null) {
       return MESSAGE_NOT_CHANGED;
-    }
-    if (mMessageFilterProcessingState != null) {
-      mMessageFilterProcessingState.updateMessageContent(messageId, newContent);
     }
     if ((flags & FLAG_UNSUPPORTED) != 0) {
       if (message.content.getConstructor() == TdApi.MessageUnsupported.CONSTRUCTOR && newContent.getConstructor() != TdApi.MessageUnsupported.CONSTRUCTOR) {
@@ -6113,9 +6096,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (replyData != null)
       replyData.performDestroy();
     messageReactions.performDestroy();
-    if (mMessageFilterProcessingState != null) {
-      mMessageFilterProcessingState.performDestroy();
-    }
     setViewAttached(false);
     onMessageContainerDestroyed();
   }

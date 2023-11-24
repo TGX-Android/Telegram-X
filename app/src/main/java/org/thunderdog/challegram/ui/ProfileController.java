@@ -665,11 +665,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       strings.append(R.string.Stats);
     }
 
-    if (mode == MODE_CHANNEL && Settings.instance().getMessagesFilterSetting(Settings.MESSAGES_FILTER_ENABLED)) {
-      ids.append(R.id.more_btn_messagesFilter);
-      strings.append(R.string.MessagesFilter);
-    }
-
     tdlib.ui().addDeleteChatOptions(getChatId(), ids, strings, false, true);
 
     if (ids.size() > 0) {
@@ -762,9 +757,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           return;
         } else if (id == R.id.more_btn_join) {
           joinChannel();
-          return;
-        } else if (id == R.id.more_btn_messagesFilter) {
-          tdlib.ui().openMessageFilterSettings(this, getChatId(), null);
           return;
         }
         break;
