@@ -812,7 +812,7 @@ public class CropAreaView extends View implements FactorAnimator.Target {
     }
   }
 
-  private void normalizeProportion () {
+  private void normalizeProportion (boolean animated) {
     float heightProportion = getProportion();
     if (heightProportion == 0) {
       cancelPositionAnimator();
@@ -863,7 +863,11 @@ public class CropAreaView extends View implements FactorAnimator.Target {
       newRight = 1.0;
     }
 
-    animateArea(newLeft, newTop, newRight, newBottom, false, false);
+    if (animated) {
+      animateArea(newLeft, newTop, newRight, newBottom, false, false);
+    } else {
+      setArea(newLeft, newTop, newRight, newBottom, true);
+    }
   }
 
   public boolean resetArea (boolean forceAnimation, boolean useFastAnimation) {
@@ -930,11 +934,11 @@ public class CropAreaView extends View implements FactorAnimator.Target {
     return targetHeight;
   }
 
-  public void setFixedProportion (int big, int small) {
+  public void setFixedProportion (int big, int small, boolean animated) {
     if (this.proportionBig != big || this.proportionSmall != small) {
       this.proportionBig = big;
       this.proportionSmall = small;
-      normalizeProportion();
+      normalizeProportion(animated);
     }
   }
 

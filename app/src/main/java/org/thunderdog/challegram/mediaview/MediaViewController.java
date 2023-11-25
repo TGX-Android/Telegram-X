@@ -6515,7 +6515,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         prepareSectionToHide(SECTION_CROP);
         mediaView.setVisibility(View.VISIBLE);
       } else if (inProfilePhotoEditMode()) {
-        setCropProportion(1, 1);
+        setCropProportion(1, 1, false);
       }
       cropAnimator.setDuration(inCrop ? (currentCropState.isEmpty() ? CROP_OUT_DURATION : CROP_IN_DURATION) : 120l);
       cropAnimator.setValue(inCrop, true);
@@ -6777,9 +6777,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     oldCropState = null;
   }
 
-  private void setCropProportion (int big, int small) {
-    cropAreaView.setFixedProportion(big, small);
-    proportionButton.setActive(big != 0 && small != 0, true);
+  private void setCropProportion (int big, int small, boolean animated) {
+    cropAreaView.setFixedProportion(big, small, animated);
+    proportionButton.setActive(big != 0 && small != 0, animated);
   }
 
   public int getMirrorHorizontallyFlag () {
@@ -8113,11 +8113,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           if (id == R.id.btn_crop_reset) {
             resetCrop(true);
           } else if (id == R.id.btn_proportion_free) {
-            setCropProportion(0, 0);
+            setCropProportion(0, 0, true);
           } else if (id == R.id.btn_proportion_original) {
             int targetWidth = cropAreaView.getTargetWidth();
             int targetHeight = cropAreaView.getTargetHeight();
-            setCropProportion(Math.max(targetWidth, targetHeight), Math.min(targetWidth, targetHeight));
+            setCropProportion(Math.max(targetWidth, targetHeight), Math.min(targetWidth, targetHeight), true);
           } else {
             int[] mode = null;
             for (int[] proportionMode : PROPORTION_MODES) {
@@ -8127,7 +8127,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
               }
             }
             if (mode != null) {
-              setCropProportion(mode[0], mode[1]);
+              setCropProportion(mode[0], mode[1], true);
             }
           }
           return true;
