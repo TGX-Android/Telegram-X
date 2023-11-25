@@ -2904,14 +2904,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return false;
   }
 
-  /*public boolean hasWritePermission (long chatId) {
-    return chatId != 0 && hasWritePermission(chat(chatId));
-  }
-
-  public boolean hasWritePermission (TdApi.Chat chat) {
-    return getRestrictionStatus(chat, R.id.right_sendMessages) == null;
-  }*/
-
   public @Nullable TdApi.SecretChat chatToSecretChat (long chatId) {
     int secretChatId = ChatId.toSecretChatId(chatId);
     return secretChatId != 0 ? cache().secretChat(secretChatId) : null;

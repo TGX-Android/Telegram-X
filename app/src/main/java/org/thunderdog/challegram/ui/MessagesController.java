@@ -3759,7 +3759,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private static HashSet<String> shownTutorials;
 
   private void showMessageMenuTutorial () {
-    if (sendShown.getValue() && !areScheduledOnly() && !isInputLess() && canWriteMessages() && hasWritePermission() && !isEditingMessage() && !isSecretChat() && isFocused() && !isVoicePreviewShowing() && !sendButton.inInlineMode()) {
+    if (sendShown.getValue() && !areScheduledOnly() && !isInputLess() && canWriteMessages() && hasSendBasicMessagePermission() && !isEditingMessage() && !isSecretChat() && isFocused() && !isVoicePreviewShowing() && !sendButton.inInlineMode()) {
       long tutorialFlag;
       if (isSelfChat()) {
         tutorialFlag = Settings.TUTORIAL_SET_REMINDER;
@@ -4292,7 +4292,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         ids.append(R.id.btn_sendScreenshotNotification);
         strings.append("Send screenshot notification");
       }
-      if (!hasWritePermission()) {
+      if (!hasSendBasicMessagePermission()) {
         ids.append(R.id.btn_debugShowHideBottomBar);
         strings.append("Show/hide bottom bar");
       }
@@ -5207,7 +5207,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Deprecated
-  public boolean hasWritePermission () {
+  private boolean hasWritePermission () {
     // FIXME: this check is outdated and no longer correct
     return chat != null && tdlib.canSendBasicMessage(chat) && !isEventLog();
   }
@@ -7988,16 +7988,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return getForcePreviewHeight(/* hasHeader */ true, /* hasFooter */ true);
   }
 
-  /*public int getForceTouchModeOffset () {
-    int height = Screen.currentHeight() - HeaderView.getSize(true);
-
-    if (tdlib.hasWritePermission(chat) || (tdlib.isChannel(chat.id) && !TD.isMember(tdlib.chatStatus(chat.id)))) {
-      height -= Screen.dp(49f);
-    }
-
-    return (height - makeGuessAboutForcePreviewHeight());
-  }*/
-
   // Commands
 
   public boolean getCommandsState () {
@@ -10733,7 +10723,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private boolean needSearchControlsTranslate () {
-    return tdlib.isChannelChat(chat) && !hasWritePermission();
+    return tdlib.isChannelChat(chat) && !canWriteMessages();
   }
 
   private float getSearchControlsOffset () {

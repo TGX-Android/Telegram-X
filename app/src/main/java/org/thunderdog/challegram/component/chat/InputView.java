@@ -1458,8 +1458,14 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       return null;
     final InputConnectionCompat.OnCommitContentListener callback =
       (inputContentInfo, flags, bundle) -> {
-        if (controller == null || !controller.hasWritePermission())
+        if (controller == null)
           return false;
+
+        final long chatId = controller.getChatId();
+        final TdApi.Chat chat = tdlib.chat(chatId);
+        if (chat == null) {
+          return false;
+        }
 
         ClipDescription description = inputContentInfo.getDescription();
         @MediaType int mediaType;
@@ -1487,7 +1493,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         }
         Uri uri = inputContentInfo.getContentUri();
         long timestamp = System.currentTimeMillis();
-        long chatId = controller.getChatId();
         long messageThreadId = controller.getMessageThreadId();
         TdApi.MessageReplyTo replyTo = controller.obtainReplyTo();
         boolean silent = controller.obtainSilentMode();
@@ -1531,8 +1536,12 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
             TdApi.InputFileGenerated generated = PhotoGenerationInfo.newFile(path, 0, timestamp, false, 0);
             content = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(generated, null, null, imageWidth, imageHeight, null, null, false), isSecretChat);
           }
-          if (needMenu) {
-            tdlib.ui().post(() -> {
+
+          UI.post(() -> {
+            if (controller.showRestriction(this, tdlib.getRestrictionText(chat, content))) {
+              return;
+            }
+            if (needMenu) {
               tdlib.ui().showScheduleOptions(controller, chatId, false,
                 (sendOptions, disableMarkdown) ->
                   tdlib.sendMessage(chatId, messageThreadId, replyTo,
@@ -1541,10 +1550,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
                     null
                   ),
                 null, null);
-            });
-          } else {
-            tdlib.sendMessage(chatId, messageThreadId, replyTo, Td.newSendOptions(silent), content);
-          }
+            } else {
+              tdlib.sendMessage(chatId, messageThreadId, replyTo, Td.newSendOptions(silent), content);
+            }
+          });
         });
         // read and display inputContentInfo asynchronously.
         // call inputContentInfo.releasePermission() as needed.
