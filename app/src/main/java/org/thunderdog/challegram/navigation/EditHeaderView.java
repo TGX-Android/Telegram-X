@@ -65,6 +65,7 @@ public class EditHeaderView extends FrameLayoutFix implements RtlCheckListener, 
     setWillNotDraw(false);
 
     receiver = new ImageReceiver(this, 0);
+    receiver.prepareToBeCropped();
 
     FrameLayoutFix.LayoutParams params;
 
