@@ -2681,6 +2681,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (sendButton != null) {
       sendButton.getSlowModeCounterController(tdlib).setCurrentChat(getChatId());
     }
+    if (messageSenderButton != null) {
+      messageSenderButton.setInSlowMode(tdlib.inSlowMode(getChatId()));
+    }
     clearSwitchPmButton();
     clearReply();
 
@@ -3023,7 +3026,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (sendButton != null) {
       sendButton.getSlowModeCounterController(tdlib).updateSlowModeTimer(isUpdate);
     }
-
+    if (messageSenderButton != null) {
+      messageSenderButton.setInSlowMode(tdlib.inSlowMode(getChatId()));
+    }
     if (isUpdate) {
       updateInputHint();
     }
@@ -10059,6 +10064,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       if (ChatId.toSupergroupId(getChatId()) == supergroupId) {
         checkLinkedChat();
+        if (messageSenderButton != null) {
+          messageSenderButton.setInSlowMode(tdlib.inSlowMode(getChatId()));
+        }
       }
     });
   }

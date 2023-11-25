@@ -10435,6 +10435,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return false;
   }
 
+  public boolean inSlowMode (long chatId) {
+    return cache.getSlowModeDelayExpiresIn(ChatId.toSupergroupId(chatId), TimeUnit.SECONDS) > 0;
+  }
+
   public boolean canEditSlowMode (long chatId) {
     if (canRestrictMembers(chatId)) {
       TdApi.Supergroup supergroup = chatToSupergroup(chatId);
