@@ -338,7 +338,7 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
     }
 
     if (slowModeCounterController != null) {
-      slowModeCounterController.draw(c, avatarReceiver, cx, cy);
+      slowModeCounterController.draw(c, avatarReceiver, cx, cy, 1f);
     }
   }
 
@@ -481,6 +481,7 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
     private final View view;
     private final boolean ignoreDrawMessageSender;
     private final Callback callback;
+    private float lastVisibilityDraw;
 
     private long chatId;
     private @Nullable TdApi.Chat chat;
@@ -517,10 +518,18 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
       return counter.getVisibility() > 0f || hasChatDefaultMessageSenderIdToDraw();
     }
 
-    public void draw (Canvas c, @Nullable AvatarReceiver avatarReceiver, float cx, float cy) {
+    public void draw (Canvas c, @Nullable AvatarReceiver avatarReceiver, float cx, float cy, float visibility) {
       final float cxReal = cx + Screen.dp(5);
       final float cyReal = cy + Screen.dp(10f);
 
+      final boolean needScale = visibility != 1f;
+      int scaleSaveTo = -1;
+      if (needScale) {
+        scaleSaveTo = Views.save(c);
+        c.scale(visibility, visibility, cxReal, cyReal);
+      }
+
+      lastVisibilityDraw = visibility;
       counter.draw(c, cxReal, cyReal, Gravity.CENTER, 1f, lastCounterDrawRect);
 
       if (!ignoreDrawMessageSender) {
@@ -545,6 +554,9 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
             avatarReceiver.draw(c);
           }
         }
+      }
+      if (needScale) {
+        Views.restore(c, scaleSaveTo);
       }
     }
 
@@ -689,8 +701,8 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
       final boolean hasSenderId = hasChatDefaultMessageSenderIdToDraw();
       final float cx = v.getMeasuredWidth() / 2f + Screen.dp(5);
       final float cy = v.getMeasuredHeight() / 2f + Screen.dp(10f);
-      final float width = MathUtils.fromTo(hasSenderId ? Screen.dp(19) : 0, lastCounterDrawRect.width(), counter.getVisibility());
-      final float height = MathUtils.fromTo(hasSenderId ? Screen.dp(19) : 0, lastCounterDrawRect.height(), counter.getVisibility());
+      final float width = MathUtils.fromTo(hasSenderId ? Screen.dp(19) : 0, lastCounterDrawRect.width(), counter.getVisibility()) * lastVisibilityDraw;
+      final float height = MathUtils.fromTo(hasSenderId ? Screen.dp(19) : 0, lastCounterDrawRect.height(), counter.getVisibility()) * lastVisibilityDraw;
       final float radius = Math.min(width, height) / 2f;
 
       tmpRectF.set(cx - width / 2f, cy - height / 2f, cx + width / 2f, cy + height / 2f);

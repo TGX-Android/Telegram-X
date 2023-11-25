@@ -7566,6 +7566,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (activeButtonId != 0) {
       backButton.setIcon(R.drawable.baseline_close_24, true, false);
       sendButton.setIcon(R.drawable.baseline_check_24, true, false);
+      sendButton.setSlowModeVisibility(false, true);
     } else {
       backButton.setIcon(R.drawable.baseline_arrow_back_24, true, false);
       setDefaultSendButtonIcon(true);
@@ -7579,6 +7580,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       R.drawable.dot_baseline_group_accept_24,
       R.drawable.dot_baseline_channel_accept_24
     ), animated, false);
+    sendButton.setSlowModeVisibility(true, animated);
   }
 
   private boolean hasAppliedFilters () {

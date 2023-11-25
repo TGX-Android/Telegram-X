@@ -36,6 +36,7 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.widget.SendButton;
 
 import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
@@ -86,6 +87,7 @@ public class EditButton extends View implements FactorAnimator.Target {
   private static final int ACTIVE_ANIMATOR = 0;
   private static final int CHANGE_ANIMATOR = 1;
   private static final int EDITED_ANIMATOR = 2;
+  private static final int SLOW_MODE_VISIBILITY_ANIMATOR = 3;
 
   private float editedFactor;
   private FactorAnimator editedAnimator;
@@ -123,6 +125,16 @@ public class EditButton extends View implements FactorAnimator.Target {
       this.editedFactor = factor;
       invalidate();
     }
+  }
+
+  private BoolAnimator slowModeVisibilityAnimator;
+
+  public void setSlowModeVisibility (boolean visibility, boolean animated) {
+    if (slowModeVisibilityAnimator == null) {
+      slowModeVisibilityAnimator = new BoolAnimator(SLOW_MODE_VISIBILITY_ANIMATOR, this, AnimatorUtils.DECELERATE_INTERPOLATOR, useFastAnimations ? 180L : 380L, visibility);
+    }
+
+    slowModeVisibilityAnimator.setValue(visibility, animated);
   }
 
   private FactorAnimator iconAnimator;
@@ -271,6 +283,10 @@ public class EditButton extends View implements FactorAnimator.Target {
         setEditedFactor(factor);
         break;
       }
+      case SLOW_MODE_VISIBILITY_ANIMATOR: {
+        invalidate();
+        break;
+      }
     }
   }
 
@@ -314,10 +330,11 @@ public class EditButton extends View implements FactorAnimator.Target {
       return;
     }
 
-    final boolean needDrawSlowModeCounter = slowModeCounterController != null && slowModeCounterController.isVisible();
+    final float slowModeCounterFactor = slowModeVisibilityAnimator != null ? slowModeVisibilityAnimator.getFloatValue() : 1f;
+    final boolean needDrawSlowModeCounter = slowModeCounterController != null && slowModeCounterController.isVisible() && slowModeCounterFactor > 0f;
     int clipSaveTo = -1;
     if (needDrawSlowModeCounter) {
-      slowModeCounterController.draw(c, avatarReceiver, centerX, centerY);
+      slowModeCounterController.draw(c, avatarReceiver, centerX, centerY, slowModeCounterFactor);
       slowModeCounterController.buildClipPath(this, clipPath);
       clipSaveTo = Views.save(c);
       c.clipPath(clipPath);
