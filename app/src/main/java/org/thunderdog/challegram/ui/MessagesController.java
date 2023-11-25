@@ -5310,7 +5310,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         return true;
       } else if (id == R.id.btn_messageSendNow) {
         cancelSheduledKeyboardOpeningAndHideAllKeyboards();
-        tdlib.client().send(new TdApi.EditMessageSchedulingState(getChatId(), selectedMessage.getId(), null), tdlib.okHandler());
+        if (!showRestriction(null, tdlib.getSlowModeRestrictionText(getChatId()))) {
+          tdlib.client().send(new TdApi.EditMessageSchedulingState(getChatId(), selectedMessage.getId(), null), tdlib.okHandler());
+        }
         return true;
       } else if (id == R.id.btn_messageReschedule) {
         cancelSheduledKeyboardOpeningAndHideAllKeyboards();
