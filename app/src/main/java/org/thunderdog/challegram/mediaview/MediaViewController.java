@@ -1169,7 +1169,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   @Override
   public void onPopupCompletelyShown (PopupLayout popup) {
     if (inProfilePhotoEditMode()) {
-      UI.post(this::openCrop);
+      UI.post(() -> openCrop(true));
     }
   }
 
@@ -7428,6 +7428,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void changeSection (int section, int mode) {
+    changeSection(section, mode, false);
+  }
+
+  private void changeSection (int section, int mode, boolean useFastAnimation) {
     if (currentSection == section || !allowDataChanges()) {
       return;
     }
@@ -7467,7 +7471,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       }
     }
 
-    changeSectionImpl(section);
+    changeSectionImpl(section, useFastAnimation);
   }
 
   private void applyFiltersAsync (final int futureSection) {
@@ -7485,6 +7489,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void changeSectionImpl (int section) {
+    changeSectionImpl(section, false);
+  }
+
+  private void changeSectionImpl (int section, boolean useFastAnimation) {
     if (scheduleSectionChange(currentSection, section)) {
       return;
     }
@@ -7511,10 +7519,12 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     updateIconStates(true);
 
+    final long duration = useFastAnimation ? 220L : 380L;
     if (sectionChangeAnimator == null) {
-      sectionChangeAnimator = new FactorAnimator(ANIMATOR_SECTION, this, AnimatorUtils.LINEAR_INTERPOLATOR, 380l);
+      sectionChangeAnimator = new FactorAnimator(ANIMATOR_SECTION, this, AnimatorUtils.LINEAR_INTERPOLATOR, duration);
     } else {
       sectionChangeAnimator.forceFactor(0f);
+      sectionChangeAnimator.setDuration(duration);
     }
     sectionChangeAnimator.animateTo(1f);
   }
@@ -7892,9 +7902,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void openCrop () {
+    openCrop(false);
+  }
+
+  private void openCrop (boolean useFastAnimation) {
     if (Config.CROP_ENABLED) {
       if (currentSection != SECTION_CROP) {
-        changeSection(SECTION_CROP, MODE_OK);
+        changeSection(SECTION_CROP, MODE_OK, useFastAnimation);
       }
     } else {
       // UI.showToast(R.string.FeatureDisabled, Toast.LENGTH_SHORT);
