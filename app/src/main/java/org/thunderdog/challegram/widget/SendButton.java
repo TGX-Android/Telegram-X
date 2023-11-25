@@ -18,6 +18,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
@@ -25,11 +26,15 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 
+import androidx.annotation.Nullable;
+
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
+import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.theme.ColorId;
@@ -50,9 +55,11 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.ChatId;
+import me.vkryl.td.Td;
 
 public class SendButton extends View implements FactorAnimator.Target, TooltipOverlayView.LocationProvider {
 
@@ -62,6 +69,7 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
 
   public SendButton (Context context, int sendIconRes) {
     super(context);
+    avatarReceiver = new AvatarReceiver(this);
     sendIcon = Drawables.get(getResources(), sendIconRes);
     sendIconBg = Drawables.get(getResources(), sendIconRes);
     if (strokePaint == null) {
@@ -330,7 +338,7 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
     }
 
     if (slowModeCounterController != null) {
-      slowModeCounterController.draw(c, cx, cy);
+      slowModeCounterController.draw(c, avatarReceiver, cx, cy);
     }
   }
 
@@ -413,12 +421,31 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
   }
 
   private SlowModeCounterController slowModeCounterController;
+  private final AvatarReceiver avatarReceiver;
+  private boolean ignoreDrawMessageSender;
+
+  public void setIgnoreDrawMessageSender () {
+    this.ignoreDrawMessageSender = true;
+  }
 
   public void destroySlowModeCounterController () {
     if (slowModeCounterController != null) {
       slowModeCounterController.performDestroy();
       slowModeCounterController = null;
     }
+    avatarReceiver.destroy();
+  }
+
+  @Override
+  protected void onAttachedToWindow () {
+    avatarReceiver.attach();
+    super.onAttachedToWindow();
+  }
+
+  @Override
+  protected void onDetachedFromWindow () {
+    avatarReceiver.detach();
+    super.onDetachedFromWindow();
   }
 
   public SlowModeCounterController getSlowModeCounterController (Tdlib tdlib) {
@@ -437,21 +464,38 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
         public int backgroundColor (boolean isPressed) {
           return Theme.getColor(ColorId.filling);
         }
-      }, true);
+      }, true, ignoreDrawMessageSender, (a, b, c) -> {
+        avatarReceiver.requestMessageSender(a, b, c);
+        invalidate();
+      });
     }
     return slowModeCounterController;
   }
 
-  public static class SlowModeCounterController implements TdlibCache.SupergroupDataChangeListener, Destroyable {
+  public static class SlowModeCounterController implements TdlibCache.SupergroupDataChangeListener, ChatListener, Destroyable {
     public final Counter counter;
     public final RectF lastCounterDrawRect = new RectF();
     private final Tdlib tdlib;
+    private final boolean needBackground;
+    private final Drawable anonymousDrawable;
     private final View view;
-    private long chatId;
+    private final boolean ignoreDrawMessageSender;
+    private final Callback callback;
 
-    public SlowModeCounterController (Tdlib tdlib, View v, TextColorSet textColorSet, boolean needBackground) {
+    private long chatId;
+    private @Nullable TdApi.Chat chat;
+
+    public interface Callback {
+      void requestMessageSender (@Nullable Tdlib tdlib, @Nullable TdApi.MessageSender sender, @AvatarReceiver.Options int options);
+    }
+
+    public SlowModeCounterController (Tdlib tdlib, View v, TextColorSet textColorSet, boolean needBackground, boolean ignoreDrawMessageSender, Callback callback) {
       this.tdlib = tdlib;
       this.view = v;
+      this.needBackground = needBackground;
+      this.anonymousDrawable = Drawables.get(v.getResources(), R.drawable.infanf_baseline_incognito_11);
+      this.ignoreDrawMessageSender = ignoreDrawMessageSender;
+      this.callback = callback;
 
       Counter.Builder builder = new Counter.Builder()
         .callback((c, s) -> view.invalidate())
@@ -470,11 +514,38 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
     }
 
     public boolean isVisible () {
-      return counter.getVisibility() > 0f;
+      return counter.getVisibility() > 0f || hasChatDefaultMessageSenderIdToDraw();
     }
 
-    public void draw (Canvas c, float cx, float cy) {
-      counter.draw(c, cx + Screen.dp(5), cy + Screen.dp(10f), Gravity.CENTER, 1f, lastCounterDrawRect);
+    public void draw (Canvas c, @Nullable AvatarReceiver avatarReceiver, float cx, float cy) {
+      final float cxReal = cx + Screen.dp(5);
+      final float cyReal = cy + Screen.dp(10f);
+
+      counter.draw(c, cxReal, cyReal, Gravity.CENTER, 1f, lastCounterDrawRect);
+
+      if (!ignoreDrawMessageSender) {
+        final float sendAsFactor = 1f - counter.getVisibility();
+        final long sendAsSender = getChatDefaultMessageSenderId();
+
+        if (sendAsFactor > 0f && sendAsSender != 0 && sendAsSender != tdlib.myUserId()) {
+          if (needBackground) {
+            c.drawCircle(cxReal, cyReal, Screen.dp(9.5f * sendAsFactor), Paints.fillingPaint(counter.backgroundColor(false)));
+          }
+          final float radius = Screen.dp(7.5f * sendAsFactor);
+
+          if (sendAsSender == chatId) {
+            c.drawCircle(cxReal, cyReal, radius, Paints.fillingPaint(Theme.iconLightColor()));
+            Drawables.draw(c, anonymousDrawable, cxReal - Screen.dp(5.5f), cyReal - Screen.dp(5.5f), PorterDuffPaint.get(ColorId.badgeMutedText));
+          } else if (avatarReceiver != null) {
+            avatarReceiver.setBounds(
+              (int) (cxReal - radius),
+              (int) (cyReal - radius),
+              (int) (cxReal + radius),
+              (int) (cyReal + radius));
+            avatarReceiver.draw(c);
+          }
+        }
+      }
     }
 
     public void setCurrentChat (long chatId) {
@@ -485,12 +556,14 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
       stopSlowModeTimerUpdates();
       final long oldChatId = this.chatId;
       this.chatId = chatId;
+      this.chat = tdlib.chat(chatId);
 
       if (oldChatId != 0) {
         final long supergroupId = ChatId.toSupergroupId(oldChatId);
         if (supergroupId != 0) {
           tdlib.cache().unsubscribeFromSupergroupUpdates(supergroupId, this);
         }
+        tdlib.listeners().unsubscribeFromChatUpdates(chatId, this);
       }
 
       if (chatId != 0) {
@@ -498,7 +571,10 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
         if (supergroupId != 0) {
           tdlib.cache().subscribeToSupergroupUpdates(supergroupId, this);
         }
+        tdlib.listeners().subscribeToChatUpdates(chatId, this);
       }
+
+      updateChatDefaultMessageSenderId(chat != null ? chat.messageSenderId : null);
       updateSlowModeTimer(false);
     }
 
@@ -572,6 +648,57 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
           updateSlowModeTimer(true);
         }
       });
+    }
+
+    /* Default Sender Id */
+
+    @Override
+    public void onChatDefaultMessageSenderIdChanged (long chatId, TdApi.MessageSender senderId) {
+      UI.post(() -> {
+        if (chatId == this.chatId) {
+          updateChatDefaultMessageSenderId(senderId);
+        }
+      });
+    }
+
+    private void updateChatDefaultMessageSenderId (TdApi.MessageSender sender) {
+      final boolean isUserSender = Td.getSenderId(sender) == tdlib.myUserId();
+      final boolean isGroupSender = Td.getSenderId(sender) == chatId;
+      updateChatDefaultMessageSenderId(sender, isUserSender, isGroupSender);
+    }
+
+    private void updateChatDefaultMessageSenderId (TdApi.MessageSender sender, boolean isPersonal, boolean isAnonymous) {
+      callback.requestMessageSender(tdlib, sender, AvatarReceiver.Options.NONE);
+    }
+
+    private long getChatDefaultMessageSenderId () {
+      return chat != null && chat.messageSenderId != null ? Td.getSenderId(chat.messageSenderId) : 0;
+    }
+
+    private boolean hasChatDefaultMessageSenderIdToDraw () {
+      return chat != null && chat.messageSenderId != null && Td.getSenderId(chat.messageSenderId) != tdlib.myUserId();
+    }
+
+
+
+    /* * */
+
+    private final RectF tmpRectF = new RectF();
+
+    public void buildClipPath (View v, Path clipPath) {
+      final boolean hasSenderId = hasChatDefaultMessageSenderIdToDraw();
+      final float cx = v.getMeasuredWidth() / 2f + Screen.dp(5);
+      final float cy = v.getMeasuredHeight() / 2f + Screen.dp(10f);
+      final float width = MathUtils.fromTo(hasSenderId ? Screen.dp(19) : 0, lastCounterDrawRect.width(), counter.getVisibility());
+      final float height = MathUtils.fromTo(hasSenderId ? Screen.dp(19) : 0, lastCounterDrawRect.height(), counter.getVisibility());
+      final float radius = Math.min(width, height) / 2f;
+
+      tmpRectF.set(cx - width / 2f, cy - height / 2f, cx + width / 2f, cy + height / 2f);
+
+      clipPath.reset();
+      clipPath.addRect(0, 0, v.getMeasuredWidth(), v.getMeasuredHeight(), Path.Direction.CW);
+      clipPath.addRoundRect(tmpRectF, radius, radius, Path.Direction.CCW);
+      clipPath.close();
     }
 
     @Override

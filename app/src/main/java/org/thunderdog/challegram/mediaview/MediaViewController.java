@@ -2965,7 +2965,6 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private EditButton mirrorButton;
   private EditButton adjustOrTextButton;
   private StopwatchHeaderButton stopwatchButton;
-  private @Nullable MediaLayout.SenderSendIcon senderSendIcon;
 
   private FrameLayoutFix bottomWrap;
   private LinearLayout captionWrapView;
@@ -4963,14 +4962,6 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         }
         editWrap.addView(sendButton);
 
-        if (chat != null && chat.messageSenderId != null) {
-          senderSendIcon = new MediaLayout.SenderSendIcon(context, tdlib(), chat.id);
-          senderSendIcon.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(19), Screen.dp(19), Gravity.RIGHT | Gravity.BOTTOM, 0, 0, Screen.dp(11), Screen.dp(8)));
-          senderSendIcon.setBackgroundColorId(getHeaderColorId());
-          senderSendIcon.update(chat.messageSenderId);
-          editWrap.addView(senderSendIcon);
-        }
-
         if (chat != null) {
           tdlib.ui().createSimpleHapticMenu(this, chat.id, () -> currentActiveButton == 0, this::canDisableMarkdown, () -> true, hapticItems -> {
             if (sendDelegate != null && sendDelegate.allowHideMedia()) {
@@ -5023,8 +5014,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
                 return true;
               }).bindTutorialFlag(Settings.TUTORIAL_SEND_AS_FILE));
             }
-            if (senderSendIcon != null) {
-              hapticItems.add(0, senderSendIcon.createHapticSenderItem(chat).setOnClickListener((view, parentView, item) -> {
+            if (chat != null && chat.messageSenderId != null) {
+              hapticItems.add(0, MediaLayout.createHapticSenderItem(tdlib, chat).setOnClickListener((view, parentView, item) -> {
                 openSetSenderPopup(chat);
                 return true;
               }));
@@ -8645,13 +8636,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void setNewMessageSender (TdApi.Chat chat, TdApi.ChatMessageSender sender) {
-    tdlib().send(new TdApi.SetChatMessageSender(chat.id, sender.sender), ignored -> {
-      UI.post(() -> {
-        if (senderSendIcon != null) {
-          senderSendIcon.update(chat.messageSenderId);
-        }
-      });
-    });
+    tdlib().send(new TdApi.SetChatMessageSender(chat.id, sender.sender), tdlib.okHandler());
   }
 
   private void setEmojiShown (boolean emojiShown) {

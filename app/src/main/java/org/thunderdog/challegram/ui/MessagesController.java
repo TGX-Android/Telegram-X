@@ -1175,6 +1175,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     sendButton = new SendButton(context, areScheduled ? R.drawable.baseline_schedule_24 : R.drawable.deproko_baseline_send_24);
+    sendButton.setIgnoreDrawMessageSender();
     sendButton.setOnClickListener(this);
     addThemeInvalidateListener(sendButton);
     sendButton.setId(R.id.msg_send);

@@ -18,10 +18,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
-import android.content.Context;
 import android.content.Intent;
-import android.graphics.Canvas;
-import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -29,7 +26,6 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -68,11 +64,8 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeChangeListener;
 import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.theme.ThemeManager;
-import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Intents;
-import org.thunderdog.challegram.tool.Paints;
-import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
@@ -82,7 +75,6 @@ import org.thunderdog.challegram.ui.SetSenderController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.Permissions;
-import org.thunderdog.challegram.widget.AvatarView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.SendButton;
@@ -1320,7 +1312,6 @@ public class MediaLayout extends FrameLayoutFix implements
   private BackHeaderButton closeButton;
   private TextView counterHintView;
   private ImageView groupMediaView, hotMediaView;
-  private @Nullable SenderSendIcon senderSendIcon;
 
   private float groupMediaFactor;
   private boolean needGroupMedia, needSpoiler;
@@ -1401,21 +1392,14 @@ public class MediaLayout extends FrameLayoutFix implements
       sendButton.setOnClickListener(this);
       bottomBar.addView(sendButton);
 
-      TdApi.Chat chat = getTargetChat();
-      if (chat != null && chat.messageSenderId != null) {
-        senderSendIcon = new SenderSendIcon(getContext(), tdlib(), chat.id);
-        senderSendIcon.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(19), Screen.dp(19), Gravity.RIGHT | Gravity.BOTTOM, 0, 0, Screen.dp(11), Screen.dp(8)));
-        senderSendIcon.update(chat.messageSenderId);
-        bottomBar.addView(senderSendIcon);
-      }
-
       sendMenu = new HapticMenuHelper(list -> {
+        final TdApi.Chat chat = getTargetChat();
         List<HapticMenuHelper.MenuItem> items = tdlib().ui().fillDefaultHapticMenu(getTargetChatId(), false, getCurrentController().canRemoveMarkdown(), true);
         if (items == null)
           items = new ArrayList<>();
         getCurrentController().addCustomItems(sendButton, items);
-        if (senderSendIcon != null) {
-          items.add(0, senderSendIcon.createHapticSenderItem(getTargetChat()));
+        if (chat != null && chat.messageSenderId != null) {
+          items.add(0, MediaLayout.createHapticSenderItem(tdlib(), chat));
         }
         return !items.isEmpty() ? items : null;
       }, (menuItem, parentView, item) -> {
@@ -1497,9 +1481,6 @@ public class MediaLayout extends FrameLayoutFix implements
 
       counterView.setAlpha(0f);
       sendButton.setAlpha(0f);
-      if (senderSendIcon != null) {
-        senderSendIcon.setAlpha(0f);
-      }
       closeButton.setAlpha(0f);
       counterHintView.setAlpha(0f);
       groupMediaView.setAlpha(0f);
@@ -1680,9 +1661,6 @@ public class MediaLayout extends FrameLayoutFix implements
       counterView.setAlpha(factor);
       sendButton.setAlpha(factor);
       closeButton.setAlpha(factor);
-      if (senderSendIcon != null) {
-        senderSendIcon.setAlpha(factor);
-      }
       checkCounterHint();
     }
     setCounterEnabled(factor != 0f);
@@ -1836,89 +1814,15 @@ public class MediaLayout extends FrameLayoutFix implements
     return Screen.dp(60);
   }
 
-  public static class SenderSendIcon extends FrameLayout {
-    private final AvatarView senderAvatarView;
-    private final Tdlib tdlib;
-    private final long chatId;
-    private boolean isPersonal;
-    private boolean isAnonymous;
-    private int backgroundColorId;
+  public static HapticMenuHelper.MenuItem createHapticSenderItem (Tdlib tdlib, @NonNull TdApi.Chat chat) {
+    final long senderId = Td.getSenderId(chat.messageSenderId);
 
-    public SenderSendIcon (@NonNull Context context, Tdlib tdlib, long chatId) {
-      super(context);
-      this.tdlib = tdlib;
-      this.chatId = chatId;
-      this.backgroundColorId = ColorId.filling;
-
-      setWillNotDraw(false);
-      setLayoutParams(FrameLayoutFix.newParams(Screen.dp(19), Screen.dp(19)));
-
-      senderAvatarView = new AvatarView(context);
-      senderAvatarView.setEnabled(false);
-      senderAvatarView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(15), Screen.dp(15), Gravity.CENTER));
-      addView(senderAvatarView);
-    }
-
-    public void setBackgroundColorId (int backgroundColorId) {
-      this.backgroundColorId = backgroundColorId;
-      invalidate();
-    }
-
-    public AvatarView getSenderAvatarView () {
-      return senderAvatarView;
-    }
-
-    public boolean isAnonymous () {
-      return isAnonymous;
-    }
-
-    public boolean isPersonal () {
-      return isPersonal;
-    }
-
-    @Override
-    protected void onDraw (Canvas c) {
-      float cx = getMeasuredWidth() / 2f;
-      float cy = getMeasuredHeight() / 2f;
-      c.drawCircle(cx, cy, Screen.dp(19f / 2f), Paints.fillingPaint(Theme.getColor(backgroundColorId)));
-
-      if (isAnonymous) {
-        c.drawCircle(cx, cy, Screen.dp(15f / 2f), Paints.fillingPaint(Theme.iconLightColor()));
-        Drawable drawable = Drawables.get(getResources(), R.drawable.infanf_baseline_incognito_11);
-        Drawables.draw(c, drawable, cx - Screen.dp(5.5f), cy - Screen.dp(5.5f), PorterDuffPaint.get(ColorId.badgeMutedText));
-      }
-
-      super.onDraw(c);
-    }
-
-    public void update (TdApi.MessageSender sender) {
-      final boolean isUserSender = Td.getSenderId(sender) == tdlib.myUserId();
-      final boolean isGroupSender = Td.getSenderId(sender) == chatId;
-
-      if (sender == null || isUserSender || isGroupSender) {
-        update(null, isUserSender, isGroupSender);
-      } else {
-        update(sender, false, false);
-      }
-    }
-
-    private void update (TdApi.MessageSender sender, boolean isPersonal, boolean isAnonymous) {
-      this.senderAvatarView.setVisibility(sender != null ? VISIBLE : GONE);
-      this.senderAvatarView.setMessageSender(tdlib, sender);
-      this.isAnonymous = isAnonymous;
-      this.isPersonal = isPersonal;
-      setVisibility(!isPersonal ? VISIBLE : GONE);
-      invalidate();
-    }
-
-    public HapticMenuHelper.MenuItem createHapticSenderItem (TdApi.Chat chat) {
-      if (isAnonymous()) {
-        return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib.getMessageSenderTitle(chat.messageSenderId) : null, R.drawable.dot_baseline_acc_anon_24);
-      } else if (isPersonal()) {
-        return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib.getMessageSenderTitle(chat.messageSenderId) : null, R.drawable.dot_baseline_acc_personal_24);
-      } else {
-        return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib.getMessageSenderTitle(chat.messageSenderId) : null, 0, tdlib, chat != null ? chat.messageSenderId : null, false);
-      }
+    if (senderId == chat.id) {
+      return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), tdlib.getMessageSenderTitle(chat.messageSenderId), R.drawable.dot_baseline_acc_anon_24);
+    } else if (senderId == tdlib.myUserId()) {
+      return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), tdlib.getMessageSenderTitle(chat.messageSenderId), R.drawable.dot_baseline_acc_personal_24);
+    } else {
+      return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), tdlib.getMessageSenderTitle(chat.messageSenderId), 0, tdlib, chat.messageSenderId, false);
     }
   }
 
@@ -1939,14 +1843,7 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   private void setNewMessageSender (TdApi.ChatMessageSender sender) {
-    tdlib().send(new TdApi.SetChatMessageSender(getTargetChatId(), sender.sender), ignored -> {
-      UI.post(() -> {
-        TdApi.Chat chat = getTargetChat();
-        if (senderSendIcon != null) {
-          senderSendIcon.update(chat != null ? chat.messageSenderId : null);
-        }
-      });
-    });
+    tdlib().send(new TdApi.SetChatMessageSender(getTargetChatId(), sender.sender), tdlib().okHandler());
   }
 
   public boolean showSlowModeRestriction (View v) {

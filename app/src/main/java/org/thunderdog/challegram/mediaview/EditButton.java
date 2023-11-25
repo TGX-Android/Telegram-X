@@ -19,7 +19,6 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
@@ -28,6 +27,7 @@ import androidx.annotation.ColorInt;
 import androidx.annotation.DrawableRes;
 
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -54,6 +54,7 @@ public class EditButton extends View implements FactorAnimator.Target {
 
   public EditButton (Context context) {
     super(context);
+    avatarReceiver = new AvatarReceiver(this);
     setBackgroundResource(R.drawable.bg_btn_header_light);
   }
 
@@ -283,15 +284,6 @@ public class EditButton extends View implements FactorAnimator.Target {
 
   private final Path clipPath = new Path();
 
-  private void checkClipPath (RectF currentRect) {
-    final float radius = Math.min(currentRect.height(), currentRect.width()) / 2f;
-    clipPath.reset();
-    clipPath.addRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), Path.Direction.CW);
-    clipPath.addRoundRect(currentRect, radius, radius, Path.Direction.CCW);
-    clipPath.close();
-  }
-
-
   @ColorInt
   private int getCurrentIconColor () {
     float activeFactor = iconRes != R.drawable.baseline_volume_up_24 ? this.activeFactor : 0f;
@@ -325,8 +317,8 @@ public class EditButton extends View implements FactorAnimator.Target {
     final boolean needDrawSlowModeCounter = slowModeCounterController != null && slowModeCounterController.isVisible();
     int clipSaveTo = -1;
     if (needDrawSlowModeCounter) {
-      slowModeCounterController.draw(c, centerX, centerY);
-      checkClipPath(slowModeCounterController.lastCounterDrawRect);
+      slowModeCounterController.draw(c, avatarReceiver, centerX, centerY);
+      slowModeCounterController.buildClipPath(this, clipPath);
       clipSaveTo = Views.save(c);
       c.clipPath(clipPath);
     }
@@ -383,12 +375,26 @@ public class EditButton extends View implements FactorAnimator.Target {
   }
 
   private SendButton.SlowModeCounterController slowModeCounterController;
+  private final AvatarReceiver avatarReceiver;
 
   public void destroySlowModeCounterController () {
     if (slowModeCounterController != null) {
       slowModeCounterController.performDestroy();
       slowModeCounterController = null;
     }
+    avatarReceiver.destroy();
+  }
+
+  @Override
+  protected void onAttachedToWindow () {
+    avatarReceiver.attach();
+    super.onAttachedToWindow();
+  }
+
+  @Override
+  protected void onDetachedFromWindow () {
+    avatarReceiver.detach();
+    super.onDetachedFromWindow();
   }
 
   public SendButton.SlowModeCounterController getSlowModeCounterController (Tdlib tdlib) {
@@ -397,7 +403,10 @@ public class EditButton extends View implements FactorAnimator.Target {
     }
 
     if (slowModeCounterController == null) {
-      slowModeCounterController = new SendButton.SlowModeCounterController(tdlib, this, () -> getCurrentIconColor(), true);
+      slowModeCounterController = new SendButton.SlowModeCounterController(tdlib, this, this::getCurrentIconColor, true, false, (a, b, c) -> {
+        avatarReceiver.requestMessageSender(a, b, c);
+        invalidate();
+      });
     }
     return slowModeCounterController;
   }
