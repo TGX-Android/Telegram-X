@@ -21,6 +21,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.tool.Strings;
 
 import java.util.ArrayList;
@@ -94,12 +95,11 @@ public class CallItem {
     return isOutgoing ? R.drawable.baseline_call_made_18 : isMissed(call) ? R.drawable.baseline_call_missed_18 : R.drawable.baseline_call_received_18;
   }
 
-  public @ColorId
-  int getSubtitleIconColorId () {
+  public @PorterDuffColorId int getSubtitleIconColorId () {
     return getSubtitleIconColorId((TdApi.MessageCall) lastMessage().content);
   }
 
-  public static @ColorId int getSubtitleIconColorId (TdApi.MessageCall call) {
+  public static @PorterDuffColorId int getSubtitleIconColorId (TdApi.MessageCall call) {
     return isMissedOrCancelled(call) ? ColorId.iconNegative : ColorId.iconPositive;
   }
 

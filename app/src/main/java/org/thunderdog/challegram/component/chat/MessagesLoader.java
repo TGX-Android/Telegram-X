@@ -288,13 +288,6 @@ public class MessagesLoader implements Client.ResultHandler {
             nextSearchFromMessageId = 0;
             break;
           }
-          case TdApi.Error.CONSTRUCTOR: {
-            Log.w(Log.TAG_MESSAGES_LOADER, "Received error: %s", TD.toErrorString(object));
-            messages = new TdApi.Message[0];
-            knownTotalCount = -1;
-            nextSearchOffset = null; nextSearchFromMessageId = 0;
-            break;
-          }
           case TdApi.ChatEvents.CONSTRUCTOR: {
             if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
               Log.i(Log.TAG_MESSAGES_LOADER, "Received %d events in %dms", ((TdApi.ChatEvents) object).events.length, ms);
@@ -304,17 +297,15 @@ public class MessagesLoader implements Client.ResultHandler {
             nextSearchOffset = null; nextSearchFromMessageId = 0;
             break;
           }
+          case TdApi.Error.CONSTRUCTOR: {
+            Log.w(Log.TAG_MESSAGES_LOADER, "Received error: %s", TD.toErrorString(object));
+            messages = new TdApi.Message[0];
+            knownTotalCount = -1;
+            nextSearchOffset = null; nextSearchFromMessageId = 0;
+            break;
+          }
           default: {
-            synchronized (lock) {
-              lastHandler = null;
-            }
-            Log.unexpectedTdlibResponse(object,
-              TdApi.GetChatHistory.class,
-              TdApi.Messages.class, TdApi.FoundMessages.class, TdApi.FoundChatMessages.class,
-              TdApi.ChatEvents.class,
-              TdApi.Error.class
-            );
-            return;
+            throw new UnsupportedOperationException(object.toString());
           }
         }
 
@@ -504,12 +495,14 @@ public class MessagesLoader implements Client.ResultHandler {
             mergeMode = MERGE_MODE_TOP;
             mergeChunk = messages;
             Log.i(Log.TAG_MESSAGES_LOADER, "Loading more groupped messages on the top, count: %d, fromMessageId: %d", loadMoreTopCount, oldestMessage.id);
+            Log.ensureReturnType(TdApi.GetChatHistory.class, TdApi.Messages.class);
             tdlib.client().send(new TdApi.GetChatHistory(messages[0].chatId, oldestMessage.id, 0, loadMoreTopCount, true), this);
             return;
           } else if (loadMoreBottomCount > 0) {
             mergeMode = MERGE_MODE_BOTTOM;
             mergeChunk = messages;
             Log.i(Log.TAG_MESSAGES_LOADER, "Loading more groupped messages on the bottom, count: %d, fromMessageId: %d", loadMoreBottomCount + 1, newestMessage.id);
+            Log.ensureReturnType(TdApi.GetChatHistory.class, TdApi.Messages.class);
             tdlib.client().send(new TdApi.GetChatHistory(messages[0].chatId, newestMessage.id, -loadMoreBottomCount, loadMoreBottomCount + 1, true), this);
             return;
           }
@@ -977,7 +970,7 @@ public class MessagesLoader implements Client.ResultHandler {
       else if (autoDeleteTime != null)
         content = autoDeleteTime;
       else if (text != null)
-        content = new TdApi.MessageText(text, null);
+        content = new TdApi.MessageText(text, null, null);
       else
         throw new JSONException("Invalid message: " + data);
       messages.add(new PreviewMessage(date, after, isOut, senderUserId, content));
@@ -1101,29 +1094,36 @@ public class MessagesLoader implements Client.ResultHandler {
 
       switch (specialMode) {
         case SPECIAL_MODE_EVENT_LOG:
+          Log.ensureReturnType(TdApi.GetChatEventLog.class, TdApi.ChatEvents.class);
           function = new TdApi.GetChatEventLog(sourceChatId, manager.getEventLogQuery(), (lastFromMessageId = fromMessageId).getMessageId(), lastLimit = limit, manager.getEventLogFilters(), manager.getEventLogUserIds());
           break;
         case SPECIAL_MODE_SEARCH: {
           long chatId = getChatId();
           if (ChatId.isSecret(chatId)) {
+            Log.ensureReturnType(TdApi.SearchSecretMessages.class, TdApi.FoundMessages.class);
             function = new TdApi.SearchSecretMessages(sourceChatId, searchQuery, lastSearchNextOffset, limit, searchFilter);
           } else {
+            Log.ensureReturnType(TdApi.SearchChatMessages.class, TdApi.FoundChatMessages.class);
             function = new TdApi.SearchChatMessages(sourceChatId, searchQuery, searchSender, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, searchFilter, messageThread != null ? messageThread.getMessageThreadId() : 0);
           }
           break;
         }
         case SPECIAL_MODE_SCHEDULED:
           loadingAllowMoreBottom = loadingAllowMoreTop = loadingLocal = allowMoreBottom = allowMoreTop = onlyLocal = false;
+          Log.ensureReturnType(TdApi.GetChatScheduledMessages.class, TdApi.Messages.class);
           function = new TdApi.GetChatScheduledMessages(sourceChatId);
           break;
         default:
           if (hasSearchFilter()) {
             loadingLocal = false;
+            Log.ensureReturnType(TdApi.SearchChatMessages.class, TdApi.FoundChatMessages.class);
             function = new TdApi.SearchChatMessages(sourceChatId, null, null, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, searchFilter, messageThread != null ? messageThread.getMessageThreadId() : 0);
           } else if (messageThread != null) {
             loadingLocal = false;
+            Log.ensureReturnType(TdApi.GetMessageThreadHistory.class, TdApi.Messages.class);
             function = new TdApi.GetMessageThreadHistory(sourceChatId, messageThread.getOldestMessageId(), (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit);
           } else {
+            Log.ensureReturnType(TdApi.GetChatHistory.class, TdApi.Messages.class);
             function = new TdApi.GetChatHistory(sourceChatId, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, loadingLocal);
           }
           break;
@@ -1203,7 +1203,7 @@ public class MessagesLoader implements Client.ResultHandler {
       null,
       tdlib.isSelfSender(event.memberId),
       false, false,
-      false, canBeSaved,
+      false, false, canBeSaved,
       false, false, false,
       false, false, false,
       false, false, false,

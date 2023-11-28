@@ -83,6 +83,8 @@ public class ChatEventUtil {
         return ActionMessageMode.SERVICE_AND_FULL;
       // only service message
       case TdApi.ChatEventPhotoChanged.CONSTRUCTOR:
+      case TdApi.ChatEventAccentColorChanged.CONSTRUCTOR:
+      case TdApi.ChatEventBackgroundCustomEmojiChanged.CONSTRUCTOR:
       case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
       case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
       case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
@@ -125,7 +127,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
         return ActionMessageMode.ONLY_FULL;
       default: {
-        Td.assertChatEventAction_d9a53493();
+        Td.assertChatEventAction_c8306b0f();
         throw Td.unsupported(action);
       }
     }
@@ -150,6 +152,10 @@ public class ChatEventUtil {
       // only service message
       case TdApi.ChatEventPhotoChanged.CONSTRUCTOR:
         return new TGMessageService(context, msg, (TdApi.ChatEventPhotoChanged) action);
+      case TdApi.ChatEventAccentColorChanged.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventAccentColorChanged) action);
+      case TdApi.ChatEventBackgroundCustomEmojiChanged.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventBackgroundCustomEmojiChanged) action);
       case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
         return new TGMessageService(context, msg, (TdApi.ChatEventMessageUnpinned) action);
       case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
@@ -216,7 +222,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
         throw new IllegalArgumentException(action.toString());
       default: {
-        Td.assertChatEventAction_d9a53493();
+        Td.assertChatEventAction_c8306b0f();
         throw Td.unsupported(action);
       }
     }
@@ -600,6 +606,8 @@ public class ChatEventUtil {
         break;
       }
       // only service message
+      case TdApi.ChatEventAccentColorChanged.CONSTRUCTOR:
+      case TdApi.ChatEventBackgroundCustomEmojiChanged.CONSTRUCTOR:
       case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
       case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
       case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
@@ -627,7 +635,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventForumTopicToggleIsHidden.CONSTRUCTOR:
         throw new IllegalArgumentException(action.toString());
       default: {
-        Td.assertChatEventAction_d9a53493();
+        Td.assertChatEventAction_c8306b0f();
         throw Td.unsupported(action);
       }
     }
@@ -715,7 +723,7 @@ public class ChatEventUtil {
 
         TdApi.FormattedText formattedText = new TdApi.FormattedText(b.toString().trim(), new TdApi.TextEntity[] {new TdApi.TextEntity(0, length, new TdApi.TextEntityTypeItalic())});
 
-        return new TdApi.MessageText(formattedText, null);
+        return new TdApi.MessageText(formattedText, null, null);
       }
       case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR: {
         TdApi.ChatEventAvailableReactionsChanged e = (TdApi.ChatEventAvailableReactionsChanged) event.action;
@@ -831,7 +839,7 @@ public class ChatEventUtil {
 
         TdApi.FormattedText formattedText = new TdApi.FormattedText(text.toString(), entities.toArray(new TdApi.TextEntity[0]));
 
-        return new TdApi.MessageText(formattedText, null);
+        return new TdApi.MessageText(formattedText, null, null);
       }
       case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR: {
         TdApi.ChatEventInviteLinkEdited e = (TdApi.ChatEventInviteLinkEdited) event.action;
@@ -871,11 +879,13 @@ public class ChatEventUtil {
         }
 
         TdApi.FormattedText formattedText = new TdApi.FormattedText(text, Td.findEntities(text));
-        return new TdApi.MessageText(formattedText, null);
+        return new TdApi.MessageText(formattedText, null, null);
       }
 
       // No native message interpretation.
       case TdApi.ChatEventDescriptionChanged.CONSTRUCTOR:
+      case TdApi.ChatEventAccentColorChanged.CONSTRUCTOR:
+      case TdApi.ChatEventBackgroundCustomEmojiChanged.CONSTRUCTOR:
       case TdApi.ChatEventHasProtectedContentToggled.CONSTRUCTOR:
       case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
       case TdApi.ChatEventInviteLinkRevoked.CONSTRUCTOR:
@@ -913,7 +923,7 @@ public class ChatEventUtil {
 
       // Unsupported
       default: {
-        Td.assertChatEventAction_d9a53493();
+        Td.assertChatEventAction_c8306b0f();
         throw Td.unsupported(event.action);
       }
     }

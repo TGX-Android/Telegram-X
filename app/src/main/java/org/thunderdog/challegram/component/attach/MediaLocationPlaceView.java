@@ -34,6 +34,7 @@ import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
@@ -214,19 +215,19 @@ public class MediaLocationPlaceView extends FrameLayoutFix implements AttachDele
 
   // Data
 
-  private int circleColorId = ColorId.fileAttach;
+  private TdlibAccentColor accentColor;
   private Letters letters;
   private float lettersWidth;
 
-  public void setLocation (String title, String subtitle, @ColorId int circleColorId, Letters letters, boolean isFaded, int livePeriod, long expiresAt) {
+  public void setLocation (String title, String subtitle, TdlibAccentColor accentColor, Letters letters, boolean isFaded, int livePeriod, long expiresAt) {
     clearLiveLocation();
     setIsFaded(isFaded);
     timerView.setLivePeriod(livePeriod, expiresAt);
     titleView.setText(title);
     addressView.setText(subtitle);
     boolean needInvalidate = false;
-    if (this.circleColorId != circleColorId) {
-      this.circleColorId = circleColorId;
+    if (this.accentColor != accentColor) {
+      this.accentColor = accentColor;
       needInvalidate = true;
     }
     if (!StringUtils.equalsOrBothEmpty(this.letters != null ? this.letters.text : null, letters != null ? letters.text : null)) {
@@ -397,7 +398,7 @@ public class MediaLocationPlaceView extends FrameLayoutFix implements AttachDele
       return;
     }
 
-    c.drawCircle(cx, cy, Screen.dp(IMAGE_RADIUS), Paints.fillingPaint(ColorUtils.alphaColor(alpha, Theme.getColor(circleColorId))));
+    c.drawCircle(cx, cy, Screen.dp(IMAGE_RADIUS), Paints.fillingPaint(ColorUtils.alphaColor(alpha, accentColor != null ? accentColor.getPrimaryColor() : Theme.getColor(ColorId.fileAttach))));
     if (letters != null) {
       Paints.drawLetters(c, letters, cx - lettersWidth / 2, cy + Screen.dp(6f), 17f, alpha);
     }

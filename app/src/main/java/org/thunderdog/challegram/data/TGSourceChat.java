@@ -22,6 +22,7 @@ import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.Receiver;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextPart;
@@ -37,14 +38,14 @@ public class TGSourceChat extends TGSource implements Runnable {
   private String title;
   private TdApi.ChatPhotoInfo photo;
 
-  public TGSourceChat (TGMessage msg, TdApi.MessageForwardOriginChannel channel) {
+  public TGSourceChat (TGMessage msg, TdApi.MessageOriginChannel channel) {
     super(msg);
     this.chatId = channel.chatId;
     this.authorSignature = channel.authorSignature;
     this.messageId = channel.messageId;
   }
 
-  public TGSourceChat (TGMessage msg, TdApi.MessageForwardOriginChat chat) {
+  public TGSourceChat (TGMessage msg, TdApi.MessageOriginChat chat) {
     super(msg);
     this.chatId = chat.senderChatId;
     this.authorSignature = chat.authorSignature;
@@ -119,8 +120,8 @@ public class TGSourceChat extends TGSource implements Runnable {
   }
 
   @Override
-  public int getAuthorNameColorId () {
-    return TD.getNameColorId(msg.tdlib.chatAvatarColorId(chatId));
+  public TdlibAccentColor getAuthorAccentColor () {
+    return msg.tdlib().chatAccentColor(chatId);
   }
 
   @Override

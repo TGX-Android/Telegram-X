@@ -154,16 +154,12 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
     return ColorUtils.fromToArgb(ColorUtils.compositeColor(Theme.headerTextColor(), Theme.getColor(ColorId.drawerText)), Theme.getColor(ColorId.white), factor);
   }
 
-  private int getMediaTextColorOrId (float factor) {
+  private long getMediaTextComplexColor (float factor) {
     if (factor == 1f) {
-      return ColorId.white;
+      return Theme.newComplexColor(true, ColorId.white);
     } else {
-      return getTextColor(factor);
+      return Theme.newComplexColor(false, getTextColor(factor));
     }
-  }
-
-  private boolean getMediaTextColorIsId (float factor) {
-    return factor == 1f;
   }
 
   // Clicks
@@ -411,7 +407,7 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
             } else {
               RectF rectF = Paints.getRectF();
               rectF.set(left, top, right, bottom);
-              c.drawRoundRect(rectF, cornerRadius, cornerRadius, Paints.fillingPaint(ColorUtils.alphaColor(avatarAlphaFactor, Theme.getColor(avatarPlaceholder.metadata.colorId))));
+              c.drawRoundRect(rectF, cornerRadius, cornerRadius, Paints.fillingPaint(ColorUtils.alphaColor(avatarAlphaFactor, avatarPlaceholder.metadata.accentColor.getPrimaryColor())));
               avatarPlaceholder.draw(c, cx, cy, avatarAlphaFactor, radius, false);
             }
           }
@@ -463,13 +459,8 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
     }
 
     @Override
-    public int mediaTextColorOrId () {
-      return context.getMediaTextColorOrId(lastAvatarFactor);
-    }
-
-    @Override
-    public boolean mediaTextColorIsId () {
-      return context.getMediaTextColorIsId(lastAvatarFactor);
+    public long mediaTextComplexColor () {
+      return context.getMediaTextComplexColor(lastAvatarFactor);
     }
   }
 

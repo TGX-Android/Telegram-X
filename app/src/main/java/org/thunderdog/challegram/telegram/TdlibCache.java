@@ -38,7 +38,6 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
-import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.AppInstallationUtil;
@@ -937,12 +936,24 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     return userId != 0 && TD.isGeneralUser(user(userId));
   }
 
-  public int userAvatarColorId (long userId) {
-    return userAvatarColorId(userId != 0 ? user(userId) : null);
+  public int userAccentColorId (long userId) {
+    return userAccentColorId(userId != 0 ? user(userId) : null);
   }
 
-  public int userAvatarColorId (TdApi.User user) {
-    return TD.getAvatarColorId(user == null || TD.isUserDeleted(user) ? -1 : user.id, myUserId);
+  public int userAccentColorId (TdApi.User user) {
+    if (user != null) {
+      return user.accentColorId;
+    } else {
+      return TdlibAccentColor.InternalId.INACTIVE;
+    }
+  }
+
+  public TdlibAccentColor userAccentColor (long userId) {
+    return tdlib.chatAccentColor(ChatId.fromUserId(userId));
+  }
+
+  public TdlibAccentColor userAccentColor (TdApi.User user) {
+    return tdlib.chatAccentColor(user != null ? ChatId.fromUserId(user.id) : 0);
   }
 
   public Letters userLetters (TdApi.User user) {
@@ -955,34 +966,38 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   }
 
   public AvatarPlaceholder.Metadata selfPlaceholderMetadata () {
-    return new AvatarPlaceholder.Metadata(ColorId.avatarSavedMessages, (String) null, R.drawable.baseline_bookmark_24, 0);
+    return new AvatarPlaceholder.Metadata(tdlib.accentColor(TdlibAccentColor.InternalId.SAVED_MESSAGES), null, R.drawable.baseline_bookmark_24, 0);
+  }
+
+  public AvatarPlaceholder.Metadata repliesPlaceholderMetadata () {
+    return new AvatarPlaceholder.Metadata(tdlib.accentColor(TdlibAccentColor.InternalId.REPLIES), null, R.drawable.baseline_reply_24, R.drawable.baseline_reply_56);
+  }
+
+  public AvatarPlaceholder.Metadata deletedPlaceholderMetadata () {
+    return new AvatarPlaceholder.Metadata(tdlib.accentColor(TdlibAccentColor.InternalId.INACTIVE), null, R.drawable.baseline_ghost_24, R.drawable.baseline_ghost_56);
   }
 
   public AvatarPlaceholder.Metadata userPlaceholderMetadata (@Nullable TdApi.User user, boolean allowSavedMessages) {
     if (user == null) {
       return null;
     }
-    Letters avatarLetters = null;
-    int avatarColorId;
-    int desiredDrawableRes = 0;
-    int extraDrawableRes = 0;
     if (allowSavedMessages && tdlib.isSelfUserId(user.id)) {
-      avatarColorId = ColorId.avatarSavedMessages;
-      desiredDrawableRes = R.drawable.baseline_bookmark_24;
-    } else {
-      if (tdlib.isRepliesChat(ChatId.fromUserId(user.id))) {
-        desiredDrawableRes = R.drawable.baseline_reply_24;
-        avatarColorId = ColorId.avatarReplies;
-      } else {
-        avatarLetters = userLetters(user);
-        avatarColorId = userAvatarColorId(user);
-      }
-      extraDrawableRes = /*tdlib.isSelfUserId(user.id) ? R.drawable.baseline_add_a_photo_56 :*/
-        tdlib.isRepliesChat(ChatId.fromUserId(user.id)) ? R.drawable.baseline_reply_56 :
-        TD.isBot(user) ? R.drawable.deproko_baseline_bots_56 :
-          R.drawable.baseline_person_56;
+      return selfPlaceholderMetadata();
     }
-    return new AvatarPlaceholder.Metadata(avatarColorId, avatarLetters != null ? avatarLetters.text : null, desiredDrawableRes, extraDrawableRes);
+    long chatId = ChatId.fromUserId(user.id);
+    if (tdlib.isRepliesChat(chatId)) {
+      return repliesPlaceholderMetadata();
+    }
+    if (userDeleted(user.id)) {
+      return deletedPlaceholderMetadata();
+    }
+    TdlibAccentColor accentColor = userAccentColor(user);
+    Letters avatarLetters = userLetters(user);
+    int extraDrawableRes = /*tdlib.isSelfUserId(user.id) ? R.drawable.baseline_add_a_photo_56 :*/
+      /*tdlib.isRepliesChat(ChatId.fromUserId(user.id)) ? R.drawable.baseline_reply_56 :*/
+      TD.isBot(user) ? R.drawable.deproko_baseline_bots_56 :
+      R.drawable.baseline_person_56;
+    return new AvatarPlaceholder.Metadata(accentColor, avatarLetters, 0, extraDrawableRes);
   }
 
   public AvatarPlaceholder userPlaceholder (long userId, boolean allowSavedMessages, float radius, @Nullable DrawableProvider provider) {
@@ -1013,7 +1028,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     if (user != null || userId == 0) {
       return userPlaceholderMetadata(user, allowSavedMessages);
     } else {
-      return new AvatarPlaceholder.Metadata(TD.getAvatarColorId(userId, tdlib.myUserId()));
+      return new AvatarPlaceholder.Metadata(userAccentColor(userId));
     }
   }
 

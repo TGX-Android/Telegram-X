@@ -425,6 +425,9 @@
   <string name="ChatContentLiveStreamInviteMulti_outgoing_one">Invited %1$s person to the live stream</string>
   <string name="ChatContentLiveStreamInviteMulti_outgoing_other">Invited %1$s people to the live stream</string>
 
+  <string name="ChatContentGiveaway_one"></string>
+  <string name="ChatContentGiveaway_other"></string>
+
   <string name="Audio">Audio</string>
   <string name="Voice">Voice</string>
   <string name="Photo">Photo</string>
@@ -674,6 +677,7 @@
   <string name="NoMediaYet">No photos or videos yet</string>
   <string name="AttachAudio">Voice Message</string>
   <string name="GettingLinkInfo">Getting Link Info…</string>
+  <string name="NoLinkInfo">Link info is not available</string>
   <string name="ChatsAndContacts">Chats and Contacts</string>
   <string name="GlobalSearch">Global Search</string>
   <string name="Global">Global</string>
@@ -1059,6 +1063,12 @@
   <string name="GiftedPremium_one">%2$s gifted you %1$s month of Telegram Premium for %3$s</string>
   <string name="GiftedPremium_other">%2$s gifted you %1$s months Telegram Premium for %3$s</string>
 
+  <string name="YouGiftedPremiumCode_one">You sent Gift Code for %1$s month of Telegram Premium</string>
+  <string name="YouGiftedPremiumCode_other">You sent Gift Code for %1$s months of Telegram Premium</string>
+
+  <string name="GiftedPremiumCode_one">%2$s sent you a Gift Code for %1$s month of Telegram Premium</string>
+  <string name="GiftedPremiumCode_other">%2$s sent you a Gift Code for %1$s months Telegram Premium</string>
+
   <string name="BotDataSent">Data from the \"%1$s\" button was transferred to the bot</string>
 
   <string name="YouDisabledTimer">You disabled the self-destruct timer</string>
@@ -1213,6 +1223,7 @@
   <string name="ActionPinnedGame">%1$s pinned %2$s</string>
   <string name="ActionPinnedGameNoName">%1$s pinned a **game**</string>
   <string name="ActionPinnedNoText">%1$s pinned a **message**</string>
+  <string name="ActionPinnedGiveaway">%1$s pinned a **giveaway**</string>
   <string name="ActionPinnedGeo">%1$s pinned a **location**</string>
   <string name="ActionPinnedPoll">%1$s pinned a **poll**</string>
   <string name="ActionPinnedQuiz">%1$s pinned a **quiz**</string>
@@ -2116,6 +2127,16 @@
   <string name="EventLogReactionsAdded2">+ Added:</string>
   <string name="EventLogReactionsRemoved2">– Removed:</string>
 
+  <string name="EventLogAccentColorChanged">%1$s changed accent color from %2$s to %3$s</string>
+  <string name="EventLogAccentColorChangedYou">You changed accent color from %1$s to %2$s</string>
+
+  <string name="EventLogEmojiChanged">%1$s changed emoji from %2$s to %3$s</string>
+  <string name="EventLogEmojiChangedYou">You changed emoji from %1$s to %2$s</string>
+  <string name="EventLogEmojiSet">%1$s changed emoji from none to %2$s</string>
+  <string name="EventLogEmojiSetYou">You changed emoji from none to %1$s</string>
+  <string name="EventLogEmojiUnset">%1$s changed emoji from %2$s to none</string>
+  <string name="EventLogEmojiUnsetYou">You changed emoji from %1$s to none</string>
+
   <string name="UntilX">Until %1$s</string>
   <string name="NetworkUsage">Network Usage</string>
   <string name="RecentStickers">Recently Used</string>
@@ -2176,6 +2197,7 @@
   <string name="CompressAudio">Compress audio in videos</string>
   <string name="EditMarkdownHint2">Edit text in messages using shortcuts: `**`**bold**`**`, `__`__italic__`__`, `~~`~~strikethrough~~`~~`, ````monospace````, `||`||spoiler||`||`, `[`text`](`url`)`</string>
   <string name="MessageNotFound">Message not found</string>
+  <string name="MessageReplyPrivate">This message is from a private chat</string>
   <string name="SyncHintTitle">Find Contacts</string>
   <string name="SyncHint">To help you connect with friends and family, allow %1$s access to your contacts.</string>
   <string name="SyncHintRetry">To help you message friends and family on Telegram, allow access to your contacts.\n\nTap Settings &gt; Permissions, and turn Contacts on.</string>
@@ -2841,6 +2863,14 @@
   <string name="ThemeSectionUnsorted">Unsorted</string>
   <string name="ThemeSectionAttach">Attach Menu</string>
   <string name="ThemeSectionMedia">Media</string>
+
+  <string name="AccentColorRed">Red</string>
+  <string name="AccentColorOrange">Orange</string>
+  <string name="AccentColorPink">Pink</string>
+  <string name="AccentColorGreen">Green</string>
+  <string name="AccentColorPurple">Purple</string>
+  <string name="AccentColorCyan">Cyan</string>
+  <string name="AccentColorBlue">Blue</string>
 
   <string name="ColorHex">Hex</string>
 
@@ -4814,7 +4844,7 @@
   <string name="AvatarsInReactionsAlways">Always</string>
   <string name="AvatarsInReactionsSmartFilter">Limited</string>
   <string name="AvatarsInReactionsNever">Never</string>
-  
+
   <string name="ShowXMore_one">%1$s more</string>
   <string name="ShowXMore_other">%1$s more</string>
   
@@ -4883,5 +4913,24 @@
   <string name="BasicGroupId">Group ID</string>
   <string name="SuperGroupId">Supergroup ID</string>
   <string name="ChannelId">Channel ID</string>
+
+  <string name="BoostingGiveawayJustStarted">%1$s just started a giveaway of Telegram Premium subscriptions for its followers.</string>
+
+  <string name="Giveaway">Giveaway</string>
+
+  <string name="xFutureWinnersOn_one">%1$s winner to be selected on %2$s</string>
+  <string name="xFutureWinnersOn_other">%1$s winners to be selected on %2$s</string>
+  <string name="xFutureWinners_one">%1$s winner to be selected</string>
+  <string name="xFutureWinners_other">%1$s winners to be selected</string>
+  <string name="format_giveawayInfo">%1$s: %2$s</string>
+
+  <string name="LinkPreviewEnlarged">Link preview media will be enlarged</string>
+  <string name="LinkPreviewMinimized">Link preview media will be minimized</string>
+  <string name="LinkPreviewShowAbove">Link preview will appear above text</string>
+  <string name="LinkPreviewShowBelow">Link preview will appear below text</string>
+
+  <string name="LinkPreviewChanged">Link preview changed to %1$s\n\nTap again to choose next link.</string>
+  <string name="ReplyMessageDeletedHint">This message is a reply to the message that was deleted.</string>
+  <string name="AnotherChatReplyHint">This message is from another chat. Tap again to view.</string>
 
 </resources>

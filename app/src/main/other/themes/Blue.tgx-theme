@@ -24,14 +24,17 @@ attachPhoto: #68B6F3
 attachText, avatar_content, badgeFailedText, badgeMutedText, badgeText, bubble_buttonText, bubble_buttonText_noWallpaper, bubble_dateText, bubble_dateText_noWallpaper, bubble_mediaOverlayText, bubble_mediaReplyText, bubble_mediaReplyText_noWallpaper, bubble_mediaTimeText, bubble_mediaTimeText_noWallpaper, bubble_messageCheckOutline, bubble_overlayText, bubble_overlayText_noWallpaper, bubble_unreadText, bubble_unreadText_noWallpaper, bubbleIn_background, bubbleOut_chatCorrectChosenFillingContent, bubbleOut_chatCorrectFillingContent, bubbleOut_chatNegativeFillingContent, bubbleOut_chatNeutralFillingContent, chatBackground, checkContent, circleButtonChat, circleButtonNegativeIcon, circleButtonNewChannelIcon, circleButtonNewChatIcon, circleButtonNewGroupIcon, circleButtonNewSecretIcon, circleButtonOverlay, circleButtonPositiveIcon, circleButtonRegularIcon, circleButtonThemeIcon, controlContent, filling, fillingPositiveContent, headerButton, headerIcon, headerLightBackground, headerTabActive, headerTabActiveText, headerText, inlineContentActive, messageCorrectChosenFillingContent, messageCorrectFillingContent, messageNegativeLineContent, messageNeutralFillingContent, messageSwipeContent, overlayFilling, passcodeIcon, passcodeText, promoContent, snackbarUpdateAction, snackbarUpdateText, statusBarContent, statusBarLegacyContent, togglerNegativeContent, togglerPositiveContent, tooltip_text, videoSliderActive, white: #FFF
 avatarArchive, avatarReplies, avatarReplies_big, avatarSavedMessages, avatarSavedMessages_big, tooltip_textLink: #61A9E1
 avatarArchivePinned, avatarInactive, avatarInactive_big: #ADB1B6
+bubbleOut_messageAuthorPsa, messageAuthorPsa: #7ABB58
 avatarBlue, avatarBlue_big, nameBlue: #5E9CD4
-avatarCyan, avatarCyan_big, nameCyan: #64BACE
-avatarGreen, avatarGreen_big, bubbleOut_messageAuthorPsa, messageAuthorPsa, nameGreen: #7ABB58
-avatarOrange, avatarOrange_big, nameOrange: #F29154
-avatarPink, avatarPink_big, namePink: #D979A3
-avatarRed, avatarRed_big, nameRed: #EF615C
-avatarViolet, avatarViolet_big: #9388E1
-avatarYellow, avatarYellow_big, nameYellow: #F5AD3D
+lineBlue: #50AADF
+nameInactive, lineInactive: #787878
+avatarCyan, avatarCyan_big, nameCyan, lineCyan: #64BACE
+avatarGreen, avatarGreen_big, nameGreen, lineGreen: #7ABB58
+avatarOrange, avatarOrange_big, nameOrange, lineOrange: #F29154
+avatarPink, avatarPink_big, namePink, linePink: #D979A3
+avatarRed, avatarRed_big, nameRed, lineRed: #EF615C
+avatarViolet, avatarViolet_big, nameViolet, lineViolet: #9388E1
+avatarYellow, avatarYellow_big, nameYellow, lineYellow: #F5AD3D
 background, iv_chatLinkBackground, iv_textReferenceBackground: #F2F2F2
 background_icon: #9DA1A5
 background_text: #71787E
@@ -145,8 +148,6 @@ ledWhite: #BBB
 ledYellow: #FFCE1F
 messageSelection: #24A2DC10
 messageSwipeBackground: #6BADE0
-nameInactive: #787878
-nameViolet: #9388E2
 online: #54CA63
 photoHighlightTint1: #EF9286
 photoHighlightTint2: #EACEA2

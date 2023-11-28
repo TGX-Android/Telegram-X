@@ -81,6 +81,7 @@ import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibChatList;
 import org.thunderdog.challegram.telegram.TdlibChatListSlice;
@@ -2033,7 +2034,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       }
 
       context.setTdlib(tdlib);
-      context.setHeaderAvatar(null, new AvatarPlaceholder.Metadata(ColorId.avatarArchive, R.drawable.baseline_archive_24));
+      context.setHeaderAvatar(null, new AvatarPlaceholder.Metadata(tdlib.accentColor(TdlibAccentColor.InternalId.ARCHIVE), R.drawable.baseline_archive_24));
       context.setHeader(Lang.getString(R.string.ArchiveTitle), Lang.plural(R.string.xChats, tdlib.getTotalChatsCount(ChatPosition.CHAT_LIST_ARCHIVE)));
 
       context.setMaximizeListener((target1, animateToWhenReady, arg) -> {
@@ -2298,19 +2299,15 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         }
       } else if (viewId == R.id.btn_editFolder) {
         int chatFolderId = ((TdApi.ChatListFolder) chatList()).chatFolderId;
-        tdlib.send(new TdApi.GetChatFolder(chatFolderId), (result) -> runOnUiThreadOptional(() -> {
+        tdlib.send(new TdApi.GetChatFolder(chatFolderId), (chatFolder, error) -> runOnUiThreadOptional(() -> {
           if (parentController == null)
             return;
-          switch (result.getConstructor()) {
-            case TdApi.ChatFolder.CONSTRUCTOR:
-              TdApi.ChatFolder chatFolder = (TdApi.ChatFolder) result;
-              EditChatFolderController c = new EditChatFolderController(context, tdlib);
-              c.setArguments(new EditChatFolderController.Arguments(chatFolderId, chatFolder));
-              parentController.navigateTo(c);
-              break;
-            case TdApi.Error.CONSTRUCTOR:
-              UI.showError(result);
-              break;
+          if (error != null) {
+            UI.showError(error);
+          } else {
+            EditChatFolderController c = new EditChatFolderController(context, tdlib);
+            c.setArguments(new EditChatFolderController.Arguments(chatFolderId, chatFolder));
+            parentController.navigateTo(c);
           }
         }));
       }

@@ -53,9 +53,8 @@ import org.thunderdog.challegram.loader.ImageLoader;
 import org.thunderdog.challegram.loader.Watcher;
 import org.thunderdog.challegram.loader.WatcherReference;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibUi;
-import org.thunderdog.challegram.theme.ColorId;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
@@ -107,10 +106,10 @@ public class MapGoogleController extends MapController<MapView, MapGoogleControl
       Bitmap bitmap = null;
       if (point.isSelfLocation) {
         TdApi.User user = tdlib.myUser();
-        int avatarColorId = tdlib.cache().userAvatarColorId(user);
+        TdlibAccentColor accentColor = tdlib.cache().userAccentColor(user);
         Letters letters = tdlib.cache().userLetters(user);
         TdApi.File avatar = user != null && user.profilePhoto != null ? user.profilePhoto.small : null;
-        bitmap = newBitmap(this, avatarColorId, letters, avatar);
+        bitmap = newBitmap(this, accentColor, letters, avatar);
       } else if (point.isLiveLocation && point.message != null) {
         opts.zIndex(1f);
         this.isActive = ((TdApi.MessageLocation) point.message.content).expiresIn > 0;
@@ -125,20 +124,20 @@ public class MapGoogleController extends MapController<MapView, MapGoogleControl
     }
 
     private @Nullable Bitmap newBitmap (MarkerData data, TdApi.Message message) {
-      int avatarColorId;
+      TdlibAccentColor accentColor;
       Letters letters;
       TdApi.File avatar;
       switch (message.senderId.getConstructor()) {
         case TdApi.MessageSenderChat.CONSTRUCTOR: {
           TdApi.Chat chat = tdlib.chat(((TdApi.MessageSenderChat) message.senderId).chatId);
-          avatarColorId = tdlib.chatAvatarColorId(chat);
+          accentColor = tdlib.chatAccentColor(chat);
           letters = tdlib.chatLetters(chat);
           avatar = chat != null && chat.photo != null ? chat.photo.small : null;
           break;
         }
         case TdApi.MessageSenderUser.CONSTRUCTOR: {
           TdApi.User user = tdlib.cache().user(((TdApi.MessageSenderUser) message.senderId).userId);
-          avatarColorId = tdlib.cache().userAvatarColorId(user);
+          accentColor = tdlib.cache().userAccentColor(user);
           letters = tdlib.cache().userLetters(user);
           avatar = user != null && user.profilePhoto != null ? user.profilePhoto.small : null;
           break;
@@ -146,7 +145,7 @@ public class MapGoogleController extends MapController<MapView, MapGoogleControl
         default:
           throw new IllegalArgumentException(message.senderId.toString());
       }
-      return newBitmap(data, avatarColorId, letters, avatar);
+      return newBitmap(data, accentColor, letters, avatar);
     }
 
     private Drawable liveBackground;
@@ -165,7 +164,7 @@ public class MapGoogleController extends MapController<MapView, MapGoogleControl
       c.drawRoundRect(rect, Screen.dp(26), Screen.dp(26), roundPaint);
     }
 
-    private void drawAvatar (final MarkerData data, Canvas c, @ColorId int avatarColorId, Letters letters, TdApi.File avatar) {
+    private void drawAvatar (final MarkerData data, Canvas c, TdlibAccentColor accentColor, Letters letters, TdApi.File avatar) {
       int cx = Screen.dp(62) / 2;
       int cy = Screen.dp(62f) / 2;
       int radius = Screen.dp(26f);
@@ -186,15 +185,15 @@ public class MapGoogleController extends MapController<MapView, MapGoogleControl
         imageFile = null;
       }
 
-      c.drawCircle(cx, cy, radius, Paints.fillingPaint(Theme.getColor(avatarColorId)));
-      Paint paint = Paints.whiteMediumPaint(19f, letters.needFakeBold, false);
+      c.drawCircle(cx, cy, radius, Paints.fillingPaint(accentColor.getPrimaryColor()));
+      Paint paint = Paints.getMediumTextPaint(19f, accentColor.getPrimaryContentColor(), letters.needFakeBold);
       float textWidth = Paints.measureLetters(letters, 19f);
       c.drawText(letters.text, cx - textWidth / 2, cy + Screen.dp(6.5f), paint);
 
       data.requestFile(imageFile);
     }
 
-    private @Nullable Bitmap newBitmap (MarkerData data, @ColorId int avatarColorId, Letters letters, TdApi.File avatar) {
+    private @Nullable Bitmap newBitmap (MarkerData data, TdlibAccentColor accentColor, Letters letters, TdApi.File avatar) {
       Bitmap result = null;
       boolean success = false;
       try {
@@ -210,7 +209,7 @@ public class MapGoogleController extends MapController<MapView, MapGoogleControl
         data.canvas = c;
         data.bitmap = result;
 
-        drawAvatar(data, c, avatarColorId, letters, avatar);
+        drawAvatar(data, c, accentColor, letters, avatar);
         success = true;
       } catch (Throwable t) {
         Log.w(t);

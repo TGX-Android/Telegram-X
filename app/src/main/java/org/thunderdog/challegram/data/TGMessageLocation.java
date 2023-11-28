@@ -41,6 +41,7 @@ import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.LiveLocationManager;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -79,7 +80,7 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
   private ImageFile previewFile;
   private Letters previewLetters;
   private float previewLettersWidth;
-  private int previewAvatarColorId;
+  private TdlibAccentColor previewAccentColor;
 
   private int previewWidth;
   private int previewHeight;
@@ -134,7 +135,7 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
   }
 
   private void updatePreviewUser (long userId, TdApi.User user) {
-    this.previewAvatarColorId = tdlib.cache().userAvatarColorId(user);
+    this.previewAccentColor = tdlib.cache().userAccentColor(userId);
     if (user != null) {
       this.previewFile = TD.getAvatar(tdlib, user);
       this.previewLetters = TD.getLetters(user);
@@ -147,7 +148,7 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
 
   private void updatePreviewChat (long chatId, TdApi.Chat chat) {
     this.previewFile = tdlib.chatAvatar(chatId);
-    this.previewAvatarColorId = tdlib.chatAvatarColorId(chatId);
+    this.previewAccentColor = tdlib.chatAccentColor(chatId);
     this.previewLetters = tdlib.chatLetters(chatId);
     this.previewLettersWidth = Paints.measureLetters(previewLetters, 18f);
   }
@@ -759,13 +760,13 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
       scheduleUpdate(SCHEDULE_FLAG_PULSE, false, pulseUpdateDelay);
     }
 
-    c.drawBitmap(pinBgIcon, mapCenterX - pinBgIcon.getWidth() / 2, pinTop, Paints.getBitmapPaint());
+    c.drawBitmap(pinBgIcon, mapCenterX - pinBgIcon.getWidth() / 2f, pinTop, Paints.getBitmapPaint());
 
     int iconSize;
     if (livePeriod > 0) {
       iconSize = pinRadius;
       if (previewFile == null && previewLetters != null) {
-        c.drawCircle(mapCenterX, pinCenterY, pinRadius, Paints.fillingPaint(Theme.getColor(previewAvatarColorId)));
+        c.drawCircle(mapCenterX, pinCenterY, pinRadius, Paints.fillingPaint(previewAccentColor.getPrimaryColor()));
         Paints.drawLetters(c, previewLetters, mapCenterX - previewLettersWidth / 2, pinCenterY + Screen.dp(7f), 18f);
       }
     } else {
@@ -778,8 +779,8 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
         if (iconAlpha != 1f) {
           paint.setAlpha((int) (255f * iconAlpha));
         }
-        Drawable pinIcon = view.getSparseDrawable(R.drawable.baseline_location_on_24, 0);
-        Drawables.draw(c, pinIcon, mapCenterX - pinIcon.getMinimumWidth() / 2, pinCenterY - pinIcon.getMinimumHeight() / 2, paint);
+        Drawable pinIcon = view.getSparseDrawable(R.drawable.baseline_location_on_24, ColorId.NONE);
+        Drawables.draw(c, pinIcon, mapCenterX - pinIcon.getMinimumWidth() / 2f, pinCenterY - pinIcon.getMinimumHeight() / 2f, paint);
         if (iconAlpha != 1f) {
           paint.setAlpha(255);
         }

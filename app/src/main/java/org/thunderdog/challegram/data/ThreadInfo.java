@@ -198,11 +198,11 @@ public class ThreadInfo {
   }
 
   public void setDraft (@Nullable TdApi.DraftMessage draftMessage) {
-    long replyToMessageId = draftMessage != null ? draftMessage.replyToMessageId : 0;
-    if (replyToMessageId != 0) {
+    TdApi.InputMessageReplyToMessage replyToMessage = draftMessage != null && draftMessage.replyTo instanceof TdApi.InputMessageReplyToMessage ? ((TdApi.InputMessageReplyToMessage) draftMessage.replyTo) : null;
+    if (replyToMessage != null && Td.isEmpty(replyToMessage.quote)) {
       for (TdApi.Message message : threadInfo.messages) {
-        if (message.id == replyToMessageId) {
-          draftMessage.replyToMessageId = 0;
+        if (message.chatId == replyToMessage.chatId && message.id == replyToMessage.messageId) {
+          draftMessage.replyTo = null;
           break;
         }
       }

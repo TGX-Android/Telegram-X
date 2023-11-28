@@ -2,6 +2,7 @@ package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -28,6 +29,7 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -415,11 +417,19 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
       drawSelection(c, selectionFactor, selectionColor);
     }
 
-    int iconColorId = ColorId.inlineIcon;
+    TdlibAccentColor accentColor = context.getContentAccentColor();
+    long complexIconColor = accentColor != null ? accentColor.getNameComplexColor() : 0;
+    int iconColorId = complexIconColor != 0 ? (Theme.isColorId(complexIconColor) ? Theme.extractColorValue(complexIconColor) : ColorId.NONE) : ColorId.inlineIcon;
     Drawable icon = drawableProvider.getSparseDrawable(R.drawable.baseline_forum_18, iconColorId);
     float iconX = useBubbles ? left + Screen.dp(16f) : (TGMessage.getContentLeft() - icon.getMinimumWidth()) / 2f;
     float iconY = rect.centerY() - icon.getMinimumHeight() / 2f;
-    Drawables.draw(c, icon, iconX, iconY, PorterDuffPaint.get(iconColorId, alpha));
+    Paint iconPaint;
+    if (complexIconColor != 0) {
+      iconPaint = Theme.getComplexPorterDuffPaint(complexIconColor, alpha);
+    } else {
+      iconPaint = PorterDuffPaint.get(iconColorId, alpha);
+    }
+    Drawables.draw(c, icon, iconX, iconY, iconPaint);
 
     float textX = useBubbles ? left + Screen.dp(46f) : TGMessage.getContentLeft();
     float textY = rect.centerY();
@@ -546,6 +556,10 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
 
   @Override public int defaultTextColor () {
     if (isInline()) {
+      TdlibAccentColor accentColor = context.getContentAccentColor();
+      if (accentColor != null) {
+        return accentColor.getNameColor();
+      }
       return Theme.inlineTextColor(false);
     }
     if (isBubble()) {
@@ -780,7 +794,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
             messageThread.getChatId(), messageIds,
             new TdApi.MessageSourceMessageThreadHistory(),
             true
-          ), c.tdlib().okHandler());
+          ), c.tdlib().typedOkHandler());
         }
       };
       forceTouchContext.setButtons(actionListener, controller, ids, icons, hints);

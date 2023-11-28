@@ -937,10 +937,10 @@ public class PhoneController extends EditBaseController<Void> implements Setting
               if (message instanceof Spannable) {
                 CustomTypefaceSpan[] spans = ((Spannable) message).getSpans(0, message.length(), CustomTypefaceSpan.class);
                 for (CustomTypefaceSpan span : spans) {
-                  if (span.getEntityType() != null && Td.isItalic(span.getEntityType())) {
+                  if (span.getTextEntityType() != null && Td.isItalic(span.getTextEntityType())) {
                     span.setTypeface(null);
                     span.setColorId(ColorId.textLink);
-                    span.setEntityType(new TdApi.TextEntityTypeEmailAddress());
+                    span.setTextEntityType(new TdApi.TextEntityTypeEmailAddress());
                     int start = ((Spannable) message).getSpanStart(span);
                     int end = ((Spannable) message).getSpanEnd(span);
                     ((Spannable) message).setSpan(new NoUnderlineClickableSpan() {

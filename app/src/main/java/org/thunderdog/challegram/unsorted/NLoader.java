@@ -68,8 +68,8 @@ public class NLoader implements ReLinker.Logger {
       try {
         ReLinkerInstance reLinker = ReLinker.recursively().log(NLoader.instance());
         loadLibraryImpl(reLinker, "c++_shared", BuildConfig.NDK_VERSION);
-        loadLibraryImpl(reLinker, "cryptox", BuildConfig.OPENSSL_VERSION);
-        loadLibraryImpl(reLinker, "sslx", BuildConfig.OPENSSL_VERSION);
+        loadLibraryImpl(reLinker, "cryptox", BuildConfig.OPENSSL_VERSION_FULL);
+        loadLibraryImpl(reLinker, "sslx", BuildConfig.OPENSSL_VERSION_FULL);
         loadLibraryImpl(reLinker, "tdjni", BuildConfig.TDLIB_VERSION);
         loadLibraryImpl(reLinker, "leveldbjni", BuildConfig.LEVELDB_VERSION);
         loadLibraryImpl(reLinker, "tgcallsjni", BuildConfig.JNI_VERSION /*TODO: separate variable?*/);

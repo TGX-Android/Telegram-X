@@ -233,6 +233,16 @@
     <item name="nameViolet" porterDuff="true" />
     <item name="namePink" porterDuff="true" />
 
+    <item name="lineInactive" porterDuff="true" />
+    <item name="lineRed" porterDuff="true" />
+    <item name="lineOrange" porterDuff="true" />
+    <item name="lineYellow" porterDuff="true" />
+    <item name="lineGreen" porterDuff="true" />
+    <item name="lineCyan" porterDuff="true" />
+    <item name="lineBlue" porterDuff="true" />
+    <item name="lineViolet" porterDuff="true" />
+    <item name="linePink" porterDuff="true" />
+
     <!-- NAVIGATION -->
 
     <item name="headerBackground" tinted="true" />

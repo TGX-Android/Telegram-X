@@ -244,8 +244,26 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
         TdApi.VoiceNote voiceNote = ((TdApi.MessageVoiceNote) message.content).voiceNote;
         break;
       }
+      case TdApi.MessageGiftedPremium.CONSTRUCTOR: {
+        TdApi.Sticker sticker = ((TdApi.MessageGiftedPremium) message.content).sticker;
+        if (sticker != null)
+          return new MediaPreviewSimple(tdlib, size, cornerRadius, sticker);
+        break;
+      }
+      case TdApi.MessagePremiumGiftCode.CONSTRUCTOR: {
+        TdApi.Sticker sticker = ((TdApi.MessagePremiumGiftCode) message.content).sticker;
+        if (sticker != null)
+          return new MediaPreviewSimple(tdlib, size, cornerRadius, sticker);
+        break;
+      }
+      case TdApi.MessagePremiumGiveaway.CONSTRUCTOR: {
+        TdApi.Sticker sticker = ((TdApi.MessagePremiumGiveaway) message.content).sticker;
+        if (sticker != null)
+          return new MediaPreviewSimple(tdlib, size, cornerRadius, sticker);
+        break;
+      }
       default: {
-        Td.assertMessageContent_cda9af31();
+        Td.assertMessageContent_ea2cfacf();
         break;
       }
     }

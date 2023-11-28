@@ -14,6 +14,7 @@ package org.thunderdog.challegram.util.text;
 
 import androidx.annotation.ColorInt;
 
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 
 import me.vkryl.core.BitwiseUtils;
@@ -26,11 +27,8 @@ public interface TextColorSet {
     return defaultTextColor();
   }
 
-  default int mediaTextColorOrId () {
-    return defaultTextColor();
-  }
-  default boolean mediaTextColorIsId () {
-    return false;
+  default long mediaTextComplexColor () {
+    return Theme.newComplexColor(false, defaultTextColor());
   }
 
   @ColorInt

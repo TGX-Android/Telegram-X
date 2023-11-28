@@ -26,32 +26,47 @@ public final class RateLimiter implements Runnable {
   private final Handler handler;
 
   private long lastExecutionTime;
-  private boolean isScheduled;
+  private boolean isScheduled, delayFirstExecution;
 
   public RateLimiter (Runnable act, long delayMs, @Nullable Looper looper) {
     this.act = act;
     this.delayMs = delayMs;
     this.handler = new Handler(looper != null ? looper : Looper.getMainLooper(), (msg) -> {
-      runImpl();
+      runImpl(true);
       return true;
     });
+  }
+
+  public void setDelayFirstExecution (boolean delayFirstExecution) {
+    this.delayFirstExecution = delayFirstExecution;
+  }
+
+  public void cancelIfScheduled () {
+    if (isScheduled) {
+      handler.removeMessages(0);
+      isScheduled = false;
+    }
   }
 
   @Override
   public void run () {
     long now = SystemClock.uptimeMillis();
-    if (lastExecutionTime == 0 || (now - lastExecutionTime) >= delayMs) {
-      runImpl();
-    } else if (!isScheduled) {
-      long nextExecutionTimeMs = lastExecutionTime + delayMs;
-      long delayMs = nextExecutionTimeMs - now;
-      handler.sendMessageDelayed(handler.obtainMessage(), delayMs);
+    if ((lastExecutionTime == 0 || (now - lastExecutionTime) >= delayMs) && runImpl(false)) {
+      return;
+    }
+    if (!isScheduled) {
+      long delayMs = lastExecutionTime != 0 ? (lastExecutionTime + this.delayMs) - now : this.delayMs;
+      handler.sendMessageDelayed(handler.obtainMessage(0), delayMs);
     }
   }
 
-  private void runImpl () {
-    act.run();
-    lastExecutionTime = SystemClock.uptimeMillis();
-    isScheduled = false;
+  private boolean runImpl (boolean byTimeout) {
+    if (byTimeout || !delayFirstExecution) {
+      act.run();
+      lastExecutionTime = SystemClock.uptimeMillis();
+      isScheduled = false;
+      return true;
+    }
+    return false;
   }
 }

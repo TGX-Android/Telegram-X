@@ -29,6 +29,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.emoji.EmojiInfo;
 import org.thunderdog.challegram.loader.ComplexReceiver;
+import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -355,6 +356,43 @@ public class TextPart {
     Emoji.instance().draw(c, emojiInfo, rect, (int) (alpha * textPaint.getAlpha()));
   }
 
+  private static final int DRAW_BATCH_LEVEL_LOCAL = 1;
+
+  public @Nullable GifReceiver findTargetReceiver (@Nullable ComplexReceiver receiver) {
+    if (receiver != null && media != null && !media.isNotFoundCustomEmoji() && media.isAnimated()) {
+      final long displayMediaKey = media.getDisplayMediaKey();
+      return receiver.getGifReceiver(displayMediaKey);
+    }
+    return null;
+  }
+
+  public void beginDrawBatch (@Nullable ComplexReceiver receiver, int externalBatchId) {
+    if (externalBatchId <= 0)
+      throw new IllegalArgumentException(Integer.toString(externalBatchId));
+    GifReceiver gifReceiver = findTargetReceiver(receiver);
+    if (gifReceiver != null) {
+      gifReceiver.beginDrawBatch(DRAW_BATCH_LEVEL_LOCAL + externalBatchId);
+    }
+  }
+
+  public void finishAllDrawBatches (@Nullable ComplexReceiver receiver) {
+    finishDrawBatch(receiver, 0);
+  }
+
+  public void finishDrawBatch (@Nullable ComplexReceiver receiver, int externalBatchId) {
+    if (externalBatchId < 0) {
+      throw new IllegalArgumentException(Integer.toString(externalBatchId));
+    }
+    GifReceiver gifReceiver = findTargetReceiver(receiver);
+    if (gifReceiver != null) {
+      if (externalBatchId == 0) {
+        gifReceiver.finishAllDrawBatches();
+      } else {
+        gifReceiver.finishDrawBatch(DRAW_BATCH_LEVEL_LOCAL + externalBatchId);
+      }
+    }
+  }
+
   public void draw (int partIndex, Canvas c, int startX, int endX, int endXBottomPadding, int startY, float alpha, @Nullable TextColorSet colorProvider, @Nullable ComplexReceiver receiver) {
     final int y = startY + this.y;
     final int x = makeX(startX, endX, endXBottomPadding);
@@ -369,7 +407,7 @@ public class TextPart {
         }
         return;
       }
-      final int displayMediaKey = media.getDisplayMediaKey();
+      final long displayMediaKey = media.getDisplayMediaKey();
       final int iconY = y + textPaint.baselineShift - (isCustomEmoji() ? Screen.dp(1.5f) : 0);
       final int height = this.height == -1 ? (int) width : this.height;
       if (receiver != null && displayMediaKey != -1) {
@@ -384,7 +422,7 @@ public class TextPart {
           restoreToCount = Views.save(c);
           c.translate(x, iconY);
           if (isFirst && media.isAnimated()) {
-            receiver.getGifReceiver(displayMediaKey).beginDrawBatch();
+            receiver.getGifReceiver(displayMediaKey).beginDrawBatch(DRAW_BATCH_LEVEL_LOCAL);
           }
         } else {
           left = x;
@@ -396,7 +434,7 @@ public class TextPart {
         media.draw(c, receiver, left, top, right, bottom, alpha, displayMediaKey);
         if (needTranslate) {
           if (isLast && media.isAnimated()) {
-            receiver.getGifReceiver(displayMediaKey).finishDrawBatch();
+            receiver.getGifReceiver(displayMediaKey).finishDrawBatch(DRAW_BATCH_LEVEL_LOCAL);
           }
           Views.restore(c, restoreToCount);
         }

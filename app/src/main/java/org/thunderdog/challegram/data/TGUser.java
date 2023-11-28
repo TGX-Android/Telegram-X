@@ -26,6 +26,7 @@ import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.util.UserProvider;
@@ -141,7 +142,7 @@ public class TGUser implements UserProvider {
   }
 
   private void buildContact () {
-    avatarPlaceholderMetadata = new AvatarPlaceholder.Metadata(TD.getAvatarColorId(rawContactId, tdlib.myUserId()), TD.getLetters(firstName, lastName));
+    avatarPlaceholderMetadata = new AvatarPlaceholder.Metadata(TdlibAccentColor.defaultAccentColorForUserId(tdlib, rawContactId), TD.getLetters(firstName, lastName));
     updateName();
     updateStatus();
   }
@@ -262,7 +263,7 @@ public class TGUser implements UserProvider {
       flags &= ~FLAG_GROUP_CREATOR;
     }
     if (user == null || TD.isPhotoEmpty(user.profilePhoto)) {
-      avatarPlaceholderMetadata = new AvatarPlaceholder.Metadata(TD.getAvatarColorId(user, tdlib.myUserId()), TD.getLetters(user));
+      avatarPlaceholderMetadata = new AvatarPlaceholder.Metadata(tdlib.cache().userAccentColor(user), TD.getLetters(user));
     } else {
       imageFile = new ImageFile(tdlib, user.profilePhoto.small);
       imageFile.setSize(ChatView.getDefaultAvatarCacheSize());

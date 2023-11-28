@@ -43,6 +43,7 @@ import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.TGLegacyAudioManager;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.theme.ColorId;
@@ -163,7 +164,7 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
     if (hasPreview) {
       this.progress.setBackgroundColor(0x44000000);
     } else {
-      this.progress.setBackgroundColorId(TD.getFileColorId(doc, context.isOutgoingBubble()));
+      this.progress.setBackgroundColorId(TdlibAccentColor.getFileColorId(doc, context.isOutgoingBubble()));
     }
     this.progress.setFile(doc.document, context.getMessage());
     if (viewProvider != null) {

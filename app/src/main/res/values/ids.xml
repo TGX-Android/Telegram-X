@@ -855,6 +855,9 @@
   <item type="id" name="btn_localContacts" />
   <item type="id" name="btn_gmailContacts" />
   <item type="id" name="btn_close" />
+  <item type="id" name="btn_replace" />
+  <item type="id" name="btn_toggleEnlarge" />
+  <item type="id" name="btn_toggleShowAbove" />
   <item type="id" name="btn_dataSaver" />
   <item type="id" name="btn_dataSaverForce" />
   <item type="id" name="btn_inChannelChats" />

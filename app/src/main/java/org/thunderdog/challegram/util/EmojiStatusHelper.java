@@ -35,6 +35,7 @@ import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
@@ -410,16 +411,10 @@ public class EmojiStatusHelper implements Destroyable {
           imageReceiver.disablePorterDuffColorFilter();
           preview.disablePorterDuffColorFilter();
         } else if (textColorSet != null) {
-          int color = textColorSet.mediaTextColorOrId();
-          if (textColorSet.mediaTextColorIsId()) {
-            gifReceiver.setThemedPorterDuffColorId(color);
-            imageReceiver.setThemedPorterDuffColorId(color);
-            preview.setThemedPorterDuffColorId(color);
-          } else {
-            gifReceiver.setPorterDuffColorFilter(color);
-            imageReceiver.setPorterDuffColorFilter(color);
-            preview.setPorterDuffColorFilter(color);
-          }
+          long complexColor = textColorSet.mediaTextComplexColor();
+          Theme.applyComplexColor(gifReceiver, complexColor);
+          Theme.applyComplexColor(imageReceiver, complexColor);
+          Theme.applyComplexColor(preview, complexColor);
         } else {
           gifReceiver.setThemedPorterDuffColorId(ColorId.icon);
           imageReceiver.setThemedPorterDuffColorId(ColorId.icon);
@@ -442,11 +437,12 @@ public class EmojiStatusHelper implements Destroyable {
       } else if (emojiStatus != null) {
         emojiStatus.draw(c, startX, startY, null, alpha, emojiStatusReceiver);
       } else if (starDrawable != null && textColorSet != null) {
+        long complexColor = textColorSet.mediaTextComplexColor();
         Paint p;
-        if (textColorSet.mediaTextColorIsId()) {
-          p = PorterDuffPaint.get(textColorSet.mediaTextColorOrId(), alpha);
+        if (Theme.isColorId(complexColor)) {
+          p = PorterDuffPaint.get(Theme.extractColorValue(complexColor), alpha);
         } else {
-          p = Paints.getPorterDuffPaint(ColorUtils.alphaColor(alpha, textColorSet.mediaTextColorOrId()));
+          p = Paints.getPorterDuffPaint(ColorUtils.alphaColor(alpha, Theme.extractColorValue(complexColor)));
         }
         Drawables.draw(c, starDrawable, startX, startY + (Screen.dp(textSize + 2) - starDrawable.getMinimumHeight()) / 2f, p);
       }

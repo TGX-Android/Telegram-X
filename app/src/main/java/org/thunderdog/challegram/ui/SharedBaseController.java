@@ -28,7 +28,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
 import org.thunderdog.challegram.core.Lang;
@@ -701,8 +700,7 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
         break;
       }
       default: {
-        Log.unexpectedTdlibResponse(object, TdApi.GetChats.class, TdApi.Chats.class);
-        return;
+        throw new UnsupportedOperationException(object.toString());
       }
     }
     final long nextOffsetFinal = nextOffset;

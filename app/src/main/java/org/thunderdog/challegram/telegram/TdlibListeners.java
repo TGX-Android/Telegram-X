@@ -547,6 +547,22 @@ public class TdlibListeners {
     }
   }
 
+  // Generic updates template
+
+  private static <T> void runUpdate (@Nullable Iterator<T> list, RunnableData<T> act) {
+    if (list != null) {
+      while (list.hasNext()) {
+        T next = list.next();
+        act.runWithData(next);
+      }
+    }
+  }
+
+  private void runChatUpdate (long chatId, RunnableData<ChatListener> act) {
+    runUpdate(chatListeners.iterator(), act);
+    runUpdate(specificChatListeners.iterator(chatId), act);
+  }
+
   // updateNewMessage
 
   private static void updateNewMessage (TdApi.UpdateNewMessage update, @Nullable Iterator<MessageListener> list) {
@@ -1463,17 +1479,26 @@ public class TdlibListeners {
 
   // updateChatBackground
 
-  private static void updateChatBackground (long chatId, @Nullable TdApi.ChatBackground background, @Nullable Iterator<ChatListener> list) {
-    if (list != null) {
-      while (list.hasNext()) {
-        list.next().onChatBackgroundChanged(chatId, background);
-      }
-    }
+  void updateChatBackground (TdApi.UpdateChatBackground update) {
+    runChatUpdate(update.chatId, listener ->
+      listener.onChatBackgroundChanged(update.chatId, update.background)
+    );
   }
 
-  void updateChatBackground (TdApi.UpdateChatBackground update) {
-    updateChatBackground(update.chatId, update.background, chatListeners.iterator());
-    updateChatBackground(update.chatId, update.background, specificChatListeners.iterator(update.chatId));
+  // updateChatAccentColor
+
+  void updateChatAccentColor (TdApi.UpdateChatAccentColor update) {
+    runChatUpdate(update.chatId, listener ->
+      listener.onChatAccentColorChanged(update.chatId, update.accentColorId)
+    );
+  }
+
+  // updateChatBackgroundCustomEmoji
+
+  void updateChatBackgroundCustomEmoji (TdApi.UpdateChatBackgroundCustomEmoji update) {
+    runChatUpdate(update.chatId, listener ->
+      listener.onChatBackgroundCustomEmojiChanged(update.chatId, update.backgroundCustomEmojiId)
+    );
   }
 
   // updateChatIsTranslatable
@@ -1828,6 +1853,12 @@ public class TdlibListeners {
   void updateContactRegisteredNotificationsDisabled (boolean areDisabled) {
     for (TdlibOptionListener listener : optionListeners) {
       listener.onContactRegisteredNotificationsDisabled(areDisabled);
+    }
+  }
+
+  void updateAccentColors (TdApi.UpdateAccentColors update) {
+    for (TdlibOptionListener listener : optionListeners) {
+      listener.onAccentColorsChanged();
     }
   }
 

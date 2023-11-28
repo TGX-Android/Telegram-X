@@ -6,18 +6,10 @@ time: 1601377382
 dark, parentTheme, shadowDepth, wallpaperUsageId: 1
 #
 attachContact, attachFile, attachInlineBot, attachLocation, attachPhoto, badgeMutedText, badgeText, bubbleIn_background, bubbleOut_background, chatKeyboardButton, headerBackground, headerBarCallMuted, headerLightBackground, inlineContentActive, iv_preBlockBackground, iv_textCodeBackground, iv_textCodeBackgroundPressed, messageSwipeBackground, notification, notificationPlayer, passcode, unread: #212121
-avatarBlue, avatarBlue_big, nameBlue: #80C1FA
-avatarCyan, avatarCyan_big, nameCyan: #6CC7DC
-avatarGreen, avatarGreen_big, bubbleOut_messageAuthorPsa, messageAuthorPsa, nameGreen: #8CC56E
-avatarOrange, avatarOrange_big, nameOrange: #F49F69
-avatarPink, avatarPink_big, namePink: #E181AC
-avatarRed, avatarRed_big, nameRed: #F07975
-avatarViolet, avatarViolet_big, nameViolet: #BCB3F9
-avatarYellow, avatarYellow_big, nameYellow: #F9C84A
 background, bubble_chatSeparator, bubbleIn_outline, bubbleIn_separator, bubbleOut_chatCorrectChosenFillingContent, bubbleOut_chatCorrectFillingContent, bubbleOut_chatNeutralFillingContent, bubbleOut_outline, chatKeyboard, chatSeparator, checkContent, controlContent, iv_chatLinkBackground, messageCorrectChosenFillingContent, messageCorrectFillingContent, messageNegativeLineContent, messageNeutralFillingContent, promoContent, separator, shareSeparator, togglerPositiveContent: #000
 background_icon, background_text, background_textLight, bubbleIn_time, bubbleOut_progress, bubbleOut_separator, bubbleOut_time, circleButtonChatIcon, circleButtonOverlayIcon, icon, iv_caption, iv_icon, iv_pageAuthor, iv_pageFooter, textLight, textPlaceholder: #A0A0A0
 badge, bubbleIn_progress, bubbleIn_text, bubbleOut_chatCorrectChosenFilling, bubbleOut_chatCorrectFilling, bubbleOut_chatVerticalLine, bubbleOut_inlineIcon, bubbleOut_inlineOutline, bubbleOut_inlineText, bubbleOut_text, bubbleOut_ticks, bubbleOut_ticksRead, chatListAction, chatListVerify, chatSendButton, checkActive, controlActive, headerButtonIcon, headerLightIcon, headerLightText, iconActive, inlineIcon, inlineOutline, inlineText, inputActive, introSectionActive, iv_blockQuoteLine, iv_header, iv_pageTitle, iv_text, iv_textCode, iv_textMarked, iv_textReference, messageCorrectChosenFilling, messageCorrectFilling, messageVerticalLine, notificationLink, online, playerButton, profileSectionActive, profileSectionActiveContent, progress, promo, sliderActive, text, textNeutral, themeBlackWhite, ticks, ticksRead, togglerActive, togglerPositive, unreadText, headerBadge: #FFF
-badgeMuted, controlInactive, nameInactive, themeNightBlack, togglerInactiveBackground, headerBadgeMuted: #6A6A6A
+badgeMuted, controlInactive, nameInactive, lineInactive, themeNightBlack, togglerInactiveBackground, headerBadgeMuted: #6A6A6A
 bubble_button_noWallpaper, bubble_buttonRipple_noWallpaper: #A0A0A020
 bubble_date_noWallpaper, bubble_mediaReply_noWallpaper, bubble_overlay, bubble_unread_noWallpaper: #A0A0A040
 bubble_messageCheckOutline: #EAEAEA
@@ -66,3 +58,14 @@ bubbleIn_fillingActiveContent, bubbleOut_fillingActiveContent, fillingActiveCont
 fillingActive: #A0A0A026
 fillingPositive, bubbleOut_fillingPositive, bubbleIn_fillingPositive, bubbleOut_fillingPositive_overlay, bubbleIn_fillingPositive_overlay: #FFF
 fillingPositiveContent, bubbleOut_fillingPositiveContent, bubbleIn_fillingPositiveContent, bubbleOut_fillingPositiveContent_overlay, bubbleIn_fillingPositiveContent_overlay: #000
+
+bubbleOut_messageAuthorPsa, messageAuthorPsa: #8CC56E
+
+avatarBlue, avatarBlue_big, nameBlue: #368AD1
+avatarCyan, avatarCyan_big, nameCyan: #309EBA
+avatarGreen, avatarGreen_big, nameGreen: #40A920
+avatarOrange, avatarOrange_big, nameOrange: #D67722
+avatarPink, avatarPink_big, namePink: #C7508B
+avatarRed, avatarRed_big, nameRed: #CC5049
+avatarViolet, avatarViolet_big: #955CDB
+avatarYellow, avatarYellow_big, nameYellow: #F9C84A

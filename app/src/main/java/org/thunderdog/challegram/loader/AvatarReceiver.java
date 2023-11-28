@@ -31,6 +31,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.DrawableProvider;
+import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 
@@ -175,7 +176,16 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   // Public API
 
   public boolean requestPlaceholder (Tdlib tdlib, AvatarPlaceholder.Metadata specificPlaceholder, @Options int options) {
-    return requestData(tdlib, DataType.PLACEHOLDER, specificPlaceholder != null ? specificPlaceholder.colorId : 0, specificPlaceholder, null, null, null, options | Options.NO_UPDATES);
+    int nonZeroId;
+    if (specificPlaceholder != null) {
+      nonZeroId = specificPlaceholder.accentColor.getId();
+      if (nonZeroId >= 0) {
+        nonZeroId = nonZeroId + 1;
+      }
+    } else {
+      nonZeroId = 0;
+    }
+    return requestData(tdlib, DataType.PLACEHOLDER, nonZeroId, specificPlaceholder, null, null, null, options | Options.NO_UPDATES);
   }
 
   public boolean isDisplayingPlaceholder (AvatarPlaceholder.Metadata specificPlaceholder) {
@@ -1166,12 +1176,11 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
         }
       }
     } else if (requestedPlaceholder != null) {
-      int toColorId = Theme.avatarSmallToBig(requestedPlaceholder.colorId);
-      int placeholderColor = toColorId != 0 ? ColorUtils.fromToArgb(
-        Theme.getColor(requestedPlaceholder.colorId),
-        Theme.getColor(toColorId),
+      int placeholderColor = ColorUtils.fromToArgb(
+        requestedPlaceholder.accentColor.getPrimaryColor(),
+        requestedPlaceholder.accentColor.getPrimaryBigColor(),
         isFullScreen.getFloatValue()
-      ) : Theme.getColor(requestedPlaceholder.colorId);
+      );
       drawPlaceholderRounded(c, displayRadius, ColorUtils.alphaColor(alpha, placeholderColor));
       int avatarContentColorId = ColorId.avatar_content;
       float primaryContentAlpha = requestedPlaceholder.extraDrawableRes != 0 ? 1f - isFullScreen.getFloatValue() : 1f;
@@ -1202,18 +1211,18 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   private Text displayingLetters;
   private float displayingLettersTextSize;
 
-  private void drawPlaceholderLetters (Canvas c, String letters, float alpha) {
-    if (StringUtils.isEmpty(letters)) {
+  private void drawPlaceholderLetters (Canvas c, Letters letters, float alpha) {
+    if (letters == null || StringUtils.isEmpty(letters.text)) {
       return;
     }
 
-    float currentRadiusPx = getWidth() / 2f;
+    float currentRadiusPx = Math.min(getWidth(), getHeight()) / 2f;
 
     float textSizeDp = (int) ((primaryPlaceholderRadius != 0 ? primaryPlaceholderRadius : Screen.px(currentRadiusPx)) * .75f);
 
-    if (displayingLetters == null || !displayingLetters.getText().equals(letters) || displayingLettersTextSize != textSizeDp) {
+    if (displayingLetters == null || !displayingLetters.getText().equals(letters.text) || displayingLettersTextSize != textSizeDp) {
       displayingLetters = new Text.Builder(
-        letters, (int) (currentRadiusPx * 3), Paints.robotoStyleProvider(textSizeDp), TextColorSets.Regular.AVATAR_CONTENT)
+        letters.text, (int) (currentRadiusPx * 3), Paints.robotoStyleProvider(textSizeDp), TextColorSets.Regular.AVATAR_CONTENT)
         .allBold()
         .singleLine()
         .build();
@@ -1221,8 +1230,12 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     }
 
     float radiusPx = primaryPlaceholderRadius != 0f ? Screen.dp(primaryPlaceholderRadius) : currentRadiusPx;
-    float scale = radiusPx < currentRadiusPx ? radiusPx / (float) currentRadiusPx : 1f;
-    scale *= Math.min(1f, (radiusPx * 2f) / (float) (Math.max(displayingLetters.getWidth(), displayingLetters.getHeight())));
+    float scale = radiusPx < currentRadiusPx ? radiusPx / currentRadiusPx : 1f;
+    float size = Math.max(displayingLetters.getWidth(), displayingLetters.getHeight());
+    float maxSize = (float) Math.sqrt(2.0) * (currentRadiusPx - Screen.dp(1f));
+    if (size > maxSize) {
+      scale *= maxSize / size;
+    }
 
     float centerX = centerX();
     float centerY = centerY();
@@ -1242,14 +1255,18 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   }
 
   private void drawPlaceholderDrawable (Canvas c, int resId, int colorId, float alpha) {
-    float currentRadiusPx = getWidth() / 2f;
+    float currentRadiusPx = Math.min(getWidth(), getHeight()) / 2f;
     float radiusPx = primaryPlaceholderRadius != 0f ? Screen.dp(primaryPlaceholderRadius) : currentRadiusPx;
     View view = getTargetView();
     Drawable drawable = view instanceof DrawableProvider ?
       ((DrawableProvider) view).getSparseDrawable(resId, colorId) :
       Drawables.get(resId);
     float scale = radiusPx < currentRadiusPx ? radiusPx / currentRadiusPx : 1f;
-    scale *= Math.min(1f, (radiusPx * 2f) / (float) Math.max(drawable.getMinimumWidth(), drawable.getMinimumHeight()));
+    float size = Math.max(drawable.getMinimumWidth(), drawable.getMinimumHeight()) * scale;
+    float maxSize = (float) Math.sqrt(2.0) * (currentRadiusPx - Screen.dp(1f));
+    if (size > maxSize) {
+      scale *= maxSize / size;
+    }
     float centerX = centerX();
     float centerY = centerY();
     final boolean needRestore = scale != 1f;

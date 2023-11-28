@@ -1934,7 +1934,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void updateMessagesDeleted (long chatId, long[] messageIds) {
-    controller.removeReply(messageIds);
+    controller.removeReply(chatId, messageIds);
     controller.onMessagesDeleted(chatId, messageIds);
 
     int removedCount = 0;

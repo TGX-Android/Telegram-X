@@ -28,6 +28,7 @@ import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -52,8 +53,7 @@ public class TGMessageCall extends TGMessage {
 
   // private Drawable phoneIcon, callIcon;
   private @DrawableRes int callIconId;
-  private @ColorId
-  int callIconColorId;
+  private @PorterDuffColorId int callIconColorId;
   // private String title, subtitle;
 
   private String trimmedTitle, trimmedSubtitle;
@@ -92,8 +92,8 @@ public class TGMessageCall extends TGMessage {
 
   @Override
   protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth) {
-    Drawable phoneIcon = view.getSparseDrawable(callRaw.isVideo ? R.drawable.baseline_videocam_24 : R.drawable.baseline_phone_24, 0);
-    Drawable callIcon = view.getSparseDrawable(callIconId, 0);
+    Drawable phoneIcon = view.getSparseDrawable(callRaw.isVideo ? R.drawable.baseline_videocam_24 : R.drawable.baseline_phone_24, ColorId.NONE);
+    Drawable callIcon = view.getSparseDrawable(callIconId, ColorId.NONE);
     if (useBubbles()) {
       int colorId = isOutgoingBubble() ? ColorId.bubbleOut_file : ColorId.file;
       Drawables.draw(c, phoneIcon, startX + getContentWidth() - getContentHeight() / 2f - phoneIcon.getMinimumWidth() / 2f, startY + getContentHeight() / 2f - phoneIcon.getMinimumHeight() / 2f, PorterDuffPaint.get(colorId));

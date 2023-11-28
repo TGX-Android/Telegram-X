@@ -205,7 +205,7 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable, Text.T
     requestMedia(receiver, -1, -1);
   }
 
-  public void requestMedia (ComplexReceiver receiver, int startKey, int maxMediaCount) {
+  public void requestMedia (ComplexReceiver receiver, long startKey, long maxMediaCount) {
     Text text = getCurrent();
     if (text != null) {
       text.requestMedia(receiver, startKey, maxMediaCount);
@@ -355,6 +355,28 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable, Text.T
   public void detachFromView (View view) {
     if (currentViews != null) {
       currentViews.detachFromView(view);
+    }
+  }
+
+  public final void beginDrawBatch (@Nullable ComplexReceiver receiver, int externalBatchId) {
+    if (receiver != null) {
+      final Text text = getCurrent();
+      if (text != null) {
+        text.beginDrawBatch(receiver, externalBatchId);
+      }
+    }
+  }
+
+  public final void finishAllDrawBatches (@Nullable ComplexReceiver receiver) {
+    finishDrawBatch(receiver, 0);
+  }
+
+  public final void finishDrawBatch (@Nullable ComplexReceiver receiver, int externalBatchId) {
+    if (receiver != null) {
+      final Text text = getCurrent();
+      if (text != null) {
+        text.finishDrawBatch(receiver, externalBatchId);
+      }
     }
   }
 

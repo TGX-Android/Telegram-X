@@ -559,7 +559,7 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
   }
 
   public void initWithSet (TdApi.StickerSet set) {
-    TdApi.StickerSetInfo info = new TdApi.StickerSetInfo(set.id, set.title, set.name, set.thumbnail, set.thumbnailOutline, set.isInstalled, set.isArchived, set.isOfficial, set.stickerFormat, set.stickerType, false, set.stickers.length, null);
+    TdApi.StickerSetInfo info = new TdApi.StickerSetInfo(set.id, set.title, set.name, set.thumbnail, set.thumbnailOutline, set.isInstalled, set.isArchived, set.isOfficial, set.stickerFormat, set.stickerType, set.needsRepainting, false, set.stickers.length, null);
     this.stickerSets.put(set.id, new TGStickerSetInfo(tdlib, info));
     updateButton(false);
     stickersController.setStickerSetInfo(info);

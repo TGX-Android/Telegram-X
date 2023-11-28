@@ -81,6 +81,28 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     return 0; // override for performance
   }
 
+  /*@Override
+  public boolean onBackPressed (boolean fromTop) {
+    int currentPosition = getCurrentPagerItemPosition();
+    ViewController<?> currentController = getCachedControllerForPosition(currentPosition);
+    if (currentController != null && currentController.onBackPressed(fromTop)) {
+      return true;
+    }
+    SparseArrayCompat<ViewController<?>> controllers = getAllCachedControllers();
+    if (controllers != null) {
+      for (int i = 0; i < controllers.size(); i++) {
+        int position = controllers.keyAt(i);
+        if (position != currentPosition) {
+          ViewController<?> controller = controllers.valueAt(position);
+          if (controller != null && controller.onBackPressed(fromTop)) {
+            return true;
+          }
+        }
+      }
+    }
+    return super.onBackPressed(fromTop);
+  }*/
+
   @Override
   protected void handleLanguageDirectionChange () {
     super.handleLanguageDirectionChange();
