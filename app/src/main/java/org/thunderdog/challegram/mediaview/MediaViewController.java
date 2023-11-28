@@ -8656,11 +8656,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void setNewMessageSender (TdApi.Chat chat, TdApi.ChatMessageSender sender) {
-    tdlib().send(new TdApi.SetChatMessageSender(chat.id, sender.sender), tdlib.typedOkHandler(() -> {
-      if (senderSendIcon != null) {
-        senderSendIcon.update(chat.messageSenderId);
-      }
-    }));
+    tdlib().send(new TdApi.SetChatMessageSender(chat.id, sender.sender), tdlib.typedOkHandler());
   }
 
   private void setEmojiShown (boolean emojiShown) {
