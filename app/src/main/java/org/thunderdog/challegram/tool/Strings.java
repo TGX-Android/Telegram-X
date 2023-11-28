@@ -347,6 +347,25 @@ public class Strings {
     return b.toString();
   }
 
+  public static Uri forceProtocol (String url, String protocol) {
+    if (StringUtils.isEmpty(url))
+      return null;
+    try {
+      Uri uri = Uri.parse(url);
+      String scheme = uri.getScheme();
+      if (StringUtils.isEmpty(scheme)) {
+        return Uri.parse(protocol + "://" + url);
+      } else if (!scheme.equals(protocol)) {
+        return uri.buildUpon().scheme(protocol).build();
+      } else {
+        return uri;
+      }
+    } catch (Throwable t) {
+      Log.e("Unable to parse uri: %s", t, url);
+      return null;
+    }
+  }
+
   public static Uri wrapHttps (String url) {
     return wrapProtocol(url, "https");
   }

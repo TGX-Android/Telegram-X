@@ -41,7 +41,7 @@ public final class FoundUrls {
     if (foundUrls != null && !foundUrls.isEmpty()) {
       for (String url : foundUrls) {
         if (!url.matches("^[^/]+$")) {
-          uniqueUrls.add(unifyUrl(url));
+          uniqueUrls.add(url);
         }
       }
     }
@@ -53,11 +53,37 @@ public final class FoundUrls {
   }
 
   public boolean hasUrl (@NonNull String url) {
-    return !StringUtils.isEmpty(url) && set.contains(unifyUrl(url));
+    if (!StringUtils.isEmpty(url)) {
+      if (set.contains(url)) {
+        return true;
+      }
+      String unifiedUrl = unifyUrl(url);
+      if (set.contains(unifiedUrl)) {
+        return true;
+      }
+      for (String existingUrl : urls) {
+        if (unifiedUrl.equals(unifyUrl(existingUrl))) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   public int indexOfUrl (@NonNull String url) {
-    return ArrayUtils.indexOf(urls, unifyUrl(url));
+    int index = ArrayUtils.indexOf(urls, url);
+    if (index == -1) {
+      String unifiedUrl = unifyUrl(url);
+      int foundIndex = 0;
+      for (String existingUrl : urls) {
+        String unifiedExistingUrl = unifyUrl(existingUrl);
+        if (unifiedUrl.equals(unifiedExistingUrl)) {
+          return foundIndex;
+        }
+        foundIndex++;
+      }
+    }
+    return index;
   }
 
   private static FoundUrls emptyResult;
@@ -85,7 +111,7 @@ public final class FoundUrls {
           null;
     if (!StringUtils.isEmpty(specificUrl)) {
       // Make sure there is existing url
-      this.set.add(unifyUrl(specificUrl));
+      this.set.add(specificUrl);
     }
     this.urls = set.toArray(new String[0]);
   }
@@ -110,8 +136,8 @@ public final class FoundUrls {
     return Arrays.equals(this.urls, other.urls);
   }
 
-  public static String unifyUrl (@NonNull String url) {
-    Uri uri = Strings.wrapProtocol(url, "http");
+  private static String unifyUrl (@NonNull String url) {
+    Uri uri = Strings.forceProtocol(url, "https");
     if (uri != null) {
       String path = uri.getPath();
       if (path != null && path.matches("^/+$")) {
