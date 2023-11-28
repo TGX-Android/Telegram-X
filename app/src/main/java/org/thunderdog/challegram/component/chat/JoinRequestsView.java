@@ -26,10 +26,8 @@ import androidx.annotation.Nullable;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.AvatarPlaceholder;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
-import org.thunderdog.challegram.loader.ImageFile;
-import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
@@ -143,9 +141,7 @@ public class JoinRequestsView extends BaseView implements Destroyable, ComplexRe
       for (long userId : userIds) {
         UserEntry ue = new UserEntry(tdlib, userId);
         entries.add(ue);
-        if (ue.avatarFile != null) {
-          megaReceiver.getImageReceiver(userId).requestFile(ue.avatarFile);
-        }
+        megaReceiver.getAvatarReceiver(userId).requestUser(tdlib, ue.userId, AvatarReceiver.Options.NONE);
       }
       if (this.joinRequestEntries == null)
         this.joinRequestEntries = new ListAnimator<>(new SingleViewProvider(this));
@@ -203,17 +199,10 @@ public class JoinRequestsView extends BaseView implements Destroyable, ComplexRe
 
   private static class UserEntry {
     private final long userId;
-    private final ImageFile avatarFile;
-    private final AvatarPlaceholder avatarPlaceholder;
     private final Paint clearPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public UserEntry (Tdlib tdlib, long userId) {
       this.userId = userId;
-      this.avatarFile = tdlib.cache().userAvatar(userId);
-      if (this.avatarFile != null) {
-        this.avatarFile.setSize(Screen.dp(AVATAR_RADIUS) * 2);
-      }
-      this.avatarPlaceholder = tdlib.cache().userPlaceholder(userId, false, AVATAR_RADIUS, null);
 
       clearPaint.setColor(0);
       clearPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
@@ -241,7 +230,7 @@ public class JoinRequestsView extends BaseView implements Destroyable, ComplexRe
       if (alpha == 0f)
         return;
 
-      ImageReceiver receiver = avatarFile != null ? complexReceiver.getImageReceiver(userId) : null;
+      AvatarReceiver receiver = complexReceiver.getAvatarReceiver(userId);
       int radius = Screen.dp(AVATAR_RADIUS);
 
       //c.drawRect(cx - radius, cy - radius, cx + radius, cy + radius, Paints.fillingPaint(Theme.getColor(ColorId.textNegative)));
@@ -256,21 +245,17 @@ public class JoinRequestsView extends BaseView implements Destroyable, ComplexRe
         restoreToCount = -1;
       }
 
-      c.drawCircle(cx, cy, radius + Screen.dp(AVATAR_OUTLINE) * alpha * .5f, clearPaint);
+      if (alpha != 1f)
+        receiver.setPaintAlpha(receiver.getPaintAlpha() * alpha);
+      receiver.setBounds((int) (cx - radius), (int) (cy - radius), (int) (cx + radius), (int) (cy + radius));
 
-      if (receiver != null) {
-        if (alpha != 1f)
-          receiver.setPaintAlpha(receiver.getPaintAlpha() * alpha);
-        receiver.setBounds((int) (cx - radius), (int) (cy - radius), (int) (cx + radius), (int) (cy + radius));
-        if (receiver.needPlaceholder())
-          receiver.drawPlaceholderRounded(c, radius, ColorUtils.alphaColor(alpha, Theme.placeholderColor()));
-        receiver.setRadius(radius);
-        receiver.draw(c);
-        if (alpha != 1f)
-          receiver.restorePaintAlpha();
-      } else if (avatarPlaceholder != null) {
-        avatarPlaceholder.draw(c, cx, cy, alpha);
-      }
+      receiver.drawPlaceholderRounded(c, radius, Screen.dp(AVATAR_OUTLINE) * alpha * .5f, clearPaint);
+
+      if (receiver.needPlaceholder())
+        receiver.drawPlaceholderRounded(c, radius, ColorUtils.alphaColor(alpha, Theme.placeholderColor()));
+      receiver.draw(c);
+      if (alpha != 1f)
+        receiver.restorePaintAlpha();
 
       if (needRestore) {
         Views.restore(c, restoreToCount);

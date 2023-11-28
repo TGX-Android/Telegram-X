@@ -64,7 +64,7 @@ public class PushProcessor {
         TDLib.Tag.notifications(pushId, accountId, "Couldn't find account for receiverId: %d. Sending to all accounts, payload: %s, sentTime: %d", pushReceiverId, payload, sentTime);
       }
       return accountId;
-    } catch (Client.ExecutionError error) {
+    } catch (Client.ExecutionException error) {
       TDLib.Tag.notifications(pushId, TdlibAccount.NO_ID, "Couldn't fetch receiverId: %s, payload: %s. Sending to all instances.", TD.toErrorString(error.error), payload);
       return TdlibAccount.NO_ID;
     }

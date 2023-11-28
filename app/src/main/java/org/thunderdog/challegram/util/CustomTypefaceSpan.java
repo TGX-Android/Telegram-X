@@ -24,6 +24,7 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.component.chat.WallpaperView;
+import org.thunderdog.challegram.telegram.TdlibEntitySpan;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeDelegate;
@@ -35,7 +36,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.td.Td;
 
-public class CustomTypefaceSpan extends MetricAffectingSpan {
+public class CustomTypefaceSpan extends MetricAffectingSpan implements TdlibEntitySpan {
   private static final int FLAG_FAKE_BOLD = 1;
   private static final int FLAG_REMOVE_UNDERLINE = 1 << 1;
   private static final int FLAG_NO_BACKGROUND_TRANSPARENCY = 1 << 2;
@@ -140,7 +141,8 @@ public class CustomTypefaceSpan extends MetricAffectingSpan {
     return this;
   }
 
-  public CustomTypefaceSpan setEntityType (TdApi.TextEntityType type) {
+  @Override
+  public void setTextEntityType (TdApi.TextEntityType type) {
     this.type = type;
     if (type != null) {
       setNeedUnderline(Td.isUnderline(type));
@@ -151,7 +153,11 @@ public class CustomTypefaceSpan extends MetricAffectingSpan {
       setNeedStrikethrough(false);
       setNeedRevealOnTap(false);
     }
-    return this;
+  }
+
+  @Override
+  public TdApi.TextEntityType getTextEntityType () {
+    return type;
   }
 
   public CustomTypefaceSpan setTransparencyColorId (@ColorId int transparentColorId, WallpaperView wallpaperView) {
@@ -167,10 +173,6 @@ public class CustomTypefaceSpan extends MetricAffectingSpan {
 
   public Object getTag () {
     return tag;
-  }
-
-  public TdApi.TextEntityType getEntityType () {
-    return type;
   }
 
   @Nullable

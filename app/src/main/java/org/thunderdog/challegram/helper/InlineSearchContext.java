@@ -63,14 +63,9 @@ import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
 public class InlineSearchContext implements LocationHelper.LocationChangeListener, InlineResultsWrap.LoadMoreCallback {
-  public static final int WARNING_OK = 0;
-  public static final int WARNING_CONFIRM = 1;
-  public static final int WARNING_BLOCK = 2;
-
   public interface Callback {
     long provideInlineSearchChatId ();
     TdApi.Chat provideInlineSearchChat ();
-    TdApi.WebPage provideExistingWebPage (TdApi.FormattedText currentText);
     long provideInlineSearchChatUserId ();
     boolean isDisplayingItems ();
     void updateInlineMode (boolean isInInlineMode, boolean isInProgress);
@@ -79,14 +74,13 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     void addInlineResults (ArrayList<InlineResult<?>> items);
     void hideInlineResults ();
     void showInlineStickers (ArrayList<TGStickerObj> stickers, String foundByEmoji, boolean isEmoji, boolean isMore);
-    boolean needsLinkPreview ();
-    boolean showLinkPreview (@Nullable String link, @Nullable TdApi.WebPage webPage);
+
+    boolean enableLinkPreview ();
+    void showLinkPreview (@Nullable FoundUrls foundUrls);
 
     boolean needsInlineBots ();
 
     TdApi.FormattedText getOutputText (boolean applyMarkdown);
-
-    int showLinkPreviewWarning (int contextId, @Nullable String link);
   }
 
   public interface CommandListProvider {
@@ -125,7 +119,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
   private boolean canHandlePositionChange;
   private int lastHandledPosition;
   private int lastKnownCursorPosition;
-  private ViewController<?> boundController;
+  private final ViewController<?> boundController;
 
   public InlineSearchContext (BaseActivity context, Tdlib tdlib, @NonNull Callback callback, ViewController<?> boundController) {
     this.context = context;
@@ -262,7 +256,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
       }
     }
 
-    processLinkPreview(probablyHasWebPagePreview ? newText : "");
+    processLinkPreview(probablyHasWebPagePreview);
   }
 
   // Common UI
@@ -1326,96 +1320,49 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
 
   // Links processor
 
-  private final ArrayList<String> lastLinks = new ArrayList<>(5);
-  private final ArrayList<String> currentLinks = new ArrayList<>(5);
+  private FoundUrls lastFoundUrls;
   private int linkContextId;
 
-  private void processLinkPreview (String input) {
-    currentLinks.clear();
+  private void processLinkPreview (boolean allowLinkPreview) {
+    allowLinkPreview = allowLinkPreview && callback.enableLinkPreview();
 
-    if (!StringUtils.isEmpty(input)) {
-      List<String> links = TD.findUrls(callback.getOutputText(true));
-      if (links != null && !links.isEmpty()) {
-        currentLinks.addAll(links);
-      }
+    boolean isPrivacyCritical = ChatId.isSecret(callback.provideInlineSearchChatId());
+    boolean needPrivacyPrompt = isPrivacyCritical && Settings.instance().needTutorial(Settings.TUTORIAL_SECRET_LINK_PREVIEWS);
+    if (allowLinkPreview && isPrivacyCritical && !needPrivacyPrompt && !Settings.instance().needSecretLinkPreviews()) {
+      // As an optimization, do not look up for any URLs at all in secret chats when link previews are forbidden.
+      allowLinkPreview = false;
     }
 
-    int size = currentLinks.size();
-    if (lastLinks.size() == size) {
-      if (size == 0) {
-        return;
-      }
-      boolean changed = false;
-      int j = 0;
-      for (String str : lastLinks) {
-        if (!currentLinks.get(j++).equals(str)) {
-          changed = true;
-          break;
-        }
-      }
-      if (!changed) {
-        return;
-      }
-    }
+    TdApi.FormattedText formattedText = allowLinkPreview ? callback.getOutputText(true) : null;
+    FoundUrls foundUrls = !Td.isEmpty(formattedText) ? new FoundUrls(formattedText) : null;
 
-    lastLinks.clear();
-    lastLinks.addAll(currentLinks);
+    boolean wasEmpty = (lastFoundUrls == null || lastFoundUrls.isEmpty());
+    boolean nowEmpty = foundUrls == null || foundUrls.isEmpty();
+
+    if (wasEmpty == nowEmpty && (foundUrls == null || foundUrls.equals(lastFoundUrls))) {
+      // Nothing changed
+      return;
+    }
 
     final int contextId = ++linkContextId;
-    if (size == 0 || !callback.needsLinkPreview()) {
-      closeLinkPreview();
-    } else {
-      processLinkPreview(contextId, lastLinks.get(0));
-    }
-  }
+    this.lastFoundUrls = foundUrls;
 
-  public final void processLinkPreview (final int contextId, final String link) {
-    int result = WARNING_BLOCK;
-    if (!StringUtils.isEmpty(link)) {
-      result = callback.showLinkPreviewWarning(contextId, link);
+    if (nowEmpty) {
+      callback.showLinkPreview(null);
+      return;
     }
-    if (result != WARNING_CONFIRM && callback.showLinkPreview(link, null)) {
-      switch (result) {
-        case WARNING_BLOCK: {
-          dispatchLinkPreview(contextId, null, null);
-          break;
+
+    if (needPrivacyPrompt) {
+      callback.showLinkPreview(null);
+      boundController.openSecretLinkPreviewAlert(isAccepted -> {
+        if (linkContextId == contextId && isAccepted) {
+          callback.showLinkPreview(foundUrls);
         }
-        case WARNING_OK: {
-          TdApi.WebPage webPage = callback.provideExistingWebPage(callback.getOutputText(false));
-          if (webPage != null) {
-            dispatchLinkPreview(contextId, link, webPage);
-            return;
-          }
-          UI.post(() -> {
-            if (linkContextId == contextId) {
-              tdlib.send(new TdApi.GetWebPagePreview(callback.getOutputText(true)), (webPagePreview, error) -> {
-                if (error != null) {
-                  if (error.code != 404) { // 404 is "Web page is empty". Maybe something interesting
-                    Log.w("Cannot load link preview: %s", TD.toErrorString(error));
-                  }
-                  dispatchLinkPreview(contextId, null, null);
-                } else {
-                  dispatchLinkPreview(contextId, link, webPagePreview);
-                }
-              });
-            }
-          }, 400l);
-          break;
-        }
-      }
+      });
+      return;
     }
-  }
 
-  private void dispatchLinkPreview (final int contextId, final @Nullable String link, final @Nullable TdApi.WebPage webPage) {
-    UI.post(() -> {
-      if (linkContextId == contextId) {
-        callback.showLinkPreview(link, webPage);
-      }
-    });
-  }
-
-  private void closeLinkPreview () {
-    callback.showLinkPreview(null, null);
+    callback.showLinkPreview(foundUrls);
   }
 
   private boolean isInSelfChat () {

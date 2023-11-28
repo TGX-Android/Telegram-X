@@ -29,7 +29,8 @@ import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageFileLocal;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -45,7 +46,7 @@ import me.vkryl.core.lambda.Destroyable;
 public class DetachedChatHeaderView extends SparseDrawableView implements Destroyable {
   private final DoubleImageReceiver avatar = new DoubleImageReceiver(this, 0);
 
-  private int avatarPlaceholderColor;
+  private TdlibAccentColor accentColor;
   private Drawable avatarPlaceholderDrawable;
 
   private final Drawable topShadow;
@@ -87,6 +88,7 @@ public class DetachedChatHeaderView extends SparseDrawableView implements Destro
       .clipTextArea()
       .allBold()
       .build();
+    accentColor = tdlib.chatAccentColor(linkInfo.chatId);
 
     subtitle = new Text.Builder(Lang.pluralMembers(linkInfo.memberCount, 0, isChannel).toString(), getMeasuredWidth(), Paints.robotoStyleProvider(14), TextColorSets.WHITE).singleLine().build();
 
@@ -107,11 +109,9 @@ public class DetachedChatHeaderView extends SparseDrawableView implements Destro
       fileNetwork.setScaleType(ImageFile.CENTER_CROP);
 
       avatarPlaceholderDrawable = null;
-      avatarPlaceholderColor = 0;
       avatar.requestFile(file, fileNetwork);
     } else {
-      avatarPlaceholderDrawable = getSparseDrawable(isChannel ? R.drawable.baseline_bullhorn_56 : R.drawable.baseline_group_56, 0);
-      avatarPlaceholderColor = TD.getAvatarColorId(linkInfo.chatId, tdlib.myUserId());
+      avatarPlaceholderDrawable = getSparseDrawable(isChannel ? R.drawable.baseline_bullhorn_56 : R.drawable.baseline_group_56, ColorId.NONE);
       avatar.clear();
     }
   }
@@ -135,7 +135,7 @@ public class DetachedChatHeaderView extends SparseDrawableView implements Destro
       int cx = avatar.centerX();
       int cy = avatar.centerY();
 
-      canvas.drawColor(Theme.getColor(avatarPlaceholderColor));
+      canvas.drawColor(accentColor.getPrimaryColor());
       float placeholderScale = (avatar.getWidth() / 2f / ((float) getMeasuredWidth() / 2f));
       canvas.save();
       canvas.scale(placeholderScale, placeholderScale, cx, cy);

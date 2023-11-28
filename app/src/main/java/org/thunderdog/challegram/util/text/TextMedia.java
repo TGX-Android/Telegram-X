@@ -32,6 +32,7 @@ import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibEmojiManager;
 import org.thunderdog.challegram.telegram.TdlibThread;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
@@ -48,11 +49,11 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
   private final Text source;
 
   final List<TextPart> attachedToParts = new ArrayList<>();
-  private int displayMediaKeyOffset = -1;
+  private long displayMediaKeyOffset = -1;
 
   private final Tdlib tdlib;
   public final String keyId;
-  public final int id;
+  public final long id;
   private final int width, height;
   private boolean isDestroyed;
 
@@ -65,7 +66,7 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
   private ImageFile imageFile;
   private GifFile gifFile;
 
-  public TextMedia (Text source, Tdlib tdlib, String keyId, int id, int size, long customEmojiId) {
+  public TextMedia (Text source, Tdlib tdlib, String keyId, long id, int size, long customEmojiId) {
     if (tdlib == null)
       throw new IllegalArgumentException();
     this.source = source;
@@ -81,7 +82,7 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
     }
   }
 
-  public TextMedia (Text source, Tdlib tdlib, String keyId, int id, TdApi.RichTextIcon icon) {
+  public TextMedia (Text source, Tdlib tdlib, String keyId, long id, TdApi.RichTextIcon icon) {
     if (tdlib == null)
       throw new IllegalArgumentException();
     this.source = source;
@@ -249,11 +250,11 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
     }
   }
 
-  void setDisplayMediaKeyOffset (int keyOffset) {
+  void setDisplayMediaKeyOffset (long keyOffset) {
     this.displayMediaKeyOffset = keyOffset;
   }
 
-  int getDisplayMediaKey () {
+  long getDisplayMediaKey () {
     if (displayMediaKeyOffset != -1) {
       return displayMediaKeyOffset + id;
     }
@@ -261,7 +262,7 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
   }
 
   public void requestFiles (ComplexReceiver receiver) {
-    int displayMediaKey = getDisplayMediaKey();
+    long displayMediaKey = getDisplayMediaKey();
     if (displayMediaKey == -1)
       throw new IllegalStateException();
     if (isCustomEmoji() && customEmoji == null && !customEmojiRequested) {
@@ -277,7 +278,7 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
     }
   }
 
-  public void draw (Canvas c, ComplexReceiver receiver, int left, int top, int right, int bottom, float alpha, int displayMediaKey) {
+  public void draw (Canvas c, ComplexReceiver receiver, int left, int top, int right, int bottom, float alpha, long displayMediaKey) {
     if (isCustomEmoji() && customEmoji == null) {
       if (BuildConfig.DEBUG) {
         c.drawCircle(left + (right - left) / 2f, top + (bottom - top) / 2f, height / 2f, Paints.fillingPaint(ColorUtils.alphaColor(alpha, 0xffff0000)));
@@ -314,12 +315,8 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
     DoubleImageReceiver preview = content == null || content.needPlaceholder() ? receiver.getPreviewReceiver(displayMediaKey) : null;
     if (preview != null) {
       if (needRepainting) {
-        int color = source.getMediaTextColorOrId();
-        if (source.getMediaTextColorIsId()) {
-          preview.setThemedPorterDuffColorId(color);
-        } else {
-          preview.setPorterDuffColorFilter(color);
-        }
+        long complexColor = source.getMediaTextComplexColor();
+        Theme.applyComplexColor(preview, complexColor);
       } else {
         preview.disablePorterDuffColorFilter();
       }
@@ -333,12 +330,8 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
     }
     if (content != null) {
       if (needRepainting) {
-        int color = source.getMediaTextColorOrId();
-        if (source.getMediaTextColorIsId()) {
-          content.setThemedPorterDuffColorId(color);
-        } else {
-          content.setPorterDuffColorFilter(color);
-        }
+        long complexColor = source.getMediaTextComplexColor();
+        Theme.applyComplexColor(content, complexColor);
       } else {
         content.disablePorterDuffColorFilter();
       }

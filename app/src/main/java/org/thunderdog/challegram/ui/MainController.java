@@ -1697,7 +1697,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
       // If sendingText still unused, then add it to the beginning of send queue
       if (!StringUtils.isEmpty(sendingText)) {
-        out.addAll(0, TD.explodeText(new TdApi.InputMessageText(new TdApi.FormattedText(sendingText, null), false, false), tdlib.maxMessageTextLength()));
+        out.addAll(0, TD.explodeText(new TdApi.InputMessageText(new TdApi.FormattedText(sendingText, null), null, false), tdlib.maxMessageTextLength()));
       }
     }
     shareContents(tdlib, type, out, false);
@@ -1735,7 +1735,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     }
     // If sendingText still unused, then add it to the beginning of send queue
     if (!StringUtils.isEmpty(sendingText)) {
-      out.addAll(0, TD.explodeText(new TdApi.InputMessageText(new TdApi.FormattedText(sendingText, null), false, false), tdlib.maxMessageTextLength()));
+      out.addAll(0, TD.explodeText(new TdApi.InputMessageText(new TdApi.FormattedText(sendingText, null), null, false), tdlib.maxMessageTextLength()));
     }
 
     shareContents(tdlib, type, out, true);
@@ -1992,17 +1992,13 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     options.item(new OptionItem(R.id.btn_chatFolders, Lang.getString(R.string.EditFolders), OPTION_COLOR_NORMAL, R.drawable.baseline_edit_folders_24));
     showOptions(options.build(), (v, id) -> {
       if (id == R.id.btn_editFolder) {
-        tdlib.send(new TdApi.GetChatFolder(chatFolderId), (result) -> runOnUiThreadOptional(() -> {
-          switch (result.getConstructor()) {
-            case TdApi.ChatFolder.CONSTRUCTOR:
-              TdApi.ChatFolder chatFolder = (TdApi.ChatFolder) result;
-              EditChatFolderController controller = new EditChatFolderController(context, tdlib);
-              controller.setArguments(new EditChatFolderController.Arguments(chatFolderId, chatFolder));
-              navigateTo(controller);
-              break;
-            case TdApi.Error.CONSTRUCTOR:
-              UI.showError(result);
-              break;
+        tdlib.send(new TdApi.GetChatFolder(chatFolderId), (chatFolder, error) -> runOnUiThreadOptional(() -> {
+          if (error != null) {
+            UI.showError(error);
+          } else {
+            EditChatFolderController controller = new EditChatFolderController(context, tdlib);
+            controller.setArguments(new EditChatFolderController.Arguments(chatFolderId, chatFolder));
+            navigateTo(controller);
           }
         }));
       } else if (id == R.id.btn_hideFolder) {
@@ -2017,43 +2013,35 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
             .hideDelayed(3500, TimeUnit.MILLISECONDS);
         }
       } else if (id == R.id.btn_folderIncludeChats) {
-        tdlib.send(new TdApi.GetChatFolder(chatFolderId), (result) -> runOnUiThreadOptional(() -> {
-          switch (result.getConstructor()) {
-            case TdApi.ChatFolder.CONSTRUCTOR:
-              TdApi.ChatFolder chatFolder = (TdApi.ChatFolder) result;
-              SelectChatsController controller = new SelectChatsController(context, tdlib);
-              controller.setArguments(SelectChatsController.Arguments.includedChats(chatFolderId, chatFolder));
-              navigateTo(controller);
-              break;
-            case TdApi.Error.CONSTRUCTOR:
-              UI.showError(result);
-              break;
+        tdlib.send(new TdApi.GetChatFolder(chatFolderId), (chatFolder, error) -> runOnUiThreadOptional(() -> {
+          if (error != null) {
+            UI.showError(error);
+          } else {
+            SelectChatsController controller = new SelectChatsController(context, tdlib);
+            controller.setArguments(SelectChatsController.Arguments.includedChats(chatFolderId, chatFolder));
+            navigateTo(controller);
           }
         }));
       } else if (id == R.id.btn_changeFolderIcon) {
         ChatFolderIconSelector.show(this, icon -> {
-          tdlib.send(new TdApi.GetChatFolder(chatFolderId), (result) -> {
-            switch (result.getConstructor()) {
-              case TdApi.ChatFolder.CONSTRUCTOR:
-                TdApi.ChatFolder chatFolder = (TdApi.ChatFolder) result;
-                if (!Td.equalsTo(chatFolder.icon, icon)) {
-                  chatFolder.icon = icon;
-                  tdlib.send(new TdApi.EditChatFolder(chatFolderId, chatFolder), (chatFolderInfo, error) -> {
-                    if (error != null) {
-                      UI.showError(error);
-                    }
-                  });
-                }
-                break;
-              case TdApi.Error.CONSTRUCTOR:
-                UI.showError(result);
-                break;
+          tdlib.send(new TdApi.GetChatFolder(chatFolderId), (chatFolder, getError) -> {
+            if (getError != null) {
+              UI.showError(getError);
+            } else {
+              if (!Td.equalsTo(chatFolder.icon, icon)) {
+                chatFolder.icon = icon;
+                tdlib.send(new TdApi.EditChatFolder(chatFolderId, chatFolder), (chatFolderInfo, editError) -> {
+                  if (editError != null) {
+                    UI.showError(editError);
+                  }
+                });
+              }
             }
           });
         });
       } else if (id == R.id.btn_removeFolder) {
         showConfirm(Lang.getString(R.string.RemoveFolderConfirm), Lang.getString(R.string.Remove), R.drawable.baseline_delete_24, OPTION_COLOR_RED, () -> {
-          tdlib.send(new TdApi.DeleteChatFolder(chatFolderId, null), tdlib.okHandler());
+          tdlib.send(new TdApi.DeleteChatFolder(chatFolderId, null), tdlib.typedOkHandler());
         });
       } else if (id == R.id.btn_chatFolders) {
         navigateTo(new SettingsFoldersController(context, tdlib));

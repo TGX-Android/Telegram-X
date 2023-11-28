@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.component.chat;
 
-import android.app.AlertDialog;
 import android.content.ClipDescription;
 import android.content.Context;
 import android.graphics.BitmapFactory;
@@ -34,7 +33,6 @@ import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.text.style.CharacterStyle;
 import android.text.style.StyleSpan;
 import android.text.style.URLSpan;
 import android.util.TypedValue;
@@ -86,6 +84,7 @@ import org.thunderdog.challegram.emoji.EmojiSpan;
 import org.thunderdog.challegram.emoji.EmojiUpdater;
 import org.thunderdog.challegram.emoji.PreserveCustomEmojiFilter;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
+import org.thunderdog.challegram.helper.FoundUrls;
 import org.thunderdog.challegram.helper.InlineSearchContext;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.navigation.LocaleChanger;
@@ -436,9 +435,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     TextSelection selection = getTextSelection();
     if (selection != null && !selection.isEmpty()) {
       Editable editable = getText();
-      CharacterStyle[] spans = editable.getSpans(selection.start, selection.end, CharacterStyle.class);
+      Object[] spans = editable.getSpans(selection.start, selection.end, Object.class);
       if (spans != null) {
-        for (CharacterStyle span : spans) {
+        for (Object span : spans) {
           if (span instanceof NoCopySpan || span instanceof EmojiSpan || isComposingSpan(editable, span) || !TD.canConvertToEntityType(span)) {
             continue;
           }
@@ -455,10 +454,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   private void clearSpans (int start, int end, @Nullable TdApi.TextEntityType typeForRemove) {
     Editable editable = getText();
-    CharacterStyle[] spans = editable.getSpans(start, end, CharacterStyle.class);
+    Object[] spans = editable.getSpans(start, end, Object.class);
     boolean updated = false;
     if (spans != null) {
-      for (CharacterStyle existingSpan : spans) {
+      for (Object existingSpan : spans) {
         if (existingSpan instanceof NoCopySpan || existingSpan instanceof EmojiSpan || isComposingSpan(editable, existingSpan) || !TD.canConvertToEntityType(existingSpan)) {
           continue;
         }
@@ -522,12 +521,12 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     if (end - start <= 0 || !TD.canConvertToSpan(newType)) {
       return false;
     }
-    CharacterStyle newSpan = TD.toSpan(newType);
+    Object newSpan = TD.toSpan(newType);
     Editable editable = getText();
-    CharacterStyle[] existingSpansArray = editable.getSpans(start, end, CharacterStyle.class);
-    List<CharacterStyle> existingSpans = null;
+    Object[] existingSpansArray = editable.getSpans(start, end, Object.class);
+    List<Object> existingSpans = null;
     if (existingSpansArray != null && existingSpansArray.length > 0) {
-      for (CharacterStyle existingSpan : existingSpansArray) {
+      for (Object existingSpan : existingSpansArray) {
         if (existingSpan instanceof NoCopySpan || isComposingSpan(editable, existingSpan) || !TD.canConvertToEntityType(existingSpan)) {
           continue;
         }
@@ -592,7 +591,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       return true;
     }
     boolean canBeNested = Td.canBeNested(newType);
-    for (CharacterStyle existingSpan : existingSpans) {
+    for (Object existingSpan : existingSpans) {
       int existingSpanStart = editable.getSpanStart(existingSpan);
       int existingSpanEnd = editable.getSpanEnd(existingSpan);
       TdApi.TextEntityType[] existingTypes = TD.toEntityType(existingSpan);
@@ -921,18 +920,20 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     return controller != null ? controller.getChatId() : inputListener != null && inputListener.canSearchInline(this) ? inputListener.provideInlineSearchChatId(this) : 0;
   }
 
-  @Override
-  public TdApi.WebPage provideExistingWebPage (TdApi.FormattedText currentText) {
-    return controller != null ? controller.getEditingWebPage(currentText) : null;
-  }
-
   private boolean isCaptionEditing () {
     return controller == null || controller.isEditingCaption();
   }
 
   @Override
-  public boolean needsLinkPreview () {
+  public boolean enableLinkPreview () {
     return !isCaptionEditing() && tdlib.canAddWebPagePreviews(controller.getChat());
+  }
+
+  @Override
+  public void showLinkPreview (@Nullable FoundUrls foundUrls) {
+    if (controller != null) {
+      controller.showLinkPreview(foundUrls);
+    }
   }
 
   @Override
@@ -1011,53 +1012,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     } else {
       ((BaseActivity) getContext()).showInlineResults(controller, tdlib, null, false, null);
     }
-  }
-
-  @Override
-  public boolean showLinkPreview (@Nullable String link, @Nullable TdApi.WebPage webPage) {
-    if (controller == null) {
-      return false;
-    }
-    if (ignoreFirstLinkPreview) {
-      ignoreFirstLinkPreview = false;
-      controller.ignoreLinkPreview(link, webPage);
-      return false;
-    } else {
-      controller.showLinkPreview(link, webPage);
-      return true;
-    }
-  }
-
-  private AlertDialog linkWarningDialog;
-
-  @Override
-  public int showLinkPreviewWarning (final int contextId, @Nullable final String link) {
-    if (controller == null || !controller.isSecretChat()) {
-      return InlineSearchContext.WARNING_OK;
-    }
-    if (Settings.instance().needTutorial(Settings.TUTORIAL_SECRET_LINK_PREVIEWS)) {
-      if (linkWarningDialog == null || !linkWarningDialog.isShowing()) {
-        AlertDialog.Builder b = new AlertDialog.Builder(controller.context(), Theme.dialogTheme());
-        b.setTitle(Lang.getString(R.string.AppName));
-        b.setMessage(Lang.getString(R.string.SecretLinkPreviewAlert));
-        b.setPositiveButton(Lang.getString(R.string.SecretLinkPreviewEnable), (dialog, which) -> {
-          linkWarningDialog = null;
-          Settings.instance().markTutorialAsComplete(Settings.TUTORIAL_SECRET_LINK_PREVIEWS);
-          Settings.instance().setUseSecretLinkPreviews(true);
-          inlineContext.forceCheck();
-        });
-        b.setNegativeButton(Lang.getString(R.string.SecretLinkPreviewDisable), (dialog, which) -> {
-          linkWarningDialog = null;
-          Settings.instance().markTutorialAsComplete(Settings.TUTORIAL_SECRET_LINK_PREVIEWS);
-          Settings.instance().setUseSecretLinkPreviews(false);
-          inlineContext.forceCheck();
-        });
-        b.setCancelable(false);
-        linkWarningDialog = controller.showAlert(b);
-      }
-      return InlineSearchContext.WARNING_CONFIRM;
-    }
-    return Settings.instance().needSecretLinkPreviews() ? InlineSearchContext.WARNING_OK : InlineSearchContext.WARNING_BLOCK;
   }
 
   public void setIsInEditMessageMode (boolean isInEditMessageMode, String futureText) {
@@ -1164,7 +1118,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     setSelection(start + s.length());
   }
 
-  private boolean textChangedSinceChatOpened, ignoreFirstLinkPreview;
+  private boolean textChangedSinceChatOpened;
 
   public void setChat (TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable String customInputField, boolean isSilent) {
     textChangedSinceChatOpened = false;
@@ -1232,10 +1186,8 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     if (draftContent != null && draftContent.getConstructor() == TdApi.InputMessageText.CONSTRUCTOR) {
       TdApi.InputMessageText textDraft = (TdApi.InputMessageText) draftContent;
       draft = TD.toCharSequence(textDraft.text);
-      ignoreFirstLinkPreview = textDraft.disableWebPagePreview;
     } else {
       draft = "";
-      ignoreFirstLinkPreview = false;
     }
     String current = getInput().trim();
     controller.setInputVisible(true, current.length() > 0);
@@ -1494,7 +1446,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         Uri uri = inputContentInfo.getContentUri();
         long timestamp = System.currentTimeMillis();
         long messageThreadId = controller.getMessageThreadId();
-        TdApi.MessageReplyTo replyTo = controller.obtainReplyTo();
+        TdApi.InputMessageReplyTo replyTo = controller.obtainReplyTo();
         boolean silent = controller.obtainSilentMode();
         boolean needMenu = controller.areScheduledOnly();
 
@@ -1619,12 +1571,12 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   public final TdApi.FormattedText getOutputText (boolean applyMarkdown) {
     SpannableStringBuilder text = new SpannableStringBuilder(getText());
     BaseInputConnection.removeComposingSpans(text);
-    TdApi.FormattedText result = new TdApi.FormattedText(text.toString(), TD.toEntities(text, false));
+    TdApi.FormattedText formattedText = new TdApi.FormattedText(text.toString(), TD.toEntities(text, false));
     if (applyMarkdown) {
       //noinspection UnsafeOptInUsageError
-      Td.parseMarkdown(result);
+      Td.parseMarkdown(formattedText);
     }
-    return result;
+    return formattedText;
   }
 
   public final boolean hasOnlyPremiumFeatures () {

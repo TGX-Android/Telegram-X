@@ -26,6 +26,7 @@ import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.TDLib;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.tool.UI;
@@ -422,7 +423,7 @@ public class TdlibMessageViewer {
       if (!state.refreshMessageIds.isEmpty() && !viewport.isDestroyed()) {
         if (viewport.needIgnore()) {
           state.awaitingIgnoreLocksForRefresh = true;
-          if (BuildConfig.DEBUG) {
+          if (Config.DEBUG_VIEW_MESSAGES) {
             UI.showToast("Scheduling views refresh until lock changes", Toast.LENGTH_SHORT);
           }
           return;
@@ -430,12 +431,12 @@ public class TdlibMessageViewer {
         if (viewport.activity != null && viewport.activity.getActivityState() != UI.State.RESUMED) {
           state.awaitingUiResumeForRefresh = true;
           viewport.activity.addSimpleStateListener(activityListener);
-          if (BuildConfig.DEBUG) {
+          if (Config.DEBUG_VIEW_MESSAGES) {
             UI.showToast("Scheduling views refresh until activity resume", Toast.LENGTH_SHORT);
           }
           return;
         }
-        if (BuildConfig.DEBUG) {
+        if (Config.DEBUG_VIEW_MESSAGES) {
           UI.showToast("refresh views for " + state.refreshMessageIds.size() + " message(s), byTimeout: " + byTimeout, Toast.LENGTH_SHORT);
         }
         viewport.refreshMessageInteractionInfo(chatId, state.refreshMessageIds.toArray(), success ->

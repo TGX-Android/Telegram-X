@@ -21,6 +21,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.Receiver;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.util.text.Text;
@@ -30,7 +31,7 @@ public class TGSourceUser extends TGSource implements TdlibCache.UserDataChangeL
   private final long senderUserId;
   private TdApi.User user;
 
-  public TGSourceUser (TGMessage msg, TdApi.MessageForwardOriginUser info) {
+  public TGSourceUser (TGMessage msg, TdApi.MessageOriginUser info) {
     super(msg);
     this.senderUserId = info.senderUserId;
   }
@@ -67,11 +68,9 @@ public class TGSourceUser extends TGSource implements TdlibCache.UserDataChangeL
   @Override
   public void onUserUpdated (TdApi.User user) {
     this.user = user;
-    msg.tdlib().ui().post(() -> {
-      if (!msg.isDestroyed()) {
-        msg.rebuildForward();
-        msg.postInvalidate();
-      }
+    msg.runOnUiThreadOptional(() -> {
+      msg.rebuildForward();
+      msg.postInvalidate();
     });
   }
 
@@ -85,8 +84,8 @@ public class TGSourceUser extends TGSource implements TdlibCache.UserDataChangeL
   }
 
   @Override
-  public int getAuthorNameColorId () {
-    return TD.getNameColorId(msg.tdlib.cache().userAvatarColorId(senderUserId));
+  public TdlibAccentColor getAuthorAccentColor () {
+    return msg.tdlib.cache().userAccentColor(senderUserId);
   }
 
   @Override

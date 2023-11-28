@@ -25,8 +25,8 @@ import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibCache;
-import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -44,9 +44,8 @@ public class TGMessageContact extends TGMessage implements TdlibCache.UserDataCh
   private TdApi.User user;
 
   private ImageFile avatar;
-  private @ColorId
-  int avatarColorId;
-  private Letters letters;
+  private final TdlibAccentColor accentColor;
+  private final Letters letters;
 
   private String tName;
   private String tPhone;
@@ -70,7 +69,10 @@ public class TGMessageContact extends TGMessage implements TdlibCache.UserDataCh
 
     if (contact.userId != 0) {
       this.user = tdlib.cache().user(contact.userId);
+      this.accentColor = tdlib.cache().userAccentColor(contact.userId);
       tdlib.cache().addUserDataListener(contact.userId, this);
+    } else {
+      this.accentColor = tdlib.accentColorForString(phone);
     }
   }
 
@@ -117,7 +119,6 @@ public class TGMessageContact extends TGMessage implements TdlibCache.UserDataCh
   private void buildAvatar () {
     if (user == null || TD.isPhotoEmpty(user.profilePhoto)) {
       avatar = null;
-      avatarColorId = TD.getAvatarColorId(TD.isUserDeleted(user) ? -1 : userId, tdlib.myUserId());
     } else {
       avatar = new ImageFile(tdlib, user.profilePhoto.small);
       avatar.setSize(avatarSize);
@@ -132,8 +133,8 @@ public class TGMessageContact extends TGMessage implements TdlibCache.UserDataCh
     }
     startY += Screen.dp(1f);
     if (avatar == null) {
-      c.drawCircle(startX + avatarRadius, startY + avatarRadius, avatarRadius, Paints.fillingPaint(Theme.getColor(avatarColorId)));
-      Paints.drawLetters(c, letters, startX + avatarRadius - (int) (lettersWidth / 2f), startY + lettersTop, LETTERS_SIZE);
+      c.drawCircle(startX + avatarRadius, startY + avatarRadius, avatarRadius, Paints.fillingPaint(accentColor.getPrimaryColor()));
+      c.drawText(letters.text, startX + avatarRadius - (int) (lettersWidth / 2f), startY + lettersTop, Paints.getMediumTextPaint(LETTERS_SIZE, accentColor.getPrimaryContentColor(), letters.needFakeBold));
     } else {
       receiver.setBounds(startX, startY, startX + avatarSize, startY + avatarSize);
       if (receiver.needPlaceholder()) {

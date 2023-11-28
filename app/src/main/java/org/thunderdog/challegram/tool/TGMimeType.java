@@ -34,7 +34,7 @@ public class TGMimeType {
        if (!StringUtils.isEmpty(mimeType.text)) {
          return mimeType.text;
        }
-     } catch (Client.ExecutionError ignored) { }
+     } catch (Client.ExecutionException ignored) { }
      if ("heic".equals(extension)) {
        return "image/heic";
      }
@@ -74,7 +74,7 @@ public class TGMimeType {
       if (!StringUtils.isEmpty(extension.text)) {
         return extension.text;
       }
-    } catch (Client.ExecutionError ignored) { }
+    } catch (Client.ExecutionException ignored) { }
     if ("image/heic".equals(mimeType)) {
       return "heic";
     }

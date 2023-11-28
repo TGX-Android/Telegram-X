@@ -10,6 +10,7 @@ import org.thunderdog.challegram.util.TranslationCounterDrawable;
 import java.util.HashMap;
 
 import me.vkryl.core.StringUtils;
+import me.vkryl.td.Td;
 
 public final class TranslationsManager {
 
@@ -52,11 +53,28 @@ public final class TranslationsManager {
     requestTranslation(null);
   }
 
+  private int lastDispatchedStatus = TranslationCounterDrawable.TRANSLATE_STATUS_DEFAULT;
+  private TdApi.FormattedText lastDispatchedResult;
+
+  private void dispatchStatus (int status, boolean animated) {
+    if (lastDispatchedStatus != status) {
+      this.lastDispatchedStatus = status;
+      statusDelegate.setTranslatedStatus(status, animated);
+    }
+  }
+
+  private void dispatchResult (int status, @Nullable TdApi.FormattedText result, boolean animated) {
+    dispatchStatus(status, animated);
+    if (!Td.equalsTo(lastDispatchedResult, result)) {
+      this.lastDispatchedResult = result;
+      resultDelegate.setTranslationResult(result);
+    }
+  }
+
   public void requestTranslation (String language) {
     currentTranslatedLanguage = language;
     if (language == null || StringUtils.equalsOrBothEmpty(language, message.getOriginalMessageLanguage())) {
-      statusDelegate.setTranslatedStatus(TranslationCounterDrawable.TRANSLATE_STATUS_DEFAULT, true);
-      resultDelegate.setTranslationResult(null);
+      dispatchResult(TranslationCounterDrawable.TRANSLATE_STATUS_DEFAULT, null, true);
       currentTranslatedLanguage = null;
       return;
     }
@@ -70,23 +88,21 @@ public final class TranslationsManager {
 
     TdApi.FormattedText cachedText = getCachedTextTranslation(textToTranslate.text, language);
     if (cachedText != null) {
-      statusDelegate.setTranslatedStatus(TranslationCounterDrawable.TRANSLATE_STATUS_SUCCESS, true);
-      resultDelegate.setTranslationResult(cachedText);
+      dispatchResult(TranslationCounterDrawable.TRANSLATE_STATUS_SUCCESS, cachedText, true);
       return;
     }
 
-    statusDelegate.setTranslatedStatus(TranslationCounterDrawable.TRANSLATE_STATUS_LOADING, true);
+    dispatchStatus(TranslationCounterDrawable.TRANSLATE_STATUS_LOADING, true);
     tdlib.ui().post(() -> requestTranslationImpl(textToTranslate, language, object -> tdlib.ui().post(() -> {
       if (object instanceof TdApi.FormattedText) {
         TdApi.FormattedText text = prepareTranslatedText((TdApi.FormattedText) object);
         saveCachedTextTranslation(textToTranslate.text, language, text);
         if (StringUtils.equalsOrBothEmpty(currentTranslatedLanguage, language)) {
-          statusDelegate.setTranslatedStatus(TranslationCounterDrawable.TRANSLATE_STATUS_SUCCESS, true);
-          resultDelegate.setTranslationResult(text);
+          dispatchResult(TranslationCounterDrawable.TRANSLATE_STATUS_SUCCESS, text, true);
         }
       } else {
         if (StringUtils.equalsOrBothEmpty(currentTranslatedLanguage, language)) {
-          statusDelegate.setTranslatedStatus(TranslationCounterDrawable.TRANSLATE_STATUS_ERROR, true);
+          dispatchStatus(TranslationCounterDrawable.TRANSLATE_STATUS_ERROR, true);
           if (object instanceof TdApi.Error) {
             errorDelegate.onError(TD.toErrorString(object));
           }

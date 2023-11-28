@@ -1277,11 +1277,12 @@ public class TooltipOverlayView extends ViewGroup {
       return this;
     }
 
-    public void show (ViewController<?> controller, Tdlib tdlib, int iconRes, CharSequence text) {
+    public TooltipInfo show (ViewController<?> controller, Tdlib tdlib, int iconRes, CharSequence text) {
       if (originalView == null && viewProvider == null && locationProvider == null) {
         UI.showToast(text, Toast.LENGTH_SHORT);
+        return null;
       } else {
-        icon(iconRes).needBlink(iconRes == R.drawable.baseline_info_24 || iconRes == R.drawable.baseline_error_24).controller(controller != null ? controller.getParentOrSelf() : null).show(tdlib, text).hideDelayed(3500, TimeUnit.MILLISECONDS);
+        return icon(iconRes).needBlink(iconRes == R.drawable.baseline_info_24 || iconRes == R.drawable.baseline_error_24).controller(controller != null ? controller.getParentOrSelf() : null).show(tdlib, text).hideDelayed(3500, TimeUnit.MILLISECONDS);
       }
     }
 

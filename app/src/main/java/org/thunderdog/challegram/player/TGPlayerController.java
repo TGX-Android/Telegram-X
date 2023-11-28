@@ -1391,8 +1391,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
           break;
         }
         default: {
-          Log.unexpectedTdlibResponse(object, TdApi.SearchSecretMessages.class, TdApi.SearchChatMessages.class, TdApi.Messages.class, TdApi.Error.class);
-          return;
+          throw new UnsupportedOperationException(object.toString());
         }
       }
       addMessages(contextId, moreMessages, areNew);

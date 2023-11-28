@@ -54,6 +54,7 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.ChatListListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibChatList;
 import org.thunderdog.challegram.telegram.TdlibChatListSlice;
 import org.thunderdog.challegram.theme.ColorId;
@@ -370,7 +371,9 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
   }
 
   private ListItem chatTypeItem (@IdRes int id) {
-    return new ListItem(ListItem.TYPE_CHAT_BETTER, id, TD.chatTypeIcon24(id), TD.chatTypeName(id)).setIntValue(TD.chatTypeColor(id));
+    TdlibAccentColor accentColor = tdlib.accentColor(TD.chatTypeAccentColorId(id));
+    return new ListItem(ListItem.TYPE_CHAT_BETTER, id, TD.chatTypeIcon24(id), TD.chatTypeName(id))
+      .setAccentColor(accentColor);
   }
 
   private ListItem chatItem (TGFoundChat foundChat) {
@@ -421,11 +424,11 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
           TD.updateExcludedChats(chatFolder, selectedChatIds);
           TD.updateExcludedChatTypes(chatFolder, selectedChatTypes);
         }
-        tdlib.send(new TdApi.EditChatFolder(chatFolderId, chatFolder), tdlib.resultHandler(TdApi.ChatFolderInfo.class, after != null ? () -> {
-          if (!isDestroyed()) {
-            after.run();
+        tdlib.send(new TdApi.EditChatFolder(chatFolderId, chatFolder), (chatFolderInfo, error) -> {
+          if (after != null) {
+            executeOnUiThreadOptional(after);
           }
-        } : null));
+        });
       }
     }
   }
@@ -451,10 +454,9 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
           CharSequence text = Lang.getMarkdownString(this, R.string.ChatsInFolderLimitReached, chosenChatCountMax);
           UI.showCustomToast(text, Toast.LENGTH_LONG, 0);
         } else {
-          tdlib.send(new TdApi.GetPremiumLimit(new TdApi.PremiumLimitTypeChatFolderChosenChatCount()), (result) -> runOnUiThreadOptional(() -> {
+          tdlib.send(new TdApi.GetPremiumLimit(new TdApi.PremiumLimitTypeChatFolderChosenChatCount()), (premiumLimit, error) -> runOnUiThreadOptional(() -> {
             CharSequence text;
-            if (result.getConstructor() == TdApi.PremiumLimit.CONSTRUCTOR) {
-              TdApi.PremiumLimit premiumLimit = (TdApi.PremiumLimit) result;
+            if (premiumLimit != null) {
               text = Lang.getMarkdownString(this, R.string.PremiumRequiredChatsInFolder, premiumLimit.defaultValue, premiumLimit.premiumValue);
             } else {
               text = Lang.getMarkdownString(this, R.string.ChatsInFolderLimitReached, chosenChatCountMax);
@@ -626,7 +628,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
       ChipGroup chipGroup = (ChipGroup) view;
       List<Chip> chips = new ArrayList<>(selectedChatIds.size() + selectedChatTypes.size());
       for (int selectedChatType : selectedChatTypes) {
-        chips.add(chipGroup.chatType(selectedChatType));
+        chips.add(chipGroup.chatType(tdlib, selectedChatType));
       }
       for (long selectedChatId : selectedChatIds) {
         chips.add(chipGroup.chat(tdlib, selectedChatId));
@@ -645,7 +647,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
         chatView.setTitle(item.getString());
         chatView.setSubtitle(null);
         chatView.setNoSubtitle(true);
-        chatView.setAvatar(null, new AvatarPlaceholder.Metadata(item.getIntValue(), item.getIconResource()));
+        chatView.setAvatar(null, new AvatarPlaceholder.Metadata(item.getAccentColor(), item.getIconResource()));
         chatView.setIsChecked(selectedChatTypes.contains(item.getId()), false);
         chatView.clearPreviewChat();
       } else {
@@ -685,10 +687,10 @@ class Chip extends Drawable implements FlowListAnimator.Measurable, Drawable.Cal
     this.isSecretChat = ChatId.isSecret(chatId);
     if (tdlib.isSelfChat(chatId)) {
       this.avatarFile = null;
-      this.avatarPlaceholder = new AvatarPlaceholder(AVATAR_RADIUS, new AvatarPlaceholder.Metadata(ColorId.avatarSavedMessages, R.drawable.baseline_bookmark_16), drawableProvider);
+      this.avatarPlaceholder = new AvatarPlaceholder(AVATAR_RADIUS, new AvatarPlaceholder.Metadata(tdlib.accentColor(TdlibAccentColor.InternalId.ARCHIVE), R.drawable.baseline_bookmark_16), drawableProvider);
     } else if (tdlib.isRepliesChat(chatId)) {
       this.avatarFile = null;
-      this.avatarPlaceholder = new AvatarPlaceholder(AVATAR_RADIUS, new AvatarPlaceholder.Metadata(ColorId.avatarReplies, R.drawable.baseline_reply_16), drawableProvider);
+      this.avatarPlaceholder = new AvatarPlaceholder(AVATAR_RADIUS, new AvatarPlaceholder.Metadata(tdlib.accentColor(TdlibAccentColor.InternalId.REPLIES), R.drawable.baseline_reply_16), drawableProvider);
     } else {
       this.avatarFile = tdlib.chatAvatar(chatId, Screen.dp(AVATAR_RADIUS * 2));
       this.avatarPlaceholder = tdlib.chatPlaceholder(chatId, tdlib.chat(chatId), true, AVATAR_RADIUS, drawableProvider);
@@ -698,13 +700,13 @@ class Chip extends Drawable implements FlowListAnimator.Measurable, Drawable.Cal
     initCrossDrawable();
   }
 
-  public Chip (DrawableProvider drawableProvider, @IdRes int chatType) {
+  public Chip (DrawableProvider drawableProvider, @IdRes int chatType, Tdlib tdlib) {
     this.id = chatType;
     this.type = TYPE_CHAT_TYPE;
     this.label = buildLabel(Lang.getString(TD.chatTypeName(chatType)));
     this.isSecretChat = false;
     this.avatarFile = null;
-    this.avatarPlaceholder = new AvatarPlaceholder(AVATAR_RADIUS, new AvatarPlaceholder.Metadata(TD.chatTypeColor(chatType), TD.chatTypeIcon16(chatType)), drawableProvider);
+    this.avatarPlaceholder = new AvatarPlaceholder(AVATAR_RADIUS, new AvatarPlaceholder.Metadata(tdlib.accentColor(TD.chatTypeAccentColorId(chatType)), TD.chatTypeIcon16(chatType)), drawableProvider);
     this.drawableProvider = drawableProvider;
     this.complexReceiver = null;
     initCrossDrawable();
@@ -966,13 +968,13 @@ class ChipGroup extends SparseDrawableView implements ClickHelper.Delegate, Atta
     return new Chip(this, complexReceiver, tdlib, chatId);
   }
 
-  public Chip chatType (@IdRes int chatType) {
+  public Chip chatType (Tdlib tdlib, @IdRes int chatType) {
     for (Chip chip : chips) {
       if (chip.type == Chip.TYPE_CHAT_TYPE && chip.id == chatType) {
         return chip;
       }
     }
-    return new Chip(this, chatType);
+    return new Chip(this, chatType, tdlib);
   }
 
   public void setChips (List<Chip> chips) {

@@ -31,8 +31,8 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -349,7 +349,7 @@ public class JoinedUsersView extends View implements Destroyable, FactorAnimator
   // Drawing
 
   private void drawPlaceholder (Canvas c, AvatarInfo info, int cx, int cy, float factor) {
-    c.drawCircle(cx, cy, Screen.dp(AVATAR_RADIUS), Paints.fillingPaint(ColorUtils.alphaColor(factor, Theme.getColor(info.avatarColorId))));
+    c.drawCircle(cx, cy, Screen.dp(AVATAR_RADIUS), Paints.fillingPaint(ColorUtils.alphaColor(factor, info.accentColor.getPrimaryColor())));
     Paint paint = Paints.whiteMediumPaint(15f, info.letters.needFakeBold, false);
     paint.setAlpha((int) (255f * factor));
     c.drawText(info.letters.text, cx - info.lettersWidth15dp / 2, cy + Screen.dp(5.5f), paint);

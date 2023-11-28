@@ -29,12 +29,14 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.ReactionLoadListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibChatList;
 import org.thunderdog.challegram.telegram.TdlibCounter;
 import org.thunderdog.challegram.telegram.TdlibStatusManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.PorterDuffColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -723,7 +725,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
 
   private void setAvatar () {
     if (isArchive()) {
-      avatarPlaceholder = new AvatarPlaceholder.Metadata(ColorId.avatarArchive, R.drawable.baseline_archive_24);
+      avatarPlaceholder = new AvatarPlaceholder.Metadata(tdlib.accentColor(TdlibAccentColor.InternalId.ARCHIVE), R.drawable.baseline_archive_24);
     } else {
       avatarPlaceholder = null;
     }
@@ -919,13 +921,8 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
     if (!tdlib.isSelfChat(chat)) {
       emojiStatusDrawable = EmojiStatusHelper.makeDrawable(null, tdlib, chat != null ? tdlib.chatUser(chat) : null, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
         @Override
-        public int mediaTextColorOrId () {
-          return ColorId.iconActive;
-        }
-
-        @Override
-        public boolean mediaTextColorIsId () {
-          return true;
+        public long mediaTextComplexColor () {
+          return Theme.newComplexColor(true, ColorId.iconActive);
         }
       }, this::invalidateEmojiStatusReceiver);
       emojiStatusDrawable.invalidateTextMedia();
@@ -1428,22 +1425,22 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
     } else if (lastMessage != null && (lastMessage.isChannelPost || getPrefixIconCount() == 0)) {
       boolean needShareIcon = false;
       if (lastMessage.forwardInfo != null) {
-        TdApi.MessageForwardOrigin origin = lastMessage.forwardInfo.origin;
+        TdApi.MessageOrigin origin = lastMessage.forwardInfo.origin;
         switch (origin.getConstructor()) {
-          case TdApi.MessageForwardOriginChannel.CONSTRUCTOR:
-            needShareIcon = chat.id != ((TdApi.MessageForwardOriginChannel) origin).chatId;
+          case TdApi.MessageOriginChannel.CONSTRUCTOR:
+            needShareIcon = chat.id != ((TdApi.MessageOriginChannel) origin).chatId;
             break;
-          case TdApi.MessageForwardOriginHiddenUser.CONSTRUCTOR:
+          case TdApi.MessageOriginHiddenUser.CONSTRUCTOR:
             needShareIcon = true;
             break;
-          case TdApi.MessageForwardOriginUser.CONSTRUCTOR:
-            needShareIcon = Td.getSenderUserId(chat.lastMessage) != ((TdApi.MessageForwardOriginUser) origin).senderUserId;
+          case TdApi.MessageOriginUser.CONSTRUCTOR:
+            needShareIcon = Td.getSenderUserId(chat.lastMessage) != ((TdApi.MessageOriginUser) origin).senderUserId;
             break;
-          case TdApi.MessageForwardOriginChat.CONSTRUCTOR:
-            needShareIcon = Td.getSenderId(chat.lastMessage) != ((TdApi.MessageForwardOriginChat) origin).senderChatId;
+          case TdApi.MessageOriginChat.CONSTRUCTOR:
+            needShareIcon = Td.getSenderId(chat.lastMessage) != ((TdApi.MessageOriginChat) origin).senderChatId;
             break;
           default:
-            Td.assertMessageForwardOrigin_715b9732();
+            Td.assertMessageOrigin_f2224a59();
             throw Td.unsupported(origin);
         }
       }
@@ -1451,6 +1448,11 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
         addIcon(R.drawable.baseline_share_arrow_16);
       } else if (lastMessage.importInfo != null) {
         addIcon(R.drawable.templarian_baseline_import_16);
+      } else if (lastMessage.replyTo != null && lastMessage.replyTo.getConstructor() == TdApi.MessageReplyToMessage.CONSTRUCTOR) {
+        TdApi.MessageReplyToMessage replyToMessage = (TdApi.MessageReplyToMessage) lastMessage.replyTo;
+        if (replyToMessage.chatId != lastMessage.chatId) {
+          addIcon(R.drawable.baseline_reply_16);
+        }
       }
     }
     if (preview.emoji != null) {

@@ -100,15 +100,19 @@ public class RootFrameLayout extends FrameLayoutFix {
         lastAction = null;
       }
       if (keyboardListener != null) {
-        getViewTreeObserver().removeOnPreDrawListener(onPreDrawListener);
-        getViewTreeObserver().addOnPreDrawListener(onPreDrawListener);
+        ViewTreeObserver observer = getViewTreeObserver();
+        observer.removeOnPreDrawListener(onPreDrawListener);
+        observer.addOnPreDrawListener(onPreDrawListener);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
           keyboardListener.onKeyboardStateChanged(isVisible);
           UI.post(lastAction = new CancellableRunnable() {
             @Override
             public void act () {
-              getViewTreeObserver().removeOnPreDrawListener(onPreDrawListener);
+              observer.removeOnPreDrawListener(onPreDrawListener);
               invalidate();
+              if (lastAction == this) {
+                lastAction = null;
+              }
             }
           }.removeOnCancel(UI.getAppHandler()), 20);
         } else {
@@ -116,24 +120,14 @@ public class RootFrameLayout extends FrameLayoutFix {
             @Override
             public void act () {
               keyboardListener.onKeyboardStateChanged(isVisible);
-              getViewTreeObserver().removeOnPreDrawListener(onPreDrawListener);
+              observer.removeOnPreDrawListener(onPreDrawListener);
               invalidate();
+              if (lastAction == this) {
+                lastAction = null;
+              }
             }
           }.removeOnCancel(UI.getAppHandler()), 2);
         }
-        /*if (true || Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-
-        } else {
-          keyboardListener.onKeyboardStateChanged(isVisible);
-        }*/
-        /*if (isVisible) {
-          UI.postDelayed(new Runnable() {
-            @Override
-            public void run () {
-              keyboardListener.closeAdditionalKeyboards();
-            }
-          }, 20);
-        }*/
       }
     }
   }

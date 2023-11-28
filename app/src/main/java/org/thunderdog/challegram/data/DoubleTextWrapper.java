@@ -421,13 +421,8 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
 
     emojiStatusDrawable = EmojiStatusHelper.makeDrawable(null, tdlib, user, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
       @Override
-      public int mediaTextColorOrId () {
-        return ColorId.iconActive;
-      }
-
-      @Override
-      public boolean mediaTextColorIsId () {
-        return true;
+      public long mediaTextComplexColor () {
+        return Theme.newComplexColor(true, ColorId.iconActive);
       }
     }, this::invalidateEmojiStatusReceiver);
     emojiStatusDrawable.invalidateTextMedia();

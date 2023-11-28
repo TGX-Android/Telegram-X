@@ -75,7 +75,7 @@ public class TGMessageFile extends TGMessage {
     private TdApi.FormattedText effectiveCaption;
     public final ReplaceAnimator<TextWrapper> caption;
     private TextWrapper captionWrapper;
-    private int captionMediaKeyOffset;
+    private long captionMediaKeyOffset;
     private final VariableFloat lastLineWidth = new VariableFloat(0);
     private final VariableFloat needBottomLineExpand = new VariableFloat(1f);
 
@@ -92,7 +92,7 @@ public class TGMessageFile extends TGMessage {
       this.caption = new ReplaceAnimator<>(animator -> {
         files.measure(needAnimateChanges());
         invalidate();
-      }, AnimatorUtils.DECELERATE_INTERPOLATOR, 200l);
+      }, AnimatorUtils.DECELERATE_INTERPOLATOR, TEXT_CROSS_FADE_DURATION_MS);
       updateCaption(false);
     }
 
@@ -556,12 +556,12 @@ public class TGMessageFile extends TGMessage {
   }
 
   @Override
-  protected float getBubbleExpandFactor () {
+  protected float getIntermediateBubbleExpandFactor () {
     return filesList.get(filesList.size() - 1).needBottomLineExpand.get();
   }
 
   @Override
-  protected int getAnimatedBottomLineWidth () {
+  protected int getAnimatedBottomLineWidth (int bubbleTimePartWidth) {
     return Math.round(filesList.get(filesList.size() - 1).lastLineWidth.get());
   }
 

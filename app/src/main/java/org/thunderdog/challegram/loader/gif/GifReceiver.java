@@ -723,26 +723,45 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     }
   }
 
-  private static final int DRAW_BATCH_STARTED = 1;
-  private static final int DRAW_BATCH_DRAWN = 1 << 1;
+  private static final int DRAW_BATCH_DRAWN = 1;
 
   private int drawBatchFlags;
 
-  public void beginDrawBatch () {
-    // Use when drawing the same GifReceiver multiple times on one canvas
-    drawBatchFlags = DRAW_BATCH_STARTED;
+  public boolean isInDrawBatch () {
+    return BitwiseUtils.setFlag(drawBatchFlags, DRAW_BATCH_DRAWN, false) != 0;
   }
 
-  public void finishDrawBatch () {
-    int flags = drawBatchFlags;
-    if (gif != null && BitwiseUtils.hasFlag(flags, DRAW_BATCH_STARTED) && BitwiseUtils.hasFlag(flags, DRAW_BATCH_DRAWN)) {
+  public void beginDrawBatch (int batchId) {
+    if (batchId <= 0) {
+      throw new IllegalArgumentException(Integer.toString(batchId));
+    }
+    // Use when drawing the same GifReceiver multiple times on one canvas
+    drawBatchFlags = BitwiseUtils.setFlag(drawBatchFlags, (1 << batchId), true);
+  }
+
+  public void finishAllDrawBatches () {
+    finishDrawBatch(0);
+  }
+
+  public void finishDrawBatch (int batchId) {
+    if (batchId < 0)
+      throw new IllegalArgumentException(Integer.toString(batchId));
+    int flags;
+    if (batchId == 0) {
+      // Drop all batches
+      flags = (drawBatchFlags & DRAW_BATCH_DRAWN);
+    } else {
+      flags = BitwiseUtils.setFlag(drawBatchFlags, (1 << batchId), false);
+    }
+    int remainingFlags = BitwiseUtils.setFlag(flags, DRAW_BATCH_DRAWN, false);
+    if (gif != null && BitwiseUtils.hasFlag(flags, DRAW_BATCH_DRAWN) && isInDrawBatch() && remainingFlags == 0) {
       synchronized (gif.getBusyList()) {
         if (gif.hasBitmap()) {
           gif.getDrawFrame(true);
         }
       }
     }
-    this.drawBatchFlags = 0;
+    this.drawBatchFlags = remainingFlags;
   }
 
   private int porterDuffColor = ColorId.NONE;
@@ -778,7 +797,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
           if (Config.DEBUG_GIF_OPTIMIZATION_MODE) {
             c.drawRect(drawRegion, Paints.fillingPaint(debugOptimizationColors[file.getOptimizationMode()]));
           }
-          final boolean inBatch = BitwiseUtils.hasFlag(drawBatchFlags, DRAW_BATCH_STARTED);
+          final boolean inBatch = isInDrawBatch();
           if (!inBatch || !BitwiseUtils.hasFlag(drawBatchFlags, DRAW_BATCH_DRAWN)) {
             gif.applyNext();
             if (inBatch) {

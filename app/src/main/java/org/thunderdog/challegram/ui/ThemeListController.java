@@ -1893,7 +1893,9 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
               tdlib.ui().switchInline(ThemeListController.this, username, "", true);
             }
           });
-          spans.add(new CustomTypefaceSpan(null, ColorId.textLink).setEntityType(entity.type).setRemoveUnderline(true));
+          CustomTypefaceSpan span = new CustomTypefaceSpan(null, ColorId.textLink).setRemoveUnderline(true);
+          span.setTextEntityType(entity.type);
+          spans.add(span);
         }
         if (!spans.isEmpty()) {
           if (!(text instanceof SpannableStringBuilder)) {

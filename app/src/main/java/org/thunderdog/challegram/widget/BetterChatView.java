@@ -262,13 +262,8 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
   public void setEmojiStatus (@Nullable TdApi.User user) {
     emojiStatusHelper.updateEmoji(user, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
       @Override
-      public int mediaTextColorOrId () {
-        return ColorId.iconActive;
-      }
-
-      @Override
-      public boolean mediaTextColorIsId () {
-        return true;
+      public long mediaTextComplexColor () {
+        return Theme.newComplexColor(true, ColorId.iconActive);
       }
     });
     setTrimmedTitle();

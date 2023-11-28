@@ -36,7 +36,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.user.RemoveHelper;
@@ -458,13 +457,12 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
     } else {
       Object viewTag = view.getTag();
       WeakReference<View> viewRef = new WeakReference<>(view);
-      tdlib.send(new TdApi.GetPremiumLimit(new TdApi.PremiumLimitTypeChatFolderCount()), (result) -> runOnUiThreadOptional(() -> {
+      tdlib.send(new TdApi.GetPremiumLimit(new TdApi.PremiumLimitTypeChatFolderCount()), (premiumLimit, error) -> runOnUiThreadOptional(() -> {
         View v = viewRef.get();
         if (v == null || !ViewCompat.isAttachedToWindow(v) || viewTag != v.getTag())
           return;
         CharSequence text;
-        if (result.getConstructor() == TdApi.PremiumLimit.CONSTRUCTOR) {
-          TdApi.PremiumLimit premiumLimit = (TdApi.PremiumLimit) result;
+        if (premiumLimit != null) {
           text = Lang.getMarkdownString(this, R.string.PremiumRequiredCreateFolder, premiumLimit.defaultValue, premiumLimit.premiumValue);
         } else {
           text = Lang.getMarkdownString(this, R.string.ChatFolderLimitReached, tdlib.chatFolderCountMax());
@@ -506,34 +504,22 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
   }
 
   private void editChatFolder (TdApi.ChatFolderInfo chatFolderInfo) {
-    tdlib.send(new TdApi.GetChatFolder(chatFolderInfo.id), (result) -> runOnUiThreadOptional(() -> {
-      switch (result.getConstructor()) {
-        case TdApi.ChatFolder.CONSTRUCTOR:
-          TdApi.ChatFolder chatFolder = (TdApi.ChatFolder) result;
-          EditChatFolderController controller = new EditChatFolderController(context, tdlib);
-          controller.setArguments(new EditChatFolderController.Arguments(chatFolderInfo.id, chatFolder));
-          navigateTo(controller);
-          break;
-        case TdApi.Error.CONSTRUCTOR:
-          UI.showError(result);
-          break;
-        default:
-          Log.unexpectedTdlibResponse(result, TdApi.GetChatFolder.class, TdApi.ChatFolder.class, TdApi.Error.class);
-          break;
+    tdlib.send(new TdApi.GetChatFolder(chatFolderInfo.id), (chatFolder, error) -> runOnUiThreadOptional(() -> {
+      if (error != null) {
+        UI.showError(error);
+      } else {
+        EditChatFolderController controller = new EditChatFolderController(context, tdlib);
+        controller.setArguments(new EditChatFolderController.Arguments(chatFolderInfo.id, chatFolder));
+        navigateTo(controller);
       }
     }));
   }
 
   private void createChatFolder (TdApi.ChatFolder chatFolder, RunnableBool after) {
-    tdlib.send(new TdApi.CreateChatFolder(chatFolder), (result) -> runOnUiThreadOptional(() -> {
-      switch (result.getConstructor()) {
-        case TdApi.ChatFolderInfo.CONSTRUCTOR:
-          after.runWithBool(true);
-          break;
-        case TdApi.Error.CONSTRUCTOR:
-          after.runWithBool(false);
-          UI.showError(result);
-          break;
+    tdlib.send(new TdApi.CreateChatFolder(chatFolder), (chatFolderInfo, error) -> runOnUiThreadOptional(() -> {
+      after.runWithBool(error == null);
+      if (error != null) {
+        UI.showError(error);
       }
     }));
   }
@@ -553,7 +539,7 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
       if (position >= tdlib.mainChatListPosition()) position++;
       if (position >= archiveChatListPosition) position++;
       boolean affectsArchiveChatListPosition = position < archiveChatListPosition && archiveChatListPosition < chatFolders.length + 2;
-      tdlib.send(new TdApi.DeleteChatFolder(chatFolderId, null), tdlib.okHandler(() -> {
+      tdlib.send(new TdApi.DeleteChatFolder(chatFolderId, null), tdlib.typedOkHandler(() -> {
         if (affectsArchiveChatListPosition && archiveChatListPosition == tdlib.settings().archiveChatListPosition()) {
           tdlib.settings().setArchiveChatListPosition(archiveChatListPosition - 1);
           if (!isDestroyed()) {
@@ -602,9 +588,9 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
     }
     tdlib.settings().setArchiveChatListPosition(archiveChatListPosition);
     if (chatFoldersIds.size() > 0) {
-      tdlib.send(new TdApi.ReorderChatFolders(chatFoldersIds.get(), mainChatListPosition), (result) -> {
-        if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
-          UI.showError(result);
+      tdlib.send(new TdApi.ReorderChatFolders(chatFoldersIds.get(), mainChatListPosition), (ok, error) -> {
+        if (error != null) {
+          UI.showError(error);
           runOnUiThreadOptional(this::updateChatFolders);
         }
       });
@@ -762,10 +748,10 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
   }
 
   private void updateRecommendedChatFolders () {
-    tdlib.send(new TdApi.GetRecommendedChatFolders(), (result) -> {
+    tdlib.send(new TdApi.GetRecommendedChatFolders(), (recommendedChatFolders, error) -> {
       runOnUiThreadOptional(() -> {
-        if (result.getConstructor() == TdApi.RecommendedChatFolders.CONSTRUCTOR) {
-          updateRecommendedChatFolders(((TdApi.RecommendedChatFolders) result).chatFolders);
+        if (recommendedChatFolders != null) {
+          updateRecommendedChatFolders(recommendedChatFolders.chatFolders);
         }
         if (!recommendedChatFoldersInitialized) {
           recommendedChatFoldersInitialized = true;
