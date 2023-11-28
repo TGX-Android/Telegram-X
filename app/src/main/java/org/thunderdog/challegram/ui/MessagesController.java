@@ -280,6 +280,7 @@ import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.Future;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
+import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
@@ -6156,7 +6157,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private void updateReplyBarVisibility (boolean animated) {
     boolean shouldBeVisible = true;
     if (showingLinkPreview()) {
-      replyBarView.showWebPage(findTargetContext(), findTargetContext().getSelectedUrlIndex());
+      replyBarView.showWebPage(findTargetContext(), findTargetContext().findSelectedUrlIndex());
     } else if (isEditingMessage()) {
       replyBarView.setEditingMessage(editContext.message);
     } else if (reply != null) {
@@ -6437,6 +6438,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     private final RateLimiter linkPreviewLoader = new RateLimiter(this::loadLinkPreview, 400L, null);
     private boolean needLoadWebPagePreview, isDestroyed;
+    private RunnableData<LinkPreview> loadCallback;
+
+    private final ReferenceList<RunnableData<LinkPreview>> loadCallbacks = new ReferenceList<>(false, true, (list, isFull) -> {
+      if (isFull) {
+        if (needLoadWebPagePreview) {
+          linkPreviewLoader.run();
+        }
+      } else {
+        linkPreviewLoader.cancelIfScheduled();
+      }
+    });
 
     public LinkPreview (Tdlib tdlib, String url, @Nullable TdApi.Message existingMessage) {
       this.tdlib = tdlib;
@@ -6451,10 +6463,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
         TdApi.MessageText existingText = (TdApi.MessageText) existingMessage.content;
         if (existingText.webPage != null) {
           boolean isCurrentWebPage =
-            (existingText.linkPreviewOptions != null && !StringUtils.isEmpty(existingText.linkPreviewOptions.url) && existingText.linkPreviewOptions.url.equals(url)) ||
-            (existingText.webPage.url.equals(url));
+            (existingText.linkPreviewOptions != null && !StringUtils.isEmpty(existingText.linkPreviewOptions.url) && compareUrls(existingText.linkPreviewOptions.url, url)) ||
+            (compareUrls(existingText.webPage.url, url));
           if (isCurrentWebPage) {
             this.webPage = existingText.webPage;
+            updateMessageText(messageText, this.webPage);
             this.needLoadWebPagePreview = false;
           }
         }
@@ -6462,18 +6475,29 @@ public class MessagesController extends ViewController<MessagesController.Argume
       this.fakeMessage = TD.newFakeMessage(0, messageSender, messageText);
     }
 
-    private int refCount;
+    public void setLoadCallback (RunnableData<LinkPreview> loadCallback) {
+      this.loadCallback = loadCallback;
+    }
 
-    public void addReference () {
-      if (++refCount == 1 && needLoadWebPagePreview) {
-        linkPreviewLoader.run();
+    private static boolean compareUrls (String a, String b) {
+      return a.equals(b) || StringUtils.urlWithoutProtocol(a).equals(StringUtils.urlWithoutProtocol(b));
+    }
+
+    private static void updateMessageText (TdApi.MessageText messageText, TdApi.WebPage webPage) {
+      messageText.webPage = webPage;
+      if (!Td.isEmpty(webPage.description)) {
+        messageText.text = webPage.description;
+      } else if (!StringUtils.isEmpty(webPage.siteName) && !StringUtils.isEmpty(webPage.title)) {
+        messageText.text = new TdApi.FormattedText(webPage.title, null);
       }
     }
 
-    public void removeReference () {
-      if (--refCount == 0) {
-        linkPreviewLoader.cancelIfScheduled();
-      }
+    public void addReference (RunnableData<LinkPreview> callback) {
+      loadCallbacks.add(callback);
+    }
+
+    public void removeReference (RunnableData<LinkPreview> callback) {
+      loadCallbacks.remove(callback);
     }
 
     @Override
@@ -6481,7 +6505,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       isDestroyed = true;
       needLoadWebPagePreview = false;
       linkPreviewLoader.cancelIfScheduled();
-      refCount = 0;
+      loadCallbacks.clear();
     }
 
     private void loadLinkPreview () {
@@ -6490,7 +6514,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         tdlib.ui().post(() -> {
           if (webPage != null) {
             this.webPage = webPage;
-            ((TdApi.MessageText) fakeMessage.content).webPage = webPage;
+            updateMessageText((TdApi.MessageText) fakeMessage.content, webPage);
           } else {
             this.error = error;
           }
@@ -6518,7 +6542,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         return Lang.getString(R.string.NoLinkInfo);
       }
 
-      String title = Strings.any(webPage.title, webPage.siteName);
+      String title = Td.isEmpty(webPage.description) ? Strings.any(webPage.siteName, webPage.title) : Strings.any(webPage.title, webPage.siteName);
       if (!StringUtils.isEmpty(title)) {
         return title;
       }
@@ -6544,11 +6568,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (isDestroyed) {
         return;
       }
-      // TODO
+      for (RunnableData<LinkPreview> callback : loadCallbacks) {
+        callback.runWithData(this);
+      }
+      if (loadCallback != null) {
+        loadCallback.runWithData(this);
+      }
     }
   }
 
   public static class MessageInputContext {
+    private final MessagesController context;
     private final Tdlib tdlib;
     private final TdApi.Message message;
     private @NonNull InlineSearchContext.FoundUrls foundUrls;
@@ -6557,7 +6587,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     private final TdApi.LinkPreviewOptions linkPreviewOptions;
 
-    MessageInputContext (Tdlib tdlib, @Nullable TdApi.Message existingMessage) {
+    MessageInputContext (MessagesController context, Tdlib tdlib, @Nullable TdApi.Message existingMessage) {
+      this.context = context;
       this.tdlib = tdlib;
       this.foundUrls = InlineSearchContext.FoundUrls.emptyResult();
       this.message = existingMessage;
@@ -6576,24 +6607,37 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return foundUrls;
     }
 
+    public void setLinkPreviewUrl (@NonNull String url) {
+      this.linkPreviewOptions.url = url;
+    }
+
     private final Map<String, LinkPreview> linkPreviews = new HashMap<>();
 
     public @NonNull LinkPreview getLinkPreview (String url) {
       LinkPreview linkPreview = linkPreviews.get(url);
       if (linkPreview == null) {
         linkPreview = new LinkPreview(tdlib, url, message);
+        linkPreview.setLoadCallback(loadedLinkPreview -> {
+          if (loadedLinkPreview.isNotFound()) {
+            context.updateReplyBarVisibility(true);
+          }
+        });
         linkPreviews.put(url, linkPreview);
       }
       return linkPreview;
     }
 
-    public int getSelectedUrlIndex () {
+    public int findSelectedUrlIndex () {
       if (foundUrls.isEmpty()) {
         return -1;
       } else if (StringUtils.isEmpty(linkPreviewOptions.url)) {
         return 0;
       } else {
-        return Math.max(0, ArrayUtils.indexOf(foundUrls.urls, linkPreviewOptions.url));
+        int index = foundUrls.indexOfUrl(linkPreviewOptions.url);
+        if (index != -1) {
+          return index;
+        }
+        return 0;
       }
     }
 
@@ -6605,7 +6649,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (linkPreviewOptions.isDisabled) {
         return null;
       }
-      int index = getSelectedUrlIndex();
+      int index = findSelectedUrlIndex();
       if (index == -1) {
         return null;
       }
@@ -6634,7 +6678,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         dismissedFoundUrls = null;
         hasChanges = true;
       }
-      if (!StringUtils.isEmpty(linkPreviewOptions.url) && !foundUrls.set.contains(linkPreviewOptions.url)) {
+      if (!StringUtils.isEmpty(linkPreviewOptions.url) && !foundUrls.hasUrl(linkPreviewOptions.url)) {
         linkPreviewOptions.url = null;
         hasChanges = true;
       }
@@ -6747,7 +6791,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       closeSearchMode(null);
     }
 
-    this.editContext = new MessageInputContext(tdlib, msg);
+    this.editContext = new MessageInputContext(this, tdlib, msg);
     TdApi.FormattedText text = Td.textOrCaption(msg.content);
     setInEditMode(true, text.text);
     sendButton.setIsActive(!StringUtils.isEmpty(text.text) || isEditingCaption());
@@ -7995,8 +8039,23 @@ public class MessagesController extends ViewController<MessagesController.Argume
   // Link preview
 
   private void closeLinkPreview () {
+    boolean animationsDisabled = replyBarView.areAnimationsDisabled();
+    if (isEditingMessage()) {
+      replyBarView.setAnimationsDisabled(true);
+    }
     findTargetContext().dismiss();
-    updateReplyBarVisibility(true);
+    updateReplyBarVisibility(!isEditingMessage());
+    inputView.setTextChangedSinceChatOpened(true);
+    if (isEditingMessage()) {
+      tdlib.ui().postDelayed(() -> {
+        replyBarView.setAnimationsDisabled(animationsDisabled);
+      }, 10L);
+    }
+  }
+
+  @Override
+  public void onSelectLinkPreviewUrl (ReplyBarView view, MessageInputContext messageContext, String url) {
+    messageContext.setLinkPreviewUrl(url);
     inputView.setTextChangedSinceChatOpened(true);
   }
 
@@ -8009,7 +8068,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return linkPreviewOptions;
   }
 
-  private final MessageInputContext draftContext = new MessageInputContext(tdlib, null);
+  private final MessageInputContext draftContext = new MessageInputContext(this, tdlib, null);
   private MessageInputContext editContext;
 
   private MessageInputContext findTargetContext () {

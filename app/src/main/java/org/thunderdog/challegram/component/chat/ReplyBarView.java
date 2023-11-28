@@ -84,7 +84,6 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
     pinnedMessagesBar.setCollapseButtonVisible(false);
     pinnedMessagesBar.setIgnoreAlbums(true);
     pinnedMessagesBar.setMessageListener(new PinnedMessagesBar.MessageListener() {
-
       @Override
       public void onCreateMessagePreview (PinnedMessagesBar view, MessagePreviewView previewView) {
         ViewUtils.setBackground(previewView, null);
@@ -93,6 +92,13 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
       @Override
       public void onMessageDisplayed (PinnedMessagesBar view, MessagePreviewView previewView, TdApi.Message message) {
         previewView.clearPreviewChat();
+      }
+
+      @Override
+      public void onSelectLinkPreviewUrl (PinnedMessagesBar view, MessagesController.MessageInputContext messageContext, String url) {
+        if (callback != null) {
+          callback.onSelectLinkPreviewUrl(ReplyBarView.this, messageContext, url);
+        }
       }
 
       @Override
@@ -122,6 +128,10 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
         pinnedMessagesBar.setAnimationsDisabled(animationsDisabled);
       }
     }
+  }
+
+  public boolean areAnimationsDisabled () {
+    return animationsDisabled;
   }
 
   private ImageView newButton (@IdRes int idRes, @DrawableRes int iconRes, ViewController<?> themeProvider) {
@@ -170,5 +180,6 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
   public interface Callback {
     void onDismissReplyBar (ReplyBarView view);
     void onMessageHighlightRequested (ReplyBarView view, TdApi.Message message, @Nullable TdApi.FormattedText quote);
+    void onSelectLinkPreviewUrl (ReplyBarView view, MessagesController.MessageInputContext messageContext, String url);
   }
 }

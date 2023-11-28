@@ -44,6 +44,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.ui.ListItem;
+import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
@@ -63,10 +64,11 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 
-public class MessagePreviewView extends BaseView implements AttachDelegate, Destroyable, ChatListener, MessageListener, TdlibCache.UserDataChangeListener, TGLegacyManager.EmojiLoadListener, TdlibUi.MessageProvider {
+public class MessagePreviewView extends BaseView implements AttachDelegate, Destroyable, ChatListener, MessageListener, TdlibCache.UserDataChangeListener, TGLegacyManager.EmojiLoadListener, TdlibUi.MessageProvider, RunnableData<MessagesController.LinkPreview> {
   private static class TextEntry extends ListAnimator.MeasurableEntry<Text> implements Destroyable {
     public final Drawable drawable;
     public ComplexReceiver receiver;
@@ -124,23 +126,98 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
 
   private final ViewProvider viewProvider = new SingleViewProvider(this);
 
-  private TdApi.Message message;
-  private @Nullable TdApi.FormattedText messageQuote;
-  private String forcedTitle;
+  private static class DisplayData implements Destroyable {
+    public final Tdlib tdlib;
+    public final TdApi.Message message;
+    public final @Nullable TdApi.FormattedText quote;
+    public final @Options int options;
+    public @Nullable TdApi.SearchMessagesFilter filter;
+    public @Nullable String forcedTitle;
+    public boolean messageDeleted;
+    public @Nullable MessagesController.LinkPreview linkPreview;
+
+    public DisplayData (Tdlib tdlib, TdApi.Message message, @Nullable TdApi.FormattedText quote, int options) {
+      this.tdlib = tdlib;
+      this.message = message;
+      this.quote = quote;
+      this.options = options;
+    }
+
+    public boolean setForcedTitle (String forcedTitle) {
+      if (!StringUtils.equalsOrBothEmpty(this.forcedTitle, forcedTitle)) {
+        this.forcedTitle = forcedTitle;
+        return true;
+      }
+      return false;
+    }
+
+    public void setPreviewFilter (@Nullable TdApi.SearchMessagesFilter filter) {
+      this.filter = filter;
+    }
+
+    public void setLinkPreview (@Nullable MessagesController.LinkPreview linkPreview) {
+      this.linkPreview = linkPreview;
+    }
+
+    public boolean equalsTo (TdApi.Message message, @Nullable TdApi.FormattedText quote, @Options int options, @Nullable MessagesController.LinkPreview linkPreview) {
+      return this.message == message && Td.equalsTo(this.quote, quote) && this.options == options && this.linkPreview == linkPreview;
+    }
+
+    public TdlibAccentColor accentColor () {
+      if (StringUtils.isEmpty(forcedTitle)) {
+        // TODO handle fake messages
+        return tdlib.messageAccentColor(message);
+      }
+      return null;
+    }
+
+    public boolean needBoldTitle () {
+      if (linkPreview != null && linkPreview.isNotFound()) {
+        return false;
+      }
+      return !StringUtils.isEmpty(forcedTitle) || Td.getMessageAuthorId(message, true) != 0;
+    }
+
+    public boolean relatedToChat (long chatId) {
+      return this.message.senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR &&
+        ((TdApi.MessageSenderChat) this.message.senderId).chatId == chatId;
+    }
+
+    public boolean relatedToUser (long userId) {
+      return this.message.senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR &&
+        ((TdApi.MessageSenderUser) this.message.senderId).userId == userId;
+    }
+
+    public boolean updateMessageContent (long chatId, long messageId, TdApi.MessageContent newContent) {
+      if (this.message.chatId == chatId && this.message.id == messageId) {
+        this.message.content = newContent;
+        return true;
+      }
+      return false;
+    }
+
+    @Override
+    public void performDestroy () {
+      setLinkPreview(null);
+    }
+  }
+
+  private @Nullable DisplayData data;
   private boolean useAvatarFallback;
-  private int displayOptions;
 
   @Retention(RetentionPolicy.SOURCE)
   @IntDef(value = {
     Options.NONE,
     Options.IGNORE_ALBUM_REFRESHERS,
-    Options.DISABLE_MESSAGE_PREVIEW
+    Options.DISABLE_MESSAGE_PREVIEW,
+    Options.NO_UPDATES
   }, flag = true)
   public @interface Options {
     int
       NONE = 0,
       IGNORE_ALBUM_REFRESHERS = 1,
-      DISABLE_MESSAGE_PREVIEW = 1 << 1;
+      DISABLE_MESSAGE_PREVIEW = 1 << 1,
+      NO_UPDATES = 1 << 2;
   }
 
   private ContentPreview contentPreview;
@@ -150,38 +227,76 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   }
 
   public void setMessage (@Nullable TdApi.Message message, @Nullable TdApi.FormattedText quote, @Nullable TdApi.SearchMessagesFilter filter, @Nullable String forcedTitle, @Options int options) {
-    this.displayOptions = options;
-    if (this.message == message && Td.equalsTo(this.messageQuote, quote)) {
-      setForcedTitle(forcedTitle);
+    if (message != null) {
+      DisplayData displayData = new DisplayData(tdlib, message, quote, options);
+      displayData.setPreviewFilter(filter);
+      displayData.setForcedTitle(forcedTitle);
+      setDisplayData(displayData);
+    } else {
+      setDisplayData(null);
+    }
+  }
+
+  public void setLinkPreview (@Nullable MessagesController.LinkPreview linkPreview) {
+    if (linkPreview != null) {
+      DisplayData displayData = new DisplayData(tdlib, linkPreview.getFakeMessage(), null, Options.DISABLE_MESSAGE_PREVIEW | Options.NO_UPDATES);
+      displayData.setForcedTitle(linkPreview.getForcedTitle());
+      displayData.setLinkPreview(linkPreview);
+      setDisplayData(displayData);
+    } else {
+      setDisplayData(null);
+    }
+  }
+
+  @Override
+  public void runWithData (MessagesController.LinkPreview arg) {
+    if (this.data != null && this.data.linkPreview == arg) {
+      data.setForcedTitle(arg.getForcedTitle());
+      updateTitleText();
+      buildPreview();
+    }
+  }
+
+  private void setDisplayData (DisplayData data) {
+    if (this.data == null && data == null) {
       return;
     }
-    if (this.message != null) {
-      unsubscribeFromUpdates(this.message);
+    if (this.data != null && data != null && this.data.equalsTo(data.message, data.quote, data.options, data.linkPreview)) {
+      if (data.setForcedTitle(data.forcedTitle)) {
+        updateTitleText();
+      }
+      return;
     }
-    this.message = message;
-    this.messageQuote = quote;
-    this.forcedTitle = forcedTitle;
-    if (message != null) {
-      subscribeToUpdates(message);
+    if (this.data != null) {
+      if (!BitwiseUtils.hasFlag(this.data.options, Options.NO_UPDATES)) {
+        unsubscribeFromUpdates(this.data.message);
+      }
+      if (this.data.linkPreview != null) {
+        this.data.linkPreview.removeReference(this);
+      }
+      this.data.performDestroy();
+    }
+    this.data = data;
+    if (data != null) {
+      if (!BitwiseUtils.hasFlag(this.data.options, Options.NO_UPDATES)) {
+        subscribeToUpdates(data.message);
+      }
+      if (data.linkPreview != null && data.linkPreview.isLoading()) {
+        data.linkPreview.addReference(this);
+      }
       buildPreview();
+      if (!BitwiseUtils.hasFlag(data.options, Options.DISABLE_MESSAGE_PREVIEW)) {
+        setPreviewChatId(null, data.message.chatId, null, new MessageId(data.message), data.filter);
+      } else {
+        clearPreviewChat();
+      }
     } else {
       this.contentPreview = null;
       this.mediaPreview.replace(null, false);
       this.mediaPreview.measure(false);
-    }
-    if (message != null && BitwiseUtils.hasFlag(options, Options.DISABLE_MESSAGE_PREVIEW)) {
-      setPreviewChatId(null, message.chatId, null, new MessageId(message.chatId, message.id), filter);
-    } else {
       clearPreviewChat();
     }
     invalidate();
-  }
-
-  public void setForcedTitle (@Nullable String forcedTitle) {
-    if (!StringUtils.equalsOrBothEmpty(this.forcedTitle, forcedTitle)) {
-      this.forcedTitle = forcedTitle;
-      updateTitleText();
-    }
   }
 
   public void setUseAvatarFallback (boolean useAvatarFallback) {
@@ -214,12 +329,15 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   }
 
   private void buildPreview () {
-    if (messageQuote != null) {
-      this.contentPreview = new ContentPreview(messageQuote, false);
-    } else {
-      this.contentPreview = ContentPreview.getChatListPreview(tdlib, message.chatId, message, true);
+    if (data == null) {
+      throw new IllegalStateException();
     }
-    if (contentPreview.hasRefresher() && !(BitwiseUtils.hasFlag(displayOptions, Options.IGNORE_ALBUM_REFRESHERS) && contentPreview.isMediaGroup())) {
+    if (!Td.isEmpty(data.quote)) {
+      this.contentPreview = new ContentPreview(data.quote, false);
+    } else {
+      this.contentPreview = ContentPreview.getChatListPreview(tdlib, data.message.chatId, data.messageDeleted ? null : data.message, true);
+    }
+    if (contentPreview.hasRefresher() && !(BitwiseUtils.hasFlag(data.options, Options.IGNORE_ALBUM_REFRESHERS) && contentPreview.isMediaGroup())) {
       contentPreview.refreshContent((chatId, messageId, newPreview, oldPreview) -> {
         tdlib.runOnUiThread(() -> {
           if (this.contentPreview == oldPreview) {
@@ -303,10 +421,10 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   private void buildMediaPreview (boolean animated) {
     MediaPreview preview;
 
-    if (message != null) {
-      preview = MediaPreview.valueOf(tdlib, message, contentPreview, Screen.dp(IMAGE_HEIGHT), Screen.dp(3f));
+    if (data != null) {
+      preview = MediaPreview.valueOf(tdlib, data.message, contentPreview, Screen.dp(IMAGE_HEIGHT), Screen.dp(3f));
       if (preview == null && useAvatarFallback) {
-        TdApi.Chat chat = tdlib.chat(message.chatId);
+        TdApi.Chat chat = tdlib.chat(data.message.chatId);
         if (chat != null && chat.photo != null) {
           preview = MediaPreview.valueOf(tdlib, chat.photo, Screen.dp(IMAGE_HEIGHT), Screen.dp(3f));
         }
@@ -333,30 +451,26 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
 
   @Nullable
   private String getTitle () {
-    return !StringUtils.isEmpty(forcedTitle) ? forcedTitle : message != null ? tdlib.senderName(message, true, false) : null;
-  }
-
-  @Nullable
-  private TdlibAccentColor getAccentColor () {
-    if (StringUtils.isEmpty(forcedTitle) && message != null) {
-      return tdlib.messageAccentColor(message);
-    } else {
-      return null;
+    if (this.data != null) {
+      if (!StringUtils.isEmpty(this.data.forcedTitle)) {
+        return this.data.forcedTitle;
+      }
+      return tdlib.senderName(this.data.message, true, false);
     }
-  }
-
-  private boolean needBoldTitle () {
-    return !StringUtils.isEmpty(forcedTitle) || (message != null && Td.getMessageAuthorId(message, true) != 0);
+    return null;
   }
 
   private static final float CORNER_PADDING = 3f;
 
   private void buildTitleText (int availWidth, boolean animated) {
+    if (data == null) {
+      throw new IllegalStateException();
+    }
     String title = getTitle();
-    TdlibAccentColor accentColor = getAccentColor();
+    TdlibAccentColor accentColor = data.accentColor();
 
     Drawable drawable;
-    if (messageQuote != null) {
+    if (!Td.isEmpty(data.quote)) {
       @ColorId int colorId = ColorId.messageAuthor;
       if (accentColor != null) {
         long complexColor = accentColor.getNameComplexColor();
@@ -384,7 +498,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
       ).viewProvider(viewProvider)
        .singleLine()
        .allClickable()
-       .allBold(needBoldTitle())
+       .allBold(data.needBoldTitle())
        .build();
     } else {
       newText = null;
@@ -448,7 +562,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
 
   @Override
   protected void onDraw (Canvas c) {
-    if (this.message == null)
+    if (this.data == null)
       return;
     int textX = Screen.dp(getLinePadding()) + Screen.dp(PADDING_SIZE) + getTextHorizontalOffset();
     for (ListAnimator.Entry<MediaEntry> entry : mediaPreview) {
@@ -521,10 +635,18 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     tdlib.listeners().unsubscribeFromMessageUpdates(message.chatId, this);
   }
 
+  private void runOnUiThreadOptional (RunnableData<DisplayData> runnable) {
+    tdlib.runOnUiThread(() -> {
+      if (this.data != null) {
+        runnable.runWithData(this.data);
+      }
+    });
+  }
+
   @Override
   public void onChatTitleChanged (long chatId, String title) {
-    tdlib.runOnUiThread(() -> {
-      if (this.message != null && this.message.senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR && ((TdApi.MessageSenderChat) this.message.senderId).chatId == chatId) {
+    runOnUiThreadOptional(data -> {
+      if (data.relatedToChat(chatId)) {
         updateTitleText();
       }
     });
@@ -532,8 +654,8 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
 
   @Override
   public void onUserUpdated (TdApi.User user) {
-    tdlib.runOnUiThread(() -> {
-      if (this.message != null && this.message.senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR && ((TdApi.MessageSenderUser) this.message.senderId).userId == user.id) {
+    runOnUiThreadOptional(data -> {
+      if (data.relatedToUser(user.id)) {
         updateTitleText();
       }
     });
@@ -541,9 +663,8 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
 
   @Override
   public void onMessageContentChanged (long chatId, long messageId, TdApi.MessageContent newContent) {
-    tdlib.runOnUiThread(() -> {
-      if (this.message != null && this.message.chatId == chatId && this.message.id == messageId) {
-        this.message.content = newContent;
+    runOnUiThreadOptional(data -> {
+      if (data.updateMessageContent(chatId, messageId, newContent)) {
         buildPreview();
       }
     });
@@ -551,18 +672,26 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
 
   @Override
   public void onMessagesDeleted (long chatId, long[] messageIds) {
-    tdlib.runOnUiThread(() -> {
-      if (this.message != null && this.message.chatId == chatId) {
+    runOnUiThreadOptional(data -> {
+      if (data.message.chatId == chatId) {
+        boolean needUpdate = false;
+        if (ArrayUtils.contains(messageIds, data.message.id)) {
+          data.messageDeleted = true;
+          needUpdate = true;
+        }
         if (this.contentPreview != null) {
           Tdlib.Album album = this.contentPreview.getAlbum();
           if (album != null) {
             for (TdApi.Message albumMessage : album.messages) {
               if (ArrayUtils.contains(messageIds, albumMessage.id)) {
-                buildPreview(); // one of album's message was deleted
+                needUpdate = true; // one of album's message was deleted, force reload album.
                 break;
               }
             }
           }
+        }
+        if (needUpdate) {
+          buildPreview();
         }
       }
     });
@@ -599,7 +728,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   }
 
   public void clear () {
-    setMessage(null, null, null, Options.NONE);
+    setDisplayData(null);
   }
 
   @Override
@@ -627,8 +756,8 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
 
   @Override
   public TdApi.Message getVisibleMessage () {
-    if (message != null && message.chatId != 0) {
-      return message;
+    if (data != null && data.message.chatId != 0) {
+      return data.message;
     }
     return null;
   }

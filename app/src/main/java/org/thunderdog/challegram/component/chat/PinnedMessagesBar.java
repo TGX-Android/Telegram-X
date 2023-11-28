@@ -269,6 +269,10 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     }
   }
 
+  public boolean areAnimationsDisabled () {
+    return animationsDisabled;
+  }
+
   @Override
   protected void onDraw (Canvas c) {
     c.drawRect(0, getRecyclerHeight(), getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(Theme.fillingColor()));
@@ -427,8 +431,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
         Entry data = (Entry) item.getData();
         if (data.isLinkPreview()) {
           MessagesController.LinkPreview linkPreview = data.linkPreviewContext.getLinkPreview(data.linkPreviewUrl);
-          // TODO add/remove ref to load web page
-          previewView.setMessage(linkPreview.getFakeMessage(), null, null, linkPreview.getForcedTitle(), MessagePreviewView.Options.IGNORE_ALBUM_REFRESHERS);
+          previewView.setLinkPreview(linkPreview);
         } else if (data.isMessage()) {
           TdApi.Message message = data.message;
           TdApi.FormattedText quote = data.quote;

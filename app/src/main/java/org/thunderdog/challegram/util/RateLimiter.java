@@ -55,8 +55,7 @@ public final class RateLimiter implements Runnable {
       return;
     }
     if (!isScheduled) {
-      long nextExecutionTimeMs = lastExecutionTime + delayMs;
-      long delayMs = nextExecutionTimeMs - now;
+      long delayMs = lastExecutionTime != 0 ? (lastExecutionTime + this.delayMs) - now : this.delayMs;
       handler.sendMessageDelayed(handler.obtainMessage(0), delayMs);
     }
   }

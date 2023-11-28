@@ -205,7 +205,10 @@ public class ContentPreview {
   }
 
   @NonNull
-  private static ContentPreview getContentPreview (Tdlib tdlib, long chatId, TdApi.Message message, boolean allowContent, boolean isChatList, boolean checkChatRestrictions) {
+  private static ContentPreview getContentPreview (Tdlib tdlib, long chatId, @Nullable TdApi.Message message, boolean allowContent, boolean isChatList, boolean checkChatRestrictions) {
+    if (message == null) {
+      return new ContentPreview(EMOJI_ERROR, 0, Lang.getString(R.string.DeletedMessage), false);
+    }
     if (Settings.instance().needRestrictContent()) {
       if (!StringUtils.isEmpty(message.restrictionReason)) {
         return new ContentPreview(EMOJI_ERROR, 0, message.restrictionReason, false);

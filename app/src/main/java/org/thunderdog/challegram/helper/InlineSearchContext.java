@@ -60,6 +60,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.td.ChatId;
@@ -1341,6 +1342,27 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     public FoundUrls () {
       this.set = Collections.emptySet();
       this.urls = new String[0];
+    }
+
+    public boolean hasUrl (@NonNull String url) {
+      return !StringUtils.isEmpty(url) && (set.contains(url) || set.contains(StringUtils.urlWithoutProtocol(url)));
+    }
+
+    public int indexOfUrl (@NonNull String url) {
+      int index = ArrayUtils.indexOf(urls, url);
+      if (index != -1) {
+        return index;
+      }
+      index = 0;
+      String urlWithoutProtocol = StringUtils.urlWithoutProtocol(url);
+      for (String foundUrl : urls) {
+        String foundUrlWithoutProtocol = StringUtils.urlWithoutProtocol(foundUrl);
+        if (StringUtils.equalsOrBothEmpty(foundUrlWithoutProtocol, urlWithoutProtocol)) {
+          return index;
+        }
+        index++;
+      }
+      return -1;
     }
 
     private static FoundUrls emptyResult;
