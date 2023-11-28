@@ -445,6 +445,8 @@
   <string name="PasscodeSettingDisabled">Disabled</string>
   <string name="passcode_confirm_invisible">%1$s (invisible)</string>
   <string name="copied_phone">Phone number has been copied to the clipboard</string>
+  <string name="CopiedMyUserId">Your ID has been copied to the clipboard</string>
+  <string name="CopiedPeerId">Peer ID has been copied to the clipboard</string>
   <string name="CopiedUsername">Username has been copied to the clipboard</string>
   <string name="CopiedLink">Link has been copied to the clipboard</string>
   <string name="CopiedLinkPrivate">Link has been copied to the clipboard. It works only for members of this chat.</string>
@@ -3323,8 +3325,6 @@
   <string name="RecurringPayment">Recurring payment</string>
   <string name="PaidX">You successfully paid %1$s</string>
 
-  <string name="MarketUrl">https://play.google.com/store/apps/details?id=org.thunderdog.challegram</string>
-
   <string name="NotificationChannelOther">Other</string>
   <string name="RetrievingMessages">Checking for new messages</string>
   <string name="RetrievingText">Account: %1$s</string>
@@ -4805,6 +4805,8 @@
 
   <string name="ReactionsPickerHeader">Reactions</string>
 
+  <string name="BroadcastWriteHint">Only admins can write messages in broadcast groups.</string>
+
   <string name="ShowXMoreEmoji_one">%1$s more</string>
   <string name="ShowXMoreEmoji_other">%1$s more</string>
 
@@ -4870,9 +4872,17 @@
   <string name="ExperimentalSettings">Experimental settings</string>
   <string name="ExperimentalSettingsWarning">**Warning:** those are experimental settings. Some may not work. Others may break the app. Any of them might disappear without a trace.\n\nUse at your own risk.</string>
   <string name="Experiment_PeerIds">Show Peer IDs in Profiles</string>
-  <string name="Experiment_PeerIdsInfo">Show peer IDs from API below their Bio / Description</string>
+  <string name="Experiment_PeerIdsInfo">Show API identifiers of users and chats in their profiles</string>
   <string name="Experiment_ChatFolders">Enable Chat Folders</string>
   <string name="Experiment_ChatFoldersInfo">Enable early access to folders. Appearance of this feature is planned to be changed in future versions of Telegram X, and it includes some unfinished work. Credit: [PR #297](https://github.com/TGX-Android/Telegram-X/pull/297) by nikita-toropov</string>
+
+  <string name="PeerId">Peer ID</string>
+  <string name="UserId">User ID</string>
+  <string name="SecretChatId">Secret Chat ID</string>
+  <string name="BotId">Bot ID</string>
+  <string name="BasicGroupId">Group ID</string>
+  <string name="SuperGroupId">Supergroup ID</string>
+  <string name="ChannelId">Channel ID</string>
 
   <!-- RESOLUTION STRING SECTION -->
 
@@ -4881,4 +4891,5 @@
   <string name="ResolutionLow">Low (800px)</string>
   <string name="ResolutionMedium">Medium (1280px)</string>
   <string name="ResolutionHigh">High (2560px)</string>
+
 </resources>

@@ -65,6 +65,7 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.AppInstallationUtil;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.UserProvider;
 import org.thunderdog.challegram.util.WrapperProvider;
@@ -478,7 +479,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private int pinnedChatsMaxCount = 5, pinnedArchivedChatsMaxCount = 100, pinnedForumTopicMaxCount = 5;
   private int favoriteStickersMaxCount = 5;
   private double emojiesAnimatedZoom = .75f;
-  private boolean youtubePipDisabled, qrLoginCamera, dialogFiltersTooltip, dialogFiltersEnabled;
+  private boolean youtubePipDisabled, qrLoginCamera, dialogFiltersTooltip, dialogFiltersEnabled, forceUrgentInAppUpdate;
   private String qrLoginCode;
   private String[] diceEmoji, activeEmojiReactions;
   private TdApi.ReactionType defaultReactionType;
@@ -1663,6 +1664,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   public int id () {
     return accountId;
+  }
+
+  public boolean isProduction () {
+    return instanceMode == Mode.NORMAL;
   }
 
   private boolean isDebugInstance () {
@@ -4814,51 +4819,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
-  public TdApi.FormattedText addServiceInformation (long chatId, TdApi.FormattedText existingPrefix) {
-    String prefix;
-    long value;
-    switch (ChatId.getType(chatId)) {
-      case TdApi.ChatTypePrivate.CONSTRUCTOR: {
-        prefix = "user";
-        value = ChatId.toUserId(chatId);
-        break;
-      }
-      case TdApi.ChatTypeSecret.CONSTRUCTOR: {
-        prefix = "secret";
-        value = ChatId.toSecretChatId(chatId);
-        break;
-      }
-      case TdApi.ChatTypeBasicGroup.CONSTRUCTOR: {
-        prefix = "group";
-        value = ChatId.toBasicGroupId(chatId);
-        break;
-      }
-      case TdApi.ChatTypeSupergroup.CONSTRUCTOR: {
-        prefix = isSupergroup(chatId) ? "supergroup" : "channel";
-        value = ChatId.toSupergroupId(chatId);
-        break;
-      }
-      default: {
-        Td.assertChatType_e562ec7d();
-        return existingPrefix;
-      }
-    }
-
-    String suffix = "#" + value;
-    TdApi.FormattedText formattedSuffix = new TdApi.FormattedText(prefix + " " + suffix, new TdApi.TextEntity[2]);
-    formattedSuffix.entities[0] = new TdApi.TextEntity(0, formattedSuffix.text.length(), new TdApi.TextEntityTypeItalic());
-    formattedSuffix.entities[1] = new TdApi.TextEntity(formattedSuffix.text.length() - suffix.length(), suffix.length(), new TdApi.TextEntityTypeHashtag());
-    if (!Td.isEmpty(existingPrefix)) {
-      return Td.concat(
-        existingPrefix,
-        new TdApi.FormattedText("\n", null),
-        formattedSuffix
-      );
-    } else {
-      return formattedSuffix;
-    }
-  }
-
   public void forwardMessage (long chatId, long messageThreadId, long fromChatId, long messageId, TdApi.MessageSendOptions options) {
     client().send(new TdApi.ForwardMessages(chatId, messageThreadId, fromChatId, new long[] {messageId}, options, false, false, false), messageHandler());
   }
@@ -5768,9 +5728,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
     long timeZoneOffset = timeZoneOffset();
     params.put("package_id", UI.getAppContext().getPackageName());
-    String installerName = U.getInstallerPackageName();
+    String installerName = AppInstallationUtil.getInstallerPackageName();
     if (!StringUtils.isEmpty(installerName)) {
       params.put("installer", installerName);
+    }
+    String initiatorName = AppInstallationUtil.getInitiatorPackageName();
+    if (!StringUtils.isEmpty(initiatorName) && !initiatorName.equals(installerName)) {
+      params.put("initiator", initiatorName);
+    }
+    if (BuildConfig.DEBUG) {
+      params.put("debug", true);
     }
     String fingerprint = U.getApkFingerprint("SHA1", false);
     if (!StringUtils.isEmpty(fingerprint)) {
@@ -5854,7 +5821,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       updateNotificationParameters(client);
       client.send(new TdApi.SetOption("storage_max_files_size", new TdApi.OptionValueInteger(Integer.MAX_VALUE)), okHandler);
       client.send(new TdApi.SetOption("ignore_default_disable_notification", new TdApi.OptionValueBoolean(true)), okHandler);
-      client.send(new TdApi.SetOption("ignore_platform_restrictions", new TdApi.OptionValueBoolean(U.isAppSideLoaded())), okHandler);
+      client.send(new TdApi.SetOption("ignore_platform_restrictions", new TdApi.OptionValueBoolean(AppInstallationUtil.isAppSideLoaded())), okHandler);
     }
     checkConnectionParams(client, true);
 
@@ -5885,6 +5852,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
+  public boolean hasUrgentInAppUpdate () {
+    return forceUrgentInAppUpdate;
+  }
+
   private void processApplicationConfig (TdApi.JsonValue config) {
     if (!(config instanceof TdApi.JsonValueObject))
       return;
@@ -5895,6 +5866,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       switch (member.key) {
         case "test":
           // Nothing to do?
+          break;
+        case "force_inapp_update":
+          this.forceUrgentInAppUpdate = member.value instanceof TdApi.JsonValueBoolean && ((TdApi.JsonValueBoolean) member.value).value;
           break;
         case "ios_disable_parallel_channel_reset":
         case "small_queue_max_active_operations_count": // Number
@@ -6673,7 +6647,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public boolean youtubePipEnabled () {
-    return !youtubePipDisabled || U.isAppSideLoaded();
+    return !youtubePipDisabled || AppInstallationUtil.isAppSideLoaded();
   }
 
   public RtcServer[] rtcServers () {
@@ -10458,6 +10432,22 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       }
     }
     return false;
+  }
+
+  public boolean canEditSlowMode (long chatId) {
+    if (canRestrictMembers(chatId)) {
+      TdApi.Supergroup supergroup = chatToSupergroup(chatId);
+      if (supergroup != null) {
+        return !supergroup.isChannel && !supergroup.isBroadcastGroup;
+      }
+      return ChatId.isBasicGroup(chatId) && canUpgradeChat(chatId);
+    }
+    return false;
+  }
+
+  public boolean isBroadcastGroup (long chatId) {
+    TdApi.Supergroup supergroup = chatToSupergroup(chatId);
+    return supergroup != null && supergroup.isBroadcastGroup;
   }
 
   public boolean canDeleteMessages (long chatId) {

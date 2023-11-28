@@ -363,6 +363,7 @@
   <item type="id" name="btn_stickerSet" />
   <item type="id" name="btn_reactionSelector" />
   <item type="id" name="btn_description" />
+  <item type="id" name="btn_peer_id" />
   <item type="id" name="btn_contactsRegistered" />
   <item type="id" name="btn_contactsUnregistered" />
   <item type="id" name="btn_bio" />

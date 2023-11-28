@@ -126,6 +126,7 @@ import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.TextController;
 import org.thunderdog.challegram.util.AppBuildInfo;
+import org.thunderdog.challegram.util.AppInstallationUtil;
 import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
@@ -191,40 +192,12 @@ public class U {
     return U.isValidBitmap(bitmap) && N.blurBitmap(bitmap, radius, unpin, 0) == 0;
   }
 
-  private static Boolean isAppSideLoaded;
-
-  public static boolean isAppSideLoaded () {
-    return (isAppSideLoaded != null ? isAppSideLoaded : (isAppSideLoaded = isAppSideLoadedImpl()));
-  }
-
   public static int getHeading (Location location) {
     if (location.hasBearing()) {
       int heading = MathUtils.modulo(Math.round(location.getBearing()), 360);
       return heading != 0 ? heading : 360;
     }
     return 0;
-  }
-
-  public static final String VENDOR_GOOGLE_PLAY = "com.android.vending";
-
-  @Nullable
-  public static String getInstallerPackageName () {
-    try {
-      String packageName = UI.getAppContext().getPackageName();
-      String installerPackageName = UI.getAppContext().getPackageManager().getInstallerPackageName(packageName);
-      if (StringUtils.isEmpty(installerPackageName)) {
-        return null;
-      }
-      return installerPackageName;
-    } catch (Throwable t) {
-      Log.v("Unable to determine installer package", t);
-      return null;
-    }
-  }
-
-  private static boolean isAppSideLoadedImpl () {
-    String installerId = getInstallerPackageName();
-    return StringUtils.isEmpty(installerId) || !VENDOR_GOOGLE_PLAY.equals(installerId);
   }
 
   public static String gzipFileToString (String path) {
@@ -844,15 +817,6 @@ public class U {
       return (long) statFs.getBlockSize() * (long) statFs.getAvailableBlocks();
     }
   }
-
-  public static String getMarketUrl () {
-    String url = Lang.getStringSecure(R.string.MarketUrl);
-    return Strings.isValidLink(url) ? url : BuildConfig.MARKET_URL;
-  }
-
-  /*public static boolean isAfter (int hour, int minute, int second, int afterHour, int afterMinute, int afterSecond) {
-    return hour > afterHour || (hour == afterHour && (minute > afterMinute || (minute == afterMinute && second > afterSecond)));
-  }*/
 
   public static String getOtherNotificationChannel () {
     return getNotificationChannel("other", R.string.NotificationChannelOther);
@@ -2433,9 +2397,9 @@ public class U {
       "Build: `" + Build.FINGERPRINT + "`\n" +
       "Package: " + UI.getAppContext().getPackageName() + "\n" +
       "Locale: " + locale + (!locale.equals(appLocale) ? " (app: " + appLocale + ")" : "");
-    String installerName = U.getInstallerPackageName();
+    String installerName = AppInstallationUtil.getInstallerPrettyName();
     if (!StringUtils.isEmpty(installerName)) {
-      metadata += "\nInstaller: " + (U.VENDOR_GOOGLE_PLAY.equals(installerName) ? "Google Play" : installerName);
+      metadata += "\nInstaller: " + installerName;
     }
     String fingerprint = U.getApkFingerprint("SHA1");
     if (!StringUtils.isEmpty(fingerprint)) {
