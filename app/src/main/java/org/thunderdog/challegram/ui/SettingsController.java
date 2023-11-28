@@ -598,7 +598,7 @@ public class SettingsController extends ViewController<Void> implements
 
     items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET));
     if (Settings.instance().showPeerIds()) {
-      items.add(new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_peer_id, R.drawable.baseline_code_24, R.string.UserId).setContentStrings(R.string.LoadingInformation, R.string.LoadingInformation));
+      items.add(new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_peer_id, R.drawable.baseline_identifier_24, R.string.UserId).setContentStrings(R.string.LoadingInformation, R.string.LoadingInformation));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     }
     items.add(new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_username, R.drawable.baseline_alternate_email_24, R.string.Username).setContentStrings(R.string.LoadingUsername, R.string.SetUpUsername));
