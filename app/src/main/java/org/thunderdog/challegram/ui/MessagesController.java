@@ -6288,10 +6288,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  private static final boolean ANIMATE_REPLY_BAR = false;
+
   private final BoolAnimator replyBarVisible = new BoolAnimator(0, new FactorAnimator.Target() {
     @Override
     public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
-      if (replyBarView != null) {
+      if (ANIMATE_REPLY_BAR && replyBarView != null) {
         replyBarView.setAnimationsDisabled(factor == 0f);
       }
       updateReplyView();
