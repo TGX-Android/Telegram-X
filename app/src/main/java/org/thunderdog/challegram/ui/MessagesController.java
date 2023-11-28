@@ -146,12 +146,12 @@ import org.thunderdog.challegram.data.TGMessageSticker;
 import org.thunderdog.challegram.data.TGRecord;
 import org.thunderdog.challegram.data.TGSwitchInline;
 import org.thunderdog.challegram.data.TGUser;
-import org.thunderdog.challegram.data.TGWebPage;
 import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.filegen.VideoGenerationInfo;
 import org.thunderdog.challegram.helper.BotHelper;
-import org.thunderdog.challegram.helper.InlineSearchContext;
+import org.thunderdog.challegram.helper.FoundUrls;
+import org.thunderdog.challegram.helper.LinkPreview;
 import org.thunderdog.challegram.helper.LiveLocationHelper;
 import org.thunderdog.challegram.helper.Recorder;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -224,7 +224,6 @@ import org.thunderdog.challegram.util.CancellableResultHandler;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.Permissions;
-import org.thunderdog.challegram.util.RateLimiter;
 import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.Unlockable;
@@ -276,11 +275,9 @@ import me.vkryl.core.collection.IntList;
 import me.vkryl.core.collection.LongList;
 import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.lambda.CancellableRunnable;
-import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.Future;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
@@ -6427,183 +6424,33 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return editContext != null && editContext.message.content.getConstructor() != TdApi.MessageText.CONSTRUCTOR;
   }
 
-  public static class LinkPreview implements Destroyable {
-    public final Tdlib tdlib;
-    public final String url;
-
-    public TdApi.WebPage webPage;
-    public TdApi.Error error;
-
-    private final TdApi.Message fakeMessage;
-
-    private final RateLimiter linkPreviewLoader = new RateLimiter(this::loadLinkPreview, 400L, null);
-    private boolean needLoadWebPagePreview, isDestroyed;
-    private RunnableData<LinkPreview> loadCallback;
-
-    private final ReferenceList<RunnableData<LinkPreview>> loadCallbacks = new ReferenceList<>(false, true, (list, isFull) -> {
-      if (isFull) {
-        if (needLoadWebPagePreview) {
-          linkPreviewLoader.run();
-        }
-      } else {
-        linkPreviewLoader.cancelIfScheduled();
-      }
-    });
-
-    public LinkPreview (Tdlib tdlib, String url, @Nullable TdApi.Message existingMessage) {
-      this.tdlib = tdlib;
-      this.url = url;
-      this.linkPreviewLoader.setDelayFirstExecution(true);
-      this.needLoadWebPagePreview = true;
-
-      TdApi.MessageText messageText = new TdApi.MessageText(new TdApi.FormattedText(url, null), null, null);
-      TdApi.MessageSender messageSender = existingMessage != null ? existingMessage.senderId : new TdApi.MessageSenderUser(tdlib.myUserId());
-
-      if (existingMessage != null && Td.isText(existingMessage.content)) {
-        TdApi.MessageText existingText = (TdApi.MessageText) existingMessage.content;
-        if (existingText.webPage != null) {
-          boolean isCurrentWebPage =
-            (existingText.linkPreviewOptions != null && !StringUtils.isEmpty(existingText.linkPreviewOptions.url) && compareUrls(existingText.linkPreviewOptions.url, url)) ||
-            (compareUrls(existingText.webPage.url, url));
-          if (isCurrentWebPage) {
-            this.webPage = existingText.webPage;
-            updateMessageText(messageText, this.webPage);
-            this.needLoadWebPagePreview = false;
-          }
-        }
-      }
-      this.fakeMessage = TD.newFakeMessage(0, messageSender, messageText);
-    }
-
-    public void setLoadCallback (RunnableData<LinkPreview> loadCallback) {
-      this.loadCallback = loadCallback;
-    }
-
-    private static boolean compareUrls (String a, String b) {
-      return a.equals(b) || StringUtils.urlWithoutProtocol(a).equals(StringUtils.urlWithoutProtocol(b));
-    }
-
-    private static void updateMessageText (TdApi.MessageText messageText, TdApi.WebPage webPage) {
-      messageText.webPage = webPage;
-      if (!Td.isEmpty(webPage.description)) {
-        messageText.text = webPage.description;
-      } else if (!StringUtils.isEmpty(webPage.siteName) && !StringUtils.isEmpty(webPage.title)) {
-        messageText.text = new TdApi.FormattedText(webPage.title, null);
-      }
-    }
-
-    public void addReference (RunnableData<LinkPreview> callback) {
-      loadCallbacks.add(callback);
-    }
-
-    public void removeReference (RunnableData<LinkPreview> callback) {
-      loadCallbacks.remove(callback);
-    }
-
-    @Override
-    public void performDestroy () {
-      isDestroyed = true;
-      needLoadWebPagePreview = false;
-      linkPreviewLoader.cancelIfScheduled();
-      loadCallbacks.clear();
-    }
-
-    private void loadLinkPreview () {
-      needLoadWebPagePreview = false;
-      tdlib.send(new TdApi.GetWebPagePreview(new TdApi.FormattedText(url, null), null), (webPage, error) -> {
-        tdlib.ui().post(() -> {
-          if (webPage != null) {
-            this.webPage = webPage;
-            updateMessageText((TdApi.MessageText) fakeMessage.content, webPage);
-          } else {
-            this.error = error;
-          }
-          notifyLinkPreviewLoaded();
-        });
-      });
-    }
-
-    public boolean isNotFound () {
-      return error != null;
-    }
-
-    public boolean isLoading () {
-      return error == null && webPage == null;
-    }
-
-    public TdApi.Message getFakeMessage () {
-      return fakeMessage;
-    }
-
-    public String getForcedTitle () {
-      if (isLoading()) {
-        return Lang.getString(R.string.GettingLinkInfo);
-      } else if (isNotFound()) {
-        return Lang.getString(R.string.NoLinkInfo);
-      }
-
-      String title = Td.isEmpty(webPage.description) ? Strings.any(webPage.siteName, webPage.title) : Strings.any(webPage.title, webPage.siteName);
-      if (!StringUtils.isEmpty(title)) {
-        return title;
-      }
-      if (webPage.photo != null || (webPage.sticker != null && Math.max(webPage.sticker.width, webPage.sticker.height) > TGWebPage.STICKER_SIZE_LIMIT)) {
-        return Lang.getString(R.string.Photo);
-      } else if (webPage.video != null) {
-        return Lang.getString(R.string.Video);
-      } else if (webPage.document != null || webPage.voiceNote != null) {
-        title = webPage.document != null ? webPage.document.fileName : Lang.getString(R.string.Audio);
-        if (StringUtils.isEmpty(title)) {
-          title = Lang.getString(R.string.File);
-        }
-        return title;
-      } else if (webPage.audio != null) {
-        return TD.getTitle(webPage.audio) + " – " + TD.getSubtitle(webPage.audio);
-      } else if (webPage.sticker != null) {
-        return Lang.getString(R.string.Sticker);
-      }
-      return Lang.getString(R.string.LinkPreview);
-    }
-
-    private void notifyLinkPreviewLoaded () {
-      if (isDestroyed) {
-        return;
-      }
-      for (RunnableData<LinkPreview> callback : loadCallbacks) {
-        callback.runWithData(this);
-      }
-      if (loadCallback != null) {
-        loadCallback.runWithData(this);
-      }
-    }
-  }
-
   public static class MessageInputContext {
     private final MessagesController context;
     private final Tdlib tdlib;
     private final TdApi.Message message;
-    private @NonNull InlineSearchContext.FoundUrls foundUrls;
+    private @NonNull FoundUrls foundUrls;
 
-    private InlineSearchContext.FoundUrls dismissedFoundUrls;
+    private FoundUrls dismissedFoundUrls;
 
     private final TdApi.LinkPreviewOptions linkPreviewOptions;
 
     MessageInputContext (MessagesController context, Tdlib tdlib, @Nullable TdApi.Message existingMessage) {
       this.context = context;
       this.tdlib = tdlib;
-      this.foundUrls = InlineSearchContext.FoundUrls.emptyResult();
+      this.foundUrls = FoundUrls.emptyResult();
       this.message = existingMessage;
       if (existingMessage != null && Td.isText(existingMessage.content)) {
         TdApi.MessageText messageText = (TdApi.MessageText) existingMessage.content;
         linkPreviewOptions = Td.copyOf(messageText.linkPreviewOptions);
         if (linkPreviewOptions.isDisabled) {
-          dismissedFoundUrls = new InlineSearchContext.FoundUrls(messageText);
+          dismissedFoundUrls = foundUrls = new FoundUrls(messageText);
         }
       } else {
         linkPreviewOptions = new TdApi.LinkPreviewOptions();
       }
     }
 
-    public @NonNull InlineSearchContext.FoundUrls getFoundUrls () {
+    public @NonNull FoundUrls getFoundUrls () {
       return foundUrls;
     }
 
@@ -6660,12 +6507,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return message != null && message.chatId == chatId && message.id == messageId;
     }
 
-    boolean setFoundUrls (@Nullable InlineSearchContext.FoundUrls foundUrls) {
+    boolean setFoundUrls (@Nullable FoundUrls foundUrls) {
       if (foundUrls == null) {
-        foundUrls = InlineSearchContext.FoundUrls.emptyResult();
+        foundUrls = FoundUrls.emptyResult();
       }
 
-      InlineSearchContext.FoundUrls previouslyFoundUrls = this.foundUrls;
+      FoundUrls previouslyFoundUrls = this.foundUrls;
       this.foundUrls = foundUrls;
 
       boolean wasEmpty = previouslyFoundUrls.isEmpty();
@@ -6697,6 +6544,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     void reset () {
       dismissedFoundUrls = null;
+      foundUrls = FoundUrls.emptyResult();
       Td.reset(linkPreviewOptions);
     }
 
@@ -8039,18 +7887,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   // Link preview
 
   private void closeLinkPreview () {
-    boolean animationsDisabled = replyBarView.areAnimationsDisabled();
-    if (isEditingMessage()) {
-      replyBarView.setAnimationsDisabled(true);
-    }
     findTargetContext().dismiss();
     updateReplyBarVisibility(!isEditingMessage());
     inputView.setTextChangedSinceChatOpened(true);
-    if (isEditingMessage()) {
-      tdlib.ui().postDelayed(() -> {
-        replyBarView.setAnimationsDisabled(animationsDisabled);
-      }, 10L);
-    }
   }
 
   @Override
@@ -8075,7 +7914,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return isEditingMessage() ? editContext : draftContext;
   }
 
-  public void showLinkPreview (@Nullable InlineSearchContext.FoundUrls foundUrls) {
+  public void showLinkPreview (@Nullable FoundUrls foundUrls) {
     if (inPreviewMode || isInForceTouchMode()) {
       return;
     }

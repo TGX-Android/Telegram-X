@@ -29,9 +29,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.config.Config;
-import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.helper.InlineSearchContext;
+import org.thunderdog.challegram.helper.LinkPreview;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ListManager;
@@ -63,7 +61,6 @@ import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.MessageId;
-import me.vkryl.td.Td;
 
 public class PinnedMessagesBar extends ViewGroup implements Destroyable, MessageListManager.ChangeListener, View.OnClickListener {
   private CustomRecyclerView recyclerView;
@@ -430,7 +427,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
       protected void setMessagePreview (ListItem item, int position, MessagePreviewView previewView) {
         Entry data = (Entry) item.getData();
         if (data.isLinkPreview()) {
-          MessagesController.LinkPreview linkPreview = data.linkPreviewContext.getLinkPreview(data.linkPreviewUrl);
+          LinkPreview linkPreview = data.linkPreviewContext.getLinkPreview(data.linkPreviewUrl);
           previewView.setLinkPreview(linkPreview);
         } else if (data.isMessage()) {
           TdApi.Message message = data.message;
@@ -502,14 +499,33 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
       @Override
       public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
         LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
-        if (messageList != null && dy != 0 && manager != null) {
+        if (manager != null) {
           int lastVisiblePosition = manager.findLastVisibleItemPosition();
           int firstVisiblePosition = manager.findFirstVisibleItemPosition();
-          if (lastVisiblePosition != RecyclerView.NO_POSITION && lastVisiblePosition + 15 >= messageList.getCount()) {
-            messageList.loadItems(false, null);
-          } else if (firstVisiblePosition != RecyclerView.NO_POSITION && firstVisiblePosition - 5 <= 0) {
-            messageList.loadItems(true, null);
+          if (messageList != null && dy != 0) {
+            if (lastVisiblePosition != RecyclerView.NO_POSITION && lastVisiblePosition + 15 >= messageList.getCount()) {
+              messageList.loadItems(false, null);
+            } else if (firstVisiblePosition != RecyclerView.NO_POSITION && firstVisiblePosition - 5 <= 0) {
+              messageList.loadItems(true, null);
+            }
           }
+
+          int focusIndex = firstVisiblePosition;
+          View view = manager.findViewByPosition(firstVisiblePosition);
+          if (view != null) {
+            if (reverseLayout) {
+              int offsetY = Math.max(0, view.getBottom() - recyclerView.getMeasuredHeight());
+              if (offsetY > view.getMeasuredHeight() / 2) {
+                focusIndex++;
+              }
+            } else {
+              int offsetY = Math.min(0, view.getTop());
+              if (-offsetY > view.getMeasuredHeight() / 2) {
+                focusIndex++;
+              }
+            }
+          }
+          setFocusIndex(focusIndex);
         }
         float expand = getExpandFactor();
         if (expand > 0f && expand < 1f) {
@@ -522,6 +538,21 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     viewController.addThemeInvalidateListener(recyclerView);
     viewController.addThemeInvalidateListener(collapseButton);
     showAllButton.addThemeListeners(viewController);
+  }
+
+  private int focusIndex = RecyclerView.NO_POSITION;
+
+  private void setFocusIndex (int focusIndex) {
+    if (this.focusIndex != focusIndex) {
+      this.focusIndex = focusIndex;
+      ListItem item = messagesAdapter.getItem(focusIndex);
+      if (item != null) {
+        Entry entry = (Entry) item.getData();
+        if (entry.isLinkPreview()) {
+          messageListener.onSelectLinkPreviewUrl(this, entry.linkPreviewContext, entry.linkPreviewUrl);
+        }
+      }
+    }
   }
 
   public interface MessageListener {
@@ -670,6 +701,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
       this.messageList.removeChangeListener(this);
       this.messageList = null;
     }
+    this.focusIndex = RecyclerView.NO_POSITION;
   }
 
   public void setMessageList (@Nullable MessageListManager messageList) {

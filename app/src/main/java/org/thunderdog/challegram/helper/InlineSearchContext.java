@@ -55,12 +55,8 @@ import org.thunderdog.challegram.util.CancellableResultHandler;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
-import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.td.ChatId;
@@ -1323,98 +1319,6 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
   }
 
   // Links processor
-
-  public static final class FoundUrls {
-    public final @NonNull Set<String> set;
-    public final @NonNull String[] urls;
-
-    private static void findUniqueUrls (Set<String> uniqueUrls, @NonNull TdApi.FormattedText formattedText) {
-      List<String> foundUrls = TD.findUrls(formattedText);
-      if (foundUrls != null && !foundUrls.isEmpty()) {
-        for (String url : foundUrls) {
-          if (!url.matches("^[a-zA-Z.-]\\.[a-zA-Z]+$")) {
-            uniqueUrls.add(url);
-          }
-        }
-      }
-    }
-
-    public FoundUrls () {
-      this.set = Collections.emptySet();
-      this.urls = new String[0];
-    }
-
-    public boolean hasUrl (@NonNull String url) {
-      return !StringUtils.isEmpty(url) && (set.contains(url) || set.contains(StringUtils.urlWithoutProtocol(url)));
-    }
-
-    public int indexOfUrl (@NonNull String url) {
-      int index = ArrayUtils.indexOf(urls, url);
-      if (index != -1) {
-        return index;
-      }
-      index = 0;
-      String urlWithoutProtocol = StringUtils.urlWithoutProtocol(url);
-      for (String foundUrl : urls) {
-        String foundUrlWithoutProtocol = StringUtils.urlWithoutProtocol(foundUrl);
-        if (StringUtils.equalsOrBothEmpty(foundUrlWithoutProtocol, urlWithoutProtocol)) {
-          return index;
-        }
-        index++;
-      }
-      return -1;
-    }
-
-    private static FoundUrls emptyResult;
-
-    public static FoundUrls emptyResult () {
-      if (emptyResult == null) {
-        emptyResult = new FoundUrls();
-      }
-      return emptyResult;
-    }
-
-    public FoundUrls (@NonNull TdApi.FormattedText formattedText) {
-      this.set = new LinkedHashSet<>();
-      findUniqueUrls(this.set, formattedText);
-      this.urls = set.toArray(new String[0]);
-    }
-
-    public FoundUrls (@NonNull TdApi.MessageText messageText) {
-      this.set = new LinkedHashSet<>();
-      findUniqueUrls(this.set, messageText.text);
-      String specificUrl =
-        messageText.linkPreviewOptions != null && !messageText.linkPreviewOptions.isDisabled && !StringUtils.isEmpty(messageText.linkPreviewOptions.url) ?
-        messageText.linkPreviewOptions.url :
-        messageText.webPage != null ? messageText.webPage.url :
-            null;
-      if (!StringUtils.isEmpty(specificUrl)) {
-        // Make sure there is existing url
-        this.set.add(specificUrl);
-      }
-      this.urls = set.toArray(new String[0]);
-    }
-
-    public boolean isEmpty () {
-      return set.isEmpty();
-    }
-
-    public int size () {
-      return set.size();
-    }
-
-    @Override
-    public boolean equals (@Nullable Object obj) {
-      if (obj == this) {
-        return true;
-      }
-      if (!(obj instanceof FoundUrls)) {
-        return false;
-      }
-      FoundUrls other = (FoundUrls) obj;
-      return Arrays.equals(this.urls, other.urls);
-    }
-  }
 
   private FoundUrls lastFoundUrls;
   private int linkContextId;

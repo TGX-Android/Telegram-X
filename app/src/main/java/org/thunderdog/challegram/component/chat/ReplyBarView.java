@@ -27,7 +27,7 @@ import androidx.annotation.Nullable;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.helper.InlineSearchContext;
+import org.thunderdog.challegram.helper.FoundUrls;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
@@ -148,7 +148,7 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
   }
 
   public void showWebPage (@NonNull MessagesController.MessageInputContext context, int selectedUrlIndex) {
-    InlineSearchContext.FoundUrls foundUrls = context.getFoundUrls();
+    FoundUrls foundUrls = context.getFoundUrls();
     List<PinnedMessagesBar.Entry> entryList = new ArrayList<>();
     for (String url : foundUrls.urls) {
       entryList.add(new PinnedMessagesBar.Entry(tdlib, context, url));

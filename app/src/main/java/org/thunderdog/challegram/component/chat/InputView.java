@@ -82,6 +82,7 @@ import org.thunderdog.challegram.emoji.EmojiSpan;
 import org.thunderdog.challegram.emoji.EmojiUpdater;
 import org.thunderdog.challegram.emoji.PreserveCustomEmojiFilter;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
+import org.thunderdog.challegram.helper.FoundUrls;
 import org.thunderdog.challegram.helper.InlineSearchContext;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.navigation.LocaleChanger;
@@ -922,7 +923,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   @Override
-  public void showLinkPreview (@Nullable InlineSearchContext.FoundUrls foundUrls) {
+  public void showLinkPreview (@Nullable FoundUrls foundUrls) {
     if (controller != null) {
       controller.showLinkPreview(foundUrls);
     }

@@ -348,13 +348,17 @@ public class Strings {
   }
 
   public static Uri wrapHttps (String url) {
+    return wrapProtocol(url, "https");
+  }
+
+  public static Uri wrapProtocol (String url, String defaultProtocol) {
     if (StringUtils.isEmpty(url))
       return null;
     try {
       Uri uri = Uri.parse(url);
       String scheme = uri.getScheme();
       if (StringUtils.isEmpty(scheme)) {
-        return Uri.parse("https://" + url);
+        return Uri.parse(defaultProtocol + "://" + url);
       } else if (!scheme.toLowerCase().equals(scheme)) {
         return uri.buildUpon().scheme(scheme.toLowerCase()).build();
       } else {

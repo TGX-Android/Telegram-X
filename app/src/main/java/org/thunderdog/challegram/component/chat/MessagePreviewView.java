@@ -25,6 +25,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.ContentPreview;
+import org.thunderdog.challegram.helper.LinkPreview;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 import org.thunderdog.challegram.support.RippleSupport;
@@ -44,7 +45,6 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.ui.ListItem;
-import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
@@ -68,7 +68,7 @@ import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 
-public class MessagePreviewView extends BaseView implements AttachDelegate, Destroyable, ChatListener, MessageListener, TdlibCache.UserDataChangeListener, TGLegacyManager.EmojiLoadListener, TdlibUi.MessageProvider, RunnableData<MessagesController.LinkPreview> {
+public class MessagePreviewView extends BaseView implements AttachDelegate, Destroyable, ChatListener, MessageListener, TdlibCache.UserDataChangeListener, TGLegacyManager.EmojiLoadListener, TdlibUi.MessageProvider, RunnableData<LinkPreview> {
   private static class TextEntry extends ListAnimator.MeasurableEntry<Text> implements Destroyable {
     public final Drawable drawable;
     public ComplexReceiver receiver;
@@ -134,7 +134,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     public @Nullable TdApi.SearchMessagesFilter filter;
     public @Nullable String forcedTitle;
     public boolean messageDeleted;
-    public @Nullable MessagesController.LinkPreview linkPreview;
+    public @Nullable LinkPreview linkPreview;
 
     public DisplayData (Tdlib tdlib, TdApi.Message message, @Nullable TdApi.FormattedText quote, int options) {
       this.tdlib = tdlib;
@@ -155,11 +155,11 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
       this.filter = filter;
     }
 
-    public void setLinkPreview (@Nullable MessagesController.LinkPreview linkPreview) {
+    public void setLinkPreview (@Nullable LinkPreview linkPreview) {
       this.linkPreview = linkPreview;
     }
 
-    public boolean equalsTo (TdApi.Message message, @Nullable TdApi.FormattedText quote, @Options int options, @Nullable MessagesController.LinkPreview linkPreview) {
+    public boolean equalsTo (TdApi.Message message, @Nullable TdApi.FormattedText quote, @Options int options, @Nullable LinkPreview linkPreview) {
       return this.message == message && Td.equalsTo(this.quote, quote) && this.options == options && this.linkPreview == linkPreview;
     }
 
@@ -237,7 +237,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     }
   }
 
-  public void setLinkPreview (@Nullable MessagesController.LinkPreview linkPreview) {
+  public void setLinkPreview (@Nullable LinkPreview linkPreview) {
     if (linkPreview != null) {
       DisplayData displayData = new DisplayData(tdlib, linkPreview.getFakeMessage(), null, Options.DISABLE_MESSAGE_PREVIEW | Options.NO_UPDATES);
       displayData.setForcedTitle(linkPreview.getForcedTitle());
@@ -249,7 +249,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   }
 
   @Override
-  public void runWithData (MessagesController.LinkPreview arg) {
+  public void runWithData (LinkPreview arg) {
     if (this.data != null && this.data.linkPreview == arg) {
       data.setForcedTitle(arg.getForcedTitle());
       updateTitleText();
