@@ -248,7 +248,7 @@ public class LinkPreviewToggleView extends AppCompatImageView implements Tooltip
     top += verticalInset;
     bottom -= verticalInset;
 
-    int contentColor = Theme.iconColor();
+    int contentColor = Theme.textAccentColor();
 
     if (factor > 0f) {
       float rectWidth = factor <= 1f ? this.rectWidth * factor : MathUtils.fromTo(this.rectWidth, right - (left + lineSize + horizontalLineSpacing), factor - 1f);
