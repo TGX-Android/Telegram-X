@@ -11270,8 +11270,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public boolean canSendSendSomeMedia (TdApi.Chat chat) {
+    return canSendSendSomeMedia(chat, false);
+  }
+
+  public boolean canSendSendSomeMedia (TdApi.Chat chat, boolean ckeckGlobal) {
     for (int rightId : EditRightsController.SEND_MEDIA_RIGHT_IDS) {
-      if (getRestrictionStatus(chat, rightId) == null) {
+      Tdlib.RestrictionStatus restrictionStatus = getRestrictionStatus(chat, RightId.SEND_BASIC_MESSAGES);
+      if (restrictionStatus == null || ckeckGlobal && !restrictionStatus.isGlobal()) {
         return true;
       }
     }
