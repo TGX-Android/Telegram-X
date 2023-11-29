@@ -274,18 +274,6 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
               v.setData(R.string.AutoInstantViewNone);
               break;
           }
-        } else if (itemId == R.id.btn_resolutionOption) {
-          switch (Settings.instance().getResolutionOption()) {
-            case Settings.RESOLUTION_OPTION_LOW:
-              v.setData(R.string.ResolutionLow);
-              break;
-            case Settings.RESOLUTION_OPTION_MEDIUM:
-              v.setData(R.string.ResolutionMedium);
-              break;
-            case Settings.RESOLUTION_OPTION_HIGH:
-              v.setData(R.string.ResolutionHigh);
-              break;
-          }
         } else if (itemId == R.id.btn_hqRounds) {
           v.getToggler().setRadioEnabled(Settings.instance().needHqRoundVideos(), isUpdate);
         } else if (itemId == R.id.btn_rearRounds) {
@@ -589,8 +577,6 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_saveToGallery, 0, R.string.SaveOutgoingPhotos));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_instantViewMode, 0, R.string.AutoInstantView));
-      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_resolutionOption, 0, R.string.ResolutionOption));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.OpenEmbed).setLongId(Settings.SETTING_FLAG_NO_EMBEDS).setBoolValue(true));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
@@ -1200,8 +1186,6 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       showChatListOptions();
     } else if (viewId == R.id.btn_instantViewMode) {
       showInstantViewOptions();
-    } else if (viewId == R.id.btn_resolutionOption) {
-      showResolutionOption();
     } else if (viewId == R.id.btn_chatSwipes) {
       showSettings(R.id.btn_chatSwipes, new ListItem[] {
         new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_messageShare, 0, R.string.Share, R.id.btn_messageShare, Settings.instance().needChatQuickShare()),
@@ -1756,27 +1740,6 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       }
       Settings.instance().setInstantViewMode(newInstantViewMode);
       adapter.updateValuedSettingById(R.id.btn_instantViewMode);
-    }));
-  }
-
-  private void showResolutionOption () {
-    int resolutionOption = Settings.instance().getResolutionOption();
-    showSettings(new SettingsWrapBuilder(R.id.btn_resolutionOption).setRawItems(new ListItem[] {
-      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_resolutionLow, 0, R.string.ResolutionLow, R.id.btn_resolutionOption, resolutionOption == Settings.RESOLUTION_OPTION_LOW),
-      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_resolutionMedium, 0, R.string.ResolutionMedium, R.id.btn_resolutionOption, resolutionOption == Settings.RESOLUTION_OPTION_MEDIUM),
-      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_resolutionHigh, 0, R.string.ResolutionHigh, R.id.btn_resolutionOption, resolutionOption == Settings.RESOLUTION_OPTION_HIGH),
-    }).setAllowResize(false).addHeaderItem(Lang.getString(R.string.ResolutionDesc)).setIntDelegate((id, result) -> {
-      int newResolutionOption = Settings.instance().getResolutionOption();
-      int resolutionResult = result.get(R.id.btn_resolutionOption);
-      if (resolutionResult == R.id.btn_resolutionLow) {
-        newResolutionOption = Settings.RESOLUTION_OPTION_LOW;
-      } else if (resolutionResult == R.id.btn_resolutionMedium) {
-        newResolutionOption = Settings.RESOLUTION_OPTION_MEDIUM;
-      } else if (resolutionResult == R.id.btn_resolutionHigh) {
-        newResolutionOption = Settings.RESOLUTION_OPTION_HIGH;
-      }
-      Settings.instance().setResolutionOption(newResolutionOption);
-      adapter.updateValuedSettingById(R.id.btn_resolutionOption);
     }));
   }
 

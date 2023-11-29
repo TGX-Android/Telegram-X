@@ -418,6 +418,8 @@ public class Settings {
   public static final long EXPERIMENT_FLAG_ENABLE_FOLDERS = 1 << 1;
   public static final long EXPERIMENT_FLAG_SHOW_PEER_IDS = 1 << 2;
 
+  public static final long EXPERIMENT_FLAG_SEND_HQ_PHOTO = 1 << 3;
+
   private static final @Deprecated int DISABLED_FLAG_OTHER_NEED_RAISE_TO_SPEAK = 1 << 2;
   private static final @Deprecated int DISABLED_FLAG_OTHER_AUTODOWNLOAD_IN_BACKGROUND = 1 << 3;
   private static final @Deprecated int DISABLED_FLAG_OTHER_DEFAULT_CRASH_MANAGER = 1 << 5;
@@ -6976,5 +6978,9 @@ public class Settings {
 
   public boolean showPeerIds () {
     return isExperimentEnabled(EXPERIMENT_FLAG_SHOW_PEER_IDS);
+  }
+
+  public boolean sendHqPhotos () {
+    return isExperimentEnabled(EXPERIMENT_FLAG_SEND_HQ_PHOTO);
   }
 }

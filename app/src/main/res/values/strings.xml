@@ -4916,8 +4916,9 @@
 
   <!-- RESOLUTION STRING SECTION -->
 
-  <string name="ResolutionOption">Photo Resolution Selector</string>
-  <string name="ResolutionDesc">Resolution Selector (Experimental): Possible instability or app crashes.</string>
+  <string name="Experiment_SendHQPhoto">Send large photo</string>
+  <string name="Experiment_ResolutionOption">Photo Resolution Selector</string>
+  <string name="Experiment_ResolutionInfo">Resolution Selector (Experimental): Possible instability or app crashes.</string>
   <string name="ResolutionLow">Low (800px)</string>
   <string name="ResolutionMedium">Medium (1280px)</string>
   <string name="ResolutionHigh">High (2560px)</string>
