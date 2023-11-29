@@ -2490,18 +2490,26 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
     private void dispatchCounterChange (TdApi.ChatList chatList, TdlibCounter counter, boolean areMessages) {
       runOnUiThreadOptional(() -> {
-        if (areMessages != BitwiseUtils.hasFlag(tdlib.settings().getChatFolderBadgeFlags(), Settings.BADGE_FLAG_MESSAGES)) {
+        int badgeFlags = tdlib.settings().getChatFolderBadgeFlags();
+        if (areMessages != BitwiseUtils.hasFlag(badgeFlags, Settings.BADGE_FLAG_MESSAGES)) {
           return;
         }
-        long itemId = getPagerItemId(chatList);
-        int positionToUpdate = getPagerItemPosition(itemId);
-        if (positionToUpdate != NO_POSITION) {
-          ViewPagerTopView.Item pagerSection = pagerSections.get(positionToUpdate);
-          if (pagerSection.counter != null) {
-            updateCounter(chatList, pagerSection.counter, counter, isFocused());
-          }
+        dispatchCounter(chatList, counter);
+        if (chatList.getConstructor() == TdApi.ChatListArchive.CONSTRUCTOR && BitwiseUtils.hasFlag(badgeFlags, Settings.BADGE_FLAG_ARCHIVED)) {
+          dispatchCounter(ChatPosition.CHAT_LIST_MAIN, tdlib.getCounter(ChatPosition.CHAT_LIST_MAIN));
         }
       });
+    }
+
+    private void dispatchCounter (TdApi.ChatList chatList, TdlibCounter counter) {
+      long itemId = getPagerItemId(chatList);
+      int positionToUpdate = getPagerItemPosition(itemId);
+      if (positionToUpdate != NO_POSITION) {
+        ViewPagerTopView.Item pagerSection = pagerSections.get(positionToUpdate);
+        if (pagerSection.counter != null) {
+          updateCounter(chatList, pagerSection.counter, counter, isFocused());
+        }
+      }
     }
   }
 
