@@ -707,13 +707,12 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
       }
 
       @Override
-      public int mediaTextColorOrId () {
-        return mediaTextColorIsId() ? ColorId.white : getTitleColor();
-      }
-
-      @Override
-      public boolean mediaTextColorIsId () {
-        return getAvatarExpandFactor() == 1f;
+      public long mediaTextComplexColor () {
+        if (getAvatarExpandFactor() == 1f) {
+          return Theme.newComplexColor(true, ColorId.white);
+        } else {
+          return Theme.newComplexColor(false, getTitleColor());
+        }
       }
     };
   }

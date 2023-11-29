@@ -79,6 +79,7 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
   private static final int FLAG_STRIKETHROUGH = 1 << 4;
   private static final int FLAG_LINK = 1 << 5;
   private static final int FLAG_SPOILER = 1 << 6;
+  private static final int FLAG_BLOCK_QUOTE = 1 << 7;
   private static final int FLAG_CLEAR = 1 << 30;
 
   private static final int[] buttonIds = new int[]{
@@ -470,6 +471,8 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
         return FLAG_LINK;
       case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
         return FLAG_SPOILER;
+      case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
+        return FLAG_BLOCK_QUOTE;
 
       // immutable
       case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
@@ -489,7 +492,7 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
 
       // unsupported
       default:
-        Td.assertTextEntityType_542d164b();
+        Td.assertTextEntityType_91234a79();
         throw Td.unsupported(type);
     }
   }
@@ -509,6 +512,8 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
       return new TdApi.TextEntityTypeTextUrl();
     } else if (flag == FLAG_SPOILER) {
       return new TdApi.TextEntityTypeSpoiler();
+    } else if (flag == FLAG_BLOCK_QUOTE) {
+      return new TdApi.TextEntityTypeBlockQuote();
     }
     return null;
   }

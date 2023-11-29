@@ -51,6 +51,7 @@ import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.LiveLocationManager;
 import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.telegram.TdlibThread;
 import org.thunderdog.challegram.theme.ColorId;
@@ -434,7 +435,8 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
                 subtitle = !StringUtils.isEmpty(args.address) ? args.address : Lang.beautifyCoordinates(args.latitude, args.longitude);
               }
               String title = args.locationOwnerChatId != 0 ? tdlib.chatTitle(args.locationOwnerChatId) : !StringUtils.isEmpty(args.title) ? args.title : Lang.getString(R.string.DroppedPin);
-              view.setLocation(title, subtitle, ColorId.file, null, false, 0, 0);
+              TdlibAccentColor accentColor = args.locationOwnerChatId != 0 ? tdlib.chatAccentColor(args.locationOwnerChatId) : tdlib.accentColor(TdlibAccentColor.InternalId.FILE_REGULAR);
+              view.setLocation(title, subtitle, accentColor, null, false, 0, 0);
               if (args.locationOwnerChatId != 0) {
                 ImageFile avatarFile = tdlib.chatAvatar(args.locationOwnerChatId);
                 if (avatarFile != null) {
@@ -599,7 +601,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
 
     TGMessageLocation.TimeResult result = buildLocationSubtitle(msg, isBase);
     TdApi.MessageLocation location = (TdApi.MessageLocation) msg.content;
-    view.setLocation(sender.getName(), result.text, sender.getAvatarColorId(), sender.getLetters(), expiresAt == 0 || SystemClock.uptimeMillis() >= expiresAt, location.livePeriod, expiresAt);
+    view.setLocation(sender.getName(), result.text, sender.getAccentColor(), sender.getLetters(), expiresAt == 0 || SystemClock.uptimeMillis() >= expiresAt, location.livePeriod, expiresAt);
     if (result.nextLiveLocationUpdateTime != -1) {
       view.scheduleSubtitleUpdater(new Runnable() {
         @Override

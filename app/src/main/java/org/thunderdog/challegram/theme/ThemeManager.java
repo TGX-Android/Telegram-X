@@ -408,6 +408,8 @@ public class ThemeManager implements FactorAnimator.Target, GlobalAccountListene
 
   @Override
   public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
+    if (finalFactor != 1f)
+      return;
     notifyThemeColorsChanged(false, null);
     ThemeDelegate currentTheme = currentThemeImpl(false);
     if (currentTheme instanceof ThemeTemporary) {

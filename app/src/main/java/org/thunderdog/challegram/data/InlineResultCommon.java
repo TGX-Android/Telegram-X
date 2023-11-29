@@ -42,6 +42,7 @@ import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -90,8 +91,8 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
 
     setMediaPreview(MediaPreview.valueOf(tdlib, data.video, Screen.dp(50f), Screen.dp(3f), false));
     if (getMediaPreview() == null) {
-      int placeholderColorId = TD.getColorIdForString(data.video.fileName.isEmpty() ? data.id : data.video.fileName);
-      avatarPlaceholder = new AvatarPlaceholder(AVATAR_PLACEHOLDER_RADIUS, new AvatarPlaceholder.Metadata(placeholderColorId, TD.getLetters(title)), null);
+      TdlibAccentColor accentColor = tdlib.accentColorForString(data.video.fileName.isEmpty() ? data.id : data.video.fileName);
+      avatarPlaceholder = new AvatarPlaceholder(AVATAR_PLACEHOLDER_RADIUS, new AvatarPlaceholder.Metadata(accentColor, TD.getLetters(title)), null);
     }
   }
 
@@ -123,8 +124,8 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
 
     if (getMediaPreview() == null) {
       Letters letters = TD.getLetters(data.contact.firstName, data.contact.lastName);
-      int placeholderColorId = data.contact.userId != 0 ? TD.getAvatarColorId(data.contact.userId, tdlib.myUserId()) : ColorId.avatarInactive; //TD.getColorIdForString(TD.getUserName(data.contact.firstName, data.contact.lastName));
-      avatarPlaceholder = new AvatarPlaceholder(AVATAR_PLACEHOLDER_RADIUS, new AvatarPlaceholder.Metadata(placeholderColorId, letters), null);
+      TdlibAccentColor accentColor = data.contact.userId != 0 ? tdlib.cache().userAccentColor(data.contact.userId) : tdlib.accentColor(TdlibAccentColor.InternalId.INACTIVE);
+      avatarPlaceholder = new AvatarPlaceholder(AVATAR_PLACEHOLDER_RADIUS, new AvatarPlaceholder.Metadata(accentColor, letters), null);
     }
   }
 
@@ -356,7 +357,7 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
     this.fileProgress.setSimpleListener(this);
     if (this.getMediaPreview() == null) {
       this.fileProgress.setDownloadedIconRes(isFolder ? R.drawable.baseline_folder_24 : R.drawable.baseline_insert_drive_file_24);
-      this.fileProgress.setBackgroundColorId(TD.getFileColorId(file.getName(), mimeType, false));
+      this.fileProgress.setBackgroundColorId(TdlibAccentColor.getFileColorId(file.getName(), mimeType, false));
     } else {
       if (isFolder) {
         this.fileProgress.setBackgroundColor(0x66000000);
@@ -456,7 +457,7 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
     this.fileProgress.setSimpleListener(this);
     this.fileProgress.setDocumentMetadata(document, this.getMediaPreview() == null);
     if (this.getMediaPreview() == null) {
-      this.fileProgress.setBackgroundColorId(TD.getFileColorId(document, false));
+      this.fileProgress.setBackgroundColorId(TdlibAccentColor.getFileColorId(document, false));
     } else {
       this.fileProgress.setBackgroundColor(0x44000000);
     }
@@ -487,7 +488,7 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
     this.fileProgress.setPausedIconRes(R.drawable.baseline_insert_drive_file_24);
     this.fileProgress.setDocumentMetadata(data.document, this.getMediaPreview() == null);
     if (this.getMediaPreview() == null) {
-      this.fileProgress.setBackgroundColorId(TD.getFileColorId(data.document, false));
+      this.fileProgress.setBackgroundColorId(TdlibAccentColor.getFileColorId(data.document, false));
     } else {
       this.fileProgress.setBackgroundColor(0x44000000);
     }
@@ -571,7 +572,7 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
       if (getMediaPreview() != null) {
         getMediaPreview().draw(view, c, receiver, (int) rectF.left, (int) rectF.top, (int) rectF.width(), (int) rectF.height(), getMediaPreview().getCornerRadius(), 1f);
       } else {
-        c.drawRoundRect(rectF, rectF.width() / 2f, rectF.height() / 2f, Paints.fillingPaint(Theme.getColor(avatarPlaceholder.metadata.colorId)));
+        c.drawRoundRect(rectF, rectF.width() / 2f, rectF.height() / 2f, Paints.fillingPaint(avatarPlaceholder.metadata.accentColor.getPrimaryColor()));
         avatarPlaceholder.draw(c, rectF.centerX(), rectF.centerY(), 1f, avatarPlaceholder.getRadius(), false);
       }
     }
@@ -583,7 +584,7 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
         } else {
           if (getMediaPreview() == null || getMediaPreview().needPlaceholder(receiver)) {
             c.drawRoundRect(rectF, radius, radius, Paints.fillingPaint(Theme.getColor(ColorId.playerCoverPlaceholder)));
-            Drawable drawable = view.getSparseDrawable(R.drawable.baseline_music_note_24, 0);
+            Drawable drawable = view.getSparseDrawable(R.drawable.baseline_music_note_24, ColorId.NONE);
             Drawables.draw(c, drawable, rectF.centerX() - drawable.getMinimumWidth() / 2f, rectF.centerY() - drawable.getMinimumHeight() / 2f, Paints.getNotePorterDuffPaint());
           }
           if (getMediaPreview() != null) {

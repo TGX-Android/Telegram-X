@@ -132,7 +132,6 @@ public final class MessageListManager extends ListManager<TdApi.Message> impleme
         }
       });
     } else {
-      TdApi.Function<?> function;
       if (hasComplexFilter()) {
         if (local) {
           if (callback != null) {
@@ -140,36 +139,36 @@ public final class MessageListManager extends ListManager<TdApi.Message> impleme
           }
           return;
         }
-        function = new TdApi.SearchChatMessages(chatId, query, sender, 0, 0, 1, filter, messageThreadId);
-      } else {
-        function = new TdApi.GetChatHistory(chatId, 0, 0, 1, local);
-      }
-      tdlib.client().send(function, result -> {
-        final int count;
-        switch (result.getConstructor()) {
-          case TdApi.Messages.CONSTRUCTOR: {
-            count = ((TdApi.Messages) result).totalCount;
-            break;
-          }
-          case TdApi.FoundChatMessages.CONSTRUCTOR: {
-            count = ((TdApi.FoundChatMessages) result).totalCount;
-            break;
-          }
-          case TdApi.Error.CONSTRUCTOR: {
-            Log.e("%s: %s, chatId: %d", function.getClass().getSimpleName(), TD.toErrorString(result), chatId);
+        tdlib.send(new TdApi.SearchChatMessages(chatId, query, sender, 0, 0, 1, filter, messageThreadId), (foundChatMessages, error) -> {
+          final int count;
+          if (error != null) {
+            Log.e("SearchChatMessages: %s, chatId: %d", TD.toErrorString(error), chatId);
             count = -1;
-            break;
+          } else {
+            count = foundChatMessages.totalCount;
           }
-          default:
-            Log.unexpectedTdlibResponse(result, function.getClass(), TdApi.Messages.class);
-            throw new AssertionError(result.toString());
-        }
-        if (callback != null) {
-          runOnUiThread(() ->
-            callback.runWithInt(count)
-          );
-        }
-      });
+          if (callback != null) {
+            runOnUiThread(() ->
+              callback.runWithInt(count)
+            );
+          }
+        });
+      } else {
+        tdlib.send(new TdApi.GetChatHistory(chatId, 0, 0, 1, local), (messages, error) -> {
+          final int count;
+          if (error != null) {
+            Log.e("GetChatHistory: %s, chatId: %d", TD.toErrorString(error), chatId);
+            count = -1;
+          } else {
+            count = messages.totalCount;
+          }
+          if (callback != null) {
+            runOnUiThread(() ->
+              callback.runWithInt(count)
+            );
+          }
+        });
+      }
     }
   }
 

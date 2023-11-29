@@ -94,7 +94,7 @@ public class InlineResultCommand extends InlineResult<TdApi.BotCommand> {
 
   @Override
   public void requestContent (ComplexReceiver receiver, boolean isInvalidate) {
-    receiver.clearReceivers((receiverType, receiver1, key) -> receiverType == ComplexReceiver.RECEIVER_TYPE_IMAGE && key == 0);
+    receiver.clearReceivers((receiverType, receiver1, key) -> receiverType == ComplexReceiver.ReceiverType.IMAGE && key == 0);
     receiver.getImageReceiver(0).requestFile(userContext.getImageFile());
   }
 

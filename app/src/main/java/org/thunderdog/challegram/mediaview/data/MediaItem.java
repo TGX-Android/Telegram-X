@@ -940,7 +940,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
             }
           }
           default: {
-            Td.assertChatEventAction_d9a53493();
+            Td.assertChatEventAction_c8306b0f();
           }
         }
         break;

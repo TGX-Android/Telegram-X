@@ -16,18 +16,22 @@ package org.thunderdog.challegram.loader;
 
 import android.view.View;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
 
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.RunnableData;
 
 public class ComplexReceiver implements Destroyable {
   public interface KeyFilter {
-    boolean filterKey (int receiverType, Receiver receiver, long key);
+    boolean filterKey (@ReceiverType int receiverType, Receiver receiver, long key);
   }
 
   private final View view;
@@ -107,7 +111,7 @@ public class ComplexReceiver implements Destroyable {
     }
   }
 
-  private static <T extends Receiver> void clearReceivers (LongSparseArray<T> target, int receiverType, @Nullable KeyFilter filter) {
+  private static <T extends Receiver> void clearReceivers (LongSparseArray<T> target, @ReceiverType int receiverType, @Nullable KeyFilter filter) {
     int size = target.size();
     for (int i = 0; i < size; i++) {
       Receiver receiver = target.valueAt(i);
@@ -117,16 +121,22 @@ public class ComplexReceiver implements Destroyable {
     }
   }
 
-  public static final int RECEIVER_TYPE_PREVIEW = 0;
-  public static final int RECEIVER_TYPE_IMAGE = 1;
-  public static final int RECEIVER_TYPE_GIF = 2;
-  public static final int RECEIVER_TYPE_AVATAR = 3;
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    ReceiverType.PREVIEW,
+    ReceiverType.IMAGE,
+    ReceiverType.GIF,
+    ReceiverType.AVATAR
+  })
+  public @interface ReceiverType {
+    int PREVIEW = 0, IMAGE = 1, GIF = 2, AVATAR = 3;
+  }
 
   public void clearReceivers (@Nullable KeyFilter filter) {
-    clearReceivers(imageReceivers, RECEIVER_TYPE_IMAGE, filter);
-    clearReceivers(gifReceivers, RECEIVER_TYPE_GIF, filter);
-    clearReceivers(previews, RECEIVER_TYPE_PREVIEW, filter);
-    clearReceivers(avatarReceivers, RECEIVER_TYPE_AVATAR, filter);
+    clearReceivers(imageReceivers, ReceiverType.IMAGE, filter);
+    clearReceivers(gifReceivers, ReceiverType.GIF, filter);
+    clearReceivers(previews, ReceiverType.PREVIEW, filter);
+    clearReceivers(avatarReceivers, ReceiverType.AVATAR, filter);
   }
 
   public void clearReceivers (long key) {

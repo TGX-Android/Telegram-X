@@ -228,10 +228,14 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
     adapter.setItems(items, false);
     recyclerView.setAdapter(adapter);
 
+    Log.ensureReturnType(TdApi.GetBlockedMessageSenders.class, TdApi.MessageSenders.class);
     tdlib.client().send(new TdApi.GetBlockedMessageSenders(new TdApi.BlockListMain(), 0, 1), this);
     fetchSessions();
+    Log.ensureReturnType(TdApi.GetPasswordState.class, TdApi.PasswordState.class);
     tdlib.client().send(new TdApi.GetPasswordState(), this);
+    Log.ensureReturnType(TdApi.GetAccountTtl.class, TdApi.AccountTtl.class);
     tdlib.client().send(new TdApi.GetAccountTtl(), this);
+    Log.ensureReturnType(TdApi.GetConnectedWebsites.class, TdApi.ConnectedWebsites.class);
     tdlib.client().send(new TdApi.GetConnectedWebsites(), this);
 
     tdlib.cache().putGlobalUserDataListener(this);
@@ -291,18 +295,11 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
   }
 
   private void getPrivacy (final TdApi.UserPrivacySetting setting) {
-    tdlib.client().send(new TdApi.GetUserPrivacySettingRules(setting), object -> tdlib.ui().post(() -> {
-      if (!isDestroyed()) {
-        switch (object.getConstructor()) {
-          case TdApi.UserPrivacySettingRules.CONSTRUCTOR: {
-            setPrivacyRules(setting.getConstructor(), (TdApi.UserPrivacySettingRules) object);
-            break;
-          }
-          case TdApi.Error.CONSTRUCTOR: {
-            UI.showError(object);
-            break;
-          }
-        }
+    tdlib.send(new TdApi.GetUserPrivacySettingRules(setting), (rules, error) -> runOnUiThreadOptional(() -> {
+      if (error != null) {
+        UI.showError(error);
+      } else {
+        setPrivacyRules(setting.getConstructor(), rules);
       }
     }));
   }
@@ -731,8 +728,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
           break;
         }
         default: {
-          Log.unexpectedTdlibResponse(object, TdApi.GetUser.class, TdApi.Users.class);
-          break;
+          throw new UnsupportedOperationException(object.toString());
         }
       }
     });

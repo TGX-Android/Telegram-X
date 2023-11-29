@@ -49,7 +49,7 @@ public class TGMessageBotInfo extends TGMessage {
   }
 
   private TGMessageBotInfo (MessagesManager context, long chatId, TdApi.FormattedText description) {
-    super(context, TD.newFakeMessage(chatId, context.controller().tdlib().sender(chatId), new TdApi.MessageText(description, null)));
+    super(context, TD.newFakeMessage(chatId, context.controller().tdlib().sender(chatId), new TdApi.MessageText(description, null, null)));
 
     if (!tdlib().isRepliesChat(ChatId.fromUserId(getSender().getUserId()))) {
       String text = Lang.getString(R.string.WhatThisBotCanDo);

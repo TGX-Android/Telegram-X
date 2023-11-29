@@ -185,6 +185,8 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
     private boolean allowCopyLink;
 
+    private boolean disallowReply;
+
     private ShareProviderDelegate customDelegate;
 
     private Runnable after;
@@ -268,6 +270,11 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
     public Args setExport (String exportText) {
       this.exportText = exportText;
+      return this;
+    }
+
+    public Args setDisallowReply (boolean disallowReply) {
+      this.disallowReply = disallowReply;
       return this;
     }
 
@@ -1776,8 +1783,15 @@ public class ShareController extends TelegramViewController<ShareController.Args
       }
       case MODE_MESSAGES: {
         for (TdApi.Message message : args.messages) {
-          if (ChatId.isSecret(chatId) && !TD.canSendToSecretChat(message.content))
-            return Lang.getString(R.string.SecretChatForwardError);
+          if (ChatId.isSecret(chatId)) {
+            if (!TD.canSendToSecretChat(message.content))
+              return Lang.getString(R.string.SecretChatForwardError);
+            TdApi.ForwardMessages function = new TdApi.ForwardMessages(chatId, 0, message.chatId, new long[] {message.id}, new TdApi.MessageSendOptions(false, false, false, false, null, 0, true), needHideAuthor, needRemoveCaptions);
+            TdApi.Object check = tdlib.clientExecute(function, 1000L);
+            if (check instanceof TdApi.Error) {
+              return TD.toErrorString(check);
+            }
+          }
 
           if (message.content.getConstructor() == TdApi.MessagePoll.CONSTRUCTOR && !((TdApi.MessagePoll) message.content).poll.isAnonymous && tdlib.isChannel(chatId))
             return Lang.getString(R.string.PollPublicForwardHint);
@@ -3168,16 +3182,48 @@ public class ShareController extends TelegramViewController<ShareController.Args
         tdlib.client().send(new TdApi.CreatePrivateChat(myUserId, true), tdlib.silentHandler());
       }
       TdApi.MessageSendOptions sendOptions = ChatId.isSecret(chatId) ? secretSendOptions : cloudSendOptions;
+      boolean messageReplyIncluded = false;
       if (hasComment) {
-        functions.addAll(TD.sendMessageText(chatId, 0, null, sendOptions, new TdApi.InputMessageText(comment, false, false), tdlib.maxMessageTextLength()));
+        TdApi.InputMessageReplyToMessage replyTo = null;
+        if (Config.FORCE_REPLY_WHEN_FORWARDING_WITH_COMMENT && !args.disallowReply && !ChatId.isSecret(chatId) && mode == MODE_MESSAGES && !(needHideAuthor || needRemoveCaptions) && args.messages[0].chatId != chatId) {
+          messageReplyIncluded = true;
+
+          long singleSourceChatId = 0, singleSourceMediaGroupId = 0, contentfulMediaMessageId = 0;
+          for (int index = 0; index < args.messages.length; index++) {
+            TdApi.Message message = args.messages[index];
+            if (!message.canBeRepliedInAnotherChat) {
+              messageReplyIncluded = false;
+              break;
+            }
+            if (index == 0) {
+              singleSourceChatId = message.chatId;
+              singleSourceMediaGroupId = message.mediaAlbumId;
+            } else if (singleSourceChatId != message.chatId || singleSourceMediaGroupId != message.mediaAlbumId || message.mediaAlbumId == 0) {
+              messageReplyIncluded = false;
+              break;
+            }
+            if (!Td.isEmpty(Td.textOrCaption(message.content))) {
+              if (contentfulMediaMessageId != 0) {
+                messageReplyIncluded = false;
+                break;
+              }
+              contentfulMediaMessageId = message.id;
+            }
+          }
+
+          if (messageReplyIncluded) {
+            replyTo = new TdApi.InputMessageReplyToMessage(args.messages[0].chatId, contentfulMediaMessageId != 0 ? contentfulMediaMessageId : args.messages[0].id, null);
+          }
+        }
+        functions.addAll(TD.sendMessageText(chatId, 0, replyTo, sendOptions, new TdApi.InputMessageText(comment, null, false), tdlib.maxMessageTextLength()));
       }
       switch (mode) {
         case MODE_TEXT: {
-          functions.addAll(TD.sendMessageText(chatId, 0, null, sendOptions, new TdApi.InputMessageText(args.text, false, false), tdlib.maxMessageTextLength()));
+          functions.addAll(TD.sendMessageText(chatId, 0, null, sendOptions, new TdApi.InputMessageText(args.text, null, false), tdlib.maxMessageTextLength()));
           break;
         }
         case MODE_MESSAGES: {
-          if (!TD.forwardMessages(chatId, 0, args.messages, needHideAuthor, needRemoveCaptions, sendOptions, functions))
+          if (!messageReplyIncluded && !TD.forwardMessages(chatId, 0, args.messages, needHideAuthor, needRemoveCaptions, sendOptions, functions))
             return;
           break;
         }
@@ -3209,7 +3255,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           TdApi.FormattedText formattedCaption = StringUtils.isEmpty(args.telegramCaption) ? null : TD.newText(args.telegramCaption);
           TdApi.FormattedText messageCaption = formattedCaption != null && formattedCaption.text.codePointCount(0, formattedCaption.text.length()) <= tdlib.maxCaptionLength() ? formattedCaption : null;
           if (formattedCaption != null && messageCaption == null) {
-            functions.addAll(TD.sendMessageText(chatId, 0, null, sendOptions, new TdApi.InputMessageText(formattedCaption, false, false), tdlib.maxMessageTextLength()));
+            functions.addAll(TD.sendMessageText(chatId, 0, null, sendOptions, new TdApi.InputMessageText(formattedCaption, null, false), tdlib.maxMessageTextLength()));
           }
           for (MediaItem item : args.telegramFiles) {
             boolean last = item == args.telegramFiles[args.telegramFiles.length - 1];

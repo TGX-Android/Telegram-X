@@ -33,6 +33,7 @@ import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -120,7 +121,7 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
           itemId == R.id.btn_statsPublicShares) {
           view.setIgnoreEnabled(true);
           view.setEnabled(false);
-          view.setTextColorId(0);
+          view.setTextColorId(ColorId.NONE);
           if (item.getData() instanceof String) {
             view.setName(item.getData().toString());
           } else {
@@ -166,10 +167,10 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
           if (message.interactionInfo.forwardCount > 0) {
             statString.append(", ").append(Lang.plural(R.string.StatsXShared, message.interactionInfo.forwardCount));
           }
-          previewView.setMessage(message, null, statString.toString(), true);
+          previewView.setMessage(message, null, statString.toString(), MessagePreviewView.Options.IGNORE_ALBUM_REFRESHERS);
 
         } else {
-          previewView.setMessage(message, null, null, false);
+          previewView.setMessage(message, null, null, MessagePreviewView.Options.NONE);
         }
 
         RippleSupport.setSimpleWhiteBackground(previewView);

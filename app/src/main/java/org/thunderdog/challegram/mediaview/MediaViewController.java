@@ -1203,7 +1203,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         break;
       }
       case ANIMATOR_SECTION: {
-        applySection();
+        if (finalFactor == 1f) {
+          applySection();
+        }
         break;
       }
       case ANIMATOR_CAPTION: {
@@ -1240,7 +1242,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         break;
       }
       case ANIMATOR_IMAGE_ROTATE: {
-        applyImageRotation();
+        if (finalFactor == 1f) {
+          applyImageRotation();
+        }
         break;
       }
       case ANIMATOR_THUMBS: {
@@ -8484,13 +8488,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void setNewMessageSender (TdApi.Chat chat, TdApi.ChatMessageSender sender) {
-    tdlib().send(new TdApi.SetChatMessageSender(chat.id, sender.sender), ignored -> {
-      UI.post(() -> {
-        if (senderSendIcon != null) {
-          senderSendIcon.update(chat.messageSenderId);
-        }
-      });
-    });
+    tdlib().send(new TdApi.SetChatMessageSender(chat.id, sender.sender), tdlib.typedOkHandler(() -> {
+      if (senderSendIcon != null) {
+        senderSendIcon.update(chat.messageSenderId);
+      }
+    }));
   }
 
   private void setEmojiShown (boolean emojiShown) {

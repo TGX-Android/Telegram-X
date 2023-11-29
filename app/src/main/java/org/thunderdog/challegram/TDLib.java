@@ -43,7 +43,7 @@ public final class TDLib {
   private static void log (int verbosityLevel, String format, Object... formatArgs) {
     try {
       Client.execute(new TdApi.AddLogMessage(verbosityLevel, format(format, formatArgs)));
-    } catch (Client.ExecutionError ignored) { }
+    } catch (Client.ExecutionException ignored) { }
   }
 
   public static void e (String format, Object... formatArgs) {

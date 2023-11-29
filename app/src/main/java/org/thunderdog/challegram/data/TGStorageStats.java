@@ -249,7 +249,7 @@ public class TGStorageStats {
         }
       } else {
         this.isSecret = false;
-        this.avatarPlaceholderMetadata = new AvatarPlaceholder.Metadata();
+        this.avatarPlaceholderMetadata = new AvatarPlaceholder.Metadata(tdlib.chatAccentColor(chatId));
         this.avatarFile = null;
       }
 

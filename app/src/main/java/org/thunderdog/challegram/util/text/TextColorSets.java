@@ -17,6 +17,8 @@ import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 
+import me.vkryl.core.ColorUtils;
+
 public final class TextColorSets {
   public static final TextColorSetThemed WHITE = () -> ColorId.white;
   public static final TextColorSetThemed PLACEHOLDER = () -> ColorId.textPlaceholder;
@@ -133,13 +135,8 @@ public final class TextColorSets {
     }
 
     @Override
-    default int mediaTextColorOrId () {
-      return defaultTextColorId();
-    }
-
-    @Override
-    default boolean mediaTextColorIsId () {
-      return true;
+    default long mediaTextComplexColor () {
+      return Theme.newComplexColor(true, defaultTextColorId());
     }
 
     @Override
@@ -227,18 +224,23 @@ public final class TextColorSets {
         }*/
 
         @Override
-        public int mediaTextColorOrId () {
-          return ColorId.messageAuthor;
-        }
-
-        @Override
-        public boolean mediaTextColorIsId () {
-          return true;
+        public long mediaTextComplexColor () {
+          return Theme.newComplexColor(true, ColorId.messageAuthor);
         }
 
         @Override
         public int clickableTextColorId (boolean isPressed) {
           return ColorId.messageAuthor;
+        }
+
+        @Override
+        public int backgroundColor (boolean isPressed) {
+          return isPressed ? ColorUtils.alphaColor(.2f, Theme.getColor(ColorId.messageAuthor)) : ColorId.NONE;
+        }
+
+        @Override
+        public int backgroundColorId (boolean isPressed) {
+          return isPressed ? ColorId.messageAuthor : ColorId.NONE;
         }
       },
       MESSAGE_AUTHOR_PSA = new Regular() {
@@ -288,13 +290,8 @@ public final class TextColorSets {
         }
 
         @Override
-        public int mediaTextColorOrId () {
-          return ColorId.bubbleOut_messageAuthor;
-        }
-
-        @Override
-        public boolean mediaTextColorIsId () {
-          return true;
+        public long mediaTextComplexColor () {
+          return Theme.newComplexColor(true, ColorId.bubbleOut_messageAuthor);
         }
 
         @Override
@@ -356,13 +353,8 @@ public final class TextColorSets {
         }
 
         @Override
-        public int mediaTextColorOrId () {
-          return ColorId.messageAuthor;
-        }
-
-        @Override
-        public boolean mediaTextColorIsId () {
-          return true;
+        public long mediaTextComplexColor () {
+          return Theme.newComplexColor(true, ColorId.messageAuthor);
         }
 
         @Override

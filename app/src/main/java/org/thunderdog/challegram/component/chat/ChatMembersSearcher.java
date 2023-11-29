@@ -5,6 +5,7 @@ import android.annotation.SuppressLint;
 import androidx.annotation.UiThread;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibThread;
 import org.thunderdog.challegram.tool.UI;
@@ -74,12 +75,16 @@ public class ChatMembersSearcher {
     boolean isSupergroup = supergroupId != 0;
 
     if (currentFilter == FILTER_TYPE_GLOBAL_GLOBAL) {
+      Log.ensureReturnType(TdApi.SearchPublicChats.class, TdApi.Chats.class);
       tdlib.client().send(new TdApi.SearchPublicChats(query), o -> onResult(contextId, o));
     } else if (currentFilter == FILTER_TYPE_GLOBAL_LOCAL) {
+      Log.ensureReturnType(TdApi.SearchChatsOnServer.class, TdApi.Chats.class);
       tdlib.client().send(new TdApi.SearchChatsOnServer(query, 50), o -> onResult(contextId, o));
     } else if (isSupergroup) {
+      Log.ensureReturnType(TdApi.GetSupergroupMembers.class, TdApi.ChatMembers.class);
       tdlib.client().send(new TdApi.GetSupergroupMembers(supergroupId, makeSupergroupFilter(query, currentFilter), currentOffset, LIMIT), o -> onResult(contextId, o));
     } else {
+      Log.ensureReturnType(TdApi.SearchChatMembers.class, TdApi.ChatMembers.class);
       tdlib.client().send(new TdApi.SearchChatMembers(chatId, query, LIMIT, makeBasicGroupFilter(currentFilter)), o -> onResult(contextId, o));
     }
   }
@@ -131,6 +136,8 @@ public class ChatMembersSearcher {
           UI.showError(object);
           break;
         }
+        default:
+          throw new UnsupportedOperationException(object.toString());
       }
 
       if (needSetNextFilter) {

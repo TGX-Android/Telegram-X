@@ -29,6 +29,7 @@ import org.thunderdog.challegram.component.inline.CustomResultView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -63,8 +64,8 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
     this.description = article.description;
     this.url = article.hideUrl || article.url.isEmpty() ? null : article.url; // ? null : article.url;
 
-    int placeholderColorId = TD.getColorIdForString(article.url.isEmpty() ? article.id : article.url);
-    avatarPlaceholder = new AvatarPlaceholder(AVATAR_PLACEHOLDER_RADIUS, new AvatarPlaceholder.Metadata(placeholderColorId, TD.getLetters(title)), null);
+    TdlibAccentColor accentColor = tdlib.accentColorForString(article.url.isEmpty() ? article.id : article.url);
+    avatarPlaceholder = new AvatarPlaceholder(AVATAR_PLACEHOLDER_RADIUS, new AvatarPlaceholder.Metadata(accentColor, TD.getLetters(title)), null);
 
     setMediaPreview(MediaPreview.valueOf(tdlib, article.thumbnail, null, Screen.dp(50f), Screen.dp(3f)));
     layoutInternal(Screen.currentWidth());
@@ -76,8 +77,8 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
     this.title = game.game.title;
     this.description = game.game.description;
 
-    int placeholderColorId = TD.getColorIdForString(game.game.shortName);
-    avatarPlaceholder = new AvatarPlaceholder(AVATAR_PLACEHOLDER_RADIUS, new AvatarPlaceholder.Metadata(placeholderColorId, TD.getLetters(title)), null);
+    TdlibAccentColor accentColor = tdlib.accentColorForString(game.game.shortName);
+    avatarPlaceholder = new AvatarPlaceholder(AVATAR_PLACEHOLDER_RADIUS, new AvatarPlaceholder.Metadata(accentColor, TD.getLetters(title)), null);
 
     setMediaPreview(MediaPreview.valueOf(tdlib, game.game, Screen.dp(50f), Screen.dp(3f)));
 
@@ -165,8 +166,8 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
       this.url = "";
     }
 
-    int placeholderColorId = TD.getColorIdForString(url);
-    avatarPlaceholder = new AvatarPlaceholder(AVATAR_PLACEHOLDER_RADIUS, new AvatarPlaceholder.Metadata(placeholderColorId, TD.getLetters(title)), null);
+    TdlibAccentColor accentColor = tdlib.accentColorForString(url);
+    avatarPlaceholder = new AvatarPlaceholder(AVATAR_PLACEHOLDER_RADIUS, new AvatarPlaceholder.Metadata(accentColor, TD.getLetters(title)), null);
 
     layoutInternal(Screen.currentWidth());
   }
@@ -293,7 +294,7 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
     } else if (avatarPlaceholder != null) {
       RectF rectF = Paints.getRectF();
       rectF.set(Screen.dp(11f), Screen.dp(11f), Screen.dp(11f) + Screen.dp(50f), Screen.dp(11f) + Screen.dp(50f));
-      c.drawRoundRect(rectF, Screen.dp(3f), Screen.dp(3f), Paints.fillingPaint(Theme.getColor(avatarPlaceholder.metadata.colorId)));
+      c.drawRoundRect(rectF, Screen.dp(3f), Screen.dp(3f), Paints.fillingPaint(avatarPlaceholder.metadata.accentColor.getPrimaryColor()));
       avatarPlaceholder.draw(c, rectF.centerX(), rectF.centerY(), 1f, avatarPlaceholder.getRadius(), false);
     }
 

@@ -35,6 +35,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.helper.LiveLocationHelper;
 import org.thunderdog.challegram.loader.gif.LottieCache;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
@@ -538,15 +539,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
       if (c != null) {
         c.openAlert(R.string.ExperimentalBuildTitle,
           Strings.buildMarkdown(c, Lang.getStringSecure(R.string.ExperimentalBuildInfo), (view, span, clickedText) -> {
-            //noinspection SwitchIntDef
-            switch (span.getEntityType().getConstructor()) {
-              case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
-                UI.openUrl(clickedText);
-                break;
-              case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
-                UI.openUrl(((TdApi.TextEntityTypeTextUrl) span.getEntityType()).url);
-                break;
-            }
+            TD.handleLegacyClick(c, clickedText, span);
             return true;
           }),
           Lang.getOK(),

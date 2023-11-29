@@ -29,13 +29,8 @@ public class TextColorSetOverride implements TextColorSet {
   }
 
   @Override
-  public int mediaTextColorOrId () {
-    return colorSet.mediaTextColorOrId();
-  }
-
-  @Override
-  public boolean mediaTextColorIsId () {
-    return colorSet.mediaTextColorIsId();
+  public long mediaTextComplexColor () {
+    return colorSet.mediaTextComplexColor();
   }
 
   @Override

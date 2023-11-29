@@ -42,6 +42,7 @@ import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.AnimatedEmojiListener;
 import org.thunderdog.challegram.telegram.TdlibEmojiManager;
 import org.thunderdog.challegram.telegram.TdlibThread;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -685,14 +686,9 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
                 target = receiver.getImageReceiver(index);
               }
               if (representation.needThemedColorFilter) {
-                int color = getTextColorSet().mediaTextColorOrId();
-                if (getTextColorSet().mediaTextColorIsId()) {
-                  preview.setThemedPorterDuffColorId(color);
-                  target.setThemedPorterDuffColorId(color);
-                } else {
-                  preview.setPorterDuffColorFilter(color);
-                  target.setPorterDuffColorFilter(color);
-                }
+                long complexColor = getTextColorSet().mediaTextComplexColor();
+                Theme.applyComplexColor(preview, complexColor);
+                Theme.applyComplexColor(target, complexColor);
               } else {
                 preview.disablePorterDuffColorFilter();
                 target.disablePorterDuffColorFilter();
@@ -946,6 +942,6 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
   private static TdApi.MessageContent checkContent (TdApi.MessageContent content) {
     final boolean allowAnimatedEmoji = !Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI);
     return !allowAnimatedEmoji && TD.isStickerFromAnimatedEmojiPack(content) ?
-      new TdApi.MessageText(Td.textOrCaption(content), null): content;
+      new TdApi.MessageText(Td.textOrCaption(content), null, null) : content;
   }
 }

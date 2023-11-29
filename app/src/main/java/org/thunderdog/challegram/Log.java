@@ -18,7 +18,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Message;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -939,28 +938,8 @@ public class Log {
     log(0, LEVEL_ASSERT, fmt, args);
   }
 
-  @Deprecated
-  public static void unexpectedTdlibResponse (TdApi.Object response, @SuppressWarnings("rawtypes") Class<? extends TdApi.Function> function, Class<?>... objects) {
-    StringBuilder b = new StringBuilder("Unexpected TDLib response");
-    if (function != null) {
-      b.append(" for ");
-      b.append(function.getName());
-    }
-    b.append(". Expected: ");
-    boolean first = true;
-    for (Class<?> object : objects) {
-      if (first) {
-        first = false;
-      } else {
-        b.append(", ");
-      }
-      b.append(object.getName());
-    }
-    b.append(" but received: ");
-    b.append(response != null ? response : "null");
-    String message = b.toString();
-    UI.showToast(message, Toast.LENGTH_LONG);
-    Log.a("%s", message);
+  public static <T extends TdApi.Object> void ensureReturnType (Class<? extends TdApi.Function<T>> function, Class<T> expectedReturnType) {
+    // Do nothing.
   }
 
   public static void fixme () {

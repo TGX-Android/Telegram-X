@@ -25,9 +25,7 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.loader.AvatarReceiver;
-import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
@@ -198,13 +196,8 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
   public void setEmojiStatus (TdlibAccount account) {
     TextColorSet colorSet = new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
       @Override
-      public int mediaTextColorOrId () {
-        return ColorId.iconActive;
-      }
-
-      @Override
-      public boolean mediaTextColorIsId () {
-        return true;
+      public long mediaTextComplexColor () {
+        return Theme.newComplexColor(true, ColorId.iconActive);
       }
     };
     emojiStatusHelper.setSharedUsageId("account_" + account.id);

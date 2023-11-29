@@ -47,7 +47,7 @@ iv_textReferenceOutline: #FFF4
 iv_textReferenceOutlinePressed: #FFFFFF20
 messageSelection: #61A9E110
 messageVerticalLine: #538EBD
-nameInactive, themeNightBlack: #6A6A6A
+nameInactive, lineInactive, themeNightBlack: #6A6A6A
 notificationSecure, textSecure: #78E27E
 placeholder: #FFFFFF0C
 playerButtonActive: #58A6E0

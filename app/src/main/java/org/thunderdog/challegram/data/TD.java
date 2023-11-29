@@ -14,8 +14,6 @@
  */
 package org.thunderdog.challegram.data;
 
-import static androidx.core.util.ObjectsCompat.requireNonNull;
-
 import android.app.DownloadManager;
 import android.content.Context;
 import android.database.Cursor;
@@ -33,8 +31,8 @@ import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.BackgroundColorSpan;
-import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
+import android.text.style.QuoteSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.TypefaceSpan;
@@ -72,7 +70,9 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.PrivacySettings;
 import org.thunderdog.challegram.telegram.RightId;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
+import org.thunderdog.challegram.telegram.TdlibEntitySpan;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
@@ -97,7 +97,6 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -110,7 +109,6 @@ import me.vkryl.android.text.AcceptFilter;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.FileUtils;
-import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.collection.LongList;
@@ -223,17 +221,6 @@ public class TD {
     throw new IllegalArgumentException(Lang.getResourceEntryName(rightId));
   }
 
-  private static final int[] color_ids =  {
-    ColorId.avatarRed      /* red 0 */,
-    ColorId.avatarOrange   /* orange 1 */,
-    ColorId.avatarYellow   /* yellow 2 */,
-    ColorId.avatarGreen    /* green 3 */,
-    ColorId.avatarCyan     /* cyan 4 */,
-    ColorId.avatarBlue     /* blue 5 */,
-    ColorId.avatarViolet   /* violet 6 */,
-    ColorId.avatarPink     /* pink 7 */
-  };
-
   public static boolean isSameSource (TdApi.Message a, TdApi.Message b, boolean splitAuthors) {
     if (a == null || b == null)
       return false;
@@ -249,18 +236,18 @@ public class TD {
       return false;
     if (splitAuthors) {
       switch (a.forwardInfo.origin.getConstructor()) {
-        case TdApi.MessageForwardOriginUser.CONSTRUCTOR:
-          return ((TdApi.MessageForwardOriginUser) a.forwardInfo.origin).senderUserId == ((TdApi.MessageForwardOriginUser) b.forwardInfo.origin).senderUserId;
-        case TdApi.MessageForwardOriginChannel.CONSTRUCTOR:
-          return ((TdApi.MessageForwardOriginChannel) a.forwardInfo.origin).chatId == ((TdApi.MessageForwardOriginChannel) b.forwardInfo.origin).chatId &&
-            StringUtils.equalsOrBothEmpty(((TdApi.MessageForwardOriginChannel) a.forwardInfo.origin).authorSignature, ((TdApi.MessageForwardOriginChannel) b.forwardInfo.origin).authorSignature);
-        case TdApi.MessageForwardOriginChat.CONSTRUCTOR:
-          return ((TdApi.MessageForwardOriginChat) a.forwardInfo.origin).senderChatId == ((TdApi.MessageForwardOriginChat) b.forwardInfo.origin).senderChatId &&
-            StringUtils.equalsOrBothEmpty(((TdApi.MessageForwardOriginChat) a.forwardInfo.origin).authorSignature, ((TdApi.MessageForwardOriginChat) b.forwardInfo.origin).authorSignature);
-        case TdApi.MessageForwardOriginHiddenUser.CONSTRUCTOR:
-          return ((TdApi.MessageForwardOriginHiddenUser) a.forwardInfo.origin).senderName.equals(((TdApi.MessageForwardOriginHiddenUser) b.forwardInfo.origin).senderName);
+        case TdApi.MessageOriginUser.CONSTRUCTOR:
+          return ((TdApi.MessageOriginUser) a.forwardInfo.origin).senderUserId == ((TdApi.MessageOriginUser) b.forwardInfo.origin).senderUserId;
+        case TdApi.MessageOriginChannel.CONSTRUCTOR:
+          return ((TdApi.MessageOriginChannel) a.forwardInfo.origin).chatId == ((TdApi.MessageOriginChannel) b.forwardInfo.origin).chatId &&
+            StringUtils.equalsOrBothEmpty(((TdApi.MessageOriginChannel) a.forwardInfo.origin).authorSignature, ((TdApi.MessageOriginChannel) b.forwardInfo.origin).authorSignature);
+        case TdApi.MessageOriginChat.CONSTRUCTOR:
+          return ((TdApi.MessageOriginChat) a.forwardInfo.origin).senderChatId == ((TdApi.MessageOriginChat) b.forwardInfo.origin).senderChatId &&
+            StringUtils.equalsOrBothEmpty(((TdApi.MessageOriginChat) a.forwardInfo.origin).authorSignature, ((TdApi.MessageOriginChat) b.forwardInfo.origin).authorSignature);
+        case TdApi.MessageOriginHiddenUser.CONSTRUCTOR:
+          return ((TdApi.MessageOriginHiddenUser) a.forwardInfo.origin).senderName.equals(((TdApi.MessageOriginHiddenUser) b.forwardInfo.origin).senderName);
         default:
-          Td.assertMessageForwardOrigin_715b9732();
+          Td.assertMessageOrigin_f2224a59();
           throw Td.unsupported(a.forwardInfo.origin);
       }
     }
@@ -273,7 +260,7 @@ public class TD {
 
     SpannableStringBuilder b = null;
     for (TdApi.TextEntity entity : entities) {
-      CustomTypefaceSpan span;
+      Object span;
       switch (entity.type.getConstructor()) {
         case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
           span = null; // nothing to do?
@@ -375,16 +362,20 @@ public class TD {
       if (span != null) {
         if (b == null)
           b = new SpannableStringBuilder(text);
-        if (span.getOnClickListener() != null) {
-          final String entityText = Td.substring(text, entity);
-          b.setSpan(new ClickableSpan() {
-            @Override
-            public void onClick (@NonNull View widget) {
-              span.getOnClickListener().onClick(widget, span, entityText);
-            }
-          }, entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        if (span instanceof CustomTypefaceSpan) {
+          CustomTypefaceSpan customSpan = (CustomTypefaceSpan) span;
+          customSpan.setTextEntityType(entity.type);
+          customSpan.setRemoveUnderline(true);
+          if (customSpan.getOnClickListener() != null) {
+            final String entityText = Td.substring(text, entity);
+            b.setSpan(new ClickableSpan() {
+              @Override
+              public void onClick (@NonNull View widget) {
+                customSpan.getOnClickListener().onClick(widget, customSpan, entityText);
+              }
+            }, entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+          }
         }
-        span.setEntityType(entity.type).setRemoveUnderline(true);
         b.setSpan(span, entity.offset, entity.offset + entity.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
       }
     }
@@ -536,13 +527,14 @@ public class TD {
       case TdApi.TextEntityTypePre.CONSTRUCTOR:
       case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
       case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
+      case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
         return true;
 
       case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
         return allowInternal;
 
       default:
-        Td.assertTextEntityType_542d164b();
+        Td.assertTextEntityType_91234a79();
         throw Td.unsupported(type);
     }
   }
@@ -661,169 +653,8 @@ public class TD {
     return null;
   }
 
-  public static int getColorIdForString (String string) {
-    switch (Math.abs(string.hashCode()) % 3) {
-      case 0: return ColorId.fileYellow;
-      case 1: return ColorId.fileRed;
-      case 2: return ColorId.fileGreen;
-    }
-    return ColorId.file;
-  }
-
-  public static int getColorIdForName (String name) {
-    return color_ids[MathUtils.pickNumber(color_ids.length, name)];
-  }
-
-  public static int getFileColorId (TdApi.Document doc, boolean isOutBubble) {
-    return getFileColorId(doc.fileName, doc.mimeType, isOutBubble);
-  }
-
-  public static int getFileColorId (String fileName, @Nullable String mimeType, boolean isOutBubble) {
-    String mime = mimeType != null ? mimeType.toLowerCase() : null;
-    int i = fileName.lastIndexOf('.');
-    String ext = i != -1 ? fileName.substring(i + 1).toLowerCase() : "";
-
-    // Android APKs
-    if ("application/vnd.android.package-archive".equals(mime) || "apk".equals(ext)) {
-      return ColorId.fileGreen;
-    }
-
-    if (
-      "7z".equals(ext) || "application/x-7z-compressed".equals(mime) ||
-      "zip".equals(ext) || "application/zip".equals(mime) ||
-      "rar".equals(ext) || "application/x-rar-compressed".equals(mime)
-      ) {
-      return ColorId.fileYellow;
-    }
-
-    if (
-      "pdf".equals(ext) || "application/pdf".equals(mime)
-      ) {
-      return ColorId.fileRed;
-    }
-
-    return isOutBubble ? ColorId.bubbleOut_file : ColorId.file;
-  }
-
   public static String getPhoneNumber (String in) {
     return StringUtils.isEmpty(in) || in.startsWith("+") ? in : "+" + in;
-  }
-
-  public static void saveSender (Bundle bundle, String prefix, TdApi.MessageSender sender) {
-    if (sender == null)
-      return;
-    switch (sender.getConstructor()) {
-      case TdApi.MessageSenderChat.CONSTRUCTOR:
-        bundle.putLong(prefix + "chat_id", ((TdApi.MessageSenderChat) sender).chatId);
-        break;
-      case TdApi.MessageSenderUser.CONSTRUCTOR:
-        bundle.putLong(prefix + "user_id", ((TdApi.MessageSenderUser) sender).userId);
-        break;
-      default:
-        throw new RuntimeException(sender.toString());
-    }
-  }
-
-  public static TdApi.MessageSender restoreSender (Bundle bundle, String prefix) {
-    long chatId = bundle.getLong(prefix + "chat_id");
-    if (chatId != 0)
-      return new TdApi.MessageSenderChat(chatId);
-    long userId = bundle.getLong(prefix + "user_id");
-    if (userId != 0)
-      return new TdApi.MessageSenderUser(userId);
-    return null;
-  }
-
-  public static void saveFilter (Bundle bundle, String prefix, TdApi.SearchMessagesFilter filter) {
-    if (filter == null)
-      return;
-    int type;
-    switch (filter.getConstructor()) {
-      case TdApi.SearchMessagesFilterAnimation.CONSTRUCTOR:
-        type = 1;
-        break;
-      case TdApi.SearchMessagesFilterAudio.CONSTRUCTOR:
-        type = 2;
-        break;
-      case TdApi.SearchMessagesFilterDocument.CONSTRUCTOR:
-        type = 3;
-        break;
-      case TdApi.SearchMessagesFilterPhoto.CONSTRUCTOR:
-        type = 4;
-        break;
-      case TdApi.SearchMessagesFilterVideo.CONSTRUCTOR:
-        type = 5;
-        break;
-      case TdApi.SearchMessagesFilterVoiceNote.CONSTRUCTOR:
-        type = 6;
-        break;
-      case TdApi.SearchMessagesFilterPhotoAndVideo.CONSTRUCTOR:
-        type = 7;
-        break;
-      case TdApi.SearchMessagesFilterUrl.CONSTRUCTOR:
-        type = 8;
-        break;
-      case TdApi.SearchMessagesFilterChatPhoto.CONSTRUCTOR:
-        type = 9;
-        break;
-      /*case TdApi.SearchMessagesFilterCall.CONSTRUCTOR:
-        type = 10;
-        break;
-      case TdApi.SearchMessagesFilterMissedCall.CONSTRUCTOR:
-        type = 11;
-        break;*/
-      case TdApi.SearchMessagesFilterVideoNote.CONSTRUCTOR:
-        type = 12;
-        break;
-      case TdApi.SearchMessagesFilterVoiceAndVideoNote.CONSTRUCTOR:
-        type = 13;
-        break;
-      case TdApi.SearchMessagesFilterMention.CONSTRUCTOR:
-        type = 14;
-        break;
-      case TdApi.SearchMessagesFilterUnreadMention.CONSTRUCTOR:
-        type = 15;
-        break;
-      case TdApi.SearchMessagesFilterFailedToSend.CONSTRUCTOR:
-        type = 16;
-        break;
-      case TdApi.SearchMessagesFilterPinned.CONSTRUCTOR:
-        type = 17;
-        break;
-      case TdApi.SearchMessagesFilterEmpty.CONSTRUCTOR:
-      default:
-        type = 0;
-        break;
-    }
-    if (type != 0) {
-      bundle.putInt(prefix + "type", type);
-    }
-  }
-
-  public static TdApi.SearchMessagesFilter restoreFilter (Bundle bundle, String prefix) {
-    int type = bundle.getInt(prefix + "type", 0);
-    if (type != 0) {
-      switch (type) {
-        case 1: return new TdApi.SearchMessagesFilterAnimation();
-        case 2: return new TdApi.SearchMessagesFilterAudio();
-        case 3: return new TdApi.SearchMessagesFilterDocument();
-        case 4: return new TdApi.SearchMessagesFilterPhoto();
-        case 5: return new TdApi.SearchMessagesFilterVideo();
-        case 6: return new TdApi.SearchMessagesFilterVoiceNote();
-        case 7: return new TdApi.SearchMessagesFilterPhotoAndVideo();
-        case 8: return new TdApi.SearchMessagesFilterUrl();
-        case 9: return new TdApi.SearchMessagesFilterChatPhoto();
-        /*case 10: return new TdApi.SearchMessagesFilterCall();
-        case 11: return new TdApi.SearchMessagesFilterMissedCall();*/
-        case 12: return new TdApi.SearchMessagesFilterVideoNote();
-        case 13: return new TdApi.SearchMessagesFilterVoiceAndVideoNote();
-        case 14: return new TdApi.SearchMessagesFilterMention();
-        case 15: return new TdApi.SearchMessagesFilterUnreadMention();
-        case 16: return new TdApi.SearchMessagesFilterFailedToSend();
-        case 17: return new TdApi.SearchMessagesFilterPinned();
-      }
-    }
-    return null;
   }
 
   public static void saveMessageThreadInfo (Bundle bundle, String prefix, @Nullable TdApi.MessageThreadInfo threadInfo) {
@@ -833,8 +664,8 @@ public class TD {
     bundle.putLong(prefix + "_chatId", threadInfo.chatId);
     bundle.putLong(prefix + "_messageThreadId", threadInfo.messageThreadId);
     bundle.putInt(prefix + "_unreadMessageCount", threadInfo.unreadMessageCount);
-    saveReplyInfo(bundle, prefix + "_replyInfo", threadInfo.replyInfo);
-    saveDraftMessage(bundle, prefix + "_draftMessage", threadInfo.draftMessage);
+    Td.put(bundle, prefix + "_replyInfo", threadInfo.replyInfo);
+    Td.put(bundle, prefix + "_draftMessage", threadInfo.draftMessage);
     bundle.putInt(prefix + "_messagesLength", threadInfo.messages.length);
     for (int index = 0; index < threadInfo.messages.length; index++) {
       bundle.putLong(prefix + "_messageId_" + index, threadInfo.messages[index].id);
@@ -847,7 +678,7 @@ public class TD {
     if (chatId == 0 || messageThreadId == 0) {
       return null;
     }
-    TdApi.MessageReplyInfo replyInfo = restoreMessageReplyInfo(bundle, prefix + "_replyInfo");
+    TdApi.MessageReplyInfo replyInfo = Td.restoreMessageReplyInfo(bundle, prefix + "_replyInfo");
     if (replyInfo == null) {
       return null;
     }
@@ -863,234 +694,8 @@ public class TD {
         return null;
       }
     }
-    TdApi.DraftMessage draftMessage = restoreDraftMessage(bundle, prefix + "_draftMessage");
+    TdApi.DraftMessage draftMessage = Td.restoreDraftMessage(bundle, prefix + "_draftMessage");
     return new TdApi.MessageThreadInfo(chatId, messageThreadId, replyInfo, unreadMessageCount, messages.toArray(new TdApi.Message[0]), draftMessage);
-  }
-
-  public static void saveDraftMessage (Bundle bundle, String prefix, @Nullable TdApi.DraftMessage draftMessage) {
-    if (draftMessage == null) {
-      return;
-    }
-    if (!(draftMessage.inputMessageText instanceof TdApi.InputMessageText)) {
-      throw new UnsupportedOperationException(draftMessage.inputMessageText.toString());
-    }
-    bundle.putLong(prefix + "_replyToMessageId", draftMessage.replyToMessageId);
-    bundle.putInt(prefix + "_date", draftMessage.date);
-    saveInputMessageText(bundle, prefix + "_inputMessageText", (TdApi.InputMessageText) draftMessage.inputMessageText);
-  }
-
-  public static @Nullable TdApi.DraftMessage restoreDraftMessage (Bundle bundle, String prefix) {
-    long replyToMessageId = bundle.getLong(prefix + "_replyToMessageId");
-    int date = bundle.getInt(prefix + "_date");
-    TdApi.InputMessageText inputMessageText = restoreInputMessageText(bundle, prefix + "_inputMessageText");
-    if (inputMessageText == null)
-      return null;
-    return new TdApi.DraftMessage(replyToMessageId, date, inputMessageText);
-  }
-
-  public static void saveInputMessageText (Bundle bundle, String prefix, @Nullable TdApi.InputMessageText inputMessageText) {
-    if (inputMessageText == null) {
-      return;
-    }
-    saveFormattedText(bundle, prefix + "_text", inputMessageText.text);
-    bundle.putBoolean(prefix + "_disableWebPagePreview", inputMessageText.disableWebPagePreview);
-    bundle.putBoolean(prefix + "_clearDraft", inputMessageText.clearDraft);
-  }
-
-  public static @Nullable TdApi.InputMessageText restoreInputMessageText (Bundle bundle, String prefix) {
-    TdApi.FormattedText text = restoreFormattedText(bundle, prefix + "_text");
-    if (text == null) {
-      return null;
-    }
-    boolean disableWebPagePreview = bundle.getBoolean(prefix + "_disableWebPagePreview");
-    boolean clearDraft = bundle.getBoolean(prefix + "_clearDraft");
-    return new TdApi.InputMessageText(text, disableWebPagePreview, clearDraft);
-  }
-
-  public static void saveFormattedText (Bundle bundle, String prefix, @Nullable TdApi.FormattedText formattedText) {
-    if (formattedText == null) {
-      return;
-    }
-    bundle.putString(prefix + "_text", formattedText.text);
-    if (formattedText.entities != null) {
-      bundle.putInt(prefix + "_entityCount", formattedText.entities.length);
-      for (int i = 0; i < formattedText.entities.length; i++) {
-        saveTextEntity(bundle, prefix + "_entity_" + i, formattedText.entities[i]);
-      }
-    }
-  }
-
-  public static @Nullable TdApi.FormattedText restoreFormattedText (Bundle bundle, String prefix) {
-    String text = bundle.getString(prefix + "_text");
-    if (text == null) {
-      return null;
-    }
-    int entityCount = bundle.getInt(prefix + "_entityCount");
-    TdApi.TextEntity[] entities = new TdApi.TextEntity[entityCount];
-    for (int i = 0; i < entityCount; i++) {
-      TdApi.TextEntity entity = restoreTextEntity(bundle, prefix + "_entity_" + i);
-      if (entity != null) {
-        entities[i] = entity;
-      } else {
-        return null;
-      }
-    }
-    return new TdApi.FormattedText(text, entities);
-  }
-
-  public static void saveTextEntity (Bundle bundle, String prefix, @Nullable TdApi.TextEntity textEntity) {
-    if (textEntity == null) {
-      return;
-    }
-    bundle.putInt(prefix + "_offset", textEntity.offset);
-    bundle.putInt(prefix + "_length", textEntity.length);
-    saveTextEntityType(bundle, prefix + "_type", textEntity.type);
-  }
-
-  public static @Nullable TdApi.TextEntity restoreTextEntity (Bundle bundle, String prefix) {
-    if (!bundle.containsKey(prefix + "_offset")) {
-      return null;
-    }
-    int offset = bundle.getInt(prefix + "_offset");
-    int length = bundle.getInt(prefix + "_length");
-    TdApi.TextEntityType type = restoreTextEntityType(bundle, prefix + "_type");
-    if (type == null) {
-      return null;
-    }
-    return new TdApi.TextEntity(offset, length, type);
-  }
-
-  public static void saveTextEntityType (Bundle bundle, String prefix, @Nullable TdApi.TextEntityType type) {
-    if (type == null) {
-      return;
-    }
-    bundle.putInt(prefix + "_constructor", type.getConstructor());
-    switch (type.getConstructor()) {
-      case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
-        bundle.putString(prefix + "_language", ((TdApi.TextEntityTypePreCode) type).language);
-        break;
-      case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
-        bundle.putString(prefix + "_url", ((TdApi.TextEntityTypeTextUrl) type).url);
-        break;
-      case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
-        bundle.putLong(prefix + "_userId", ((TdApi.TextEntityTypeMentionName) type).userId);
-        break;
-      case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
-        bundle.putLong(prefix + "_customEmojiId", ((TdApi.TextEntityTypeCustomEmoji) type).customEmojiId);
-        break;
-      case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR:
-        bundle.putInt(prefix + "_mediaTimestamp", ((TdApi.TextEntityTypeMediaTimestamp) type).mediaTimestamp);
-        break;
-      case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
-      case TdApi.TextEntityTypeBold.CONSTRUCTOR:
-      case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
-      case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
-      case TdApi.TextEntityTypeCode.CONSTRUCTOR:
-      case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
-      case TdApi.TextEntityTypeHashtag.CONSTRUCTOR:
-      case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
-      case TdApi.TextEntityTypeMention.CONSTRUCTOR:
-      case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR:
-      case TdApi.TextEntityTypePre.CONSTRUCTOR:
-      case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
-      case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
-      case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
-      case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
-        break;
-      default:
-        Td.assertTextEntityType_542d164b();
-        throw Td.unsupported(type);
-    }
-  }
-
-  public static @Nullable TdApi.TextEntityType restoreTextEntityType (Bundle bundle, String prefix) {
-    if (!bundle.containsKey(prefix + "_constructor")) {
-      return null;
-    }
-    @TdApi.TextEntityType.Constructors int constructor = bundle.getInt(prefix + "_constructor");
-    switch (constructor) {
-      case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
-        return new TdApi.TextEntityTypeBankCardNumber();
-      case TdApi.TextEntityTypeBold.CONSTRUCTOR:
-        return new TdApi.TextEntityTypeBold();
-      case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
-        return new TdApi.TextEntityTypeBotCommand();
-      case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
-        return new TdApi.TextEntityTypeCashtag();
-      case TdApi.TextEntityTypeCode.CONSTRUCTOR:
-        return new TdApi.TextEntityTypeCode();
-      case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
-        long customEmoji = requireNonNull(bundle.getLong(prefix + "_customEmojiId"));
-        return new TdApi.TextEntityTypeCustomEmoji(customEmoji);
-      case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
-        return new TdApi.TextEntityTypeEmailAddress();
-      case TdApi.TextEntityTypeHashtag.CONSTRUCTOR:
-        return new TdApi.TextEntityTypeHashtag();
-      case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
-        return new TdApi.TextEntityTypeItalic();
-      case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR:
-        int mediaTimestamp = bundle.getInt(prefix + "_mediaTimestamp");
-        return new TdApi.TextEntityTypeMediaTimestamp(mediaTimestamp);
-      case TdApi.TextEntityTypeMention.CONSTRUCTOR:
-        return new TdApi.TextEntityTypeMention();
-      case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
-        long userId = bundle.getLong(prefix + "_userId");
-        return new TdApi.TextEntityTypeMentionName(userId);
-      case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR:
-        return new TdApi.TextEntityTypePhoneNumber();
-      case TdApi.TextEntityTypePre.CONSTRUCTOR:
-        return new TdApi.TextEntityTypePre();
-      case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
-        String language = requireNonNull(bundle.getString(prefix + "_language"));
-        return new TdApi.TextEntityTypePreCode(language);
-      case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
-        return new TdApi.TextEntityTypeSpoiler();
-      case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
-        return new TdApi.TextEntityTypeStrikethrough();
-      case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
-        String url = requireNonNull(bundle.getString(prefix + "_url"));
-        return new TdApi.TextEntityTypeTextUrl(url);
-      case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
-        return new TdApi.TextEntityTypeUnderline();
-      case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
-        return new TdApi.TextEntityTypeUrl();
-      default:
-        Td.assertTextEntityType_542d164b();
-        throw new UnsupportedOperationException("constructor=" + constructor);
-    }
-  }
-
-  public static void saveReplyInfo (Bundle bundle, String prefix, @Nullable TdApi.MessageReplyInfo replyInfo) {
-    if (replyInfo == null) {
-      return;
-    }
-    bundle.putInt(prefix + "_replyCount", replyInfo.replyCount);
-    bundle.putLong(prefix + "_lastMessageId", replyInfo.lastMessageId);
-    bundle.putLong(prefix + "_lastReadInboxMessageId", replyInfo.lastReadInboxMessageId);
-    bundle.putLong(prefix + "_lastReadOutboxMessageId", replyInfo.lastReadOutboxMessageId);
-    if (replyInfo.recentReplierIds != null) {
-      bundle.putInt(prefix + "_recentReplierIdsLength", replyInfo.recentReplierIds.length);
-      for (int index = 0; index < replyInfo.recentReplierIds.length; index++) {
-        TdApi.MessageSender recentReplierId = replyInfo.recentReplierIds[index];
-        saveSender(bundle, prefix + "_recentReplierId_" + index, recentReplierId);
-      }
-    }
-  }
-
-  public static @Nullable TdApi.MessageReplyInfo restoreMessageReplyInfo (Bundle bundle, String prefix) {
-    if (!bundle.containsKey(prefix + "_replyCount")) {
-      return null;
-    }
-    int replyCount = bundle.getInt(prefix + "_replyCount");
-    long lastMessageId = bundle.getLong(prefix + "_lastMessageId");
-    long lastReadInboxMessageId = bundle.getLong(prefix + "_lastReadInboxMessageId");
-    long lastReadOutboxMessageId = bundle.getLong(prefix + "_lastReadOutboxMessageId");
-    int recentReplierIdsLength = bundle.getInt(prefix + "_recentReplierIdsLength");
-    TdApi.MessageSender[] recentReplierIds = new TdApi.MessageSender[recentReplierIdsLength];
-    for (int index = 0; index < recentReplierIdsLength; index++) {
-      recentReplierIds[index] = restoreSender(bundle, prefix + "_recentReplierId_" + index);
-    }
-    return new TdApi.MessageReplyInfo(replyCount, recentReplierIds, lastReadInboxMessageId, lastReadOutboxMessageId, lastMessageId);
   }
 
   public static final String KEY_PREFIX_FOLDER = "filter";
@@ -1153,34 +758,6 @@ public class TD {
         Td.assertReactionType_7dcca074();
         throw Td.unsupported(reactionType);
     }
-  }
-
-  public static int getColorIndex (long selfUserId, long id) {
-    if (id >= 0 && id < color_ids.length) {
-      return (int) id;
-    }
-    try {
-      String str;
-      if (id >= 0 && selfUserId != 0) {
-        str = String.format(Locale.US, "%d%d", id, selfUserId);
-      } else {
-        str = String.format(Locale.US, "%d", id);
-      }
-      if (str.length() > 15) {
-        str = str.substring(0, 15);
-      }
-      java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
-      byte[] digest = md.digest(str.getBytes(StringUtils.UTF_8));
-      int b = digest[(int) Math.abs(id % 16)];
-      if (b < 0) {
-        b += 256;
-      }
-      return Math.abs(b) % color_ids.length;
-    } catch (Throwable t) {
-      Log.e("Cannot calculate user color", t);
-    }
-
-    return (int) Math.abs(id % color_ids.length);
   }
 
   public static ImageFile getAvatar (Tdlib tdlib, TdApi.User user) {
@@ -1417,36 +994,6 @@ public class TD {
     return new TdApi.Photo(false, null, sizes);
   }
 
-  public static int getAvatarColorId (TdApi.User user, long selfUserId) {
-    return getAvatarColorId(isUserDeleted(user) ? -1 : user == null ? 0 : user.id, selfUserId);
-  }
-
-  public static int getNameColorId (int avatarColorId) {
-    switch (avatarColorId) {
-      case ColorId.avatarRed:
-        return ColorId.nameRed;
-      case ColorId.avatarOrange:
-        return ColorId.nameOrange;
-      case ColorId.avatarYellow:
-        return ColorId.nameYellow;
-      case ColorId.avatarGreen:
-        return ColorId.nameGreen;
-      case ColorId.avatarCyan:
-        return ColorId.nameCyan;
-      case ColorId.avatarBlue:
-        return ColorId.nameBlue;
-      case ColorId.avatarViolet:
-        return ColorId.nameViolet;
-      case ColorId.avatarPink:
-        return ColorId.namePink;
-      case ColorId.avatarSavedMessages:
-        return ColorId.messageAuthor;
-      case ColorId.avatarInactive:
-        return ColorId.nameInactive;
-    }
-    return ColorId.messageAuthor;
-  }
-
   public static boolean isMultiChat (TdApi.Chat chat) {
     if (chat != null) {
       switch (chat.type.getConstructor()) {
@@ -1457,18 +1004,6 @@ public class TD {
       }
     }
     return false;
-  }
-
-  /*public static int getAuthorColorId () {
-    return getAuthorColorId(true, 0);
-  }
-
-  public static int getAuthorColorId (int selfUserId, int id) {
-    return selfUserId != 0 && selfUserId == id ? ColorId.chatAuthor : id == -1 ? ColorId.chatAuthorDead : color_ids[getColorIndex(selfUserId, id)];
-  }*/
-
-  public static int getAvatarColorId (long id, long selfUserId) {
-    return id == -1 ? ColorId.avatarInactive : color_ids[getColorIndex(selfUserId, id)];
   }
 
   public static boolean hasEncryptionKey (TdApi.SecretChat secretChat) {
@@ -1510,11 +1045,16 @@ public class TD {
     switch (content.getConstructor()) {
       case TdApi.MessagePoll.CONSTRUCTOR:
       case TdApi.MessageGame.CONSTRUCTOR:
-      case TdApi.MessageStory.CONSTRUCTOR: {
+      case TdApi.MessageStory.CONSTRUCTOR:
+      case TdApi.MessageInvoice.CONSTRUCTOR:
+      case TdApi.MessageDice.CONSTRUCTOR:
+      case TdApi.MessagePremiumGiveaway.CONSTRUCTOR:
+      case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
+      case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR: {
         return false;
       }
       default: {
-        Td.assertMessageContent_cda9af31();
+        Td.assertMessageContent_ea2cfacf();
       }
     }
     return true;
@@ -1938,7 +1478,7 @@ public class TD {
     for (TdApi.Message message : messages) {
       if (message.chatId != fromChatId) {
         if (size > 0) {
-          out.add(new TdApi.ForwardMessages(toChatId, toMessageThreadId, fromChatId, getMessageIds(messages, index, size), options, sendCopy, removeCaption, false));
+          out.add(new TdApi.ForwardMessages(toChatId, toMessageThreadId, fromChatId, getMessageIds(messages, index, size), options, sendCopy, removeCaption));
         }
         fromChatId = message.chatId;
         index += size;
@@ -1947,7 +1487,7 @@ public class TD {
       size++;
     }
     if (size > 0) {
-      out.add(new TdApi.ForwardMessages(toChatId, toMessageThreadId, fromChatId, getMessageIds(messages, index, size), options, sendCopy, removeCaption, false));
+      out.add(new TdApi.ForwardMessages(toChatId, toMessageThreadId, fromChatId, getMessageIds(messages, index, size), options, sendCopy, removeCaption));
     }
     return true;
   }
@@ -2414,6 +1954,8 @@ public class TD {
       "",
       new TdApi.UserStatusEmpty(),
       null,
+      TdlibAccentColor.defaultAccentColorIdForUserId(userId),
+      0,
       null,
       false,
       false,
@@ -3138,12 +2680,12 @@ public class TD {
     } else {
       TdApi.InputMessageContent[] array = new TdApi.InputMessageContent[album.size()];
       album.toArray(array);
-      functions.add(new TdApi.SendMessageAlbum(chatId, 0, null, options, array, false));
+      functions.add(new TdApi.SendMessageAlbum(chatId, 0, null, options, array));
     }
     album.clear();
   }
 
-  public static List<TdApi.Function<?>> toFunctions (long chatId, long messageThreadId, @Nullable TdApi.MessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.InputMessageContent[] content, boolean needGroupMedia) {
+  public static List<TdApi.Function<?>> toFunctions (long chatId, long messageThreadId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.InputMessageContent[] content, boolean needGroupMedia) {
     if (content.length == 0)
       return Collections.emptyList();
 
@@ -3185,7 +2727,7 @@ public class TD {
             ((TdApi.InputMessageDocument) inputContent).disableContentTypeDetection = true;
           }
         }
-        functions.add(new TdApi.SendMessageAlbum(chatId, messageThreadId, functions.isEmpty() ? replyTo : null, options, slice, false));
+        functions.add(new TdApi.SendMessageAlbum(chatId, messageThreadId, functions.isEmpty() ? replyTo : null, options, slice));
       }
 
       remaining -= sliceSize;
@@ -4050,19 +3592,21 @@ public class TD {
       return content;
     }
     TdApi.MessageText messageText = (TdApi.MessageText) content;
-    if (messageText.webPage == null) {
+    String linkPreviewUrl = Td.findLinkPreviewUrl(messageText);
+    if (StringUtils.isEmpty(linkPreviewUrl)) {
       return messageText;
     }
     String linkPreviewText = "[" + Lang.getString(R.string.LinkPreview) + "]";
+    // TODO maybe: show changes in LinkPreviewOptions?
     TdApi.FormattedText newText = Td.concat(
       messageText.text,
       new TdApi.FormattedText("\n", null),
       new TdApi.FormattedText(linkPreviewText, new TdApi.TextEntity[] {
         new TdApi.TextEntity(0, linkPreviewText.length(), new TdApi.TextEntityTypeItalic()),
-        new TdApi.TextEntity(0, linkPreviewText.length(), new TdApi.TextEntityTypeTextUrl(messageText.webPage.url))
+        new TdApi.TextEntity(0, linkPreviewText.length(), new TdApi.TextEntityTypeTextUrl(linkPreviewUrl))
       })
     );
-    return new TdApi.MessageText(newText, null);
+    return new TdApi.MessageText(newText, null, null);
   }
 
   public static class DownloadedFile {
@@ -4676,12 +4220,16 @@ public class TD {
   }
 
   public static CustomTypefaceSpan newSpan (@NonNull TdApi.TextEntityType type) {
-    return new CustomTypefaceSpan(null, 0).setEntityType(type);
+    CustomTypefaceSpan span = new CustomTypefaceSpan(null, 0);
+    span.setTextEntityType(type);
+    return span;
   }
 
-  public static CustomTypefaceSpan newBoldSpan (@NonNull String text) {
+  public static Object newBoldSpan (@NonNull String text) {
     boolean needFakeBold = Text.needFakeBold(text);
-    return new CustomTypefaceSpan(needFakeBold ? null : Fonts.getRobotoMedium(), 0).setFakeBold(needFakeBold).setEntityType(new TdApi.TextEntityTypeBold());
+    CustomTypefaceSpan span = new CustomTypefaceSpan(needFakeBold ? null : Fonts.getRobotoMedium(), 0).setFakeBold(needFakeBold);
+    span.setTextEntityType(new TdApi.TextEntityTypeBold());
+    return span;
   }
 
   public static TdApi.FormattedText newText (@NonNull CharSequence text) {
@@ -4699,7 +4247,7 @@ public class TD {
       return text.text;
     SpannableStringBuilder b = null;
     for (TdApi.TextEntity entity : text.entities) {
-      CharacterStyle span = toDisplaySpan(entity.type, defaultTypeface, Text.needFakeBold(text.text, entity.offset, entity.offset + entity.length));
+      Object span = toDisplaySpan(entity.type, defaultTypeface, Text.needFakeBold(text.text, entity.offset, entity.offset + entity.length));
       if (span != null) {
         if (b == null)
           b = new SpannableStringBuilder(text.text);
@@ -4717,7 +4265,7 @@ public class TD {
     TdApi.FormattedText formattedText;
     try {
       formattedText = Client.execute(new TdApi.GetMarkdownText(text));
-    } catch (Client.ExecutionError error) {
+    } catch (Client.ExecutionException error) {
       Log.w("getMarkdownText: %s", TD.toErrorString(error.error));
       return text.text;
     }
@@ -4740,6 +4288,8 @@ public class TD {
         return new HtmlTag("s");
       case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
         return new HtmlTag("u");
+      case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
+        return new HtmlTag("blockquote");
       case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
         return new HtmlTag(
           "<tg-user-mention data-user-id=\"" + ((TdApi.TextEntityTypeMentionName) entityType).userId + "\">",
@@ -4777,13 +4327,13 @@ public class TD {
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
         return null;
       default:
-        Td.assertTextEntityType_542d164b();
+        Td.assertTextEntityType_91234a79();
         throw Td.unsupported(entityType);
     }
   }
 
-  private static HtmlTag[] toHtmlTag (CharacterStyle span) {
-    TdApi.TextEntityType[] entityTypes = toEntityType((CharacterStyle) span);
+  private static HtmlTag[] toHtmlTag (Object span) {
+    TdApi.TextEntityType[] entityTypes = toEntityType(span);
     if (entityTypes != null && entityTypes.length > 0) {
       List<HtmlTag> tags = new ArrayList<>();
       for (TdApi.TextEntityType entityType : entityTypes) {
@@ -4801,14 +4351,14 @@ public class TD {
 
   @Nullable
   public static String toHtmlCopyText (Spanned spanned) {
-    HtmlEncoder.EncodeResult encodeResult = HtmlEncoder.toHtml(spanned, CharacterStyle.class, TD::toHtmlTag);
+    HtmlEncoder.EncodeResult encodeResult = HtmlEncoder.toHtml(spanned, Object.class, TD::toHtmlTag);
     return encodeResult.tagCount > 0 ? encodeResult.htmlText : null;
   }
 
   @Nullable
   public static CharSequence htmlToCharSequence (String htmlText) {
     HtmlParser.Replacer<TdApi.TextEntityType> entityReplacer = (text, start, end, mark) -> {
-      CharacterStyle span = toSpan(mark);
+      Object span = toSpan(mark);
       if (span != null) {
         text.setSpan(span, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
       }
@@ -4908,14 +4458,18 @@ public class TD {
     return b != null ? SpannableString.valueOf(b) : text.text;
   }
 
-  public static CustomTypefaceSpan toDisplaySpan (TdApi.TextEntityType type) {
+  public static Object toDisplaySpan (TdApi.TextEntityType type) {
     return toDisplaySpan(type, null, false);
   }
 
-  public static CustomTypefaceSpan toDisplaySpan (TdApi.TextEntityType type, @Nullable Typeface defaultTypeface, boolean needFakeBold) {
+  public static Object tempToBlockQuoteSpan (boolean isDisplay, boolean needFakeBold) {
+    return new QuoteSpan(); // TODO
+  }
+
+  public static Object toDisplaySpan (TdApi.TextEntityType type, @Nullable Typeface defaultTypeface, boolean needFakeBold) {
     if (type == null)
       return null;
-    CustomTypefaceSpan span;
+    Object span;
     switch (type.getConstructor()) {
       case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
       case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
@@ -4929,6 +4483,9 @@ public class TD {
         break;
       case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
         span = new CustomTypefaceSpan(Fonts.getRobotoItalic(), 0);
+        break;
+      case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
+        span = tempToBlockQuoteSpan(true, needFakeBold);
         break;
       case TdApi.TextEntityTypePre.CONSTRUCTOR:
       case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
@@ -4956,14 +4513,39 @@ public class TD {
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
         return null;
       default:
-        Td.assertTextEntityType_542d164b();
+        Td.assertTextEntityType_91234a79();
         throw Td.unsupported(type);
     }
-    span.setEntityType(type);
+    if (span instanceof TdlibEntitySpan) {
+      ((TdlibEntitySpan) span).setTextEntityType(type);
+    }
     return span;
   }
 
-  public static CharacterStyle toSpan (TdApi.TextEntityType type) {
+  public static void handleLegacyClick (TdlibDelegate context, String clickedText, Object span) {
+    // One day rework to properly designed code instead of this mess collected over time.
+    TdApi.TextEntityType type = span instanceof TdlibEntitySpan ? ((TdlibEntitySpan) span).getTextEntityType() : null;
+    if (type != null) {
+      //noinspection SwitchIntDef
+      switch (type.getConstructor()) {
+        case TdApi.TextEntityTypeMentionName.CONSTRUCTOR: {
+          TdApi.TextEntityTypeMentionName mentionName = (TdApi.TextEntityTypeMentionName) span;
+          context.tdlib().ui().openPrivateProfile(context, mentionName.userId, null);
+          break;
+        }
+        case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
+          UI.openUrl(clickedText);
+          break;
+        case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR: {
+          TdApi.TextEntityTypeTextUrl textUrl = (TdApi.TextEntityTypeTextUrl) span;
+          UI.openUrl(textUrl.url);
+          break;
+        }
+      }
+    }
+  }
+
+  public static Object toSpan (TdApi.TextEntityType type) {
     return toSpan(type, true);
   }
 
@@ -4980,6 +4562,7 @@ public class TD {
       case TdApi.TextEntityTypeCode.CONSTRUCTOR:
       case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
       case TdApi.TextEntityTypePre.CONSTRUCTOR:
+      case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
       case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
       case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
       case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
@@ -4999,12 +4582,12 @@ public class TD {
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
         return false;
       default:
-        Td.assertTextEntityType_542d164b();
+        Td.assertTextEntityType_91234a79();
         throw Td.unsupported(type);
     }
   }
 
-  public static CharacterStyle toSpan (TdApi.TextEntityType type, boolean allowInternal) {
+  public static Object toSpan (TdApi.TextEntityType type, boolean allowInternal) {
     if (type == null)
       return null;
     switch (type.getConstructor()) {
@@ -5025,9 +4608,16 @@ public class TD {
       case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
         return new BackgroundColorSpan(SPOILER_BACKGROUND_COLOR);
       case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
-        return allowInternal ? new CustomTypefaceSpan(null, ColorId.textLink).setEntityType(type) : null;
+        if (allowInternal) {
+          CustomTypefaceSpan span = new CustomTypefaceSpan(null, ColorId.textLink);
+          span.setTextEntityType(type);
+          return span;
+        }
+        return null;
       case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
         return new CustomEmojiId(((TdApi.TextEntityTypeCustomEmoji) type).customEmojiId);
+      case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
+        return tempToBlockQuoteSpan(false, false);
       // auto-detected entities
       case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
       case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
@@ -5040,16 +4630,16 @@ public class TD {
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
         return null;
       default:
-        Td.assertTextEntityType_542d164b();
+        Td.assertTextEntityType_91234a79();
         throw Td.unsupported(type);
     }
   }
 
-  public static TdApi.TextEntityType[] toEntityType (CharacterStyle span) {
+  public static TdApi.TextEntityType[] toEntityType (Object span) {
     if (!canConvertToEntityType(span))
       return null;
     if (span instanceof CustomTypefaceSpan)
-      return new TdApi.TextEntityType[] {((CustomTypefaceSpan) span).getEntityType()};
+      return new TdApi.TextEntityType[] {((CustomTypefaceSpan) span).getTextEntityType()};
     if (span instanceof URLSpan) {
       String url = ((URLSpan) span).getURL();
       if (!Strings.isValidLink(url))
@@ -5147,7 +4737,7 @@ public class TD {
     return false;
   }
 
-  public static CharacterStyle cloneSpan (CharacterStyle span) {
+  public static Object cloneSpan (Object span) {
     if (span instanceof CustomTypefaceSpan) {
       CustomTypefaceSpan customTypefaceSpan = (CustomTypefaceSpan) span;
       return new CustomTypefaceSpan(customTypefaceSpan);
@@ -5183,9 +4773,9 @@ public class TD {
     throw new UnsupportedOperationException(span.toString());
   }
 
-  public static boolean canConvertToEntityType (CharacterStyle span) {
+  public static boolean canConvertToEntityType (Object span) {
     if (span instanceof CustomTypefaceSpan)
-      return ((CustomTypefaceSpan) span).getEntityType() != null;
+      return ((CustomTypefaceSpan) span).getTextEntityType() != null;
     if (span instanceof URLSpan)
       return Strings.isValidLink(((URLSpan) span).getURL());
     if (span instanceof StyleSpan) {
@@ -5221,12 +4811,12 @@ public class TD {
   public static TdApi.TextEntity[] toEntities (CharSequence cs, boolean onlyLinks) {
     if (!(cs instanceof Spanned))
       return null;
-    CharacterStyle[] spans = ((Spanned) cs).getSpans(0, cs.length(), CharacterStyle.class);
+    Object[] spans = ((Spanned) cs).getSpans(0, cs.length(), Object.class);
     if (spans == null || spans.length == 0)
       return null;
 
     List<TdApi.TextEntity> entities = null;
-    for (CharacterStyle span : spans) {
+    for (Object span : spans) {
       TdApi.TextEntityType[] types = toEntityType(span);
       if (types == null || types.length == 0)
         continue;
@@ -5276,7 +4866,7 @@ public class TD {
     return -1;
   }
 
-  public static List<TdApi.SendMessage> sendMessageText (long chatId, long messageThreadId, @Nullable TdApi.MessageReplyTo replyTo, TdApi.MessageSendOptions sendOptions, @NonNull TdApi.InputMessageContent content, int maxCodePointCount) {
+  public static List<TdApi.SendMessage> sendMessageText (long chatId, long messageThreadId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions sendOptions, @NonNull TdApi.InputMessageContent content, int maxCodePointCount) {
     List<TdApi.InputMessageContent> list = explodeText(content, maxCodePointCount);
     List<TdApi.SendMessage> result = new ArrayList<>(list.size());
     for (TdApi.InputMessageContent item : list) {
@@ -5344,7 +4934,7 @@ public class TD {
         // Send chunk between start ... end
         substring = Td.substring(text, start, end);
         boolean first = list.isEmpty();
-        list.add(new TdApi.InputMessageText(substring, textContent.disableWebPagePreview, first && textContent.clearDraft));
+        list.add(new TdApi.InputMessageText(substring, textContent.linkPreviewOptions, first && textContent.clearDraft));
         // Reset loop state
         start = end;
         currentCodePointCount = 0;
@@ -5430,7 +5020,7 @@ public class TD {
       case TdApi.MessageExpiredVideo.CONSTRUCTOR:
         return true;
       default:
-        Td.assertMessageContent_cda9af31();
+        Td.assertMessageContent_ea2cfacf();
         break;
     }
     return false;
@@ -5722,15 +5312,15 @@ public class TD {
     throw new IllegalArgumentException();
   }
 
-  public static @ColorId int chatTypeColor (@IdRes int chatType) {
-    if (chatType == R.id.chatType_contact) return ColorId.avatarBlue;
-    if (chatType == R.id.chatType_nonContact) return ColorId.avatarCyan;
-    if (chatType == R.id.chatType_group) return ColorId.avatarGreen;
-    if (chatType == R.id.chatType_channel) return ColorId.avatarOrange;
-    if (chatType == R.id.chatType_bot) return ColorId.avatarRed;
-    if (chatType == R.id.chatType_muted) return ColorId.avatarPink;
-    if (chatType == R.id.chatType_read) return ColorId.avatarBlue;
-    if (chatType == R.id.chatType_archived) return ColorId.avatarArchive;
+  public static int chatTypeAccentColorId (@IdRes int chatType) {
+    if (chatType == R.id.chatType_contact) return TdlibAccentColor.BuiltInId.BLUE;
+    if (chatType == R.id.chatType_nonContact) return TdlibAccentColor.BuiltInId.CYAN;
+    if (chatType == R.id.chatType_group) return TdlibAccentColor.BuiltInId.GREEN;
+    if (chatType == R.id.chatType_channel) return TdlibAccentColor.BuiltInId.ORANGE;
+    if (chatType == R.id.chatType_bot) return TdlibAccentColor.BuiltInId.RED;
+    if (chatType == R.id.chatType_muted) return TdlibAccentColor.BuiltInId.PINK;
+    if (chatType == R.id.chatType_read) return TdlibAccentColor.BuiltInId.BLUE;
+    if (chatType == R.id.chatType_archived) return TdlibAccentColor.InternalId.ARCHIVE;
     throw new IllegalArgumentException();
   }
 

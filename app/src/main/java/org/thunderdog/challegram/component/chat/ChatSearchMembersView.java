@@ -15,7 +15,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.core.Lang;
@@ -266,8 +265,7 @@ public class ChatSearchMembersView extends FrameLayout implements TdlibCache.Bas
         break;
       }
       default: {
-        Log.unexpectedTdlibResponse(object, TdApi.GetChats.class, TdApi.Chats.class);
-        return;
+        throw new UnsupportedOperationException(object.toString());
       }
     }
 

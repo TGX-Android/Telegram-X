@@ -36,6 +36,7 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiverProvider;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibContactManager;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -78,7 +79,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
 
   public static final float DEFAULT_HEIGHT = 72f;
 
-  private RemoveHelper removeHelper;
+  private final RemoveHelper removeHelper;
 
   public UserView (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -222,13 +223,8 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
     }
     emojiStatusHelper.updateEmoji(user != null ? user.getUser() : null, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
       @Override
-      public int mediaTextColorOrId () {
-        return ColorId.iconActive;
-      }
-
-      @Override
-      public boolean mediaTextColorIsId () {
-        return true;
+      public long mediaTextComplexColor () {
+        return Theme.newComplexColor(true, ColorId.iconActive);
       }
     });
     if (emojiStatusHelper.needDrawEmojiStatus()) {
@@ -295,7 +291,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
 
   private void updateLetters () {
     if (unregisteredContact != null) {
-      avatarPlaceholder = new AvatarPlaceholder.Metadata(ColorId.avatarInactive, unregisteredContact.letters.text);
+      avatarPlaceholder = new AvatarPlaceholder.Metadata(tdlib.accentColor(TdlibAccentColor.InternalId.INACTIVE), unregisteredContact.letters);
     } else {
       avatarPlaceholder = null;
     }
@@ -358,13 +354,13 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
         int x1, x2;
         x1 = x - width;
         x2 = x;
-        c.drawRect(viewWidth - x2, centerY - height / 2, viewWidth - x1, centerY + height / 2 + height % 2, paint);
+        c.drawRect(viewWidth - x2, centerY - height / 2f, viewWidth - x1, centerY + height / 2f + height % 2, paint);
         x1 = x - width / 2 - height / 2;
         x2 = x - width / 2 + height / 2 + height % 2;
-        c.drawRect(viewWidth - x2, centerY - width / 2, viewWidth - x1, centerY + width / 2 + width % 2, paint);
+        c.drawRect(viewWidth - x2, centerY - width / 2f, viewWidth - x1, centerY + width / 2f + width % 2, paint);
       } else {
-        c.drawRect(x - width, centerY - height / 2, x, centerY + height / 2 + height % 2, paint);
-        c.drawRect(x - width / 2 - height / 2, centerY - width / 2, x - width / 2 + height / 2 + height % 2, centerY + width / 2 + width % 2, paint);
+        c.drawRect(x - width, centerY - height / 2f, x, centerY + height / 2f + height % 2, paint);
+        c.drawRect(x - width / 2f - height / 2f, centerY - width / 2f, x - width / 2f + height / 2f + height % 2, centerY + width / 2f + width % 2, paint);
       }
     }
 
