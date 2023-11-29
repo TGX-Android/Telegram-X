@@ -113,6 +113,7 @@ import java.io.InputStreamReader;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -417,8 +418,14 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         }
       }
     } else {
-      String sectionName = getMenuSectionName(pagerItemId, pagerItemPosition, /* hasFolders */ false, ChatFolderStyle.LABEL_ONLY);
-      item = new ViewPagerTopView.Item(sectionName.toUpperCase());
+      int filter = getSelectedFilter(pagerItemId);
+      if (filter == FILTER_NONE && !menuNeedArchive) {
+        item = getDefaultMainItem();
+      } else {
+        String sectionName = getMenuSectionName(pagerItemId, pagerItemPosition, /* hasFolders */ false, ChatFolderStyle.LABEL_ONLY).toUpperCase();
+        item = new ViewPagerTopView.Item(sectionName);
+      }
+      getDefaultSectionItems().set(0, item);
     }
     headerCell.getTopView().setItemAt(pagerItemPosition, item);
 
@@ -1007,6 +1014,11 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       tdlib.listeners().removeTotalChatCounterListener(chatListUnreadCountListener);
       chatListUnreadCountListener = null;
     }
+    if (defaultCounterListener != null) {
+      tdlib.listeners().removeTotalChatCounterListener(defaultCounterListener);
+      defaultCounterListener = null;
+      defaultMainItem = null;
+    }
     if (chatListPositionListener != null) {
       tdlib.settings().removeChatListPositionListener(chatListPositionListener);
       chatListPositionListener = null;
@@ -1453,12 +1465,76 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (hasFolders()) {
       throw new UnsupportedOperationException();
     }
-    return new String[] {getMenuSectionName(MAIN_PAGER_ITEM_ID, /* pagerItemPosition */ 0, /* hasFolders */ false, ChatFolderStyle.LABEL_ONLY).toUpperCase(), Lang.getString(R.string.Calls).toUpperCase()/*, UI.getString(R.string.Contacts).toUpperCase()*/};
+    return new String[] {
+      getMenuSectionName(MAIN_PAGER_ITEM_ID, /* pagerItemPosition */ 0, /* hasFolders */ false, ChatFolderStyle.LABEL_ONLY).toUpperCase(),
+      Lang.getString(R.string.Calls).toUpperCase()/*, UI.getString(R.string.Contacts).toUpperCase()*/
+    };
+  }
+
+  private List<ViewPagerTopView.Item> defaultSectionItems;
+  private ViewPagerTopView.Item defaultMainItem;
+  private CounterChangeListener defaultCounterListener;
+
+  private ViewPagerTopView.Item getDefaultMainItem () {
+    if (defaultMainItem == null) {
+      String mainItem = getMenuSectionName(MAIN_PAGER_ITEM_ID, 0, false, ChatFolderStyle.LABEL_ONLY).toUpperCase();
+      UnreadCounterColorSet unreadCounterColorSet = new UnreadCounterColorSet();
+      Counter unreadCounter = new Counter.Builder()
+        .textSize(12f)
+        .backgroundPadding(4f)
+        .outlineAffectsBackgroundSize(false)
+        .colorSet(unreadCounterColorSet)
+        .callback(unreadCounterCallback(MAIN_PAGER_ITEM_ID))
+        .build();
+      unreadCounterColorSet.setCounter(unreadCounter);
+      updateCounter(ChatPosition.CHAT_LIST_MAIN, unreadCounter, tdlib.getCounter(ChatPosition.CHAT_LIST_MAIN), false);
+      defaultCounterListener = new CounterChangeListener() {
+        @Override
+        public void onChatCounterChanged (@NonNull TdApi.ChatList chatList, TdlibCounter counter, boolean availabilityChanged, int totalCount, int unreadCount, int unreadUnmutedCount) {
+          handleCounterChange(chatList, counter, false);
+        }
+
+        @Override
+        public void onMessageCounterChanged (@NonNull TdApi.ChatList chatList, TdlibCounter counter, int unreadCount, int unreadUnmutedCount) {
+          handleCounterChange(chatList, counter, true);
+        }
+
+        private void handleCounterChange (@NonNull TdApi.ChatList chatList, TdlibCounter counter, boolean areMessages) {
+          int badgeFlags = tdlib.settings().getChatFolderBadgeFlags();
+          if (areMessages != BitwiseUtils.hasFlag(badgeFlags, Settings.BADGE_FLAG_MESSAGES)) {
+            return;
+          }
+          if (chatList.getConstructor() == TdApi.ChatListMain.CONSTRUCTOR) {
+            executeOnUiThreadOptional(() -> {
+              updateCounter(chatList, unreadCounter, counter, isFocused());
+            });
+          } else if (chatList.getConstructor() == TdApi.ChatListArchive.CONSTRUCTOR && BitwiseUtils.hasFlag(badgeFlags, Settings.BADGE_FLAG_ARCHIVED)) {
+            executeOnUiThreadOptional(() -> {
+              updateCounter(ChatPosition.CHAT_LIST_MAIN, unreadCounter, tdlib.getCounter(ChatPosition.CHAT_LIST_MAIN), isFocused());
+            });
+          }
+        }
+      };
+      defaultMainItem = new ViewPagerTopView.Item(mainItem, unreadCounter);
+      tdlib.listeners().addTotalChatCounterListener(defaultCounterListener);
+    }
+    return defaultMainItem;
+  }
+
+  private List<ViewPagerTopView.Item> getDefaultSectionItems () {
+    if (defaultSectionItems == null) {
+      String callsItem = Lang.getString(R.string.Calls).toUpperCase();
+      defaultSectionItems = Arrays.asList(
+        getDefaultMainItem(),
+        new ViewPagerTopView.Item(callsItem)
+      );
+    }
+    return defaultSectionItems;
   }
 
   @Override
   protected List<ViewPagerTopView.Item> getPagerSectionItems () {
-    return hasFolders() ? pagerSections : super.getPagerSectionItems(); // calls String[] getPagerSections()
+    return hasFolders() ? pagerSections : getDefaultSectionItems();
   }
 
   // Menu
