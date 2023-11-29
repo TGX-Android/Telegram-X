@@ -18,12 +18,16 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.chat.MediaPreview;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGWebPage;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.util.RateLimiter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
@@ -42,7 +46,7 @@ public class LinkPreview implements Destroyable {
 
   private final RateLimiter linkPreviewLoader = new RateLimiter(this::loadLinkPreview, 400L, null);
   private boolean needLoadWebPagePreview, isDestroyed;
-  private RunnableData<LinkPreview> loadCallback;
+  private final List<RunnableData<LinkPreview>> staticLoadCallbacks = new ArrayList<>();
 
   private final ReferenceList<RunnableData<LinkPreview>> loadCallbacks = new ReferenceList<>(false, true, (list, isFull) -> {
     if (isFull) {
@@ -53,6 +57,8 @@ public class LinkPreview implements Destroyable {
       linkPreviewLoader.cancelIfScheduled();
     }
   });
+
+  private boolean forceSmallMedia, forceLargeMedia;
 
   public LinkPreview (Tdlib tdlib, String url, @Nullable TdApi.Message existingMessage) {
     this.tdlib = tdlib;
@@ -66,6 +72,7 @@ public class LinkPreview implements Destroyable {
     if (existingMessage != null && Td.isText(existingMessage.content)) {
       TdApi.MessageText existingText = (TdApi.MessageText) existingMessage.content;
       if (existingText.webPage != null) {
+        TdApi.LinkPreviewOptions existingOptions = existingText.linkPreviewOptions;
         boolean isCurrentWebPage =
           (existingText.linkPreviewOptions != null && !StringUtils.isEmpty(existingText.linkPreviewOptions.url) && FoundUrls.compareUrls(existingText.linkPreviewOptions.url, url)) ||
           (FoundUrls.compareUrls(existingText.webPage.url, url));
@@ -73,14 +80,20 @@ public class LinkPreview implements Destroyable {
           this.webPage = existingText.webPage;
           updateMessageText(messageText, this.webPage);
           this.needLoadWebPagePreview = false;
+          this.forceSmallMedia = existingOptions != null && existingOptions.forceSmallMedia;
+          this.forceLargeMedia = existingOptions != null && existingOptions.forceLargeMedia;
         }
       }
     }
     this.fakeMessage = TD.newFakeMessage(0, messageSender, messageText);
   }
 
-  public void setLoadCallback (RunnableData<LinkPreview> loadCallback) {
-    this.loadCallback = loadCallback;
+  public void addLoadCallback (RunnableData<LinkPreview> loadCallback) {
+    this.staticLoadCallbacks.add(loadCallback);
+  }
+
+  public void removeLoadCallback (RunnableData<LinkPreview> loadCallback) {
+    this.staticLoadCallbacks.remove(loadCallback);
   }
 
   private static void updateMessageText (TdApi.MessageText messageText, TdApi.WebPage webPage) {
@@ -131,6 +144,43 @@ public class LinkPreview implements Destroyable {
     return error == null && webPage == null;
   }
 
+  public boolean hasMedia () {
+    return webPage != null && MediaPreview.hasMedia(webPage);
+  }
+
+  public boolean forceSmallMedia () {
+    return forceSmallMedia;
+  }
+
+  public boolean forceLargeMedia () {
+    return forceLargeMedia;
+  }
+
+  public boolean toggleLargeMedia () {
+    boolean showLargeMedia = getOutputShowLargeMedia();
+    if (hasMedia() && webPage.hasLargeMedia) {
+      forceLargeMedia = !showLargeMedia;
+      forceSmallMedia = showLargeMedia;
+      return getOutputShowLargeMedia() != showLargeMedia;
+    }
+    return false;
+  }
+
+  public boolean getOutputShowLargeMedia () {
+    if (hasMedia()) {
+      if (webPage.hasLargeMedia) {
+        if (forceLargeMedia) {
+          return true;
+        }
+        if (forceSmallMedia) {
+          return false;
+        }
+      }
+      return webPage.showLargeMedia;
+    }
+    return false;
+  }
+
   public TdApi.Message getFakeMessage () {
     return fakeMessage;
   }
@@ -171,8 +221,8 @@ public class LinkPreview implements Destroyable {
     for (RunnableData<LinkPreview> callback : loadCallbacks) {
       callback.runWithData(this);
     }
-    if (loadCallback != null) {
-      loadCallback.runWithData(this);
+    for (int index = staticLoadCallbacks.size() - 1; index >= 0; index--) {
+      staticLoadCallbacks.get(index).runWithData(this);
     }
   }
 }
