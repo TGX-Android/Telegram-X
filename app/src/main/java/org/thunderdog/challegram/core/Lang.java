@@ -3210,6 +3210,10 @@ public class Lang {
     return languageRtl;
   }
 
+  public static int reverseGravity () {
+    return rtl() ? Gravity.LEFT : Gravity.RIGHT;
+  }
+
   public static int gravity () {
     return rtl() ? Gravity.RIGHT : Gravity.LEFT;
   }

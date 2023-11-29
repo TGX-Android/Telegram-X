@@ -28,6 +28,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.helper.FoundUrls;
+import org.thunderdog.challegram.helper.LinkPreview;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
@@ -35,6 +36,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.MessagesController;
+import org.thunderdog.challegram.widget.LinkPreviewToggleView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +44,7 @@ import java.util.List;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.core.lambda.RunnableData;
 
 public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener, Destroyable {
   protected final Tdlib tdlib;
@@ -63,9 +66,13 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
   }
 
   ImageView closeView;
+  LinkPreviewToggleView linkPreviewToggleView;
 
   public void checkRtl () {
     if (Views.setGravity(closeView, Lang.gravity())) {
+      Views.updateLayoutParams(closeView);
+    }
+    if (Views.setGravity(closeView, Lang.reverseGravity())) {
       Views.updateLayoutParams(closeView);
     }
     invalidate();
@@ -99,6 +106,7 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
         if (callback != null) {
           callback.onSelectLinkPreviewUrl(ReplyBarView.this, messageContext, url);
         }
+        updateLinkPreviewSettings(true);
       }
 
       @Override
@@ -117,6 +125,21 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
     closeView = newButton(R.id.btn_close, R.drawable.baseline_close_24, themeProvider);
     closeView.setLayoutParams(params);
     addView(closeView);
+
+    params = FrameLayoutFix.newParams(Screen.dp(56f), ViewGroup.LayoutParams.MATCH_PARENT);
+    params.gravity = Lang.reverseGravity();
+    linkPreviewToggleView = new LinkPreviewToggleView(getContext());
+    linkPreviewToggleView.setLayoutParams(params);
+    linkPreviewToggleView.setVisibility(View.GONE);
+    linkPreviewToggleView.addThemeListeners(themeProvider);
+    linkPreviewToggleView.setOnClickListener(v -> {
+      if (callback != null && inputContext != null && callback.onRequestToggleShowAbove(ReplyBarView.this, v, inputContext)) {
+        updateLinkPreviewSettings(true);
+      }
+    });
+    Views.setClickable(linkPreviewToggleView);
+    linkPreviewToggleView.setBackgroundResource(R.drawable.bg_btn_header);
+    addView(linkPreviewToggleView);
   }
 
   private boolean animationsDisabled;
@@ -147,6 +170,73 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
     return btn;
   }
 
+  private void updateLinkPreviewSettings (boolean animated) {
+    LinkPreview linkPreview = inputContext != null ? inputContext.getSelectedLinkPreview() : null;
+    setPendingLinkPreview(linkPreview != null && linkPreview.isLoading() ? linkPreview : null);
+    if (linkPreview != null) {
+      TdApi.LinkPreviewOptions options = inputContext.takeOutputLinkPreviewOptions(false);
+      TdApi.WebPage webPage = linkPreview.webPage;
+      boolean hasMedia = webPage != null && MediaPreview.hasMedia(webPage);
+      @LinkPreviewToggleView.MediaVisibility int mediaState;
+      if (!hasMedia) {
+        mediaState = LinkPreviewToggleView.MediaVisibility.NONE;
+      } else {
+        mediaState = webPage.showLargeMedia ? LinkPreviewToggleView.MediaVisibility.LARGE : LinkPreviewToggleView.MediaVisibility.SMALL;
+        if (webPage.hasLargeMedia) {
+          if (options.forceLargeMedia) {
+            mediaState = LinkPreviewToggleView.MediaVisibility.LARGE;
+          } else if (options.forceSmallMedia) {
+            mediaState = LinkPreviewToggleView.MediaVisibility.SMALL;
+          }
+        }
+      }
+      linkPreviewToggleView.setMediaVisibility(mediaState, animated);
+      linkPreviewToggleView.setShowAboveText(options.showAboveText, animated);
+    }
+  }
+
+  private void setLinkPreviewToggleVisible (boolean isVisible) {
+    if (isVisible != (linkPreviewToggleView.getVisibility() == View.VISIBLE)) {
+      linkPreviewToggleView.setVisibility(isVisible ? View.VISIBLE : View.GONE);
+      pinnedMessagesBar.setPadding(Screen.dp(49.5f), 0, isVisible ? Screen.dp(49.5f) : 0, 0);
+    }
+  }
+
+  private MessagesController.MessageInputContext inputContext;
+  private LinkPreview pendingLinkPreview;
+
+  private final RunnableData<LinkPreview> onLinkPreviewLoadListener = linkPreview -> {
+    if (linkPreview == pendingLinkPreview) {
+      updateLinkPreviewSettings(true);
+    }
+  };
+
+  private void setPendingLinkPreview (LinkPreview linkPreview) {
+    if (this.pendingLinkPreview != linkPreview) {
+      if (this.pendingLinkPreview != null) {
+        this.pendingLinkPreview.removeLoadCallback(onLinkPreviewLoadListener);
+      }
+      this.pendingLinkPreview = linkPreview;
+      if (linkPreview != null) {
+        linkPreview.addLoadCallback(onLinkPreviewLoadListener);
+      }
+    }
+  }
+
+  private void setMessageInputContext (MessagesController.MessageInputContext context) {
+    if (this.inputContext != context) {
+      if (this.inputContext != null) {
+        setPendingLinkPreview(null);
+      }
+      this.inputContext = context;
+      if (context != null) {
+        updateLinkPreviewSettings(false);
+      } else {
+        setPendingLinkPreview(null);
+      }
+    }
+  }
+
   public void showWebPage (@NonNull MessagesController.MessageInputContext context, int selectedUrlIndex) {
     FoundUrls foundUrls = context.getFoundUrls();
     List<PinnedMessagesBar.Entry> entryList = new ArrayList<>();
@@ -154,14 +244,20 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
       entryList.add(new PinnedMessagesBar.Entry(tdlib, context, url));
     }
     pinnedMessagesBar.setStaticMessageList(entryList, selectedUrlIndex);
+    setLinkPreviewToggleVisible(true);
+    setMessageInputContext(context);
   }
 
   public void setReplyTo (TdApi.Message msg, @Nullable TdApi.FormattedText quote) {
     pinnedMessagesBar.setMessage(tdlib, msg, quote);
+    setLinkPreviewToggleVisible(false);
+    setMessageInputContext(null);
   }
 
   public void setEditingMessage (TdApi.Message msg) {
     pinnedMessagesBar.setMessage(tdlib, msg);
+    setLinkPreviewToggleVisible(false);
+    setMessageInputContext(null);
   }
 
   public void reset () {
@@ -171,15 +267,21 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
   @Override
   public void performDestroy () {
     pinnedMessagesBar.performDestroy();
+    setMessageInputContext(null);
   }
 
   public void completeDestroy () {
     pinnedMessagesBar.completeDestroy();
   }
 
+  public LinkPreviewToggleView getLinkPreviewToggleView () {
+    return linkPreviewToggleView;
+  }
+
   public interface Callback {
     void onDismissReplyBar (ReplyBarView view);
     void onMessageHighlightRequested (ReplyBarView view, TdApi.Message message, @Nullable TdApi.FormattedText quote);
     void onSelectLinkPreviewUrl (ReplyBarView view, MessagesController.MessageInputContext messageContext, String url);
+    boolean onRequestToggleShowAbove (ReplyBarView view, View buttonView, MessagesController.MessageInputContext messageContext);
   }
 }

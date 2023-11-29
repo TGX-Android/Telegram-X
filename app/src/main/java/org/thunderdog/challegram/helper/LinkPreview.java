@@ -25,6 +25,9 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.util.RateLimiter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.RunnableData;
@@ -42,7 +45,7 @@ public class LinkPreview implements Destroyable {
 
   private final RateLimiter linkPreviewLoader = new RateLimiter(this::loadLinkPreview, 400L, null);
   private boolean needLoadWebPagePreview, isDestroyed;
-  private RunnableData<LinkPreview> loadCallback;
+  private final List<RunnableData<LinkPreview>> staticLoadCallbacks = new ArrayList<>();
 
   private final ReferenceList<RunnableData<LinkPreview>> loadCallbacks = new ReferenceList<>(false, true, (list, isFull) -> {
     if (isFull) {
@@ -79,8 +82,12 @@ public class LinkPreview implements Destroyable {
     this.fakeMessage = TD.newFakeMessage(0, messageSender, messageText);
   }
 
-  public void setLoadCallback (RunnableData<LinkPreview> loadCallback) {
-    this.loadCallback = loadCallback;
+  public void addLoadCallback (RunnableData<LinkPreview> loadCallback) {
+    this.staticLoadCallbacks.add(loadCallback);
+  }
+
+  public void removeLoadCallback (RunnableData<LinkPreview> loadCallback) {
+    this.staticLoadCallbacks.remove(loadCallback);
   }
 
   private static void updateMessageText (TdApi.MessageText messageText, TdApi.WebPage webPage) {
@@ -171,8 +178,8 @@ public class LinkPreview implements Destroyable {
     for (RunnableData<LinkPreview> callback : loadCallbacks) {
       callback.runWithData(this);
     }
-    if (loadCallback != null) {
-      loadCallback.runWithData(this);
+    for (int index = staticLoadCallbacks.size() - 1; index >= 0; index--) {
+      staticLoadCallbacks.get(index).runWithData(this);
     }
   }
 }

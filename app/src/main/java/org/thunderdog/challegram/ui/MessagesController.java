@@ -6462,11 +6462,22 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     private final Map<String, LinkPreview> linkPreviews = new HashMap<>();
 
+    public @Nullable LinkPreview getSelectedLinkPreview () {
+      if (linkPreviewOptions.isDisabled) {
+        return null;
+      }
+      int index = findSelectedUrlIndex();
+      if (index == -1)
+        return null;
+      String url = foundUrls.urls[index];
+      return getLinkPreview(url);
+    }
+
     public @NonNull LinkPreview getLinkPreview (String url) {
       LinkPreview linkPreview = linkPreviews.get(url);
       if (linkPreview == null) {
         linkPreview = new LinkPreview(tdlib, url, message);
-        linkPreview.setLoadCallback(loadedLinkPreview -> {
+        linkPreview.addLoadCallback(loadedLinkPreview -> {
           if (loadedLinkPreview.isNotFound()) {
             context.updateReplyBarVisibility(true);
           }
@@ -6495,14 +6506,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     public TdApi.WebPage getPreloadedOutputWebPage () {
-      if (linkPreviewOptions.isDisabled) {
-        return null;
-      }
-      int index = findSelectedUrlIndex();
-      if (index == -1) {
-        return null;
-      }
-      return getLinkPreview(foundUrls.urls[index]).webPage;
+      LinkPreview linkPreview = getSelectedLinkPreview();
+      return linkPreview != null ? linkPreview.webPage : null;
     }
 
     public boolean checkMessage (long chatId, long messageId) {
@@ -7898,6 +7903,33 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onSelectLinkPreviewUrl (ReplyBarView view, MessageInputContext messageContext, String url) {
     messageContext.setLinkPreviewUrl(url);
     inputView.setTextChangedSinceChatOpened(true);
+  }
+
+  @Override
+  public boolean onRequestToggleShowAbove (ReplyBarView view, View buttonView, MessageInputContext messageContext) {
+    TdApi.LinkPreviewOptions options = messageContext.takeOutputLinkPreviewOptions(false);
+    if (!options.isDisabled) {
+      options.showAboveText = !options.showAboveText;
+      showLinkPreviewHint(Lang.getString(options.showAboveText ? R.string.LinkPreviewShowAbove : R.string.LinkPreviewShowBelow));
+      return true;
+    }
+    return false;
+  }
+
+  private TooltipOverlayView.TooltipInfo linkPreviewHint;
+
+  private void showLinkPreviewHint (CharSequence text) {
+    if (linkPreviewHint == null) {
+      linkPreviewHint = context().tooltipManager().builder(replyBarView.getLinkPreviewToggleView()).locate((targetView, rect) -> replyBarView.getLinkPreviewToggleView().getTargetBounds(targetView, rect))
+        .icon(R.drawable.baseline_info_24)
+        .ignoreViewScale(true)
+        .controller(this)
+        .show(tdlib, text);
+    } else {
+      linkPreviewHint.reset(context().tooltipManager().newContent(tdlib, text, 0), R.drawable.baseline_info_24);
+      linkPreviewHint.show();
+    }
+    linkPreviewHint.hideDelayed(false);
   }
 
   private @NonNull TdApi.LinkPreviewOptions obtainLinkPreviewOptions (boolean close) {
