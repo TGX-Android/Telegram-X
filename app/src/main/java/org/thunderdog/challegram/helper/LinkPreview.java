@@ -18,6 +18,7 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.chat.MediaPreview;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGWebPage;
@@ -57,6 +58,8 @@ public class LinkPreview implements Destroyable {
     }
   });
 
+  private boolean forceSmallMedia, forceLargeMedia;
+
   public LinkPreview (Tdlib tdlib, String url, @Nullable TdApi.Message existingMessage) {
     this.tdlib = tdlib;
     this.url = url;
@@ -69,6 +72,7 @@ public class LinkPreview implements Destroyable {
     if (existingMessage != null && Td.isText(existingMessage.content)) {
       TdApi.MessageText existingText = (TdApi.MessageText) existingMessage.content;
       if (existingText.webPage != null) {
+        TdApi.LinkPreviewOptions existingOptions = existingText.linkPreviewOptions;
         boolean isCurrentWebPage =
           (existingText.linkPreviewOptions != null && !StringUtils.isEmpty(existingText.linkPreviewOptions.url) && FoundUrls.compareUrls(existingText.linkPreviewOptions.url, url)) ||
           (FoundUrls.compareUrls(existingText.webPage.url, url));
@@ -76,6 +80,8 @@ public class LinkPreview implements Destroyable {
           this.webPage = existingText.webPage;
           updateMessageText(messageText, this.webPage);
           this.needLoadWebPagePreview = false;
+          this.forceSmallMedia = existingOptions != null && existingOptions.forceSmallMedia;
+          this.forceLargeMedia = existingOptions != null && existingOptions.forceLargeMedia;
         }
       }
     }
@@ -136,6 +142,43 @@ public class LinkPreview implements Destroyable {
 
   public boolean isLoading () {
     return error == null && webPage == null;
+  }
+
+  public boolean hasMedia () {
+    return webPage != null && MediaPreview.hasMedia(webPage);
+  }
+
+  public boolean forceSmallMedia () {
+    return forceSmallMedia;
+  }
+
+  public boolean forceLargeMedia () {
+    return forceLargeMedia;
+  }
+
+  public boolean toggleLargeMedia () {
+    boolean showLargeMedia = getOutputShowLargeMedia();
+    if (hasMedia() && webPage.hasLargeMedia) {
+      forceLargeMedia = !showLargeMedia;
+      forceSmallMedia = showLargeMedia;
+      return getOutputShowLargeMedia() != showLargeMedia;
+    }
+    return false;
+  }
+
+  public boolean getOutputShowLargeMedia () {
+    if (hasMedia()) {
+      if (webPage.hasLargeMedia) {
+        if (forceLargeMedia) {
+          return true;
+        }
+        if (forceSmallMedia) {
+          return false;
+        }
+      }
+      return webPage.showLargeMedia;
+    }
+    return false;
   }
 
   public TdApi.Message getFakeMessage () {

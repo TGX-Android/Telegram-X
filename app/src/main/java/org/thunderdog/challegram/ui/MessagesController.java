@@ -6502,6 +6502,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     public TdApi.LinkPreviewOptions takeOutputLinkPreviewOptions (boolean copy) {
+      LinkPreview linkPreview = getSelectedLinkPreview();
+      if (linkPreview != null) {
+        boolean forceLargeMedia = linkPreview.forceLargeMedia();
+        boolean forceSmallMedia = linkPreview.forceSmallMedia();
+        if (linkPreviewOptions.forceLargeMedia != forceLargeMedia || linkPreviewOptions.forceSmallMedia != forceSmallMedia) {
+          linkPreviewOptions.forceLargeMedia = forceLargeMedia;
+          linkPreviewOptions.forceSmallMedia = forceSmallMedia;
+          if ((forceLargeMedia || forceSmallMedia) && StringUtils.isEmpty(linkPreviewOptions.url)) {
+            linkPreviewOptions.url = linkPreview.url;
+          }
+        }
+      }
       return copy ? Td.copyOf(linkPreviewOptions) : linkPreviewOptions;
     }
 
@@ -7903,6 +7915,22 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onSelectLinkPreviewUrl (ReplyBarView view, MessageInputContext messageContext, String url) {
     messageContext.setLinkPreviewUrl(url);
     inputView.setTextChangedSinceChatOpened(true);
+  }
+
+  @Override
+  public boolean onRequestToggleLargeMedia (ReplyBarView view, View buttonView, MessageInputContext messageContext, LinkPreview linkPreview) {
+    TdApi.LinkPreviewOptions options = messageContext.takeOutputLinkPreviewOptions(false);
+    if (options.isDisabled) {
+      return false;
+    }
+    if (linkPreview.toggleLargeMedia()) {
+      options.forceSmallMedia = linkPreview.forceSmallMedia();
+      options.forceLargeMedia = linkPreview.forceLargeMedia();
+      inputView.setTextChangedSinceChatOpened(true);
+      showLinkPreviewHint(Lang.getString(linkPreview.getOutputShowLargeMedia() ? R.string.LinkPreviewEnlarged : R.string.LinkPreviewMinimized));
+      return true;
+    }
+    return false;
   }
 
   @Override

@@ -14,11 +14,14 @@ package org.thunderdog.challegram.component.chat;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.IntDef;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
@@ -44,6 +47,7 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.util.text.Text;
@@ -56,12 +60,15 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.List;
 
 import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.android.animator.ReplaceAnimator;
+import me.vkryl.android.util.ClickHelper;
 import me.vkryl.android.util.SingleViewProvider;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.RunnableData;
@@ -135,6 +142,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     public @Nullable String forcedTitle;
     public boolean messageDeleted;
     public @Nullable LinkPreview linkPreview;
+    public @Nullable View.OnClickListener onMediaClickListener;
 
     public DisplayData (Tdlib tdlib, TdApi.Message message, @Nullable TdApi.FormattedText quote, int options) {
       this.tdlib = tdlib;
@@ -151,12 +159,20 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
       return false;
     }
 
+    public void setOnMediaClickListener (View.OnClickListener onClickListener) {
+      this.onMediaClickListener = onClickListener;
+    }
+
     public void setPreviewFilter (@Nullable TdApi.SearchMessagesFilter filter) {
       this.filter = filter;
     }
 
     public void setLinkPreview (@Nullable LinkPreview linkPreview) {
       this.linkPreview = linkPreview;
+    }
+
+    public boolean isLinkPreviewShowSmallMedia () {
+       return linkPreview != null && linkPreview.hasMedia() && !linkPreview.getOutputShowLargeMedia();
     }
 
     public boolean equalsTo (TdApi.Message message, @Nullable TdApi.FormattedText quote, @Options int options, @Nullable LinkPreview linkPreview) {
@@ -210,14 +226,16 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     Options.NONE,
     Options.IGNORE_ALBUM_REFRESHERS,
     Options.DISABLE_MESSAGE_PREVIEW,
-    Options.NO_UPDATES
+    Options.NO_UPDATES,
+    Options.HANDLE_MEDIA_CLICKS
   }, flag = true)
   public @interface Options {
     int
       NONE = 0,
       IGNORE_ALBUM_REFRESHERS = 1,
       DISABLE_MESSAGE_PREVIEW = 1 << 1,
-      NO_UPDATES = 1 << 2;
+      NO_UPDATES = 1 << 2,
+      HANDLE_MEDIA_CLICKS = 1 << 3;
   }
 
   private ContentPreview contentPreview;
@@ -237,10 +255,19 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     }
   }
 
-  public void setLinkPreview (@Nullable LinkPreview linkPreview) {
+  public interface LinkPreviewMediaClickListener {
+    void onClick (MessagePreviewView view, @NonNull LinkPreview linkPreview);
+  }
+
+  public void setLinkPreview (@Nullable LinkPreview linkPreview, @Nullable LinkPreviewMediaClickListener onMediaClick) {
     if (linkPreview != null) {
-      DisplayData displayData = new DisplayData(tdlib, linkPreview.getFakeMessage(), null, Options.DISABLE_MESSAGE_PREVIEW | Options.NO_UPDATES);
+      DisplayData displayData = new DisplayData(tdlib, linkPreview.getFakeMessage(), null, Options.DISABLE_MESSAGE_PREVIEW | Options.NO_UPDATES | (onMediaClick != null ? Options.HANDLE_MEDIA_CLICKS : 0));
       displayData.setForcedTitle(linkPreview.getForcedTitle());
+      if (onMediaClick != null) {
+        displayData.setOnMediaClickListener(v -> {
+          onMediaClick.onClick(this, linkPreview);
+        });
+      }
       displayData.setLinkPreview(linkPreview);
       setDisplayData(displayData);
     } else {
@@ -309,6 +336,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     buildText(true);
     invalidate();
   }, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
+  private final BoolAnimator showSmallMedia = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
 
   private static final float LINE_PADDING = 6f;
   private static final float PADDING_SIZE = 8f;
@@ -356,7 +384,11 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   private int lastTextWidth;
 
   private int getTextHorizontalOffset () {
-    return (int) (mediaPreview.getMetadata().getTotalWidth() + mediaPreview.getMetadata().getTotalVisibility() * Screen.dp(PADDING_SIZE)) + Screen.dp(getLinePadding());
+    return getMediaWidth() + Screen.dp(getLinePadding());
+  }
+
+  private int getMediaWidth () {
+    return (int) (mediaPreview.getMetadata().getTotalWidth() + mediaPreview.getMetadata().getTotalVisibility() * Screen.dp(PADDING_SIZE));
   }
 
   private int contentInset;
@@ -420,6 +452,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
 
   private void buildMediaPreview (boolean animated) {
     MediaPreview preview;
+    boolean showSmallMedia = false;
 
     if (data != null) {
       preview = MediaPreview.valueOf(tdlib, data.message, contentPreview, Screen.dp(IMAGE_HEIGHT), Screen.dp(3f));
@@ -429,6 +462,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
           preview = MediaPreview.valueOf(tdlib, chat.photo, Screen.dp(IMAGE_HEIGHT), Screen.dp(3f));
         }
       }
+      showSmallMedia = data.isLinkPreviewShowSmallMedia();
     } else {
       preview = null;
     }
@@ -439,7 +473,13 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
       ComplexReceiver receiver = newComplexReceiver(false);
       preview.requestFiles(receiver, false);
       this.mediaPreview.replace(new MediaEntry(preview, receiver), animated);
+      this.showSmallMedia.setValue(showSmallMedia, animated);
     }
+  }
+
+  public void updateShowSmallMedia (boolean animated) {
+    boolean showSmallMedia = data != null && data.isLinkPreviewShowSmallMedia();
+    this.showSmallMedia.setValue(showSmallMedia, animated);
   }
 
   private void updateTitleText () {
@@ -560,13 +600,62 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
 
   // Drawing
 
+  public boolean getMediaPosition (RectF rectF) {
+    float reverseMediaFactor = showSmallMedia.getFloatValue();
+    int textX = Screen.dp(getLinePadding()) + Screen.dp(PADDING_SIZE) + getTextHorizontalOffset() - (int) (getMediaWidth() * reverseMediaFactor);
+    ListAnimator.Entry<MediaEntry> entry = mediaPreview.singleton();
+    if (entry == null) {
+      return false;
+    }
+    float scale = 1f, cx, cy;
+    if (reverseMediaFactor <= .5f) {
+      cx = textX - entry.item.content.getWidth() / 2f - Screen.dp(PADDING_SIZE);
+      cy = (SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW) - Screen.dp(IMAGE_HEIGHT)) / 2f + entry.item.content.getHeight() / 2f;
+    } else {
+      scale = .85f;
+      float x = getMeasuredWidth() - contentInset - getPaddingRight() - entry.item.content.getWidth() + (int) ((1f - reverseMediaFactor) * getMediaWidth());
+      float y = (SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW) - Screen.dp(IMAGE_HEIGHT)) / 2f;
+      cx = x + entry.item.content.getWidth() / 2f;
+      cy = y + entry.item.content.getHeight() / 2f;
+    }
+
+    rectF.left = cx - entry.item.content.getWidth() * scale / 2f;
+    rectF.right = cx + entry.item.content.getWidth() * scale / 2f;
+    rectF.top = cy - entry.item.content.getHeight() * scale / 2f;
+    rectF.bottom = cy + entry.item.content.getHeight() * scale / 2f;
+    return true;
+  }
+
+  private boolean isInsideMedia (float touchX, float touchY) {
+    RectF rectF = Paints.getRectF();
+    if (getMediaPosition(rectF)) {
+      return (touchX >= rectF.left && touchX <= rectF.right && touchY >= rectF.top && touchY <= rectF.bottom);
+    } else {
+      return false;
+    }
+  }
+
   @Override
   protected void onDraw (Canvas c) {
     if (this.data == null)
       return;
-    int textX = Screen.dp(getLinePadding()) + Screen.dp(PADDING_SIZE) + getTextHorizontalOffset();
+    float reverseMediaFactor = showSmallMedia.getFloatValue();
+    int textX = Screen.dp(getLinePadding()) + Screen.dp(PADDING_SIZE) + getTextHorizontalOffset() - (int) (getMediaWidth() * reverseMediaFactor);
     for (ListAnimator.Entry<MediaEntry> entry : mediaPreview) {
-      entry.item.content.draw(this, c, entry.item.receiver, textX - entry.item.content.getWidth() - Screen.dp(PADDING_SIZE), (SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW) - Screen.dp(IMAGE_HEIGHT)) / 2f, entry.getVisibility());
+      if (reverseMediaFactor <= .5f) {
+        float alpha = 1f - reverseMediaFactor / .5f;
+        entry.item.content.draw(this, c, entry.item.receiver, textX - entry.item.content.getWidth() - Screen.dp(PADDING_SIZE), (SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW) - Screen.dp(IMAGE_HEIGHT)) / 2f, entry.getVisibility() * alpha);
+      } else {
+        float alpha = (reverseMediaFactor - .5f) / .5f;
+        int restoreToCount = Views.save(c);
+        float x = getMeasuredWidth() - contentInset - getPaddingRight() - entry.item.content.getWidth() + (int) ((1f - reverseMediaFactor) * getMediaWidth());
+        float y = (SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW) - Screen.dp(IMAGE_HEIGHT)) / 2f;
+        float cx = x + entry.item.content.getWidth() / 2f;
+        float cy = y + entry.item.content.getHeight() / 2f;
+        c.scale(.85f, .85f, cx, cy);
+        entry.item.content.draw(this, c, entry.item.receiver, x, y, entry.getVisibility() * alpha);
+        Views.restore(c, restoreToCount);
+      }
     }
     int contextTextY = Screen.dp(7f) + Screen.dp(TEXT_SIZE) + Screen.dp(5f);
     for (ListAnimator.Entry<TextEntry> entry : titleText) {
@@ -595,6 +684,25 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
 
   // Touch events
 
+  private final ClickHelper clickHelper = new ClickHelper(new ClickHelper.Delegate() {
+    @Override
+    public boolean needClickAt (View view, float x, float y) {
+      if (data != null && BitwiseUtils.hasFlag(data.options, Options.HANDLE_MEDIA_CLICKS)) {
+        return isInsideMedia(x, y);
+      }
+      return false;
+    }
+
+    @Override
+    public void onClickAt (View view, float x, float y) {
+      if (data != null && BitwiseUtils.hasFlag(data.options, Options.HANDLE_MEDIA_CLICKS) && isInsideMedia(x, y)) {
+        if (data.onMediaClickListener != null) {
+          data.onMediaClickListener.onClick(MessagePreviewView.this);
+        }
+      }
+    }
+  });
+
   @Override
   public boolean onTouchEvent (MotionEvent e) {
     for (ListAnimator.Entry<TextEntry> entry : contentText) {
@@ -602,7 +710,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
         return true;
       }
     }
-    return super.onTouchEvent(e);
+    return clickHelper.onTouchEvent(this, e) || super.onTouchEvent(e);
   }
 
   // Listeners

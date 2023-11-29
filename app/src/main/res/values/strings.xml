@@ -4926,8 +4926,8 @@
 
   <string name="LinkPreviewEnlarged">Link preview media will be enlarged</string>
   <string name="LinkPreviewMinimized">Link preview media will be minimized</string>
-  <string name="LinkPreviewShowAbove">Link preview will appear above text</string>
-  <string name="LinkPreviewShowBelow">Link preview will appear below text</string>
+  <string name="LinkPreviewShowAbove">Link preview will appear above the text</string>
+  <string name="LinkPreviewShowBelow">Link preview will appear below the text</string>
 
   <string name="LinkPreviewChanged">Link preview changed to %1$s\n\nTap again to choose next link.</string>
   <string name="ReplyMessageDeletedHint">This message is a reply to the message that was deleted.</string>
