@@ -62,6 +62,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.EmojiStatusHelper;
+import org.thunderdog.challegram.util.RateLimiter;
 import org.thunderdog.challegram.util.text.TextColorSetOverride;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.voip.gui.CallSettings;
@@ -779,10 +780,7 @@ public class CallController extends ViewController<CallController.Arguments> imp
     switch (id) {
       case ANIMATOR_FLASH_ID: {
         if (finalFactor == 1f) {
-          flashAnimator.forceFactor(0f);
-          if (isFlashing) {
-            flashAnimator.animateTo(1f);
-          }
+          flashLimiter.run();
         }
         break;
       }
@@ -893,6 +891,15 @@ public class CallController extends ViewController<CallController.Arguments> imp
 
   public static final long CALL_FLASH_DURATION = 1100;
   public static final long CALL_FLASH_DELAY = 650l;
+
+  private final RateLimiter flashLimiter = new RateLimiter(() -> {
+    if (isFlashing) {
+      flashAnimator.forceFactor(0f);
+      if (isFlashing) {
+        flashAnimator.animateTo(1f);
+      }
+    }
+  }, 100l, null);
 
   private void setFlashing (boolean isFlashing) {
     if (this.isFlashing != isFlashing) {
