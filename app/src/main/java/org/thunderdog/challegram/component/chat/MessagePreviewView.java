@@ -68,7 +68,6 @@ import me.vkryl.android.util.SingleViewProvider;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
-import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.RunnableData;
@@ -612,7 +611,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
       cx = textX - entry.item.content.getWidth() / 2f - Screen.dp(PADDING_SIZE);
       cy = (SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW) - Screen.dp(IMAGE_HEIGHT)) / 2f + entry.item.content.getHeight() / 2f;
     } else {
-      scale = .85f;
+      scale = MINIMIZED_MEDIA_SCALE;
       float x = getMeasuredWidth() - contentInset - getPaddingRight() - entry.item.content.getWidth() + (int) ((1f - reverseMediaFactor) * getMediaWidth());
       float y = (SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW) - Screen.dp(IMAGE_HEIGHT)) / 2f;
       cx = x + entry.item.content.getWidth() / 2f;
@@ -652,7 +651,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
         float y = (SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW) - Screen.dp(IMAGE_HEIGHT)) / 2f;
         float cx = x + entry.item.content.getWidth() / 2f;
         float cy = y + entry.item.content.getHeight() / 2f;
-        c.scale(.85f, .85f, cx, cy);
+        c.scale(MINIMIZED_MEDIA_SCALE, MINIMIZED_MEDIA_SCALE, cx, cy);
         entry.item.content.draw(this, c, entry.item.receiver, x, y, entry.getVisibility() * alpha);
         Views.restore(c, restoreToCount);
       }
@@ -681,6 +680,8 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
       }
     }
   }
+
+  private static final float MINIMIZED_MEDIA_SCALE = .8f;
 
   // Touch events
 

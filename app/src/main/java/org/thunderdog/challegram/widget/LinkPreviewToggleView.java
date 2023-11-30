@@ -18,7 +18,9 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Path;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
@@ -30,13 +32,16 @@ import androidx.appcompat.widget.AppCompatImageView;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
+import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 
 import java.lang.annotation.Retention;
@@ -224,13 +229,13 @@ public class LinkPreviewToggleView extends AppCompatImageView implements Tooltip
     float minY = centerY - height / 2f + verticalInset + lineSize;
     float maxY = centerY + height / 2f - verticalInset - lineSize;
 
-    centerY += MathUtils.clamp(1f - showAboveText.getFloatValue()) * (height / 2f);
+    centerY += MathUtils.clamp(1f - showAboveText.getFloatValue()) * ((int) (height / 2) + (int) (height % 2) + Screen.dp(.5f));
 
-    float left = centerX - width / 2f;
-    float top = centerY - height / 2f;
+    final float left = centerX - width / 2f;
+    final float top = centerY - height / 2f;
 
-    float right = left + width;
-    float bottom = top + height / 2f;
+    final float right = left + width;
+    final float bottom = top + height / 2f;
 
     if (needFallback) {
       Drawables.draw(c, topDrawable, left, top, PorterDuffPaint.get(ColorId.icon));
@@ -243,66 +248,84 @@ public class LinkPreviewToggleView extends AppCompatImageView implements Tooltip
 
     float factor = mediaStateFactor.getFactor();
 
-    left += horizontalInset;
-    right -= horizontalInset;
-    top += verticalInset;
-    bottom -= verticalInset;
+    float cLeft = left, cTop = top, cRight = right, cBottom = bottom;
+    cLeft += horizontalInset;
+    cRight -= horizontalInset;
+    cTop += verticalInset;
+    cBottom -= verticalInset;
 
     int contentColor = Theme.textAccentColor();
 
     if (factor > 0f) {
-      float rectWidth = factor <= 1f ? this.rectWidth * factor : MathUtils.fromTo(this.rectWidth, right - (left + lineSize + horizontalLineSpacing), factor - 1f);
+      float rectWidth = factor <= 1f ? this.rectWidth * factor : MathUtils.fromTo(this.rectWidth, cRight - (cLeft + lineSize + horizontalLineSpacing), factor - 1f);
       c.drawRect(
-        right - rectWidth,
-        top,
-        right,
-        top + lineSize * 2 + verticalLineSpacing,
+        cRight - rectWidth,
+        cTop,
+        cRight,
+        cTop + lineSize * 2 + verticalLineSpacing,
         Paints.fillingPaint(contentColor)
       );
     }
 
-    float lineStartX = left + lineSize + horizontalLineSpacing;
+    float lineStartX = cLeft + lineSize + horizontalLineSpacing;
     float topLineEndX;
     if (factor <= 1f) {
-      topLineEndX = MathUtils.fromTo(right, right - rectWidth - horizontalLineSpacing, factor);
+      topLineEndX = MathUtils.fromTo(cRight, cRight - rectWidth - horizontalLineSpacing, factor);
     } else {
-      topLineEndX = MathUtils.fromTo(right - rectWidth - horizontalLineSpacing, lineStartX, factor - 1f);
+      topLineEndX = MathUtils.fromTo(cRight - rectWidth - horizontalLineSpacing, lineStartX, factor - 1f);
     }
-    float bottomLineEndX = MathUtils.fromTo(right - rectWidth - horizontalLineSpacing, right, hasMedia.getFloatValue());
+    float bottomLineEndX = MathUtils.fromTo(cRight - rectWidth - horizontalLineSpacing, cRight, hasMedia.getFloatValue());
 
     c.drawRect(
       lineStartX,
-      top,
+      cTop,
       topLineEndX,
-      top + lineSize,
+      cTop + lineSize,
       Paints.fillingPaint(contentColor)
     );
     c.drawRect(
       lineStartX,
-      top + lineSize + verticalLineSpacing,
+      cTop + lineSize + verticalLineSpacing,
       topLineEndX,
-      top + lineSize * 2 + verticalLineSpacing,
+      cTop + lineSize * 2 + verticalLineSpacing,
       Paints.fillingPaint(contentColor)
     );
     c.drawRect(
       lineStartX,
-      top + lineSize * 2 + verticalLineSpacing * 2,
+      cTop + lineSize * 2 + verticalLineSpacing * 2,
       bottomLineEndX,
-      top + lineSize * 3 + verticalLineSpacing * 2,
+      cTop + lineSize * 3 + verticalLineSpacing * 2,
       Paints.fillingPaint(contentColor)
     );
 
-    c.drawRect(left,
-      Math.max(top, minY),
-      left + lineSize,
-      Math.min(maxY, top + lineSize * 3 + verticalLineSpacing * 2),
-      Paints.fillingPaint(contentColor)
+    rebuildPath(cLeft,
+      cTop,
+      cLeft + lineSize,
+      cTop + lineSize * 3 + verticalLineSpacing * 2,
+      MathUtils.clamp(showAboveText.getFloatValue()),
+      MathUtils.clamp(1f - showAboveText.getFloatValue())
     );
+    c.drawPath(leftLinePath, Paints.fillingPaint(contentColor));
 
     /*if (BuildConfig.DEBUG) {
       Drawables.drawCentered(c, Drawables.get(R.drawable.baseline_link_preview_bg_24), getMeasuredWidth() / 2f, getMeasuredHeight() / 2f, Paints.getPorterDuffPaint(0xaaff0000));
     }*/
   }
+
+  private final RectF leftLineRect = new RectF();
+  private float leftLineTopRadius, leftLineBottomRadius;
+
+  private void rebuildPath (float left, float top, float right, float bottom, float topRadiusFactor, float bottomRadiusFactor) {
+    if (U.setRect(leftLineRect, left, top, right, bottom) || leftLineTopRadius != topRadiusFactor || leftLineBottomRadius != bottomRadiusFactor) {
+      leftLinePath.reset();
+      leftLineTopRadius = topRadiusFactor;
+      leftLineBottomRadius = bottomRadiusFactor;
+      float radius = (right - left);
+      DrawAlgorithms.buildPath(leftLinePath, leftLineRect, radius * topRadiusFactor, 0, 0, radius * bottomRadiusFactor);
+    }
+  }
+
+  private final Path leftLinePath = new Path();
 
   private static Bitmap drawableToBitmap (Drawable drawable) {
     Bitmap bitmap;
