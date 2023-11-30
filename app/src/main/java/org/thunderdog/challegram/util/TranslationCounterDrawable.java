@@ -147,10 +147,14 @@ public class TranslationCounterDrawable extends Drawable implements FactorAnimat
     invalidate();
   }
 
+  private final RateLimiter checkLimiter = new RateLimiter(this::checkStatus, 100L, null);
+
   @Override
   public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
     if (id == ANIMATOR_OFFSET) {
-      checkStatus();
+      if (finalFactor == (offsetAnimator.getValue() ? 1f : 0f)) {
+        checkLimiter.run();
+      }
     }
   }
 }
