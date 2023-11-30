@@ -1634,8 +1634,8 @@
   <string name="ViewPackPreview">View Pack</string>
   <string name="UserBio">Bio</string>
   <string name="BioDescription">Any details such as age, occupation or city.\nExample: 23 y.o. designer from San Francisco.</string>
-  <string name="AttachPhotoExpired">Photo has expired</string>
-  <string name="AttachVideoExpired">Video has expired</string>
+  <string name="AttachPhotoExpired">Expired photo</string>
+  <string name="AttachVideoExpired">Expired video</string>
   <string name="SendByEnter">Send with Enter</string>
   <string name="HideChatKeyboard">Hide keyboard on chat scroll</string>
   <string name="CopiedHashtag">Hashtag has been copied to the clipboard</string>
@@ -3649,7 +3649,7 @@
   <string name="WhoCanSeePhone">Who can see your Phone Number?</string>
   <string name="WhoCanSeePhoneInfo">Users who have your number saved in their contacts will also see it on Telegram.</string>
   <string name="WhoCanSeeBio">Who can see your bio?</string>
-  <string name="WhoCanSeeBioInfo">You can restrict who can see can see the bio on your profile with granular precision.</string>
+  <string name="WhoCanSeeBioInfo">You can restrict who can see the bio on your profile with granular precision.</string>
 
   <string name="PrivacyShowNumberExceptionOn">Visible</string>
   <string name="PrivacyShowNumberExceptionContacts">Visible only for contacts</string>
@@ -4800,7 +4800,7 @@
   <string name="EmojiUsedFromSingle">Emoji used from %1$s pack</string>
   <string name="EmojiUsedFromX">Emoji used from %1$s</string>
   <string name="xEmojiPacksEmojiSingle">* %1$s</string>
-  <string name="ArchivedEmojiInfo">You can add up to %1$s emoji packs. Unused packs are archive when you add more.</string>
+  <string name="ArchivedEmojiInfo">You can add up to %1$s emoji packs. Unused packs are archived when you add more.</string>
 
   <string name="SuggestAnimatedEmoji">Suggest Animated Emoji</string>
   <string name="EmojiPacks">Emoji Packs</string>
@@ -4823,10 +4823,10 @@
   <string name="ArchiveSettingFolderChatsDesc">Keep archived chats from folders in the Archive even if they are unmuted and get a new message.</string>
 
   <string name="xStickerSetsInstalled_one">%1$s set installed</string>
-  <string name="xStickerSetsInstalled_other">%1$s set installed</string>
+  <string name="xStickerSetsInstalled_other">%1$s sets installed</string>
   <string name="xStickerSetsInstalledUnknown">Sticker set settings</string>
   <string name="xEmojiSetsInstalled_one">%1$s set installed</string>
-  <string name="xEmojiSetsInstalled_other">%1$s set installed</string>
+  <string name="xEmojiSetsInstalled_other">%1$s sets installed</string>
   <string name="xEmojiSetsInstalledUnknown">Emoji packs settings</string>
   <string name="xStickersHide_one">Archive %1$s pack</string>
   <string name="xStickersHide_other">Archive %1$s packs</string>
