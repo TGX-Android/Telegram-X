@@ -4869,8 +4869,12 @@
   <string name="RemoveFolder">Remove Folder</string>
   <string name="RemoveFolderConfirm">Are you sure you want to remove this folder? Your chats will not be deleted.</string>
   <string name="FolderNoChatsToDisplay">**Folder is empty**\n\nNo chats currently belong to this folder.</string>
-  <string name="FolderRemoveInclusionConfirm">Are you sure you want to remove "%1$s" from the always included list?</string>
-  <string name="FolderRemoveExclusionConfirm">Are you sure you want to remove "%1$s" from the always excluded list?</string>
+  <string name="FolderRemoveInclusionConfirmChat">Are you sure you want to remove "%1$s" from the always included list?</string>
+  <string name="FolderRemoveInclusionConfirmUser">Are you sure you want to remove "%1$s" from the always included list?</string>
+  <string name="FolderRemoveInclusionConfirmType">Are you sure you want to remove "%1$s" from the always included list?</string>
+  <string name="FolderRemoveExclusionConfirmChat">Are you sure you want to remove "%1$s" from the always excluded list?</string>
+  <string name="FolderRemoveExclusionConfirmUser">Are you sure you want to remove "%1$s" from the always excluded list?</string>
+  <string name="FolderRemoveExclusionConfirmType">Are you sure you want to remove "%1$s" from the always excluded list?</string>
   <string name="IncludeChats">Include Chats</string>
   <string name="IncludeChatsInfo_one">You can select only one non-secret chat and only one secret chat.</string>
   <string name="IncludeChatsInfo_other">You can select up to %1$s non-secret chats and the same number of secret chats.</string>

@@ -29,6 +29,7 @@ import android.widget.LinearLayout;
 
 import androidx.annotation.IdRes;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
@@ -501,7 +502,18 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
     } else {
       title = item.getString();
     }
-    CharSequence info = Lang.getStringBold(inclusion ? R.string.FolderRemoveInclusionConfirm : R.string.FolderRemoveExclusionConfirm, title);
+    @StringRes int stringRes;
+    if (item.getId() == R.id.chat) {
+      long chatId = item.getLongId();
+      if (tdlib.isUserChat(chatId)) {
+        stringRes = inclusion ? R.string.FolderRemoveInclusionConfirmUser : R.string.FolderRemoveExclusionConfirmUser;
+      } else {
+        stringRes = inclusion ? R.string.FolderRemoveInclusionConfirmChat : R.string.FolderRemoveExclusionConfirmChat;
+      }
+    } else {
+      stringRes = inclusion ? R.string.FolderRemoveInclusionConfirmType : R.string.FolderRemoveExclusionConfirmType;
+    }
+    CharSequence info = Lang.getStringBold(stringRes, title);
     showConfirm(info, Lang.getString(R.string.Remove), R.drawable.baseline_delete_24, OPTION_COLOR_RED, () -> {
       int index = adapter.getItem(position) == item ? position : adapter.indexOfView(item);
       if (index != RecyclerView.NO_POSITION) {
