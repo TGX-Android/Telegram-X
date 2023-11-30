@@ -4932,5 +4932,6 @@
   <string name="LinkPreviewChanged">Link preview changed to %1$s\n\nTap again to choose next link.</string>
   <string name="ReplyMessageDeletedHint">This message is a reply to the message that was deleted.</string>
   <string name="AnotherChatReplyHint">This message is from another chat. Tap again to view.</string>
+  <string name="SwipeToSwapLinkPreview">Swipe to choose specific link preview</string>
 
 </resources>

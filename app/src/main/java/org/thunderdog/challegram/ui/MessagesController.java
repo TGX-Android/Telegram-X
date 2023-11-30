@@ -6456,8 +6456,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return foundUrls;
     }
 
-    public void setLinkPreviewUrl (@NonNull String url) {
+    public boolean setLinkPreviewUrl (@NonNull String url) {
+      if (url.equals(this.linkPreviewOptions.url)) {
+        return false;
+      }
+      if (StringUtils.isEmpty(this.linkPreviewOptions.url) && url.equals(foundUrls.urls[0])) {
+        return false;
+      }
       this.linkPreviewOptions.url = url;
+      return true;
     }
 
     private final Map<String, LinkPreview> linkPreviews = new HashMap<>();
@@ -6558,6 +6565,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       if (hasChanges && !foundUrls.isEmpty()) {
         linkPreviewOptions.isDisabled = false;
+      }
+      if (hasChanges && foundUrls.size() > 1 && Settings.instance().needTutorial(Settings.TUTORIAL_MULTIPLE_LINK_PREVIEWS)) {
+        Settings.instance().markTutorialAsShown(Settings.TUTORIAL_MULTIPLE_LINK_PREVIEWS);
+        context.context()
+          .tooltipManager()
+          .builder(context.replyBarView)
+          .icon(R.drawable.baseline_info_24)
+          .show(tdlib, R.string.SwipeToSwapLinkPreview);
       }
 
       return hasChanges;
@@ -7921,8 +7936,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public void onSelectLinkPreviewUrl (ReplyBarView view, MessageInputContext messageContext, String url) {
-    messageContext.setLinkPreviewUrl(url);
-    inputView.setTextChangedSinceChatOpened(true);
+    if (messageContext.setLinkPreviewUrl(url)) {
+      Settings.instance().markTutorialAsComplete(Settings.TUTORIAL_MULTIPLE_LINK_PREVIEWS);
+      inputView.setTextChangedSinceChatOpened(true);
+    }
   }
 
   @Override
