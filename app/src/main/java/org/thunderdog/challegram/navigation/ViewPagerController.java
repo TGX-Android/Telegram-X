@@ -49,8 +49,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import me.vkryl.android.widget.FrameLayoutFix;
@@ -233,8 +233,12 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     pager.addOnPageChangeListener(new androidx.viewpager.widget.ViewPager.OnPageChangeListener() {
       @Override
       public void onPageScrolled (int position, float positionOffset, int positionOffsetPixels) {
+        boolean needUpdateAttachState = currentPosition != position || (currentPositionOffset == 0f) != (positionOffset == 0f);
         currentPosition = position;
         currentPositionOffset = positionOffset;
+        if (needUpdateAttachState) {
+          updateAttachedControllers();
+        }
         context().checkDisallowScreenshots();
       }
 
@@ -260,11 +264,30 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     return contentView;
   }
 
-  private final ViewController.AttachListener attachListener = (context, navigation, isAttached) -> {
-    for (ViewController<?> c : adapter.visibleControllers) {
-      c.onAttachStateChanged(navigation, isAttached);
+  private void updateControllerState (ViewController<?> c, int position) {
+    boolean attachState = c.getAttachState();
+    boolean desiredAttachState = adapter.attachedControllers.contains(c);
+    if (desiredAttachState) {
+      if (currentPositionOffset == 0f || Math.abs(currentPositionOffset) == 1f) {
+        desiredAttachState = (int) (currentPosition + currentPositionOffset) == position;
+      } else {
+        desiredAttachState = position == currentPosition || position == currentPosition + Math.signum(currentPositionOffset);
+      }
     }
+    if (attachState != desiredAttachState) {
+      c.onAttachStateChanged(navigationController, desiredAttachState);
+    }
+  }
+
+  private final ViewController.AttachListener attachListener = (context, navigation, isAttached) -> {
+    updateAttachedControllers();
   };
+
+  private void updateAttachedControllers () {
+    for (ViewController<?> c : adapter.attachedControllers) {
+      updateControllerState(c, adapter.getControllerPosition(c));
+    }
+  }
 
   protected boolean overridePagerParent () {
     return false;
@@ -714,16 +737,14 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
       return parent.getPagerItemCount();
     }
 
-    private final Set<ViewController<?>> visibleControllers = new HashSet<>();
+    private final Set<ViewController<?>> attachedControllers = new HashSet<>();
 
     @Override
     public void destroyItem (ViewGroup container, int position, @NonNull Object object) {
       ViewController<?> c = (ViewController<?>) object;
       container.removeView(c.getValue());
-      visibleControllers.remove(c);
-      if (c.getAttachState()) {
-        c.onAttachStateChanged(parent.navigationController, false);
-      }
+      attachedControllers.remove(c);
+      parent.updateControllerState(c, position);
     }
 
     public void destroyCachedItems () {
@@ -744,9 +765,17 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
 
     @Override
     public int getItemPosition (@NonNull Object object) {
+      if (object instanceof ViewController<?>) {
+        return getControllerPosition((ViewController<?>) object);
+      } else {
+        return POSITION_NONE;
+      }
+    }
+
+    public int getControllerPosition (ViewController<?> controller) {
       int count = cachedItems.size();
       for (int i = 0; i < count; i++) {
-        if (cachedItems.valueAt(i) == object) {
+        if (cachedItems.valueAt(i) == controller) {
           return reversePosition(cachedItems.keyAt(i));
         }
       }
@@ -770,10 +799,8 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     public Object instantiateItem (@NonNull ViewGroup container, int position) {
       ViewController<?> c = prepareViewController(reversePosition(position));
       container.addView(c.getValue());
-      visibleControllers.add(c);
-      if (!c.getAttachState()) {
-        c.onAttachStateChanged(parent.navigationController, true);
-      }
+      attachedControllers.add(c);
+      parent.updateControllerState(c, position);
       if ((position == parent.currentPosition || (parent.currentPositionOffset != 0f && position == parent.currentPosition + (parent.currentPositionOffset > 0f ? 1 : -1))) && c.shouldDisallowScreenshots()) {
         parent.context().checkDisallowScreenshots();
       }

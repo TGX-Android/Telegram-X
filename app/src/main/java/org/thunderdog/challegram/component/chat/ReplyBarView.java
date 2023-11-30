@@ -94,6 +94,7 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
       @Override
       public void onCreateMessagePreview (PinnedMessagesBar view, MessagePreviewView previewView) {
         ViewUtils.setBackground(previewView, null);
+        // previewView.setLinePadding(4f);
       }
 
       @Override
@@ -107,6 +108,15 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
           callback.onSelectLinkPreviewUrl(ReplyBarView.this, messageContext, url);
         }
         updateLinkPreviewSettings(true);
+      }
+
+      @Override
+      public boolean onToggleLargeMedia (PinnedMessagesBar view, MessagePreviewView previewView, MessagesController.MessageInputContext messageContext, LinkPreview linkPreview) {
+        if (callback != null && callback.onRequestToggleLargeMedia(ReplyBarView.this, previewView, messageContext, linkPreview)) {
+          updateLinkPreviewSettings(true);
+          return true;
+        }
+        return false;
       }
 
       @Override
@@ -175,20 +185,11 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
     setPendingLinkPreview(linkPreview != null && linkPreview.isLoading() ? linkPreview : null);
     if (linkPreview != null) {
       TdApi.LinkPreviewOptions options = inputContext.takeOutputLinkPreviewOptions(false);
-      TdApi.WebPage webPage = linkPreview.webPage;
-      boolean hasMedia = webPage != null && MediaPreview.hasMedia(webPage);
       @LinkPreviewToggleView.MediaVisibility int mediaState;
-      if (!hasMedia) {
+      if (!linkPreview.hasMedia()) {
         mediaState = LinkPreviewToggleView.MediaVisibility.NONE;
       } else {
-        mediaState = webPage.showLargeMedia ? LinkPreviewToggleView.MediaVisibility.LARGE : LinkPreviewToggleView.MediaVisibility.SMALL;
-        if (webPage.hasLargeMedia) {
-          if (options.forceLargeMedia) {
-            mediaState = LinkPreviewToggleView.MediaVisibility.LARGE;
-          } else if (options.forceSmallMedia) {
-            mediaState = LinkPreviewToggleView.MediaVisibility.SMALL;
-          }
-        }
+        mediaState = linkPreview.getOutputShowLargeMedia() ? LinkPreviewToggleView.MediaVisibility.LARGE : LinkPreviewToggleView.MediaVisibility.SMALL;
       }
       linkPreviewToggleView.setMediaVisibility(mediaState, animated);
       linkPreviewToggleView.setShowAboveText(options.showAboveText, animated);
@@ -283,5 +284,6 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
     void onMessageHighlightRequested (ReplyBarView view, TdApi.Message message, @Nullable TdApi.FormattedText quote);
     void onSelectLinkPreviewUrl (ReplyBarView view, MessagesController.MessageInputContext messageContext, String url);
     boolean onRequestToggleShowAbove (ReplyBarView view, View buttonView, MessagesController.MessageInputContext messageContext);
+    boolean onRequestToggleLargeMedia (ReplyBarView view, View buttonView, MessagesController.MessageInputContext messageContext, LinkPreview linkPreview);
   }
 }

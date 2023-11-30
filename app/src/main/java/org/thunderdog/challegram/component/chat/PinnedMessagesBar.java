@@ -428,7 +428,11 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
         Entry data = (Entry) item.getData();
         if (data.isLinkPreview()) {
           LinkPreview linkPreview = data.linkPreviewContext.getLinkPreview(data.linkPreviewUrl);
-          previewView.setLinkPreview(linkPreview);
+          previewView.setLinkPreview(linkPreview, (v, currentLinkPreview) -> {
+            if (messageListener != null && messageListener.onToggleLargeMedia(PinnedMessagesBar.this, v, data.linkPreviewContext, currentLinkPreview)) {
+              v.updateShowSmallMedia(true);
+            }
+          });
         } else if (data.isMessage()) {
           TdApi.Message message = data.message;
           TdApi.FormattedText quote = data.quote;
@@ -558,6 +562,9 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
   public interface MessageListener {
     void onMessageClick (PinnedMessagesBar view, TdApi.Message message, @Nullable TdApi.FormattedText quote);
     default void onSelectLinkPreviewUrl (PinnedMessagesBar view, MessagesController.MessageInputContext messageContext, String url) { }
+    default boolean onToggleLargeMedia (PinnedMessagesBar view, MessagePreviewView previewView, MessagesController.MessageInputContext messageContext, LinkPreview linkPreview) {
+      return false;
+    }
     default void onDismissRequest (PinnedMessagesBar view) { }
     default void onShowAllRequest (PinnedMessagesBar view) { }
     default void onCreateMessagePreview (PinnedMessagesBar view, MessagePreviewView previewView) { }
