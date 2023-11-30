@@ -498,6 +498,7 @@ public class Settings {
   public static final long TUTORIAL_BRUSH_COLOR_TONE = 1 << 17;
   public static final long TUTORIAL_QR_SCAN = 1 << 18;
   public static final long TUTORIAL_SELECT_LANGUAGE_INLINE_MODE = 1 << 19;
+  public static final long TUTORIAL_MULTIPLE_LINK_PREVIEWS = 1 << 20;
 
   @Nullable
   private Long _tutorialFlags;

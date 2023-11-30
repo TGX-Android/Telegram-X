@@ -39,9 +39,15 @@ public class TdlibBadgeCounter {
   }
 
   void add (TdlibBadgeCounter counter) {
-    this.count += counter.count;
-    if (!counter.isMuted)
-      this.isMuted = false;
+    if (counter.count > 0) {
+      if (this.count == 0) {
+        this.isMuted = counter.isMuted;
+      }
+      this.count += counter.count;
+      if (!counter.isMuted) {
+        this.isMuted = false;
+      }
+    }
   }
 
   boolean reset (TdlibCounter counter, @Nullable TdlibCounter archiveCounter) {
