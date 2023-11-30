@@ -51,6 +51,7 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.MathUtils;
+import me.vkryl.core.lambda.RunnableData;
 
 public class LinkPreviewToggleView extends AppCompatImageView implements TooltipOverlayView.LocationProvider {
   private final BoolAnimator showAboveText = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
@@ -78,91 +79,89 @@ public class LinkPreviewToggleView extends AppCompatImageView implements Tooltip
     long now = SystemClock.uptimeMillis();
 
     Drawable topDrawable = Drawables.get(R.drawable.baseline_link_preview_top_layer_24);
-    Bitmap bitmap = drawableToBitmap(topDrawable);
+    toBitmap(topDrawable, bitmap -> {
+      int centerX = bitmap.getWidth() / 2;
 
-    int centerX = bitmap.getWidth() / 2;
+      int startTopY = -1, endTopY = -1, secondaryTopY = -1;
+      int prevColor = 0;
+      for (int y = 0; y < bitmap.getHeight(); y++) {
+        int color = bitmap.getPixel(centerX, y);
 
-    int startTopY = -1, endTopY = -1, secondaryTopY = -1;
-    int prevColor = 0;
-    for (int y = 0; y < bitmap.getHeight(); y++) {
-      int color = bitmap.getPixel(centerX, y);
-
-      boolean hadColor = Color.alpha(prevColor) != 0;
-      boolean hasColor = Color.alpha(color) != 0;
-      if (hadColor != hasColor) {
-        if (hasColor) {
-          if (startTopY == -1) {
-            startTopY = y;
-          } else if (secondaryTopY == -1) {
-            secondaryTopY = y;
-            break;
-          }
-        } else {
-          if (endTopY == -1) {
-            endTopY = y;
-          }
-        }
-      }
-
-      prevColor = color;
-    }
-
-    this.verticalLineSpacing = secondaryTopY - endTopY;
-    this.lineSize = endTopY - startTopY - 1;
-    this.verticalInset = startTopY;
-
-    prevColor = 0;
-
-    int startRightX = -1;
-    int endRightX = -1, secondaryRightX = -1;
-
-    for (int x = bitmap.getWidth() - 1; x >= 0; x--) {
-      int color = bitmap.getPixel(x, verticalInset);
-
-      boolean hadColor = Color.alpha(prevColor) != 0;
-      boolean hasColor = Color.alpha(color) != 0;
-
-      if (hadColor != hasColor) {
-        if (hasColor) {
-          if (startRightX == -1) {
-            startRightX = x;
-          } else if (secondaryRightX == -1) {
-            secondaryRightX = x;
-            break;
-          }
-        } else {
-          if (endRightX == -1) {
-            endRightX = x;
+        boolean hadColor = Color.alpha(prevColor) != 0;
+        boolean hasColor = Color.alpha(color) != 0;
+        if (hadColor != hasColor) {
+          if (hasColor) {
+            if (startTopY == -1) {
+              startTopY = y;
+            } else if (secondaryTopY == -1) {
+              secondaryTopY = y;
+              break;
+            }
+          } else {
+            if (endTopY == -1) {
+              endTopY = y;
+            }
           }
         }
+
+        prevColor = color;
       }
 
-      prevColor = color;
-    }
+      this.verticalLineSpacing = secondaryTopY - endTopY;
+      this.lineSize = endTopY - startTopY - 1;
+      this.verticalInset = startTopY;
 
-    needFallback = false;
-    if (startTopY == -1 || endTopY == -1 || secondaryTopY == -1) {
+      prevColor = 0;
+
+      int startRightX = -1;
+      int endRightX = -1, secondaryRightX = -1;
+
+      for (int x = bitmap.getWidth() - 1; x >= 0; x--) {
+        int color = bitmap.getPixel(x, verticalInset);
+
+        boolean hadColor = Color.alpha(prevColor) != 0;
+        boolean hasColor = Color.alpha(color) != 0;
+
+        if (hadColor != hasColor) {
+          if (hasColor) {
+            if (startRightX == -1) {
+              startRightX = x;
+            } else if (secondaryRightX == -1) {
+              secondaryRightX = x;
+              break;
+            }
+          } else {
+            if (endRightX == -1) {
+              endRightX = x;
+            }
+          }
+        }
+
+        prevColor = color;
+      }
+
+      needFallback = false;
+      if (startTopY == -1 || endTopY == -1 || secondaryTopY == -1) {
+        if (BuildConfig.DEBUG) {
+          throw new IllegalStateException();
+        }
+        needFallback = true;
+      }
+      if (startRightX == -1 || endRightX == -1 || secondaryRightX == -1) {
+        if (BuildConfig.DEBUG) {
+          throw new IllegalStateException();
+        }
+        needFallback = true;
+      }
+
+      this.horizontalInset = bitmap.getWidth() - startRightX - 1;
+      this.horizontalLineSpacing = endRightX - secondaryRightX;
+      this.rectWidth = startRightX - endRightX - 1;
+
       if (BuildConfig.DEBUG) {
-        throw new IllegalStateException();
+        Log.v("Measured icon in %dms", SystemClock.uptimeMillis() - now);
       }
-      needFallback = true;
-    }
-    if (startRightX == -1 || endRightX == -1 || secondaryRightX == -1) {
-      if (BuildConfig.DEBUG) {
-        throw new IllegalStateException();
-      }
-      needFallback = true;
-    }
-
-    this.horizontalInset = bitmap.getWidth() - startRightX - 1;
-    this.horizontalLineSpacing = endRightX - secondaryRightX;
-    this.rectWidth = startRightX - endRightX - 1;
-
-    bitmap.recycle();
-
-    if (BuildConfig.DEBUG) {
-      Log.v("Measured icon in %dms", SystemClock.uptimeMillis() - now);
-    }
+    });
   }
 
   public void addThemeListeners (ViewController<?> themeProvider) {
@@ -327,16 +326,16 @@ public class LinkPreviewToggleView extends AppCompatImageView implements Tooltip
 
   private final Path leftLinePath = new Path();
 
-  private static Bitmap drawableToBitmap (Drawable drawable) {
-    Bitmap bitmap;
-
+  private static void toBitmap (Drawable drawable, RunnableData<Bitmap> callback) {
     if (drawable instanceof BitmapDrawable) {
       BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
-      if(bitmapDrawable.getBitmap() != null) {
-        return bitmapDrawable.getBitmap();
+      if (bitmapDrawable.getBitmap() != null) {
+        callback.runWithData(bitmapDrawable.getBitmap());
+        return;
       }
     }
 
+    Bitmap bitmap;
     if (drawable.getIntrinsicWidth() <= 0 || drawable.getIntrinsicHeight() <= 0) {
       bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888); // Single color bitmap will be created of 1x1 pixel
     } else {
@@ -346,6 +345,7 @@ public class LinkPreviewToggleView extends AppCompatImageView implements Tooltip
     Canvas canvas = new Canvas(bitmap);
     drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
     drawable.draw(canvas);
-    return bitmap;
+    callback.runWithData(bitmap);
+    bitmap.recycle();
   }
 }
