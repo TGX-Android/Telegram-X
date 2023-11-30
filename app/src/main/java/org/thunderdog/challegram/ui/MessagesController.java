@@ -6509,17 +6509,25 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (linkPreviewOptions.forceLargeMedia != forceLargeMedia || linkPreviewOptions.forceSmallMedia != forceSmallMedia) {
           linkPreviewOptions.forceLargeMedia = forceLargeMedia;
           linkPreviewOptions.forceSmallMedia = forceSmallMedia;
-          if ((forceLargeMedia || forceSmallMedia) && StringUtils.isEmpty(linkPreviewOptions.url)) {
-            linkPreviewOptions.url = linkPreview.url;
-          }
+        }
+        if ((forceLargeMedia || forceSmallMedia) && StringUtils.isEmpty(linkPreviewOptions.url)) {
+          linkPreviewOptions.url = linkPreview.url;
         }
       }
       return copy ? Td.copyOf(linkPreviewOptions) : linkPreviewOptions;
     }
 
-    public TdApi.WebPage getPreloadedOutputWebPage () {
+    public TdApi.WebPage takePreloadedOutputWebPage () {
       LinkPreview linkPreview = getSelectedLinkPreview();
-      return linkPreview != null ? linkPreview.webPage : null;
+      TdApi.WebPage webPage = linkPreview != null ? linkPreview.webPage : null;
+      if (webPage != null && webPage.hasLargeMedia) {
+        boolean showLargeMedia = linkPreview.getOutputShowLargeMedia();
+        if (webPage.showLargeMedia != showLargeMedia) {
+          webPage = Td.copyOf(webPage);
+          webPage.showLargeMedia = showLargeMedia;
+        }
+      }
+      return webPage;
     }
 
     public boolean checkMessage (long chatId, long messageId) {
@@ -6724,7 +6732,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             showBottomHint(Lang.pluralBold(R.string.EditMessageTextTooLong, newTextLength - maxLength), true);
             return;
           }
-          TdApi.WebPage webPage = editContext.getPreloadedOutputWebPage();
+          TdApi.WebPage webPage = editContext.takePreloadedOutputWebPage();
           tdlib.editMessageText(editContext.message.chatId, editContext.message.id, newInputMessageText, webPage);
         }
         break;
@@ -7926,6 +7934,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (linkPreview.toggleLargeMedia()) {
       options.forceSmallMedia = linkPreview.forceSmallMedia();
       options.forceLargeMedia = linkPreview.forceLargeMedia();
+      if (StringUtils.isEmpty(options.url)) {
+        options.url = linkPreview.url;
+      }
       inputView.setTextChangedSinceChatOpened(true);
       showLinkPreviewHint(Lang.getString(linkPreview.getOutputShowLargeMedia() ? R.string.LinkPreviewEnlarged : R.string.LinkPreviewMinimized));
       return true;
