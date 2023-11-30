@@ -778,9 +778,11 @@ public class CallController extends ViewController<CallController.Arguments> imp
   public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
     switch (id) {
       case ANIMATOR_FLASH_ID: {
-        flashAnimator.forceFactor(0f);
-        if (isFlashing) {
-          flashAnimator.animateTo(1f);
+        if (finalFactor == 1f) {
+          flashAnimator.forceFactor(0f);
+          if (isFlashing) {
+            flashAnimator.animateTo(1f);
+          }
         }
         break;
       }
