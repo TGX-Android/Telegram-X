@@ -282,21 +282,14 @@
   <string name="general_Messages">Messages</string>
   <string name="SelectChat">Select Chat</string>
   <string name="Message">Message</string>
-  <string name="MessageAnonymously">Send anonymously</string>
-  <string name="MessageAsX">Send as %1$s</string>
   <string name="MessageReply">Reply</string>
-  <string name="MessageReplyAsX">Reply as %1$s</string>
-  <string name="MessageReplyAnonymously">Reply anonymously</string>
-  <string name="CommentAnonymously">Comment anonymously</string>
   <string name="Comment">Comment</string>
-  <string name="CommentAsX">Comment as %1$s</string>
   <string name="AnyAsX">as %1$s</string>
   <string name="AnonymousAdmin">Anonymous Admin</string>
   <string name="DeletedMessage">Deleted message</string>
   <string name="UnsupportedMessage">Unsupported message</string>
   <string name="UnsupportedMessageType">Unsupported message</string>
   <string name="YouHaveNewMessage">You have a new message</string>
-  <string name="ChatContentWithCaption">%1$s: %2$s</string>
   <string name="ChatContentVoice">Voice Message</string>
   <string name="ChatContentVoiceDuration">%1$s (%2$s)</string>
   <string name="ChatContentRoundVideo">Video Message</string>
@@ -433,7 +426,6 @@
   <string name="Photo">Photo</string>
   <string name="Video">Video</string>
   <string name="Gif">GIF</string>
-  <string name="sticker">%1$s Sticker</string>
   <string name="File">File</string>
   <string name="Location">Location</string>
   <string name="AttachContact">Contact</string>
@@ -501,10 +493,8 @@
   <string name="ClearSavedMessages">Delete all Saved Messages</string>
   <string name="Cancel">Cancel</string>
   <string name="AddMember">Add Members</string>
-  <string name="AddMembers">Add members</string>
   <string name="DeleteAndLeave">Delete and leave</string>
   <string name="justAdd">Just add to group</string>
-  <string name="KickFromGroup">Remove from group</string>
   <string name="DeleteChat">Delete chat</string>
   <string name="DeleteThread">Delete Thread</string>
   <string name="slideToCancel">Slide to Cancel</string>
@@ -645,10 +635,8 @@
   <string name="group_title_changed">%1$s renamed the group to "%2$s"</string>
   <string name="group_title_changed_you">You renamed the group to "%1$s"</string>
   <string name="ChannelRenamed">Channel renamed to "%1$s"</string>
-  <string name="Somebody">Somebody</string>
   <string name="GroupUpgraded">Group upgraded to supergroup</string>
   <string name="ActionCreateChannel">Channel created</string>
-  <string name="YouCreatedChannel">You created the channel</string>
   <string name="ActionChannelRemovedPhoto">Channel photo removed</string>
   <string name="ActionChannelChangedTitle">Channel renamed</string>
   <string name="ActionChannelChangedTitleTo">Channel renamed to "%1$s"</string>
@@ -684,7 +672,6 @@
   <string name="Recent">Recent</string>
   <string name="RecentAdmins">Admins</string>
   <string name="ClearRecentsHint">Clear recent searches?</string>
-  <string name="YoutubeRotateHint">PS: Rotate your screen to minimize player</string>
   <string name="PublicLinkTooShort">Public link is too short</string>
   <string name="PublicLinkIsInvalid">You can use only a–z, 0–9 and underscores for a Telegram public link.</string>
   <string name="SaveToGallery">Save to Gallery</string>
@@ -856,7 +843,6 @@
   <string name="EncryptedDescription2">Leave no trace on our servers</string>
   <string name="EncryptedDescription3">Have a self-destruct timer</string>
   <string name="EncryptedDescription4">Do not allow forwarding</string>
-  <string name="EditMessage">Edit message</string>
   <string name="NotNow">Not now</string>
   <string name="ChannelNotifyMembersInfoOn">Subscribers will be notified when you post.</string>
   <string name="ChannelNotifyMembersInfoOff">Subscribers will receive a silent notification.</string>
@@ -930,10 +916,8 @@
   <string name="TwoStepVerification">Two-Step Verification</string>
   <string name="PasswordEnabled">Enabled</string>
   <string name="PasswordDisabled">Disabled</string>
-  <string name="CurrentSession">Current Session</string>
   <string name="ThisDevice">This Device</string>
   <string name="Devices">Devices</string>
-  <string name="DevicesTitle">Devices</string>
   <string name="NoOtherSessions">No Other Active Sessions</string>
   <string name="NoOtherSessionsInfo">You can log in to Telegram from other mobile, tablet and desktop devices, using the same phone number. All your data will be instantly synchronized.</string>
   <string name="TerminateAllSessions">Terminate All Other Sessions</string>
@@ -4203,17 +4187,13 @@
   <string name="ViewXOtherComments_one">View %1$s other comment</string>
   <string name="ViewXOtherComments_other">View %1$s other comments</string>
   <string name="DiscussionStart">Discussion started</string>
-  <string name="NoComments">No comments yet…</string>
-  <string name="NoReplies">No replies yet…</string>
   <string name="ChannelPostDeleted">Sorry, this post has been removed from the discussion group.</string>
   <string name="ViewThread">View Thread</string>
   <string name="ViewInChat">View in chat</string>
-  <string name="ViewComment">View comment</string>
   <string name="CommentsTitle">Comments</string>
   <string name="RepliesTitle">Replies</string>
 
   <string name="RepliesBot">Replies</string>
-  <string name="RepliesBotShort">Replies</string>
 
   <string name="DeleteRepliesConfirm">Are you sure you want to delete all **reply notifications**? This action cannot be undone.</string>
   <string name="DeleteAndStopRepliesConfirm">Are you sure you want to delete all **reply notifications** and stop receiving them?</string>
@@ -4246,18 +4226,13 @@
   <string name="CheckForUpdates">Check for updates</string>
   <string name="InstallUpdate">Install an update</string>
   <string name="CheckingForUpdates">Checking for updates…</string>
-  <string name="LatestInstalled">Latest version is installed</string>
   <string name="DownloadUpdateSize">Download update (%1$s)</string>
   <string name="DownloadUpdate">Download update</string>
   <string name="UpdateSourceChanges">View source code changes</string>
   <string name="AppUpdateAvailablePrompt">A new **Telegram X** update is available. Would you like to download? (%1$s)</string>
   <string name="AppUpdateAvailableVersionPrompt">A new **Telegram X** `%2$s` update is available. Would you like to download? (%1$s)</string>
-  <string name="AppUpdateAvailablePromptConfirm">Download and install</string>
 
-  <string name="CommitSignature">**Commit**: [%1$s](%2$s)</string>
   <string name="AppSignature">**Telegram X** `%1$s`</string>
-  <string name="CreatedOn">**Created**: %1$s</string>
-  <string name="SourceCode">Source Code</string>
 
   <string name="ScanQR">Scan QR</string>
   <string name="ScanQRLogInInfo">Use camera to sign in on the desktop app.</string>
@@ -4380,7 +4355,6 @@
   <string name="ChannelTtlEnabled">Automatically delete new posts after %1$s for subscribers of the channel.</string>
 
   <string name="ChatBackgroundPreview">Chat Wallpaper Preview</string>
-  <string name="ChatBackgroundNotSupported">Sorry, this type of chat wallpaper is not yet supported.</string>
   <string name="ChatBackgroundApply">Apply Chat Wallpaper</string>
   <string name="ChatBackgroundView">View Wallpaper</string>
   <string name="ChatBackground">Chat Wallpaper</string>
@@ -4641,7 +4615,7 @@
   <string name="ExperimentalBuildTitle">Caution: experimental build</string>
   <string name="ExperimentalBuildInfo">This version of **Telegram X** is not designed for long-term use.\n\nIt may completely stop working over a time and you cannot turn notifications on.\n\nIf you are looking for the proper Telegram X APK file, see https://t.me/tgx_log</string>
 
-   <string name="PremiumRequiredSticker">Sending this sticker requires a **Telegram Premium** subscription.</string>
+  <string name="PremiumRequiredSticker">Sending this sticker requires a **Telegram Premium** subscription.</string>
   <string name="PremiumRequiredVoiceVideo">This setting requires a **Telegram Premium** subscription.</string>
   <string name="PremiumRequired">This feature requires a **Telegram Premium** subscription.</string>
   <string name="PremiumRequiredMoveFolder">Subscribe to **Telegram Premium** to move the "%1$s" folder.</string>
@@ -4795,7 +4769,6 @@
   <string name="AddXStickerPacks_other">Add %1$s sticker sets</string>
   <string name="RemoveXStickerPacks_one">Remove %1$s sticker set</string>
   <string name="RemoveXStickerPacks_other">Remove %1$s sticker sets</string>
-  <string name="EmojiOnlyForPremium">Available only with Telegram Premium subscription</string>
   <string name="LoadingMessageEmojiPack">Loading…</string>
   <string name="EmojiUsedFromSingle">Emoji used from %1$s pack</string>
   <string name="EmojiUsedFromX">Emoji used from %1$s</string>
@@ -4809,7 +4782,6 @@
   <string name="StickersAndEmoji">Stickers and Emoji</string>
   <string name="PasteCustomEmoji">Paste Emoji</string>
   <string name="ShareCustomEmoji">Share Emoji</string>
-  <string name="LoopAnimatedEmoji">Loop Animated Emoji</string>
 
   <string name="ArchiveSettings">Archive Settings</string>
   <string name="ArchiveSettingsDesc">Control what chats remain archived even if they are unmuted and get a new message.</string>
@@ -4898,7 +4870,6 @@
   <string name="IconOnly">Icon only</string>
   <string name="LabelOnly">Label only</string>
   <string name="LabelAndIcon">Label with icon</string>
-  <string name="CountMutedChats">Count muted chats</string>
   <string name="DisplayFoldersAtTheTop">Display folders at the top</string>
   <string name="ChatsXShowMore_one">Show %1$s more</string>
   <string name="ChatsXShowMore_other">Show %1$s more</string>
@@ -4933,7 +4904,6 @@
   <string name="LinkPreviewShowAbove">Link preview will appear above the text</string>
   <string name="LinkPreviewShowBelow">Link preview will appear below the text</string>
 
-  <string name="LinkPreviewChanged">Link preview changed to %1$s\n\nTap again to choose next link.</string>
   <string name="ReplyMessageDeletedHint">This message is a reply to the message that was deleted.</string>
   <string name="AnotherChatReplyHint">This message is from another chat. Tap again to view.</string>
   <string name="SwipeToSwapLinkPreview">Swipe to choose specific link preview</string>

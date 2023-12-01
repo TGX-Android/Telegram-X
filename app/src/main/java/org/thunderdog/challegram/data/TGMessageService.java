@@ -694,6 +694,8 @@ public final class TGMessageService extends TGMessageServiceImpl {
           return getText(
             isUserChat ?
               R.string.YouDisabledTimer :
+            msg.isChannelPost ?
+              R.string.YouDisabledAutoDeletePosts :
               R.string.YouDisabledAutoDelete
           );
         } else {
