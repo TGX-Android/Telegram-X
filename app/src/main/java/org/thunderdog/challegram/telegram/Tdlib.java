@@ -11275,7 +11275,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   public boolean canSendSendSomeMedia (TdApi.Chat chat, boolean ckeckGlobal) {
     for (int rightId : EditRightsController.SEND_MEDIA_RIGHT_IDS) {
-      Tdlib.RestrictionStatus restrictionStatus = getRestrictionStatus(chat, RightId.SEND_BASIC_MESSAGES);
+      Tdlib.RestrictionStatus restrictionStatus = getRestrictionStatus(chat, rightId);
       if (restrictionStatus == null || ckeckGlobal && !restrictionStatus.isGlobal()) {
         return true;
       }
