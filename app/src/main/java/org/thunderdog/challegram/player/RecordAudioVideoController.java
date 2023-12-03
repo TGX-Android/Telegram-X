@@ -1450,11 +1450,15 @@ public class RecordAudioVideoController implements
   private int savedRoundDurationSeconds;
 
   private void startVideoRecording () {
+    if (this.recordingRoundVideo)
+      throw new IllegalStateException();
     this.recordingRoundVideo = true;
     ownedCamera.getLegacyManager().requestRoundVideoCapture(roundKey, this, roundOutputPath);
   }
 
   private void finishVideoRecording (int closeMode) {
+    if (!this.recordingRoundVideo)
+      throw new IllegalStateException();
     this.recordingRoundVideo = false;
     this.roundCloseMode = closeMode;
     final boolean needResult = closeMode != CLOSE_MODE_CANCEL;

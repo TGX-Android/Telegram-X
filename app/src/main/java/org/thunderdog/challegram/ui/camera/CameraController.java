@@ -39,6 +39,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.AnyThread;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 
@@ -285,9 +286,12 @@ public class CameraController extends ViewController<Void> implements CameraDele
     }
   }
 
+  private Throwable debugDestroy;
+
   public void checkLegacyMode () {
     if (contentView != null && isLegacy() != needLegacy()) {
       if (manager != null) {
+        debugDestroy = Log.generateException();
         contentView.removeView(this.manager.getView());
         manager.destroy();
         manager = null;
@@ -330,11 +334,21 @@ public class CameraController extends ViewController<Void> implements CameraDele
     }
   }
 
-  public CameraManager<?> getManager () {
+  private void ensureManager () {
+    if (manager == null) {
+      if (debugDestroy != null)
+        throw new IllegalStateException(debugDestroy);
+      throw new IllegalStateException();
+    }
+  }
+
+  public @NonNull CameraManager<?> getManager () {
+    ensureManager();
     return manager;
   }
 
-  public CameraManagerLegacy getLegacyManager () {
+  public @NonNull CameraManagerLegacy getLegacyManager () {
+    ensureManager();
     return (CameraManagerLegacy) manager;
   }
 
