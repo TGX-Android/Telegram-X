@@ -822,12 +822,16 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
 
   static Person buildPerson (TdlibNotificationManager context, boolean isSelfChat, boolean isGroupChat, boolean isChannel, TdApi.User user, @Nullable String id, boolean isScheduled, boolean isSilent, boolean allowDownload) {
     if (user == null)
-      return new Person.Builder().setName("").build();
+      return new Person.Builder().setName(Strings.ELLIPSIS).build();
     if (context.isSelfUserId(user.id))
       id = "0";
     else if (id == null)
       id = Long.toString(user.id);
-    return buildPerson(context, isSelfChat, isGroupChat, isChannel, id, TD.isBot(user), TD.getUserName(user), TD.getLetters(user), context.tdlib().cache().userAccentColor(user), user.profilePhoto != null ? user.profilePhoto.small : null, isScheduled, isSilent, allowDownload);
+    String name = TD.getUserName(user);
+    if (StringUtils.isEmpty(name)) {
+      name = Strings.ELLIPSIS;
+    }
+    return buildPerson(context, isSelfChat, isGroupChat, isChannel, id, TD.isBot(user), name, TD.getLetters(user), context.tdlib().cache().userAccentColor(user), user.profilePhoto != null ? user.profilePhoto.small : null, isScheduled, isSilent, allowDownload);
   }
 
   public static Person buildPerson (TdlibNotificationManager context, TdApi.Chat chat, TdlibNotification notification, boolean isScheduled, boolean isSilent, boolean allowDownload) {
