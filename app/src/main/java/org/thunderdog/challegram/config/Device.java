@@ -85,6 +85,8 @@ public class Device {
       case "nvidia":
         return NVIDIA;
       case "xiaomi":
+      case "poco":
+      case "redmi":
         return XIAOMI;
       case "zte":
         return ZTE;
