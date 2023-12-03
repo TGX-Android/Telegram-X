@@ -2055,7 +2055,9 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       options.item(new OptionItem(R.id.btn_folderIncludeChats, Lang.getString(R.string.ChatFolderAddChats), OPTION_COLOR_NORMAL, R.drawable.baseline_add_24));
     }
     if (isMain) {
-      options.item(new OptionItem(R.id.btn_hideFolder, Lang.getString(R.string.HideAllChats), OPTION_COLOR_NORMAL, R.drawable.baseline_eye_off_24));
+      if (!Config.RESTRICT_HIDING_MAIN_LIST) {
+        options.item(new OptionItem(R.id.btn_hideFolder, Lang.getString(R.string.HideAllChats), OPTION_COLOR_NORMAL, R.drawable.baseline_eye_off_24));
+      }
     } else if (isFolder || isArchive) {
       options.item(new OptionItem(R.id.btn_hideFolder, Lang.getString(R.string.HideFolder), OPTION_COLOR_NORMAL, R.drawable.baseline_eye_off_24));
     }
