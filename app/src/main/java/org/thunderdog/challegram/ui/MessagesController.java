@@ -725,16 +725,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
       inputView.setSpanChangeListener(this::onInputSpansChanged);
     }
 
-    params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48f));
-    params.addRule(RelativeLayout.ALIGN_TOP, R.id.msg_bottom);
+    if (!inPreviewMode) {
+      params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48f));
+      params.addRule(RelativeLayout.ALIGN_TOP, R.id.msg_bottom);
 
-    replyBarView = new ReplyBarView(context(), tdlib);
-    ViewSupport.setThemedBackground(replyBarView, ColorId.filling, this);
-    replyBarView.setId(R.id.msg_bottomReply);
-    replyBarView.setAnimationsDisabled(true);
-    replyBarView.initWithCallback(this, this);
-    replyBarView.setOnClickListener(this);
-    replyBarView.setLayoutParams(params);
+      replyBarView = new ReplyBarView(context(), tdlib);
+      ViewSupport.setThemedBackground(replyBarView, ColorId.filling, this);
+      replyBarView.setId(R.id.msg_bottomReply);
+      replyBarView.setAnimationsDisabled(true);
+      replyBarView.initWithCallback(this, this);
+      replyBarView.setOnClickListener(this);
+      replyBarView.setLayoutParams(params);
+    }
 
     params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
     params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
@@ -3142,7 +3144,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (visible) {
       bottomWrap.setVisibility(View.VISIBLE);
       bottomShadowView.setVisibility(View.VISIBLE);
-      replyBarView.setVisibility(View.VISIBLE);
+      if (replyBarView != null) {
+        replyBarView.setVisibility(View.VISIBLE);
+      }
       emojiButton.setVisibility(View.VISIBLE);
       if (notEmpty) {
         attachButtons.setVisibility(View.INVISIBLE);
@@ -3158,7 +3162,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     } else {
       hideActionButton();
       bottomWrap.setVisibility(View.GONE);
-      replyBarView.setVisibility(View.GONE);
+      if (replyBarView != null) {
+        replyBarView.setVisibility(View.GONE);
+      }
       bottomShadowView.setVisibility(View.GONE);
       emojiButton.setVisibility(View.GONE);
       attachButtons.setVisibility(View.GONE);
@@ -6077,7 +6083,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private ReplyInfo reply;
-  private ReplyBarView replyBarView;
+  private @Nullable ReplyBarView replyBarView;
 
   private CollapseListView topBar;
   private TopBarView actionView;
@@ -6152,6 +6158,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void updateReplyBarVisibility (boolean animated) {
+    if (replyBarView == null) {
+      return;
+    }
     boolean shouldBeVisible = true;
     if (showingLinkPreview()) {
       replyBarView.showWebPage(findTargetContext(), findTargetContext().findSelectedUrlIndex());
@@ -6266,9 +6275,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (originalLayerType1 != View.LAYER_TYPE_HARDWARE) {
           Views.setLayerType(messagesView, View.LAYER_TYPE_HARDWARE);
         }
-        originalLayerType2 = replyBarView.getLayerType();
-        if (originalLayerType2 != View.LAYER_TYPE_HARDWARE) {
-          Views.setLayerType(replyBarView, View.LAYER_TYPE_HARDWARE);
+        if (replyBarView != null) {
+          originalLayerType2 = replyBarView.getLayerType();
+          if (originalLayerType2 != View.LAYER_TYPE_HARDWARE) {
+            Views.setLayerType(replyBarView, View.LAYER_TYPE_HARDWARE);
+          }
         }
         originalLayerType3 = bottomShadowView.getLayerType();
         if (originalLayerType3 != View.LAYER_TYPE_HARDWARE) {
@@ -6311,6 +6322,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }, AnimatorUtils.DECELERATE_INTERPOLATOR, 200L);
 
   private float getReplyOffset () {
+    if (replyBarView == null) {
+      return 0;
+    }
     return replyBarVisible.getFloatValue() * (1f - getSearchTransformFactor()) * (float) (replyBarView.getLayoutParams().height);
   }
 
@@ -6370,7 +6384,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     float y = -getReplyOffset();
     messagesView.setTranslationY(y);
     bottomShadowView.setTranslationY(y);
-    replyBarView.setTranslationY(y);
+    if (replyBarView != null) {
+      replyBarView.setTranslationY(y);
+    }
     checkScrollButtonOffsets();
     onMessagesFrameChanged();
   }
