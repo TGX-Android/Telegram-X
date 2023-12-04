@@ -4529,7 +4529,7 @@ public class TD {
       //noinspection SwitchIntDef
       switch (type.getConstructor()) {
         case TdApi.TextEntityTypeMentionName.CONSTRUCTOR: {
-          TdApi.TextEntityTypeMentionName mentionName = (TdApi.TextEntityTypeMentionName) span;
+          TdApi.TextEntityTypeMentionName mentionName = (TdApi.TextEntityTypeMentionName) type;
           context.tdlib().ui().openPrivateProfile(context, mentionName.userId, null);
           break;
         }
@@ -4537,7 +4537,7 @@ public class TD {
           UI.openUrl(clickedText);
           break;
         case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR: {
-          TdApi.TextEntityTypeTextUrl textUrl = (TdApi.TextEntityTypeTextUrl) span;
+          TdApi.TextEntityTypeTextUrl textUrl = (TdApi.TextEntityTypeTextUrl) type;
           UI.openUrl(textUrl.url);
           break;
         }
