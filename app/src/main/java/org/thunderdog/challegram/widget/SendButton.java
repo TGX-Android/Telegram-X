@@ -46,6 +46,7 @@ import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.util.RateLimiter;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.TextColorSet;
 
@@ -410,11 +411,15 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
     invalidate();
   }
 
+  private final RateLimiter inlineProgressLimiter = new RateLimiter(this::animateInlineProgress, 100L, null);
+
   @Override
   public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
     switch (id) {
       case INLINE_PROGRESS_ANIMATOR: {
-        animateInlineProgress();
+        if (finalFactor == 1f) {
+          inlineProgressLimiter.run();
+        }
         break;
       }
     }

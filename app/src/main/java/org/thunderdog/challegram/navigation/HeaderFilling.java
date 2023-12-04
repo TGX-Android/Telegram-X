@@ -51,6 +51,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.CallController;
 import org.thunderdog.challegram.ui.PlaybackController;
 import org.thunderdog.challegram.unsorted.Size;
+import org.thunderdog.challegram.util.RateLimiter;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextColorSets;
@@ -930,6 +931,7 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
           callFlashAnimator.animateTo(1f);
         }
       } else {
+        flashCallBar.cancelIfScheduled();
         if (callFlashAnimator != null && callFlashAnimator.getFactor() == 0f) {
           callFlashAnimator.forceFactor(0f);
         }
@@ -1149,13 +1151,21 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
     }
   }
 
+  private final RateLimiter flashCallBar = new RateLimiter(() -> {
+    if (isCallFlashing) {
+      callFlashAnimator.animateTo(1f);
+    }
+  }, 100L, null);
+
   @Override
   public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
     switch (id) {
       case ANIMATOR_CALL_FLASH_ID: {
-        callFlashAnimator.forceFactor(0f);
-        if (isCallFlashing) {
-          callFlashAnimator.animateTo(1f);
+        if (finalFactor == 1f) {
+          callFlashAnimator.forceFactor(0f);
+          if (isCallFlashing) {
+            flashCallBar.run();
+          }
         }
         break;
       }

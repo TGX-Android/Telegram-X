@@ -689,7 +689,14 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   @Override
   public Iterator<TdlibAccount> iterator () {
     List<TdlibAccount> accounts = new ArrayList<>(this.accounts);
-    Collections.sort(accounts, (a, b) -> (a == currentAccount) != (b == currentAccount) ? Boolean.compare(b == currentAccount, a == currentAccount) : a.compareTo(b));
+    Collections.sort(accounts, (a, b) -> {
+      boolean aCurrent = a == currentAccount;
+      boolean bCurrent = b == currentAccount;
+      if (aCurrent != bCurrent) {
+        return Boolean.compare(bCurrent, aCurrent);
+      }
+      return a.compareTo(b);
+    });
     return new FilteredIterator<>(accounts.iterator(), account -> !account.isUnauthorized() && account.tdlibInstanceMode() != Tdlib.Mode.SERVICE);
   }
 

@@ -18,6 +18,8 @@ import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.voip.annotation.AudioState;
 import org.thunderdog.challegram.voip.annotation.CallNetworkType;
 import org.thunderdog.challegram.voip.annotation.VideoState;
@@ -26,8 +28,8 @@ import org.thunderdog.challegram.voip.annotation.VideoState;
 public class TgCallsController extends VoIPInstance {
   private final String version;
   private long nativePtr;
-  public TgCallsController (@NonNull CallConfiguration configuration, @NonNull CallOptions options, @NonNull ConnectionStateListener stateListener, String version) {
-    super(configuration, options, stateListener);
+  public TgCallsController (@NonNull Tdlib tdlib, @NonNull TdApi.Call call, @NonNull CallConfiguration configuration, @NonNull CallOptions options, @NonNull ConnectionStateListener stateListener, String version) {
+    super(tdlib, call, configuration, options, stateListener);
     if (configuration.state.encryptionKey.length != 256)
       throw new IllegalArgumentException(Integer.toString(configuration.state.encryptionKey.length));
     this.version = version;

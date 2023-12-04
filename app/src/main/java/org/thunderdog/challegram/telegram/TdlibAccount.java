@@ -114,9 +114,9 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
 
   @Override
   public final int compareTo (@NonNull TdlibAccount o) {
-    if (this.order != o.order) {
-      int x = this.order != -1 ? this.order : Integer.MAX_VALUE;
-      int y = o.order != -1 ? o.order : Integer.MAX_VALUE;
+    int x = this.order != -1 ? this.order : Integer.MAX_VALUE;
+    int y = o.order != -1 ? o.order : Integer.MAX_VALUE;
+    if (x != y) {
       return Integer.compare(x, y);
     }
     if (this.modificationTime != o.modificationTime) {
