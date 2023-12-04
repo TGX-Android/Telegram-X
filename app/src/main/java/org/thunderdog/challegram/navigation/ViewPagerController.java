@@ -267,7 +267,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
 
   private void updateControllerState (ViewController<?> c, int position) {
     boolean attachState = c.getAttachState();
-    boolean desiredAttachState = adapter.attachedControllers.contains(c);
+    boolean desiredAttachState = getAttachState() && adapter.attachedControllers.contains(c);
 
     if (desiredAttachState) {
       if (currentPositionOffset == 0f || Math.abs(currentPositionOffset) == 1f) {
