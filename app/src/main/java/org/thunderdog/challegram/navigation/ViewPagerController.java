@@ -227,6 +227,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
 
     adapter = new ViewPagerAdapter(context, this);
     addAttachStateListener(attachListener);
+    addFocusListener(focusListener);
     pager = new RtlViewPager(context);
     pager.setLayoutParams(params);
     pager.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS : View.OVER_SCROLL_NEVER);
@@ -267,6 +268,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
   private void updateControllerState (ViewController<?> c, int position) {
     boolean attachState = c.getAttachState();
     boolean desiredAttachState = adapter.attachedControllers.contains(c);
+
     if (desiredAttachState) {
       if (currentPositionOffset == 0f || Math.abs(currentPositionOffset) == 1f) {
         desiredAttachState = (int) (currentPosition + currentPositionOffset) == position;
@@ -274,12 +276,29 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
         desiredAttachState = position == currentPosition || position == currentPosition + Math.signum(currentPositionOffset);
       }
     }
+
+    boolean isFocused = c.isFocused();
+    boolean desiredFocusState = desiredAttachState && isFocused();
+    if (desiredFocusState) {
+      desiredFocusState = currentPositionOffset == 0f && position == currentPosition;
+    }
+
+    if (isFocused != desiredFocusState && !desiredFocusState) {
+      c.onBlur();
+    }
     if (attachState != desiredAttachState) {
       c.onAttachStateChanged(navigationController, desiredAttachState);
+    }
+    if (isFocused != desiredFocusState && desiredFocusState) {
+      c.onFocus();
     }
   }
 
   private final ViewController.AttachListener attachListener = (context, navigation, isAttached) -> {
+    updateAttachedControllers();
+  };
+
+  private final ViewController.FocusStateListener focusListener = (c, isFocused) -> {
     updateAttachedControllers();
   };
 
