@@ -1139,13 +1139,19 @@ public class TGCallService extends Service implements
 
   private CharSequence lastDebugLog;
 
-  private void releaseTgCalls (Tdlib tdlib, TdApi.Call call) {
+  private void releaseTgCalls (@Nullable Tdlib tdlib, @Nullable TdApi.Call call) {
     if (tgcalls != null) {
+      if (call == null) {
+        call = tgcalls.getCall();
+      }
+      if (tdlib == null) {
+        tdlib = tgcalls.tdlib();
+      }
       lastDebugLog = tgcalls.collectDebugLog();
       tgcalls.performDestroy();
       tgcalls = null;
     }
-    if (callListener != null) {
+    if (callListener != null && tdlib != null && call != null) {
       tdlib.listeners().unsubscribeFromCallUpdates(call.id, callListener);
       callListener = null;
     }
