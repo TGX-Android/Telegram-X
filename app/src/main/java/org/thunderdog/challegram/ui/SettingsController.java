@@ -1020,10 +1020,15 @@ public class SettingsController extends ViewController<Void> implements
       c.setArguments(new EditBioController.Arguments(about != null ? about.text : "", 0));
       navigateTo(c);
     } else if (viewId == R.id.btn_peer_id) {
-      long myId = tdlib.myUserId(true);
-      if (myId != 0) {
-        UI.copyText(Long.toString(myId), R.string.CopiedMyUserId);
-      }
+      long selfId = tdlib.myUserId(true);
+      if (selfId == 0) return;
+
+      showOptions(Strings.buildCounter(selfId), new int[]{R.id.btn_peer_id_copy}, new String[]{Lang.getString(R.string.Copy)}, null, new int[]{R.drawable.baseline_content_copy_24}, (itemView, id) -> {
+        if (id == R.id.btn_peer_id_copy) {
+          UI.copyText(Long.toString(selfId), R.string.CopiedMyUserId);
+        }
+        return true;
+      });
     } else if (viewId == R.id.btn_languageSettings) {
       navigateTo(new SettingsLanguageController(context, tdlib));
     } else if (viewId == R.id.btn_notificationSettings) {
