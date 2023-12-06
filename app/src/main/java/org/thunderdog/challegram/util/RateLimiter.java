@@ -62,9 +62,9 @@ public final class RateLimiter implements Runnable {
 
   private boolean runImpl (boolean byTimeout) {
     if (byTimeout || !delayFirstExecution) {
-      act.run();
       lastExecutionTime = SystemClock.uptimeMillis();
       isScheduled = false;
+      act.run();
       return true;
     }
     return false;

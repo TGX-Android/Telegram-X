@@ -42,9 +42,12 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.CancellableResultHandler;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.lambda.CancellableRunnable;
 
 public class StickersTrendingController extends ViewController<Void> implements StickerSmallView.StickerMovementCallback, Client.ResultHandler, TGStickerObj.DataProvider, StickersListener, TGStickerSetInfo.ViewCallback {
@@ -254,23 +257,57 @@ public class StickersTrendingController extends ViewController<Void> implements 
     if (!loadingTrending) {
       loadingTrending = true;
 
-      TdApi.Function<?> function = StringUtils.isEmpty(searchRequest) ?
-        new TdApi.GetTrendingStickerSets(getStickerType(), offset, limit):
-        (offset == 0 ? (isEmoji ?
-          new TdApi.SearchInstalledStickerSets(getStickerType(), searchRequest, 200):
-          new TdApi.SearchStickerSets(searchRequest)): null);
+      TdApi.StickerType stickerType = getStickerType();
+      String searchRequest = this.searchRequest;
+      CancellableResultHandler handler = trendingHandler(offset, cellCount, searchRequest);
 
-      if (function != null) {
-        tdlib.client().send(function, trendingHandler(offset, cellCount, searchRequest));
+      if (StringUtils.isEmpty(searchRequest)) {
+        tdlib.client().send(
+          new TdApi.GetTrendingStickerSets(stickerType, offset, limit),
+          handler
+        );
+        return;
       }
+
+      tdlib.send(new TdApi.SearchInstalledStickerSets(stickerType, searchRequest, 200), (foundInstalledStickerSets, error) -> {
+        if (handler.isCancelled())
+          return;
+        if (error != null || foundInstalledStickerSets.sets.length == 0) {
+          tdlib.client().send(new TdApi.SearchStickerSets(stickerType, searchRequest), handler);
+          return;
+        }
+        tdlib.send(new TdApi.SearchStickerSets(stickerType, searchRequest), (foundStickerSets, error1) -> {
+          if (error1 != null || foundInstalledStickerSets.sets.length == 0) {
+            handler.onResult(foundInstalledStickerSets);
+            return;
+          }
+          List<TdApi.StickerSetInfo> stickerSets = new ArrayList<>();
+          Collections.addAll(stickerSets, foundInstalledStickerSets.sets);
+          LongSet idsSet = new LongSet(foundInstalledStickerSets.sets.length);
+          for (TdApi.StickerSetInfo setInfo : foundInstalledStickerSets.sets) {
+            idsSet.add(setInfo.id);
+          }
+          for (TdApi.StickerSetInfo setInfo : foundStickerSets.sets) {
+            if (!idsSet.has(setInfo.id)) {
+              stickerSets.add(setInfo);
+            }
+          }
+          TdApi.StickerSets mergedStickerSets = new TdApi.StickerSets(
+            foundInstalledStickerSets.totalCount + foundStickerSets.totalCount,
+            stickerSets.toArray(new TdApi.StickerSetInfo[0])
+          );
+          handler.onResult(mergedStickerSets);
+        });
+      });
     }
   }
 
   private TdApi.StickerType getStickerType () {
     if (isEmoji) {
       return new TdApi.StickerTypeCustomEmoji();
+    } else {
+      return new TdApi.StickerTypeRegular();
     }
-    return new TdApi.StickerTypeRegular();
   }
 
   private boolean isNeedIgnoreStickersUpdate (final TdApi.StickerType stickerType) {

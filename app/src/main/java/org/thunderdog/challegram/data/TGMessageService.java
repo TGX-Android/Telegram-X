@@ -119,6 +119,16 @@ public final class TGMessageService extends TGMessageServiceImpl {
     });
   }
 
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessagePremiumGiveawayCompleted giveawayCompleted) {
+    super(context, msg);
+    setTextCreator(() -> {
+      return getPlural(
+        R.string.BoostingGiveawayServiceWinnersSelected,
+        giveawayCompleted.winnerCount
+      );
+    });
+  }
+
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatSetTheme setTheme) {
     super(context, msg);
     setTextCreator(() -> {
@@ -320,6 +330,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageGiftedPremium.CONSTRUCTOR:
             case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
             case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR:
+            case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR:
             case TdApi.MessagePremiumGiveaway.CONSTRUCTOR:
             case TdApi.MessageInviteVideoChatParticipants.CONSTRUCTOR:
             case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
@@ -347,7 +358,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              Td.assertMessageContent_ea2cfacf();
+              Td.assertMessageContent_afad899a();
               throw Td.unsupported(message.content);
           }
           String format = Lang.getString(staticResId);

@@ -554,6 +554,12 @@ public class ContentPreview {
         }
         return new ContentPreview(EMOJI_GIFT, 0, text, true);
       }
+      case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR: {
+        TdApi.MessagePremiumGiveawayCompleted giveawayCompleted = (TdApi.MessagePremiumGiveawayCompleted) message.content;
+        arg1 = giveawayCompleted.winnerCount;
+        arg2 = giveawayCompleted.unclaimedPrizeCount;
+        break;
+      }
 
       case TdApi.MessageCustomServiceAction.CONSTRUCTOR: {
         TdApi.MessageCustomServiceAction serviceAction = (TdApi.MessageCustomServiceAction) message.content;
@@ -634,7 +640,7 @@ public class ContentPreview {
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_ea2cfacf();
+        Td.assertMessageContent_afad899a();
         throw Td.unsupported(message.content);
     }
     Refresher refresher = null;
@@ -1233,6 +1239,8 @@ public class ContentPreview {
 
       case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR:
         return new ContentPreview(EMOJI_GIFT, R.string.BoostingGiveawayJustStarted);
+      case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR:
+        return new ContentPreview(EMOJI_GIFT, 0, Lang.plural(R.string.BoostingGiveawayServiceWinnersSelected, arg1), true);
 
       case TdApi.MessagePremiumGiveaway.CONSTRUCTOR: {
         int winnerCount = arg1;
@@ -1288,7 +1296,7 @@ public class ContentPreview {
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_ea2cfacf();
+        Td.assertMessageContent_afad899a();
         throw new UnsupportedOperationException(Integer.toString(type));
     }
   }

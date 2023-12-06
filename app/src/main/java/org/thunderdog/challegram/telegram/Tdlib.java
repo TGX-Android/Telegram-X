@@ -3684,6 +3684,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         TdApi.MessageSponsorTypeBot bot = (TdApi.MessageSponsorTypeBot) sponsor.type;
         return cache().userName(bot.botUserId);
       }
+      case TdApi.MessageSponsorTypeWebApp.CONSTRUCTOR: {
+        TdApi.MessageSponsorTypeWebApp webApp = (TdApi.MessageSponsorTypeWebApp) sponsor.type;
+        return webApp.webAppTitle;
+      }
       case TdApi.MessageSponsorTypePublicChannel.CONSTRUCTOR: {
         TdApi.MessageSponsorTypePublicChannel publicChannel = (TdApi.MessageSponsorTypePublicChannel) sponsor.type;
         return chatTitle(publicChannel.chatId);
@@ -3697,7 +3701,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         return website.name;
       }
       default:
-        Td.assertMessageSponsorType_ce9e3245();
+        Td.assertMessageSponsorType_cdabde01();
         throw Td.unsupported(sponsor.type);
     }
   }
@@ -4718,7 +4722,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
           return Td.textOrCaption(messageText);
       }
-      Td.assertMessageContent_ea2cfacf();
+      Td.assertMessageContent_afad899a();
       throw Td.unsupported(messageText);
     }
     return getPendingMessageCaption(chatId, messageId);
@@ -8181,6 +8185,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   @TdlibThread
+  private void updateChatViewAsTopics (TdApi.UpdateChatViewAsTopics update) {
+    synchronized (dataLock) {
+      final TdApi.Chat chat = chats.get(update.chatId);
+      if (TdlibUtils.assertChat(update.chatId, chat, update)) {
+        return;
+      }
+      chat.viewAsTopics = update.viewAsTopics;
+    }
+    listeners.updateChatViewAsTopics(update);
+  }
+
+  @TdlibThread
   private void updateChatPendingJoinRequests (TdApi.UpdateChatPendingJoinRequests update) {
     synchronized (dataLock) {
       final TdApi.Chat chat = chats.get(update.chatId);
@@ -8958,6 +8974,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   @TdlibThread
+  private void updateSpeechRecognitionTrial (TdApi.UpdateSpeechRecognitionTrial update) {
+    // TODO
+  }
+
+  @TdlibThread
   private void updateOption (ClientHolder context, TdApi.UpdateOption update) {
     final String name = update.name;
 
@@ -9309,6 +9330,22 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return accentColor(MathUtils.pickNumber(TdlibAccentColor.BUILT_IN_COLOR_COUNT, any));
   }
 
+  private int[] availableProfileAccentColorIds;
+  private final SparseArrayCompat<TdApi.ProfileAccentColor> profileAccentColors = new SparseArrayCompat<>();
+
+  @TdlibThread
+  private void updateProfileAccentColors (TdApi.UpdateProfileAccentColors update) {
+    boolean listChanged;
+    synchronized (profileAccentColors) {
+      listChanged = Arrays.equals(this.availableProfileAccentColorIds, update.availableAccentColorIds);
+      this.availableProfileAccentColorIds = update.availableAccentColorIds;
+      for (TdApi.ProfileAccentColor profileAccentColor : update.colors) {
+        profileAccentColors.put(profileAccentColor.id, profileAccentColor);
+      }
+    }
+    listeners.updateProfileAccentColors(update, listChanged);
+  }
+
   // Updates: MEDIA
 
   private void updateAnimationSearchParameters (TdApi.UpdateAnimationSearchParameters update) {
@@ -9623,6 +9660,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateForumTopicInfo((TdApi.UpdateForumTopicInfo) update);
         break;
       }
+      case TdApi.UpdateChatViewAsTopics.CONSTRUCTOR: {
+        updateChatViewAsTopics((TdApi.UpdateChatViewAsTopics) update);
+        break;
+      }
 
       // Join requests
       case TdApi.UpdateChatPendingJoinRequests.CONSTRUCTOR: {
@@ -9899,6 +9940,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateOption(context, (TdApi.UpdateOption) update);
         break;
       }
+      case TdApi.UpdateSpeechRecognitionTrial.CONSTRUCTOR: {
+        updateSpeechRecognitionTrial((TdApi.UpdateSpeechRecognitionTrial) update);
+        break;
+      }
       case TdApi.UpdateSelectedBackground.CONSTRUCTOR: {
         // TODO?
         break;
@@ -9908,6 +9953,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       // Accent colors
       case TdApi.UpdateAccentColors.CONSTRUCTOR: {
         updateAccentColors((TdApi.UpdateAccentColors) update);
+        break;
+      }
+      case TdApi.UpdateProfileAccentColors.CONSTRUCTOR: {
+        updateProfileAccentColors((TdApi.UpdateProfileAccentColors) update);
         break;
       }
 
@@ -10009,7 +10058,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         throw Td.unsupported(update);
       }
       default: {
-        Td.assertUpdate_7e467106();
+        Td.assertUpdate_3098a407();
         throw Td.unsupported(update);
       }
     }
@@ -10952,6 +11001,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageGiftedPremium.CONSTRUCTOR:
         case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
         case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR:
+        case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR:
         case TdApi.MessagePremiumGiveaway.CONSTRUCTOR:
         case TdApi.MessageInviteVideoChatParticipants.CONSTRUCTOR:
         case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
@@ -10971,7 +11021,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           // assuming we want to check RightId.SEND_BASIC_MESSAGES
           return getBasicMessageRestrictionText(chat);
         default:
-          Td.assertMessageContent_ea2cfacf();
+          Td.assertMessageContent_afad899a();
           throw Td.unsupported(message.content);
       }
     }
