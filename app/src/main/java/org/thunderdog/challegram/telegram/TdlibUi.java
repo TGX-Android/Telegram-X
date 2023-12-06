@@ -2475,7 +2475,7 @@ public class TdlibUi extends Handler {
               if (message != null && message.replyTo == null && message.forwardInfo != null && tdlib.isChannelAutoForward(message)) {
                 tdlib.send(new TdApi.GetRepliedMessage(message.forwardInfo.fromChatId, message.forwardInfo.fromMessageId), (repliedMessage, repliedMessageError) -> {
                   if (repliedMessage != null) {
-                    message.replyTo = new TdApi.MessageReplyToMessage(repliedMessage.chatId, repliedMessage.id, null, false, null, repliedMessage.date, repliedMessage.content);
+                    message.replyTo = new TdApi.MessageReplyToMessage(repliedMessage.chatId, repliedMessage.id, null, null, repliedMessage.date, repliedMessage.content);
                   }
                   openMessage(context, messageThread.getChatId(), messageId, messageThread, openParameters);
                 });

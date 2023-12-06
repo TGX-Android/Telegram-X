@@ -1404,48 +1404,37 @@ public class TdlibListeners {
 
   // updateChatVoiceChat
 
-  private static void updateChatVideoChat (long chatId, TdApi.VideoChat voiceChat, @Nullable Iterator<ChatListener> list) {
-    if (list != null) {
-      while (list.hasNext()) {
-        list.next().onChatVideoChatChanged(chatId, voiceChat);
-      }
-    }
-  }
-
   void updateChatVideoChat (TdApi.UpdateChatVideoChat update) {
-    updateChatVideoChat(update.chatId, update.videoChat, chatListeners.iterator());
-    updateChatVideoChat(update.chatId, update.videoChat, specificChatListeners.iterator(update.chatId));
+    runChatUpdate(update.chatId, listener -> {
+      listener.onChatVideoChatChanged(update.chatId, update.videoChat);
+    });
   }
 
   // updateForumTopicInfo
 
   void updateForumTopicInfo (TdApi.UpdateForumTopicInfo update) {
-    updateForumTopicInfo(update.chatId, update.info, chatListeners.iterator());
-    updateForumTopicInfo(update.chatId, update.info, specificChatListeners.iterator(update.chatId));
-    updateForumTopicInfo(update.chatId, update.info, specificForumTopicListeners.iterator(update.chatId + "_" + update.info.messageThreadId));
+    runChatUpdate(update.chatId, listener -> {
+      listener.onForumTopicInfoChanged(update.chatId, update.info);
+    });
+    runUpdate(specificForumTopicListeners.iterator(update.chatId + "_" + update.info.messageThreadId), listener -> {
+      listener.onForumTopicInfoChanged(update.chatId, update.info);
+    });
   }
 
-  private static void updateForumTopicInfo (long chatId, TdApi.ForumTopicInfo info, @Nullable Iterator<? extends ForumTopicInfoListener> list) {
-    if (list != null) {
-      while (list.hasNext()) {
-        list.next().onForumTopicInfoChanged(chatId, info);
-      }
-    }
+  // updateChatViewAsTopics
+
+  void updateChatViewAsTopics (TdApi.UpdateChatViewAsTopics update) {
+    runChatUpdate(update.chatId, listener -> {
+      listener.onChatViewAsTopics(update.chatId, update.viewAsTopics);
+    });
   }
 
   // updateChatPendingJoinRequests
 
-  private static void updateChatPendingJoinRequests (long chatId, TdApi.ChatJoinRequestsInfo pendingJoinRequests, @Nullable Iterator<ChatListener> list) {
-    if (list != null) {
-      while (list.hasNext()) {
-        list.next().onChatPendingJoinRequestsChanged(chatId, pendingJoinRequests);
-      }
-    }
-  }
-
   void updateChatPendingJoinRequests (TdApi.UpdateChatPendingJoinRequests update) {
-    updateChatPendingJoinRequests(update.chatId, update.pendingJoinRequests, chatListeners.iterator());
-    updateChatPendingJoinRequests(update.chatId, update.pendingJoinRequests, specificChatListeners.iterator(update.chatId));
+    runChatUpdate(update.chatId, listener -> {
+      listener.onChatPendingJoinRequestsChanged(update.chatId, update.pendingJoinRequests);
+    });
   }
 
   // updateUsersNearby
@@ -1464,17 +1453,10 @@ public class TdlibListeners {
 
   // updateChatIsMarkedAsUnread
 
-  private static void updateChatIsMarkedAsUnread (long chatId, boolean isMarkedAsUnread, @Nullable Iterator<ChatListener> list) {
-    if (list != null) {
-      while (list.hasNext()) {
-        list.next().onChatMarkedAsUnread(chatId, isMarkedAsUnread);
-      }
-    }
-  }
-
   void updateChatIsMarkedAsUnread (TdApi.UpdateChatIsMarkedAsUnread update) {
-    updateChatIsMarkedAsUnread(update.chatId, update.isMarkedAsUnread, chatListeners.iterator());
-    updateChatIsMarkedAsUnread(update.chatId, update.isMarkedAsUnread, specificChatListeners.iterator(update.chatId));
+    runChatUpdate(update.chatId, listener -> {
+      listener.onChatMarkedAsUnread(update.chatId, update.isMarkedAsUnread);
+    });
   }
 
   // updateChatBackground
@@ -1503,17 +1485,10 @@ public class TdlibListeners {
 
   // updateChatIsTranslatable
 
-  private static void updateChatIsTranslatable (long chatId, boolean isTranslatable, @Nullable Iterator<ChatListener> list) {
-    if (list != null) {
-      while (list.hasNext()) {
-        list.next().onChatIsTranslatableChanged(chatId, isTranslatable);
-      }
-    }
-  }
-
   void updateChatIsTranslatable (TdApi.UpdateChatIsTranslatable update) {
-    updateChatIsTranslatable(update.chatId, update.isTranslatable, chatListeners.iterator());
-    updateChatIsTranslatable(update.chatId, update.isTranslatable, specificChatListeners.iterator(update.chatId));
+    runChatUpdate(update.chatId, listener -> {
+      listener.onChatIsTranslatableChanged(update.chatId, update.isTranslatable);
+    });
   }
 
   // updateChatIsBlocked
@@ -1527,23 +1502,17 @@ public class TdlibListeners {
   }
 
   void updateChatBlockList (TdApi.UpdateChatBlockList update) {
-    updateChatBlockList(update.chatId, update.blockList, chatListeners.iterator());
-    updateChatBlockList(update.chatId, update.blockList, specificChatListeners.iterator(update.chatId));
+    runChatUpdate(update.chatId, listener -> {
+      listener.onChatBlockListChanged(update.chatId, update.blockList);
+    });
   }
 
   // updateChatClientDataChanged
 
-  private static void updateChatClientDataChanged (long chatId, String clientData, @Nullable Iterator<ChatListener> list) {
-    if (list != null) {
-      while (list.hasNext()) {
-        list.next().onChatClientDataChanged(chatId, clientData);
-      }
-    }
-  }
-
   void updateChatClientDataChanged (long chatId, String newClientData) {
-    updateChatClientDataChanged(chatId, newClientData, chatListeners.iterator());
-    updateChatClientDataChanged(chatId, newClientData, specificChatListeners.iterator(chatId));
+    runChatUpdate(chatId, listener -> {
+      listener.onChatClientDataChanged(chatId, newClientData);
+    });
   }
 
   // updateNotificationSettings
@@ -1859,6 +1828,12 @@ public class TdlibListeners {
   void updateAccentColors (TdApi.UpdateAccentColors update) {
     for (TdlibOptionListener listener : optionListeners) {
       listener.onAccentColorsChanged();
+    }
+  }
+
+  void updateProfileAccentColors (TdApi.UpdateProfileAccentColors update, boolean listChanged) {
+    for (TdlibOptionListener listener : optionListeners) {
+      listener.onProfileAccentColorsChanged(listChanged);
     }
   }
 

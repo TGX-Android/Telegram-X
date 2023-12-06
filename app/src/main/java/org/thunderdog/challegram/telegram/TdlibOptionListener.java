@@ -24,4 +24,5 @@ public interface TdlibOptionListener {
   default void onSuggestedActionsChanged (TdApi.SuggestedAction[] addedActions, TdApi.SuggestedAction[] removedActions) { }
   default void onArchiveAndMuteChatsFromUnknownUsersEnabled (boolean enabled) { }
   default void onAccentColorsChanged () { }
+  default void onProfileAccentColorsChanged (boolean listChanged) { }
 }

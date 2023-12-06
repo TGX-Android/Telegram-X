@@ -549,7 +549,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
 
   private @Nullable TdApi.Function<?> retryFunction;
   private boolean ignoreFailures;
-  private @Nullable TdApi.FormattedText quote;
+  private @Nullable TdApi.TextQuote quote;
   private Drawable cornerDrawable;
 
   public void load () {
@@ -563,7 +563,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     switch (message.replyTo.getConstructor()) {
       case TdApi.MessageReplyToMessage.CONSTRUCTOR: {
         TdApi.MessageReplyToMessage replyToMessage = (TdApi.MessageReplyToMessage) message.replyTo;
-        if (replyToMessage.isQuoteManual) {
+        if (!Td.isEmpty(replyToMessage.quote) && replyToMessage.quote.isManual) {
           cornerDrawable = Drawables.load(R.drawable.baseline_format_quote_close_18);
         } else {
           cornerDrawable = null;
@@ -580,12 +580,12 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
         }
         if (!Td.isEmpty(replyToMessage.quote) || replyToMessage.content != null) {
           this.quote = replyToMessage.quote;
-          TdApi.Message fakeMessage = TD.newFakeMessage(replyToMessage.chatId, sender, replyToMessage.content == null ? new TdApi.MessageText(replyToMessage.quote, null, null) : replyToMessage.content);
+          TdApi.Message fakeMessage = TD.newFakeMessage(replyToMessage.chatId, sender, replyToMessage.content == null ? new TdApi.MessageText(replyToMessage.quote.text, null, null) : replyToMessage.content);
           fakeMessage.id = replyToMessage.messageId;
 
           ContentPreview contentPreview = ContentPreview.getChatListPreview(tdlib, fakeMessage.chatId, fakeMessage, true);
           if (!Td.isEmpty(replyToMessage.quote)) {
-            contentPreview = new ContentPreview(contentPreview, replyToMessage.quote);
+            contentPreview = new ContentPreview(contentPreview, replyToMessage.quote.text);
           }
           MediaPreview mediaPreview = replyToMessage.content != null ? newMediaPreview(replyToMessage.chatId, replyToMessage.content) : null;
           this.content = new ContentPreview(translatedText, contentPreview);
@@ -862,7 +862,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     MediaPreview mediaPreview = newMediaPreview(msg.chatId, msg.content);
     ContentPreview contentPreview = ContentPreview.getChatListPreview(tdlib, msg.chatId, msg, true);
     if (!Td.isEmpty(quote)) {
-      contentPreview = new ContentPreview(contentPreview, quote);
+      contentPreview = new ContentPreview(contentPreview, quote.text);
     }
     if (msg.forwardInfo != null /*&& (parent != null && parent.getMessage().forwardInfo != null)*/) {
       handleOrigin(msg.forwardInfo.origin);

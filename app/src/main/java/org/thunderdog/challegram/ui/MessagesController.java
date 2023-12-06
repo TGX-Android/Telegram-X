@@ -816,7 +816,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     pinnedMessagesBar.initialize(this);
     pinnedMessagesBar.setMessageListener(new PinnedMessagesBar.MessageListener() {
       @Override
-      public void onMessageClick (PinnedMessagesBar view, TdApi.Message message, TdApi.FormattedText quote) {
+      public void onMessageClick (PinnedMessagesBar view, TdApi.Message message, TdApi.InputTextQuote quote) {
         highlightMessage(new MessageId(message.chatId, message.id));
       }
 
@@ -6059,9 +6059,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private static class ReplyInfo {
     public final Tdlib tdlib;
     public final TdApi.Message message;
-    public final @Nullable TdApi.FormattedText quote;
+    public final @Nullable TdApi.InputTextQuote quote;
 
-    public ReplyInfo (Tdlib tdlib, TdApi.Message message, @Nullable TdApi.FormattedText quote) {
+    public ReplyInfo (Tdlib tdlib, TdApi.Message message, @Nullable TdApi.InputTextQuote quote) {
       this.tdlib = tdlib;
       this.message = message;
       this.quote = quote;
@@ -6126,7 +6126,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  public void showReply (TdApi.Message msg, @Nullable TdApi.FormattedText quote, boolean byUser, boolean showKeyboard) {
+  public void showReply (TdApi.Message msg, @Nullable TdApi.InputTextQuote quote, boolean byUser, boolean showKeyboard) {
     if (inPreviewMode || isInForceTouchMode()) {
       return;
     }
@@ -6192,7 +6192,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private TooltipOverlayView.TooltipInfo anotherChatHint;
 
   @Override
-  public void onMessageHighlightRequested (ReplyBarView view, TdApi.Message message, @Nullable TdApi.FormattedText quote) {
+  public void onMessageHighlightRequested (ReplyBarView view, TdApi.Message message, @Nullable TdApi.InputTextQuote quote) {
     if (message.chatId == getChatId()) {
       highlightMessage(new MessageId(message.chatId, message.id));
     } else {
@@ -6233,7 +6233,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     });
   }
 
-  public void forceReply (TdApi.Message message, @Nullable TdApi.FormattedText quote) {
+  public void forceReply (TdApi.Message message, @Nullable TdApi.InputTextQuote quote) {
     if (message == null || chat == null || inPreviewMode || isInForceTouchMode()) {
       clearReply();
       return;
@@ -6429,7 +6429,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           return !Td.equalsTo(oldText, newText);
         }
         default: {
-          Td.assertMessageContent_ea2cfacf();
+          Td.assertMessageContent_afad899a();
           break;
         }
       }
@@ -6788,7 +6788,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         break;
       }
       default: {
-        Td.assertMessageContent_ea2cfacf();
+        Td.assertMessageContent_afad899a();
         throw Td.unsupported(editContext.message.content);
       }
     }

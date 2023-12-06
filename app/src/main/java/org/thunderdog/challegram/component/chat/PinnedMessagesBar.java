@@ -435,7 +435,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
           });
         } else if (data.isMessage()) {
           TdApi.Message message = data.message;
-          TdApi.FormattedText quote = data.quote;
+          TdApi.InputTextQuote quote = data.quote;
           previewView.setMessage(message, quote, new TdApi.SearchMessagesFilterPinned(), item.getStringValue(), ignoreAlbums ? MessagePreviewView.Options.IGNORE_ALBUM_REFRESHERS : MessagePreviewView.Options.NONE);
           if (messageList == null) {
             // override message preview
@@ -560,7 +560,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
   }
 
   public interface MessageListener {
-    void onMessageClick (PinnedMessagesBar view, TdApi.Message message, @Nullable TdApi.FormattedText quote);
+    void onMessageClick (PinnedMessagesBar view, TdApi.Message message, @Nullable TdApi.InputTextQuote quote);
     default void onSelectLinkPreviewUrl (PinnedMessagesBar view, MessagesController.MessageInputContext messageContext, String url) { }
     default boolean onToggleLargeMedia (PinnedMessagesBar view, MessagePreviewView previewView, MessagesController.MessageInputContext messageContext, LinkPreview linkPreview) {
       return false;
@@ -626,13 +626,13 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     public final Tdlib tdlib;
 
     public final TdApi.Message message;
-    public final @Nullable TdApi.FormattedText quote;
+    public final @Nullable TdApi.InputTextQuote quote;
     public final TdlibAccentColor accentColor;
 
     public final MessagesController.MessageInputContext linkPreviewContext;
     public final String linkPreviewUrl;
 
-    public Entry (Tdlib tdlib, TdApi.Message message, @Nullable TdApi.FormattedText quote) {
+    public Entry (Tdlib tdlib, TdApi.Message message, @Nullable TdApi.InputTextQuote quote) {
       this.tdlib = tdlib;
       this.message = message;
       this.linkPreviewContext = null;
@@ -777,7 +777,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     }
   }
 
-  public void setMessage (@Nullable Tdlib tdlib, @Nullable TdApi.Message message, @Nullable TdApi.FormattedText quote) {
+  public void setMessage (@Nullable Tdlib tdlib, @Nullable TdApi.Message message, @Nullable TdApi.InputTextQuote quote) {
     if (tdlib != null && message != null) {
       setStaticMessageList(Collections.singletonList(new Entry(tdlib, message, quote)), RecyclerView.NO_POSITION);
     } else {

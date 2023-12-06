@@ -135,7 +135,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   private static class DisplayData implements Destroyable {
     public final Tdlib tdlib;
     public final TdApi.Message message;
-    public final @Nullable TdApi.FormattedText quote;
+    public final @Nullable TdApi.InputTextQuote quote;
     public final @Options int options;
     public @Nullable TdApi.SearchMessagesFilter filter;
     public @Nullable String forcedTitle;
@@ -143,7 +143,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     public @Nullable LinkPreview linkPreview;
     public @Nullable View.OnClickListener onMediaClickListener;
 
-    public DisplayData (Tdlib tdlib, TdApi.Message message, @Nullable TdApi.FormattedText quote, int options) {
+    public DisplayData (Tdlib tdlib, TdApi.Message message, @Nullable TdApi.InputTextQuote quote, int options) {
       this.tdlib = tdlib;
       this.message = message;
       this.quote = quote;
@@ -174,7 +174,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
        return linkPreview != null && linkPreview.hasMedia() && !linkPreview.getOutputShowLargeMedia();
     }
 
-    public boolean equalsTo (TdApi.Message message, @Nullable TdApi.FormattedText quote, @Options int options, @Nullable LinkPreview linkPreview) {
+    public boolean equalsTo (TdApi.Message message, @Nullable TdApi.InputTextQuote quote, @Options int options, @Nullable LinkPreview linkPreview) {
       return this.message == message && Td.equalsTo(this.quote, quote) && this.options == options && this.linkPreview == linkPreview;
     }
 
@@ -243,7 +243,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     setMessage(message, null, filter, forcedTitle, options);
   }
 
-  public void setMessage (@Nullable TdApi.Message message, @Nullable TdApi.FormattedText quote, @Nullable TdApi.SearchMessagesFilter filter, @Nullable String forcedTitle, @Options int options) {
+  public void setMessage (@Nullable TdApi.Message message, @Nullable TdApi.InputTextQuote quote, @Nullable TdApi.SearchMessagesFilter filter, @Nullable String forcedTitle, @Options int options) {
     if (message != null) {
       DisplayData displayData = new DisplayData(tdlib, message, quote, options);
       displayData.setPreviewFilter(filter);
@@ -360,7 +360,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
       throw new IllegalStateException();
     }
     if (!Td.isEmpty(data.quote)) {
-      this.contentPreview = new ContentPreview(data.quote, false);
+      this.contentPreview = new ContentPreview(data.quote.text, false);
     } else {
       this.contentPreview = ContentPreview.getChatListPreview(tdlib, data.message.chatId, data.messageDeleted ? null : data.message, true);
     }

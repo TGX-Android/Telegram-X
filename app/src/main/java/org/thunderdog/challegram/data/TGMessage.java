@@ -1397,13 +1397,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (isSponsoredMessage()) {
       switch (sponsoredMessage.sponsor.type.getConstructor()) {
         case TdApi.MessageSponsorTypeWebsite.CONSTRUCTOR:
+        case TdApi.MessageSponsorTypeWebApp.CONSTRUCTOR:
         case TdApi.MessageSponsorTypePrivateChannel.CONSTRUCTOR:
           return false;
         case TdApi.MessageSponsorTypeBot.CONSTRUCTOR:
         case TdApi.MessageSponsorTypePublicChannel.CONSTRUCTOR:
           return true;
         default:
-          Td.assertMessageSponsorType_ce9e3245();
+          Td.assertMessageSponsorType_cdabde01();
           throw Td.unsupported(sponsoredMessage.sponsor.type);
       }
     }
@@ -4028,12 +4029,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
               break;
             }
             case TdApi.MessageSponsorTypePrivateChannel.CONSTRUCTOR:
-            case TdApi.MessageSponsorTypeWebsite.CONSTRUCTOR: {
+            case TdApi.MessageSponsorTypeWebsite.CONSTRUCTOR:
+            case TdApi.MessageSponsorTypeWebApp.CONSTRUCTOR: {
               receiver.requestPlaceholder(tdlib, sender.getPlaceholderMetadata(), AvatarReceiver.Options.NONE);
               break;
             }
             default:
-              Td.assertMessageSponsorType_ce9e3245();
+              Td.assertMessageSponsorType_cdabde01();
               throw Td.unsupported(sponsor.type);
           }
         }
@@ -8008,6 +8010,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessagePremiumGiveawayCreated) content);
         }
+        case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessagePremiumGiveawayCompleted) content);
+        }
         case TdApi.MessagePremiumGiveaway.CONSTRUCTOR: {
           if (BuildConfig.DEBUG) {
             // uncomment once finished
@@ -8035,7 +8040,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           break;
         }
         default: {
-          Td.assertMessageContent_ea2cfacf();
+          Td.assertMessageContent_afad899a();
           throw Td.unsupported(msg.content);
         }
       }
@@ -9243,6 +9248,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         tdlib.ui().openInternalLinkType(this, null, bot.link, openParameters, after);
         break;
       }
+      case TdApi.MessageSponsorTypeWebApp.CONSTRUCTOR: {
+        TdApi.MessageSponsorTypeWebApp webApp = (TdApi.MessageSponsorTypeWebApp) sponsor.type;
+        tdlib.ui().openInternalLinkType(this, null, webApp.link, openParameters, after);
+        break;
+      }
       case TdApi.MessageSponsorTypePublicChannel.CONSTRUCTOR: {
         TdApi.MessageSponsorTypePublicChannel publicChannel = (TdApi.MessageSponsorTypePublicChannel) sponsor.type;
         if (publicChannel.link != null) {
@@ -9265,7 +9275,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         break;
       }
       default:
-        Td.assertMessageSponsorType_ce9e3245();
+        Td.assertMessageSponsorType_cdabde01();
         throw Td.unsupported(sponsor.type);
     }
   }
@@ -9290,8 +9300,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       case TdApi.MessageSponsorTypeWebsite.CONSTRUCTOR: {
         return R.string.AdOpenWebsite;
       }
+      case TdApi.MessageSponsorTypeWebApp.CONSTRUCTOR: {
+        return R.string.AdOpenApp;
+      }
       default:
-        Td.assertMessageSponsorType_ce9e3245();
+        Td.assertMessageSponsorType_cdabde01();
         throw Td.unsupported(sponsor.type);
     }
   }
@@ -9316,6 +9329,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         // Ignoring other types
         break;
       }
+      case TdApi.MessageSponsorTypeWebApp.CONSTRUCTOR: {
+        TdApi.MessageSponsorTypeWebApp webApp = (TdApi.MessageSponsorTypeWebApp) sponsor.type;
+        // No need in URL
+        break;
+      }
       case TdApi.MessageSponsorTypePrivateChannel.CONSTRUCTOR: {
         TdApi.MessageSponsorTypePrivateChannel privateChannel = (TdApi.MessageSponsorTypePrivateChannel) sponsor.type;
         return privateChannel.inviteLink;
@@ -9335,7 +9353,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         return website.url;
       }
       default:
-        Td.assertMessageSponsorType_ce9e3245();
+        Td.assertMessageSponsorType_cdabde01();
         throw Td.unsupported(sponsor.type);
     }
 

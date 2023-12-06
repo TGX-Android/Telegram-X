@@ -1631,6 +1631,7 @@
   <string name="OpenGroup">View Group</string>
   <string name="AdOpenChannel">View Channel</string>
   <string name="AdOpenPost">View Post</string>
+  <string name="AdOpenApp">Open App</string>
   <string name="AdOpenWebsite">Open Website</string>
   <string name="AdOpenBot">Open Bot</string>
   <string name="OpenBot">View Bot</string>
@@ -4890,6 +4891,8 @@
   <string name="ChannelId">Channel ID</string>
 
   <string name="BoostingGiveawayJustStarted">%1$s just started a giveaway of Telegram Premium subscriptions for its followers.</string>
+  <string name="BoostingGiveawayServiceWinnersSelected_one">%1$s winner of the giveaway was randomly selected by Telegram and received their gift link in a private message.</string>
+  <string name="BoostingGiveawayServiceWinnersSelected_other">%1$s winners of the giveaway were randomly selected by Telegram and received their gift link in a private message.</string>
 
   <string name="Giveaway">Giveaway</string>
 

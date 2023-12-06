@@ -419,13 +419,13 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_members, 0, R.string.StatsMembers, false).setData(statistics.memberCount));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_notifications, 0, R.string.StatsNotifications, false).setDoubleValue(statistics.enabledNotificationsPercentage));
-    if (!Td.isEmpty(statistics.meanViewCount)) {
+    if (!Td.isEmpty(statistics.meanMessageViewCount)) {
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_view, 0, R.string.StatsViews, false).setData(statistics.meanViewCount));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_view, 0, R.string.StatsViews, false).setData(statistics.meanMessageViewCount));
     }
-    if (!Td.isEmpty(statistics.meanShareCount)) {
+    if (!Td.isEmpty(statistics.meanMessageShareCount)) {
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_share, 0, R.string.StatsShares, false).setData(statistics.meanShareCount));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_share, 0, R.string.StatsShares, false).setData(statistics.meanMessageShareCount));
     }
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getStringBold(R.string.StatsRange, Lang.getDateRange(statistics.period.startDate, statistics.period.endDate, TimeUnit.SECONDS, true)), false));
@@ -447,15 +447,20 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     );
 
     setCharts(items, charts, () -> {
-      if (statistics.recentMessageInteractions.length > 0) {
-        setRecentMessageInteractions(statistics.period, statistics.recentMessageInteractions, R.string.StatsRecentPosts);
+      TdApi.ChatStatisticsInteractionInfo[] recentMessageInteractions = ArrayUtils.filter(
+        Arrays.asList(statistics.recentInteractions),
+        item -> item.objectType.getConstructor() == TdApi.ChatStatisticsObjectTypeMessage.CONSTRUCTOR
+      ).toArray(new TdApi.ChatStatisticsInteractionInfo[0]);
+      // TODO: stories
+      if (recentMessageInteractions.length > 0) {
+        setRecentMessageInteractions(statistics.period, recentMessageInteractions, R.string.StatsRecentPosts);
       } else {
         executeScheduledAnimation();
       }
     });
   }
 
-  private void setRecentMessageInteractions (TdApi.DateRange range, TdApi.ChatStatisticsMessageInteractionInfo[] interactions, @StringRes int header) {
+  private void setRecentMessageInteractions (TdApi.DateRange range, TdApi.ChatStatisticsInteractionInfo[] interactions, @StringRes int header) {
     loadInteractionMessages(interactions, () -> {
       int currentSize = adapter.getItems().size();
       adapter.getItems().add(new ListItem(ListItem.TYPE_CHART_HEADER_DETACHED).setData(new MiniChart(header, range)));
@@ -472,16 +477,20 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
     });
   }
 
-  private void loadInteractionMessages (TdApi.ChatStatisticsMessageInteractionInfo[] interactions, Runnable onMessagesLoaded) {
+  private void loadInteractionMessages (TdApi.ChatStatisticsInteractionInfo[] interactions, Runnable onMessagesLoaded) {
     AtomicInteger remaining = new AtomicInteger(interactions.length);
 
-    Tdlib.ResultHandler<TdApi.Message> handler = (message, error) -> {
+    Runnable after = () -> {
+      if (remaining.decrementAndGet() == 0) {
+        runOnUiThreadOptional(onMessagesLoaded);
+      }
+    };
+    Tdlib.ResultHandler<TdApi.Message> messageHandler = (message, error) -> {
       if (message != null) {
         if (message.mediaAlbumId != 0) {
           if (!interactionMessageAlbums.containsKey(message.mediaAlbumId)) {
             interactionMessageAlbums.put(message.mediaAlbumId, new ArrayList<>());
           }
-
           interactionMessageAlbums.get(message.mediaAlbumId).add(message);
         }
 
@@ -496,13 +505,26 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
         }
       }
 
-      if (remaining.decrementAndGet() == 0) {
-        runOnUiThreadOptional(onMessagesLoaded);
-      }
+      after.run();
     };
 
-    for (TdApi.ChatStatisticsMessageInteractionInfo interaction : interactions) {
-      tdlib.send(new TdApi.GetMessageLocally(getArgumentsStrict().chatId, interaction.messageId), handler);
+    for (TdApi.ChatStatisticsInteractionInfo interaction : interactions) {
+      switch (interaction.objectType.getConstructor()) {
+        case TdApi.ChatStatisticsObjectTypeMessage.CONSTRUCTOR: {
+          TdApi.ChatStatisticsObjectTypeMessage objectType = (TdApi.ChatStatisticsObjectTypeMessage) interaction.objectType;
+          tdlib.send(new TdApi.GetMessageLocally(getArgumentsStrict().chatId, objectType.messageId), messageHandler);
+          break;
+        }
+        case TdApi.ChatStatisticsObjectTypeStory.CONSTRUCTOR: {
+          TdApi.ChatStatisticsObjectTypeStory objectType = (TdApi.ChatStatisticsObjectTypeStory) interaction.objectType;
+          // TODO: stories
+          after.run();
+          break;
+        }
+        default:
+          Td.assertChatStatisticsObjectType_5cb871fe();
+          throw Td.unsupported(interaction.objectType);
+      }
     }
   }
 
@@ -574,9 +596,9 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
 
   public static class MessageInteractionInfoContainer {
     public final TdApi.Message message;
-    public final TdApi.ChatStatisticsMessageInteractionInfo messageInteractionInfo;
+    public final TdApi.ChatStatisticsInteractionInfo messageInteractionInfo;
 
-    public MessageInteractionInfoContainer (TdApi.Message message, TdApi.ChatStatisticsMessageInteractionInfo messageInteractionInfo) {
+    public MessageInteractionInfoContainer (TdApi.Message message, TdApi.ChatStatisticsInteractionInfo messageInteractionInfo) {
       this.message = message;
       this.messageInteractionInfo = messageInteractionInfo;
     }

@@ -1050,11 +1050,12 @@ public class TD {
       case TdApi.MessageDice.CONSTRUCTOR:
       case TdApi.MessagePremiumGiveaway.CONSTRUCTOR:
       case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
-      case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR: {
+      case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR:
+      case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR: {
         return false;
       }
       default: {
-        Td.assertMessageContent_ea2cfacf();
+        Td.assertMessageContent_afad899a();
       }
     }
     return true;
@@ -1954,8 +1955,8 @@ public class TD {
       "",
       new TdApi.UserStatusEmpty(),
       null,
-      TdlibAccentColor.defaultAccentColorIdForUserId(userId),
-      0,
+      TdlibAccentColor.defaultAccentColorIdForUserId(userId), 0,
+      0, 0,
       null,
       false,
       false,
@@ -5020,7 +5021,7 @@ public class TD {
       case TdApi.MessageExpiredVideo.CONSTRUCTOR:
         return true;
       default:
-        Td.assertMessageContent_ea2cfacf();
+        Td.assertMessageContent_afad899a();
         break;
     }
     return false;
