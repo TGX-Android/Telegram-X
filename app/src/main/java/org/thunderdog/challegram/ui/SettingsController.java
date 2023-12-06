@@ -92,7 +92,6 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
 public class SettingsController extends ViewController<Void> implements
@@ -1023,7 +1022,7 @@ public class SettingsController extends ViewController<Void> implements
       long selfId = tdlib.myUserId(true);
       if (selfId == 0) return;
 
-      showOptions(Strings.buildCounter(selfId), new int[]{R.id.btn_peer_id_copy}, new String[]{Lang.getString(R.string.Copy)}, null, new int[]{R.drawable.baseline_content_copy_24}, (itemView, id) -> {
+      showOptions(Long.toString(selfId), new int[]{R.id.btn_peer_id_copy}, new String[]{Lang.getString(R.string.Copy)}, null, new int[]{R.drawable.baseline_content_copy_24}, (itemView, id) -> {
         if (id == R.id.btn_peer_id_copy) {
           UI.copyText(Long.toString(selfId), R.string.CopiedMyUserId);
         }
