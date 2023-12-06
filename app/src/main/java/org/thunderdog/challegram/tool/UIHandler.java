@@ -15,7 +15,6 @@
 package org.thunderdog.challegram.tool;
 
 import android.content.Context;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.view.Gravity;
@@ -30,6 +29,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.MainActivity;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGAudio;
 import org.thunderdog.challegram.navigation.NavigationController;
@@ -358,7 +358,7 @@ public class UIHandler extends Handler {
       case COPY_TEXT: {
         try {
           U.copyText((CharSequence) msg.obj);
-          if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2 && msg.arg1 != 0) {
+          if (!Device.HAS_BUILTIN_CLIPBOARD_TOASTS && msg.arg1 != 0) {
             showCustomToast(msg.arg1, Toast.LENGTH_SHORT, 0);
           }
         } catch (Throwable t) {
