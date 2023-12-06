@@ -816,6 +816,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       if (!StringUtils.isEmpty(username)) {
         UI.copyText("@" + username, R.string.CopiedUsername);
       }
+    } else if (id == R.id.btn_peer_id_copy) {
+      UI.copyText(Long.toString(getPeerId()), R.string.CopiedPeerId);
     } else if (id == R.id.btn_copyLink) {
       String username = getProfileUsername();
       if (!StringUtils.isEmpty(username)) {
@@ -4593,7 +4595,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     } else if (viewId == R.id.btn_useExplicitDice) {
       Settings.instance().setNewSetting(((ListItem) v.getTag()).getLongId(), baseAdapter.toggleView(v));
     } else if (viewId == R.id.btn_peer_id) {
-       UI.copyText(Long.toString(getPeerId()), R.string.CopiedPeerId);
+      showOptions(Strings.buildCounter(getPeerId()), new int[]{R.id.btn_peer_id_copy}, new String[]{Lang.getString(R.string.Copy)}, null, new int[]{R.drawable.baseline_content_copy_24});
     } else if (viewId == R.id.btn_username) {
       boolean canSetUsername = canSetUsername();
       boolean canInviteUsers = chat != null && tdlib.canManageInviteLinks(chat);
