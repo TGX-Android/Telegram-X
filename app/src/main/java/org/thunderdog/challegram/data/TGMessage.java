@@ -9369,7 +9369,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
-  public boolean matchesReactionSenderAvatarFilter (TdApi.MessageReaction reaction, TdApi.MessageSender sender) {
+  public boolean matchesReactionSenderAvatarFilter (TdApi.FormattedText messageText, TdApi.MessageReaction reaction, TdApi.MessageSender sender) {
     final long currentChatId = getChatId();
 
     if (Td.equalsTo(reaction.usedSenderId, sender)) {
@@ -9383,7 +9383,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     long userId = Td.getSenderUserId(sender);
     final TdApi.User user = userId != 0 ? tdlib.cache().user(userId) : null;
-    if (user != null && (user.isContact || user.isCloseFriend || TD.containsMention(getTextToTranslateImpl(), user))) {
+    if (user != null && (user.isContact || user.isCloseFriend || TD.containsMention(messageText, user))) {
       return true;
     }
 
@@ -9536,6 +9536,30 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     return null;
   }
+
+  /* * */
+
+  @Nullable
+  public final TdApi.FormattedText getMessageText () {
+    synchronized (this) {
+      if (combinedMessages != null && !combinedMessages.isEmpty()) {
+        final TdApi.FormattedText sep = new TdApi.FormattedText(" ", new TdApi.TextEntity[0]);
+        TdApi.FormattedText result = new TdApi.FormattedText("", new TdApi.TextEntity[0]);
+        for (TdApi.Message msg : combinedMessages) {
+          final TdApi.FormattedText textPart = msg.content != null ? Td.textOrCaption(msg.content) : null;
+          if (!Td.isEmpty(textPart)) {
+            if (!Td.isEmpty(result)) {
+              result = Td.concat(result, sep);
+            }
+            result = Td.concat(result, textPart);
+          }
+        }
+        return !Td.isEmpty(result) ? result : null;
+      }
+    }
+    return msg.content != null ? Td.textOrCaption(msg.content) : null;
+  }
+
 
   /* * */
 
