@@ -571,13 +571,6 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
         if (replyToMessage.origin != null) {
           handleOrigin(replyToMessage.origin);
         }
-        if (message.chatId == replyToMessage.chatId) {
-          TdApi.Message foundMessage = parent.manager().getAdapter().tryFindMessage(replyToMessage.chatId, replyToMessage.messageId);
-          if (foundMessage != null) {
-            setMessage(foundMessage, false, true);
-            return;
-          }
-        }
         if (!Td.isEmpty(replyToMessage.quote) || replyToMessage.content != null) {
           this.quote = replyToMessage.quote;
           TdApi.Message fakeMessage = TD.newFakeMessage(replyToMessage.chatId, sender, replyToMessage.content == null ? new TdApi.MessageText(replyToMessage.quote.text, null, null) : replyToMessage.content);
@@ -594,6 +587,12 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
           buildLayout();
           invalidate(mediaPreview != null);
           this.ignoreFailures = true;
+        } else if (message.chatId == replyToMessage.chatId) {
+          TdApi.Message foundMessage = parent.manager().getAdapter().tryFindMessage(replyToMessage.chatId, replyToMessage.messageId);
+          if (foundMessage != null) {
+            setMessage(foundMessage, false, true);
+            return;
+          }
         }
         if (replyToMessage.origin == null) {
           if (message.forwardInfo != null && message.forwardInfo.fromChatId != 0 && message.forwardInfo.fromMessageId != 0 && !parent.isRepliesChat()) {

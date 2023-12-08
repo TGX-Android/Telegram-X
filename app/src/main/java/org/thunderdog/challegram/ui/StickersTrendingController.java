@@ -49,6 +49,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.lambda.CancellableRunnable;
+import me.vkryl.core.lambda.RunnableData;
 
 public class StickersTrendingController extends ViewController<Void> implements StickerSmallView.StickerMovementCallback, Client.ResultHandler, TGStickerObj.DataProvider, StickersListener, TGStickerSetInfo.ViewCallback {
   private final boolean isEmoji;
@@ -266,6 +267,13 @@ public class StickersTrendingController extends ViewController<Void> implements 
           new TdApi.GetTrendingStickerSets(stickerType, offset, limit),
           handler
         );
+        return;
+      }
+
+      // TODO: rework properly to tdlib.ui().getEmojiStickers(..)
+
+      if (offset > 0) {
+        handler.onResult(new TdApi.StickerSets(0, new TdApi.StickerSetInfo[0]));
         return;
       }
 
@@ -535,6 +543,7 @@ public class StickersTrendingController extends ViewController<Void> implements 
           }
           case TdApi.Error.CONSTRUCTOR: {
             UI.showError(result);
+            processResultImpl(new TdApi.StickerSetInfo[0]);
             break;
           }
         }
