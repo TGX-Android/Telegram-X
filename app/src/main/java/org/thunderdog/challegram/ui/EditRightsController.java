@@ -323,6 +323,9 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           targetAdmin.rights.canManageVideoChats = false;
           targetAdmin.rights.isAnonymous = false;
           targetAdmin.rights.canPromoteMembers = false;
+          targetAdmin.rights.canPostStories = false;
+          targetAdmin.rights.canEditStories = false;
+          targetAdmin.rights.canDeleteStories = false;
           updateValues();
           setDoneInProgress(true);
           setDoneVisible(true);
