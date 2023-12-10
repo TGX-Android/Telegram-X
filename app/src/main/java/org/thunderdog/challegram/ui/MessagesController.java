@@ -5457,6 +5457,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
           tdlib.ui().saveGifs(((List<TD.DownloadedFile>) selectedMessageTag));
         }
         return true;
+      } else if (id == R.id.btn_messageChangeMessageFilterVisibility) {
+        selectedMessage.setIsHiddenByMessagesFilter(!selectedMessage.isHiddenByMessagesFilter(), true);
+        return true;
       } else if (id == R.id.btn_saveFile) {
         if (selectedMessageTag != null) {
           if (!selectedMessage.canBeSaved()) {
