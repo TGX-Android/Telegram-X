@@ -325,7 +325,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     default int getStickerViewTop (StickerSmallView v) { return -1; }
     default StickerSmallView getStickerViewUnder (StickerSmallView v, int x, int y) { return null; }
     default TGReaction getReactionForPreview (StickerSmallView v) { return null; }
-    default void onSetEmojiStatusFromPreview (StickerSmallView view, View clickView, TGStickerObj sticker, long emojiId, int duration) { }
+    default void onSetEmojiStatusFromPreview (StickerSmallView view, View clickView, TGStickerObj sticker, long emojiId, long expirationDate) { }
   }
 
   private @Nullable StickerMovementCallback callback;
@@ -578,9 +578,9 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     }
   }
 
-  public void onSetEmojiStatus (View view, TGStickerObj sticker, long emojiId, int duration) {
+  public void onSetEmojiStatus (View view, TGStickerObj sticker, long emojiId, long expirationDate) {
     if (callback != null) {
-      callback.onSetEmojiStatusFromPreview(this, view, sticker, emojiId, duration);
+      callback.onSetEmojiStatusFromPreview(this, view, sticker, emojiId, expirationDate);
     }
   }
 

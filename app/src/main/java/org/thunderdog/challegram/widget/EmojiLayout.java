@@ -597,8 +597,8 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     }
   }
 
-  public boolean setEmojiStatus (View view, TGStickerObj sticker, int duration) {
-    return listener != null && listener.onSetEmojiStatus(view, sticker, new TdApi.EmojiStatus(sticker.getCustomEmojiId(), duration));
+  public boolean setEmojiStatus (View view, TGStickerObj sticker, long expirationDate) {
+    return listener != null && listener.onSetEmojiStatus(view, sticker, new TdApi.EmojiStatus(sticker.getCustomEmojiId(), (int) expirationDate));
   }
 
   public boolean sendSticker (View view, TGStickerObj sticker, TdApi.MessageSendOptions sendOptions) {
