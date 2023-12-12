@@ -596,14 +596,21 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
     return provideOffset() - stickersController.getOffsetScroll();
   }
 
+  private boolean isScrollByHeader;
+
   @Override
   public void onScrollFinished () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      if (isScrollByHeader) {
+        isScrollByHeader = false;
+        return;
+      }
 
       if (Config.USE_FULLSCREEN_NAVIGATION) {
         if (topLick != null) {
           if (topLick.factor >= .4f) {
             stickersController.scrollBy((int) ((float) HeaderView.getTopOffset() * (1f - topLick.factor)));
+            isScrollByHeader = true;
           } else {
             stickersController.scrollBy(-(int) ((float) HeaderView.getTopOffset() * topLick.factor));
           }
@@ -613,6 +620,7 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
         if (statusBarFactor != 0f && statusBarFactor != 1f) {
           if (statusBarFactor >= .4f) {
             stickersController.scrollBy(getHeaderTop());
+            isScrollByHeader = true;
           } else {
             stickersController.scrollBy(-(getStatusBarLimit() - getHeaderTop()));
           }
