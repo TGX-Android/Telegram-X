@@ -1075,13 +1075,21 @@ public class RecordAudioVideoController implements
     return roundCloseMode != CLOSE_MODE_CANCEL;
   }
 
+  private Throwable releasedTrace;
+  private boolean cleanupVideoPending;
+
   private void cleanupVideoRecording () {
     if (recordingVideo && Math.max(recordFactor, editFactor) * (1f - renderFactor) == 0f && ownedCamera != null && !awaitingRoundResult()) {
+      if (recordingRoundVideo) {
+        cleanupVideoPending = true;
+        return;
+      }
       ownedCamera.onCleanAfterHide();
       ownedCamera.releaseCameraLayout();
 
       setupCamera(false);
       context.releaseCameraOwnership();
+      releasedTrace = Log.generateException();
       ownedCamera = null;
 
       resetRoundState();
@@ -1211,6 +1219,7 @@ public class RecordAudioVideoController implements
   }
 
   private void onRecordRemoved () {
+    // note: when animations disabled happens before finishVideoRecording
     context.setScreenFlagEnabled(BaseActivity.SCREEN_FLAG_RECORDING, false);
     context.setOrientationLockFlagEnabled(BaseActivity.ORIENTATION_FLAG_RECORDING, false);
     cleanupVideoRecording();
@@ -1457,12 +1466,20 @@ public class RecordAudioVideoController implements
   }
 
   private void finishVideoRecording (int closeMode) {
+    // note: when animations disabled, happens after cleanupVideoRecording is called
     if (!this.recordingRoundVideo)
       throw new IllegalStateException();
     this.recordingRoundVideo = false;
     this.roundCloseMode = closeMode;
     final boolean needResult = closeMode != CLOSE_MODE_CANCEL;
+    if (ownedCamera == null) {
+      throw new RuntimeException(releasedTrace);
+    }
     ownedCamera.getLegacyManager().finishOrCancelRoundVideoCapture(roundKey, needResult);
+    if (cleanupVideoPending) {
+      cleanupVideoPending = false;
+      cleanupVideoRecording();
+    }
   }
 
   @Override
