@@ -50,6 +50,7 @@ import android.widget.TextView;
 import androidx.annotation.CallSuper;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.IdRes;
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
@@ -120,6 +121,8 @@ import org.thunderdog.challegram.widget.SeparatorView;
 import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.TimerView;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -2184,10 +2187,14 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   // Options delegate
 
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({OPTION_COLOR_BLUE, OPTION_COLOR_INACTIVE, OPTION_COLOR_RED, OPTION_COLOR_NORMAL, OPTION_COLOR_GREEN})
+  public @interface OptionColor {}
   public static final int OPTION_COLOR_NORMAL = 0x01;
   public static final int OPTION_COLOR_RED = 0x02;
   public static final int OPTION_COLOR_BLUE = 0x03;
   public static final int OPTION_COLOR_GREEN = 0x04;
+  public static final int OPTION_COLOR_INACTIVE = 0x05;
 
   public static final float DISABLED_ALPHA = .7f;
 
@@ -2281,14 +2288,14 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public static class OptionItem {
-    public static final OptionItem SEPARATOR = new OptionItem(0, null, 0, 0);
+    public static final OptionItem SEPARATOR = new OptionItem(0, null, OPTION_COLOR_NORMAL, 0);
 
     public final int id;
     public final CharSequence name;
     public final int color;
     public final int icon;
 
-    public OptionItem (int id, CharSequence name, int color, int icon) {
+    public OptionItem (int id, CharSequence name, @OptionColor int color, int icon) {
       this.id = id;
       this.name = name;
       this.color = color;
@@ -2302,7 +2309,6 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       private int icon;
 
       public Builder () {
-        this.id = id;
       }
 
       public Builder id (int id) {
@@ -2352,7 +2358,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       private CharSequence info;
       private CharSequence title;
       private OptionItem subtitle;
-      private List<OptionItem> items = new ArrayList<>();
+      private final List<OptionItem> items = new ArrayList<>();
 
       public Builder () {
       }

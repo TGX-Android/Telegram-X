@@ -15,15 +15,13 @@
 package org.thunderdog.challegram.emoji;
 
 import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.text.Layout;
 import android.view.View;
 
 import org.thunderdog.challegram.loader.ComplexReceiver;
+import org.thunderdog.challegram.util.text.TextReplacementSpan;
 
-public interface EmojiSpan {
-  int getRawSize (Paint paint);
-
+public interface EmojiSpan extends TextReplacementSpan {
   boolean isCustomEmoji ();
   default long getCustomEmojiId () {
     return 0;

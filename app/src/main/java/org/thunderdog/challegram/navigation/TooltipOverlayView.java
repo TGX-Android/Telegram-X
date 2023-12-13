@@ -857,6 +857,11 @@ public class TooltipOverlayView extends ViewGroup {
         locationProvider.getTargetBounds(view, innerRect);
       } else if (view instanceof LocationProvider) {
         ((LocationProvider) view).getTargetBounds(view, innerRect);
+      } else {
+        Object tag = view.getTag(R.id.tag_tooltip_location_provider);
+        if (tag instanceof LocationProvider) {
+          ((LocationProvider) tag).getTargetBounds(view, innerRect);
+        }
       }
 
       boolean hasIcon = hasIcon();

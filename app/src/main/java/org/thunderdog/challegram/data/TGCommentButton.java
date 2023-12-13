@@ -450,7 +450,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
 
     int avatarsX = right - (useBubbles ? Screen.dp(16f) : Screen.dp(38f));
     int avatarsY = rect.centerY();
-    avatars.draw(view, c, view.getAvatarsReceiver(), avatarsX, avatarsY, Gravity.RIGHT, alpha);
+    avatars.draw(c, view.getAvatarsReceiver(), avatarsX, avatarsY, Gravity.RIGHT, alpha);
 
     int badgeX = avatarsX - Math.round(avatars.getAnimatedWidth()) - Screen.dp(8f) - Screen.dp(BADGE_RADIUS);
     int badgeY = rect.centerY();
@@ -511,7 +511,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
 
     int avatarsX = right - Screen.dp(6f);
     int avatarsY = rect.centerY();
-    avatars.draw(view, c, view.getAvatarsReceiver(), avatarsX, avatarsY, Gravity.RIGHT, alpha);
+    avatars.draw(c, view.getAvatarsReceiver(), avatarsX, avatarsY, Gravity.RIGHT, alpha);
 
     float badgeX = avatarsX - avatars.getAnimatedWidth() - Screen.dp(8f) - Screen.dp(BADGE_RADIUS);
     float badgeY = rect.centerY();

@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -273,6 +274,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
   private boolean isPremiumLocked;
   private boolean drawAnonymousIcon;
   private boolean drawFakeCheckbox;
+  private boolean drawCrossIcon;
 
   public void setChatMessageSender (TdApi.ChatMessageSender sender) {
     this.chatMessageSender = sender;
@@ -283,7 +285,31 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
   }
 
   public void setDrawFakeCheckbox (boolean drawFakeCheckbox) {
-    this.drawFakeCheckbox = drawFakeCheckbox;
+    if (this.drawFakeCheckbox != drawFakeCheckbox) {
+      this.drawFakeCheckbox = drawFakeCheckbox;
+      if (drawFakeCheckbox) {
+        this.drawCrossIcon = false;
+      }
+      currentViews.invalidate();
+    }
+  }
+
+  public boolean isDrawFakeCheckbox () {
+    return drawFakeCheckbox;
+  }
+
+  public void setDrawCrossIcon (boolean drawCrossIcon) {
+    if (this.drawCrossIcon != drawCrossIcon) {
+      this.drawCrossIcon = drawCrossIcon;
+      if (drawCrossIcon) {
+        this.drawFakeCheckbox = false;
+      }
+      currentViews.invalidate();
+    }
+  }
+
+  public boolean isDrawCrossIcon () {
+    return drawCrossIcon;
   }
 
   public boolean isPremiumLocked () {
@@ -507,21 +533,30 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
       }
     }
 
-    if (drawFakeCheckbox) {
+    if (drawFakeCheckbox || drawCrossIcon) {
       double radians = Math.toRadians(45f);
       float cx = receiver.centerX() + (float) ((double) (receiver.getWidth() / 2) * Math.sin(radians));
       float cy = receiver.centerY() + (float) ((double) (receiver.getHeight() / 2) * Math.cos(radians));
       c.drawCircle(cx, cy, Screen.dp(11.5f), Paints.fillingPaint(Theme.fillingColor()));
-      c.drawCircle(cx, cy, Screen.dp(10f), Paints.fillingPaint(Theme.radioFillingColor()));
+      int backgroundColor = drawFakeCheckbox ? Theme.radioFillingColor() : Theme.textDecentColor();
+      c.drawCircle(cx, cy, Screen.dp(10f), Paints.fillingPaint(backgroundColor));
       c.save();
       float lineSize = Screen.dp(2);
-      float x1 = cx - Screen.dp(1.5f);
-      float y1 = cy + Screen.dp(5.5f);
-      float w2 = Screen.dp(10f);
-      float h1 = Screen.dp(6f);
-      c.rotate(-45f, x1, y1);
-      c.drawRect(x1, y1 - h1, x1 + lineSize, y1, Paints.fillingPaint(Theme.radioCheckColor()));
-      c.drawRect(x1, y1 - lineSize, x1 + w2, y1, Paints.fillingPaint(Theme.radioCheckColor()));
+      if (drawFakeCheckbox) {
+        float x1 = cx - Screen.dp(1.5f);
+        float y1 = cy + Screen.dp(5.5f);
+        float w2 = Screen.dp(10f);
+        float h1 = Screen.dp(6f);
+        c.rotate(-45f, x1, y1);
+        c.drawRect(x1, y1 - h1, x1 + lineSize, y1, Paints.fillingPaint(Theme.radioCheckColor()));
+        c.drawRect(x1, y1 - lineSize, x1 + w2, y1, Paints.fillingPaint(Theme.radioCheckColor()));
+      } else {
+        float h = Screen.dp(5.5f);
+        c.rotate(45f, cx, cy);
+        int color = Theme.isDark() ? Color.BLACK : Color.WHITE;
+        c.drawRect(cx - h, cy - lineSize / 2f, cx + h, cy + lineSize / 2f, Paints.fillingPaint(color));
+        c.drawRect(cx - lineSize / 2f, cy - h, cx + lineSize / 2f, cy + h, Paints.fillingPaint(color));
+      }
       c.restore();
     }
     if (drawAnonymousIcon) {

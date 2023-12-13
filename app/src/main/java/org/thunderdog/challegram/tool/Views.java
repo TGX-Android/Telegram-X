@@ -52,7 +52,6 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.DiffMatchPatch;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewTranslator;
 import org.thunderdog.challegram.theme.ColorId;
@@ -860,6 +859,16 @@ public class Views {
       ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
       if (params.rightMargin != margin) {
         params.rightMargin = margin;
+        view.setLayoutParams(params);
+      }
+    }
+  }
+
+  public static void setLeftMargin (View view, int margin) {
+    if (view != null) {
+      ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
+      if (params.leftMargin != margin) {
+        params.leftMargin = margin;
         view.setLayoutParams(params);
       }
     }

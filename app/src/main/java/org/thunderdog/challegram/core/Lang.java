@@ -3228,6 +3228,10 @@ public class Lang {
     return gravity() | gravity;
   }
 
+  public static int reverseGravity (int gravity) {
+    return reverseGravity() | gravity;
+  }
+
   private static void setLanguageAllowLowercase (boolean allowLowercase, boolean sendEvents) {
     if (Lang.languageAllowLowercase != allowLowercase) {
       Lang.languageAllowLowercase = allowLowercase;

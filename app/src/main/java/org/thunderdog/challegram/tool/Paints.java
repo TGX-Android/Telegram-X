@@ -624,6 +624,8 @@ public class Paints {
     return PorterDuffPaint.get(ColorId.headerButtonIcon);
   }
 
+  public static Paint getAccentPorterDuffPaint() { return PorterDuffPaint.get(ColorId.text); }
+
   public static Paint getDecentPorterDuffPaint () {
     return PorterDuffPaint.get(ColorId.textLight);
   }
