@@ -72,7 +72,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
   private class Representation {
     public final long stickerId;
     public final String emoji;
-    public final @Nullable EmojiInfo emojiInfo;
+    public @Nullable EmojiInfo emojiInfo;
 
     public @Nullable TdApi.Sticker sticker;
     public float xIndex;
@@ -97,7 +97,11 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     public Representation (long stickerId, String emoji, @Nullable TdApi.Sticker sticker, int fitzpatrickType, boolean allowNoLoop, boolean forcePlayOnce) {
       this.stickerId = stickerId;
       this.emoji = emoji;
-      this.emojiInfo = stickerId == 0 ? Emoji.instance().getEmojiInfo(emoji) : null;
+      Emoji.instance().replaceEmoji(emoji, 0, emoji != null ? emoji.length() : 0, null, (a, b, c, d, e) -> {
+        this.emojiInfo = c;
+        return true;
+      });
+      //this.emojiInfo = stickerId == 0 ? Emoji.instance().getEmojiInfo(Emoji.instance().replaceEmoji(emoji)) : null;
       setSticker(sticker, fitzpatrickType, allowNoLoop, forcePlayOnce);
     }
 
