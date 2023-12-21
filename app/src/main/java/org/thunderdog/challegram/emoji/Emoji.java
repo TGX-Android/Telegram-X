@@ -662,6 +662,12 @@ public class Emoji {
         return getEmojiInfo(Character.toString(code.charAt(0)) + code.charAt(2));
       }
     }
+    if (info == null) {
+      String fixed = code.replace("\uFE0F\u200D", "\u200D");
+      if (!fixed.equals(code)) {
+        return getEmojiInfo(fixed);
+      }
+    }
     /*if (info == null) {
       CharSequence fixedEmoji = fixEmoji(code);
       if (!fixedEmoji.equals(code)) {
