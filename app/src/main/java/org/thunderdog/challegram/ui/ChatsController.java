@@ -541,7 +541,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     updateNetworkStatus(tdlib.connectionState());
 
     tdlib.listeners().subscribeForGlobalUpdates(this);
-    tdlib.cache().subscribeToAnyUpdates(this);
+    tdlib.cache().subscribeForGlobalUpdates(this);
 
     Settings.instance().addChatListModeListener(this);
     TGLegacyManager.instance().addEmojiListener(this);
@@ -2571,7 +2571,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     Settings.instance().removeChatListModeListener(this);
     tdlib.settings().removeUserPreferenceChangeListener(this);
     tdlib.listeners().unsubscribeFromGlobalUpdates(this);
-    tdlib.cache().unsubscribeFromAnyUpdates(this);
+    tdlib.cache().unsubscribeFromGlobalUpdates(this);
     list.unsubscribeFromUpdates(this);
     TGLegacyManager.instance().removeEmojiListener(this);
     tdlib.contacts().removeListener(this);
