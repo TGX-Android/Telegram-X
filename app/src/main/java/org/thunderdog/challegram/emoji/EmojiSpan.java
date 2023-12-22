@@ -28,6 +28,9 @@ public interface EmojiSpan {
   default long getCustomEmojiId () {
     return 0;
   }
+  default EmojiInfo getBuiltInEmojiInfo () {
+    return null;
+  }
   default boolean belongsToSurface (CustomEmojiSurfaceProvider customEmojiSurfaceProvider) {
     return false;
   }

@@ -20,6 +20,7 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.emoji.Emoji;
+import org.thunderdog.challegram.emoji.EmojiInfo;
 import org.thunderdog.challegram.emoji.EmojiSpan;
 
 import java.util.ArrayList;
@@ -39,8 +40,8 @@ public class NonBubbleEmojiLayout {
     }
   }
 
-  private void addSpan (String emoji, long customEmojiId) {
-    items.add(new Item(Item.EMOJI, emoji, customEmojiId));
+  private void addSpan (String emoji, long customEmojiId, @Nullable EmojiInfo info) {
+    items.add(new Item(Item.EMOJI, emoji, customEmojiId, info));
   }
 
   private void addRow () {
@@ -78,7 +79,7 @@ public class NonBubbleEmojiLayout {
             }
             index = end;
             if (layout != null) {
-              layout.addSpan(formattedText.text.substring(start, end), ((TdApi.TextEntityTypeCustomEmoji) entity.type).customEmojiId);
+              layout.addSpan(formattedText.text.substring(start, end), ((TdApi.TextEntityTypeCustomEmoji) entity.type).customEmojiId, null);
             }
             continue;
           }
@@ -122,7 +123,7 @@ public class NonBubbleEmojiLayout {
           }
           spanIsFound = true;
           if (layout != null) {
-            layout.addSpan(text.substring(start, end), span.getCustomEmojiId());
+            layout.addSpan(text.substring(start, end), span.getCustomEmojiId(), span.getBuiltInEmojiInfo());
           }
         }
         if (!spanIsFound) {
@@ -231,15 +232,17 @@ public class NonBubbleEmojiLayout {
     public final String emoji;
     public final long customEmojiId;
     public final int type;
+    public final EmojiInfo info;
 
     private Item (int type) {
-      this(type, null, 0);
+      this(type, null, 0, null);
     }
 
-    private Item (int type, String emoji, long customEmojiId) {
+    private Item (int type, String emoji, long customEmojiId, EmojiInfo info) {
       this.type = type;
       this.emoji = emoji;
       this.customEmojiId = customEmojiId;
+      this.info = info;
     }
   }
 }
