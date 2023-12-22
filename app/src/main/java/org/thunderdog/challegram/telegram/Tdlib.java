@@ -10929,8 +10929,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     final int seconds = timeToSend % 60;
 
     return (minutes > 0) ?
-      Lang.plural(R.string.xSlowModeRestrictionMinutes, minutes):
-      Lang.plural(R.string.xSlowModeRestrictionSeconds, seconds);
+      Lang.pluralBold(R.string.xSlowModeRestrictionMinutes, minutes):
+      Lang.pluralBold(R.string.xSlowModeRestrictionSeconds, seconds);
   }
 
   public CharSequence getRestrictionText (TdApi.Chat chat, TdApi.Message message) {
