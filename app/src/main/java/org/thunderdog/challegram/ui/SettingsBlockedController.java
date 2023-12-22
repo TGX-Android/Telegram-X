@@ -133,7 +133,11 @@ public class SettingsBlockedController extends RecyclerViewController<TdApi.Bloc
   public void unblockSender (TGUser user) {
     showOptions(Lang.getStringBold(R.string.QUnblockX, tdlib.senderName(user.getSenderId())), new int[]{R.id.btn_unblockSender, R.id.btn_cancel}, new String[]{Lang.getString(R.string.Unblock), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_block_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_unblockSender) {
-        tdlib.blockSender(user.getSenderId(), null, tdlib.okHandler());
+        tdlib.blockSender(user.getSenderId(), null, tdlib.okHandler(() -> {
+          runOnUiThreadOptional(() -> {
+            removeSender(user.getSenderId());
+          });
+        }));
       }
       return true;
     });
@@ -335,6 +339,13 @@ public class SettingsBlockedController extends RecyclerViewController<TdApi.Bloc
       if (i != -1) {
         ((LinearLayoutManager) getRecyclerView().getLayoutManager()).scrollToPositionWithOffset(i, top);
       }
+    }
+  }
+
+  private void removeSender (TdApi.MessageSender sender) {
+    int index = indexOfSender(ChatId.fromSender(sender));
+    if (index != -1) {
+      removeSender(index);
     }
   }
 
