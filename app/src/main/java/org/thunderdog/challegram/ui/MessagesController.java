@@ -2684,6 +2684,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (sendButton != null) {
       sendButton.getSlowModeCounterController(tdlib).setCurrentChat(getChatId());
+      sendButton.getSlowModeCounterController(tdlib).setSlowModeCounterUpdateListener(this::onSlowModeCounterUpdate);
     }
     if (messageSenderButton != null) {
       messageSenderButton.setInSlowMode(tdlib.inSlowMode(getChatId()));
@@ -3123,11 +3124,30 @@ public class MessagesController extends ViewController<MessagesController.Argume
         .ignoreViewScale(true)
         .controller(this)
         .show(tdlib, text);
+      tooltipInfo.addOnCloseListener(this::onTooltipInfoClose);
     } else {
       tooltipInfo.reset(context().tooltipManager().newContent(tdlib, text, 0), isError ? R.drawable.baseline_warning_24 : 0);
       tooltipInfo.show();
     }
+    isSlowModeRestrictionHintVisible = false;
     tooltipInfo.hideDelayed(false);
+  }
+
+  private boolean isSlowModeRestrictionHintVisible;
+
+  private void onTooltipInfoClose (long duration) {
+    isSlowModeRestrictionHintVisible = false;
+  }
+
+  private void onSlowModeCounterUpdate (int duration) {
+    if (sendButton != null && tooltipInfo != null && tooltipInfo.isVisible() && isSlowModeRestrictionHintVisible) {
+      CharSequence restriction = tdlib().getSlowModeRestrictionText(getChatId(), null);
+      if (restriction != null) {
+        tooltipInfo.reset(context().tooltipManager().newContent(tdlib, restriction, 0), R.drawable.baseline_warning_24);
+      } else {
+        tooltipInfo.hideNow();
+      }
+    }
   }
 
   @Override
@@ -8518,6 +8538,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public boolean showSlowModeRestriction (View v, @Nullable TdApi.MessageSendOptions sendOptions) {
     CharSequence restriction = tdlib().getSlowModeRestrictionText(getChatId(), sendOptions != null ? sendOptions.schedulingState : null);
     if (restriction != null) {
+      if (v == sendButton || v == recordButton) {
+        showBottomHint(restriction, true);
+        isSlowModeRestrictionHintVisible = true;
+        return true;
+      }
       showRestriction(v, restriction);
       return true;
     }

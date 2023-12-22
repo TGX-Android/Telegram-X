@@ -59,6 +59,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.core.lambda.RunnableInt;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
@@ -639,6 +640,12 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
       }
     }
 
+    private RunnableInt slowModeCounterUpdateListener;
+
+    public void setSlowModeCounterUpdateListener (RunnableInt slowModeCounterUpdateListener) {
+      this.slowModeCounterUpdateListener = slowModeCounterUpdateListener;
+    }
+
     private float slowModeDelayProgress = 1f;
 
     private void setSlowModeTimer (long seconds, long slowModeDelaySeconds, boolean animated) {
@@ -647,6 +654,9 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
 
       this.counter.setCount(seconds, false, formatElapsedTime((int) seconds), animated);
       this.view.invalidate();
+      if (slowModeCounterUpdateListener != null) {
+        slowModeCounterUpdateListener.runWithInt((int) seconds);
+      }
     }
 
     public static String formatElapsedTime (int seconds) {
