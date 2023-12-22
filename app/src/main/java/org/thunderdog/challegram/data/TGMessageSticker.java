@@ -72,7 +72,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
   private class Representation {
     public final long stickerId;
     public final String emoji;
-    public @Nullable EmojiInfo emojiInfo;
+    public final @Nullable EmojiInfo emojiInfo;
 
     public @Nullable TdApi.Sticker sticker;
     public float xIndex;
