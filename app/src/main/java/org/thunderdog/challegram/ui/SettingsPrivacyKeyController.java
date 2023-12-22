@@ -56,7 +56,7 @@ import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
 public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.UserPrivacySetting> implements View.OnClickListener, UserPickerMultiDelegate, PrivacySettingsListener, ActivityResultHandler,
-  TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener {
+  TdlibCache.UserDataChangeListener {
 
   public SettingsPrivacyKeyController (Context context, Tdlib tdlib) {
     super(context, tdlib);
