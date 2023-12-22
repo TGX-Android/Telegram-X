@@ -1913,7 +1913,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
 
   private boolean putSupergroupFull (long supergroupId, TdApi.SupergroupFullInfo supergroupFull) {
     supergroupsFulls.put(supergroupId, supergroupFull);
-    supergroupsFullsLastUpdateTime.append(supergroupId, SystemClock.uptimeMillis());
+    supergroupsFullsLastUpdateTime.put(supergroupId, SystemClock.uptimeMillis());
     return true;
   }
 
