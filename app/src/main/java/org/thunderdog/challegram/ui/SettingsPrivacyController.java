@@ -241,7 +241,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
     tdlib.cache().putGlobalUserDataListener(this);
     tdlib.contacts().addStatusListener(this);
 
-    tdlib.listeners().subscribeForAnyUpdates(this);
+    tdlib.listeners().subscribeForGlobalUpdates(this);
   }
 
   @Override
@@ -272,7 +272,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
     super.destroy();
     tdlib.cache().deleteGlobalUserDataListener(this);
     tdlib.contacts().removeStatusListener(this);
-    tdlib.listeners().unsubscribeFromAnyUpdates(this);
+    tdlib.listeners().unsubscribeFromGlobalUpdates(this);
   }
 
   @Override

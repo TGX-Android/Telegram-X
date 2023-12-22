@@ -265,14 +265,14 @@ public class SettingsBlockedController extends RecyclerViewController<TdApi.Bloc
       }
     });
     tdlib.cache().addGlobalUsersListener(this);
-    tdlib.listeners().subscribeForAnyUpdates(this);
+    tdlib.listeners().subscribeForGlobalUpdates(this);
   }
 
   @Override
   public void destroy () {
     super.destroy();
     tdlib.cache().removeGlobalUsersListener(this);
-    tdlib.listeners().unsubscribeFromAnyUpdates(this);
+    tdlib.listeners().unsubscribeFromGlobalUpdates(this);
   }
 
   private void buildCells () {

@@ -39,12 +39,12 @@ public class TdlibSingleUnreadReactionsManager implements ChatListener, MessageL
   public TdlibSingleUnreadReactionsManager (Tdlib tdlib) {
     this.tdlib = tdlib;
 
-    tdlib.listeners().subscribeForAnyUpdates(this);
+    tdlib.listeners().subscribeForGlobalUpdates(this);
   }
 
   @Override
   public void performDestroy () {
-    tdlib.listeners().unsubscribeFromAnyUpdates(this);
+    tdlib.listeners().unsubscribeFromGlobalUpdates(this);
   }
 
   @UiThread

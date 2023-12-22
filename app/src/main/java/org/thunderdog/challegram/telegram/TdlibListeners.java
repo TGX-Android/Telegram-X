@@ -134,7 +134,7 @@ public class TdlibListeners {
   }
 
   @AnyThread
-  public void subscribeForAnyUpdates (Object any) {
+  public void subscribeForGlobalUpdates (Object any) {
     synchronized (this) {
       if (any instanceof MessageListener) {
         messageListeners.add((MessageListener) any);
@@ -185,7 +185,7 @@ public class TdlibListeners {
   }
 
   @AnyThread
-  public void unsubscribeFromAnyUpdates (Object any) {
+  public void unsubscribeFromGlobalUpdates (Object any) {
     synchronized (this) {
       if (any instanceof MessageListener) {
         messageListeners.remove((MessageListener) any);
