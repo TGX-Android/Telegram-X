@@ -134,103 +134,103 @@ public class TdlibListeners {
   }
 
   @AnyThread
-  public void subscribeForGlobalUpdates (Object any) {
+  public void subscribeForGlobalUpdates (Object globalListener) {
     synchronized (this) {
-      if (any instanceof MessageListener) {
-        messageListeners.add((MessageListener) any);
+      if (globalListener instanceof MessageListener) {
+        messageListeners.add((MessageListener) globalListener);
       }
-      if (any instanceof MessageEditListener) {
-        messageEditListeners.add((MessageEditListener) any);
+      if (globalListener instanceof MessageEditListener) {
+        messageEditListeners.add((MessageEditListener) globalListener);
       }
-      if (any instanceof ChatListener) {
-        chatListeners.add((ChatListener) any);
+      if (globalListener instanceof ChatListener) {
+        chatListeners.add((ChatListener) globalListener);
       }
-      if (any instanceof NotificationSettingsListener) {
-        settingsListeners.add((NotificationSettingsListener) any);
+      if (globalListener instanceof NotificationSettingsListener) {
+        settingsListeners.add((NotificationSettingsListener) globalListener);
       }
-      if (any instanceof StickersListener) {
-        stickersListeners.add((StickersListener) any);
+      if (globalListener instanceof StickersListener) {
+        stickersListeners.add((StickersListener) globalListener);
       }
-      if (any instanceof AnimationsListener) {
-        animationsListeners.add((AnimationsListener) any);
+      if (globalListener instanceof AnimationsListener) {
+        animationsListeners.add((AnimationsListener) globalListener);
       }
-      if (any instanceof ConnectionListener) {
-        connectionListeners.add((ConnectionListener) any);
+      if (globalListener instanceof ConnectionListener) {
+        connectionListeners.add((ConnectionListener) globalListener);
       }
-      if (any instanceof TdlibOptionListener) {
-        optionListeners.add((TdlibOptionListener) any);
+      if (globalListener instanceof TdlibOptionListener) {
+        optionListeners.add((TdlibOptionListener) globalListener);
       }
-      if (any instanceof CounterChangeListener) {
-        totalCountersListeners.add((CounterChangeListener) any);
+      if (globalListener instanceof CounterChangeListener) {
+        totalCountersListeners.add((CounterChangeListener) globalListener);
       }
-      if (any instanceof ChatsNearbyListener) {
-        chatsNearbyListeners.add((ChatsNearbyListener) any);
+      if (globalListener instanceof ChatsNearbyListener) {
+        chatsNearbyListeners.add((ChatsNearbyListener) globalListener);
       }
-      if (any instanceof AnimatedEmojiListener) {
-        animatedEmojiListeners.add((AnimatedEmojiListener) any);
+      if (globalListener instanceof AnimatedEmojiListener) {
+        animatedEmojiListeners.add((AnimatedEmojiListener) globalListener);
       }
-      if (any instanceof PrivacySettingsListener) {
-        privacySettingsListeners.add((PrivacySettingsListener) any);
+      if (globalListener instanceof PrivacySettingsListener) {
+        privacySettingsListeners.add((PrivacySettingsListener) globalListener);
       }
-      if (any instanceof PrivateCallListener) {
-        privateCallListeners.add((PrivateCallListener) any);
+      if (globalListener instanceof PrivateCallListener) {
+        privateCallListeners.add((PrivateCallListener) globalListener);
       }
-      if (any instanceof GroupCallListener) {
-        groupCallListeners.add((GroupCallListener) any);
+      if (globalListener instanceof GroupCallListener) {
+        groupCallListeners.add((GroupCallListener) globalListener);
       }
-      if (any instanceof SessionListener) {
-        sessionListeners.add((SessionListener) any);
+      if (globalListener instanceof SessionListener) {
+        sessionListeners.add((SessionListener) globalListener);
       }
     }
   }
 
   @AnyThread
-  public void unsubscribeFromGlobalUpdates (Object any) {
+  public void unsubscribeFromGlobalUpdates (Object globalListener) {
     synchronized (this) {
-      if (any instanceof MessageListener) {
-        messageListeners.remove((MessageListener) any);
+      if (globalListener instanceof MessageListener) {
+        messageListeners.remove((MessageListener) globalListener);
       }
-      if (any instanceof MessageEditListener) {
-        messageEditListeners.remove((MessageEditListener) any);
+      if (globalListener instanceof MessageEditListener) {
+        messageEditListeners.remove((MessageEditListener) globalListener);
       }
-      if (any instanceof ChatListener) {
-        chatListeners.remove((ChatListener) any);
+      if (globalListener instanceof ChatListener) {
+        chatListeners.remove((ChatListener) globalListener);
       }
-      if (any instanceof NotificationSettingsListener) {
-        settingsListeners.remove((NotificationSettingsListener) any);
+      if (globalListener instanceof NotificationSettingsListener) {
+        settingsListeners.remove((NotificationSettingsListener) globalListener);
       }
-      if (any instanceof StickersListener) {
-        stickersListeners.remove((StickersListener) any);
+      if (globalListener instanceof StickersListener) {
+        stickersListeners.remove((StickersListener) globalListener);
       }
-      if (any instanceof StickersListener) {
-        animationsListeners.remove((AnimationsListener) any);
+      if (globalListener instanceof StickersListener) {
+        animationsListeners.remove((AnimationsListener) globalListener);
       }
-      if (any instanceof ConnectionListener) {
-        connectionListeners.remove((ConnectionListener) any);
+      if (globalListener instanceof ConnectionListener) {
+        connectionListeners.remove((ConnectionListener) globalListener);
       }
-      if (any instanceof TdlibOptionListener) {
-        optionListeners.remove((TdlibOptionListener) any);
+      if (globalListener instanceof TdlibOptionListener) {
+        optionListeners.remove((TdlibOptionListener) globalListener);
       }
-      if (any instanceof CounterChangeListener) {
-        totalCountersListeners.remove((CounterChangeListener) any);
+      if (globalListener instanceof CounterChangeListener) {
+        totalCountersListeners.remove((CounterChangeListener) globalListener);
       }
-      if (any instanceof ChatsNearbyListener) {
-        chatsNearbyListeners.remove((ChatsNearbyListener) any);
+      if (globalListener instanceof ChatsNearbyListener) {
+        chatsNearbyListeners.remove((ChatsNearbyListener) globalListener);
       }
-      if (any instanceof AnimatedEmojiListener) {
-        animatedEmojiListeners.remove((AnimatedEmojiListener) any);
+      if (globalListener instanceof AnimatedEmojiListener) {
+        animatedEmojiListeners.remove((AnimatedEmojiListener) globalListener);
       }
-      if (any instanceof PrivacySettingsListener) {
-        privacySettingsListeners.remove((PrivacySettingsListener) any);
+      if (globalListener instanceof PrivacySettingsListener) {
+        privacySettingsListeners.remove((PrivacySettingsListener) globalListener);
       }
-      if (any instanceof PrivateCallListener) {
-        privateCallListeners.remove((PrivateCallListener) any);
+      if (globalListener instanceof PrivateCallListener) {
+        privateCallListeners.remove((PrivateCallListener) globalListener);
       }
-      if (any instanceof GroupCallListener) {
-        groupCallListeners.remove((GroupCallListener) any);
+      if (globalListener instanceof GroupCallListener) {
+        groupCallListeners.remove((GroupCallListener) globalListener);
       }
-      if (any instanceof SessionListener) {
-        sessionListeners.remove((SessionListener) any);
+      if (globalListener instanceof SessionListener) {
+        sessionListeners.remove((SessionListener) globalListener);
       }
     }
   }

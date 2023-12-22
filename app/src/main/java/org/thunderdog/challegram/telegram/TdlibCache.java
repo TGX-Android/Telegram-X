@@ -728,45 +728,45 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
 
   // Listeners
 
-  public void subscribeToAnyUpdates (Object any) {
-    if (any instanceof UserDataChangeListener) {
-      __putGlobalUserDataListener((UserDataChangeListener) any);
+  public void subscribeForGlobalUpdates (Object globalListener) {
+    if (globalListener instanceof UserDataChangeListener) {
+      __putGlobalUserDataListener((UserDataChangeListener) globalListener);
     }
-    if (any instanceof UserStatusChangeListener) {
-      __putGlobalStatusListener((UserStatusChangeListener) any);
+    if (globalListener instanceof UserStatusChangeListener) {
+      __putGlobalStatusListener((UserStatusChangeListener) globalListener);
     }
-    if (any instanceof BasicGroupDataChangeListener) {
-      putGlobalBasicGroupListener((BasicGroupDataChangeListener) any);
+    if (globalListener instanceof BasicGroupDataChangeListener) {
+      putGlobalBasicGroupListener((BasicGroupDataChangeListener) globalListener);
     }
-    if (any instanceof SupergroupDataChangeListener) {
-      putGlobalSupergroupListener((SupergroupDataChangeListener) any);
+    if (globalListener instanceof SupergroupDataChangeListener) {
+      putGlobalSupergroupListener((SupergroupDataChangeListener) globalListener);
     }
-    if (any instanceof SecretChatDataChangeListener) {
-      putGlobalSecretChatListener((SecretChatDataChangeListener) any);
+    if (globalListener instanceof SecretChatDataChangeListener) {
+      putGlobalSecretChatListener((SecretChatDataChangeListener) globalListener);
     }
-    if (any instanceof CallStateChangeListener) {
-      putGlobalCallListener((CallStateChangeListener) any);
+    if (globalListener instanceof CallStateChangeListener) {
+      putGlobalCallListener((CallStateChangeListener) globalListener);
     }
   }
 
-  public void unsubscribeFromAnyUpdates (Object any) {
-    if (any instanceof UserDataChangeListener) {
-      __deleteGlobalUserDataListener((UserDataChangeListener) any);
+  public void unsubscribeFromGlobalUpdates (Object globalListener) {
+    if (globalListener instanceof UserDataChangeListener) {
+      __deleteGlobalUserDataListener((UserDataChangeListener) globalListener);
     }
-    if (any instanceof UserStatusChangeListener) {
-      __deleteGlobalStatusListener((UserStatusChangeListener) any);
+    if (globalListener instanceof UserStatusChangeListener) {
+      __deleteGlobalStatusListener((UserStatusChangeListener) globalListener);
     }
-    if (any instanceof BasicGroupDataChangeListener) {
-      deleteGlobalBasicGroupListener((BasicGroupDataChangeListener) any);
+    if (globalListener instanceof BasicGroupDataChangeListener) {
+      deleteGlobalBasicGroupListener((BasicGroupDataChangeListener) globalListener);
     }
-    if (any instanceof SupergroupDataChangeListener) {
-      deleteGlobalSupergroupListener((SupergroupDataChangeListener) any);
+    if (globalListener instanceof SupergroupDataChangeListener) {
+      deleteGlobalSupergroupListener((SupergroupDataChangeListener) globalListener);
     }
-    if (any instanceof SecretChatDataChangeListener) {
-      deleteGlobalSecretChatListener((SecretChatDataChangeListener) any);
+    if (globalListener instanceof SecretChatDataChangeListener) {
+      deleteGlobalSecretChatListener((SecretChatDataChangeListener) globalListener);
     }
-    if (any instanceof CallStateChangeListener) {
-      deleteGlobalCallListener((CallStateChangeListener) any);
+    if (globalListener instanceof CallStateChangeListener) {
+      deleteGlobalCallListener((CallStateChangeListener) globalListener);
     }
   }
 
