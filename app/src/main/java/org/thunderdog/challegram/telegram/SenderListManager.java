@@ -45,13 +45,13 @@ public abstract class SenderListManager extends ListManager<TdApi.MessageSender>
   @Override
   protected void subscribeToUpdates () {
     tdlib.cache().subscribeToAnyUpdates(this);
-    tdlib.listeners().subscribeForAnyUpdates(this);
+    tdlib.listeners().subscribeForGlobalUpdates(this);
   }
 
   @Override
   protected void unsubscribeFromUpdates () {
     tdlib.cache().unsubscribeFromAnyUpdates(this);
-    tdlib.listeners().unsubscribeFromAnyUpdates(this);
+    tdlib.listeners().unsubscribeFromGlobalUpdates(this);
   }
 
   @Override

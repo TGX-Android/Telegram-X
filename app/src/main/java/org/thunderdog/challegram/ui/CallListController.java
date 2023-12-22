@@ -166,7 +166,7 @@ public class CallListController extends RecyclerViewController<Void> implements
 
     tdlib.client().send(new TdApi.SearchCallMessages(null, Screen.calculateLoadingItems(Screen.dp(72f), 20), false), this);
     tdlib.client().send(new TdApi.GetTopChats(new TdApi.TopChatCategoryCalls(), 30), this);
-    tdlib.listeners().subscribeForAnyUpdates(this);
+    tdlib.listeners().subscribeForGlobalUpdates(this);
     tdlib.context().dateManager().addListener(this);
   }
 
@@ -596,7 +596,7 @@ public class CallListController extends RecyclerViewController<Void> implements
   @Override
   public void destroy () {
     super.destroy();
-    tdlib.listeners().unsubscribeFromAnyUpdates(this);
+    tdlib.listeners().unsubscribeFromGlobalUpdates(this);
     tdlib.context().dateManager().removeListener(this);
   }
 

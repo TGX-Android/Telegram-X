@@ -571,7 +571,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   @Override
   public void destroy () {
     super.destroy();
-    tdlib.listeners().unsubscribeFromAnyUpdates(this);
+    tdlib.listeners().unsubscribeFromGlobalUpdates(this);
     stickersController.destroy();
     trendingSetsController.destroy();
   }
