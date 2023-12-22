@@ -511,6 +511,10 @@ public class MediaLayout extends FrameLayoutFix implements
     popupLayout.hideWindow(true);
   }
 
+  public boolean isVisible () {
+    return popupLayout != null && !popupLayout.isWindowHidden();
+  }
+
   // Callbacks
 
   @Override

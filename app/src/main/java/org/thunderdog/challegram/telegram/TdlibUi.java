@@ -7056,7 +7056,7 @@ public class TdlibUi extends Handler {
     private boolean openingMediaLayout;
 
     private void openMediaView (boolean ignorePermissionRequest, boolean noMedia, @AvatarPickerMode int avatarPickerMode, RunnableData<ImageGalleryFile> callback, String customButtonText, @ColorId int customButtonColorId, Runnable customButtonCallback) {
-      if (openingMediaLayout) {
+      if (openingMediaLayout || currentMediaLayout != null && currentMediaLayout.isVisible()) {
         return;
       }
 
