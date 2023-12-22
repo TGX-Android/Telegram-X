@@ -553,7 +553,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
   public void destroy () {
     super.destroy();
     tdlib.listeners().unsubscribeFromPrivacyUpdates(this);
-    tdlib.cache().unsubscribeFromAnyUpdates(this);
+    tdlib.cache().removeUserDataListener(subscribedToUserId, this);
   }
 
   private int userPickMode;
