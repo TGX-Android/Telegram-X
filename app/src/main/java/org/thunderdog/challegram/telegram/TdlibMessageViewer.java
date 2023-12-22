@@ -266,7 +266,7 @@ public class TdlibMessageViewer {
       assertChat(chatId);
       VisibleMessage visibleMessage = find(messageId);
       if (visibleMessage != null && visibleMessage.visibility.markAsHidden()) {
-        trackMessage(visibleMessage, false);
+        trackMessage(visibleMessage, false, messageId);
         return visibleMessage;
       }
       return null;
@@ -306,6 +306,10 @@ public class TdlibMessageViewer {
 
     private void trackMessage (VisibleMessage visibleMessage, boolean isVisible) {
       final Long messageId = visibleMessage.getMessageId();
+      trackMessage(visibleMessage, isVisible, messageId);
+    }
+
+    private void trackMessage (VisibleMessage visibleMessage, boolean isVisible, Long messageId) {
       if (isVisible) {
         if (!state.visibleMessageIds.add(messageId))
           throw new IllegalStateException();
@@ -313,15 +317,15 @@ public class TdlibMessageViewer {
           if (!state.visibleProtectedMessageIds.add(messageId))
             throw new IllegalStateException();
         }
-        visibleMessages.put(visibleMessage.getMessageId(), visibleMessage);
-        if (visibleMessage.needRefreshInteractionInfo() && state.refreshMessageIds.add(visibleMessage.getMessageId())) {
+        visibleMessages.put(messageId, visibleMessage);
+        if (visibleMessage.needRefreshInteractionInfo() && state.refreshMessageIds.add(messageId)) {
           checkRefreshInteractionInfo();
         }
       } else {
         if (!state.visibleMessageIds.remove(messageId))
           throw new IllegalStateException();
         state.visibleProtectedMessageIds.remove(messageId);
-        visibleMessages.remove(visibleMessage.getMessageId());
+        visibleMessages.remove(messageId);
         viewport.trackRecentlyViewedMessage(this, visibleMessage);
         if (state.refreshMessageIds.remove(messageId)) {
           checkRefreshInteractionInfo();
