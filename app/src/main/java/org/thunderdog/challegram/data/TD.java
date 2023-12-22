@@ -5422,4 +5422,30 @@ public class TD {
   }
 
   public static final String[] ICON_NAMES = {"All", "Unread", "Unmuted", "Bots", "Channels", "Groups", "Private", "Custom", "Setup", "Cat", "Crown", "Favorite", "Flower", "Game", "Home", "Love", "Mask", "Party", "Sport", "Study", "Trade", "Travel", "Work", "Airplane", "Book", "Light", "Like", "Money", "Note", "Palette"};
+
+  public static boolean isTelegramOwnedHost (Uri uri, boolean allowTelegraph) {
+    String host = uri.getHost();
+    if (host == null) {
+      return false;
+    }
+
+    for (String knownHost : TdConstants.TME_HOSTS) {
+      if (StringUtils.equalsOrBothEmpty(host, knownHost) || host.endsWith("." + knownHost)) {
+        return true;
+      }
+    }
+    if (allowTelegraph) {
+      for (String knownHost : TdConstants.TELEGRAM_HOSTS) {
+        if (StringUtils.equalsOrBothEmpty(host, knownHost) || host.endsWith("." + knownHost)) {
+          return true;
+        }
+      }
+      for (String knownHost : TdConstants.TELEGRAPH_HOSTS) {
+        if (StringUtils.equalsOrBothEmpty(host, knownHost) || host.endsWith("." + knownHost)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 }

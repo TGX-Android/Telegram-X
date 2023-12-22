@@ -7014,4 +7014,21 @@ public class TdlibUi extends Handler {
     recyclerView.addOnScrollListener(onScrollListener);
     return viewMessages;
   }
+
+  public void openMessageFilterSettings (ViewController<?> context, long chatId, @Nullable Runnable after) {
+    context.showSettings(R.id.btn_chatMessageLinksFilter, new ListItem[] {
+      new ListItem(ListItem.TYPE_INFO, 0, 0, R.string.ChatMessagesFilterInfo),
+      new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_chatMessageLinksFilterInternal, 0, R.string.ChatMessagesFilterInternal, R.id.btn_chatMessageLinksFilterInternal, Settings.instance().isChatFilterEnabled(chatId, Settings.FILTER_TYPE_LINKS_INTERNAL)),
+      new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_chatMessageLinksFilterExternal, 0, R.string.ChatMessagesFilterExternal, R.id.btn_chatMessageLinksFilterExternal, Settings.instance().isChatFilterEnabled(chatId, Settings.FILTER_TYPE_LINKS_EXTERNAL))
+    }, (id, result) -> {
+      Settings.instance().setChatLinksFilterEnabled(chatId, Settings.FILTER_TYPE_LINKS_INTERNAL,
+        result.get(R.id.btn_chatMessageLinksFilterInternal) == R.id.btn_chatMessageLinksFilterInternal);
+      Settings.instance().setChatLinksFilterEnabled(chatId, Settings.FILTER_TYPE_LINKS_EXTERNAL,
+        result.get(R.id.btn_chatMessageLinksFilterExternal) == R.id.btn_chatMessageLinksFilterExternal);
+      tdlib.messagesFilterProvider().updateChatCustomFilterSettings(chatId);
+      if (after != null) {
+        after.run();
+      }
+    });
+  }
 }

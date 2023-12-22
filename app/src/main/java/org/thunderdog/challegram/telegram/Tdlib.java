@@ -44,6 +44,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.chat.TdlibSingleUnreadReactionsManager;
+import org.thunderdog.challegram.component.chat.filter.MessagesFilterProvider;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
@@ -453,6 +454,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private final TdlibFileGenerationManager fileGenerationManager;
   private final TdlibSingleUnreadReactionsManager unreadReactionsManager;
   private final TdlibMessageViewer messageViewer;
+  private final MessagesFilterProvider messagesFilterProvider;
 
   private final HashSet<Long> channels = new HashSet<>();
   private final LongSparseLongArray accessibleChatTimers = new LongSparseLongArray();
@@ -660,6 +662,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       Log.v("INITIALIZATION: Tdlib.messageViewer -> %dms", SystemClock.uptimeMillis() - ms);
       ms = SystemClock.uptimeMillis();
     }
+    this.messagesFilterProvider = new MessagesFilterProvider(this);
     this.unreadReactionsManager = new TdlibSingleUnreadReactionsManager(this);
     this.applicationConfigJson = settings().getApplicationConfig();
     if (!StringUtils.isEmpty(applicationConfigJson)) {
@@ -2324,6 +2327,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   public TdlibListeners listeners () {
     return listeners;
+  }
+
+  public MessagesFilterProvider messagesFilterProvider() {
+    return messagesFilterProvider;
   }
 
   public TdlibStatusManager status () {

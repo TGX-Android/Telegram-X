@@ -401,6 +401,8 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_chatBackground, 0, R.string.Wallpaper));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_chatFontSize, 0, R.string.TextSize));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_messageFilterSettings, 0, R.string.MessagesFilter));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
       items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.ColorTheme));
@@ -1250,6 +1252,9 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
     } else if (viewId == R.id.btn_chatFontSize) {
       MessagesController controller = new MessagesController(context, tdlib);
       controller.setArguments(new MessagesController.Arguments(MessagesController.PREVIEW_MODE_FONT_SIZE, null, null));
+      navigateTo(controller);
+    } else if (viewId == R.id.btn_messageFilterSettings) {
+      SettingsMessagesFilterController controller = new SettingsMessagesFilterController(context, tdlib);
       navigateTo(controller);
     } else if (viewId == R.id.btn_chatBackground) {
       if (!context().permissions().requestReadExternalStorage(Permissions.ReadType.IMAGES, grantType ->

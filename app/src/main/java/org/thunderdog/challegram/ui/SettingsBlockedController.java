@@ -221,7 +221,7 @@ public class SettingsBlockedController extends RecyclerViewController<TdApi.Bloc
       }
     };
     buildCells();
-    ViewSupport.setThemedBackground(recyclerView, ColorId.filling, this);
+    // ViewSupport.setThemedBackground(recyclerView, ColorId.filling, this);
     RemoveHelper.attach(recyclerView, new RemoveHelper.Callback() {
       @Override
       public boolean canRemove (RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, int position) {
