@@ -531,11 +531,6 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
   }
 
   @Override
-  public void onUserStatusChanged (long userId, TdApi.UserStatus status, boolean uiOnly) {
-
-  }
-
-  @Override
   public void onBlur () {
     super.onBlur();
     saveChanges();
