@@ -468,11 +468,10 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
     });
   }
 
+  private long subscribedToUserId;
+
   @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
-    tdlib.cache().subscribeToUserUpdates(tdlib.myUserId(), this);
-
-
     adapter = new SettingsAdapter(this) {
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
@@ -518,6 +517,9 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
         }
       }
     }));
+
+    subscribedToUserId = tdlib.myUserId();
+    tdlib.cache().addUserDataListener(subscribedToUserId, this);
     tdlib.listeners().subscribeToPrivacyUpdates(this);
   }
 
