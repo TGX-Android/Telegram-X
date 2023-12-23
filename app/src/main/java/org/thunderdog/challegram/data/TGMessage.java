@@ -5617,7 +5617,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean allowInteraction () {
-    return !isEventLog() && !isThreadHeader();
+    return !isFakeMessage() && !isEventLog() && !isThreadHeader();
   }
 
   public boolean canReplyTo () {
