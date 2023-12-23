@@ -268,13 +268,13 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   public void getInviteText (@Nullable final RunnableData<TdApi.Text> callback) {
     getDownloadUrl(httpUrl -> {
       if (callback != null) {
-        String text = Lang.getString(R.string.InviteText, BuildConfig.PROJECT_NAME, httpUrl);
+        String text = Lang.getString(R.string.InviteText, BuildConfig.PROJECT_NAME, httpUrl.url);
         callback.runWithData(new TdApi.Text(text));
       }
     });
   }
 
-  private AppInstallationUtil.DownloadUrl toDownloadUrl (@Nullable TdApi.HttpUrl url) {
+  private @NonNull AppInstallationUtil.DownloadUrl toDownloadUrl (@Nullable TdApi.HttpUrl url) {
     if (url != null && tdlib.hasUrgentInAppUpdate()) {
       return new AppInstallationUtil.DownloadUrl(AppInstallationUtil.InstallerId.UNKNOWN, url.url);
     }
