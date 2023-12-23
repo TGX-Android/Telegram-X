@@ -252,7 +252,8 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
       return sendersPreFiltered.toArray(new TdApi.MessageSender[0]);
     }
 
-    return ArrayUtils.filter(sendersPreFiltered, (item) -> parent.matchesReactionSenderAvatarFilter(reaction, item)).toArray(new TdApi.MessageSender[0]);
+    final TdApi.FormattedText msgText = parent.getMessageText();
+    return ArrayUtils.filter(sendersPreFiltered, (item) -> parent.matchesReactionSenderAvatarFilter(msgText, reaction, item)).toArray(new TdApi.MessageSender[0]);
   }
 
   public void requestAvatarFiles (ComplexReceiver complexReceiver, boolean isUpdate) {

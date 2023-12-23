@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.ui;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -34,14 +33,15 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.emoji.EmojiFilter;
-import org.thunderdog.challegram.filegen.SimpleGenerationInfo;
-import org.thunderdog.challegram.loader.ImageFile;
+import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
+import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.navigation.ActivityResultHandler;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.EditHeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
@@ -51,7 +51,6 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.CharacterStyleFilter;
-import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.v.EditText;
 import org.thunderdog.challegram.widget.EmojiEditText;
 import org.thunderdog.challegram.widget.NoScrollTextView;
@@ -61,9 +60,12 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.TdConstants;
 
-public class CreateChannelController extends ViewController<String[]> implements EditHeaderView.ReadyCallback, OptionDelegate, ActivityResultHandler, TextView.OnEditorActionListener {
+public class CreateChannelController extends ViewController<String[]> implements EditHeaderView.ReadyCallback, ActivityResultHandler, TextView.OnEditorActionListener {
+  private final TdlibUi.AvatarPickerManager avatarPickerManager;
+
   public CreateChannelController (Context context, Tdlib tdlib) {
     super(context, tdlib);
+    avatarPickerManager = new TdlibUi.AvatarPickerManager(this);
   }
 
   private EditText descView;
@@ -144,6 +146,9 @@ public class CreateChannelController extends ViewController<String[]> implements
 
     headerCell = new EditHeaderView(context, this);
     headerCell.setInputOptions(R.string.ChannelName, InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+    headerCell.setOnPhotoClickListener(() -> {
+      avatarPickerManager.showMenuForNonCreatedChat(headerCell, true);
+    });
     headerCell.setNextField(R.id.edit_description);
     headerCell.setReadyCallback(this);
     setLockFocusView(headerCell.getInputView());
@@ -218,16 +223,8 @@ public class CreateChannelController extends ViewController<String[]> implements
   }
 
   @Override
-  public boolean onOptionItemPressed (View optionItemView, int id) {
-    tdlib.ui().handlePhotoOption(context, id, null, headerCell);
-    return true;
-  }
-
-  @Override
   public void onActivityResult (int requestCode, int resultCode, Intent data) {
-    if (resultCode == Activity.RESULT_OK) {
-      tdlib.ui().handlePhotoChange(requestCode, data, headerCell);
-    }
+    avatarPickerManager.handleActivityResult(requestCode, resultCode, data, TdlibUi.AvatarPickerManager.MODE_NON_CREATED, null, headerCell);
   }
 
   @Override
@@ -251,14 +248,6 @@ public class CreateChannelController extends ViewController<String[]> implements
     return descView.getText().toString();
   }
 
-  public String getPhoto () {
-    return headerCell.getPhoto();
-  }
-
-  public ImageFile getImageFile () {
-    return headerCell.getImageFile();
-  }
-
   public void setDescription (String description) {
     if (description != null) {
       descView.setText(description);
@@ -267,8 +256,7 @@ public class CreateChannelController extends ViewController<String[]> implements
   }
 
   private boolean isCreating;
-  private String currentPhoto;
-  private ImageFile currentImageFile;
+  private ImageGalleryFile currentImageFile;
 
   private void toggleCreating () {
     isCreating = !isCreating;
@@ -288,10 +276,9 @@ public class CreateChannelController extends ViewController<String[]> implements
 
     toggleCreating();
 
-    currentPhoto = getPhoto();
-    currentImageFile = getImageFile();
+    currentImageFile = headerCell.getImageFile();
 
-    UI.showProgress(Lang.getString(R.string.ProgressCreateChannel), null, 300l);
+    UI.showProgress(Lang.getString(R.string.ProgressCreateChannel), null, 300L);
 
     tdlib.send(new TdApi.CreateNewSupergroupChat(title, false, true, desc, null, 0, false), (remoteChat, error) -> {
       UI.hideProgress();
@@ -301,8 +288,8 @@ public class CreateChannelController extends ViewController<String[]> implements
       } else {
         long chatId = remoteChat.id;
         chat = tdlib.chatStrict(chatId);
-        if (currentPhoto != null) {
-          tdlib.client().send(new TdApi.SetChatPhoto(chat.id, new TdApi.InputChatPhotoStatic(new TdApi.InputFileGenerated(currentPhoto, SimpleGenerationInfo.makeConversion(currentPhoto), 0))), tdlib.okHandler());
+        if (currentImageFile != null) {
+          tdlib.client().send(new TdApi.SetChatPhoto(chat.id, new TdApi.InputChatPhotoStatic(PhotoGenerationInfo.newFile(currentImageFile))), tdlib.okHandler());
         }
       }
       UI.post(() -> channelCreated(chat));

@@ -456,6 +456,10 @@
 
     <meta-data
       android:name="com.samsung.android.icon_container.has_icon_container"
-      android:value="@bool/com_samsung_android_icon_container_has_icon_container"/>
+      android:value="@bool/com_samsung_android_icon_container_has_icon_container" />
+
+    <meta-data
+      android:name="com.google.android.gms.car.application"
+      android:resource="@xml/automotive_app_desc"/>
   </application>
 </manifest>

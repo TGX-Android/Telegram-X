@@ -120,7 +120,7 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
       }
 
       @Override
-      public void onMessageClick (PinnedMessagesBar view, TdApi.Message message, @Nullable TdApi.FormattedText quote) {
+      public void onMessageClick (PinnedMessagesBar view, TdApi.Message message, @Nullable TdApi.InputTextQuote quote) {
         if (callback != null) {
           callback.onMessageHighlightRequested(ReplyBarView.this, message, quote);
         }
@@ -249,7 +249,7 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
     setMessageInputContext(context);
   }
 
-  public void setReplyTo (TdApi.Message msg, @Nullable TdApi.FormattedText quote) {
+  public void setReplyTo (TdApi.Message msg, @Nullable TdApi.InputTextQuote quote) {
     pinnedMessagesBar.setMessage(tdlib, msg, quote);
     setLinkPreviewToggleVisible(false);
     setMessageInputContext(null);
@@ -281,7 +281,7 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
 
   public interface Callback {
     void onDismissReplyBar (ReplyBarView view);
-    void onMessageHighlightRequested (ReplyBarView view, TdApi.Message message, @Nullable TdApi.FormattedText quote);
+    void onMessageHighlightRequested (ReplyBarView view, TdApi.Message message, @Nullable TdApi.InputTextQuote quote);
     void onSelectLinkPreviewUrl (ReplyBarView view, MessagesController.MessageInputContext messageContext, String url);
     boolean onRequestToggleShowAbove (ReplyBarView view, View buttonView, MessagesController.MessageInputContext messageContext);
     boolean onRequestToggleLargeMedia (ReplyBarView view, View buttonView, MessagesController.MessageInputContext messageContext, LinkPreview linkPreview);

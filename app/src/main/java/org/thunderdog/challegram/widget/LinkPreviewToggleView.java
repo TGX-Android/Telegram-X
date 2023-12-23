@@ -18,7 +18,9 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Path;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
@@ -30,13 +32,16 @@ import androidx.appcompat.widget.AppCompatImageView;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
+import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 
 import java.lang.annotation.Retention;
@@ -46,6 +51,7 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.MathUtils;
+import me.vkryl.core.lambda.RunnableData;
 
 public class LinkPreviewToggleView extends AppCompatImageView implements TooltipOverlayView.LocationProvider {
   private final BoolAnimator showAboveText = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
@@ -73,91 +79,89 @@ public class LinkPreviewToggleView extends AppCompatImageView implements Tooltip
     long now = SystemClock.uptimeMillis();
 
     Drawable topDrawable = Drawables.get(R.drawable.baseline_link_preview_top_layer_24);
-    Bitmap bitmap = drawableToBitmap(topDrawable);
+    toBitmap(topDrawable, bitmap -> {
+      int centerX = bitmap.getWidth() / 2;
 
-    int centerX = bitmap.getWidth() / 2;
+      int startTopY = -1, endTopY = -1, secondaryTopY = -1;
+      int prevColor = 0;
+      for (int y = 0; y < bitmap.getHeight(); y++) {
+        int color = bitmap.getPixel(centerX, y);
 
-    int startTopY = -1, endTopY = -1, secondaryTopY = -1;
-    int prevColor = 0;
-    for (int y = 0; y < bitmap.getHeight(); y++) {
-      int color = bitmap.getPixel(centerX, y);
-
-      boolean hadColor = Color.alpha(prevColor) != 0;
-      boolean hasColor = Color.alpha(color) != 0;
-      if (hadColor != hasColor) {
-        if (hasColor) {
-          if (startTopY == -1) {
-            startTopY = y;
-          } else if (secondaryTopY == -1) {
-            secondaryTopY = y;
-            break;
-          }
-        } else {
-          if (endTopY == -1) {
-            endTopY = y;
-          }
-        }
-      }
-
-      prevColor = color;
-    }
-
-    this.verticalLineSpacing = secondaryTopY - endTopY;
-    this.lineSize = endTopY - startTopY - 1;
-    this.verticalInset = startTopY;
-
-    prevColor = 0;
-
-    int startRightX = -1;
-    int endRightX = -1, secondaryRightX = -1;
-
-    for (int x = bitmap.getWidth() - 1; x >= 0; x--) {
-      int color = bitmap.getPixel(x, verticalInset);
-
-      boolean hadColor = Color.alpha(prevColor) != 0;
-      boolean hasColor = Color.alpha(color) != 0;
-
-      if (hadColor != hasColor) {
-        if (hasColor) {
-          if (startRightX == -1) {
-            startRightX = x;
-          } else if (secondaryRightX == -1) {
-            secondaryRightX = x;
-            break;
-          }
-        } else {
-          if (endRightX == -1) {
-            endRightX = x;
+        boolean hadColor = Color.alpha(prevColor) != 0;
+        boolean hasColor = Color.alpha(color) != 0;
+        if (hadColor != hasColor) {
+          if (hasColor) {
+            if (startTopY == -1) {
+              startTopY = y;
+            } else if (secondaryTopY == -1) {
+              secondaryTopY = y;
+              break;
+            }
+          } else {
+            if (endTopY == -1) {
+              endTopY = y;
+            }
           }
         }
+
+        prevColor = color;
       }
 
-      prevColor = color;
-    }
+      this.verticalLineSpacing = secondaryTopY - endTopY;
+      this.lineSize = endTopY - startTopY - 1;
+      this.verticalInset = startTopY;
 
-    needFallback = false;
-    if (startTopY == -1 || endTopY == -1 || secondaryTopY == -1) {
+      prevColor = 0;
+
+      int startRightX = -1;
+      int endRightX = -1, secondaryRightX = -1;
+
+      for (int x = bitmap.getWidth() - 1; x >= 0; x--) {
+        int color = bitmap.getPixel(x, verticalInset);
+
+        boolean hadColor = Color.alpha(prevColor) != 0;
+        boolean hasColor = Color.alpha(color) != 0;
+
+        if (hadColor != hasColor) {
+          if (hasColor) {
+            if (startRightX == -1) {
+              startRightX = x;
+            } else if (secondaryRightX == -1) {
+              secondaryRightX = x;
+              break;
+            }
+          } else {
+            if (endRightX == -1) {
+              endRightX = x;
+            }
+          }
+        }
+
+        prevColor = color;
+      }
+
+      needFallback = false;
+      if (startTopY == -1 || endTopY == -1 || secondaryTopY == -1) {
+        if (BuildConfig.DEBUG) {
+          throw new IllegalStateException();
+        }
+        needFallback = true;
+      }
+      if (startRightX == -1 || endRightX == -1 || secondaryRightX == -1) {
+        if (BuildConfig.DEBUG) {
+          throw new IllegalStateException();
+        }
+        needFallback = true;
+      }
+
+      this.horizontalInset = bitmap.getWidth() - startRightX - 1;
+      this.horizontalLineSpacing = endRightX - secondaryRightX;
+      this.rectWidth = startRightX - endRightX - 1;
+
       if (BuildConfig.DEBUG) {
-        throw new IllegalStateException();
+        Log.v("Measured icon in %dms", SystemClock.uptimeMillis() - now);
       }
-      needFallback = true;
-    }
-    if (startRightX == -1 || endRightX == -1 || secondaryRightX == -1) {
-      if (BuildConfig.DEBUG) {
-        throw new IllegalStateException();
-      }
-      needFallback = true;
-    }
-
-    this.horizontalInset = bitmap.getWidth() - startRightX - 1;
-    this.horizontalLineSpacing = endRightX - secondaryRightX;
-    this.rectWidth = startRightX - endRightX - 1;
-
-    bitmap.recycle();
-
-    if (BuildConfig.DEBUG) {
-      Log.v("Measured icon in %dms", SystemClock.uptimeMillis() - now);
-    }
+    });
   }
 
   public void addThemeListeners (ViewController<?> themeProvider) {
@@ -224,13 +228,13 @@ public class LinkPreviewToggleView extends AppCompatImageView implements Tooltip
     float minY = centerY - height / 2f + verticalInset + lineSize;
     float maxY = centerY + height / 2f - verticalInset - lineSize;
 
-    centerY += MathUtils.clamp(1f - showAboveText.getFloatValue()) * (height / 2f);
+    centerY += MathUtils.clamp(1f - showAboveText.getFloatValue()) * ((int) (height / 2) + (int) (height % 2) + Screen.dp(.5f));
 
-    float left = centerX - width / 2f;
-    float top = centerY - height / 2f;
+    final float left = centerX - width / 2f;
+    final float top = centerY - height / 2f;
 
-    float right = left + width;
-    float bottom = top + height / 2f;
+    final float right = left + width;
+    final float bottom = top + height / 2f;
 
     if (needFallback) {
       Drawables.draw(c, topDrawable, left, top, PorterDuffPaint.get(ColorId.icon));
@@ -243,77 +247,95 @@ public class LinkPreviewToggleView extends AppCompatImageView implements Tooltip
 
     float factor = mediaStateFactor.getFactor();
 
-    left += horizontalInset;
-    right -= horizontalInset;
-    top += verticalInset;
-    bottom -= verticalInset;
+    float cLeft = left, cTop = top, cRight = right, cBottom = bottom;
+    cLeft += horizontalInset;
+    cRight -= horizontalInset;
+    cTop += verticalInset;
+    cBottom -= verticalInset;
 
     int contentColor = Theme.textAccentColor();
 
     if (factor > 0f) {
-      float rectWidth = factor <= 1f ? this.rectWidth * factor : MathUtils.fromTo(this.rectWidth, right - (left + lineSize + horizontalLineSpacing), factor - 1f);
+      float rectWidth = factor <= 1f ? this.rectWidth * factor : MathUtils.fromTo(this.rectWidth, cRight - (cLeft + lineSize + horizontalLineSpacing), factor - 1f);
       c.drawRect(
-        right - rectWidth,
-        top,
-        right,
-        top + lineSize * 2 + verticalLineSpacing,
+        cRight - rectWidth,
+        cTop,
+        cRight,
+        cTop + lineSize * 2 + verticalLineSpacing,
         Paints.fillingPaint(contentColor)
       );
     }
 
-    float lineStartX = left + lineSize + horizontalLineSpacing;
+    float lineStartX = cLeft + lineSize + horizontalLineSpacing;
     float topLineEndX;
     if (factor <= 1f) {
-      topLineEndX = MathUtils.fromTo(right, right - rectWidth - horizontalLineSpacing, factor);
+      topLineEndX = MathUtils.fromTo(cRight, cRight - rectWidth - horizontalLineSpacing, factor);
     } else {
-      topLineEndX = MathUtils.fromTo(right - rectWidth - horizontalLineSpacing, lineStartX, factor - 1f);
+      topLineEndX = MathUtils.fromTo(cRight - rectWidth - horizontalLineSpacing, lineStartX, factor - 1f);
     }
-    float bottomLineEndX = MathUtils.fromTo(right - rectWidth - horizontalLineSpacing, right, hasMedia.getFloatValue());
+    float bottomLineEndX = MathUtils.fromTo(cRight - rectWidth - horizontalLineSpacing, cRight, hasMedia.getFloatValue());
 
     c.drawRect(
       lineStartX,
-      top,
+      cTop,
       topLineEndX,
-      top + lineSize,
+      cTop + lineSize,
       Paints.fillingPaint(contentColor)
     );
     c.drawRect(
       lineStartX,
-      top + lineSize + verticalLineSpacing,
+      cTop + lineSize + verticalLineSpacing,
       topLineEndX,
-      top + lineSize * 2 + verticalLineSpacing,
+      cTop + lineSize * 2 + verticalLineSpacing,
       Paints.fillingPaint(contentColor)
     );
     c.drawRect(
       lineStartX,
-      top + lineSize * 2 + verticalLineSpacing * 2,
+      cTop + lineSize * 2 + verticalLineSpacing * 2,
       bottomLineEndX,
-      top + lineSize * 3 + verticalLineSpacing * 2,
+      cTop + lineSize * 3 + verticalLineSpacing * 2,
       Paints.fillingPaint(contentColor)
     );
 
-    c.drawRect(left,
-      Math.max(top, minY),
-      left + lineSize,
-      Math.min(maxY, top + lineSize * 3 + verticalLineSpacing * 2),
-      Paints.fillingPaint(contentColor)
+    rebuildPath(cLeft,
+      cTop,
+      cLeft + lineSize,
+      cTop + lineSize * 3 + verticalLineSpacing * 2,
+      MathUtils.clamp(showAboveText.getFloatValue()),
+      MathUtils.clamp(1f - showAboveText.getFloatValue())
     );
+    c.drawPath(leftLinePath, Paints.fillingPaint(contentColor));
 
     /*if (BuildConfig.DEBUG) {
       Drawables.drawCentered(c, Drawables.get(R.drawable.baseline_link_preview_bg_24), getMeasuredWidth() / 2f, getMeasuredHeight() / 2f, Paints.getPorterDuffPaint(0xaaff0000));
     }*/
   }
 
-  private static Bitmap drawableToBitmap (Drawable drawable) {
-    Bitmap bitmap;
+  private final RectF leftLineRect = new RectF();
+  private float leftLineTopRadius, leftLineBottomRadius;
 
+  private void rebuildPath (float left, float top, float right, float bottom, float topRadiusFactor, float bottomRadiusFactor) {
+    if (U.setRect(leftLineRect, left, top, right, bottom) || leftLineTopRadius != topRadiusFactor || leftLineBottomRadius != bottomRadiusFactor) {
+      leftLinePath.reset();
+      leftLineTopRadius = topRadiusFactor;
+      leftLineBottomRadius = bottomRadiusFactor;
+      float radius = (right - left);
+      DrawAlgorithms.buildPath(leftLinePath, leftLineRect, radius * topRadiusFactor, 0, 0, radius * bottomRadiusFactor);
+    }
+  }
+
+  private final Path leftLinePath = new Path();
+
+  private static void toBitmap (Drawable drawable, RunnableData<Bitmap> callback) {
     if (drawable instanceof BitmapDrawable) {
       BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
-      if(bitmapDrawable.getBitmap() != null) {
-        return bitmapDrawable.getBitmap();
+      if (bitmapDrawable.getBitmap() != null) {
+        callback.runWithData(bitmapDrawable.getBitmap());
+        return;
       }
     }
 
+    Bitmap bitmap;
     if (drawable.getIntrinsicWidth() <= 0 || drawable.getIntrinsicHeight() <= 0) {
       bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888); // Single color bitmap will be created of 1x1 pixel
     } else {
@@ -323,6 +345,7 @@ public class LinkPreviewToggleView extends AppCompatImageView implements Tooltip
     Canvas canvas = new Canvas(bitmap);
     drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
     drawable.draw(canvas);
-    return bitmap;
+    callback.runWithData(bitmap);
+    bitmap.recycle();
   }
 }

@@ -1446,7 +1446,7 @@ public class RoundVideoRecorder {
     }
 
     private void didWriteData(File file, boolean last) {
-      if (videoConvertFirstWrite) {
+      if (videoConvertFirstWrite && !last) {
         videoConvertFirstWrite = false;
       } else if (last) {
         dispatchVideoRecordFinished(workingKey, file.length(), SystemClock.uptimeMillis() - recordStartTime, TimeUnit.MILLISECONDS);

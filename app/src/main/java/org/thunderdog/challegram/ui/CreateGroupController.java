@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.ui;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -35,7 +34,8 @@ import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGUser;
-import org.thunderdog.challegram.filegen.SimpleGenerationInfo;
+import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
+import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.navigation.ActivityResultHandler;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.EditHeaderView;
@@ -44,13 +44,13 @@ import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Size;
-import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.Unlockable;
 import org.thunderdog.challegram.widget.ListInfoView;
 
@@ -59,12 +59,15 @@ import java.util.ArrayList;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
 
-public class CreateGroupController extends ViewController<Void> implements EditHeaderView.ReadyCallback, OptionDelegate, Client.ResultHandler, Unlockable, ActivityResultHandler,
+public class CreateGroupController extends ViewController<Void> implements EditHeaderView.ReadyCallback, Client.ResultHandler, Unlockable, ActivityResultHandler,
   TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener {
+
+  private final TdlibUi.AvatarPickerManager avatarPickerManager;
   private ArrayList<TGUser> members;
 
   public CreateGroupController (Context context, Tdlib tdlib) {
     super(context, tdlib);
+    avatarPickerManager = new TdlibUi.AvatarPickerManager(this);
   }
 
   public void setMembers (ArrayList<TGUser> members) {
@@ -79,6 +82,9 @@ public class CreateGroupController extends ViewController<Void> implements EditH
   protected View onCreateView (Context context) {
     headerCell = new EditHeaderView(context, this);
     headerCell.setInputOptions(R.string.GroupName, InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+    headerCell.setOnPhotoClickListener(() -> {
+      avatarPickerManager.showMenuForNonCreatedChat(headerCell, false);
+    });
     headerCell.setImeOptions(EditorInfo.IME_ACTION_DONE);
     headerCell.setReadyCallback(this);
     setLockFocusView(headerCell.getInputView());
@@ -334,10 +340,9 @@ public class CreateGroupController extends ViewController<Void> implements EditH
 
   private void onUserClick (TGUser user) {
     pickedUser = user;
-    showOptions(null, new int[] {R.id.btn_deleteMember, R.id.btn_cancel}, new String[] {Lang.getString(R.string.GroupDontAdd), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24});
+    showOptions(null, new int[] {R.id.btn_deleteMember, R.id.btn_cancel}, new String[] {Lang.getString(R.string.GroupDontAdd), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, this::onOptionItemPressed);
   }
 
-  @Override
   public boolean onOptionItemPressed (View optionItemView, int id) {
     if (id == R.id.btn_deleteMember) {
       if (pickedUser != null) {
@@ -356,17 +361,13 @@ public class CreateGroupController extends ViewController<Void> implements EditH
           }
         }
       }
-    } else {
-      tdlib.ui().handlePhotoOption(context, id, null, headerCell);
     }
     return true;
   }
 
   @Override
   public void onActivityResult (int requestCode, int resultCode, Intent data) {
-    if (resultCode == Activity.RESULT_OK) {
-      tdlib.ui().handlePhotoChange(requestCode, data, headerCell);
-    }
+    avatarPickerManager.handleActivityResult(requestCode, resultCode, data, TdlibUi.AvatarPickerManager.MODE_NON_CREATED, null, headerCell);
   }
 
   @Override
@@ -382,7 +383,7 @@ public class CreateGroupController extends ViewController<Void> implements EditH
   }
 
   private boolean isCreating;
-  private String currentPhoto;
+  private ImageGalleryFile currentImageFile;
   private long[] currentMemberIds;
   private boolean currentIsChannel;
 
@@ -409,7 +410,7 @@ public class CreateGroupController extends ViewController<Void> implements EditH
 
     headerCell.setInputEnabled(false);
     isCreating = true;
-    currentPhoto = headerCell.getPhoto();
+    currentImageFile = headerCell.getImageFile();
 
     String title = headerCell.getInput();
 
@@ -462,8 +463,8 @@ public class CreateGroupController extends ViewController<Void> implements EditH
         if (currentIsChannel) {
           tdlib.client().send(new TdApi.AddChatMembers(chatId, currentMemberIds), this);
         }
-        if (currentPhoto != null) {
-          tdlib.client().send(new TdApi.SetChatPhoto(chatId, new TdApi.InputChatPhotoStatic(new TdApi.InputFileGenerated(currentPhoto, SimpleGenerationInfo.makeConversion(currentPhoto), 0))), this);
+        if (currentImageFile != null) {
+          tdlib.client().send(new TdApi.SetChatPhoto(chatId, new TdApi.InputChatPhotoStatic(PhotoGenerationInfo.newFile(currentImageFile))), this);
         }
         tdlib.ui().post(() -> {
           if (groupCreationCallback == null || !groupCreationCallback.onGroupCreated(this, (TdApi.Chat) object)) {

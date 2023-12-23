@@ -55,6 +55,7 @@ import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.collection.LongSparseIntArray;
+import me.vkryl.core.collection.LongSparseLongArray;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceIntMap;
@@ -125,6 +126,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
 
   private final HashMap<Long, TdApi.Supergroup> supergroups = new HashMap<>();
   private final HashMap<Long, TdApi.SupergroupFullInfo> supergroupsFulls = new HashMap<>();
+  private final LongSparseLongArray supergroupsFullsLastUpdateTime = new LongSparseLongArray();
   private final ReferenceList<SupergroupDataChangeListener> supergroupsGlobalListeners = new ReferenceList<>();
   private final ReferenceLongMap<SupergroupDataChangeListener> supergroupListeners = new ReferenceLongMap<>();
 
@@ -266,13 +268,13 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   public void getInviteText (@Nullable final RunnableData<TdApi.Text> callback) {
     getDownloadUrl(httpUrl -> {
       if (callback != null) {
-        String text = Lang.getString(R.string.InviteText, BuildConfig.PROJECT_NAME, httpUrl);
+        String text = Lang.getString(R.string.InviteText, BuildConfig.PROJECT_NAME, httpUrl.url);
         callback.runWithData(new TdApi.Text(text));
       }
     });
   }
 
-  private AppInstallationUtil.DownloadUrl toDownloadUrl (@Nullable TdApi.HttpUrl url) {
+  private @NonNull AppInstallationUtil.DownloadUrl toDownloadUrl (@Nullable TdApi.HttpUrl url) {
     if (url != null && tdlib.hasUrgentInAppUpdate()) {
       return new AppInstallationUtil.DownloadUrl(AppInstallationUtil.InstallerId.UNKNOWN, url.url);
     }
@@ -728,45 +730,45 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
 
   // Listeners
 
-  public void subscribeToAnyUpdates (Object any) {
-    if (any instanceof UserDataChangeListener) {
-      __putGlobalUserDataListener((UserDataChangeListener) any);
+  public void subscribeForGlobalUpdates (Object globalListener) {
+    if (globalListener instanceof UserDataChangeListener) {
+      __putGlobalUserDataListener((UserDataChangeListener) globalListener);
     }
-    if (any instanceof UserStatusChangeListener) {
-      __putGlobalStatusListener((UserStatusChangeListener) any);
+    if (globalListener instanceof UserStatusChangeListener) {
+      __putGlobalStatusListener((UserStatusChangeListener) globalListener);
     }
-    if (any instanceof BasicGroupDataChangeListener) {
-      putGlobalBasicGroupListener((BasicGroupDataChangeListener) any);
+    if (globalListener instanceof BasicGroupDataChangeListener) {
+      putGlobalBasicGroupListener((BasicGroupDataChangeListener) globalListener);
     }
-    if (any instanceof SupergroupDataChangeListener) {
-      putGlobalSupergroupListener((SupergroupDataChangeListener) any);
+    if (globalListener instanceof SupergroupDataChangeListener) {
+      putGlobalSupergroupListener((SupergroupDataChangeListener) globalListener);
     }
-    if (any instanceof SecretChatDataChangeListener) {
-      putGlobalSecretChatListener((SecretChatDataChangeListener) any);
+    if (globalListener instanceof SecretChatDataChangeListener) {
+      putGlobalSecretChatListener((SecretChatDataChangeListener) globalListener);
     }
-    if (any instanceof CallStateChangeListener) {
-      putGlobalCallListener((CallStateChangeListener) any);
+    if (globalListener instanceof CallStateChangeListener) {
+      putGlobalCallListener((CallStateChangeListener) globalListener);
     }
   }
 
-  public void unsubscribeFromAnyUpdates (Object any) {
-    if (any instanceof UserDataChangeListener) {
-      __deleteGlobalUserDataListener((UserDataChangeListener) any);
+  public void unsubscribeFromGlobalUpdates (Object globalListener) {
+    if (globalListener instanceof UserDataChangeListener) {
+      __deleteGlobalUserDataListener((UserDataChangeListener) globalListener);
     }
-    if (any instanceof UserStatusChangeListener) {
-      __deleteGlobalStatusListener((UserStatusChangeListener) any);
+    if (globalListener instanceof UserStatusChangeListener) {
+      __deleteGlobalStatusListener((UserStatusChangeListener) globalListener);
     }
-    if (any instanceof BasicGroupDataChangeListener) {
-      deleteGlobalBasicGroupListener((BasicGroupDataChangeListener) any);
+    if (globalListener instanceof BasicGroupDataChangeListener) {
+      deleteGlobalBasicGroupListener((BasicGroupDataChangeListener) globalListener);
     }
-    if (any instanceof SupergroupDataChangeListener) {
-      deleteGlobalSupergroupListener((SupergroupDataChangeListener) any);
+    if (globalListener instanceof SupergroupDataChangeListener) {
+      deleteGlobalSupergroupListener((SupergroupDataChangeListener) globalListener);
     }
-    if (any instanceof SecretChatDataChangeListener) {
-      deleteGlobalSecretChatListener((SecretChatDataChangeListener) any);
+    if (globalListener instanceof SecretChatDataChangeListener) {
+      deleteGlobalSecretChatListener((SecretChatDataChangeListener) globalListener);
     }
-    if (any instanceof CallStateChangeListener) {
-      deleteGlobalCallListener((CallStateChangeListener) any);
+    if (globalListener instanceof CallStateChangeListener) {
+      deleteGlobalCallListener((CallStateChangeListener) globalListener);
     }
   }
 
@@ -1284,6 +1286,19 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
       }
     }
     return result;
+  }
+
+  public long getSlowModeDelayExpiresIn (long supergroupId, TimeUnit timeUnit) {
+    synchronized (dataLock) {
+      final long lastUpdateTime = supergroupsFullsLastUpdateTime.get(supergroupId, 0);
+      final TdApi.SupergroupFullInfo supergroupFullInfo = supergroupsFulls.get(supergroupId);
+      if (supergroupFullInfo != null) {
+        final long delayExpiresInMillis = TimeUnit.SECONDS.toMillis((long) supergroupFullInfo.slowModeDelayExpiresIn);
+        return timeUnit.convert(Math.max(0, delayExpiresInMillis - (SystemClock.uptimeMillis() - lastUpdateTime)), TimeUnit.MILLISECONDS);
+      }
+    }
+
+    return 0;
   }
 
   public void supergroupFull (long supergroupId, RunnableData<TdApi.SupergroupFullInfo> callback) {
@@ -1898,6 +1913,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
 
   private boolean putSupergroupFull (long supergroupId, TdApi.SupergroupFullInfo supergroupFull) {
     supergroupsFulls.put(supergroupId, supergroupFull);
+    supergroupsFullsLastUpdateTime.put(supergroupId, SystemClock.uptimeMillis());
     return true;
   }
 

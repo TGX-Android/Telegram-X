@@ -7,6 +7,7 @@ import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.voip.annotation.CallNetworkType;
 
 import java.util.ArrayList;
@@ -21,11 +22,13 @@ public final class VoIPController extends VoIPInstance {
   private long nativeInst;
 
   public VoIPController (
+    @NonNull Tdlib tdlib,
+    @NonNull TdApi.Call call,
     @NonNull CallConfiguration configuration,
     @NonNull CallOptions options,
     @NonNull ConnectionStateListener stateListener
   ) {
-    super(configuration, options, stateListener);
+    super(tdlib, call, configuration, options, stateListener);
     nativeInst = nativeInit(configuration.persistentStateFilePath);
   }
 

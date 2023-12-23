@@ -18,7 +18,9 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Rect;
+import android.os.Build;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -30,6 +32,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
@@ -76,6 +79,12 @@ public class CropAreaView extends View implements FactorAnimator.Target {
 
   public void setRotateModeChangeListener (@Nullable RotateModeChangeListener rotateModeChangeListener) {
     this.rotateModeChangeListener = rotateModeChangeListener;
+  }
+
+  private boolean profilePhotoMode;   //
+
+  public void setProfilePhotoMode (boolean profilePhotoMode) {
+    this.profilePhotoMode = profilePhotoMode;
   }
 
   private static final int OUTER_LINE_COLOR = 0x99ffffff;
@@ -241,6 +250,7 @@ public class CropAreaView extends View implements FactorAnimator.Target {
 
   private final Rect srcRect = new Rect();
   private final Rect dstRect = new Rect();
+  private final Path roundClipPath = new Path();
 
   @Override
   protected void onDraw (Canvas c) {
@@ -290,6 +300,9 @@ public class CropAreaView extends View implements FactorAnimator.Target {
     int top = dstRect.top;
     int right = dstRect.right;
     int bottom = dstRect.bottom;
+    int centerX = dstRect.centerX();
+    int centerY = dstRect.centerY();
+    int radius = Math.min(dstRect.width(), dstRect.height()) / 2;
 
     int cornerWidth = Screen.dp(2f);
     int cornerHeight = Screen.dp(16f);
@@ -306,6 +319,20 @@ public class CropAreaView extends View implements FactorAnimator.Target {
     c.drawRect(left + cornerHeight - cornerWidth, top - normalWidth, right - cornerHeight + cornerWidth, top, Paints.fillingPaint(OUTER_LINE_COLOR));
     // bottom line
     c.drawRect(left + cornerHeight - cornerWidth, bottom, right - cornerHeight + cornerWidth, bottom + normalWidth, Paints.fillingPaint(OUTER_LINE_COLOR));
+
+    if (profilePhotoMode) {
+      roundClipPath.reset();
+      roundClipPath.addRect(dstRect.left, dstRect.top, dstRect.right, dstRect.bottom, Path.Direction.CW);
+      roundClipPath.addCircle(centerX, centerY, radius, Path.Direction.CCW);
+      roundClipPath.close();
+
+      final int s = Views.save(c);
+      c.clipPath(roundClipPath);
+      c.drawRect(dstRect, Paints.fillingPaint(ColorUtils.alphaColor(Color.alpha(overlayColor) / 300f, overlayColor)));
+      Views.restore(c, s);
+
+      c.drawCircle(centerX, centerY, radius, Paints.strokeSmallPaint(OUTER_LINE_COLOR));
+    }
 
     if (cornerHeight > 0) {
       float cornerAlpha = mode == MODE_NORMAL || mode == MODE_INVISIBLE ? 1f - activeFactor : 1f;
@@ -785,7 +812,7 @@ public class CropAreaView extends View implements FactorAnimator.Target {
     }
   }
 
-  private void normalizeProportion () {
+  private void normalizeProportion (boolean animated) {
     float heightProportion = getProportion();
     if (heightProportion == 0) {
       cancelPositionAnimator();
@@ -836,7 +863,11 @@ public class CropAreaView extends View implements FactorAnimator.Target {
       newRight = 1.0;
     }
 
-    animateArea(newLeft, newTop, newRight, newBottom, false, false);
+    if (animated) {
+      animateArea(newLeft, newTop, newRight, newBottom, false, false);
+    } else {
+      setArea(newLeft, newTop, newRight, newBottom, true);
+    }
   }
 
   public boolean resetArea (boolean forceAnimation, boolean useFastAnimation) {
@@ -903,11 +934,11 @@ public class CropAreaView extends View implements FactorAnimator.Target {
     return targetHeight;
   }
 
-  public void setFixedProportion (int big, int small) {
+  public void setFixedProportion (int big, int small, boolean animated) {
     if (this.proportionBig != big || this.proportionSmall != small) {
       this.proportionBig = big;
       this.proportionSmall = small;
-      normalizeProportion();
+      normalizeProportion(animated);
     }
   }
 

@@ -134,103 +134,103 @@ public class TdlibListeners {
   }
 
   @AnyThread
-  public void subscribeForAnyUpdates (Object any) {
+  public void subscribeForGlobalUpdates (Object globalListener) {
     synchronized (this) {
-      if (any instanceof MessageListener) {
-        messageListeners.add((MessageListener) any);
+      if (globalListener instanceof MessageListener) {
+        messageListeners.add((MessageListener) globalListener);
       }
-      if (any instanceof MessageEditListener) {
-        messageEditListeners.add((MessageEditListener) any);
+      if (globalListener instanceof MessageEditListener) {
+        messageEditListeners.add((MessageEditListener) globalListener);
       }
-      if (any instanceof ChatListener) {
-        chatListeners.add((ChatListener) any);
+      if (globalListener instanceof ChatListener) {
+        chatListeners.add((ChatListener) globalListener);
       }
-      if (any instanceof NotificationSettingsListener) {
-        settingsListeners.add((NotificationSettingsListener) any);
+      if (globalListener instanceof NotificationSettingsListener) {
+        settingsListeners.add((NotificationSettingsListener) globalListener);
       }
-      if (any instanceof StickersListener) {
-        stickersListeners.add((StickersListener) any);
+      if (globalListener instanceof StickersListener) {
+        stickersListeners.add((StickersListener) globalListener);
       }
-      if (any instanceof AnimationsListener) {
-        animationsListeners.add((AnimationsListener) any);
+      if (globalListener instanceof AnimationsListener) {
+        animationsListeners.add((AnimationsListener) globalListener);
       }
-      if (any instanceof ConnectionListener) {
-        connectionListeners.add((ConnectionListener) any);
+      if (globalListener instanceof ConnectionListener) {
+        connectionListeners.add((ConnectionListener) globalListener);
       }
-      if (any instanceof TdlibOptionListener) {
-        optionListeners.add((TdlibOptionListener) any);
+      if (globalListener instanceof TdlibOptionListener) {
+        optionListeners.add((TdlibOptionListener) globalListener);
       }
-      if (any instanceof CounterChangeListener) {
-        totalCountersListeners.add((CounterChangeListener) any);
+      if (globalListener instanceof CounterChangeListener) {
+        totalCountersListeners.add((CounterChangeListener) globalListener);
       }
-      if (any instanceof ChatsNearbyListener) {
-        chatsNearbyListeners.add((ChatsNearbyListener) any);
+      if (globalListener instanceof ChatsNearbyListener) {
+        chatsNearbyListeners.add((ChatsNearbyListener) globalListener);
       }
-      if (any instanceof AnimatedEmojiListener) {
-        animatedEmojiListeners.add((AnimatedEmojiListener) any);
+      if (globalListener instanceof AnimatedEmojiListener) {
+        animatedEmojiListeners.add((AnimatedEmojiListener) globalListener);
       }
-      if (any instanceof PrivacySettingsListener) {
-        privacySettingsListeners.add((PrivacySettingsListener) any);
+      if (globalListener instanceof PrivacySettingsListener) {
+        privacySettingsListeners.add((PrivacySettingsListener) globalListener);
       }
-      if (any instanceof PrivateCallListener) {
-        privateCallListeners.add((PrivateCallListener) any);
+      if (globalListener instanceof PrivateCallListener) {
+        privateCallListeners.add((PrivateCallListener) globalListener);
       }
-      if (any instanceof GroupCallListener) {
-        groupCallListeners.add((GroupCallListener) any);
+      if (globalListener instanceof GroupCallListener) {
+        groupCallListeners.add((GroupCallListener) globalListener);
       }
-      if (any instanceof SessionListener) {
-        sessionListeners.add((SessionListener) any);
+      if (globalListener instanceof SessionListener) {
+        sessionListeners.add((SessionListener) globalListener);
       }
     }
   }
 
   @AnyThread
-  public void unsubscribeFromAnyUpdates (Object any) {
+  public void unsubscribeFromGlobalUpdates (Object globalListener) {
     synchronized (this) {
-      if (any instanceof MessageListener) {
-        messageListeners.remove((MessageListener) any);
+      if (globalListener instanceof MessageListener) {
+        messageListeners.remove((MessageListener) globalListener);
       }
-      if (any instanceof MessageEditListener) {
-        messageEditListeners.remove((MessageEditListener) any);
+      if (globalListener instanceof MessageEditListener) {
+        messageEditListeners.remove((MessageEditListener) globalListener);
       }
-      if (any instanceof ChatListener) {
-        chatListeners.remove((ChatListener) any);
+      if (globalListener instanceof ChatListener) {
+        chatListeners.remove((ChatListener) globalListener);
       }
-      if (any instanceof NotificationSettingsListener) {
-        settingsListeners.remove((NotificationSettingsListener) any);
+      if (globalListener instanceof NotificationSettingsListener) {
+        settingsListeners.remove((NotificationSettingsListener) globalListener);
       }
-      if (any instanceof StickersListener) {
-        stickersListeners.remove((StickersListener) any);
+      if (globalListener instanceof StickersListener) {
+        stickersListeners.remove((StickersListener) globalListener);
       }
-      if (any instanceof StickersListener) {
-        animationsListeners.remove((AnimationsListener) any);
+      if (globalListener instanceof StickersListener) {
+        animationsListeners.remove((AnimationsListener) globalListener);
       }
-      if (any instanceof ConnectionListener) {
-        connectionListeners.remove((ConnectionListener) any);
+      if (globalListener instanceof ConnectionListener) {
+        connectionListeners.remove((ConnectionListener) globalListener);
       }
-      if (any instanceof TdlibOptionListener) {
-        optionListeners.remove((TdlibOptionListener) any);
+      if (globalListener instanceof TdlibOptionListener) {
+        optionListeners.remove((TdlibOptionListener) globalListener);
       }
-      if (any instanceof CounterChangeListener) {
-        totalCountersListeners.remove((CounterChangeListener) any);
+      if (globalListener instanceof CounterChangeListener) {
+        totalCountersListeners.remove((CounterChangeListener) globalListener);
       }
-      if (any instanceof ChatsNearbyListener) {
-        chatsNearbyListeners.remove((ChatsNearbyListener) any);
+      if (globalListener instanceof ChatsNearbyListener) {
+        chatsNearbyListeners.remove((ChatsNearbyListener) globalListener);
       }
-      if (any instanceof AnimatedEmojiListener) {
-        animatedEmojiListeners.remove((AnimatedEmojiListener) any);
+      if (globalListener instanceof AnimatedEmojiListener) {
+        animatedEmojiListeners.remove((AnimatedEmojiListener) globalListener);
       }
-      if (any instanceof PrivacySettingsListener) {
-        privacySettingsListeners.remove((PrivacySettingsListener) any);
+      if (globalListener instanceof PrivacySettingsListener) {
+        privacySettingsListeners.remove((PrivacySettingsListener) globalListener);
       }
-      if (any instanceof PrivateCallListener) {
-        privateCallListeners.remove((PrivateCallListener) any);
+      if (globalListener instanceof PrivateCallListener) {
+        privateCallListeners.remove((PrivateCallListener) globalListener);
       }
-      if (any instanceof GroupCallListener) {
-        groupCallListeners.remove((GroupCallListener) any);
+      if (globalListener instanceof GroupCallListener) {
+        groupCallListeners.remove((GroupCallListener) globalListener);
       }
-      if (any instanceof SessionListener) {
-        sessionListeners.remove((SessionListener) any);
+      if (globalListener instanceof SessionListener) {
+        sessionListeners.remove((SessionListener) globalListener);
       }
     }
   }
@@ -1404,48 +1404,37 @@ public class TdlibListeners {
 
   // updateChatVoiceChat
 
-  private static void updateChatVideoChat (long chatId, TdApi.VideoChat voiceChat, @Nullable Iterator<ChatListener> list) {
-    if (list != null) {
-      while (list.hasNext()) {
-        list.next().onChatVideoChatChanged(chatId, voiceChat);
-      }
-    }
-  }
-
   void updateChatVideoChat (TdApi.UpdateChatVideoChat update) {
-    updateChatVideoChat(update.chatId, update.videoChat, chatListeners.iterator());
-    updateChatVideoChat(update.chatId, update.videoChat, specificChatListeners.iterator(update.chatId));
+    runChatUpdate(update.chatId, listener -> {
+      listener.onChatVideoChatChanged(update.chatId, update.videoChat);
+    });
   }
 
   // updateForumTopicInfo
 
   void updateForumTopicInfo (TdApi.UpdateForumTopicInfo update) {
-    updateForumTopicInfo(update.chatId, update.info, chatListeners.iterator());
-    updateForumTopicInfo(update.chatId, update.info, specificChatListeners.iterator(update.chatId));
-    updateForumTopicInfo(update.chatId, update.info, specificForumTopicListeners.iterator(update.chatId + "_" + update.info.messageThreadId));
+    runChatUpdate(update.chatId, listener -> {
+      listener.onForumTopicInfoChanged(update.chatId, update.info);
+    });
+    runUpdate(specificForumTopicListeners.iterator(update.chatId + "_" + update.info.messageThreadId), listener -> {
+      listener.onForumTopicInfoChanged(update.chatId, update.info);
+    });
   }
 
-  private static void updateForumTopicInfo (long chatId, TdApi.ForumTopicInfo info, @Nullable Iterator<? extends ForumTopicInfoListener> list) {
-    if (list != null) {
-      while (list.hasNext()) {
-        list.next().onForumTopicInfoChanged(chatId, info);
-      }
-    }
+  // updateChatViewAsTopics
+
+  void updateChatViewAsTopics (TdApi.UpdateChatViewAsTopics update) {
+    runChatUpdate(update.chatId, listener -> {
+      listener.onChatViewAsTopics(update.chatId, update.viewAsTopics);
+    });
   }
 
   // updateChatPendingJoinRequests
 
-  private static void updateChatPendingJoinRequests (long chatId, TdApi.ChatJoinRequestsInfo pendingJoinRequests, @Nullable Iterator<ChatListener> list) {
-    if (list != null) {
-      while (list.hasNext()) {
-        list.next().onChatPendingJoinRequestsChanged(chatId, pendingJoinRequests);
-      }
-    }
-  }
-
   void updateChatPendingJoinRequests (TdApi.UpdateChatPendingJoinRequests update) {
-    updateChatPendingJoinRequests(update.chatId, update.pendingJoinRequests, chatListeners.iterator());
-    updateChatPendingJoinRequests(update.chatId, update.pendingJoinRequests, specificChatListeners.iterator(update.chatId));
+    runChatUpdate(update.chatId, listener -> {
+      listener.onChatPendingJoinRequestsChanged(update.chatId, update.pendingJoinRequests);
+    });
   }
 
   // updateUsersNearby
@@ -1464,17 +1453,10 @@ public class TdlibListeners {
 
   // updateChatIsMarkedAsUnread
 
-  private static void updateChatIsMarkedAsUnread (long chatId, boolean isMarkedAsUnread, @Nullable Iterator<ChatListener> list) {
-    if (list != null) {
-      while (list.hasNext()) {
-        list.next().onChatMarkedAsUnread(chatId, isMarkedAsUnread);
-      }
-    }
-  }
-
   void updateChatIsMarkedAsUnread (TdApi.UpdateChatIsMarkedAsUnread update) {
-    updateChatIsMarkedAsUnread(update.chatId, update.isMarkedAsUnread, chatListeners.iterator());
-    updateChatIsMarkedAsUnread(update.chatId, update.isMarkedAsUnread, specificChatListeners.iterator(update.chatId));
+    runChatUpdate(update.chatId, listener -> {
+      listener.onChatMarkedAsUnread(update.chatId, update.isMarkedAsUnread);
+    });
   }
 
   // updateChatBackground
@@ -1503,17 +1485,10 @@ public class TdlibListeners {
 
   // updateChatIsTranslatable
 
-  private static void updateChatIsTranslatable (long chatId, boolean isTranslatable, @Nullable Iterator<ChatListener> list) {
-    if (list != null) {
-      while (list.hasNext()) {
-        list.next().onChatIsTranslatableChanged(chatId, isTranslatable);
-      }
-    }
-  }
-
   void updateChatIsTranslatable (TdApi.UpdateChatIsTranslatable update) {
-    updateChatIsTranslatable(update.chatId, update.isTranslatable, chatListeners.iterator());
-    updateChatIsTranslatable(update.chatId, update.isTranslatable, specificChatListeners.iterator(update.chatId));
+    runChatUpdate(update.chatId, listener -> {
+      listener.onChatIsTranslatableChanged(update.chatId, update.isTranslatable);
+    });
   }
 
   // updateChatIsBlocked
@@ -1527,23 +1502,17 @@ public class TdlibListeners {
   }
 
   void updateChatBlockList (TdApi.UpdateChatBlockList update) {
-    updateChatBlockList(update.chatId, update.blockList, chatListeners.iterator());
-    updateChatBlockList(update.chatId, update.blockList, specificChatListeners.iterator(update.chatId));
+    runChatUpdate(update.chatId, listener -> {
+      listener.onChatBlockListChanged(update.chatId, update.blockList);
+    });
   }
 
   // updateChatClientDataChanged
 
-  private static void updateChatClientDataChanged (long chatId, String clientData, @Nullable Iterator<ChatListener> list) {
-    if (list != null) {
-      while (list.hasNext()) {
-        list.next().onChatClientDataChanged(chatId, clientData);
-      }
-    }
-  }
-
   void updateChatClientDataChanged (long chatId, String newClientData) {
-    updateChatClientDataChanged(chatId, newClientData, chatListeners.iterator());
-    updateChatClientDataChanged(chatId, newClientData, specificChatListeners.iterator(chatId));
+    runChatUpdate(chatId, listener -> {
+      listener.onChatClientDataChanged(chatId, newClientData);
+    });
   }
 
   // updateNotificationSettings
@@ -1859,6 +1828,12 @@ public class TdlibListeners {
   void updateAccentColors (TdApi.UpdateAccentColors update) {
     for (TdlibOptionListener listener : optionListeners) {
       listener.onAccentColorsChanged();
+    }
+  }
+
+  void updateProfileAccentColors (TdApi.UpdateProfileAccentColors update, boolean listChanged) {
+    for (TdlibOptionListener listener : optionListeners) {
+      listener.onProfileAccentColorsChanged(listChanged);
     }
   }
 

@@ -1050,11 +1050,12 @@ public class TD {
       case TdApi.MessageDice.CONSTRUCTOR:
       case TdApi.MessagePremiumGiveaway.CONSTRUCTOR:
       case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
-      case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR: {
+      case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR:
+      case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR: {
         return false;
       }
       default: {
-        Td.assertMessageContent_ea2cfacf();
+        Td.assertMessageContent_afad899a();
       }
     }
     return true;
@@ -1954,8 +1955,8 @@ public class TD {
       "",
       new TdApi.UserStatusEmpty(),
       null,
-      TdlibAccentColor.defaultAccentColorIdForUserId(userId),
-      0,
+      TdlibAccentColor.defaultAccentColorIdForUserId(userId), 0,
+      0, 0,
       null,
       false,
       false,
@@ -2797,48 +2798,6 @@ public class TD {
   public static boolean matchHashtag (char c) {
     final int type = Character.getType(c);
     return type != Character.SPACE_SEPARATOR && c != '#';
-  }
-
-  /*public static boolean hasWritePermission (TdApi.Chat chat) {
-    if (chat == null) {
-      return false;
-    }
-    switch (chat.type.getConstructor()) {
-      case TdApi.ChatTypeSupergroup.CONSTRUCTOR: {
-        TdApi.Supergroup channel = TdlibCache.instance().getSupergroup(TD.getChatSupergroupId(chat));
-        return hasWritePermission(channel);
-      }
-      case TdApi.ChatTypeBasicGroup.CONSTRUCTOR: {
-        TdApi.BasicGroup group = TdlibCache.instance().getGroup(TD.getChatBasicGroupId(chat));
-        return hasWritePermission(group);
-      }
-      case TdApi.ChatTypePrivate.CONSTRUCTOR: {
-        TdApi.User user = TD.getUser(chat);
-        return user != null && user.type.getConstructor() != TdApi.UserTypeDeleted.CONSTRUCTOR && user.type.getConstructor() != TdApi.UserTypeUnknown.CONSTRUCTOR;
-      }
-      case TdApi.ChatTypeSecret.CONSTRUCTOR: {
-        TdApi.SecretChat secretChat = TD.getSecretChat(chat);
-        return secretChat != null && secretChat.state.getConstructor() == TdApi.SecretChatStateReady.CONSTRUCTOR;
-      }
-    }
-    return false;
-  }*/
-
-  public static boolean hasWritePermission (TdApi.Supergroup supergroup) {
-    if (supergroup != null) {
-      if (supergroup.isChannel) {
-        switch (supergroup.status.getConstructor()) {
-          case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
-            return true;
-          case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-            return ((TdApi.ChatMemberStatusAdministrator) supergroup.status).rights.canPostMessages;
-        }
-        return false;
-      } else {
-        return !isNotInChat(supergroup.status);
-      }
-    }
-    return false;
   }
 
   public static boolean isLocalLanguagePackId (String languagePackId) {
@@ -4529,7 +4488,7 @@ public class TD {
       //noinspection SwitchIntDef
       switch (type.getConstructor()) {
         case TdApi.TextEntityTypeMentionName.CONSTRUCTOR: {
-          TdApi.TextEntityTypeMentionName mentionName = (TdApi.TextEntityTypeMentionName) span;
+          TdApi.TextEntityTypeMentionName mentionName = (TdApi.TextEntityTypeMentionName) type;
           context.tdlib().ui().openPrivateProfile(context, mentionName.userId, null);
           break;
         }
@@ -4537,7 +4496,7 @@ public class TD {
           UI.openUrl(clickedText);
           break;
         case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR: {
-          TdApi.TextEntityTypeTextUrl textUrl = (TdApi.TextEntityTypeTextUrl) span;
+          TdApi.TextEntityTypeTextUrl textUrl = (TdApi.TextEntityTypeTextUrl) type;
           UI.openUrl(textUrl.url);
           break;
         }
@@ -5020,7 +4979,7 @@ public class TD {
       case TdApi.MessageExpiredVideo.CONSTRUCTOR:
         return true;
       default:
-        Td.assertMessageContent_ea2cfacf();
+        Td.assertMessageContent_afad899a();
         break;
     }
     return false;

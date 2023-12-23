@@ -133,7 +133,11 @@ public class SettingsBlockedController extends RecyclerViewController<TdApi.Bloc
   public void unblockSender (TGUser user) {
     showOptions(Lang.getStringBold(R.string.QUnblockX, tdlib.senderName(user.getSenderId())), new int[]{R.id.btn_unblockSender, R.id.btn_cancel}, new String[]{Lang.getString(R.string.Unblock), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_block_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_unblockSender) {
-        tdlib.blockSender(user.getSenderId(), null, tdlib.okHandler());
+        tdlib.blockSender(user.getSenderId(), null, tdlib.okHandler(() -> {
+          runOnUiThreadOptional(() -> {
+            removeSender(user.getSenderId());
+          });
+        }));
       }
       return true;
     });
@@ -217,7 +221,7 @@ public class SettingsBlockedController extends RecyclerViewController<TdApi.Bloc
       }
     };
     buildCells();
-    ViewSupport.setThemedBackground(recyclerView, ColorId.filling, this);
+    // ViewSupport.setThemedBackground(recyclerView, ColorId.filling, this);
     RemoveHelper.attach(recyclerView, new RemoveHelper.Callback() {
       @Override
       public boolean canRemove (RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, int position) {
@@ -261,14 +265,14 @@ public class SettingsBlockedController extends RecyclerViewController<TdApi.Bloc
       }
     });
     tdlib.cache().addGlobalUsersListener(this);
-    tdlib.listeners().subscribeForAnyUpdates(this);
+    tdlib.listeners().subscribeForGlobalUpdates(this);
   }
 
   @Override
   public void destroy () {
     super.destroy();
     tdlib.cache().removeGlobalUsersListener(this);
-    tdlib.listeners().unsubscribeFromAnyUpdates(this);
+    tdlib.listeners().unsubscribeFromGlobalUpdates(this);
   }
 
   private void buildCells () {
@@ -335,6 +339,13 @@ public class SettingsBlockedController extends RecyclerViewController<TdApi.Bloc
       if (i != -1) {
         ((LinearLayoutManager) getRecyclerView().getLayoutManager()).scrollToPositionWithOffset(i, top);
       }
+    }
+  }
+
+  private void removeSender (TdApi.MessageSender sender) {
+    int index = indexOfSender(ChatId.fromSender(sender));
+    if (index != -1) {
+      removeSender(index);
     }
   }
 

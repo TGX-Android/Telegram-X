@@ -121,10 +121,11 @@ public class TdlibSender {
         break;
       case TdApi.MessageSponsorTypePrivateChannel.CONSTRUCTOR:
       case TdApi.MessageSponsorTypeWebsite.CONSTRUCTOR:
+      case TdApi.MessageSponsorTypeWebApp.CONSTRUCTOR:
         sender = null;
         break;
       default:
-        Td.assertMessageSponsorType_ce9e3245();
+        Td.assertMessageSponsorType_cdabde01();
         throw Td.unsupported(sponsor.type);
     }
     if (sender != null) {

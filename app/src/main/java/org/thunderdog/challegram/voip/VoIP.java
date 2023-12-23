@@ -232,6 +232,8 @@ public class VoIP {
       }
       if (version.equals(libtgvoipVersion) && (Config.FORCE_DIRECT_TGVOIP || !ArrayUtils.contains(tgCallsVersions, version) || isForceDisabled(version))) {
         tgcalls = new VoIPController(
+          tdlib,
+          call,
           configuration,
           options,
           connectionStateListener
@@ -239,6 +241,8 @@ public class VoIP {
       } else if (ArrayUtils.contains(tgCallsVersions, version)) {
         try {
           tgcalls = new TgCallsController(
+            tdlib,
+            call,
             configuration,
             options,
             connectionStateListener,

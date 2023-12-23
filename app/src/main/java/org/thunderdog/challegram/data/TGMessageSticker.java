@@ -91,13 +91,13 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     public boolean needThemedColorFilter;
 
     public Representation (@NonNull TdApi.Sticker sticker, int fitzpatrickType, boolean allowNoLoop, boolean forcePlayOnce) {
-      this(sticker.id, sticker.emoji, sticker, fitzpatrickType, allowNoLoop, forcePlayOnce);
+      this(sticker.id, sticker.emoji, Emoji.instance().getEmojiInfo(sticker.emoji), sticker, fitzpatrickType, allowNoLoop, forcePlayOnce);
     }
 
-    public Representation (long stickerId, String emoji, @Nullable TdApi.Sticker sticker, int fitzpatrickType, boolean allowNoLoop, boolean forcePlayOnce) {
+    public Representation (long stickerId, String emoji, @Nullable EmojiInfo info, @Nullable TdApi.Sticker sticker, int fitzpatrickType, boolean allowNoLoop, boolean forcePlayOnce) {
       this.stickerId = stickerId;
       this.emoji = emoji;
-      this.emojiInfo = stickerId == 0 ? Emoji.instance().getEmojiInfo(emoji) : null;
+      this.emojiInfo = stickerId == 0 ? info : null;
       setSticker(sticker, fitzpatrickType, allowNoLoop, forcePlayOnce);
     }
 
@@ -452,11 +452,11 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     this.representation = new ArrayList<>();
     this.multiEmojiLayout = NonBubbleEmojiLayout.create(text);
     if (multiEmojiLayout != null) {
-      for (NonBubbleEmojiLayout.Item emojiR: multiEmojiLayout.items) {
+      for (NonBubbleEmojiLayout.Item emojiR : multiEmojiLayout.items) {
         if (emojiR.type == NonBubbleEmojiLayout.Item.EMOJI) {
           TdlibEmojiManager.Entry entry = emojiR.customEmojiId != 0 ?
             tdlib.emoji().findOrPostponeRequest(emojiR.customEmojiId, this) : null;
-          representation.add(new Representation(emojiR.customEmojiId, emojiR.emoji, entry != null ? entry.value : null, 0, true, false));
+          representation.add(new Representation(emojiR.customEmojiId, emojiR.emoji, emojiR.info, entry != null ? entry.value : null, 0, true, false));
         }
       }
       tdlib.emoji().performPostponedRequests();

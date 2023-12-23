@@ -178,7 +178,7 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
       }
     });
 
-    tdlib.listeners().subscribeForAnyUpdates(this);
+    tdlib.listeners().subscribeForGlobalUpdates(this);
   }
 
   private void openRightsScreen (long userId) {
@@ -201,7 +201,7 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
   @Override
   public void destroy () {
     super.destroy();
-    tdlib.listeners().unsubscribeFromAnyUpdates(this);
+    tdlib.listeners().unsubscribeFromGlobalUpdates(this);
   }
 
   @Override

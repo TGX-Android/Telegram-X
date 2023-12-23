@@ -80,6 +80,7 @@ import me.vkryl.android.util.SingleViewProvider;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 
@@ -647,6 +648,12 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     }
   }
 
+  private final BoolAnimator iconRotated = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L, false);
+
+  public void setIconRotated (boolean rotated, boolean animated) {
+    iconRotated.setValue(rotated, animated);
+  }
+
   private final BoolAnimator isEnabled = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 168l, true);
 
   public void setEnabledAnimated (boolean enabled) {
@@ -825,7 +832,19 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     int width = getMeasuredWidth();
     if (icon != null) {
       int x = (int) (rtl ? width - pIconLeft - icon.getMinimumWidth() : pIconLeft) + Screen.dp(24f) / 2 - icon.getMinimumWidth() / 2;
-      Drawables.draw(c, icon, x, pIconTop, lastIconResource == 0 ? Paints.getBitmapPaint() : iconColorId != 0 ? PorterDuffPaint.get(iconColorId) : Paints.getIconGrayPorterDuffPaint());
+      float y = pIconTop;
+      final boolean needRotateIcon = iconRotated.getFloatValue() > 0;
+      if (needRotateIcon) {
+        float cx = x + icon.getMinimumWidth() / 2f;
+        float cy = y + icon.getMinimumHeight() / 2f;
+        c.save();
+        c.rotate(MathUtils.fromTo(0, 90, iconRotated.getFloatValue()), cx, cy);
+      }
+      Drawables.draw(c, icon, x, y, lastIconResource == 0 ? Paints.getBitmapPaint() : iconColorId != 0 ? PorterDuffPaint.get(iconColorId) : Paints.getIconGrayPorterDuffPaint());
+      if (needRotateIcon) {
+        c.restore();
+      }
+
       // c.drawBitmap(icon, x, pIconTop, paint);
       if (overlay != null) {
         c.save();

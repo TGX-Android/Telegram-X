@@ -129,13 +129,13 @@ public class SharedChatsController extends SharedBaseController<DoubleTextWrappe
   @Override
   protected void onCreateView (Context context, MediaRecyclerView recyclerView, SettingsAdapter adapter) {
     super.onCreateView(context, recyclerView, adapter);
-    tdlib.cache().subscribeToAnyUpdates(this);
+    tdlib.cache().subscribeForGlobalUpdates(this);
   }
 
   @Override
   public void destroy () {
     super.destroy();
-    tdlib.cache().unsubscribeFromAnyUpdates(this);
+    tdlib.cache().unsubscribeFromGlobalUpdates(this);
   }
 
   // Updates for texts

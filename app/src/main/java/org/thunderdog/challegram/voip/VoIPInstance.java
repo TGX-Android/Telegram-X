@@ -19,19 +19,27 @@ import android.os.SystemClock;
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 
+import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.voip.annotation.CallNetworkType;
 import org.thunderdog.challegram.voip.annotation.CallState;
 
 import me.vkryl.core.lambda.Destroyable;
 
 public abstract class VoIPInstance implements Destroyable {
+  protected final Tdlib tdlib;
+  protected final TdApi.Call call;
   protected final CallConfiguration configuration;
   protected final CallOptions options;
   protected final @NonNull ConnectionStateListener connectionStateListener;
 
-  public VoIPInstance (@NonNull CallConfiguration configuration,
+  public VoIPInstance (@NonNull Tdlib tdlib,
+                       @NonNull TdApi.Call call,
+                       @NonNull CallConfiguration configuration,
                        @NonNull CallOptions options,
                        @NonNull ConnectionStateListener stateListener) {
+    this.tdlib = tdlib;
+    this.call = call;
     this.configuration = configuration;
     this.options = options;
     this.connectionStateListener = stateListener;
@@ -40,6 +48,14 @@ public abstract class VoIPInstance implements Destroyable {
   public abstract void initializeAndConnect ();
 
   // Getters
+
+  public final Tdlib tdlib () {
+    return tdlib;
+  }
+
+  public final @NonNull TdApi.Call getCall () {
+    return call;
+  }
 
   public final @NonNull CallConfiguration getConfiguration () {
     return configuration;
