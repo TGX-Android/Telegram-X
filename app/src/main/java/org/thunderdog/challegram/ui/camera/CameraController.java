@@ -52,7 +52,9 @@ import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.loader.ImageReader;
 import org.thunderdog.challegram.loader.ImageStrictCache;
+import org.thunderdog.challegram.mediaview.AvatarPickerMode;
 import org.thunderdog.challegram.mediaview.MediaSelectDelegate;
+import org.thunderdog.challegram.mediaview.MediaSendDelegate;
 import org.thunderdog.challegram.mediaview.MediaSpoilerSendDelegate;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.MediaViewDelegate;
@@ -127,6 +129,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
   private boolean qrCodeConfirmed;
   private int qrSubtitleRes;
   private boolean qrModeDebug;
+  private @AvatarPickerMode int avatarPickerMode = AvatarPickerMode.NONE;
 
   public void setQrListener (@Nullable QrCodeListener qrCodeListener, @StringRes int subtitleRes, boolean qrModeDebug) {
     this.qrCodeListener = qrCodeListener;
@@ -136,6 +139,16 @@ public class CameraController extends ViewController<Void> implements CameraDele
       rootLayout.setQrModeSubtitle(subtitleRes);
       rootLayout.setQrMode(true, qrModeDebug);
     }
+  }
+
+  public void setAvatarPickerMode (@AvatarPickerMode int avatarPickerMode) {
+    this.avatarPickerMode = avatarPickerMode;
+  }
+
+  public void setMediaEditorDelegates (MediaViewDelegate delegate, MediaSelectDelegate selectDelegate, MediaSendDelegate sendDelegate) {
+    this.delegate = delegate;
+    this.selectDelegate = selectDelegate;
+    this.sendDelegate = sendDelegate;
   }
 
   public void setMode (int mode, @Nullable ReadyListener readyListener) {
@@ -1455,6 +1468,10 @@ public class CameraController extends ViewController<Void> implements CameraDele
     return false;
   }
 
+  public MediaViewDelegate delegate;
+  public MediaSelectDelegate selectDelegate;
+  public MediaSendDelegate sendDelegate;
+
   @Override
   public void onMediaTaken (final ImageGalleryFile file) {
     boolean awaitLayout = applyFakeRotation();
@@ -1466,7 +1483,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
       MediaItem item = new MediaItem(context, tdlib, file);
       stack.set(item);
       MessagesController m = findOutputController();
-      MediaViewController.Args args = new MediaViewController.Args(CameraController.this, MediaViewController.MODE_GALLERY, new MediaViewDelegate() {
+      MediaViewController.Args args = MediaViewController.Args.fromGallery(CameraController.this, delegate != null ? delegate : new MediaViewDelegate() {
         @Override
         public MediaViewThumbLocation getTargetLocation (int indexInStack, MediaItem item) {
           MediaViewThumbLocation location = new MediaViewThumbLocation(0, 0, contentView.getMeasuredWidth(), contentView.getMeasuredHeight());
@@ -1479,7 +1496,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
         public void setMediaItemVisible (int index, MediaItem item, boolean isVisible) {
 
         }
-      }, new MediaSelectDelegate() {
+      }, selectDelegate != null ? selectDelegate : new MediaSelectDelegate() {
         @Override
         public boolean isMediaItemSelected (int index, MediaItem item) {
           return false;
@@ -1515,13 +1532,13 @@ public class CameraController extends ViewController<Void> implements CameraDele
         public ArrayList<ImageFile> getSelectedMediaItems (boolean copy) {
           return null;
         }
-      }, new MediaSpoilerSendDelegate() {
+      }, sendDelegate != null ? sendDelegate : new MediaSpoilerSendDelegate() {
         @Override
         public boolean sendSelectedItems (View view, ArrayList<ImageFile> images, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean hasSpoiler) {
           ImageGalleryFile galleryFile = (ImageGalleryFile) images.get(0);
           return onSendMedia(galleryFile, options, disableMarkdown, asFiles, hasSpoiler);
         }
-      }, stack).setOnlyScheduled(m != null && m.areScheduledOnly());
+      }, stack, m != null && m.areScheduledOnly()).setAvatarPickerMode(avatarPickerMode);
       if (m != null) {
         args.setReceiverChatId(m.getChatId());
       }

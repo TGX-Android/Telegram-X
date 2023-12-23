@@ -21,6 +21,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
@@ -259,6 +260,11 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
             .show(this, tdlib, R.drawable.baseline_info_24, text);
         }
       }
+    } else if (viewId == R.id.btn_togglePermissionGroup) {
+      RightOption option = (RightOption) item.getData();
+      if (option != null && option.groupRightIds != null) {
+        toggleRightsGroupVisibility(option.groupRightIds);
+      }
     } else if (viewId == R.id.btn_transferOwnership) {
       if (ChatId.isBasicGroup(getArgumentsStrict().chatId)) {
         showConfirm(Lang.getMarkdownString(this, R.string.UpgradeChatPrompt), Lang.getString(R.string.Proceed), this::onTransferOwnershipClick);
@@ -317,6 +323,9 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           targetAdmin.rights.canManageVideoChats = false;
           targetAdmin.rights.isAnonymous = false;
           targetAdmin.rights.canPromoteMembers = false;
+          targetAdmin.rights.canPostStories = false;
+          targetAdmin.rights.canEditStories = false;
+          targetAdmin.rights.canDeleteStories = false;
           updateValues();
           setDoneInProgress(true);
           setDoneVisible(true);
@@ -481,20 +490,38 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       @SuppressWarnings("WrongConstant")
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         final int viewId = item.getId();
+        boolean needRotateIcon = false;
         if (viewId == R.id.btn_togglePermission) {
           @RightId int rightId = item.getIntValue();
           boolean canEdit = hasAccessToEditRight(item);
           view.setIgnoreEnabled(true);
           view.setEnabled(canEdit || getHintForToggleUnavailability(item) != null);
           view.setVisuallyEnabled(canEdit, isUpdate);
+
           boolean isToggler = item.getViewType() == ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER;
+          boolean needAddData = getArgumentsStrict().mode == MODE_CHAT_PERMISSIONS;
+
           if (isToggler) {
             view.getToggler().setUseNegativeState(true);
           }
           view.getToggler().setRadioEnabled(item.getBoolValue(), isUpdate);
           view.getToggler().setShowLock(!canEdit);
-          if (isToggler) {
+          if (needAddData) {
             view.setData(item.getBoolValue() ? R.string.AllMembers : (rightId == RightId.INVITE_USERS || rightId == RightId.CHANGE_CHAT_INFO || rightId == RightId.PIN_MESSAGES) ? R.string.OnlyAdminsSpecific : R.string.OnlyAdmins);
+          }
+        } else if (viewId == R.id.btn_togglePermissionGroup) {
+          final RightOption option = (RightOption) item.getData();
+          if (option != null && option.groupRightIds != null) {
+            final boolean canEdit = hasAccessToEditRightsGroup(option.groupRightIds);
+            final int count = getRightsGroupEnabledCount(option.groupRightIds);
+            view.setIgnoreEnabled(true);
+            view.setEnabled(true /*canEdit || getHintForToggleUnavailability(item) != null*/);
+            view.setVisuallyEnabled(canEdit, isUpdate);
+            view.getToggler().setUseNegativeState(true);
+            view.getToggler().setRadioEnabled(item.getBoolValue(), isUpdate);
+            view.getToggler().setShowLock(!canEdit);
+            view.setData(Lang.pluralBold(R.string.xPermissionsSendMediaAllowed, count, option.groupRightIds.length));
+            needRotateIcon = adapter.indexOfViewByIdAndValue(R.id.btn_togglePermission, option.groupRightIds[0]) != -1;
           }
         } else if (viewId == R.id.btn_date) {
           boolean canEdit = hasAccessToEditRight(item);
@@ -521,11 +548,39 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
             view.setName(canViewMessages ? R.string.RestrictFor : R.string.BlockFor);
           }
         }
+        if (view.getToggler() != null) {
+          if (viewId == R.id.btn_togglePermissionGroup) {
+            view.getToggler().setOnClickListener(v -> {
+              ListItem i = (ListItem) view.getTag();
+              if (i.getId() == R.id.btn_togglePermissionGroup) {
+                final RightOption option = (RightOption) item.getData();
+                if (option != null && option.groupRightIds != null) {
+                  toggleRightsGroup(option.groupRightIds);
+                }
+              } else {
+                view.performClick();
+              }
+            });
+            view.getToggler().setClickable(true);
+          } else {
+            view.getToggler().setOnClickListener(null);
+            view.getToggler().setClickable(false);
+          }
+        }
+        view.setIconRotated(needRotateIcon, isUpdate);
       }
 
       @Override
       protected void setChatData (ListItem item, int position, BetterChatView chatView) {
         chatView.setChat((TGFoundChat) item.getData());
+      }
+
+      @Override
+      public void modifySettingView (int viewType, SettingView settingView) {
+        super.modifySettingView(viewType, settingView);
+        if (viewType == ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER || viewType == ListItem.TYPE_RADIO_SETTING_WITH_NEGATIVE_STATE) {
+          settingView.forcePadding(Screen.dp(73), 0);
+        }
       }
     };
 
@@ -690,6 +745,11 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       throw new UnsupportedOperationException();
     }
 
+    return hasAccessToEditRight(id);
+  }
+
+  private boolean hasAccessToEditRight (int id) {
+    Args args = getArgumentsStrict();
     if (args.mode == MODE_CHAT_PERMISSIONS) {
       if (tdlib.canRestrictMembers(args.chatId)) {
         TdApi.Chat chat = tdlib.chatStrict(args.chatId);
@@ -994,113 +1054,74 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       args.mode == MODE_RESTRICTION ? args.senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR ? (tdlib.isChannel(((TdApi.MessageSenderChat) args.senderId).chatId) ? R.string.WhatThisChannelCanDo : R.string.WhatThisGroupCanDo) : R.string.WhatThisUserCanDo : R.string.WhatThisAdminCanDo));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
 
-    boolean isChannel = tdlib.isChannel(args.chatId);
-
-    @RightId int[] rightIds;
+    final boolean isChannel = tdlib.isChannel(args.chatId);
+    final ArrayList<RightOption> rightIdOptions = new ArrayList<>(12);
     if (args.mode == MODE_CHAT_PERMISSIONS) {
-      rightIds = new int[] {
-        RightId.SEND_BASIC_MESSAGES,
-        RightId.SEND_PHOTOS,
-        RightId.SEND_VIDEOS,
-        RightId.SEND_AUDIO,
-        RightId.SEND_DOCS,
-        RightId.SEND_VOICE_NOTES,
-        RightId.SEND_VIDEO_NOTES,
-        RightId.SEND_OTHER_MESSAGES,
-        RightId.SEND_POLLS,
-        RightId.EMBED_LINKS,
-        RightId.INVITE_USERS,
-        RightId.PIN_MESSAGES,
-        RightId.CHANGE_CHAT_INFO
-      };
+      rightIdOptions.add(new RightOption(RightId.SEND_BASIC_MESSAGES));
+      rightIdOptions.add(new RightOption(R.string.RightSendMedia, SEND_MEDIA_RIGHT_IDS));
+      rightIdOptions.add(new RightOption(RightId.INVITE_USERS));
+      rightIdOptions.add(new RightOption(RightId.PIN_MESSAGES));
+      rightIdOptions.add(new RightOption(RightId.CHANGE_CHAT_INFO));
     } else if (args.mode == MODE_RESTRICTION) {
       if (args.senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
-        rightIds = new int[] {
-          RightId.SEND_BASIC_MESSAGES,
-          RightId.SEND_PHOTOS,
-          RightId.SEND_VIDEOS,
-          RightId.SEND_AUDIO,
-          RightId.SEND_DOCS,
-          RightId.SEND_VOICE_NOTES,
-          RightId.SEND_VIDEO_NOTES,
-          RightId.SEND_OTHER_MESSAGES,
-          RightId.SEND_POLLS,
-          RightId.EMBED_LINKS,
-          RightId.INVITE_USERS,
-          RightId.PIN_MESSAGES,
-          RightId.CHANGE_CHAT_INFO
-        };
+        rightIdOptions.add(new RightOption(RightId.SEND_BASIC_MESSAGES));
+        rightIdOptions.add(new RightOption(R.string.RightSendMedia, SEND_MEDIA_RIGHT_IDS));
+        rightIdOptions.add(new RightOption(RightId.INVITE_USERS));
+        rightIdOptions.add(new RightOption(RightId.PIN_MESSAGES));
+        rightIdOptions.add(new RightOption(RightId.CHANGE_CHAT_INFO));
       } else {
-        rightIds = new int[] {
-          RightId.READ_MESSAGES,
-          RightId.SEND_BASIC_MESSAGES,
-          RightId.SEND_PHOTOS,
-          RightId.SEND_VIDEOS,
-          RightId.SEND_AUDIO,
-          RightId.SEND_DOCS,
-          RightId.SEND_VOICE_NOTES,
-          RightId.SEND_VIDEO_NOTES,
-          RightId.SEND_OTHER_MESSAGES,
-          RightId.SEND_POLLS,
-          RightId.EMBED_LINKS,
-          RightId.INVITE_USERS,
-          RightId.PIN_MESSAGES,
-          RightId.CHANGE_CHAT_INFO
-        };
+        rightIdOptions.add(new RightOption(RightId.READ_MESSAGES));
+        rightIdOptions.add(new RightOption(RightId.SEND_BASIC_MESSAGES));
+        rightIdOptions.add(new RightOption(R.string.RightSendMedia, SEND_MEDIA_RIGHT_IDS));
+        rightIdOptions.add(new RightOption(RightId.INVITE_USERS));
+        rightIdOptions.add(new RightOption(RightId.PIN_MESSAGES));
+        rightIdOptions.add(new RightOption(RightId.CHANGE_CHAT_INFO));
       }
     } else if (isChannel) {
-      rightIds = new int[] {
-        RightId.CHANGE_CHAT_INFO,
-        RightId.SEND_BASIC_MESSAGES,
-        RightId.EDIT_MESSAGES,
-        RightId.DELETE_MESSAGES,
-        RightId.INVITE_USERS,
-        RightId.MANAGE_VIDEO_CHATS,
-        RightId.POST_STORIES,
-        RightId.EDIT_STORIES,
-        RightId.DELETE_STORIES,
-        RightId.ADD_NEW_ADMINS
-      };
+      rightIdOptions.add(new RightOption(RightId.CHANGE_CHAT_INFO));
+      rightIdOptions.add(new RightOption(R.string.RightMessages, MANAGE_CHANNEL_POSTS_IDS));
+      rightIdOptions.add(new RightOption(RightId.INVITE_USERS));
+      rightIdOptions.add(new RightOption(RightId.MANAGE_VIDEO_CHATS));
+      rightIdOptions.add(new RightOption(RightId.ADD_NEW_ADMINS));
+      rightIdOptions.add(new RightOption(R.string.RightStories, MANAGE_STORIES_RIGHT_IDS));
     } else if (isForum) {
-      rightIds = new int[] {
-        RightId.CHANGE_CHAT_INFO,
-        RightId.DELETE_MESSAGES,
-        RightId.BAN_USERS,
-        RightId.INVITE_USERS,
-        RightId.PIN_MESSAGES,
-        RightId.MANAGE_VIDEO_CHATS,
-        RightId.MANAGE_TOPICS,
-        RightId.REMAIN_ANONYMOUS,
-        RightId.ADD_NEW_ADMINS
-      };
+      rightIdOptions.add(new RightOption(RightId.CHANGE_CHAT_INFO));
+      rightIdOptions.add(new RightOption( RightId.DELETE_MESSAGES));
+      rightIdOptions.add(new RightOption(RightId.BAN_USERS));
+      rightIdOptions.add(new RightOption(RightId.INVITE_USERS));
+      rightIdOptions.add(new RightOption(RightId.PIN_MESSAGES));
+      rightIdOptions.add(new RightOption(RightId.MANAGE_VIDEO_CHATS));
+      rightIdOptions.add(new RightOption(RightId.MANAGE_TOPICS));
+      rightIdOptions.add(new RightOption(RightId.REMAIN_ANONYMOUS));
+      rightIdOptions.add(new RightOption(RightId.ADD_NEW_ADMINS));
     } else {
-      rightIds = new int[] {
-        RightId.CHANGE_CHAT_INFO,
-        RightId.DELETE_MESSAGES,
-        RightId.BAN_USERS,
-        RightId.INVITE_USERS,
-        RightId.PIN_MESSAGES,
-        RightId.MANAGE_VIDEO_CHATS,
-        RightId.REMAIN_ANONYMOUS,
-        RightId.ADD_NEW_ADMINS
-      };
+      rightIdOptions.add(new RightOption(RightId.CHANGE_CHAT_INFO));
+      rightIdOptions.add(new RightOption(RightId.DELETE_MESSAGES));
+      rightIdOptions.add(new RightOption(RightId.BAN_USERS));
+      rightIdOptions.add(new RightOption(RightId.INVITE_USERS));
+      rightIdOptions.add(new RightOption(RightId.PIN_MESSAGES));
+      rightIdOptions.add(new RightOption(RightId.MANAGE_VIDEO_CHATS));
+      rightIdOptions.add(new RightOption(RightId.REMAIN_ANONYMOUS));
+      rightIdOptions.add(new RightOption(RightId.ADD_NEW_ADMINS));
     }
 
     boolean first = true;
     int viewType = args.mode == MODE_CHAT_PERMISSIONS ? ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER : ListItem.TYPE_RADIO_SETTING_WITH_NEGATIVE_STATE;
-    for (@RightId int rightId : rightIds) {
+    for (RightOption option: rightIdOptions) {
       if (first) {
         first = false;
       } else {
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       }
-      items.add(new ListItem(
-        viewType,
-        R.id.btn_togglePermission, 0,
-        stringForRightId(rightId, isChannel)
-      ).setIntValue(rightId)
-       .setBoolValue(getValueForId(rightId))
-      );
+      if (option.groupRightIds == null) {
+        final @RightId int rightId = option.singleRightId;
+        items.add(new ListItem(viewType, R.id.btn_togglePermission, iconForRightId(rightId), stringForRightId(rightId, isChannel))
+          .setIntValue(rightId).setBoolValue(getValueForId(rightId)));
+      } else {
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER,
+          R.id.btn_togglePermissionGroup, R.drawable.round_keyboard_arrow_right_24, option.name
+        ).setIntValue(option.groupRightIds[0]).setData(option).setBoolValue(getRightsGroupEnabledCount(option.groupRightIds) > 0));
+      }
     }
 
     if (args.mode == MODE_RESTRICTION) {
@@ -1346,6 +1367,14 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
 
   private void toggleValueForRightId (@RightId int id) {
     final boolean newValue = !getValueForId(id);
+    setValueForRightId(id, newValue);
+  }
+
+  private void setValueForRightId (@RightId int id, boolean newValue) {
+    if (getValueForId(id) == newValue) {
+      return;
+    }
+
     switch (id) {
       case RightId.READ_MESSAGES: {
         setCanViewMessages(newValue);
@@ -1504,9 +1533,19 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           item.setBoolValue(value);
           adapter.updateValuedSettingByPosition(i);
         }
+      } else if (item.getId() == R.id.btn_togglePermissionGroup) {
+        final RightOption option = (RightOption) item.getData();
+        if (option != null && option.groupRightIds != null) {
+          final boolean value = getRightsGroupEnabledCount(option.groupRightIds) > 0;
+          if (value != item.getBoolValue()) {
+            item.setBoolValue(value);
+            adapter.updateValuedSettingByPosition(i);
+          }
+        }
       }
       i++;
     }
+    adapter.updateAllValuedSettingsById(R.id.btn_togglePermissionGroup);
   }
 
   private boolean checkDefaultRight (@RightId int id) {
@@ -1645,6 +1684,52 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     throw new UnsupportedOperationException(Lang.getResourceEntryName(id));
   }
 
+  private @DrawableRes int iconForRightId (@RightId int id) {
+    switch (id) {
+      case RightId.READ_MESSAGES:
+        return R.drawable.baseline_eye_off_24;
+      case RightId.SEND_BASIC_MESSAGES:
+        return R.drawable.baseline_format_text_24;
+      case RightId.CHANGE_CHAT_INFO:
+      case RightId.EDIT_MESSAGES:
+      case RightId.EDIT_STORIES:
+        return R.drawable.baseline_edit_24;
+      case RightId.DELETE_STORIES:
+      case RightId.DELETE_MESSAGES:
+        return R.drawable.baseline_delete_24;
+      case RightId.BAN_USERS:
+        return R.drawable.baseline_block_24;
+      case RightId.INVITE_USERS:
+        return R.drawable.baseline_person_add_24;
+      case RightId.ADD_NEW_ADMINS:
+        return R.drawable.baseline_stars_24;
+      case RightId.PIN_MESSAGES:
+        return R.drawable.deproko_baseline_pin_24;
+      case RightId.REMAIN_ANONYMOUS:
+        return R.drawable.dot_baseline_acc_anon_24;
+
+      case RightId.MANAGE_VIDEO_CHATS:
+        return R.drawable.baseline_video_chat_24;
+      case RightId.MANAGE_TOPICS:
+        return R.drawable.baseline_format_list_bulleted_type_24;
+
+      case RightId.POST_STORIES:  // todo
+
+
+      case RightId.SEND_AUDIO:
+      case RightId.SEND_DOCS:
+      case RightId.SEND_PHOTOS:
+      case RightId.SEND_VIDEOS:
+      case RightId.SEND_VOICE_NOTES:
+      case RightId.SEND_VIDEO_NOTES:
+      case RightId.SEND_OTHER_MESSAGES:
+      case RightId.SEND_POLLS:
+      case RightId.EMBED_LINKS:
+      default:
+        return 0;
+    }
+  }
+
   private boolean canViewOrEditCustomTitle () {
     Args args = getArgumentsStrict();
     if (tdlib.isChannel(args.chatId))
@@ -1689,4 +1774,109 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     throw new AssertionError();
   }
 
+  private boolean hasAccessToEditRightsGroup (int[] rights) {
+    for (int right : rights) {
+      if (hasAccessToEditRight(right)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private void toggleRightsGroup (int[] rights) {
+    final int index = adapter.indexOfViewByIdAndValue(R.id.btn_togglePermissionGroup, rights[0]);
+    final ListItem item = adapter.getItem(index);
+    if (item == null) {
+      return;
+    }
+
+    boolean newValue = !item.getBoolValue();
+    for (int rightId : rights) {
+      boolean canEdit = hasAccessToEditRight(rightId);
+      if (canEdit) {
+        setValueForRightId(rightId, newValue);
+      }
+    }
+  }
+
+  private int getRightsGroupEnabledCount (int[] rights) {
+    int res = 0;
+    for (int right : rights) {
+      res += getValueForId(right) ? 1 : 0;
+    }
+
+    return res;
+  }
+
+  private void toggleRightsGroupVisibility (int[] rights) {
+    final int index = adapter.indexOfViewByIdAndValue(R.id.btn_togglePermissionGroup, rights[0]);
+    if (index == -1) return;
+
+    final boolean sendMediaGroupIsVisible = indexOfViewByRightId(rights[0]) != -1;
+
+    if (!sendMediaGroupIsVisible) {
+      final Args args = getArgumentsStrict();
+      final boolean isChannel = tdlib.isChannel(args.chatId);
+      final int viewType = args.mode == MODE_CHAT_PERMISSIONS ?
+        ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER :
+        ListItem.TYPE_RADIO_SETTING_WITH_NEGATIVE_STATE;
+
+      ArrayList<ListItem> items = new ArrayList<>(rights.length * 2);
+      for (@RightId int rightId : rights) {
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+        items.add(new ListItem(viewType,
+            R.id.btn_togglePermission, 0,
+            stringForRightId(rightId, isChannel)
+          ).setIntValue(rightId)
+            .setBoolValue(getValueForId(rightId))
+        );
+      }
+      adapter.addItems(index + 1, items.toArray(new ListItem[0]));
+    } else {
+      adapter.removeRange(index + 1, rights.length * 2);
+    }
+    adapter.updateValuedSettingByPosition(index);
+  }
+
+  public static final int[] SEND_MEDIA_RIGHT_IDS = {
+    RightId.SEND_PHOTOS,
+    RightId.SEND_VIDEOS,
+    RightId.SEND_AUDIO,
+    RightId.SEND_DOCS,
+    RightId.SEND_VOICE_NOTES,
+    RightId.SEND_VIDEO_NOTES,
+    RightId.SEND_OTHER_MESSAGES,
+    RightId.SEND_POLLS,
+    RightId.EMBED_LINKS,
+  };
+
+  private static final int[] MANAGE_CHANNEL_POSTS_IDS = {
+    RightId.SEND_BASIC_MESSAGES,
+    RightId.EDIT_MESSAGES,
+    RightId.DELETE_MESSAGES
+  };
+
+  private static final int[] MANAGE_STORIES_RIGHT_IDS = {
+    RightId.POST_STORIES,
+    RightId.EDIT_STORIES,
+    RightId.DELETE_STORIES
+  };
+
+  private static class RightOption {
+    public final @RightId int singleRightId;
+    public final @Nullable @RightId int[] groupRightIds;
+    public final @StringRes int name;
+
+    public RightOption (@RightId int singleRightId) {
+      this.singleRightId = singleRightId;
+      this.groupRightIds = null;
+      this.name = -1;
+    }
+
+    public RightOption (@StringRes int name, @NonNull @RightId int[] groupRightIds) {
+      this.groupRightIds = groupRightIds;
+      this.singleRightId = groupRightIds[0];
+      this.name = name;
+    }
+  }
 }

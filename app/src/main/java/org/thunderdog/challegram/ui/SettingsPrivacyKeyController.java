@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -30,14 +31,17 @@ import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.dialogs.SearchManager;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGUser;
+import org.thunderdog.challegram.navigation.ActivityResultHandler;
 import org.thunderdog.challegram.telegram.PrivacySettings;
 import org.thunderdog.challegram.telegram.PrivacySettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.util.ProfilePhotoDrawModifier;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.NoUnderlineClickableSpan;
 import org.thunderdog.challegram.util.UserPickerMultiDelegate;
@@ -51,7 +55,8 @@ import me.vkryl.core.collection.LongList;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
-public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.UserPrivacySetting> implements View.OnClickListener, UserPickerMultiDelegate, PrivacySettingsListener {
+public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.UserPrivacySetting> implements View.OnClickListener, UserPickerMultiDelegate, PrivacySettingsListener, ActivityResultHandler,
+  TdlibCache.UserDataChangeListener {
 
   public SettingsPrivacyKeyController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -342,6 +347,13 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.CustomShareSettingsHelp));
     }
 
+    if (getArgumentsStrict().getConstructor() == TdApi.UserPrivacySettingShowProfilePhoto.CONSTRUCTOR) {
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_setProfilePhoto, 0, R.string.PublicPhoto));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.PublicPhotoHint));
+    }
+
     /*if (privacyKey.getConstructor() == TdApi.UserPrivacySettingAllowCalls.CONSTRUCTOR) {
       items.add(new SettingItem(SettingItem.TYPE_HEADER, 0, 0, R.string.PrivacyCallsP2PTitle));
       items.add(new SettingItem(SettingItem.TYPE_SHADOW_TOP));
@@ -456,6 +468,8 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
     });
   }
 
+  private long subscribedToUserId;
+
   @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
     adapter = new SettingsAdapter(this) {
@@ -468,6 +482,16 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
         } else if (itemId == R.id.btn_neverAllow) {
           int count = currentRules().getMinusTotalCount(tdlib);
           view.setData(count > 0 ? Lang.plural(R.string.xUsers, count) : Lang.getString(R.string.PrivacyAddUsers));
+        }
+
+        if (itemId == R.id.btn_setProfilePhoto) {
+          final TdApi.UserFullInfo myUserFull = tdlib.myUserFull();
+          final boolean hasAvatar = myUserFull != null && myUserFull.publicPhoto != null;
+
+          view.setData(Lang.getString(hasAvatar ? R.string.PublicPhotoSet : R.string.PublicPhotoNoSet));
+          view.setDrawModifier(new ProfilePhotoDrawModifier().requestFiles(view.getComplexReceiver(), tdlib));
+        } else {
+          view.setDrawModifier(null);
         }
       }
 
@@ -493,7 +517,19 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
         }
       }
     }));
+
+    subscribedToUserId = tdlib.myUserId();
+    tdlib.cache().addUserDataListener(subscribedToUserId, this);
     tdlib.listeners().subscribeToPrivacyUpdates(this);
+  }
+
+  @Override
+  public void onUserFullUpdated (long userId, TdApi.UserFullInfo userFull) {
+    UI.post(() -> {
+      if (userId == tdlib.myUserId() && !isDestroyed()) {
+        adapter.updateValuedSettingById(R.id.btn_setProfilePhoto);
+      }
+    });
   }
 
   @Override
@@ -519,6 +555,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
   public void destroy () {
     super.destroy();
     tdlib.listeners().unsubscribeFromPrivacyUpdates(this);
+    tdlib.cache().removeUserDataListener(subscribedToUserId, this);
   }
 
   private int userPickMode;
@@ -600,6 +637,22 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
         changedPrivacyRules = PrivacySettings.valueOf(currentRules().toggleGlobal(desiredMode));
         updateRulesState(changedPrivacyRules);
       }
+    } else if (viewId == R.id.btn_setProfilePhoto) {
+      getAvatarPickerManager().showMenuForProfile(null, true);
     }
+  }
+
+  @Override
+  public void onActivityResult (int requestCode, int resultCode, Intent data) {
+    getAvatarPickerManager().handleActivityResult(requestCode, resultCode, data, TdlibUi.AvatarPickerManager.MODE_PROFILE_PUBLIC, null, null);
+  }
+
+  private TdlibUi.AvatarPickerManager avatarPickerManager;
+
+  private TdlibUi.AvatarPickerManager getAvatarPickerManager () {
+    if (avatarPickerManager == null) {
+      avatarPickerManager = new TdlibUi.AvatarPickerManager(this);
+    }
+    return avatarPickerManager;
   }
 }

@@ -16,6 +16,7 @@ package org.thunderdog.challegram.navigation;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Path;
 import android.graphics.drawable.Drawable;
 import android.text.Editable;
 import android.text.InputFilter;
@@ -31,6 +32,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageFileLocal;
+import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Keyboard;
@@ -51,6 +53,7 @@ public class EditHeaderView extends FrameLayoutFix implements RtlCheckListener, 
   private final ViewController<?> parent;
   private HeaderEditText input;
   private final ImageReceiver receiver;
+  private final Path clipPath = new Path();
 
   private final Drawable icon;
 
@@ -61,7 +64,8 @@ public class EditHeaderView extends FrameLayoutFix implements RtlCheckListener, 
 
     setWillNotDraw(false);
 
-    receiver = new ImageReceiver(this, Screen.dp(30.5f));
+    receiver = new ImageReceiver(this, 0);
+    receiver.prepareToBeCropped();
 
     FrameLayoutFix.LayoutParams params;
 
@@ -125,10 +129,18 @@ public class EditHeaderView extends FrameLayoutFix implements RtlCheckListener, 
     performReadyCallback(s.toString().trim().length() > 0);
   }
 
+  private Runnable onPhotoClickListener;
+
+  public void setOnPhotoClickListener (Runnable onPhotoClickListener) {
+    this.onPhotoClickListener = onPhotoClickListener;
+  }
+
   private void onPhotoClicked () {
     if (input.isEnabled()) {
       Keyboard.hide(input);
-      parent.tdlib().ui().showChangePhotoOptions(parent, file != null);
+      if (onPhotoClickListener != null) {
+        onPhotoClickListener.run();
+      }
       ViewUtils.onClick(this);
     }
   }
@@ -247,14 +259,20 @@ public class EditHeaderView extends FrameLayoutFix implements RtlCheckListener, 
       avatarLeft = getMeasuredWidth() - avatarLeft - avatarSize;
     }
 
-    receiver.setRadius(avatarRadius);
+    // receiver.setRadius(avatarRadius);
     receiver.setBounds(avatarLeft, 0, avatarLeft + avatarSize, avatarSize);
+    clipPath.reset();
+    clipPath.addCircle(receiver.centerX(), receiver.centerY(), avatarSize / 2f, Path.Direction.CW);
+    clipPath.close();
   }
 
   @Override
   protected void onDraw (Canvas c) {
     layoutReceiver();
+    int s = Views.save(c);
+    c.clipPath(clipPath);
     receiver.draw(c);
+    Views.restore(c, s);
     int cx = receiver.centerX();
     int cy = receiver.centerY();
     c.drawCircle(cx, cy, avatarRadius, Paints.fillingPaint(0x20000000));
@@ -265,22 +283,14 @@ public class EditHeaderView extends FrameLayoutFix implements RtlCheckListener, 
     input.setEnabled(enabled);
   }
 
-  private ImageFile file;
+  private ImageGalleryFile file;
 
-  public void setPhoto (ImageFile file) {
+  public void setPhoto (ImageGalleryFile file) {
     this.file = file;
     receiver.requestFile(file);
   }
 
-  public boolean isPhotoChanged (boolean changedIfNull) {
-    return (file == null && changedIfNull) || (file != null && file instanceof ImageFileLocal);
-  }
-
-  public String getPhoto () {
-    return file == null || !(file instanceof ImageFileLocal) ? null : ((ImageFileLocal) file).getPath();
-  }
-
-  public ImageFile getImageFile () {
+  public ImageGalleryFile getImageFile () {
     return file;
   }
 

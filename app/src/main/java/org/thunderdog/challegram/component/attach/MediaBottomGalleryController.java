@@ -45,6 +45,7 @@ import org.thunderdog.challegram.core.Media;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
+import org.thunderdog.challegram.mediaview.AvatarPickerMode;
 import org.thunderdog.challegram.mediaview.MediaSelectDelegate;
 import org.thunderdog.challegram.mediaview.MediaSendDelegate;
 import org.thunderdog.challegram.mediaview.MediaViewController;
@@ -56,6 +57,7 @@ import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.navigation.MenuMoreWrap;
 import org.thunderdog.challegram.navigation.ToggleHeaderView;
+import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Intents;
@@ -101,7 +103,9 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
     if (id == R.id.menu_more) {
-      header.addSearchButton(menu, this);
+      if (mediaLayout.getMode() != MediaLayout.MODE_AVATAR_PICKER) {
+        header.addSearchButton(menu, this);
+      }
       header.addMoreButton(menu, this);
     } else if (id == R.id.menu_clear) {
       header.addClearButton(menu, this);
@@ -207,7 +211,8 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
     decoration = new GridSpacingItemDecoration(spanCount, Screen.dp(4f), true, true, true);
     GridLayoutManager manager = new RtlGridLayoutManager(context(), spanCount);
 
-    int options = MediaGalleryAdapter.OPTION_SELECTABLE | MediaGalleryAdapter.OPTION_ALWAYS_SELECTABLE;
+    int options = inAvatarPickerMode() ? MediaGalleryAdapter.OPTION_NEVER_SELECTABLE :
+      MediaGalleryAdapter.OPTION_SELECTABLE | MediaGalleryAdapter.OPTION_ALWAYS_SELECTABLE;
     /*if (U.deviceHasAnyCamera(context)) {
       options |= MediaGalleryAdapter.OPTION_CAMERA_AVAILABLE;
     }*/
@@ -229,7 +234,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
     if (mediaLayout.needCameraButton()) {
       cameraBadgeView = new CircleCounterBadgeView(this, R.id.btn_camera, this::onCameraButtonClick, null);
       cameraBadgeView.init(R.drawable.deproko_baseline_camera_26, 48f, 4f, ColorId.circleButtonChat, ColorId.circleButtonChatIcon);
-      cameraBadgeView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(CircleCounterBadgeView.BUTTON_WRAPPER_WIDTH), Screen.dp(74f), Gravity.BOTTOM | Gravity.RIGHT, 0, 0, Screen.dp(12), Screen.dp(12 + 60)));
+      cameraBadgeView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(CircleCounterBadgeView.BUTTON_WRAPPER_WIDTH), Screen.dp(74f), Gravity.BOTTOM | Gravity.RIGHT, 0, 0, Screen.dp(12), Screen.dp(12) + mediaLayout.getCameraButtonOffset()));
       contentView.addView(cameraBadgeView);
     }
 
@@ -251,6 +256,12 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   }
 
   private void onCameraButtonClick (View v) {
+    if (mediaLayout.getMode() == MediaLayout.MODE_AVATAR_PICKER) {
+      mediaLayout.hidePopupAndOpenCamera(new ViewController.CameraOpenOptions().anchor(v)
+        .setAvatarPickerMode(mediaLayout.getAvatarPickerMode()).setMediaEditorDelegates(this, this, this));
+      return;
+    }
+
     MessagesController c = mediaLayout.parentMessageController();
     if (c == null) return;
 
@@ -565,7 +576,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
       MediaViewController controller = new MediaViewController(context, tdlib);
       controller.setArguments(
         MediaViewController.Args.fromGallery(this, this, this, this, stack, mediaLayout.areScheduledOnly())
-          .setReceiverChatId(mediaLayout.getTargetChatId())
+          .setReceiverChatId(mediaLayout.getTargetChatId()).setAvatarPickerMode(mediaLayout.getAvatarPickerMode())
       );
       controller.open();
 
@@ -575,6 +586,10 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
     return false;
   }
 
+  private boolean inAvatarPickerMode () {
+    return mediaLayout.getAvatarPickerMode() != AvatarPickerMode.NONE;
+  }
+
   @Override
   public boolean isMediaItemSelected (int index, MediaItem item) {
     return adapter.getSelectionIndex(item.getSourceGalleryFile()) >= 0;
@@ -582,6 +597,9 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
 
   @Override
   public void setMediaItemSelected (int index, MediaItem item, boolean isSelected) {
+    if (mediaLayout.getMode() == MediaLayout.MODE_AVATAR_PICKER) {
+      return;
+    }
     adapter.setSelected(item.getSourceGalleryFile(), isSelected);
   }
 

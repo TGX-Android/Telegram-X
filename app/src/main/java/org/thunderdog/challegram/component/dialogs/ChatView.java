@@ -623,8 +623,8 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
       Drawables.drawRtl(c, Icons.getClockIcon(ColorId.iconLight), x, getClockTop(chatListMode) - Screen.dp(Icons.CLOCK_SHIFT_Y), Paints.getIconLightPorterDuffPaint(), viewWidth, rtl);
     } else {
       int x = chat.getChecksRight();
+      int y = getClockTop(chatListMode);
       if (chat.isOutgoing() && !chat.isSelfChat()) {
-        int y = getClockTop(chatListMode);
         if (chat.showViews()) {
           y -= Screen.dp(.5f);
         } else if (chat.isUnread()) {
@@ -637,11 +637,11 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
           int iconX = x - Screen.dp(Icons.TICKS_SHIFT_X) - Screen.dp(14f);
           boolean unread = chat.isUnread();
           Drawables.drawRtl(c, unread ? Icons.getSingleTick(ColorId.ticks) : Icons.getDoubleTick(ColorId.ticks), iconX, y - Screen.dp(Icons.TICKS_SHIFT_Y), unread ? Paints.getTicksPaint() : Paints.getTicksReadPaint(), viewWidth, rtl);
-          x -= Screen.dp(24 + 3);
+          x -= Screen.dp(24 - 8 + 3);
         }
       }
       if (chat.needDrawReactionsPreview()) {
-        chat.getReactionsCounterDrawable().draw(c, x - chat.getReactionsWidth(), getClockTop(chatListMode) + Screen.dp(7f));
+        chat.getReactionsCounterDrawable().draw(c, x - chat.getReactionsWidth(), y + Screen.dp(6f));
       }
     }
 

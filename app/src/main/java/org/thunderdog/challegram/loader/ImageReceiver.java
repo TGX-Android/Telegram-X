@@ -417,9 +417,20 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     return sourceHeight;
   }
 
+  private int getVisualRotationWithoutCropState () {
+    if (file != null) {
+      return Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && file instanceof ImageGalleryFile && ((ImageGalleryFile) file).needThumb() ? 0 : file.getVisualRotation();
+    }
+    return 0;
+  }
+
+  private boolean needSwapMirrorAxis () {
+    return file != null && U.isRotated(Math.abs(getVisualRotationWithoutCropState() - file.getVisualRotation()));
+  }
+
   private int getVisualRotation () {
     if (file != null) {
-      int rotation = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && file instanceof ImageGalleryFile && ((ImageGalleryFile) file).needThumb() ? 0 : file.getVisualRotation();
+      int rotation = getVisualRotationWithoutCropState();
       if (displayCrop != null) {
         rotation = MathUtils.modulo(rotation + displayCrop.getRotateBy(), 360);
       }
@@ -1178,6 +1189,9 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     } else {
       PaintState paintState = file.getPaintState();
       float scaleType = file.getScaleType();
+      final boolean needSwapMirrorAxis = needSwapMirrorAxis();
+      final boolean needMirrorHorizontally = displayCrop != null && (needSwapMirrorAxis ? displayCrop.needMirrorVertically() : displayCrop.needMirrorHorizontally());
+      final boolean needMirrorVertically = displayCrop != null && (needSwapMirrorAxis ? displayCrop.needMirrorHorizontally() : displayCrop.needMirrorVertically());
       if (scaleType == ImageFile.CENTER_CROP || scaleType == ImageFile.FIT_CENTER) {
         // c.drawRect(left, top, right, bottom, Paints.fillingPaint(0xaa00ff00));
         boolean hasCrop = displayCrop != null;
@@ -1192,6 +1206,9 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
         if (left != 0 || top != 0) {
           c.translate(left, top);
         }
+        /*if (hasCrop && displayCrop.needMirror()) {
+          c.scale(displayCrop.needMirrorHorizontally() ? -1 : 1, displayCrop.needMirrorVertically() ? -1 : 1, (right - left) / 2f, (bottom - top) / 2f);
+        }*/
         if (rotation != 0) {
           c.rotate(rotation, (right - left) / 2f, (bottom - top) / 2f);
         }
@@ -1226,12 +1243,12 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
             c.rotate(degrees, cx, cy);
             c.scale(scale, scale, cx, cy);
 
-            drawBitmap(c, bitmap, 0, 0, paint);
+            drawBitmap(c, bitmap, 0, 0, needMirrorHorizontally, needMirrorVertically, paint);
             if (paintState != null) {
               paintState.draw(c, 0, 0, bitmap.getWidth(), bitmap.getHeight());
             }
           } else {
-            drawBitmap(c, bitmap, bitmapRect, rect, paint);
+            drawBitmap(c, bitmap, bitmapRect, rect, needMirrorHorizontally, needMirrorVertically, paint);
             if (paintState != null) {
               c.clipRect(rect);
               DrawAlgorithms.drawPainting(c, bitmap, bitmapRect, rect, paintState);
@@ -1239,7 +1256,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
           }
         } else {
           c.concat(bitmapMatrix);
-          drawBitmap(c, bitmap, 0, 0, paint);
+          drawBitmap(c, bitmap, 0, 0, needMirrorHorizontally, needMirrorVertically, paint);
           if (paintState != null) {
             c.clipRect(0, 0, bitmap.getWidth(), bitmap.getHeight());
             paintState.draw(c, 0, 0, bitmap.getWidth(), bitmap.getHeight());
@@ -1248,7 +1265,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
 
         c.restore();
       } else {
-        drawBitmap(c, bitmap, bitmapRect, drawRegion, paint);
+        drawBitmap(c, bitmap, bitmapRect, drawRegion, needMirrorHorizontally, needMirrorVertically, paint);
         if (paintState != null) {
           c.save();
           c.clipRect(drawRegion);
@@ -1263,18 +1280,42 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     void onComplete (ImageReceiver receiver, ImageFile imageFile);
   }
 
-  private static void drawBitmap (Canvas c, Bitmap bitmap, float left, float top, Paint paint) {
+  private static void drawBitmap (Canvas c, Bitmap bitmap, float left, float top, boolean needMirrorHorizontally, boolean needMirrorVertically, Paint paint) {
     try {
+      c.save();
+      c.scale(needMirrorHorizontally ? -1 : 1, needMirrorVertically ? -1 : 1, left + bitmap.getWidth() / 2f, top + bitmap.getHeight() / 2f);
       c.drawBitmap(bitmap, left, top, paint);
+      c.restore();
     } catch (Throwable t) {
       Log.e(Log.TAG_IMAGE_LOADER, "Unable to draw bitmap", t);
       Tracer.onOtherError(t);
     }
   }
 
-  private static void drawBitmap (Canvas c, Bitmap bitmap, Rect rect, Rect drawRegion, Paint paint) {
+  private static final Rect tmpRect = new Rect();
+
+  private static void drawBitmap (Canvas c, Bitmap bitmap, Rect rect, Rect drawRegion, boolean needMirrorHorizontally, boolean needMirrorVertically, Paint paint) {
     try {
-      c.drawBitmap(bitmap, rect, drawRegion, paint);
+      c.save();
+      c.scale(needMirrorHorizontally ? -1 : 1, needMirrorVertically ? -1 : 1, drawRegion.centerX(), drawRegion.centerY());
+      tmpRect.set(rect);
+
+      if (needMirrorHorizontally) {
+        int width = bitmap.getWidth();
+        int left = rect.left;
+        int right = rect.right;
+        tmpRect.left = width - right;
+        tmpRect.right = width - left;
+      }
+      if (needMirrorVertically) {
+        int height = bitmap.getHeight();
+        int top = rect.top;
+        int bottom = rect.bottom;
+        tmpRect.top = height - bottom;
+        tmpRect.bottom = height - top;
+      }
+      c.drawBitmap(bitmap, tmpRect, drawRegion, paint);
+      c.restore();
     } catch (Throwable t) {
       Log.e(Log.TAG_IMAGE_LOADER, "Unable to draw bitmap", t);
       Tracer.onOtherError(t);

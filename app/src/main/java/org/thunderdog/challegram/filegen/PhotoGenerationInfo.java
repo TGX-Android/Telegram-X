@@ -109,6 +109,9 @@ public class PhotoGenerationInfo extends GenerationInfo {
   }
 
   public boolean needSpecialProcessing (boolean needRotate) {
+    if (cropState != null && cropState.getFlags() != 0) {
+      return true;
+    }
     if (paintState != null && !paintState.isEmpty()) {
       return true;
     }
@@ -241,8 +244,12 @@ public class PhotoGenerationInfo extends GenerationInfo {
     int bitmapBottom = source.getHeight();
     int rotation = needRotate ? this.rotation : 0;
     boolean drawingComplete = false;
+    boolean needMirrorHorizontal = false;
+    boolean needMirrorVertical = false;
 
     if (cropState != null) {
+      needMirrorHorizontal = cropState.needMirrorHorizontally();
+      needMirrorVertical = cropState.needMirrorVertically();
       rotation = MathUtils.modulo(rotation + cropState.getRotateBy(), 360);
       if (regionDecoderState == REGION_ERROR) {
         Log.i("Region reader failed, cropping in-memory");
@@ -279,7 +286,16 @@ public class PhotoGenerationInfo extends GenerationInfo {
         if (scale != 1f) {
           c.scale(scale, scale, w / 2, h / 2);
         }
+        if (needMirrorHorizontal || needMirrorVertical) {
+          c.save();
+          c.scale(needMirrorHorizontal ? -1 : 1, needMirrorVertical ? -1 : 1, w / 2f, h / 2f);
+        }
         c.drawBitmap(source, 0, 0, null);
+        if (needMirrorHorizontal || needMirrorVertical) {
+          c.restore();
+          needMirrorHorizontal = false;
+          needMirrorVertical = false;
+        }
         if (paintState != null) {
           drawPaintState(c, source.getWidth(), source.getHeight());
           drawingComplete = true;
@@ -302,10 +318,31 @@ public class PhotoGenerationInfo extends GenerationInfo {
     if (paintState != null && !drawingComplete) {
       Bitmap altered = Bitmap.createBitmap(source.getWidth(), source.getHeight(), Bitmap.Config.ARGB_8888);
       Canvas c = new Canvas(altered);
+      if (needMirrorHorizontal || needMirrorVertical) {
+        c.save();
+        c.scale(needMirrorHorizontal ? -1 : 1, needMirrorVertical ? -1 : 1, source.getWidth() / 2f, source.getHeight() / 2f);
+      }
       c.drawBitmap(source, 0, 0, null);
+      if (needMirrorHorizontal || needMirrorVertical) {
+        c.restore();
+        needMirrorHorizontal = false;
+        needMirrorVertical = false;
+      }
       drawPaintState(c, source.getWidth(), source.getHeight());
       source.recycle();
       source = altered;
+      U.recycle(c);
+    }
+
+    if (needMirrorHorizontal || needMirrorVertical) {   // fixme: use matrix ??
+      Bitmap flipped = Bitmap.createBitmap(source.getWidth(), source.getHeight(), Bitmap.Config.ARGB_8888);
+      Canvas c = new Canvas(flipped);
+
+      c.scale(needMirrorHorizontal ? -1 : 1, needMirrorVertical ? -1 : 1, source.getWidth() / 2f, source.getHeight() / 2f);
+      c.drawBitmap(source, 0, 0, null);
+
+      source.recycle();
+      source = flipped;
       U.recycle(c);
     }
 

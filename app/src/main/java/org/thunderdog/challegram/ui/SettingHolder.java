@@ -1260,6 +1260,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         settingView.setOnClickListener(onClickListener);
         if (viewType == ListItem.TYPE_RADIO_SETTING_WITH_NEGATIVE_STATE) {
           settingView.getToggler().setUseNegativeState(true);
+          adapter.modifySettingView(viewType, settingView);
         }
         return new SettingHolder(settingView);
       }

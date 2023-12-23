@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.util.text;
 
 import android.graphics.Canvas;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.View;
@@ -358,16 +359,28 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     draw(c, cx, cy, gravity, alpha, null, 0);
   }
 
+  public void draw (Canvas c, float cx, float cy, int gravity, float alpha, @Nullable RectF outDrawRect) {
+    draw(c, cx, cy, gravity, alpha, alpha, alpha, null, 0, outDrawRect);
+  }
+
   public void draw (Canvas c, float cx, float cy, int gravity, float alpha, DrawableProvider drawableProvider, @PorterDuffColorId int drawableColorId) {
     draw(c, cx, cy, gravity, alpha, alpha, alpha, drawableProvider, drawableColorId);
   }
 
+  public void draw (Canvas c, float cx, float cy, int gravity, float alpha, DrawableProvider drawableProvider, @PorterDuffColorId int drawableColorId, @Nullable RectF outputDrawRect) {
+    draw(c, cx, cy, gravity, alpha, alpha, alpha, drawableProvider, drawableColorId, outputDrawRect);
+  }
+
   public void draw (Canvas c, float cx, float cy, int gravity, float textAlpha, float backgroundAlpha, float drawableAlpha, DrawableProvider drawableProvider, @PorterDuffColorId int drawableColorId) {
+    draw(c, cx, cy, gravity, textAlpha, backgroundAlpha, drawableAlpha, drawableProvider, drawableColorId, null);
+  }
+
+  public void draw (Canvas c, float cx, float cy, int gravity, float textAlpha, float backgroundAlpha, float drawableAlpha, DrawableProvider drawableProvider, @PorterDuffColorId int drawableColorId, @Nullable RectF outputDrawRect) {
     boolean needBackground = BitwiseUtils.hasFlag(flags, FLAG_NEED_BACKGROUND);
     boolean outlineAffectsBackgroundSize = needBackground && BitwiseUtils.hasFlag(flags, FLAG_OUTLINE_AFFECTS_BACKGROUND_SIZE);
     if (textAlpha * getVisibility() > 0f || (needBackground && backgroundAlpha * getVisibility() > 0f)) {
       Drawable drawable = getDrawable(drawableProvider, drawableColorId);
-      DrawAlgorithms.drawCounter(c, cx, cy, gravity, counter, textSize, textAlpha * getVisibility(), needBackground, outlineAffectsBackgroundSize, Screen.dp(backgroundPadding), this, drawable, drawableGravity, drawableColorId, Screen.dp(drawableMarginDp), backgroundAlpha * getVisibility(), drawableAlpha * getVisibility(), isVisible.getFloatValue());
+      DrawAlgorithms.drawCounter(c, cx, cy, gravity, counter, textSize, textAlpha * getVisibility(), needBackground, outlineAffectsBackgroundSize, Screen.dp(backgroundPadding), this, drawable, drawableGravity, drawableColorId, Screen.dp(drawableMarginDp), backgroundAlpha * getVisibility(), drawableAlpha * getVisibility(), isVisible.getFloatValue(), outputDrawRect);
     }
   }
 

@@ -1796,6 +1796,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       case ListItem.TYPE_RADIO_SETTING_WITH_NEGATIVE_STATE: {
         SettingView settingView = (SettingView) holder.itemView;
         settingView.setName(item.getString());
+        settingView.setIcon(item.getIconResource());
         settingView.getToggler().checkRtl(true);
         holder.itemView.setEnabled(true);
         setValuedSetting(item, (SettingView) holder.itemView, false);

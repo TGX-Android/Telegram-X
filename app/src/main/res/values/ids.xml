@@ -413,6 +413,7 @@
   <item type="id" name="btn_toggleJoinByRequest" />
   <item type="id" name="btn_toggleProtection" />
   <item type="id" name="btn_togglePermission" />
+  <item type="id" name="btn_togglePermissionGroup" />
   <item type="id" name="btn_allMembers" />
   <item type="id" name="btn_onlyAdmins" />
   <item type="id" name="btn_hidden" />
@@ -493,6 +494,8 @@
   <item type="id" name="btn_paint" />
   <item type="id" name="btn_adjust" />
   <item type="id" name="btn_rotate" />
+  <item type="id" name="btn_flipHorizontally" />
+  <item type="id" name="btn_mirrorHorizontal" />
   <item type="id" name="btn_proportion" />
   <item type="id" name="btn_proportion_free" />
   <item type="id" name="btn_proportion_original" />

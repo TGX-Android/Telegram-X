@@ -63,6 +63,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.ui.EditRightsController;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.AppInstallationUtil;
@@ -2896,14 +2897,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
     return false;
   }
-
-  /*public boolean hasWritePermission (long chatId) {
-    return chatId != 0 && hasWritePermission(chat(chatId));
-  }
-
-  public boolean hasWritePermission (TdApi.Chat chat) {
-    return getRestrictionStatus(chat, R.id.right_sendMessages) == null;
-  }*/
 
   public @Nullable TdApi.SecretChat chatToSecretChat (long chatId) {
     int secretChatId = ChatId.toSecretChatId(chatId);
@@ -10637,6 +10630,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return false;
   }
 
+  public boolean inSlowMode (long chatId) {
+    return cache.getSlowModeDelayExpiresIn(ChatId.toSupergroupId(chatId), TimeUnit.SECONDS) > 0;
+  }
+
   public boolean canEditSlowMode (long chatId) {
     if (canRestrictMembers(chatId)) {
       TdApi.Supergroup supergroup = chatToSupergroup(chatId);
@@ -10914,6 +10911,28 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return null;
   }
 
+  public CharSequence getSlowModeRestrictionText (long chatId) {
+    return getSlowModeRestrictionText(chatId, null);
+  }
+
+  public CharSequence getSlowModeRestrictionText (long chatId, @Nullable TdApi.MessageSchedulingState schedulingState) {
+    if (schedulingState != null) {
+      return null;
+    }
+
+    final int timeToSend = (int) cache().getSlowModeDelayExpiresIn(ChatId.toSupergroupId(chatId), TimeUnit.SECONDS);
+    if (timeToSend == 0) {
+      return null;
+    }
+
+    final int minutes = timeToSend / 60;
+    final int seconds = timeToSend % 60;
+
+    return (minutes > 0) ?
+      Lang.pluralBold(R.string.xSlowModeRestrictionMinutes, minutes):
+      Lang.pluralBold(R.string.xSlowModeRestrictionSeconds, seconds);
+  }
+
   public CharSequence getRestrictionText (TdApi.Chat chat, TdApi.Message message) {
     if (message != null) {
       switch (message.content.getConstructor()) {
@@ -11044,9 +11063,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.InputMessageText.CONSTRUCTOR:
         case TdApi.InputMessageVenue.CONSTRUCTOR:
         case TdApi.InputMessageContact.CONSTRUCTOR:
+        case TdApi.InputMessageStory.CONSTRUCTOR:
           return getBasicMessageRestrictionText(chat);
+        default:
+          Td.assertInputMessageContent_4e99a3f();
+          throw Td.unsupported(content);
       }
-      throw new UnsupportedOperationException(content.toString());
     }
     // Assuming if null is passed, we want to check if we can write text messages
     return getBasicMessageRestrictionText(chat);
@@ -11296,6 +11318,22 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   public boolean canSendBasicMessage (TdApi.Chat chat) {
     return canSendMessage(chat, RightId.SEND_BASIC_MESSAGES);
   }
+
+  public boolean canSendSendSomeMedia (TdApi.Chat chat) {
+    return canSendSendSomeMedia(chat, false);
+  }
+
+  public boolean canSendSendSomeMedia (TdApi.Chat chat, boolean checkGlobal) {
+    for (int rightId : EditRightsController.SEND_MEDIA_RIGHT_IDS) {
+      Tdlib.RestrictionStatus restrictionStatus = getRestrictionStatus(chat, rightId);
+      if (restrictionStatus == null || checkGlobal && !restrictionStatus.isGlobal()) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   public boolean canSendMessage (TdApi.Chat chat, @RightId int kindResId) {
     switch (kindResId) {
       case RightId.SEND_BASIC_MESSAGES:

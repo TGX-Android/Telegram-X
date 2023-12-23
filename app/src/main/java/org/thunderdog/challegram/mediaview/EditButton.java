@@ -18,19 +18,25 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
 
+import androidx.annotation.ColorInt;
 import androidx.annotation.DrawableRes;
 
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.loader.AvatarReceiver;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.widget.SendButton;
 
 import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
@@ -49,6 +55,7 @@ public class EditButton extends View implements FactorAnimator.Target {
 
   public EditButton (Context context) {
     super(context);
+    avatarReceiver = new AvatarReceiver(this);
     setBackgroundResource(R.drawable.bg_btn_header_light);
   }
 
@@ -80,6 +87,7 @@ public class EditButton extends View implements FactorAnimator.Target {
   private static final int ACTIVE_ANIMATOR = 0;
   private static final int CHANGE_ANIMATOR = 1;
   private static final int EDITED_ANIMATOR = 2;
+  private static final int SLOW_MODE_VISIBILITY_ANIMATOR = 3;
 
   private float editedFactor;
   private FactorAnimator editedAnimator;
@@ -117,6 +125,16 @@ public class EditButton extends View implements FactorAnimator.Target {
       this.editedFactor = factor;
       invalidate();
     }
+  }
+
+  private BoolAnimator slowModeVisibilityAnimator;
+
+  public void setSlowModeVisibility (boolean visibility, boolean animated) {
+    if (slowModeVisibilityAnimator == null) {
+      slowModeVisibilityAnimator = new BoolAnimator(SLOW_MODE_VISIBILITY_ANIMATOR, this, AnimatorUtils.DECELERATE_INTERPOLATOR, useFastAnimations ? 180L : 380L, visibility);
+    }
+
+    slowModeVisibilityAnimator.setValue(visibility, animated);
   }
 
   private FactorAnimator iconAnimator;
@@ -265,6 +283,10 @@ public class EditButton extends View implements FactorAnimator.Target {
         setEditedFactor(factor);
         break;
       }
+      case SLOW_MODE_VISIBILITY_ANIMATOR: {
+        invalidate();
+        break;
+      }
     }
   }
 
@@ -275,10 +297,18 @@ public class EditButton extends View implements FactorAnimator.Target {
   private static final float MIN_SCALE = USE_SCALE ? .78f : 1f;
   private static final float STEP_FACTOR = USE_SCALE ? .45f : .5f;
 
+
+  private final Path clipPath = new Path();
+
+  @ColorInt
+  private int getCurrentIconColor () {
+    float activeFactor = iconRes != R.drawable.baseline_volume_up_24 ? this.activeFactor : 0f;
+    return changer.getColor(activeFactor);
+  }
+
   @Override
   protected void onDraw (Canvas c) {
-    float activeFactor = iconRes != R.drawable.baseline_volume_up_24 ? this.activeFactor : 0f;
-    Paint paint = Paints.getPorterDuffPaint(changer.getColor(activeFactor));
+    Paint paint = Paints.getPorterDuffPaint(getCurrentIconColor());
 
     int centerX = getMeasuredWidth() / 2;
     int centerY = getMeasuredHeight() / 2;
@@ -298,6 +328,16 @@ public class EditButton extends View implements FactorAnimator.Target {
 
     if (alpha == 0f) {
       return;
+    }
+
+    final float slowModeCounterFactor = slowModeVisibilityAnimator != null ? slowModeVisibilityAnimator.getFloatValue() : 1f;
+    final boolean needDrawSlowModeCounter = slowModeCounterController != null && slowModeCounterController.isVisible() && slowModeCounterFactor > 0f;
+    int clipSaveTo = -1;
+    if (needDrawSlowModeCounter) {
+      slowModeCounterController.draw(c, avatarReceiver, centerX, centerY, slowModeCounterFactor);
+      slowModeCounterController.buildClipPath(this, clipPath);
+      clipSaveTo = Views.save(c);
+      c.clipPath(clipPath);
     }
 
     if (alpha != 1f) {
@@ -345,5 +385,46 @@ public class EditButton extends View implements FactorAnimator.Target {
 
       c.drawCircle(centerX, getMeasuredHeight() - Screen.dp(9.5f), Screen.dp(2f), Paints.fillingPaint(color));
     }
+
+    if (needDrawSlowModeCounter) {
+      Views.restore(c, clipSaveTo);
+    }
+  }
+
+  private SendButton.SlowModeCounterController slowModeCounterController;
+  private final AvatarReceiver avatarReceiver;
+
+  public void destroySlowModeCounterController () {
+    if (slowModeCounterController != null) {
+      slowModeCounterController.performDestroy();
+      slowModeCounterController = null;
+    }
+    avatarReceiver.destroy();
+  }
+
+  @Override
+  protected void onAttachedToWindow () {
+    avatarReceiver.attach();
+    super.onAttachedToWindow();
+  }
+
+  @Override
+  protected void onDetachedFromWindow () {
+    avatarReceiver.detach();
+    super.onDetachedFromWindow();
+  }
+
+  public SendButton.SlowModeCounterController getSlowModeCounterController (Tdlib tdlib) {
+    if (slowModeCounterController != null && slowModeCounterController.tdlib() != tdlib) {
+      destroySlowModeCounterController();
+    }
+
+    if (slowModeCounterController == null) {
+      slowModeCounterController = new SendButton.SlowModeCounterController(tdlib, this, this::getCurrentIconColor, true, false, (a, b, c) -> {
+        avatarReceiver.requestMessageSender(a, b, c);
+        invalidate();
+      });
+    }
+    return slowModeCounterController;
   }
 }

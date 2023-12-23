@@ -884,6 +884,9 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       }
     }
     String title = computeTitleText(null);
+    if (parent != null) {
+      UI.execute(parent::onReplyLoaded);
+    }
     if (Thread.currentThread() == Background.instance().thread() || forceLocal) {
       this.content = new ContentPreview(translatedText, contentPreview);
       setTitleImpl(title);

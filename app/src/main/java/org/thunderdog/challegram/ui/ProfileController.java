@@ -365,8 +365,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   // Controller
 
+  private final TdlibUi.AvatarPickerManager avatarPickerManager;
+
   public ProfileController (Context context, Tdlib tdlib) {
     super(context, tdlib);
+    avatarPickerManager = new TdlibUi.AvatarPickerManager(this);
   }
 
   @Override
@@ -4415,84 +4418,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onActivityResult (int requestCode, int resultCode, Intent data) {
-    if (resultCode != Activity.RESULT_OK) {
-      return;
-    }
-    switch (requestCode) {
-      case Intents.ACTIVITY_RESULT_IMAGE_CAPTURE: {
-        File image = Intents.takeLastOutputMedia();
-        if (image != null) {
-          // TODO show editor
-          U.addToGallery(image);
-          UI.showToast(R.string.UploadingPhotoWait, Toast.LENGTH_SHORT);
-          tdlib.client().send(new TdApi.SetChatPhoto(chat.id, new TdApi.InputChatPhotoStatic(new TdApi.InputFileGenerated(image.getPath(), SimpleGenerationInfo.makeConversion(image.getPath()), 0))), tdlib.okHandler());
-        }
-
-        break;
-      }
-      case Intents.ACTIVITY_RESULT_GALLERY: {
-        Uri image = data.getData();
-        if (image == null) break;
-        final Uri path = data.getData();
-        String imagePath = U.tryResolveFilePath(path);
-
-        if (imagePath == null) break;
-
-        if (imagePath.endsWith(".webp")) {
-          UI.showToast("Webp is not supported for profile photos", Toast.LENGTH_LONG);
-          break;
-        }
-
-        UI.showToast(R.string.UploadingPhotoWait, Toast.LENGTH_SHORT);
-        tdlib.client().send(new TdApi.SetChatPhoto(chat.id, new TdApi.InputChatPhotoStatic(new TdApi.InputFileGenerated(imagePath, SimpleGenerationInfo.makeConversion(imagePath), 0))), tdlib.okHandler());
-
-        break;
-      }
-    }
+    avatarPickerManager.handleActivityResult(requestCode, resultCode, data, TdlibUi.AvatarPickerManager.MODE_CHAT, chat, null);
   }
 
   private void changeProfilePhoto () {
-    IntList ids = new IntList(4);
-    StringList strings = new StringList(4);
-    IntList colors = new IntList(4);
-    IntList icons = new IntList(4);
-
-    if (chat != null && chat.photo != null && !isEditing()) {
-      ids.append(R.id.btn_open);
-      strings.append(R.string.Open);
-      icons.append(R.drawable.baseline_visibility_24);
-      colors.append(OPTION_COLOR_NORMAL);
-    }
-
-    ids.append(R.id.btn_changePhotoCamera);
-    strings.append(R.string.ChatCamera);
-    icons.append(R.drawable.baseline_camera_alt_24);
-    colors.append(OPTION_COLOR_NORMAL);
-
-    ids.append(R.id.btn_changePhotoGallery);
-    strings.append(R.string.Gallery);
-    icons.append(R.drawable.baseline_image_24);
-    colors.append(OPTION_COLOR_NORMAL);
-
-    if (chat != null && chat.photo != null) {
-      ids.append(R.id.btn_changePhotoDelete);
-      strings.append(R.string.Delete);
-      icons.append(R.drawable.baseline_delete_24);
-      colors.append(OPTION_COLOR_RED);
-    }
-
-    showOptions(null, ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
-      if (id == R.id.btn_open) {
-        openPhoto();
-      } else if (id == R.id.btn_changePhotoCamera) {
-        UI.openCameraDelayed(context);
-      } else if (id == R.id.btn_changePhotoGallery) {
-        UI.openGalleryDelayed(context, false);
-      } else if (id == R.id.btn_changePhotoDelete) {
-        tdlib.client().send(new TdApi.SetChatPhoto(chat.id, null), tdlib.okHandler());
-      }
-      return true;
-    });
+    avatarPickerManager.showMenuForChat(chat, headerCell, !isEditing());
   }
 
   @Override

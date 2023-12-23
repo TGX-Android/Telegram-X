@@ -62,6 +62,7 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.widget.CircleFrameLayout;
 import org.thunderdog.challegram.widget.NoScrollTextView;
+import org.thunderdog.challegram.widget.SendButton;
 import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.SimpleVideoPlayer;
 import org.thunderdog.challegram.widget.VideoTimelineView;
@@ -111,7 +112,8 @@ public class RecordAudioVideoController implements
   private CircleFrameLayout videoLayout;
   private View videoPlaceholderView;
   private RoundProgressView progressView;
-  private ImageView deleteButton, sendButton;
+  private SendButton sendButton;
+  private ImageView deleteButton;
   private HapticMenuHelper sendHelper;
   private VideoTimelineView videoTimelineView;
   private SimpleVideoPlayer videoPreviewView;
@@ -159,7 +161,6 @@ public class RecordAudioVideoController implements
     this.cancelView.setTextColor(Theme.getColor(ColorId.textNeutral));
     this.videoPlaceholderView.setBackgroundColor(Theme.fillingColor());
     this.deleteButton.setColorFilter(Theme.iconColor());
-    this.sendButton.setColorFilter(Theme.chatSendButtonColor());
     this.videoBackgroundView.setBackgroundColor(Theme.getColor(ColorId.previewBackground));
 
     this.cornerView.invalidate();
@@ -421,17 +422,17 @@ public class RecordAudioVideoController implements
       this.deleteButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(56f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.LEFT));
       this.inputOverlayView.addView(deleteButton);
 
-      this.sendButton = new ImageView(context) {
+      this.sendButton = new SendButton(context, R.drawable.deproko_baseline_send_24) {
         @Override
         public boolean onTouchEvent (MotionEvent event) {
           return editFactor > 0f && Views.isValid(this) && super.onTouchEvent(event);
         }
       };
-      this.sendButton.setScaleType(ImageView.ScaleType.CENTER);
-      this.sendButton.setImageResource(R.drawable.deproko_baseline_send_24);
       Views.setClickable(sendButton);
       this.sendButton.setOnClickListener(v -> {
-        sendVideo(Td.newSendOptions());
+        if (!targetController.showSlowModeRestriction(v, null)) {
+          sendVideo(Td.newSendOptions());
+        }
       });
       this.sendButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(55f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT));
       this.inputOverlayView.addView(sendButton);
@@ -667,6 +668,7 @@ public class RecordAudioVideoController implements
     videoTimelineView.performDestroy();
     videoPreviewView.setMuted(true);
     videoPreviewView.setPlaying(true);
+    sendButton.destroySlowModeCounterController();
     setReleased(false, false);
     resetState();
   }
@@ -996,7 +998,8 @@ public class RecordAudioVideoController implements
   }
 
   public boolean finishRecording (boolean needPreview) {
-    return stopRecording(canSendRecording() ? (needPreview ? CLOSE_MODE_PREVIEW : (hasValidOutputTarget() && targetController.areScheduledOnly()) ? CLOSE_MODE_PREVIEW_SCHEDULE : CLOSE_MODE_SEND) : CLOSE_MODE_CANCEL, true);
+    boolean forcePreview = tdlib.getSlowModeRestrictionText(targetChatId) != null;
+    return stopRecording(canSendRecording() ? (needPreview || forcePreview ? CLOSE_MODE_PREVIEW : (hasValidOutputTarget() && targetController.areScheduledOnly()) ? CLOSE_MODE_PREVIEW_SCHEDULE : CLOSE_MODE_SEND) : CLOSE_MODE_CANCEL, true);
   }
 
   private boolean stopRecording (int closeMode, boolean showPrompt) {
@@ -1017,6 +1020,9 @@ public class RecordAudioVideoController implements
     if (async) {
       mode = RECORD_MODE_VIDEO_EDIT;
       editAnimator.setValue(true, false);
+      if (sendButton != null) {
+        sendButton.getSlowModeCounterController(tdlib).setCurrentChat(targetChatId);
+      }
     }
 
     if (recordingVideo && (closeMode == CLOSE_MODE_PREVIEW || closeMode == CLOSE_MODE_PREVIEW_SCHEDULE)) {
@@ -1674,6 +1680,6 @@ public class RecordAudioVideoController implements
     }
     videoPreviewView.setPlaying(false);
     editAnimator.setValue(false, true);
-
+    sendButton.destroySlowModeCounterController();
   }
 }

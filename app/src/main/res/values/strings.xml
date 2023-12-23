@@ -178,6 +178,11 @@
   <string name="xWeeksRelative_one">%1$s week</string>
   <string name="xWeeksRelative_other">%1$s weeks</string>
 
+  <string name="xSlowModeRestrictionSeconds_one">Slow mode is active. You can send the next message in %1$s second</string>
+  <string name="xSlowModeRestrictionSeconds_other">Slow mode is active. You can send the next message in %1$s seconds</string>
+  <string name="xSlowModeRestrictionMinutes_one">Slow mode is active. You can send the next message in %1$s minute</string>
+  <string name="xSlowModeRestrictionMinutes_other">Slow mode is active. You can send the next message in %1$s minutes</string>
+
   <string name="inXHours_one">in %1$s hour</string>
   <string name="inXHours_other">in %1$s hours</string>
   <string name="xChats_one">%1$s chat</string>
@@ -282,6 +287,8 @@
   <string name="general_Messages">Messages</string>
   <string name="SelectChat">Select Chat</string>
   <string name="Message">Message</string>
+  <string name="MessageInputTextDisabled">Text is disabled</string>
+  <string name="MessageInputTextDisabledHint">Admins of this group disabled ability to send text messages.</string>
   <string name="MessageReply">Reply</string>
   <string name="Comment">Comment</string>
   <string name="AnyAsX">as %1$s</string>
@@ -579,6 +586,16 @@
   <string name="NothingFound">Nothing found</string>
   <string name="Gallery">Gallery</string>
   <string name="ChatCamera">Camera</string>
+
+  <string name="SetProfilePhoto">Set Profile Photo</string>
+  <string name="SetGroupPhoto">Set Group Photo</string>
+  <string name="SetChannelPhoto">Set Channel Photo</string>
+  <string name="SetPublicPhoto">Set Public Photo</string>
+  <string name="RemoveProfilePhoto">Remove Profile Photo</string>
+  <string name="RemoveGroupPhoto">Remove Group Photo</string>
+  <string name="RemoveChannelPhoto">Remove Channel Photo</string>
+  <string name="RemovePublicPhoto">Remove Public Photo</string>
+  <string name="RemovePhotoConfirm">Delete current photo?</string>
 
   <string name="MessageSearchFilterAll">All message types</string>
   <string name="MessageSearchFilterText">Text messages</string>
@@ -1273,6 +1290,10 @@
   <string name="Today">Today</string>
   <string name="Yesterday">Yesterday</string>
   <string name="PublicGroup">Public group</string>
+  <string name="PublicPhoto">Public Photo</string>
+  <string name="PublicPhotoSet">Photo set</string>
+  <string name="PublicPhotoNoSet">No Photo set</string>
+  <string name="PublicPhotoHint">Public Photo will be visible for everyone who is restricted from seeing your regular profile photo.</string>
   <string name="Group">Group</string>
   <string name="RenameContact">Rename contact</string>
   <string name="Themes">Themes</string>
@@ -1811,6 +1832,8 @@
   <string name="RightVoiceChats">Manage video chats</string>
   <string name="RightLiveStreams">Manage live streams</string>
   <string name="RightTopics">Manage topics</string>
+  <string name="RightStories">Stories</string>
+  <string name="RightMessages">Messages</string>
   <string name="RightStoriesPost">Post Stories</string>
   <string name="RightStoriesEdit">Edit Stories of Others</string>
   <string name="RightStoriesDelete">Delete Stories of Others</string>
@@ -3431,6 +3454,8 @@
   <string name="format_nameAndSubtitleAndStatus">%1$s (%2$s)\n%3$s</string>
   <string name="format_doubleLines">%1$s\n\n%2$s</string>
 
+  <string name="xPermissionsSendMediaAllowed_one">Allowed %1$s/%2$s</string>
+  <string name="xPermissionsSendMediaAllowed_other">Allowed %1$s/%2$s</string>
   <string name="xPermissions_one">%1$s of %2$s</string>
   <string name="xPermissions_other">%1$s of %2$s</string>
   <string name="xReactions_one">%1$s of %2$s</string>
@@ -4254,6 +4279,8 @@
   <string name="SlowModeHours_one">Members will be able to send only one message every %1$s hour.</string>
   <string name="SlowModeHours_other">Members will be able to send only one message every %1$s hours.</string>
   <string name="SlowModeOff">Off</string>
+  <string name="SlowModeMinutesShort_one">%1$sm</string>
+  <string name="SlowModeMinutesShort_other">%1$sm</string>
 
   <string name="InviteLinks">Invite Links</string>
   <string name="PrimaryInviteLinkMenu">Primary Invite Link</string>
@@ -4687,6 +4714,18 @@
   <string name="opened_round_hours_one">watched %1$s hour ago</string>
   <string name="opened_round_hours_other">watched %1$s hours ago</string>
 
+  <string name="message_edited_now">Edited just now</string>
+  <string name="message_edited_today">Edited today at %1$s</string>
+  <string name="message_edited_yesterday">Edited yesterday at %1$s</string>
+  <string name="message_edited_weekday">Edited on %1$s at %2$s</string>
+  <string name="message_edited_date">Edited on %1$s at %2$s</string>
+  <string name="message_edited_seconds_one">Edited %1$s second ago</string>
+  <string name="message_edited_seconds_other">Edited %1$s seconds ago</string>
+  <string name="message_edited_minutes_one">Edited %1$s minute ago</string>
+  <string name="message_edited_minutes_other">Edited %1$s minutes ago</string>
+  <string name="message_edited_hours_one">Edited %1$s hour ago</string>
+  <string name="message_edited_hours_other">Edited %1$s hours ago</string>
+
   <string name="reacted_now">reacted just now</string>
   <string name="reacted_today">reacted today at %1$s</string>
   <string name="reacted_yesterday">reacted yesterday at %1$s</string>
@@ -4747,7 +4786,7 @@
   <string name="SetTodayAt">Set until today at %1$s</string>
   <string name="SetTomorrowAt">Set until tomorrow at %1$s</string>
   <string name="SetDateAt">Set until %1$s at %2$s</string>
-  
+
   <string name="TextFormatting">Text formatting</string>
   <string name="TextFormattingTools">Tools</string>
   <string name="TextFormattingTranslate">Translate</string>
@@ -4820,7 +4859,7 @@
 
   <string name="ShowXMore_one">%1$s more</string>
   <string name="ShowXMore_other">%1$s more</string>
-  
+
   <string name="ChatTypes">Chat types</string>
   <string name="ChatFolders">Chat Folders</string>
   <string name="ChatFoldersInfo">Create folders for different groups of chats and quickly switch between them.</string>
@@ -4909,6 +4948,10 @@
 
   <string name="ReplyMessageDeletedHint">This message is a reply to the message that was deleted.</string>
   <string name="AnotherChatReplyHint">This message is from another chat. Tap again to view.</string>
+  
   <string name="SwipeToSwapLinkPreview">Swipe to choose specific link preview</string>
+
+  <string name="MessageRestrictedByTelegram">This is a service message from Telegram</string>
+  <string name="MessageUnsupportedHint">This message is unsupported in the installed version of Telegram X.</string>
 
 </resources>

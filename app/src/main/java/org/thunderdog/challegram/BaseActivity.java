@@ -1809,7 +1809,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         PopupLayout window = windows.get(i);
         View boundView = window.getBoundView();
         ViewController<?> boundController = window.getBoundController();
-        if (isContextual(boundView) || (byNavigation && boundView instanceof StickerSetWrap) || (boundView instanceof MediaLayout && !(navigation.getCurrentStackItem() instanceof MessagesController)) || (byNavigation && isContextual(boundController)) ) {
+        if (isContextual(boundView) || (byNavigation && boundView instanceof StickerSetWrap) || (boundView instanceof MediaLayout && !((navigation.getCurrentStackItem() instanceof MessagesController) || (((MediaLayout) boundView).getMode() == MediaLayout.MODE_AVATAR_PICKER))) || (byNavigation && isContextual(boundController)) ) {
           window.hideWindow(true);
         }
       }
@@ -3040,15 +3040,17 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   private void initializeCamera (ViewController.CameraOpenOptions options) {
-    if (camera == null) {
+    final boolean needCreateCamera = camera == null;
+    if (needCreateCamera) {
       camera = new CameraController(this);
-      camera.setMode(options.mode, options.readyListener);
-      camera.setQrListener(options.qrCodeListener, options.qrModeSubtitle, options.qrModeDebug);
+    }
+    camera.setMode(options.mode, options.readyListener);
+    camera.setAvatarPickerMode(options.avatarPickerMode);
+    camera.setQrListener(options.qrCodeListener, options.qrModeSubtitle, options.qrModeDebug);
+    camera.setMediaEditorDelegates(options.delegate, options.selectDelegate, options.sendDelegate);
+    if (needCreateCamera) {
       camera.getValue(); // Ensure view creation
       addActivityListener(camera);
-    } else {
-      camera.setMode(options.mode, options.readyListener);
-      camera.setQrListener(options.qrCodeListener, options.qrModeSubtitle, options.qrModeDebug);
     }
     hideContextualPopups(false);
     closeAllMedia(true);

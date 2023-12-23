@@ -55,6 +55,7 @@ import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.collection.LongSparseIntArray;
+import me.vkryl.core.collection.LongSparseLongArray;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceIntMap;
@@ -125,6 +126,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
 
   private final HashMap<Long, TdApi.Supergroup> supergroups = new HashMap<>();
   private final HashMap<Long, TdApi.SupergroupFullInfo> supergroupsFulls = new HashMap<>();
+  private final LongSparseLongArray supergroupsFullsLastUpdateTime = new LongSparseLongArray();
   private final ReferenceList<SupergroupDataChangeListener> supergroupsGlobalListeners = new ReferenceList<>();
   private final ReferenceLongMap<SupergroupDataChangeListener> supergroupListeners = new ReferenceLongMap<>();
 
@@ -1286,6 +1288,19 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     return result;
   }
 
+  public long getSlowModeDelayExpiresIn (long supergroupId, TimeUnit timeUnit) {
+    synchronized (dataLock) {
+      final long lastUpdateTime = supergroupsFullsLastUpdateTime.get(supergroupId, 0);
+      final TdApi.SupergroupFullInfo supergroupFullInfo = supergroupsFulls.get(supergroupId);
+      if (supergroupFullInfo != null) {
+        final long delayExpiresInMillis = TimeUnit.SECONDS.toMillis((long) supergroupFullInfo.slowModeDelayExpiresIn);
+        return timeUnit.convert(Math.max(0, delayExpiresInMillis - (SystemClock.uptimeMillis() - lastUpdateTime)), TimeUnit.MILLISECONDS);
+      }
+    }
+
+    return 0;
+  }
+
   public void supergroupFull (long supergroupId, RunnableData<TdApi.SupergroupFullInfo> callback) {
     if (supergroupId == 0) {
       if (callback != null) {
@@ -1898,6 +1913,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
 
   private boolean putSupergroupFull (long supergroupId, TdApi.SupergroupFullInfo supergroupFull) {
     supergroupsFulls.put(supergroupId, supergroupFull);
+    supergroupsFullsLastUpdateTime.put(supergroupId, SystemClock.uptimeMillis());
     return true;
   }
 

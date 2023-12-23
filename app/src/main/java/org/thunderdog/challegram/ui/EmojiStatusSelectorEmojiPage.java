@@ -120,7 +120,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
 
     emojiCustomListController = new EmojiStatusListController(context, tdlib) {
       @Override
-      public void onSetEmojiStatusFromPreview (StickerSmallView view, View clickView, TGStickerObj sticker, long emojiId, int duration) {
+      public void onSetEmojiStatusFromPreview (StickerSmallView view, View clickView, TGStickerObj sticker, long emojiId, long expirationDate) {
         context.replaceReactionPreviewCords(parent.animationDelegate.getDestX(), parent.animationDelegate.getDestY());
         parent.hidePopupWindow(true);
         scheduleClickAnimation(sticker.getCustomEmojiId());

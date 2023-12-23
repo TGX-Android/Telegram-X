@@ -650,6 +650,12 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
       return;
     }
 
+    final CharSequence slowModeRestrictionText = tdlib.getSlowModeRestrictionText(chatId, sendOptions.schedulingState);
+    if (slowModeRestrictionText != null) {
+      context().tooltipManager().builder(getDoneButton()).controller(this).show(tdlib, slowModeRestrictionText).hideDelayed();
+      return;
+    }
+
     TdApi.FormattedText explanation = getExplanation(!disableMarkdown);
 
     // TODO lock texts

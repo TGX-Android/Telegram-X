@@ -1406,9 +1406,9 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
             futureRes = R.string.SetDateAt;
 
             context.showDateTimePicker(tdlib, Lang.getString(titleRes), todayRes, tomorrowRes, futureRes, millis -> {
-              int duration = (int) ((millis - System.currentTimeMillis()) / 1000L);
-              stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, duration);
-              tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(emojiId, duration)), tdlib.okHandler());
+              long expirationDate = millis / 1000L;
+              stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, expirationDate);
+              tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(emojiId, (int) expirationDate)), tdlib.okHandler());
               stickerSmallView.closePreviewIfNeeded();
             }, null);
             return true;
@@ -1426,8 +1426,9 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
           } else {
             duration = 0;
           }
-          stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, duration);
-          tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(emojiId, duration)), tdlib.okHandler());
+          long expirationDate = System.currentTimeMillis() / 1000L + duration;
+          stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, expirationDate);
+          tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(emojiId, (int) expirationDate)), tdlib.okHandler());
           stickerSmallView.closePreviewIfNeeded();
           return true;
         });

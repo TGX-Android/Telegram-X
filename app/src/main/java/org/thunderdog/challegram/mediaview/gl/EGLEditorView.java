@@ -168,6 +168,7 @@ public class EGLEditorView extends ViewGroup {
             @Override
             public void onSurfaceTextureUpdated (SurfaceTexture surface) { }
           });
+          textureView.setScaleX(-1);
           contentWrap.addView(textureView);
           break;
         }
@@ -219,12 +220,20 @@ public class EGLEditorView extends ViewGroup {
         float scale = Math.max(W / w, H / h);
         contentWrap.setScaleX(scale);
         contentWrap.setScaleY(scale);
+        if (textureView != null) {
+          textureView.setScaleX(sourceCropState.needMirrorHorizontally() ? -1 : 1);
+          textureView.setScaleY(sourceCropState.needMirrorVertically() ? -1 : 1);
+        }
       } else {
         contentWrap.setRotation(0);
         contentWrap.setScaleX(1f);
         contentWrap.setScaleY(1f);
         contentWrap.setTranslationX(0f);
         contentWrap.setTranslationY(0f);
+        if (textureView != null) {
+          textureView.setScaleX(1);
+          textureView.setScaleY(1);
+        }
       }
       textureWrap.setRotation(sourceRotation);
     }

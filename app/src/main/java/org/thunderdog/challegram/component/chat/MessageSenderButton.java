@@ -183,6 +183,7 @@ public class MessageSenderButton extends FrameLayout implements ReplaceAnimator.
   public void setSendFactor (float factor) {
     sendFactor = factor;
     checkPositionAndSize();
+    checkAlpha();
   }
 
   public void checkPositionAndSize () {
@@ -246,13 +247,24 @@ public class MessageSenderButton extends FrameLayout implements ReplaceAnimator.
     }
   }
 
+  private boolean inSlowMode;
+
+  public void setInSlowMode (boolean inSlowMode) {
+    this.inSlowMode = inSlowMode;
+    checkAlpha();
+  }
+
+  private void checkAlpha () {
+    setAlpha(alphaAnimator.getFloatValue() * (inSlowMode ? (1f - sendFactor) : 1f));
+  }
+
   @Override
   public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
     if (id == QUICK_ANIMATOR) {
       currentButtonView.setQuickSelectFactor(factor);
       oldButtonView.setQuickSelectFactor(factor);
     } else if (id == VISIBLE_ANIMATOR) {
-      setAlpha(factor);
+      checkAlpha();
     }
     invalidate();
   }

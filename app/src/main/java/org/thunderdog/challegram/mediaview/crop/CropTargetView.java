@@ -160,10 +160,18 @@ public class CropTargetView extends View {
     }
   }
 
+  private float mirrorHorizontallyFactor = 0;
+  private float mirrorVerticallyFactor = 0;
+
+  public void setMirrorFactors (float mirrorHorizontallyFactor, float mirrorVerticallyFactor) {
+    this.mirrorHorizontallyFactor = mirrorHorizontallyFactor;
+    this.mirrorVerticallyFactor = mirrorVerticallyFactor;
+    invalidate();
+  }
+
+
   @Override
   protected void onDraw (Canvas c) {
-    // c.drawColor(0xffff0000);
-
     int cx = getMeasuredWidth() / 2;
     int cy = getMeasuredHeight() / 2;
 
@@ -174,7 +182,7 @@ public class CropTargetView extends View {
       c.scale(rotationScale, rotationScale, cx, cy);
     }
 
-    DrawAlgorithms.drawScaledBitmap(getMeasuredWidth(), getMeasuredHeight(), c, bitmap, rotation, paintState);
+    DrawAlgorithms.drawScaledBitmap(getMeasuredWidth(), getMeasuredHeight(), c, bitmap, rotation, mirrorHorizontallyFactor, mirrorVerticallyFactor, paintState);
 
     if (saved) {
       c.restore();
