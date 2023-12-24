@@ -403,7 +403,7 @@ public class EditLanguageController extends EditBaseController<EditLanguageContr
   }
 
   @Override
-  public boolean onDoneClick (View v) {
+  public final boolean onDoneClick () {
     if (saveString()) {
       if (exitOnSave) {
         onSaveCompleted();

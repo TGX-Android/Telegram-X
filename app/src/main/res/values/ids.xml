@@ -138,6 +138,7 @@
   <item type="id" name="controller_memberRights" />
   <item type="id" name="controller_linkChat" />
   <item type="id" name="controller_enabledReactions"/>
+  <item type="id" name="controller_deleteAccount"/>
 
   <item type="id" name="controller_setEmojiStatusPager" />
 
@@ -369,6 +370,7 @@
   <item type="id" name="btn_contactsUnregistered" />
   <item type="id" name="btn_bio" />
   <item type="id" name="btn_logout" />
+  <item type="id" name="btn_deleteAccount" />
   <item type="id" name="btn_camera" />
   <item type="id" name="btn_viewScheduled" />
   <item type="id" name="btn_takePhoto" />

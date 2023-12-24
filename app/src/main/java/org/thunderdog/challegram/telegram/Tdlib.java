@@ -1157,13 +1157,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return authorizationState;
   }
 
-  public void signOut () {
+  public boolean switchToNextAuthorizedAccount () {
     if (context().preferredAccountId() == accountId) {
       int nextAccountId = context().findNextAccountId(accountId);
       if (nextAccountId != TdlibAccount.NO_ID) {
         context().changePreferredAccountId(nextAccountId, TdlibManager.SWITCH_REASON_UNAUTHORIZED);
+        return true;
       }
     }
+    return false;
+  }
+
+  public void signOut () {
+    switchToNextAuthorizedAccount();
     boolean isMulti = context().isMultiUser();
     String name = isMulti ? TD.getUserName(account().getFirstName(), account().getLastName()) : null;
     incrementReferenceCount(REFERENCE_TYPE_JOB);

@@ -510,6 +510,11 @@
   <string name="cam_hint">Please allow Telegram X to use camera in System Settings &gt; Apps &gt; Telegram X &gt; Permissions</string>
   <string name="Settings">Settings</string>
   <string name="LogOut">Log out</string>
+  <string name="DeleteAccount">Delete account</string>
+  <string name="DeleteAccountBtn">Permanently delete account</string>
+  <string name="DeleteAccountInfo">Access to your chats will be lost forever. All existing chats will see you as Deleted Account. Using the same phone number will create a new account.</string>
+  <string name="DeleteMyAccount">Delete my account now</string>
+  <string name="DeleteMyAccountInfo">Permanently delete the account, and all associated information from Telegram servers.</string>
   <string name="Mute">Mute</string>
   <string name="Unmute">Unmute</string>
   <string name="returnToGroup">Return to Group</string>
@@ -1696,7 +1701,7 @@
   <string name="DeleteMultipleFilesHint">Note: you will be able to download these files any time later.</string>
   <string name="FreedX">Freed %1$s of disk space</string>
   <string name="LinkPreview">Link Preview</string>
-  <string name="ClearChannelConfirm">Are you sure you want to clear history for this channell? This action cannot be undone.</string>
+  <string name="ClearChannelConfirm">Are you sure you want to clear history for this channel? This action cannot be undone.</string>
   <string name="ClearChannelSecondaryConfirm">**No, seriously.**\n\nThis will delete **all messages** for **all subscribers**. There will be no way to restore them.</string>
   <string name="ClearHistoryAllConfirm">Are you sure you want to clear history for this chat for all users? This action cannot be undone.</string>
   <string name="ClearHistoryConfirm">Are you sure you want to clear history for this chat? This action cannot be undone.</string>
@@ -2824,6 +2829,8 @@
   <string name="SignOutAltHelp">Contact Support</string>
   <string name="SignOutAltHelpHint">Tell us about any issues; logging out doesn\'t usually help.</string>
   <string name="SignOutAltHint2">Remember, logging out kills all your Secret Chats. Downloaded media will be erased from this device.</string>
+  <string name="DeleteAccountSignOutAltHint2">Sign out without deleting the account. You can sign back in using the same phone number to access your chats.</string>
+  <string name="DeleteAccountHelpHint">Tell us about any issues; after you delete the account, we won\'t be able to restore any data you lose in the process.</string>
 
   <string name="PushServices">Push Services</string>
 
@@ -4953,5 +4960,17 @@
 
   <string name="MessageRestrictedByTelegram">This is a service message from Telegram</string>
   <string name="MessageUnsupportedHint">This message is unsupported in the installed version of Telegram X.</string>
+
+  <string name="ConfirmPasswordAlertHint">Please enter your 2-Step verification password to confirm the action.</string>
+  <string name="DeleteAccountReason">Reason</string>
+  <string name="DeleteAccountDescription">**Note:** you can simultaneously use your Telegram account on as many devices as you want, and change the phone number without starting over.\n\nYou should use this option if you want to erase all data associated with your account on Telegram servers forever.</string>
+  <string name="DeleteAccountConfirmFirst">**Wait. You are entering danger zone.**\n\nThis action will permanently erase all data associated with your account on Telegram servers. There will be no way to restore it.\n\nAccess to any channels or groups, where you are the only admin, **will be lost forever**.</string>
+  <string name="DeleteAccountConfirmFirstBtn">Show alternatives</string>
+  <string name="DeleteAccountConfirm">**No, seriously.**\n\nThis will permanently delete all data associated with your account. There will be no way to restore it.\n\nAccess to any channels or groups, where you are the only admin, **will be lost forever**.</string>
+  <string name="DeleteAccountConfirmBtn">Proceed anyway</string>
+  <string name="DeleteAccountConfirmFinal">**Danger:** this is the last confirmation prompt.\n\nOnce you press the button below, all data will be erased from Telegram servers. Using the same phone number will create a new empty account.</string>
+  <string name="DeleteAccountConfirmFinalBtn">Alright, delete account.</string>
+  <string name="AccountDeleted">Account deleted</string>
+  <string name="AccountDeletedText">Your account %1$s (%2$s) is now deleted from Telegram servers, and can no longer be restored.\n\nUsing the same phone number will create a new account.</string>
 
 </resources>

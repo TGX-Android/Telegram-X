@@ -106,6 +106,7 @@ import org.thunderdog.challegram.ui.ChatLinksController;
 import org.thunderdog.challegram.ui.ChatsController;
 import org.thunderdog.challegram.ui.EditChatFolderController;
 import org.thunderdog.challegram.ui.EditChatLinkController;
+import org.thunderdog.challegram.ui.EditDeleteAccountReasonController;
 import org.thunderdog.challegram.ui.EditNameController;
 import org.thunderdog.challegram.ui.EditProxyController;
 import org.thunderdog.challegram.ui.EditRightsController;
@@ -3728,6 +3729,69 @@ public class TdlibUi extends Handler {
     });
   }
 
+  // Delete account on server
+
+  public void permanentlyDeleteAccount (ViewController<?> context, boolean showAlternatives) {
+    boolean needShowAlternatives = tdlib.isAuthorized() && showAlternatives;
+    context.showOptions(
+      Lang.getMarkdownString(context, needShowAlternatives ? R.string.DeleteAccountConfirmFirst : R.string.DeleteAccountConfirm),
+      new int[] {R.id.btn_deleteAccount, R.id.btn_cancel},
+      new String[] {Lang.getString(needShowAlternatives ? R.string.DeleteAccountConfirmFirstBtn : R.string.DeleteAccountConfirmBtn), Lang.getString(R.string.Cancel)},
+      new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL},
+      new int[] {R.drawable.baseline_delete_alert_24, R.drawable.baseline_cancel_24},
+      (optionItemView, id) -> {
+        if (id == R.id.btn_deleteAccount) {
+          if (needShowAlternatives) {
+            SettingsLogOutController c = new SettingsLogOutController(context.context(), tdlib);
+            c.setArguments(SettingsLogOutController.Type.DELETE_ACCOUNT);
+            context.navigateTo(c);
+            return true;
+          }
+
+          tdlib.send(new TdApi.GetPasswordState(), (passwordState, error) -> context.runOnUiThreadOptional(() -> {
+            if (error != null) {
+              UI.showError(error);
+              return;
+            }
+            context.runOnUiThreadOptional(() -> {
+              if (!passwordState.hasPassword) {
+                context.navigateTo(new EditDeleteAccountReasonController(context.context(), tdlib));
+                return;
+              }
+              promptPassword(context, passwordState, new PasswordController.CustomConfirmDelegate() {
+                @Override
+                public CharSequence getName () {
+                  return Lang.getString(R.string.DeleteAccount);
+                }
+
+                @Override
+                public boolean needNext () {
+                  return true;
+                }
+
+                @Override
+                public void onPasswordConfirmed (ViewController<?> c, String password) {
+                  EditDeleteAccountReasonController target = new EditDeleteAccountReasonController(context.context(), tdlib);
+                  target.setArguments(password);
+                  context.navigateTo(target);
+                }
+              });
+            });
+          }));
+        }
+        return true;
+      }
+    );
+  }
+
+  private void promptPassword (ViewController<?> context, TdApi.PasswordState passwordState, @NonNull PasswordController.CustomConfirmDelegate confirmDelegate) {
+    PasswordController controller = new PasswordController(context.context(), context.tdlib());
+    controller.setArguments(new PasswordController.Args(PasswordController.MODE_CUSTOM_CONFIRM, passwordState)
+      .setConfirmDelegate(confirmDelegate)
+    );
+    context.navigateTo(controller);
+  }
+
   // Log out
 
   public void logOut (ViewController<?> context, boolean showAlternatives) {
@@ -5396,7 +5460,7 @@ public class TdlibUi extends Handler {
   }
 
   private static void removeAccount (ViewController<?> context, final TdlibAccount account, boolean isSignOut) {
-    context.showOptions(Lang.getStringBold(isSignOut ? R.string.SignOutHint2 : R.string.RemoveAccountHint2, account.getName()), new int[]{R.id.btn_removeAccount, R.id.btn_cancel}, new String[]{Lang.getString(R.string.LogOut), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+    context.showOptions(Lang.getStringBold(isSignOut ? R.string.SignOutHint2 : R.string.RemoveAccountHint2, account.getName()), new int[]{R.id.btn_removeAccount, R.id.btn_cancel}, new String[]{Lang.getString(R.string.LogOut), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_logout_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_removeAccount) {
         account.tdlib().signOut();
       }
@@ -6368,68 +6432,80 @@ public class TdlibUi extends Handler {
   }
 
   public void requestTransferOwnership (ViewController<?> context, CharSequence finalAlertMessageText, OwnershipTransferListener listener) {
-    tdlib.client().send(new TdApi.CanTransferOwnership(), result -> {
-      tdlib.ui().post(() -> {
-        listener.onOwnershipTransferAbilityChecked(result);
-        switch (result.getConstructor()) {
-          case TdApi.CanTransferOwnershipResultOk.CONSTRUCTOR:
-            tdlib.client().send(new TdApi.GetPasswordState(), state -> {
-              if (state.getConstructor() != TdApi.PasswordState.CONSTRUCTOR) return;
-              post(() -> {
-                PasswordController controller = new PasswordController(context.context(), context.tdlib());
-                controller.setArguments(new PasswordController.Args(PasswordController.MODE_TRANSFER_OWNERSHIP_CONFIRM, (TdApi.PasswordState) state).setSuccessListener(password -> {
-                  // Ask if the user REALLY wants to transfer ownership, because this operation is serious
-                  context.addOneShotFocusListener(() ->
-                    context.showOptions(new ViewController.Options.Builder()
-                      .info(Strings.getTitleAndText(Lang.getString(R.string.TransferOwnershipAlert), finalAlertMessageText))
-                      .item(new ViewController.OptionItem(R.id.btn_next, Lang.getString(R.string.TransferOwnershipConfirm), ViewController.OPTION_COLOR_RED, R.drawable.templarian_baseline_account_switch_24))
-                      .cancelItem()
-                      .build(), (optionView, id) -> {
-                      if (id == R.id.btn_next) {
-                        listener.onOwnershipTransferConfirmed(password);
-                      }
-                      return true;
-                    })
-                  );
-                }));
-                context.navigateTo(controller);
-              });
+    tdlib.send(new TdApi.CanTransferOwnership(), (canTransferOwnership, error) -> post(() -> {
+      listener.onOwnershipTransferAbilityChecked(canTransferOwnership != null ? canTransferOwnership : error);
+      if (error != null) {
+        UI.showError(error);
+        return;
+      }
+      switch (canTransferOwnership.getConstructor()) {
+        case TdApi.CanTransferOwnershipResultOk.CONSTRUCTOR: {
+          tdlib.send(new TdApi.GetPasswordState(), (passwordState, error1) -> {
+            if (error1 != null) {
+              UI.showError(error1);
+              return;
+            }
+            post(() -> {
+              PasswordController controller = new PasswordController(context.context(), context.tdlib());
+              controller.setArguments(new PasswordController.Args(PasswordController.MODE_TRANSFER_OWNERSHIP_CONFIRM, passwordState).setSuccessListener(password -> {
+                // Ask if the user REALLY wants to transfer ownership, because this operation is serious
+                context.addOneShotFocusListener(() ->
+                  context.showOptions(new ViewController.Options.Builder()
+                    .info(Strings.getTitleAndText(Lang.getString(R.string.TransferOwnershipAlert), finalAlertMessageText))
+                    .item(new ViewController.OptionItem(R.id.btn_next, Lang.getString(R.string.TransferOwnershipConfirm), ViewController.OPTION_COLOR_RED, R.drawable.templarian_baseline_account_switch_24))
+                    .cancelItem()
+                    .build(), (optionView, id) -> {
+                    if (id == R.id.btn_next) {
+                      listener.onOwnershipTransferConfirmed(password);
+                    }
+                    return true;
+                  })
+                );
+              }));
+              context.navigateTo(controller);
             });
-            break;
-          case TdApi.CanTransferOwnershipResultPasswordNeeded.CONSTRUCTOR:
-            context.showOptions(new ViewController.Options.Builder()
-              .info(Strings.getTitleAndText(Lang.getString(R.string.TransferOwnershipSecurityAlert), Lang.getMarkdownString(context, R.string.TransferOwnershipSecurityPasswordNeeded)))
-              .item(new ViewController.OptionItem(R.id.btn_next, Lang.getString(R.string.TransferOwnershipSecurityActionSetPassword), ViewController.OPTION_COLOR_BLUE, R.drawable.mrgrigri_baseline_textbox_password_24))
-              .cancelItem()
-              .build(), (optionView, id) -> {
-                if (id == R.id.btn_next) {
-                  Settings2FAController controller = new Settings2FAController(context.context(), context.tdlib());
-                  controller.setArguments(new Settings2FAController.Args(null));
-                  context.navigateTo(controller);
-                }
-                return true;
-              }
-            );
-            break;
-          case TdApi.CanTransferOwnershipResultPasswordTooFresh.CONSTRUCTOR:
-            context.showOptions(new ViewController.Options.Builder()
-              .info(Strings.getTitleAndText(Lang.getString(R.string.TransferOwnershipSecurityAlert), Lang.getMarkdownString(context, R.string.TransferOwnershipSecurityWaitPassword, Lang.getDuration(((TdApi.CanTransferOwnershipResultPasswordTooFresh) result).retryAfter))))
-              .item(new ViewController.OptionItem(R.id.btn_next, Lang.getString(R.string.OK), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_check_circle_24))
-              .cancelItem()
-              .build(), (optionView, id) -> true
-            );
-            break;
-          case TdApi.CanTransferOwnershipResultSessionTooFresh.CONSTRUCTOR:
-            context.showOptions(new ViewController.Options.Builder()
-              .info(Strings.getTitleAndText(Lang.getString(R.string.TransferOwnershipSecurityAlert), Lang.getMarkdownString(context, R.string.TransferOwnershipSecurityWaitSession, Lang.getDuration(((TdApi.CanTransferOwnershipResultSessionTooFresh) result).retryAfter))))
-              .item(new ViewController.OptionItem(R.id.btn_next, Lang.getString(R.string.OK), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_check_circle_24))
-              .cancelItem()
-              .build(), (optionView, id) -> true
-            );
-            break;
+          });
+          break;
         }
-      });
-    });
+        case TdApi.CanTransferOwnershipResultPasswordNeeded.CONSTRUCTOR: {
+          context.showOptions(new ViewController.Options.Builder()
+            .info(Strings.getTitleAndText(Lang.getString(R.string.TransferOwnershipSecurityAlert), Lang.getMarkdownString(context, R.string.TransferOwnershipSecurityPasswordNeeded)))
+            .item(new ViewController.OptionItem(R.id.btn_next, Lang.getString(R.string.TransferOwnershipSecurityActionSetPassword), ViewController.OPTION_COLOR_BLUE, R.drawable.mrgrigri_baseline_textbox_password_24))
+            .cancelItem()
+            .build(), (optionView, id) -> {
+              if (id == R.id.btn_next) {
+                Settings2FAController controller = new Settings2FAController(context.context(), context.tdlib());
+                controller.setArguments(new Settings2FAController.Args(null));
+                context.navigateTo(controller);
+              }
+              return true;
+            }
+          );
+          break;
+        }
+        case TdApi.CanTransferOwnershipResultPasswordTooFresh.CONSTRUCTOR: {
+          context.showOptions(new ViewController.Options.Builder()
+            .info(Strings.getTitleAndText(Lang.getString(R.string.TransferOwnershipSecurityAlert), Lang.getMarkdownString(context, R.string.TransferOwnershipSecurityWaitPassword, Lang.getDuration(((TdApi.CanTransferOwnershipResultPasswordTooFresh) canTransferOwnership).retryAfter))))
+            .item(new ViewController.OptionItem(R.id.btn_next, Lang.getString(R.string.OK), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_check_circle_24))
+            .cancelItem()
+            .build(), (optionView, id) -> true
+          );
+          break;
+        }
+        case TdApi.CanTransferOwnershipResultSessionTooFresh.CONSTRUCTOR: {
+          context.showOptions(new ViewController.Options.Builder()
+            .info(Strings.getTitleAndText(Lang.getString(R.string.TransferOwnershipSecurityAlert), Lang.getMarkdownString(context, R.string.TransferOwnershipSecurityWaitSession, Lang.getDuration(((TdApi.CanTransferOwnershipResultSessionTooFresh) canTransferOwnership).retryAfter))))
+            .item(new ViewController.OptionItem(R.id.btn_next, Lang.getString(R.string.OK), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_check_circle_24))
+            .cancelItem()
+            .build(), (optionView, id) -> true
+          );
+          break;
+        }
+        default:
+          Td.assertCanTransferOwnershipResult_ac091006();
+          throw Td.unsupported(canTransferOwnership);
+      }
+    }));
   }
 
   public void saveGifs (List<TD.DownloadedFile> downloadedFiles) {
