@@ -4895,11 +4895,11 @@
   <string name="FolderRemoveExclusionConfirmUser">Are you sure you want to remove "%1$s" from the always excluded list?</string>
   <string name="FolderRemoveExclusionConfirmType">Are you sure you want to remove "%1$s" from the always excluded list?</string>
   <string name="IncludeChats">Include Chats</string>
-  <string name="IncludeChatsInfo_one">You can select only one non-secret chat and only one secret chat.</string>
-  <string name="IncludeChatsInfo_other">You can select up to %1$s non-secret chats and the same number of secret chats.</string>
+  <string name="IncludeChatsInfo_one">You can select only one cloud and only one secret chat.</string>
+  <string name="IncludeChatsInfo_other">You can select up to %1$s cloud chats and the same number of secret chats.</string>
   <string name="ExcludeChats">Exclude Chats</string>
-  <string name="ExcludeChatsInfo_one">You can select only one non-secret chat and only one secret chat</string>
-  <string name="ExcludeChatsInfo_other">You can select up to %1$s non-secret chats and the same number of secret chats.</string>
+  <string name="ExcludeChatsInfo_one">You can select only one cloud chat and only one secret chat</string>
+  <string name="ExcludeChatsInfo_other">You can select up to %1$s cloud chats and the same number of secret chats.</string>
   <string name="FolderIncludedChats">Included Chats</string>
   <string name="FolderIncludedChatsInfo">Choose chats or types of chats that will appear in this folder.</string>
   <string name="FolderExcludedChats">Excluded Chats</string>
