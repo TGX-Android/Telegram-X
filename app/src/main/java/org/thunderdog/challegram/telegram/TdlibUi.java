@@ -3773,7 +3773,7 @@ public class TdlibUi extends Handler {
                 public void onPasswordConfirmed (ViewController<?> c, String password) {
                   EditDeleteAccountReasonController target = new EditDeleteAccountReasonController(context.context(), tdlib);
                   target.setArguments(password);
-                  context.navigateTo(target);
+                  c.navigateTo(target);
                 }
               });
             });
