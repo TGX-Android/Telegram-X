@@ -28,6 +28,9 @@ public abstract class TokenRetriever {
 
   protected abstract boolean performInitialization (Context context);
 
+  public abstract @NonNull String getName ();
+  public abstract @Nullable String getConfiguration ();
+
   public final void retrieveDeviceToken (int retryCount, RegisterCallback callback) {
     if (!isInitialized) {
       throw new IllegalStateException();

@@ -42,8 +42,6 @@ import androidx.annotation.StringRes;
 import androidx.collection.SparseArrayCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
-import com.google.firebase.FirebaseOptions;
-
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -65,6 +63,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibNotificationChannelGroup;
 import org.thunderdog.challegram.telegram.TdlibNotificationManager;
+import org.thunderdog.challegram.telegram.TdlibNotificationUtils;
 import org.thunderdog.challegram.telegram.TdlibOptionListener;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -76,6 +75,7 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.RingtoneItem;
 import org.thunderdog.challegram.util.SimpleStringItem;
 import org.thunderdog.challegram.util.StringList;
+import org.thunderdog.challegram.util.TokenRetriever;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.InfiniteRecyclerView;
@@ -1370,16 +1370,17 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     Throwable fullError = tdlib.context().getTokenFullError();
     String error = tdlib.context().getTokenError();
     if (!StringUtils.isEmpty(error) || fullError != null) {
-      String report = "#firebase_error";
+      TokenRetriever retriever = TdlibNotificationUtils.getTokenRetriever();
+      String report = "#" + retriever.getName() + "_error";
       if (!StringUtils.isEmpty(error)) {
         report += " " + error;
       }
       report += "\n\n";
-      FirebaseOptions firebaseOptions = FirebaseOptions.fromResource(UI.getAppContext());
-      if (firebaseOptions != null) {
-        report += "Firebase options:\n" + firebaseOptions;
+      String configuration = retriever.getConfiguration();
+      if (!StringUtils.isEmpty(configuration)) {
+        report += "Configuration:\n" + configuration;
       } else {
-        report += "Firebase options unavailable!";
+        report += "Configuration unavailable!";
       }
       report += "\n" + U.getUsefulMetadata(tdlib);
       if (fullError != null) {

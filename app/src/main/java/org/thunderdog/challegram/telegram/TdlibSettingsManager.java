@@ -72,7 +72,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   private static final String NOTIFICATION_DATA_PREFIX = "notification_data_";
   public static final String CONVERSION_PREFIX = "pending_conversion_";
 
-  public static final String DEVICE_TOKEN_KEY = "registered_device_token";
+  public static final String DEVICE_TOKEN_OR_ENDPOINT_KEY = "registered_device_token";
   public static final String DEVICE_TOKEN_TYPE_KEY = "registered_device_token_type";
   public static final String DEVICE_UID_KEY = "registered_device_uid";
   public static final String DEVICE_OTHER_UID_KEY = "registered_device_uid_other";
@@ -616,49 +616,32 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   @Nullable
   private static TdApi.DeviceToken getRegisteredDeviceToken (int accountId) {
     @DeviceTokenType int tokenType = Settings.instance().getInt(key(DEVICE_TOKEN_TYPE_KEY, accountId), DeviceTokenType.FIREBASE_CLOUD_MESSAGING);
-    switch (tokenType) {
-      case DeviceTokenType.FIREBASE_CLOUD_MESSAGING:
-      default: {
-        String token = Settings.instance().getString(key(DEVICE_TOKEN_KEY, accountId), null);
-        if (!StringUtils.isEmpty(token)) {
-          return new TdApi.DeviceTokenFirebaseCloudMessaging(token, true);
-        }
-        break;
-      }
-    }
-    return null;
+    String tokenOrEndpoint = Settings.instance().getString(key(DEVICE_TOKEN_OR_ENDPOINT_KEY, accountId), null);
+    return Settings.newDeviceToken(tokenType, tokenOrEndpoint);
   }
 
   private static long[] getRegisteredDeviceOtherUserIds (int accountId) {
     return Settings.instance().pmc().getLongArray(key(DEVICE_OTHER_UID_KEY, accountId));
   }
 
-  public static void setRegisteredDevice (int accountId, long userId, TdApi.DeviceToken deviceToken, @Nullable long[] otherUserIds) {
+  public static void setRegisteredDevice (int accountId, long userId, @Nullable TdApi.DeviceToken deviceToken, @Nullable long[] otherUserIds) {
     if (deviceToken == null) {
       unregisterDevice(accountId);
-    } else {
-      int tokenType = TdlibNotificationUtils.getDeviceTokenType(deviceToken);
-      LevelDB pmc = Settings.instance().edit();
-      switch (deviceToken.getConstructor()) {
-        case TdApi.DeviceTokenFirebaseCloudMessaging.CONSTRUCTOR: {
-          String token = ((TdApi.DeviceTokenFirebaseCloudMessaging) deviceToken).token;
-          pmc.putInt(key(DEVICE_TOKEN_TYPE_KEY, accountId), tokenType)
-            .putString(key(DEVICE_TOKEN_KEY, accountId), token);
-          break;
-        }
-        default: {
-          throw new UnsupportedOperationException(deviceToken.toString());
-        }
-      }
-      pmc.putLong(key(DEVICE_UID_KEY, accountId), userId);
-      pmc.putString(key(DEVICE_TDLIB_VERSION2_KEY, accountId), BuildConfig.TDLIB_VERSION);
-      if (otherUserIds != null && otherUserIds.length > 0) {
-        pmc.putLongArray(key(DEVICE_OTHER_UID_KEY, accountId), otherUserIds);
-      } else {
-        pmc.remove(key(DEVICE_OTHER_UID_KEY, accountId));
-      }
-      pmc.apply();
+      return;
     }
+    LevelDB pmc = Settings.instance().edit();
+    Settings.storeDeviceToken(deviceToken, pmc,
+      key(DEVICE_TOKEN_TYPE_KEY, accountId),
+      key(DEVICE_TOKEN_OR_ENDPOINT_KEY, accountId)
+    );
+    pmc.putLong(key(DEVICE_UID_KEY, accountId), userId);
+    pmc.putString(key(DEVICE_TDLIB_VERSION2_KEY, accountId), BuildConfig.TDLIB_VERSION);
+    if (otherUserIds != null && otherUserIds.length > 0) {
+      pmc.putLongArray(key(DEVICE_OTHER_UID_KEY, accountId), otherUserIds);
+    } else {
+      pmc.remove(key(DEVICE_OTHER_UID_KEY, accountId));
+    }
+    pmc.apply();
   }
 
   public static boolean checkRegisteredDeviceToken (int accountId, long userId, TdApi.DeviceToken token, long[] otherUserIds, boolean skipOtherUserIdsCheck) {
@@ -671,7 +654,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
 
   public static void unregisterDevice (int accountId) {
     Settings.instance().edit()
-      .remove(key(DEVICE_TOKEN_KEY, accountId))
+      .remove(key(DEVICE_TOKEN_OR_ENDPOINT_KEY, accountId))
       .remove(key(DEVICE_TOKEN_TYPE_KEY, accountId))
       .remove(key(DEVICE_UID_KEY, accountId))
       .remove(key(DEVICE_OTHER_UID_KEY, accountId))

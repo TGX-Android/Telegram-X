@@ -26,8 +26,6 @@ import androidx.annotation.IdRes;
 import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 
-import com.google.firebase.FirebaseOptions;
-
 import org.drinkless.tdlib.TdApi;
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.BuildConfig;
@@ -49,6 +47,7 @@ import org.thunderdog.challegram.telegram.GlobalTokenStateListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibManager;
+import org.thunderdog.challegram.telegram.TdlibNotificationUtils;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.PorterDuffColorId;
@@ -83,6 +82,7 @@ import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.unit.ByteUnit;
 import me.vkryl.td.ChatPosition;
+import me.vkryl.td.Td;
 
 public class SettingsBugController extends RecyclerViewController<SettingsBugController.Args> implements
   View.OnClickListener,
@@ -410,6 +410,30 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
     return customHeaderCell;
   }
 
+  private static String toHumanRepresentation (@Nullable TdApi.DeviceToken deviceToken) {
+    if (deviceToken == null) {
+      return "null";
+    }
+    switch (deviceToken.getConstructor()) {
+      case TdApi.DeviceTokenFirebaseCloudMessaging.CONSTRUCTOR: {
+        TdApi.DeviceTokenFirebaseCloudMessaging fcm = (TdApi.DeviceTokenFirebaseCloudMessaging) deviceToken;
+        return "Firebase: " + fcm.token + ", encrypt: " + fcm.encrypt;
+      }
+      case TdApi.DeviceTokenHuaweiPush.CONSTRUCTOR: {
+        TdApi.DeviceTokenHuaweiPush huaweiPush = (TdApi.DeviceTokenHuaweiPush) deviceToken;
+        return "Huawei: " + huaweiPush.token + ", encrypt: " + huaweiPush.encrypt;
+      }
+      case TdApi.DeviceTokenSimplePush.CONSTRUCTOR: {
+        TdApi.DeviceTokenSimplePush simplePush = (TdApi.DeviceTokenSimplePush) deviceToken;
+        return "Simple Push: " + simplePush.endpoint;
+      }
+      default: {
+        Td.assertDeviceToken_de4a4f61();
+        throw Td.unsupported(deviceToken);
+      }
+    }
+  }
+
   @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
     checkLogSize(false);
@@ -483,17 +507,19 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
             case TdlibManager.TokenState.INITIALIZING:
               view.setData("Initializing...");
               break;
-            case TdlibManager.TokenState.OK:
-              view.setData("Firebase: " + tdlib.context().getToken());
+            case TdlibManager.TokenState.OK: {
+              TdApi.DeviceToken deviceToken = tdlib.context().getToken();
+              view.setData(toHumanRepresentation(deviceToken));
               break;
+            }
             case TdlibManager.TokenState.NONE:
             default:
               view.setData("Unknown");
               break;
           }
         } else if (itemId == R.id.btn_secret_pushConfig) {
-          FirebaseOptions options = FirebaseOptions.fromResource(UI.getAppContext());
-          view.setData(options != null ? options.toString() : "Unavailable");
+          String configuration = TdlibNotificationUtils.getTokenRetriever().getConfiguration();
+          view.setData(!StringUtils.isEmpty(configuration) ? configuration : "Unavailable");
         } else if (itemId == R.id.btn_secret_appFingerprint) {
           view.setData(U.getApkFingerprint("SHA1"));
         } else if (itemId == R.id.btn_secret_pushStats) {
@@ -702,7 +728,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_secret_pushTtl, 0, "TTL", false));
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_secret_pushConfig, 0, "App config", false));
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_secret_pushConfig, 0, "Configuration", false));
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_secret_appFingerprint, 0, "App fingerprint", false));
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
@@ -1129,12 +1155,12 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       }
     } else if (viewId == R.id.btn_secret_pushToken) {
       if (tdlib.context().getTokenState() == TdlibManager.TokenState.OK) {
-        UI.copyText("Firebase: " + tdlib.context().getToken(), R.string.CopiedText);
+        UI.copyText(toHumanRepresentation(tdlib.context().getToken()), R.string.CopiedText);
       }
     } else if (viewId == R.id.btn_secret_pushConfig) {
-      FirebaseOptions options = FirebaseOptions.fromResource(UI.getAppContext());
-      if (options != null) {
-        UI.copyText("Firebase config: " + options, R.string.CopiedText);
+      String configuration = TdlibNotificationUtils.getTokenRetriever().getConfiguration();
+      if (!StringUtils.isEmpty(configuration)) {
+        UI.copyText(configuration, R.string.CopiedText);
       }
     } else if (viewId == R.id.btn_secret_appFingerprint) {
       UI.copyText(U.getApkFingerprint("SHA1"), R.string.CopiedText);

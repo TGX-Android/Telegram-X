@@ -5757,31 +5757,38 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       if (deviceToken != null && (state == TdlibManager.TokenState.NONE || state == TdlibManager.TokenState.INITIALIZING)) {
         state = TdlibManager.TokenState.OK;
       }
+      String tokenProvider = TdlibNotificationUtils.getTokenRetriever().getName();
       String error = context().getTokenError();
       switch (state) {
         case TdlibManager.TokenState.ERROR: {
-          params.put("device_token", "FIREBASE_ERROR");
+          params.put("device_token", tokenProvider.toUpperCase() + "_ERROR");
           if (!StringUtils.isEmpty(error)) {
-            params.put("firebase_error", error);
+            params.put(tokenProvider + "_error", error);
           }
           break;
         }
         case TdlibManager.TokenState.INITIALIZING: {
-          params.put("device_token", "FIREBASE_INITIALIZING");
+          params.put("device_token", tokenProvider.toUpperCase() + "_INITIALIZING");
           break;
         }
         case TdlibManager.TokenState.OK: {
+          String tokenOrEndpoint;
           switch (deviceToken.getConstructor()) {
-            // TODO more push services
-            case TdApi.DeviceTokenFirebaseCloudMessaging.CONSTRUCTOR: {
-              String token = ((TdApi.DeviceTokenFirebaseCloudMessaging) deviceToken).token;
-              params.put("device_token", token);
+            case TdApi.DeviceTokenFirebaseCloudMessaging.CONSTRUCTOR:
+              tokenOrEndpoint = ((TdApi.DeviceTokenFirebaseCloudMessaging) deviceToken).token;
               break;
-            }
+            case TdApi.DeviceTokenHuaweiPush.CONSTRUCTOR:
+              tokenOrEndpoint = ((TdApi.DeviceTokenHuaweiPush) deviceToken).token;
+              break;
+            case TdApi.DeviceTokenSimplePush.CONSTRUCTOR:
+              tokenOrEndpoint = ((TdApi.DeviceTokenSimplePush) deviceToken).endpoint;
+              break;
             default: {
-              throw new UnsupportedOperationException(deviceToken.toString());
+              Td.assertDeviceToken_de4a4f61();
+              throw Td.unsupported(deviceToken);
             }
           }
+          params.put("device_token", tokenOrEndpoint);
           break;
         }
         case TdlibManager.TokenState.NONE:

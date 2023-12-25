@@ -12,14 +12,21 @@
  *
  * File created on 22/10/2022
  */
-package org.thunderdog.challegram;
+package org.thunderdog.challegram.push;
 
 import android.content.Context;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.TDLib;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.TokenRetriever;
 
 import java.util.regex.Matcher;
@@ -27,7 +34,7 @@ import java.util.regex.Pattern;
 
 import me.vkryl.core.StringUtils;
 
-public final class FirebaseTokenRetriever extends TokenRetriever {
+final class FirebaseTokenRetriever extends TokenRetriever {
   @Override
   protected boolean performInitialization (Context context) {
     try {
@@ -42,6 +49,19 @@ public final class FirebaseTokenRetriever extends TokenRetriever {
       TDLib.Tag.notifications("FirebaseApp initialization failed with error: %s", Log.toString(e));
     }
     return false;
+  }
+
+  @NonNull
+  @Override
+  public String getName () {
+    return "firebase";
+  }
+
+  @Override
+  @Nullable
+  public String getConfiguration () {
+    FirebaseOptions options = FirebaseOptions.fromResource(UI.getAppContext());
+    return options != null ? options.toString() : null;
   }
 
   private static String extractFirebaseErrorName (Throwable e) {

@@ -321,7 +321,7 @@ public class Settings {
   private static final @Deprecated String KEY_PUSH_USER_IDS = "push_user_ids";
   private static final @Deprecated String KEY_PUSH_USER_ID = "push_user_id";
   private static final String KEY_PUSH_DEVICE_TOKEN_TYPE = "push_device_token_type";
-  private static final String KEY_PUSH_DEVICE_TOKEN = "push_device_token";
+  private static final String KEY_PUSH_DEVICE_TOKEN_OR_ENDPOINT = "push_device_token";
   private static final String KEY_PUSH_STATS_TOTAL_COUNT = "push_stats_total";
   private static final String KEY_PUSH_STATS_CURRENT_APP_VERSION_COUNT = "push_stats_app";
   private static final String KEY_PUSH_STATS_CURRENT_TOKEN_COUNT = "push_stats_token";
@@ -1844,7 +1844,7 @@ public class Settings {
       case VERSION_24: {
         int accountNum = TdlibManager.readAccountNum();
         for (int accountId = 0; accountId < accountNum; accountId++) {
-          editor.remove(TdlibSettingsManager.key(TdlibSettingsManager.DEVICE_TOKEN_KEY, accountId));
+          editor.remove(TdlibSettingsManager.key(TdlibSettingsManager.DEVICE_TOKEN_OR_ENDPOINT_KEY, accountId));
           editor.remove(TdlibSettingsManager.key(TdlibSettingsManager.DEVICE_UID_KEY, accountId));
           editor.remove(TdlibSettingsManager.key(TdlibSettingsManager.DEVICE_OTHER_UID_KEY, accountId));
         }
@@ -6370,45 +6370,65 @@ public class Settings {
 
   // Push token
 
+  public static void storeDeviceToken (@NonNull TdApi.DeviceToken deviceToken, SharedPreferences.Editor editor, final String keyTokenType, final String keyTokenOrEndpoint) {
+    @DeviceTokenType int tokenType = TdlibNotificationUtils.getDeviceTokenType(deviceToken);
+    final String tokenOrEndpoint;
+    switch (tokenType) {
+      case DeviceTokenType.FIREBASE_CLOUD_MESSAGING:
+        tokenOrEndpoint = ((TdApi.DeviceTokenFirebaseCloudMessaging) deviceToken).token;
+        break;
+      case DeviceTokenType.HUAWEI_PUSH_SERVICE:
+        tokenOrEndpoint = ((TdApi.DeviceTokenHuaweiPush) deviceToken).token;
+        break;
+      case DeviceTokenType.SIMPLE_PUSH_SERVICE:
+        tokenOrEndpoint = ((TdApi.DeviceTokenSimplePush) deviceToken).endpoint;
+        break;
+      default:
+        Td.assertDeviceToken_de4a4f61();
+        throw Td.unsupported(deviceToken);
+    }
+    editor
+      .putInt(keyTokenType, tokenType)
+      .putString(keyTokenOrEndpoint, tokenOrEndpoint);
+  }
+
   public void setDeviceToken (TdApi.DeviceToken token) {
     if (token == null) {
       pmc.edit()
         .remove(KEY_PUSH_DEVICE_TOKEN_TYPE)
-        .remove(KEY_PUSH_DEVICE_TOKEN)
+        .remove(KEY_PUSH_DEVICE_TOKEN_OR_ENDPOINT)
         .apply();
     } else if (!Td.equalsTo(token, getDeviceToken())) {
       resetTokenPushMessageCount();
-      int tokenType = TdlibNotificationUtils.getDeviceTokenType(token);
-      switch (token.getConstructor()) {
-        case TdApi.DeviceTokenFirebaseCloudMessaging.CONSTRUCTOR: {
-          TdApi.DeviceTokenFirebaseCloudMessaging fcmToken = (TdApi.DeviceTokenFirebaseCloudMessaging) token;
-          pmc.edit()
-            .putInt(KEY_PUSH_DEVICE_TOKEN_TYPE, tokenType)
-            .putString(KEY_PUSH_DEVICE_TOKEN, fcmToken.token)
-            .apply();
-          break;
-        }
-        default: {
-          throw new UnsupportedOperationException(token.toString());
-        }
-      }
+      SharedPreferences.Editor editor = pmc.edit();
+      Settings.storeDeviceToken(token, editor,
+        KEY_PUSH_DEVICE_TOKEN_TYPE,
+        KEY_PUSH_DEVICE_TOKEN_OR_ENDPOINT
+      );
+      editor.apply();
     }
+  }
+
+  public static TdApi.DeviceToken newDeviceToken (@DeviceTokenType int tokenType, @Nullable String tokenOrEndpoint) {
+    if (StringUtils.isEmpty(tokenOrEndpoint)) {
+      return null;
+    }
+    switch (tokenType) {
+      case DeviceTokenType.FIREBASE_CLOUD_MESSAGING:
+        return new TdApi.DeviceTokenFirebaseCloudMessaging(tokenOrEndpoint, true);
+      case DeviceTokenType.SIMPLE_PUSH_SERVICE:
+        return new TdApi.DeviceTokenSimplePush(tokenOrEndpoint);
+      case DeviceTokenType.HUAWEI_PUSH_SERVICE:
+        return new TdApi.DeviceTokenHuaweiPush(tokenOrEndpoint, true);
+    }
+    return null;
   }
 
   @Nullable
   public TdApi.DeviceToken getDeviceToken () {
     @DeviceTokenType int tokenType = pmc.getInt(KEY_PUSH_DEVICE_TOKEN_TYPE, DeviceTokenType.FIREBASE_CLOUD_MESSAGING);
-    switch (tokenType) {
-      case DeviceTokenType.FIREBASE_CLOUD_MESSAGING:
-      default: {
-        String token = pmc.getString(KEY_PUSH_DEVICE_TOKEN, null);
-        if (!StringUtils.isEmpty(token)) {
-          return new TdApi.DeviceTokenFirebaseCloudMessaging(token, true);
-        }
-        break;
-      }
-    }
-    return null;
+    String tokenOrEndpoint = pmc.getString(KEY_PUSH_DEVICE_TOKEN_OR_ENDPOINT, null);
+    return newDeviceToken(tokenType, tokenOrEndpoint);
   }
 
   // Device ID used to anonymously identify crashes from the same client

@@ -12,7 +12,7 @@
  *
  * File created on 22/10/2022
  */
-package org.thunderdog.challegram;
+package org.thunderdog.challegram.location;
 
 import android.location.Location;
 
@@ -26,6 +26,8 @@ import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResult;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 
+import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.LocationRetriever;

@@ -32,7 +32,6 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.TDLib;
-import org.thunderdog.challegram.TokenRetrieverFactory;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
@@ -40,6 +39,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageCache;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReader;
+import org.thunderdog.challegram.push.TokenRetrieverFactory;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeId;
@@ -52,6 +52,8 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.DeviceTokenType;
 import org.thunderdog.challegram.util.TokenRetriever;
 import org.thunderdog.challegram.util.text.Letters;
+
+import me.vkryl.td.Td;
 
 public class TdlibNotificationUtils {
   private static TextPaint lettersPaint;
@@ -252,14 +254,25 @@ public class TdlibNotificationUtils {
     return tokenRetriever.initialize(UI.getAppContext());
   }
 
+  public static @NonNull TokenRetriever getTokenRetriever () {
+    if (tokenRetriever == null) {
+      initialize();
+    }
+    return tokenRetriever;
+  }
+
   @DeviceTokenType
   public static int getDeviceTokenType (TdApi.DeviceToken deviceToken) {
     switch (deviceToken.getConstructor()) {
-      // TODO more push services
       case TdApi.DeviceTokenFirebaseCloudMessaging.CONSTRUCTOR:
         return DeviceTokenType.FIREBASE_CLOUD_MESSAGING;
+      case TdApi.DeviceTokenHuaweiPush.CONSTRUCTOR:
+        return DeviceTokenType.HUAWEI_PUSH_SERVICE;
+      case TdApi.DeviceTokenSimplePush.CONSTRUCTOR:
+        return DeviceTokenType.SIMPLE_PUSH_SERVICE;
       default:
-        throw new UnsupportedOperationException(deviceToken.toString());
+        Td.assertDeviceToken_de4a4f61();
+        throw Td.unsupported(deviceToken);
     }
   }
 
