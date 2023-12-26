@@ -87,6 +87,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.TimeZone;
@@ -5773,13 +5774,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         }
         case TdlibManager.TokenState.OK: {
           String tokenOrEndpoint;
-          switch (deviceToken.getConstructor()) {
+          switch (Objects.requireNonNull(deviceToken).getConstructor()) {
             case TdApi.DeviceTokenFirebaseCloudMessaging.CONSTRUCTOR:
               tokenOrEndpoint = ((TdApi.DeviceTokenFirebaseCloudMessaging) deviceToken).token;
               break;
-            case TdApi.DeviceTokenHuaweiPush.CONSTRUCTOR:
+            case TdApi.DeviceTokenHuaweiPush.CONSTRUCTOR: {
               tokenOrEndpoint = ((TdApi.DeviceTokenHuaweiPush) deviceToken).token;
+              final String huaweiTokenPrefix = "huawei://";
+              if (tokenOrEndpoint.startsWith(huaweiTokenPrefix)) {
+                tokenOrEndpoint = huaweiTokenPrefix + tokenOrEndpoint;
+              }
               break;
+            }
             case TdApi.DeviceTokenSimplePush.CONSTRUCTOR:
               tokenOrEndpoint = ((TdApi.DeviceTokenSimplePush) deviceToken).endpoint;
               break;
