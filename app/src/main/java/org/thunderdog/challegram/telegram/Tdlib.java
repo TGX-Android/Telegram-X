@@ -87,7 +87,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.TimeZone;
@@ -105,6 +104,7 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.FileUtils;
 import me.vkryl.core.MathUtils;
+import me.vkryl.core.ObjectUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.LongList;
 import me.vkryl.core.collection.LongSet;
@@ -5774,7 +5774,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         }
         case TdlibManager.TokenState.OK: {
           String tokenOrEndpoint;
-          switch (Objects.requireNonNull(deviceToken).getConstructor()) {
+          switch (ObjectUtils.requireNonNull(deviceToken).getConstructor()) {
             case TdApi.DeviceTokenFirebaseCloudMessaging.CONSTRUCTOR:
               tokenOrEndpoint = ((TdApi.DeviceTokenFirebaseCloudMessaging) deviceToken).token;
               break;

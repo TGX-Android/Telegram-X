@@ -12,9 +12,9 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.text.Highlight;
 
 import java.util.ArrayList;
-import java.util.Objects;
 
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.ObjectUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
@@ -237,7 +237,7 @@ public class ChatMembersSearcher {
   }
 
   private boolean checkContextId (String contextId) {
-    if (!Objects.equals(contextId, currentContextId)) {
+    if (!ObjectUtils.equals(contextId, currentContextId)) {
       currentContextId = contextId;
       reset();
       return true;

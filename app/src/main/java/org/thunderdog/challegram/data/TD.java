@@ -98,7 +98,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -109,6 +108,7 @@ import me.vkryl.android.text.AcceptFilter;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.FileUtils;
+import me.vkryl.core.ObjectUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.collection.LongList;
@@ -5126,8 +5126,10 @@ public class TD {
     if (lhs == rhs) {
       return true;
     }
-    return Objects.equals(lhs.title, rhs.title) &&
-      Objects.equals(lhs.icon != null ? lhs.icon.name : null, rhs.icon != null ? rhs.icon.name : null) &&
+    if (!ObjectUtils.equals(lhs.title, rhs.title)) return false;
+    String a = lhs.icon != null ? lhs.icon.name : null;
+    String b = rhs.icon != null ? rhs.icon.name : null;
+    return ObjectUtils.equals(a, b) &&
       lhs.includeContacts == rhs.includeContacts &&
       lhs.includeNonContacts == rhs.includeNonContacts &&
       lhs.includeGroups == rhs.includeGroups &&

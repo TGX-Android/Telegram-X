@@ -99,7 +99,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -108,6 +107,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.FileUtils;
+import me.vkryl.core.ObjectUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableBool;
@@ -3141,7 +3141,7 @@ public class Settings {
 
     @Override
     public int hashCode () {
-      return Objects.hash(majorSize, minorSize);
+      return ObjectUtils.hashCode(majorSize, minorSize);
     }
   }
 
@@ -3187,7 +3187,7 @@ public class Settings {
 
     @Override
     public int hashCode () {
-      return Objects.hash(size, fps, bitrate);
+      return ObjectUtils.hashCode(size, fps, bitrate);
     }
 
     public VideoLimit () {

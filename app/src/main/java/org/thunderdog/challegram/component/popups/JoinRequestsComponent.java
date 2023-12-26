@@ -43,11 +43,11 @@ import org.thunderdog.challegram.widget.EmbeddableStickerView;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.ObjectUtils;
 
 public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener, Client.ResultHandler {
   private static final String UTYAN_EMOJI = "\uD83D\uDE0E";
@@ -364,7 +364,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
   }
 
   public void search (String query) {
-    if (Objects.equals(currentQuery, query)) {
+    if (ObjectUtils.equals(currentQuery, query)) {
       return;
     }
 
