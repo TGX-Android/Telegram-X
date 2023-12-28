@@ -3141,7 +3141,7 @@ public class Settings {
 
     @Override
     public int hashCode () {
-      return ObjectUtils.hashCode(majorSize, minorSize);
+      return ObjectUtils.hash(majorSize, minorSize);
     }
   }
 
