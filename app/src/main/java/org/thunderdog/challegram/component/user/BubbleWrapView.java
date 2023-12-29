@@ -81,7 +81,8 @@ public class BubbleWrapView extends View {
       maxTextWidth = maxWidth;
     }
 
-    BubbleView view = new BubbleView(tdlib, this, user.getSenderId(), maxTextWidth);
+    BubbleView view = new BubbleView(tdlib, paint, user.getSenderId(), maxTextWidth);
+    view.setInvalidateCallback(BubbleWrapView.this::invalidate);
 
     if (bubbles.size() == 0) {
       view.setXY(Screen.dp(START_X), Screen.dp(START_Y));
@@ -120,7 +121,8 @@ public class BubbleWrapView extends View {
         maxTextWidth = maxWidth;
       }
 
-      final BubbleView view = new BubbleView(tdlib, BubbleWrapView.this, user.getSenderId(), maxTextWidth);
+      final BubbleView view = new BubbleView(tdlib, paint, user.getSenderId(), maxTextWidth);
+      view.setInvalidateCallback(BubbleWrapView.this::invalidate);
       UI.post(() -> {
         view.requestFile(complexReceiver);
 

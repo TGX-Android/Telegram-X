@@ -101,6 +101,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private final AvatarReceiver avatarReceiver;
   private final GifReceiver gifReceiver;
   private final ComplexReceiver avatarsReceiver;
+  private final ComplexReceiver giveawayAvatarsReceiver;
   private final ComplexReceiver reactionAvatarsReceiver;
   private final ComplexReceiver emojiStatusReceiver;
   private final ComplexReceiver reactionsComplexReceiver, textMediaReceiver, replyTextMediaReceiver;
@@ -124,6 +125,8 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     avatarReceiver = new AvatarReceiver(this)
       .setUpdateListener(refreshRateLimiter.passThroughUpdateListener());
     avatarsReceiver = new ComplexReceiver(this)
+      .setUpdateListener(refreshRateLimiter.passThroughComplexUpdateListener());
+    giveawayAvatarsReceiver = new ComplexReceiver(this)
       .setUpdateListener(refreshRateLimiter.passThroughComplexUpdateListener());
     reactionAvatarsReceiver = new ComplexReceiver(this)
       .setUpdateListener(refreshRateLimiter.passThroughComplexUpdateListener());
@@ -167,6 +170,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   public void performDestroy () {
     avatarReceiver.destroy();
     avatarsReceiver.performDestroy();
+    giveawayAvatarsReceiver.performDestroy();
     reactionAvatarsReceiver.performDestroy();
     replyReceiver.destroy();
     replyTextMediaReceiver.performDestroy();
@@ -300,6 +304,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     message.requestAvatar(avatarReceiver);
     message.requestReactions(reactionsComplexReceiver);
     message.requestCommentsResources(avatarsReceiver, false);
+    message.requestGiveawayAvatars(giveawayAvatarsReceiver, false);
     message.requestReactionsResources(reactionAvatarsReceiver, false);
     message.requestAllTextMedia(this);
 
@@ -423,6 +428,10 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     return avatarsReceiver;
   }
 
+  public ComplexReceiver getGiveawayAvatarsReceiver () {
+    return giveawayAvatarsReceiver;
+  }
+
   public ComplexReceiver getReactionAvatarsReceiver () {
     return reactionAvatarsReceiver;
   }
@@ -472,6 +481,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       isAttached = true;
       avatarReceiver.attach();
       avatarsReceiver.attach();
+      giveawayAvatarsReceiver.attach();
       reactionAvatarsReceiver.attach();
       gifReceiver.attach();
       reactionsComplexReceiver.attach();
@@ -494,6 +504,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       isAttached = false;
       avatarReceiver.detach();
       avatarsReceiver.detach();
+      giveawayAvatarsReceiver.detach();
       reactionAvatarsReceiver.detach();
       gifReceiver.detach();
       reactionsComplexReceiver.detach();

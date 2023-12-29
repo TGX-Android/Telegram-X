@@ -2785,6 +2785,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     performWithViews(view -> requestCommentsResources(view.getAvatarsReceiver(), true));
   }
 
+  public final void invalidateGiveawayReceiver () {
+    performWithViews(view -> requestGiveawayAvatars(view.getGiveawayAvatarsReceiver(), true));
+  }
+
   public final void invalidateReactionFilesReceiver () {
     performWithViews(view -> requestReactions(view.getReactionsComplexReceiver()));
   }
@@ -4232,6 +4236,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (commentButton != null) {
       commentButton.requestResources(complexReceiver, isUpdate);
     }
+  }
+
+  public void requestGiveawayAvatars (ComplexReceiver complexReceiver, boolean isUpdate) {
+
   }
 
   public final void requestReactionsResources (ComplexReceiver complexReceiver, boolean isUpdate) {

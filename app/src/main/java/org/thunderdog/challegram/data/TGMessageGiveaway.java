@@ -26,7 +26,9 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.user.BubbleWrapView;
+import org.thunderdog.challegram.component.user.BubbleWrapView2;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
@@ -75,7 +77,7 @@ public class TGMessageGiveaway extends TGMessage implements TGInlineKeyboard.Cli
   private Block giveawayParticipantsBlock;
   private int giveawayParticipantsBlockY;
 
-  private BubbleWrapView giveawayParticipantsBubbles;
+  private BubbleWrapView2 giveawayParticipantsBubbles;
   private int giveawayParticipantsBubblesY;
 
   private Block giveawayFinishTimeBlock;
@@ -126,10 +128,10 @@ public class TGMessageGiveaway extends TGMessage implements TGInlineKeyboard.Cli
     contentHeight += Screen.dp(6);
 
     giveawayParticipantsBubblesY = contentHeight;
-    /*giveawayParticipantsBubbles = new BubbleWrapView(context());
-    giveawayParticipantsBubbles.measure(
-      View.MeasureSpec.makeMeasureSpec(maxWidth, View.MeasureSpec.EXACTLY),
-      View.MeasureSpec.makeMeasureSpec(maxWidth, View.MeasureSpec.EXACTLY));*/
+    giveawayParticipantsBubbles = new BubbleWrapView2(tdlib);
+    giveawayParticipantsBubbles.addBubble(new TdApi.MessageSenderChat(giveawayContent.parameters.boostedChatId), null);
+    giveawayParticipantsBubbles.buildLayout(maxWidth);
+    contentHeight += giveawayParticipantsBubbles.getCurrentHeight();
     contentHeight += Screen.dp(BLOCK_MARGIN);
 
     /* * */
@@ -156,9 +158,14 @@ public class TGMessageGiveaway extends TGMessage implements TGInlineKeyboard.Cli
 
     contentHeight += TGInlineKeyboard.getButtonHeight();
     // contentHeight += Screen.dp(BLOCK_MARGIN);
+
+    invalidateGiveawayReceiver();
   }
 
-
+  @Override
+  public void requestGiveawayAvatars (ComplexReceiver complexReceiver, boolean isUpdate) {
+    giveawayParticipantsBubbles.requestFiles(complexReceiver);
+  }
 
   @Override
   protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth) {
@@ -183,6 +190,7 @@ public class TGMessageGiveaway extends TGMessage implements TGInlineKeyboard.Cli
 
     giveawayPrizeBlock.draw(c, 0, giveawayPrizeBlockY);
     giveawayParticipantsBlock.draw(c, 0, giveawayParticipantsBlockY);
+    giveawayParticipantsBubbles.draw(c, view.getGiveawayAvatarsReceiver(), 0, giveawayParticipantsBubblesY);
     giveawayFinishTimeBlock.draw(c, 0, giveawayFinishTimeBlockY);
 
     c.restore();
