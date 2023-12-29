@@ -32,6 +32,7 @@ import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.RtlCheckListener;
 import org.thunderdog.challegram.navigation.StretchyHeaderView;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Size;
@@ -51,7 +52,7 @@ public class BubbleHeaderView extends FrameLayoutFix implements RtlCheckListener
   private ArrayList<TGUser> users;
   private int maxBubbleHeight;
 
-  public BubbleHeaderView (Context context) {
+  public BubbleHeaderView (Context context, Tdlib tdlib) {
     super(context);
 
     users = new ArrayList<>(10);
@@ -59,7 +60,7 @@ public class BubbleHeaderView extends FrameLayoutFix implements RtlCheckListener
     FrameLayoutFix.LayoutParams params;
 
     params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-    bubbleWrap = new BubbleWrapView(context);
+    bubbleWrap = new BubbleWrapView(context, tdlib);
     bubbleWrap.setHeaderView(this);
     bubbleWrap.setLayoutParams(params);
 

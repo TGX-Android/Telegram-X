@@ -302,7 +302,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
       addMemberHeaderView.setTitle(titleRes);
       addMemberHeaderView.setSubtitle(chatTitle);
     } else if (hasBubbles()) {
-      headerCell = new BubbleHeaderView(context);
+      headerCell = new BubbleHeaderView(context, tdlib);
       headerCell.setHint(bindLocaleChanger(mode == MODE_MULTI_PICK ? multiDelegate.provideMultiUserPickerHint() : R.string.SendMessageTo, headerCell.getInput(), true, false));
       headerCell.setCallback(this);
       if (pickedChats != null && pickedChats.size() > 0) {

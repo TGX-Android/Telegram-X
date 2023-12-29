@@ -4973,4 +4973,14 @@
   <string name="AccountDeleted">Account deleted</string>
   <string name="AccountDeletedText">Your account %1$s (%2$s) is now deleted from Telegram servers, and can no longer be restored.\n\nUsing the same phone number will create a new account.</string>
 
+  <string name="GiveawayLearnMore">Learn More</string>
+  <string name="GiveawayPrizes">Giveaway Prizes</string>
+  <string name="GiveawayParticipants">Participants</string>
+  <string name="GiveawayParticipantsAll">All subscribers of the channel:</string>
+  <string name="GiveawayParticipantsNew">New subscribers of the channel:</string>
+  <string name="GiveawayWinnersSelectionDateHeader">Winners Selection Date</string>
+  <string name="GiveawayWinnersSelectionDate">%1$s at %2$s</string>
+  <string name="xGiveawayPrizePremiumInfo_one">%1$s Telegram Premium Subscription for %2$s months.</string>
+  <string name="xGiveawayPrizePremiumInfo_other">%1$s Telegram Premium Subscriptions for %2$s months.</string>
+
 </resources>
