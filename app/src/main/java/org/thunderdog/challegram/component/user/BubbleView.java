@@ -123,6 +123,10 @@ public class BubbleView {
     return (flags & FLAG_MOVING) != 0 ? toY : y;
   }
 
+  public TdApi.MessageSender getSenderId () {
+    return senderId;
+  }
+
   public long getChatId () {
     return Td.getSenderId(senderId);
   }

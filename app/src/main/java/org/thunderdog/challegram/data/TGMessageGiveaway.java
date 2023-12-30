@@ -32,6 +32,7 @@ import org.thunderdog.challegram.component.user.BubbleWrapView2;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
@@ -52,6 +53,9 @@ import java.util.concurrent.TimeUnit;
 import kotlin.random.Random;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
+import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.RunnableData;
+import me.vkryl.td.Td;
 
 public class TGMessageGiveaway extends TGMessage implements TGInlineKeyboard.ClickListener {
   private final static int BLOCK_MARGIN = 18;
@@ -132,6 +136,7 @@ public class TGMessageGiveaway extends TGMessage implements TGInlineKeyboard.Cli
       content.add(Lang.getString(giveawayContent.parameters.onlyNewMembers ? R.string.GiveawayParticipantsNew : R.string.GiveawayParticipantsAll));
       content.padding(Screen.dp(6));
       content.add(new ContentBubbles(this, maxWidth)
+        .setOnClickListener(this::onBubbleClick)
         .addChatId(giveawayContent.parameters.boostedChatId)
         .addChatIds(giveawayContent.parameters.additionalChatIds));
 
@@ -164,7 +169,9 @@ public class TGMessageGiveaway extends TGMessage implements TGInlineKeyboard.Cli
       content.padding(Screen.dp(BLOCK_MARGIN));
       content.add(Lang.boldify(Lang.getString(R.string.GiveawayWinners)));
       content.padding(Screen.dp(6));
-      content.add(new ContentBubbles(this, maxWidth).addChatIds(giveawayWinners.winnerUserIds));
+      content.add(new ContentBubbles(this, maxWidth)
+        .setOnClickListener(this::onBubbleClick)
+        .addChatIds(giveawayWinners.winnerUserIds));
 
       content.padding(Screen.dp(BLOCK_MARGIN));
       content.add(Lang.getString(R.string.GiveawayAllWinnersReceivedLinks));
@@ -196,6 +203,11 @@ public class TGMessageGiveaway extends TGMessage implements TGInlineKeyboard.Cli
     }
 
     invalidateGiveawayReceiver();
+  }
+
+  private void onBubbleClick (TdApi.MessageSender senderId) {
+    tdlib.ui().openChat(controller(), Td.getSenderId(senderId), new TdlibUi.ChatOpenParameters()
+      .keepStack().removeDuplicates().openProfileInCaseOfPrivateChat());
   }
 
   @Override
@@ -244,12 +256,9 @@ public class TGMessageGiveaway extends TGMessage implements TGInlineKeyboard.Cli
 
     participantsCounter.draw(c, contentCenterX, participantsCounterY, Gravity.CENTER, 1f);
 
-    content.draw(c, view, 0, contentDrawY);
-
     c.restore();
 
-
-
+    content.draw(c, view, startX, startY + contentDrawY);
     if (rippleButton != null) {
       rippleButton.draw(view, c, startX, startY + rippleButtonY);
     }
@@ -273,6 +282,9 @@ public class TGMessageGiveaway extends TGMessage implements TGInlineKeyboard.Cli
   @Override
   public boolean onTouchEvent (MessageView view, MotionEvent e) {
     if (rippleButton != null && rippleButton.onTouchEvent(view, e)) {
+      return true;
+    }
+    if (content != null && content.onTouchEvent(view, e)) {
       return true;
     }
     return super.onTouchEvent(view, e);
@@ -311,40 +323,6 @@ public class TGMessageGiveaway extends TGMessage implements TGInlineKeyboard.Cli
       this.angle = angle;
     }
   }
-
-  private static class Block {
-    private final TextWrapper[] texts;
-
-    public Block (TGMessageGiveaway messageGiveaway, CharSequence ...texts) {
-      this.texts = new TextWrapper[texts.length];
-      for (int a = 0; a < texts.length; a++) {
-        this.texts[a] = genTextWrapper(messageGiveaway, texts[a]);
-      }
-    }
-
-    public void build (int maxWidth) {
-      for (TextWrapper text : texts) {
-        text.prepare(maxWidth);
-      }
-    }
-
-    public int getHeight () {
-      int height = Screen.dp(6 * (texts.length - 1));
-      for (TextWrapper text : texts) {
-        height += text.getHeight();
-      }
-      return height;
-    }
-
-    public void draw (Canvas c, int x, int y) {
-      for (TextWrapper text : texts) {
-        text.draw(c, x, y);
-        y += text.getHeight() + Screen.dp(6);
-      }
-    }
-  }
-
-
 
   private static TextStyleProvider giveawayStyleProvider;
 
@@ -391,18 +369,24 @@ public class TGMessageGiveaway extends TGMessage implements TGInlineKeyboard.Cli
     }
 
     public void draw (Canvas c, MessageView v, int x, int y) {
-      c.save();
-      c.translate(x, y);
       for (ContentPart p : parts) {
-        p.draw(c, v);
+        p.draw(c, v, x, y);
       }
-      c.restore();
     }
 
     public void requestFiles (ComplexReceiver complexReceiver) {
       for (ContentPart p : parts) {
         p.requestFiles(complexReceiver);
       }
+    }
+
+    public boolean onTouchEvent (MessageView view, MotionEvent e) {
+      for (ContentPart p : parts) {
+        if (p.onTouchEvent(view, e)) {
+          return true;
+        }
+      }
+      return false;
     }
   }
 
@@ -415,8 +399,12 @@ public class TGMessageGiveaway extends TGMessage implements TGInlineKeyboard.Cli
 
     public abstract void build (int width);
     public abstract int getHeight ();
-    public abstract void draw (Canvas c, MessageView v);
+    public abstract void draw (Canvas c, MessageView v, int x, int y);
     public abstract void requestFiles (ComplexReceiver r);
+
+    public boolean onTouchEvent (MessageView view, MotionEvent e) {
+      return false;
+    }
   }
 
   private static class ContentText extends ContentPart {
@@ -437,8 +425,8 @@ public class TGMessageGiveaway extends TGMessage implements TGInlineKeyboard.Cli
     }
 
     @Override
-    public void draw (Canvas c, MessageView v) {
-      text.draw(c, 0, y);
+    public void draw (Canvas c, MessageView v, int x, int y) {
+      text.draw(c, x, y + this.y);
     }
 
     @Override
@@ -470,6 +458,11 @@ public class TGMessageGiveaway extends TGMessage implements TGInlineKeyboard.Cli
       return this;
     }
 
+    public ContentBubbles setOnClickListener (RunnableData<TdApi.MessageSender> onClickListener) {
+      layout.setOnClickListener(onClickListener);
+      return this;
+    }
+
     @Override
     public void build (int width) {
       layout.buildLayout(width);
@@ -480,14 +473,21 @@ public class TGMessageGiveaway extends TGMessage implements TGInlineKeyboard.Cli
       return layout.getCurrentHeight();
     }
 
+    int lastDrawX = 0;
+    int lastDrawY = 0;
+
     @Override
-    public void draw (Canvas c, MessageView v) {
-      layout.draw(c, v.getGiveawayAvatarsReceiver(), 0, y);
+    public void draw (Canvas c, MessageView v, int x, int y) {
+      layout.draw(c, v.getGiveawayAvatarsReceiver(), lastDrawX = x, lastDrawY = (y + this.y));
     }
 
     @Override
     public void requestFiles (ComplexReceiver r) {
       layout.requestFiles(r);
+    }
+
+    public boolean onTouchEvent (MessageView view, MotionEvent e) {
+      return layout.onTouchEvent(view, e, lastDrawX, lastDrawY);
     }
   }
 

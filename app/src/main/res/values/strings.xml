@@ -4975,6 +4975,7 @@
 
   <string name="GiveawayLearnMore">Learn More</string>
   <string name="GiveawayPrizes">Giveaway Prizes</string>
+  <string name="GiveawayPrizesWith">with</string>
   <string name="GiveawayWinners">Winners</string>
   <string name="GiveawayAllWinnersReceivedLinks">All winners received gift links in private messages.</string>
   <string name="GiveawayWinnersSelected">Winners Selected!</string>
