@@ -3625,8 +3625,11 @@ public class TdlibUi extends Handler {
         });
         return; // async
       }
+      case TdApi.InternalLinkTypePremiumGift.CONSTRUCTOR: {
+        break;
+      }
       default: {
-        Td.assertInternalLinkType_91894cfa();
+        Td.assertInternalLinkType_18c73626();
         throw Td.unsupported(linkType);
       }
     }

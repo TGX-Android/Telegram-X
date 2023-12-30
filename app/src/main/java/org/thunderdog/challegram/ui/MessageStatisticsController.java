@@ -71,7 +71,7 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
   }
 
   private SettingsAdapter adapter;
-  private TdApi.FoundMessages publicShares;
+  private TdApi.PublicForwards publicShares;
 
   @Override
   public CharSequence getName () {
@@ -278,7 +278,7 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
   }
 
   private void setPublicShares () {
-    if (publicShares == null || publicShares.messages.length == 0) return;
+    if (publicShares == null || publicShares.forwards.length == 0) return;
     final int index = adapter.indexOfViewById(R.id.btn_statsPrivateShares) + 1;
     adapter.getItems().add(index, new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsPublicShares, 0, R.string.StatsMessageSharesPublic, false).setData(publicShares.totalCount));
     adapter.getItems().add(index, new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -288,9 +288,9 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
 
     adapter.getItems().add(new ListItem(ListItem.TYPE_CHART_HEADER_DETACHED).setData(new MiniChart(R.string.StatsMessageSharesPublic, null)));
     adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    for (int i = 0; i < publicShares.messages.length; i++) {
-      adapter.getItems().add(new ListItem(ListItem.TYPE_USER, R.id.chat).setData(publicShares.messages[i]));
-      if (i != publicShares.messages.length - 1)
+    for (int i = 0; i < publicShares.forwards.length; i++) {
+      adapter.getItems().add(new ListItem(ListItem.TYPE_USER, R.id.chat).setData(publicShares.forwards[i]));
+      if (i != publicShares.forwards.length - 1)
         adapter.getItems().add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     }
     adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));

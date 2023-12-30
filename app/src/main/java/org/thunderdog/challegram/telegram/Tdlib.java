@@ -4729,7 +4729,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
           return Td.textOrCaption(messageText);
       }
-      Td.assertMessageContent_afad899a();
+      Td.assertMessageContent_d40af239();
       throw Td.unsupported(messageText);
     }
     return getPendingMessageCaption(chatId, messageId);
@@ -8893,18 +8893,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   @TdlibThread
-  private void updateChatAccentColor (TdApi.UpdateChatAccentColor update) {
+  private void updateChatAccentColor (TdApi.UpdateChatAccentColors update) {
     updateChat(update, update.chatId, chat ->
       chat.accentColorId = update.accentColorId,
       listeners::updateChatAccentColor
-    );
-  }
-
-  @TdlibThread
-  private void updateChatBackgroundCustomEmoji (TdApi.UpdateChatBackgroundCustomEmoji update) {
-    updateChat(update, update.chatId, chat ->
-      chat.backgroundCustomEmojiId = update.backgroundCustomEmojiId,
-      listeners::updateChatBackgroundCustomEmoji
     );
   }
 
@@ -9963,7 +9955,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateSpeechRecognitionTrial((TdApi.UpdateSpeechRecognitionTrial) update);
         break;
       }
-      case TdApi.UpdateSelectedBackground.CONSTRUCTOR: {
+      case TdApi.UpdateMessageReaction.CONSTRUCTOR:
+      case TdApi.UpdateMessageReactions.CONSTRUCTOR:
+      case TdApi.UpdateDefaultBackground.CONSTRUCTOR:
+      case TdApi.UpdateChatEmojiStatus.CONSTRUCTOR: {
         // TODO?
         break;
       }
@@ -10040,12 +10035,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateChatBackground((TdApi.UpdateChatBackground) update);
         break;
       }
-      case TdApi.UpdateChatAccentColor.CONSTRUCTOR: {
-        updateChatAccentColor((TdApi.UpdateChatAccentColor) update);
-        break;
-      }
-      case TdApi.UpdateChatBackgroundCustomEmoji.CONSTRUCTOR: {
-        updateChatBackgroundCustomEmoji((TdApi.UpdateChatBackgroundCustomEmoji) update);
+      case TdApi.UpdateChatAccentColors.CONSTRUCTOR: {
+        updateChatAccentColor((TdApi.UpdateChatAccentColors) update);
         break;
       }
 
@@ -10077,7 +10068,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         throw Td.unsupported(update);
       }
       default: {
-        Td.assertUpdate_3098a407();
+        Td.assertUpdate_618db8c7();
         throw Td.unsupported(update);
       }
     }
@@ -11030,7 +11021,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
         case TdApi.MessageSupergroupChatCreate.CONSTRUCTOR:
         case TdApi.MessageUnsupported.CONSTRUCTOR:
-        case TdApi.MessageUserShared.CONSTRUCTOR:
+        case TdApi.MessageUsersShared.CONSTRUCTOR:
+        case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR:
         case TdApi.MessageVideoChatEnded.CONSTRUCTOR:
         case TdApi.MessageVideoChatScheduled.CONSTRUCTOR:
         case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
@@ -11040,7 +11032,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           // assuming we want to check RightId.SEND_BASIC_MESSAGES
           return getBasicMessageRestrictionText(chat);
         default:
-          Td.assertMessageContent_afad899a();
+          Td.assertMessageContent_d40af239();
           throw Td.unsupported(message.content);
       }
     }

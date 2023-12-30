@@ -142,8 +142,11 @@ public class TGBackground {
         case TdApi.BackgroundTypeFill.CONSTRUCTOR:
           needImages = false;
           break;
+        case TdApi.BackgroundTypeChatTheme.CONSTRUCTOR:
+          needImages = false;
+          break;
         default:
-          Td.assertBackgroundType_64138c2();
+          Td.assertBackgroundType_eedb1e16();
           throw Td.unsupported(type);
       }
     } else {
@@ -671,8 +674,11 @@ public class TGBackground {
           putFill(editor, key, pattern.fill);
           break;
         }
+        case TdApi.BackgroundTypeChatTheme.CONSTRUCTOR: {
+          throw new IllegalStateException();
+        }
         default: {
-          Td.assertBackgroundType_64138c2();
+          Td.assertBackgroundType_eedb1e16();
           throw Td.unsupported(type);
         }
       }

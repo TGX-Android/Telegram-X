@@ -47,37 +47,8 @@ public class BubbleWrapView2 {
     paint.setTextSize(Screen.dp(14f));
   }
 
-  public void addBubble (final TdApi.MessageSender senderId, ComplexReceiver complexReceiver) {
-    int defaultWidth = Screen.dp(100f);
-    int maxWidth = (int) ((float) (Screen.smallestSide() - Screen.dp(60f)) * .5f) - Screen.dp(SPACING) - Screen.dp(44f);
-
-    final int maxTextWidth;
-    if (maxWidth < defaultWidth) {
-      maxTextWidth = defaultWidth;
-    } else if (maxWidth > Screen.dp(200f)) {
-      maxTextWidth = Screen.dp(200f);
-    } else {
-      maxTextWidth = maxWidth;
-    }
-
-    BubbleView view = new BubbleView(tdlib, paint, senderId, maxTextWidth);
-
-    if (bubbles.size() == 0) {
-      view.setXY(Screen.dp(START_X), Screen.dp(START_Y));
-    } else {
-      BubbleView prev = bubbles.get(bubbles.size() - 1);
-      float add = Screen.dp(SPACING);
-      float cx = prev.getX() + prev.getWidth() + add;
-      float cy = prev.getY();
-      if (cx + view.getWidth() > width - add) {
-        cx = Screen.dp(START_X);
-        cy = cy + prev.getHeight() + add;
-      }
-      view.setXY((int) cx, (int) cy);
-    }
-
-    view.requestFile(complexReceiver);
-    bubbles.add(view);
+  public void addBubble (final TdApi.MessageSender senderId, int maxTextWidth) {
+    bubbles.add(new BubbleView(tdlib, paint, senderId, maxTextWidth));
   }
 
   public void requestFiles (ComplexReceiver complexReceiver) {
@@ -126,6 +97,32 @@ public class BubbleWrapView2 {
       }
       bubble.setXY((int) cx, (int) cy);
       cx = cx + bubble.getWidth() + add;
+    }
+
+    int rs = 0;
+    int rw = 0;
+    int oy = Screen.dp(START_Y);
+    for (int i = 0; i < length; i++) {
+      final BubbleView bubble = bubbles.get(i);
+      if (oy == bubble.getY()) {
+        rw += bubble.getWidth();
+      } else {
+        rw += Screen.dp(SPACING * (i - rs - 1));
+        for (int j = rs; j < i; j++) {
+          BubbleView b = bubbles.get(j);
+          b.setXY(b.getX() + ((width - rw) / 2), b.getY());
+        }
+        rw = bubble.getWidth();
+        rs = i;
+        oy = bubble.getY();
+      }
+    }
+    if (rw > 0) {
+      rw += Screen.dp(SPACING * (bubbles.size() - rs - 1));
+      for (int j = rs; j < bubbles.size(); j++) {
+        BubbleView b = bubbles.get(j);
+        b.setXY(b.getX() + ((width - rw) / 2), b.getY());
+      }
     }
   }
 

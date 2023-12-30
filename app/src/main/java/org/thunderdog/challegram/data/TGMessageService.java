@@ -352,13 +352,14 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
             case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
             case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
-            case TdApi.MessageUserShared.CONSTRUCTOR:
+            case TdApi.MessageUsersShared.CONSTRUCTOR:
+            case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR:
             case TdApi.MessageChatShared.CONSTRUCTOR:
             case TdApi.MessageBotWriteAccessAllowed.CONSTRUCTOR:
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              Td.assertMessageContent_afad899a();
+              Td.assertMessageContent_d40af239();
               throw Td.unsupported(message.content);
           }
           String format = Lang.getString(staticResId);
@@ -1589,45 +1590,6 @@ public final class TGMessageService extends TGMessageServiceImpl {
           new AccentColorArgument(tdlib.accentColor(accentColorChanged.oldAccentColorId)),
           new AccentColorArgument(tdlib.accentColor(accentColorChanged.newAccentColorId))
         );
-      }
-    });
-  }
-
-  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventBackgroundCustomEmojiChanged backgroundEmojiChanged) {
-    super(context, msg);
-    setTextCreator(() -> {
-      if (backgroundEmojiChanged.newBackgroundCustomEmojiId == 0 || backgroundEmojiChanged.oldBackgroundCustomEmojiId == 0) {
-        boolean isUnset = backgroundEmojiChanged.newBackgroundCustomEmojiId == 0;
-        long backgroundCustomEmojiId = isUnset ?
-          backgroundEmojiChanged.oldBackgroundCustomEmojiId :
-          backgroundEmojiChanged.newBackgroundCustomEmojiId;
-        if (msg.isOutgoing) {
-          return getText(
-            isUnset ? R.string.EventLogEmojiUnsetYou : R.string.EventLogEmojiSetYou,
-            new CustomEmojiArgument(tdlib, backgroundCustomEmojiId)
-          );
-        } else {
-          return getText(
-            isUnset ? R.string.EventLogEmojiUnset : R.string.EventLogEmojiSet,
-            new SenderArgument(sender),
-            new CustomEmojiArgument(tdlib, backgroundCustomEmojiId)
-          );
-        }
-      } else {
-        if (msg.isOutgoing) {
-          return getText(
-            R.string.EventLogEmojiChangedYou,
-            new CustomEmojiArgument(tdlib, backgroundEmojiChanged.oldBackgroundCustomEmojiId),
-            new CustomEmojiArgument(tdlib, backgroundEmojiChanged.newBackgroundCustomEmojiId)
-          );
-        } else {
-          return getText(
-            R.string.EventLogEmojiChanged,
-            new SenderArgument(sender),
-            new CustomEmojiArgument(tdlib, backgroundEmojiChanged.oldBackgroundCustomEmojiId),
-            new CustomEmojiArgument(tdlib, backgroundEmojiChanged.newBackgroundCustomEmojiId)
-          );
-        }
       }
     });
   }

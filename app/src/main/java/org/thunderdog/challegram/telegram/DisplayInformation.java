@@ -341,7 +341,7 @@ public class DisplayInformation {
         case Settings.KEY_ACCOUNT_INFO_SUFFIX_LIGHT_THEME_COLORS:
         case Settings.KEY_ACCOUNT_INFO_SUFFIX_DARK_THEME_COLORS:
           if (info.accentColor == null) {
-            info.accentColor = new TdApi.AccentColor(info.accentColorId, 0, null, null);
+            info.accentColor = new TdApi.AccentColor(info.accentColorId, 0, null, null, 0);
           }
           switch (suffix) {
             case Settings.KEY_ACCOUNT_INFO_SUFFIX_ACCENT_BUILT_IN_ACCENT_COLOR_ID:

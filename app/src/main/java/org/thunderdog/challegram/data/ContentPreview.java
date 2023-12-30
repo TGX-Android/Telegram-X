@@ -624,7 +624,8 @@ public class ContentPreview {
 
       // Handled by getSimpleContentPreview, but unsupported
       case TdApi.MessageUnsupported.CONSTRUCTOR:
-      case TdApi.MessageUserShared.CONSTRUCTOR:
+      case TdApi.MessageUsersShared.CONSTRUCTOR:
+      case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR:
       case TdApi.MessageChatShared.CONSTRUCTOR:
       case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
       case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
@@ -640,7 +641,7 @@ public class ContentPreview {
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_afad899a();
+        Td.assertMessageContent_d40af239();
         throw Td.unsupported(message.content);
     }
     Refresher refresher = null;
@@ -1275,7 +1276,8 @@ public class ContentPreview {
         throw new IllegalArgumentException(Integer.toString(type));
         
       case TdApi.MessageStory.CONSTRUCTOR:
-      case TdApi.MessageUserShared.CONSTRUCTOR:
+      case TdApi.MessageUsersShared.CONSTRUCTOR:
+      case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR:
       case TdApi.MessageChatShared.CONSTRUCTOR:
       case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
       case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
@@ -1296,7 +1298,7 @@ public class ContentPreview {
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_afad899a();
+        Td.assertMessageContent_d40af239();
         throw new UnsupportedOperationException(Integer.toString(type));
     }
   }

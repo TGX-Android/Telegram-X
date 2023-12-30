@@ -4975,6 +4975,7 @@
 
   <string name="GiveawayLearnMore">Learn More</string>
   <string name="GiveawayPrizes">Giveaway Prizes</string>
+  <string name="GiveawayCountries">from %1$s</string>
   <string name="GiveawayParticipants">Participants</string>
   <string name="GiveawayParticipantsAll">All subscribers of the channel:</string>
   <string name="GiveawayParticipantsNew">New subscribers of the channel:</string>

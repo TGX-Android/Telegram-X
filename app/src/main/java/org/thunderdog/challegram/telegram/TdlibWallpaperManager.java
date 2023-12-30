@@ -137,7 +137,7 @@ public class TdlibWallpaperManager {
   private final SparseArrayCompat<List<TGBackground>> backgrounds = new SparseArrayCompat<>();
 
   private void fetchBackgrounds (boolean forDarkTheme) {
-    tdlib.client().send(new TdApi.GetBackgrounds(forDarkTheme), result -> {
+    tdlib.client().send(new TdApi.GetInstalledBackgrounds(forDarkTheme), result -> {
       switch (result.getConstructor()) {
         case TdApi.Backgrounds.CONSTRUCTOR: {
           TdApi.Background[] rawBackgrounds = ((TdApi.Backgrounds) result).backgrounds;

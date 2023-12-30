@@ -1469,17 +1469,9 @@ public class TdlibListeners {
 
   // updateChatAccentColor
 
-  void updateChatAccentColor (TdApi.UpdateChatAccentColor update) {
+  void updateChatAccentColor (TdApi.UpdateChatAccentColors update) {
     runChatUpdate(update.chatId, listener ->
       listener.onChatAccentColorChanged(update.chatId, update.accentColorId)
-    );
-  }
-
-  // updateChatBackgroundCustomEmoji
-
-  void updateChatBackgroundCustomEmoji (TdApi.UpdateChatBackgroundCustomEmoji update) {
-    runChatUpdate(update.chatId, listener ->
-      listener.onChatBackgroundCustomEmojiChanged(update.chatId, update.backgroundCustomEmojiId)
     );
   }
 
