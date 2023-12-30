@@ -545,7 +545,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
 
     ThreadInfo messageThread = messagesController().getMessageThread();
-    if (msg.replyTo != null && (messageThread == null || !messageThread.isRootMessage(msg.replyTo))) {
+    if (msg.replyTo != null && (messageThread == null || !messageThread.isRootMessage(msg.replyTo)) && !(msg.content != null && msg.content.getConstructor() == TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR)) {
       if (msg.replyTo.getConstructor() == TdApi.MessageReplyToMessage.CONSTRUCTOR) { // TODO: support replies to stories
         loadReply();
       }
@@ -8220,12 +8220,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessagePremiumGiveawayCompleted) content);
         }
+        case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR: {
+          return new TGMessageGiveaway(context, msg, (TdApi.MessagePremiumGiveawayWinners) content);
+        }
         case TdApi.MessagePremiumGiveaway.CONSTRUCTOR: {
-          if (BuildConfig.DEBUG) {
-            // uncomment once finished
-            return new TGMessageGiveaway(context, msg, (TdApi.MessagePremiumGiveaway) content);
-          }
-          break;
+          return new TGMessageGiveaway(context, msg, (TdApi.MessagePremiumGiveaway) content);
         }
         // unsupported
         case TdApi.MessageInvoice.CONSTRUCTOR:
@@ -8234,7 +8233,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageChatSetBackground.CONSTRUCTOR:
         case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
         case TdApi.MessageUsersShared.CONSTRUCTOR:
-        case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR:
         case TdApi.MessageChatShared.CONSTRUCTOR:
           break;
         case TdApi.MessageUnsupported.CONSTRUCTOR:

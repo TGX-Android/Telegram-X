@@ -15,12 +15,14 @@
 package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
@@ -29,6 +31,7 @@ import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.user.BubbleWrapView2;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ComplexReceiver;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
@@ -43,146 +46,132 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import kotlin.random.Random;
+import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 
 public class TGMessageGiveaway extends TGMessage implements TGInlineKeyboard.ClickListener {
   private final static int BLOCK_MARGIN = 18;
 
-  private final TdApi.MessagePremiumGiveaway giveawayContent;
+  private final @Nullable TdApi.MessagePremiumGiveaway giveawayContent;
+  private final @Nullable TdApi.MessagePremiumGiveawayWinners giveawayWinners;
 
-  public TGMessageGiveaway (MessagesManager manager, TdApi.Message msg, TdApi.MessagePremiumGiveaway giveawayContent) {
+  public TGMessageGiveaway (MessagesManager manager, TdApi.Message msg, @NonNull TdApi.MessagePremiumGiveaway giveawayContent) {
     super(manager, msg);
     this.giveawayContent = giveawayContent;
-    this.participantsCounter = new Counter.Builder()
-      .allBold(true)
-      .textSize(11)
-      .noBackground()
-      .textColor(ColorId.text)
-      .build();
+    this.giveawayWinners = null;
+  }
 
-    participantsCounter.setCount(giveawayContent.winnerCount, false, "x" + giveawayContent.winnerCount, false);
+  public TGMessageGiveaway (MessagesManager manager, TdApi.Message msg, @NonNull TdApi.MessagePremiumGiveawayWinners giveawayWinners) {
+    super(manager, msg);
+    this.giveawayContent = null;
+    this.giveawayWinners = giveawayWinners;
+  }
+
+  private int getWinnersCount () {
+    return giveawayContent != null ? giveawayContent.winnerCount : giveawayWinners != null ? giveawayWinners.winnerCount : 0;
+  }
+
+  private int getMonthCount () {
+    return giveawayContent != null ? giveawayContent.monthCount : giveawayWinners != null ? giveawayWinners.monthCount : 0;
   }
 
   private TGInlineKeyboard rippleButton;
   private Particle[] particles;
-  private final Counter participantsCounter;
   private final RectF outlineCounterRect = new RectF();
   private final RectF backgroundCounterRect = new RectF();
-
-
   private int giftDrawableY;
-  private int usersCounterY;
 
-  private Block giveawayPrizeBlock;
-  private int giveawayPrizeBlockY;
+  private Counter participantsCounter;
+  private int participantsCounterY;
 
-  private Block giveawayParticipantsBlock;
-  private int giveawayParticipantsBlockY;
 
-  private BubbleWrapView2 giveawayParticipantsBubbles;
-  private int giveawayParticipantsBubblesY;
-
-  private Block giveawayCountryBlock;
-  private int giveawayCountryBlockY;
-
-  private Block giveawayFinishTimeBlock;
-  private int giveawayFinishTimeBlockY;
+  private int contentDrawY;
+  private Content content;
 
   private int rippleButtonY;
   private int contentHeight = 0;
-
 
   @Override
   protected void buildContent (int maxWidth) {
     contentHeight = Screen.dp(30);
     giftDrawableY = contentHeight;
-    usersCounterY = giftDrawableY + Screen.dp(73.5f);
 
+    /* * */
+
+    participantsCounterY = giftDrawableY + Screen.dp(73.5f);
+    participantsCounter = new Counter.Builder().allBold(true).textSize(11).noBackground().textColor(ColorId.text).build();
+    participantsCounter.setCount(getWinnersCount(), false, "x" + getWinnersCount(), false);
     backgroundCounterRect.set(
       maxWidth / 2f - participantsCounter.getWidth() / 2f - Screen.dp(8),
-      usersCounterY - Screen.dp(23 / 2f),
+      participantsCounterY - Screen.dp(23 / 2f),
       maxWidth / 2f + participantsCounter.getWidth() / 2f + Screen.dp(8),
-      usersCounterY + Screen.dp(23 / 2f)
+      participantsCounterY + Screen.dp(23 / 2f)
     );
     outlineCounterRect.set(backgroundCounterRect);
     outlineCounterRect.inset(-Screen.dp(3), -Screen.dp(3));
     contentHeight += Screen.dp(72); // gift drawable height
     contentHeight += Screen.dp(35); // gift drawable margin
 
-
-
     /* * */
 
-    giveawayPrizeBlockY = contentHeight;
-    giveawayPrizeBlock = new Block(this,
-      Lang.boldify(Lang.getString(R.string.GiveawayPrizes)),
-      Lang.pluralBold(R.string.xGiveawayPrizePremiumInfo, giveawayContent.winnerCount, giveawayContent.monthCount));
-    giveawayPrizeBlock.build(maxWidth);
-    contentHeight += giveawayPrizeBlock.getHeight();
-    contentHeight += Screen.dp(BLOCK_MARGIN);
+    contentDrawY = contentHeight;
+    content = new Content(this, maxWidth);
 
-    /* * */
+    if (giveawayContent != null) {
+      content.add(Lang.boldify(Lang.getString(R.string.GiveawayPrizes)));
+      content.padding(Screen.dp(6));
+      content.add(Lang.pluralBold(R.string.xGiveawayPrizePremiumInfo, getWinnersCount(), getMonthCount()));
 
-    giveawayParticipantsBlockY = contentHeight;
-    giveawayParticipantsBlock = new Block(this,
-      Lang.boldify(Lang.getString(R.string.GiveawayParticipants)),
-      Lang.getString(giveawayContent.parameters.onlyNewMembers ?
-        R.string.GiveawayParticipantsNew : R.string.GiveawayParticipantsAll));
-    giveawayParticipantsBlock.build(maxWidth);
-    contentHeight += giveawayParticipantsBlock.getHeight();
-    contentHeight += Screen.dp(6);
+      content.padding(Screen.dp(BLOCK_MARGIN));
+      content.add(Lang.boldify(Lang.getString(R.string.GiveawayParticipants)));
+      content.padding(Screen.dp(6));
+      content.add(Lang.getString(giveawayContent.parameters.onlyNewMembers ? R.string.GiveawayParticipantsNew : R.string.GiveawayParticipantsAll));
+      content.padding(Screen.dp(6));
+      content.add(new ContentBubbles(this, maxWidth)
+        .addChatId(giveawayContent.parameters.boostedChatId)
+        .addChatIds(giveawayContent.parameters.additionalChatIds));
 
-    giveawayParticipantsBubblesY = contentHeight;
-    giveawayParticipantsBubbles = new BubbleWrapView2(tdlib);
-    giveawayParticipantsBubbles.addBubble(tdlib.sender(giveawayContent.parameters.boostedChatId), maxWidth);
-    if (giveawayContent.parameters.additionalChatIds != null) {
-      for (long chatId : giveawayContent.parameters.additionalChatIds) {
-        giveawayParticipantsBubbles.addBubble(tdlib.sender(chatId), maxWidth);
-      }
-    }
-
-    giveawayParticipantsBubbles.buildLayout(maxWidth);
-    contentHeight += giveawayParticipantsBubbles.getCurrentHeight();
-
-    if (giveawayContent.parameters.countryCodes != null && giveawayContent.parameters.countryCodes.length > 0) {
-      contentHeight += Screen.dp(6);
-      StringBuilder sb = new StringBuilder();
-      for (String countryCode : giveawayContent.parameters.countryCodes) {
-        if (sb.length() > 0) {
-          sb.append(Lang.getConcatSeparator());
+      if (giveawayContent.parameters.countryCodes.length > 0) {
+        StringBuilder sb = new StringBuilder();
+        for (String countryCode : giveawayContent.parameters.countryCodes) {
+          if (sb.length() > 0) {
+            sb.append(Lang.getConcatSeparator());
+          }
+          String[] info = TGCountry.instance().find(countryCode);
+          sb.append(info != null ? info[2] : countryCode);
         }
-        String[] info = TGCountry.instance().find(countryCode);
-        sb.append(info != null ? info[2] : countryCode);
+        content.padding(Screen.dp(6));
+        content.add(Lang.getString(R.string.GiveawayCountries, sb));
       }
 
-      giveawayCountryBlockY = contentHeight;
-      giveawayCountryBlock = new Block(this, Lang.getString(R.string.GiveawayCountries, sb));
-      giveawayCountryBlock.build(maxWidth);
-      contentHeight += giveawayCountryBlock.getHeight();
-    } else {
-      giveawayCountryBlock = null;
-    }
-    contentHeight += Screen.dp(BLOCK_MARGIN);
-
-    /* * */
-
-    giveawayFinishTimeBlockY = contentHeight;
-    giveawayFinishTimeBlock = new Block(this,
-      Lang.boldify(Lang.getString(R.string.GiveawayWinnersSelectionDateHeader)),
-      Lang.getString(R.string.GiveawayWinnersSelectionDate,
+      content.padding(Screen.dp(BLOCK_MARGIN));
+      content.add(Lang.boldify(Lang.getString(R.string.GiveawayWinnersSelectionDateHeader)));
+      content.padding(Screen.dp(6));
+      content.add(Lang.getString(R.string.GiveawayWinnersSelectionDate,
         Lang.dateYearFull(giveawayContent.parameters.winnersSelectionDate, TimeUnit.SECONDS),
-        Lang.time(giveawayContent.parameters.winnersSelectionDate, TimeUnit.SECONDS))
-    );
-    giveawayFinishTimeBlock.build(maxWidth);
-    contentHeight += giveawayFinishTimeBlock.getHeight();
+        Lang.time(giveawayContent.parameters.winnersSelectionDate, TimeUnit.SECONDS)));
+    }
+
+    if (giveawayWinners != null) {
+      content.add(Lang.boldify(Lang.getString(R.string.GiveawayWinnersSelected)));
+      content.padding(Screen.dp(6));
+      content.add(Lang.pluralBold(R.string.xGiveawayWinnersSelectedInfo, getWinnersCount()));
+
+      content.padding(Screen.dp(BLOCK_MARGIN));
+      content.add(Lang.boldify(Lang.getString(R.string.GiveawayWinners)));
+      content.padding(Screen.dp(6));
+      content.add(new ContentBubbles(this, maxWidth).addChatIds(giveawayWinners.winnerUserIds));
+
+      content.padding(Screen.dp(BLOCK_MARGIN));
+      content.add(Lang.getString(R.string.GiveawayAllWinnersReceivedLinks));
+    }
+
+    contentHeight += content.getHeight();
     contentHeight += Screen.dp(BLOCK_MARGIN);
-
-    /* * */
-
-
 
     rippleButtonY = contentHeight;
     rippleButton = new TGInlineKeyboard(this, false);
@@ -211,7 +200,7 @@ public class TGMessageGiveaway extends TGMessage implements TGInlineKeyboard.Cli
 
   @Override
   public void requestGiveawayAvatars (ComplexReceiver complexReceiver, boolean isUpdate) {
-    giveawayParticipantsBubbles.requestFiles(complexReceiver);
+    content.requestFiles(complexReceiver);
   }
 
   private static final int[] particleColors = new int[]{
@@ -227,17 +216,17 @@ public class TGMessageGiveaway extends TGMessage implements TGInlineKeyboard.Cli
   protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth) {
     c.save();
     c.translate(startX, startY);
-/*
-    for (Particle particle : particles) {
+
+    /*for (Particle particle : particles) {
       c.save();
       c.scale(particle.scale, particle.scale, particle.x, particle.y);
       c.rotate(particle.angle, particle.x, particle.y);
       c.drawRect(
         particle.x - Screen.dp(2), particle.y - Screen.dp(2),
-        particle.x + Screen.dp(2), particle.y + Screen.dp(2), Paints.fillingPaint(Theme.getColor(particle.color)));
+        particle.x + Screen.dp(2), particle.y + Screen.dp(2),
+        Paints.fillingPaint(ColorUtils.alphaColor(0.4f, Theme.getColor(particle.color))));
       c.restore();
-    }
-*/
+    }*/
 
     final int contentWidth = getContentWidth();
     final float contentCenterX = contentWidth / 2f;
@@ -253,15 +242,9 @@ public class TGMessageGiveaway extends TGMessage implements TGInlineKeyboard.Cli
     c.drawRoundRect(outlineCounterRect, cor, cor, Paints.fillingPaint(Theme.getColor(useBubbles() ? ColorId.filling : ColorId.background)));
     c.drawRoundRect(backgroundCounterRect, cbr, cbr, Paints.fillingPaint(getCounterBackgroundColor()));
 
-    participantsCounter.draw(c, contentCenterX, usersCounterY, Gravity.CENTER, 1f);
+    participantsCounter.draw(c, contentCenterX, participantsCounterY, Gravity.CENTER, 1f);
 
-    giveawayPrizeBlock.draw(c, 0, giveawayPrizeBlockY);
-    giveawayParticipantsBlock.draw(c, 0, giveawayParticipantsBlockY);
-    giveawayParticipantsBubbles.draw(c, view.getGiveawayAvatarsReceiver(), 0, giveawayParticipantsBubblesY);
-    if (giveawayCountryBlock != null) {
-      giveawayCountryBlock.draw(c, 0, giveawayCountryBlockY);
-    }
-    giveawayFinishTimeBlock.draw(c, 0, giveawayFinishTimeBlockY);
+    content.draw(c, view, 0, contentDrawY);
 
     c.restore();
 
@@ -361,11 +344,7 @@ public class TGMessageGiveaway extends TGMessage implements TGInlineKeyboard.Cli
     }
   }
 
-  private static TextWrapper genTextWrapper (TGMessageGiveaway message, CharSequence text) {
-    return new TextWrapper(message.tdlib(), TD.toFormattedText(text, false), getGiveawayTextStyleProvider(), message.getTextColorSet(), null, null)
-      .setTextFlagEnabled(Text.FLAG_ALIGN_CENTER, true)
-      .setViewProvider(message.currentViews);
-  }
+
 
   private static TextStyleProvider giveawayStyleProvider;
 
@@ -375,5 +354,146 @@ public class TGMessageGiveaway extends TGMessage implements TGInlineKeyboard.Cli
       Settings.instance().addChatFontSizeChangeListener(giveawayStyleProvider);
     }
     return giveawayStyleProvider;
+  }
+
+
+
+  /* * */
+
+  private static class Content {
+    private final ArrayList<ContentPart> parts = new ArrayList<>();
+    private final TGMessage msg;
+    private final int maxWidth;
+    private int y;
+
+    public Content (TGMessage msg, int maxWidth) {
+      this.maxWidth = maxWidth;
+      this.msg = msg;
+    }
+
+    public void add (CharSequence text) {
+      add(new ContentText(msg, text));
+    }
+
+    public void add (ContentPart p) {
+      parts.add(p);
+      p.setY(y);
+      p.build(maxWidth);
+      y += p.getHeight();
+    }
+
+    public void padding (int padding) {
+      y += padding;
+    }
+
+    public int getHeight () {
+      return y;
+    }
+
+    public void draw (Canvas c, MessageView v, int x, int y) {
+      c.save();
+      c.translate(x, y);
+      for (ContentPart p : parts) {
+        p.draw(c, v);
+      }
+      c.restore();
+    }
+
+    public void requestFiles (ComplexReceiver complexReceiver) {
+      for (ContentPart p : parts) {
+        p.requestFiles(complexReceiver);
+      }
+    }
+  }
+
+  private static abstract class ContentPart {
+    protected int y;
+
+    public void setY (int y) {
+      this.y = y;
+    }
+
+    public abstract void build (int width);
+    public abstract int getHeight ();
+    public abstract void draw (Canvas c, MessageView v);
+    public abstract void requestFiles (ComplexReceiver r);
+  }
+
+  private static class ContentText extends ContentPart {
+    private final TextWrapper text;
+
+    public ContentText (TGMessage msg, CharSequence text) {
+      this.text = genTextWrapper(msg, text);
+    }
+
+    @Override
+    public void build (int width) {
+      text.prepare(width);
+    }
+
+    @Override
+    public int getHeight () {
+      return text.getHeight();
+    }
+
+    @Override
+    public void draw (Canvas c, MessageView v) {
+      text.draw(c, 0, y);
+    }
+
+    @Override
+    public void requestFiles (ComplexReceiver r) {
+
+    }
+  }
+
+  private static class ContentBubbles extends ContentPart {
+    private final BubbleWrapView2 layout;
+    private final Tdlib tdlib;
+    private final int maxTextWidth;
+
+    public ContentBubbles (TGMessage msg, int maxTextWidth) {
+      this.layout = new BubbleWrapView2(msg.tdlib);
+      this.maxTextWidth = maxTextWidth;
+      this.tdlib = msg.tdlib;
+    }
+
+    public ContentBubbles addChatId (long chatId) {
+      layout.addBubble(tdlib.sender(chatId), maxTextWidth);
+      return this;
+    }
+
+    public ContentBubbles addChatIds (long[] chatIds) {
+      for (long chatId : chatIds) {
+        addChatId(chatId);
+      }
+      return this;
+    }
+
+    @Override
+    public void build (int width) {
+      layout.buildLayout(width);
+    }
+
+    @Override
+    public int getHeight () {
+      return layout.getCurrentHeight();
+    }
+
+    @Override
+    public void draw (Canvas c, MessageView v) {
+      layout.draw(c, v.getGiveawayAvatarsReceiver(), 0, y);
+    }
+
+    @Override
+    public void requestFiles (ComplexReceiver r) {
+      layout.requestFiles(r);
+    }
+  }
+
+  private static TextWrapper genTextWrapper (TGMessage message, CharSequence text) {
+    return new TextWrapper(message.tdlib(), TD.toFormattedText(text, false), getGiveawayTextStyleProvider(), message.getTextColorSet(), null, null)
+      .setTextFlagEnabled(Text.FLAG_ALIGN_CENTER, true)
+      .setViewProvider(message.currentViews);
   }
 }
