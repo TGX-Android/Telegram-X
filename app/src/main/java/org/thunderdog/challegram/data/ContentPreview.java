@@ -621,11 +621,11 @@ public class ContentPreview {
       case TdApi.MessageChatChangePhoto.CONSTRUCTOR:
       case TdApi.MessageChatDeletePhoto.CONSTRUCTOR:
       case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR:
+      case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR:
 
       // Handled by getSimpleContentPreview, but unsupported
       case TdApi.MessageUnsupported.CONSTRUCTOR:
       case TdApi.MessageUsersShared.CONSTRUCTOR:
-      case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR:
       case TdApi.MessageChatShared.CONSTRUCTOR:
       case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
       case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
@@ -1277,7 +1277,6 @@ public class ContentPreview {
         
       case TdApi.MessageStory.CONSTRUCTOR:
       case TdApi.MessageUsersShared.CONSTRUCTOR:
-      case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR:
       case TdApi.MessageChatShared.CONSTRUCTOR:
       case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
       case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
@@ -1287,6 +1286,7 @@ public class ContentPreview {
       case TdApi.MessagePassportDataSent.CONSTRUCTOR:
       case TdApi.MessageChatSetBackground.CONSTRUCTOR:
       case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
+      case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR:
         // TODO support these previews
         return new ContentPreview(EMOJI_QUIZ, R.string.UnsupportedMessage);
         

@@ -8893,10 +8893,22 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   @TdlibThread
-  private void updateChatAccentColor (TdApi.UpdateChatAccentColors update) {
+  private void updateChatAccentColors (TdApi.UpdateChatAccentColors update) {
+    updateChat(update, update.chatId, chat -> {
+        chat.accentColorId = update.accentColorId;
+        chat.backgroundCustomEmojiId = update.backgroundCustomEmojiId;
+        chat.profileAccentColorId = update.profileAccentColorId;
+        chat.profileBackgroundCustomEmojiId = update.profileBackgroundCustomEmojiId;
+      },
+      listeners::updateChatAccentColors
+    );
+  }
+
+  @TdlibThread
+  private void updateChatEmojiStatus (TdApi.UpdateChatEmojiStatus update) {
     updateChat(update, update.chatId, chat ->
-      chat.accentColorId = update.accentColorId,
-      listeners::updateChatAccentColor
+      chat.emojiStatus = update.emojiStatus,
+      listeners::updateChatEmojiStatus
     );
   }
 
@@ -8987,6 +8999,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   @TdlibThread
   private void updateSpeechRecognitionTrial (TdApi.UpdateSpeechRecognitionTrial update) {
     // TODO
+  }
+
+  @TdlibThread
+  private void updateDefaultBackground (TdApi.UpdateDefaultBackground update) {
+    // TODO ?
   }
 
   @TdlibThread
@@ -9955,11 +9972,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateSpeechRecognitionTrial((TdApi.UpdateSpeechRecognitionTrial) update);
         break;
       }
-      case TdApi.UpdateMessageReaction.CONSTRUCTOR:
-      case TdApi.UpdateMessageReactions.CONSTRUCTOR:
-      case TdApi.UpdateDefaultBackground.CONSTRUCTOR:
-      case TdApi.UpdateChatEmojiStatus.CONSTRUCTOR: {
-        // TODO?
+      case TdApi.UpdateDefaultBackground.CONSTRUCTOR: {
+        updateDefaultBackground((TdApi.UpdateDefaultBackground) update);
         break;
       }
 
@@ -10036,7 +10050,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         break;
       }
       case TdApi.UpdateChatAccentColors.CONSTRUCTOR: {
-        updateChatAccentColor((TdApi.UpdateChatAccentColors) update);
+        updateChatAccentColors((TdApi.UpdateChatAccentColors) update);
+        break;
+      }
+      case TdApi.UpdateChatEmojiStatus.CONSTRUCTOR: {
+        updateChatEmojiStatus((TdApi.UpdateChatEmojiStatus) update);
         break;
       }
 
@@ -10063,7 +10081,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.UpdatePoll.CONSTRUCTOR:
       case TdApi.UpdatePollAnswer.CONSTRUCTOR:
       case TdApi.UpdateChatMember.CONSTRUCTOR:
-      case TdApi.UpdateChatBoost.CONSTRUCTOR: {
+      case TdApi.UpdateChatBoost.CONSTRUCTOR:
+      case TdApi.UpdateMessageReaction.CONSTRUCTOR:
+      case TdApi.UpdateMessageReactions.CONSTRUCTOR: {
         // Must never come from TDLib. If it does, there's a bug on TDLib side.
         throw Td.unsupported(update);
       }
@@ -11012,6 +11032,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
         case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR:
         case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR:
+        case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR:
         case TdApi.MessagePremiumGiveaway.CONSTRUCTOR:
         case TdApi.MessageInviteVideoChatParticipants.CONSTRUCTOR:
         case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
@@ -11022,7 +11043,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageSupergroupChatCreate.CONSTRUCTOR:
         case TdApi.MessageUnsupported.CONSTRUCTOR:
         case TdApi.MessageUsersShared.CONSTRUCTOR:
-        case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR:
         case TdApi.MessageVideoChatEnded.CONSTRUCTOR:
         case TdApi.MessageVideoChatScheduled.CONSTRUCTOR:
         case TdApi.MessageVideoChatStarted.CONSTRUCTOR:

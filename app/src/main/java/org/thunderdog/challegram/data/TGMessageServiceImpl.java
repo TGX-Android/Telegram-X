@@ -412,25 +412,42 @@ abstract class TGMessageServiceImpl extends TGMessage {
   }
 
   protected final class AccentColorArgument implements FormattedArgument {
-    private final TdlibAccentColor accentColor;
+    private final @Nullable TdlibAccentColor accentColor;
+    private final long customEmojiId;
 
-    public AccentColorArgument (TdlibAccentColor accentColor) {
+    public AccentColorArgument (@NonNull TdlibAccentColor accentColor) {
+      this(accentColor, 0);
+    }
+
+    public AccentColorArgument (@Nullable TdlibAccentColor accentColor, long customEmojiId) {
       this.accentColor = accentColor;
+      this.customEmojiId = customEmojiId;
     }
 
     @Override
     public FormattedText buildArgument () {
-      final String text = accentColor.getTextRepresentation();
-      TextEntityCustom custom = new TextEntityCustom(
-        controller(),
-        tdlib,
-        text,
-        0, text.length(),
-        0,
-        openParameters()
-      );
-      customizeColor(custom, accentColor);
-      return new FormattedText(text, new TextEntity[] {custom});
+      final String text = accentColor != null ? accentColor.getTextRepresentation() : " ";
+      TextEntity entity;
+      if (customEmojiId != 0) {
+        entity = new TextEntityMessage(
+          tdlib,
+          text, new TdApi.TextEntity(0, text.length(), new TdApi.TextEntityTypeCustomEmoji(customEmojiId)),
+          openParameters()
+        );
+      } else {
+        entity = new TextEntityCustom(
+          controller(),
+          tdlib,
+          text,
+          0, text.length(),
+          0,
+          openParameters()
+        );
+      }
+      if (accentColor != null) {
+        customizeColor(entity, accentColor);
+      }
+      return new FormattedText(text, new TextEntity[] {entity});
     }
   }
 
@@ -439,7 +456,7 @@ abstract class TGMessageServiceImpl extends TGMessage {
     private final long customEmojiId;
     private final String text;
 
-    public CustomEmojiArgument (Tdlib tdlib, long customEmojiId) {
+    public CustomEmojiArgument (Tdlib tdlib, long customEmojiId, @Nullable TdlibAccentColor repaintAccentColor) {
       this.tdlib = tdlib;
       this.customEmojiId = customEmojiId;
       TdlibEmojiManager.Entry emoji = tdlib.emoji().find(customEmojiId);

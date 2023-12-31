@@ -1467,11 +1467,26 @@ public class TdlibListeners {
     );
   }
 
-  // updateChatAccentColor
+  // updateChatAccentColors
 
-  void updateChatAccentColor (TdApi.UpdateChatAccentColors update) {
+  void updateChatAccentColors (TdApi.UpdateChatAccentColors update) {
     runChatUpdate(update.chatId, listener ->
-      listener.onChatAccentColorChanged(update.chatId, update.accentColorId)
+      listener.onChatAccentColorsChanged(update.chatId,
+        update.accentColorId,
+        update.backgroundCustomEmojiId,
+        update.profileAccentColorId,
+        update.profileBackgroundCustomEmojiId
+      )
+    );
+  }
+
+  // updateChatEmojiStatus
+
+  void updateChatEmojiStatus (TdApi.UpdateChatEmojiStatus update) {
+    runChatUpdate(update.chatId, listener ->
+      listener.onChatEmojiStatusChanged(update.chatId,
+        update.emojiStatus
+      )
     );
   }
 

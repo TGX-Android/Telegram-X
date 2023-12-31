@@ -1051,7 +1051,8 @@ public class TD {
       case TdApi.MessagePremiumGiveaway.CONSTRUCTOR:
       case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
       case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR:
-      case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR: {
+      case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR:
+      case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR: {
         return false;
       }
       default: {
