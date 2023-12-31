@@ -21,6 +21,10 @@ import org.thunderdog.challegram.navigation.ViewController;
 public class ModernActionedLayout extends MediaLayout {
   private MediaBottomBaseController<?> curController;
 
+  public static void showGiftCode (ViewController<?> context, String code, TdApi.PremiumGiftCodeInfo giftCodeInfo) {
+    showMal(context, (mal) -> new GiftCodeController(mal, code, giftCodeInfo));
+  }
+
   public static void showMessageSeen (ViewController<?> context, TGMessage msg, TdApi.MessageViewers viewers) {
     showMal(context, (mal) -> new MessageSeenController(mal, msg, viewers));
   }

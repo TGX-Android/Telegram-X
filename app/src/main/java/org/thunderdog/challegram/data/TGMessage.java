@@ -8127,9 +8127,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageGiftedPremium.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageGiftedPremium) content);
         }
-        case TdApi.MessagePremiumGiftCode.CONSTRUCTOR: {
-          return new TGMessageService(context, msg, (TdApi.MessagePremiumGiftCode) content);
-        }
         case TdApi.MessageChatSetTheme.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageChatSetTheme) content);
         }
@@ -8220,8 +8217,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessagePremiumGiveawayCompleted) content);
         }
+        case TdApi.MessagePremiumGiftCode.CONSTRUCTOR: {
+          return new TGMessageGift(context, msg, (TdApi.MessagePremiumGiftCode) content);
+        }
         case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR: {
-          return new TGMessageGiveaway(context, msg, (TdApi.MessagePremiumGiveawayWinners) content);
+          return new TGMessageGiveawayWinners(context, msg, (TdApi.MessagePremiumGiveawayWinners) content);
         }
         case TdApi.MessagePremiumGiveaway.CONSTRUCTOR: {
           return new TGMessageGiveaway(context, msg, (TdApi.MessagePremiumGiveaway) content);

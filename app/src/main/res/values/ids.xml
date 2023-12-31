@@ -216,6 +216,7 @@
   <item type="id" name="controller_chatJoinRequests" />
   <item type="id" name="controller_messageSeen" />
   <item type="id" name="controller_joinDialog" />
+  <item type="id" name="controller_giftDialog" />
 
   <item type="id" name="controller_code" />
   <item type="id" name="controller_name" />

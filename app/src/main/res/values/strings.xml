@@ -5001,9 +5001,13 @@
   <string name="AccountDeleted">Account deleted</string>
   <string name="AccountDeletedText">Your account %1$s (%2$s) is now deleted from Telegram servers, and can no longer be restored.\n\nUsing the same phone number will create a new account.</string>
 
+  <string name="GiveawayCongratulations">Congratulations</string>
+  <string name="GiveawayYouWon">You won a prize in a giveaway organized by:</string>
+  <string name="GiveawayYouGetGift">You received a gift from:</string>
   <string name="GiveawayLearnMore">Learn More</string>
   <string name="GiveawayPrizes">Giveaway Prizes</string>
   <string name="GiveawayPrizesWith">with</string>
+  <string name="GiveawayPrizesAdditional">%1$s %2$s</string>
   <string name="GiveawayWinners">Winners</string>
   <string name="GiveawayAllWinnersReceivedLinks">All winners received gift links in private messages.</string>
   <string name="GiveawayWinnersSelected">Winners Selected!</string>
@@ -5019,5 +5023,21 @@
   <string name="xGiveawayWinnersSelectedInfo_other">%1$s winners of the Giveaway were randomly selected by Telegram.</string>
   <string name="xGiveawayPrizePremiumInfo_one">%1$s Telegram Premium Subscription for %2$s months.</string>
   <string name="xGiveawayPrizePremiumInfo_other">%1$s Telegram Premium Subscriptions for %2$s months.</string>
+  <string name="xGiveawayPrizeReceivedInfo_one">Your prize is a **Telegram Premium** subscription for **%1$s** month.</string>
+  <string name="xGiveawayPrizeReceivedInfo_other">Your prize is a **Telegram Premium** subscription for **%1$s** months.</string>
+
+  <string name="xTelegramPremiumForMonth_one">Telegram Premium for %1$s month</string>
+  <string name="xTelegramPremiumForMonth_other">Telegram Premium for %1$s months</string>
+
+  <string name="Gift">Gift</string>
+  <string name="GiftLink">Gift link</string>
+  <string name="GiftDate">Date</string>
+  <string name="GiftFrom">From</string>
+  <string name="GiftTo">To</string>
+  <string name="GiftReason">Reason</string>
+  <string name="GiftReasonGift">Gift</string>
+  <string name="GiftReasonGiveaway">Giveaway</string>
+  <string name="GiftLinkShareDesc">You can also send this link to a friend as a gift.</string>
+  <string name="OpenGiftLink">Open gift link</string>
 
 </resources>

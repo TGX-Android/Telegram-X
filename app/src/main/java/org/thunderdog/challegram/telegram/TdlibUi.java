@@ -3551,13 +3551,34 @@ public class TdlibUi extends Handler {
       case TdApi.InternalLinkTypePremiumFeatures.CONSTRUCTOR:
       case TdApi.InternalLinkTypeRestorePurchases.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatBoost.CONSTRUCTOR:
-      case TdApi.InternalLinkTypePremiumGiftCode.CONSTRUCTOR:
       case TdApi.InternalLinkTypePremiumGift.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypePassportDataRequest.CONSTRUCTOR: {
         showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
         break;
       }
+
+      case TdApi.InternalLinkTypePremiumGiftCode.CONSTRUCTOR: {
+        final String code = ((TdApi.InternalLinkTypePremiumGiftCode) linkType).code;
+
+        // TODO progress
+        tdlib.send(new TdApi.CheckPremiumGiftCode(code), (info, error) -> {
+          if (error != null) {
+            if (after != null) {
+              post(() -> after.runWithBool(false));
+            }
+          } else {
+            post(() -> {
+              ModernActionedLayout.showGiftCode(context.context().navigation().getCurrentStackItem(), code, info);
+              if (after != null) {
+                after.runWithBool(true);
+              }
+            });
+          }
+        });
+        break;
+      }
+
       case TdApi.InternalLinkTypeChangePhoneNumber.CONSTRUCTOR: {
         SettingsPhoneController c = new SettingsPhoneController(context.context(), context.tdlib());
         context.context().navigation().navigateTo(c);
