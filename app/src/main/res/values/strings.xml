@@ -2143,12 +2143,40 @@
   <string name="EventLogAccentColorChanged">%1$s changed accent color from %2$s to %3$s</string>
   <string name="EventLogAccentColorChangedYou">You changed accent color from %1$s to %2$s</string>
 
+  <string name="EventLogEmojiStatusChanged">%1$s changed emoji status from %2$s to %3$s</string>
+  <string name="EventLogEmojiStatusChangedYou">You changed emoji status from %1$s to %2$s</string>
+  <string name="EventLogEmojiStatusSet">%1$s changed emoji status from none to %2$s</string>
+  <string name="EventLogEmojiStatusSetYou">You changed emoji status from none to %1$s</string>
+  <string name="EventLogEmojiStatusUnset">%1$s changed emoji status from %2$s to none</string>
+  <string name="EventLogEmojiStatusUnsetYou">You changed emoji status from %1$s to none</string>
+
   <string name="EventLogEmojiChanged">%1$s changed emoji from %2$s to %3$s</string>
   <string name="EventLogEmojiChangedYou">You changed emoji from %1$s to %2$s</string>
   <string name="EventLogEmojiSet">%1$s changed emoji from none to %2$s</string>
   <string name="EventLogEmojiSetYou">You changed emoji from none to %1$s</string>
   <string name="EventLogEmojiUnset">%1$s changed emoji from %2$s to none</string>
   <string name="EventLogEmojiUnsetYou">You changed emoji from %1$s to none</string>
+
+  <string name="EventLogProfileEmojiChanged">%1$s changed profile emoji from %2$s to %3$s</string>
+  <string name="EventLogProfileEmojiChangedYou">You changed profile emoji from %1$s to %2$s</string>
+  <string name="EventLogProfileEmojiSet">%1$s changed profile emoji from none to %2$s</string>
+  <string name="EventLogProfileEmojiSetYou">You changed profile emoji from none to %1$s</string>
+  <string name="EventLogProfileEmojiUnset">%1$s changed profile emoji from %2$s to none</string>
+  <string name="EventLogProfileEmojiUnsetYou">You changed profile emoji from %1$s to none</string>
+
+  <string name="EventLogProfileColorChanged">%1$s changed profile color from %2$s to %3$s</string>
+  <string name="EventLogProfileColorChangedYou">You changed profile color from %1$s to %2$s</string>
+  <string name="EventLogProfileColorSet">%1$s changed profile color from none to %2$s</string>
+  <string name="EventLogProfileColorSetYou">You changed profile color from none to %1$s</string>
+  <string name="EventLogProfileColorUnset">%1$s changed profile color from %2$s to none</string>
+  <string name="EventLogProfileColorUnsetYou">You changed profile color from %1$s to none</string>
+
+  <string name="EventLogProfileColorIconChanged">%1$s changed profile color and icon from %2$s to %3$s</string>
+  <string name="EventLogProfileColorIconChangedYou">You changed profile color and icon from %1$s to %2$s</string>
+  <string name="EventLogProfileColorIconSet">%1$s changed profile color and icon from none to %2$s</string>
+  <string name="EventLogProfileColorIconSetYou">You changed profile color and icon from none to %1$s</string>
+  <string name="EventLogProfileColorIconUnset">%1$s changed profile color and icon from %2$s to none</string>
+  <string name="EventLogProfileColorIconUnsetYou">You changed profile color and icon from %1$s to none</string>
 
   <string name="UntilX">Until %1$s</string>
   <string name="NetworkUsage">Network Usage</string>

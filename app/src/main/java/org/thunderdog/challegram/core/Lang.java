@@ -1070,6 +1070,7 @@ public class Lang {
       case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
       case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR:
       case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR:
+      case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR:
       case TdApi.MessagePremiumGiveaway.CONSTRUCTOR:
       case TdApi.MessageBasicGroupChatCreate.CONSTRUCTOR:
       case TdApi.MessageCall.CONSTRUCTOR:
@@ -1104,7 +1105,7 @@ public class Lang {
       case TdApi.MessageInviteVideoChatParticipants.CONSTRUCTOR:
       case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR:
       case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
-      case TdApi.MessageUserShared.CONSTRUCTOR:
+      case TdApi.MessageUsersShared.CONSTRUCTOR:
       case TdApi.MessageVideoChatEnded.CONSTRUCTOR:
       case TdApi.MessageVideoChatScheduled.CONSTRUCTOR:
       case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
@@ -1112,7 +1113,7 @@ public class Lang {
       case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
         break;
       default:
-        Td.assertMessageContent_afad899a();
+        Td.assertMessageContent_d40af239();
         throw Td.unsupported(message.content);
     }
     String format = Lang.getString(res);

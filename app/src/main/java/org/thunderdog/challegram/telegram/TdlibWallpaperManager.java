@@ -137,30 +137,25 @@ public class TdlibWallpaperManager {
   private final SparseArrayCompat<List<TGBackground>> backgrounds = new SparseArrayCompat<>();
 
   private void fetchBackgrounds (boolean forDarkTheme) {
-    tdlib.client().send(new TdApi.GetBackgrounds(forDarkTheme), result -> {
-      switch (result.getConstructor()) {
-        case TdApi.Backgrounds.CONSTRUCTOR: {
-          TdApi.Background[] rawBackgrounds = ((TdApi.Backgrounds) result).backgrounds;
-          List<TGBackground> backgrounds = new ArrayList<>(rawBackgrounds.length);
-          for (TdApi.Background rawBackground : rawBackgrounds) {
-            backgrounds.add(new TGBackground(tdlib, rawBackground));
-          }
-          List<Callback> callbacks;
-          synchronized (this.backgrounds) {
-            this.backgrounds.put(forDarkTheme ? 1 : 0, backgrounds);
-            callbacks = ArrayUtils.removeWithKey(this.callbacks, forDarkTheme ? 1 : 0);
-          }
-          if (callbacks != null) {
-            for (Callback callback : callbacks) {
-              if (callback != null)
-                callback.onReceiveWallpapers(backgrounds);
-            }
-          }
-          break;
+    tdlib.send(new TdApi.GetInstalledBackgrounds(forDarkTheme), (result, error) -> {
+      if (error != null) {
+        UI.showError(error);
+        return;
+      }
+      List<TGBackground> backgrounds = new ArrayList<>(result.backgrounds.length);
+      for (TdApi.Background rawBackground : result.backgrounds) {
+        backgrounds.add(new TGBackground(tdlib, rawBackground));
+      }
+      List<Callback> callbacks;
+      synchronized (this.backgrounds) {
+        this.backgrounds.put(forDarkTheme ? 1 : 0, backgrounds);
+        callbacks = ArrayUtils.removeWithKey(this.callbacks, forDarkTheme ? 1 : 0);
+      }
+      if (callbacks != null) {
+        for (Callback callback : callbacks) {
+          if (callback != null)
+            callback.onReceiveWallpapers(backgrounds);
         }
-        case TdApi.Error.CONSTRUCTOR:
-          UI.showError(result);
-          break;
       }
     });
   }

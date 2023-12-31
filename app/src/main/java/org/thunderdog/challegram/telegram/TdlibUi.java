@@ -3552,6 +3552,7 @@ public class TdlibUi extends Handler {
       case TdApi.InternalLinkTypeRestorePurchases.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatBoost.CONSTRUCTOR:
       case TdApi.InternalLinkTypePremiumGiftCode.CONSTRUCTOR:
+      case TdApi.InternalLinkTypePremiumGift.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypePassportDataRequest.CONSTRUCTOR: {
         showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
@@ -3626,7 +3627,7 @@ public class TdlibUi extends Handler {
         return; // async
       }
       default: {
-        Td.assertInternalLinkType_91894cfa();
+        Td.assertInternalLinkType_18c73626();
         throw Td.unsupported(linkType);
       }
     }

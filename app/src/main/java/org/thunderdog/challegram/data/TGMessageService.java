@@ -23,6 +23,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
@@ -331,6 +332,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
             case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR:
             case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR:
+            case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR:
             case TdApi.MessagePremiumGiveaway.CONSTRUCTOR:
             case TdApi.MessageInviteVideoChatParticipants.CONSTRUCTOR:
             case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
@@ -352,13 +354,13 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
             case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
             case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
-            case TdApi.MessageUserShared.CONSTRUCTOR:
+            case TdApi.MessageUsersShared.CONSTRUCTOR:
             case TdApi.MessageChatShared.CONSTRUCTOR:
             case TdApi.MessageBotWriteAccessAllowed.CONSTRUCTOR:
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              Td.assertMessageContent_afad899a();
+              Td.assertMessageContent_d40af239();
               throw Td.unsupported(message.content);
           }
           String format = Lang.getString(staticResId);
@@ -1573,59 +1575,184 @@ public final class TGMessageService extends TGMessageServiceImpl {
     }
   }
 
-  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventAccentColorChanged accentColorChanged) {
-    super(context, msg);
+  private void setBackgroundTextCreator (int oldAccentColorId, int newAccentColorId,
+                                         long oldBackgroundCustomEmojiId, long newBackgroundCustomEmojiId,
+                                         boolean isProfile) {
     setTextCreator(() -> {
-      if (msg.isOutgoing) {
-        return getText(
-          R.string.EventLogAccentColorChangedYou,
-          new AccentColorArgument(tdlib.accentColor(accentColorChanged.oldAccentColorId)),
-          new AccentColorArgument(tdlib.accentColor(accentColorChanged.newAccentColorId))
-        );
+      if (oldBackgroundCustomEmojiId == newBackgroundCustomEmojiId) {
+        // Only accent color changed
+        if (isProfile && (oldAccentColorId == -1 || newAccentColorId == -1)) {
+          boolean isUnset = newAccentColorId == -1;
+          int accentColorId = isUnset ?
+            oldAccentColorId :
+            newAccentColorId;
+          if (msg.isOutgoing) {
+            return getText(
+              isUnset ? R.string.EventLogProfileColorUnsetYou : R.string.EventLogProfileColorSetYou,
+              new AccentColorArgument(tdlib.accentColor(accentColorId))
+            );
+          } else {
+            return getText(
+              isUnset ? R.string.EventLogProfileColorUnset : R.string.EventLogProfileColorSet,
+              new SenderArgument(sender),
+              new AccentColorArgument(tdlib.accentColor(accentColorId))
+            );
+          }
+        } else {
+          if (msg.isOutgoing) {
+            return getText(
+              isProfile ? R.string.EventLogProfileColorChangedYou : R.string.EventLogAccentColorChangedYou,
+              new AccentColorArgument(tdlib.accentColor(oldAccentColorId)),
+              new AccentColorArgument(tdlib.accentColor(newAccentColorId))
+            );
+          } else {
+            return getText(
+              isProfile ? R.string.EventLogProfileColorChanged : R.string.EventLogAccentColorChanged,
+              new SenderArgument(sender),
+              new AccentColorArgument(tdlib.accentColor(oldAccentColorId)),
+              new AccentColorArgument(tdlib.accentColor(newAccentColorId))
+            );
+          }
+        }
+      } else if (oldAccentColorId == newAccentColorId) {
+        // Only background changed
+        TdlibAccentColor repaintAccentColor = newAccentColorId != -1 ? tdlib.accentColor(newAccentColorId) : null;
+        if (newBackgroundCustomEmojiId == 0 || oldBackgroundCustomEmojiId == 0) {
+          boolean isUnset = newBackgroundCustomEmojiId == 0;
+          long backgroundCustomEmojiId = isUnset ?
+            oldBackgroundCustomEmojiId :
+            newBackgroundCustomEmojiId;
+          if (msg.isOutgoing) {
+            return getText(
+              isProfile ?
+                (isUnset ? R.string.EventLogProfileEmojiUnsetYou : R.string.EventLogProfileEmojiSetYou) :
+                (isUnset ? R.string.EventLogEmojiUnsetYou : R.string.EventLogEmojiSetYou),
+              new CustomEmojiArgument(tdlib, backgroundCustomEmojiId, repaintAccentColor)
+            );
+          } else {
+            return getText(
+              isProfile ?
+                (isUnset ? R.string.EventLogProfileEmojiUnset : R.string.EventLogProfileEmojiSet) :
+                (isUnset ? R.string.EventLogEmojiUnset : R.string.EventLogEmojiSet),
+              new SenderArgument(sender),
+              new CustomEmojiArgument(tdlib, backgroundCustomEmojiId, repaintAccentColor)
+            );
+          }
+        } else {
+          if (msg.isOutgoing) {
+            return getText(
+              isProfile ? R.string.EventLogProfileEmojiChangedYou : R.string.EventLogEmojiChangedYou,
+              new CustomEmojiArgument(tdlib, oldBackgroundCustomEmojiId, repaintAccentColor),
+              new CustomEmojiArgument(tdlib, newBackgroundCustomEmojiId, repaintAccentColor)
+            );
+          } else {
+            return getText(
+              isProfile ? R.string.EventLogProfileEmojiChanged : R.string.EventLogEmojiChanged,
+              new SenderArgument(sender),
+              new CustomEmojiArgument(tdlib, oldBackgroundCustomEmojiId, repaintAccentColor),
+              new CustomEmojiArgument(tdlib, newBackgroundCustomEmojiId, repaintAccentColor)
+            );
+          }
+        }
       } else {
-        return getText(
-          R.string.EventLogAccentColorChanged,
-          new SenderArgument(sender),
-          new AccentColorArgument(tdlib.accentColor(accentColorChanged.oldAccentColorId)),
-          new AccentColorArgument(tdlib.accentColor(accentColorChanged.newAccentColorId))
-        );
+        // Both color and emoji changed
+
+        boolean hadIconOrColor = oldAccentColorId != -1 || oldBackgroundCustomEmojiId != 0;
+        boolean hasIconOrColor = newAccentColorId != -1 || newBackgroundCustomEmojiId != 0;
+
+        if (!hadIconOrColor || !hasIconOrColor) {
+          boolean isUnset = !hasIconOrColor;
+          int accentColorId = isUnset ?
+            oldAccentColorId :
+            newAccentColorId;
+          long backgroundCustomEmojiId = isUnset ?
+            oldBackgroundCustomEmojiId :
+            newBackgroundCustomEmojiId;
+          if (msg.isOutgoing) {
+            return getText(
+              isUnset ? R.string.EventLogProfileColorIconUnsetYou : R.string.EventLogProfileColorIconSetYou,
+              new AccentColorArgument(accentColorId != -1 ? tdlib.accentColor(accentColorId) : null, backgroundCustomEmojiId)
+            );
+          } else {
+            return getText(
+              isUnset ? R.string.EventLogProfileColorIconUnset : R.string.EventLogProfileColorIconSet,
+              new SenderArgument(sender),
+              new AccentColorArgument(accentColorId != -1 ? tdlib.accentColor(accentColorId) : null, backgroundCustomEmojiId)
+            );
+          }
+        } else {
+          if (msg.isOutgoing) {
+            return getText(
+              R.string.EventLogProfileColorIconChangedYou,
+              new AccentColorArgument(oldAccentColorId != -1 ? tdlib.accentColor(oldAccentColorId) : null, oldBackgroundCustomEmojiId),
+              new AccentColorArgument(newAccentColorId != -1 ? tdlib.accentColor(newAccentColorId) : null, newBackgroundCustomEmojiId)
+            );
+          } else {
+            return getText(
+              R.string.EventLogProfileColorIconChanged,
+              new SenderArgument(sender),
+              new AccentColorArgument(oldAccentColorId != -1 ? tdlib.accentColor(oldAccentColorId) : null, oldBackgroundCustomEmojiId),
+              new AccentColorArgument(newAccentColorId != -1 ? tdlib.accentColor(newAccentColorId) : null, newBackgroundCustomEmojiId)
+            );
+          }
+        }
       }
     });
   }
 
-  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventBackgroundCustomEmojiChanged backgroundEmojiChanged) {
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventAccentColorChanged accentColorChanged) {
+    super(context, msg);
+    setBackgroundTextCreator(
+      accentColorChanged.oldAccentColorId, accentColorChanged.newAccentColorId,
+      accentColorChanged.oldBackgroundCustomEmojiId, accentColorChanged.newBackgroundCustomEmojiId,
+      false
+    );
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventProfileAccentColorChanged profileAccentColorChanged) {
+    super(context, msg);
+    setBackgroundTextCreator(
+      profileAccentColorChanged.oldProfileAccentColorId, profileAccentColorChanged.newProfileAccentColorId,
+      profileAccentColorChanged.oldProfileBackgroundCustomEmojiId, profileAccentColorChanged.newProfileBackgroundCustomEmojiId,
+      true
+    );
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventEmojiStatusChanged emojiStatusChanged) {
     super(context, msg);
     setTextCreator(() -> {
-      if (backgroundEmojiChanged.newBackgroundCustomEmojiId == 0 || backgroundEmojiChanged.oldBackgroundCustomEmojiId == 0) {
-        boolean isUnset = backgroundEmojiChanged.newBackgroundCustomEmojiId == 0;
+      if (emojiStatusChanged.oldEmojiStatus == null || emojiStatusChanged.newEmojiStatus == null) {
+        boolean isUnset = emojiStatusChanged.newEmojiStatus == null;
         long backgroundCustomEmojiId = isUnset ?
-          backgroundEmojiChanged.oldBackgroundCustomEmojiId :
-          backgroundEmojiChanged.newBackgroundCustomEmojiId;
+          (emojiStatusChanged.oldEmojiStatus != null ? emojiStatusChanged.oldEmojiStatus.customEmojiId : 0) :
+          emojiStatusChanged.newEmojiStatus.customEmojiId;
         if (msg.isOutgoing) {
           return getText(
-            isUnset ? R.string.EventLogEmojiUnsetYou : R.string.EventLogEmojiSetYou,
-            new CustomEmojiArgument(tdlib, backgroundCustomEmojiId)
+            (isUnset ? R.string.EventLogEmojiStatusUnsetYou : R.string.EventLogEmojiStatusSetYou),
+            new CustomEmojiArgument(tdlib, backgroundCustomEmojiId, null)
           );
         } else {
           return getText(
-            isUnset ? R.string.EventLogEmojiUnset : R.string.EventLogEmojiSet,
+            (isUnset ? R.string.EventLogEmojiStatusUnset : R.string.EventLogEmojiStatusSet),
             new SenderArgument(sender),
-            new CustomEmojiArgument(tdlib, backgroundCustomEmojiId)
+            new CustomEmojiArgument(tdlib, backgroundCustomEmojiId, null)
           );
         }
       } else {
+        long oldBackgroundCustomEmojiId = emojiStatusChanged.oldEmojiStatus.customEmojiId;
+        long newBackgroundCustomEmojiId = emojiStatusChanged.newEmojiStatus.customEmojiId;
         if (msg.isOutgoing) {
           return getText(
-            R.string.EventLogEmojiChangedYou,
-            new CustomEmojiArgument(tdlib, backgroundEmojiChanged.oldBackgroundCustomEmojiId),
-            new CustomEmojiArgument(tdlib, backgroundEmojiChanged.newBackgroundCustomEmojiId)
+            R.string.EventLogEmojiStatusChangedYou,
+            new CustomEmojiArgument(tdlib, oldBackgroundCustomEmojiId, null),
+            new CustomEmojiArgument(tdlib, newBackgroundCustomEmojiId, null)
           );
         } else {
           return getText(
-            R.string.EventLogEmojiChanged,
+            R.string.EventLogEmojiStatusChanged,
             new SenderArgument(sender),
-            new CustomEmojiArgument(tdlib, backgroundEmojiChanged.oldBackgroundCustomEmojiId),
-            new CustomEmojiArgument(tdlib, backgroundEmojiChanged.newBackgroundCustomEmojiId)
+            new CustomEmojiArgument(tdlib, oldBackgroundCustomEmojiId, null),
+            new CustomEmojiArgument(tdlib, newBackgroundCustomEmojiId, null)
           );
         }
       }

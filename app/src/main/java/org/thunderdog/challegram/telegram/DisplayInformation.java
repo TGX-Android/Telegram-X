@@ -250,10 +250,12 @@ public class DisplayInformation {
       editor.putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_ACCENT_BUILT_IN_ACCENT_COLOR_ID, accentColor.builtInAccentColorId);
       editor.putIntArray(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_LIGHT_THEME_COLORS, accentColor.lightThemeColors);
       editor.putIntArray(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_DARK_THEME_COLORS, accentColor.darkThemeColors);
+      editor.putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_MIN_CHAT_BOOST_LEVEL, accentColor.minChatBoostLevel);
     } else {
       editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_ACCENT_BUILT_IN_ACCENT_COLOR_ID);
       editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_LIGHT_THEME_COLORS);
       editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_DARK_THEME_COLORS);
+      editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_MIN_CHAT_BOOST_LEVEL);
     }
     if (usernames != null) {
       editor
@@ -340,8 +342,15 @@ public class DisplayInformation {
         case Settings.KEY_ACCOUNT_INFO_SUFFIX_ACCENT_BUILT_IN_ACCENT_COLOR_ID:
         case Settings.KEY_ACCOUNT_INFO_SUFFIX_LIGHT_THEME_COLORS:
         case Settings.KEY_ACCOUNT_INFO_SUFFIX_DARK_THEME_COLORS:
+        case Settings.KEY_ACCOUNT_INFO_SUFFIX_MIN_CHAT_BOOST_LEVEL:
           if (info.accentColor == null) {
-            info.accentColor = new TdApi.AccentColor(info.accentColorId, 0, null, null);
+            info.accentColor = new TdApi.AccentColor(
+              info.accentColorId,
+              0,
+              null,
+              null,
+              0
+            );
           }
           switch (suffix) {
             case Settings.KEY_ACCOUNT_INFO_SUFFIX_ACCENT_BUILT_IN_ACCENT_COLOR_ID:
@@ -352,6 +361,9 @@ public class DisplayInformation {
               break;
             case Settings.KEY_ACCOUNT_INFO_SUFFIX_DARK_THEME_COLORS:
               info.accentColor.darkThemeColors = entry.asIntArray();
+              break;
+            case Settings.KEY_ACCOUNT_INFO_SUFFIX_MIN_CHAT_BOOST_LEVEL:
+              info.accentColor.minChatBoostLevel = entry.asInt();
               break;
           }
           break;

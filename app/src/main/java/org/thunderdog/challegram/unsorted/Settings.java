@@ -258,6 +258,7 @@ public class Settings {
   public static final String KEY_ACCOUNT_INFO_SUFFIX_ACCENT_BUILT_IN_ACCENT_COLOR_ID = "accent_builtin"; // accent_color_id
   public static final String KEY_ACCOUNT_INFO_SUFFIX_LIGHT_THEME_COLORS = "accent_light"; // accent_light
   public static final String KEY_ACCOUNT_INFO_SUFFIX_DARK_THEME_COLORS = "accent_dark"; // accent_dark
+  public static final String KEY_ACCOUNT_INFO_SUFFIX_MIN_CHAT_BOOST_LEVEL = "min_boost_level"; // min_chat_boost_level
   public static final String KEY_ACCOUNT_INFO_SUFFIX_USERNAME = "username"; // username
   public static final String KEY_ACCOUNT_INFO_SUFFIX_USERNAMES_ACTIVE = "usernames_active"; // username
   public static final String KEY_ACCOUNT_INFO_SUFFIX_USERNAMES_DISABLED = "usernames_disabled"; // last_name
