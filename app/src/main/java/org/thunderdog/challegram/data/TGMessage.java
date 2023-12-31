@@ -8234,6 +8234,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
         case TdApi.MessageUsersShared.CONSTRUCTOR:
         case TdApi.MessageChatShared.CONSTRUCTOR:
+        case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR:
           break;
         case TdApi.MessageUnsupported.CONSTRUCTOR:
           unsupportedStringRes = R.string.UnsupportedMessageType;
