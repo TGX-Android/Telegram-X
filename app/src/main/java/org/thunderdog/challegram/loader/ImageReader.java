@@ -265,21 +265,35 @@ public class ImageReader {
 
     File cacheFile = new File(path);
 
-    Bitmap bitmap;
+    Bitmap bitmap = null;
 
     try {
-      if (file.isWebp() && Config.useBundledWebp()) {
-        RandomAccessFile f = new RandomAccessFile(cacheFile, "r");
-        ByteBuffer buffer = f.getChannel().map(FileChannel.MapMode.READ_ONLY, 0, cacheFile.length());
+      boolean webpDecoderFailed = false;
+      boolean isWebP = file.isWebp() && Config.useBundledWebp();
+      if (isWebP) {
+        try (RandomAccessFile f = new RandomAccessFile(cacheFile, "r")) {
+          ByteBuffer buffer = f.getChannel().map(FileChannel.MapMode.READ_ONLY, 0, cacheFile.length());
 
-        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
-        bmOptions.inJustDecodeBounds = true;
-        N.loadWebpImage(null, buffer, buffer.limit(), bmOptions, true);
-        bitmap = Bitmap.createBitmap(bmOptions.outWidth, bmOptions.outHeight, Bitmap.Config.ARGB_8888);
-        N.loadWebpImage(bitmap, buffer, buffer.limit(), null, !opts.inPurgeable);
+          BitmapFactory.Options bmOptions = new BitmapFactory.Options();
+          bmOptions.inJustDecodeBounds = true;
+          N.loadWebpImage(null, buffer, buffer.limit(), bmOptions, true);
+          bitmap = Bitmap.createBitmap(bmOptions.outWidth, bmOptions.outHeight, Bitmap.Config.ARGB_8888);
+          N.loadWebpImage(bitmap, buffer, buffer.limit(), null, !opts.inPurgeable);
+        } catch (Throwable t) {
+          Log.e(Log.TAG_IMAGE_LOADER, "#%s: Cannot load bitmap, config: %s", t, file.toString(), opts.inPreferredConfig.toString());
+          webpDecoderFailed = true;
+        }
+      }
 
-        f.close();
-      } else {
+      if (webpDecoderFailed) {
+        String mimeType = ImageFormatDetector.getImageFormat(cacheFile.getPath());
+        if (mimeType != null && !"image/webp".equals(mimeType)) {
+          Log.e(Log.TAG_IMAGE_LOADER, "#%s: Not WebP, retry with system decoder: %s", file.toString(), mimeType);
+          isWebP = false;
+        }
+      }
+
+      if (!isWebP) {
         if (opts.inPurgeable) {
           RandomAccessFile f = null;
           for (int attempt = 0; attempt < 2; attempt++) { // fixme stupid fix for EACCESS on early applaunch requests
