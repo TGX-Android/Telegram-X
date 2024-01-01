@@ -22,6 +22,7 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
@@ -36,7 +37,13 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.text.Counter;
+import org.thunderdog.challegram.util.text.FormattedText;
+import org.thunderdog.challegram.util.text.Text;
+import org.thunderdog.challegram.util.text.TextColorSet;
+import org.thunderdog.challegram.util.text.TextPart;
+import org.thunderdog.challegram.util.text.TextWrapper;
 
 import me.vkryl.td.Td;
 
@@ -52,22 +59,39 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
 
   private final RectF outlineCounterRect = new RectF();
   private final RectF backgroundCounterRect = new RectF();
-  private int giftDrawableY;
 
   private Counter participantsCounter;
   private int participantsCounterY;
 
-  private int contentDrawY;
   private Content content;
 
   @Override
   protected int onBuildContent (int maxWidth) {
-    int contentHeight = Screen.dp(30);
-    giftDrawableY = contentHeight;
+
+
+    content = new Content(maxWidth);
+
+    content.padding(Screen.dp(30));
+    content.add(new ContentDrawable(R.drawable.baseline_party_popper_72));
+    participantsCounterY = content.getHeight() + Screen.dp(1.5f);
+    content.padding(Screen.dp(35));
+
+    content.add(Lang.boldify(Lang.getString(R.string.GiveawayWinnersSelected)), getTextColorSet(), currentViews);
+    content.padding(Screen.dp(6));
+    content.add(Lang.pluralBold(R.string.xGiveawayWinnersSelectedInfo, giveawayWinners.winnerCount), getTextColorSet(), currentViews);
+
+    content.padding(Screen.dp(BLOCK_MARGIN));
+    content.add(Lang.boldify(Lang.getString(R.string.GiveawayWinners)), getTextColorSet(), currentViews);
+    content.padding(Screen.dp(6));
+    content.add(new ContentBubbles(this, maxWidth)
+      .setOnClickListener(this::onBubbleClick)
+      .addChatIds(giveawayWinners.winnerUserIds));
+
+    content.padding(Screen.dp(BLOCK_MARGIN));
+    content.add(Lang.getString(R.string.GiveawayAllWinnersReceivedLinks), getTextColorSet(), currentViews);
 
     /* * */
 
-    participantsCounterY = giftDrawableY + Screen.dp(73.5f);
     participantsCounter = new Counter.Builder().allBold(true).textSize(11).noBackground().textColor(ColorId.text).build();
     participantsCounter.setCount(giveawayWinners.winnerCount, false, "x" + giveawayWinners.winnerCount, false);
     backgroundCounterRect.set(
@@ -79,33 +103,8 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
     outlineCounterRect.set(backgroundCounterRect);
     outlineCounterRect.inset(-Screen.dp(3), -Screen.dp(3));
 
-
-    contentHeight += Screen.dp(72); // gift drawable height
-    contentHeight += Screen.dp(35); // gift drawable margin
-
-    /* * */
-
-    contentDrawY = contentHeight;
-    content = new Content(this, maxWidth);
-
-    content.add(Lang.boldify(Lang.getString(R.string.GiveawayWinnersSelected)));
-    content.padding(Screen.dp(6));
-    content.add(Lang.pluralBold(R.string.xGiveawayWinnersSelectedInfo, giveawayWinners.winnerCount));
-
-    content.padding(Screen.dp(BLOCK_MARGIN));
-    content.add(Lang.boldify(Lang.getString(R.string.GiveawayWinners)));
-    content.padding(Screen.dp(6));
-    content.add(new ContentBubbles(this, maxWidth)
-      .setOnClickListener(this::onBubbleClick)
-      .addChatIds(giveawayWinners.winnerUserIds));
-
-    content.padding(Screen.dp(BLOCK_MARGIN));
-    content.add(Lang.getString(R.string.GiveawayAllWinnersReceivedLinks));
-
-    contentHeight += content.getHeight();
-
     invalidateGiveawayReceiver();
-    return contentHeight;
+    return content.getHeight();
   }
 
   @Override
@@ -126,17 +125,13 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
   @Override
   protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth) {
     super.drawContent(view, c, startX, startY, maxWidth);
+    content.draw(c, view, startX, startY);
 
     c.save();
     c.translate(startX, startY);
 
     final int contentWidth = getContentWidth();
     final float contentCenterX = contentWidth / 2f;
-
-    final Drawable giftIcon = view.getSparseDrawable(giveawayWinners != null ? R.drawable.baseline_party_popper_72 : R.drawable.baseline_gift_72, ColorId.NONE);
-    if (giftIcon != null) {
-      Drawables.draw(c, giftIcon, contentCenterX - giftIcon.getMinimumWidth() / 2f, giftDrawableY, PorterDuffPaint.get(ColorId.icon));
-    }
 
     if (participantsCounter != null) {
       final float cor = Math.min(outlineCounterRect.width(), outlineCounterRect.height()) / 2f;
@@ -147,8 +142,6 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
     }
 
     c.restore();
-
-    content.draw(c, view, startX, startY + contentDrawY);
   }
 
   @Override

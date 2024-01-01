@@ -56,60 +56,37 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
 
   private final RectF outlineCounterRect = new RectF();
   private final RectF backgroundCounterRect = new RectF();
-  private int giftDrawableY;
 
   private Counter participantsCounter;
   private int participantsCounterY;
 
-  private int contentDrawY;
   private Content content;
 
 
 
   @Override
   protected int onBuildContent (int maxWidth) {
-    int contentHeight = Screen.dp(30);
-    giftDrawableY = contentHeight;
+    content = new Content(maxWidth);
 
-    /* * */
+    content.padding(Screen.dp(30));
+    content.add(new ContentDrawable(R.drawable.baseline_gift_72));
+    participantsCounterY = content.getHeight() + Screen.dp(1.5f);
+    content.padding(Screen.dp(35));
 
-
-    participantsCounterY = giftDrawableY + Screen.dp(73.5f);
-    participantsCounter = new Counter.Builder().allBold(true).textSize(11).noBackground().textColor(ColorId.text).build();
-    participantsCounter.setCount(giveawayContent.winnerCount, false, "x" + giveawayContent.winnerCount, false);
-    backgroundCounterRect.set(
-      maxWidth / 2f - participantsCounter.getWidth() / 2f - Screen.dp(8),
-      participantsCounterY - Screen.dp(23 / 2f),
-      maxWidth / 2f + participantsCounter.getWidth() / 2f + Screen.dp(8),
-      participantsCounterY + Screen.dp(23 / 2f)
-    );
-    outlineCounterRect.set(backgroundCounterRect);
-    outlineCounterRect.inset(-Screen.dp(3), -Screen.dp(3));
-
-
-    contentHeight += Screen.dp(72); // gift drawable height
-    contentHeight += Screen.dp(35); // gift drawable margin
-
-    /* * */
-
-    contentDrawY = contentHeight;
-    content = new Content(this, maxWidth);
-
-
-    content.add(Lang.boldify(Lang.getString(R.string.GiveawayPrizes)));
+    content.add(Lang.boldify(Lang.getString(R.string.GiveawayPrizes)), getTextColorSet(), currentViews);
     content.padding(Screen.dp(6));
     if (!StringUtils.isEmpty(giveawayContent.parameters.prizeDescription)) {
-      content.add(Lang.getString(R.string.GiveawayPrizesAdditional, Lang.boldify(Integer.toString(giveawayContent.winnerCount)), giveawayContent.parameters.prizeDescription));
+      content.add(Lang.getString(R.string.GiveawayPrizesAdditional, Lang.boldify(Integer.toString(giveawayContent.winnerCount)), giveawayContent.parameters.prizeDescription), getTextColorSet(), currentViews);
       content.padding(Screen.dp(6));
-      content.add(Lang.getString(R.string.GiveawayPrizesWith));
+      content.add(Lang.getString(R.string.GiveawayPrizesWith), () -> Theme.getColor(ColorId.textLight), currentViews);
       content.padding(Screen.dp(6));
     }
-    content.add(Lang.pluralBold(R.string.xGiveawayPrizePremiumInfo, giveawayContent.winnerCount, giveawayContent.monthCount));
+    content.add(Lang.pluralBold(R.string.xGiveawayPrizePremiumInfo, giveawayContent.winnerCount, giveawayContent.monthCount), getTextColorSet(), currentViews);
 
     content.padding(Screen.dp(BLOCK_MARGIN));
-    content.add(Lang.boldify(Lang.getString(R.string.GiveawayParticipants)));
+    content.add(Lang.boldify(Lang.getString(R.string.GiveawayParticipants)), getTextColorSet(), currentViews);
     content.padding(Screen.dp(6));
-    content.add(Lang.getString(giveawayContent.parameters.onlyNewMembers ? R.string.GiveawayParticipantsNew : R.string.GiveawayParticipantsAll));
+    content.add(Lang.getString(giveawayContent.parameters.onlyNewMembers ? R.string.GiveawayParticipantsNew : R.string.GiveawayParticipantsAll), getTextColorSet(), currentViews);
     content.padding(Screen.dp(6));
     content.add(new ContentBubbles(this, maxWidth)
       .setOnClickListener(this::onBubbleClick)
@@ -126,20 +103,31 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
         sb.append(info != null ? info[2] : countryCode);
       }
       content.padding(Screen.dp(6));
-      content.add(Lang.getString(R.string.GiveawayCountries, sb));
+      content.add(Lang.getString(R.string.GiveawayCountries, sb), getTextColorSet(), currentViews);
     }
 
     content.padding(Screen.dp(BLOCK_MARGIN));
-    content.add(Lang.boldify(Lang.getString(R.string.GiveawayWinnersSelectionDateHeader)));
+    content.add(Lang.boldify(Lang.getString(R.string.GiveawayWinnersSelectionDateHeader)), getTextColorSet(), currentViews);
     content.padding(Screen.dp(6));
     content.add(Lang.getString(R.string.GiveawayWinnersSelectionDate,
       Lang.dateYearFull(giveawayContent.parameters.winnersSelectionDate, TimeUnit.SECONDS),
-      Lang.time(giveawayContent.parameters.winnersSelectionDate, TimeUnit.SECONDS)));
+      Lang.time(giveawayContent.parameters.winnersSelectionDate, TimeUnit.SECONDS)), getTextColorSet(), currentViews);
 
-    contentHeight += content.getHeight();
+    /* * */
+
+    participantsCounter = new Counter.Builder().allBold(true).textSize(11).noBackground().textColor(ColorId.text).build();
+    participantsCounter.setCount(giveawayContent.winnerCount, false, "x" + giveawayContent.winnerCount, false);
+    backgroundCounterRect.set(
+      maxWidth / 2f - participantsCounter.getWidth() / 2f - Screen.dp(8),
+      participantsCounterY - Screen.dp(23 / 2f),
+      maxWidth / 2f + participantsCounter.getWidth() / 2f + Screen.dp(8),
+      participantsCounterY + Screen.dp(23 / 2f)
+    );
+    outlineCounterRect.set(backgroundCounterRect);
+    outlineCounterRect.inset(-Screen.dp(3), -Screen.dp(3));
 
     invalidateGiveawayReceiver();
-    return contentHeight;
+    return content.getHeight();
   }
 
   @Override
@@ -160,17 +148,13 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
   @Override
   protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth) {
     super.drawContent(view, c, startX, startY, maxWidth);
+    content.draw(c, view, startX, startY);
 
     c.save();
     c.translate(startX, startY);
 
     final int contentWidth = getContentWidth();
     final float contentCenterX = contentWidth / 2f;
-
-    final Drawable giftIcon = view.getSparseDrawable(R.drawable.baseline_gift_72, ColorId.NONE);
-    if (giftIcon != null) {
-      Drawables.draw(c, giftIcon, contentCenterX - giftIcon.getMinimumWidth() / 2f, giftDrawableY, PorterDuffPaint.get(ColorId.icon));
-    }
 
     if (participantsCounter != null) {
       final float cor = Math.min(outlineCounterRect.width(), outlineCounterRect.height()) / 2f;
@@ -181,8 +165,6 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
     }
 
     c.restore();
-
-    content.draw(c, view, startX, startY + contentDrawY);
   }
 
   @Override

@@ -1359,4 +1359,6 @@
   <item type="id" name="controller_emojiLayoutEmojiTrending" />
   <item type="id" name="controller_emojiLayoutReactions" />
   <item type="id" name="controller_reactionsPicker" />
+
+  <item type="id" name="btn_redeemGiftLink" />
 </resources>

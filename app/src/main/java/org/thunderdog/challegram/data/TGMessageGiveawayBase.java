@@ -15,8 +15,11 @@
 package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
+
+import androidx.annotation.DrawableRes;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.component.chat.MessageView;
@@ -26,23 +29,27 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.text.Text;
+import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
 import org.thunderdog.challegram.util.text.TextWrapper;
+import org.thunderdog.challegram.widget.GiftHeaderView;
 
 import java.util.ArrayList;
 
-import kotlin.random.Random;
-import me.vkryl.core.MathUtils;
+import me.vkryl.android.util.MultipleViewProvider;
+import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.lambda.RunnableData;
 
 public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlineKeyboard.ClickListener {
   protected final static int BLOCK_MARGIN = 18;
 
-  private Particle[] particles;
+  private GiftHeaderView.ParticlesDrawable particlesDrawable;
   private int contentHeight = 0;
 
   private TGInlineKeyboard rippleButton;
@@ -66,17 +73,10 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
     contentHeight += TGInlineKeyboard.getButtonHeight();
     contentHeight += Screen.dp(BLOCK_MARGIN) / 2;
 
-    int particlesCount = (int) (Screen.px(maxWidth) * Screen.px(contentHeight) / 2000f);
-    particles = new Particle[particlesCount];
-    for (int a = 0; a < particlesCount; a++) {
-      particles[a] = new Particle(
-        MathUtils.random(0, 3),
-        particleColors[MathUtils.random(0, 5)],
-        MathUtils.random(0, maxWidth),
-        MathUtils.random(0, contentHeight),
-        1f + Random.Default.nextFloat(),
-        Random.Default.nextFloat() * 360f
-      );
+    if (particlesDrawable == null) {
+      particlesDrawable = new GiftHeaderView.ParticlesDrawable(maxWidth, contentHeight);
+    } else {
+      particlesDrawable.setBounds(0, 0, maxWidth, contentHeight);
     }
 
     invalidateGiveawayReceiver();
@@ -86,32 +86,14 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
 
   protected abstract String getButtonText ();
 
-  private static final int[] particleColors = new int[]{
-    ColorId.confettiGreen,
-    ColorId.confettiBlue,
-    ColorId.confettiYellow,
-    ColorId.confettiRed,
-    ColorId.confettiCyan,
-    ColorId.confettiPurple
-  };
-
   @Override
   protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth) {
-    c.save();
-    c.translate(startX, startY);
-
-    /*for (Particle particle : particles) {
+    if (particlesDrawable != null) {
       c.save();
-      c.scale(particle.scale, particle.scale, particle.x, particle.y);
-      c.rotate(particle.angle, particle.x, particle.y);
-      c.drawRect(
-        particle.x - Screen.dp(2), particle.y - Screen.dp(2),
-        particle.x + Screen.dp(2), particle.y + Screen.dp(2),
-        Paints.fillingPaint(ColorUtils.alphaColor(0.4f, Theme.getColor(particle.color))));
+      c.translate(startX, startY);
+      particlesDrawable.draw(c);
       c.restore();
-    }*/
-
-    c.restore();
+    }
 
     if (rippleButton != null) {
       rippleButton.draw(view, c, startX, startY + rippleButtonY);
@@ -153,24 +135,6 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
 
   /* * */
 
-  private static class Particle {
-    public final int type;
-    public final int color;
-    public final float scale;
-    public final float angle;
-    public final int x;
-    public final int y;
-
-    public Particle (int type, int color, int x, int y, float scale, float angle) {
-      this.type = type;
-      this.color = color;
-      this.x = x;
-      this.y = y;
-      this.scale = scale;
-      this.angle = angle;
-    }
-  }
-
   private static TextStyleProvider giveawayStyleProvider;
 
   protected static TextStyleProvider getGiveawayTextStyleProvider () {
@@ -185,19 +149,21 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
 
   /* * */
 
-  protected static class Content {
+  public static class Content {
     private final ArrayList<ContentPart> parts = new ArrayList<>();
-    private final TGMessage msg;
     private final int maxWidth;
     private int y;
 
-    public Content (TGMessage msg, int maxWidth) {
+    public Content (int maxWidth) {
       this.maxWidth = maxWidth;
-      this.msg = msg;
     }
 
-    public void add (CharSequence text) {
-      add(new ContentText(msg, text));
+    public void add (CharSequence text, TextColorSet colorSet, ViewProvider viewProvider) {
+      add(new ContentText(genTextWrapper(text, colorSet, viewProvider)));
+    }
+
+    public void add (TextWrapper textWrapper) {
+      add(new ContentText(textWrapper));
     }
 
     public void add (ContentPart p) {
@@ -237,7 +203,7 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
     }
   }
 
-  protected static abstract class ContentPart {
+  public static abstract class ContentPart {
     protected int y;
 
     public void setY (int y) {
@@ -254,26 +220,39 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
     }
   }
 
-  protected static class ContentText extends ContentPart {
-    private final TextWrapper text;
+  public static class ContentText extends ContentPart {
+    private final TextWrapper textWrapper;
+    private final Text text;
 
-    public ContentText (TGMessage msg, CharSequence text) {
-      this.text = genTextWrapper(msg, text);
+    public ContentText (TextWrapper wrapper) {
+      this.textWrapper = wrapper;
+      this.text = null;
+    }
+
+    public ContentText (Text text) {
+      this.textWrapper = null;
+      this.text = text;
     }
 
     @Override
     public void build (int width) {
-      text.prepare(width);
+      if (textWrapper != null) {
+        textWrapper.prepare(width);
+      }
     }
 
     @Override
     public int getHeight () {
-      return text.getHeight();
+      return textWrapper != null ? textWrapper.getHeight() : text.getHeight();
     }
 
     @Override
     public void draw (Canvas c, MessageView v, int x, int y) {
-      text.draw(c, x, y + this.y);
+      if (textWrapper != null) {
+        textWrapper.draw(c, x, y + this.y);
+      } else if (text != null) {
+        text.draw(c, x, y + this.y);
+      }
     }
 
     @Override
@@ -282,7 +261,7 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
     }
   }
 
-  protected static class ContentBubbles extends ContentPart {
+  public static class ContentBubbles extends ContentPart {
     private final BubbleWrapView2 layout;
     private final Tdlib tdlib;
     private final int maxTextWidth;
@@ -338,9 +317,37 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
     }
   }
 
-  private static TextWrapper genTextWrapper (TGMessage message, CharSequence text) {
-    return new TextWrapper(message.tdlib(), TD.toFormattedText(text, false), getGiveawayTextStyleProvider(), message.getTextColorSet(), null, null)
-      .setTextFlagEnabled(Text.FLAG_ALIGN_CENTER, true)
-      .setViewProvider(message.currentViews);
+  public static class ContentDrawable extends ContentPart {
+    private final Drawable drawable;
+    private int width;
+
+    public ContentDrawable (@DrawableRes int drawableRes) {
+      drawable = Drawables.get(drawableRes);
+    }
+
+    @Override
+    public void build (int width) {
+      this.width = width;
+    }
+
+    @Override
+    public int getHeight () {
+      return drawable.getMinimumHeight();
+    }
+
+    @Override
+    public void draw (Canvas c, MessageView v, int x, int y) {
+      Drawables.draw(c, drawable, x + (width - drawable.getMinimumWidth()) / 2f, this.y + y, PorterDuffPaint.get(ColorId.icon));
+    }
+
+    @Override
+    public void requestFiles (ComplexReceiver r) {
+
+    }
+  }
+
+  private static TextWrapper genTextWrapper (CharSequence text, TextColorSet textColorSet, ViewProvider viewProvider) {
+    return new TextWrapper(null, TD.toFormattedText(text, false), getGiveawayTextStyleProvider(), textColorSet, null, null)
+      .setTextFlagEnabled(Text.FLAG_ALIGN_CENTER, true).setViewProvider(viewProvider);
   }
 }

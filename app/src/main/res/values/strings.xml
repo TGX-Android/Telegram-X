@@ -5007,7 +5007,7 @@
   <string name="GiveawayLearnMore">Learn More</string>
   <string name="GiveawayPrizes">Giveaway Prizes</string>
   <string name="GiveawayPrizesWith">with</string>
-  <string name="GiveawayPrizesAdditional">%1$s %2$s</string>
+  <string name="GiveawayPrizesAdditional">%1$s x %2$s</string>
   <string name="GiveawayWinners">Winners</string>
   <string name="GiveawayAllWinnersReceivedLinks">All winners received gift links in private messages.</string>
   <string name="GiveawayWinnersSelected">Winners Selected!</string>
@@ -5031,6 +5031,8 @@
 
   <string name="Gift">Gift</string>
   <string name="GiftLink">Gift link</string>
+  <string name="GiftLinkDesc">This link allows you to activate a **Telegram Premium** subscription</string>
+  <string name="GiftLinkRedeem">Redeem gift link</string>
   <string name="GiftDate">Date</string>
   <string name="GiftFrom">From</string>
   <string name="GiftTo">To</string>

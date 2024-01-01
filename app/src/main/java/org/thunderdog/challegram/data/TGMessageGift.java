@@ -45,28 +45,19 @@ public class TGMessageGift extends TGMessageGiveawayBase {
     this.msgContent = premiumGiftCode;
   }
 
-  private int giftDrawableY;
-  private int contentDrawY;
   private Content content;
 
   protected int onBuildContent (int maxWidth) {
-    int contentHeight = Screen.dp(30);
-    giftDrawableY = contentHeight;
+    content = new Content(maxWidth);
 
-    /* * */
-
-    contentHeight += Screen.dp(72); // gift drawable height
-    contentHeight += Screen.dp(25); // gift drawable margin
-
-    /* * */
-
-    contentDrawY = contentHeight;
-    content = new Content(this, maxWidth);
+    content.padding(Screen.dp(25));
+    content.add(new ContentDrawable(R.drawable.baseline_gift_72));
+    content.padding(Screen.dp(25));
 
     if (msgContent != null) {
-      content.add(Lang.boldify(Lang.getString(R.string.GiveawayCongratulations)));
+      content.add(Lang.boldify(Lang.getString(R.string.GiveawayCongratulations)), getTextColorSet(), currentViews);
       content.padding(Screen.dp(6));
-      content.add(Lang.getString(msgContent.isFromGiveaway ? R.string.GiveawayYouWon : R.string.GiveawayYouGetGift));
+      content.add(Lang.getString(msgContent.isFromGiveaway ? R.string.GiveawayYouWon : R.string.GiveawayYouGetGift), getTextColorSet(), currentViews);
       if (msgContent.creatorId != null) {
         content.padding(Screen.dp(6));
         content.add(new ContentBubbles(this, maxWidth)
@@ -75,15 +66,12 @@ public class TGMessageGift extends TGMessageGiveawayBase {
       }
 
       content.padding(Screen.dp(BLOCK_MARGIN));
-      content.add(Strings.buildMarkdown(this, Lang.plural(R.string.xGiveawayPrizeReceivedInfo, msgContent.monthCount)));
+      content.add(Strings.buildMarkdown(this, Lang.plural(R.string.xGiveawayPrizeReceivedInfo, msgContent.monthCount)), getTextColorSet(), currentViews);
     }
 
-    contentHeight += content.getHeight();
-
     invalidateGiveawayReceiver();
-    return contentHeight;
+    return content.getHeight();
   }
-
 
   private void onBubbleClick (TdApi.MessageSender senderId) {
     tdlib.ui().openChat(controller(), Td.getSenderId(senderId), new TdlibUi.ChatOpenParameters()
@@ -103,21 +91,7 @@ public class TGMessageGift extends TGMessageGiveawayBase {
   @Override
   protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth) {
     super.drawContent(view, c, startX, startY, maxWidth);
-
-    c.save();
-    c.translate(startX, startY);
-
-    final int contentWidth = getContentWidth();
-    final float contentCenterX = contentWidth / 2f;
-
-    final Drawable giftIcon = view.getSparseDrawable(R.drawable.baseline_gift_72, ColorId.NONE);
-    if (giftIcon != null) {
-      Drawables.draw(c, giftIcon, contentCenterX - giftIcon.getMinimumWidth() / 2f, giftDrawableY, PorterDuffPaint.get(ColorId.icon));
-    }
-
-    c.restore();
-
-    content.draw(c, view, startX, startY + contentDrawY);
+    content.draw(c, view, startX, startY);
   }
 
   @Override
@@ -128,11 +102,10 @@ public class TGMessageGift extends TGMessageGiveawayBase {
     return super.onTouchEvent(view, e);
   }
 
-
-
   @Override
   public void onClick (View view, TGInlineKeyboard keyboard, TGInlineKeyboard.Button button) {
-
+    String rawLink = "t.me/giftcode/" + msgContent.code;
+    tdlib.ui().openInternalLinkType(this, rawLink, new TdApi.InternalLinkTypePremiumGiftCode(msgContent.code), null, null);
   }
 
   @Override
