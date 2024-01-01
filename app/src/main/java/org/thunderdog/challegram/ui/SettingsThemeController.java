@@ -1107,10 +1107,15 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
           } else {
             Calendar sunrise = SunriseSunsetCalculator.getSunrise(location.getLatitude(), location.getLongitude(), TimeZone.getDefault(), DateUtils.getNowCalendar(), 0);
             Calendar sunset = SunriseSunsetCalculator.getSunset(location.getLatitude(), location.getLongitude(), TimeZone.getDefault(), DateUtils.getNowCalendar(), 0);
-              /*if (result == null || result[0] == -1 || result[1] == -1) {
-                UI.showToast(R.string.AutoNightModeScheduledByLocationError, Toast.LENGTH_SHORT);
-                return;
-              }*/
+
+            if (sunrise == null || sunset == null) {
+              context.tooltipManager()
+                .builder(v)
+                .icon(R.drawable.baseline_info_24)
+                .show(tdlib, R.string.AutoNightModeScheduledByLocationPolarNight);
+              return;
+            }
+
             int startHour = sunset.get(Calendar.HOUR_OF_DAY);
             int startMinute = sunset.get(Calendar.MINUTE);
 
