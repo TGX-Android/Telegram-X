@@ -5033,6 +5033,8 @@
   <string name="Gift">Gift</string>
   <string name="GiftLink">Gift link</string>
   <string name="GiftLinkDesc">This link allows you to activate a **Telegram Premium** subscription</string>
+  <string name="GiftLinkActivated">Activated Gift link</string>
+  <string name="GiftLinkActivatedDesc">This link was used to activate a **Telegram Premium** subscription</string>
   <string name="GiftLinkRedeem">Redeem gift link</string>
   <string name="GiftDate">Date</string>
   <string name="GiftFrom">From</string>
@@ -5040,7 +5042,10 @@
   <string name="GiftReason">Reason</string>
   <string name="GiftReasonGift">Gift</string>
   <string name="GiftReasonGiveaway">Giveaway</string>
-  <string name="GiftLinkShareDesc">You can also send this link to a friend as a gift.</string>
+  <string name="GiftLinkWasActivated">The link was activated on %1$s at %2$s</string>
   <string name="OpenGiftLink">Open gift link</string>
+
+  <string name="GiftLinkShareDesc">You can also %1$s to a friend as a gift.</string>
+  <string name="GiftLinkShareDesc_SendThisLink">send this link</string>
 
 </resources>

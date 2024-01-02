@@ -68,7 +68,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Filter;
 import me.vkryl.td.MessageId;
 
-abstract class TGMessageServiceImpl extends TGMessage {
+public abstract class TGMessageServiceImpl extends TGMessage {
   protected TGMessageServiceImpl (MessagesManager manager, TdApi.Message msg) {
     super(manager, msg);
   }
@@ -744,6 +744,10 @@ abstract class TGMessageServiceImpl extends TGMessage {
   }
 
   private static FormattedText[] parseFormatArgs (FormattedArgument... args) {
+    if (args == null) {
+      return new FormattedText[0];
+    }
+
     FormattedText[] formatArgs = new FormattedText[args.length];
     for (int i = 0; i < args.length; i++) {
       formatArgs[i] = args[i].buildArgument();
@@ -752,15 +756,18 @@ abstract class TGMessageServiceImpl extends TGMessage {
   }
 
   protected final FormattedText getText (@StringRes int resId, FormattedArgument... args) {
-    if (args == null || args.length == 0) {
+    return getText(tdlib, openParameters(), resId, parseFormatArgs(args));
+  }
+
+  public static FormattedText getText (Tdlib tdlib, TdlibUi.UrlOpenParameters urlOpenParameters, @StringRes int resId, FormattedText... formatArgs) {
+    if (formatArgs == null || formatArgs.length == 0) {
       return new FormattedText(Lang.getString(resId));
     }
-    FormattedText[] formatArgs = parseFormatArgs(args);
     CharSequence text = Lang.getString(resId,
       (target, argStart, argEnd, argIndex, needFakeBold) -> formatArgs[argIndex],
       (Object[]) formatArgs
     );
-    return toFormattedText(text, tdlib, openParameters());
+    return toFormattedText(text, tdlib, urlOpenParameters);
   }
 
   protected final FormattedText formatText (@NonNull String format, FormattedArgument... args) {

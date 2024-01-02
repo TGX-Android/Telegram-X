@@ -12,14 +12,12 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageGiveawayBase;
-import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
@@ -32,7 +30,6 @@ import org.thunderdog.challegram.util.text.TextStyleProvider;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
 import kotlin.random.Random;
-import me.vkryl.android.util.SingleViewProvider;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 
@@ -41,9 +38,22 @@ public class GiftHeaderView extends View {
   private TGMessageGiveawayBase.Content content;
   private int contentY;
 
+  private @StringRes int headerRes = R.string.GiftLink;
+  private @StringRes int descriptionRes = R.string.GiftLinkDesc;
+
   public GiftHeaderView (Context context) {
     super(context);
     this.particlesDrawable = new ParticlesDrawable();
+  }
+
+  public void setTexts (@StringRes int headerRes, @StringRes int descriptionRes) {
+    if (this.headerRes != headerRes || this.descriptionRes != descriptionRes) {
+      this.headerRes = headerRes;
+      this.descriptionRes = descriptionRes;
+      if (getMeasuredWidth() > 0) {
+        buildContent();
+      }
+    }
   }
 
   @Override
@@ -58,9 +68,9 @@ public class GiftHeaderView extends View {
     content.padding(Screen.dp(10));
     content.add(new TGMessageGiveawayBase.ContentDrawable(R.drawable.baseline_gift_72));
     content.padding(Screen.dp(22));
-    content.add(new TextWrapper(Lang.getString(R.string.GiftLink), getHeaderStyleProvider(), () -> Theme.getColor(ColorId.text)).setTextFlagEnabled(Text.FLAG_ALIGN_CENTER, true));
+    content.add(new TextWrapper(Lang.getString(headerRes), getHeaderStyleProvider(), () -> Theme.getColor(ColorId.text)).setTextFlagEnabled(Text.FLAG_ALIGN_CENTER, true));
     content.padding(Screen.dp(8));
-    content.add(new TextWrapper(null, TD.toFormattedText(Lang.getMarkdownString(null, R.string.GiftLinkDesc), false), getTextStyleProvider(), () -> Theme.getColor(ColorId.text), null, null).setTextFlagEnabled(Text.FLAG_ALIGN_CENTER, true));
+    content.add(new TextWrapper(null, TD.toFormattedText(Lang.getMarkdownString(null, descriptionRes), false), getTextStyleProvider(), () -> Theme.getColor(ColorId.text), null, null).setTextFlagEnabled(Text.FLAG_ALIGN_CENTER, true));
     contentY = (getMeasuredHeight() - content.getHeight()) / 2;
   }
 
