@@ -45,8 +45,6 @@ public class TGMessageGift extends TGMessageGiveawayBase {
     this.msgContent = premiumGiftCode;
   }
 
-  private Content content;
-
   protected int onBuildContent (int maxWidth) {
     content = new Content(maxWidth);
 
@@ -86,20 +84,6 @@ public class TGMessageGift extends TGMessageGiveawayBase {
   @Override
   protected String getButtonText () {
     return Lang.getString(R.string.OpenGiftLink);
-  }
-
-  @Override
-  protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth) {
-    super.drawContent(view, c, startX, startY, maxWidth);
-    content.draw(c, view, startX, startY);
-  }
-
-  @Override
-  public boolean onTouchEvent (MessageView view, MotionEvent e) {
-    if (content != null && content.onTouchEvent(view, e)) {
-      return true;
-    }
-    return super.onTouchEvent(view, e);
   }
 
   @Override

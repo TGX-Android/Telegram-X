@@ -60,10 +60,6 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
   private Counter participantsCounter;
   private int participantsCounterY;
 
-  private Content content;
-
-
-
   @Override
   protected int onBuildContent (int maxWidth) {
     content = new Content(maxWidth);
@@ -137,7 +133,7 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
 
   private void onBubbleClick (TdApi.MessageSender senderId) {
     tdlib.ui().openChat(controller(), Td.getSenderId(senderId), new TdlibUi.ChatOpenParameters()
-      .keepStack().removeDuplicates().openProfileInCaseOfPrivateChat());
+      .keepStack().removeDuplicates().openProfileInCaseOfPrivateChat().openProfileInCaseOfDuplicateChat());
   }
 
   @Override
@@ -148,7 +144,6 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
   @Override
   protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth) {
     super.drawContent(view, c, startX, startY, maxWidth);
-    content.draw(c, view, startX, startY);
 
     c.save();
     c.translate(startX, startY);
@@ -165,14 +160,6 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
     }
 
     c.restore();
-  }
-
-  @Override
-  public boolean onTouchEvent (MessageView view, MotionEvent e) {
-    if (content != null && content.onTouchEvent(view, e)) {
-      return true;
-    }
-    return super.onTouchEvent(view, e);
   }
 
   @Override

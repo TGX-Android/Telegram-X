@@ -132,9 +132,11 @@ public class BubbleWrapView2 {
     }
   }
 
+  private int lastX, lastY;
+
   public void draw (Canvas c, ComplexReceiver complexReceiver, int x, int y) {
     c.save();
-    c.translate(x, y);
+    c.translate(lastX = x, lastY = y);
     for (BubbleView view : bubbles) {
       view.draw(c, complexReceiver, width);
     }
@@ -163,11 +165,11 @@ public class BubbleWrapView2 {
     }
   }
 
-  public boolean onTouchEvent (View v, MotionEvent e, int offsetX, int offsetY) {
+  public boolean onTouchEvent (View v, MotionEvent e) {
     switch (e.getAction()) {
       case MotionEvent.ACTION_DOWN: {
-        startX = (int) e.getX() - offsetX;
-        startY = (int) e.getY() - offsetY;
+        startX = (int) e.getX() - lastX;
+        startY = (int) e.getY() - lastY;
 
         int spacing = (int) ((float) Screen.dp(SPACING) * .5f);
 

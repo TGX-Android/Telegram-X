@@ -17,6 +17,8 @@ package org.thunderdog.challegram.data;
 import android.graphics.Canvas;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.text.style.ClickableSpan;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -42,9 +44,12 @@ import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.FormattedText;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
+import org.thunderdog.challegram.util.text.TextEntity;
+import org.thunderdog.challegram.util.text.TextEntityCustom;
 import org.thunderdog.challegram.util.text.TextPart;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
+import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 
 public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements TGInlineKeyboard.ClickListener {
@@ -63,12 +68,8 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
   private Counter participantsCounter;
   private int participantsCounterY;
 
-  private Content content;
-
   @Override
   protected int onBuildContent (int maxWidth) {
-
-
     content = new Content(maxWidth);
 
     content.padding(Screen.dp(30));
@@ -76,9 +77,27 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
     participantsCounterY = content.getHeight() + Screen.dp(1.5f);
     content.padding(Screen.dp(35));
 
+    String gvw = Lang.getString(R.string.Giveaway);
+    TextEntityCustom custom = new TextEntityCustom(controller(), tdlib, gvw, 0, gvw.length(), 0, openParameters());
+    custom.setCustomColorSet(getLinkColorSet());
+    custom.setOnClickListener(new ClickableSpan() {
+      @Override
+      public void onClick (@NonNull View widget) {
+        tdlib.ui().openMessage(controller(), giveawayWinners.boostedChatId, new MessageId(giveawayWinners.boostedChatId, giveawayWinners.giveawayMessageId), openParameters());
+      }
+    });
+    FormattedText gvwf = new FormattedText(gvw, new TextEntity[] {custom});
+
+    FormattedText formattedText = TGMessageServiceImpl.getPlural(tdlib, null, R.string.xGiveawayWinnersSelectedInfo, giveawayWinners.winnerCount, gvwf);
+    Text.Builder b = new Text.Builder(
+      formattedText, maxWidth,
+      getGiveawayTextStyleProvider(),
+      getTextColorSet(), null
+    ).viewProvider(currentViews).textFlags(Text.FLAG_ALIGN_CENTER);
+
     content.add(Lang.boldify(Lang.getString(R.string.GiveawayWinnersSelected)), getTextColorSet(), currentViews);
     content.padding(Screen.dp(6));
-    content.add(Lang.pluralBold(R.string.xGiveawayWinnersSelectedInfo, giveawayWinners.winnerCount), getTextColorSet(), currentViews);
+    content.add(new ContentText(b.build()));
 
     content.padding(Screen.dp(BLOCK_MARGIN));
     content.add(Lang.boldify(Lang.getString(R.string.GiveawayWinners)), getTextColorSet(), currentViews);
@@ -125,7 +144,6 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
   @Override
   protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth) {
     super.drawContent(view, c, startX, startY, maxWidth);
-    content.draw(c, view, startX, startY);
 
     c.save();
     c.translate(startX, startY);
@@ -142,14 +160,6 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
     }
 
     c.restore();
-  }
-
-  @Override
-  public boolean onTouchEvent (MessageView view, MotionEvent e) {
-    if (content != null && content.onTouchEvent(view, e)) {
-      return true;
-    }
-    return super.onTouchEvent(view, e);
   }
 
   @Override

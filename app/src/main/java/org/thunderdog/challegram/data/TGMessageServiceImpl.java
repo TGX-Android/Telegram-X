@@ -44,6 +44,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibEmojiManager;
 import org.thunderdog.challegram.telegram.TdlibSender;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
@@ -759,7 +760,7 @@ abstract class TGMessageServiceImpl extends TGMessage {
       (target, argStart, argEnd, argIndex, needFakeBold) -> formatArgs[argIndex],
       (Object[]) formatArgs
     );
-    return toFormattedText(text);
+    return toFormattedText(text, tdlib, openParameters());
   }
 
   protected final FormattedText formatText (@NonNull String format, FormattedArgument... args) {
@@ -771,18 +772,21 @@ abstract class TGMessageServiceImpl extends TGMessage {
       (target, argStart, argEnd, argIndex, needFakeBold) -> formatArgs[argIndex],
       (Object[]) formatArgs
     );
-    return toFormattedText(text);
+    return toFormattedText(text, tdlib, openParameters());
   }
 
   protected final FormattedText getPlural (@StringRes int resId, long num, FormattedArgument... args) {
-    FormattedText[] formatArgs = parseFormatArgs(args);
+    return getPlural(tdlib, openParameters(), resId, num, parseFormatArgs(args));
+  }
+
+  public static FormattedText getPlural (Tdlib tdlib, TdlibUi.UrlOpenParameters urlOpenParameters, @StringRes int resId, long num, FormattedText... formatArgs) {
     CharSequence text = Lang.plural(resId, num,
       (target, argStart, argEnd, argIndex, needFakeBold) -> argIndex == 0 ?
         Lang.boldCreator().onCreateSpan(target, argStart, argEnd, argIndex, needFakeBold) :
         formatArgs[argIndex - 1],
       (Object[]) formatArgs
     );
-    return toFormattedText(text);
+    return toFormattedText(text, tdlib, urlOpenParameters);
   }
 
   protected final FormattedText getDuration (
@@ -822,7 +826,7 @@ abstract class TGMessageServiceImpl extends TGMessage {
     throw new IllegalArgumentException("duration == " + durationUnit.toMillis(duration));
   }
 
-  private FormattedText toFormattedText (CharSequence text) {
+  private static FormattedText toFormattedText (CharSequence text, Tdlib tdlib, TdlibUi.UrlOpenParameters urlOpenParameters) {
     final String string = text.toString();
     if (!(text instanceof Spanned)) {
       return new FormattedText(string);
@@ -862,7 +866,7 @@ abstract class TGMessageServiceImpl extends TGMessage {
               entityType[i]
             );
           }
-          TextEntity[] entities = TextEntity.valueOf(tdlib, string, telegramEntities, openParameters());
+          TextEntity[] entities = TextEntity.valueOf(tdlib, string, telegramEntities, urlOpenParameters);
           if (entities != null && entities.length > 0) {
             if (mixedEntities == null) {
               mixedEntities = new ArrayList<>();

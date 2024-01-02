@@ -1696,6 +1696,7 @@ public class TdlibUi extends Handler {
   private static final int CHAT_OPTION_PASSCODE_UNLOCKED = 1 << 4;
   private static final int CHAT_OPTION_REMOVE_DUPLICATES = 1 << 5;
   private static final int CHAT_OPTION_SCHEDULED_MESSAGES = 1 << 6;
+  private static final int CHAT_OPTION_OPEN_PROFILE_IF_DUPLICATE = 1 << 7;
 
   public static class ChatOpenParameters {
     public int options;
@@ -1827,6 +1828,11 @@ public class TdlibUi extends Handler {
 
     public ChatOpenParameters openProfileInCaseOfPrivateChat () {
       this.options |= CHAT_OPTION_NEED_PRIVATE_PROFILE;
+      return this;
+    }
+
+    public ChatOpenParameters openProfileInCaseOfDuplicateChat () {
+      this.options |= CHAT_OPTION_OPEN_PROFILE_IF_DUPLICATE;
       return this;
     }
 
@@ -2116,6 +2122,12 @@ public class TdlibUi extends Handler {
         ((MessagesController) context).openVoiceChatInvitation(voiceChatInvitation);
         doneSomething = true;
       }
+
+      if (BitwiseUtils.hasFlag(options, CHAT_OPTION_OPEN_PROFILE_IF_DUPLICATE)) {
+        openChatProfile(context, chat, messageThread, urlOpenParameters);
+        doneSomething = true;
+      }
+
       if (!doneSomething) {
         // TODO animate header
         UI.forceVibrateError(context.context().getContentView());

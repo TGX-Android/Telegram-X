@@ -42,7 +42,6 @@ import org.thunderdog.challegram.widget.GiftHeaderView;
 
 import java.util.ArrayList;
 
-import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.lambda.RunnableData;
 
@@ -51,6 +50,7 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
 
   private GiftHeaderView.ParticlesDrawable particlesDrawable;
   private int contentHeight = 0;
+  protected Content content;
 
   private TGInlineKeyboard rippleButton;
   private int rippleButtonY;
@@ -95,6 +95,8 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
       c.restore();
     }
 
+    content.draw(c, view, startX, startY);
+
     if (rippleButton != null) {
       rippleButton.draw(view, c, startX, startY + rippleButtonY);
     }
@@ -120,12 +122,19 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
   @Override
   public boolean performLongPress (View view, float x, float y) {
     boolean res = super.performLongPress(view, x, y);
-    return (rippleButton != null && rippleButton.performLongPress(view)) || res;
+
+    boolean a = rippleButton != null && rippleButton.performLongPress(view);
+    boolean b = content != null && content.performLongPress(view, x, y);
+
+    return a || b || res;
   }
 
   @Override
   public boolean onTouchEvent (MessageView view, MotionEvent e) {
     if (rippleButton != null && rippleButton.onTouchEvent(view, e)) {
+      return true;
+    }
+    if (content != null && content.onTouchEvent(view, e)) {
       return true;
     }
     return super.onTouchEvent(view, e);
@@ -183,7 +192,7 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
 
     public void draw (Canvas c, MessageView v, int x, int y) {
       for (ContentPart p : parts) {
-        p.draw(c, v, x, y);
+        p.draw(c, v, x, p.y + y);
       }
     }
 
@@ -193,9 +202,18 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
       }
     }
 
-    public boolean onTouchEvent (MessageView view, MotionEvent e) {
+    public boolean onTouchEvent (View view, MotionEvent e) {
       for (ContentPart p : parts) {
         if (p.onTouchEvent(view, e)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    public boolean performLongPress (View view, float x, float y) {
+      for (ContentPart p : parts) {
+        if (p.performLongPress(view, x, y)) {
           return true;
         }
       }
@@ -213,9 +231,16 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
     public abstract void build (int width);
     public abstract int getHeight ();
     public abstract void draw (Canvas c, MessageView v, int x, int y);
-    public abstract void requestFiles (ComplexReceiver r);
 
-    public boolean onTouchEvent (MessageView view, MotionEvent e) {
+    public void requestFiles (ComplexReceiver r) {
+
+    };
+
+    public boolean performLongPress (View view, float x, float y) {
+      return false;
+    }
+
+    public boolean onTouchEvent (View view, MotionEvent e) {
       return false;
     }
   }
@@ -223,6 +248,7 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
   public static class ContentText extends ContentPart {
     private final TextWrapper textWrapper;
     private final Text text;
+    private int maxWidth;
 
     public ContentText (TextWrapper wrapper) {
       this.textWrapper = wrapper;
@@ -236,6 +262,7 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
 
     @Override
     public void build (int width) {
+      this.maxWidth = width;
       if (textWrapper != null) {
         textWrapper.prepare(width);
       }
@@ -249,15 +276,25 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
     @Override
     public void draw (Canvas c, MessageView v, int x, int y) {
       if (textWrapper != null) {
-        textWrapper.draw(c, x, y + this.y);
+        textWrapper.draw(c, x, y);
       } else if (text != null) {
-        text.draw(c, x, y + this.y);
+        text.draw(c, x, x + maxWidth, 0, y, null);
       }
     }
 
     @Override
-    public void requestFiles (ComplexReceiver r) {
+    public boolean onTouchEvent (View view, MotionEvent e) {
+      if (text != null) {
+        return text.onTouchEvent(view, e);
+      } else if (textWrapper != null) {
+        return textWrapper.onTouchEvent(view, e);
+      }
+      return false;
+    }
 
+    @Override
+    public boolean performLongPress (View view, float x, float y) {
+      return text != null && text.performLongPress(view) || textWrapper != null && textWrapper.performLongPress(view);
     }
   }
 
@@ -299,12 +336,9 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
       return layout.getCurrentHeight();
     }
 
-    int lastDrawX = 0;
-    int lastDrawY = 0;
-
     @Override
     public void draw (Canvas c, MessageView v, int x, int y) {
-      layout.draw(c, v.getGiveawayAvatarsReceiver(), lastDrawX = x, lastDrawY = (y + this.y));
+      layout.draw(c, v.getGiveawayAvatarsReceiver(), x, y);
     }
 
     @Override
@@ -312,8 +346,9 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
       layout.requestFiles(r);
     }
 
-    public boolean onTouchEvent (MessageView view, MotionEvent e) {
-      return layout.onTouchEvent(view, e, lastDrawX, lastDrawY);
+    @Override
+    public boolean onTouchEvent (View view, MotionEvent e) {
+      return layout.onTouchEvent(view, e);
     }
   }
 
@@ -337,12 +372,7 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
 
     @Override
     public void draw (Canvas c, MessageView v, int x, int y) {
-      Drawables.draw(c, drawable, x + (width - drawable.getMinimumWidth()) / 2f, this.y + y, PorterDuffPaint.get(ColorId.icon));
-    }
-
-    @Override
-    public void requestFiles (ComplexReceiver r) {
-
+      Drawables.draw(c, drawable, x + (width - drawable.getMinimumWidth()) / 2f, y, PorterDuffPaint.get(ColorId.icon));
     }
   }
 
