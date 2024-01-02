@@ -5001,5 +5001,6 @@
   <string name="DeleteAccountConfirmFinalBtn">Alright, delete account.</string>
   <string name="AccountDeleted">Account deleted</string>
   <string name="AccountDeletedText">Your account %1$s (%2$s) is now deleted from Telegram servers, and can no longer be restored.\n\nUsing the same phone number will create a new account.</string>
+  <string name="ViewOnce">View once</string>
 
 </resources>

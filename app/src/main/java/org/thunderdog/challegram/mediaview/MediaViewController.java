@@ -1202,10 +1202,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
             setFullScreen(true);
           }
           mediaView.autoplayIfNeeded(false);
-          if (mode == MODE_SECRET) {
-            final MediaItem secretItem = stack.getCurrent();
-            UI.post(() -> secretItem.viewSecretContent(), 20);
-          }
+          final MediaItem openedItem = stack.getCurrent();
+          UI.post(() -> openedItem.viewContent(false), 20);
           if (canSendAsFile() != SEND_MODE_NONE && Settings.instance().needTutorial(Settings.TUTORIAL_SEND_AS_FILE)) {
             Settings.instance().markTutorialAsShown(Settings.TUTORIAL_SEND_AS_FILE);
             context().tooltipManager().builder(sendButton).color(context().tooltipManager().overrideColorProvider(getForcedTheme())).locate((targetView, outRect) -> {
@@ -1482,6 +1480,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   @Override
   protected int getMenuId () {
+    MediaItem current = stack.getCurrent();
+    if (current != null && current.isViewOnce()) {
+      return 0;
+    }
     return R.id.menu_photo;
   }
 
@@ -2299,7 +2301,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           replaceMedia(index, oldItem, newItem);
           headerCell.setSubtitle(genSubtitle());
         } else if (stack.getCurrentIndex() == index) {
-          forceClose();
+          if (message.selfDestructType == null || message.selfDestructType.getConstructor() != TdApi.MessageSelfDestructTypeImmediately.CONSTRUCTOR) {
+            forceClose();
+          }
         } else {
           deleteMedia(index, oldItem);
         }
@@ -5649,6 +5653,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   @Override
   public void destroy () {
     super.destroy();
+    MediaItem current = stack.getCurrent();
+    if (current != null && current.isViewOnce()) {
+      current.viewContent(true);
+    }
     if (!isMediaSent && getArguments() != null && getArgumentsStrict().deleteOnExit && stack != null) {
       for (int i = 0; i < stack.getCurrentSize(); i++) {
         MediaItem item = stack.get(i);
@@ -8211,7 +8219,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private void showTTLOptions () {
     final MediaItem item = stack.getCurrent();
-    tdlib.ui().showTTLPicker(context(), item.getSelfDestructType(), true, true, item.isVideo() ? R.string.MessageLifetimeVideo : R.string.MessageLifetimePhoto, result -> {
+    tdlib.ui().showTTLPicker(context(), item.getSelfDestructType(), !ChatId.isSecret(item.getSourceChatId()), true, true, item.isVideo() ? R.string.MessageLifetimeVideo : R.string.MessageLifetimePhoto, result -> {
       if (stack.getCurrent() == item) {
         TdApi.MessageSelfDestructType selfDestructType;
         String textRepresentation;
@@ -8565,36 +8573,39 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       return;
     }
 
+    boolean allowLoadMore = !item.isSecret() && !item.isViewOnce();
     TdApi.SearchMessagesFilter filter = null;
-    //noinspection SwitchIntDef
-    switch (msg.content.getConstructor()) {
-      case TdApi.MessagePhoto.CONSTRUCTOR: {
-        filter = new TdApi.SearchMessagesFilterPhotoAndVideo();
-        break;
-      }
-      case TdApi.MessageChatChangePhoto.CONSTRUCTOR: {
-        filter = new TdApi.SearchMessagesFilterChatPhoto();
-        break;
-      }
-      case TdApi.MessageVideo.CONSTRUCTOR: {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
-          TdApi.Video video = ((TdApi.MessageVideo) msg.content).video;
-          UI.openFile(messageContainer.controller(), null, new File(video.video.local.path), "video/mp4", TD.getViewCount(msg.interactionInfo));
+    if (allowLoadMore) {
+      //noinspection SwitchIntDef
+      switch (msg.content.getConstructor()) {
+        case TdApi.MessagePhoto.CONSTRUCTOR: {
+          filter = new TdApi.SearchMessagesFilterPhotoAndVideo();
+          break;
         }
-        filter = new TdApi.SearchMessagesFilterPhotoAndVideo();
-        break;
-      }
-      case TdApi.MessageAnimation.CONSTRUCTOR: {
-        filter = new TdApi.SearchMessagesFilterAnimation();
-        break;
-      }
-      case TdApi.MessageText.CONSTRUCTOR: {
-        filter = new TdApi.SearchMessagesFilterUrl();
-        break;
-      }
-      case TdApi.MessageDocument.CONSTRUCTOR: {
-        filter = new TdApi.SearchMessagesFilterDocument();
-        break;
+        case TdApi.MessageChatChangePhoto.CONSTRUCTOR: {
+          filter = new TdApi.SearchMessagesFilterChatPhoto();
+          break;
+        }
+        case TdApi.MessageVideo.CONSTRUCTOR: {
+          if (Build.VERSION.SDK_INT < Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
+            TdApi.Video video = ((TdApi.MessageVideo) msg.content).video;
+            UI.openFile(messageContainer.controller(), null, new File(video.video.local.path), "video/mp4", TD.getViewCount(msg.interactionInfo));
+          }
+          filter = new TdApi.SearchMessagesFilterPhotoAndVideo();
+          break;
+        }
+        case TdApi.MessageAnimation.CONSTRUCTOR: {
+          filter = new TdApi.SearchMessagesFilterAnimation();
+          break;
+        }
+        case TdApi.MessageText.CONSTRUCTOR: {
+          filter = new TdApi.SearchMessagesFilterUrl();
+          break;
+        }
+        case TdApi.MessageDocument.CONSTRUCTOR: {
+          filter = new TdApi.SearchMessagesFilterDocument();
+          break;
+        }
       }
     }
 
@@ -8603,7 +8614,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (context.isStackLocked()) {
       return;
     }
-    if (context instanceof MediaCollectorDelegate) {
+    if (allowLoadMore && context instanceof MediaCollectorDelegate) {
       stack = ((MediaCollectorDelegate) context).collectMedias(msg.id, filter);
     }
 
@@ -8613,7 +8624,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
 
     Args args = new Args(context, MODE_MESSAGES, stack);
-    args.noLoadMore = messageContainer.isEventLog();
+    args.noLoadMore = !allowLoadMore || messageContainer.isEventLog();
     if (context instanceof MediaCollectorDelegate) {
       ((MediaCollectorDelegate) context).modifyMediaArguments(msg, args);
     }

@@ -625,7 +625,7 @@ public class TGMessageMedia extends TGMessage {
 
   @Override
   protected boolean needHotTimer () {
-    return true;
+    return !isViewOnce();
   }
 
   @Override
@@ -795,7 +795,7 @@ public class TGMessageMedia extends TGMessage {
       return true;
     }
 
-    if (isHot() && mosaicWrapper.getSingularItem().getFileProgress().isLoaded()) {
+    if (isHot() && !isViewOnce() && mosaicWrapper.getSingularItem().getFileProgress().isLoaded()) {
       switch (e.getAction()) {
         case MotionEvent.ACTION_DOWN: {
           cancelScheduledHotOpening(view, false);
@@ -850,7 +850,7 @@ public class TGMessageMedia extends TGMessage {
     int cellRight = cellLeft + mosaicWrapper.getWidth();
     int cellBottom = cellTop + mosaicWrapper.getHeight();
 
-    return !isHot() || x < cellLeft || x > cellRight || y < cellTop || y > cellBottom;
+    return !(isHot() && !isViewOnce()) || x < cellLeft || x > cellRight || y < cellTop || y > cellBottom;
   }
 
   @Override
