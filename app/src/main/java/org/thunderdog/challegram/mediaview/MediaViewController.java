@@ -2301,9 +2301,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           replaceMedia(index, oldItem, newItem);
           headerCell.setSubtitle(genSubtitle());
         } else if (stack.getCurrentIndex() == index) {
-          if (message.selfDestructType == null || message.selfDestructType.getConstructor() != TdApi.MessageSelfDestructTypeImmediately.CONSTRUCTOR) {
+          // if (message.selfDestructType == null || message.selfDestructType.getConstructor() != TdApi.MessageSelfDestructTypeImmediately.CONSTRUCTOR) {
             forceClose();
-          }
+          // }
         } else {
           deleteMedia(index, oldItem);
         }
@@ -4692,6 +4692,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       @Override
       public void onActivityPause () {
         mediaView.onMediaActivityPause();
+        MediaItem item = stack.getCurrent();
+        if (item != null && item.isViewOnce()) {
+          item.viewContent(true);
+        }
       }
 
       @Override
