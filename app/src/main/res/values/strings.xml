@@ -2339,6 +2339,7 @@
   <string name="AutoNightScheduled">Scheduled</string>
   <string name="AutoNightModeScheduledByLocation">Detect current sunset &amp; sunrise time</string>
   <string name="AutoNightModeScheduledByLocationProgress">Determining location…</string>
+  <string name="AutoNightModeScheduledByLocationPolarNight">There is currently no sunrise or sunset at your current location.</string>
   <string name="AutoNightModeScheduledTurnOn">From</string>
   <string name="AutoNightModeScheduledTurnOff">To</string>
   <string name="AutoNightModeDescription">Switch to night theme based on ambient lighting or your time preference.</string>
