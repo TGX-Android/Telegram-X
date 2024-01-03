@@ -2336,18 +2336,26 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   public static class Options {
     public final CharSequence info;
+    public final CharSequence header;
     public final OptionItem[] items;
 
-    public Options (CharSequence info, OptionItem[] items) {
+    public Options (CharSequence info, CharSequence header, OptionItem[] items) {
       this.info = info;
+      this.header = header;
       this.items = items;
     }
 
     public static class Builder {
       private CharSequence info;
+      private CharSequence header;
       private List<OptionItem> items = new ArrayList<>();
 
       public Builder () {
+      }
+
+      public Builder header (CharSequence header) {
+        this.header = header;
+        return this;
       }
 
       public Builder info (CharSequence info) {
@@ -2371,7 +2379,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       }
 
       public Options build () {
-        return new Options(info, items.toArray(new OptionItem[0]));
+        return new Options(info, header, items.toArray(new OptionItem[0]));
       }
     }
   }
@@ -2385,7 +2393,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     for (int i = 0; i < ids.length; i++) {
       items[i] = new OptionItem(ids != null ? ids[i] : i, titles[i], colors != null ? colors[i] : OPTION_COLOR_NORMAL, icons != null ? icons[i] : 0);
     }
-    return new Options(info, items);
+    return new Options(info, null, items);
   }
 
   public final PopupLayout showOptions (Options options, final OptionDelegate delegate) {
@@ -2409,6 +2417,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     }
 
     OptionsLayout optionsWrap = new OptionsLayout(context(), this, forcedTheme);
+    optionsWrap.setHeader(options.header);
     optionsWrap.setInfo(this, tdlib(), options.info, false);
     optionsWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
 

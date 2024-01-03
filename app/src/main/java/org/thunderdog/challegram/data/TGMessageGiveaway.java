@@ -16,12 +16,11 @@ package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
 import android.graphics.RectF;
-import android.graphics.drawable.Drawable;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
@@ -32,11 +31,10 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
-import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.TGCountry;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.text.Counter;
 
 import java.util.concurrent.TimeUnit;
@@ -123,12 +121,17 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
     outlineCounterRect.inset(-Screen.dp(3), -Screen.dp(3));
 
     invalidateGiveawayReceiver();
+    UI.execute(this::loadPremiumGiveawayInfo);
     return content.getHeight();
   }
 
   @Override
-  protected String getButtonText () {
-    return Lang.getString(R.string.GiveawayLearnMore);
+  protected void onBuildButton (int maxWidth) {
+    final boolean isParticipating = TD.isParticipating(premiumGiveawayInfo);
+    rippleButton.setCustom(isParticipating ? R.drawable.baseline_check_18 : 0,
+      Lang.getString(isParticipating ? R.string.GiveawayParticipating : R.string.GiveawayLearnMore), maxWidth, false, this);
+    rippleButton.firstButton().setCustomIconReverse(true);
+    rippleButton.firstButton().setCustomColorId(isParticipating ? ColorId.iconPositive : ColorId.NONE);
   }
 
   private void onBubbleClick (TdApi.MessageSender senderId) {
@@ -162,9 +165,27 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
     c.restore();
   }
 
+  private boolean byClick;
+
   @Override
   public void onClick (View view, TGInlineKeyboard keyboard, TGInlineKeyboard.Button button) {
+    loadPremiumGiveawayInfo();
+    byClick = true;
+  }
 
+  @Override
+  protected void onPremiumGiveawayInfoLoaded (TdApi.PremiumGiveawayInfo result, @Nullable TdApi.Error error) {
+    super.onPremiumGiveawayInfoLoaded(result, error);
+    this.onBuildButton(getContentWidth());
+
+    if (byClick && error != null) {
+      UI.showError(error);
+      return;
+    }
+    if (byClick && !isDestroyed()) {
+      showPremiumGiveawayInfoPopup(giveawayContent.winnerCount, giveawayContent.monthCount, giveawayContent.parameters.boostedChatId, giveawayContent.parameters.additionalChatIds.length, giveawayContent.parameters.additionalChatIds, giveawayContent.parameters.winnersSelectionDate);
+    }
+    byClick = false;
   }
 
   @Override

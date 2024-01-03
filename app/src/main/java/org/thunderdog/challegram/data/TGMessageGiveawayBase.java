@@ -19,13 +19,18 @@ import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
 
+import androidx.annotation.CallSuper;
 import androidx.annotation.DrawableRes;
+import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.user.BubbleWrapView2;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ComplexReceiver;
+import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -33,6 +38,7 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -41,9 +47,12 @@ import org.thunderdog.challegram.util.text.TextWrapper;
 import org.thunderdog.challegram.widget.GiftHeaderView;
 
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.util.ViewProvider;
+import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;
+import me.vkryl.td.Td;
 
 public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlineKeyboard.ClickListener {
   protected final static int BLOCK_MARGIN = 18;
@@ -52,7 +61,7 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
   private int contentHeight = 0;
   protected Content content;
 
-  private TGInlineKeyboard rippleButton;
+  protected TGInlineKeyboard rippleButton;
   private int rippleButtonY;
 
   protected TGMessageGiveawayBase (MessagesManager manager, TdApi.Message msg) {
@@ -61,14 +70,17 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
 
   @Override
   protected final void buildContent (int maxWidth) {
+    if (rippleButton == null) {
+      rippleButton = new TGInlineKeyboard(this, false);
+      rippleButton.setViewProvider(currentViews);
+    }
+    onBuildButton(maxWidth);
+
     contentHeight = onBuildContent(maxWidth);
 
     contentHeight += Screen.dp(BLOCK_MARGIN);
 
     rippleButtonY = contentHeight;
-    rippleButton = new TGInlineKeyboard(this, false);
-    rippleButton.setCustom(0, getButtonText(), maxWidth, false, this);
-    rippleButton.setViewProvider(currentViews);
 
     contentHeight += TGInlineKeyboard.getButtonHeight();
     contentHeight += Screen.dp(BLOCK_MARGIN) / 2;
@@ -82,9 +94,15 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
     invalidateGiveawayReceiver();
   }
 
+  protected void onBuildButton (int maxWidth) {
+    rippleButton.setCustom(0, getButtonText(), maxWidth, false, this);
+  }
+
   protected abstract int onBuildContent (int maxWidth);
 
-  protected abstract String getButtonText ();
+  protected String getButtonText () {
+    return null;
+  };
 
   @Override
   protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth) {
@@ -116,8 +134,6 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
   protected int getContentHeight () {
     return contentHeight;
   }
-
-
 
   @Override
   public boolean performLongPress (View view, float x, float y) {
@@ -234,7 +250,7 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
 
     public void requestFiles (ComplexReceiver r) {
 
-    };
+    }
 
     public boolean performLongPress (View view, float x, float y) {
       return false;
@@ -270,7 +286,7 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
 
     @Override
     public int getHeight () {
-      return textWrapper != null ? textWrapper.getHeight() : text.getHeight();
+      return textWrapper != null ? textWrapper.getHeight() : (text != null ? text.getHeight() : 0);
     }
 
     @Override
@@ -379,5 +395,92 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
   private static TextWrapper genTextWrapper (CharSequence text, TextColorSet textColorSet, ViewProvider viewProvider) {
     return new TextWrapper(null, TD.toFormattedText(text, false), getGiveawayTextStyleProvider(), textColorSet, null, null)
       .setTextFlagEnabled(Text.FLAG_ALIGN_CENTER, true).setViewProvider(viewProvider);
+  }
+
+
+
+  /* * */
+
+  protected @Nullable TdApi.PremiumGiveawayInfo premiumGiveawayInfo;
+  protected boolean premiumGiveawayInfoLoaded;
+
+  protected boolean loadPremiumGiveawayInfo () {
+    if (!premiumGiveawayInfoLoaded) {
+      tdlib.send(new TdApi.GetPremiumGiveawayInfo(msg.chatId, msg.id), (a, b) -> UI.post(() -> this.onPremiumGiveawayInfoLoaded(a, b)));
+      rippleButton.firstButton().showProgressDelayed();
+      premiumGiveawayInfoLoaded = true;
+      return true;
+    }
+    return false;
+  }
+
+  @CallSuper
+  protected void onPremiumGiveawayInfoLoaded (TdApi.PremiumGiveawayInfo result, @Nullable TdApi.Error error) {
+    this.premiumGiveawayInfo = result;
+    rippleButton.firstButton().hideProgress();
+    premiumGiveawayInfoLoaded = false;
+  }
+
+  protected void showPremiumGiveawayInfoPopup (int winnerCount, int monthCount, long boostedChatId, int additionalChatsCount, long[] additionalChatIds, int winnersSelectionDate) {
+    if (premiumGiveawayInfo == null) {
+      return;
+    }
+
+    final ViewController.Options.Builder b = new ViewController.Options.Builder();
+
+    StringBuilder channelsSb = new StringBuilder();
+    channelsSb.append(tdlib.chatTitle(boostedChatId));
+    if (additionalChatIds != null) {
+      for (long chatId : additionalChatIds) {
+        channelsSb.append(Lang.getConcatSeparator());
+        channelsSb.append(tdlib.chatTitle(chatId));
+      }
+    } else if (additionalChatsCount > 0) {
+      channelsSb = new StringBuilder();
+      channelsSb.append(Lang.plural(R.string.GiveawaySponsors, additionalChatsCount, tdlib.chatTitle(boostedChatId)));
+    }
+    final String sponsors = channelsSb.toString();
+
+    switch (premiumGiveawayInfo.getConstructor()) {
+      case TdApi.PremiumGiveawayInfoCompleted.CONSTRUCTOR: {
+        final TdApi.PremiumGiveawayInfoCompleted infoCompleted = (TdApi.PremiumGiveawayInfoCompleted) premiumGiveawayInfo;
+        b.header(Lang.getString(R.string.GiveawayEnded));
+        b.info(Lang.pluralBold(R.string.GiveawayEndedInfo, winnerCount, tdlib.chatTitle(boostedChatId), monthCount,
+          Lang.dateYearFull(winnersSelectionDate, TimeUnit.SECONDS),
+          Lang.time(winnersSelectionDate, TimeUnit.SECONDS), sponsors
+        ));
+        if (!StringUtils.isEmpty(infoCompleted.giftCode)) {
+          b.item(new ViewController.OptionItem(R.id.btn_openLink, Lang.getString(R.string.GiveawayViewMyPrize), ViewController.OPTION_COLOR_BLUE, R.drawable.baseline_gift_outline_24));
+        }
+        break;
+      }
+      case TdApi.PremiumGiveawayInfoOngoing.CONSTRUCTOR: {
+        final TdApi.PremiumGiveawayInfoOngoing infoOngoing = (TdApi.PremiumGiveawayInfoOngoing) premiumGiveawayInfo;
+        final TdApi.PremiumGiveawayParticipantStatus status = infoOngoing.status;
+        b.header(Lang.getString(R.string.GiveawayOngoing));
+        b.info(Lang.pluralBold(R.string.GiveawayOngoingInfo, winnerCount, tdlib.chatTitle(boostedChatId), monthCount,
+          Lang.dateYearFull(winnersSelectionDate, TimeUnit.SECONDS),
+          Lang.time(winnersSelectionDate, TimeUnit.SECONDS), sponsors
+        ));
+
+        break;
+      }
+      default:
+        Td.assertPremiumGiveawayInfo_32426860();
+        throw Td.unsupported(premiumGiveawayInfo);
+    }
+
+    b.item(new ViewController.OptionItem(R.id.btn_cancel, Lang.getString(R.string.GiveawayInfoClose), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_cancel_24));
+    controller().showOptions(b.build(), this::onGiveawayInfoOptionItemPressed);
+  }
+
+  protected boolean onGiveawayInfoOptionItemPressed (View optionItemView, int id) {
+    if (id == R.id.btn_openLink) {
+      if (premiumGiveawayInfo != null && premiumGiveawayInfo.getConstructor() == TdApi.PremiumGiveawayInfoCompleted.CONSTRUCTOR) {
+        final TdApi.PremiumGiveawayInfoCompleted infoCompleted = (TdApi.PremiumGiveawayInfoCompleted) premiumGiveawayInfo;
+        tdlib.ui().openInternalLinkType(this, TD.makeGiftCodeLink(infoCompleted.giftCode), new TdApi.InternalLinkTypePremiumGiftCode(infoCompleted.giftCode), null, null);
+      }
+    }
+    return true;
   }
 }

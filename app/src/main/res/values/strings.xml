@@ -5007,6 +5007,7 @@
   <string name="GiveawayYouWon">You won a prize in a giveaway organized by:</string>
   <string name="GiveawayYouGetGift">You received a gift from:</string>
   <string name="GiveawayLearnMore">Learn More</string>
+  <string name="GiveawayParticipating">Participating</string>
   <string name="GiveawayPrizes">Giveaway Prizes</string>
   <string name="GiveawayPrizesWith">with</string>
   <string name="GiveawayPrizesAdditional">%1$s x %2$s</string>
@@ -5048,5 +5049,24 @@
 
   <string name="GiftLinkShareDesc">You can also %1$s to a friend as a gift.</string>
   <string name="GiftLinkShareDesc_SendThisLink">send this link</string>
+
+
+
+  <!-- Giveaway show more popup -->
+  <string name="GiveawaySponsors_one">%2$s and %1$s more channel</string>
+  <string name="GiveawaySponsors_other">%2$s and %1$s more channels</string>
+
+  <string name="GiveawayEnded">Giveaway ended</string>
+  <string name="GiveawayOngoing">Giveaway ongoing</string>
+
+  <string name="GiveawayEndedInfo_one">This giveaway was sponsored by the admins of %2$s, who acquired %1$s Telegram Premium subscription for %3$s months for its followers.\n\nOn %4$s at %5$s, Telegram automatically selected %1$s random user that joined %6$s.</string>
+  <string name="GiveawayEndedInfo_other">This giveaway was sponsored by the admins of %2$s, who acquired %1$s Telegram Premium subscriptions for %3$s months for its followers.\n\nOn %4$s at %5$s, Telegram automatically selected %1$s random users that joined %6$s.</string>
+
+  <string name="GiveawayOngoingInfo_one">This giveaway is sponsored by the admins of %2$s, who acquired %1$s Telegram Premium subscription for %3$s months for its followers.\n\nOn %4$s at %5$s, Telegram will automatically selected %1$s random user that joined %6$s.</string>
+  <string name="GiveawayOngoingInfo_other">This giveaway is sponsored by the admins of %2$s, who acquired %1$s Telegram Premium subscriptions for %3$s months for its followers.\n\nOn %4$s at %5$s, Telegram will automatically selected %1$s random users that joined %6$s.</string>
+
+
+  <string name="GiveawayInfoClose">Close</string>
+  <string name="GiveawayViewMyPrize">View my prize</string>
 
 </resources>

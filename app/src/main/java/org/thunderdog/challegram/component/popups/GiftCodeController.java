@@ -17,22 +17,19 @@ import org.thunderdog.challegram.component.attach.MediaBottomBaseController;
 import org.thunderdog.challegram.component.attach.MediaLayout;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessageServiceImpl;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.support.ViewSupport;
-import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.ui.ListItem;
-import org.thunderdog.challegram.ui.PollResultsController;
 import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.ui.SettingsAdapter;
-import org.thunderdog.challegram.ui.ShareController;
 import org.thunderdog.challegram.util.AvatarDrawModifier;
 import org.thunderdog.challegram.util.text.FormattedText;
-import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextEntityCustom;
@@ -91,7 +88,7 @@ public class GiftCodeController extends MediaBottomBaseController<Void> implemen
       );
     }
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-    items.add(new ListItem(ListItem.TYPE_SETTING,0, R.drawable.dotvhs_baseline_gift_24, R.string.Gift)
+    items.add(new ListItem(ListItem.TYPE_SETTING,0, R.drawable.baseline_gift_outline_24, R.string.Gift)
       .setStringValue(Lang.plural(R.string.xTelegramPremiumForMonth, info.monthCount)));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showGiveawayMessage, R.drawable.baseline_info_24, R.string.GiftReason)
@@ -262,6 +259,6 @@ public class GiftCodeController extends MediaBottomBaseController<Void> implemen
   }
 
   public final String getGiftCodeLink () {
-    return "t.me/giftcode/" + code;
+    return TD.makeGiftCodeLink(code);
   }
 }

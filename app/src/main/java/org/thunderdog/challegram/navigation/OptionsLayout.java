@@ -55,11 +55,21 @@ import me.vkryl.core.StringUtils;
 
 public class OptionsLayout extends LinearLayout implements Animated {
   private final CustomTextView textView;
+  private final CustomTextView headerView;
 
   public OptionsLayout (Context context, ViewController<?> parent, @Nullable ThemeDelegate forcedTheme) {
     super(context);
 
     setOrientation(LinearLayout.VERTICAL);
+
+    headerView = new CustomTextView(context, parent.tdlib());
+    headerView.setTextSize(18f);
+    headerView.setPadding(Screen.dp(16f), Screen.dp(18f), Screen.dp(16f), Screen.dp(6f));
+    headerView.setTextColorId(ColorId.text);
+    headerView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+    headerView.setMaxLineCount(1);
+    headerView.setVisibility(View.GONE);
+    addView(headerView);
 
     textView = new CustomTextView(context, parent.tdlib());
     textView.setPadding(Screen.dp(16f), Screen.dp(14f), Screen.dp(16f), Screen.dp(6f));
@@ -178,6 +188,15 @@ public class OptionsLayout extends LinearLayout implements Animated {
     }
 
     return text;
+  }
+
+  public void setHeader (CharSequence text) {
+    if (!StringUtils.isEmpty(text)) {
+      headerView.setBoldText(text, null, false);
+      headerView.setVisibility(View.VISIBLE);
+    } else {
+      headerView.setVisibility(View.GONE);
+    }
   }
 
   public void setInfo (ViewController<?> context, Tdlib tdlib, CharSequence info, boolean isTitle) {

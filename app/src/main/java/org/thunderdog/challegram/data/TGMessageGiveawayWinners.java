@@ -16,11 +16,8 @@ package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
 import android.graphics.RectF;
-import android.graphics.drawable.Drawable;
 import android.text.style.ClickableSpan;
-import android.util.Log;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.NonNull;
@@ -35,19 +32,14 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
-import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.util.CustomTypefaceSpan;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.FormattedText;
 import org.thunderdog.challegram.util.text.Text;
-import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextEntityCustom;
-import org.thunderdog.challegram.util.text.TextPart;
-import org.thunderdog.challegram.util.text.TextWrapper;
 
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
@@ -132,6 +124,12 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
   }
 
   private void onBubbleClick (TdApi.MessageSender senderId) {
+    final long userId = Td.getSenderUserId(senderId);
+    if (userId != 0) {
+      tdlib.ui().openPrivateProfile(controller(), userId, openParameters());
+      return;
+    }
+
     tdlib.ui().openChat(controller(), Td.getSenderId(senderId), new TdlibUi.ChatOpenParameters()
       .keepStack().removeDuplicates().openProfileInCaseOfPrivateChat());
   }
@@ -164,7 +162,19 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
 
   @Override
   public void onClick (View view, TGInlineKeyboard keyboard, TGInlineKeyboard.Button button) {
+    loadPremiumGiveawayInfo();
+  }
 
+  @Override
+  protected void onPremiumGiveawayInfoLoaded (TdApi.PremiumGiveawayInfo result, @Nullable TdApi.Error error) {
+    super.onPremiumGiveawayInfoLoaded(result, error);
+    if (error != null) {
+      UI.showError(error);
+      return;
+    }
+    if (!isDestroyed()) {
+      showPremiumGiveawayInfoPopup(giveawayWinners.winnerCount, giveawayWinners.monthCount, giveawayWinners.boostedChatId, giveawayWinners.additionalChatCount, null, giveawayWinners.actualWinnersSelectionDate);
+    }
   }
 
   @Override

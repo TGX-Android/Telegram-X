@@ -88,8 +88,7 @@ public class TGMessageGift extends TGMessageGiveawayBase {
 
   @Override
   public void onClick (View view, TGInlineKeyboard keyboard, TGInlineKeyboard.Button button) {
-    String rawLink = "t.me/giftcode/" + msgContent.code;
-    tdlib.ui().openInternalLinkType(this, rawLink, new TdApi.InternalLinkTypePremiumGiftCode(msgContent.code), null, null);
+    tdlib.ui().openInternalLinkType(this, TD.makeGiftCodeLink(msgContent.code), new TdApi.InternalLinkTypePremiumGiftCode(msgContent.code), null, null);
   }
 
   @Override
