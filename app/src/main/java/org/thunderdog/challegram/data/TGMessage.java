@@ -30,6 +30,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.SystemClock;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
@@ -5474,6 +5475,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     // return msg.ttl > 0 && ((chat != null && chat.type.getConstructor() == TdApi.ChatTypePrivate.CONSTRUCTOR) || msg.ttl <= 60) && (flags & FLAG_EVENT_LOG) == 0 && !isEventLog();
   }
 
+  public boolean isViewOnce () {
+    return msg.selfDestructType != null && msg.selfDestructType.getConstructor() == TdApi.MessageSelfDestructTypeImmediately.CONSTRUCTOR;
+  }
+
   public boolean isHotDone () {
     return isOutgoing() && isHotOpened();
   }
@@ -5481,7 +5486,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   public boolean isHotOpened () {
     if (msg.selfDestructType != null && msg.selfDestructType.getConstructor() == TdApi.MessageSelfDestructTypeTimer.CONSTRUCTOR) {
       TdApi.MessageSelfDestructTypeTimer timer = (TdApi.MessageSelfDestructTypeTimer) msg.selfDestructType;
-      return msg.selfDestructIn < timer.selfDestructTime;
+      return msg.selfDestructIn != 0 && msg.selfDestructIn < timer.selfDestructTime;
     }
     return false;
   }
@@ -5526,7 +5531,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private void startHotTimer (boolean byEvent) {
     if (isHot() && needHotTimer() && hotTimerStart == 0) {
       HotHandler hotHandler = getHotHandler();
-      hotTimerStart = System.currentTimeMillis();
+      hotTimerStart = SystemClock.uptimeMillis();
       hotHandler.sendMessageDelayed(Message.obtain(hotHandler, HotHandler.MSG_HOT_CHECK, this), HOT_CHECK_DELAY);
       onHotTimerStarted(byEvent);
     }
@@ -5548,12 +5553,16 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   private void checkHotTimer () {
-    long now = System.currentTimeMillis();
-    long elapsed = now - hotTimerStart;
-    double prevTtl = msg.selfDestructIn;
+    if (msg.selfDestructType == null || msg.selfDestructType.getConstructor() != TdApi.MessageSelfDestructTypeTimer.CONSTRUCTOR) {
+      return;
+    }
+    TdApi.MessageSelfDestructTypeTimer timer = (TdApi.MessageSelfDestructTypeTimer) msg.selfDestructType;
+    double preSelfDestructIn = msg.selfDestructIn != 0 ? msg.selfDestructIn : timer.selfDestructTime;
+    long now = SystemClock.uptimeMillis();
+    long elapsedMs = now - hotTimerStart;
     hotTimerStart = now;
-    msg.selfDestructIn = Math.max(0, prevTtl - (double) elapsed / 1000.0d);
-    boolean secondsChanged = Math.round(prevTtl) != Math.round(msg.selfDestructIn);
+    msg.selfDestructIn = Math.max(0, preSelfDestructIn - (double) elapsedMs / 1000.0d);
+    boolean secondsChanged = Math.round(preSelfDestructIn) != Math.round(msg.selfDestructIn);
     onHotInvalidate(secondsChanged);
     if (hotListener != null) {
       hotListener.onHotInvalidate(secondsChanged);
@@ -5567,13 +5576,31 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   public float getHotExpiresFactor () {
     if (msg.selfDestructType != null && msg.selfDestructType.getConstructor() == TdApi.MessageSelfDestructTypeTimer.CONSTRUCTOR) {
       TdApi.MessageSelfDestructTypeTimer timer = (TdApi.MessageSelfDestructTypeTimer) msg.selfDestructType;
-      return (float) (msg.selfDestructIn / timer.selfDestructTime);
+      return msg.selfDestructIn == 0 ? 1f : (float) (msg.selfDestructIn / timer.selfDestructTime);
     }
     return 0f;
   }
 
   public String getHotTimerText () {
-    return TdlibUi.getDuration((int) Math.round(msg.selfDestructIn), TimeUnit.SECONDS, false);
+    double selfDestructIn = msg.selfDestructIn;
+    if (msg.selfDestructType != null) {
+      switch (msg.selfDestructType.getConstructor()) {
+        case TdApi.MessageSelfDestructTypeImmediately.CONSTRUCTOR:
+          return Lang.getString(R.string.ViewOnce);
+        case TdApi.MessageSelfDestructTypeTimer.CONSTRUCTOR: {
+          TdApi.MessageSelfDestructTypeTimer timer = (TdApi.MessageSelfDestructTypeTimer) msg.selfDestructType;
+          if (selfDestructIn == 0) {
+            selfDestructIn = timer.selfDestructTime;
+          }
+          break;
+        }
+        default: {
+          Td.assertMessageSelfDestructType_58882d8c();
+          throw Td.unsupported(msg.selfDestructType);
+        }
+      }
+    }
+    return TdlibUi.getDuration(Math.round(selfDestructIn), TimeUnit.SECONDS, false);
   }
 
   public interface HotListener {

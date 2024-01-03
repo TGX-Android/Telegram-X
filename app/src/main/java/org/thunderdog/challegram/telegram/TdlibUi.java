@@ -844,13 +844,15 @@ public class TdlibUi extends Handler {
   public void showTTLPicker (final Context context, final TdApi.Chat chat) {
     int ttl = tdlib.chatTTL(chat.id);
     TdApi.MessageSelfDestructType selfDestructType = ttl != 0 ? new TdApi.MessageSelfDestructTypeTimer(ttl) : null;
-    showTTLPicker(context, selfDestructType, false, false, 0, result -> setTTL(chat, result.ttlTime));
+    showTTLPicker(context, selfDestructType, !ChatId.isSecret(chat.id), false, false, 0, result -> setTTL(chat, result.ttlTime));
   }
 
-  public static void showTTLPicker (final Context context, @Nullable TdApi.MessageSelfDestructType currentSelfDestructType, boolean useDarkMode, boolean precise, @StringRes int message, final RunnableData<TTLOption> callback) {
+  public static void showTTLPicker (final Context context, @Nullable TdApi.MessageSelfDestructType currentSelfDestructType, boolean allowInstant, boolean useDarkMode, boolean precise, @StringRes int message, final RunnableData<TTLOption> callback) {
     final ArrayList<TTLOption> ttlOptions = new ArrayList<>(21);
     ttlOptions.add(new TTLOption(0, Lang.getString(R.string.Off)));
-    ttlOptions.add(new TTLOption(-1, Lang.getString(R.string.TimerInstant)));
+    if (allowInstant) {
+      ttlOptions.add(new TTLOption(-1, Lang.getString(R.string.TimerInstant)));
+    }
     final int secondsCount = precise ? 20 : 15;
     for (int i = 1; i <= secondsCount; i++) {
       ttlOptions.add(new TTLOption(i, Lang.plural(R.string.xSeconds, i)));

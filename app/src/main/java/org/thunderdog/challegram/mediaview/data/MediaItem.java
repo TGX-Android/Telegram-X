@@ -1472,9 +1472,19 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     return secretPhoto != null;
   }
 
-  public void viewSecretContent () {
-    if (secretPhoto != null) {
-      secretPhoto.readContent();
+  public boolean isViewOnce () {
+    return msg != null && msg.selfDestructType != null && msg.selfDestructType.getConstructor() == TdApi.MessageSelfDestructTypeImmediately.CONSTRUCTOR;
+  }
+
+  public void viewContent (boolean isClosed) {
+    if (isClosed) {
+      if (isViewOnce()) {
+        tdlib.send(new TdApi.OpenMessageContent(msg.chatId, msg.id), tdlib.typedOkHandler());
+      }
+    } else {
+      if (secretPhoto != null) {
+        secretPhoto.readContent();
+      }
     }
   }
 
