@@ -27,8 +27,6 @@ import android.view.View;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGUser;
-import org.thunderdog.challegram.loader.ComplexReceiver;
-import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
@@ -49,14 +47,8 @@ public class BubbleWrapView extends View {
   private ArrayList<BubbleView> bubbles;
   private BubbleHeaderView headerView;
 
-  private final Tdlib tdlib;
-  private final ComplexReceiver complexReceiver;
-
-  public BubbleWrapView (Context context, Tdlib tdlib) {
+  public BubbleWrapView (Context context) {
     super(context);
-    this.tdlib = tdlib;
-    this.complexReceiver = new ComplexReceiver(this);
-
     bubbles = new ArrayList<>(10);
     paint = new TextPaint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG);
     paint.setStyle(Paint.Style.FILL);
@@ -81,8 +73,7 @@ public class BubbleWrapView extends View {
       maxTextWidth = maxWidth;
     }
 
-    BubbleView view = new BubbleView(tdlib, paint, user.getSenderId(), maxTextWidth);
-    view.setInvalidateCallback(BubbleWrapView.this::invalidate);
+    BubbleView view = new BubbleView(this, user, maxTextWidth);
 
     if (bubbles.size() == 0) {
       view.setXY(Screen.dp(START_X), Screen.dp(START_Y));
@@ -98,7 +89,7 @@ public class BubbleWrapView extends View {
       view.setXY((int) cx, (int) cy);
     }
 
-    view.requestFile(complexReceiver);
+    view.requestFile();
     bubbles.add(view);
 
     // final BubbleView view = new BubbleView(BubbleWrapView.this, user, Scree);
@@ -121,10 +112,9 @@ public class BubbleWrapView extends View {
         maxTextWidth = maxWidth;
       }
 
-      final BubbleView view = new BubbleView(tdlib, paint, user.getSenderId(), maxTextWidth);
-      view.setInvalidateCallback(BubbleWrapView.this::invalidate);
+      final BubbleView view = new BubbleView(BubbleWrapView.this, user, maxTextWidth);
       UI.post(() -> {
-        view.requestFile(complexReceiver);
+        view.requestFile();
 
         if (bubbles.size() == 0) {
           view.setXY(Screen.dp(START_X), Screen.dp(START_Y));
@@ -250,13 +240,17 @@ public class BubbleWrapView extends View {
   @Override
   protected void onAttachedToWindow () {
     super.onAttachedToWindow();
-    complexReceiver.attach();
+    for (BubbleView view : bubbles) {
+      view.onAttachedToWindow();
+    }
   }
 
   @Override
   protected void onDetachedFromWindow () {
     super.onDetachedFromWindow();
-    complexReceiver.detach();
+    for (BubbleView view : bubbles) {
+      view.onDetachedFromWindow();
+    }
   }
 
   private void setBoundLayerType (int type) {
@@ -273,12 +267,15 @@ public class BubbleWrapView extends View {
     for (int i = rangeStart; i < rangeEnd; i++) {
       bubbles.get(i).completeMove();
     }
-    bubbles.remove(rangeStart);
+    BubbleView view = bubbles.remove(rangeStart);
+    view.destroy();
     rangeStart = rangeEnd = 0;
   }
 
   public void destroy () {
-    complexReceiver.performDestroy();
+    for (BubbleView bubble : bubbles) {
+      bubble.destroy();
+    }
   }
 
   public int getCurrentHeight () {
@@ -457,7 +454,7 @@ public class BubbleWrapView extends View {
   @Override
   protected void onDraw (Canvas c) {
     for (BubbleView view : bubbles) {
-      view.draw(c, complexReceiver, getMeasuredWidth());
+      view.draw(c, this);
     }
   }
 }

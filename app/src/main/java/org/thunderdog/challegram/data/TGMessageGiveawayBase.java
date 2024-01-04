@@ -56,6 +56,7 @@ import me.vkryl.td.Td;
 
 public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlineKeyboard.ClickListener {
   protected final static int BLOCK_MARGIN = 18;
+  protected final static int CONTENT_PADDING_DP = 16;
 
   private GiftHeaderView.ParticlesDrawable particlesDrawable;
   private int contentHeight = 0;
@@ -113,20 +114,10 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
       c.restore();
     }
 
-    content.draw(c, view, startX, startY);
+    content.draw(c, view, startX + Screen.dp(CONTENT_PADDING_DP), startY);
 
     if (rippleButton != null) {
       rippleButton.draw(view, c, startX, startY + rippleButtonY);
-    }
-  }
-
-  public int getCounterBackgroundColor () {
-    if (!useBubbles()) {
-      return Theme.getColor(ColorId.fillingPositive); //, ColorId.fillingActive);
-    } else if (isOutgoing()) {
-      return Theme.getColor(ColorId.bubbleOut_fillingPositive); //, ColorId.bubbleOut_fillingActive);
-    } else {
-      return Theme.getColor(ColorId.bubbleIn_fillingPositive); //, ColorId.bubbleIn_fillingActive);
     }
   }
 
@@ -320,7 +311,7 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
     private final int maxTextWidth;
 
     public ContentBubbles (TGMessage msg, int maxTextWidth) {
-      this.layout = new BubbleWrapView2(msg.tdlib);
+      this.layout = new BubbleWrapView2(msg.tdlib, msg.currentViews);
       this.maxTextWidth = maxTextWidth;
       this.tdlib = msg.tdlib;
     }
@@ -365,6 +356,11 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
     @Override
     public boolean onTouchEvent (View view, MotionEvent e) {
       return layout.onTouchEvent(view, e);
+    }
+
+    @Override
+    public boolean performLongPress (View view, float x, float y) {
+      return layout.performLongPress(view);
     }
   }
 

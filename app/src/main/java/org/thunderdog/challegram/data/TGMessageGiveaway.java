@@ -60,7 +60,7 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
 
   @Override
   protected int onBuildContent (int maxWidth) {
-    content = new Content(maxWidth);
+    content = new Content(maxWidth - Screen.dp(CONTENT_PADDING_DP * 2));
 
     content.padding(Screen.dp(30));
     content.add(new ContentDrawable(R.drawable.baseline_gift_72));
@@ -70,7 +70,7 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
     content.add(Lang.boldify(Lang.getString(R.string.GiveawayPrizes)), getTextColorSet(), currentViews);
     content.padding(Screen.dp(6));
     if (!StringUtils.isEmpty(giveawayContent.parameters.prizeDescription)) {
-      content.add(Lang.getString(R.string.GiveawayPrizesAdditional, Lang.boldify(Integer.toString(giveawayContent.winnerCount)), giveawayContent.parameters.prizeDescription), getTextColorSet(), currentViews);
+      content.add(Lang.getCharSequence(R.string.GiveawayPrizesAdditional, Lang.boldify(Integer.toString(giveawayContent.winnerCount)), giveawayContent.parameters.prizeDescription), getTextColorSet(), currentViews);
       content.padding(Screen.dp(6));
       content.add(Lang.getString(R.string.GiveawayPrizesWith), () -> Theme.getColor(ColorId.textLight), currentViews);
       content.padding(Screen.dp(6));
@@ -109,7 +109,7 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
 
     /* * */
 
-    participantsCounter = new Counter.Builder().allBold(true).textSize(11).noBackground().textColor(ColorId.text).build();
+    participantsCounter = new Counter.Builder().allBold(true).textSize(11).noBackground().textColor(ColorId.badgeText).build();
     participantsCounter.setCount(giveawayContent.winnerCount, false, "x" + giveawayContent.winnerCount, false);
     backgroundCounterRect.set(
       maxWidth / 2f - participantsCounter.getWidth() / 2f - Screen.dp(8),
@@ -158,7 +158,7 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
       final float cor = Math.min(outlineCounterRect.width(), outlineCounterRect.height()) / 2f;
       final float cbr = Math.min(backgroundCounterRect.width(), backgroundCounterRect.height()) / 2f;
       c.drawRoundRect(outlineCounterRect, cor, cor, Paints.fillingPaint(Theme.getColor(useBubbles() ? ColorId.filling : ColorId.background)));
-      c.drawRoundRect(backgroundCounterRect, cbr, cbr, Paints.fillingPaint(getCounterBackgroundColor()));
+      c.drawRoundRect(backgroundCounterRect, cbr, cbr, Paints.fillingPaint(Theme.getColor(ColorId.badge)));
       participantsCounter.draw(c, contentCenterX, participantsCounterY, Gravity.CENTER, 1f);
     }
 

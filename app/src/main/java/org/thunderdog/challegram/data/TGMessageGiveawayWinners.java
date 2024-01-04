@@ -62,7 +62,7 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
 
   @Override
   protected int onBuildContent (int maxWidth) {
-    content = new Content(maxWidth);
+    content = new Content(maxWidth - Screen.dp(CONTENT_PADDING_DP * 2));
 
     content.padding(Screen.dp(30));
     content.add(new ContentDrawable(R.drawable.baseline_party_popper_72));
@@ -103,7 +103,7 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
 
     /* * */
 
-    participantsCounter = new Counter.Builder().allBold(true).textSize(11).noBackground().textColor(ColorId.text).build();
+    participantsCounter = new Counter.Builder().allBold(true).textSize(11).noBackground().textColor(ColorId.badgeText).build();
     participantsCounter.setCount(giveawayWinners.winnerCount, false, "x" + giveawayWinners.winnerCount, false);
     backgroundCounterRect.set(
       maxWidth / 2f - participantsCounter.getWidth() / 2f - Screen.dp(8),
@@ -153,7 +153,7 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
       final float cor = Math.min(outlineCounterRect.width(), outlineCounterRect.height()) / 2f;
       final float cbr = Math.min(backgroundCounterRect.width(), backgroundCounterRect.height()) / 2f;
       c.drawRoundRect(outlineCounterRect, cor, cor, Paints.fillingPaint(Theme.getColor(useBubbles() ? ColorId.filling : ColorId.background)));
-      c.drawRoundRect(backgroundCounterRect, cbr, cbr, Paints.fillingPaint(getCounterBackgroundColor()));
+      c.drawRoundRect(backgroundCounterRect, cbr, cbr, Paints.fillingPaint(Theme.getColor(ColorId.badge)));
       participantsCounter.draw(c, contentCenterX, participantsCounterY, Gravity.CENTER, 1f);
     }
 

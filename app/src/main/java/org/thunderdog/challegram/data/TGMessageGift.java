@@ -46,7 +46,7 @@ public class TGMessageGift extends TGMessageGiveawayBase {
   }
 
   protected int onBuildContent (int maxWidth) {
-    content = new Content(maxWidth);
+    content = new Content(maxWidth - Screen.dp(CONTENT_PADDING_DP * 2));
 
     content.padding(Screen.dp(25));
     content.add(new ContentDrawable(R.drawable.baseline_gift_72));

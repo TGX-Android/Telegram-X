@@ -52,7 +52,7 @@ public class BubbleHeaderView extends FrameLayoutFix implements RtlCheckListener
   private ArrayList<TGUser> users;
   private int maxBubbleHeight;
 
-  public BubbleHeaderView (Context context, Tdlib tdlib) {
+  public BubbleHeaderView (Context context) {
     super(context);
 
     users = new ArrayList<>(10);
@@ -60,7 +60,7 @@ public class BubbleHeaderView extends FrameLayoutFix implements RtlCheckListener
     FrameLayoutFix.LayoutParams params;
 
     params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-    bubbleWrap = new BubbleWrapView(context, tdlib);
+    bubbleWrap = new BubbleWrapView(context);
     bubbleWrap.setHeaderView(this);
     bubbleWrap.setLayoutParams(params);
 
