@@ -5057,7 +5057,13 @@
   <string name="GiveawaySponsors_other">%2$s and %1$s more channels</string>
 
   <string name="GiveawayEnded">Giveaway ended</string>
+  <string name="GiveawayEndedYouWon">You won a prize in this giveaway</string>
+  <string name="GiveawayEndedYouLose">You didn’t win a prize in this giveaway</string>
+
   <string name="GiveawayOngoing">Giveaway ongoing</string>
+  <string name="GiveawayOngoingYouParticipating">You are participating in this giveaway</string>
+  <string name="GiveawayOngoingYouEligible">You can participate in this giveaway</string>
+  <string name="GiveawayOngoingYouRestricted">You can’t participate in this giveaway</string>
 
   <string name="GiveawayEndedInfo_one">This giveaway was sponsored by the admins of %2$s, who acquired %1$s Telegram Premium subscription for %3$s months for its followers.\n\nOn %4$s at %5$s, Telegram automatically selected %1$s random user that joined %6$s.</string>
   <string name="GiveawayEndedInfo_other">This giveaway was sponsored by the admins of %2$s, who acquired %1$s Telegram Premium subscriptions for %3$s months for its followers.\n\nOn %4$s at %5$s, Telegram automatically selected %1$s random users that joined %6$s.</string>

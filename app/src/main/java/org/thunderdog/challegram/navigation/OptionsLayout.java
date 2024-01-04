@@ -28,15 +28,15 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.tool.Drawables;
@@ -56,9 +56,13 @@ import me.vkryl.core.StringUtils;
 public class OptionsLayout extends LinearLayout implements Animated {
   private final CustomTextView textView;
   private final CustomTextView headerView;
+  private final ViewController<?> parent;
+  private final @Nullable ThemeDelegate forcedTheme;
 
   public OptionsLayout (Context context, ViewController<?> parent, @Nullable ThemeDelegate forcedTheme) {
     super(context);
+    this.parent = parent;
+    this.forcedTheme = forcedTheme;
 
     setOrientation(LinearLayout.VERTICAL);
 
@@ -139,6 +143,9 @@ public class OptionsLayout extends LinearLayout implements Animated {
       case ViewController.OPTION_COLOR_BLUE: {
         return ColorId.textNeutral;
       }
+      case ViewController.OPTION_COLOR_GREEN: {
+        return ColorId.iconPositive;
+      }
     }
     throw new IllegalArgumentException("color == " + color);
   }
@@ -197,6 +204,48 @@ public class OptionsLayout extends LinearLayout implements Animated {
     } else {
       headerView.setVisibility(View.GONE);
     }
+  }
+
+  public void setSubtitle (CharSequence name, @DrawableRes int icon, int color) {
+    EmojiTextView text = new EmojiTextView(getContext());
+    text.setScrollDisabled(true);
+    text.setTypeface(Fonts.getRobotoRegular());
+    text.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
+    final int colorId = getOptionColorId(color);
+    if (forcedTheme != null) {
+      text.setTextColor(forcedTheme.getColor(colorId));
+    } else {
+      text.setTextColor(Theme.getColor(colorId));
+      if (parent != null)
+        parent.addThemeTextColorListener(text, colorId);
+    }
+    text.setGravity(Lang.rtl() ? Gravity.RIGHT | Gravity.CENTER_VERTICAL : Gravity.LEFT | Gravity.CENTER_VERTICAL);
+    text.setPadding(Screen.dp(17f), Screen.dp(6f), Screen.dp(17f), 0);
+    text.setCompoundDrawablePadding(Screen.dp(8f));
+    if (icon != 0) {
+      Drawable drawable = Drawables.get(getContext().getResources(), icon);
+      if (drawable != null) {
+        final int drawableColorId = color == ViewController.OPTION_COLOR_NORMAL ? ColorId.icon : colorId;
+        drawable.setColorFilter(Paints.getColorFilter(forcedTheme != null ? forcedTheme.getColor(drawableColorId) : Theme.getColor(drawableColorId)));
+        if (parent != null) {
+          parent.addThemeFilterListener(drawable, drawableColorId);
+        }
+        if (Drawables.needMirror(icon)) {
+          // TODO
+        }
+        if (Lang.rtl()) {
+          text.setCompoundDrawablesWithIntrinsicBounds(null, null, drawable, null);
+        } else {
+          text.setCompoundDrawablesWithIntrinsicBounds(drawable, null, null, null);
+        }
+      }
+    }
+    if (!StringUtils.isEmpty(name)) {
+      text.setText(name);
+    }
+
+    text.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+    addView(text, 1);
   }
 
   public void setInfo (ViewController<?> context, Tdlib tdlib, CharSequence info, boolean isTitle) {
