@@ -104,9 +104,11 @@ public class OptionsLayout extends LinearLayout implements Animated {
 
     if (forcedTheme != null) {
       textView.setForcedTheme(forcedTheme);
+      headerView.setForcedTheme(forcedTheme);
     } else {
       // parent.addThemeTextColorListener(textView, ColorId.textLight);
       parent.addThemeInvalidateListener(textView);
+      parent.addThemeInvalidateListener(headerView);
       parent.addThemeInvalidateListener(this);
     }
   }

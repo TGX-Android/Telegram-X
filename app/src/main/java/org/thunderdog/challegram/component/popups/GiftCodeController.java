@@ -163,6 +163,7 @@ public class GiftCodeController extends MediaBottomBaseController<Void> implemen
       @Override
       protected void setButtonText (ListItem item, ScalableTextView view, boolean isUpdate) {
         super.setButtonText(item, view, isUpdate);
+        removeThemeListenerByTarget(view);
 
         view.setTextColor(Theme.getColor(ColorId.badgeText));
         addThemeTextColorListener(view, ColorId.badgeText);
