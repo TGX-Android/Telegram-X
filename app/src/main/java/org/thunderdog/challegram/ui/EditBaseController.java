@@ -115,7 +115,7 @@ public abstract class EditBaseController<T> extends ViewController<T> implements
   }
 
   @Override
-  public boolean onDoneClick (View v) {
+  public final boolean onDoneClick (View v) {
     return onDoneClick();
   }
 

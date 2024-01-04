@@ -17,19 +17,36 @@ package org.thunderdog.challegram.ui;
 import android.content.Context;
 import android.view.View;
 
+import androidx.annotation.IdRes;
+import androidx.annotation.IntDef;
+
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TGFoundChat;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.v.CustomRecyclerView;
+import org.thunderdog.challegram.widget.BetterChatView;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class SettingsLogOutController extends RecyclerViewController<Void> implements View.OnClickListener {
+public class SettingsLogOutController extends RecyclerViewController<Integer> implements View.OnClickListener {
+  @IntDef({
+    Type.LOG_OUT, Type.DELETE_ACCOUNT
+  })
+  public @interface Type {
+    int LOG_OUT = 0, DELETE_ACCOUNT = 1;
+  }
+
+  private @Type int getType () {
+    return getArguments() == null ? Type.LOG_OUT : getArgumentsStrict();
+  }
+
   public SettingsLogOutController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
@@ -41,7 +58,13 @@ public class SettingsLogOutController extends RecyclerViewController<Void> imple
 
   @Override
   public CharSequence getName () {
-    return Lang.getString(R.string.LogOut);
+    switch (getType()) {
+      case Type.LOG_OUT:
+        return Lang.getString(R.string.LogOut);
+      case Type.DELETE_ACCOUNT:
+        return Lang.getString(R.string.DeleteAccount);
+    }
+    throw new UnsupportedOperationException();
   }
 
   private SettingsAdapter adapter;
@@ -70,12 +93,25 @@ public class SettingsLogOutController extends RecyclerViewController<Void> imple
     adapter = new SettingsAdapter(this) {
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
-        view.setIconColorId(item.getId() == R.id.btn_logout ? ColorId.iconNegative : ColorId.NONE);
+        @IdRes int itemId = item.getId();
+        view.setIconColorId(itemId == R.id.btn_logout || itemId == R.id.btn_deleteAccount ? ColorId.iconNegative : ColorId.NONE);
+      }
+
+      @Override
+      protected void setChatData (ListItem item, int position, BetterChatView chatView) {
+        chatView.setEnabled(false);
+        chatView.setChat((TGFoundChat) item.getData());
       }
     };
 
     List<ListItem> items = new ArrayList<>();
 
+    @Type int type = getType();
+
+    TGFoundChat chat = new TGFoundChat(tdlib, tdlib.mySender(), true);
+    chat.setForcedSubtitle(Strings.formatPhone(tdlib.account().getPhoneNumber()));
+    items.add(new ListItem(ListItem.TYPE_CHAT_BETTER).setData(chat));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_addAccount, R.drawable.baseline_person_add_24, R.string.SignOutAltAddAccount));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.SignOutAltAddAccountHint));
@@ -100,12 +136,19 @@ public class SettingsLogOutController extends RecyclerViewController<Void> imple
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_help, R.drawable.baseline_help_24, R.string.SignOutAltHelp));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.SignOutAltHelpHint));
+    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, type == Type.DELETE_ACCOUNT ? R.string.DeleteAccountHelpHint : R.string.SignOutAltHelpHint));
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_logout, R.drawable.baseline_delete_forever_24, R.string.LogOut).setTextColorId(ColorId.textNegative));
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_logout, R.drawable.baseline_logout_24, R.string.LogOut).setTextColorId(ColorId.textNegative));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.SignOutAltHint2));
+    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, type == Type.DELETE_ACCOUNT ? R.string.DeleteAccountSignOutAltHint2 : R.string.SignOutAltHint2));
+
+    if (type == Type.DELETE_ACCOUNT) {
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_deleteAccount, R.drawable.baseline_delete_alert_24, R.string.DeleteAccountBtn).setTextColorId(ColorId.textNegative));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.DeleteAccountInfo));
+    }
 
     adapter.setItems(items, false);
 
@@ -129,6 +172,8 @@ public class SettingsLogOutController extends RecyclerViewController<Void> imple
       tdlib.ui().openSupport(this);
     } else if (viewId == R.id.btn_logout) {
       tdlib.ui().logOut(this, false);
+    } else if (viewId == R.id.btn_deleteAccount) {
+      tdlib.ui().permanentlyDeleteAccount(this, false);
     }
   }
 }

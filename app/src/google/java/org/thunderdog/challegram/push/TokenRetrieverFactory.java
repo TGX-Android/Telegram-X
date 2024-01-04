@@ -12,13 +12,13 @@
  *
  * File created on 22/10/2022
  */
-package org.thunderdog.challegram;
+package org.thunderdog.challegram.push;
 
 import android.content.Context;
 
 import org.thunderdog.challegram.util.TokenRetriever;
 
-public class TokenRetrieverFactory {
+public final class TokenRetrieverFactory {
   public static TokenRetriever newRetriever (Context context) {
     return new FirebaseTokenRetriever();
   }

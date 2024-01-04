@@ -1951,14 +1951,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
         ((TdApi.BackgroundTypeWallpaper) newBackgroundType).isBlurred = backgroundParamsView.isBlurred();
       }
 
-      tdlib().client().send(new TdApi.SetBackground(
+      tdlib().send(new TdApi.SetDefaultBackground(
         new TdApi.InputBackgroundRemote(getArgumentsStrict().wallpaperObject.id),
         newBackgroundType,
         Theme.isDark()
-      ), result -> {
-        if (result.getConstructor() == TdApi.Background.CONSTRUCTOR) {
+      ), (result, error) -> {
+        if (result != null) {
           runOnUiThread(() -> {
-            TGBackground bg = new TGBackground(tdlib(), (TdApi.Background) result);
+            TGBackground bg = new TGBackground(tdlib(), result);
             tdlib.wallpaper().addBackground(bg, Theme.isDark());
             tdlib.settings().setWallpaper(bg, true, Theme.getWallpaperIdentifier());
             navigateBack();
@@ -6499,7 +6499,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           return !Td.equalsTo(oldText, newText);
         }
         default: {
-          Td.assertMessageContent_afad899a();
+          Td.assertMessageContent_d40af239();
           break;
         }
       }
@@ -6862,7 +6862,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         break;
       }
       default: {
-        Td.assertMessageContent_afad899a();
+        Td.assertMessageContent_d40af239();
         throw Td.unsupported(editContext.message.content);
       }
     }

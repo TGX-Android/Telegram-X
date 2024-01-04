@@ -98,7 +98,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -109,6 +108,7 @@ import me.vkryl.android.text.AcceptFilter;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.FileUtils;
+import me.vkryl.core.ObjectUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.collection.LongList;
@@ -1051,11 +1051,12 @@ public class TD {
       case TdApi.MessagePremiumGiveaway.CONSTRUCTOR:
       case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
       case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR:
-      case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR: {
+      case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR:
+      case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR: {
         return false;
       }
       default: {
-        Td.assertMessageContent_afad899a();
+        Td.assertMessageContent_d40af239();
       }
     }
     return true;
@@ -4979,7 +4980,7 @@ public class TD {
       case TdApi.MessageExpiredVideo.CONSTRUCTOR:
         return true;
       default:
-        Td.assertMessageContent_afad899a();
+        Td.assertMessageContent_d40af239();
         break;
     }
     return false;
@@ -5126,8 +5127,10 @@ public class TD {
     if (lhs == rhs) {
       return true;
     }
-    return Objects.equals(lhs.title, rhs.title) &&
-      Objects.equals(lhs.icon != null ? lhs.icon.name : null, rhs.icon != null ? rhs.icon.name : null) &&
+    if (!ObjectUtils.equals(lhs.title, rhs.title)) return false;
+    String a = lhs.icon != null ? lhs.icon.name : null;
+    String b = rhs.icon != null ? rhs.icon.name : null;
+    return ObjectUtils.equals(a, b) &&
       lhs.includeContacts == rhs.includeContacts &&
       lhs.includeNonContacts == rhs.includeNonContacts &&
       lhs.includeGroups == rhs.includeGroups &&

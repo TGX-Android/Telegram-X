@@ -71,7 +71,7 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
   }
 
   private SettingsAdapter adapter;
-  private TdApi.FoundMessages publicShares;
+  private TdApi.PublicForwards publicForwards;
 
   @Override
   public CharSequence getName () {
@@ -191,7 +191,7 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
         } else {
           tdlib.send(new TdApi.GetMessagePublicForwards(chatId, messageId, null, 20), (foundMessages, error1) -> runOnUiThreadOptional(() -> {
             if (foundMessages != null) {
-              publicShares = foundMessages;
+              publicForwards = foundMessages;
             }
             setStatistics(messageStatistics);
           }));
@@ -241,8 +241,8 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
     this.statistics = statistics;
 
     int privateShareCount = getArgumentsStrict().message.interactionInfo.forwardCount;
-    if (publicShares != null) {
-      privateShareCount -= publicShares.totalCount;
+    if (publicForwards != null) {
+      privateShareCount -= publicForwards.totalCount;
     }
 
     TdApi.Message message = getArgumentsStrict().message;
@@ -278,9 +278,23 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
   }
 
   private void setPublicShares () {
-    if (publicShares == null || publicShares.messages.length == 0) return;
+    TdApi.Message[] publicMessages;
+    if (publicForwards != null) {
+      // TODO support stories
+      List<TdApi.Message> messages = new ArrayList<>();
+      for (TdApi.PublicForward publicForward : publicForwards.forwards) {
+        if (publicForward.getConstructor() == TdApi.PublicForwardMessage.CONSTRUCTOR) {
+          TdApi.PublicForwardMessage message = (TdApi.PublicForwardMessage) publicForward;
+          messages.add(message.message);
+        }
+      }
+      publicMessages = messages.toArray(new TdApi.Message[0]);
+    } else {
+      publicMessages = null;
+    }
+    if (publicMessages == null || publicMessages.length == 0) return;
     final int index = adapter.indexOfViewById(R.id.btn_statsPrivateShares) + 1;
-    adapter.getItems().add(index, new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsPublicShares, 0, R.string.StatsMessageSharesPublic, false).setData(publicShares.totalCount));
+    adapter.getItems().add(index, new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_statsPublicShares, 0, R.string.StatsMessageSharesPublic, false).setData(publicForwards.totalCount));
     adapter.getItems().add(index, new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     adapter.notifyItemRangeInserted(index, 2);
 
@@ -288,10 +302,11 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
 
     adapter.getItems().add(new ListItem(ListItem.TYPE_CHART_HEADER_DETACHED).setData(new MiniChart(R.string.StatsMessageSharesPublic, null)));
     adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    for (int i = 0; i < publicShares.messages.length; i++) {
-      adapter.getItems().add(new ListItem(ListItem.TYPE_USER, R.id.chat).setData(publicShares.messages[i]));
-      if (i != publicShares.messages.length - 1)
+    for (int i = 0; i < publicMessages.length; i++) {
+      if (i != 0) {
         adapter.getItems().add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      }
+      adapter.getItems().add(new ListItem(ListItem.TYPE_USER, R.id.chat).setData(publicMessages[i]));
     }
     adapter.getItems().add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 

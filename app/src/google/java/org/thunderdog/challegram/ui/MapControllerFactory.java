@@ -18,7 +18,7 @@ import android.content.Context;
 
 import org.thunderdog.challegram.telegram.Tdlib;
 
-public class MapControllerFactory {
+public final class MapControllerFactory {
   public static MapController<?,?> newMapController (Context context, Tdlib tdlib) {
     return new MapGoogleController(context, tdlib);
   }

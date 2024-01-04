@@ -34,7 +34,7 @@ import java.util.Map;
 
 import me.vkryl.td.JSON;
 
-public class FirebaseListenerService extends FirebaseMessagingService {
+public final class FirebaseListenerService extends FirebaseMessagingService {
   @Override
   public void onNewToken (@NonNull String newToken) {
     UI.initApp(getApplicationContext());

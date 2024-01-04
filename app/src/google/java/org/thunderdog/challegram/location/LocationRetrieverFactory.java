@@ -12,8 +12,9 @@
  *
  * File created on 22/10/2022
  */
-package org.thunderdog.challegram;
+package org.thunderdog.challegram.location;
 
+import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.unsorted.LocationRetriever;
 
 public class LocationRetrieverFactory {

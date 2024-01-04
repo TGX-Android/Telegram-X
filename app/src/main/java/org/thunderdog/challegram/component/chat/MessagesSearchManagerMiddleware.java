@@ -17,8 +17,8 @@ import org.thunderdog.challegram.ui.MessagesController;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Objects;
 
+import me.vkryl.core.ObjectUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.Td;
 
@@ -354,7 +354,7 @@ public class MessagesSearchManagerMiddleware {
       return;
     }
 
-    if (!Objects.equals(lastSecretNextOffset, query.offset)) {
+    if (!ObjectUtils.equals(lastSecretNextOffset, query.offset)) {
       TdApi.Error error = new TdApi.Error(400, "INCORRECT OFFSET");
       UI.showError(error);
       resultHandler.onResult(error);
@@ -461,7 +461,7 @@ public class MessagesSearchManagerMiddleware {
   }
 
   private boolean checkContextId (String contextId) {
-    if (!Objects.equals(contextId, currentContextId)) {
+    if (!ObjectUtils.equals(contextId, currentContextId)) {
       currentContextId = contextId;
       Log.i("SEARCH_MIDDLEWARE", "RESET");
       reset();

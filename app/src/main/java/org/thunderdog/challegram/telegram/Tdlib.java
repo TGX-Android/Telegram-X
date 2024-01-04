@@ -104,6 +104,7 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.FileUtils;
 import me.vkryl.core.MathUtils;
+import me.vkryl.core.ObjectUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.LongList;
 import me.vkryl.core.collection.LongSet;
@@ -1157,13 +1158,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return authorizationState;
   }
 
-  public void signOut () {
+  public boolean switchToNextAuthorizedAccount () {
     if (context().preferredAccountId() == accountId) {
       int nextAccountId = context().findNextAccountId(accountId);
       if (nextAccountId != TdlibAccount.NO_ID) {
         context().changePreferredAccountId(nextAccountId, TdlibManager.SWITCH_REASON_UNAUTHORIZED);
+        return true;
       }
     }
+    return false;
+  }
+
+  public void signOut () {
+    switchToNextAuthorizedAccount();
     boolean isMulti = context().isMultiUser();
     String name = isMulti ? TD.getUserName(account().getFirstName(), account().getLastName()) : null;
     incrementReferenceCount(REFERENCE_TYPE_JOB);
@@ -1527,7 +1534,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         makeUpdateText(0, 25, 6, APP_RELEASE_VERSION_2023_APRIL, "https://telegra.ph/Telegram-X-04-02", functions, updates, false);
       }
       if (checkVersion(prevVersion, APP_RELEASE_VERSION_2023_AUGUST, test)) {
-        makeUpdateText(0, 25, 10, APP_RELEASE_VERSION_2023_AUGUST, "https://telegra.ph/Telegram-X-08-02", functions, updates, true);
+        makeUpdateText(0, 25, 10, APP_RELEASE_VERSION_2023_AUGUST, "https://telegra.ph/Telegram-X-08-02", functions, updates, false);
+      }
+      if (checkVersion(prevVersion, APP_RELEASE_VERSION_2023_DECEMBER, test)) {
+        makeUpdateText(0, 25, 10, APP_RELEASE_VERSION_2023_DECEMBER, "https://telegra.ph/Telegram-X-2023-12-31", functions, updates, true);
       }
       if (!updates.isEmpty()) {
         incrementReferenceCount(REFERENCE_TYPE_JOB); // starting task
@@ -1587,6 +1597,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private static final int APP_RELEASE_VERSION_2023_MARCH_2 = 1615; // Bugfixes to the previous release. 15 March, 2023: https://t.me/tgx_android/305
   private static final int APP_RELEASE_VERSION_2023_APRIL = 1624; // Emoji 15.0, more recent stickers & more + critical TDLIb upgrade. 2 April, 2023: https://telegra.ph/Telegram-X-04-02
   private static final int APP_RELEASE_VERSION_2023_AUGUST = 1646; // Translation, Advanced Text Formatting, Emoji Status, tgcalls, reproducible TDLib & more. 3 August, 2023: https://telegra.ph/Telegram-X-08-02
+  private static final int APP_RELEASE_VERSION_2023_DECEMBER = 1674; // Custom emoji, select link preview, archive settings, in-app avatar picker, group chat tools, & more. 31st December, 2023 (full roll-out in January 2024): https://telegra.ph/Telegram-X-2023-12-31
 
   // Startup
 
@@ -4722,7 +4733,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
           return Td.textOrCaption(messageText);
       }
-      Td.assertMessageContent_afad899a();
+      Td.assertMessageContent_d40af239();
       throw Td.unsupported(messageText);
     }
     return getPendingMessageCaption(chatId, messageId);
@@ -5751,31 +5762,43 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       if (deviceToken != null && (state == TdlibManager.TokenState.NONE || state == TdlibManager.TokenState.INITIALIZING)) {
         state = TdlibManager.TokenState.OK;
       }
+      String tokenProvider = TdlibNotificationUtils.getTokenRetriever().getName();
       String error = context().getTokenError();
       switch (state) {
         case TdlibManager.TokenState.ERROR: {
-          params.put("device_token", "FIREBASE_ERROR");
+          params.put("device_token", tokenProvider.toUpperCase() + "_ERROR");
           if (!StringUtils.isEmpty(error)) {
-            params.put("firebase_error", error);
+            params.put(tokenProvider + "_error", error);
           }
           break;
         }
         case TdlibManager.TokenState.INITIALIZING: {
-          params.put("device_token", "FIREBASE_INITIALIZING");
+          params.put("device_token", tokenProvider.toUpperCase() + "_INITIALIZING");
           break;
         }
         case TdlibManager.TokenState.OK: {
-          switch (deviceToken.getConstructor()) {
-            // TODO more push services
-            case TdApi.DeviceTokenFirebaseCloudMessaging.CONSTRUCTOR: {
-              String token = ((TdApi.DeviceTokenFirebaseCloudMessaging) deviceToken).token;
-              params.put("device_token", token);
+          String tokenOrEndpoint;
+          switch (ObjectUtils.requireNonNull(deviceToken).getConstructor()) {
+            case TdApi.DeviceTokenFirebaseCloudMessaging.CONSTRUCTOR:
+              tokenOrEndpoint = ((TdApi.DeviceTokenFirebaseCloudMessaging) deviceToken).token;
+              break;
+            case TdApi.DeviceTokenHuaweiPush.CONSTRUCTOR: {
+              tokenOrEndpoint = ((TdApi.DeviceTokenHuaweiPush) deviceToken).token;
+              final String huaweiTokenPrefix = "huawei://";
+              if (tokenOrEndpoint.startsWith(huaweiTokenPrefix)) {
+                tokenOrEndpoint = huaweiTokenPrefix + tokenOrEndpoint;
+              }
               break;
             }
+            case TdApi.DeviceTokenSimplePush.CONSTRUCTOR:
+              tokenOrEndpoint = ((TdApi.DeviceTokenSimplePush) deviceToken).endpoint;
+              break;
             default: {
-              throw new UnsupportedOperationException(deviceToken.toString());
+              Td.assertDeviceToken_de4a4f61();
+              throw Td.unsupported(deviceToken);
             }
           }
+          params.put("device_token", tokenOrEndpoint);
           break;
         }
         case TdlibManager.TokenState.NONE:
@@ -8874,18 +8897,22 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   @TdlibThread
-  private void updateChatAccentColor (TdApi.UpdateChatAccentColor update) {
-    updateChat(update, update.chatId, chat ->
-      chat.accentColorId = update.accentColorId,
-      listeners::updateChatAccentColor
+  private void updateChatAccentColors (TdApi.UpdateChatAccentColors update) {
+    updateChat(update, update.chatId, chat -> {
+        chat.accentColorId = update.accentColorId;
+        chat.backgroundCustomEmojiId = update.backgroundCustomEmojiId;
+        chat.profileAccentColorId = update.profileAccentColorId;
+        chat.profileBackgroundCustomEmojiId = update.profileBackgroundCustomEmojiId;
+      },
+      listeners::updateChatAccentColors
     );
   }
 
   @TdlibThread
-  private void updateChatBackgroundCustomEmoji (TdApi.UpdateChatBackgroundCustomEmoji update) {
+  private void updateChatEmojiStatus (TdApi.UpdateChatEmojiStatus update) {
     updateChat(update, update.chatId, chat ->
-      chat.backgroundCustomEmojiId = update.backgroundCustomEmojiId,
-      listeners::updateChatBackgroundCustomEmoji
+      chat.emojiStatus = update.emojiStatus,
+      listeners::updateChatEmojiStatus
     );
   }
 
@@ -8976,6 +9003,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   @TdlibThread
   private void updateSpeechRecognitionTrial (TdApi.UpdateSpeechRecognitionTrial update) {
     // TODO
+  }
+
+  @TdlibThread
+  private void updateDefaultBackground (TdApi.UpdateDefaultBackground update) {
+    // TODO ?
   }
 
   @TdlibThread
@@ -9944,8 +9976,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateSpeechRecognitionTrial((TdApi.UpdateSpeechRecognitionTrial) update);
         break;
       }
-      case TdApi.UpdateSelectedBackground.CONSTRUCTOR: {
-        // TODO?
+      case TdApi.UpdateDefaultBackground.CONSTRUCTOR: {
+        updateDefaultBackground((TdApi.UpdateDefaultBackground) update);
         break;
       }
 
@@ -10021,12 +10053,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateChatBackground((TdApi.UpdateChatBackground) update);
         break;
       }
-      case TdApi.UpdateChatAccentColor.CONSTRUCTOR: {
-        updateChatAccentColor((TdApi.UpdateChatAccentColor) update);
+      case TdApi.UpdateChatAccentColors.CONSTRUCTOR: {
+        updateChatAccentColors((TdApi.UpdateChatAccentColors) update);
         break;
       }
-      case TdApi.UpdateChatBackgroundCustomEmoji.CONSTRUCTOR: {
-        updateChatBackgroundCustomEmoji((TdApi.UpdateChatBackgroundCustomEmoji) update);
+      case TdApi.UpdateChatEmojiStatus.CONSTRUCTOR: {
+        updateChatEmojiStatus((TdApi.UpdateChatEmojiStatus) update);
         break;
       }
 
@@ -10053,12 +10085,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.UpdatePoll.CONSTRUCTOR:
       case TdApi.UpdatePollAnswer.CONSTRUCTOR:
       case TdApi.UpdateChatMember.CONSTRUCTOR:
-      case TdApi.UpdateChatBoost.CONSTRUCTOR: {
+      case TdApi.UpdateChatBoost.CONSTRUCTOR:
+      case TdApi.UpdateMessageReaction.CONSTRUCTOR:
+      case TdApi.UpdateMessageReactions.CONSTRUCTOR: {
         // Must never come from TDLib. If it does, there's a bug on TDLib side.
         throw Td.unsupported(update);
       }
       default: {
-        Td.assertUpdate_3098a407();
+        Td.assertUpdate_618db8c7();
         throw Td.unsupported(update);
       }
     }
@@ -11002,6 +11036,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
         case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR:
         case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR:
+        case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR:
         case TdApi.MessagePremiumGiveaway.CONSTRUCTOR:
         case TdApi.MessageInviteVideoChatParticipants.CONSTRUCTOR:
         case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
@@ -11011,7 +11046,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
         case TdApi.MessageSupergroupChatCreate.CONSTRUCTOR:
         case TdApi.MessageUnsupported.CONSTRUCTOR:
-        case TdApi.MessageUserShared.CONSTRUCTOR:
+        case TdApi.MessageUsersShared.CONSTRUCTOR:
         case TdApi.MessageVideoChatEnded.CONSTRUCTOR:
         case TdApi.MessageVideoChatScheduled.CONSTRUCTOR:
         case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
@@ -11021,7 +11056,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           // assuming we want to check RightId.SEND_BASIC_MESSAGES
           return getBasicMessageRestrictionText(chat);
         default:
-          Td.assertMessageContent_afad899a();
+          Td.assertMessageContent_d40af239();
           throw Td.unsupported(message.content);
       }
     }

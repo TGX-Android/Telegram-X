@@ -64,7 +64,6 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.widget.FrameLayoutFix;
@@ -72,6 +71,7 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
+import me.vkryl.core.ObjectUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.td.ChatPosition;
@@ -808,7 +808,9 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
 
       @Override
       public boolean areContentsTheSame (ListItem oldItem, ListItem newItem) {
-        return Objects.equals(oldItem.getString(), newItem.getString());
+        CharSequence a = oldItem.getString();
+        CharSequence b = newItem.getString();
+        return ObjectUtils.equals(a, b);
       }
     };
   }
@@ -819,7 +821,9 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
       public boolean areItemsTheSame (ListItem oldItem, ListItem newItem) {
         if (oldItem.getViewType() == newItem.getViewType() && oldItem.getId() == newItem.getId()) {
           if (oldItem.getId() == R.id.recommendedChatFolder) {
-            return Objects.equals(oldItem.getString(), newItem.getString());
+            CharSequence a = oldItem.getString();
+            CharSequence b = newItem.getString();
+            return ObjectUtils.equals(a, b);
           }
           return true;
         }
@@ -829,11 +833,17 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
       @Override
       public boolean areContentsTheSame (ListItem oldItem, ListItem newItem) {
         if (oldItem.getId() == R.id.recommendedChatFolder) {
-          return oldItem.getIconResource() == newItem.getIconResource() &&
-            Objects.equals(oldItem.getString(), newItem.getString()) &&
-            Objects.equals(oldItem.getStringValue(), newItem.getStringValue());
+          CharSequence a1 = oldItem.getString();
+          CharSequence b1 = newItem.getString();
+          if (oldItem.getIconResource() != newItem.getIconResource() ||
+            !ObjectUtils.equals(a1, b1)) return false;
+          String a = oldItem.getStringValue();
+          String b = newItem.getStringValue();
+          return ObjectUtils.equals(a, b);
         }
-        return Objects.equals(oldItem.getString(), newItem.getString());
+        CharSequence a = oldItem.getString();
+        CharSequence b = newItem.getString();
+        return ObjectUtils.equals(a, b);
       }
     };
   }

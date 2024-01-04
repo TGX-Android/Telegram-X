@@ -140,10 +140,10 @@ public class TGBackground {
           needImages = true;
           break;
         case TdApi.BackgroundTypeFill.CONSTRUCTOR:
+        case TdApi.BackgroundTypeChatTheme.CONSTRUCTOR:
           needImages = false;
           break;
         default:
-          Td.assertBackgroundType_64138c2();
           throw Td.unsupported(type);
       }
     } else {
@@ -551,6 +551,7 @@ public class TGBackground {
   private static final int BACKGROUND_TYPE_FILL = 1;
   private static final int BACKGROUND_TYPE_WALLPAPER = 2;
   private static final int BACKGROUND_TYPE_PATTERN = 3;
+  private static final int BACKGROUND_TYPE_CHAT_THEME = 4;
 
   private static final int FILL_TYPE_SOLID = 1;
   private static final int FILL_TYPE_GRADIENT = 2;
@@ -671,8 +672,14 @@ public class TGBackground {
           putFill(editor, key, pattern.fill);
           break;
         }
+        case TdApi.BackgroundTypeChatTheme.CONSTRUCTOR: {
+          TdApi.BackgroundTypeChatTheme chatTheme = (TdApi.BackgroundTypeChatTheme) type;
+          editor.putInt(key + "_type", BACKGROUND_TYPE_CHAT_THEME);
+          editor.putString(key + "_theme", chatTheme.themeName);
+          break;
+        }
         default: {
-          Td.assertBackgroundType_64138c2();
+          Td.assertBackgroundType_eedb1e16();
           throw Td.unsupported(type);
         }
       }
@@ -688,7 +695,8 @@ public class TGBackground {
         .remove(key + "_color_top")
         .remove(key + "_color_bottom")
         .remove(key + "_colors")
-        .remove(key + "_rotation_angle");
+        .remove(key + "_rotation_angle")
+        .remove(key + "_theme");
     }
     editor.apply();
   }
@@ -708,6 +716,7 @@ public class TGBackground {
       }
       case FILL_TYPE_SOLID:
       default: {
+        Td.assertBackgroundFill_6086fe10();
         int color = prefs.getInt(key + "_color", 0);
         return new TdApi.BackgroundFillSolid(color);
       }
@@ -746,6 +755,11 @@ public class TGBackground {
           isInverted,
           prefs.getBoolean(key + "_moving", false)
         );
+        break;
+      }
+      case BACKGROUND_TYPE_CHAT_THEME: {
+        String themeName = prefs.getString(key + "_theme", null);
+        type = new TdApi.BackgroundTypeChatTheme(themeName);
         break;
       }
       default:

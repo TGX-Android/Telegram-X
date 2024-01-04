@@ -66,7 +66,7 @@ import java.util.List;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.MessageId;
 
-public class MapGoogleController extends MapController<MapView, MapGoogleController.MarkerData> implements OnMapReadyCallback, GoogleMap.OnMyLocationChangeListener, GoogleMap.OnCameraMoveStartedListener, GoogleMap.OnMarkerClickListener {
+final class MapGoogleController extends MapController<MapView, MapGoogleController.MarkerData> implements OnMapReadyCallback, GoogleMap.OnMyLocationChangeListener, GoogleMap.OnCameraMoveStartedListener, GoogleMap.OnMarkerClickListener {
   private static final float DEFAULT_ZOOM_LEVEL = 16.0f;
   private static final float CLICK_ZOOM_LEVEL = 17.0f;
 

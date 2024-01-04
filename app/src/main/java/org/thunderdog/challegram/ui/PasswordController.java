@@ -91,6 +91,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
   public static final int MODE_CONFIRM = 11;
   public static final int MODE_CODE_EMAIL = 12;
   public static final int MODE_EMAIL_LOGIN = 13;
+  public static final int MODE_CUSTOM_CONFIRM = 14;
 
   private final Handler handler = new Handler(this);
 
@@ -99,6 +100,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     public final TdApi.PasswordState state;
     public final TdApi.AuthorizationState authState;
     public @Nullable String phoneNumber;
+    public @Nullable CustomConfirmDelegate confirmDelegate;
 
     public Args (int mode, TdApi.PasswordState state) {
       this.mode = mode;
@@ -174,6 +176,11 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       this.onSuccessListener = onSuccessListener;
       return this;
     }
+
+    public Args setConfirmDelegate (@Nullable CustomConfirmDelegate confirmDelegate) {
+      this.confirmDelegate = confirmDelegate;
+      return this;
+    }
   }
 
   private int mode;
@@ -206,7 +213,18 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     this.state = args.state;
     this.authState = args.authState;
     this.formattedPhone = args.phoneNumber;
+    this.confirmDelegate = args.confirmDelegate;
   }
+
+  public interface CustomConfirmDelegate {
+    default CharSequence getName () {
+      return Lang.getString(R.string.EnterPassword);
+    }
+    boolean needNext ();
+    void onPasswordConfirmed (ViewController<?> c, String password);
+  }
+
+  private CustomConfirmDelegate confirmDelegate;
 
   @Override
   public CharSequence getName () {
@@ -223,6 +241,9 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       case MODE_CONFIRM:
       case MODE_UNLOCK_EDIT: {
         return Lang.getString(R.string.EnterPassword);
+      }
+      case MODE_CUSTOM_CONFIRM: {
+        return confirmDelegate.getName();
       }
       case MODE_TRANSFER_OWNERSHIP_CONFIRM: {
         return Lang.getString(R.string.TransferOwnershipPasswordAlert);
@@ -290,6 +311,8 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       case MODE_CONFIRM:
       case MODE_TRANSFER_OWNERSHIP_CONFIRM:
         return R.drawable.baseline_check_24;
+      case MODE_CUSTOM_CONFIRM:
+        return confirmDelegate.needNext() ? R.drawable.baseline_arrow_forward_24 : R.drawable.baseline_check_24;
     }
     return R.drawable.baseline_arrow_forward_24;
   }
@@ -368,6 +391,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         break;
       }
       case MODE_TRANSFER_OWNERSHIP_CONFIRM:
+      case MODE_CUSTOM_CONFIRM:
       case MODE_CONFIRM:
       case MODE_UNLOCK_EDIT: {
         if (state != null && state.passwordHint != null && !state.passwordHint.isEmpty()) {
@@ -438,11 +462,24 @@ public class PasswordController extends ViewController<PasswordController.Args> 
 
     switch (mode) {
       case MODE_TRANSFER_OWNERSHIP_CONFIRM:
+      case MODE_CUSTOM_CONFIRM:
       case MODE_CONFIRM:
       case MODE_UNLOCK_EDIT:
       case MODE_LOGIN: {
         updatePasswordResetTextViews();
-        hint = Lang.getString(mode == MODE_TRANSFER_OWNERSHIP_CONFIRM ? R.string.TransferOwnershipPasswordAlertHint : R.string.LoginPasswordText);
+        @StringRes int res;
+        switch (mode) {
+          case MODE_TRANSFER_OWNERSHIP_CONFIRM:
+            res = R.string.TransferOwnershipPasswordAlertHint;
+            break;
+          case MODE_CUSTOM_CONFIRM:
+            res = R.string.ConfirmPasswordAlertHint;
+            break;
+          default:
+            res = R.string.LoginPasswordText;
+            break;
+        }
+        hint = Lang.getString(res);
         break;
       }
       case MODE_EMAIL_RECOVERY:
@@ -480,7 +517,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       }
     }
 
-    if (mode == MODE_TRANSFER_OWNERSHIP_CONFIRM || mode == MODE_UNLOCK_EDIT || mode == MODE_CONFIRM || mode == MODE_LOGIN || mode == MODE_CODE || mode == MODE_CODE_CHANGE || mode == MODE_CODE_PHONE_CONFIRM || mode == MODE_CODE_EMAIL) {
+    if (mode == MODE_TRANSFER_OWNERSHIP_CONFIRM || mode == MODE_UNLOCK_EDIT || mode == MODE_CUSTOM_CONFIRM || mode == MODE_CONFIRM || mode == MODE_LOGIN || mode == MODE_CODE || mode == MODE_CODE_CHANGE || mode == MODE_CODE_PHONE_CONFIRM || mode == MODE_CODE_EMAIL) {
       RelativeLayout forgotWrap = new RelativeLayout(context);
       forgotWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM));
 
@@ -1037,7 +1074,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
 
       handler.sendMessageDelayed(Message.obtain(handler, UPDATE_TEXT_VIEWS_TIMER), 1000);
     } else {
-      forgotView.setText(Lang.getString(R.string.ForgotPassword));
+      forgotView.setText(Lang.getString(canResetPassword() ? R.string.ResetPassword : R.string.ForgotPassword));
       resetWaitView.setVisibility(View.GONE);
     }
   }
@@ -1300,6 +1337,8 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         } else if ((mode == MODE_CONFIRM || mode == MODE_TRANSFER_OWNERSHIP_CONFIRM) && getArguments() != null && getArguments().onSuccessListener != null) {
           navigateBack();
           getArgumentsStrict().onSuccessListener.runWithData(password);
+        } else if (mode == MODE_CUSTOM_CONFIRM) {
+          confirmDelegate.onPasswordConfirmed(this, password);
         }
       }
     }));
@@ -1591,6 +1630,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     switch (mode) {
       case MODE_CONFIRM:
       case MODE_TRANSFER_OWNERSHIP_CONFIRM:
+      case MODE_CUSTOM_CONFIRM:
       case MODE_UNLOCK_EDIT: {
         if (!input.isEmpty()) {
           unlockEdit(input);
@@ -1668,6 +1708,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       }
       case MODE_CONFIRM:
       case MODE_TRANSFER_OWNERSHIP_CONFIRM:
+      case MODE_CUSTOM_CONFIRM:
       case MODE_UNLOCK_EDIT:
       case MODE_LOGIN: {
         requestRecovery();

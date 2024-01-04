@@ -24,9 +24,8 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 
-import java.util.Objects;
-
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.ObjectUtils;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
@@ -76,7 +75,8 @@ public class ThreadInfo {
   }
 
   @Override public int hashCode () {
-    return Objects.hash(areComments(), contextChatId, threadInfo.chatId, threadInfo.messageThreadId);
+    Object[] objects = new Object[] {areComments(), contextChatId, threadInfo.chatId, threadInfo.messageThreadId};
+    return ObjectUtils.hashCode(objects);
   }
 
   public boolean belongsTo (long chatId, long messageThreadId) {

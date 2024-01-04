@@ -222,6 +222,11 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_accountTTL, 0, R.string.DeleteAccountIfAwayFor2));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.DeleteAccountHelp));
+
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_deleteAccount, 0, R.string.DeleteMyAccount).setTextColorId(ColorId.textNegative));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.DeleteMyAccountInfo));
     }
 
 
@@ -454,6 +459,8 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
         new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_6month, 0, Lang.pluralBold(R.string.xMonths, 6), R.id.btn_accountTTL, months == 6),
         new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_1year, 0, Lang.pluralBold(R.string.xYears, 1), R.id.btn_accountTTL, years == 1)
       }, this);
+    } else if (id == R.id.btn_deleteAccount) {
+      tdlib.ui().permanentlyDeleteAccount(this, true);
     } else if (id == R.id.btn_clearAllDrafts) {
       showOptions(Lang.getString(R.string.AreYouSureClearDrafts), new int[] {R.id.btn_clearAllDrafts, R.id.btn_cancel}, new String[] {Lang.getString(R.string.PrivacyDeleteCloudDrafts), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, actionId) -> {
         if (actionId == R.id.btn_clearAllDrafts) {

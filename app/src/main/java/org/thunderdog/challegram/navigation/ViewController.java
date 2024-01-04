@@ -450,6 +450,17 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     return navigationController != null ? navigationController.getStack().destroy(index) : null;
   }
 
+  public final ViewController<?> destroyPreviousStackItem () {
+    if (navigationController != null) {
+      NavigationStack stack = navigationController.getStack();
+      int currentIndex = stack.size() - 1;
+      if (currentIndex > 0) {
+        return stack.destroy(currentIndex - 1);
+      }
+    }
+    return null;
+  }
+
   public final ViewController<?> removeStackItemById (int id) {
     return navigationController != null ? navigationController.getStack().removeById(id) : null;
   }

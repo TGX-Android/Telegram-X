@@ -726,8 +726,10 @@ public class TdlibMessageViewer {
           throw new IllegalStateException();
         boolean hasProtectedContent = ChatId.isSecret(visibleChat.chatId);
         if (!hasProtectedContent) {
-          TdApi.Chat chat = context.tdlib.chatStrict(visibleChat.chatId);
-          hasProtectedContent = chat.hasProtectedContent;
+          TdApi.Chat chat = context.tdlib.chat(visibleChat.chatId);
+          // Allowing screenshots for `chat == null` isn't a problem here,
+          // as that chat content would be protected by other components anyway.
+          hasProtectedContent = chat != null && chat.hasProtectedContent;
         }
         if (hasProtectedContent) {
           if (!state.visibleProtectedChatIds.add(visibleChat.chatId))
