@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -47,14 +48,16 @@ import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 
 public class GiftCodeController extends MediaBottomBaseController<Void> implements View.OnClickListener {
-  private final TdApi.PremiumGiftCodeInfo info;
+  private final @Nullable TdApi.MessagePremiumGiftCode giftCodeContent;
+  private final @NonNull TdApi.PremiumGiftCodeInfo giftCodeInfo;
   private final String code;
 
   private int measuredRecyclerHeight;
 
-  protected GiftCodeController (MediaLayout context, String code, TdApi.PremiumGiftCodeInfo giftCodeInfo) {
+  protected GiftCodeController (MediaLayout context, String code, @Nullable TdApi.MessagePremiumGiftCode giftCodeContent, @NonNull TdApi.PremiumGiftCodeInfo giftCodeInfo) {
     super(context, Lang.getString(R.string.GiftLink));
-    this.info = giftCodeInfo;
+    this.giftCodeContent = giftCodeContent;
+    this.giftCodeInfo = giftCodeInfo;
     this.code = code;
   }
 
@@ -63,44 +66,46 @@ public class GiftCodeController extends MediaBottomBaseController<Void> implemen
     buildContentView(false);
     setLayoutManager(new LinearLayoutManager(context(), RecyclerView.VERTICAL, false));
 
-    final boolean isActivated = info.useDate > 0;
+    final boolean isActivated = giftCodeInfo.useDate > 0;
+    final TdApi.MessageSender creatorId = getCreatorId();
 
-    ArrayList<ListItem> items = new ArrayList<>();
+    final ArrayList<ListItem> items = new ArrayList<>();
 
     items.add(new ListItem(ListItem.TYPE_GIFT_HEADER));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_copyLink, R.drawable.baseline_link_24, R.string.GiftLink)
-      .setStringValue(getGiftCodeLink()));
+      .setStringValue(TD.makeGiftCodeLink(code)));
 
-    if (info.creatorId != null) {
-      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_openGiftSender, 0, R.string.GiftFrom)
-        .setStringValue(tdlib.chatTitle(Td.getSenderId(info.creatorId)))
-        .setDrawModifier(new AvatarDrawModifier(24))
-        .setData(info.creatorId)
-      );
-    }
-    if (info.userId != 0) {
-      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_openGiftReceiver, 0, R.string.GiftTo)
-        .setStringValue(tdlib.chatTitle(ChatId.fromUserId(info.userId), false, false))
-        .setDrawModifier(new AvatarDrawModifier(24))
-        .setData(new TdApi.MessageSenderUser(info.userId))
-      );
-    }
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_openGiftSender, creatorId != null ? 0 : R.drawable.dot_baseline_acc_anon_24, R.string.GiftFrom)
+      .setStringValue(creatorId != null ? tdlib.chatTitle(Td.getSenderId(creatorId)) : Lang.getString(R.string.GiftFromUnknown))
+      .setDrawModifier(creatorId != null ? new AvatarDrawModifier(24): null)
+      .setData(creatorId)
+    );
+
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_openGiftReceiver, giftCodeInfo.userId != 0 ? 0 : R.drawable.dot_baseline_acc_anon_24, R.string.GiftTo)
+      .setStringValue(giftCodeInfo.userId != 0 ? tdlib.chatTitle(ChatId.fromUserId(giftCodeInfo.userId), false, false) : Lang.getString(R.string.GiftToUnknown))
+      .setDrawModifier(giftCodeInfo.userId != 0 ? new AvatarDrawModifier(24) : null)
+      .setData(new TdApi.MessageSenderUser(giftCodeInfo.userId))
+    );
+
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_SETTING,0, R.drawable.baseline_gift_outline_24, R.string.Gift)
-      .setStringValue(Lang.plural(R.string.xTelegramPremiumForMonth, info.monthCount)));
+      .setStringValue(Lang.plural(R.string.xTelegramPremiumForMonth, giftCodeInfo.monthCount)));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showGiveawayMessage, R.drawable.baseline_info_24, R.string.GiftReason)
-      .setStringValue(Lang.getString(info.isFromGiveaway ? R.string.GiftReasonGiveaway : R.string.GiftReasonGift)));
+      .setStringValue(Lang.getString(giftCodeInfo.isFromGiveaway ? R.string.GiftReasonGiveaway : R.string.GiftReasonGift)));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_SETTING,0, R.drawable.baseline_date_range_24, R.string.GiftDate)
-      .setStringValue(Lang.dateFullShort(info.creationDate, TimeUnit.SECONDS)));
+      .setStringValue(Lang.getString(R.string.format_GiveawayDateTime,
+        Lang.dateYearFull(giftCodeInfo.creationDate, TimeUnit.SECONDS),
+        Lang.time(giftCodeInfo.creationDate, TimeUnit.SECONDS)))
+    );
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     if (isActivated) {
-      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getString(R.string.GiftLinkWasActivated, Lang.dateFullShort(info.useDate, TimeUnit.SECONDS), Lang.time(info.useDate, TimeUnit.SECONDS))));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getString(R.string.GiftLinkWasActivated, Lang.dateFullShort(giftCodeInfo.useDate, TimeUnit.SECONDS), Lang.time(giftCodeInfo.useDate, TimeUnit.SECONDS))));
     } else {
       items.add(new ListItem(ListItem.TYPE_TEXT_VIEW));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -118,7 +123,7 @@ public class GiftCodeController extends MediaBottomBaseController<Void> implemen
       public void updateView (SettingHolder holder, int position, int viewType) {
         super.updateView(holder, position, viewType);
         if (viewType == ListItem.TYPE_GIFT_HEADER) {
-          final boolean isActivated = info.useDate > 0;
+          final boolean isActivated = giftCodeInfo.useDate > 0;
           GiftHeaderView view = (GiftHeaderView) (holder.itemView);
           view.setTexts(
             isActivated ? R.string.GiftLinkActivated : R.string.GiftLink,
@@ -147,7 +152,7 @@ public class GiftCodeController extends MediaBottomBaseController<Void> implemen
         custom.setOnClickListener(new ClickableSpan() {
           @Override
           public void onClick (@NonNull View widget) {
-            tdlib.ui().shareText(GiftCodeController.this, getGiftCodeLink());
+            tdlib.ui().shareText(GiftCodeController.this, TD.makeGiftCodeLink(code));
           }
         });
         FormattedText gvwf = new FormattedText(gvw, new TextEntity[] {custom});
@@ -190,6 +195,8 @@ public class GiftCodeController extends MediaBottomBaseController<Void> implemen
     return contentView;
   }
 
+
+
   @Override
   protected int getInitialContentHeight () {
     if (measuredRecyclerHeight != 0) {
@@ -230,26 +237,31 @@ public class GiftCodeController extends MediaBottomBaseController<Void> implemen
   @Override
   public void onClick (View v) {
     final int id = v.getId();
+
     if (id == R.id.btn_copyLink) {
-      U.copyText(getGiftCodeLink());
+      U.copyText(TD.makeGiftCodeLink(code));
     } else if (id == R.id.btn_openGiftSender) {
-      if (info.creatorId != null) {
-        tdlib.ui().openChat(this, info.creatorId, null);
+      final TdApi.MessageSender creatorId = getCreatorId();
+      if (creatorId != null) {
+        tdlib.ui().openChat(this, creatorId, null);
         mediaLayout.hide(false);
       }
     } else if (id == R.id.btn_openGiftReceiver) {
-      tdlib.ui().openChatProfile(this, ChatId.fromUserId(info.userId), null, null);
-      mediaLayout.hide(false);
+      if (giftCodeInfo.userId != 0) {
+        tdlib.ui().openChatProfile(this, ChatId.fromUserId(giftCodeInfo.userId), null, null);
+        mediaLayout.hide(false);
+      }
     } else if (id == R.id.btn_showGiveawayMessage) {
-      final long chatId = Td.getSenderId(info.creatorId);
-      tdlib.ui().openMessage(this, chatId, new MessageId(chatId, info.giveawayMessageId, null), null);
-      mediaLayout.hide(false);
+      final TdApi.MessageSender creatorId = getCreatorId();
+      if (creatorId != null) {
+        final long chatId = Td.getSenderId(creatorId);
+        tdlib.ui().openMessage(this, chatId, new MessageId(chatId, giftCodeInfo.giveawayMessageId, null), null);
+        mediaLayout.hide(false);
+      }
     } else if (id == R.id.btn_redeemGiftLink) {
       if (!redeemLoading) {
         redeemLoading = true;
-        tdlib.client().send(new TdApi.ApplyPremiumGiftCode(code), tdlib.okHandler(() -> {
-          mediaLayout.hide(false);
-        }));
+        tdlib.client().send(new TdApi.ApplyPremiumGiftCode(code), tdlib.okHandler(() -> mediaLayout.hide(false)));
       }
     }
   }
@@ -259,7 +271,8 @@ public class GiftCodeController extends MediaBottomBaseController<Void> implemen
     return new FrameLayout(context);
   }
 
-  public final String getGiftCodeLink () {
-    return TD.makeGiftCodeLink(code);
+  private @Nullable TdApi.MessageSender getCreatorId () {
+    return giftCodeContent != null && giftCodeContent.creatorId != null ?
+      giftCodeContent.creatorId : giftCodeInfo.creatorId;
   }
 }

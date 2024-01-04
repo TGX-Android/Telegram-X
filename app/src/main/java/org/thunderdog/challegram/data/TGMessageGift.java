@@ -26,6 +26,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
+import org.thunderdog.challegram.component.popups.ModernActionedLayout;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -34,6 +35,7 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
+import org.thunderdog.challegram.tool.UI;
 
 import me.vkryl.td.Td;
 
@@ -58,7 +60,7 @@ public class TGMessageGift extends TGMessageGiveawayBase {
       content.add(Lang.getString(msgContent.isFromGiveaway ? R.string.GiveawayYouWon : R.string.GiveawayYouGetGift), getTextColorSet(), currentViews);
       if (msgContent.creatorId != null) {
         content.padding(Screen.dp(6));
-        content.add(new ContentBubbles(this, maxWidth)
+        content.add(new ContentBubbles(this, maxWidth - Screen.dp(CONTENT_PADDING_DP * 2 + 60))
           .setOnClickListener(this::onBubbleClick)
           .addChatId(Td.getSenderId(msgContent.creatorId)));
       }
@@ -86,9 +88,23 @@ public class TGMessageGift extends TGMessageGiveawayBase {
     return Lang.getString(R.string.OpenGiftLink);
   }
 
+  private boolean loading;
+
   @Override
   public void onClick (View view, TGInlineKeyboard keyboard, TGInlineKeyboard.Button button) {
-    tdlib.ui().openInternalLinkType(this, TD.makeGiftCodeLink(msgContent.code), new TdApi.InternalLinkTypePremiumGiftCode(msgContent.code), null, null);
+    if (loading) {
+      return;
+    }
+
+    loading = true;
+    tdlib.send(new TdApi.CheckPremiumGiftCode(msgContent.code), (info, error) -> UI.post(() -> {
+      loading = false;
+      if (error != null) {
+        UI.showError(error);
+      } else {
+        ModernActionedLayout.showGiftCode(context().navigation().getCurrentStackItem(), msgContent.code, msgContent, info);
+      }
+    }));
   }
 
   @Override

@@ -3583,7 +3583,7 @@ public class TdlibUi extends Handler {
             }
           } else {
             post(() -> {
-              ModernActionedLayout.showGiftCode(context.context().navigation().getCurrentStackItem(), code, info);
+              ModernActionedLayout.showGiftCode(context.context().navigation().getCurrentStackItem(), code, null, info);
               if (after != null) {
                 after.runWithBool(true);
               }

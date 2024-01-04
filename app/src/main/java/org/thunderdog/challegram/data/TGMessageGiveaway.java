@@ -82,7 +82,7 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
     content.padding(Screen.dp(6));
     content.add(Lang.getString(giveawayContent.parameters.onlyNewMembers ? R.string.GiveawayParticipantsNew : R.string.GiveawayParticipantsAll), getTextColorSet(), currentViews);
     content.padding(Screen.dp(6));
-    content.add(new ContentBubbles(this, maxWidth)
+    content.add(new ContentBubbles(this, maxWidth - Screen.dp(CONTENT_PADDING_DP * 2 + 60))
       .setOnClickListener(this::onBubbleClick)
       .addChatId(giveawayContent.parameters.boostedChatId)
       .addChatIds(giveawayContent.parameters.additionalChatIds));
@@ -183,7 +183,7 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
       return;
     }
     if (byClick && !isDestroyed()) {
-      showPremiumGiveawayInfoPopup(giveawayContent.winnerCount, giveawayContent.monthCount, giveawayContent.parameters.boostedChatId, giveawayContent.parameters.additionalChatIds.length, giveawayContent.parameters.additionalChatIds, giveawayContent.parameters.winnersSelectionDate);
+      showPremiumGiveawayInfoPopup(giveawayContent.winnerCount, giveawayContent.monthCount, giveawayContent.parameters.boostedChatId, giveawayContent.parameters.additionalChatIds.length, giveawayContent.parameters.additionalChatIds, giveawayContent.parameters.winnersSelectionDate, giveawayContent.parameters.prizeDescription);
     }
     byClick = false;
   }

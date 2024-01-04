@@ -16,6 +16,7 @@ package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
+import android.text.SpannableStringBuilder;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -415,7 +416,7 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
     premiumGiveawayInfoLoaded = false;
   }
 
-  protected void showPremiumGiveawayInfoPopup (int winnerCount, int monthCount, long boostedChatId, int additionalChatsCount, long[] additionalChatIds, int winnersSelectionDate) {
+  protected void showPremiumGiveawayInfoPopup (int winnerCount, int monthCount, long boostedChatId, int additionalChatsCount, long[] additionalChatIds, int winnersSelectionDate, String prizeDescription) {
     if (premiumGiveawayInfo == null) {
       return;
     }
@@ -439,35 +440,78 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
       case TdApi.PremiumGiveawayInfoCompleted.CONSTRUCTOR: {
         final TdApi.PremiumGiveawayInfoCompleted infoCompleted = (TdApi.PremiumGiveawayInfoCompleted) premiumGiveawayInfo;
         b.title(Lang.getString(R.string.GiveawayEnded));
-        b.info(Lang.pluralBold(R.string.GiveawayEndedInfo, winnerCount, tdlib.chatTitle(boostedChatId), monthCount,
-          Lang.dateYearFull(winnersSelectionDate, TimeUnit.SECONDS),
-          Lang.time(winnersSelectionDate, TimeUnit.SECONDS), sponsors
-        ));
+
+        SpannableStringBuilder infoSsb = new SpannableStringBuilder();
+        infoSsb.append(Lang.pluralBold(R.string.GiveawayInfoEndedPart1, winnerCount, tdlib.chatTitle(boostedChatId), monthCount));
+        if (!StringUtils.isEmpty(prizeDescription)) {
+          infoSsb.append("\n\n");
+          infoSsb.append(Lang.pluralBold(R.string.GiveawayInfoPartExtended, winnerCount, tdlib.chatTitle(boostedChatId), prizeDescription));
+        }
+        infoSsb.append("\n\n");
+        infoSsb.append(Lang.pluralBold(R.string.GiveawayInfoEndedPart2, winnerCount, getDateTime(winnersSelectionDate), sponsors));
+        infoSsb.append(" ");
+        infoSsb.append(Lang.pluralBold(R.string.GiveawayInfoEndedPart3, infoCompleted.activationCount));
+
         if (!StringUtils.isEmpty(infoCompleted.giftCode)) {
           b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayEndedYouWon), ViewController.OPTION_COLOR_GREEN, R.drawable.baseline_party_popper_24));
           b.item(new ViewController.OptionItem(R.id.btn_openLink, Lang.getString(R.string.GiveawayViewMyPrize), ViewController.OPTION_COLOR_BLUE, R.drawable.baseline_gift_outline_24));
         } else {
           b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayEndedYouLose), ViewController.OPTION_COLOR_BLUE, R.drawable.baseline_info_24));
         }
+
+        b.info(infoSsb);
         break;
       }
       case TdApi.PremiumGiveawayInfoOngoing.CONSTRUCTOR: {
         final TdApi.PremiumGiveawayInfoOngoing infoOngoing = (TdApi.PremiumGiveawayInfoOngoing) premiumGiveawayInfo;
         final TdApi.PremiumGiveawayParticipantStatus status = infoOngoing.status;
         b.title(Lang.getString(R.string.GiveawayOngoing));
-        b.info(Lang.pluralBold(R.string.GiveawayOngoingInfo, winnerCount, tdlib.chatTitle(boostedChatId), monthCount,
-          Lang.dateYearFull(winnersSelectionDate, TimeUnit.SECONDS),
-          Lang.time(winnersSelectionDate, TimeUnit.SECONDS), sponsors
-        ));
 
-        if (status.getConstructor() == TdApi.PremiumGiveawayParticipantStatusParticipating.CONSTRUCTOR) {
-          b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayOngoingYouParticipating), ViewController.OPTION_COLOR_GREEN, R.drawable.baseline_info_24));
-        } else if (status.getConstructor() == TdApi.PremiumGiveawayParticipantStatusEligible.CONSTRUCTOR) {
-          b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayOngoingYouEligible), ViewController.OPTION_COLOR_BLUE, R.drawable.baseline_info_24));
-        } else {
-          b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayOngoingYouRestricted), ViewController.OPTION_COLOR_RED, R.drawable.baseline_info_24));
+        SpannableStringBuilder infoSsb = new SpannableStringBuilder();
+        infoSsb.append(Lang.pluralBold(R.string.GiveawayInfoOngoingPart1, winnerCount, tdlib.chatTitle(boostedChatId), monthCount));
+        if (!StringUtils.isEmpty(prizeDescription)) {
+          infoSsb.append("\n\n");
+          infoSsb.append(Lang.pluralBold(R.string.GiveawayInfoPartExtended, winnerCount, tdlib.chatTitle(boostedChatId), prizeDescription));
+        }
+        infoSsb.append("\n\n");
+        infoSsb.append(Lang.pluralBold(R.string.GiveawayInfoOngoingPart2, winnerCount, getDateTime(winnersSelectionDate), sponsors));
+
+        switch (status.getConstructor()) {
+          case TdApi.PremiumGiveawayParticipantStatusParticipating.CONSTRUCTOR: {
+            b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayOngoingYouParticipating), ViewController.OPTION_COLOR_GREEN, R.drawable.baseline_info_24));
+            break;
+          }
+          case TdApi.PremiumGiveawayParticipantStatusEligible.CONSTRUCTOR: {
+            b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayOngoingYouEligible), ViewController.OPTION_COLOR_BLUE, R.drawable.baseline_info_24));
+            break;
+          }
+          case TdApi.PremiumGiveawayParticipantStatusAdministrator.CONSTRUCTOR: {
+            TdApi.PremiumGiveawayParticipantStatusAdministrator s = (TdApi.PremiumGiveawayParticipantStatusAdministrator) status;
+            infoSsb.append("\n\n");
+            infoSsb.append(Lang.getStringBold(R.string.GiveawayInfoOngoingPartRestrictedAdmin, tdlib.chatTitle(s.chatId)));
+            b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayOngoingYouRestricted), ViewController.OPTION_COLOR_RED, R.drawable.baseline_info_24));
+            break;
+          }
+          case TdApi.PremiumGiveawayParticipantStatusAlreadyWasMember.CONSTRUCTOR: {
+            infoSsb.append("\n\n");
+            infoSsb.append(Lang.getStringBold(R.string.GiveawayInfoOngoingPartRestrictedMember, tdlib.chatTitle(boostedChatId)));
+            b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayOngoingYouRestricted), ViewController.OPTION_COLOR_RED, R.drawable.baseline_info_24));
+            break;
+          }
+          case TdApi.PremiumGiveawayParticipantStatusDisallowedCountry.CONSTRUCTOR: {
+            TdApi.PremiumGiveawayParticipantStatusDisallowedCountry s = (TdApi.PremiumGiveawayParticipantStatusDisallowedCountry) status;
+            infoSsb.append("\n\n");
+            infoSsb.append(Lang.getStringBold(R.string.GiveawayInfoOngoingPartRestrictedCountry, s.userCountryCode));
+            b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayOngoingYouRestricted), ViewController.OPTION_COLOR_RED, R.drawable.baseline_info_24));
+            break;
+          }
+          default: {
+            Td.assertPremiumGiveawayParticipantStatus_29647766();
+            throw Td.unsupported(status);
+          }
         }
 
+        b.info(infoSsb);
         break;
       }
       default:
@@ -487,5 +531,9 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
       }
     }
     return true;
+  }
+
+  public static CharSequence getDateTime (int date) {
+    return Lang.getString(R.string.format_GiveawayDateTime, Lang.dateYearFull(date, TimeUnit.SECONDS), Lang.time(date, TimeUnit.SECONDS));
   }
 }

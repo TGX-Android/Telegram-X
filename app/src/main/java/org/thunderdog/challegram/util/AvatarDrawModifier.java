@@ -63,6 +63,6 @@ public class AvatarDrawModifier implements DrawModifier {
 
   @Override
   public int getWidth () {
-    return Screen.dp(48);
+    return 0;
   }
 }
