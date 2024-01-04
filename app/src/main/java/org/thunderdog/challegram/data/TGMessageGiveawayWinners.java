@@ -82,7 +82,7 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
 
     FormattedText formattedText = TGMessageServiceImpl.getPlural(tdlib, null, R.string.xGiveawayWinnersSelectedInfo, giveawayWinners.winnerCount, gvwf);
     Text.Builder b = new Text.Builder(
-      formattedText, maxWidth,
+      formattedText, maxWidth - Screen.dp(CONTENT_PADDING_DP * 2),
       getGiveawayTextStyleProvider(),
       getTextColorSet(), null
     ).viewProvider(currentViews).textFlags(Text.FLAG_ALIGN_CENTER);

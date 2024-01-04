@@ -246,9 +246,9 @@ public class GiftCodeController extends MediaBottomBaseController<Void> implemen
     } else if (id == R.id.btn_redeemGiftLink) {
       if (!redeemLoading) {
         redeemLoading = true;
-       /* tdlib.client().send(new TdApi.ApplyPremiumGiftCode(code), tdlib.okHandler(() -> {
+        tdlib.client().send(new TdApi.ApplyPremiumGiftCode(code), tdlib.okHandler(() -> {
           mediaLayout.hide(false);
-        }));*/
+        }));
       }
     }
   }
