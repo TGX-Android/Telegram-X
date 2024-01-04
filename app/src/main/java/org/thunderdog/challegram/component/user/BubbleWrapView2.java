@@ -59,7 +59,7 @@ public class BubbleWrapView2 {
 
   public void addBubble (final TdApi.MessageSender senderId, int maxTextWidth) {
     BubbleView2 bubbleView2 = new BubbleView2(viewProvider, tdlib, paint, senderId, maxTextWidth);
-    bubbleView2.setOnClickListener(v -> onClickListener.runWithData(senderId));
+    bubbleView2.setOnClickListener(v -> completeTouch(v, senderId));
     bubbles.add(bubbleView2);
   }
 
@@ -149,16 +149,11 @@ public class BubbleWrapView2 {
   // Touch
 
   private int caughtIndex = -1;
-  private int startX, startY;
 
-  private void clearTouch () {
-    caughtIndex = -1;
-  }
-
-  private void completeTouch (View v) {
+  private void completeTouch (View v, TdApi.MessageSender senderId) {
     ViewUtils.onClick(v);
     if (onClickListener != null) {
-      onClickListener.runWithData(bubbles.get(caughtIndex).getSenderId());
+      onClickListener.runWithData(senderId);
     }
   }
 
@@ -172,74 +167,13 @@ public class BubbleWrapView2 {
 
     if (e.getAction() == MotionEvent.ACTION_DOWN) {
       caughtIndex = findButtonByPosition(x, y);
-      //activeMaxWidth = maxWidth;
     }
-
-    /*if (caughtIndex != -1 && activeMaxWidth != maxWidth) {
-      findXYForButton(caughtIndex);
-    }*/
 
     boolean result = caughtIndex != -1 && caughtIndex >= 0 && caughtIndex < bubbles.size() && bubbles.get(caughtIndex).onTouchEvent(v, e);
     if (caughtIndex != -1 && (e.getAction() == MotionEvent.ACTION_CANCEL || e.getAction() == MotionEvent.ACTION_UP)) {
       caughtIndex = -1;
     }
     return result;
-
-
-    /*switch (e.getAction()) {
-      case MotionEvent.ACTION_DOWN: {
-        startX = (int) e.getX() - lastX;
-        startY = (int) e.getY() - lastY;
-
-        int spacing = (int) ((float) Screen.dp(SPACING) * .5f);
-
-        caughtIndex = -1;
-
-        for (int i = 0; i < bubbles.size(); i++) {
-          BubbleView2 view = bubbles.get(i);
-
-          int cx = view.getX();
-          int cy = view.getY();
-          int w = view.getWidth();
-          int h = view.getHeight();
-
-          if (Lang.rtl()) {
-            cx = width - cx - w;
-          }
-
-          if (startX >= cx - spacing && startX < cx + w + spacing && startY >= cy - spacing && startY < cy + h + spacing) {
-            caughtIndex = i;
-            break;
-          }
-        }
-
-        return caughtIndex != -1;
-      }
-      case MotionEvent.ACTION_CANCEL: {
-        if (caughtIndex != -1) {
-          clearTouch();
-        }
-        return true;
-      }
-      case MotionEvent.ACTION_MOVE: {
-        if (caughtIndex != -1) {
-          if (Math.abs(startX - e.getX()) > Screen.getTouchSlop() || Math.abs(startY - e.getY()) > Screen.getTouchSlop()) {
-            clearTouch();
-          }
-        }
-        return true;
-      }
-      case MotionEvent.ACTION_UP: {
-        if (caughtIndex != -1) {
-          completeTouch(v);
-          return true;
-        }
-        return false;
-      }
-      default: {
-        return false;
-      }
-    }*/
   }
 
   private int findButtonByPosition (int x, int y) {
@@ -257,7 +191,7 @@ public class BubbleWrapView2 {
         cx = width - cx - w;
       }
 
-      if (x >= cx - spacing && x < cx + w + spacing && y >= cy - spacing && startY < cy + h + spacing) {
+      if (x >= cx - spacing && x < cx + w + spacing && y >= cy - spacing && y < cy + h + spacing) {
         return i;
       }
     }
