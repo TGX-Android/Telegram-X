@@ -4977,6 +4977,11 @@
   <string name="xFutureWinners_other">%1$s winners to be selected</string>
   <string name="format_giveawayInfo">%1$s: %2$s</string>
 
+  <string name="xPastWinnersOn_one">%1$s winner was selected on %2$s</string>
+  <string name="xPastWinnersOn_other">%1$s winners were selected on %2$s</string>
+  <string name="xPastWinners_one">%1$s winner was selected</string>
+  <string name="xPastWinners_other">%1$s winners were selected</string>
+
   <string name="LinkPreviewEnlarged">Link preview media will be enlarged</string>
   <string name="LinkPreviewMinimized">Link preview media will be minimized</string>
   <string name="LinkPreviewShowAbove">Link preview will appear above the text</string>
