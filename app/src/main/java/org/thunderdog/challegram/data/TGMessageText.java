@@ -51,6 +51,7 @@ import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.android.animator.ReplaceAnimator;
 import me.vkryl.android.animator.VariableFloat;
 import me.vkryl.core.MathUtils;
+import me.vkryl.core.StringUtils;
 import me.vkryl.td.Td;
 
 public class TGMessageText extends TGMessage {
@@ -372,7 +373,13 @@ public class TGMessageText extends TGMessage {
 
   private boolean setWebPage (TdApi.WebPage page, @Nullable TdApi.LinkPreviewOptions linkPreviewOptions) {
     if (page != null) {
-      String url = text != null ? Td.findUrl(text, page.url, false) : page.url;
+      String url = null;
+      if (text != null) {
+        url = Td.findUrl(text, page.url, false);
+      }
+      if (StringUtils.isEmpty(url)) {
+        url = page.url;
+      }
       this.webPage = new TGWebPage(this, page, url, linkPreviewOptions);
       this.webPage.setViewProvider(currentViews);
       this.webPageOnTop.setValue(linkPreviewOptions != null && linkPreviewOptions.showAboveText, needAnimateChanges());

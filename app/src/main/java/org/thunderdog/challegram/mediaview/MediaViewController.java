@@ -2299,7 +2299,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         MediaItem newItem = MediaItem.valueOf(context(), tdlib, message);
         if (newItem != null) {
           replaceMedia(index, oldItem, newItem);
-          headerCell.setSubtitle(genSubtitle());
+          if (headerCell != null) {
+            headerCell.setSubtitle(genSubtitle());
+          }
         } else if (stack.getCurrentIndex() == index) {
           // if (message.selfDestructType == null || message.selfDestructType.getConstructor() != TdApi.MessageSelfDestructTypeImmediately.CONSTRUCTOR) {
             forceClose();
