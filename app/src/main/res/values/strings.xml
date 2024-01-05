@@ -5009,6 +5009,8 @@
   <string name="ViewOnce">View once</string>
 
   <string name="GiveawayCongratulations">Congratulations</string>
+  <string name="GiveawayUnclaimedPrize">Unclaimed Prize</string>
+  <string name="GiveawayYouGetUnclaimedPrize">You have an unclaimed prize from a giveaway by:</string>
   <string name="GiveawayYouWon">You won a prize in a giveaway organized by:</string>
   <string name="GiveawayYouGetGift">You received a gift from:</string>
   <string name="GiveawayLearnMore">Learn More</string>
@@ -5033,6 +5035,9 @@
   <string name="xGiveawayPrizePremiumInfo_other">%1$s Telegram Premium Subscriptions for %2$s months.</string>
   <string name="xGiveawayPrizeReceivedInfo_one">Your prize is a **Telegram Premium** subscription for **%1$s** month.</string>
   <string name="xGiveawayPrizeReceivedInfo_other">Your prize is a **Telegram Premium** subscription for **%1$s** months.</string>
+
+  <string name="xGiveawayUnclaimedPrizeReceivedInfo_one">This prize is a **Telegram Premium** subscription for **%1$s** month.</string>
+  <string name="xGiveawayUnclaimedPrizeReceivedInfo_other">This prize is a **Telegram Premium** subscription for **%1$s** months.</string>
 
   <string name="xTelegramPremiumForMonth_one">Telegram Premium for %1$s month</string>
   <string name="xTelegramPremiumForMonth_other">Telegram Premium for %1$s months</string>
@@ -5068,6 +5073,7 @@
   <string name="GiveawayEnded">Giveaway ended</string>
   <string name="GiveawayEndedYouWon">You won a prize in this giveaway</string>
   <string name="GiveawayEndedYouLose">You didn’t win a prize in this giveaway</string>
+  <string name="GiveawayEndedRefunded">The channel cancelled the prizes by refunding the payment for them</string>
 
   <string name="GiveawayOngoing">Giveaway ongoing</string>
   <string name="GiveawayOngoingYouParticipating">You are participating in this giveaway</string>
@@ -5085,6 +5091,7 @@
   <string name="GiveawayInfoOngoingPartRestrictedAdmin">You are not eligible for this giveaway because you are an admin of a participating channel %1$s.</string>
   <string name="GiveawayInfoOngoingPartRestrictedMember">You are not eligible to participate in this giveaway because you joined this channel on %1$s, which is before the contest started.</string>
   <string name="GiveawayInfoOngoingPartRestrictedCountry">You are not eligible to participate in this giveaway because your country (%1$s) is not included in the terms of the giveaway.</string>
+  <string name="GiveawayInfoOngoingPartEligible">To take part in this giveaway please join the channel %1$s before %2$s.</string>
 
   <string name="GiveawayInfoEndedPart1_one">This giveaway was sponsored by the admins of %2$s, who acquired %1$s Telegram Premium subscription for %3$s months for its followers.</string>
   <string name="GiveawayInfoEndedPart1_other">This giveaway was sponsored by the admins of %2$s, who acquired %1$s Telegram Premium subscriptions for %3$s months for its followers.</string>

@@ -58,8 +58,7 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
   private Counter participantsCounter;
   private int participantsCounterY;
 
-  @Override
-  protected int onBuildContent (int maxWidth) {
+  @Override protected int onBuildContent (int maxWidth) {
     content = new Content(maxWidth - Screen.dp(CONTENT_PADDING_DP * 2));
 
     content.padding(Screen.dp(30));
@@ -82,10 +81,7 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
     content.padding(Screen.dp(6));
     content.add(Lang.getString(giveawayContent.parameters.onlyNewMembers ? R.string.GiveawayParticipantsNew : R.string.GiveawayParticipantsAll), getTextColorSet(), currentViews);
     content.padding(Screen.dp(6));
-    content.add(new ContentBubbles(this, maxWidth - Screen.dp(CONTENT_PADDING_DP * 2 + 60))
-      .setOnClickListener(this::onBubbleClick)
-      .addChatId(giveawayContent.parameters.boostedChatId)
-      .addChatIds(giveawayContent.parameters.additionalChatIds));
+    content.add(new ContentBubbles(this, maxWidth - Screen.dp(CONTENT_PADDING_DP * 2 + 60)).setOnClickListener(this::onBubbleClick).addChatId(giveawayContent.parameters.boostedChatId).addChatIds(giveawayContent.parameters.additionalChatIds));
 
     if (giveawayContent.parameters.countryCodes.length > 0) {
       StringBuilder sb = new StringBuilder();
@@ -103,20 +99,13 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
     content.padding(Screen.dp(BLOCK_MARGIN));
     content.add(Lang.boldify(Lang.getString(R.string.GiveawayWinnersSelectionDateHeader)), getTextColorSet(), currentViews);
     content.padding(Screen.dp(6));
-    content.add(Lang.getString(R.string.GiveawayWinnersSelectionDate,
-      Lang.dateYearFull(giveawayContent.parameters.winnersSelectionDate, TimeUnit.SECONDS),
-      Lang.time(giveawayContent.parameters.winnersSelectionDate, TimeUnit.SECONDS)), getTextColorSet(), currentViews);
+    content.add(Lang.getString(R.string.GiveawayWinnersSelectionDate, Lang.dateYearFull(giveawayContent.parameters.winnersSelectionDate, TimeUnit.SECONDS), Lang.time(giveawayContent.parameters.winnersSelectionDate, TimeUnit.SECONDS)), getTextColorSet(), currentViews);
 
     /* * */
 
     participantsCounter = new Counter.Builder().allBold(true).textSize(11).noBackground().textColor(ColorId.badgeText).build();
     participantsCounter.setCount(giveawayContent.winnerCount, false, "x" + giveawayContent.winnerCount, false);
-    backgroundCounterRect.set(
-      maxWidth / 2f - participantsCounter.getWidth() / 2f - Screen.dp(8),
-      participantsCounterY - Screen.dp(23 / 2f),
-      maxWidth / 2f + participantsCounter.getWidth() / 2f + Screen.dp(8),
-      participantsCounterY + Screen.dp(23 / 2f)
-    );
+    backgroundCounterRect.set(maxWidth / 2f - participantsCounter.getWidth() / 2f - Screen.dp(8), participantsCounterY - Screen.dp(23 / 2f), maxWidth / 2f + participantsCounter.getWidth() / 2f + Screen.dp(8), participantsCounterY + Screen.dp(23 / 2f));
     outlineCounterRect.set(backgroundCounterRect);
     outlineCounterRect.inset(-Screen.dp(3), -Screen.dp(3));
 
@@ -125,27 +114,22 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
     return content.getHeight();
   }
 
-  @Override
-  protected void onBuildButton (int maxWidth) {
+  @Override protected void onBuildButton (int maxWidth) {
     final boolean isParticipating = TD.isParticipating(premiumGiveawayInfo);
-    rippleButton.setCustom(isParticipating ? R.drawable.baseline_check_18 : 0,
-      Lang.getString(isParticipating ? R.string.GiveawayParticipating : R.string.GiveawayLearnMore), maxWidth, false, this);
+    rippleButton.setCustom(isParticipating ? R.drawable.baseline_check_18 : 0, Lang.getString(isParticipating ? R.string.GiveawayParticipating : R.string.GiveawayLearnMore), maxWidth, false, this);
     rippleButton.firstButton().setCustomIconReverse(true);
     rippleButton.firstButton().setCustomColorId(isParticipating ? ColorId.iconPositive : ColorId.NONE);
   }
 
   private void onBubbleClick (TdApi.MessageSender senderId) {
-    tdlib.ui().openChat(controller(), Td.getSenderId(senderId), new TdlibUi.ChatOpenParameters()
-      .keepStack().removeDuplicates().openProfileInCaseOfPrivateChat().openProfileInCaseOfDuplicateChat());
+    tdlib.ui().openChat(controller(), Td.getSenderId(senderId), new TdlibUi.ChatOpenParameters().keepStack().removeDuplicates().openProfileInCaseOfPrivateChat().openProfileInCaseOfDuplicateChat());
   }
 
-  @Override
-  public void requestGiveawayAvatars (ComplexReceiver complexReceiver, boolean isUpdate) {
+  @Override public void requestGiveawayAvatars (ComplexReceiver complexReceiver, boolean isUpdate) {
     content.requestFiles(complexReceiver);
   }
 
-  @Override
-  protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth) {
+  @Override protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth) {
     super.drawContent(view, c, startX, startY, maxWidth);
 
     c.save();
@@ -157,7 +141,7 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
     if (participantsCounter != null) {
       final float cor = Math.min(outlineCounterRect.width(), outlineCounterRect.height()) / 2f;
       final float cbr = Math.min(backgroundCounterRect.width(), backgroundCounterRect.height()) / 2f;
-      c.drawRoundRect(outlineCounterRect, cor, cor, Paints.fillingPaint(Theme.getColor(useBubbles() ? ColorId.filling : ColorId.background)));
+      c.drawRoundRect(outlineCounterRect, cor, cor, Paints.fillingPaint(Theme.getColor(ColorId.filling)));
       c.drawRoundRect(backgroundCounterRect, cbr, cbr, Paints.fillingPaint(Theme.getColor(ColorId.badge)));
       participantsCounter.draw(c, contentCenterX, participantsCounterY, Gravity.CENTER, 1f);
     }
@@ -167,14 +151,12 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
 
   private boolean byClick;
 
-  @Override
-  public void onClick (View view, TGInlineKeyboard keyboard, TGInlineKeyboard.Button button) {
+  @Override public void onClick (View view, TGInlineKeyboard keyboard, TGInlineKeyboard.Button button) {
     loadPremiumGiveawayInfo();
     byClick = true;
   }
 
-  @Override
-  protected void onPremiumGiveawayInfoLoaded (TdApi.PremiumGiveawayInfo result, @Nullable TdApi.Error error) {
+  @Override protected void onPremiumGiveawayInfoLoaded (TdApi.PremiumGiveawayInfo result, @Nullable TdApi.Error error) {
     super.onPremiumGiveawayInfoLoaded(result, error);
     this.onBuildButton(getContentWidth());
 
@@ -188,8 +170,7 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
     byClick = false;
   }
 
-  @Override
-  public boolean onLongClick (View view, TGInlineKeyboard keyboard, TGInlineKeyboard.Button button) {
+  @Override public boolean onLongClick (View view, TGInlineKeyboard keyboard, TGInlineKeyboard.Button button) {
     return false;
   }
 }

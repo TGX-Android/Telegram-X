@@ -10,7 +10,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
- * File created on 06/11/2023
+ * File created on 04/01/2024
  */
 package org.thunderdog.challegram.data;
 
@@ -60,8 +60,7 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
   private Counter participantsCounter;
   private int participantsCounterY;
 
-  @Override
-  protected int onBuildContent (int maxWidth) {
+  @Override protected int onBuildContent (int maxWidth) {
     content = new Content(maxWidth - Screen.dp(CONTENT_PADDING_DP * 2));
 
     content.padding(Screen.dp(30));
@@ -73,19 +72,14 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
     TextEntityCustom custom = new TextEntityCustom(controller(), tdlib, gvw, 0, gvw.length(), 0, openParameters());
     custom.setCustomColorSet(getLinkColorSet());
     custom.setOnClickListener(new ClickableSpan() {
-      @Override
-      public void onClick (@NonNull View widget) {
+      @Override public void onClick (@NonNull View widget) {
         tdlib.ui().openMessage(controller(), giveawayWinners.boostedChatId, new MessageId(giveawayWinners.boostedChatId, giveawayWinners.giveawayMessageId), openParameters());
       }
     });
     FormattedText gvwf = new FormattedText(gvw, new TextEntity[] {custom});
 
     FormattedText formattedText = TGMessageServiceImpl.getPlural(tdlib, null, R.string.xGiveawayWinnersSelectedInfo, giveawayWinners.winnerCount, gvwf);
-    Text.Builder b = new Text.Builder(
-      formattedText, maxWidth - Screen.dp(CONTENT_PADDING_DP * 2),
-      getGiveawayTextStyleProvider(),
-      getTextColorSet(), null
-    ).viewProvider(currentViews).textFlags(Text.FLAG_ALIGN_CENTER);
+    Text.Builder b = new Text.Builder(formattedText, maxWidth - Screen.dp(CONTENT_PADDING_DP * 2), getGiveawayTextStyleProvider(), getTextColorSet(), null).viewProvider(currentViews).textFlags(Text.FLAG_ALIGN_CENTER);
 
     content.add(Lang.boldify(Lang.getString(R.string.GiveawayWinnersSelected)), getTextColorSet(), currentViews);
     content.padding(Screen.dp(6));
@@ -94,9 +88,7 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
     content.padding(Screen.dp(BLOCK_MARGIN));
     content.add(Lang.boldify(Lang.getString(R.string.GiveawayWinners)), getTextColorSet(), currentViews);
     content.padding(Screen.dp(6));
-    content.add(new ContentBubbles(this, maxWidth - Screen.dp(CONTENT_PADDING_DP * 2 + 60))
-      .setOnClickListener(this::onBubbleClick)
-      .addChatIds(giveawayWinners.winnerUserIds));
+    content.add(new ContentBubbles(this, maxWidth - Screen.dp(CONTENT_PADDING_DP * 2 + 60)).setOnClickListener(this::onBubbleClick).addChatIds(giveawayWinners.winnerUserIds));
 
     content.padding(Screen.dp(BLOCK_MARGIN));
     content.add(Lang.getString(R.string.GiveawayAllWinnersReceivedLinks), getTextColorSet(), currentViews);
@@ -105,12 +97,7 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
 
     participantsCounter = new Counter.Builder().allBold(true).textSize(11).noBackground().textColor(ColorId.badgeText).build();
     participantsCounter.setCount(giveawayWinners.winnerCount, false, "x" + giveawayWinners.winnerCount, false);
-    backgroundCounterRect.set(
-      maxWidth / 2f - participantsCounter.getWidth() / 2f - Screen.dp(8),
-      participantsCounterY - Screen.dp(23 / 2f),
-      maxWidth / 2f + participantsCounter.getWidth() / 2f + Screen.dp(8),
-      participantsCounterY + Screen.dp(23 / 2f)
-    );
+    backgroundCounterRect.set(maxWidth / 2f - participantsCounter.getWidth() / 2f - Screen.dp(8), participantsCounterY - Screen.dp(23 / 2f), maxWidth / 2f + participantsCounter.getWidth() / 2f + Screen.dp(8), participantsCounterY + Screen.dp(23 / 2f));
     outlineCounterRect.set(backgroundCounterRect);
     outlineCounterRect.inset(-Screen.dp(3), -Screen.dp(3));
 
@@ -118,8 +105,7 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
     return content.getHeight();
   }
 
-  @Override
-  protected String getButtonText () {
+  @Override protected String getButtonText () {
     return Lang.getString(R.string.GiveawayLearnMore);
   }
 
@@ -130,17 +116,14 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
       return;
     }
 
-    tdlib.ui().openChat(controller(), Td.getSenderId(senderId), new TdlibUi.ChatOpenParameters()
-      .keepStack().removeDuplicates().openProfileInCaseOfPrivateChat());
+    tdlib.ui().openChat(controller(), Td.getSenderId(senderId), new TdlibUi.ChatOpenParameters().keepStack().removeDuplicates().openProfileInCaseOfPrivateChat());
   }
 
-  @Override
-  public void requestGiveawayAvatars (ComplexReceiver complexReceiver, boolean isUpdate) {
+  @Override public void requestGiveawayAvatars (ComplexReceiver complexReceiver, boolean isUpdate) {
     content.requestFiles(complexReceiver);
   }
 
-  @Override
-  protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth) {
+  @Override protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth) {
     super.drawContent(view, c, startX, startY, maxWidth);
 
     c.save();
@@ -152,7 +135,7 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
     if (participantsCounter != null) {
       final float cor = Math.min(outlineCounterRect.width(), outlineCounterRect.height()) / 2f;
       final float cbr = Math.min(backgroundCounterRect.width(), backgroundCounterRect.height()) / 2f;
-      c.drawRoundRect(outlineCounterRect, cor, cor, Paints.fillingPaint(Theme.getColor(useBubbles() ? ColorId.filling : ColorId.background)));
+      c.drawRoundRect(outlineCounterRect, cor, cor, Paints.fillingPaint(Theme.getColor(ColorId.filling)));
       c.drawRoundRect(backgroundCounterRect, cbr, cbr, Paints.fillingPaint(Theme.getColor(ColorId.badge)));
       participantsCounter.draw(c, contentCenterX, participantsCounterY, Gravity.CENTER, 1f);
     }
@@ -160,13 +143,11 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
     c.restore();
   }
 
-  @Override
-  public void onClick (View view, TGInlineKeyboard keyboard, TGInlineKeyboard.Button button) {
+  @Override public void onClick (View view, TGInlineKeyboard keyboard, TGInlineKeyboard.Button button) {
     loadPremiumGiveawayInfo();
   }
 
-  @Override
-  protected void onPremiumGiveawayInfoLoaded (TdApi.PremiumGiveawayInfo result, @Nullable TdApi.Error error) {
+  @Override protected void onPremiumGiveawayInfoLoaded (TdApi.PremiumGiveawayInfo result, @Nullable TdApi.Error error) {
     super.onPremiumGiveawayInfoLoaded(result, error);
     if (error != null) {
       UI.showError(error);
@@ -177,8 +158,7 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
     }
   }
 
-  @Override
-  public boolean onLongClick (View view, TGInlineKeyboard keyboard, TGInlineKeyboard.Button button) {
+  @Override public boolean onLongClick (View view, TGInlineKeyboard keyboard, TGInlineKeyboard.Button button) {
     return false;
   }
 }

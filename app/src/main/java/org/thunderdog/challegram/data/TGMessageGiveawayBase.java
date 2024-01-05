@@ -10,11 +10,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
- * File created on 06/11/2023
+ * File created on 04/01/2024
  */
 package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.SpannableStringBuilder;
 import android.view.MotionEvent;
@@ -34,18 +35,17 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.GiftParticlesDrawable;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
 import org.thunderdog.challegram.util.text.TextWrapper;
-import org.thunderdog.challegram.widget.GiftHeaderView;
 
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
@@ -55,11 +55,11 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.Td;
 
-public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlineKeyboard.ClickListener {
+public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlineKeyboard.ClickListener, GiftParticlesDrawable.ParticleValidator {
   protected final static int BLOCK_MARGIN = 18;
   protected final static int CONTENT_PADDING_DP = 16;
 
-  private GiftHeaderView.ParticlesDrawable particlesDrawable;
+  private GiftParticlesDrawable particlesDrawable;
   private int contentHeight = 0;
   protected Content content;
 
@@ -88,12 +88,17 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
     contentHeight += Screen.dp(BLOCK_MARGIN) / 2;
 
     if (particlesDrawable == null) {
-      particlesDrawable = new GiftHeaderView.ParticlesDrawable(maxWidth, contentHeight);
+      particlesDrawable = new GiftParticlesDrawable(this, maxWidth, contentHeight);
     } else {
       particlesDrawable.setBounds(0, 0, maxWidth, contentHeight);
     }
 
     invalidateGiveawayReceiver();
+  }
+
+  @Override
+  public boolean isValidPosition (int x, int y) {
+    return y < content.getHeight() && content.isValidPosition(x - Screen.dp(CONTENT_PADDING_DP), y);
   }
 
   protected void onBuildButton (int maxWidth) {
@@ -166,7 +171,7 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
 
   /* * */
 
-  public static class Content {
+  public static class Content implements GiftParticlesDrawable.ParticleValidator {
     private final ArrayList<ContentPart> parts = new ArrayList<>();
     private final int maxWidth;
     private int y;
@@ -227,6 +232,25 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
       }
       return false;
     }
+
+    private final RectF tmpRectF = new RectF();
+
+    @Override
+    public boolean isValidPosition (int x, int y) {
+      for (ContentPart p : parts) {
+        int w = p.getWidth();
+        int h = p.getHeight();
+
+        tmpRectF.set((maxWidth - w) / 2f, p.y, (maxWidth + w) / 2f, p.y + h);
+        tmpRectF.inset(-Screen.dp(10), -Screen.dp(10));
+
+        if (tmpRectF.contains(x, y)) {
+          return false;
+        }
+      }
+
+      return true;
+    }
   }
 
   public static abstract class ContentPart {
@@ -237,7 +261,11 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
     }
 
     public abstract void build (int width);
+
     public abstract int getHeight ();
+
+    public abstract int getWidth ();
+
     public abstract void draw (Canvas c, MessageView v, int x, int y);
 
     public void requestFiles (ComplexReceiver r) {
@@ -274,6 +302,11 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
       if (textWrapper != null) {
         textWrapper.prepare(width);
       }
+    }
+
+    @Override
+    public int getWidth () {
+      return textWrapper != null ? textWrapper.getWidth() : (text != null ? text.getWidth() : 0);
     }
 
     @Override
@@ -340,6 +373,11 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
     }
 
     @Override
+    public int getWidth () {
+      return maxTextWidth;
+    }
+
+    @Override
     public int getHeight () {
       return layout.getCurrentHeight();
     }
@@ -376,6 +414,10 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
     @Override
     public void build (int width) {
       this.width = width;
+    }
+
+    @Override public int getWidth () {
+      return drawable.getMinimumWidth();
     }
 
     @Override
@@ -439,22 +481,30 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
     switch (premiumGiveawayInfo.getConstructor()) {
       case TdApi.PremiumGiveawayInfoCompleted.CONSTRUCTOR: {
         final TdApi.PremiumGiveawayInfoCompleted infoCompleted = (TdApi.PremiumGiveawayInfoCompleted) premiumGiveawayInfo;
+        final boolean hasGiftCode = !StringUtils.isEmpty(infoCompleted.giftCode);
+        final boolean wasRefunded = infoCompleted.wasRefunded;
+
         b.title(Lang.getString(R.string.GiveawayEnded));
 
         SpannableStringBuilder infoSsb = new SpannableStringBuilder();
-        infoSsb.append(Lang.pluralBold(R.string.GiveawayInfoEndedPart1, winnerCount, tdlib.chatTitle(boostedChatId), monthCount));
+        infoSsb.append(Lang.pluralBold(R.string.GiveawayInfoEndedPart1, infoCompleted.winnerCount, tdlib.chatTitle(boostedChatId), monthCount));
         if (!StringUtils.isEmpty(prizeDescription)) {
           infoSsb.append("\n\n");
-          infoSsb.append(Lang.pluralBold(R.string.GiveawayInfoPartExtended, winnerCount, tdlib.chatTitle(boostedChatId), prizeDescription));
+          infoSsb.append(Lang.pluralBold(R.string.GiveawayInfoPartExtended, infoCompleted.winnerCount, tdlib.chatTitle(boostedChatId), prizeDescription));
         }
         infoSsb.append("\n\n");
-        infoSsb.append(Lang.pluralBold(R.string.GiveawayInfoEndedPart2, winnerCount, getDateTime(winnersSelectionDate), sponsors));
+        infoSsb.append(Lang.pluralBold(R.string.GiveawayInfoEndedPart2, infoCompleted.winnerCount, getDateTime(infoCompleted.actualWinnersSelectionDate), sponsors));
         infoSsb.append(" ");
         infoSsb.append(Lang.pluralBold(R.string.GiveawayInfoEndedPart3, infoCompleted.activationCount));
 
-        if (!StringUtils.isEmpty(infoCompleted.giftCode)) {
-          b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayEndedYouWon), ViewController.OPTION_COLOR_GREEN, R.drawable.baseline_party_popper_24));
+        if (hasGiftCode) {
           b.item(new ViewController.OptionItem(R.id.btn_openLink, Lang.getString(R.string.GiveawayViewMyPrize), ViewController.OPTION_COLOR_BLUE, R.drawable.baseline_gift_outline_24));
+        }
+
+        if (wasRefunded) {
+          b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayEndedRefunded), ViewController.OPTION_COLOR_RED, R.drawable.baseline_info_24));
+        } else if (hasGiftCode) {
+          b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayEndedYouWon), ViewController.OPTION_COLOR_GREEN, R.drawable.baseline_party_popper_24));
         } else {
           b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayEndedYouLose), ViewController.OPTION_COLOR_BLUE, R.drawable.baseline_info_24));
         }
@@ -483,6 +533,8 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
           }
           case TdApi.PremiumGiveawayParticipantStatusEligible.CONSTRUCTOR: {
             b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayOngoingYouEligible), ViewController.OPTION_COLOR_BLUE, R.drawable.baseline_info_24));
+            infoSsb.append("\n\n");
+            infoSsb.append(Lang.getStringBold(R.string.GiveawayInfoOngoingPartEligible, sponsors, getDateTime(winnersSelectionDate)));
             break;
           }
           case TdApi.PremiumGiveawayParticipantStatusAdministrator.CONSTRUCTOR: {
