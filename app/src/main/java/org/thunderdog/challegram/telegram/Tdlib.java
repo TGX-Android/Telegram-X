@@ -10685,16 +10685,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   public boolean canConvertToBroadcast (long chatId) {
     TdApi.ChatMemberStatus status = chatStatus(chatId);
-    if (status != null) {
-      switch (status.getConstructor()) {
-        case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
-          return true;
-        case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-        case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR:
-        case TdApi.ChatMemberStatusLeft.CONSTRUCTOR:
-        case TdApi.ChatMemberStatusBanned.CONSTRUCTOR:
-        case TdApi.ChatMemberStatusMember.CONSTRUCTOR:
-          break;
+    if (isSupergroup(chatId)) {
+      if (status != null) {
+        switch (status.getConstructor()) {
+          case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
+            return true;
+          case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
+          case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR:
+          case TdApi.ChatMemberStatusLeft.CONSTRUCTOR:
+          case TdApi.ChatMemberStatusBanned.CONSTRUCTOR:
+          case TdApi.ChatMemberStatusMember.CONSTRUCTOR:
+            break;
+        }
       }
     }
     return false;
