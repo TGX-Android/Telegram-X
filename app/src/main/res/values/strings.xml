@@ -5006,5 +5006,7 @@
   <string name="ConvertToBroadcastGroupDesc">Broadcast groups can have over 200,000 members, but only admins can send messages in them.</string>
   <string name="ConvertToBroadcastGroupButton">Convert to Broadcast Group</string>
   <string name="ConvertToBroadcastGroupHint">You can convert your current group to a Broadcast Group.\n\nBroadcast Groups have no limit on the members but only admins can send messages.\n\nThis action cannot be undone.</string>
+  <string name="ConvertToBroadcastGroupConfirmHint">Members who are not admins will permanently lose their right to send messages in the group.\n\nThis action cannot be undone.</string>
+  <string name="ConvertToBroadcastGroupConfirm">Yes, I am sure, convert.</string>
 
 </resources>

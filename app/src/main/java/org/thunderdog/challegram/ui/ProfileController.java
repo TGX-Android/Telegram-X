@@ -4643,13 +4643,50 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     } else if (viewId == R.id.btn_convertToBroadcastGroup) {
       showOptions(
         Lang.getString(R.string.ConvertToBroadcastGroupHint),
-        new int[] {R.id.convertBroadcastGroup, R.id.btn_cancel},new String[] {Lang.getString(R.string.ConvertToBroadcastGroupButton), Lang.getString(R.string.Cancel)},new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.dot_baseline_channel_accept_24, R.drawable.baseline_cancel_24}, (itemView, optionId) -> {
-          if (optionId == R.id.convertBroadcastGroup) {
-            tdlib.toggleBroadcast(chat.id, tdlib().okHandler());
+        new int[] {R.id.convertBroadcastGroup3, R.id.btn_cancel},
+        new String[] {
+          Lang.getString(R.string.ConvertToBroadcastGroupButton),
+          Lang.getString(R.string.Cancel)
+        },
+        new int[] {
+          OPTION_COLOR_RED,
+          OPTION_COLOR_NORMAL
+        },
+        new int[] {
+          R.drawable.baseline_bullhorn_24,
+          R.drawable.baseline_cancel_24
+        },
+        (itemView, optionId) -> {
+          if (optionId == R.id.convertBroadcastGroup3) {
+            convertToBroadcastGroup();
           }
           return true;
         });
     }
+  }
+
+  private void convertToBroadcastGroup () {
+    showOptions(
+      Lang.getString(R.string.ConvertToBroadcastGroupConfirmHint),
+      new int[] {R.id.convertBroadcastGroup2, R.id.btn_cancel},
+      new String[] {
+        Lang.getString(R.string.ConvertToBroadcastGroupConfirm),
+        Lang.getString(R.string.Cancel)
+      },
+      new int[] {
+        OPTION_COLOR_RED,
+        OPTION_COLOR_NORMAL
+      },
+      new int[] {
+        R.drawable.deproko_baseline_check_single_24,
+        R.drawable.baseline_cancel_24
+      },
+      (itemView, optionId) -> {
+        if (optionId == R.id.convertBroadcastGroup2) {
+          tdlib.toggleBroadcast(chat.id, tdlib().okHandler());
+        }
+        return true;
+      });
   }
 
   private boolean canSetUsername () {
