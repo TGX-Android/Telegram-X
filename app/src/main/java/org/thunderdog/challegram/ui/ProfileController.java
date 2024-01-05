@@ -15,14 +15,12 @@
 package org.thunderdog.challegram.ui;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Rect;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.InputFilter;
@@ -68,7 +66,6 @@ import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.data.TranslationsManager;
 import org.thunderdog.challegram.emoji.EmojiFilter;
-import org.thunderdog.challegram.filegen.SimpleGenerationInfo;
 import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.data.MediaStack;
@@ -99,7 +96,6 @@ import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -131,7 +127,6 @@ import org.thunderdog.challegram.widget.ViewControllerPagerAdapter;
 import org.thunderdog.challegram.widget.ViewPager;
 import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -686,6 +681,28 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     switch (mode) {
       case MODE_EDIT_CHANNEL:
       case MODE_EDIT_SUPERGROUP:
+        if (id == R.id.btn_convertToBroadcastGroup) {
+          showOptions(
+            Lang.getString(R.string.ConvertToBroadcastGroupHint),
+            new int[] {R.id.btn_convertBroadcastGroup, R.id.btn_cancel},new String[] {Lang.getString(R.string.ConvertToBroadcastGroupButton), Lang.getString(R.string.Cancel)},new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.dot_baseline_channel_accept_24, R.drawable.baseline_cancel_24}, (itemView, optionId) -> {
+              if (optionId == R.id.btn_convertBroadcastGroup) {
+                UI.showToast("DONE", Toast.LENGTH_SHORT);
+              /*tdlib.send(new TdApi.ToggleSupergroupIsBroadcastGroup(), object -> {
+                switch (object.getConstructor()) {
+                  case TdApi.Ok.CONSTRUCTOR: {
+                    tdlib.send();
+                    break;
+                  }
+                  case TdApi.Error.CONSTRUCTOR: {
+                    UI.showError(object);
+                    break;
+                  }
+                }
+              });*/
+              }
+              return true;
+            });
+        }
       case MODE_EDIT_GROUP: {
         if (id == R.id.btn_destroyChat) {
           destroyChat();
@@ -3834,6 +3851,23 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AggressiveAntiSpamDesc));
     }
+
+    TdApi.SuggestedAction[] actions = tdlib.getSuggestedActions();
+    for (TdApi.SuggestedAction action : actions) {
+      UI.showToast(action.toString(), Toast.LENGTH_SHORT);
+      if (!tdlib.isBroadcastConvertSuggestion(action)) {
+        continue;
+      }
+      if (action.getConstructor() ==  TdApi.SuggestedActionConvertToBroadcastGroup.CONSTRUCTOR) {
+        if (tdlib.canConvertToMegagroup(chat.id)) {
+          items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
+          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_convertToBroadcastGroup, 0, R.string.ConvertToBroadcastGroup));
+          items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ConvertToBroadcastGroupDesc));
+          break;
+        }
+      }
+    }
+
 
     if ((supergroupFull != null && supergroupFull.canHideMembers) || (groupFull != null && groupFull.canHideMembers && tdlib.canUpgradeChat(chat.id))) {
       boolean membersHidden = supergroupFull != null && supergroupFull.hasHiddenMembers;
