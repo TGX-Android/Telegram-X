@@ -681,28 +681,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     switch (mode) {
       case MODE_EDIT_CHANNEL:
       case MODE_EDIT_SUPERGROUP:
-        if (id == R.id.btn_convertToBroadcastGroup) {
-          showOptions(
-            Lang.getString(R.string.ConvertToBroadcastGroupHint),
-            new int[] {R.id.btn_convertBroadcastGroup, R.id.btn_cancel},new String[] {Lang.getString(R.string.ConvertToBroadcastGroupButton), Lang.getString(R.string.Cancel)},new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.dot_baseline_channel_accept_24, R.drawable.baseline_cancel_24}, (itemView, optionId) -> {
-              if (optionId == R.id.btn_convertBroadcastGroup) {
-                UI.showToast("DONE", Toast.LENGTH_SHORT);
-              /*tdlib.send(new TdApi.ToggleSupergroupIsBroadcastGroup(), object -> {
-                switch (object.getConstructor()) {
-                  case TdApi.Ok.CONSTRUCTOR: {
-                    tdlib.send();
-                    break;
-                  }
-                  case TdApi.Error.CONSTRUCTOR: {
-                    UI.showError(object);
-                    break;
-                  }
-                }
-              });*/
-              }
-              return true;
-            });
-        }
       case MODE_EDIT_GROUP: {
         if (id == R.id.btn_destroyChat) {
           destroyChat();
@@ -3859,7 +3837,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         continue;
       }
       if (action.getConstructor() ==  TdApi.SuggestedActionConvertToBroadcastGroup.CONSTRUCTOR) {*/
-        if (supergroup.memberCount >= 200000 || BuildConfig.DEBUG && tdlib.canConvertToMegagroup(chat.id)) {
+        if (supergroup != null && supergroup.memberCount >= 200000 || BuildConfig.DEBUG && tdlib.canConvertToMegagroup(chat.id)) {
           items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
           items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_convertToBroadcastGroup, 0, R.string.ConvertToBroadcastGroup));
           items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ConvertToBroadcastGroupDesc));
@@ -4662,6 +4640,15 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       toggleContentProtection(v);
     } else if (viewId == R.id.btn_toggleJoinByRequest) {
       toggleJoinByRequests(v);
+    } else if (viewId == R.id.btn_convertToBroadcastGroup) {
+      showOptions(
+        Lang.getString(R.string.ConvertToBroadcastGroupHint),
+        new int[] {R.id.convertBroadcastGroup, R.id.btn_cancel},new String[] {Lang.getString(R.string.ConvertToBroadcastGroupButton), Lang.getString(R.string.Cancel)},new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.dot_baseline_channel_accept_24, R.drawable.baseline_cancel_24}, (itemView, optionId) -> {
+          if (optionId == R.id.convertBroadcastGroup) {
+            tdlib.toggleBroadcast(chat.id, tdlib().okHandler());
+          }
+          return true;
+        });
     }
   }
 
