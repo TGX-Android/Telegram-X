@@ -10683,7 +10683,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return false;
   }
 
-  public boolean canConvertToMegagroup (long chatId) {
+  public boolean canConvertToBroadcast (long chatId) {
     TdApi.ChatMemberStatus status = chatStatus(chatId);
     if (status != null) {
       switch (status.getConstructor()) {
