@@ -14,10 +14,10 @@ package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
 import android.graphics.Rect;
-import android.graphics.RectF;
 import android.view.MotionEvent;
 import android.view.View;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
@@ -25,8 +25,10 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.text.FormattedText;
@@ -39,21 +41,27 @@ import me.vkryl.core.collection.LongSparseIntArray;
 import me.vkryl.td.Td;
 
 public class PageBlockTable extends PageBlock {
+  private static final int MARGIN_BOTTOM = 6;
+  private static final int MARGIN_HORIZONTAL = 12;
+  private static final int PADDING_HORIZONTAL = 8;
+  private static final int PADDING_VERTICAL = 8;
+
+
   private final boolean isRtl;
   private final TdlibUi.UrlOpenParameters openParameters;
 
   // Drawing
 
   private class Cell {
-    private final TdApi.PageBlockTableCell cell;
+    private final @NonNull TdApi.PageBlockTableCell cell;
+    private final @Nullable FormattedText formattedText;
     private final int cellPositionX, cellPositionY;
-    private final FormattedText formattedText;
     private final int iconCount;
 
     private final Rect bounds = new Rect();
-    private Text text;
+    private @Nullable Text text;
 
-    public Cell (TdApi.PageBlockTableCell cell, int cellPositionX, int cellPositionY, FormattedText formattedText) {
+    public Cell (@NonNull TdApi.PageBlockTableCell cell, int cellPositionX, int cellPositionY, @Nullable FormattedText formattedText) {
       this.cell = cell;
       this.cellPositionX = cellPositionX;
       this.cellPositionY = cellPositionY;
@@ -77,14 +85,20 @@ public class PageBlockTable extends PageBlock {
       return cellPositionY + cell.rowspan;
     }
 
+    public int width () {
+      return text != null ? text.getWidth() + Screen.dp(PADDING_HORIZONTAL) * 2 : 0;
+    }
 
+    public int height () {
+      return text != null ? text.getHeight() + Screen.dp(PADDING_VERTICAL) * 2 : 0;
+    }
 
-
-    public void build (int maxWidth) {
+    public void build (int maxTextWidth) {
       if (formattedText != null) {
-        maxWidth -= padding() * 2;
-        Text.Builder b = new Text.Builder(formattedText.text, maxWidth, PageBlockRichText.getParagraphProvider(), TextColorSets.InstantView.NORMAL)
-          .entities(formattedText.entities, null)
+        Text.Builder b = new Text.Builder(formattedText.text, maxTextWidth, PageBlockRichText.getParagraphProvider(), TextColorSets.InstantView.NORMAL)
+          .entities(formattedText.entities, (text, specificMedia) -> {
+
+          })
           .textFlags(Text.FLAG_ARTICLE | Text.FLAG_CUSTOM_LONG_PRESS)
           .viewProvider(currentViews);
         switch (cell.align.getConstructor()) {
@@ -101,34 +115,12 @@ public class PageBlockTable extends PageBlock {
       }
     }
 
-
-
-
     public boolean belongsToRow (int row) {
       return row >= cellPositionX && row < cellPositionX + cell.rowspan;
     }
 
-
-
-
-
-
-
-
     public boolean belongsToColumn (int column) {
       return column >= cellPositionY && column < cellPositionY + cell.colspan;
-    }
-
-    public int padding () {
-      return Screen.dp(8f);
-    }
-
-    public int width () {
-      return text != null ? text.getWidth() + padding() * 2 : 0;
-    }
-
-    public int height () {
-      return text != null ? text.getHeight() + padding() * 2 : 0;
     }
   }
 
@@ -137,11 +129,6 @@ public class PageBlockTable extends PageBlock {
   private final int columnsCount;
   private final int rowsCount;
 
-
-
-
-  private final Cell[][] cells;
-  // private final int totalRowCount, totalColumnCount;
 
 
 
@@ -154,11 +141,9 @@ public class PageBlockTable extends PageBlock {
     final LongSparseIntArray keys = new LongSparseIntArray(50);
     final ArrayList<Cell> cellsList = new ArrayList<>();
 
-    int currentIndexX = 0;
     int currentIndexY = 0;
-    int maxRowSize = 0;
     for (TdApi.PageBlockTableCell[] rowCells : block.cells) {
-      currentIndexX = 0;
+      int currentIndexX = 0;
       for (TdApi.PageBlockTableCell cell : rowCells) {
         while (keys.get(currentIndexX, 0) > 0) {
           currentIndexX += 1;
@@ -171,15 +156,12 @@ public class PageBlockTable extends PageBlock {
           keys.put(key, Math.max(cell.rowspan, keys.get(key, 0)));
         }
         currentIndexX += cell.colspan;
-        maxRowSize = Math.max(maxRowSize, currentIndexX);
       }
       currentIndexY += 1;
       for (int a = 0; a < keys.size(); a++) {
         keys.setValueAt(a, Math.max(keys.valueAt(a) - 1, 0));
       }
     }
-
-    this.cellsList = cellsList.toArray(new Cell[0]);
 
     int columnsCount = 0;
     int rowsCount = 0;
@@ -189,25 +171,10 @@ public class PageBlockTable extends PageBlock {
       rowsCount = Math.max(rowsCount, cell.cellPositionEndY());
     }
 
-
+    this.cellsList = cellsList.toArray(new Cell[0]);
     this.columnsCount = columnsCount;
     this.rowsCount = rowsCount;
 
-
-
-
-
-
-
-
-
-    this.cells = new Cell[block.cells.length][];
-    if (true) {
-      return;
-    }
-
-    if (true)
-      throw new UnsupportedOperationException();
     /*int rowIndex = 0;
     int rowPosition = 0;
     int maxColumnCount = 0;
@@ -273,30 +240,66 @@ public class PageBlockTable extends PageBlock {
 
   @Override
   public void requestIcons (ComplexReceiver receiver) {
-    /*int iconCount = 0;
-    for (Cell[] row : cells) {
-      for (Cell cell : row) {
-        if (cell.text != null) {
-          cell.text.requestMedia(receiver, iconCount, cell.iconCount);
-        }
-        iconCount += cell.iconCount;
+    int iconCount = 0;
+    for (Cell cell : cellsList) {
+      if (cell.text != null) {
+        cell.text.requestMedia(receiver, iconCount, cell.iconCount);
       }
+      iconCount += cell.iconCount;
     }
-    receiver.clearReceiversWithHigherKey(iconCount);*/
+    receiver.clearReceiversWithHigherKey(iconCount);
   }
 
   private int tableWidth, tableHeight;
 
-
-  private static final int CELL_SIZE = 20;
-
   @Override
   protected int computeHeight (View view, final int maxContentWidth) {
-    int horizontalMargin = Screen.dp(12f);
-    int topMargin = getContentTop();
-    int bottomMargin = Screen.dp(6f);
-    int defaultWidth = (maxContentWidth - horizontalMargin * 2);
-    return Screen.dp(rowsCount) * CELL_SIZE;
+    final int horizontalMargin = Screen.dp(MARGIN_HORIZONTAL);
+    final int topMargin = getContentTop();
+    final int bottomMargin = Screen.dp(MARGIN_BOTTOM);
+    final int defaultWidth = (maxContentWidth - horizontalMargin * 2);
+    final int defaultCellWidth = defaultWidth / columnsCount;
+
+    final int[] columnWidth = new int[columnsCount];
+    final int[] rowHeight = new int[rowsCount];
+
+    // Preliminary estimate
+    for (Cell cell : cellsList) {
+      cell.build(defaultCellWidth * cell.cell.colspan - Screen.dp(PADDING_HORIZONTAL) * 2);
+
+      final int width = cell.width();
+      for (int column = cell.cellPositionStartX(); column < cell.cellPositionEndX(); column++) {
+        columnWidth[column] = Math.max(columnWidth[column], width / cell.cell.colspan);
+      }
+      final int height = cell.height();
+      for (int row = cell.cellPositionStartY(); row < cell.cellPositionEndY(); row++) {
+        rowHeight[row] = Math.max(rowHeight[row], height / cell.cell.rowspan);
+      }
+    }
+
+    final int[] cellsX = new int[columnsCount + 1];
+    final int[] cellsY = new int[rowsCount + 1];
+    for (int a = 0; a < columnsCount; a++) {
+      cellsX[a + 1] = cellsX[a] + columnWidth[a];
+    }
+
+    for (int a = 0; a < rowsCount; a++) {
+      cellsY[a + 1] = cellsY[a] + rowHeight[a];
+    }
+
+    for (Cell cell : cellsList) {
+      cell.bounds.set(
+        cellsX[cell.cellPositionStartX()],
+        cellsY[cell.cellPositionStartY()],
+        cellsX[cell.cellPositionEndX()],
+        cellsY[cell.cellPositionEndY()]);
+      cell.bounds.offset(horizontalMargin, topMargin);
+    }
+
+    this.tableWidth = cellsX[cellsX.length - 1];
+    this.tableHeight = cellsY[cellsY.length - 1];
+
+    return topMargin + tableHeight + bottomMargin;
 
     // Step #1: build content
     /*for (Cell[] row : cells) {
@@ -306,8 +309,7 @@ public class PageBlockTable extends PageBlock {
     }
 
     final List<Cell> openCells = new ArrayList<>();
-    final int[] columnWidth = new int[totalColumnCount];
-    final int[] rowHeight = new int[totalRowCount];
+
 
     for (Cell[] rowCells : cells) {
       for (Cell cell : rowCells) {
@@ -409,12 +411,10 @@ public class PageBlockTable extends PageBlock {
 
   @Override
   public boolean handleTouchEvent (View view, MotionEvent e) {
-    /*for (Cell[] row : cells) {
-      for (Cell cell : row) {
-        if (cell.text != null && cell.text.onTouchEvent(view, e, context instanceof Text.ClickCallback ? (Text.ClickCallback) context : null))
-          return true;
-      }
-    }*/
+    for (Cell cell : cellsList) {
+      if (cell.text != null && cell.text.onTouchEvent(view, e, context instanceof Text.ClickCallback ? (Text.ClickCallback) context : null))
+        return true;
+    }
     return false;
   }
 
@@ -430,65 +430,36 @@ public class PageBlockTable extends PageBlock {
 
   @Override
   protected <T extends View & DrawableProvider> void drawInternal (T view, Canvas c, Receiver preview, Receiver receiver, @Nullable ComplexReceiver iconReceiver) {
-    final int squareSize = Screen.dp(CELL_SIZE);
-
-    RectF tmpRect = Paints.getRectF();
-    tmpRect.set(0, 0, columnsCount * squareSize, rowsCount * squareSize);
-    c.drawRect(tmpRect, Paints.strokeSmallPaint(0xFFFF00FF));
-
+    final TdApi.PageBlockTable table = (TdApi.PageBlockTable) this.block;
     for (Cell cell : cellsList) {
-      tmpRect.set(
-        cell.cellPositionStartX() * squareSize,
-        cell.cellPositionStartY() * squareSize,
-        cell.cellPositionEndX() * squareSize,
-        cell.cellPositionEndY() * squareSize
-      );
-      tmpRect.inset(Screen.dp(3), Screen.dp(3));
-
-      if (cell.cell.isHeader) {
-        c.drawRect(tmpRect, Paints.fillingPaint(0x6000FF00));
+      if (cell.cell.isHeader || (table.isStriped && cell.cellPositionStartY() % 2 == 0)) {
+        c.drawRect(cell.bounds, Paints.fillingPaint(Theme.backgroundColor()));
       }
-
-      c.drawRect(tmpRect, Paints.strokeSmallPaint(0xFF00FF00));
+      if (table.isBordered) {
+        c.drawRect(cell.bounds, Paints.strokeSeparatorPaint(Theme.separatorColor()));
+      }
+      if (cell.text != null) {
+        int restoreCount = Views.save(c);
+        c.clipRect(cell.bounds);
+        int y;
+        switch (cell.cell.valign.getConstructor()) {
+          case TdApi.PageBlockVerticalAlignmentTop.CONSTRUCTOR:
+            y = cell.bounds.top + Screen.dp(PADDING_VERTICAL);
+            break;
+          case TdApi.PageBlockVerticalAlignmentMiddle.CONSTRUCTOR:
+            y = cell.bounds.centerY() - (cell.text.getHeight() - cell.text.getLineSpacing()) / 2;
+            break;
+          case TdApi.PageBlockVerticalAlignmentBottom.CONSTRUCTOR:
+            y = cell.bounds.bottom - Screen.dp(PADDING_VERTICAL) - cell.text.getHeight();
+            break;
+          default:
+            throw new UnsupportedOperationException(cell.toString());
+        }
+        cell.text.draw(c, cell.bounds.left + Screen.dp(PADDING_HORIZONTAL), cell.bounds.right - Screen.dp(PADDING_VERTICAL), 0, y, null, 1f, iconReceiver);
+        Views.restore(c, restoreCount);
+      }
     }
-
-
-
-
-    /*TdApi.PageBlockTable table = (TdApi.PageBlockTable) this.block;
-    for (Cell[] row : cells) {
-      for (Cell cell : row) {
-        if (cell.cell.isHeader || (table.isStriped && cell.rowStart() % 2 == 0)) {
-          c.drawRect(cell.bounds, Paints.fillingPaint(Theme.backgroundColor()));
-        }
-        if (table.isBordered) {
-          c.drawRect(cell.bounds, Paints.strokeSeparatorPaint(Theme.separatorColor()));
-        }
-        if (cell.text != null) {
-          int restoreCount = Views.save(c);
-          c.clipRect(cell.bounds);
-          int y;
-          switch (cell.cell.valign.getConstructor()) {
-            case TdApi.PageBlockVerticalAlignmentTop.CONSTRUCTOR:
-              y = cell.bounds.top + cell.padding();
-              break;
-            case TdApi.PageBlockVerticalAlignmentMiddle.CONSTRUCTOR:
-              y = cell.bounds.centerY() - (cell.text.getHeight() - cell.text.getLineSpacing()) / 2;
-              break;
-            case TdApi.PageBlockVerticalAlignmentBottom.CONSTRUCTOR:
-              y = cell.bounds.bottom - cell.padding() - cell.text.getHeight();
-              break;
-            default:
-              throw new UnsupportedOperationException(cell.toString());
-          }
-          cell.text.draw(c, cell.bounds.left + cell.padding(), cell.bounds.right - cell.padding(), 0, y, null, 1f, iconReceiver);
-          Views.restore(c, restoreCount);
-        }
-      }
-    }*/
   }
-
-
 
   public static boolean isVisible (TdApi.PageBlockTableCell cell) {
     return cell.text != null;
