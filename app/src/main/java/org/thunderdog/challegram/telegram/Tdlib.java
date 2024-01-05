@@ -10679,6 +10679,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return false;
   }
 
+  public void clearCallsHistory () {
+    tdlib().send(new TdApi.DeleteAllCallMessages(true), (result, error) -> {
+      if (result != null) {
+        UI.showToast(String.format("%s",result), Toast.LENGTH_SHORT);
+      } else {
+        UI.showToast(String.format("%s", error), Toast.LENGTH_SHORT);
+      }});
+  }
+
   public boolean isBroadcastGroup (long chatId) {
     TdApi.Supergroup supergroup = chatToSupergroup(chatId);
     return supergroup != null && supergroup.isBroadcastGroup;

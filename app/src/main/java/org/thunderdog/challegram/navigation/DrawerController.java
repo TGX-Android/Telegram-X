@@ -797,6 +797,9 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
             }
           });
         }
+      } else if (itemId == R.id.btn_calls) {
+        tdlib.clearCallsHistory();
+        UI.showToast("LONG_PRESS_TO_CLEAR_CALL_HISTORY", Toast.LENGTH_LONG);
       }
       return false;
     }
