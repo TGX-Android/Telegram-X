@@ -1537,7 +1537,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         makeUpdateText(0, 25, 10, APP_RELEASE_VERSION_2023_AUGUST, "https://telegra.ph/Telegram-X-08-02", functions, updates, false);
       }
       if (checkVersion(prevVersion, APP_RELEASE_VERSION_2023_DECEMBER, test)) {
-        makeUpdateText(0, 25, 10, APP_RELEASE_VERSION_2023_DECEMBER, "https://telegra.ph/Telegram-X-2023-12-31", functions, updates, true);
+        makeUpdateText(0, 26, 3, APP_RELEASE_VERSION_2023_DECEMBER, "https://telegra.ph/Telegram-X-2023-12-31", functions, updates, true);
       }
       if (!updates.isEmpty()) {
         incrementReferenceCount(REFERENCE_TYPE_JOB); // starting task
