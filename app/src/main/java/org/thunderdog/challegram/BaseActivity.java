@@ -2918,11 +2918,13 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   private void processCameraAnimationFinish (final float toFactor) {
-    if (toFactor == 1f && isCameraOpen) {
-      onCameraCompletelyOpen();
-    } else if (toFactor == 0f && !isCameraOpen) {
-      onCameraCompletelyClosed();
-    }
+    UI.post(() -> {
+      if (toFactor == 1f && isCameraOpen) {
+        onCameraCompletelyOpen();
+      } else if (toFactor == 0f && !isCameraOpen) {
+        onCameraCompletelyClosed();
+      }
+    });
   }
 
   private void replaceCameraWithContent (final boolean launchAnimation) { // called before closing, when camera has been completely open
