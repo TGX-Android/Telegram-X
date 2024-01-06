@@ -3842,7 +3842,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         continue;
       }
       if (action.getConstructor() ==  TdApi.SuggestedActionConvertToBroadcastGroup.CONSTRUCTOR) {*/
-        if (supergroup != null && supergroup.memberCount >= 200000 || BuildConfig.DEBUG && tdlib.canConvertToBroadcast(chat.id)) {
+        boolean alwaysVisible = BuildConfig.DEBUG || BuildConfig.EXPERIMENTAL;
+        if (supergroup != null && supergroup.memberCount >= tdlib.supergroupMaxSize() - 50 /*little margin for leaving/joining members*/ || alwaysVisible && tdlib.canConvertToBroadcast(chat.id)) {
           items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
           items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_convertToBroadcastGroup, 0, R.string.ConvertToBroadcastGroup));
           items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ConvertToBroadcastGroupDesc));
@@ -4646,9 +4647,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     } else if (viewId == R.id.btn_toggleJoinByRequest) {
       toggleJoinByRequests(v);
     } else if (viewId == R.id.btn_convertToBroadcastGroup) {
+      int confirmButton = R.id.btn_confirmConvertBroadcast;
       showOptions(
         Lang.getString(R.string.ConvertToBroadcastGroupHint),
-        new int[] {R.id.convertBroadcastGroup3, R.id.btn_cancel},
+        new int[] {confirmButton, R.id.btn_cancel},
         new String[] {
           Lang.getString(R.string.ConvertToBroadcastGroupButton),
           Lang.getString(R.string.Cancel)
@@ -4662,7 +4664,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           R.drawable.baseline_cancel_24
         },
         (itemView, optionId) -> {
-          if (optionId == R.id.convertBroadcastGroup3) {
+          if (optionId == confirmButton) {
             convertToBroadcastGroup();
           }
           return true;
@@ -4671,9 +4673,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private void convertToBroadcastGroup () {
+    int convertButton = R.id.btn_convertBroadcastGroup;
     showOptions(
       Lang.getString(R.string.ConvertToBroadcastGroupConfirmHint),
-      new int[] {R.id.convertBroadcastGroup2, R.id.btn_cancel},
+      new int[] {convertButton, R.id.btn_cancel},
       new String[] {
         Lang.getString(R.string.ConvertToBroadcastGroupConfirm),
         Lang.getString(R.string.Cancel)
@@ -4687,7 +4690,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         R.drawable.baseline_cancel_24
       },
       (itemView, optionId) -> {
-        if (optionId == R.id.convertBroadcastGroup2) {
+        if (optionId == convertButton) {
           if (supergroup != null) {
             tdlib.toggleBroadcast(supergroup.id, tdlib().okHandler());
           }
