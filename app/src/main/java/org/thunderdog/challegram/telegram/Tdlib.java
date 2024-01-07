@@ -5017,10 +5017,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return CHAT_ACCESS_OK;
   }
 
-  public void toggleBroadcast (long chatId, Client.ResultHandler handler) {
-    client().send(new TdApi.ToggleSupergroupIsBroadcastGroup(chatId), handler);
-  }
-
   public void blockSender (TdApi.MessageSender sender, @Nullable TdApi.BlockList blockList, Client.ResultHandler handler) {
     client().send(new TdApi.SetMessageSenderBlockList(sender, blockList), handler);
   }
