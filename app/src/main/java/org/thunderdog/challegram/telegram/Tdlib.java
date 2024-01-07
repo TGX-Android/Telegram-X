@@ -11406,10 +11406,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return action.getConstructor() == TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR || action.getConstructor() == TdApi.SuggestedActionCheckPassword.CONSTRUCTOR;
   }
 
-  public boolean isBroadcastConvertSuggestion (TdApi.SuggestedAction action) {
-    return action.getConstructor() == TdApi.SuggestedActionConvertToBroadcastGroup.CONSTRUCTOR;
-  }
-
   public int getSettingSuggestionCount () {
     synchronized (dataLock) {
       int count = 0;
