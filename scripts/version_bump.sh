@@ -35,12 +35,5 @@ fi
 
 echo "$COMMIT_MESSAGE"
 
-git add "$VERSION_FILE"
-git commit -m "$COMMIT_MESSAGE"
-
-if [ "$#" -eq 4 ]; then
-  USERNAME=$3
-  PASSWORD=$4
-  REMOTE="https://${USERNAME}:${PASSWORD}@$(git remote get-url origin | cut -c 9-)"
-  git push "$REMOTE" > /dev/null 2>&1
-fi
+git commit --only "$VERSION_FILE" -m "$COMMIT_MESSAGE"
+git push
