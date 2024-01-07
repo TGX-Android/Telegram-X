@@ -48,16 +48,9 @@ public class PageBlockTable extends PageBlock implements Destroyable {
   private static final int PADDING_HORIZONTAL = 8;
   private static final int PADDING_VERTICAL = 8;
 
-
-  // Drawing
-
-
-
   private final Cell[] cellsList;
-
   private final int totalColumnsCount;
   private final int totalRowsCount;
-
 
   public PageBlockTable (ViewController<?> context, TdApi.PageBlockTable block, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, block);
@@ -72,9 +65,7 @@ public class PageBlockTable extends PageBlock implements Destroyable {
         while (keys.get(currentIndexX, 0) > 0) {
           currentIndexX += 1;
         }
-        if (isVisible(cell)) {
-          cellsList.add(new Cell(this, cell, currentIndexX, currentIndexY, FormattedText.parseRichText(context, cell.text, openParameters)));
-        }
+        cellsList.add(new Cell(this, cell, currentIndexX, currentIndexY, FormattedText.parseRichText(context, cell.text, openParameters)));
         for (int x = 0; x < cell.colspan; x++) {
           long key = currentIndexX + x;
           keys.put(key, Math.max(cell.rowspan, keys.get(key, 0)));
@@ -243,10 +234,6 @@ public class PageBlockTable extends PageBlock implements Destroyable {
     for (Cell cell : cellsList) {
       cell.performDestroy();
     }
-  }
-
-  public static boolean isVisible (TdApi.PageBlockTableCell cell) {
-    return cell.text != null;
   }
 
   private static class TableLayout {
