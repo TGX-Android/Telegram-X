@@ -3835,11 +3835,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AggressiveAntiSpamDesc));
     }
 
-        boolean alwaysVisible = BuildConfig.DEBUG || BuildConfig.EXPERIMENTAL;
-        if (alwaysVisible || tdlib.suggestConvertToBroadcastGroup(chat.id)) {
-          items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
-          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_convertToBroadcastGroup, 0, R.string.ConvertToBroadcastGroup));
-          items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ConvertToBroadcastGroupDesc));
+    boolean alwaysVisible = BuildConfig.DEBUG || BuildConfig.EXPERIMENTAL;
+    if (alwaysVisible || tdlib.suggestConvertToBroadcastGroup(chat.id)) {
+      items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_convertToBroadcastGroup, 0, R.string.ConvertToBroadcastGroup));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ConvertToBroadcastGroupDesc));
     }
 
 
