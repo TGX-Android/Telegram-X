@@ -125,10 +125,6 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
     tdlib.ui().openChat(controller(), Td.getSenderId(senderId), new TdlibUi.ChatOpenParameters().keepStack().removeDuplicates().openProfileInCaseOfPrivateChat().openProfileInCaseOfDuplicateChat());
   }
 
-  @Override public void requestGiveawayAvatars (ComplexReceiver complexReceiver, boolean isUpdate) {
-    content.requestFiles(complexReceiver);
-  }
-
   @Override protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth) {
     super.drawContent(view, c, startX, startY, maxWidth);
 

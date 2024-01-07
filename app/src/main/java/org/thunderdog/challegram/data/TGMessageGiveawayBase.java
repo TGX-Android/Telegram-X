@@ -153,6 +153,13 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
     return super.onTouchEvent(view, e);
   }
 
+  @Override
+  public void requestGiveawayAvatars (ComplexReceiver complexReceiver, boolean isUpdate) {
+    if (content != null) {
+      content.requestFiles(complexReceiver);
+    }
+  }
+
 
 
   /* * */

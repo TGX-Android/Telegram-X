@@ -67,10 +67,6 @@ public class TGMessageGift extends TGMessageGiveawayBase {
     tdlib.ui().openChat(controller(), Td.getSenderId(senderId), new TdlibUi.ChatOpenParameters().keepStack().removeDuplicates().openProfileInCaseOfPrivateChat());
   }
 
-  @Override public void requestGiveawayAvatars (ComplexReceiver complexReceiver, boolean isUpdate) {
-    content.requestFiles(complexReceiver);
-  }
-
   @Override protected String getButtonText () {
     return Lang.getString(R.string.OpenGiftLink);
   }
