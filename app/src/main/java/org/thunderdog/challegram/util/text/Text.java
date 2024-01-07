@@ -849,7 +849,11 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   }
 
   public void changeMaxWidth (int maxWidth) {
-    if (this.maxWidth != maxWidth) {
+    changeMaxWidth(maxWidth, false);
+  }
+
+  public void changeMaxWidth (int maxWidth, boolean force) {
+    if (this.maxWidth != maxWidth || force) {
       set(maxWidth, originalText, entities);
     }
   }

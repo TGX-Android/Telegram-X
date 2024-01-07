@@ -57,9 +57,6 @@ public class PageBlockTable extends PageBlock {
   private final int totalColumnsCount;
   private final int totalRowsCount;
 
-  private final TableLayout tableLayoutMaxWidth;
-  private final TableLayout tableLayoutMinWidth;
-
 
   public PageBlockTable (ViewController<?> context, TdApi.PageBlockTable block, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(context, block);
@@ -100,9 +97,6 @@ public class PageBlockTable extends PageBlock {
     this.cellsList = cellsList.toArray(new Cell[0]);
     this.totalColumnsCount = columnsCount;
     this.totalRowsCount = rowsCount;
-
-    this.tableLayoutMaxWidth = TableLayout.valueOf(this.cellsList, totalColumnsCount, totalRowsCount, Cell.METRIC_TYPE_MAX);
-    this.tableLayoutMinWidth = TableLayout.valueOf(this.cellsList, totalColumnsCount, totalRowsCount, Cell.METRIC_TYPE_MIN);
   }
 
   @Override
@@ -131,6 +125,12 @@ public class PageBlockTable extends PageBlock {
     final int bottomMargin = Screen.dp(MARGIN_BOTTOM);
     final int defaultWidth = (maxContentWidth - horizontalMargin * 2);
 
+    for (Cell cell : cellsList) {
+      cell.prepareToBuild(defaultWidth);
+    }
+
+    final TableLayout tableLayoutMaxWidth = TableLayout.valueOf(this.cellsList, totalColumnsCount, totalRowsCount, Cell.METRIC_TYPE_MAX);
+    final TableLayout tableLayoutMinWidth = TableLayout.valueOf(this.cellsList, totalColumnsCount, totalRowsCount, Cell.METRIC_TYPE_MIN);
 
     final int[] tableCordsX;
     final int[] tableCordsY;
@@ -161,13 +161,8 @@ public class PageBlockTable extends PageBlock {
       }
       tableCordsY = TableLayout.computeCordsArrayY(cellsList, totalRowsCount, Cell.METRIC_TYPE_CURRENT);
     } else {
-      for (Cell cell : cellsList) {
-        cell.build(defaultWidth, true);
-      }
-
-      TableLayout tl = TableLayout.valueOf(cellsList, totalColumnsCount, totalRowsCount, Cell.METRIC_TYPE_CURRENT);
-      tableCordsX = tl.cellsX;
-      tableCordsY = tl.cellsY;
+      tableCordsX = tableLayoutMinWidth.cellsX;
+      tableCordsY = tableLayoutMinWidth.cellsY;
     }
 
     for (Cell cell : cellsList) {
@@ -315,12 +310,14 @@ public class PageBlockTable extends PageBlock {
     private final int cellPositionX, cellPositionY;
     private final int iconCount;
 
-    private final int heightForMinimalPossibleWidth;
-    private final int heightForMaximalPossibleWidth;
-    private final int minimalPossibleWidth;
-    private final int maximalPossibleWidth;
+    private int heightForMinimalPossibleWidth;
+    private int heightForMaximalPossibleWidth;
+    private int minimalPossibleWidth;
+    private int maximalPossibleWidth;
 
-    private final @Nullable Text text;
+    private final ViewProvider viewProvider;
+    private final @Nullable FormattedText formattedText;
+    private @Nullable Text text;
 
     private final Rect bounds = new Rect();
 
@@ -328,42 +325,9 @@ public class PageBlockTable extends PageBlock {
       this.cell = cell;
       this.cellPositionX = cellPositionX;
       this.cellPositionY = cellPositionY;
+      this.formattedText = formattedText;
       this.iconCount = formattedText != null ? formattedText.getIconCount() : 0;
-
-      if (formattedText != null) {
-        Text.Builder b = new Text.Builder(formattedText.text, Integer.MAX_VALUE, PageBlockRichText.getParagraphProvider(), TextColorSets.InstantView.NORMAL)
-          .entities(formattedText.entities, (text, specificMedia) -> {
-
-          })
-          .textFlags(Text.FLAG_ARTICLE | Text.FLAG_CUSTOM_LONG_PRESS | Text.FLAG_ALWAYS_BREAK)
-          .viewProvider(viewProvider);
-        switch (cell.align.getConstructor()) {
-          case TdApi.PageBlockHorizontalAlignmentLeft.CONSTRUCTOR:
-            break;
-          case TdApi.PageBlockHorizontalAlignmentCenter.CONSTRUCTOR:
-            b.addFlags(Text.FLAG_ALIGN_CENTER);
-            break;
-          case TdApi.PageBlockHorizontalAlignmentRight.CONSTRUCTOR:
-            b.addFlags(Text.FLAG_ALIGN_RIGHT);
-            break;
-        }
-        text = b.build();
-
-        minimalPossibleWidth = text.getWidth();
-        heightForMinimalPossibleWidth = text.getHeight();
-
-        text.setTextFlag(Text.FLAG_ALWAYS_BREAK, false);
-        text.changeMaxWidth(Integer.MAX_VALUE - 1);
-
-        maximalPossibleWidth = text.getWidth();
-        heightForMaximalPossibleWidth = text.getHeight();
-      } else {
-        text = null;
-        minimalPossibleWidth = 0;
-        heightForMinimalPossibleWidth = 0;
-        maximalPossibleWidth = 0;
-        heightForMaximalPossibleWidth = 0;
-      }
+      this.viewProvider = viewProvider;
     }
 
     public int width (int metricType) {
@@ -402,6 +366,43 @@ public class PageBlockTable extends PageBlock {
 
     public int height () {
       return text != null ? text.getHeight() + Screen.dp(PADDING_VERTICAL) * 2 : 0;
+    }
+
+    public void prepareToBuild (int maxCellWidth) {
+      if (formattedText != null) {
+        final int maxTextWidth = maxCellWidth - Screen.dp(PADDING_HORIZONTAL) * 2;
+
+        Text.Builder b = new Text.Builder(formattedText.text, maxTextWidth, PageBlockRichText.getParagraphProvider(), TextColorSets.InstantView.NORMAL)
+          .entities(formattedText.entities, (text, specificMedia) -> {})
+          .textFlags(Text.FLAG_ARTICLE | Text.FLAG_CUSTOM_LONG_PRESS | Text.FLAG_ALWAYS_BREAK)
+          .viewProvider(viewProvider);
+        switch (cell.align.getConstructor()) {
+          case TdApi.PageBlockHorizontalAlignmentLeft.CONSTRUCTOR:
+            break;
+          case TdApi.PageBlockHorizontalAlignmentCenter.CONSTRUCTOR:
+            b.addFlags(Text.FLAG_ALIGN_CENTER);
+            break;
+          case TdApi.PageBlockHorizontalAlignmentRight.CONSTRUCTOR:
+            b.addFlags(Text.FLAG_ALIGN_RIGHT);
+            break;
+        }
+        text = b.build();
+
+        minimalPossibleWidth = text.getWidth();
+        heightForMinimalPossibleWidth = text.getHeight();
+
+        text.setTextFlag(Text.FLAG_ALWAYS_BREAK, false);
+        text.changeMaxWidth(maxTextWidth, true);
+
+        maximalPossibleWidth = text.getWidth();
+        heightForMaximalPossibleWidth = text.getHeight();
+      } else {
+        text = null;
+        minimalPossibleWidth = 0;
+        heightForMinimalPossibleWidth = 0;
+        maximalPossibleWidth = 0;
+        heightForMaximalPossibleWidth = 0;
+      }
     }
 
     public void build (int maxCellWidth, boolean alwaysBreak) {
