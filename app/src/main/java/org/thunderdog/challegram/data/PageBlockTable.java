@@ -34,14 +34,15 @@ import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.text.FormattedText;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
+import org.thunderdog.challegram.widget.PageBlockView;
 
 import java.util.ArrayList;
 
-import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.collection.LongSparseIntArray;
+import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.Td;
 
-public class PageBlockTable extends PageBlock {
+public class PageBlockTable extends PageBlock implements Destroyable {
   private static final int MARGIN_BOTTOM = 6;
   private static final int MARGIN_HORIZONTAL = 12;
   private static final int PADDING_HORIZONTAL = 8;
@@ -72,7 +73,7 @@ public class PageBlockTable extends PageBlock {
           currentIndexX += 1;
         }
         if (isVisible(cell)) {
-          cellsList.add(new Cell(cell, currentIndexX, currentIndexY, FormattedText.parseRichText(context, cell.text, openParameters), currentViews));
+          cellsList.add(new Cell(this, cell, currentIndexX, currentIndexY, FormattedText.parseRichText(context, cell.text, openParameters)));
         }
         for (int x = 0; x < cell.colspan; x++) {
           long key = currentIndexX + x;
@@ -116,7 +117,7 @@ public class PageBlockTable extends PageBlock {
     receiver.clearReceiversWithHigherKey(iconCount);
   }
 
-  private int tableWidth, tableHeight;
+  private int tableHeight;
 
   @Override
   protected int computeHeight (View view, final int maxContentWidth) {
@@ -132,13 +133,13 @@ public class PageBlockTable extends PageBlock {
     final TableLayout tableLayoutMaxWidth = TableLayout.valueOf(this.cellsList, totalColumnsCount, totalRowsCount, Cell.METRIC_TYPE_MAX);
     final TableLayout tableLayoutMinWidth = TableLayout.valueOf(this.cellsList, totalColumnsCount, totalRowsCount, Cell.METRIC_TYPE_MIN);
 
-    final int[] tableCordsX;
-    final int[] tableCordsY;
+    final float[] tableCordsX;
+    final float[] tableCordsY;
     if (tableLayoutMaxWidth.tableWidth <= defaultWidth) {
-      int diff = defaultWidth - tableLayoutMaxWidth.tableWidth;
-      int add = diff / totalColumnsCount;
+      float diff = defaultWidth - tableLayoutMaxWidth.tableWidth;
+      float add = diff / totalColumnsCount;
 
-      final int[] columnsWidth = new int[tableLayoutMaxWidth.columnWidth.length];
+      final float[] columnsWidth = new float[tableLayoutMaxWidth.columnWidth.length];
       for (int a = 0; a < columnsWidth.length; a++) {
         columnsWidth[a] = tableLayoutMaxWidth.columnWidth[a] + add;
       }
@@ -146,36 +147,41 @@ public class PageBlockTable extends PageBlock {
       tableCordsX = TableLayout.computeCordsArray(columnsWidth);
       tableCordsY = tableLayoutMaxWidth.cellsY;
     } else if (tableLayoutMinWidth.tableWidth <= defaultWidth) {
-      final int W = defaultWidth - tableLayoutMinWidth.tableWidth;
-      final int D = tableLayoutMaxWidth.tableWidth - tableLayoutMinWidth.tableWidth;
+      final float W = defaultWidth - tableLayoutMinWidth.tableWidth;
+      final float D = tableLayoutMaxWidth.tableWidth - tableLayoutMinWidth.tableWidth;
 
-      final int[] columnsWidth = new int[tableLayoutMaxWidth.columnWidth.length];
+      final float[] columnsWidth = new float[tableLayoutMaxWidth.columnWidth.length];
       for (int a = 0; a < columnsWidth.length; a++) {
-        final int d = tableLayoutMaxWidth.columnWidth[a] -  tableLayoutMinWidth.columnWidth[a];
-        columnsWidth[a] = tableLayoutMinWidth.columnWidth[a] + (int) ((float) d * W / D);
+        final float d = tableLayoutMaxWidth.columnWidth[a] -  tableLayoutMinWidth.columnWidth[a];
+        columnsWidth[a] = tableLayoutMinWidth.columnWidth[a] + (d * W / D);
       }
 
       tableCordsX = TableLayout.computeCordsArray(columnsWidth);
       for (Cell cell : cellsList) {
-        cell.build(tableCordsX[cell.cellPositionEndX()] - tableCordsX[cell.cellPositionStartX()] + 2, false);
+        cell.build((int) Math.ceil(tableCordsX[cell.cellPositionEndX()] - tableCordsX[cell.cellPositionStartX()] + 2), false);
       }
       tableCordsY = TableLayout.computeCordsArrayY(cellsList, totalRowsCount, Cell.METRIC_TYPE_CURRENT);
     } else {
+      for (Cell cell : cellsList) {
+        cell.build(defaultWidth, true);
+      }
       tableCordsX = tableLayoutMinWidth.cellsX;
       tableCordsY = tableLayoutMinWidth.cellsY;
     }
 
     for (Cell cell : cellsList) {
       cell.bounds.set(
-        tableCordsX[cell.cellPositionStartX()],
-        tableCordsY[cell.cellPositionStartY()],
-        tableCordsX[cell.cellPositionEndX()],
-        tableCordsY[cell.cellPositionEndY()]);
+        Math.round(tableCordsX[cell.cellPositionStartX()]),
+        Math.round(tableCordsY[cell.cellPositionStartY()]),
+        Math.round(tableCordsX[cell.cellPositionEndX()]),
+        Math.round(tableCordsY[cell.cellPositionEndY()]));
       cell.bounds.offset(horizontalMargin, topMargin);
+      if (cell.text != null && cell.text.hasMedia()) {
+        cell.text.notifyMediaChanged(null);
+      }
     }
 
-    this.tableWidth = tableCordsX[tableCordsX.length - 1];
-    this.tableHeight = tableCordsY[tableCordsY.length - 1];
+    this.tableHeight = Math.round(tableCordsY[tableCordsY.length - 1]);
 
     return topMargin + tableHeight + bottomMargin;
   }
@@ -232,48 +238,48 @@ public class PageBlockTable extends PageBlock {
     }
   }
 
+  @Override
+  public void performDestroy () {
+    for (Cell cell : cellsList) {
+      cell.performDestroy();
+    }
+  }
+
   public static boolean isVisible (TdApi.PageBlockTableCell cell) {
     return cell.text != null;
   }
 
-
-
-
-
-
-
-
-
   private static class TableLayout {
-    public final int[] columnWidth;
-    public final int[] rowHeight;
-    public final int[] cellsX;
-    public final int[] cellsY;
+    public final float[] columnWidth;
+    public final float[] rowHeight;
+    public final float[] cellsX;
+    public final float[] cellsY;
     public final int tableWidth;
     public final int tableHeight;
 
-    private TableLayout (int[] columnWidth, int[] rowHeight) {
+    private TableLayout (float[] columnWidth, float[] rowHeight) {
       this.columnWidth = columnWidth;
       this.rowHeight = rowHeight;
       this.cellsX = computeCordsArray(columnWidth);
       this.cellsY = computeCordsArray(rowHeight);
-      this.tableWidth = cellsX[cellsX.length - 1];
-      this.tableHeight = cellsY[cellsY.length - 1];
+      this.tableWidth = Math.round(cellsX[cellsX.length - 1]);
+      this.tableHeight = Math.round(cellsY[cellsY.length - 1]);
     }
 
-    public static int[] computeCordsArray (int[] size) {
-      final int[] cords = new int[size.length + 1];
+    public static float[] computeCordsArray (float[] size) {
+      final float[] cords = new float[size.length + 1];
       for (int a = 0; a < size.length; a++) {
         cords[a + 1] = cords[a] + size[a];
       }
+
       return cords;
     }
 
-    public static int[] computeCordsArrayY (Cell[] cells, int rowsCount, int metricType) {
-      int[] rowHeight = new int[rowsCount];
+    public static float[] computeCordsArrayY (Cell[] cells, int rowsCount, int metricType) {
+      float[] rowHeight = new float[rowsCount];
 
       for (Cell cell : cells) {
-        final int height = cell.height(metricType);
+        final float height = cell.height(metricType);
         for (int row = cell.cellPositionStartY(); row < cell.cellPositionEndY(); row++) {
           rowHeight[row] = Math.max(rowHeight[row], height / cell.cell.rowspan);
         }
@@ -283,15 +289,15 @@ public class PageBlockTable extends PageBlock {
     }
 
     public static TableLayout valueOf (Cell[] cells, int columnsCount, int rowsCount, int metricType) {
-      int[] columnWidth = new int[columnsCount];
-      int[] rowHeight = new int[rowsCount];
+      float[] columnWidth = new float[columnsCount];
+      float[] rowHeight = new float[rowsCount];
 
       for (Cell cell : cells) {
-        final int width = cell.width(metricType);
+        final float width = cell.width(metricType);
         for (int column = cell.cellPositionStartX(); column < cell.cellPositionEndX(); column++) {
           columnWidth[column] = Math.max(columnWidth[column], width / cell.cell.colspan);
         }
-        final int height = cell.height(metricType);
+        final float height = cell.height(metricType);
         for (int row = cell.cellPositionStartY(); row < cell.cellPositionEndY(); row++) {
           rowHeight[row] = Math.max(rowHeight[row], height / cell.cell.rowspan);
         }
@@ -301,11 +307,12 @@ public class PageBlockTable extends PageBlock {
     }
   }
 
-  private static class Cell {
+  private static class Cell implements Destroyable {
     private static final int METRIC_TYPE_MAX = 0;
     private static final int METRIC_TYPE_MIN = 1;
     private static final int METRIC_TYPE_CURRENT = 2;
 
+    private final PageBlockTable parent;
     private final @NonNull TdApi.PageBlockTableCell cell;
     private final int cellPositionX, cellPositionY;
     private final int iconCount;
@@ -315,19 +322,18 @@ public class PageBlockTable extends PageBlock {
     private int minimalPossibleWidth;
     private int maximalPossibleWidth;
 
-    private final ViewProvider viewProvider;
     private final @Nullable FormattedText formattedText;
     private @Nullable Text text;
 
     private final Rect bounds = new Rect();
 
-    public Cell (@NonNull TdApi.PageBlockTableCell cell, int cellPositionX, int cellPositionY, @Nullable FormattedText formattedText, ViewProvider viewProvider) {
+    public Cell (PageBlockTable parent, @NonNull TdApi.PageBlockTableCell cell, int cellPositionX, int cellPositionY, @Nullable FormattedText formattedText) {
+      this.parent = parent;
       this.cell = cell;
       this.cellPositionX = cellPositionX;
       this.cellPositionY = cellPositionY;
       this.formattedText = formattedText;
       this.iconCount = formattedText != null ? formattedText.getIconCount() : 0;
-      this.viewProvider = viewProvider;
     }
 
     public int width (int metricType) {
@@ -370,12 +376,24 @@ public class PageBlockTable extends PageBlock {
 
     public void prepareToBuild (int maxCellWidth) {
       if (formattedText != null) {
+        if (text != null) {
+          text.performDestroy();
+        }
+
         final int maxTextWidth = maxCellWidth - Screen.dp(PADDING_HORIZONTAL) * 2;
 
         Text.Builder b = new Text.Builder(formattedText.text, maxTextWidth, PageBlockRichText.getParagraphProvider(), TextColorSets.InstantView.NORMAL)
-          .entities(formattedText.entities, (text, specificMedia) -> {})
+          .entities(formattedText.entities, (text, specificMedia) -> {
+            for (View view : parent.currentViews) {
+              if (view instanceof PageBlockView) {
+                if (!text.invalidateMediaContent(((PageBlockView) view).getIconReceiver(), specificMedia)) {
+                  ((PageBlockView) view).invalidateIconsContent(parent);
+                }
+              }
+            }
+          })
           .textFlags(Text.FLAG_ARTICLE | Text.FLAG_CUSTOM_LONG_PRESS | Text.FLAG_ALWAYS_BREAK)
-          .viewProvider(viewProvider);
+          .viewProvider(parent.currentViews);
         switch (cell.align.getConstructor()) {
           case TdApi.PageBlockHorizontalAlignmentLeft.CONSTRUCTOR:
             break;
@@ -409,6 +427,13 @@ public class PageBlockTable extends PageBlock {
       if (text != null) {
         text.setTextFlag(Text.FLAG_ALWAYS_BREAK, alwaysBreak);
         text.changeMaxWidth(maxCellWidth - Screen.dp(PADDING_HORIZONTAL) * 2);
+      }
+    }
+
+    @Override
+    public void performDestroy () {
+      if (text != null) {
+        text.performDestroy();
       }
     }
   }
