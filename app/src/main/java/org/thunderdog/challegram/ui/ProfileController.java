@@ -4692,7 +4692,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       (itemView, optionId) -> {
         if (optionId == convertButton) {
           if (supergroup != null) {
-            tdlib.toggleBroadcast(supergroup.id, tdlib().okHandler());
+            tdlib.send(new TdApi.ToggleSupergroupIsBroadcastGroup(supergroup.id), tdlib.typedOkHandler());
           }
         }
         return true;
