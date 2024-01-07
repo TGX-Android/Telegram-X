@@ -1095,7 +1095,7 @@ public class RoundVideoRecorder {
           int inputBufferIndex = audioEncoder.dequeueInputBuffer(0);
           if (inputBufferIndex >= 0) {
             ByteBuffer inputBuffer;
-            if (Build.VERSION.SDK_INT >= 21) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
               inputBuffer = audioEncoder.getInputBuffer(inputBufferIndex);
             } else {
               ByteBuffer[] inputBuffers = audioEncoder.getInputBuffers();

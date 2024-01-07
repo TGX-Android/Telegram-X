@@ -91,12 +91,23 @@ public class TdlibNotificationChannelGroup {
     create(account);
   }
 
+  private static String getChannelGroupName (long userId, TdApi.User user, boolean isDebug) {
+    String name = Lang.getDebugString(TD.getUserName(userId, user), isDebug);
+    if (StringUtils.isEmpty(name)) {
+      name = "#" + userId;
+    }
+    return name;
+  }
+
   public void create (@Nullable TdApi.User account) throws ChannelCreationFailureException {
     NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
     if (m == null)
       throw new ChannelCreationFailureException("Notification service unavailable");
     try {
-      m.createNotificationChannelGroup(new android.app.NotificationChannelGroup(this.groupId, Lang.getDebugString(TD.getUserName(accountUserId, account), isDebug)));
+      final String groupName = getChannelGroupName(accountUserId, account, isDebug);
+      android.app.NotificationChannelGroup group;
+      group = new android.app.NotificationChannelGroup(this.groupId, groupName);
+      m.createNotificationChannelGroup(group);
     } catch (Throwable t) {
       throw new ChannelCreationFailureException(t);
     }
@@ -378,11 +389,13 @@ public class TdlibNotificationChannelGroup {
     return b.toString();
   }
 
-  public static void updateGroup (TdApi.User user) {
+  public static void updateGroup (@NonNull TdApi.User user, boolean isDebug) {
     NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
     if (m != null) {
+      final String groupId = makeGroupId(user.id, isDebug);
+      final String groupName = getChannelGroupName(user.id, user, isDebug);
       android.app.NotificationChannelGroup group;
-      group = new android.app.NotificationChannelGroup("account_" + user.id, TD.getUserName(user));
+      group = new android.app.NotificationChannelGroup(groupId, groupName);
       m.createNotificationChannelGroup(group);
     }
   }
