@@ -10679,11 +10679,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return false;
   }
 
-  public boolean canConvertToBroadcast(long chatId) {
-    return isSupergroup(chatId) && TD.isCreator(chatStatus(chatId));
-  }
-
-
   public boolean isBroadcastGroup (long chatId) {
     TdApi.Supergroup supergroup = chatToSupergroup(chatId);
     return supergroup != null && supergroup.isBroadcastGroup;
