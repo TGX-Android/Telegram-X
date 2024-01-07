@@ -460,7 +460,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private final LongSparseLongArray accessibleChatTimers = new LongSparseLongArray();
 
   private long authorizationDate = 0;
-  private int supergroupMaxSize = 100000;
+  private int supergroupMaxSize = 200000;
   private int maxBioLength = 70;
   private int chatFolderMaxCount = 10, folderChosenChatMaxCount = 100;
   private int addedShareableChatFolderMaxCount = 2, chatFolderInviteLinkMaxCount = 3;
@@ -8836,7 +8836,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     synchronized (dataLock) {
       for (TdApi.SuggestedAction removedAction : update.removedActions) {
         for (int i = suggestedActions.size() - 1; i >= 0; i--) {
-          if (suggestedActions.get(i).getConstructor() == removedAction.getConstructor()) {
+          if (Td.equalsTo(suggestedActions.get(i), removedAction)) {
             suggestedActions.remove(i);
           }
         }
@@ -10682,6 +10682,26 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   public boolean isBroadcastGroup (long chatId) {
     TdApi.Supergroup supergroup = chatToSupergroup(chatId);
     return supergroup != null && supergroup.isBroadcastGroup;
+  }
+
+  public boolean suggestConvertToBroadcastGroup (long chatId) {
+    TdApi.Supergroup supergroup = chatToSupergroup(chatId);
+    if (supergroup == null || supergroup.isChannel || supergroup.isBroadcastGroup || !TD.isCreator(supergroup.status)) {
+      return false;
+    }
+    synchronized (dataLock) {
+      for (TdApi.SuggestedAction action : suggestedActions) {
+        if (action.getConstructor() == TdApi.SuggestedActionConvertToBroadcastGroup.CONSTRUCTOR) {
+          TdApi.SuggestedActionConvertToBroadcastGroup convertToBroadcastGroup = (TdApi.SuggestedActionConvertToBroadcastGroup) action;
+          if (convertToBroadcastGroup.supergroupId == supergroup.id) {
+            return true;
+          }
+        }
+      }
+    }
+    TdApi.SupergroupFullInfo fullInfo = cache().supergroupFull(supergroup.id, false);
+    int memberCount = fullInfo != null ? fullInfo.memberCount : supergroup.memberCount;
+    return memberCount + (supergroupMaxSize * 0.0005f) /* +50 per 100000*/ >= supergroupMaxSize;
   }
 
   public boolean canDeleteMessages (long chatId) {
