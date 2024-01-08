@@ -36,6 +36,10 @@ public class GiftParticlesDrawable extends Drawable {
     this(null, 0, 0);
   }
 
+  public GiftParticlesDrawable (ParticleValidator validator) {
+    this(validator, 0, 0);
+  }
+
   public GiftParticlesDrawable (ParticleValidator validator, int width, int height) {
     if (particle1 == null || particle2 == null) {
       particle1 = Drawables.get(R.drawable.giveaway_particle_1);
