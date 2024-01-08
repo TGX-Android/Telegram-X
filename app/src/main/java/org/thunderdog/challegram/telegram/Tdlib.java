@@ -10679,8 +10679,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return false;
   }
 
-  public void clearCallsHistory () {
-    tdlib().send(new TdApi.DeleteAllCallMessages(true), (result, error) -> {
+  public void clearCallsHistory (boolean revoke) {
+    tdlib().send(new TdApi.DeleteAllCallMessages(revoke), (result, error) -> {
       if (result != null) {
         UI.showToast(String.format("%s",result), Toast.LENGTH_SHORT);
       } else {

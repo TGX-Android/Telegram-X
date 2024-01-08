@@ -5003,4 +5003,5 @@
   <string name="AccountDeletedText">Your account %1$s (%2$s) is now deleted from Telegram servers, and can no longer be restored.\n\nUsing the same phone number will create a new account.</string>
   <string name="ViewOnce">View once</string>
 
+  <string name="AreYouSureClearCalls">Do you want to delete all recent calls?</string>
 </resources>

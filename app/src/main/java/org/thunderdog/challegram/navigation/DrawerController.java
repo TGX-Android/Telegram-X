@@ -785,6 +785,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     if (item == null) {
       return false;
     }
+    android.util.Log.e("ITEM_ID", String.format("%s",item.getId()));
     final int itemId = item.getId();
     if (itemId != R.id.account) {
       if (itemId == R.id.btn_addAccount) {
@@ -798,8 +799,22 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
           });
         }
       } else if (itemId == R.id.btn_calls) {
-        tdlib.clearCallsHistory();
-        UI.showToast("LONG_PRESS_TO_CLEAR_CALL_HISTORY", Toast.LENGTH_LONG);
+        showSettings(new SettingsWrapBuilder(R.id.btn_delete)
+          .setHeaderItem(new ListItem(ListItem.TYPE_INFO, R.id.text_title, 0, R.string.AreYouSureClearCalls, false))
+          .setRawItems(
+            new ListItem[]{
+              new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_deleteAll, 0, R.string.DeleteForEveryone, false)
+            })
+          .setIntDelegate((id, result) -> {
+            if (id == R.id.btn_delete) {
+              boolean value = result.get(R.id.btn_deleteAll) != 0;
+              UI.showToast(String.format("VALUE: %b", value), Toast.LENGTH_SHORT);
+              // TODO: Fix crash (tdlib.clearCallsHistory(value);)
+            }
+          })
+          .setSaveStr(R.string.Delete)
+          .setSaveColorId(ColorId.textNegative)
+        );
       }
       return false;
     }
