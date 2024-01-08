@@ -27,6 +27,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.widget.Toast;
 
 import androidx.annotation.Dimension;
 import androidx.annotation.DrawableRes;
@@ -36,6 +37,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.Px;
 
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.core.Lang;
@@ -50,7 +52,10 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.ui.ListItem;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.Text;
@@ -350,15 +355,37 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   public boolean onLongClick (View v) {
     if (listener != null && v instanceof BackgroundView) {
       BackgroundView backgroundView = (BackgroundView) v;
+      int bgViewIndex = backgroundView.index;
+      if (!Settings.instance().chatFoldersEnabled() && bgViewIndex == 1) {
+        clearRecentCalls();
+      }
       if (backgroundView.inSlideOff()) {
         return false;
       }
       backgroundView.cancelSlideOff();
-      return listener.onPagerItemLongClick(backgroundView.index);
+      return listener.onPagerItemLongClick(bgViewIndex);
     }
     return false;
   }
 
+  public void clearRecentCalls () {
+    // TODO: show the settings
+    new SettingsWrapBuilder(R.id.btn_delete)
+      .setHeaderItem(new ListItem(ListItem.TYPE_INFO, R.id.text_title, 0, R.string.AreYouSureClearCalls, false))
+      .setRawItems(
+        new ListItem[]{
+          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_deleteAll, 0, R.string.DeleteForEveryone, false)
+        })
+      .setIntDelegate((id, result) -> {
+        if (id == R.id.btn_delete) {
+          boolean value = result.get(R.id.btn_deleteAll) != 0;
+          UI.showToast(String.format("VALUE: %b", value), Toast.LENGTH_SHORT);
+          // TODO: Fix crash (tdlib.clearCallsHistory(value);)
+        }
+      })
+      .setSaveStr(R.string.Delete)
+      .setSaveColorId(ColorId.textNegative);
+  }
   private int totalWidth;
 
   public void setItems (String[] stringItems) {
