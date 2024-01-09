@@ -109,6 +109,7 @@ public class PageBlockTable extends PageBlock implements Destroyable {
   }
 
   private int tableHeight;
+  private int customTableWidth;
 
   @Override
   protected int computeHeight (View view, final int maxContentWidth) {
@@ -160,6 +161,8 @@ public class PageBlockTable extends PageBlock implements Destroyable {
       tableCordsY = tableLayoutMinWidth.cellsY;
     }
 
+    customTableWidth = Math.round(tableCordsX[tableCordsX.length - 1]);
+
     for (Cell cell : cellsList) {
       cell.bounds.set(
         Math.round(tableCordsX[cell.cellPositionStartX()]),
@@ -175,6 +178,11 @@ public class PageBlockTable extends PageBlock implements Destroyable {
     this.tableHeight = Math.round(tableCordsY[tableCordsY.length - 1]);
 
     return topMargin + tableHeight + bottomMargin;
+  }
+
+  @Override
+  public int getCustomWidth () {
+    return customTableWidth + Screen.dp(MARGIN_HORIZONTAL) * 2;
   }
 
   @Override

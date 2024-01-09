@@ -284,7 +284,13 @@ public class PageBlockView extends BaseView implements Destroyable, InvalidateCo
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     final int width = getDefaultSize(getSuggestedMinimumWidth(), widthMeasureSpec);
-    setMeasuredDimension(width, MeasureSpec.makeMeasureSpec(block != null ? block.getHeight(this, width) : 0, MeasureSpec.EXACTLY));
+
+    int blockHeight = block != null ? block.getHeight(this, width) : 0;
+    int blockCustomWidth = block != null ? block.getCustomWidth() : -1;
+    int blockWidthMeasureSpec = blockCustomWidth >= 0 ?
+      MeasureSpec.makeMeasureSpec(blockCustomWidth, MeasureSpec.EXACTLY) : width;
+
+    setMeasuredDimension(blockWidthMeasureSpec, MeasureSpec.makeMeasureSpec(blockHeight, MeasureSpec.EXACTLY));
   }
 
   public ComplexReceiver getIconReceiver () {

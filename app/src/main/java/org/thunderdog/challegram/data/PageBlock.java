@@ -242,6 +242,10 @@ public abstract class PageBlock {
     return handleTouchEvent(view, e);
   }
 
+  public int getCustomWidth () {
+    return -1;
+  }
+
   protected abstract boolean handleTouchEvent (View view, MotionEvent e);
 
   protected final int getMinimumContentPadding (boolean leftEdge) {
