@@ -65,7 +65,7 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
 
   protected TGInlineKeyboard rippleButton;
   private int rippleButtonY;
-  private boolean useBubbles;
+  private boolean useFullWidthParticles;
 
   protected TGMessageGiveawayBase (MessagesManager manager, TdApi.Message msg) {
     super(manager, msg);
@@ -73,7 +73,7 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
 
   @Override
   protected final void buildContent (int maxWidth) {
-    useBubbles = useBubbles();
+    useFullWidthParticles = !useBubbles() && !useForward();
 
     if (rippleButton == null) {
       rippleButton = new TGInlineKeyboard(this, false);
@@ -93,14 +93,14 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
     if (particlesDrawable == null) {
       particlesDrawable = new GiftParticlesDrawable(this);
     }
-    particlesDrawable.setBounds(0, 0, useBubbles ? maxWidth : width, contentHeight);
+    particlesDrawable.setBounds(0, 0, useFullWidthParticles ? width : maxWidth, contentHeight);
 
     invalidateGiveawayReceiver();
   }
 
   @Override
   public boolean isValidPosition (int x, int y) {
-    return y < content.getHeight() && content.isValidPosition(x - getContentX() - (useBubbles ? 0 : Screen.dp(CONTENT_PADDING_DP)), y);
+    return y < content.getHeight() && content.isValidPosition(x - (useFullWidthParticles ? getContentX() : 0) - Screen.dp(CONTENT_PADDING_DP), y);
   }
 
   protected void onBuildButton (int maxWidth) {
@@ -117,7 +117,7 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
   protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth) {
     if (particlesDrawable != null) {
       c.save();
-      c.translate(useBubbles ? startX : 0, startY);
+      c.translate(useFullWidthParticles ? 0: startX, startY);
       particlesDrawable.draw(c);
       c.restore();
     }

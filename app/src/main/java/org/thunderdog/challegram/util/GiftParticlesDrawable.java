@@ -58,7 +58,7 @@ public class GiftParticlesDrawable extends Drawable {
     setSize(bounds.width(), bounds.height());
   }
 
-  private static final int GRID_SIZE = 35;
+  private static final int GRID_SIZE = 10;
 
   private void setSize (int width, int height) {
     if (this.width == width && this.height == height) {
