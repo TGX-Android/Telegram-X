@@ -276,6 +276,11 @@ public class Media {
             fail = false;
           }
         }
+        if (fail && Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+          if (context.checkSelfPermission(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED) == PackageManager.PERMISSION_GRANTED) {
+            fail = false;
+          }
+        }
         if (fail) {
           return null;
         }
