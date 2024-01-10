@@ -18,6 +18,7 @@ import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 
 import androidx.annotation.NonNull;
@@ -341,7 +342,10 @@ public class TextPart {
     if (trimmedLine != null)
       throw new IllegalStateException("trimmedLine != null");
     TextPaint paint = getPaint(partIndex, alpha, colorProvider);
-    c.drawText(line, start, end, x, y + source.getAscent() + paint.baselineShift, paint);
+    final float textSize = paint.getTextSize();
+    final int textY = y + source.getAscent() + paint.baselineShift;
+    paint.setTextSize(textSize);
+    c.drawText(line, start, end, x, textY, paint);
   }
 
   private void drawError (Canvas c, float cx, float cy, float radius, float alpha, int color) {
@@ -397,6 +401,7 @@ public class TextPart {
     final int y = startY + this.y;
     final int x = makeX(startX, endX, endXBottomPadding);
     final TextPaint textPaint = getPaint(partIndex, alpha, colorProvider);
+    final float textSize = textPaint.getTextSize();
     final float textAlpha = textPaint.getAlpha() / 255f;
     if (media != null) {
       if (media.isNotFoundCustomEmoji()) {
@@ -448,6 +453,7 @@ public class TextPart {
       drawEmoji(c, x, y, textPaint, alpha);
     } else {
       final int textY = y + source.getAscent() + textPaint.baselineShift;
+      textPaint.setTextSize(textSize);
       if (trimmedLine != null) {
         c.drawText(trimmedLine, x, textY, textPaint);
       } else {
