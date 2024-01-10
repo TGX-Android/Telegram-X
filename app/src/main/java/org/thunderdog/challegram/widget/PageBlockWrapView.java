@@ -193,7 +193,17 @@ public class PageBlockWrapView extends FrameLayoutFix implements ViewPager.OnPag
         break;
       }
       case MODE_TABLE: {
-        HorizontalScrollView scrollView = new HorizontalScrollView(getContext());
+        HorizontalScrollView scrollView = new HorizontalScrollView(getContext()) {
+          @Override
+          public boolean onTouchEvent (MotionEvent ev) {
+            final PageBlock block = tableView.getBlock();
+            final int blockWidth = block != null ? block.getCustomWidth() : -1;
+            if (blockWidth <= getMeasuredWidth()) {
+              return false;
+            }
+            return super.onTouchEvent(ev);
+          }
+        };
         scrollView.setHorizontalScrollBarEnabled(true);
         scrollView.setVerticalScrollBarEnabled(false);
         scrollView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
