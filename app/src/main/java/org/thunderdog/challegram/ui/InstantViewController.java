@@ -127,8 +127,9 @@ public class InstantViewController extends ViewController<InstantViewController.
           return child == null || y < child.getTop() || y >= child.getBottom() || wrapView.getViewPagerPosition() == 0f;
         }
         case PageBlockWrapView.MODE_TABLE: {
-          View child = ((ViewGroup) wrapView.getChildAt(0)).getChildAt(0);
-          return child == null || y < child.getTop() || y >= child.getBottom() || child.getLeft() >= 0;
+          ViewGroup vg = (ViewGroup) wrapView.getChildAt(0);
+          View child = vg.getChildAt(0);
+          return child == null || y < child.getTop() || y >= child.getBottom() || vg.getScrollX() == 0;
         }
       }
       return false;
