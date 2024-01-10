@@ -49,6 +49,7 @@ add_library(tgcalls STATIC
 
   "${TGCALLS_DIR}/tgcalls/v2/InstanceV2Impl.cpp"
   "${TGCALLS_DIR}/tgcalls/v2/NativeNetworkingImpl.cpp"
+  "${TGCALLS_DIR}/tgcalls/v2/DirectNetworkingImpl.cpp"
   "${TGCALLS_DIR}/tgcalls/v2/Signaling.cpp"
   "${TGCALLS_DIR}/tgcalls/v2/SignalingEncryption.cpp"
   "${TGCALLS_DIR}/tgcalls/v2/ContentNegotiation.cpp"
