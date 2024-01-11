@@ -119,7 +119,15 @@ public class MessagesRecyclerView extends RecyclerView implements FactorAnimator
   }
 
   public void startSwipe (View view) {
-    RecyclerView.ViewHolder holder = getChildViewHolder(view);
+    if (view == null) {
+      return;
+    }
+    RecyclerView.ViewHolder holder;
+    try {
+      holder = getChildViewHolder(view);
+    } catch (IllegalArgumentException ignored) {
+      return;
+    }
     if (holder != null && holder.getItemViewType() != MessagesHolder.TYPE_EMPTY) {
       touchHelper.startSwipe(holder);
     }

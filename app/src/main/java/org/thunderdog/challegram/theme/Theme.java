@@ -977,7 +977,7 @@ public class Theme {
     defaultDrawable.getPaint().setColor(defaultColor);
     ShapeDrawable pressedDrawable = new ShapeDrawable(new RoundRectShape(new float[]{rad, rad, rad, rad, rad, rad, rad, rad}, null, null));
     pressedDrawable.getPaint().setColor(maskColor);
-    if (Build.VERSION.SDK_INT >= 21) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       ColorStateList colorStateList = new ColorStateList(
         new int[][]{StateSet.WILD_CARD},
         new int[]{pressedColor}
@@ -999,7 +999,7 @@ public class Theme {
   }
 
   public static Drawable getRoundRectSelectorDrawable(int color) {
-    if (Build.VERSION.SDK_INT >= 21) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       Drawable maskDrawable = createRoundRectDrawable(Screen.dp(3), 0xffffffff);
       ColorStateList colorStateList = new ColorStateList(
         new int[][]{StateSet.WILD_CARD},
