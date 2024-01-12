@@ -762,7 +762,7 @@ abstract class TGMessageServiceImpl extends TGMessage {
       (target, argStart, argEnd, argIndex, needFakeBold) -> formatArgs[argIndex],
       (Object[]) formatArgs
     );
-    return FormattedText.toFormattedText(text, tdlib, openParameters());
+    return FormattedText.valueOf(text, tdlib, openParameters());
   }
 
   protected final FormattedText getPlural (@StringRes int resId, long num, FormattedArgument... args) {

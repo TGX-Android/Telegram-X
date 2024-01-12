@@ -67,7 +67,8 @@ public class GiftParticlesDrawable extends Drawable {
     this.particleValidator = particleValidator;
   }
 
-  @Override protected void onBoundsChange (@NonNull Rect bounds) {
+  @Override
+  protected void onBoundsChange (@NonNull Rect bounds) {
     super.onBoundsChange(bounds);
     setSize(bounds.width(), bounds.height());
   }
@@ -106,7 +107,8 @@ public class GiftParticlesDrawable extends Drawable {
     this.particles = particles.toArray(new Particle[0]);
   }
 
-  @Override public void draw (@NonNull Canvas c) {
+  @Override
+  public void draw (@NonNull Canvas c) {
     final float radius = Screen.dp(3.5f);
     for (Particle particle : particles) {
       c.save();
@@ -128,15 +130,14 @@ public class GiftParticlesDrawable extends Drawable {
     }
   }
 
-  @Override public void setAlpha (int alpha) {
+  @Override
+  public void setAlpha (int alpha) { }
 
-  }
+  @Override
+  public void setColorFilter (@Nullable ColorFilter colorFilter) { }
 
-  @Override public void setColorFilter (@Nullable ColorFilter colorFilter) {
-
-  }
-
-  @Override public int getOpacity () {
+  @Override
+  public int getOpacity () {
     return PixelFormat.UNKNOWN;
   }
 

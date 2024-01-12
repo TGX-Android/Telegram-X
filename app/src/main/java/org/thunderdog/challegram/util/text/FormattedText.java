@@ -24,7 +24,6 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.navigation.ViewController;
-import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.telegram.TdlibProvider;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -283,7 +282,7 @@ public class FormattedText {
       (target, argStart, argEnd, argIndex, needFakeBold) -> formatArgs[argIndex],
       (Object[]) formatArgs
     );
-    return toFormattedText(text, tdlib, urlOpenParameters);
+    return valueOf(text, tdlib, urlOpenParameters);
   }
 
   public static FormattedText getPlural (TdlibProvider tdlib, TdlibUi.UrlOpenParameters urlOpenParameters, @StringRes int resId, long num, FormattedText... formatArgs) {
@@ -293,10 +292,10 @@ public class FormattedText {
         formatArgs[argIndex - 1],
       (Object[]) formatArgs
     );
-    return toFormattedText(text, tdlib, urlOpenParameters);
+    return valueOf(text, tdlib, urlOpenParameters);
   }
 
-  public static FormattedText toFormattedText (CharSequence text, TdlibProvider tdlib, TdlibUi.UrlOpenParameters urlOpenParameters) {
+  public static FormattedText valueOf (CharSequence text, TdlibProvider tdlib, TdlibUi.UrlOpenParameters urlOpenParameters) {
     final String string = text.toString();
     if (!(text instanceof Spanned)) {
       return new FormattedText(string);
