@@ -2187,6 +2187,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   public static final int OPTION_COLOR_NORMAL = 0x01;
   public static final int OPTION_COLOR_RED = 0x02;
   public static final int OPTION_COLOR_BLUE = 0x03;
+  public static final int OPTION_COLOR_GREEN = 0x04;
 
   public static final float DISABLED_ALPHA = .7f;
 
@@ -2336,18 +2337,34 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   public static class Options {
     public final CharSequence info;
+    public final CharSequence title;
+    public final OptionItem subtitle;
     public final OptionItem[] items;
 
-    public Options (CharSequence info, OptionItem[] items) {
+    public Options (CharSequence info, CharSequence header, OptionItem subtitle, OptionItem[] items) {
       this.info = info;
+      this.title = header;
+      this.subtitle = subtitle;
       this.items = items;
     }
 
     public static class Builder {
       private CharSequence info;
+      private CharSequence title;
+      private OptionItem subtitle;
       private List<OptionItem> items = new ArrayList<>();
 
       public Builder () {
+      }
+
+      public Builder title (CharSequence header) {
+        this.title = header;
+        return this;
+      }
+
+      public Builder subtitle (OptionItem item) {
+        this.subtitle = item;
+        return this;
       }
 
       public Builder info (CharSequence info) {
@@ -2371,7 +2388,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       }
 
       public Options build () {
-        return new Options(info, items.toArray(new OptionItem[0]));
+        return new Options(info, title, subtitle, items.toArray(new OptionItem[0]));
       }
     }
   }
@@ -2385,7 +2402,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     for (int i = 0; i < ids.length; i++) {
       items[i] = new OptionItem(ids != null ? ids[i] : i, titles[i], colors != null ? colors[i] : OPTION_COLOR_NORMAL, icons != null ? icons[i] : 0);
     }
-    return new Options(info, items);
+    return new Options(info, null, null, items);
   }
 
   public final PopupLayout showOptions (Options options, final OptionDelegate delegate) {
@@ -2409,6 +2426,11 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     }
 
     OptionsLayout optionsWrap = new OptionsLayout(context(), this, forcedTheme);
+    optionsWrap.setHeader(options.title);
+    if (options.subtitle != null) {
+      optionsWrap.setSubtitle(options.subtitle.name, options.subtitle.icon, options.subtitle.color);
+    }
+
     optionsWrap.setInfo(this, tdlib(), options.info, false);
     optionsWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
 

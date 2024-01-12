@@ -83,6 +83,7 @@ import org.thunderdog.challegram.widget.DoubleTextView;
 import org.thunderdog.challegram.widget.DoubleTextViewWithIcon;
 import org.thunderdog.challegram.widget.EmbeddableStickerView;
 import org.thunderdog.challegram.widget.EmptySmartView;
+import org.thunderdog.challegram.widget.GiftHeaderView;
 import org.thunderdog.challegram.widget.JoinedUsersView;
 import org.thunderdog.challegram.widget.ListInfoView;
 import org.thunderdog.challegram.widget.LiveLocationView;
@@ -270,6 +271,9 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         int barHeight = Screen.dp(42f);
         int marginBottom = Screen.dp(12f);
         return toneHeight + paletteHeight * 2 + inputHeight * 2 + barHeight + marginBottom;
+      }
+      case ListItem.TYPE_GIFT_HEADER: {
+        return GiftHeaderView.getDefaultHeight();
       }
       default: {
         // FIXME: This can be used only by ThemeController
@@ -1171,6 +1175,12 @@ public class SettingHolder extends RecyclerView.ViewHolder {
           stupidView.addThemeListeners(themeProvider);
         }
         return new SettingHolder(stupidView);
+      }
+      case ListItem.TYPE_GIFT_HEADER: {
+        GiftHeaderView view = new GiftHeaderView(context);
+        ViewSupport.setThemedBackground(view, ColorId.filling, themeProvider);
+        view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, GiftHeaderView.getDefaultHeight()));
+        return new SettingHolder(view);
       }
       case ListItem.TYPE_REACTION_CHECKBOX: {
         ReactionCheckboxSettingsView view = new ReactionCheckboxSettingsView(context);

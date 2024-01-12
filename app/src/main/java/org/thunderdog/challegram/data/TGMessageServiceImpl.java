@@ -17,8 +17,6 @@ package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
 import android.graphics.RectF;
-import android.text.Spanned;
-import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
 import android.view.MotionEvent;
 import android.view.View;
@@ -57,9 +55,6 @@ import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextEntityCustom;
 import org.thunderdog.challegram.util.text.TextEntityMessage;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.util.ClickHelper;
@@ -743,6 +738,10 @@ abstract class TGMessageServiceImpl extends TGMessage {
   }
 
   private static FormattedText[] parseFormatArgs (FormattedArgument... args) {
+    if (args == null) {
+      return new FormattedText[0];
+    }
+
     FormattedText[] formatArgs = new FormattedText[args.length];
     for (int i = 0; i < args.length; i++) {
       formatArgs[i] = args[i].buildArgument();
@@ -751,15 +750,7 @@ abstract class TGMessageServiceImpl extends TGMessage {
   }
 
   protected final FormattedText getText (@StringRes int resId, FormattedArgument... args) {
-    if (args == null || args.length == 0) {
-      return new FormattedText(Lang.getString(resId));
-    }
-    FormattedText[] formatArgs = parseFormatArgs(args);
-    CharSequence text = Lang.getString(resId,
-      (target, argStart, argEnd, argIndex, needFakeBold) -> formatArgs[argIndex],
-      (Object[]) formatArgs
-    );
-    return toFormattedText(text);
+    return FormattedText.valueOf(tdlib, openParameters(), resId, parseFormatArgs(args));
   }
 
   protected final FormattedText formatText (@NonNull String format, FormattedArgument... args) {
@@ -771,18 +762,11 @@ abstract class TGMessageServiceImpl extends TGMessage {
       (target, argStart, argEnd, argIndex, needFakeBold) -> formatArgs[argIndex],
       (Object[]) formatArgs
     );
-    return toFormattedText(text);
+    return FormattedText.valueOf(text, tdlib, openParameters());
   }
 
   protected final FormattedText getPlural (@StringRes int resId, long num, FormattedArgument... args) {
-    FormattedText[] formatArgs = parseFormatArgs(args);
-    CharSequence text = Lang.plural(resId, num,
-      (target, argStart, argEnd, argIndex, needFakeBold) -> argIndex == 0 ?
-        Lang.boldCreator().onCreateSpan(target, argStart, argEnd, argIndex, needFakeBold) :
-        formatArgs[argIndex - 1],
-      (Object[]) formatArgs
-    );
-    return toFormattedText(text);
+    return FormattedText.getPlural(tdlib, openParameters(), resId, num, parseFormatArgs(args));
   }
 
   protected final FormattedText getDuration (
@@ -820,61 +804,5 @@ abstract class TGMessageServiceImpl extends TGMessage {
       return getPlural(secondsRes, seconds, args);
     }
     throw new IllegalArgumentException("duration == " + durationUnit.toMillis(duration));
-  }
-
-  private FormattedText toFormattedText (CharSequence text) {
-    final String string = text.toString();
-    if (!(text instanceof Spanned)) {
-      return new FormattedText(string);
-    }
-    List<TextEntity> mixedEntities = null;
-    Spanned spanned = (Spanned) text;
-    Object[] spans = spanned.getSpans(
-      0,
-      spanned.length(),
-      Object.class
-    );
-    for (Object span : spans) {
-      final int spanStart = spanned.getSpanStart(span);
-      final int spanEnd = spanned.getSpanEnd(span);
-      if (spanStart == -1 || spanEnd == -1) {
-        continue;
-      }
-      if (span instanceof FormattedText) {
-        FormattedText formattedText = (FormattedText) span;
-        if (formattedText.entities != null) {
-          for (TextEntity entity : formattedText.entities) {
-            entity.offset(spanStart);
-            if (mixedEntities == null) {
-              mixedEntities = new ArrayList<>();
-            }
-            mixedEntities.add(entity);
-          }
-        }
-      } else if (span instanceof CharacterStyle) {
-        TdApi.TextEntityType[] entityType = TD.toEntityType((CharacterStyle) span);
-        if (entityType != null && entityType.length > 0) {
-          TdApi.TextEntity[] telegramEntities = new TdApi.TextEntity[entityType.length];
-          for (int i = 0; i < entityType.length; i++) {
-            telegramEntities[i] = new TdApi.TextEntity(
-              spanStart,
-              spanEnd - spanStart,
-              entityType[i]
-            );
-          }
-          TextEntity[] entities = TextEntity.valueOf(tdlib, string, telegramEntities, openParameters());
-          if (entities != null && entities.length > 0) {
-            if (mixedEntities == null) {
-              mixedEntities = new ArrayList<>();
-            }
-            Collections.addAll(mixedEntities, entities);
-          }
-        }
-      }
-    }
-    return new FormattedText(
-      string,
-      mixedEntities != null && !mixedEntities.isEmpty() ? mixedEntities.toArray(new TextEntity[0]) : null
-    );
   }
 }

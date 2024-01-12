@@ -4977,6 +4977,11 @@
   <string name="xFutureWinners_other">%1$s winners to be selected</string>
   <string name="format_giveawayInfo">%1$s: %2$s</string>
 
+  <string name="xPastWinnersOn_one">%1$s winner was selected on %2$s</string>
+  <string name="xPastWinnersOn_other">%1$s winners were selected on %2$s</string>
+  <string name="xPastWinners_one">%1$s winner was selected</string>
+  <string name="xPastWinners_other">%1$s winners were selected</string>
+
   <string name="LinkPreviewEnlarged">Link preview media will be enlarged</string>
   <string name="LinkPreviewMinimized">Link preview media will be minimized</string>
   <string name="LinkPreviewShowAbove">Link preview will appear above the text</string>
@@ -5002,5 +5007,101 @@
   <string name="AccountDeleted">Account deleted</string>
   <string name="AccountDeletedText">Your account %1$s (%2$s) is now deleted from Telegram servers, and can no longer be restored.\n\nUsing the same phone number will create a new account.</string>
   <string name="ViewOnce">View once</string>
+
+  <string name="GiveawayCongratulations">Congratulations</string>
+  <string name="GiveawayUnclaimedPrize">Unclaimed Prize</string>
+  <string name="GiveawayYouGetUnclaimedPrize">You have an unclaimed prize from a giveaway by:</string>
+  <string name="GiveawayYouWon">You won a prize in a giveaway organized by:</string>
+  <string name="GiveawayYouGetGift">You received a gift from:</string>
+  <string name="GiveawayLearnMore">Learn More</string>
+  <string name="GiveawayParticipating">Participating</string>
+  <string name="GiveawayPrizes">Giveaway Prizes</string>
+  <string name="GiveawayPrizesWith">with</string>
+  <string name="GiveawayPrizesAdditional">%1$s x %2$s</string>
+  <string name="GiveawayWinners">Winners</string>
+  <string name="GiveawayAllWinnersReceivedLinks">All winners received gift links in private messages.</string>
+  <string name="GiveawayWinnersSelected">Winners Selected!</string>
+
+  <string name="GiveawayCountries">from %1$s</string>
+  <string name="GiveawayParticipants">Participants</string>
+  <string name="GiveawayParticipantsAll">All subscribers of the channel:</string>
+  <string name="GiveawayParticipantsNew">New subscribers of the channel:</string>
+  <string name="GiveawayWinnersSelectionDateHeader">Winners Selection Date</string>
+  <string name="GiveawayWinnersSelectionDate">%1$s at %2$s</string>
+
+  <string name="xGiveawayWinnersSelectedInfo_one">%1$s winner of the %2$s were randomly selected by Telegram.</string>
+  <string name="xGiveawayWinnersSelectedInfo_other">%1$s winners of the %2$s were randomly selected by Telegram.</string>
+  <string name="xGiveawayPrizePremiumInfo_one">%1$s Telegram Premium Subscription for %2$s months.</string>
+  <string name="xGiveawayPrizePremiumInfo_other">%1$s Telegram Premium Subscriptions for %2$s months.</string>
+  <string name="xGiveawayPrizeReceivedInfo_one">Your prize is a **Telegram Premium** subscription for **%1$s** month.</string>
+  <string name="xGiveawayPrizeReceivedInfo_other">Your prize is a **Telegram Premium** subscription for **%1$s** months.</string>
+
+  <string name="xGiveawayUnclaimedPrizeReceivedInfo_one">This prize is a **Telegram Premium** subscription for **%1$s** month.</string>
+  <string name="xGiveawayUnclaimedPrizeReceivedInfo_other">This prize is a **Telegram Premium** subscription for **%1$s** months.</string>
+
+  <string name="xTelegramPremiumForMonth_one">Telegram Premium for %1$s month</string>
+  <string name="xTelegramPremiumForMonth_other">Telegram Premium for %1$s months</string>
+
+  <string name="format_GiveawayDateTime">%1$s at %2$s</string>
+
+  <string name="Gift">Gift</string>
+  <string name="GiftLink">Gift link</string>
+  <string name="GiftLinkDesc">This link allows you to activate a **Telegram Premium** subscription</string>
+  <string name="GiftLinkActivated">Activated Gift link</string>
+  <string name="GiftLinkActivatedDesc">This link was used to activate a **Telegram Premium** subscription</string>
+  <string name="GiftLinkRedeem">Redeem gift link</string>
+  <string name="GiftDate">Date</string>
+  <string name="GiftFrom">From</string>
+  <string name="GiftFromUnknown">Unknown Sender</string>
+  <string name="GiftTo">To</string>
+  <string name="GiftToUnknown">No recipient</string>
+  <string name="GiftReason">Reason</string>
+  <string name="GiftReasonGift">Gift</string>
+  <string name="GiftReasonGiveaway">Giveaway</string>
+  <string name="GiftLinkWasActivated">The link was activated on %1$s at %2$s</string>
+  <string name="OpenGiftLink">Open gift link</string>
+
+  <string name="GiftLinkShareDesc">You can also %1$s to a friend as a gift.</string>
+  <string name="GiftLinkShareDesc_SendThisLink">send this link</string>
+
+
+
+  <!-- Giveaway show more popup -->
+  <string name="GiveawaySponsors_one">%2$s and %1$s more channel</string>
+  <string name="GiveawaySponsors_other">%2$s and %1$s more channels</string>
+
+  <string name="GiveawayEnded">Giveaway ended</string>
+  <string name="GiveawayEndedYouWon">You won a prize in this giveaway</string>
+  <string name="GiveawayEndedYouLose">You didn’t win a prize in this giveaway</string>
+  <string name="GiveawayEndedRefunded">The channel cancelled the prizes by refunding the payment for them</string>
+
+  <string name="GiveawayOngoing">Giveaway ongoing</string>
+  <string name="GiveawayOngoingYouParticipating">You are participating in this giveaway</string>
+  <string name="GiveawayOngoingYouEligible">You can participate in this giveaway</string>
+  <string name="GiveawayOngoingYouRestricted">You can’t participate in this giveaway</string>
+
+  <string name="GiveawayInfoOngoingPart1_one">This giveaway is sponsored by the admins of %2$s, who acquired %1$s Telegram Premium subscription for %3$s months for its followers.</string>
+  <string name="GiveawayInfoOngoingPart1_other">This giveaway is sponsored by the admins of %2$s, who acquired %1$s Telegram Premium subscriptions for %3$s months for its followers.</string>
+  <string name="GiveawayInfoOngoingPart2_one">On %2$s, Telegram will automatically selected %1$s random user that joined %3$s.</string>
+  <string name="GiveawayInfoOngoingPart2_other">On %2$s, Telegram will automatically selected %1$s random users that joined %3$s.</string>
+
+  <string name="GiveawayInfoPartExtended_one">%2$s also included %1$s %3$s with the prizes. The channel admins are responsible for delivering these prizes.</string>
+  <string name="GiveawayInfoPartExtended_other">%2$s also included %1$s %3$s with the prizes. The channel admins are responsible for delivering these prizes.</string>
+
+  <string name="GiveawayInfoOngoingPartRestrictedAdmin">You are not eligible for this giveaway because you are an admin of a participating channel %1$s.</string>
+  <string name="GiveawayInfoOngoingPartRestrictedMember">You are not eligible to participate in this giveaway because you joined this channel on %1$s, which is before the contest started.</string>
+  <string name="GiveawayInfoOngoingPartRestrictedCountry">You are not eligible to participate in this giveaway because your country (%1$s) is not included in the terms of the giveaway.</string>
+  <string name="GiveawayInfoOngoingPartEligible">To take part in this giveaway please join the channel %1$s before %2$s.</string>
+
+  <string name="GiveawayInfoEndedPart1_one">This giveaway was sponsored by the admins of %2$s, who acquired %1$s Telegram Premium subscription for %3$s months for its followers.</string>
+  <string name="GiveawayInfoEndedPart1_other">This giveaway was sponsored by the admins of %2$s, who acquired %1$s Telegram Premium subscriptions for %3$s months for its followers.</string>
+  <string name="GiveawayInfoEndedPart2_one">On %2$s, Telegram automatically selected %1$s random user that joined %3$s.</string>
+  <string name="GiveawayInfoEndedPart2_other">On %2$s, Telegram automatically selected %1$s random users that joined %3$s.</string>
+  <string name="GiveawayInfoEndedPart3_one">%1$s of the winners already used their gift link.</string>
+  <string name="GiveawayInfoEndedPart3_other">%1$s of the winners already used their gift links.</string>
+
+
+  <string name="GiveawayInfoClose">Close</string>
+  <string name="GiveawayViewMyPrize">View my prize</string>
 
 </resources>

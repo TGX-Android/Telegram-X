@@ -5383,4 +5383,13 @@ public class TD {
   }
 
   public static final String[] ICON_NAMES = {"All", "Unread", "Unmuted", "Bots", "Channels", "Groups", "Private", "Custom", "Setup", "Cat", "Crown", "Favorite", "Flower", "Game", "Home", "Love", "Mask", "Party", "Sport", "Study", "Trade", "Travel", "Work", "Airplane", "Book", "Light", "Like", "Money", "Note", "Palette"};
+
+  public static boolean isParticipating (@Nullable TdApi.PremiumGiveawayInfo info) {
+    if (info == null || info.getConstructor() != TdApi.PremiumGiveawayInfoOngoing.CONSTRUCTOR) {
+      return false;
+    }
+
+    TdApi.PremiumGiveawayInfoOngoing infoOngoing = (TdApi.PremiumGiveawayInfoOngoing) info;
+    return infoOngoing.status.getConstructor() == TdApi.PremiumGiveawayParticipantStatusParticipating.CONSTRUCTOR;
+  }
 }

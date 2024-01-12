@@ -216,6 +216,7 @@
   <item type="id" name="controller_chatJoinRequests" />
   <item type="id" name="controller_messageSeen" />
   <item type="id" name="controller_joinDialog" />
+  <item type="id" name="controller_giftDialog" />
 
   <item type="id" name="controller_code" />
   <item type="id" name="controller_name" />
@@ -633,6 +634,9 @@
   <item type="id" name="btn_statsPublicShares" />
   <item type="id" name="btn_statsPublishDate" />
   <item type="id" name="btn_statsSignature" />
+  <item type="id" name="btn_openGiftSender" />
+  <item type="id" name="btn_openGiftReceiver" />
+  <item type="id" name="btn_showGiveawayMessage" />
 
   <item type="id" name="stats_memberCount" />
   <item type="id" name="stats_join" />
@@ -1358,4 +1362,6 @@
   <item type="id" name="controller_emojiLayoutEmojiTrending" />
   <item type="id" name="controller_emojiLayoutReactions" />
   <item type="id" name="controller_reactionsPicker" />
+
+  <item type="id" name="btn_redeemGiftLink" />
 </resources>

@@ -432,6 +432,8 @@ public class TGInlineKeyboard {
     private boolean needFakeBold;
 
     private @DrawableRes int customIconRes;
+    private boolean customIconReverse;
+    private @ColorId int customColorId;
     private boolean isCustom;
     private String currencyChar;
     private float currencyCharWidth;
@@ -500,6 +502,14 @@ public class TGInlineKeyboard {
       }
     }
 
+    public void setCustomIconReverse (boolean customIconReverse) {
+      this.customIconReverse = customIconReverse;
+    }
+
+    public void setCustomColorId (int customColorId) {
+      this.customColorId = customColorId;
+    }
+
     private int row = -1, column = -1;
 
     private boolean useWhiteMode () {
@@ -537,7 +547,7 @@ public class TGInlineKeyboard {
 
       final boolean useBubbleMode = useWhiteMode();
       // float darkFactor = Theme.getDarkFactor();
-      int inlineOutlineColor = Theme.inlineOutlineColor(isOutBubble);
+      int inlineOutlineColor = customColorId != ColorId.NONE ? Theme.getColor(customColorId) : Theme.inlineOutlineColor(isOutBubble);
       int fillingColor = 0;
 
       if (useBubbleMode) {
@@ -581,7 +591,7 @@ public class TGInlineKeyboard {
 
       //noinspection ConstantConditions
       final float textColorFactor = ALLOW_INVERSE ? (selectionFactor * activeFactor * (1f - fadeFactor)) : ALLOW_ALWAYS_ACTIVE ? selectionFactor * (1f - fadeFactor) : 0f;
-      final int textColor = useBubbleMode ? context.context.getBubbleButtonTextColor() : ColorUtils.fromToArgb(Theme.inlineTextColor(isOutBubble), Theme.inlineTextActiveColor(), textColorFactor);
+      final int textColor = useBubbleMode ? context.context.getBubbleButtonTextColor() : ColorUtils.fromToArgb(customColorId != ColorId.NONE ? Theme.getColor(customColorId) :Theme.inlineTextColor(isOutBubble), Theme.inlineTextActiveColor(), textColorFactor);
 
       int textX = cx + getButtonPadding();
       if (customIconRes != 0) {
@@ -591,7 +601,7 @@ public class TGInlineKeyboard {
         int totalWidth = iconWidth + contentWidth;
         int offset = Screen.dp(4f);
         int iconX;
-        if (Lang.rtl()) {
+        if (Lang.rtl() ^ customIconReverse) {
           iconX = cx + buttonWidth / 2 + totalWidth / 2 + offset - iconWidth;
           textX -= iconWidth / 4 * 3 + offset - iconWidth;
         } else {
@@ -663,13 +673,14 @@ public class TGInlineKeyboard {
           }
         }
       } else {
+        drawProgress(c, useBubbleMode, textColorFactor);
         // TODO
       }
     }
 
     private void drawProgress (Canvas c, boolean useBubbleMode, float textColorFactor) {
       if (progress != null) {
-        final int color = useBubbleMode ?  context.context.getBubbleButtonTextColor() : ColorUtils.fromToArgb(Theme.inlineIconColor(context.context != null && context.context.isOutgoingBubble()), Theme.inlineTextActiveColor(), textColorFactor);
+        final int color = useBubbleMode ?  context.context.getBubbleButtonTextColor() : ColorUtils.fromToArgb(customColorId != ColorId.NONE ? Theme.getColor(customColorId) :Theme.inlineIconColor(context.context != null && context.context.isOutgoingBubble()), Theme.inlineTextActiveColor(), textColorFactor);
         final int progressColor = ColorUtils.color((int) ((float) Color.alpha(color) * progressFactor), color);
         progress.forceColor(progressColor);
         progress.draw(c);

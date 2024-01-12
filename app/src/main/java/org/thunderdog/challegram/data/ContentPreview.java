@@ -554,6 +554,19 @@ public class ContentPreview {
         }
         return new ContentPreview(EMOJI_GIFT, 0, text, true);
       }
+      case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR: {
+        TdApi.MessagePremiumGiveawayWinners premiumGiveaway = (TdApi.MessagePremiumGiveawayWinners) message.content;
+        String text;
+        if (premiumGiveaway.winnerCount > 0) {
+          text = Lang.getString(R.string.format_giveawayInfo,
+            Lang.getString(R.string.Giveaway),
+            Lang.plural(R.string.xPastWinnersOn, premiumGiveaway.winnerCount, Lang.getDate(premiumGiveaway.actualWinnersSelectionDate, TimeUnit.SECONDS))
+          );
+        } else {
+          text = Lang.getString(R.string.Giveaway);
+        }
+        return new ContentPreview(EMOJI_GIFT, 0, text, true);
+      }
       case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR: {
         TdApi.MessagePremiumGiveawayCompleted giveawayCompleted = (TdApi.MessagePremiumGiveawayCompleted) message.content;
         arg1 = giveawayCompleted.winnerCount;
@@ -621,7 +634,6 @@ public class ContentPreview {
       case TdApi.MessageChatChangePhoto.CONSTRUCTOR:
       case TdApi.MessageChatDeletePhoto.CONSTRUCTOR:
       case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR:
-      case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR:
 
       // Handled by getSimpleContentPreview, but unsupported
       case TdApi.MessageUnsupported.CONSTRUCTOR:
@@ -1257,6 +1269,21 @@ public class ContentPreview {
         }
         return new ContentPreview(EMOJI_GIFT, 0, text, true);
       }
+      case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR: {
+        int winnerCount = arg1;
+        int monthCount = arg2;
+        String text;
+        if (winnerCount > 0) {
+          text = Lang.getString(R.string.format_giveawayInfo,
+            Lang.getString(R.string.Giveaway),
+            Lang.plural(R.string.xPastWinners, winnerCount)
+          );
+        } else {
+          text = Lang.getString(R.string.Giveaway);
+        }
+        return new ContentPreview(EMOJI_GIFT, 0, text, true);
+      }
+
 
       // Must be supported by the caller and never passed to this method.
       case TdApi.MessageGiftedPremium.CONSTRUCTOR:
@@ -1286,7 +1313,6 @@ public class ContentPreview {
       case TdApi.MessagePassportDataSent.CONSTRUCTOR:
       case TdApi.MessageChatSetBackground.CONSTRUCTOR:
       case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
-      case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR:
         // TODO support these previews
         return new ContentPreview(EMOJI_QUIZ, R.string.UnsupportedMessage);
         
