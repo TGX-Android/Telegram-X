@@ -195,13 +195,13 @@ dependencies {
   implementation(project(":vkryl:android"))
   implementation(project(":vkryl:td"))
   // AndroidX: https://developer.android.com/jetpack/androidx/versions
-  implementation("androidx.activity:activity:1.7.2")
+  implementation("androidx.activity:activity:1.8.2")
   implementation("androidx.palette:palette:1.0.0")
   implementation("androidx.recyclerview:recyclerview:1.3.2")
   implementation("androidx.viewpager:viewpager:1.0.0")
-  implementation("androidx.work:work-runtime:2.8.1")
-  implementation("androidx.browser:browser:1.5.0")
-  implementation("androidx.exifinterface:exifinterface:1.3.6")
+  implementation("androidx.work:work-runtime:2.9.0")
+  implementation("androidx.browser:browser:1.5.0") // 1.7.0+ requires minSdkVersion 19
+  implementation("androidx.exifinterface:exifinterface:1.3.7")
   implementation("androidx.collection:collection:1.3.0")
   implementation("androidx.interpolator:interpolator:1.0.0")
   implementation("androidx.gridlayout:gridlayout:1.0.0")
@@ -229,15 +229,15 @@ dependencies {
   // 17.x version requires minSdk 19 or higher
   implementation("com.google.mlkit:language-id:16.1.1")
   // The Checker Framework: https://checkerframework.org/CHANGELOG.md
-  compileOnly("org.checkerframework:checker-qual:3.40.0")
+  compileOnly("org.checkerframework:checker-qual:3.42.0")
   // OkHttp: https://github.com/square/okhttp/blob/master/CHANGELOG.md
-  implementation("com.squareup.okhttp3:okhttp:4.11.0")
+  implementation("com.squareup.okhttp3:okhttp:4.12.0")
   // ShortcutBadger: https://github.com/leolin310148/ShortcutBadger
   implementation("me.leolin:ShortcutBadger:1.1.22@aar")
   // ReLinker: https://github.com/KeepSafe/ReLinker/blob/master/CHANGELOG.md
   implementation("com.getkeepsafe.relinker:relinker:1.4.5")
   // Konfetti: https://github.com/DanielMartinus/Konfetti/blob/main/README.md
-  implementation("nl.dionsegijn:konfetti-xml:2.0.3")
+  implementation("nl.dionsegijn:konfetti-xml:2.0.4")
   // Transcoder: https://github.com/natario1/Transcoder/blob/master/docs/_about/changelog.md
   implementation("com.github.natario1:Transcoder:ba8f098c94")
   // https://github.com/mikereedell/sunrisesunsetlib-java

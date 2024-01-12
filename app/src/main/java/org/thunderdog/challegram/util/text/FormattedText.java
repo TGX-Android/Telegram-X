@@ -12,14 +12,20 @@
  */
 package org.thunderdog.challegram.util.text;
 
+import android.text.Spanned;
+import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
+import org.thunderdog.challegram.telegram.TdlibProvider;
 import org.thunderdog.challegram.telegram.TdlibUi;
 
 import java.util.ArrayList;
@@ -266,6 +272,83 @@ public class FormattedText {
     if (charSequence == null)
       return null;
     return new FormattedText(charSequence.toString(), TextEntity.valueOf(/*FIXME?*/ context.context().navigation().getCurrentStackItem(), context.tdlib(), charSequence, openParameters));
+  }
+
+  public static FormattedText valueOf (TdlibProvider tdlib, TdlibUi.UrlOpenParameters urlOpenParameters, @StringRes int resId, FormattedText... formatArgs) {
+    if (formatArgs == null || formatArgs.length == 0) {
+      return new FormattedText(Lang.getString(resId));
+    }
+    CharSequence text = Lang.getString(resId,
+      (target, argStart, argEnd, argIndex, needFakeBold) -> formatArgs[argIndex],
+      (Object[]) formatArgs
+    );
+    return valueOf(text, tdlib, urlOpenParameters);
+  }
+
+  public static FormattedText getPlural (TdlibProvider tdlib, TdlibUi.UrlOpenParameters urlOpenParameters, @StringRes int resId, long num, FormattedText... formatArgs) {
+    CharSequence text = Lang.plural(resId, num,
+      (target, argStart, argEnd, argIndex, needFakeBold) -> argIndex == 0 ?
+        Lang.boldCreator().onCreateSpan(target, argStart, argEnd, argIndex, needFakeBold) :
+        formatArgs[argIndex - 1],
+      (Object[]) formatArgs
+    );
+    return valueOf(text, tdlib, urlOpenParameters);
+  }
+
+  public static FormattedText valueOf (CharSequence text, TdlibProvider tdlib, TdlibUi.UrlOpenParameters urlOpenParameters) {
+    final String string = text.toString();
+    if (!(text instanceof Spanned)) {
+      return new FormattedText(string);
+    }
+    List<TextEntity> mixedEntities = null;
+    Spanned spanned = (Spanned) text;
+    Object[] spans = spanned.getSpans(
+      0,
+      spanned.length(),
+      Object.class
+    );
+    for (Object span : spans) {
+      final int spanStart = spanned.getSpanStart(span);
+      final int spanEnd = spanned.getSpanEnd(span);
+      if (spanStart == -1 || spanEnd == -1) {
+        continue;
+      }
+      if (span instanceof FormattedText) {
+        FormattedText formattedText = (FormattedText) span;
+        if (formattedText.entities != null) {
+          for (TextEntity entity : formattedText.entities) {
+            entity.offset(spanStart);
+            if (mixedEntities == null) {
+              mixedEntities = new ArrayList<>();
+            }
+            mixedEntities.add(entity);
+          }
+        }
+      } else if (span instanceof CharacterStyle) {
+        TdApi.TextEntityType[] entityType = TD.toEntityType((CharacterStyle) span);
+        if (entityType != null && entityType.length > 0) {
+          TdApi.TextEntity[] telegramEntities = new TdApi.TextEntity[entityType.length];
+          for (int i = 0; i < entityType.length; i++) {
+            telegramEntities[i] = new TdApi.TextEntity(
+              spanStart,
+              spanEnd - spanStart,
+              entityType[i]
+            );
+          }
+          TextEntity[] entities = TextEntity.valueOf(tdlib.tdlib(), string, telegramEntities, urlOpenParameters);
+          if (entities != null && entities.length > 0) {
+            if (mixedEntities == null) {
+              mixedEntities = new ArrayList<>();
+            }
+            Collections.addAll(mixedEntities, entities);
+          }
+        }
+      }
+    }
+    return new FormattedText(
+      string,
+      mixedEntities != null && !mixedEntities.isEmpty() ? mixedEntities.toArray(new TextEntity[0]) : null
+    );
   }
 
   public static FormattedText parseRichText (ViewController<?> context, @Nullable TdApi.RichText richText, @Nullable TdlibUi.UrlOpenParameters openParameters) {

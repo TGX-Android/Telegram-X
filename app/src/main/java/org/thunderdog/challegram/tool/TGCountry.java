@@ -106,7 +106,7 @@ public class TGCountry {
     return null;
   }
 
-  private String[] find (String countryCode) {
+  public String[] find (String countryCode) {
     for (String[] country : countryList) {
       if (country[1].equals(countryCode)) {
         return country;

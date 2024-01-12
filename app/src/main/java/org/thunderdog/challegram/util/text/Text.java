@@ -2652,7 +2652,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
         int width = getLineWidth(part.getLineIndex());
         int cx = startX + maxWidth / 2;
         int sx = cx - width / 2, ex = cx + width / 2;
-        searchX = part.makeX(sx, ex, 0);
+        searchX = part.makeX(sx, ex, 0) - startX;
       } else {
         searchX = part.makeX(startX, endX, endXBottomPadding) - startX;
       }
