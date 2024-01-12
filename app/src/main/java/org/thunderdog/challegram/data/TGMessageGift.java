@@ -23,7 +23,6 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.popups.ModernActionedLayout;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -32,15 +31,15 @@ import org.thunderdog.challegram.tool.UI;
 import me.vkryl.td.Td;
 
 public class TGMessageGift extends TGMessageGiveawayBase {
-  private final TdApi.MessagePremiumGiftCode msgContent;
+  private final TdApi.MessagePremiumGiftCode premiumGiftCode;
 
   public TGMessageGift (MessagesManager manager, TdApi.Message msg, @NonNull TdApi.MessagePremiumGiftCode premiumGiftCode) {
     super(manager, msg);
-    this.msgContent = premiumGiftCode;
+    this.premiumGiftCode = premiumGiftCode;
   }
 
   protected int onBuildContent (int maxWidth) {
-    final boolean isUnclaimed = msgContent.isUnclaimed;
+    final boolean isUnclaimed = premiumGiftCode.isUnclaimed;
 
     content = new Content(maxWidth - Screen.dp(CONTENT_PADDING_DP * 2));
 
@@ -50,14 +49,14 @@ public class TGMessageGift extends TGMessageGiveawayBase {
 
     content.add(Lang.boldify(Lang.getString(isUnclaimed ? R.string.GiveawayUnclaimedPrize : R.string.GiveawayCongratulations)), getTextColorSet(), currentViews);
     content.padding(Screen.dp(6));
-    content.add(Lang.getString(isUnclaimed ? R.string.GiveawayYouGetUnclaimedPrize : (msgContent.isFromGiveaway ? R.string.GiveawayYouWon : R.string.GiveawayYouGetGift)), getTextColorSet(), currentViews);
-    if (msgContent.creatorId != null) {
+    content.add(Lang.getString(isUnclaimed ? R.string.GiveawayYouGetUnclaimedPrize : (premiumGiftCode.isFromGiveaway ? R.string.GiveawayYouWon : R.string.GiveawayYouGetGift)), getTextColorSet(), currentViews);
+    if (premiumGiftCode.creatorId != null) {
       content.padding(Screen.dp(6));
-      content.add(new ContentBubbles(this, maxWidth - Screen.dp(CONTENT_PADDING_DP * 2 + 60)).setOnClickListener(this::onBubbleClick).addChatId(Td.getSenderId(msgContent.creatorId)));
+      content.add(new ContentBubbles(this, maxWidth - Screen.dp(CONTENT_PADDING_DP * 2 + 60)).setOnClickListener(this::onBubbleClick).addChatId(Td.getSenderId(premiumGiftCode.creatorId)));
     }
 
     content.padding(Screen.dp(BLOCK_MARGIN));
-    content.add(Strings.buildMarkdown(this, Lang.plural(isUnclaimed ? R.string.xGiveawayUnclaimedPrizeReceivedInfo : R.string.xGiveawayPrizeReceivedInfo, msgContent.monthCount)), getTextColorSet(), currentViews);
+    content.add(Strings.buildMarkdown(this, Lang.plural(isUnclaimed ? R.string.xGiveawayUnclaimedPrizeReceivedInfo : R.string.xGiveawayPrizeReceivedInfo, premiumGiftCode.monthCount)), getTextColorSet(), currentViews);
 
     invalidateGiveawayReceiver();
     return content.getHeight();
@@ -79,12 +78,12 @@ public class TGMessageGift extends TGMessageGiveawayBase {
     }
 
     loading = true;
-    tdlib.send(new TdApi.CheckPremiumGiftCode(msgContent.code), (info, error) -> UI.post(() -> {
+    tdlib.send(new TdApi.CheckPremiumGiftCode(premiumGiftCode.code), (info, error) -> UI.post(() -> {
       loading = false;
       if (error != null) {
         UI.showError(error);
       } else {
-        ModernActionedLayout.showGiftCode(context().navigation().getCurrentStackItem(), msgContent.code, msgContent, info);
+        ModernActionedLayout.showGiftCode(context().navigation().getCurrentStackItem(), premiumGiftCode.code, premiumGiftCode, info);
       }
     }));
   }

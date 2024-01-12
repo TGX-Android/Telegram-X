@@ -112,22 +112,22 @@ public final class TGMessageService extends TGMessageServiceImpl {
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessagePremiumGiveawayCreated giveawayCreated) {
     super(context, msg);
-    setTextCreator(() -> {
-      return getText(
+    setTextCreator(() ->
+      getText(
         R.string.BoostingGiveawayJustStarted,
         new SenderArgument(sender)
-      );
-    });
+      )
+    );
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessagePremiumGiveawayCompleted giveawayCompleted) {
     super(context, msg);
-    setTextCreator(() -> {
-      return getPlural(
+    setTextCreator(() ->
+      getPlural(
         R.string.BoostingGiveawayServiceWinnersSelected,
         giveawayCompleted.winnerCount
-      );
-    });
+      )
+    );
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatSetTheme setTheme) {
