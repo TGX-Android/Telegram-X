@@ -40,6 +40,7 @@ import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.GiftParticlesDrawable;
 import org.thunderdog.challegram.util.text.Text;
@@ -116,10 +117,10 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
   @Override
   protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth) {
     if (particlesDrawable != null) {
-      c.save();
+      final int saveCount = Views.save(c);
       c.translate(useFullWidthParticles ? 0: startX, startY);
       particlesDrawable.draw(c);
-      c.restore();
+      Views.restore(c, saveCount);
     }
 
     content.draw(c, view, startX + Screen.dp(CONTENT_PADDING_DP), startY);
@@ -588,7 +589,7 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
     if (id == R.id.btn_openLink) {
       if (premiumGiveawayInfo != null && premiumGiveawayInfo.getConstructor() == TdApi.PremiumGiveawayInfoCompleted.CONSTRUCTOR) {
         final TdApi.PremiumGiveawayInfoCompleted infoCompleted = (TdApi.PremiumGiveawayInfoCompleted) premiumGiveawayInfo;
-        tdlib.ui().openInternalLinkType(this, TD.makeGiftCodeLink(infoCompleted.giftCode), new TdApi.InternalLinkTypePremiumGiftCode(infoCompleted.giftCode), null, null);
+        tdlib.ui().openInternalLinkType(this, tdlib.tMeGiftCodeUrl(infoCompleted.giftCode), new TdApi.InternalLinkTypePremiumGiftCode(infoCompleted.giftCode), null, null);
       }
     }
     return true;

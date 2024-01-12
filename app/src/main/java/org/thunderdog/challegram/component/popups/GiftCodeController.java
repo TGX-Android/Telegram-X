@@ -1,3 +1,17 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 31/12/2023
+ */
 package org.thunderdog.challegram.component.popups;
 
 import android.content.Context;
@@ -18,8 +32,6 @@ import org.thunderdog.challegram.component.attach.MediaBottomBaseController;
 import org.thunderdog.challegram.component.attach.MediaLayout;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.data.TGMessageServiceImpl;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.support.ViewSupport;
@@ -73,7 +85,7 @@ public class GiftCodeController extends MediaBottomBaseController<Void> implemen
 
     items.add(new ListItem(ListItem.TYPE_GIFT_HEADER));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_copyLink, R.drawable.baseline_link_24, R.string.GiftLink)
-      .setStringValue(TD.makeGiftCodeLink(code)));
+      .setStringValue(tdlib.tMeGiftCodeUrl(code)));
 
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_openGiftSender, creatorId != null ? 0 : R.drawable.dot_baseline_acc_anon_24, R.string.GiftFrom)
@@ -152,12 +164,12 @@ public class GiftCodeController extends MediaBottomBaseController<Void> implemen
         custom.setOnClickListener(new ClickableSpan() {
           @Override
           public void onClick (@NonNull View widget) {
-            tdlib.ui().shareText(GiftCodeController.this, TD.makeGiftCodeLink(code));
+            tdlib.ui().shareText(GiftCodeController.this, tdlib.tMeGiftCodeUrl(code));
           }
         });
         FormattedText gvwf = new FormattedText(gvw, new TextEntity[] {custom});
 
-        FormattedText formattedText = TGMessageServiceImpl.getText(tdlib, null, R.string.GiftLinkShareDesc, gvwf);
+        FormattedText formattedText = FormattedText.valueOf(tdlib, null, R.string.GiftLinkShareDesc, gvwf);
 
         view.setText(formattedText.text, formattedText.entities, false);
         view.setTextSize(15f);
@@ -239,7 +251,7 @@ public class GiftCodeController extends MediaBottomBaseController<Void> implemen
     final int id = v.getId();
 
     if (id == R.id.btn_copyLink) {
-      U.copyText(TD.makeGiftCodeLink(code));
+      U.copyText(tdlib.tMeGiftCodeUrl(code));
     } else if (id == R.id.btn_openGiftSender) {
       final TdApi.MessageSender creatorId = getCreatorId();
       if (creatorId != null) {

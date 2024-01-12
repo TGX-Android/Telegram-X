@@ -28,13 +28,13 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.FormattedText;
 import org.thunderdog.challegram.util.text.Text;
@@ -78,7 +78,7 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
     });
     FormattedText gvwf = new FormattedText(gvw, new TextEntity[] {custom});
 
-    FormattedText formattedText = TGMessageServiceImpl.getPlural(tdlib, null, R.string.xGiveawayWinnersSelectedInfo, giveawayWinners.winnerCount, gvwf);
+    FormattedText formattedText = FormattedText.getPlural(tdlib, null, R.string.xGiveawayWinnersSelectedInfo, giveawayWinners.winnerCount, gvwf);
     Text.Builder b = new Text.Builder(formattedText, maxWidth - Screen.dp(CONTENT_PADDING_DP * 2), getGiveawayTextStyleProvider(), getTextColorSet(), null).viewProvider(currentViews).textFlags(Text.FLAG_ALIGN_CENTER);
 
     content.add(Lang.boldify(Lang.getString(R.string.GiveawayWinnersSelected)), getTextColorSet(), currentViews);
@@ -122,7 +122,7 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
   @Override protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth) {
     super.drawContent(view, c, startX, startY, maxWidth);
 
-    c.save();
+    final int saveCount = Views.save(c);
     c.translate(startX, startY);
 
     final int contentWidth = getContentWidth();
@@ -136,7 +136,7 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
       participantsCounter.draw(c, contentCenterX, participantsCounterY, Gravity.CENTER, 1f);
     }
 
-    c.restore();
+    Views.restore(c, saveCount);
   }
 
   @Override public void onClick (View view, TGInlineKeyboard keyboard, TGInlineKeyboard.Button button) {

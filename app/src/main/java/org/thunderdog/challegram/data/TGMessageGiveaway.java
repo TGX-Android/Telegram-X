@@ -34,6 +34,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.TGCountry;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.Counter;
 
 import java.util.concurrent.TimeUnit;
@@ -127,7 +128,7 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
   @Override protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth) {
     super.drawContent(view, c, startX, startY, maxWidth);
 
-    c.save();
+    final int saveCount = Views.save(c);
     c.translate(startX, startY);
 
     final int contentWidth = getContentWidth();
@@ -141,7 +142,7 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
       participantsCounter.draw(c, contentCenterX, participantsCounterY, Gravity.CENTER, 1f);
     }
 
-    c.restore();
+    Views.restore(c, saveCount);
   }
 
   private boolean byClick;

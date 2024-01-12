@@ -5384,10 +5384,6 @@ public class TD {
 
   public static final String[] ICON_NAMES = {"All", "Unread", "Unmuted", "Bots", "Channels", "Groups", "Private", "Custom", "Setup", "Cat", "Crown", "Favorite", "Flower", "Game", "Home", "Love", "Mask", "Party", "Sport", "Study", "Trade", "Travel", "Work", "Airplane", "Book", "Light", "Like", "Money", "Note", "Palette"};
 
-  public static String makeGiftCodeLink (String code) {
-    return "t.me/giftcode/" + code;
-  }
-
   public static boolean isParticipating (@Nullable TdApi.PremiumGiveawayInfo info) {
     if (info == null || info.getConstructor() != TdApi.PremiumGiveawayInfoOngoing.CONSTRUCTOR) {
       return false;
