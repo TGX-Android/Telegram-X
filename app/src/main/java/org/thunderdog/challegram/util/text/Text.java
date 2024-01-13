@@ -100,6 +100,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   public static final int FLAG_NO_CLICKABLE = 1 << 18;
   public static final int FLAG_TRIM_END = 1 << 19;
   public static final int FLAG_NO_SPACING = 1 << 20;
+  public static final int FLAG_ALWAYS_BREAK = 1 << 21;
 
   private static final int FLAG_DESTROYED = 1 << 23;
   private static final int FLAG_IN_LONG_PRESS = 1 << 24;
@@ -663,6 +664,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return (textFlags & FLAG_ABORT_PROCESS) != 0;
   }
 
+  public void setTextFlag (int flag, boolean value) {
+    setTextFlags(BitwiseUtils.setFlag(textFlags, flag, value));
+  }
+
   public boolean setTextFlags (int flags) {
     if (this.textFlags != flags) {
       this.textFlags = flags;
@@ -844,7 +849,11 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   }
 
   public void changeMaxWidth (int maxWidth) {
-    if (this.maxWidth != maxWidth) {
+    changeMaxWidth(maxWidth, false);
+  }
+
+  public void changeMaxWidth (int maxWidth, boolean force) {
+    if (this.maxWidth != maxWidth || force) {
       set(maxWidth, originalText, entities);
     }
   }
@@ -909,7 +918,13 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       boolean prevIsNewLine = false;
       final int totalLength = in.length();
       for (int index = 0; index < totalLength; ) {
-        int indexOfNewLine = in.indexOf('\n', index);
+        int indexOfNewLine;
+        if (BitwiseUtils.hasFlag(textFlags, Text.FLAG_ALWAYS_BREAK)) {
+          indexOfNewLine = indexOfSpaceOrNewLine(in, index);
+        } else {
+          indexOfNewLine = in.indexOf('\n', index);
+        }
+
         int length = indexOfNewLine == -1 ? totalLength - index : indexOfNewLine - index;
 
         processLine(in, index, index + length, out, emojiCallback);
@@ -986,6 +1001,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       LinkedList<DiffMatchPatch.Diff> list = DiffMatchPatch.instance().diff_main(in, debug.toString());
       for (DiffMatchPatch.Diff diff : list) {
         if (!diff.operation.equals(DiffMatchPatch.Operation.EQUAL) && diff.text.trim().length() > 0) {
+          android.util.Log.i("WTF_DEBUG", "TEXT PARSING PROBABLY FAILED:\n" + diff.operation + ": " + diff.text + "\n" + in);
           UI.showToast("TEXT PARSING PROBABLY FAILED:\n" + diff.operation + ": " + diff.text + "\n" + in, Toast.LENGTH_LONG);
         }
       }
@@ -1119,6 +1135,19 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       i++;
     }
     return c;
+  }
+
+  private static int indexOfSpaceOrNewLine (String in, int start) {
+    final int length = in.length();
+    for (int index = start; index < length; ) {
+      int codePoint = in.codePointAt(index);
+      int size = Character.charCount(codePoint);
+      if (codePoint == '\n' || codePoint == ' ') {
+        return index;
+      }
+      index += size;
+    }
+    return -1;
   }
 
   private static int indexOfSpace (String in, int start) {
@@ -2080,35 +2109,77 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     locatePart(outRect, part, TextEntity.COMPARE_MODE_NORMAL);
   }
 
-  public void locatePart (Rect outRect, TextPart part, int compareMode) {
+  public void locatePart (Rect outRect, TextPart touchPart, int compareMode) {
     if (isDestroyed()) {
       return;
     }
-    outRect.set(0, part.getY(), getLineWidth(part.getLineIndex()), part.getY() + getLineHeight(part.getLineIndex()));
+    outRect.set(
+      0,
+      touchPart.getY(),
+      getLineWidth(touchPart.getLineIndex()),
+      touchPart.getY() + getLineHeight(touchPart.getLineIndex())
+    );
     if (getEntityCount() > 0) {
-      outRect.left = part.getX();
-      outRect.right = part.getX() + (int) part.getWidth();
+      outRect.left = touchPart.getX();
+      outRect.right = touchPart.getX() + (int) touchPart.getWidth();
     }
-    TextEntity entity = part.getEntity();
+
+    TextEntity entity = touchPart.getEntity();
     if (entity != null) {
-      int i = parts.indexOf(part);
+      final int lineIndex = touchPart.getLineIndex();
+      final int lineWidth = getLineWidth(lineIndex);
+      final boolean center = BitwiseUtils.hasFlag(textFlags, FLAG_ALIGN_CENTER);
+
+      int i = parts.indexOf(touchPart);
       if (i != -1) {
         int start = i;
-        while (start > 0 && parts.get(start - 1).getLineIndex() == part.getLineIndex() && TextEntity.equals(entity, parts.get(start - 1).getEntity(), compareMode, originalText)) {
+        while (start > 0 && parts.get(start - 1).getLineIndex() == lineIndex && TextEntity.equals(entity, parts.get(start - 1).getEntity(), compareMode, originalText)) {
           start--;
         }
         int end = i;
-        while (end + 1 < parts.size() && parts.get(end + 1).getLineIndex() == part.getLineIndex() && TextEntity.equals(entity, parts.get(end + 1).getEntity(), compareMode, originalText)) {
+        while (end + 1 < parts.size() && parts.get(end + 1).getLineIndex() == lineIndex && TextEntity.equals(entity, parts.get(end + 1).getEntity(), compareMode, originalText)) {
           end++;
         }
         int bound = getBackgroundPadding(defaultTextColorSet, entity, compareMode != TextEntity.COMPARE_MODE_NORMAL, false);
         outRect.top -= bound;
         outRect.bottom += bound;
-        outRect.left = parts.get(start).getX();
-        outRect.right = parts.get(end).getX() + (int) parts.get(end).getWidth();
+
+        if (start != end) {
+          final TextPart startPart = parts.get(start);
+          final TextPart endPart = parts.get(end);
+          int startPartStartX, startPartWidth;
+          int endPartStartX, endPartWidth;
+
+          startPartWidth = (int) startPart.getWidth();
+          endPartWidth = (int) endPart.getWidth();
+
+          if (center) {
+            int cx = lastStartX + maxWidth / 2;
+            startPartStartX = startPart.makeX(cx - lineWidth / 2, cx + lineWidth / 2, 0);
+            endPartStartX = endPart.makeX(cx - lineWidth / 2, cx + lineWidth / 2, 0);
+          } else {
+            startPartStartX = startPart.makeX(lastStartX, lastEndX, lastEndXBottomPadding);
+            endPartStartX = startPart.makeX(lastStartX, lastEndX, lastEndXBottomPadding);
+          }
+          if (startPartStartX <= endPartStartX) {
+            outRect.left = startPartStartX;
+            outRect.right = endPartStartX + endPartWidth;
+          } else {
+            outRect.left = endPartStartX;
+            outRect.right = startPartStartX + startPartWidth;
+          }
+        } else {
+          if (center) {
+            int cx = lastStartX + maxWidth / 2;
+            outRect.left = touchPart.makeX(cx - lineWidth / 2, cx + lineWidth / 2, 0);
+          } else {
+            outRect.left = touchPart.makeX(lastStartX, lastEndX, lastEndXBottomPadding);
+          }
+          outRect.right = outRect.left + (int) touchPart.getWidth();
+        }
       }
     }
-    outRect.offset(lastStartX, lastStartY);
+    outRect.offset(0, lastStartY);
   }
 
   private Paint.FontMetricsInt getFontMetrics (float textSizePx) {
@@ -2124,8 +2195,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return getFontMetrics(textStyleProvider.getTextSize());
   }
 
-  int getAscent () {
-    return -getFontMetrics().ascent;
+  int getAscent (float textSizePx) {
+    return -getFontMetrics(textSizePx).ascent;
   }
 
   public int getLineHeight (boolean needPadding) {

@@ -242,6 +242,10 @@ public abstract class PageBlock {
     return handleTouchEvent(view, e);
   }
 
+  public int getCustomWidth () {
+    return -1;
+  }
+
   protected abstract boolean handleTouchEvent (View view, MotionEvent e);
 
   protected final int getMinimumContentPadding (boolean leftEdge) {
@@ -606,7 +610,7 @@ public abstract class PageBlock {
         if (!Td.isEmpty(tableRaw.caption)) {
           context.process(new PageBlockRichText(parent, tableRaw, openParameters), out);
         }
-        context.process(new PageBlockTable(parent, tableRaw, context.isRtl, openParameters), out);
+        context.process(new PageBlockTable(parent, tableRaw, openParameters), out);
         break;
       }
 
