@@ -152,6 +152,7 @@ public abstract class TextEntity {
     // different storages
     boolean isUnderline = isUnderline();
     boolean isStrikeThrough = isStrikethrough();
+    boolean isSmall = isSmall();
 
     Fonts.TextPaintStorage storage = textStyleProvider.getTextPaintStorage();
 
@@ -167,6 +168,9 @@ public abstract class TextEntity {
     if (isStrikeThrough) {
       storage = storage.getStrikeThroughStorage();
     }
+    if (isSmall) {
+      storage = storage.getAlternativeSizeStorage();
+    }
 
     TextPaint textPaint;
     if (isBold && isItalic) {
@@ -180,8 +184,7 @@ public abstract class TextEntity {
     }
 
     textStyleProvider.preparePaint(textPaint);
-
-    if (isSmall()) {
+    if (isSmall) {
       textPaint.setTextSize(textPaint.getTextSize() * .75f);
     }
 
