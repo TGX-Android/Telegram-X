@@ -2163,10 +2163,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return getFontMetrics();
   }
 
-  int getAscent () {
-    return getAscent(textStyleProvider.getTextSize());
-  }
-
   int getAscent (float textSizePx) {
     return -getFontMetrics(textSizePx).ascent;
   }
