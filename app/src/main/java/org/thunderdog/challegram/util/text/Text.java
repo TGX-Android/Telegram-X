@@ -2109,36 +2109,77 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     locatePart(outRect, part, TextEntity.COMPARE_MODE_NORMAL);
   }
 
-  public void locatePart (Rect outRect, TextPart part, int compareMode) {
+  public void locatePart (Rect outRect, TextPart touchPart, int compareMode) {
     if (isDestroyed()) {
       return;
     }
-
-    outRect.set(0, part.getY(), getLineWidth(part.getLineIndex()), part.getY() + getLineHeight(part.getLineIndex()));
+    outRect.set(
+      0,
+      touchPart.getY(),
+      getLineWidth(touchPart.getLineIndex()),
+      touchPart.getY() + getLineHeight(touchPart.getLineIndex())
+    );
     if (getEntityCount() > 0) {
-      outRect.left = part.getX();
-      outRect.right = part.getX() + (int) part.getWidth();
+      outRect.left = touchPart.getX();
+      outRect.right = touchPart.getX() + (int) touchPart.getWidth();
     }
-    TextEntity entity = part.getEntity();
+
+    TextEntity entity = touchPart.getEntity();
     if (entity != null) {
-      int i = parts.indexOf(part);
+      final int lineIndex = touchPart.getLineIndex();
+      final int lineWidth = getLineWidth(lineIndex);
+      final boolean center = BitwiseUtils.hasFlag(textFlags, FLAG_ALIGN_CENTER);
+
+      int i = parts.indexOf(touchPart);
       if (i != -1) {
         int start = i;
-        while (start > 0 && parts.get(start - 1).getLineIndex() == part.getLineIndex() && TextEntity.equals(entity, parts.get(start - 1).getEntity(), compareMode, originalText)) {
+        while (start > 0 && parts.get(start - 1).getLineIndex() == lineIndex && TextEntity.equals(entity, parts.get(start - 1).getEntity(), compareMode, originalText)) {
           start--;
         }
         int end = i;
-        while (end + 1 < parts.size() && parts.get(end + 1).getLineIndex() == part.getLineIndex() && TextEntity.equals(entity, parts.get(end + 1).getEntity(), compareMode, originalText)) {
+        while (end + 1 < parts.size() && parts.get(end + 1).getLineIndex() == lineIndex && TextEntity.equals(entity, parts.get(end + 1).getEntity(), compareMode, originalText)) {
           end++;
         }
         int bound = getBackgroundPadding(defaultTextColorSet, entity, compareMode != TextEntity.COMPARE_MODE_NORMAL, false);
         outRect.top -= bound;
         outRect.bottom += bound;
-        outRect.left = parts.get(start).getX();
-        outRect.right = parts.get(end).getX() + (int) parts.get(end).getWidth();
+
+        if (start != end) {
+          final TextPart startPart = parts.get(start);
+          final TextPart endPart = parts.get(end);
+          int startPartStartX, startPartWidth;
+          int endPartStartX, endPartWidth;
+
+          startPartWidth = (int) startPart.getWidth();
+          endPartWidth = (int) endPart.getWidth();
+
+          if (center) {
+            int cx = lastStartX + maxWidth / 2;
+            startPartStartX = startPart.makeX(cx - lineWidth / 2, cx + lineWidth / 2, 0);
+            endPartStartX = endPart.makeX(cx - lineWidth / 2, cx + lineWidth / 2, 0);
+          } else {
+            startPartStartX = startPart.makeX(lastStartX, lastEndX, lastEndXBottomPadding);
+            endPartStartX = startPart.makeX(lastStartX, lastEndX, lastEndXBottomPadding);
+          }
+          if (startPartStartX <= endPartStartX) {
+            outRect.left = startPartStartX;
+            outRect.right = endPartStartX + endPartWidth;
+          } else {
+            outRect.left = endPartStartX;
+            outRect.right = startPartStartX + startPartWidth;
+          }
+        } else {
+          if (center) {
+            int cx = lastStartX + maxWidth / 2;
+            outRect.left = touchPart.makeX(cx - lineWidth / 2, cx + lineWidth / 2, 0);
+          } else {
+            outRect.left = touchPart.makeX(lastStartX, lastEndX, lastEndXBottomPadding);
+          }
+          outRect.right = outRect.left + (int) touchPart.getWidth();
+        }
       }
     }
-    outRect.offset(lastStartX, lastStartY);
+    outRect.offset(0, lastStartY);
   }
 
   private Paint.FontMetricsInt getFontMetrics (float textSizePx) {
