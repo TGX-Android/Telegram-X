@@ -2114,32 +2114,11 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       return;
     }
 
-    final boolean useCenter = (textFlags & FLAG_ALIGN_CENTER) != 0;
-    final int searchX;
-
-    if (useCenter) {
-      int width = getLineWidth(part.getLineIndex());
-      int cx = lastStartX + maxWidth / 2;
-      int sx = cx - width / 2, ex = cx + width / 2;
-      searchX = part.makeX(sx, ex, 0) - lastStartX;
-    } else {
-      searchX = part.makeX(lastStartX, lastEndX, lastEndXBottomPadding) - lastStartX;
-    }
-
-    int px = searchX;
-    int py = part.getY() + getPartVerticalOffset(part);
-    int px1 = px + (int) part.getWidth();
-    int py1 = py + getPartHeight(part);
-
-    outRect.set(px, py, px1, py1);
-
-    /*
     outRect.set(0, part.getY(), getLineWidth(part.getLineIndex()), part.getY() + getLineHeight(part.getLineIndex()));
     if (getEntityCount() > 0) {
       outRect.left = part.getX();
       outRect.right = part.getX() + (int) part.getWidth();
     }
-    */
     TextEntity entity = part.getEntity();
     if (entity != null) {
       int i = parts.indexOf(part);
@@ -2155,8 +2134,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
         int bound = getBackgroundPadding(defaultTextColorSet, entity, compareMode != TextEntity.COMPARE_MODE_NORMAL, false);
         outRect.top -= bound;
         outRect.bottom += bound;
-        // outRect.left = parts.get(start).getX();
-        // outRect.right = parts.get(end).getX() + (int) parts.get(end).getWidth();
+        outRect.left = parts.get(start).getX();
+        outRect.right = parts.get(end).getX() + (int) parts.get(end).getWidth();
       }
     }
     outRect.offset(lastStartX, lastStartY);
