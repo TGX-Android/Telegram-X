@@ -423,7 +423,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
   }
 
   protected boolean isSupportedMessageContent (TdApi.Message message, TdApi.MessageContent messageContent) {
-    if (specialType != SPECIAL_TYPE_NONE) {
+    if (specialType == SPECIAL_TYPE_ANIMATED_EMOJI) {
       final @EmojiMessageContentType int contentType = getEmojiMessageContentType(messageContent);
       if (contentType == EmojiMessageContentType.NOT_EMOJI) {
         return false;

@@ -12,6 +12,9 @@
  */
 package org.thunderdog.challegram.component.popups;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.component.attach.MediaBottomBaseController;
 import org.thunderdog.challegram.component.attach.MediaLayout;
@@ -20,6 +23,10 @@ import org.thunderdog.challegram.navigation.ViewController;
 
 public class ModernActionedLayout extends MediaLayout {
   private MediaBottomBaseController<?> curController;
+
+  public static void showGiftCode (ViewController<?> context, String code, @Nullable TdApi.MessagePremiumGiftCode giftCodeContent, @NonNull TdApi.PremiumGiftCodeInfo giftCodeInfo) {
+    showMal(context, (mal) -> new GiftCodeController(mal, code, giftCodeContent, giftCodeInfo));
+  }
 
   public static void showMessageSeen (ViewController<?> context, TGMessage msg, TdApi.MessageViewers viewers) {
     showMal(context, (mal) -> new MessageSeenController(mal, msg, viewers));

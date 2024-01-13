@@ -1885,7 +1885,7 @@ public class Lang {
     return systemDateWithoutYear(timeMs, STYLE_LONG, "d MMMM");
   }
 
-  private static String dateYearFull (long unixTime, TimeUnit unit) {
+  public static String dateYearFull (long unixTime, TimeUnit unit) {
     long timeMs = unit.toMillis(unixTime);
     return systemDate(timeMs, STYLE_LONG, "d MMMM yyyy");
   }

@@ -6828,6 +6828,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
+  public String tMeGiftCodeUrl (@NonNull String giftCode) {
+    return tMeUrl("giftcode/" + giftCode);
+  }
+
   public String tMeHost () {
     return StringUtils.urlWithoutProtocol(tMeUrl());
   }
