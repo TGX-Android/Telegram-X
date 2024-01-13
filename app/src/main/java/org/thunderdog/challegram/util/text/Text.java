@@ -918,12 +918,11 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       boolean prevIsNewLine = false;
       final int totalLength = in.length();
       for (int index = 0; index < totalLength; ) {
-        int indexOfNewLine = in.indexOf('\n', index);
+        int indexOfNewLine;
         if (BitwiseUtils.hasFlag(textFlags, Text.FLAG_ALWAYS_BREAK)) {
-          int indexOfSpace = in.indexOf(' ', index); //indexOfSpace(in, index);
-          if (indexOfSpace != -1 && (indexOfSpace < indexOfNewLine || indexOfNewLine == -1)) {
-            indexOfNewLine = indexOfSpace;
-          }
+          indexOfNewLine = indexOfSpaceOrNewLine(in, index);
+        } else {
+          indexOfNewLine = in.indexOf('\n', index);
         }
 
         int length = indexOfNewLine == -1 ? totalLength - index : indexOfNewLine - index;
@@ -1136,6 +1135,19 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       i++;
     }
     return c;
+  }
+
+  private static int indexOfSpaceOrNewLine (String in, int start) {
+    final int length = in.length();
+    for (int index = start; index < length; ) {
+      int codePoint = in.codePointAt(index);
+      int size = Character.charCount(codePoint);
+      if (codePoint == '\n' || codePoint == ' ') {
+        return index;
+      }
+      index += size;
+    }
+    return -1;
   }
 
   private static int indexOfSpace (String in, int start) {
