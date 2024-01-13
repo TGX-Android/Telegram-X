@@ -64,7 +64,7 @@ object Abi {
   const val X64 = 4
 
   val VARIANTS = mapOf(
-    Pair(UNIVERSAL, AbiVariant("universal", displayName = "universal", filters = arrayOf("arm64-v8a", "x86_64"))),
+    Pair(UNIVERSAL, AbiVariant("universal", displayName = "universal", filters = arrayOf("arm64-v8a", "armeabi-v7a"))),
     Pair(ARMEABI_V7A, AbiVariant("arm32", "armeabi-v7a")),
     Pair(ARM64_V8A, AbiVariant("arm64", "arm64-v8a")),
     // Pair(X86, AbiVariant("x86", "x86")),
