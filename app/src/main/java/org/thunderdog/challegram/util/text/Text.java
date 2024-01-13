@@ -2160,7 +2160,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   }
 
   private Paint.FontMetricsInt getFontMetrics () {
-    return getFontMetrics();
+    return getFontMetrics(textStyleProvider.getTextSize());
   }
 
   int getAscent (float textSizePx) {
