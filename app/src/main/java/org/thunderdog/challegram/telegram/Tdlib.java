@@ -10693,6 +10693,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     if (supergroup == null || supergroup.isChannel || supergroup.isBroadcastGroup || !TD.isCreator(supergroup.status)) {
       return false;
     }
+    if (isDebugInstance() || BuildConfig.DEBUG) {
+      return true;
+    }
     synchronized (dataLock) {
       for (TdApi.SuggestedAction action : suggestedActions) {
         if (action.getConstructor() == TdApi.SuggestedActionConvertToBroadcastGroup.CONSTRUCTOR) {
