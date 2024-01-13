@@ -180,8 +180,21 @@ public class Fonts {
     private TextPaintStorage underlineStorage;
     private TextPaintStorage strikeThroughStorage;
     private TextPaintStorage extraBoldStorage;
+    private @Nullable TextPaintStorage alternativeSizeStorage;
 
     private final int paintFlags;
+
+    TextPaintStorage (@NonNull TextPaintStorage other) {
+      this(
+        other.regularTypeface,
+        other.boldTypeface,
+        other.italicTypeface,
+        other.boldItalicTypeface,
+        other.monospaceTypeface,
+        other.extraBoldTypeface,
+        other.paintFlags
+      );
+    }
 
     public TextPaintStorage (@NonNull Typeface regularTypeface, int paintFlags) {
       this(regularTypeface, null, null, null, null, null, paintFlags);
@@ -285,6 +298,13 @@ public class Fonts {
         return extraBoldStorage;
       }
       return this;
+    }
+
+    public TextPaintStorage getAlternativeSizeStorage () {
+      if (alternativeSizeStorage == null) {
+        alternativeSizeStorage = new TextPaintStorage(this);
+      }
+      return alternativeSizeStorage;
     }
 
     public TextPaintStorage getUnderlineStorage () {

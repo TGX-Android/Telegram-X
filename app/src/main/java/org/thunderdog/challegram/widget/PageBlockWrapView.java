@@ -28,7 +28,7 @@ import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.ScrollView;
+import android.widget.HorizontalScrollView;
 
 import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
@@ -36,7 +36,6 @@ import androidx.viewpager.widget.PagerAdapter;
 
 import org.json.JSONObject;
 import org.thunderdog.challegram.Log;
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.data.PageBlock;
 import org.thunderdog.challegram.data.PageBlockMedia;
 import org.thunderdog.challegram.loader.ComplexReceiver;
@@ -194,7 +193,17 @@ public class PageBlockWrapView extends FrameLayoutFix implements ViewPager.OnPag
         break;
       }
       case MODE_TABLE: {
-        ScrollView scrollView = new ScrollView(getContext());
+        HorizontalScrollView scrollView = new HorizontalScrollView(getContext()) {
+          @Override
+          public boolean onTouchEvent (MotionEvent ev) {
+            final PageBlock block = tableView.getBlock();
+            final int blockWidth = block != null ? block.getCustomWidth() : -1;
+            if (blockWidth <= getMeasuredWidth()) {
+              return false;
+            }
+            return super.onTouchEvent(ev);
+          }
+        };
         scrollView.setHorizontalScrollBarEnabled(true);
         scrollView.setVerticalScrollBarEnabled(false);
         scrollView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
