@@ -81,7 +81,7 @@ public class PageBlockTable extends PageBlock implements Destroyable {
     int columnsCount = 0;
     int rowsCount = 0;
 
-    for (Cell cell: cellsList) {
+    for (Cell cell : cellsList) {
       columnsCount = Math.max(columnsCount, cell.cellPositionEndX());
       rowsCount = Math.max(rowsCount, cell.cellPositionEndY());
     }
