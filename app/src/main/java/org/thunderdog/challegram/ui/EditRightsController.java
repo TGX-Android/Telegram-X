@@ -17,6 +17,7 @@ package org.thunderdog.challegram.ui;
 import android.content.Context;
 import android.graphics.Rect;
 import android.text.InputType;
+import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
@@ -49,7 +50,9 @@ import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.widget.FrameLayoutFix;
@@ -555,7 +558,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
               if (i.getId() == R.id.btn_togglePermissionGroup) {
                 final RightOption option = (RightOption) item.getData();
                 if (option != null && option.groupRightIds != null) {
-                  toggleRightsGroup(option.groupRightIds);
+                  toggleRightsGroup(view, option.groupRightIds);
                 }
               } else {
                 view.performClick();
@@ -1783,19 +1786,39 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     return false;
   }
 
-  private void toggleRightsGroup (int[] rights) {
+  private void toggleRightsGroup (SettingView view, int[] rights) {
     final int index = adapter.indexOfViewByIdAndValue(R.id.btn_togglePermissionGroup, rights[0]);
     final ListItem item = adapter.getItem(index);
     if (item == null) {
       return;
     }
 
+    Set<CharSequence> errorHints = null;
+    int editedCount = 0;
     boolean newValue = !item.getBoolValue();
     for (int rightId : rights) {
       boolean canEdit = hasAccessToEditRight(rightId);
       if (canEdit) {
+        if (getValueForId(rightId) != newValue) {
+          editedCount++;
+        }
         setValueForRightId(rightId, newValue);
+      } else {
+        CharSequence text = getHintForToggleUnavailability(item);
+        if (text != null) {
+          if (errorHints == null) {
+            errorHints = new HashSet<>();
+          }
+          errorHints.add(text);
+        }
       }
+    }
+    if (editedCount == 0 && errorHints != null) {
+      CharSequence[] hints = errorHints.toArray(new CharSequence[0]);
+      CharSequence hint = TextUtils.join("\n", hints);
+      context().tooltipManager()
+        .builder(((SettingView) view).getToggler())
+        .show(this, tdlib, R.drawable.baseline_info_24, hint);
     }
   }
 
