@@ -1373,6 +1373,9 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     if (userId == myUserId) {
       return true;
     }
+    if (tdlib.isServiceNotificationsChat(ChatId.fromUserId(userId))) {
+      return false;
+    }
     boolean isOnline;
     synchronized (dataLock) {
       if (userId != myUserId) {
