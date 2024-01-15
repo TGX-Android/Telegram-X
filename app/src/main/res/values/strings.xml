@@ -5007,6 +5007,13 @@
   <string name="AccountDeleted">Account deleted</string>
   <string name="AccountDeletedText">Your account %1$s (%2$s) is now deleted from Telegram servers, and can no longer be restored.\n\nUsing the same phone number will create a new account.</string>
   <string name="ViewOnce">View once</string>
+  <string name="ConvertToBroadcastGroup">Convert to Broadcast Group</string>
+  <string name="ConvertToBroadcastGroupDesc_one">Broadcast groups can have over %1$s member, but only admins can send messages in them.</string>
+  <string name="ConvertToBroadcastGroupDesc_other">Broadcast groups can have over %1$s members, but only admins can send messages in them.</string>
+  <string name="ConvertToBroadcastGroupButton">Convert to Broadcast Group</string>
+  <string name="ConvertToBroadcastGroupHint">You can convert your current group to a **Broadcast Group**.\n\nBroadcast Groups have no limit on the members but only admins can send messages.\n\n**This action cannot be undone.**</string>
+  <string name="ConvertToBroadcastGroupConfirmHint">Members who are not admins will **permanently** lose their right to send messages in the group.\n\n**This action cannot be undone.**</string>
+  <string name="ConvertToBroadcastGroupConfirm">Yes, I am sure, convert.</string>
 
   <string name="GiveawayCongratulations">Congratulations</string>
   <string name="GiveawayUnclaimedPrize">Unclaimed Prize</string>

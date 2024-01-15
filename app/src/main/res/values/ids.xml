@@ -1362,6 +1362,11 @@
   <item type="id" name="controller_emojiLayoutEmojiTrending" />
   <item type="id" name="controller_emojiLayoutReactions" />
   <item type="id" name="controller_reactionsPicker" />
-
   <item type="id" name="btn_redeemGiftLink" />
+
+  <!-- BROADCAST BUTTONS -->
+
+  <item type="id" name="btn_convertToBroadcastGroup" />
+  <item type="id" name="btn_confirmConvertBroadcast" />
+  <item type="id" name="btn_convertBroadcastGroup" />
 </resources>
