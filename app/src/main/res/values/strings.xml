@@ -5014,6 +5014,9 @@
   <string name="ConvertToBroadcastGroupHint">You can convert your current group to a **Broadcast Group**.\n\nBroadcast Groups have no limit on the members but only admins can send messages.\n\n**This action cannot be undone.**</string>
   <string name="ConvertToBroadcastGroupConfirmHint">Members who are not admins will **permanently** lose their right to send messages in the group.\n\n**This action cannot be undone.**</string>
   <string name="ConvertToBroadcastGroupConfirm">Yes, I am sure, convert.</string>
+  <string name="ConvertToBroadcastGroupAlertTitle">Success</string>
+  <string name="ConvertToBroadcastGroupAlertText">Group \"%1$s\" was successfully converted to Broadcast Group.\n\nNow there is no limit on the members count but only admins can send messages.</string>
+  <string name="ConvertToBroadcastGroupAlertClose">Got it</string>
 
   <string name="GiveawayCongratulations">Congratulations</string>
   <string name="GiveawayUnclaimedPrize">Unclaimed Prize</string>

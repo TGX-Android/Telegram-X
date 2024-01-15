@@ -332,8 +332,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (isEditing()) {
       TdApi.SupergroupFullInfo supergroupFullInfo = tdlib.cache().supergroupFull(supergroupId);
       if (supergroupFullInfo == null) {
-        tdlib.client().send(new TdApi.GetSupergroupFullInfo(supergroupId), result -> {
-          if (result.getConstructor() == TdApi.SupergroupFullInfo.CONSTRUCTOR) {
+        tdlib.send(new TdApi.GetSupergroupFullInfo(supergroupId), (supergroupFull, error) -> {
+          if (error == null) {
             tdlib.ui().post(() -> replaceWithSupergroup(supergroupId));
           }
         });
@@ -342,8 +342,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
     TdApi.Chat chat = tdlib.chat(ChatId.fromSupergroupId(supergroupId));
     if (chat == null) {
-      tdlib.client().send(new TdApi.CreateSupergroupChat(supergroupId, false), result -> {
-        if (result.getConstructor() == TdApi.Chat.CONSTRUCTOR) {
+      tdlib.send(new TdApi.CreateSupergroupChat(supergroupId, false), (supergroup, error) -> {
+        if (error == null) {
           tdlib.ui().post(() -> replaceWithSupergroup(supergroupId));
         }
       });
@@ -3141,6 +3141,28 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
   }
 
+  private void checkConvertToBroadcastGroup () {
+    boolean needConvertToBroadcastGroup = tdlib.suggestConvertToBroadcastGroup(chat.id);
+    int index = baseAdapter.indexOfViewById(R.id.btn_convertToBroadcastGroup);
+    boolean hasConvertToBroadcastGroup = index != -1;
+    if (needConvertToBroadcastGroup != hasConvertToBroadcastGroup) {
+      if (needConvertToBroadcastGroup) {
+        index = baseAdapter.indexOfView(aggressiveAntiSpamItem);
+        if (index != -1) {
+          index += 3;
+          baseAdapter.addItems(index,
+            new ListItem(ListItem.TYPE_SHADOW_TOP),
+            new ListItem(ListItem.TYPE_SETTING, R.id.btn_convertToBroadcastGroup, 0, R.string.ConvertToBroadcastGroup),
+            new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
+            new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.pluralBold(R.string.ConvertToBroadcastGroupDesc, tdlib.supergroupMaxSize()))
+          );
+        }
+      } else {
+        baseAdapter.removeRange(index - 1, 4);
+      }
+    }
+  }
+
   private void toggleAggressiveAntiSpam (View v) {
     boolean canToggleAggressiveAntiSpam =
       (supergroupFull != null && supergroupFull.canToggleAggressiveAntiSpam) ||
@@ -4648,14 +4670,14 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         },
         (itemView, optionId) -> {
           if (optionId == R.id.btn_confirmConvertBroadcast) {
-            convertToBroadcastGroup();
+            convertToBroadcastGroup(v);
           }
           return true;
         });
     }
   }
 
-  private void convertToBroadcastGroup () {
+  private void convertToBroadcastGroup (View view) {
     showOptions(
       Lang.getMarkdownString(this, R.string.ConvertToBroadcastGroupConfirmHint),
       new int[] {R.id.btn_convertBroadcastGroup, R.id.btn_cancel},
@@ -4674,7 +4696,20 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       (itemView, optionId) -> {
         if (optionId == R.id.btn_convertBroadcastGroup) {
           if (supergroup != null) {
-            tdlib.send(new TdApi.ToggleSupergroupIsBroadcastGroup(supergroup.id), tdlib.typedOkHandler());
+            tdlib.send(new TdApi.ToggleSupergroupIsBroadcastGroup(supergroup.id), (ok, error) -> runOnUiThreadOptional(() -> {
+              if (error != null) {
+                context().tooltipManager().builder(view).icon(R.drawable.baseline_warning_24).show(tdlib, TD.toErrorString(error));
+              } else {
+                openAlert(
+                  R.string.ConvertToBroadcastGroupAlertTitle,
+                  Lang.getStringBold(R.string.ConvertToBroadcastGroupAlertText, tdlib.chatTitle(chat.id)),
+                  Lang.getString(R.string.ConvertToBroadcastGroupAlertClose),
+                  (dialog, which) -> dialog.dismiss(),
+                  ALERT_NO_CANCELABLE | ALERT_NO_CANCEL
+                );
+                checkConvertToBroadcastGroup();
+              }
+            }));
           }
         }
         return true;
@@ -6082,6 +6117,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           ProfileController.this.supergroup = supergroup;
           checkUsername();
           checkEasterEggs();
+          checkConvertToBroadcastGroup();
           updateHeader(false);
         }
       });
