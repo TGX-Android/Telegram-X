@@ -49,7 +49,7 @@ public class MediaPreviewSimple extends MediaPreview {
   private TdApi.Sticker sticker;
   private Path outline;
   private int outlineWidth, outlineHeight;
-  private boolean hasSpoiler;
+  private boolean needFireIcon;
 
   private ImageFile previewImage;
   private GifFile previewGif;
@@ -168,15 +168,15 @@ public class MediaPreviewSimple extends MediaPreview {
     this(tdlib, size, cornerRadius, thumbnail, minithumbnail, false);
   }
 
-  public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.Thumbnail thumbnail, TdApi.Minithumbnail minithumbnail, boolean hasSpoiler) {
+  public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.Thumbnail thumbnail, TdApi.Minithumbnail minithumbnail, boolean needFireIcon) {
     super(size, cornerRadius);
-    this.hasSpoiler = hasSpoiler;
+    this.needFireIcon = needFireIcon;
     if (minithumbnail != null) {
       this.previewImage = new ImageFileLocal(minithumbnail);
       this.previewImage.setSize(size);
       this.previewImage.setScaleType(ImageFile.CENTER_CROP);
       this.previewImage.setDecodeSquare(true);
-      if (hasSpoiler) {
+      if (needFireIcon) {
         this.previewImage.setIsPrivate();
       }
     }
@@ -187,11 +187,11 @@ public class MediaPreviewSimple extends MediaPreview {
         this.targetImage.setScaleType(ImageFile.CENTER_CROP);
         this.targetImage.setDecodeSquare(true);
         this.targetImage.setNoBlur();
-        if (hasSpoiler) {
+        if (needFireIcon) {
           this.targetImage.setIsPrivate();
         }
       }
-      if (!hasSpoiler) {
+      if (!needFireIcon) {
         this.targetGif = TD.toGifFile(tdlib, thumbnail);
         if (this.targetGif != null) {
           this.targetGif.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
@@ -333,7 +333,7 @@ public class MediaPreviewSimple extends MediaPreview {
       preview.drawPlaceholderContour(c, outline);
     }
 
-    if (hasSpoiler) {
+    if (needFireIcon) {
       DrawAlgorithms.drawRoundRect(c, cornerRadius, target.getLeft(), target.getTop(), target.getRight(), target.getBottom(), Paints.fillingPaint(Theme.getColor(ColorId.spoilerMediaOverlay)));
       DrawAlgorithms.drawParticles(c, cornerRadius, target.getLeft(), target.getTop(), target.getRight(), target.getBottom(), 1f);
     }

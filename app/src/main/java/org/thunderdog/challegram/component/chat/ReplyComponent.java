@@ -37,8 +37,6 @@ import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.data.MediaWrapper;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
-import org.thunderdog.challegram.data.TGWebPage;
-import org.thunderdog.challegram.helper.InlineSearchContext;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -53,7 +51,6 @@ import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -459,7 +456,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       if (Config.DEBUG_STICKER_OUTLINES && mediaPreview != null) {
         receiver.drawPlaceholderContour(c, mediaPreview.contour);
       }
-      if (mediaPreview != null && mediaPreview.hasSpoiler) {
+      if (mediaPreview != null && mediaPreview.needFireIcon) {
         float radius = Theme.getBubbleMergeRadius();
         DrawAlgorithms.drawRoundRect(c, radius, receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), Paints.fillingPaint(Theme.getColor(ColorId.spoilerMediaOverlay)));
         DrawAlgorithms.drawParticles(c, radius, receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), 1f);
@@ -719,14 +716,14 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     private final ImageFile miniThumbnail;
     private final ImageFile preview;
     private final Path contour;
-    private final boolean hasSpoiler;
+    private final boolean needFireIcon;
     private final boolean previewCircle;
 
-    public MediaPreview (ImageFile miniThumbnail, ImageFile preview, Path contour, boolean hasSpoiler, boolean previewCircle) {
+    public MediaPreview (ImageFile miniThumbnail, ImageFile preview, Path contour, boolean needFireIcon, boolean previewCircle) {
       this.miniThumbnail = miniThumbnail;
       this.preview = preview;
       this.contour = contour;
-      this.hasSpoiler = hasSpoiler;
+      this.needFireIcon = needFireIcon;
       this.previewCircle = previewCircle;
     }
   }
@@ -853,7 +850,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     } else {
       miniPreview = null;
     }
-    return new MediaPreview(miniPreview, preview, contour, hasSpoiler, previewCircle);
+    return new MediaPreview(miniPreview, preview, contour, isPrivate || hasSpoiler, previewCircle);
   }
 
   private void setMessage (TdApi.Message msg, boolean forceRequestImage, boolean forceLocal) {

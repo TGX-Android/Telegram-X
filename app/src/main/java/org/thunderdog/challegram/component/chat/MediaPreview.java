@@ -207,7 +207,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
         TdApi.Photo photo = messagePhoto.photo;
         TdApi.PhotoSize thumbnail = Td.findSmallest(photo);
         if (thumbnail != null || photo.minithumbnail != null) {
-          return new MediaPreviewSimple(tdlib, size, cornerRadius, TD.toThumbnail(thumbnail), photo.minithumbnail, messagePhoto.hasSpoiler);
+          return new MediaPreviewSimple(tdlib, size, cornerRadius, TD.toThumbnail(thumbnail), photo.minithumbnail, messagePhoto.isSecret || messagePhoto.hasSpoiler);
         }
         break;
       }
@@ -230,13 +230,13 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       }
       case TdApi.MessageVideo.CONSTRUCTOR: {
         TdApi.MessageVideo messageVideo = (TdApi.MessageVideo) message.content;
-        return valueOf(tdlib, messageVideo.video, size, cornerRadius, messageVideo.hasSpoiler);
+        return valueOf(tdlib, messageVideo.video, size, cornerRadius, messageVideo.isSecret || messageVideo.hasSpoiler);
       }
       case TdApi.MessageAnimation.CONSTRUCTOR: {
         TdApi.MessageAnimation messageAnimation = (TdApi.MessageAnimation) message.content;
         TdApi.Animation animation = messageAnimation.animation;
         if (animation.minithumbnail != null || animation.thumbnail != null) {
-          return new MediaPreviewSimple(tdlib, size, cornerRadius, animation.thumbnail, animation.minithumbnail, messageAnimation.hasSpoiler);
+          return new MediaPreviewSimple(tdlib, size, cornerRadius, animation.thumbnail, animation.minithumbnail, messageAnimation.isSecret || messageAnimation.hasSpoiler);
         }
         break;
       }
@@ -262,8 +262,9 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
         return new MediaPreviewSimple(tdlib, size, cornerRadius, sticker);
       }
       case TdApi.MessageVideoNote.CONSTRUCTOR: {
-        TdApi.VideoNote videoNote = ((TdApi.MessageVideoNote) message.content).videoNote;
-        return new MediaPreviewSimple(tdlib, size, size / 2, videoNote.thumbnail, videoNote.minithumbnail);
+        TdApi.MessageVideoNote messageVideoNote = (TdApi.MessageVideoNote) message.content;
+        TdApi.VideoNote videoNote = messageVideoNote.videoNote;
+        return new MediaPreviewSimple(tdlib, size, size / 2, videoNote.thumbnail, videoNote.minithumbnail, messageVideoNote.isSecret);
       }
       case TdApi.MessageVoiceNote.CONSTRUCTOR: {
         // TODO voice note preview?
