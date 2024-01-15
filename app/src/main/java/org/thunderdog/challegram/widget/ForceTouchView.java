@@ -315,7 +315,7 @@ public class ForceTouchView extends FrameLayoutFix implements
         headerView.setIgnoreCustomHeight();
         headerView.setInnerMargins(Screen.dp(8f), Screen.dp(8f));
         headerView.setTextColors(Theme.textAccentColor(), Theme.textDecentColor());
-        if (context.boundDataType != 0 && context.boundDataId != 0) {
+        if (context.boundDataType != 0 && (context.boundDataId != 0 || context.boundDataType == DataType.ACCOUNT)) {
           switch (context.boundDataType) {
             case DataType.CHAT:
               setupChat(context.boundDataId, (ThreadInfo) context.boundArg1, headerView);
