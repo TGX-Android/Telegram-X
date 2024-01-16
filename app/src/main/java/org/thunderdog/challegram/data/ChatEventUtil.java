@@ -22,6 +22,7 @@ import androidx.annotation.StringRes;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessagesManager;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Strings;
@@ -530,7 +531,7 @@ public class ChatEventUtil {
         } else if (isAnonymous) {
           appendRight(b, R.string.EventLogPromotedRemainAnonymous, ((TdApi.ChatMemberStatusCreator) oldStatus).isAnonymous, ((TdApi.ChatMemberStatusCreator) newStatus).isAnonymous, false);
         } else if (isPromote) {
-          if (false) {
+          if (Config.COMPILE_CHECK) {
             // Cause compilation error if signature changes
             new TdApi.ChatAdministratorRights(
               true,
@@ -598,6 +599,7 @@ public class ChatEventUtil {
           appendRight(b, R.string.EventLogRestrictedAddUsers, oldBan != null ? oldBan.permissions.canInviteUsers : oldCanReadMessages, newBan != null ? newBan.permissions.canInviteUsers : newCanReadMessages, false);
           appendRight(b, R.string.EventLogRestrictedPinMessages, oldBan != null ? oldBan.permissions.canPinMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canPinMessages : newCanReadMessages, false);
           appendRight(b, R.string.EventLogRestrictedChangeInfo, oldBan != null ? oldBan.permissions.canChangeInfo : oldCanReadMessages, newBan != null ? newBan.permissions.canChangeInfo : newCanReadMessages, false);
+          appendRight(b, R.string.EventLogRestrictedTopics, oldBan != null ? oldBan.permissions.canManageTopics : oldCanReadMessages, newBan != null ? newBan.permissions.canManageTopics : newCanReadMessages, false);
         }
 
         TdApi.FormattedText formattedText = new TdApi.FormattedText(b.toString().trim(), null);
@@ -711,6 +713,25 @@ public class ChatEventUtil {
 
         TdApi.ChatEventPermissionsChanged permissions = (TdApi.ChatEventPermissionsChanged) event.action;
 
+        if (Config.COMPILE_CHECK) {
+          new TdApi.ChatPermissions(
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false
+          );
+        }
+
         appendRight(b, R.string.EventLogPermissionSendMessages, permissions.oldPermissions.canSendBasicMessages, permissions.newPermissions.canSendBasicMessages, true);
         appendRight(b, R.string.EventLogPermissionSendPhoto, permissions.oldPermissions.canSendPhotos, permissions.newPermissions.canSendPhotos, true);
         appendRight(b, R.string.EventLogPermissionSendVideo, permissions.oldPermissions.canSendVideos, permissions.newPermissions.canSendVideos, true);
@@ -724,6 +745,7 @@ public class ChatEventUtil {
         appendRight(b, R.string.EventLogPermissionAddUsers, permissions.oldPermissions.canInviteUsers, permissions.newPermissions.canInviteUsers, true);
         appendRight(b, R.string.EventLogPermissionPinMessages, permissions.oldPermissions.canPinMessages, permissions.newPermissions.canPinMessages, true);
         appendRight(b, R.string.EventLogPermissionChangeInfo, permissions.oldPermissions.canChangeInfo, permissions.newPermissions.canChangeInfo, true);
+        appendRight(b, R.string.EventLogPermissionTopicsCreate, permissions.oldPermissions.canManageTopics, permissions.newPermissions.canManageTopics, true);
 
         TdApi.FormattedText formattedText = new TdApi.FormattedText(b.toString().trim(), new TdApi.TextEntity[] {new TdApi.TextEntity(0, length, new TdApi.TextEntityTypeItalic())});
 

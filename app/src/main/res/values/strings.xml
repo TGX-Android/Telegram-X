@@ -1837,6 +1837,7 @@
   <string name="RightVoiceChats">Manage video chats</string>
   <string name="RightLiveStreams">Manage live streams</string>
   <string name="RightTopics">Manage topics</string>
+  <string name="RightTopicsCreate">Create topics</string>
   <string name="RightStories">Stories</string>
   <string name="RightMessages">Messages</string>
   <string name="RightStoriesPost">Post Stories</string>
@@ -1998,6 +1999,8 @@
   <string name="EventLogPermissionSendPolls">Send polls</string>
   <string name="EventLogRestrictedChangeInfo">Change info</string>
   <string name="EventLogPermissionChangeInfo">Change info</string>
+  <string name="EventLogPermissionTopicsCreate">Create topics</string>
+  <string name="EventLogRestrictedTopics">Create topics</string>
   <string name="EventLogRestrictedPinMessages">Pin messages</string>
   <string name="EventLogPermissionPinMessages">Pin messages</string>
   <string name="EventLogRestrictedAddUsers">Add users</string>

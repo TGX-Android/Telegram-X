@@ -16,8 +16,6 @@ package org.thunderdog.challegram.telegram;
 
 import androidx.annotation.IntDef;
 
-import org.thunderdog.challegram.R;
-
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
@@ -44,7 +42,7 @@ import java.lang.annotation.RetentionPolicy;
   RightId.POST_STORIES,
   RightId.EDIT_STORIES,
   RightId.DELETE_STORIES,
-  RightId.MANAGE_TOPICS,
+  RightId.MANAGE_OR_CREATE_TOPICS,
   RightId.ADD_NEW_ADMINS,
   RightId.REMAIN_ANONYMOUS
 })
@@ -71,7 +69,7 @@ public @interface RightId {
     POST_STORIES = 19,
     EDIT_STORIES = 20,
     DELETE_STORIES = 21,
-    MANAGE_TOPICS = 22,
+    MANAGE_OR_CREATE_TOPICS = 22,
     ADD_NEW_ADMINS = 23,
     REMAIN_ANONYMOUS = 24;
 }

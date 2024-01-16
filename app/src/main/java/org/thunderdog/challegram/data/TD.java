@@ -148,7 +148,7 @@ public class TD {
       case RightId.INVITE_USERS:
       case RightId.PIN_MESSAGES:
       case RightId.MANAGE_VIDEO_CHATS:
-      case RightId.MANAGE_TOPICS:
+      case RightId.MANAGE_OR_CREATE_TOPICS:
       case RightId.POST_STORIES:
       case RightId.EDIT_STORIES:
       case RightId.DELETE_STORIES:
@@ -176,6 +176,42 @@ public class TD {
   }
 
   public static boolean checkRight (TdApi.ChatPermissions permissions, @RightId int rightId) {
+    if (false) {
+      // compile check
+      new TdApi.ChatPermissions(
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      );
+      new TdApi.ChatAdministratorRights(
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      );
+    }
     switch (rightId) {
       case RightId.READ_MESSAGES:
         return true;
@@ -189,29 +225,31 @@ public class TD {
         return permissions.canSendPhotos;
       case RightId.SEND_VIDEOS:
         return permissions.canSendVideos;
-      case RightId.SEND_VOICE_NOTES:
-        return permissions.canSendVoiceNotes;
       case RightId.SEND_VIDEO_NOTES:
         return permissions.canSendVideoNotes;
-      case RightId.SEND_OTHER_MESSAGES:
-        return permissions.canSendOtherMessages;
+      case RightId.SEND_VOICE_NOTES:
+        return permissions.canSendVoiceNotes;
       case RightId.SEND_POLLS:
         return permissions.canSendPolls;
+      case RightId.SEND_OTHER_MESSAGES:
+        return permissions.canSendOtherMessages;
       case RightId.EMBED_LINKS:
         return permissions.canAddWebPagePreviews;
+      case RightId.CHANGE_CHAT_INFO:
+        return permissions.canChangeInfo;
       case RightId.INVITE_USERS:
         return permissions.canInviteUsers;
       case RightId.PIN_MESSAGES:
         return permissions.canPinMessages;
-      case RightId.CHANGE_CHAT_INFO:
-        return permissions.canChangeInfo;
+      // Same right, but different meaning
+      case RightId.MANAGE_OR_CREATE_TOPICS:
+        return permissions.canManageTopics;
       // Admin-only
       case RightId.ADD_NEW_ADMINS:
       case RightId.BAN_USERS:
       case RightId.DELETE_MESSAGES:
       case RightId.EDIT_MESSAGES:
       case RightId.MANAGE_VIDEO_CHATS:
-      case RightId.MANAGE_TOPICS:
       case RightId.POST_STORIES:
       case RightId.EDIT_STORIES:
       case RightId.DELETE_STORIES:
@@ -1148,6 +1186,24 @@ public class TD {
   }
 
   public static boolean hasRestrictions (TdApi.ChatPermissions a, TdApi.ChatPermissions defaultPermissions) {
+    if (Config.COMPILE_CHECK) {
+      new TdApi.ChatPermissions(
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      );
+    }
     return
       (a.canSendBasicMessages != defaultPermissions.canSendBasicMessages && defaultPermissions.canSendBasicMessages) ||
       (a.canSendAudios != defaultPermissions.canSendAudios && defaultPermissions.canSendAudios) ||
@@ -1161,7 +1217,8 @@ public class TD {
       (a.canSendPolls != defaultPermissions.canSendPolls && defaultPermissions.canSendPolls) ||
       (a.canInviteUsers != defaultPermissions.canInviteUsers && defaultPermissions.canInviteUsers) ||
       (a.canPinMessages != defaultPermissions.canPinMessages && defaultPermissions.canPinMessages) ||
-      (a.canChangeInfo != defaultPermissions.canChangeInfo && defaultPermissions.canChangeInfo);
+      (a.canChangeInfo != defaultPermissions.canChangeInfo && defaultPermissions.canChangeInfo) ||
+      (a.canManageTopics != defaultPermissions.canManageTopics && defaultPermissions.canManageTopics);
   }
 
   public static int getCombineMode (TdApi.Message message) {

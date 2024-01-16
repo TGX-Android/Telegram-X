@@ -315,4 +315,6 @@ public class Config {
   public static final boolean FORCE_REPLY_WHEN_FORWARDING_WITH_COMMENT = false;
   public static final boolean DEBUG_VIEW_MESSAGES = false;
   public static final boolean ENABLE_TEXT_ANIMATIONS = false;
+
+  public static final boolean COMPILE_CHECK = false /*never set to true*/;
 }

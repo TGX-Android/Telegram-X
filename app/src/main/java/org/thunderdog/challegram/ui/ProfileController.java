@@ -1839,7 +1839,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
               break;
           }
         } else if (itemId == R.id.btn_chatPermissions) {
-          view.setData(Lang.plural(R.string.xPermissions, Td.count(chat.permissions), TdConstants.CHAT_PERMISSIONS_COUNT));
+          int totalPermissionsCount = TdConstants.CHAT_PERMISSIONS_COUNT;
+          if (!tdlib.isForum(chat.id)) {
+            totalPermissionsCount--;
+          }
+          view.setData(Lang.plural(R.string.xPermissions, Td.count(chat.permissions), totalPermissionsCount));
         } else if (itemId == R.id.btn_enabledReactions) {
           TdApi.ChatAvailableReactions availableReactions = chat.availableReactions;
           switch (availableReactions.getConstructor()) {
