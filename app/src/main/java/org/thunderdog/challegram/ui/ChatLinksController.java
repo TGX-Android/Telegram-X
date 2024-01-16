@@ -729,8 +729,11 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
       items.add(new ListItem(ListItem.TYPE_CHAT_SMALL, R.id.btn_openChat).setLongId(adminUserId).setIntValue(inviteLinks.size()));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     } else {
-      items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
-      items.add(new ListItem(ListItem.TYPE_EMBED_STICKER).setData(tdlib.findTgxEmoji(UTYAN_EMOJI)));
+      TdApi.Sticker tgxEmoji = tdlib.findTgxEmoji(UTYAN_EMOJI);
+      if (tgxEmoji != null) {
+        items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
+        items.add(new ListItem(ListItem.TYPE_EMBED_STICKER).setData(tgxEmoji));
+      }
     }
 
     for (TdApi.ChatInviteLink inviteLink : inviteLinks) {
