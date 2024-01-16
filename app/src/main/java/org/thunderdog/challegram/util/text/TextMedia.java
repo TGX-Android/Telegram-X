@@ -118,6 +118,7 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
     } else {
       imageFile = new ImageFile(tdlib, icon.document.document);
       imageFile.setSize(Screen.dp(Math.max(icon.width, icon.height)));
+      imageFile.setNoBlur();
     }
   }
 
@@ -169,6 +170,7 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
         this.imageFile = new ImageFile(tdlib, sticker.sticker);
         this.imageFile.setSize(Math.max(width, height));
         this.imageFile.setScaleType(ImageFile.FIT_CENTER);
+        this.imageFile.setNoBlur();
         break;
       }
     }
