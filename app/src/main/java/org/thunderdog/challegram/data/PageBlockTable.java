@@ -150,15 +150,15 @@ public class PageBlockTable extends PageBlock implements Destroyable {
 
       tableCordsX = TableLayout.computeCordsArray(columnsWidth);
       for (Cell cell : cellsList) {
-        cell.build((int) Math.ceil(tableCordsX[cell.cellPositionEndX()] - tableCordsX[cell.cellPositionStartX()] + 2), false);
+        cell.build((int) Math.ceil(tableCordsX[cell.cellPositionEndX()] - tableCordsX[cell.cellPositionStartX()] + 2));
       }
       tableCordsY = TableLayout.computeCordsArrayY(cellsList, totalRowsCount, Cell.METRIC_TYPE_CURRENT);
     } else {
-      for (Cell cell : cellsList) {
-        cell.build(defaultWidth, true);
-      }
       tableCordsX = tableLayoutMinWidth.cellsX;
-      tableCordsY = tableLayoutMinWidth.cellsY;
+      for (Cell cell : cellsList) {
+        cell.build((int) Math.ceil(tableCordsX[cell.cellPositionEndX()] - tableCordsX[cell.cellPositionStartX()] + 2));
+      }
+      tableCordsY = TableLayout.computeCordsArrayY(cellsList, totalRowsCount, Cell.METRIC_TYPE_CURRENT);
     }
 
     customTableWidth = Math.round(tableCordsX[tableCordsX.length - 1]);
@@ -418,9 +418,8 @@ public class PageBlockTable extends PageBlock implements Destroyable {
       }
     }
 
-    public void build (int maxCellWidth, boolean alwaysBreak) {
+    public void build (int maxCellWidth) {
       if (text != null) {
-        text.setTextFlag(Text.FLAG_ALWAYS_BREAK, alwaysBreak);
         text.changeMaxWidth(maxCellWidth - Screen.dp(PADDING_HORIZONTAL) * 2);
       }
     }
