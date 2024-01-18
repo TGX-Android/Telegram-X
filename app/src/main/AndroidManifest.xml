@@ -108,6 +108,11 @@
   <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS" />
 
   <queries>
+    <package android:name="com.google.android.apps.maps" />
+    <package android:name="com.google.android.launcher.layouts.genymotion" />
+    <package android:name="com.bluestacks" />
+    <package android:name="com.bignox.app" />
+    <package android:name="com.vphone.launcher" />
     <intent>
       <action android:name="com.google.android.youtube.api.service.START" />
     </intent>

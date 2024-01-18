@@ -615,7 +615,7 @@ public class MediaLayout extends FrameLayoutFix implements
         boolean googleMapsInstalled;
         try {
           MapsInitializer.initialize(getContext());
-          googleMapsInstalled = DeviceUtils.isAppInstalled(getContext(), U.PACKAGE_GOOGLE_MAPS);
+          googleMapsInstalled = DeviceUtils.isApplicationInstalled(getContext(), U.PACKAGE_GOOGLE_MAPS, false);
         } catch (Throwable t) {
           googleMapsInstalled = false;
         }

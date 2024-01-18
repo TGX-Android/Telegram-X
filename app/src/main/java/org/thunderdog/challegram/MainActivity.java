@@ -18,6 +18,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.SystemClock;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -1450,12 +1451,14 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     UI.startNotificationService();
     if (!madeEmulatorChecks && !Settings.instance().isEmulator()) {
       madeEmulatorChecks = true;
-      Background.instance().post(() -> {
+      new Thread(() -> {
+        long ms = SystemClock.uptimeMillis();
         boolean isEmulator = DeviceUtils.detectEmulator(MainActivity.this);
+        Log.v("Ran emulator detections in %dms", ms);
         if (isEmulator) {
           Settings.instance().markAsEmulator();
         }
-      });
+      }, "EmulatorDetector").start();
     }
   }
 
