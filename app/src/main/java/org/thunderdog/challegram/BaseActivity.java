@@ -366,7 +366,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     // Impl
     new Thread(() -> {
       long ms = SystemClock.uptimeMillis();
-      boolean isEmulator = DeviceUtils.detectEmulator(BaseActivity.this);
+      boolean isEmulator = DeviceUtils.detectEmulator(BaseActivity.this, BuildConfig.EXPERIMENTAL);
       long elapsed = SystemClock.uptimeMillis() - ms;
       Log.v("Ran emulator detections in %dms", elapsed);
       Settings.instance().trackEmulatorDetectionResult(installationId, elapsed, isEmulator);
