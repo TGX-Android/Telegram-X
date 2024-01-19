@@ -36,6 +36,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.MainActivity;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.config.Config;
@@ -1072,6 +1073,9 @@ public class PhoneController extends EditBaseController<Void> implements Setting
   @Override
   public void onFocus () {
     super.onFocus();
+    if (mode == MODE_LOGIN && isAccountAdd) {
+      context.runEmulatorChecks(true);
+    }
     if (oneShot) {
       return;
     }

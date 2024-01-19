@@ -40,6 +40,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.view.Display;
@@ -136,14 +137,18 @@ import org.thunderdog.challegram.widget.StickersSuggestionsLayout;
 
 import java.lang.ref.Reference;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.DeviceUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
+import me.vkryl.core.lambda.FutureBool;
 import me.vkryl.core.lambda.FutureInt;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.reference.ReferenceList;
@@ -320,7 +325,55 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         drawer.onCurrentTdlibChanged(tdlib);
       }
       onTdlibChanged();
+      runEmulatorChecks(false);
     }
+  }
+
+  private boolean ranEmulatorChecks;
+
+  public void runEmulatorChecks (boolean force) {
+    if (Settings.instance().isEmulator() || ranEmulatorChecks) {
+      return;
+    }
+    long installationId = Settings.instance().installationId();
+    if (!force) {
+      List<FutureBool> conditions = Arrays.asList(
+        () -> !tdlib.context().hasActiveAccounts() || tdlib.isUnauthorized(),
+        () -> {
+          Settings.EmulatorDetectionResult detectionResult = Settings.instance().getLastEmulatorDetectionResult();
+          if (detectionResult != null) {
+            long elapsed = System.currentTimeMillis() - detectionResult.time;
+            return installationId != detectionResult.installationId || elapsed >= TimeUnit.DAYS.toMillis(3);
+          }
+          // every 2 days or after every update
+          return true;
+        }
+      );
+      boolean hasAnyReason = false;
+      for (FutureBool condition : conditions) {
+        if (condition.getBoolValue()) {
+          hasAnyReason = true;
+          break;
+        }
+      }
+      if (!hasAnyReason) {
+        return;
+      }
+    }
+
+    ranEmulatorChecks = true;
+
+    // Impl
+    new Thread(() -> {
+      long ms = SystemClock.uptimeMillis();
+      boolean isEmulator = DeviceUtils.detectEmulator(BaseActivity.this);
+      long elapsed = SystemClock.uptimeMillis() - ms;
+      Log.v("Ran emulator detections in %dms", elapsed);
+      Settings.instance().trackEmulatorDetectionResult(installationId, elapsed, isEmulator);
+      if (isEmulator) {
+        tdlib.context().setIsEmulator(true);
+      }
+    }, "EmulatorDetector").start();
   }
 
   protected void onTdlibChanged () {
@@ -1030,6 +1083,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       }
     }*/
     appUpdater.checkForUpdates();
+    runEmulatorChecks(false);
   }
 
   protected void setOnline (boolean isOnline) {
