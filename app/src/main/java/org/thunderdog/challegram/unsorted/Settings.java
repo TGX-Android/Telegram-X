@@ -6203,6 +6203,27 @@ public class Settings {
     public boolean isDetected () {
       return BitwiseUtils.hasFlag(flags, FLAG_EMULATOR_DETECTED);
     }
+
+    public long[] toLongArray () {
+      return new long[] {
+        time,
+        installationId,
+        elapsed,
+        flags
+      };
+    }
+
+    public static EmulatorDetectionResult restore (long[] array) {
+      if (array == null || array.length != 4) {
+        return null;
+      }
+      return new EmulatorDetectionResult(
+        array[0],
+        array[1],
+        array[2],
+        array[3]
+      );
+    }
   }
 
   @Nullable
@@ -6211,21 +6232,18 @@ public class Settings {
     if (emulatorDetectionResult == null) {
       return null;
     }
-    return new EmulatorDetectionResult(
-      emulatorDetectionResult[0],
-      emulatorDetectionResult[1],
-      emulatorDetectionResult[2],
-      emulatorDetectionResult[3]
-    );
+    return EmulatorDetectionResult.restore(emulatorDetectionResult);
   }
 
   public void trackEmulatorDetectionResult (long installationId, long elapsed, boolean isEmulator) {
-    long[] result = new long[] {
+    EmulatorDetectionResult result = new EmulatorDetectionResult(
       System.currentTimeMillis(),
       installationId,
+      elapsed,
       isEmulator ? EmulatorDetectionResult.FLAG_EMULATOR_DETECTED : 0
-    };
-    pmc.putLongArray(KEY_EMULATOR_DETECTION_RESULT, result);
+    );
+    long[] data = result.toLongArray();
+    pmc.putLongArray(KEY_EMULATOR_DETECTION_RESULT, data);
     if (isEmulator) {
       putBoolean(KEY_IS_EMULATOR, true);
     }
