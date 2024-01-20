@@ -3683,7 +3683,7 @@ public class U {
     return Collections.unmodifiableSet(set);
   }
 
-  public static long[] concat(long[] first, long[] second) {
+  public static long[] concat (long[] first, long[] second) {
     long[] result = Arrays.copyOf(first, first.length + second.length);
     System.arraycopy(second, 0, result, first.length, second.length);
     return result;

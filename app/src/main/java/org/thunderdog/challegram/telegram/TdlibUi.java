@@ -6641,7 +6641,7 @@ public class TdlibUi extends Handler {
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({
     PremiumFeature.STICKER,
-    PremiumFeature.RESTRICT_VOICE_AND_VIDEO_MESSAGES,
+    PremiumFeature.RESTRICT_VOICE_AND_VIDEO_MESSAGES
   })
   public @interface PremiumFeature {
     int
