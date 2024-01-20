@@ -8,4 +8,7 @@
   <string name="suggested_language_rtl" />
 
   <string name="format_timestampWithTimeZone">%1$02d.%2$02d.%3$d, %4$d:%5$02d %6$s</string>
+
+  <string name="EmulatorDetectorReport_title">False-positive emulator detection warning on $1%s `%2$s`</string>
+  <string name="EmulatorDetectorReport_text">Hello. I use **Telegram X** on a real device, but it says I am running on an emulator.\n\n**My real device details:**\n\nProduct: `%1$s`\nDevice: `%2$s`\nHardware: `%3$s`\n\n**The app version I am using:**\n\n%4$s\n\n**Emulator detection result:** `%5$s`\n\nPlease take a look if this warning can be resolved for my device.\nThank you!</string>
 </resources>

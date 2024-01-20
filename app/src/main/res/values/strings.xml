@@ -5042,7 +5042,7 @@
   <string name="GiveawayWinnersSelectionDateHeader">Winners Selection Date</string>
   <string name="GiveawayWinnersSelectionDate">%1$s at %2$s</string>
 
-  <string name="xGiveawayWinnersSelectedText_one">%1$s winner of the **Giveaway** were randomly selected by Telegram.</string>
+  <string name="xGiveawayWinnersSelectedText_one">%1$s winner of the **Giveaway** was randomly selected by Telegram.</string>
   <string name="xGiveawayWinnersSelectedText_other">%1$s winners of the **Giveaway** were randomly selected by Telegram.</string>
   <string name="xGiveawayPrizePremium_one">%1$s **Telegram Premium** subscription %2$s.</string>
   <string name="xGiveawayPrizePremium_other">%1$s **Telegram Premium** subscriptions %2$s.</string>
@@ -5115,8 +5115,12 @@
   <string name="GiveawayInfoEndedPart3_one">%1$s of the winners already used their gift link.</string>
   <string name="GiveawayInfoEndedPart3_other">%1$s of the winners already used their gift links.</string>
 
-
   <string name="GiveawayInfoClose">Close</string>
   <string name="GiveawayViewMyPrize">View my prize</string>
+
+  <string name="EmulatorWarning">You are running **Telegram X** on an **emulated device**.\n\n**Note**: if you don\'t have an **existing** Telegram account, you may need a **real device** to create it.\n\nIn case you see this warning on a real device (such as phone, tablet, etc), press **report issue**.</string>
+  <string name="EmulatorWarningTitle">Emulator detected</string>
+  <string name="EmulatorWarningBtnReport">Report issue</string>
+  <string name="EmulatorWarningBtnOk">Got it</string>
 
 </resources>

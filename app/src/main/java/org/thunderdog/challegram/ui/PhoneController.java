@@ -14,7 +14,10 @@
  */
 package org.thunderdog.challegram.ui;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.net.Uri;
+import android.os.Build;
 import android.text.InputFilter;
 import android.text.InputType;
 import android.text.Spannable;
@@ -36,7 +39,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.BuildConfig;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
@@ -59,6 +65,7 @@ import org.thunderdog.challegram.tool.TGCountry;
 import org.thunderdog.challegram.tool.TGPhoneFormat;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.NoUnderlineClickableSpan;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
@@ -1072,8 +1079,41 @@ public class PhoneController extends EditBaseController<Void> implements Setting
   @Override
   public void onFocus () {
     super.onFocus();
-    if (mode == MODE_LOGIN && isAccountAdd) {
-      context.runEmulatorChecks(true);
+    if (mode == MODE_LOGIN) {
+      context.forceRunEmulatorChecks(detectionResult -> executeOnUiThreadOptional(() -> {
+        if (detectionResult != null && (detectionResult.isEmulatorDetected() || BuildConfig.DEBUG)) {
+          AlertDialog.Builder b = new AlertDialog.Builder(context, Theme.dialogTheme());
+          b.setTitle(Lang.getString(R.string.EmulatorWarningTitle));
+          b.setMessage(Lang.getMarkdownStringSecure(this, R.string.EmulatorWarning));
+          b.setPositiveButton(Lang.getString(R.string.EmulatorWarningBtnOk), (dialog, which) -> dialog.dismiss());
+          b.setNeutralButton(Lang.getString(R.string.EmulatorWarningBtnReport), (dialog, which) -> {
+            try {
+              Uri uri = Uri.parse(BuildConfig.REMOTE_URL);
+              String title = Lang.getString(R.string.EmulatorDetectorReport_title, Build.BRAND, Build.MODEL);
+              String metadata = U.getUsefulMetadata(tdlib);
+              String body = Lang.getString(R.string.EmulatorDetectorReport_text,
+                Build.PRODUCT,
+                Build.DEVICE,
+                Build.HARDWARE,
+                metadata,
+                detectionResult.toHumanReadableFormat()
+              );
+              Uri reportUri = uri
+                .buildUpon()
+                .appendEncodedPath("issues/new")
+                .appendQueryParameter("title", title)
+                .appendQueryParameter("body", body)
+                .build();
+              Intents.openUriInBrowser(reportUri);
+            } catch (Throwable t) {
+              Log.e(t);
+              UI.showToast("Unable to create report: " + Log.toString(t), Toast.LENGTH_SHORT);
+            }
+          });
+          b.setCancelable(false);
+          showAlert(b);
+        }
+      }));
     }
     if (oneShot) {
       return;
