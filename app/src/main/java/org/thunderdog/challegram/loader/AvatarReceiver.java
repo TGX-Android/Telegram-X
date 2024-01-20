@@ -766,7 +766,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
       boolean fullSize = BitwiseUtils.hasFlag(options, Options.FULL_SIZE);
       TdApi.AnimatedChatPhoto smallAnimation = photo.smallAnimation == null ? photo.animation : photo.smallAnimation;
       TdApi.AnimatedChatPhoto fullAnimation = photo.smallAnimation != null ? photo.animation : null;
-      loadPreviewAnimation(!fullSize || fullAnimation == null ? smallAnimation : null);
+      loadPreviewAnimation(!fullSize || fullAnimation == null || displayFullSizeOnlyInFullScreen ? smallAnimation : null);
       loadFullAnimation(fullSize ? fullAnimation : null);
     } else {
       loadPreviewAnimation(null);
