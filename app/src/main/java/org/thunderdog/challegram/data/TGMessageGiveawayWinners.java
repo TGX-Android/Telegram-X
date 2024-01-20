@@ -16,6 +16,8 @@ package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
 import android.graphics.RectF;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.style.ClickableSpan;
 import android.view.Gravity;
 import android.view.View;
@@ -41,6 +43,7 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextEntityCustom;
 
+import me.vkryl.core.StringUtils;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 
@@ -68,17 +71,33 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
     participantsCounterY = content.getHeight() + Screen.dp(1.5f);
     content.padding(Screen.dp(35));
 
-    String gvw = Lang.getString(R.string.Giveaway);
-    TextEntityCustom custom = new TextEntityCustom(controller(), tdlib, gvw, 0, gvw.length(), 0, openParameters());
-    custom.setCustomColorSet(getLinkColorSet());
-    custom.setOnClickListener(new ClickableSpan() {
-      @Override public void onClick (@NonNull View widget) {
-        tdlib.ui().openMessage(controller(), giveawayWinners.boostedChatId, new MessageId(giveawayWinners.boostedChatId, giveawayWinners.giveawayMessageId), openParameters());
-      }
-    });
-    FormattedText gvwf = new FormattedText(gvw, new TextEntity[] {custom});
 
-    FormattedText formattedText = FormattedText.getPlural(tdlib, null, R.string.xGiveawayWinnersSelectedInfo, giveawayWinners.winnerCount, gvwf);
+    CharSequence text = Lang.pluralBold(R.string.xGiveawayWinnersSelectedText, giveawayWinners.winnerCount);
+    int startIndex = StringUtils.indexOf(text, "**");
+    if (startIndex != -1) {
+      int endIndex = StringUtils.indexOf(text, "**", startIndex + 2);
+      if (endIndex != -1) {
+        SpannableStringBuilder b = new SpannableStringBuilder(text);
+
+        String linkText = b.subSequence(startIndex + 2, endIndex).toString();
+        TextEntityCustom custom = new TextEntityCustom(controller(), tdlib, linkText, 0, linkText.length(), 0, openParameters());
+        custom.setCustomColorSet(getLinkColorSet());
+        custom.setOnClickListener(new ClickableSpan() {
+          @Override public void onClick (@NonNull View widget) {
+            tdlib.ui().openMessage(controller(), giveawayWinners.boostedChatId, new MessageId(giveawayWinners.boostedChatId, giveawayWinners.giveawayMessageId), openParameters());
+          }
+        });
+        FormattedText linkArgument = new FormattedText(linkText, new TextEntity[] {custom});
+
+        b.delete(endIndex, endIndex + 2);
+        b.delete(startIndex, startIndex + 2);
+        endIndex -= 2;
+        b.setSpan(linkArgument, startIndex, endIndex, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        text = b;
+      }
+    }
+
+    FormattedText formattedText = FormattedText.valueOf(text, tdlib, openParameters());
     Text.Builder b = new Text.Builder(formattedText, maxWidth - Screen.dp(CONTENT_PADDING_DP * 2), getGiveawayTextStyleProvider(), getTextColorSet(), null).viewProvider(currentViews).textFlags(Text.FLAG_ALIGN_CENTER);
 
     content.add(Lang.boldify(Lang.getString(R.string.GiveawayWinnersSelected)), getTextColorSet(), currentViews);

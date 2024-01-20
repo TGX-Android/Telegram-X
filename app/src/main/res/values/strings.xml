@@ -5042,10 +5042,12 @@
   <string name="GiveawayWinnersSelectionDateHeader">Winners Selection Date</string>
   <string name="GiveawayWinnersSelectionDate">%1$s at %2$s</string>
 
-  <string name="xGiveawayWinnersSelectedInfo_one">%1$s winner of the %2$s were randomly selected by Telegram.</string>
-  <string name="xGiveawayWinnersSelectedInfo_other">%1$s winners of the %2$s were randomly selected by Telegram.</string>
-  <string name="xGiveawayPrizePremiumInfo_one">%1$s Telegram Premium Subscription for %2$s months.</string>
-  <string name="xGiveawayPrizePremiumInfo_other">%1$s Telegram Premium Subscriptions for %2$s months.</string>
+  <string name="xGiveawayWinnersSelectedText_one">%1$s winner of the **Giveaway** were randomly selected by Telegram.</string>
+  <string name="xGiveawayWinnersSelectedText_other">%1$s winners of the **Giveaway** were randomly selected by Telegram.</string>
+  <string name="xGiveawayPrizePremium_one">%1$s **Telegram Premium** subscription %2$s.</string>
+  <string name="xGiveawayPrizePremium_other">%1$s **Telegram Premium** subscriptions %2$s.</string>
+  <string name="xGiveawayPrizePremiumMonths_one">for %1$s month</string>
+  <string name="xGiveawayPrizePremiumMonths_other">for %1$s months</string>
   <string name="xGiveawayPrizeReceivedInfo_one">Your prize is a **Telegram Premium** subscription for **%1$s** month.</string>
   <string name="xGiveawayPrizeReceivedInfo_other">Your prize is a **Telegram Premium** subscription for **%1$s** months.</string>
 
