@@ -151,6 +151,7 @@ import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.FutureBool;
 import me.vkryl.core.lambda.FutureInt;
 import me.vkryl.core.lambda.RunnableBool;
+import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceUtils;
 import nl.dionsegijn.konfetti.xml.KonfettiView;
@@ -325,27 +326,58 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         drawer.onCurrentTdlibChanged(tdlib);
       }
       onTdlibChanged();
-      runEmulatorChecks(false);
+      runEmulatorChecks();
     }
   }
 
-  private boolean ranEmulatorChecks;
+  private boolean ranEmulatorChecks, emulatorChecksFinished;
+  private final List<RunnableData<Settings.EmulatorDetectionResult>> emulatorCheckFinishCallbacks = new ArrayList<>();
 
-  public void runEmulatorChecks (boolean force) {
-    if (Settings.instance().isEmulator() || ranEmulatorChecks) {
+  public void runEmulatorChecks () {
+    runEmulatorChecksImpl(false, null);
+  }
+
+  public void forceRunEmulatorChecks (@Nullable RunnableData<Settings.EmulatorDetectionResult> after) {
+    runEmulatorChecksImpl(true, after);
+  }
+
+  private void addEmulatorChecksCallback (@Nullable RunnableData<Settings.EmulatorDetectionResult> after) {
+    if (after == null) {
       return;
     }
+    boolean postponed;
+    synchronized (emulatorCheckFinishCallbacks) {
+      postponed = !emulatorChecksFinished;
+      if (postponed) {
+        emulatorCheckFinishCallbacks.add(after);
+      }
+    }
+    if (!postponed) {
+      after.runWithData(Settings.instance().getLastEmulatorDetectionResult());
+    }
+  }
+
+  private void runEmulatorChecksImpl (boolean force, @Nullable RunnableData<Settings.EmulatorDetectionResult> after) {
+    if (ranEmulatorChecks) {
+      addEmulatorChecksCallback(after);
+      return;
+    }
+
     long installationId = Settings.instance().installationId();
     if (!force) {
+      Settings.EmulatorDetectionResult previousResult = Settings.instance().getLastEmulatorDetectionResult();
       List<FutureBool> conditions = Arrays.asList(
+        // every app launch without authorization
         () -> !tdlib.context().hasActiveAccounts() || tdlib.isUnauthorized(),
         () -> {
-          Settings.EmulatorDetectionResult detectionResult = Settings.instance().getLastEmulatorDetectionResult();
-          if (detectionResult != null) {
-            long elapsed = System.currentTimeMillis() - detectionResult.time;
-            return installationId != detectionResult.installationId || elapsed >= TimeUnit.DAYS.toMillis(3);
+          if (previousResult != null) {
+            if (previousResult.isEmulatorDetected()) {
+              return false;
+            }
+            long elapsed = System.currentTimeMillis() - previousResult.time;
+            // every 3 days or after every update
+            return installationId != previousResult.installationId || elapsed >= TimeUnit.DAYS.toMillis(3);
           }
-          // every 2 days or after every update
           return true;
         }
       );
@@ -357,22 +389,34 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         }
       }
       if (!hasAnyReason) {
+        if (after != null) {
+          after.runWithData(previousResult);
+        }
         return;
       }
     }
 
     ranEmulatorChecks = true;
+    addEmulatorChecksCallback(after);
 
     // Impl
     new Thread(() -> {
       long ms = SystemClock.uptimeMillis();
-      boolean isEmulator = DeviceUtils.detectEmulator(BaseActivity.this, BuildConfig.EXPERIMENTAL);
+      long detectionResult = DeviceUtils.detectEmulator(BaseActivity.this, BuildConfig.EXPERIMENTAL);
       long elapsed = SystemClock.uptimeMillis() - ms;
       Log.v("Ran emulator detections in %dms", elapsed);
-      Settings.instance().trackEmulatorDetectionResult(installationId, elapsed, isEmulator);
-      if (isEmulator) {
-        tdlib.context().setIsEmulator(true);
-      }
+      Settings.EmulatorDetectionResult result = Settings.instance().trackEmulatorDetectionResult(installationId, elapsed, detectionResult);
+      tdlib.context().setIsEmulator(result.isEmulatorDetected());
+      UI.post(() -> {
+        emulatorChecksFinished = true;
+        if (activityState != UI.State.DESTROYED) {
+          for (int i = emulatorCheckFinishCallbacks.size() - 1; i >= 0; i--) {
+            RunnableData<Settings.EmulatorDetectionResult> act = emulatorCheckFinishCallbacks.remove(i);
+            act.runWithData(result);
+          }
+        }
+        emulatorCheckFinishCallbacks.clear();
+      });
     }, "EmulatorDetector").start();
   }
 
@@ -1083,7 +1127,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       }
     }*/
     appUpdater.checkForUpdates();
-    runEmulatorChecks(false);
+    runEmulatorChecks();
   }
 
   protected void setOnline (boolean isOnline) {

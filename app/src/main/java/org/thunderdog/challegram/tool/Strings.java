@@ -705,11 +705,17 @@ public class Strings {
     return b.toString();
   }
 
-  public static CharSequence replaceBoldTokens (final String input) {
-    return replaceBoldTokens(input, ColorId.NONE);
+  public static CharSequence replaceBoldTokens (final CharSequence input) {
+    return replaceBoldTokens(input, Lang.boldCreator());
   }
 
-  public static CharSequence replaceBoldTokens (final String input, @ColorId int colorId) {
+  public static CharSequence replaceBoldTokens (final CharSequence input, @ColorId int colorId) {
+    return replaceBoldTokens(input, (target, argStart, argEnd, argIndex, needFakeBold) ->
+      new CustomTypefaceSpan(needFakeBold ? Fonts.getRobotoRegular() : Fonts.getRobotoMedium(), colorId).setFakeBold(needFakeBold)
+    );
+  }
+
+  public static CharSequence replaceBoldTokens (final CharSequence input, Lang.SpanCreator spanCreator) {
     String token = "**";
     int tokenLen = token.length();
 
@@ -722,12 +728,17 @@ public class Strings {
       end = ssb.toString().indexOf(token, start);
 
       if (start > -1 && end > -1) {
-        boolean fakeBold = Text.needFakeBold(ssb, start, end);
-        CustomTypefaceSpan span = new CustomTypefaceSpan(fakeBold ? Fonts.getRobotoRegular() : Fonts.getRobotoMedium(), colorId).setFakeBold(fakeBold);
-        ssb.setSpan(span, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         // Delete the tokens before and after the span
         ssb.delete(end, end + tokenLen);
         ssb.delete(start - tokenLen, start);
+        start -= tokenLen;
+        end -= tokenLen;
+
+        // Set span
+        boolean fakeBold = Text.needFakeBold(ssb, start, end);
+        Object span = spanCreator.onCreateSpan(ssb, start, end, count, fakeBold);
+        ssb.setSpan(span, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
         count++;
       }
     } while (start > -1 && end > -1);

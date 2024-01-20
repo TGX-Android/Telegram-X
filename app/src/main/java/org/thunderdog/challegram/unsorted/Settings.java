@@ -6189,19 +6189,21 @@ public class Settings {
   }
 
   public static class EmulatorDetectionResult {
-    public static final int FLAG_EMULATOR_DETECTED = 1;
+    public final long time, installationId, elapsed, result;
 
-    public final long time, installationId, elapsed, flags;
-
-    public EmulatorDetectionResult (long time, long installationId, long elapsed, long flags) {
+    public EmulatorDetectionResult (long time, long installationId, long elapsed, long result) {
       this.time = time;
       this.installationId = installationId;
       this.elapsed = elapsed;
-      this.flags = flags;
+      this.result = result;
     }
 
-    public boolean isDetected () {
-      return BitwiseUtils.hasFlag(flags, FLAG_EMULATOR_DETECTED);
+    public boolean isEmulatorDetected () {
+      return result != 0;
+    }
+
+    public String toHumanReadableFormat () {
+      return Long.toString(result, 16);
     }
 
     public long[] toLongArray () {
@@ -6209,7 +6211,7 @@ public class Settings {
         time,
         installationId,
         elapsed,
-        flags
+        result
       };
     }
 
@@ -6235,18 +6237,25 @@ public class Settings {
     return EmulatorDetectionResult.restore(emulatorDetectionResult);
   }
 
-  public void trackEmulatorDetectionResult (long installationId, long elapsed, boolean isEmulator) {
+  @NonNull
+  public EmulatorDetectionResult trackEmulatorDetectionResult (long installationId, long elapsed, long emulatorCheckResult) {
     EmulatorDetectionResult result = new EmulatorDetectionResult(
       System.currentTimeMillis(),
       installationId,
       elapsed,
-      isEmulator ? EmulatorDetectionResult.FLAG_EMULATOR_DETECTED : 0
+      emulatorCheckResult
     );
     long[] data = result.toLongArray();
     pmc.putLongArray(KEY_EMULATOR_DETECTION_RESULT, data);
-    if (isEmulator) {
-      putBoolean(KEY_IS_EMULATOR, true);
+    boolean wasEmulator = isEmulator();
+    if (wasEmulator != result.isEmulatorDetected()) {
+      if (result.isEmulatorDetected()) {
+        putBoolean(KEY_IS_EMULATOR, true);
+      } else {
+        pmc.remove(KEY_IS_EMULATOR);
+      }
     }
+    return result;
   }
 
   private List<String> authenticationTokens;
