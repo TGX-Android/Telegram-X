@@ -5903,6 +5903,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       client.send(new TdApi.SetOption("storage_max_files_size", new TdApi.OptionValueInteger(Integer.MAX_VALUE)), okHandler);
       client.send(new TdApi.SetOption("ignore_default_disable_notification", new TdApi.OptionValueBoolean(true)), okHandler);
       client.send(new TdApi.SetOption("ignore_platform_restrictions", new TdApi.OptionValueBoolean(AppInstallationUtil.isAppSideLoaded())), okHandler);
+      client.send(new TdApi.SetOption("process_pinned_messages_as_mentions", new TdApi.OptionValueBoolean(true)), okHandler);
     }
     checkConnectionParams(client, true);
 
@@ -9306,6 +9307,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case "use_storage_optimizer":
       case "storage_max_files_size":
       case "use_pfs":
+      case "process_pinned_messages_as_mentions":
       case "use_quick_ack":
       case "connection_parameters":
       case "notification_group_count_max":
