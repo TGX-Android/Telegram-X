@@ -294,7 +294,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
         TdApi.ChatInviteLink link = (TdApi.ChatInviteLink) item.getData();
 
         if (link.isRevoked) {
-          showOptions(Lang.getString(R.string.AreYouSureDeleteInviteLink), new int[]{R.id.btn_deleteLink, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkDelete), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
+          showOptions(Lang.getString(R.string.AreYouSureDeleteInviteLink), new int[]{R.id.btn_deleteLink, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkDelete), Lang.getString(R.string.Cancel)}, new int[]{OptionColor.RED, OptionColor.NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
             if (id2 == R.id.btn_deleteLink) {
               inviteLinksRevoked.remove(link);
               smOnRevokedLinkDeleted(link);
@@ -305,7 +305,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
             return true;
           });
         } else {
-          showOptions(Lang.getString(tdlib.isChannel(chatId) ? R.string.AreYouSureRevokeInviteLinkChannel : R.string.AreYouSureRevokeInviteLinkGroup), new int[]{R.id.btn_revokeLink, R.id.btn_cancel}, new String[]{Lang.getString(R.string.RevokeLink), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_link_off_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
+          showOptions(Lang.getString(tdlib.isChannel(chatId) ? R.string.AreYouSureRevokeInviteLinkChannel : R.string.AreYouSureRevokeInviteLinkGroup), new int[]{R.id.btn_revokeLink, R.id.btn_cancel}, new String[]{Lang.getString(R.string.RevokeLink), Lang.getString(R.string.Cancel)}, new int[]{OptionColor.RED, OptionColor.NORMAL}, new int[]{R.drawable.baseline_link_off_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
             if (id2 == R.id.btn_revokeLink) {
               tdlib.client().send(new TdApi.RevokeChatInviteLink(chatId, link.inviteLink), result -> {
                 if (result.getConstructor() == TdApi.ChatInviteLinks.CONSTRUCTOR) {
@@ -351,7 +351,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
         notifyParentIfPossible();
       }, (links) -> onLinkRevoked(link, links));
     } else if (viewId == R.id.btn_deleteAllRevokedLinks) {
-      showOptions(Lang.getString(R.string.AreYouSureDeleteAllInviteLinks), new int[] {R.id.btn_deleteAllRevokedLinks, R.id.btn_cancel}, new String[] {Lang.getString(R.string.DeleteAllRevokedLinks), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+      showOptions(Lang.getString(R.string.AreYouSureDeleteAllInviteLinks), new int[] {R.id.btn_deleteAllRevokedLinks, R.id.btn_cancel}, new String[] {Lang.getString(R.string.DeleteAllRevokedLinks), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
         if (id == R.id.btn_deleteAllRevokedLinks) {
           TdApi.ChatInviteLink firstLink = inviteLinksRevoked.get(0);
           TdApi.ChatInviteLink lastLink = inviteLinksRevoked.get(inviteLinksRevoked.size() - 1);

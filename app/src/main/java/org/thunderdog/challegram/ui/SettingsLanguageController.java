@@ -298,7 +298,7 @@ public class SettingsLanguageController extends RecyclerViewController<Void> imp
     if (languageInfo == null || languageInfo.isOfficial)
       return;
     boolean isCustom = Td.isLocal(languageInfo);
-    showOptions(Lang.getStringBold(isCustom ? R.string.DeleteLanguageConfirm : R.string.LanguageDeleteConfirm, languageInfo.nativeName, languageInfo.name, tdlib.tMeLanguageUrl(languageInfo.id)), new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getString(isCustom ? R.string.RemoveLanguage : R.string.LanguageDelete), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+    showOptions(Lang.getStringBold(isCustom ? R.string.DeleteLanguageConfirm : R.string.LanguageDeleteConfirm, languageInfo.nativeName, languageInfo.name, tdlib.tMeLanguageUrl(languageInfo.id)), new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getString(isCustom ? R.string.RemoveLanguage : R.string.LanguageDelete), Lang.getString(R.string.Cancel)}, new int[]{OptionColor.RED, OptionColor.NORMAL}, new int[]{R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_delete) {
         removeLanguage(item, languageInfo);
       }
@@ -548,28 +548,28 @@ public class SettingsLanguageController extends RecyclerViewController<Void> imp
         ids.append(R.id.btn_view);
         icons.append(R.drawable.baseline_edit_24);
         strings.append(R.string.LocalizationEdit);
-        colors.append(OPTION_COLOR_NORMAL);
+        colors.append(OptionColor.NORMAL);
       } else if (languageInfo.id.equals(Lang.packId())) {
         ids.append(R.id.btn_view);
         icons.append(R.drawable.baseline_visibility_24);
         strings.append(R.string.LocalizationView);
-        colors.append(OPTION_COLOR_NORMAL);
+        colors.append(OptionColor.NORMAL);
       }
       ids.append(R.id.btn_shareLink);
       icons.append(R.drawable.baseline_forward_24);
       strings.append(R.string.Share);
-      colors.append(OPTION_COLOR_NORMAL);
+      colors.append(OptionColor.NORMAL);
 
       ids.append(R.id.btn_share);
       icons.append(R.drawable.baseline_code_24);
       strings.append(R.string.LocalisationShare);
-      colors.append(OPTION_COLOR_NORMAL);
+      colors.append(OptionColor.NORMAL);
 
       if (Td.isInstalled(languageInfo)) {
         ids.append(R.id.btn_delete);
         icons.append(R.drawable.baseline_delete_forever_24);
         strings.append(Td.isLocal(languageInfo) ? R.string.RemoveLanguage : R.string.LanguageDelete);
-        colors.append(OPTION_COLOR_RED);
+        colors.append(OptionColor.RED);
       }
     } else if (!Td.isLocal(languageInfo)) {
       ids = new IntList(1);

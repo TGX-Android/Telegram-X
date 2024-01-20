@@ -555,7 +555,7 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
     if (proxyId == Settings.PROXY_ID_NONE) {
       return;
     }
-    showOptions(Lang.getString(R.string.ProxyRemoveInfo), new int[] {R.id.btn_removeProxy, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ProxyRemove), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+    showOptions(Lang.getString(R.string.ProxyRemoveInfo), new int[] {R.id.btn_removeProxy, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ProxyRemove), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_removeProxy) {
         removeProxyImpl(proxyId);
       }
@@ -667,24 +667,24 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
     ids.append(R.id.btn_editProxy);
     strings.append(R.string.ProxyEdit);
     icons.append(R.drawable.baseline_edit_24);
-    colors.append(OPTION_COLOR_NORMAL);
+    colors.append(OptionColor.NORMAL);
 
     if (proxy.proxy.type.getConstructor() != TdApi.ProxyTypeHttp.CONSTRUCTOR) {
       ids.append(R.id.btn_share);
       strings.append(R.string.Share);
       icons.append(R.drawable.baseline_forward_24);
-      colors.append(OPTION_COLOR_NORMAL);
+      colors.append(OptionColor.NORMAL);
 
       ids.append(R.id.btn_copyLink);
       strings.append(R.string.CopyLink);
       icons.append(R.drawable.baseline_link_24);
-      colors.append(OPTION_COLOR_NORMAL);
+      colors.append(OptionColor.NORMAL);
     }
 
     ids.append(R.id.btn_removeProxy);
     strings.append(R.string.ProxyRemove);
     icons.append(R.drawable.baseline_delete_24);
-    colors.append(OPTION_COLOR_RED);
+    colors.append(OptionColor.RED);
 
     showOptions(proxy.getName().toString(), ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
       if (id == R.id.btn_share) {

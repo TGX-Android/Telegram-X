@@ -1238,21 +1238,21 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         ids.append(R.id.btn_reportFalsePositive);
         strings.append(R.string.ReportFalsePositive);
         icons.append(R.drawable.baseline_report_24);
-        colors.append(ViewController.OPTION_COLOR_NORMAL);
+        colors.append(ViewController.OptionColor.NORMAL);
       }
 
       if (TD.canCopyText(msg.getMessage()) || (msg instanceof TGMessageText && ((TGMessageText) msg).getText().text.trim().length() > 0)) {
         ids.append(R.id.btn_messageCopy);
         strings.append(R.string.Copy);
         icons.append(R.drawable.baseline_content_copy_24);
-        colors.append(ViewController.OPTION_COLOR_NORMAL);
+        colors.append(ViewController.OptionColor.NORMAL);
       }
 
       if (msg.isTranslatable() && msg.translationStyleMode() != Settings.TRANSLATE_MODE_NONE) {
         ids.append(R.id.btn_chatTranslate);
         strings.append(R.string.Translate);
         icons.append(R.drawable.baseline_translate_24);
-        colors.append(ViewController.OPTION_COLOR_NORMAL);
+        colors.append(ViewController.OptionColor.NORMAL);
       }
 
       if (!isChannel) {
@@ -1263,7 +1263,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           strings.append(Lang.getString(R.string.ViewMessagesFromUser, m.tdlib().senderName(sender, true)));
         }
         icons.append(R.drawable.baseline_person_24);
-        colors.append(ViewController.OPTION_COLOR_NORMAL);
+        colors.append(ViewController.OptionColor.NORMAL);
       }
 
       if (myStatus != null && !(TD.isCreator(member.status) && TD.isCreator(myStatus))) {
@@ -1271,7 +1271,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         if (promoteMode != TD.PROMOTE_MODE_NONE && promoteMode != TD.PROMOTE_MODE_NEW) {
           ids.append(R.id.btn_editRights);
           icons.append(R.drawable.baseline_stars_24);
-          colors.append(ViewController.OPTION_COLOR_NORMAL);
+          colors.append(ViewController.OptionColor.NORMAL);
           switch (promoteMode) {
             case TD.PROMOTE_MODE_EDIT:
               strings.append(R.string.EditAdminRights);
@@ -1288,7 +1288,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         if (restrictMode != TD.RESTRICT_MODE_NONE && !(sender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR && Td.getSenderId(sender) == m.getChatId())) {
           if (!isChannel || (isChannel && restrictMode == TD.RESTRICT_MODE_EDIT)) {
             ids.append(R.id.btn_restrictMember);
-            colors.append(restrictMode == TD.RESTRICT_MODE_NEW ? ViewController.OPTION_COLOR_RED : ViewController.OPTION_COLOR_NORMAL);
+            colors.append(restrictMode == TD.RESTRICT_MODE_NEW ? ViewController.OptionColor.RED : ViewController.OptionColor.NORMAL);
             icons.append(R.drawable.baseline_block_24);
 
             switch (restrictMode) {
@@ -1310,7 +1310,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
             ids.append(R.id.btn_blockSender);
             icons.append(R.drawable.baseline_remove_circle_24);
             strings.append(isChannel ? R.string.ChannelRemoveUser : R.string.RemoveFromGroup);
-            colors.append(ViewController.OPTION_COLOR_RED);
+            colors.append(ViewController.OptionColor.RED);
           }
         }
       }

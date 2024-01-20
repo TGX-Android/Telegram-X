@@ -295,7 +295,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
       if (result instanceof InlineResultCommand) {
         return c instanceof MessagesController && ((MessagesController) c).canWriteMessages() && ((MessagesController) c).onCommandLongPressed((InlineResultCommand) result);
       } else if (result instanceof InlineResultHashtag) {
-        c.showOptions(Lang.getString(R.string.HashtagDeleteHint), new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getOK(), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        c.showOptions(Lang.getString(R.string.HashtagDeleteHint), new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getOK(), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
           if (id == R.id.btn_delete) {
             removeItem(result);
             delegate.tdlib().client().send(new TdApi.RemoveRecentHashtag(((InlineResultHashtag) result).data().substring(1)), delegate.tdlib().okHandler());
@@ -304,7 +304,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
         });
         return true;
       } else if (result instanceof InlineResultMention && ((InlineResultMention) result).isInlineBot()) {
-        c.showOptions(Lang.getString(R.string.BotDeleteHint), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getOK(), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        c.showOptions(Lang.getString(R.string.BotDeleteHint), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getOK(), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
           if (id == R.id.btn_delete) {
             removeItem(result);
             if (c instanceof MessagesController) {

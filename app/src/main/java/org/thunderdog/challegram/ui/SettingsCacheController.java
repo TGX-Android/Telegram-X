@@ -413,7 +413,7 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
       showAllChats();
     } else if (viewId == R.id.btn_paint) {
       if (fastStats != null) {
-        showOptions(Lang.getString(R.string.PaintsInfo), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getPaintsSize())), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        showOptions(Lang.getString(R.string.PaintsInfo), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getPaintsSize())), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
           if (id == R.id.btn_deleteFile) {
             Background.instance().post(() -> {
               FileUtils.delete(PaintState.getPaintsDir(), true);
@@ -425,7 +425,7 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
       }
     } else if (viewId == R.id.btn_junk) {
       if (fastStats != null) {
-        showOptions(Lang.getString(R.string.JunkFilesInfo), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getJunkSize())), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        showOptions(Lang.getString(R.string.JunkFilesInfo), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getJunkSize())), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
           if (id == R.id.btn_deleteFile) {
             if (!fastStats.deleteJunk())
               Log.w("Failed to delete some junk");
@@ -436,7 +436,7 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
       }
     } else if (viewId == R.id.btn_camera) {
       if (fastStats != null) {
-        showOptions(Lang.getString(R.string.InAppCameraCacheDeleteConfirm), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getPrivateCameraMediaSize())), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        showOptions(Lang.getString(R.string.InAppCameraCacheDeleteConfirm), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getPrivateCameraMediaSize())), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
           if (id == R.id.btn_deleteFile) {
             if (!fastStats.deletePrivateCameraMedia())
               Log.w("Failed to delete some emoji sets");
@@ -447,7 +447,7 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
       }
     } else if (viewId == R.id.btn_emoji) {
       if (fastStats != null) {
-        showOptions(Lang.getString(R.string.EmojiSetsInfo), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getEmojiUnusedSize())), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        showOptions(Lang.getString(R.string.EmojiSetsInfo), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getEmojiUnusedSize())), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
           if (id == R.id.btn_deleteFile) {
             if (!fastStats.deleteEmoji())
               Log.w("Failed to delete some emoji sets");
@@ -458,7 +458,7 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
       }
     } else if (viewId == R.id.btn_lottie) {
       if (fastStats != null) {
-        showOptions(Lang.getString(R.string.AnimatedStickersInfo), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getLottieSize())), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        showOptions(Lang.getString(R.string.AnimatedStickersInfo), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getLottieSize())), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
           if (id == R.id.btn_deleteFile) {
             if (!fastStats.deleteLottieFiles())
               Log.w("Failed to delete some emoji sets");
@@ -479,7 +479,7 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
           Settings.instance().deleteAllLogs(true, this::reloadFastStats);
         }));
       } else {
-        showOptions(Lang.getString(R.string.AppLogsClear), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getLogsSize())), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        showOptions(Lang.getString(R.string.AppLogsClear), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getLogsSize())), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
           if (id == R.id.btn_deleteFile) {
             Settings.instance().deleteAllLogs(true, this::reloadFastStats);
           }

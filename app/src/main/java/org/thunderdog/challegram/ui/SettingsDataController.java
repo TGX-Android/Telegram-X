@@ -452,7 +452,7 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
     final boolean toggleResult = adapter.toggleView(v);
 
     if (id == R.id.btn_resetNetworkStats) {
-      showOptions(Lang.getString(R.string.ResetStatsHint), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.Reset), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, optionId) -> {
+      showOptions(Lang.getString(R.string.ResetStatsHint), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.Reset), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, optionId) -> {
         if (optionId == R.id.btn_delete) {
           tdlib.client().send(new TdApi.ResetNetworkStatistics(), object -> {
             switch (object.getConstructor()) {

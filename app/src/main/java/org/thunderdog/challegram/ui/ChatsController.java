@@ -1512,7 +1512,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     String actionStr = Lang.plural(clearHistory ? R.string.ClearXHistories : R.string.DeleteXChats, selectedChats.size());
 
     RunnableBool deleter = needRevoke -> {
-      showOptions(Lang.getString(R.string.NoUndoWarn), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {actionStr, Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {clearHistory ? R.drawable.templarian_baseline_broom_24 : R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (v, optionId) -> {
+      showOptions(Lang.getString(R.string.NoUndoWarn), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {actionStr, Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {clearHistory ? R.drawable.templarian_baseline_broom_24 : R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (v, optionId) -> {
         if (optionId == R.id.btn_delete) {
           final int size = selectedChats.size();
           AtomicInteger remaining = new AtomicInteger(size);
@@ -1548,7 +1548,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       showOptions(info,
         new int[]{R.id.btn_delete, R.id.btn_cancel},
         new String[]{actionStr, Lang.getString(R.string.Cancel)},
-        new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL},
+        new int[]{OptionColor.RED, OptionColor.NORMAL},
         new int[]{R.drawable.templarian_baseline_broom_24, R.drawable.baseline_cancel_24}, (v, optionId) -> {
           if (optionId == R.id.btn_delete) {
             deleter.runWithBool(false);
@@ -1676,7 +1676,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
             Lang.pluralBold(botCount == count ? R.string.BlockXBots : R.string.BlockXUsers, count),
             new int[] {R.id.btn_blockSender, R.id.btn_cancel},
             new String[] {Lang.getString(R.string.BlockContact), Lang.getString(R.string.Cancel)},
-            new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL},
+            new int[] {OptionColor.RED, OptionColor.NORMAL},
             new int[] {R.drawable.baseline_block_24, R.drawable.baseline_cancel_24},
             (v, optionId) -> {
               if (optionId == R.id.btn_unblockSender || optionId == R.id.btn_blockSender) {

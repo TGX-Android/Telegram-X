@@ -484,8 +484,8 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
   private void showChatFolderOptions (TdApi.ChatFolderInfo chatFolderInfo) {
     Options options = new Options.Builder()
       .info(chatFolderInfo.title)
-      .item(new OptionItem(R.id.btn_edit, Lang.getString(R.string.EditFolder), OPTION_COLOR_NORMAL, R.drawable.baseline_edit_24))
-      .item(new OptionItem(R.id.btn_delete, Lang.getString(R.string.RemoveFolder), OPTION_COLOR_RED, R.drawable.baseline_delete_24))
+      .item(new OptionItem(R.id.btn_edit, Lang.getString(R.string.EditFolder), OptionColor.NORMAL, R.drawable.baseline_edit_24))
+      .item(new OptionItem(R.id.btn_delete, Lang.getString(R.string.RemoveFolder), OptionColor.RED, R.drawable.baseline_delete_24))
       .build();
     showOptions(options, (optionItemView, id) -> {
       if (id == R.id.btn_edit) {
@@ -498,7 +498,7 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
   }
 
   private void showRemoveFolderConfirm (int chatFolderId) {
-    showConfirm(Lang.getString(R.string.RemoveFolderConfirm), Lang.getString(R.string.Remove), R.drawable.baseline_delete_24, OPTION_COLOR_RED, () -> {
+    showConfirm(Lang.getString(R.string.RemoveFolderConfirm), Lang.getString(R.string.Remove), R.drawable.baseline_delete_24, OptionColor.RED, () -> {
       deleteChatFolder(chatFolderId);
     });
   }

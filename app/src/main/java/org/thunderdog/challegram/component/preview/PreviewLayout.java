@@ -89,7 +89,7 @@ public abstract class PreviewLayout extends FrameLayoutFix implements View.OnCli
     footerHeight += params.height;
 
     TextView item;
-    item = OptionsLayout.genOptionView(getContext(), id, Lang.getString(stringRes), ViewController.OPTION_COLOR_NORMAL, icon, this, themeListeners, null);
+    item = OptionsLayout.genOptionView(getContext(), id, Lang.getString(stringRes), ViewController.OptionColor.NORMAL, icon, this, themeListeners, null);
     RippleSupport.setSimpleWhiteBackground(item);
     themeListeners.addThemeInvalidateListener(item);
     item.setLayoutParams(params);

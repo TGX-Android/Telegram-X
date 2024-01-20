@@ -352,10 +352,10 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
               (target, argStart, argEnd, argIndex, needFakeBold) -> argIndex != 1 ? Lang.boldCreator().onCreateSpan(target, argStart, argEnd, argIndex, needFakeBold) : null,
               Strings.buildSize(bytesToDownload), displayVersion
             ))
-            .item(new ViewController.OptionItem(R.id.btn_update, Lang.getString(R.string.DownloadUpdate), ViewController.OPTION_COLOR_BLUE, R.drawable.baseline_system_update_24));
+            .item(new ViewController.OptionItem(R.id.btn_update, Lang.getString(R.string.DownloadUpdate), ViewController.OptionColor.BLUE, R.drawable.baseline_system_update_24));
           final String changesUrl = commit != null && !BuildConfig.COMMIT.equals(commit) ? BuildConfig.REMOTE_URL + "/compare/" + BuildConfig.COMMIT + "..." + commit : null;
           if (changesUrl != null) {
-            b.item(new ViewController.OptionItem(R.id.btn_sourceCode, Lang.getString(R.string.UpdateSourceChanges), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_code_24));
+            b.item(new ViewController.OptionItem(R.id.btn_sourceCode, Lang.getString(R.string.UpdateSourceChanges), ViewController.OptionColor.NORMAL, R.drawable.baseline_code_24));
           }
           b.cancelItem();
           c.showOptions(b.build(), (optionItemView, id) -> {

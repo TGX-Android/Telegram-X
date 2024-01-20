@@ -135,7 +135,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
       msg.append("\n").append(Lang.wrap(Lang.getString(R.string.InviteLinkRequestSince, Lang.getMessageTimestamp(request.date, TimeUnit.SECONDS)), Lang.italicCreator()));
     }
 
-    controller.showOptions(msg, new int[]{R.id.btn_approveChatRequest, R.id.btn_declineChatRequest, R.id.btn_openChat}, new String[]{Lang.getString(isChannel ? R.string.InviteLinkActionAcceptChannel : R.string.InviteLinkActionAccept), Lang.getString(R.string.InviteLinkActionDeclineAction), Lang.getString(R.string.InviteLinkActionWrite)}, new int[] { ViewController.OPTION_COLOR_BLUE, ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL }, new int[]{R.drawable.baseline_person_add_24, R.drawable.baseline_delete_24, R.drawable.baseline_person_24}, (itemView2, id2) -> {
+    controller.showOptions(msg, new int[]{R.id.btn_approveChatRequest, R.id.btn_declineChatRequest, R.id.btn_openChat}, new String[]{Lang.getString(isChannel ? R.string.InviteLinkActionAcceptChannel : R.string.InviteLinkActionAccept), Lang.getString(R.string.InviteLinkActionDeclineAction), Lang.getString(R.string.InviteLinkActionWrite)}, new int[] {ViewController.OptionColor.BLUE, ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, new int[]{R.drawable.baseline_person_add_24, R.drawable.baseline_delete_24, R.drawable.baseline_person_24}, (itemView2, id2) -> {
       if (id2 == R.id.btn_approveChatRequest) {
         acceptRequest(user);
       } else if (id2 == R.id.btn_openChat) {
@@ -245,7 +245,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
   }
 
   private void acceptRequest (TGUser user) {
-    controller.showOptions(Lang.getStringBold(R.string.AreYouSureAcceptJoinRequest, user.getName(), tdlib().chatTitle(chatId)), new int[]{R.id.btn_approveChatRequest, R.id.btn_cancel}, new String[]{Lang.getString(isChannel ? R.string.InviteLinkActionAcceptChannel : R.string.InviteLinkActionAccept), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_BLUE, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_person_add_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
+    controller.showOptions(Lang.getStringBold(R.string.AreYouSureAcceptJoinRequest, user.getName(), tdlib().chatTitle(chatId)), new int[]{R.id.btn_approveChatRequest, R.id.btn_cancel}, new String[]{Lang.getString(isChannel ? R.string.InviteLinkActionAcceptChannel : R.string.InviteLinkActionAccept), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OptionColor.BLUE, ViewController.OptionColor.NORMAL}, new int[]{R.drawable.baseline_person_add_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
       if (id2 == R.id.btn_approveChatRequest) {
         tdlib().client().send(new TdApi.ProcessChatJoinRequest(chatId, user.getUserId(), true), obj -> removeSender(user));
       }
@@ -255,7 +255,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
   }
 
   private void declineRequest (TGUser user) {
-    controller.showOptions(Lang.getStringBold(R.string.AreYouSureDeclineJoinRequest, user.getName()), new int[]{R.id.btn_declineChatRequest, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkActionDeclineAction), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
+    controller.showOptions(Lang.getStringBold(R.string.AreYouSureDeclineJoinRequest, user.getName()), new int[]{R.id.btn_declineChatRequest, R.id.btn_cancel}, new String[]{Lang.getString(R.string.InviteLinkActionDeclineAction), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
       if (id2 == R.id.btn_declineChatRequest) {
         tdlib().client().send(new TdApi.ProcessChatJoinRequest(chatId, user.getUserId(), false), obj -> removeSender(user));
       }

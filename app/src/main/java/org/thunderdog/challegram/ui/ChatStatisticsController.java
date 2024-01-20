@@ -664,7 +664,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
         if (TD.isCreator(member.status)) {
           if (TD.isCreator(myStatus)) {
             ids.append(R.id.btn_editRights);
-            colors.append(OPTION_COLOR_NORMAL);
+            colors.append(OptionColor.NORMAL);
             icons.append(R.drawable.baseline_edit_24);
             strings.append(R.string.EditAdminTitle);
           }
@@ -672,7 +672,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
           int promoteMode = TD.canPromoteAdmin(myStatus, member.status);
           if (promoteMode != TD.PROMOTE_MODE_NONE) {
             ids.append(R.id.btn_editRights);
-            colors.append(OPTION_COLOR_NORMAL);
+            colors.append(OptionColor.NORMAL);
             icons.append(R.drawable.baseline_stars_24);
             switch (promoteMode) {
               case TD.PROMOTE_MODE_EDIT:
@@ -693,7 +693,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
         int restrictMode = TD.canRestrictMember(myStatus, member.status);
         if (restrictMode != TD.RESTRICT_MODE_NONE) {
           ids.append(R.id.btn_restrictMember);
-          colors.append(OPTION_COLOR_NORMAL);
+          colors.append(OptionColor.NORMAL);
           icons.append(R.drawable.baseline_block_24);
 
           switch (restrictMode) {
@@ -712,7 +712,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
 
           if (restrictMode != TD.RESTRICT_MODE_VIEW && TD.isMember(member.status)) {
             ids.append(R.id.btn_blockSender);
-            colors.append(OPTION_COLOR_NORMAL);
+            colors.append(OptionColor.NORMAL);
             icons.append(R.drawable.baseline_remove_circle_24);
             strings.append(R.string.RemoveFromGroup);
           }
@@ -726,7 +726,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
         strings.append(Lang.getString(R.string.ViewMessagesFromUser, tdlib.cache().userFirstName(content.getUserId())));
       }
       icons.append(R.drawable.baseline_person_24);
-      colors.append(OPTION_COLOR_NORMAL);
+      colors.append(OptionColor.NORMAL);
 
       runOnUiThreadOptional(() -> showOptions("", ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
         if (id == R.id.btn_messageViewList) {

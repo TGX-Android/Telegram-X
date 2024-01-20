@@ -289,7 +289,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       targetRestrict.isMember = TD.isMember(args.member.status);
 
       if (targetRestrict.isMember || args.senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
-        showOptions(Lang.getStringBold(R.string.QUnblockX, tdlib.senderName(args.senderId)), new int[] {R.id.btn_blockSender, R.id.btn_cancel}, new String[] {Lang.getString(R.string.RemoveRestrictions), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        showOptions(Lang.getStringBold(R.string.QUnblockX, tdlib.senderName(args.senderId)), new int[] {R.id.btn_blockSender, R.id.btn_cancel}, new String[] {Lang.getString(R.string.RemoveRestrictions), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
           if (id == R.id.btn_blockSender) {
             unblockRunnable.run();
           }
@@ -313,7 +313,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         );
       }
     } else if (viewId == R.id.btn_dismissAdmin) {
-      showOptions(null, new int[] {R.id.btn_dismissAdmin, R.id.btn_cancel}, new String[] {Lang.getString(R.string.DismissAdmin), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+      showOptions(null, new int[] {R.id.btn_dismissAdmin, R.id.btn_cancel}, new String[] {Lang.getString(R.string.DismissAdmin), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
         if (id == R.id.btn_dismissAdmin && !isDoneInProgress()) {
           Td.setAllAdministratorRights(targetAdmin.rights, false);
           updateValues();

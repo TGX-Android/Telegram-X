@@ -536,7 +536,7 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
   private TdApi.Session sessionToTerminate;
 
   private void killSession (final TdApi.Session session, boolean alert) {
-    showOptions(Strings.concat("\n\n", Lang.boldify(Lang.getString(session.isPasswordPending ? R.string.TerminateIncompleteSessionQuestion : R.string.TerminateSessionQuestion)), getSubtext(session, true)), new int[]{R.id.btn_terminateSession, R.id.btn_cancel, R.id.btn_copyText}, new String[]{Lang.getString(session.isPasswordPending ? R.string.TerminateIncompleteSession : R.string.TerminateSession), Lang.getString(R.string.Cancel), Lang.getString(R.string.Copy)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24, R.drawable.baseline_content_copy_24}, (itemView, id) -> {
+    showOptions(Strings.concat("\n\n", Lang.boldify(Lang.getString(session.isPasswordPending ? R.string.TerminateIncompleteSessionQuestion : R.string.TerminateSessionQuestion)), getSubtext(session, true)), new int[]{R.id.btn_terminateSession, R.id.btn_cancel, R.id.btn_copyText}, new String[]{Lang.getString(session.isPasswordPending ? R.string.TerminateIncompleteSession : R.string.TerminateSession), Lang.getString(R.string.Cancel), Lang.getString(R.string.Copy)}, new int[]{OptionColor.RED, OptionColor.NORMAL, OptionColor.NORMAL}, new int[]{R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24, R.drawable.baseline_content_copy_24}, (itemView, id) -> {
       if (id == R.id.btn_terminateSession) {
         terminateSession(session);
       } else if (id == R.id.btn_copyText) {
@@ -565,7 +565,7 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
   public void onClick (View v) {
     final int viewId = v.getId();
     if (viewId == R.id.btn_terminateAllSessions) {
-      showOptions(Lang.getString(R.string.AreYouSureSessions), new int[] {R.id.btn_terminateAllSessions, R.id.btn_cancel}, new String[] {Lang.getString(R.string.TerminateAllSessions), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+      showOptions(Lang.getString(R.string.AreYouSureSessions), new int[] {R.id.btn_terminateAllSessions, R.id.btn_cancel}, new String[] {Lang.getString(R.string.TerminateAllSessions), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
         if (id == R.id.btn_terminateAllSessions) {
           terminateOtherSessions();
         }

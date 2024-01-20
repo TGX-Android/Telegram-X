@@ -1403,18 +1403,18 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         ids.append(R.id.btn_edit);
         icons.append(R.drawable.baseline_edit_24);
         strings.append(R.string.ThemeEdit);
-        colors.append(OPTION_COLOR_NORMAL);
+        colors.append(OptionColor.NORMAL);
 
         ids.append(R.id.btn_share);
         icons.append(R.drawable.baseline_forward_24);
         strings.append(Settings.instance().canEditAuthor(customThemeId) ? R.string.ThemeExport : R.string.Share);
-        colors.append(OPTION_COLOR_NORMAL);
+        colors.append(OptionColor.NORMAL);
 
         if (!isCurrent) {
           ids.append(R.id.btn_new);
           icons.append(R.drawable.baseline_content_copy_24);
           strings.append(R.string.ThemeCopy);
-          colors.append(OPTION_COLOR_NORMAL);
+          colors.append(OptionColor.NORMAL);
         }
       } else {
         info = Lang.getStringBold(R.string.ThemeCreateInfo, item.getString());
@@ -1422,30 +1422,30 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         ids.append(R.id.btn_new);
         icons.append(R.drawable.baseline_edit_24);
         strings.append(R.string.ThemeCreate);
-        colors.append(OPTION_COLOR_NORMAL);
+        colors.append(OptionColor.NORMAL);
 
         ids.append(R.id.btn_share);
         icons.append(R.drawable.baseline_forward_24);
         strings.append(R.string.Share);
-        colors.append(OPTION_COLOR_NORMAL);
+        colors.append(OptionColor.NORMAL);
       }
 
       ids.append(R.id.btn_delete);
       icons.append(R.drawable.baseline_delete_forever_24);
       strings.append(R.string.ThemeRemove);
-      colors.append(OPTION_COLOR_RED);
+      colors.append(OptionColor.RED);
     } else {
       info = Lang.getStringBold(R.string.ThemeCreateInfo, item.getString());
       ids.append(R.id.btn_new);
       icons.append(R.drawable.baseline_create_24);
       strings.append(R.string.ThemeCreate);
-      colors.append(OPTION_COLOR_NORMAL);
+      colors.append(OptionColor.NORMAL);
 
       if (BuildConfig.DEBUG) {
         ids.append(R.id.btn_share);
         icons.append(R.drawable.baseline_forward_24);
         strings.append(R.string.Share);
-        colors.append(OPTION_COLOR_NORMAL);
+        colors.append(OptionColor.NORMAL);
       }
     }
 

@@ -76,7 +76,7 @@ public class EditDeleteAccountReasonController extends EditTextController<String
             Lang.getMarkdownString(controller, R.string.DeleteAccountConfirmFinal),
             new int[] {R.id.btn_deleteAccount, R.id.btn_cancel},
             new String[] {Lang.getString(R.string.DeleteAccountConfirmFinalBtn), Lang.getString(R.string.Cancel)},
-            new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL},
+            new int[] {OptionColor.RED, OptionColor.NORMAL},
             new int[] {R.drawable.baseline_delete_alert_24, R.drawable.baseline_cancel_24},
             (optionItemView, id) -> {
               if (id == R.id.btn_deleteAccount) {

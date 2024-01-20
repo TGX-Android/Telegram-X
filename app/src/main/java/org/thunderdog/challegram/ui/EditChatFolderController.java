@@ -514,7 +514,7 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
       stringRes = inclusion ? R.string.FolderRemoveInclusionConfirmType : R.string.FolderRemoveExclusionConfirmType;
     }
     CharSequence info = Lang.getStringBold(stringRes, title);
-    showConfirm(info, Lang.getString(R.string.Remove), R.drawable.baseline_delete_24, OPTION_COLOR_RED, () -> {
+    showConfirm(info, Lang.getString(R.string.Remove), R.drawable.baseline_delete_24, OptionColor.RED, () -> {
       int index = adapter.getItem(position) == item ? position : adapter.indexOfView(item);
       if (index != RecyclerView.NO_POSITION) {
         adapter.removeRange(index - 1, 2); /* separator, condition */
@@ -550,7 +550,7 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
   }
 
   private void showRemoveFolderConfirm () {
-    showConfirm(Lang.getString(R.string.RemoveFolderConfirm), Lang.getString(R.string.Remove), R.drawable.baseline_delete_24, OPTION_COLOR_RED, () -> {
+    showConfirm(Lang.getString(R.string.RemoveFolderConfirm), Lang.getString(R.string.Remove), R.drawable.baseline_delete_24, OptionColor.RED, () -> {
       deleteChatFolder(chatFolderId);
     });
   }

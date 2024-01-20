@@ -340,7 +340,7 @@ public class CreateGroupController extends ViewController<Void> implements EditH
 
   private void onUserClick (TGUser user) {
     pickedUser = user;
-    showOptions(null, new int[] {R.id.btn_deleteMember, R.id.btn_cancel}, new String[] {Lang.getString(R.string.GroupDontAdd), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, this::onOptionItemPressed);
+    showOptions(null, new int[] {R.id.btn_deleteMember, R.id.btn_cancel}, new String[] {Lang.getString(R.string.GroupDontAdd), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, this::onOptionItemPressed);
   }
 
   public boolean onOptionItemPressed (View optionItemView, int id) {

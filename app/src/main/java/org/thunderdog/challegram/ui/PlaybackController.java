@@ -930,7 +930,7 @@ public class PlaybackController extends ViewController<Void> implements Menu, Mo
 
   private void removeTrack (final InlineResultCommon common) {
     if (currentItem != null) {
-      showOptions(Lang.getStringBold(R.string.PlayListRemoveTrack, common.getTrackTitle() + " – " + common.getTrackSubtitle()), new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getString(R.string.PlayListRemove), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+      showOptions(Lang.getStringBold(R.string.PlayListRemoveTrack, common.getTrackTitle() + " – " + common.getTrackSubtitle()), new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getString(R.string.PlayListRemove), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
         if (id == R.id.btn_delete) {
           tdlib.context().player().removeTrack(common.getMessage(), true);
         }

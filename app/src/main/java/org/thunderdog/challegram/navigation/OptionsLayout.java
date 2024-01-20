@@ -136,16 +136,16 @@ public class OptionsLayout extends LinearLayout implements Animated {
 
   public static @ColorId int getOptionColorId (int color) {
     switch (color) {
-      case ViewController.OPTION_COLOR_NORMAL: {
+      case ViewController.OptionColor.NORMAL: {
         return ColorId.text;
       }
-      case ViewController.OPTION_COLOR_RED: {
+      case ViewController.OptionColor.RED: {
         return ColorId.textNegative;
       }
-      case ViewController.OPTION_COLOR_BLUE: {
+      case ViewController.OptionColor.BLUE: {
         return ColorId.textNeutral;
       }
-      case ViewController.OPTION_COLOR_GREEN: {
+      case ViewController.OptionColor.GREEN: {
         return ColorId.iconPositive;
       }
     }
@@ -176,7 +176,7 @@ public class OptionsLayout extends LinearLayout implements Animated {
     if (icon != 0) {
       Drawable drawable = Drawables.get(context.getResources(), icon);
       if (drawable != null) {
-        final int drawableColorId = color == ViewController.OPTION_COLOR_NORMAL ? ColorId.icon : colorId;
+        final int drawableColorId = color == ViewController.OptionColor.NORMAL ? ColorId.icon : colorId;
         drawable.setColorFilter(Paints.getColorFilter(forcedTheme != null ? forcedTheme.getColor(drawableColorId) : Theme.getColor(drawableColorId)));
         if (themeProvider != null) {
           themeProvider.addThemeFilterListener(drawable, drawableColorId);
@@ -227,7 +227,7 @@ public class OptionsLayout extends LinearLayout implements Animated {
     if (icon != 0) {
       Drawable drawable = Drawables.get(getContext().getResources(), icon);
       if (drawable != null) {
-        final int drawableColorId = color == ViewController.OPTION_COLOR_NORMAL ? ColorId.icon : colorId;
+        final int drawableColorId = color == ViewController.OptionColor.NORMAL ? ColorId.icon : colorId;
         drawable.setColorFilter(Paints.getColorFilter(forcedTheme != null ? forcedTheme.getColor(drawableColorId) : Theme.getColor(drawableColorId)));
         if (parent != null) {
           parent.addThemeFilterListener(drawable, drawableColorId);

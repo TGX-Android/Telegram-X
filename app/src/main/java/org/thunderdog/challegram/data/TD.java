@@ -3843,7 +3843,7 @@ public class TD {
     }
     final String size = Strings.buildSize(totalSize);
     final long totalSizeFinal = totalSize;
-    context.showOptions(Lang.getString(files.length == 1 ? R.string.DeleteFileHint : R.string.DeleteMultipleFilesHint), new int[]{R.id.btn_deleteFile, R.id.btn_cancel}, new String[]{Lang.getString(R.string.ClearX, size), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+    context.showOptions(Lang.getString(files.length == 1 ? R.string.DeleteFileHint : R.string.DeleteMultipleFilesHint), new int[]{R.id.btn_deleteFile, R.id.btn_cancel}, new String[]{Lang.getString(R.string.ClearX, size), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_deleteFile) {
         TdlibManager.instance().player().stopPlaybackIfPlayingAnyOf(files);
         context.context().closeFilePip(files);

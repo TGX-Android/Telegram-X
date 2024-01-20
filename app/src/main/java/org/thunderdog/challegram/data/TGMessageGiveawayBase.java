@@ -508,15 +508,15 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
         infoSsb.append(Lang.pluralBold(R.string.GiveawayInfoEndedPart3, infoCompleted.activationCount));
 
         if (hasGiftCode) {
-          b.item(new ViewController.OptionItem(R.id.btn_openLink, Lang.getString(R.string.GiveawayViewMyPrize), ViewController.OPTION_COLOR_BLUE, R.drawable.baseline_gift_outline_24));
+          b.item(new ViewController.OptionItem(R.id.btn_openLink, Lang.getString(R.string.GiveawayViewMyPrize), ViewController.OptionColor.BLUE, R.drawable.baseline_gift_outline_24));
         }
 
         if (wasRefunded) {
-          b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayEndedRefunded), ViewController.OPTION_COLOR_RED, R.drawable.baseline_info_24));
+          b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayEndedRefunded), ViewController.OptionColor.RED, R.drawable.baseline_info_24));
         } else if (hasGiftCode) {
-          b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayEndedYouWon), ViewController.OPTION_COLOR_GREEN, R.drawable.baseline_party_popper_24));
+          b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayEndedYouWon), ViewController.OptionColor.GREEN, R.drawable.baseline_party_popper_24));
         } else {
-          b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayEndedYouLose), ViewController.OPTION_COLOR_BLUE, R.drawable.baseline_info_24));
+          b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayEndedYouLose), ViewController.OptionColor.BLUE, R.drawable.baseline_info_24));
         }
 
         b.info(infoSsb);
@@ -538,11 +538,11 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
 
         switch (status.getConstructor()) {
           case TdApi.PremiumGiveawayParticipantStatusParticipating.CONSTRUCTOR: {
-            b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayOngoingYouParticipating), ViewController.OPTION_COLOR_GREEN, R.drawable.baseline_info_24));
+            b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayOngoingYouParticipating), ViewController.OptionColor.GREEN, R.drawable.baseline_info_24));
             break;
           }
           case TdApi.PremiumGiveawayParticipantStatusEligible.CONSTRUCTOR: {
-            b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayOngoingYouEligible), ViewController.OPTION_COLOR_BLUE, R.drawable.baseline_info_24));
+            b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayOngoingYouEligible), ViewController.OptionColor.BLUE, R.drawable.baseline_info_24));
             infoSsb.append("\n\n");
             infoSsb.append(Lang.getStringBold(R.string.GiveawayInfoOngoingPartEligible, sponsors, getDateTime(winnersSelectionDate)));
             break;
@@ -551,20 +551,20 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
             TdApi.PremiumGiveawayParticipantStatusAdministrator s = (TdApi.PremiumGiveawayParticipantStatusAdministrator) status;
             infoSsb.append("\n\n");
             infoSsb.append(Lang.getStringBold(R.string.GiveawayInfoOngoingPartRestrictedAdmin, tdlib.chatTitle(s.chatId)));
-            b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayOngoingYouRestricted), ViewController.OPTION_COLOR_RED, R.drawable.baseline_info_24));
+            b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayOngoingYouRestricted), ViewController.OptionColor.RED, R.drawable.baseline_info_24));
             break;
           }
           case TdApi.PremiumGiveawayParticipantStatusAlreadyWasMember.CONSTRUCTOR: {
             infoSsb.append("\n\n");
             infoSsb.append(Lang.getStringBold(R.string.GiveawayInfoOngoingPartRestrictedMember, tdlib.chatTitle(boostedChatId)));
-            b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayOngoingYouRestricted), ViewController.OPTION_COLOR_RED, R.drawable.baseline_info_24));
+            b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayOngoingYouRestricted), ViewController.OptionColor.RED, R.drawable.baseline_info_24));
             break;
           }
           case TdApi.PremiumGiveawayParticipantStatusDisallowedCountry.CONSTRUCTOR: {
             TdApi.PremiumGiveawayParticipantStatusDisallowedCountry s = (TdApi.PremiumGiveawayParticipantStatusDisallowedCountry) status;
             infoSsb.append("\n\n");
             infoSsb.append(Lang.getStringBold(R.string.GiveawayInfoOngoingPartRestrictedCountry, s.userCountryCode));
-            b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayOngoingYouRestricted), ViewController.OPTION_COLOR_RED, R.drawable.baseline_info_24));
+            b.subtitle(new ViewController.OptionItem(0, Lang.getString(R.string.GiveawayOngoingYouRestricted), ViewController.OptionColor.RED, R.drawable.baseline_info_24));
             break;
           }
           default: {
@@ -581,7 +581,7 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
         throw Td.unsupported(premiumGiveawayInfo);
     }
 
-    b.item(new ViewController.OptionItem(R.id.btn_cancel, Lang.getString(R.string.GiveawayInfoClose), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_cancel_24));
+    b.item(new ViewController.OptionItem(R.id.btn_cancel, Lang.getString(R.string.GiveawayInfoClose), ViewController.OptionColor.NORMAL, R.drawable.baseline_cancel_24));
     controller().showOptions(b.build(), this::onGiveawayInfoOptionItemPressed);
   }
 

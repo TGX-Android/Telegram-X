@@ -205,7 +205,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
         File external = UI.getAppContext().getExternalFilesDir(null);
         String externalPath = external != null ? external.getPath() : null;
         if (!isUpper && (path.equals(internalPath) || path.equals(externalPath))) {
-          before = after -> showOptions(Lang.getMarkdownString(this, R.string.ApplicationFolderWarning), new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ApplicationFolderWarningConfirm), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_warning_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+          before = after -> showOptions(Lang.getMarkdownString(this, R.string.ApplicationFolderWarning), new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ApplicationFolderWarningConfirm), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_warning_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
             if (id == R.id.btn_done) {
               after.run();
             }

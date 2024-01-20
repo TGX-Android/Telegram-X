@@ -69,7 +69,7 @@ public class ModernOptions {
       desc,
       new int[]{R.id.btn_done, R.id.btn_privacyPolicy, R.id.btn_cancel},
       new String[]{Lang.getString(R.string.Continue), Lang.getString(R.string.PrivacyPolicy), Lang.getString(R.string.Cancel)},
-      new int[]{ViewController.OPTION_COLOR_BLUE, ViewController.OPTION_COLOR_NORMAL, ViewController.OPTION_COLOR_NORMAL},
+      new int[]{ViewController.OptionColor.BLUE, ViewController.OptionColor.NORMAL, ViewController.OptionColor.NORMAL},
       new int[]{R.drawable.baseline_check_circle_24, R.drawable.baseline_policy_24, R.drawable.baseline_cancel_24},
       new OptionDelegate() {
         @Override

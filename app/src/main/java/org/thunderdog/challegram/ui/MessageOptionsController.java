@@ -205,7 +205,7 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
         if (item.icon != 0) {
           Drawable drawable = Drawables.get(context.getResources(), item.icon);
           if (drawable != null) {
-            final int drawableColorId = item.color == ViewController.OPTION_COLOR_NORMAL ? ColorId.icon : colorId;
+            final int drawableColorId = item.color == OptionColor.NORMAL ? ColorId.icon : colorId;
             drawable.setColorFilter(Paints.getColorFilter(Theme.getColor(drawableColorId)));
             if (themeProvider != null) {
               themeProvider.addThemeFilterListener(drawable, drawableColorId);

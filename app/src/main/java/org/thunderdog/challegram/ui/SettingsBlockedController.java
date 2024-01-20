@@ -108,7 +108,7 @@ public class SettingsBlockedController extends RecyclerViewController<TdApi.Bloc
 
   @Override
   public boolean onSenderPick (ContactsController context, View view, TdApi.MessageSender senderId) {
-    showOptions(Lang.getStringBold(senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.QBlockUser : R.string.QBlockChat, Strings.wrapRtlLtr(tdlib.senderName(senderId))), new int[] {R.id.btn_blockSender, R.id.btn_cancel}, new String[] {Lang.getString(senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.BlockUserBtn : R.string.BlockChatBtn), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_block_24, R.drawable.baseline_cancel_24});
+    showOptions(Lang.getStringBold(senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.QBlockUser : R.string.QBlockChat, Strings.wrapRtlLtr(tdlib.senderName(senderId))), new int[] {R.id.btn_blockSender, R.id.btn_cancel}, new String[] {Lang.getString(senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.BlockUserBtn : R.string.BlockChatBtn), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_block_24, R.drawable.baseline_cancel_24});
     return false;
   }
 
@@ -129,7 +129,7 @@ public class SettingsBlockedController extends RecyclerViewController<TdApi.Bloc
   }
 
   public void unblockSender (TGUser user) {
-    showOptions(Lang.getStringBold(R.string.QUnblockX, tdlib.senderName(user.getSenderId())), new int[]{R.id.btn_unblockSender, R.id.btn_cancel}, new String[]{Lang.getString(R.string.Unblock), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_block_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+    showOptions(Lang.getStringBold(R.string.QUnblockX, tdlib.senderName(user.getSenderId())), new int[]{R.id.btn_unblockSender, R.id.btn_cancel}, new String[]{Lang.getString(R.string.Unblock), Lang.getString(R.string.Cancel)}, new int[]{OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_block_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_unblockSender) {
         tdlib.blockSender(user.getSenderId(), null, tdlib.okHandler(() -> {
           runOnUiThreadOptional(() -> {

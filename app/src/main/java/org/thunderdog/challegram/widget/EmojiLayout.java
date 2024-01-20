@@ -126,7 +126,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       themeProvider.showOptions(null, new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {
         Lang.getString(animatedEmojiOnly ? R.string.ClearRecentEmojiStatuses : R.string.ClearRecentStickers),
         Lang.getString(R.string.Cancel)
-      }, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_auto_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+      }, new int[] {ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, new int[] {R.drawable.baseline_auto_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
         if (id == R.id.btn_done) {
           setShowRecents(false);
           if (animatedEmojiOnly) {
@@ -150,7 +150,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
   private void clearRecentEmoji () {
     if (themeProvider != null) {
-      themeProvider.showOptions(null, new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearRecentEmojiAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_auto_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+      themeProvider.showOptions(null, new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearRecentEmojiAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, new int[] {R.drawable.baseline_auto_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
         if (id == R.id.btn_delete) {
           Emoji.instance().clearRecents();
           ViewController<?> c = adapter.getCachedItem(0);
@@ -174,15 +174,15 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       Lang.getString(R.string.CopyLink),
       Lang.getString(isTrending ? R.string.AddPack : R.string.DeletePack)
     }, new int[] {
-      ViewController.OPTION_COLOR_NORMAL,
-      isTrending ? ViewController.OPTION_COLOR_NORMAL : ViewController.OPTION_COLOR_RED
+      ViewController.OptionColor.NORMAL,
+      isTrending ? ViewController.OptionColor.NORMAL : ViewController.OptionColor.RED
     }, new int[] {
       R.drawable.baseline_link_24,
       isTrending ? R.drawable.deproko_baseline_insert_sticker_24 : R.drawable.baseline_delete_24
     }, (itemView, id) -> {
       if (id == R.id.more_btn_delete) {
         if (themeProvider != null) {
-          themeProvider.showOptions(Lang.getStringBold(R.string.RemoveEmojiSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.RemoveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
+          themeProvider.showOptions(Lang.getStringBold(R.string.RemoveEmojiSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.RemoveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
             if (resultId == R.id.btn_delete) {
               ViewController<?> c = adapter.getCachedItem(0);
               if (c != null) {
@@ -211,10 +211,10 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     if (animatedEmojiOnly) return;
 
     if (themeProvider != null) {
-      themeProvider.showOptions(null, new int[] {R.id.btn_copyLink, R.id.btn_archive, R.id.more_btn_delete}, new String[] {Lang.getString(R.string.CopyLink), Lang.getString(R.string.ArchivePack), Lang.getString(R.string.DeletePack)}, new int[] {ViewController.OPTION_COLOR_NORMAL, ViewController.OPTION_COLOR_NORMAL, ViewController.OPTION_COLOR_RED}, new int[] {R.drawable.baseline_link_24, R.drawable.baseline_archive_24, R.drawable.baseline_delete_24}, (itemView, id) -> {
+      themeProvider.showOptions(null, new int[] {R.id.btn_copyLink, R.id.btn_archive, R.id.more_btn_delete}, new String[] {Lang.getString(R.string.CopyLink), Lang.getString(R.string.ArchivePack), Lang.getString(R.string.DeletePack)}, new int[] {ViewController.OptionColor.NORMAL, ViewController.OptionColor.NORMAL, ViewController.OptionColor.RED}, new int[] {R.drawable.baseline_link_24, R.drawable.baseline_archive_24, R.drawable.baseline_delete_24}, (itemView, id) -> {
         if (id == R.id.more_btn_delete) {
           if (themeProvider != null) {
-            themeProvider.showOptions(Lang.getStringBold(R.string.RemoveStickerSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.RemoveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
+            themeProvider.showOptions(Lang.getStringBold(R.string.RemoveStickerSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.RemoveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
               if (resultId == R.id.btn_delete) {
                 parentController.tdlib().client().send(new TdApi.ChangeStickerSet(info.getId(), false, false), parentController.tdlib().okHandler());
               }
@@ -223,7 +223,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
           }
         } else if (id == R.id.btn_archive) {
           if (themeProvider != null) {
-            themeProvider.showOptions(Lang.getStringBold(R.string.ArchiveStickerSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ArchiveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_archive_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
+            themeProvider.showOptions(Lang.getStringBold(R.string.ArchiveStickerSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ArchiveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, new int[] {R.drawable.baseline_archive_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
               if (resultId == R.id.btn_delete) {
                 parentController.tdlib().client().send(new TdApi.ChangeStickerSet(info.getId(), false, true), parentController.tdlib().okHandler());
               }

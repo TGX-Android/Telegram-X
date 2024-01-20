@@ -467,7 +467,7 @@ public class EditLanguageController extends EditBaseController<EditLanguageContr
   }
 
   private void exit (boolean forceBack) {
-    showOptions(Lang.getStringBold(R.string.LocalizationEditConfirmPrompt, getArgumentsStrict().string.getKey()), new int[] {R.id.btn_save, R.id.btn_discard, R.id.btn_cancel}, new String[] {Lang.getString(R.string.LocalizationEditConfirmSave), Lang.getString(R.string.LocalizationEditConfirmDiscard), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_BLUE, OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_check_24, R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+    showOptions(Lang.getStringBold(R.string.LocalizationEditConfirmPrompt, getArgumentsStrict().string.getKey()), new int[] {R.id.btn_save, R.id.btn_discard, R.id.btn_cancel}, new String[] {Lang.getString(R.string.LocalizationEditConfirmSave), Lang.getString(R.string.LocalizationEditConfirmDiscard), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.BLUE, OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_check_24, R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_save || id == R.id.btn_discard) {
         if (id == R.id.btn_save) {
           if (!saveString()) {

@@ -1525,22 +1525,22 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
 
     ids.append(R.id.btn_tdlib_viewLogs);
     icons.append(R.drawable.baseline_visibility_24);
-    colors.append(OPTION_COLOR_NORMAL);
+    colors.append(OptionColor.NORMAL);
     strings.append(R.string.Open);
 
     ids.append(R.id.btn_tdlib_shareLogs);
     icons.append(tdlib == null || tdlib.context().inRecoveryMode() ? R.drawable.baseline_share_24 : R.drawable.baseline_forward_24);
-    colors.append(OPTION_COLOR_NORMAL);
+    colors.append(OptionColor.NORMAL);
     strings.append(R.string.Share);
 
     ids.append(R.id.btn_saveFile);
     icons.append(R.drawable.baseline_file_download_24);
-    colors.append(OPTION_COLOR_NORMAL);
+    colors.append(OptionColor.NORMAL);
     strings.append(R.string.SaveToDownloads);
 
     ids.append(R.id.btn_tdlib_clearLogs);
     icons.append(R.drawable.baseline_delete_24);
-    colors.append(OPTION_COLOR_RED);
+    colors.append(OptionColor.RED);
     strings.append(R.string.Delete);
 
     showOptions(tdlibLogFile.getName() + " (" + Strings.buildSize(logSize[i]) + ")", ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
@@ -1572,7 +1572,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
           setLogFiles(Log.getLogFiles());
         }
         if (logFiles != null && !logFiles.isEmpty()) {
-          showOptions("Clear " + Strings.buildSize(logFiles.totalSize) + "?", new int[] {R.id.btn_deleteAll, R.id.btn_cancel}, new String[] {"Delete all logs", "Cancel"}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+          showOptions("Clear " + Strings.buildSize(logFiles.totalSize) + "?", new int[] {R.id.btn_deleteAll, R.id.btn_cancel}, new String[] {"Delete all logs", "Cancel"}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
             if (id == R.id.btn_deleteAll) {
               deleteAllFiles();
             }

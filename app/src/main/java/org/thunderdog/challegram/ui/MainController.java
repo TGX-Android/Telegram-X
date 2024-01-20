@@ -1068,17 +1068,17 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
           ids.append(R.id.btn_done);
           strings.append(TD.findOrdinary(cloudStrings, Lang.getResourceEntryName(R.string.language_continueInLanguage), () -> Lang.getString(R.string.language_continueInLanguage)));
-          colors.append(OPTION_COLOR_BLUE);
+          colors.append(OptionColor.BLUE);
           icons.append(R.drawable.baseline_check_24);
 
           ids.append(R.id.btn_cancel);
           icons.append(R.drawable.baseline_cancel_24);
-          colors.append(OPTION_COLOR_NORMAL);
+          colors.append(OptionColor.NORMAL);
           strings.append(R.string.Cancel);
 
           ids.append(R.id.btn_languageSettings);
           strings.append(R.string.MoreLanguages);
-          colors.append(OPTION_COLOR_NORMAL);
+          colors.append(OptionColor.NORMAL);
           icons.append(R.drawable.baseline_language_24);
 
           CharSequence text = Strings.buildMarkdown(this, TD.findOrdinary(cloudStrings, Lang.getResourceEntryName(R.string.language_continueInLanguagePopupText), () -> Lang.getString(R.string.language_continueInLanguagePopupText)), null);
@@ -1116,7 +1116,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     tdlib.ui().postDelayed(() -> {
       if (!isFocused() || isDestroyed() || context.isPasscodeShowing())
         return;
-      showOptions(Lang.getStringBold(R.string.EmojiSetUpdated, emojiPack.displayName), new int[] {R.id.btn_downloadFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.EmojiSetUpdate), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_BLUE, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_sync_24, R.drawable.baseline_cancel_24}, (v, id) -> {
+      showOptions(Lang.getStringBold(R.string.EmojiSetUpdated, emojiPack.displayName), new int[] {R.id.btn_downloadFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.EmojiSetUpdate), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.BLUE, OptionColor.NORMAL}, new int[] {R.drawable.baseline_sync_24, R.drawable.baseline_cancel_24}, (v, id) -> {
         if (id == R.id.btn_downloadFile) {
           SettingsCloudEmojiController c = new SettingsCloudEmojiController(context, tdlib);
           c.setArguments(new SettingsCloudController.Args<>(emojiPack));
@@ -2047,27 +2047,27 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       options.info(title);
     }
     if (isFolder) {
-      options.item(new OptionItem(R.id.btn_editFolder, Lang.getString(R.string.EditFolder), OPTION_COLOR_NORMAL, R.drawable.baseline_edit_24));
+      options.item(new OptionItem(R.id.btn_editFolder, Lang.getString(R.string.EditFolder), OptionColor.NORMAL, R.drawable.baseline_edit_24));
       int chatFolderStyle = tdlib.settings().chatFolderStyle();
       if (chatFolderStyle == ChatFolderStyle.ICON_ONLY || chatFolderStyle == ChatFolderStyle.LABEL_AND_ICON) {
-        options.item(new OptionItem(R.id.btn_changeFolderIcon, Lang.getString(R.string.ChatFolderChangeIcon), OPTION_COLOR_NORMAL, R.drawable.baseline_image_24));
+        options.item(new OptionItem(R.id.btn_changeFolderIcon, Lang.getString(R.string.ChatFolderChangeIcon), OptionColor.NORMAL, R.drawable.baseline_image_24));
       }
-      options.item(new OptionItem(R.id.btn_folderIncludeChats, Lang.getString(R.string.ChatFolderAddChats), OPTION_COLOR_NORMAL, R.drawable.baseline_add_24));
+      options.item(new OptionItem(R.id.btn_folderIncludeChats, Lang.getString(R.string.ChatFolderAddChats), OptionColor.NORMAL, R.drawable.baseline_add_24));
     }
     if (isMain) {
       if (!Config.RESTRICT_HIDING_MAIN_LIST) {
-        options.item(new OptionItem(R.id.btn_hideFolder, Lang.getString(R.string.HideAllChats), OPTION_COLOR_NORMAL, R.drawable.baseline_eye_off_24));
+        options.item(new OptionItem(R.id.btn_hideFolder, Lang.getString(R.string.HideAllChats), OptionColor.NORMAL, R.drawable.baseline_eye_off_24));
       }
     } else if (isFolder || isArchive) {
-      options.item(new OptionItem(R.id.btn_hideFolder, Lang.getString(R.string.HideFolder), OPTION_COLOR_NORMAL, R.drawable.baseline_eye_off_24));
+      options.item(new OptionItem(R.id.btn_hideFolder, Lang.getString(R.string.HideFolder), OptionColor.NORMAL, R.drawable.baseline_eye_off_24));
     }
     if (isFolder) {
-      options.item(new OptionItem(R.id.btn_removeFolder, Lang.getString(R.string.RemoveFolder), OPTION_COLOR_RED, R.drawable.baseline_delete_24));
+      options.item(new OptionItem(R.id.btn_removeFolder, Lang.getString(R.string.RemoveFolder), OptionColor.RED, R.drawable.baseline_delete_24));
     }
     if (options.itemCount() > 0) {
       options.item(OptionItem.SEPARATOR);
     }
-    options.item(new OptionItem(R.id.btn_chatFolders, Lang.getString(R.string.EditFolders), OPTION_COLOR_NORMAL, R.drawable.baseline_edit_folders_24));
+    options.item(new OptionItem(R.id.btn_chatFolders, Lang.getString(R.string.EditFolders), OptionColor.NORMAL, R.drawable.baseline_edit_folders_24));
     showOptions(options.build(), (v, id) -> {
       if (id == R.id.btn_editFolder) {
         tdlib.send(new TdApi.GetChatFolder(chatFolderId), (chatFolder, error) -> runOnUiThreadOptional(() -> {
@@ -2118,7 +2118,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
           });
         });
       } else if (id == R.id.btn_removeFolder) {
-        showConfirm(Lang.getString(R.string.RemoveFolderConfirm), Lang.getString(R.string.Remove), R.drawable.baseline_delete_24, OPTION_COLOR_RED, () -> {
+        showConfirm(Lang.getString(R.string.RemoveFolderConfirm), Lang.getString(R.string.Remove), R.drawable.baseline_delete_24, OptionColor.RED, () -> {
           tdlib.send(new TdApi.DeleteChatFolder(chatFolderId, null), tdlib.typedOkHandler());
         });
       } else if (id == R.id.btn_chatFolders) {

@@ -702,7 +702,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             final boolean needBlock = !tdlib.chatFullyBlocked(chat.id);
             final boolean isBot = tdlib.isBotChat(chat.id);
             if (needBlock) {
-              showOptions(Lang.getStringBold(isBot ? R.string.BlockBotConfirm : R.string.BlockUserConfirm, tdlib.chatTitle(chat.id)), new int[] {R.id.btn_blockSender, R.id.btn_cancel}, new String[] {Lang.getString(isBot ? R.string.BlockBot : R.string.BlockContact), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_block_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
+              showOptions(Lang.getStringBold(isBot ? R.string.BlockBotConfirm : R.string.BlockUserConfirm, tdlib.chatTitle(chat.id)), new int[] {R.id.btn_blockSender, R.id.btn_cancel}, new String[] {Lang.getString(isBot ? R.string.BlockBot : R.string.BlockContact), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_block_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
                 if (!isDestroyed() && id1 == R.id.btn_blockSender) {
                   tdlib.blockSender(tdlib.sender(chat.id), new TdApi.BlockListMain(), result -> {
                     if (TD.isOk(result)) {
@@ -3341,10 +3341,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         icons.append(R.drawable.baseline_group_add_24);
         strings.append(R.string.ChannelGroupNew);
 
-        showOptions(info, ids.get(), strings.get(), size == 3 ? new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL, OPTION_COLOR_NORMAL} : null, icons.get(), (v, id) -> {
+        showOptions(info, ids.get(), strings.get(), size == 3 ? new int[]{OptionColor.RED, OptionColor.NORMAL, OptionColor.NORMAL} : null, icons.get(), (v, id) -> {
           if (id == R.id.btn_delete) {
             if (linkedChat != null) {
-              showConfirm(Lang.getString(R.string.UnlinkGroupConfirm, linkedChatCreator, tdlib.chatTitle(linkedChat)), Lang.getString(R.string.UnlinkGroupDone), R.drawable.baseline_remove_circle_24, OPTION_COLOR_RED, () ->
+              showConfirm(Lang.getString(R.string.UnlinkGroupConfirm, linkedChatCreator, tdlib.chatTitle(linkedChat)), Lang.getString(R.string.UnlinkGroupDone), R.drawable.baseline_remove_circle_24, OptionColor.RED, () ->
                 tdlib.client().send(new TdApi.SetChatDiscussionGroup(chat.id, 0), tdlib.okHandler())
               );
             }
@@ -3386,9 +3386,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         if (linkedChat == null)
           return;
         CharSequence info = Lang.getString(R.string.GroupChannelInfo, linkedChatCreator, tdlib.chatTitle(linkedChat));
-        showOptions(info, new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getString(R.string.GroupChannelUnlink), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (v, id) -> {
+        showOptions(info, new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getString(R.string.GroupChannelUnlink), Lang.getString(R.string.Cancel)}, new int[]{OptionColor.RED, OptionColor.NORMAL}, new int[]{R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (v, id) -> {
           if (id == R.id.btn_delete) {
-            showConfirm(Lang.getString(R.string.UnlinkChannelConfirm, linkedChatCreator, tdlib.chatTitle(linkedChat)), Lang.getString(R.string.UnlinkChannelDone), R.drawable.baseline_remove_circle_24, OPTION_COLOR_RED, () ->
+            showConfirm(Lang.getString(R.string.UnlinkChannelConfirm, linkedChatCreator, tdlib.chatTitle(linkedChat)), Lang.getString(R.string.UnlinkChannelDone), R.drawable.baseline_remove_circle_24, OptionColor.RED, () ->
               tdlib.client().send(new TdApi.SetChatDiscussionGroup(0, chat.id), tdlib.okHandler())
             );
           }
@@ -3431,7 +3431,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
                 public void onClick (@NonNull View widget) {
                   tdlib.ui().openChat(ProfileController.this, argIndex == 0 ? selectedChatId : currentChatId, new TdlibUi.ChatOpenParameters().keepStack().removeDuplicates());
                 }
-              }, tdlib.chatTitle(selectedChatId), tdlib.chatTitle(currentChatId)), Lang.getString(R.string.LinkGroupConfirmOverrideDone), R.drawable.baseline_remove_circle_24, OPTION_COLOR_RED, () -> {
+              }, tdlib.chatTitle(selectedChatId), tdlib.chatTitle(currentChatId)), Lang.getString(R.string.LinkGroupConfirmOverrideDone), R.drawable.baseline_remove_circle_24, OptionColor.RED, () -> {
                 act.runWithLong(selectedChatId);
               });
             } else {
@@ -3465,7 +3465,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       if (selectedFullInfo != null && !selectedFullInfo.isAllHistoryAvailable) {
         b.append("\n\n").append(Lang.getMarkdownString(this, R.string.LinkGroupConfirmWarnPreHistory));
       }
-      showOptions(b, new int[]{R.id.btn_done, R.id.btn_cancel}, new String[]{Lang.getString(R.string.LinkGroupConfirmDone), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_BLUE, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_link_24, R.drawable.baseline_cancel_24}, (optionView, optionId) -> {
+      showOptions(b, new int[]{R.id.btn_done, R.id.btn_cancel}, new String[]{Lang.getString(R.string.LinkGroupConfirmDone), Lang.getString(R.string.Cancel)}, new int[]{OptionColor.BLUE, OptionColor.NORMAL}, new int[]{R.drawable.baseline_link_24, R.drawable.baseline_cancel_24}, (optionView, optionId) -> {
         if (optionId == R.id.btn_done) {
           doneAct.run();
         }
@@ -4315,7 +4315,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         if (needConfirm) {
           showOptions(new Options.Builder()
               .info(Lang.getStringBold(isChannel() ? R.string.QAddXToChannel : R.string.AddToTheGroup, memberName))
-              .item(new OptionItem(R.id.btn_addMember, Lang.getString(R.string.AddMember), OPTION_COLOR_NORMAL, R.drawable.baseline_person_add_24))
+              .item(new OptionItem(R.id.btn_addMember, Lang.getString(R.string.AddMember), OptionColor.NORMAL, R.drawable.baseline_person_add_24))
               .cancelItem()
               .build(),
             (itemView, id) -> {
@@ -4372,7 +4372,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           return;
         }
         if (isBasicGroup() || isChannel()) {
-          showOptions(Lang.getStringBold(isBasicGroup() ? R.string.MemberCannotJoinGroup : R.string.MemberCannotJoinChannel, memberName), new int[] {R.id.btn_blockSender, R.id.btn_cancel}, new String[]{Lang.getString(R.string.BlockUser), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+          showOptions(Lang.getStringBold(isBasicGroup() ? R.string.MemberCannotJoinGroup : R.string.MemberCannotJoinChannel, memberName), new int[] {R.id.btn_blockSender, R.id.btn_cancel}, new String[]{Lang.getString(R.string.BlockUser), Lang.getString(R.string.Cancel)}, new int[]{OptionColor.RED, OptionColor.NORMAL}, new int[]{R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
             if (id == R.id.btn_blockSender) {
               tdlib.setChatMemberStatus(chat.id, member.memberId, new TdApi.ChatMemberStatusBanned(), member.status, (success, error) -> {
                 if (success) {
@@ -4493,14 +4493,14 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     showOptions(msg,
       new int[] {R.id.btn_destroyChat, R.id.btn_cancel},
       new String[] {Lang.getString(isChannel ? R.string.DestroyChannel : R.string.DestroyGroup), Lang.getString(R.string.Cancel)},
-      new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL},
+      new int[] {OptionColor.RED, OptionColor.NORMAL},
       new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24},
       (itemView, id) -> {
         if (id == R.id.btn_destroyChat) {
           showOptions(Lang.getString(isChannel ? R.string.DestroyChannelHint : R.string.DestroyGroupHint),
             new int[] {R.id.btn_destroyChat, R.id.btn_cancel},
             new String[] {Lang.getString(isChannel ? R.string.DestroyChannel : R.string.DestroyGroup), Lang.getString(R.string.Cancel)},
-            new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL},
+            new int[] {OptionColor.RED, OptionColor.NORMAL},
             new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
             if (resultId == R.id.btn_destroyChat) {
               tdlib.client().send(new TdApi.DeleteChat(getChatId()), tdlib.okHandler());
@@ -4665,8 +4665,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           Lang.getString(R.string.Cancel)
         },
         new int[] {
-          OPTION_COLOR_RED,
-          OPTION_COLOR_NORMAL
+          OptionColor.RED,
+          OptionColor.NORMAL
         },
         new int[] {
           R.drawable.baseline_bullhorn_24,
@@ -4690,8 +4690,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         Lang.getString(R.string.Cancel)
       },
       new int[] {
-        OPTION_COLOR_RED,
-        OPTION_COLOR_NORMAL
+        OptionColor.RED,
+        OptionColor.NORMAL
       },
       new int[] {
         R.drawable.baseline_check_24,
@@ -4827,29 +4827,29 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     ids.append(R.id.btn_manageInviteLinks);
     strings.append(R.string.InviteLinkManage);
     icons.append(R.drawable.baseline_add_link_24);
-    colors.append(OPTION_COLOR_NORMAL);
+    colors.append(OptionColor.NORMAL);
 
     if (chat.pendingJoinRequests != null && chat.pendingJoinRequests.totalCount > 0) {
       ids.append(R.id.btn_manageJoinRequests);
       strings.append(R.string.InviteLinkRequests);
       icons.append(R.drawable.baseline_pending_24);
-      colors.append(OPTION_COLOR_NORMAL);
+      colors.append(OptionColor.NORMAL);
     }
 
     ids.append(R.id.btn_copyLink);
     strings.append(R.string.InviteLinkCopy);
     icons.append(R.drawable.baseline_content_copy_24);
-    colors.append(OPTION_COLOR_NORMAL);
+    colors.append(OptionColor.NORMAL);
 
     ids.append(R.id.btn_shareLink);
     strings.append(R.string.ShareLink);
     icons.append(R.drawable.baseline_forward_24);
-    colors.append(OPTION_COLOR_NORMAL);
+    colors.append(OptionColor.NORMAL);
 
     icons.append(R.drawable.baseline_link_off_24);
     ids.append(R.id.btn_revokeLink);
     strings.append(R.string.RevokeLink);
-    colors.append(OPTION_COLOR_RED);
+    colors.append(OptionColor.RED);
 
     CharSequence info = TD.makeClickable(Lang.getString(R.string.CreatedByXOnDate, ((target, argStart, argEnd, spanIndex, needFakeBold) -> spanIndex == 0 ? Lang.newUserSpan(new TdlibContext(context, tdlib), link.creatorUserId) : null), tdlib.cache().userName(link.creatorUserId), Lang.getRelativeTimestamp(link.date, TimeUnit.SECONDS)));
     Lang.SpanCreator firstBoldCreator = (target, argStart, argEnd, spanIndex, needFakeBold) -> spanIndex == 0 ? Lang.newBoldSpan(needFakeBold) : null;
@@ -4866,7 +4866,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         c.setArguments(new ShareController.Args(text).setShare(exportText, null));
         c.show();
       } else if (id == R.id.btn_revokeLink) {
-        showOptions(Lang.getString(tdlib.isChannel(chat.id) ? R.string.AreYouSureRevokeInviteLinkChannel : R.string.AreYouSureRevokeInviteLinkGroup), new int[] {R.id.btn_revokeLink, R.id.btn_cancel}, new String[] {Lang.getString(R.string.RevokeLink), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_link_off_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
+        showOptions(Lang.getString(tdlib.isChannel(chat.id) ? R.string.AreYouSureRevokeInviteLinkChannel : R.string.AreYouSureRevokeInviteLinkGroup), new int[] {R.id.btn_revokeLink, R.id.btn_cancel}, new String[] {Lang.getString(R.string.RevokeLink), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_link_off_24, R.drawable.baseline_cancel_24}, (itemView2, id2) -> {
           if (id2 == R.id.btn_revokeLink) {
             tdlib.client().send(new TdApi.RevokeChatInviteLink(chat.id, link.inviteLink), result -> {
               if (result.getConstructor() == TdApi.ChatInviteLinks.CONSTRUCTOR) {

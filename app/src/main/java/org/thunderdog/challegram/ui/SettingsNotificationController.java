@@ -1474,8 +1474,8 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         }
         case TdlibNotificationManager.Status.FIREBASE_ERROR: {
           showOptions(new Options.Builder()
-            .item(new OptionItem(R.id.btn_retry, Lang.getString(R.string.FirebaseErrorResolveTryAgain), OPTION_COLOR_BLUE, R.drawable.baseline_sync_problem_24))
-            .item(new OptionItem(R.id.btn_share, Lang.getString(R.string.FirebaseErrorResolveShareError), OPTION_COLOR_NORMAL, R.drawable.baseline_forward_24))
+            .item(new OptionItem(R.id.btn_retry, Lang.getString(R.string.FirebaseErrorResolveTryAgain), OptionColor.BLUE, R.drawable.baseline_sync_problem_24))
+            .item(new OptionItem(R.id.btn_share, Lang.getString(R.string.FirebaseErrorResolveShareError), OptionColor.NORMAL, R.drawable.baseline_forward_24))
             .build(), (optionView, optionId) -> {
             if (optionId == R.id.btn_retry) {
               tdlib.context().checkDeviceToken(0, null);
@@ -1980,7 +1980,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   }
 
   private void showResetNotificationsConfirm () {
-    showOptions(Lang.getString(R.string.ResetNotificationsConfirm), new int[] {R.id.btn_resetNotifications, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ResetNotifications), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+    showOptions(Lang.getString(R.string.ResetNotificationsConfirm), new int[] {R.id.btn_resetNotifications, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ResetNotifications), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_resetNotifications) {
         resetNotificationSettings();
       }
