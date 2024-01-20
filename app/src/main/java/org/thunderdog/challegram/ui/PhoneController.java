@@ -68,6 +68,8 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.NoUnderlineClickableSpan;
+import org.thunderdog.challegram.util.OptionDelegate;
+import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
@@ -78,6 +80,7 @@ import java.util.Comparator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.td.Td;
 
@@ -1076,45 +1079,87 @@ public class PhoneController extends EditBaseController<Void> implements Setting
     }
   }
 
+  private void showEmulatorPrompt () {
+    if (mode != MODE_LOGIN) {
+      return;
+    }
+    context.forceRunEmulatorChecks(detectionResult -> executeOnUiThreadOptional(() -> {
+      if (detectionResult != null && (detectionResult.isEmulatorDetected() || BuildConfig.DEBUG)) {
+        AlertDialog.Builder b = new AlertDialog.Builder(context, Theme.dialogTheme());
+        b.setTitle(Lang.getString(R.string.EmulatorWarningTitle));
+        b.setMessage(Lang.getMarkdownStringSecure(this, R.string.EmulatorWarning));
+        b.setPositiveButton(Lang.getString(R.string.EmulatorWarningBtnOk), (dialog, which) -> dialog.dismiss());
+        b.setNeutralButton(Lang.getString(R.string.EmulatorWarningBtnReport), (dialog, which) -> {
+          try {
+            Uri uri = Uri.parse(BuildConfig.REMOTE_URL);
+            String title = Lang.getString(R.string.EmulatorDetectorReport_title, Build.BRAND, Build.MODEL);
+            String metadata = U.getUsefulMetadata(tdlib);
+            String body = Lang.getString(R.string.EmulatorDetectorReport_text,
+              Build.BRAND,
+              Build.MODEL,
+              Build.PRODUCT,
+              Build.DEVICE,
+              Build.HARDWARE,
+              metadata,
+              detectionResult.toHumanReadableFormat()
+            );
+            Uri reportUri = uri
+              .buildUpon()
+              .appendEncodedPath("issues/new")
+              .appendQueryParameter("title", title)
+              .appendQueryParameter("body", body)
+              .build();
+
+            IntList ids = new IntList(3);
+            StringList strings = new StringList(3);
+            IntList icons = new IntList(3);
+            ids.append(R.id.btn_openIn);
+            strings.append(R.string.EmulatorWarningReportBtn);
+            icons.append(R.drawable.baseline_github_24);
+
+            ids.append(R.id.btn_copyLink);
+            strings.append(R.string.CopyLink);
+            icons.append(R.drawable.baseline_link_24);
+
+            if (tdlib.context().hasActiveAccounts()) {
+              ids.append(R.id.btn_share);
+              strings.append(R.string.Share);
+              icons.append(R.drawable.baseline_forward_24);
+            }
+            showOptions(Lang.getMarkdownStringSecure(this, R.string.EmulatorWarningReport), ids.get(), strings.get(), null, icons.get(), (optionItemView, id) -> {
+              if (id == R.id.btn_openIn) {
+                Intents.openUriInBrowser(reportUri);
+              } else if (id == R.id.btn_copyLink) {
+                UI.copyText(reportUri.toString(), R.string.CopiedLink);
+              } else if (id == R.id.btn_share) {
+                String text = reportUri.toString();
+                ShareController c = new ShareController(context, context.currentTdlib());
+                c.setArguments(new ShareController.Args(text).setExport(text));
+                c.show();
+              }
+              return true;
+            });
+          } catch (Throwable t) {
+            Log.e(t);
+            UI.showToast("Unable to create report: " + Log.toString(t), Toast.LENGTH_SHORT);
+          }
+        });
+        b.setCancelable(false);
+        showAlert(b);
+      }
+    }));
+  }
+
+  @Override
+  public void onActivityResume () {
+    super.onActivityResume();
+    showEmulatorPrompt();
+  }
+
   @Override
   public void onFocus () {
     super.onFocus();
-    if (mode == MODE_LOGIN) {
-      context.forceRunEmulatorChecks(detectionResult -> executeOnUiThreadOptional(() -> {
-        if (detectionResult != null && (detectionResult.isEmulatorDetected() || BuildConfig.DEBUG)) {
-          AlertDialog.Builder b = new AlertDialog.Builder(context, Theme.dialogTheme());
-          b.setTitle(Lang.getString(R.string.EmulatorWarningTitle));
-          b.setMessage(Lang.getMarkdownStringSecure(this, R.string.EmulatorWarning));
-          b.setPositiveButton(Lang.getString(R.string.EmulatorWarningBtnOk), (dialog, which) -> dialog.dismiss());
-          b.setNeutralButton(Lang.getString(R.string.EmulatorWarningBtnReport), (dialog, which) -> {
-            try {
-              Uri uri = Uri.parse(BuildConfig.REMOTE_URL);
-              String title = Lang.getString(R.string.EmulatorDetectorReport_title, Build.BRAND, Build.MODEL);
-              String metadata = U.getUsefulMetadata(tdlib);
-              String body = Lang.getString(R.string.EmulatorDetectorReport_text,
-                Build.PRODUCT,
-                Build.DEVICE,
-                Build.HARDWARE,
-                metadata,
-                detectionResult.toHumanReadableFormat()
-              );
-              Uri reportUri = uri
-                .buildUpon()
-                .appendEncodedPath("issues/new")
-                .appendQueryParameter("title", title)
-                .appendQueryParameter("body", body)
-                .build();
-              Intents.openUriInBrowser(reportUri);
-            } catch (Throwable t) {
-              Log.e(t);
-              UI.showToast("Unable to create report: " + Log.toString(t), Toast.LENGTH_SHORT);
-            }
-          });
-          b.setCancelable(false);
-          showAlert(b);
-        }
-      }));
-    }
+    showEmulatorPrompt();
     if (oneShot) {
       return;
     }
