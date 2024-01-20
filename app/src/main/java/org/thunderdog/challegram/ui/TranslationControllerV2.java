@@ -515,7 +515,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
       ids.append(R.id.btn_copyTranslation);
       strings.append(R.string.TranslationCopy);
       icons.append(R.drawable.baseline_content_copy_24);
-      colors.append(OPTION_COLOR_NORMAL);
+      colors.append(OptionColor.NORMAL);
     }
 
     if (ids.isEmpty()) return;

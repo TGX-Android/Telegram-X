@@ -2798,7 +2798,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
         Lang.plural(R.string.ColorClearDone, state.getVersionCount(false)),
         Lang.getString(R.string.Cancel)
       }, new int[]{
-        OPTION_COLOR_RED, OPTION_COLOR_NORMAL
+        OptionColor.RED, OptionColor.NORMAL
       }, new int[]{
         R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24
       }, (itemView, optionId) -> {
@@ -2818,7 +2818,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
         Lang.getString(R.string.ColorRemoveDone),
         Lang.getString(R.string.Cancel)
       }, new int[] {
-        OPTION_COLOR_RED, OPTION_COLOR_NORMAL
+        OptionColor.RED, OptionColor.NORMAL
       }, new int[] {
         R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24
       }, (itemView, optionId) -> {

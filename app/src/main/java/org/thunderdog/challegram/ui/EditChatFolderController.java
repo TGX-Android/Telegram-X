@@ -714,7 +714,7 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
       stringRes = inclusion ? R.string.FolderRemoveInclusionConfirmType : R.string.FolderRemoveExclusionConfirmType;
     }
     CharSequence info = Lang.getStringBold(stringRes, title);
-    showConfirm(info, Lang.getString(R.string.Remove), R.drawable.baseline_delete_24, OPTION_COLOR_RED, () -> {
+    showConfirm(info, Lang.getString(R.string.Remove), R.drawable.baseline_delete_24, OptionColor.RED, () -> {
       int index = adapter.getItem(position) == item ? position : adapter.indexOfView(item);
       if (index != RecyclerView.NO_POSITION) {
         adapter.removeRange(index - 1, 2); /* separator, condition */
@@ -1097,9 +1097,9 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
   private void showInviteLinkOptions (TdApi.ChatFolderInviteLink inviteLink) {
     Options.Builder builder = new Options.Builder();
     builder.info(getName(inviteLink));
-    builder.item(new OptionItem(R.id.btn_copyLink, Lang.getString(R.string.InviteLinkCopy), OPTION_COLOR_NORMAL, R.drawable.baseline_content_copy_24));
-    builder.item(new OptionItem(R.id.btn_shareLink, Lang.getString(R.string.ShareLink), OPTION_COLOR_NORMAL, R.drawable.baseline_share_arrow_24));
-    builder.item(new OptionItem(R.id.btn_deleteLink, Lang.getString(R.string.InviteLinkDelete), OPTION_COLOR_RED, R.drawable.baseline_delete_24));
+    builder.item(new OptionItem(R.id.btn_copyLink, Lang.getString(R.string.InviteLinkCopy), OptionColor.NORMAL, R.drawable.baseline_content_copy_24));
+    builder.item(new OptionItem(R.id.btn_shareLink, Lang.getString(R.string.ShareLink), OptionColor.NORMAL, R.drawable.baseline_share_arrow_24));
+    builder.item(new OptionItem(R.id.btn_deleteLink, Lang.getString(R.string.InviteLinkDelete), OptionColor.RED, R.drawable.baseline_delete_24));
     showOptions(builder.build(), (view, id) -> {
       if (id == R.id.btn_copyLink) {
         copyInviteLink(inviteLink);
@@ -1121,7 +1121,7 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
   }
 
   private void showDeleteInviteLinkConfirm (String inviteLink) {
-    showConfirm(Lang.getString(R.string.AreYouSureDeleteInviteLink), Lang.getString(R.string.InviteLinkDelete), R.drawable.baseline_delete_24, OPTION_COLOR_RED, () -> {
+    showConfirm(Lang.getString(R.string.AreYouSureDeleteInviteLink), Lang.getString(R.string.InviteLinkDelete), R.drawable.baseline_delete_24, OptionColor.RED, () -> {
       deleteInviteLink(inviteLink);
     });
   }

@@ -6362,7 +6362,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           undoButton.setOnClickListener(this);
           undoButton.setOnLongClickListener(v -> {
             if (paintView != null && !paintView.getContentWrap().isBusy()) {
-              showOptions(null, new int[]{R.id.paint_clear, R.id.btn_cancel}, new String[]{Lang.getString(R.string.ClearDrawing), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+              showOptions(null, new int[]{R.id.paint_clear, R.id.btn_cancel}, new String[]{Lang.getString(R.string.ClearDrawing), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
                 if (id == R.id.paint_clear) {
                   undoAllPaintActions();
                 }
@@ -7315,7 +7315,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private static final int MODE_CANCEL = 2;
 
   private void showYesNo () {
-    showOptions(Lang.getString(R.string.DiscardCurrentChanges), new int[]{R.id.btn_discard, R.id.btn_cancel}, new String[]{Lang.getString(R.string.Discard), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+    showOptions(Lang.getString(R.string.DiscardCurrentChanges), new int[]{R.id.btn_discard, R.id.btn_cancel}, new String[]{Lang.getString(R.string.Discard), Lang.getString(R.string.Cancel)}, new int[]{OptionColor.RED, OptionColor.NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_discard) {
         changeSection(SECTION_CAPTION, MODE_CANCEL);
       }
@@ -8086,7 +8086,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           icons.append(R.drawable.baseline_crop_free_24);
           ids.append(R.id.btn_proportion_free);
           strings.append(R.string.CropFree);
-          colors.append(OPTION_COLOR_NORMAL);
+          colors.append(OptionColor.NORMAL);
         }
 
         float originalProportion = cropAreaView.getOriginalProportion();
@@ -8109,7 +8109,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           } else {
             strings.append(R.string.CropOriginal);
           }
-          colors.append(originalProportion == proportion ? OPTION_COLOR_BLUE : OPTION_COLOR_NORMAL);
+          colors.append(originalProportion == proportion ? OptionColor.BLUE : OptionColor.NORMAL);
         }
 
         if ((float) width / (float) height != 1f) {
@@ -8131,11 +8131,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
             strings.append(verb1 + ":" + verb2);
           }
           icons.append(verb3);
-          colors.append((float) verb1 / (float) verb2 == proportion ? OPTION_COLOR_BLUE : OPTION_COLOR_NORMAL);
+          colors.append((float) verb1 / (float) verb2 == proportion ? OptionColor.BLUE : OptionColor.NORMAL);
         }
 
         if (!currentCropState.isEmpty()) {
-          colors.append(OPTION_COLOR_RED);
+          colors.append(OptionColor.RED);
           ids.append(R.id.btn_crop_reset);
           strings.append(R.string.Reset);
           icons.append(R.drawable.baseline_cancel_24);

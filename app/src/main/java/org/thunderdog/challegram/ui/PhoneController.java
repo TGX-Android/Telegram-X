@@ -1031,7 +1031,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
     } else {
       msg = Lang.getStringBold(R.string.SuggestInvitingUser, getFirstName());
     }
-    showOptions(msg, new int[] {R.id.btn_invite, R.id.btn_cancel}, new String[] {Lang.getString(R.string.Invite), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_BLUE, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_person_add_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+    showOptions(msg, new int[] {R.id.btn_invite, R.id.btn_cancel}, new String[] {Lang.getString(R.string.Invite), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.BLUE, OptionColor.NORMAL}, new int[] {R.drawable.baseline_person_add_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_invite) {
         tdlib.cache().getInviteText(text -> {
           Intents.sendSms(getPhoneNumber(), text.text);

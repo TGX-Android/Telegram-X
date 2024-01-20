@@ -126,7 +126,7 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
   private static final boolean DEBUG_CHATS_SEARCH_ADAPTER = false;
 
   private void removeSuggestedChat (final TGFoundChat chat) {
-    showOptions(Lang.getStringBold(R.string.ChatHintsDelete, chat.getTitle()), new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getString(R.string.Delete), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_sweep_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+    showOptions(Lang.getStringBold(R.string.ChatHintsDelete, chat.getTitle()), new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getString(R.string.Delete), Lang.getString(R.string.Cancel)}, new int[]{OptionColor.RED, OptionColor.NORMAL}, new int[]{R.drawable.baseline_delete_sweep_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_delete) {
         chatSearchManager.removeTopChat(chat.getId());
       }
@@ -135,7 +135,7 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
   }
 
   private void removeRecentChat (final TGFoundChat chat) {
-    showOptions(Lang.getStringBold(R.string.DeleteXFromRecents, chat.getTitle()), new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getString(R.string.Delete), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+    showOptions(Lang.getStringBold(R.string.DeleteXFromRecents, chat.getTitle()), new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getString(R.string.Delete), Lang.getString(R.string.Cancel)}, new int[]{OptionColor.RED, OptionColor.NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_delete) {
         chatSearchManager.removeRecentlyFoundChat(chat);
       }
@@ -332,7 +332,7 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
         if (!chatSearchManager.areLocalChatsRecent()) {
           return;
         }
-        showOptions(Lang.getString(R.string.ClearRecentsHint), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.Clear), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        showOptions(Lang.getString(R.string.ClearRecentsHint), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.Clear), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
           if (id == R.id.btn_delete) {
             chatSearchManager.clearRecentlyFoundChats();
           }
@@ -427,7 +427,7 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
           return false;
         }
         final TGFoundChat chat = (TGFoundChat) item.getData();
-        showOptions(Lang.getStringBold(R.string.DeleteXFromRecents, chat.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.Delete), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        showOptions(Lang.getStringBold(R.string.DeleteXFromRecents, chat.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.Delete), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
           if (id == R.id.btn_delete) {
             chatSearchManager.removeRecentlyFoundChat(chat);
           }

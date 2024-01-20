@@ -192,11 +192,11 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
         return;
       }
       String publicLink = tdlib.tMeHost() + tdlib.chatUsername(chat.getChatId());
-      showOptions(publicLink, new int[] {R.id.btn_delete, R.id.btn_openChat}, new String[] {Lang.getString(R.string.ChatLinkRemove), Lang.getString(R.string.ChatLinkView)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_visibility_24}, (itemView, id) -> {
+      showOptions(publicLink, new int[] {R.id.btn_delete, R.id.btn_openChat}, new String[] {Lang.getString(R.string.ChatLinkRemove), Lang.getString(R.string.ChatLinkView)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_visibility_24}, (itemView, id) -> {
         if (id == R.id.btn_openChat) {
           tdlib.ui().openChat(this, chat.getChatId(), new TdlibUi.ChatOpenParameters().keepStack());
         } else if (id == R.id.btn_delete) {
-          showOptions(Lang.getStringBold(R.string.ChatLinkRemoveAlert, tdlib.chatTitle(chat.getChatId()), publicLink), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ChatLinkRemove), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (resultItemView, confirmId) -> {
+          showOptions(Lang.getStringBold(R.string.ChatLinkRemoveAlert, tdlib.chatTitle(chat.getChatId()), publicLink), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ChatLinkRemove), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (resultItemView, confirmId) -> {
             if (confirmId == R.id.btn_delete && !isInProgress()) {
               setInProgress(true);
               tdlib.client().send(new TdApi.SetSupergroupUsername(ChatId.toSupergroupId(chat.getChatId()), null), result -> {

@@ -391,7 +391,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
     } else if (id == R.id.btn_suggestContacts) {
       boolean value = ((SettingView) v).getToggler().isEnabled();
       if (value) {
-        showOptions(Lang.getString(R.string.SuggestContactsAlert), new int[] {R.id.btn_suggestContacts, R.id.btn_cancel}, new String[] {Lang.getString(R.string.SuggestContactsDone), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, resultId) -> {
+        showOptions(Lang.getString(R.string.SuggestContactsAlert), new int[] {R.id.btn_suggestContacts, R.id.btn_cancel}, new String[] {Lang.getString(R.string.SuggestContactsDone), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, resultId) -> {
           if (resultId == R.id.btn_suggestContacts) {
             tdlib.setDisableTopChats(true);
             adapter.updateValuedSettingById(R.id.btn_suggestContacts);
@@ -402,7 +402,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
         tdlib.setDisableTopChats(!((SettingView) v).getToggler().toggle(true));
       }
     } else if (id == R.id.btn_resetContacts) {
-      showOptions(Lang.getString(R.string.SyncContactsDeleteInfo), new int[] {R.id.btn_resetContacts, R.id.btn_cancel}, new String[] {Lang.getString(R.string.SyncContactsDeleteButton), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, resultId) -> {
+      showOptions(Lang.getString(R.string.SyncContactsDeleteInfo), new int[] {R.id.btn_resetContacts, R.id.btn_cancel}, new String[] {Lang.getString(R.string.SyncContactsDeleteButton), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, resultId) -> {
         if (resultId == R.id.btn_resetContacts) {
           tdlib.contacts().deleteContacts();
         }
@@ -462,7 +462,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
     } else if (id == R.id.btn_deleteAccount) {
       tdlib.ui().permanentlyDeleteAccount(this, true);
     } else if (id == R.id.btn_clearAllDrafts) {
-      showOptions(Lang.getString(R.string.AreYouSureClearDrafts), new int[] {R.id.btn_clearAllDrafts, R.id.btn_cancel}, new String[] {Lang.getString(R.string.PrivacyDeleteCloudDrafts), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, actionId) -> {
+      showOptions(Lang.getString(R.string.AreYouSureClearDrafts), new int[] {R.id.btn_clearAllDrafts, R.id.btn_cancel}, new String[] {Lang.getString(R.string.PrivacyDeleteCloudDrafts), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, actionId) -> {
         if (actionId == R.id.btn_clearAllDrafts) {
           tdlib.client().send(new TdApi.ClearAllDraftMessages(true), tdlib.doneHandler());
         }

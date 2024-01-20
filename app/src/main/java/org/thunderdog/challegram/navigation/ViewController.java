@@ -2188,18 +2188,16 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   // Options delegate
 
   @Retention(RetentionPolicy.SOURCE)
-  @IntDef({OPTION_COLOR_BLUE, OPTION_COLOR_INACTIVE, OPTION_COLOR_RED, OPTION_COLOR_NORMAL, OPTION_COLOR_GREEN})
-  public @interface OptionColor {}
-  public static final int OPTION_COLOR_NORMAL = 0x01;
-  public static final int OPTION_COLOR_RED = 0x02;
-  public static final int OPTION_COLOR_BLUE = 0x03;
-  public static final int OPTION_COLOR_GREEN = 0x04;
-  public static final int OPTION_COLOR_INACTIVE = 0x05;
-
-  public static final float DISABLED_ALPHA = .7f;
-
-  private OptionsLayout optionsWrap;
-  private View.OnClickListener onOptionClick;
+  @IntDef({
+    OptionColor.NORMAL,
+    OptionColor.RED,
+    OptionColor.BLUE,
+    OptionColor.GREEN,
+    OptionColor.INACTIVE
+  })
+  public @interface OptionColor {
+    int NORMAL = 1, RED = 2, BLUE = 3, GREEN = 4, INACTIVE = 5;
+  }
 
   public final void showCallOptions (final String phoneNumber, final long userId) {
     if (userId == 0) {
@@ -2233,11 +2231,11 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public final PopupLayout showConfirm (@Nullable CharSequence info, @Nullable String okString, @NonNull Runnable onConfirm) {
-    return showConfirm(info, okString, R.drawable.baseline_check_circle_24, OPTION_COLOR_NORMAL, onConfirm);
+    return showConfirm(info, okString, R.drawable.baseline_check_circle_24, OptionColor.NORMAL, onConfirm);
   }
 
   public final PopupLayout showConfirm (@Nullable CharSequence info, @Nullable String okString, int okIcon, int okColor, @NonNull Runnable onConfirm) {
-    return showOptions(info, new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {okString != null ? okString : Lang.getString(R.string.OK), Lang.getString(R.string.Cancel)}, new int[] {okColor, OPTION_COLOR_NORMAL}, new int[] {okIcon, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+    return showOptions(info, new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {okString != null ? okString : Lang.getString(R.string.OK), Lang.getString(R.string.Cancel)}, new int[] {okColor, OptionColor.NORMAL}, new int[] {okIcon, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_done) {
         onConfirm.run();
       }
@@ -2266,7 +2264,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public final void showUnsavedChangesPromptBeforeLeaving (@Nullable CharSequence info, @NonNull String discardText, @Nullable Runnable onConfirm) {
-    showOptions(info, new int[]{R.id.btn_done, R.id.btn_cancel}, new String[]{discardText, Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+    showOptions(info, new int[]{R.id.btn_done, R.id.btn_cancel}, new String[]{discardText, Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_done) {
         if (onConfirm != null)
           onConfirm.run();
@@ -2281,14 +2279,14 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public final PopupLayout showWarning (CharSequence info, RunnableBool callback) {
-    return showOptions(info, new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.TdlibLogsWarningConfirm), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_warning_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+    return showOptions(info, new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.TdlibLogsWarningConfirm), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_warning_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       callback.runWithBool(id == R.id.btn_done);
       return true;
     });
   }
 
   public static class OptionItem {
-    public static final OptionItem SEPARATOR = new OptionItem(0, null, OPTION_COLOR_NORMAL, 0);
+    public static final OptionItem SEPARATOR = new OptionItem(0, null, OptionColor.NORMAL, 0);
 
     public final int id;
     public final CharSequence name;
@@ -2305,7 +2303,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     public static class Builder {
       private int id;
       private CharSequence name;
-      private int color = OPTION_COLOR_NORMAL;
+      private int color = OptionColor.NORMAL;
       private int icon;
 
       public Builder () {
@@ -2406,7 +2404,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   public final Options getOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons) {
     OptionItem[] items = new OptionItem[ids.length];
     for (int i = 0; i < ids.length; i++) {
-      items[i] = new OptionItem(ids != null ? ids[i] : i, titles[i], colors != null ? colors[i] : OPTION_COLOR_NORMAL, icons != null ? icons[i] : 0);
+      items[i] = new OptionItem(ids != null ? ids[i] : i, titles[i], colors != null ? colors[i] : OptionColor.NORMAL, icons != null ? icons[i] : 0);
     }
     return new Options(info, null, null, items);
   }

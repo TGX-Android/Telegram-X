@@ -1386,11 +1386,11 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
           Lang.getString(R.string.SetEmojiAsStatusTimed2Days),
           Lang.getString(R.string.SetEmojiAsStatusTimedCustom)
         }, new int[] {
-          ViewController.OPTION_COLOR_NORMAL,
-          ViewController.OPTION_COLOR_NORMAL,
-          ViewController.OPTION_COLOR_NORMAL,
-          ViewController.OPTION_COLOR_NORMAL,
-          ViewController.OPTION_COLOR_NORMAL,
+          OptionColor.NORMAL,
+          OptionColor.NORMAL,
+          OptionColor.NORMAL,
+          OptionColor.NORMAL,
+          OptionColor.NORMAL,
         }, new int[] {
           R.drawable.baseline_access_time_24,
           R.drawable.baseline_access_time_24,

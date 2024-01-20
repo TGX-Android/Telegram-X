@@ -593,7 +593,7 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
           @Override
           public void onForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
             if (actionId == R.id.btn_messageUnpin) {
-              ancestor.showOptions(new ViewController.Options.Builder().item(new ViewController.OptionItem(R.id.btn_messageUnpin, Lang.getString(R.string.UnpinMessage), ViewController.OPTION_COLOR_RED, R.drawable.deproko_baseline_pin_undo_24)).cancelItem().build(), (optionItemView, id) -> {
+              ancestor.showOptions(new ViewController.Options.Builder().item(new ViewController.OptionItem(R.id.btn_messageUnpin, Lang.getString(R.string.UnpinMessage), ViewController.OptionColor.RED, R.drawable.deproko_baseline_pin_undo_24)).cancelItem().build(), (optionItemView, id) -> {
                 if (id == R.id.btn_messageUnpin) {
                   tdlib.client().send(new TdApi.UnpinChatMessage(messageId.getChatId(), messageId.getMessageId()), tdlib.okHandler());
                 }

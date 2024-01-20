@@ -1080,17 +1080,17 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
           ids.append(R.id.btn_done);
           strings.append(TD.findOrdinary(cloudStrings, Lang.getResourceEntryName(R.string.language_continueInLanguage), () -> Lang.getString(R.string.language_continueInLanguage)));
-          colors.append(OPTION_COLOR_BLUE);
+          colors.append(OptionColor.BLUE);
           icons.append(R.drawable.baseline_check_24);
 
           ids.append(R.id.btn_cancel);
           icons.append(R.drawable.baseline_cancel_24);
-          colors.append(OPTION_COLOR_NORMAL);
+          colors.append(OptionColor.NORMAL);
           strings.append(R.string.Cancel);
 
           ids.append(R.id.btn_languageSettings);
           strings.append(R.string.MoreLanguages);
-          colors.append(OPTION_COLOR_NORMAL);
+          colors.append(OptionColor.NORMAL);
           icons.append(R.drawable.baseline_language_24);
 
           CharSequence text = Strings.buildMarkdown(this, TD.findOrdinary(cloudStrings, Lang.getResourceEntryName(R.string.language_continueInLanguagePopupText), () -> Lang.getString(R.string.language_continueInLanguagePopupText)), null);
@@ -1128,7 +1128,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     tdlib.ui().postDelayed(() -> {
       if (!isFocused() || isDestroyed() || context.isPasscodeShowing())
         return;
-      showOptions(Lang.getStringBold(R.string.EmojiSetUpdated, emojiPack.displayName), new int[] {R.id.btn_downloadFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.EmojiSetUpdate), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_BLUE, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_sync_24, R.drawable.baseline_cancel_24}, (v, id) -> {
+      showOptions(Lang.getStringBold(R.string.EmojiSetUpdated, emojiPack.displayName), new int[] {R.id.btn_downloadFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.EmojiSetUpdate), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.BLUE, OptionColor.NORMAL}, new int[] {R.drawable.baseline_sync_24, R.drawable.baseline_cancel_24}, (v, id) -> {
         if (id == R.id.btn_downloadFile) {
           SettingsCloudEmojiController c = new SettingsCloudEmojiController(context, tdlib);
           c.setArguments(new SettingsCloudController.Args<>(emojiPack));
@@ -2092,33 +2092,33 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       options.info(title);
     }
     if (tdlib.hasUnreadChats(chatList)) {
-      options.item(new OptionItem(R.id.btn_markFolderAsRead, Lang.getString(R.string.MarkFolderAsRead), OPTION_COLOR_NORMAL, R.drawable.baseline_done_all_24));
+      options.item(new OptionItem(R.id.btn_markFolderAsRead, Lang.getString(R.string.MarkFolderAsRead), OptionColor.NORMAL, R.drawable.baseline_done_all_24));
     }
     if (isFolder) {
-      options.item(new OptionItem(R.id.btn_editFolder, Lang.getString(R.string.EditFolder), OPTION_COLOR_NORMAL, R.drawable.baseline_edit_24));
+      options.item(new OptionItem(R.id.btn_editFolder, Lang.getString(R.string.EditFolder), OptionColor.NORMAL, R.drawable.baseline_edit_24));
       int chatFolderStyle = tdlib.settings().chatFolderStyle();
       if (chatFolderStyle == ChatFolderStyle.ICON_ONLY || chatFolderStyle == ChatFolderStyle.LABEL_AND_ICON || chatFolderStyle == ChatFolderStyle.ICON_WITH_LABEL_ON_ACTIVE) {
-        options.item(new OptionItem(R.id.btn_changeFolderIcon, Lang.getString(R.string.ChatFolderChangeIcon), OPTION_COLOR_NORMAL, R.drawable.baseline_image_24));
+        options.item(new OptionItem(R.id.btn_changeFolderIcon, Lang.getString(R.string.ChatFolderChangeIcon), OptionColor.NORMAL, R.drawable.baseline_image_24));
       }
-      options.item(new OptionItem(R.id.btn_folderIncludeChats, Lang.getString(R.string.ChatFolderAddChats), OPTION_COLOR_NORMAL, R.drawable.baseline_add_24));
+      options.item(new OptionItem(R.id.btn_folderIncludeChats, Lang.getString(R.string.ChatFolderAddChats), OptionColor.NORMAL, R.drawable.baseline_add_24));
       if (chatFolderInfo != null) {
-        options.item(new OptionItem(R.id.btn_shareFolder, Lang.getString(R.string.ShareFolder), OPTION_COLOR_NORMAL, R.drawable.baseline_share_arrow_24));
+        options.item(new OptionItem(R.id.btn_shareFolder, Lang.getString(R.string.ShareFolder), OptionColor.NORMAL, R.drawable.baseline_share_arrow_24));
       }
     }
     if (isMain) {
       if (!Config.RESTRICT_HIDING_MAIN_LIST) {
-        options.item(new OptionItem(R.id.btn_hideFolder, Lang.getString(R.string.HideAllChats), OPTION_COLOR_NORMAL, R.drawable.baseline_eye_off_24));
+        options.item(new OptionItem(R.id.btn_hideFolder, Lang.getString(R.string.HideAllChats), OptionColor.NORMAL, R.drawable.baseline_eye_off_24));
       }
     } else if (isFolder || isArchive) {
-      options.item(new OptionItem(R.id.btn_hideFolder, Lang.getString(R.string.HideFolder), OPTION_COLOR_NORMAL, R.drawable.baseline_eye_off_24));
+      options.item(new OptionItem(R.id.btn_hideFolder, Lang.getString(R.string.HideFolder), OptionColor.NORMAL, R.drawable.baseline_eye_off_24));
     }
     if (isFolder) {
-      options.item(new OptionItem(R.id.btn_removeFolder, Lang.getString(R.string.RemoveFolder), OPTION_COLOR_RED, R.drawable.baseline_delete_24));
+      options.item(new OptionItem(R.id.btn_removeFolder, Lang.getString(R.string.RemoveFolder), OptionColor.RED, R.drawable.baseline_delete_24));
     }
     if (options.itemCount() > 0) {
       options.item(OptionItem.SEPARATOR);
     }
-    options.item(new OptionItem(R.id.btn_chatFolders, Lang.getString(R.string.EditFolders), OPTION_COLOR_NORMAL, R.drawable.baseline_edit_folders_24));
+    options.item(new OptionItem(R.id.btn_chatFolders, Lang.getString(R.string.EditFolders), OptionColor.NORMAL, R.drawable.baseline_edit_folders_24));
     showOptions(options.build(), (v, id) -> {
       if (id == R.id.btn_editFolder) {
         tdlib.send(new TdApi.GetChatFolder(chatFolderId), (chatFolder, error) -> runOnUiThreadOptional(() -> {
@@ -2222,13 +2222,13 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     long chatFolderInviteLinkCount = inviteLinks.length;
     long chatFolderInviteLinkCountMax = tdlib.chatFolderInviteLinkCountMax();
     boolean canCreateInviteLink = chatFolderInviteLinkCount < chatFolderInviteLinkCountMax;
-    int createNewLinkOptionColor = canCreateInviteLink ? OPTION_COLOR_BLUE : OPTION_COLOR_INACTIVE;
+    int createNewLinkOptionColor = canCreateInviteLink ? OptionColor.BLUE : OptionColor.INACTIVE;
     SparseArrayCompat<TdApi.ChatFolderInviteLink> inviteLinkById = new SparseArrayCompat<>(inviteLinks.length);
     for (TdApi.ChatFolderInviteLink inviteLink : inviteLinks) {
       int id = ViewCompat.generateViewId();
       inviteLinkById.append(id, inviteLink);
       String name = StringUtils.isEmptyOrInvisible(inviteLink.name) ? StringUtils.urlWithoutProtocol(inviteLink.inviteLink) : inviteLink.name;
-      options.item(new OptionItem(id, name, OPTION_COLOR_NORMAL, R.drawable.baseline_link_24));
+      options.item(new OptionItem(id, name, OptionColor.NORMAL, R.drawable.baseline_link_24));
     }
     options.item(new OptionItem(R.id.btn_createInviteLink, Lang.getString(R.string.CreateANewLink), createNewLinkOptionColor, R.drawable.baseline_add_link_24));
     PopupLayout popupLayout = showOptions(options.build(), (view, id) -> {
@@ -2303,9 +2303,9 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     String title = StringUtils.isEmptyOrInvisible(inviteLink.name) ? StringUtils.urlWithoutProtocol(inviteLink.inviteLink) : inviteLink.name;
     Options.Builder options = new Options.Builder();
     options.info(title);
-    options.item(new OptionItem(R.id.btn_shareLink, Lang.getString(R.string.ShareLink), OPTION_COLOR_NORMAL, R.drawable.baseline_share_arrow_24));
-    options.item(new OptionItem(R.id.btn_copyLink, Lang.getString(R.string.InviteLinkCopy), OPTION_COLOR_NORMAL, R.drawable.baseline_content_copy_24));
-    options.item(new OptionItem(R.id.btn_edit, Lang.getString(R.string.InviteLinkEdit), OPTION_COLOR_NORMAL, R.drawable.baseline_edit_24));
+    options.item(new OptionItem(R.id.btn_shareLink, Lang.getString(R.string.ShareLink), OptionColor.NORMAL, R.drawable.baseline_share_arrow_24));
+    options.item(new OptionItem(R.id.btn_copyLink, Lang.getString(R.string.InviteLinkCopy), OptionColor.NORMAL, R.drawable.baseline_content_copy_24));
+    options.item(new OptionItem(R.id.btn_edit, Lang.getString(R.string.InviteLinkEdit), OptionColor.NORMAL, R.drawable.baseline_edit_24));
     showOptions(options.build(), (view, id) -> {
       if (id == R.id.btn_shareLink) {
         tdlib.ui().shareUrl(this, inviteLink.inviteLink);

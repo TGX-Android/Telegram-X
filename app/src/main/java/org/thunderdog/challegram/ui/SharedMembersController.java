@@ -271,14 +271,14 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
     if (TD.isCreator(member.status)) {
       if (TD.isCreator(myStatus)) {
         ids.append(R.id.btn_editRights);
-        colors.append(OPTION_COLOR_NORMAL);
+        colors.append(OptionColor.NORMAL);
         icons.append(R.drawable.baseline_edit_24);
         strings.append(R.string.EditAdminTitle);
 
         boolean isAnonymous = ((TdApi.ChatMemberStatusCreator) member.status).isAnonymous;
         if (!isChannel() || isAnonymous) {
           ids.append(isAnonymous ? R.id.btn_makePublic : R.id.btn_makePrivate);
-          colors.append(OPTION_COLOR_NORMAL);
+          colors.append(OptionColor.NORMAL);
           icons.append(isAnonymous ? R.drawable.nilsfast_baseline_incognito_off_24 : R.drawable.infanf_baseline_incognito_24);
           strings.append(isAnonymous ? R.string.EditOwnerPublic : R.string.EditOwnerAnonymous);
         }
@@ -287,7 +287,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
       int promoteMode = TD.canPromoteAdmin(myStatus, member.status);
       if (promoteMode != TD.PROMOTE_MODE_NONE) {
         ids.append(R.id.btn_editRights);
-        colors.append(OPTION_COLOR_NORMAL);
+        colors.append(OptionColor.NORMAL);
         icons.append(R.drawable.baseline_stars_24);
         switch (promoteMode) {
           case TD.PROMOTE_MODE_EDIT:
@@ -311,7 +311,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
         )) {
           boolean isAnonymous = ((TdApi.ChatMemberStatusAdministrator) member.status).rights.isAnonymous;
           ids.append(isAnonymous ? R.id.btn_makePublic : R.id.btn_makePrivate);
-          colors.append(OPTION_COLOR_NORMAL);
+          colors.append(OptionColor.NORMAL);
           icons.append(isAnonymous ? R.drawable.nilsfast_baseline_incognito_off_24 : R.drawable.infanf_baseline_incognito_24);
           strings.append(isAnonymous ? R.string.EditAdminPublic : R.string.EditAdminAnonymous);
         }
@@ -321,7 +321,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
       if (restrictMode != TD.RESTRICT_MODE_NONE) {
         if (!isChannel() && !(restrictMode == TD.RESTRICT_MODE_EDIT && member.memberId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR)) {
           ids.append(R.id.btn_restrictMember);
-          colors.append(OPTION_COLOR_NORMAL);
+          colors.append(OptionColor.NORMAL);
           icons.append(R.drawable.baseline_block_24);
           switch (restrictMode) {
             case TD.RESTRICT_MODE_EDIT:
@@ -341,7 +341,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
         if (restrictMode != TD.RESTRICT_MODE_VIEW) {
           if (TD.isMember(member.status)) {
             ids.append(R.id.btn_blockSender);
-            colors.append(OPTION_COLOR_NORMAL);
+            colors.append(OptionColor.NORMAL);
             icons.append(R.drawable.baseline_remove_circle_24);
             strings.append(isChannel() ? R.string.ChannelRemoveUser : R.string.RemoveFromGroup);
           } else {
@@ -361,7 +361,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
                   R.string.UnbanMember
               );
               ids.append(R.id.btn_unblockSender);
-              colors.append(OPTION_COLOR_NORMAL);
+              colors.append(OptionColor.NORMAL);
               icons.append(R.drawable.baseline_remove_circle_24);
             }
           }
@@ -377,7 +377,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
         strings.append(Lang.getString(content.getSenderId().getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.ViewMessagesFromUser : R.string.ViewMessagesFromChat, tdlib.senderName(content.getSenderId(), true)));
       }
       icons.append(R.drawable.baseline_person_24);
-      colors.append(OPTION_COLOR_NORMAL);
+      colors.append(OptionColor.NORMAL);
     }
 
     if (!ids.isEmpty()) {

@@ -191,7 +191,7 @@ public class Settings2FAController extends RecyclerViewController<Settings2FACon
       });
     } else if (viewId == R.id.btn_abort2FA) {
       hideSoftwareKeyboard();
-      showOptions(Lang.getString(R.string.AbortPasswordConfirm), new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.AbortPassword), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+      showOptions(Lang.getString(R.string.AbortPasswordConfirm), new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.AbortPassword), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
         if (id == R.id.btn_done) {
           hideSoftwareKeyboard();
           abort2FA();
@@ -214,7 +214,7 @@ public class Settings2FAController extends RecyclerViewController<Settings2FACon
         }
       });
     } else if (viewId == R.id.btn_disablePassword) {
-      showOptions(Strings.buildMarkdown(this, Lang.getString(state.hasPassportData ? R.string.TurnPasswordOffQuestion2 : R.string.TurnPasswordOffQuestion), null), new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.DisablePassword), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+      showOptions(Strings.buildMarkdown(this, Lang.getString(state.hasPassportData ? R.string.TurnPasswordOffQuestion2 : R.string.TurnPasswordOffQuestion), null), new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.DisablePassword), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
         if (id == R.id.btn_done) {
           state.hasRecoveryEmailAddress = false;
           state.recoveryEmailAddressCodeInfo = null;

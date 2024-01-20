@@ -304,9 +304,9 @@ public class EditChatFolderInviteLinkController extends RecyclerViewController<E
 
   private void showInviteLinkOptions () {
     Options.Builder builder = new Options.Builder();
-    builder.item(new OptionItem(R.id.btn_copyLink, Lang.getString(R.string.InviteLinkCopy), OPTION_COLOR_NORMAL, R.drawable.baseline_content_copy_24));
-    builder.item(new OptionItem(R.id.btn_shareLink, Lang.getString(R.string.ShareLink), OPTION_COLOR_NORMAL, R.drawable.baseline_share_arrow_24));
-    builder.item(new OptionItem(R.id.btn_deleteLink, Lang.getString(R.string.InviteLinkDelete), OPTION_COLOR_RED, R.drawable.baseline_delete_24));
+    builder.item(new OptionItem(R.id.btn_copyLink, Lang.getString(R.string.InviteLinkCopy), OptionColor.NORMAL, R.drawable.baseline_content_copy_24));
+    builder.item(new OptionItem(R.id.btn_shareLink, Lang.getString(R.string.ShareLink), OptionColor.NORMAL, R.drawable.baseline_share_arrow_24));
+    builder.item(new OptionItem(R.id.btn_deleteLink, Lang.getString(R.string.InviteLinkDelete), OptionColor.RED, R.drawable.baseline_delete_24));
     showOptions(builder.build(), (view, id) -> {
       if (id == R.id.btn_copyLink) {
         copyInviteLink();
@@ -328,7 +328,7 @@ public class EditChatFolderInviteLinkController extends RecyclerViewController<E
   }
 
   private void showDeleteInviteLinkConfirm () {
-    showConfirm(Lang.getString(R.string.AreYouSureDeleteInviteLink), Lang.getString(R.string.InviteLinkDelete), R.drawable.baseline_delete_24, OPTION_COLOR_RED, this::deleteInviteLink);
+    showConfirm(Lang.getString(R.string.AreYouSureDeleteInviteLink), Lang.getString(R.string.InviteLinkDelete), R.drawable.baseline_delete_24, OptionColor.RED, this::deleteInviteLink);
   }
 
   private void deleteInviteLink () {

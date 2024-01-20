@@ -1010,13 +1010,13 @@ public class SettingsController extends ViewController<Void> implements
         if (!appBuildInfo.getPullRequests().isEmpty()) {
           b.info(Lang.plural(R.string.PullRequestsInfo, appBuildInfo.getPullRequests().size()));
         }
-        b.item(new OptionItem(R.id.btn_sourceCode, Lang.getString(R.string.format_commit, Lang.getString(R.string.ViewSourceCode), appBuildInfo.getCommit()), OPTION_COLOR_NORMAL, R.drawable.baseline_github_24));
+        b.item(new OptionItem(R.id.btn_sourceCode, Lang.getString(R.string.format_commit, Lang.getString(R.string.ViewSourceCode), appBuildInfo.getCommit()), OptionColor.NORMAL, R.drawable.baseline_github_24));
         if (appBuildInfo.getTdlibCommitFull() != null) {
-          b.item(new OptionItem(R.id.btn_tdlib, Lang.getCharSequence(R.string.format_commit, "TDLib " + Td.tdlibVersion(), Td.tdlibCommitHash()), OPTION_COLOR_NORMAL, R.drawable.baseline_tdlib_24));
+          b.item(new OptionItem(R.id.btn_tdlib, Lang.getCharSequence(R.string.format_commit, "TDLib " + Td.tdlibVersion(), Td.tdlibCommitHash()), OptionColor.NORMAL, R.drawable.baseline_tdlib_24));
         }
         int i = 0;
         for (PullRequest pullRequest : appBuildInfo.getPullRequests()) {
-          b.item(new OptionItem(i++, Lang.getString(R.string.format_commit, Lang.getString(R.string.PullRequestCommit, pullRequest.getId()), pullRequest.getCommit()), OPTION_COLOR_NORMAL, R.drawable.templarian_baseline_source_merge_24));
+          b.item(new OptionItem(i++, Lang.getString(R.string.format_commit, Lang.getString(R.string.PullRequestCommit, pullRequest.getId()), pullRequest.getCommit()), OptionColor.NORMAL, R.drawable.templarian_baseline_source_merge_24));
         }
         showOptions(b.build(), (view, id) -> {
           if (id == R.id.btn_sourceCode || id == R.id.btn_tdlib) {
@@ -1080,17 +1080,17 @@ public class SettingsController extends ViewController<Void> implements
 
         ids.append(R.id.btn_changePhoneNumber);
         titles.append(R.string.ReminderActionChangePhoneNumber);
-        colors.append(OPTION_COLOR_NORMAL);
+        colors.append(OptionColor.NORMAL);
         icons.append(R.drawable.baseline_edit_24);
 
         ids.append(R.id.btn_cancel);
         titles.append(Lang.getString(R.string.ReminderCheckPhoneNumberHide, originalPhoneNumber));
-        colors.append(OPTION_COLOR_NORMAL);
+        colors.append(OptionColor.NORMAL);
         icons.append(R.drawable.baseline_check_24);
 
         ids.append(R.id.btn_info);
         titles.append(R.string.ReminderActionLearnMore);
-        colors.append(OPTION_COLOR_NORMAL);
+        colors.append(OptionColor.NORMAL);
         icons.append(R.drawable.baseline_info_24);
 
         break;
@@ -1100,12 +1100,12 @@ public class SettingsController extends ViewController<Void> implements
 
         ids.append(R.id.btn_2fa);
         titles.append(R.string.ReminderActionVerifyPassword);
-        colors.append(OPTION_COLOR_BLUE);
+        colors.append(OptionColor.BLUE);
         icons.append(R.drawable.mrgrigri_baseline_textbox_password_24);
 
         ids.append(R.id.btn_cancel);
         titles.append(R.string.ReminderCheckTfaPasswordHide);
-        colors.append(OPTION_COLOR_NORMAL);
+        colors.append(OptionColor.NORMAL);
         icons.append(R.drawable.baseline_cancel_24);
 
         break;
@@ -1197,13 +1197,13 @@ public class SettingsController extends ViewController<Void> implements
     ids.append(R.id.btn_copyText);
     strings.append(R.string.CopyVersion);
     icons.append(R.drawable.baseline_content_copy_24);
-    colors.append(OPTION_COLOR_NORMAL);
+    colors.append(OptionColor.NORMAL);
 
     if (!Config.SHOW_COPY_REPORT_DETAILS_IN_SETTINGS) {
       ids.append(R.id.btn_copyDebug);
       strings.append(R.string.CopyReportData);
       icons.append(R.drawable.baseline_bug_report_24);
-      colors.append(OPTION_COLOR_NORMAL);
+      colors.append(OptionColor.NORMAL);
     }
 
     boolean notificationError = tdlib.context().getTokenState() == TdlibManager.TokenState.ERROR;
@@ -1211,24 +1211,24 @@ public class SettingsController extends ViewController<Void> implements
       ids.append(R.id.btn_pushService);
       strings.append(R.string.PushServices);
       icons.append(notificationError ? R.drawable.baseline_sync_problem_24 : R.drawable.baseline_sync_24);
-      colors.append(notificationError ? OPTION_COLOR_RED : OPTION_COLOR_NORMAL);
+      colors.append(notificationError ? OptionColor.RED : OptionColor.NORMAL);
     }
 
     if (allowDebug) {
       ids.append(R.id.btn_tdlib);
       strings.append(R.string.TdlibLogs);
       icons.append(R.drawable.baseline_build_24);
-      colors.append(OPTION_COLOR_NORMAL);
+      colors.append(OptionColor.NORMAL);
 
       ids.append(R.id.btn_build);
       strings.append(R.string.AppLogs);
       icons.append(R.drawable.baseline_build_24);
-      colors.append(OPTION_COLOR_NORMAL);
+      colors.append(OptionColor.NORMAL);
       
       ids.append(R.id.btn_experiment);
       strings.append(R.string.ExperimentalSettings);
       icons.append(R.drawable.templarian_baseline_flask_24);
-      colors.append(OPTION_COLOR_NORMAL);
+      colors.append(OptionColor.NORMAL);
     }
 
     SpannableStringBuilder b = new SpannableStringBuilder();

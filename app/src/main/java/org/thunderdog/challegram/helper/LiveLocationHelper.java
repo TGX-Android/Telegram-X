@@ -565,7 +565,7 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
       info = Lang.getString(R.string.StopLiveLocationInfo);
     }
 
-    c.showOptions(info, ids.get(), strings.get(), new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, icons.get(), (itemView, id) -> {
+    c.showOptions(info, ids.get(), strings.get(), new int[] {ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, icons.get(), (itemView, id) -> {
       if (id == R.id.btn_stopAllLiveLocations) {
         tdlib.cache().stopLiveLocations(chatId);
         if (after != null) {

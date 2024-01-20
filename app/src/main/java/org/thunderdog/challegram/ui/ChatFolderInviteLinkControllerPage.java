@@ -361,8 +361,8 @@ public class ChatFolderInviteLinkControllerPage extends BottomSheetViewControlle
   protected void openMoreMenu () {
     if (isFinishing()) return;
     Options.Builder builder = new Options.Builder();
-    builder.item(new OptionItem(R.id.btn_copyLink, Lang.getString(R.string.InviteLinkCopy), OPTION_COLOR_NORMAL, R.drawable.baseline_content_copy_24));
-    builder.item(new OptionItem(R.id.btn_shareFolder, Lang.getString(R.string.ShareFolder), OPTION_COLOR_NORMAL, R.drawable.baseline_share_arrow_24));
+    builder.item(new OptionItem(R.id.btn_copyLink, Lang.getString(R.string.InviteLinkCopy), OptionColor.NORMAL, R.drawable.baseline_content_copy_24));
+    builder.item(new OptionItem(R.id.btn_shareFolder, Lang.getString(R.string.ShareFolder), OptionColor.NORMAL, R.drawable.baseline_share_arrow_24));
     Options options = builder.build();
     showOptions(options, (view, id) -> {
       if (id == R.id.btn_copyLink) {
