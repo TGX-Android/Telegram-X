@@ -23,8 +23,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.navigation.ViewController;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.ColorChangeAcceptorDelegate;
 import org.thunderdog.challegram.util.CustomStateListDrawable;

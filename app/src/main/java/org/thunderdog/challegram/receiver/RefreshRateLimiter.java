@@ -28,7 +28,6 @@ import org.thunderdog.challegram.loader.ReceiverUpdateListener;
 import org.thunderdog.challegram.tool.Screen;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public class RefreshRateLimiter implements ComplexReceiverUpdateListener, ReceiverUpdateListener {

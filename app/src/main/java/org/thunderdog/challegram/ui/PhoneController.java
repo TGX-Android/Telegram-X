@@ -1072,6 +1072,9 @@ public class PhoneController extends EditBaseController<Void> implements Setting
   @Override
   public void onFocus () {
     super.onFocus();
+    if (mode == MODE_LOGIN && isAccountAdd) {
+      context.runEmulatorChecks(true);
+    }
     if (oneShot) {
       return;
     }

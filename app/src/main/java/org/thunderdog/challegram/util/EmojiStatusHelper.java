@@ -485,6 +485,8 @@ public class EmojiStatusHelper implements Destroyable {
 
     long emojiStatusId = user.emojiStatus.customEmojiId;
     TdApi.TextEntity emoji = new TdApi.TextEntity(0, 1, new TdApi.TextEntityTypeCustomEmoji(emojiStatusId));
-    return new TdApi.FormattedText("*", new TdApi.TextEntity[] {emoji});
+    return new TdApi.FormattedText(EMOJI, new TdApi.TextEntity[] {emoji});
   }
+
+  public static final String EMOJI = "*";
 }

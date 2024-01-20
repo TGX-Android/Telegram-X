@@ -17,8 +17,6 @@ package org.thunderdog.challegram.theme;
 import android.graphics.Paint;
 import android.view.View;
 
-import org.thunderdog.challegram.R;
-
 import java.util.ArrayList;
 
 import me.vkryl.android.util.InvalidateDelegate;

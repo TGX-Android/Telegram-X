@@ -13,7 +13,6 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.widget.CircleButton;
 
 import me.vkryl.android.AnimatorUtils;

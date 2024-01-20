@@ -22,7 +22,6 @@ import android.view.View;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.TGInlineKeyboard;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Fonts;

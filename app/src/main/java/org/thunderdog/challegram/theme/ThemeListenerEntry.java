@@ -34,8 +34,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.WeakReference;
 
-import me.vkryl.core.ColorUtils;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.ColorUtils;
 
 public class ThemeListenerEntry {
   public static final int MODE_INVALIDATE = 0;

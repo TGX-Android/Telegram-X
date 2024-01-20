@@ -12,8 +12,6 @@
  */
 package org.thunderdog.challegram.ui.camera;
 
-import android.graphics.Point;
-import android.graphics.Rect;
 import android.graphics.RectF;
 
 import androidx.annotation.Nullable;

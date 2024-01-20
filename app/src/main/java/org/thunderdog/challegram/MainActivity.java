@@ -18,7 +18,6 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.SystemClock;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -34,7 +33,6 @@ import androidx.collection.SparseArrayCompat;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.config.Config;
-import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.helper.LiveLocationHelper;
@@ -103,7 +101,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import me.vkryl.android.AnimatorUtils;
-import me.vkryl.android.DeviceUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ArrayUtils;
@@ -1441,8 +1438,6 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     }
   }
 
-  private boolean madeEmulatorChecks;
-
   @Override
   public void onResume () {
     super.onResume();
@@ -1452,17 +1447,6 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     tdlib.context().global().notifyResolvableProblemAvailabilityMightHaveChanged();
     tdlib.context().dateManager().checkCurrentDate();
     UI.startNotificationService();
-    if (!madeEmulatorChecks && !Settings.instance().isEmulator()) {
-      madeEmulatorChecks = true;
-      new Thread(() -> {
-        long ms = SystemClock.uptimeMillis();
-        boolean isEmulator = DeviceUtils.detectEmulator(MainActivity.this);
-        Log.v("Ran emulator detections in %dms", ms);
-        if (isEmulator) {
-          Settings.instance().markAsEmulator();
-        }
-      }, "EmulatorDetector").start();
-    }
   }
 
   @Override
