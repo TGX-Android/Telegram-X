@@ -41,9 +41,9 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
-import org.thunderdog.challegram.util.ProfilePhotoDrawModifier;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.NoUnderlineClickableSpan;
+import org.thunderdog.challegram.util.ProfilePhotoDrawModifier;
 import org.thunderdog.challegram.util.UserPickerMultiDelegate;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 

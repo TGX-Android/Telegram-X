@@ -18,16 +18,12 @@ package org.thunderdog.challegram.util;
 import android.graphics.Canvas;
 import android.view.View;
 
-import androidx.annotation.Px;
-
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiverProvider;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;
-
-import me.vkryl.td.Td;
 
 public class AvatarDrawModifier implements DrawModifier {
   final int size;

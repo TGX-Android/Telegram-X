@@ -18,15 +18,14 @@ import androidx.annotation.IntDef;
 import androidx.annotation.Keep;
 import androidx.annotation.Nullable;
 
-import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
-import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.Crash;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

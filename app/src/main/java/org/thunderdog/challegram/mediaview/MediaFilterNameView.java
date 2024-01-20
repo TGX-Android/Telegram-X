@@ -25,8 +25,8 @@ import android.widget.TextView;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.navigation.ViewController;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 

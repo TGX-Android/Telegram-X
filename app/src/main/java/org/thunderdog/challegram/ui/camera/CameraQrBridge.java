@@ -13,7 +13,6 @@
 package org.thunderdog.challegram.ui.camera;
 
 import android.graphics.ImageFormat;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.media.Image;
 import android.os.Build;
@@ -38,18 +37,15 @@ import com.google.zxing.Result;
 import com.google.zxing.ResultPoint;
 import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.qrcode.QRCodeReader;
-import com.google.zxing.qrcode.detector.AlignmentPattern;
 import com.google.zxing.qrcode.detector.FinderPattern;
 
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.camera.legacy.CameraApiLegacy;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

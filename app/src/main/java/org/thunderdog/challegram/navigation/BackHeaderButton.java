@@ -23,10 +23,9 @@ import android.view.View;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.BaseActivity;
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.theme.ThemedColorAnimator;
 import org.thunderdog.challegram.tool.Paints;

@@ -14,8 +14,9 @@
  */
 package org.thunderdog.challegram.telegram;
 
-import me.vkryl.leveldb.LevelDB;
 import org.thunderdog.challegram.unsorted.Settings;
+
+import me.vkryl.leveldb.LevelDB;
 
 public class TdlibCounter {
   public int totalChatCount;
