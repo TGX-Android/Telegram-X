@@ -17,6 +17,7 @@ package org.thunderdog.challegram.util;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.PixelFormat;
+import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 
@@ -31,14 +32,16 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import kotlin.random.Random;
+import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 
 public class GiftParticlesDrawable extends Drawable {
   public interface ParticleValidator {
-    boolean isValidPosition (int x, int y);
+    boolean isValidPosition (float x, float y);
   }
 
   private @Nullable ParticleValidator particleValidator;
@@ -73,37 +76,25 @@ public class GiftParticlesDrawable extends Drawable {
     setSize(bounds.width(), bounds.height());
   }
 
-  private static final int GRID_SIZE = 35;
+  private static final int GRID_SIZE = 25;
 
   private void setSize (int width, int height) {
     if (this.width == width && this.height == height) {
       return;
     }
-
-    final int gridSection = Screen.dp(GRID_SIZE);
-    int gridSectionsX = (int) Math.floor((float) width / gridSection);
-    int gridSectionsY = (int) Math.floor((float) height / gridSection);
-    int gridStartX = (width - gridSection * gridSectionsX) / 2;
-    int gridStartY = (height - gridSection * gridSectionsY) / 2;
-
     this.width = width;
     this.height = height;
 
-    ArrayList<Particle> particles = new ArrayList<>(gridSectionsX * gridSectionsY);
-    for (int x = 0; x < gridSectionsX; x++) {
-      for (int y = 0; y < gridSectionsY; y++) {
-        int sx = gridStartX + gridSection * x;
-        int sy = gridStartY + gridSection * y;
-        int ex = sx + gridSection;
-        int ey = sy + gridSection;
-        int px = MathUtils.random(sx, ex);
-        int py = MathUtils.random(sy, ey);
-
-        if (particleValidator == null || particleValidator.isValidPosition(px, py)) {
-          particles.add(new Particle(MathUtils.random(0, 3), particleColors[MathUtils.random(0, 5)], px, py, 0.75f + Random.Default.nextFloat() * 0.5f, Random.Default.nextFloat() * 360f));
-        }
-      }
+    List<PointF> points = poissonDiskSampling(Screen.dp(GRID_SIZE), width, height, 10);
+    if (particleValidator != null) {
+      points = ArrayUtils.filter(points, p -> particleValidator.isValidPosition(p.x, p.y));
     }
+
+    ArrayList<Particle> particles = new ArrayList<>(points.size());
+    for (PointF pointF: points) {
+      particles.add(new Particle(MathUtils.random(0, 3), particleColors[MathUtils.random(0, 5)], pointF.x, pointF.y, 0.75f + Random.Default.nextFloat() * 0.5f, Random.Default.nextFloat() * 360f));
+    }
+
     this.particles = particles.toArray(new Particle[0]);
   }
 
@@ -151,10 +142,10 @@ public class GiftParticlesDrawable extends Drawable {
     public final int color;
     public final float scale;
     public final float angle;
-    public final int x;
-    public final int y;
+    public final float x;
+    public final float y;
 
-    public Particle (int type, int color, int x, int y, float scale, float angle) {
+    public Particle (int type, int color, float x, float y, float scale, float angle) {
       this.type = type;
       this.color = color;
       this.x = x;
@@ -162,5 +153,96 @@ public class GiftParticlesDrawable extends Drawable {
       this.scale = scale;
       this.angle = angle;
     }
+  }
+  
+  /* * */
+
+  static boolean isValidPoint(PointF[][] grid, int width, int height, float cellsize,
+                       int gwidth, int gheight,
+                       PointF p, float radius) {
+    /* Make sure the point is on the screen */
+    final int gp = Screen.dp(15) / 2;
+    if ((p.x < gp) || (p.x >= (width - gp)) || (p.y < gp) || (p.y >= (height - gp)))
+      return false;
+
+    /* Check neighboring eight cells */
+    int xindex = (int)Math.floor(p.x / cellsize);
+    int yindex = (int)Math.floor(p.y / cellsize);
+    int i0 = Math.max(xindex - 1, 0);
+    int i1 = Math.min(xindex + 1, gwidth - 1);
+    int j0 = Math.max(yindex - 1, 0);
+    int j1 = Math.min(yindex + 1, gheight - 1);
+
+    for (int i = i0; i <= i1; i++)
+      for (int j = j0; j <= j1; j++)
+        if (grid[i][j] != null)
+          if (MathUtils.distance(grid[i][j].x, grid[i][j].y, p.x, p.y) < radius)
+            return false;
+
+    /* If we get here, return true */
+    return true;
+  }
+
+  static void insertPoint(PointF[][] grid, float cellsize, PointF point) {
+    int xindex = (int)Math.floor(point.x / cellsize);
+    int yindex = (int)Math.floor(point.y / cellsize);
+    grid[xindex][yindex] = point;
+  }
+
+  static ArrayList<PointF> poissonDiskSampling(float radius, int width, int height, int k) {
+    int N = 2;
+    /* The final set of points to return */
+    ArrayList<PointF> points = new ArrayList<PointF>();
+    /* The currently "active" set of points */
+    ArrayList<PointF> active = new ArrayList<PointF>();
+    /* Initial point p0 */
+    PointF p0 = new PointF(MathUtils.random(0, width), MathUtils.random(0, height));
+    PointF[][] grid;
+    float cellsize = (float) Math.floor(radius/Math.sqrt(N));
+
+    /* Figure out no. of cells in the grid for our canvas */
+    int ncells_width = (int)Math.ceil(width/cellsize) + 1;
+    int ncells_height = (int)Math.ceil(height/cellsize) + 1;
+
+    /* Allocate the grid an initialize all elements to null */
+    grid = new PointF[ncells_width][ncells_height];
+    for (int i = 0; i < ncells_width; i++)
+      for (int j = 0; j < ncells_height; j++)
+        grid[i][j] = null;
+
+    insertPoint(grid, cellsize, p0);
+    points.add(p0);
+    active.add(p0);
+
+    while (active.size() > 0) {
+      int random_index = MathUtils.random(0, active.size() - 1);
+      PointF p = active.get(random_index);
+
+      boolean found = false;
+      for (int tries = 0; tries < k; tries++) {
+        float theta = MathUtils.random(0, 360);
+        float new_radius = MathUtils.random((int)radius, (int)(2*radius));
+        float pnewx = (float) (p.x + new_radius * Math.cos(Math.toRadians(theta)));
+        float pnewy = (float) (p.y + new_radius * Math.sin(Math.toRadians(theta)));
+        PointF pnew = new PointF(pnewx, pnewy);
+
+        if (!isValidPoint(grid, width, height, cellsize,
+          ncells_width, ncells_height,
+          pnew, radius))
+          continue;
+
+        points.add(pnew);
+        insertPoint(grid, cellsize, pnew);
+        active.add(pnew);
+        found = true;
+        break;
+      }
+
+      /* If no point was found after k tries, remove p */
+      if (!found)
+        active.remove(random_index);
+    }
+
+    return points;
   }
 }

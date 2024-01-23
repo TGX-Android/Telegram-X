@@ -79,7 +79,7 @@ public class GiftHeaderView extends View implements GiftParticlesDrawable.Partic
   }
 
   @Override
-  public boolean isValidPosition (int x, int y) {
+  public boolean isValidPosition (float x, float y) {
     return content == null || content.isValidPosition(x - Screen.dp(60), y - contentY);
   }
 
