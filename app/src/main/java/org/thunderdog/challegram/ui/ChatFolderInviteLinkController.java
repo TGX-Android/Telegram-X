@@ -4,6 +4,8 @@ import android.content.Context;
 import android.view.WindowManager;
 
 import androidx.annotation.IntDef;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
@@ -18,6 +20,7 @@ import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ViewPager;
 
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.ObjectUtils;
 
 public class ChatFolderInviteLinkController extends BottomSheetViewController<ChatFolderInviteLinkController.Arguments> {
 
@@ -32,18 +35,18 @@ public class ChatFolderInviteLinkController extends BottomSheetViewController<Ch
   public static class Arguments {
     public final @Mode int mode;
     public final int chatFolderId;
-    public String chatFolderTitle;
+    public final String chatFolderTitle;
     public final long[] selectableChatIds;
-    public final String inviteLinkUrl;
-    public final TdApi.ChatFolderInviteLinkInfo inviteLinkInfo;
+    public final @Nullable String inviteLinkUrl;
+    public final @Nullable TdApi.ChatFolderInviteLinkInfo inviteLinkInfo;
 
-    public Arguments (String inviteLink, TdApi.ChatFolderInviteLinkInfo inviteLinkInfo) {
+    public Arguments (@NonNull String inviteLink, @NonNull TdApi.ChatFolderInviteLinkInfo inviteLinkInfo) {
       this.mode = MODE_INVITE_LINK;
       this.chatFolderId = inviteLinkInfo.chatFolderInfo.id;
       this.chatFolderTitle = inviteLinkInfo.chatFolderInfo.title;
       this.selectableChatIds = inviteLinkInfo.missingChatIds;
-      this.inviteLinkUrl = inviteLink;
-      this.inviteLinkInfo = inviteLinkInfo;
+      this.inviteLinkUrl = ObjectUtils.requireNonNull(inviteLink);
+      this.inviteLinkInfo = ObjectUtils.requireNonNull(inviteLinkInfo);
     }
 
     private Arguments (@Mode int mode, int chatFolderId, String chatFolderTitle, long[] chatIds) {

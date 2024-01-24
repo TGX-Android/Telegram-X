@@ -1,10 +1,6 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.ColorFilter;
-import android.graphics.PixelFormat;
-import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -26,7 +22,6 @@ import org.thunderdog.challegram.charts.LayoutHelper;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
-import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
@@ -39,7 +34,6 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.ChatFolderInviteLinkController.Arguments;
-import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.SeparatorView;
@@ -68,8 +62,6 @@ public class ChatFolderInviteLinkControllerPage extends BottomSheetViewControlle
   private @Nullable TdApi.ChatFolderInviteLinkInfo inviteLinkInfo;
   private SettingsAdapter adapter;
   private FrameLayoutFix actionButton;
-  // private @Nullable CounterDrawable counter;
-  // private @Nullable DoubleHeaderView headerCell;
 
   public ChatFolderInviteLinkControllerPage (BottomSheetViewController<?> parent) {
     super(parent.context(), parent.tdlib());
@@ -103,19 +95,6 @@ public class ChatFolderInviteLinkControllerPage extends BottomSheetViewControlle
       addThemeInvalidateListener(headerView);
     }
     return headerView;
-  }
-
-  @Override
-  public DoubleHeaderView getCustomHeaderCell () {
-//    if (headerCell == null) {
-//      headerCell = new DoubleHeaderView(context);
-//      headerCell.initWithMargin(Screen.dp(56f), false);
-//      headerCell.setThemedTextColor(ColorId.text, ColorId.textLight, this);
-//      headerCell.setTitle(getName());
-//      updateHeader();
-//    }
-//    return headerCell;
-    return null;
   }
 
   @Override
@@ -175,9 +154,6 @@ public class ChatFolderInviteLinkControllerPage extends BottomSheetViewControlle
     button.setEllipsize(TextUtils.TruncateAt.END);
     button.setGravity(Gravity.CENTER);
     button.setAllCaps(true);
-//    if (selectableChatIds.length > 0) {
-//      button.setCompoundDrawablesWithIntrinsicBounds(null, null, counter = new CounterDrawable(button), null);
-//    }
 
     FrameLayoutFix frame = new FrameLayoutFix(context);
     frame.setOnClickListener(this);
@@ -185,22 +161,6 @@ public class ChatFolderInviteLinkControllerPage extends BottomSheetViewControlle
     frame.addView(button, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER_HORIZONTAL));
     RippleSupport.setSimpleWhiteBackground(frame, this);
     return frame;
-  }
-
-  private void updateHeader () {
-    DoubleHeaderView headerCell = getCustomHeaderCell();
-    if (headerCell == null) {
-      return;
-    }
-    int selectedChatCount = selectedChatIds.size();
-    if (selectedChatCount > 0) {
-      int stringRes = chatFolderId == NO_CHAT_FOLDER_ID ? R.string.AddFolderWithXChats : R.string.JoinXChats;
-      headerCell.setSubtitle(Lang.pluralBold(stringRes, selectedChatCount));
-    } else if (selectableChatIds.length == 0) {
-      headerCell.setSubtitle(Lang.getString(R.string.NoChatsToJoin));
-    } else {
-      headerCell.setSubtitle(Lang.getString(R.string.SelectChatsToJoin));
-    }
   }
 
   private void updateActionButton () {
@@ -229,9 +189,6 @@ public class ChatFolderInviteLinkControllerPage extends BottomSheetViewControlle
         throw new IllegalStateException("mode = " + mode);
     }
     Views.setMediumText(textView, text);
-    // if (counter != null) {
-    //  counter.getCounter().setCount(selectedChatIds.size(), !enabled, true);
-    // }
   }
 
   private CharSequence getJoinChatsActionText () {
@@ -467,7 +424,6 @@ public class ChatFolderInviteLinkControllerPage extends BottomSheetViewControlle
 
   private void onSelectedChatCountChanged () {
     adapter.updateValuedSettingById(R.id.btn_check);
-    updateHeader();
     updateActionButton();
   }
 
@@ -578,66 +534,6 @@ public class ChatFolderInviteLinkControllerPage extends BottomSheetViewControlle
       } else {
         super.setHeaderCheckBoxState(item, checkBox, isUpdate);
       }
-    }
-  }
-
-  private static class CounterDrawable extends Drawable {
-
-    private final Counter counter;
-
-    private float alpha = 1f;
-
-    public CounterDrawable (TextView parent) {
-      this.counter = new Counter.Builder()
-        .backgroundPadding(0f)
-        .textSize(12f)
-        .visibleIfZero()
-        .callback((counter, sizeChanged) -> {
-          if (sizeChanged) {
-            parent.setCompoundDrawablesRelativeWithIntrinsicBounds(null, null, this, null);
-          } else {
-            invalidateSelf();
-          }
-        })
-        .build();
-    }
-
-    @Override
-    public void draw (@NonNull Canvas canvas) {
-      counter.draw(canvas, getIntrinsicWidth() / 2f, getIntrinsicHeight() / 2f, Gravity.RIGHT, alpha);
-    }
-
-    @Override
-    public int getIntrinsicWidth () {
-      return (int) Math.ceil(counter.getScaledWidth(Screen.dp(9f)));
-    }
-
-    @Override
-    public int getIntrinsicHeight () {
-      return Screen.dp(28f);
-    }
-
-    @Override
-    public void setAlpha (int alpha) {
-      float newAlpha = (float) alpha / 0xFF;
-      if (this.alpha != newAlpha) {
-        this.alpha = newAlpha;
-        invalidateSelf();
-      }
-    }
-
-    @Override
-    public void setColorFilter (@Nullable ColorFilter colorFilter) {
-
-    }
-
-    @Override
-    public int getOpacity () {
-      return PixelFormat.TRANSLUCENT;
-    }
-
-    public Counter getCounter () {
-      return counter;
     }
   }
 }

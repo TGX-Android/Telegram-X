@@ -1912,8 +1912,6 @@
   <string name="JoinChat">Join Chat</string>
   <string name="JoinXChats_one">Join %1$s chat</string>
   <string name="JoinXChats_other">Join %1$s chats</string>
-  <string name="NoChatsToJoin">No chats to join</string>
-  <string name="SelectChatsToJoin">Select chats to join</string>
   <string name="RequestJoinChannel">Request to Join Channel</string>
   <string name="RequestJoinGroup">Request to Join Group</string>
   <string name="MemberCanJoinGroup">%1$s will be able to return to the group.</string>
@@ -5151,8 +5149,6 @@
   <string name="EmulatorWarningReport">**Note**: you will need **GitHub account** to report this issue.\n\nAlternatively you can copy the link and send it to tgx-android@pm.me</string>
   <string name="EmulatorWarningReportBtn">Report on GitHub</string>
 
-  <string name="AddFolderWithXChats_one">Add Folder with %1$s chat</string>
-  <string name="AddFolderWithXChats_other">Add Folder with %1$s chats</string>
   <string name="AddFolderAndJoinXChats_one">Add Folder and Join %1$s chat</string>
   <string name="AddFolderAndJoinXChats_other">Add Folder and Join %1$s chats</string>
   <string name="DoNotAddFolder">Do not add folder</string>
