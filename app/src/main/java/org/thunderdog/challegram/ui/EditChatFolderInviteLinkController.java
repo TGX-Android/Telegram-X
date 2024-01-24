@@ -173,8 +173,10 @@ public class EditChatFolderInviteLinkController extends RecyclerViewController<E
     if (v.getId() == R.id.chat) {
       ListItem item = (ListItem) v.getTag();
       long chatId = item.getLongId();
-      if (shareableChatIds.has(chatId) && (selectedChatIds.add(chatId) || selectedChatIds.remove(chatId))) {
-        adapter.updateValuedSettingByLongId(chatId);
+      if (shareableChatIds.has(chatId)) {
+        boolean isChecked = selectedChatIds.add(chatId) || !selectedChatIds.remove(chatId);
+        DoubleTextWrapper chat = (DoubleTextWrapper) item.getData();
+        chat.setIsChecked(isChecked, /* animated */ true);
         updateItemsWithCounter();
         updateDoneButton();
       } else {
@@ -464,7 +466,7 @@ public class EditChatFolderInviteLinkController extends RecyclerViewController<E
         long chatId = item.getLongId();
         DoubleTextWrapper chat = (DoubleTextWrapper) item.getData();
         chat.setDrawCrossIcon(!shareableChatIds.has(chatId));
-        chat.setDrawFakeCheckbox(selectedChatIds.has(chatId));
+        chat.setIsChecked(selectedChatIds.has(chatId), isUpdate);
       }
     }
 

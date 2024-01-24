@@ -292,7 +292,7 @@ public class ChatFolderInviteLinkControllerPage extends BottomSheetViewControlle
     DoubleTextWrapper data = new DoubleTextWrapper(tdlib, chat);
     data.setForcedSubtitle(subtitle);
     data.setAdminSignVisible(false, false);
-    data.setDrawFakeCheckbox(selectedChatIds.has(chatId));
+    data.setIsChecked(selectedChatIds.has(chatId), /* animated */ false);
 
     ListItem item = new ListItem(ListItem.TYPE_CHAT_SMALL, R.id.chat);
     item.setBoolValue(selectable);
@@ -416,9 +416,9 @@ public class ChatFolderInviteLinkControllerPage extends BottomSheetViewControlle
       return;
     }
     long chatId = item.getLongId();
-    boolean drawCheckbox = selectedChatIds.add(chatId) || !selectedChatIds.remove(chatId);
+    boolean isChecked = selectedChatIds.add(chatId) || !selectedChatIds.remove(chatId);
     DoubleTextWrapper data = (DoubleTextWrapper) item.getData();
-    data.setDrawFakeCheckbox(drawCheckbox);
+    data.setIsChecked(isChecked, /* animated */ true);
     onSelectedChatCountChanged();
   }
 
@@ -521,7 +521,7 @@ public class ChatFolderInviteLinkControllerPage extends BottomSheetViewControlle
         chatView.setEnabled(item.getBoolValue());
 
         DoubleTextWrapper data = (DoubleTextWrapper) item.getData();
-        data.setDrawFakeCheckbox(selectedChatIds.has(item.getLongId()));
+        data.setIsChecked(selectedChatIds.has(item.getLongId()), isUpdate);
       }
     }
 
