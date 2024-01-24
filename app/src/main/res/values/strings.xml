@@ -3904,9 +3904,6 @@
   <string name="SelectUnread">Select Unread</string>
   <string name="SelectMuted">Select Muted</string>
 
-  <string name="HeaderActionSelectAll">Select all</string>
-  <string name="HeaderActionDeselectAll">Deselect all</string>
-
   <string name="ClearXHistoriesConfirm_one">Are you sure you want to clear history in %1$s chat?</string>
   <string name="ClearXHistoriesConfirm_other">Are you sure you want to clear history in %1$s chats?</string>
   <string name="ClearedXHistories_one">Cleared %1$s history</string>

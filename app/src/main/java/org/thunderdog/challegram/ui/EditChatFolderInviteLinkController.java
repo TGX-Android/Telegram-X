@@ -35,7 +35,6 @@ import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.MaterialEditText;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
-import org.thunderdog.challegram.widget.ScalableTextView;
 import org.thunderdog.challegram.widget.SmallChatView;
 
 import java.util.ArrayList;
@@ -134,7 +133,7 @@ public class EditChatFolderInviteLinkController extends RecyclerViewController<E
       if (isNoChatsToShare()) {
         items.add(new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.ChatFolderInviteLinkNoChatsToShareHeader));
       } else {
-        items.add(new ListItem(ListItem.TYPE_HEADER_WITH_TEXT_BUTTON, headerId));
+        items.add(new ListItem(ListItem.TYPE_HEADER_WITH_CHECKBOX, headerId));
       }
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
       boolean addSeparator = false;
@@ -461,27 +460,23 @@ public class EditChatFolderInviteLinkController extends RecyclerViewController<E
     }
 
     @Override
+    protected void setHeaderCheckBoxState (ListItem item, CheckBoxView checkBox, boolean isUpdate) {
+      if (item.getId() == headerId) {
+        checkBox.setChecked(!selectedChatIds.isEmpty(), isUpdate);
+        checkBox.setDisabled(shareableChatIds.isEmpty(), isUpdate);
+        checkBox.setPartially(selectedChatIds.size() < shareableChatIds.size(), isUpdate);
+      } else {
+        super.setHeaderCheckBoxState(item, checkBox, isUpdate);
+      }
+    }
+
+    @Override
     protected void modifyChatView (ListItem item, SmallChatView chatView, @Nullable CheckBoxView checkBox, boolean isUpdate) {
       if (item.getId() == R.id.chat) {
         long chatId = item.getLongId();
         DoubleTextWrapper chat = (DoubleTextWrapper) item.getData();
         chat.setDrawCrossIcon(!shareableChatIds.has(chatId));
         chat.setIsChecked(selectedChatIds.has(chatId), isUpdate);
-      }
-    }
-
-    @Override
-    protected void setButtonText (ListItem item, ScalableTextView view, boolean isUpdate) {
-      if (item.getId() == headerId) {
-        int textRes = selectedChatIds.size() < shareableChatIds.size() ? R.string.HeaderActionSelectAll : R.string.HeaderActionDeselectAll;
-        String text = Lang.getString(textRes);
-        if (isUpdate) {
-          view.replaceText(text);
-        } else {
-          view.setText(text);
-        }
-      } else {
-        super.setButtonText(item, view, isUpdate);
       }
     }
   }
