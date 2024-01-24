@@ -51,6 +51,7 @@ import org.thunderdog.challegram.data.TGFoundChat;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.ChatListListener;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -345,6 +346,11 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
       return true;
     }
     return super.onBackPressed(fromTop);
+  }
+
+  @Override
+  public boolean canSlideBackFrom (NavigationController navigationController, float x, float y) {
+    return !hasChanges();
   }
 
   private void updateDoneButton () {
