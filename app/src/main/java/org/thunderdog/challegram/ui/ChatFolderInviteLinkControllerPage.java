@@ -221,7 +221,7 @@ public class ChatFolderInviteLinkControllerPage extends BottomSheetViewControlle
       switch (mode) {
         case ChatFolderInviteLinkController.MODE_INVITE_LINK:
           headerPluralRes = R.string.xChatsToJoin;
-          headerViewType = ListItem.TYPE_HEADER;
+          headerViewType = ListItem.TYPE_HEADER_WITH_CHECKBOX;
           break;
         case ChatFolderInviteLinkController.MODE_NEW_CHATS:
           headerPluralRes = R.string.xNewChatsToJoin;
