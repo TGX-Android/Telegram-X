@@ -1614,6 +1614,18 @@ public class TD {
     return getFirstName(user);
   }
 
+  @Nullable
+  public static String getShorterUserNameOrNull (String firstName, String lastName) {
+    if (!StringUtils.isEmpty(firstName) && !StringUtils.isEmpty(lastName) && firstName.codePointCount(0, firstName.length()) > 1) {
+      return new StringBuilder()
+        .appendCodePoint(firstName.codePointAt(0))
+        .append(". ")
+        .append(lastName)
+        .toString();
+    }
+    return null;
+  }
+
   public static Letters getLetters () {
     return getLetters(null, null, "?");
   }

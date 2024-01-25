@@ -25,6 +25,7 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
 import android.widget.ScrollView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
 
 import org.thunderdog.challegram.core.Lang;
@@ -32,6 +33,7 @@ import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.RtlCheckListener;
 import org.thunderdog.challegram.navigation.StretchyHeaderView;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Size;
@@ -43,27 +45,32 @@ import java.util.List;
 import me.vkryl.android.widget.FrameLayoutFix;
 
 public class BubbleHeaderView extends FrameLayoutFix implements RtlCheckListener, StretchyHeaderView, TextWatcher, HeaderView.OffsetChangeListener {
-  private HeaderEditText editText;
-  private ScrollView scrollView;
-  private BubbleWrapView bubbleWrap;
+  private final HeaderEditText editText;
+  private final ScrollView scrollView;
+  private final BubbleWrapView bubbleWrap;
+  private final Tdlib tdlib;
 
   Callback callback;
-  private ArrayList<TGUser> users;
-  private int maxBubbleHeight;
+  private final ArrayList<BubbleView.Entry> bubbles;
+  private final int maxBubbleHeight;
 
-  public BubbleHeaderView (Context context) {
+  public BubbleHeaderView (Context context, @NonNull Tdlib tdlib) {
     super(context);
+    this.tdlib = tdlib;
 
-    users = new ArrayList<>(10);
+    bubbles = new ArrayList<>(10);
 
     FrameLayoutFix.LayoutParams params;
 
     params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-    bubbleWrap = new BubbleWrapView(context);
+    bubbleWrap = new BubbleWrapView(context, tdlib);
     bubbleWrap.setHeaderView(this);
     bubbleWrap.setLayoutParams(params);
 
-    params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, maxBubbleHeight = Screen.dp(BubbleWrapView.START_Y) + Screen.dp(BubbleWrapView.SPACING) + Screen.dp(16f) * 4);
+    int bubbleHeight = Screen.dp(BubbleView.RADIUS) * 2;
+    // TODO: expand maxBubbleHeight if users starts scrolling manually, and shrink back with delay once finished
+    this.maxBubbleHeight = Screen.dp(BubbleWrapView.START_Y) + Screen.dp(BubbleWrapView.SPACING) + bubbleHeight * 2;
+    params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, maxBubbleHeight);
     if (Lang.rtl()) {
       params.rightMargin = Screen.dp(60f);
     } else {
@@ -122,9 +129,17 @@ public class BubbleHeaderView extends FrameLayoutFix implements RtlCheckListener
   }
 
   public void forceUsers (List<TGUser> users) {
+    List<BubbleView.Entry> entries = new ArrayList<>(users.size());
     for (TGUser user : users) {
-      this.users.add(user);
-      bubbleWrap.addBubbleForce(user);
+      entries.add(BubbleView.Entry.valueOf(tdlib, user));
+    }
+    forceBubbles(entries);
+  }
+
+  public void forceBubbles (List<BubbleView.Entry> entries) {
+    for (BubbleView.Entry entry : entries) {
+      this.bubbles.add(entry);
+      bubbleWrap.addBubbleForce(entry);
     }
 
     bubbleWrap.buildLayout();
@@ -165,25 +180,24 @@ public class BubbleHeaderView extends FrameLayoutFix implements RtlCheckListener
 
   // public changers
 
-  public void addUser (TGUser user) {
-    users.add(user);
-    bubbleWrap.addBubble(user);
+  public void addBubble (BubbleView.Entry entry) {
+    bubbles.add(entry);
+    bubbleWrap.addBubble(entry);
   }
 
-  private void removeUser (int index) {
-    TGUser removed = users.remove(index);
+  private void removeBubbleAt (int index) {
+    BubbleView.Entry removed = bubbles.remove(index);
     bubbleWrap.removeBubble(removed);
   }
 
-  public void removeUser (TGUser user) {
-    long userId = user.getUserId();
-    int i = 0;
-    for (TGUser u : users) {
-      if (u.getUserId() == userId) {
-        removeUser(i);
-        break;
-      }
-      i++;
+  private int indexOfEntry (BubbleView.Entry entry) {
+    return bubbles.indexOf(entry);
+  }
+
+  public void removeBubble (BubbleView.Entry entry) {
+    int index = indexOfEntry(entry);
+    if (index != -1) {
+      removeBubbleAt(index);
     }
   }
 
@@ -314,7 +328,7 @@ public class BubbleHeaderView extends FrameLayoutFix implements RtlCheckListener
   public interface Callback {
     View getTranslationView ();
     void searchUser (String q);
-    void onBubbleRemoved (long chatId);
+    void onBubbleRemoved (@NonNull BubbleView.Entry entry);
     void setHeaderOffset (int offset);
     void applyHeaderOffset ();
     void prepareHeaderOffset (int height);

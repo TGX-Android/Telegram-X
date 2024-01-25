@@ -3717,6 +3717,27 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
+  public long senderUserId (@NonNull TdApi.MessageSender senderId) {
+    switch (senderId.getConstructor()) {
+      case TdApi.MessageSenderChat.CONSTRUCTOR: {
+        long chatId = ((TdApi.MessageSenderChat) senderId).chatId;
+        return chatUserId(chatId);
+      }
+      case TdApi.MessageSenderUser.CONSTRUCTOR: {
+        return ((TdApi.MessageSenderUser) senderId).userId;
+      }
+      default: {
+        Td.assertMessageSender_439d4c9c();
+        throw Td.unsupported(senderId);
+      }
+    }
+  }
+
+  public @Nullable TdApi.User senderUser (@NonNull TdApi.MessageSender senderId) {
+    long userId = senderUserId(senderId);
+    return userId != 0 ? cache().user(userId) : null;
+  }
+
   public String senderName (TdApi.Message msg, boolean allowForward, boolean shorten) {
     long authorId = Td.getMessageAuthorId(msg, allowForward);
     if (authorId == 0 && allowForward) {

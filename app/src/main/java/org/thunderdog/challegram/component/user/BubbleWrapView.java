@@ -24,9 +24,11 @@ import android.text.TextPaint;
 import android.view.MotionEvent;
 import android.view.View;
 
+import androidx.annotation.NonNull;
+
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.TGUser;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
@@ -44,10 +46,10 @@ public class BubbleWrapView extends View {
   static final float START_Y = 12f;
   static final float SPACING = 8f;
 
-  private ArrayList<BubbleView> bubbles;
+  private final ArrayList<BubbleView> bubbles;
   private BubbleHeaderView headerView;
 
-  public BubbleWrapView (Context context) {
+  public BubbleWrapView (Context context, @NonNull Tdlib tdlib) {
     super(context);
     bubbles = new ArrayList<>(10);
     paint = new TextPaint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG);
@@ -60,7 +62,7 @@ public class BubbleWrapView extends View {
     this.headerView = headerView;
   }
 
-  public void addBubbleForce (final TGUser user) {
+  public void addBubbleForce (final BubbleView.Entry entry) {
     int defaultWidth = Screen.dp(100f);
     int maxWidth = (int) ((float) (Screen.smallestSide() - Screen.dp(60f)) * .5f) - Screen.dp(SPACING) - Screen.dp(44f);
 
@@ -73,7 +75,7 @@ public class BubbleWrapView extends View {
       maxTextWidth = maxWidth;
     }
 
-    BubbleView view = new BubbleView(this, user, maxTextWidth);
+    BubbleView view = new BubbleView(this, entry, maxTextWidth);
 
     if (bubbles.size() == 0) {
       view.setXY(Screen.dp(START_X), Screen.dp(START_Y));
@@ -95,7 +97,7 @@ public class BubbleWrapView extends View {
     // final BubbleView view = new BubbleView(BubbleWrapView.this, user, Scree);
   }
 
-  public void addBubble (final TGUser user) {
+  public void addBubble (final BubbleView.Entry entry) {
     isAnimating = true;
     changingHeight = false;
 
@@ -112,7 +114,7 @@ public class BubbleWrapView extends View {
         maxTextWidth = maxWidth;
       }
 
-      final BubbleView view = new BubbleView(BubbleWrapView.this, user, maxTextWidth);
+      final BubbleView view = new BubbleView(BubbleWrapView.this, entry, maxTextWidth);
       UI.post(() -> {
         view.requestFile();
 
@@ -174,11 +176,10 @@ public class BubbleWrapView extends View {
     });
   }
 
-  public void removeBubble (TGUser user) {
-    long chatId = user.getChatId();
+  public void removeBubble (@NonNull BubbleView.Entry entry) {
     int i = 0;
     for (BubbleView view : bubbles) {
-      if (view.getChatId() == chatId) {
+      if (entry.equals(view.getEntry())) {
         hideAnimated(i, false);
         break;
       }
@@ -241,7 +242,7 @@ public class BubbleWrapView extends View {
   protected void onAttachedToWindow () {
     super.onAttachedToWindow();
     for (BubbleView view : bubbles) {
-      view.onAttachedToWindow();
+      view.attach();
     }
   }
 
@@ -249,7 +250,7 @@ public class BubbleWrapView extends View {
   protected void onDetachedFromWindow () {
     super.onDetachedFromWindow();
     for (BubbleView view : bubbles) {
-      view.onDetachedFromWindow();
+      view.detach();
     }
   }
 
@@ -268,13 +269,13 @@ public class BubbleWrapView extends View {
       bubbles.get(i).completeMove();
     }
     BubbleView view = bubbles.remove(rangeStart);
-    view.destroy();
+    view.performDestroy();
     rangeStart = rangeEnd = 0;
   }
 
   public void destroy () {
     for (BubbleView bubble : bubbles) {
-      bubble.destroy();
+      bubble.performDestroy();
     }
   }
 
@@ -370,7 +371,7 @@ public class BubbleWrapView extends View {
   private int startX, startY;
 
   private void clearTouch () {
-    bubbles.get(caughtIndex).cancelDeletion();
+    bubbles.get(caughtIndex).setIsDeleting(false, true);
     caughtIndex = -1;
   }
 
@@ -379,7 +380,7 @@ public class BubbleWrapView extends View {
     BubbleView view = bubbles.get(caughtIndex);
     hideAnimated(caughtIndex, true);
     if (headerView.callback != null) {
-      headerView.callback.onBubbleRemoved(view.getChatId());
+      headerView.callback.onBubbleRemoved(view.getEntry());
     }
   }
 
@@ -417,7 +418,7 @@ public class BubbleWrapView extends View {
             caughtIndex = i;
             deleteIconStroke = Screen.dp(1f);
             deleteIconWidth = Screen.dp(7f);
-            view.startDeletion();
+            view.setIsDeleting(true, true);
             break;
           }
         }
