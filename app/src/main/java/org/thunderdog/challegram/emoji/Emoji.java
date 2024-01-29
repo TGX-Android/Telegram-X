@@ -28,6 +28,7 @@ import androidx.annotation.Nullable;
 
 import com.coremedia.iso.Hex;
 
+import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
@@ -1135,5 +1136,13 @@ public class Emoji {
     if (code.endsWith("\uFE0F"))
       return code.substring(0, code.length() - 1);
     return code;
+  }
+
+  public static String getEmojiFlagFromCountry (String countryCode) {
+    try {
+      return Client.execute(new TdApi.GetCountryFlagEmoji(countryCode)).text;
+    } catch (Client.ExecutionException e) {
+      return null;
+    }
   }
 }

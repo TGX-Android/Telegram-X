@@ -27,6 +27,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -100,6 +101,11 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
           sb.append(Lang.getConcatSeparator());
         }
         String[] info = TGCountry.instance().find(countryCode);
+        String flag = Emoji.getEmojiFlagFromCountry(countryCode);
+        if (!StringUtils.isEmpty(flag)) {
+          sb.append(flag);
+          sb.append(' ');
+        }
         sb.append(info != null ? info[2] : countryCode);
       }
       content.padding(Screen.dp(6));
