@@ -1610,11 +1610,11 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
       chat.lastMessage.interactionInfo.reactions : null, animated);
   }
 
-  private boolean setReactions (TdApi.MessageReaction[] reactions, boolean animated) {
+  private boolean setReactions (@Nullable TdApi.MessageReactions reactions, boolean animated) {
     this.reactionsListEntry.clear();
 
-    if (reactions != null && !isDestroyed) {
-      for (TdApi.MessageReaction reaction : reactions) {
+    if (!Td.isEmpty(reactions) && !isDestroyed) {
+      for (TdApi.MessageReaction reaction : reactions.reactions) {
         String reactionKey = TD.makeReactionKey(reaction.type);
 
         TGReaction reactionObj = tdlib.getReaction(reaction.type);

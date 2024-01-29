@@ -29,8 +29,8 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.dialogs.SearchManager;
+import org.thunderdog.challegram.component.user.BubbleView;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.navigation.ActivityResultHandler;
 import org.thunderdog.challegram.telegram.PrivacySettings;
 import org.thunderdog.challegram.telegram.PrivacySettingsListener;
@@ -52,7 +52,6 @@ import java.util.List;
 
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.LongList;
-import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
 public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.UserPrivacySetting> implements View.OnClickListener, UserPickerMultiDelegate, PrivacySettingsListener, ActivityResultHandler,
@@ -593,15 +592,23 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
   }
 
   @Override
-  public void onAlreadyPickedChatsChanged (List<TGUser> users) {
-    LongList userIds = new LongList(users.size());
-    LongList chatIds = new LongList(users.size());
-    for (TGUser user : users) {
-      long chatId = user.getChatId();
-      if (ChatId.isPrivate(chatId)) {
-        userIds.append(ChatId.toUserId(chatId));
-      } else {
-        chatIds.append(chatId);
+  public void onAlreadyPickedChatsChanged (List<BubbleView.Entry> bubbles) {
+    LongList userIds = new LongList(bubbles.size());
+    LongList chatIds = new LongList(bubbles.size());
+    for (BubbleView.Entry entry : bubbles) {
+      if (entry.senderId == null) {
+        continue;
+      }
+      switch (entry.senderId.getConstructor()) {
+        case TdApi.MessageSenderChat.CONSTRUCTOR:
+          chatIds.append(((TdApi.MessageSenderChat) entry.senderId).chatId);
+          break;
+        case TdApi.MessageSenderUser.CONSTRUCTOR:
+          userIds.append(((TdApi.MessageSenderUser) entry.senderId).userId);
+          break;
+        default:
+          Td.assertMessageSender_439d4c9c();
+          throw Td.unsupported(entry.senderId);
       }
     }
     if (userPickMode == R.id.btn_alwaysAllow) {

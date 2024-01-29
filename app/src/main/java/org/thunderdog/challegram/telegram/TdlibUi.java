@@ -411,7 +411,7 @@ public class TdlibUi extends Handler {
         }
       });
       // TODO TDLib / server: ability to get totalCount with limit=0
-      tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, senderId, 0, 0, 1, null, 0), result -> {
+      tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, senderId, 0, 0, 1, null, 0, null), result -> {
         if (result.getConstructor() == TdApi.FoundChatMessages.CONSTRUCTOR) {
           int moreCount = ((TdApi.FoundChatMessages) result).totalCount - deletingMessages.length;
           if (moreCount > 0) {
@@ -2405,7 +2405,7 @@ public class TdlibUi extends Handler {
             if (Config.SHOW_CHANNEL_POST_REPLY_INFO_IN_COMMENTS) {
               TdApi.Message message = messageThread.getOldestMessage();
               if (message != null && message.replyTo == null && message.forwardInfo != null && tdlib.isChannelAutoForward(message)) {
-                tdlib.send(new TdApi.GetRepliedMessage(message.forwardInfo.fromChatId, message.forwardInfo.fromMessageId), (repliedMessage, repliedMessageError) -> {
+                tdlib.send(new TdApi.GetRepliedMessage(message.forwardInfo.source.chatId, message.forwardInfo.source.messageId), (repliedMessage, repliedMessageError) -> {
                   if (repliedMessage != null) {
                     message.replyTo = new TdApi.MessageReplyToMessage(repliedMessage.chatId, repliedMessage.id, null, null, repliedMessage.date, repliedMessage.content);
                   }
@@ -6692,9 +6692,9 @@ public class TdlibUi extends Handler {
         setStickers(object, StickersType.INSTALLED)
       );
       if (isComplexQuery) {
-        tdlib.client().send(new TdApi.SearchEmojis(query, false, U.getInputLanguages()), result -> {
-          String[] emojis = result.getConstructor() == TdApi.Emojis.CONSTRUCTOR ? ((TdApi.Emojis) result).emojis : null;
-          if (emojis != null && emojis.length > 0) {
+        tdlib.send(new TdApi.SearchEmojis(query, U.getInputLanguages()), (keywords, error) -> {
+          if (keywords != null && keywords.emojiKeywords.length > 0) {
+            String[] emojis = Td.findUniqueEmojis(keywords.emojiKeywords);
             String emojisQuery = TextUtils.join(" ", emojis);
             // Request 2x more than limit for the case all of the stickers returned by GetStickers
             tdlib.client().send(new TdApi.GetStickers(stickerType, emojisQuery, limit * 2, chatId), object ->

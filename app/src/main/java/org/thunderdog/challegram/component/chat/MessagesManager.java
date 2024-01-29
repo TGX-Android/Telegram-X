@@ -673,7 +673,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   private void initPinned (long chatId, int initialLoadCount, int loadCount) {
-    this.pinnedMessages = new MessageListManager(tdlib, initialLoadCount, loadCount, pinnedMessageListener, chatId, 0, null, null, new TdApi.SearchMessagesFilterPinned(), 0);
+    this.pinnedMessages = new MessageListManager(tdlib, initialLoadCount, loadCount, pinnedMessageListener, chatId, 0, null, null, new TdApi.SearchMessagesFilterPinned(), 0, null);
     this.pinnedMessages.addMaxMessageIdListener(pinnedMessageAvailabilityChangeListener);
     this.pinnedMessages.addChangeListener(new MessageListManager.ChangeListener() {
       @Override
@@ -2389,7 +2389,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (object.getConstructor() == TdApi.FoundChatMessages.CONSTRUCTOR) {
           TdApi.FoundChatMessages messages = (TdApi.FoundChatMessages) object;
           if (messages.totalCount > 0 && messages.messages.length == 0 && isRetry.getAndSet(true)) {
-            tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, 0, 0, 10, new TdApi.SearchMessagesFilterUnreadMention(), messageThreadId), this);
+            tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, 0, 0, 10, new TdApi.SearchMessagesFilterUnreadMention(), messageThreadId, null), this);
           } else {
             setMentions(this, messages, isRetry.get() ? 0 : fromMessageId);
           }
@@ -2398,7 +2398,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         }
       }
     };
-    tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, fromMessageId, -9, 10, new TdApi.SearchMessagesFilterUnreadMention(), messageThreadId), mentionsHandler);
+    tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, fromMessageId, -9, 10, new TdApi.SearchMessagesFilterUnreadMention(), messageThreadId, null), mentionsHandler);
   }
 
   private void setMentions (final CancellableResultHandler handler, final TdApi.FoundChatMessages messages, final long fromMessageId) {
@@ -2478,7 +2478,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (object.getConstructor() == TdApi.FoundChatMessages.CONSTRUCTOR) {
           TdApi.FoundChatMessages messages = (TdApi.FoundChatMessages) object;
           if (messages.totalCount > 0 && messages.messages.length == 0 && !isRetry.getAndSet(true)) {
-            tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, 0, 0, 10, new TdApi.SearchMessagesFilterUnreadReaction(), messageThreadId), this);
+            tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, 0, 0, 10, new TdApi.SearchMessagesFilterUnreadReaction(), messageThreadId, null), this);
           } else {
             setUnreadReactions(this, messages, isRetry.get() ? 0 : fromMessageId);
           }
@@ -2487,7 +2487,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         }
       }
     };
-    tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, fromMessageId, -9, 10, new TdApi.SearchMessagesFilterUnreadReaction(), messageThreadId), reactionsHandler);
+    tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, fromMessageId, -9, 10, new TdApi.SearchMessagesFilterUnreadReaction(), messageThreadId, null), reactionsHandler);
   }
 
 

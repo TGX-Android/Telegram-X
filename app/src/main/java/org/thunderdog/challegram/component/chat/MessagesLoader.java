@@ -992,9 +992,12 @@ public class MessagesLoader implements Client.ResultHandler {
         msg.content = message.content;
         if (isLast) {
           msg.interactionInfo = new TdApi.MessageInteractionInfo();
-          msg.interactionInfo.reactions = new TdApi.MessageReaction[]{
-            new TdApi.MessageReaction(new TdApi.ReactionTypeEmoji("\uD83D\uDC4D"), 5, true, mySender, new TdApi.MessageSender[0])
-          };
+          msg.interactionInfo.reactions = new TdApi.MessageReactions(
+            new TdApi.MessageReaction[]{
+              new TdApi.MessageReaction(new TdApi.ReactionTypeEmoji("\uD83D\uDC4D"), 5, true, mySender, new TdApi.MessageSender[0])
+            },
+            false
+          );
         }
         out.add(msg);
         i++;
@@ -1104,7 +1107,7 @@ public class MessagesLoader implements Client.ResultHandler {
             function = new TdApi.SearchSecretMessages(sourceChatId, searchQuery, lastSearchNextOffset, limit, searchFilter);
           } else {
             Log.ensureReturnType(TdApi.SearchChatMessages.class, TdApi.FoundChatMessages.class);
-            function = new TdApi.SearchChatMessages(sourceChatId, searchQuery, searchSender, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, searchFilter, messageThread != null ? messageThread.getMessageThreadId() : 0);
+            function = new TdApi.SearchChatMessages(sourceChatId, searchQuery, searchSender, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, searchFilter, messageThread != null ? messageThread.getMessageThreadId() : 0, null);
           }
           break;
         }
@@ -1117,7 +1120,7 @@ public class MessagesLoader implements Client.ResultHandler {
           if (hasSearchFilter()) {
             loadingLocal = false;
             Log.ensureReturnType(TdApi.SearchChatMessages.class, TdApi.FoundChatMessages.class);
-            function = new TdApi.SearchChatMessages(sourceChatId, null, null, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, searchFilter, messageThread != null ? messageThread.getMessageThreadId() : 0);
+            function = new TdApi.SearchChatMessages(sourceChatId, null, null, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, searchFilter, messageThread != null ? messageThread.getMessageThreadId() : 0, null);
           } else if (messageThread != null) {
             loadingLocal = false;
             Log.ensureReturnType(TdApi.GetMessageThreadHistory.class, TdApi.Messages.class);
@@ -1204,15 +1207,15 @@ public class MessagesLoader implements Client.ResultHandler {
       tdlib.isSelfSender(event.memberId),
       false, false,
       false, false, canBeSaved,
-      false, false, false,
-      false, false, false,
+      false, false,
+      false, false, false, false, false,
       false, false, false,
       isChannel, false,
       false,
       event.date, 0,
       null, null, null, null,
       null, 0,
-      null, 0, 0,
+      null, null, 0, 0,
       0, null,
       0,
       null,

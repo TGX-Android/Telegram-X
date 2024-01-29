@@ -14,98 +14,147 @@
  */
 package org.thunderdog.challegram.component.user;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
-import android.animation.ValueAnimator;
 import android.graphics.Canvas;
 import android.graphics.RectF;
-import android.text.TextUtils;
 import android.view.View;
 
-import org.thunderdog.challegram.U;
+import androidx.annotation.Nullable;
+
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.AvatarPlaceholder;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGUser;
-import org.thunderdog.challegram.loader.ImageFile;
-import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.loader.AvatarReceiver;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.util.text.Text;
+import org.thunderdog.challegram.util.text.TextColorSet;
+import org.thunderdog.challegram.util.text.TextStyleProvider;
+import org.thunderdog.challegram.widget.AttachDelegate;
 
 import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.core.lambda.RunnableData;
+import me.vkryl.td.Td;
 
-public class BubbleView {
+public class BubbleView implements AttachDelegate, Destroyable {
   private static final int FLAG_HIDING = 0x01;
   private static final int FLAG_SHOWING = 0x02;
   private static final int FLAG_MOVING = 0x04;
-  private static final int FLAG_DELETING = 0x08;
 
   private int flags;
 
-  private BubbleWrapView view;
-  private TGUser user;
+  private final BubbleWrapView context;
+  private final Entry entry;
+  private final int width, avatarSize, paddingLeft, avatarRadius;
 
-  private int width, avatarSize;
+  private final BoolAnimator isDeleting;
+
+  private final AvatarReceiver receiver;
   private int x, y;
-  private int paddingLeft;
-  private int avatarRadius;
-  private int textOffset;
+  private Text displayName;
 
-  private String name;
-  private int nameWidth;
+  public static class Entry {
+    public final Tdlib tdlib;
+    public final String id;
+    public final @Nullable TdApi.MessageSender senderId;
+    public final String name;
+    public final @Nullable String shortName;
+    private final RunnableData<AvatarReceiver> avatarLoader;
 
-  private AvatarPlaceholder avatarPlaceholder;
-  private ImageFile avatar;
-  private ImageReceiver receiver;
-
-  public BubbleView (BubbleWrapView view, TGUser user, int maxTextWidth) {
-    this.view = view;
-    this.user = user;
-
-    paddingLeft = Screen.dp(7f);
-    int paddingRight = Screen.dp(11f);
-    avatarRadius = Screen.dp(16f);
-    textOffset = Screen.dp(21f);
-    avatarSize = avatarRadius * 2;
-
-    if ((avatar = user.getAvatar()) == null) {
-      avatarPlaceholder = new AvatarPlaceholder(16f, user.getAvatarPlaceholderMetadata(), null);
+    public Entry (Tdlib tdlib, String id, @Nullable TdApi.MessageSender senderId, String name, @Nullable String shortName, RunnableData<AvatarReceiver> avatarLoader) {
+      this.tdlib = tdlib;
+      this.id = id;
+      this.senderId = senderId;
+      this.name = name;
+      this.shortName = shortName;
+      this.avatarLoader = avatarLoader;
     }
 
-    name = user.getName();
-    buildName(maxTextWidth);
+    public static Entry valueOf (Tdlib tdlib, TGUser user) {
+      TdApi.MessageSender sender = user.getSenderId();
+      return new Entry(
+        tdlib, "sender_" + user.getChatId(),
+        sender,
+        user.getName(),
+        user.getShorterName(),
+        receiver ->
+          receiver.requestMessageSender(tdlib, sender, AvatarReceiver.Options.FORCE_IGNORE_FORUM)
+      );
+    }
 
-    width = nameWidth + paddingLeft + paddingRight + avatarSize;
-
-    if (avatar != null) {
-      receiver = new ImageReceiver(view, avatarRadius);
+    public static Entry valueOf (Tdlib tdlib, TdApi.MessageSender senderId) {
+      final String name = tdlib.senderName(senderId);
+      final String shortName;
+      TdApi.User user = tdlib.senderUser(senderId);
+      if (user != null) {
+        shortName = TD.getShorterUserNameOrNull(user.firstName, user.lastName);
+      } else {
+        shortName = null;
+      }
+      RunnableData<AvatarReceiver> loader = receiver ->
+        receiver.requestMessageSender(tdlib, senderId, AvatarReceiver.Options.FORCE_IGNORE_FORUM);
+      return new Entry(
+        tdlib, "sender_" + Td.getSenderId(senderId), senderId,
+        name, shortName, loader
+      );
     }
   }
 
-  private boolean shortNameAttempt;
+  public static final float RADIUS = 16f;
 
-  private void buildName (int maxWidth) {
-    nameWidth = (int) U.measureText(name, view.paint);
-    if (nameWidth > maxWidth) {
-      if (!shortNameAttempt) {
-        String firstName = this.user.getFirstName();
-        String lastName = this.user.getLastName();
-        if (firstName.length() > 0 && lastName.length() > 0) {
-          shortNameAttempt = true;
-          name = firstName.charAt(0) + ". " + lastName;
-          buildName(maxWidth);
-        }
-      }
-      name = (String) TextUtils.ellipsize(name, view.paint, maxWidth, TextUtils.TruncateAt.END);
-      nameWidth = (int) U.measureText(name, view.paint);
+  public BubbleView (BubbleWrapView context, Entry entry, int maxTextWidth) {
+    this.context = context;
+    this.entry = entry;
+    this.isDeleting = new BoolAnimator(context, AnimatorUtils.DECELERATE_INTERPOLATOR, 120l);
+
+    paddingLeft = Screen.dp(7f);
+    int paddingRight = Screen.dp(11f);
+    avatarRadius = Screen.dp(RADIUS);
+    avatarSize = avatarRadius * 2;
+
+    receiver = new AvatarReceiver(context);
+
+    setName(entry.name, entry.shortName, maxTextWidth);
+
+    width = getNameWidth() + paddingLeft + paddingRight + avatarSize;
+  }
+
+  public Entry getEntry () {
+    return entry;
+  }
+
+  private int getNameWidth () {
+    return displayName != null ? displayName.getWidth() : 0;
+  }
+
+  private void setName (String name, @Nullable String shorterName, int maxWidth) {
+    TextStyleProvider textStyleProvider = Paints.robotoStyleProvider(14f);
+    TextColorSet textColorSet = () ->
+      Theme.getColor(ColorId.headerText);
+    displayName = new Text.Builder(name, maxWidth, textStyleProvider, textColorSet)
+      .singleLine()
+      .build();
+
+    if (displayName.isEllipsized() && !StringUtils.isEmpty(shorterName)) {
+      displayName = new Text.Builder(shorterName, maxWidth, textStyleProvider, textColorSet)
+        .singleLine()
+        .build();
     }
   }
 
   public void requestFile () {
-    if (receiver != null) {
-      receiver.requestFile(avatar);
+    if (entry.avatarLoader != null) {
+      entry.avatarLoader.runWithData(receiver);
+    } else {
+      receiver.clear();
     }
   }
 
@@ -123,10 +172,6 @@ public class BubbleView {
 
   public int getY () {
     return (flags & FLAG_MOVING) != 0 ? toY : y;
-  }
-
-  public long getChatId () {
-    return user.getChatId();
   }
 
   private int toX, diffX, toY, diffY;
@@ -149,7 +194,7 @@ public class BubbleView {
       int cx = x + (int) ((float) diffX * factor);
       int cy = y + (int) ((float) diffY * factor);
       if (Lang.rtl()) {
-        cx = view.getMeasuredWidth() - cx - avatarSize;
+        cx = context.getMeasuredWidth() - cx - avatarSize;
       }
       receiver.setBounds(cx, cy, cx + avatarSize, cy + avatarSize);
     }
@@ -204,8 +249,6 @@ public class BubbleView {
     int cx, cy;
     float scale;
 
-
-
     if ((flags & FLAG_MOVING) != 0) {
       cx = x + (int) ((float) diffX * factor);
       cy = y + (int) ((float) diffY * factor);
@@ -227,139 +270,95 @@ public class BubbleView {
     }
 
     final boolean savedScale = scale != 1f;
+    final int scaleSaveCount;
     if (savedScale) {
-      c.save();
+      scaleSaveCount = Views.save(c);
       float vScale = 1f - (1f - scale) * .65f;
       c.scale(vScale, vScale, cx + (float) width * .5f, cy + avatarRadius);
+    } else {
+      scaleSaveCount = -1;
     }
 
-    // int alpha = (int) (255f * scale);
-    boolean deleting = (deleteFactor != 0f && (flags & FLAG_DELETING) != 0);
-
-    // view.paint.setColor(deleting ? changer.getColor(deleteFactor) : TGTheme.headerPlaceholderColor());
-    view.paint.setColor(ColorUtils.alphaColor(scale, ColorUtils.fromToArgb(ColorUtils.compositeColor(Theme.headerColor(), Theme.headerPlaceholderColor()), Theme.getColor(ColorId.headerRemoveBackground), deleting ? deleteFactor : 0f)));
-    // view.paint.setAlpha(alpha);
+    final int headerColor = Theme.headerColor();
+    final int headerPlaceholderColor = Theme.headerPlaceholderColor();
+    final int headerDeleteColor = Theme.getColor(ColorId.headerRemoveBackground);
+    final int headerOverlayColor = ColorUtils.compositeColor(headerColor, headerPlaceholderColor);
+    final int headerDeleteHighlightColor = Theme.getColor(ColorId.headerRemoveBackgroundHighlight);
+    final float deleteFactor = this.isDeleting.getFloatValue();
+    final boolean isDeleting = deleteFactor != 0f;
+    final int avatarBackgroundColor = ColorUtils.alphaColor(scale,
+      ColorUtils.fromToArgb(
+        headerOverlayColor,
+        headerDeleteHighlightColor,
+        deleteFactor
+      )
+    );
+    final int bubbleBackgroundColor = ColorUtils.alphaColor(
+      scale, ColorUtils.fromToArgb(
+        headerOverlayColor,
+        headerDeleteColor, deleteFactor
+      )
+    );
+    context.paint.setColor(bubbleBackgroundColor);
 
     RectF rectF = Paints.getRectF();
     rectF.set(cx, cy, cx + width, cy + avatarSize);
-    c.drawRoundRect(rectF, avatarRadius, avatarRadius, view.paint);
-    //c.drawRect(cx + avatarRadius, cy, cx + width - avatarRadius, cy + avatarSize, view.paint);
-    //c.drawCircle(cx + width - avatarRadius, cy + avatarRadius, avatarRadius, view.paint);
+    c.drawRoundRect(rectF, avatarRadius, avatarRadius, context.paint);
 
-    view.paint.setColor(ColorUtils.color((int) (255f * scale), 0xffffffff));
-    if (name != null) {
-      c.drawText(name, Lang.rtl() ? cx + width - avatarSize - paddingLeft - nameWidth : cx + avatarSize + paddingLeft, cy + textOffset, view.paint);
+    if (displayName != null) {
+      int startX = Lang.rtl() ? cx + width - avatarSize - paddingLeft - displayName.getWidth() : cx + avatarSize + paddingLeft;
+      int startY = cy + avatarSize / 2 - displayName.getLineHeight(false) / 2;
+      displayName.draw(c, startX, startY, null, scale);
     }
 
     int circleX = Lang.rtl() ? cx + width - avatarRadius : cx + avatarRadius;
-    if (receiver != null) {
-      layoutReceiver();
-      if (receiver.needPlaceholder()) {
-        view.paint.setColor(ColorUtils.alphaColor(scale, ColorUtils.fromToArgb(ColorUtils.compositeColor(Theme.headerColor(), Theme.headerPlaceholderColor()), Theme.getColor(ColorId.headerRemoveBackgroundHighlight), deleting ? deleteFactor : 0f)));
-        c.drawCircle(receiver.centerX(), receiver.centerY(), avatarRadius, view.paint);
-      } else if (deleting) {
-        view.paint.setColor(ColorUtils.alphaColor(scale, Theme.getColor(ColorId.headerRemoveBackgroundHighlight)));
-        c.drawCircle(receiver.centerX(), receiver.centerY(), avatarRadius, view.paint);
-      }
-      receiver.setPaintAlpha(deleting ? scale * (1f - deleteFactor) : scale);
-      if (deleting) {
-        c.save();
-        c.rotate(45f * (Lang.rtl() ? 1f : -1f) * deleteFactor, receiver.centerX(), receiver.centerY());
-      }
-      receiver.draw(c);
-      if (deleting) {
-        c.restore();
-      }
-      receiver.restorePaintAlpha();
-    } else if (avatarPlaceholder != null) {
-      if (deleting) {
-        c.save();
-        c.rotate(45f * (Lang.rtl() ? 1f : -1f) * deleteFactor,  circleX, cy + avatarRadius);
-
-        view.paint.setColor(ColorUtils.alphaColor(scale, Theme.getColor(ColorId.headerRemoveBackgroundHighlight)));
-        c.drawCircle(circleX, cy + avatarRadius, avatarRadius, view.paint);
-      }
-      avatarPlaceholder.draw(c, circleX, cy + avatarRadius, scale * (1f - deleteFactor));
-      if (deleting) {
-        c.restore();
-      }
+    layoutReceiver();
+    if (receiver.needPlaceholder() || isDeleting) {
+      receiver.drawPlaceholderRounded(c, avatarRadius, avatarBackgroundColor);
     }
+    int saveCount = isDeleting ? Views.save(c) : -1;
+    if (isDeleting) {
+      c.rotate(45f * (Lang.rtl() ? 1f : -1f) * deleteFactor, receiver.centerX(), receiver.centerY());
+    }
+    receiver.setPaintAlpha(isDeleting ? scale * (1f - deleteFactor) : scale);
+    receiver.draw(c);
+    if (isDeleting) {
+      Views.restore(c, saveCount);
+    }
+    receiver.restorePaintAlpha();
 
-    if (deleting) {
-      c.save();
+    if (isDeleting) {
+      saveCount = Views.save(c);
       c.rotate(90f + 45f * (Lang.rtl() ? 1f : -1f) * deleteFactor, circleX, cy + avatarRadius);
 
-      view.paint.setColor(ColorUtils.color((int) (255f * scale * deleteFactor), 0xffffffff));
-      c.drawRect(circleX - view.deleteIconWidth, cy + avatarRadius - view.deleteIconStroke, circleX + view.deleteIconWidth, cy + avatarRadius + view.deleteIconStroke, view.paint);
-      c.drawRect(circleX - view.deleteIconStroke, cy + avatarRadius - view.deleteIconWidth, circleX + view.deleteIconStroke, cy + avatarRadius + view.deleteIconWidth, view.paint);
+      context.paint.setColor(ColorUtils.color((int) (255f * scale * deleteFactor), 0xffffffff));
+      c.drawRect(circleX - context.deleteIconWidth, cy + avatarRadius - context.deleteIconStroke, circleX + context.deleteIconWidth, cy + avatarRadius + context.deleteIconStroke, context.paint);
+      c.drawRect(circleX - context.deleteIconStroke, cy + avatarRadius - context.deleteIconWidth, circleX + context.deleteIconStroke, cy + avatarRadius + context.deleteIconWidth, context.paint);
 
-      c.restore();
+      Views.restore(c, saveCount);
     }
 
     if (savedScale) {
-      c.restore();
+      Views.restore(c, scaleSaveCount);
     }
   }
 
-  // Deletion
-
-  private float deleteFactor;
-
-  public void setDeleteFactor (float deleteFactor) {
-    if (this.deleteFactor != deleteFactor) {
-      this.deleteFactor = deleteFactor;
-      view.invalidate(x, y, x + width, y + avatarSize);
-    }
+  public void setIsDeleting (boolean isDeleting, boolean animated) {
+    this.isDeleting.setValue(isDeleting, animated);
   }
 
-  public float getDeleteFactor () {
-    return deleteFactor;
+  @Override
+  public void performDestroy () {
+    receiver.destroy();
   }
 
-  public void startDeletion () {
-    flags |= FLAG_DELETING;
-
-    final float startFactor = getDeleteFactor();
-    final float diffFactor = 1f - startFactor;
-    ValueAnimator obj;
-    obj = AnimatorUtils.simpleValueAnimator();
-    obj.addUpdateListener(animation -> setDeleteFactor(startFactor + diffFactor * AnimatorUtils.getFraction(animation)));
-    obj.setInterpolator(AnimatorUtils.DECELERATE_INTERPOLATOR);
-    obj.setDuration(120l);
-    obj.start();
+  @Override
+  public void attach () {
+    receiver.attach();
   }
 
-  public void cancelDeletion () {
-    final float startFactor = getDeleteFactor();
-    ValueAnimator obj;
-    obj = AnimatorUtils.simpleValueAnimator();
-    obj.addUpdateListener(animation -> setDeleteFactor(startFactor - startFactor * AnimatorUtils.getFraction(animation)));
-    obj.setInterpolator(AnimatorUtils.DECELERATE_INTERPOLATOR);
-    obj.setDuration(120l);
-    obj.addListener(new AnimatorListenerAdapter() {
-      @Override
-      public void onAnimationEnd (Animator animation) {
-        flags &= ~FLAG_DELETING;
-      }
-    });
-    obj.start();
-  }
-
-  public void destroy () {
-    if (receiver != null) {
-      receiver.requestFile(null);
-    }
-  }
-
-  public void onAttachedToWindow () {
-    if (receiver != null) {
-      receiver.attach();
-    }
-  }
-
-  public void onDetachedFromWindow () {
-    if (receiver != null) {
-      receiver.detach();
-    }
+  @Override
+  public void detach () {
+    receiver.detach();
   }
 }

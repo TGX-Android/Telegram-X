@@ -5621,7 +5621,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private void getMessageCount (TdApi.SearchMessagesFilter filter, boolean returnLocal) {
-    tdlib.send(new TdApi.GetChatMessageCount(getChatId(), filter, returnLocal), (messageCount, error) -> {
+    tdlib.send(new TdApi.GetChatMessageCount(getChatId(), filter, /*TODO*/ null, returnLocal), (messageCount, error) -> {
       int count;
       if (error != null) {
         Log.e("TDLib error getMessageCount chatId:%d, filter:%s, returnLocal:%b: %s", getChatId(), filter, returnLocal, TD.toErrorString(error));
