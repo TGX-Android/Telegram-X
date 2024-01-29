@@ -80,6 +80,19 @@ public class Emoji {
 
   private final CountLimiter singleLimiter = newSingleLimiter();
 
+  public static String cleanupEmoji (String emoji) {
+    if (StringUtils.isEmpty(emoji)) {
+      return emoji;
+    }
+    StringBuilder b = new StringBuilder(emoji);
+    int end = b.length();
+    while (b.charAt(end - 1) == '\uFE0F') {
+      b.delete(end - 1, end);
+      end--;
+    }
+    return b.toString();
+  }
+
   public static boolean equals (String a, String b) {
     int end1 = a.length();
     while (end1 > 0 && a.charAt(end1 - 1) == '\uFE0F') {

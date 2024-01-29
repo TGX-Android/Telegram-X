@@ -1543,7 +1543,7 @@ public class RecordAudioVideoController implements
             finishFileGeneration(resultFileSize);
           } else {
             finishFileGeneration(resultFileSize);
-            sendVideoNote(new TdApi.InputMessageVideoNote(new TdApi.InputFileId(roundFile.id), null, savedRoundDurationSeconds, VIDEO_NOTE_LENGTH), Td.newSendOptions(), roundFile);
+            sendVideoNote(new TdApi.InputMessageVideoNote(new TdApi.InputFileId(roundFile.id), null, savedRoundDurationSeconds, VIDEO_NOTE_LENGTH, null), Td.newSendOptions(), roundFile);
           }
         } else {
           finishFileGeneration(-1);
@@ -1670,9 +1670,9 @@ public class RecordAudioVideoController implements
         double endTimeSeconds = videoPreviewView.getEndTime();
         String conversion = VideoGenerationInfo.makeConversion(roundFile.id, false, 0, (long) (startTimeSeconds * 1_000_000), (long) (endTimeSeconds * 1_000_000), true, 0);
         TdApi.InputFileGenerated trimmedFile = new TdApi.InputFileGenerated(roundFile.local.path, conversion, 0);
-        sendVideoNote(new TdApi.InputMessageVideoNote(trimmedFile, null, (int) Math.round(endTimeSeconds - startTimeSeconds), VIDEO_NOTE_LENGTH), initialSendOptions, null);
+        sendVideoNote(new TdApi.InputMessageVideoNote(trimmedFile, null, (int) Math.round(endTimeSeconds - startTimeSeconds), VIDEO_NOTE_LENGTH, null), initialSendOptions, null);
       } else {
-        sendVideoNote(new TdApi.InputMessageVideoNote(new TdApi.InputFileId(roundFile.id), null, savedRoundDurationSeconds, VIDEO_NOTE_LENGTH), initialSendOptions, roundFile);
+        sendVideoNote(new TdApi.InputMessageVideoNote(new TdApi.InputFileId(roundFile.id), null, savedRoundDurationSeconds, VIDEO_NOTE_LENGTH, null), initialSendOptions, roundFile);
       }
     } else {
       tdlib.client().send(new TdApi.DeleteFile(roundFile.id), tdlib.silentHandler());

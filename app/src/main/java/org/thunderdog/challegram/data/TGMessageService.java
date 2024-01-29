@@ -175,6 +175,20 @@ public final class TGMessageService extends TGMessageServiceImpl {
     );
   }
 
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageExpiredVoiceNote expiredVoiceNote) {
+    super(context, msg);
+    setTextCreator(() ->
+      getText(R.string.AttachVoiceNoteExpired)
+    );
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageExpiredVideoNote expiredVideoNote) {
+    super(context, msg);
+    setTextCreator(() ->
+      getText(R.string.AttachVideoNoteExpired)
+    );
+  }
+
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageProximityAlertTriggered proximityAlertTriggered) {
     super(context, msg);
     TdlibSender travelerSender = new TdlibSender(tdlib(), msg.chatId, proximityAlertTriggered.travelerId);
@@ -280,7 +294,12 @@ public final class TGMessageService extends TGMessageServiceImpl {
               staticResId = R.string.ActionPinnedVideo;
               break;
             case TdApi.MessageVoiceNote.CONSTRUCTOR:
+            case TdApi.MessageExpiredVoiceNote.CONSTRUCTOR:
               staticResId = R.string.ActionPinnedVoice;
+              break;
+            case TdApi.MessageVideoNote.CONSTRUCTOR:
+            case TdApi.MessageExpiredVideoNote.CONSTRUCTOR:
+              staticResId = R.string.ActionPinnedRound;
               break;
             case TdApi.MessageSticker.CONSTRUCTOR:
               staticResId = R.string.ActionPinnedSticker;
@@ -297,9 +316,6 @@ public final class TGMessageService extends TGMessageServiceImpl {
               break;
             case TdApi.MessageVenue.CONSTRUCTOR:
               staticResId = R.string.ActionPinnedGeo;
-              break;
-            case TdApi.MessageVideoNote.CONSTRUCTOR:
-              staticResId = R.string.ActionPinnedRound;
               break;
             case TdApi.MessageContact.CONSTRUCTOR:
               staticResId = R.string.ActionPinnedContact;
@@ -360,7 +376,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              Td.assertMessageContent_d40af239();
+              Td.assertMessageContent_cfe6660a();
               throw Td.unsupported(message.content);
           }
           String format = Lang.getString(staticResId);

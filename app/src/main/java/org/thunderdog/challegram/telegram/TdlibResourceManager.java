@@ -86,7 +86,7 @@ public class TdlibResourceManager {
       }
       tdlib.incrementJobReferenceCount();
       tdlib.openChat(chatId, null, () -> {
-        tdlib.client().send(new TdApi.SearchChatMessages(chatId, query, null, 0, 0, 1, new TdApi.SearchMessagesFilterDocument(), 0), result -> {
+        tdlib.client().send(new TdApi.SearchChatMessages(chatId, query, null, 0, 0, 1, new TdApi.SearchMessagesFilterDocument(), 0, null), result -> {
           switch (result.getConstructor()) {
             case TdApi.FoundChatMessages.CONSTRUCTOR: {
               TdApi.FoundChatMessages messages = (TdApi.FoundChatMessages) result;

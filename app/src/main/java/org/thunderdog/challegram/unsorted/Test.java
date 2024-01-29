@@ -110,9 +110,14 @@ public class Test {
     c.showOptions(info, ids.get(), strings.get(), null, null, new OptionDelegate() {
       @Override
       public boolean onOptionItemPressed (View optionItemView, int id) {
-        TdApi.ChatAction action = actions[id];
-        testAction = action.getConstructor() == TdApi.ChatActionCancel.CONSTRUCTOR ? null : action;
-        context.currentTdlib().__sendFakeAction(action);
+        TdApi.ChatAction action = actions[id] == null || actions[id].getConstructor() == TdApi.ChatActionCancel.CONSTRUCTOR ? null : actions[id];
+        testAction = action;
+        final Tdlib tdlib = context.currentTdlib();
+        tdlib.getAllChats(new TdApi.ChatListMain(), chat -> {
+          if (chat.lastMessage != null) {
+            tdlib.sendFakeUpdate(new TdApi.UpdateChatAction(chat.id, 0, chat.lastMessage.senderId, action));
+          }
+        }, null, false);
         return true;
       }
     });
@@ -134,7 +139,7 @@ public class Test {
         userId = Td.getSenderUserId(chat.lastMessage);
       }
       if (chat.lastMessage != null) {
-        tdlib.sendFakeUpdate(new TdApi.UpdateChatAction(chat.id, 0, chat.lastMessage.senderId, tdlib.status().hasStatus(chat.id, 0) ? new TdApi.ChatActionCancel() : testAction != null ? testAction : new TdApi.ChatActionTyping()), false);
+        tdlib.sendFakeUpdate(new TdApi.UpdateChatAction(chat.id, 0, chat.lastMessage.senderId, tdlib.status().hasStatus(chat.id, 0) ? new TdApi.ChatActionCancel() : testAction != null ? testAction : new TdApi.ChatActionTyping()));
       }
       return true;
     }

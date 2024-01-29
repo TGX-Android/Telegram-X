@@ -31,6 +31,8 @@ public class ContentPreview {
   public static final Emoji EMOJI_ROUND_VIDEO = new Emoji("\uD83D\uDCF9", R.drawable.deproko_baseline_msg_video_16);
   public static final Emoji EMOJI_SECRET_PHOTO = new Emoji("\uD83D\uDD25", R.drawable.deproko_baseline_whatshot_16);
   public static final Emoji EMOJI_SECRET_VIDEO = new Emoji("\uD83D\uDD25", R.drawable.deproko_baseline_whatshot_16);
+  public static final Emoji EMOJI_SECRET_VOICE_NOTE = new Emoji("\uD83D\uDD25", R.drawable.deproko_baseline_whatshot_16);
+  public static final Emoji EMOJI_SECRET_VIDEO_NOTE = new Emoji("\uD83D\uDD25", R.drawable.deproko_baseline_whatshot_16);
   public static final Emoji EMOJI_LINK = new Emoji("\uD83D\uDD17", R.drawable.baseline_link_16);
   public static final Emoji EMOJI_GAME = new Emoji("\uD83C\uDFAE", R.drawable.baseline_videogame_asset_16);
   public static final Emoji EMOJI_GROUP = new Emoji("\uD83D\uDC65", R.drawable.baseline_group_16);
@@ -274,22 +276,6 @@ public class ContentPreview {
       case TdApi.MessageDocument.CONSTRUCTOR:
         alternativeText = ((TdApi.MessageDocument) message.content).document.fileName;
         break;
-      case TdApi.MessageVoiceNote.CONSTRUCTOR: {
-        int duration = ((TdApi.MessageVoiceNote) message.content).voiceNote.duration;
-        if (duration > 0) {
-          alternativeText = Lang.getString(R.string.ChatContentVoiceDuration, Lang.getString(R.string.ChatContentVoice), Strings.buildDuration(duration));
-          alternativeTextTranslatable = true;
-        }
-        break;
-      }
-      case TdApi.MessageVideoNote.CONSTRUCTOR: {
-        int duration = ((TdApi.MessageVideoNote) message.content).videoNote.duration;
-        if (duration > 0) {
-          alternativeText = Lang.getString(R.string.ChatContentVoiceDuration, Lang.getString(R.string.ChatContentRoundVideo), Strings.buildDuration(duration));
-          alternativeTextTranslatable = true;
-        }
-        break;
-      }
       case TdApi.MessageAudio.CONSTRUCTOR:
         TdApi.Audio audio = ((TdApi.MessageAudio) message.content).audio;
         alternativeText = Lang.getString(R.string.ChatContentSong, TD.getTitle(audio), TD.getSubtitle(audio));
@@ -349,6 +335,30 @@ public class ContentPreview {
         if (((TdApi.MessageVideo) message.content).isSecret)
           return new ContentPreview(EMOJI_SECRET_VIDEO, R.string.SelfDestructVideo, formattedText);
         break;
+      case TdApi.MessageVoiceNote.CONSTRUCTOR: {
+        if (Td.selfDestructsImmediately(message.selfDestructType)) {
+          return new ContentPreview(EMOJI_SECRET_VOICE_NOTE, R.string.SelfDestructVoiceNote, formattedText);
+        }
+        TdApi.MessageVoiceNote voiceNote = (TdApi.MessageVoiceNote) message.content;
+        int duration = voiceNote.voiceNote.duration;
+        if (duration > 0) {
+          alternativeText = Lang.getString(R.string.ChatContentVoiceDuration, Lang.getString(R.string.ChatContentVoice), Strings.buildDuration(duration));
+          alternativeTextTranslatable = true;
+        }
+        break;
+      }
+      case TdApi.MessageVideoNote.CONSTRUCTOR: {
+        TdApi.MessageVideoNote videoNote = (TdApi.MessageVideoNote) message.content;
+        if (videoNote.isSecret) {
+          return new ContentPreview(EMOJI_SECRET_VIDEO_NOTE, R.string.SelfDestructVideoNote, formattedText);
+        }
+        int duration = videoNote.videoNote.duration;
+        if (duration > 0) {
+          alternativeText = Lang.getString(R.string.ChatContentVoiceDuration, Lang.getString(R.string.ChatContentRoundVideo), Strings.buildDuration(duration));
+          alternativeTextTranslatable = true;
+        }
+        break;
+      }
       case TdApi.MessageAnimation.CONSTRUCTOR:
         // alternativeText = ((TdApi.MessageAnimation) message.content).animation.fileName;
         break;
@@ -623,6 +633,8 @@ public class ContentPreview {
       case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
       case TdApi.MessageExpiredPhoto.CONSTRUCTOR:
       case TdApi.MessageExpiredVideo.CONSTRUCTOR:
+      case TdApi.MessageExpiredVoiceNote.CONSTRUCTOR:
+      case TdApi.MessageExpiredVideoNote.CONSTRUCTOR:
       case TdApi.MessageContactRegistered.CONSTRUCTOR:
 
       case TdApi.MessageChatUpgradeFrom.CONSTRUCTOR:
@@ -653,7 +665,7 @@ public class ContentPreview {
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_d40af239();
+        Td.assertMessageContent_cfe6660a();
         throw Td.unsupported(message.content);
     }
     Refresher refresher = null;
@@ -827,6 +839,39 @@ public class ContentPreview {
           return getNotificationPreview(TdApi.MessageVideo.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, caption);
       }
 
+      case TdApi.PushMessageContentVoiceNote.CONSTRUCTOR: {
+        // FIXME server isSecret
+        String argument = null; // FIXME server ((TdApi.PushMessageContentVoiceNote) push.content).caption;
+        boolean argumentTranslatable = false;
+        if (StringUtils.isEmpty(argument)) {
+          TdApi.VoiceNote voiceNote = ((TdApi.PushMessageContentVoiceNote) push.content).voiceNote;
+          if (voiceNote != null && voiceNote.duration > 0) {
+            argument = Lang.getString(R.string.ChatContentVoiceDuration, Lang.getString(R.string.ChatContentVoice), Strings.buildDuration(voiceNote.duration));
+            argumentTranslatable = true;
+          }
+        }
+        if (((TdApi.PushMessageContentVoiceNote) push.content).isPinned)
+          return getNotificationPinned(R.string.ActionPinnedVoice, TdApi.MessageVoiceNote.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, argument, argumentTranslatable);
+        else
+          return getNotificationPreview(TdApi.MessageVoiceNote.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, argument, argumentTranslatable);
+      }
+
+      case TdApi.PushMessageContentVideoNote.CONSTRUCTOR: {
+        // FIXME server isSecret
+        String argument = null;
+        boolean argumentTranslatable = false;
+        TdApi.PushMessageContentVideoNote pushVideoNote = (TdApi.PushMessageContentVideoNote) push.content;
+        TdApi.VideoNote videoNote = pushVideoNote.videoNote;
+        if (videoNote != null && videoNote.duration > 0) {
+          argument = Lang.getString(R.string.ChatContentVoiceDuration, Lang.getString(R.string.ChatContentRoundVideo), Strings.buildDuration(videoNote.duration));
+          argumentTranslatable = true;
+        }
+        if (((TdApi.PushMessageContentVideoNote) push.content).isPinned)
+          return getNotificationPinned(R.string.ActionPinnedRound, TdApi.MessageVideoNote.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, argument, argumentTranslatable);
+        else
+          return getNotificationPreview(TdApi.MessageVideoNote.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, argument, argumentTranslatable);
+      }
+
       case TdApi.PushMessageContentAnimation.CONSTRUCTOR: {
         String caption = ((TdApi.PushMessageContentAnimation) push.content).caption;
         if (((TdApi.PushMessageContentAnimation) push.content).isPinned)
@@ -888,42 +933,12 @@ public class ContentPreview {
           return getNotificationPreview(TdApi.MessageAudio.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, caption, translatable);
       }
 
-      case TdApi.PushMessageContentVideoNote.CONSTRUCTOR: {
-        String argument = null;
-        boolean argumentTranslatable = false;
-        TdApi.VideoNote videoNote = ((TdApi.PushMessageContentVideoNote) push.content).videoNote;
-        if (videoNote != null && videoNote.duration > 0) {
-          argument = Lang.getString(R.string.ChatContentVoiceDuration, Lang.getString(R.string.ChatContentRoundVideo), Strings.buildDuration(videoNote.duration));
-          argumentTranslatable = true;
-        }
-        if (((TdApi.PushMessageContentVideoNote) push.content).isPinned)
-          return getNotificationPinned(R.string.ActionPinnedRound, TdApi.MessageVideoNote.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, argument, argumentTranslatable);
-        else
-          return getNotificationPreview(TdApi.MessageVideoNote.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, argument, argumentTranslatable);
-      }
-
       case TdApi.PushMessageContentStory.CONSTRUCTOR: {
         if (((TdApi.PushMessageContentStory) push.content).isPinned) {
           return getNotificationPinned(R.string.ActionPinnedStory, TdApi.MessageStory.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
         } else {
           return getNotificationPreview(TdApi.MessageStory.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
         }
-      }
-
-      case TdApi.PushMessageContentVoiceNote.CONSTRUCTOR: {
-        String argument = null; // FIXME server ((TdApi.PushMessageContentVoiceNote) push.content).caption;
-        boolean argumentTranslatable = false;
-        if (StringUtils.isEmpty(argument)) {
-          TdApi.VoiceNote voiceNote = ((TdApi.PushMessageContentVoiceNote) push.content).voiceNote;
-          if (voiceNote != null && voiceNote.duration > 0) {
-            argument = Lang.getString(R.string.ChatContentVoiceDuration, Lang.getString(R.string.ChatContentVoice), Strings.buildDuration(voiceNote.duration));
-            argumentTranslatable = true;
-          }
-        }
-        if (((TdApi.PushMessageContentVoiceNote) push.content).isPinned)
-          return getNotificationPinned(R.string.ActionPinnedVoice, TdApi.MessageVoiceNote.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, argument, argumentTranslatable);
-        else
-          return getNotificationPreview(TdApi.MessageVoiceNote.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, argument, argumentTranslatable);
       }
 
       case TdApi.PushMessageContentGame.CONSTRUCTOR:
@@ -1233,6 +1248,10 @@ public class ContentPreview {
         return new ContentPreview(EMOJI_SECRET_PHOTO, R.string.AttachPhotoExpired);
       case TdApi.MessageExpiredVideo.CONSTRUCTOR:
         return new ContentPreview(EMOJI_SECRET_VIDEO, R.string.AttachVideoExpired);
+      case TdApi.MessageExpiredVoiceNote.CONSTRUCTOR:
+        return new ContentPreview(EMOJI_SECRET_VOICE_NOTE, R.string.AttachVoiceNoteExpired);
+      case TdApi.MessageExpiredVideoNote.CONSTRUCTOR:
+        return new ContentPreview(EMOJI_SECRET_VIDEO_NOTE, R.string.AttachVideoNoteExpired);
       case TdApi.MessageCall.CONSTRUCTOR:
         switch (arg1) {
           case ARG_CALL_DECLINED:
@@ -1324,7 +1343,7 @@ public class ContentPreview {
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_d40af239();
+        Td.assertMessageContent_cfe6660a();
         throw new UnsupportedOperationException(Integer.toString(type));
     }
   }
