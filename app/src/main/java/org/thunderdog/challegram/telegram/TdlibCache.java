@@ -40,7 +40,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
-import org.thunderdog.challegram.util.AppInstallationUtil;
+import org.thunderdog.challegram.util.AppUpdater;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.voip.annotation.CallState;
@@ -53,7 +53,9 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import me.vkryl.android.AppInstallationUtil;
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.LongSparseIntArray;
 import me.vkryl.core.collection.LongSparseLongArray;
 import me.vkryl.core.lambda.CancellableRunnable;
@@ -275,10 +277,11 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   }
 
   private @NonNull AppInstallationUtil.DownloadUrl toDownloadUrl (@Nullable TdApi.HttpUrl url) {
-    if (url != null && tdlib.hasUrgentInAppUpdate()) {
-      return new AppInstallationUtil.DownloadUrl(AppInstallationUtil.InstallerId.UNKNOWN, url.url);
+    final String httpUrl = url != null ? url.url : null;
+    if (!StringUtils.isEmpty(httpUrl) && tdlib.hasUrgentInAppUpdate()) {
+      return new AppInstallationUtil.DownloadUrl(httpUrl);
     }
-    return AppInstallationUtil.getDownloadUrl(url != null ? url.url : null);
+    return AppUpdater.getDownloadUrl(httpUrl);
   }
 
   public void getDownloadUrl (@Nullable final RunnableData<AppInstallationUtil.DownloadUrl> callback) {

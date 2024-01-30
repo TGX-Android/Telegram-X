@@ -6203,7 +6203,7 @@ public class Settings {
     }
 
     public String toHumanReadableFormat () {
-      return Long.toString(result, 16);
+      return "0x" + Long.toString(result, 16);
     }
 
     public long[] toLongArray () {

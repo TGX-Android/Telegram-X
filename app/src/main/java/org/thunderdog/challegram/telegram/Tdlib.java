@@ -66,7 +66,6 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.EditRightsController;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
-import org.thunderdog.challegram.util.AppInstallationUtil;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.UserProvider;
 import org.thunderdog.challegram.util.WrapperProvider;
@@ -100,6 +99,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import me.vkryl.android.AppInstallationUtil;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.FileUtils;
@@ -5824,13 +5824,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           throw new IllegalStateException(Integer.toString(state));
       }
     }
-    long timeZoneOffset = timeZoneOffset();
-    params.put("package_id", UI.getAppContext().getPackageName());
-    String installerName = AppInstallationUtil.getInstallerPackageName();
+    final long timeZoneOffset = timeZoneOffset();
+    final Context context = UI.getAppContext();
+    params.put("package_id", context.getPackageName());
+    String installerName = AppInstallationUtil.getInstallerPackageName(context);
     if (!StringUtils.isEmpty(installerName)) {
       params.put("installer", installerName);
     }
-    String initiatorName = AppInstallationUtil.getInitiatorPackageName();
+    String initiatorName = AppInstallationUtil.getInitiatorPackageName(context);
     if (!StringUtils.isEmpty(initiatorName) && !initiatorName.equals(installerName)) {
       params.put("initiator", initiatorName);
     }
@@ -5919,7 +5920,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       updateNotificationParameters(client);
       client.send(new TdApi.SetOption("storage_max_files_size", new TdApi.OptionValueInteger(Integer.MAX_VALUE)), okHandler);
       client.send(new TdApi.SetOption("ignore_default_disable_notification", new TdApi.OptionValueBoolean(true)), okHandler);
-      client.send(new TdApi.SetOption("ignore_platform_restrictions", new TdApi.OptionValueBoolean(AppInstallationUtil.isAppSideLoaded())), okHandler);
+      client.send(new TdApi.SetOption("ignore_platform_restrictions", new TdApi.OptionValueBoolean(AppInstallationUtil.isAppSideLoaded(UI.getAppContext()))), okHandler);
       client.send(new TdApi.SetOption("process_pinned_messages_as_mentions", new TdApi.OptionValueBoolean(true)), okHandler);
     }
     checkConnectionParams(client, true);
@@ -6746,7 +6747,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public boolean youtubePipEnabled () {
-    return !youtubePipDisabled || AppInstallationUtil.isAppSideLoaded();
+    return !youtubePipDisabled || AppInstallationUtil.isAppSideLoaded(UI.getAppContext());
   }
 
   public RtcServer[] rtcServers () {

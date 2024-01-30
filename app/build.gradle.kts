@@ -115,7 +115,6 @@ android {
         ndkPath = File(sdkDirectory, "ndk/$ndkVersion").absolutePath
         buildConfigString("NDK_VERSION", ndkVersion)
         buildConfigBool("WEBP_ENABLED", true) // variant.minSdkVersion < 19
-        buildConfigBool("SIDE_LOAD_ONLY", variant.sideLoadOnly)
         ndk.abiFilters.clear()
         ndk.abiFilters.addAll(variant.filters)
         externalNativeBuild.ndkBuild.abiFilters(*variant.filters)

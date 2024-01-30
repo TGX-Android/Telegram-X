@@ -126,7 +126,6 @@ import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.TextController;
 import org.thunderdog.challegram.util.AppBuildInfo;
-import org.thunderdog.challegram.util.AppInstallationUtil;
 import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
@@ -166,6 +165,7 @@ import java.util.zip.GZIPInputStream;
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGL11;
 
+import me.vkryl.android.AppInstallationUtil;
 import me.vkryl.android.LocaleUtils;
 import me.vkryl.android.SdkVersion;
 import me.vkryl.core.ArrayUtils;
@@ -2397,9 +2397,13 @@ public class U {
       "Build: `" + Build.FINGERPRINT + "`\n" +
       "Package: " + UI.getAppContext().getPackageName() + "\n" +
       "Locale: " + locale + (!locale.equals(appLocale) ? " (app: " + appLocale + ")" : "");
-    String installerName = AppInstallationUtil.getInstallerPrettyName();
+    String installerName = AppInstallationUtil.getInstallerPackageName(UI.getAppContext());
     if (!StringUtils.isEmpty(installerName)) {
-      metadata += "\nInstaller: " + installerName;
+      metadata += "\nInstaller: " + AppInstallationUtil.prettifyPackageName(installerName);
+    }
+    String initiatorName = AppInstallationUtil.getInitiatorPackageName(UI.getAppContext());
+    if (!StringUtils.isEmpty(initiatorName)) {
+      metadata += "\nInitiator: " + AppInstallationUtil.prettifyPackageName(initiatorName);
     }
     String fingerprint = U.getApkFingerprint("SHA1");
     if (!StringUtils.isEmpty(fingerprint)) {
