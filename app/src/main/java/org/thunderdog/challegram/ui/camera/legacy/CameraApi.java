@@ -88,9 +88,17 @@ public abstract class CameraApi {
       mPreviewWidth = viewWidth;
       mPreviewHeight = viewHeight;
       onPreviewSizeChanged(viewWidth, viewHeight);
+      if (isCameraActive && !isCameraBusy()) {
+        setCameraActive(false);
+        setCameraActive(true);
+      }
     }
   }
   protected abstract void onPreviewSizeChanged (int newWidth, int newHeight);
+
+  private boolean isCameraBusy () {
+    return isVideoCapturing || (roundRecorder != null && roundRecorder.isCapturing());
+  }
 
   /**
    * Open camera preview

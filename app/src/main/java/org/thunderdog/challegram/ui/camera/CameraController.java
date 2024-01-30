@@ -1256,7 +1256,6 @@ public class CameraController extends ViewController<Void> implements CameraDele
       }
 
       int prevOrientation = context().getCurrentOrientation();
-      context().lockOrientation(requestedOrientation);
       checkDisplayRotation();
       return (prevOrientation == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT) != (requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
     }
@@ -1276,7 +1275,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
   public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
     switch (id) {
       case ANIMATOR_ROTATION:
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR2) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR2 && finalFactor % 90.0f == 0.0f) {
           applyFakeRotation();
         }
         break;
