@@ -10377,7 +10377,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           version = document.fileName.substring(prefix.length(), i == -1 ? document.fileName.length() : i);
           if (version.matches("^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$")) {
             buildNo = StringUtils.parseInt(version.substring(version.lastIndexOf('.') + 1));
-            if (buildNo > BuildConfig.ORIGINAL_VERSION_CODE || BuildConfig.DEBUG) {
+            if (buildNo > BuildConfig.ORIGINAL_VERSION_CODE) {
               ok = true;
             }
           }
