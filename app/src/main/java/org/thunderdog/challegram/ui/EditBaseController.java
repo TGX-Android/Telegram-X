@@ -109,6 +109,10 @@ public abstract class EditBaseController<T> extends ViewController<T> implements
     return wrapper;
   }
 
+  public RecyclerView getRecyclerView () {
+    return recyclerView;
+  }
+
   @Override
   public int getRootColorId () {
     return getRecyclerBackgroundColorId();

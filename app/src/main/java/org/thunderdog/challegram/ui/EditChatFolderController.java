@@ -28,7 +28,6 @@ import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.IdRes;
@@ -51,7 +50,6 @@ import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGFoundChat;
 import org.thunderdog.challegram.navigation.EditHeaderView;
-import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
@@ -72,7 +70,6 @@ import org.thunderdog.challegram.util.AdapterSubListUpdateCallback;
 import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.util.ListItemDiffUtilCallback;
 import org.thunderdog.challegram.util.PremiumLockModifier;
-import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 
@@ -88,7 +85,7 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.Td;
 
-public class EditChatFolderController extends RecyclerViewController<EditChatFolderController.Arguments> implements View.OnClickListener, View.OnLongClickListener, SettingsAdapter.TextChangeListener, SelectChatsController.Delegate, ChatFoldersListener, ChatFolderListener {
+public class EditChatFolderController extends EditBaseController<EditChatFolderController.Arguments> implements View.OnClickListener, View.OnLongClickListener, SettingsAdapter.TextChangeListener, SelectChatsController.Delegate, ChatFoldersListener, ChatFolderListener {
 
   private static final int NO_CHAT_FOLDER_ID = 0;
   private static final int COLLAPSED_CHAT_COUNT = 3;
@@ -199,6 +196,11 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
   }
 
   @Override
+  protected int getRecyclerBackgroundColorId () {
+    return ColorId.background;
+  }
+
+  @Override
   public void setArguments (Arguments args) {
     super.setArguments(args);
     this.chatFolderId = args.chatFolderId;
@@ -207,7 +209,7 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
   }
 
   @Override
-  protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
+  protected void onCreateView (Context context, FrameLayoutFix contentView, RecyclerView recyclerView) {
     if (Config.CHAT_FOLDERS_REDESIGN) {
       headerCell = new EditHeaderView(context, this);
       headerCell.setInput(editedChatFolder.title);
@@ -370,25 +372,6 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
   }
 
   @Override
-  protected int getMenuId () {
-    return R.id.menu_done;
-  }
-
-  @Override
-  public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
-    if (id == R.id.menu_done) {
-      header.addDoneButton(menu, this).setVisibility(canSaveChanges() ? View.VISIBLE : View.GONE);
-    }
-  }
-
-  @Override
-  public void onMenuItemPressed (int id, View view) {
-    if (id == R.id.menu_btn_done) {
-      saveChanges(this::closeSelf);
-    }
-  }
-
-  @Override
   public void onClick (View v) {
     int id = v.getId();
     if (id == R.id.btn_folderIncludeChats) {
@@ -462,6 +445,14 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
   }
 
   @Override
+  protected boolean onDoneClick () {
+    if (!isInProgress()) {
+      saveChanges(this::closeSelf);
+    }
+    return true;
+  }
+
+  @Override
   public boolean onBackPressed (boolean fromTop) {
     if (hasUnsavedChanges()) {
       showUnsavedChangesPromptBeforeLeaving(/* onConfirm */ null);
@@ -485,7 +476,7 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
   @Override
   public void onPrepareToShow () {
     super.onPrepareToShow();
-    updateMenuButton();
+    updateDoneButton();
   }
 
   @Override
@@ -504,7 +495,7 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
 
   private void onTitleChanged (String text) {
     editedChatFolder.title = text;
-    updateMenuButton();
+    updateDoneButton();
   }
 
   private void fillIncludedChats (TdApi.ChatFolder chatFolder, List<ListItem> outList) {
@@ -594,7 +585,7 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
       this.originChatFolder = TD.copyOf(chatFolder);
     }
     this.editedChatFolder = chatFolder;
-    updateMenuButton();
+    updateDoneButton();
     updateIncludedChats();
     updateExcludedChats();
   }
@@ -745,7 +736,7 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
         editedChatFolder.excludeArchived = false;
       }
       updateFolderName();
-      updateMenuButton();
+      updateDoneButton();
     });
   }
 
@@ -783,15 +774,28 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
   }
 
   private void createChatFolder (TdApi.ChatFolder chatFolder, Runnable after) {
-    tdlib.send(new TdApi.CreateChatFolder(chatFolder), tdlib.successHandler(after));
+    executeWithProgress(new TdApi.CreateChatFolder(chatFolder), after);
   }
 
   private void editChatFolder (int chatFolderId, TdApi.ChatFolder chatFolder, Runnable after) {
-    tdlib.send(new TdApi.EditChatFolder(chatFolderId, chatFolder), tdlib.successHandler(after));
+    executeWithProgress(new TdApi.EditChatFolder(chatFolderId, chatFolder), after);
   }
 
   private void deleteChatFolder (int chatFolderId) {
-    tdlib.send(new TdApi.DeleteChatFolder(chatFolderId, null), tdlib.typedOkHandler(this::closeSelf));
+    executeWithProgress(new TdApi.DeleteChatFolder(chatFolderId, null), this::closeSelf);
+  }
+
+  private void executeWithProgress (TdApi.Function<?> request, Runnable onResult) {
+    setInProgress(true);
+    tdlib.send(request, (result, error) -> runOnUiThreadOptional(() -> {
+      setInProgress(false);
+      updateDoneButton();
+      if (error != null) {
+        UI.showError(error);
+      } else {
+        onResult.run();
+      }
+    }));
   }
 
   private void closeSelf () {
@@ -810,10 +814,9 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
     }
   }
 
-  private void updateMenuButton () {
-    if (headerView != null) {
-      headerView.updateButton(getMenuId(), R.id.menu_btn_done, canSaveChanges() ? View.VISIBLE : View.GONE, 0);
-    }
+  private void updateDoneButton () {
+    boolean isDoneVisible = isInProgress() || canSaveChanges();
+    setDoneVisible(isDoneVisible);
   }
 
   private class Adapter extends SettingsAdapter {
@@ -989,7 +992,7 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
       if (!Td.equalsTo(editedChatFolder.icon, selectedIcon)) {
         editedChatFolder.icon = selectedIcon;
         updateFolderIcon();
-        updateMenuButton();
+        updateDoneButton();
       }
     });
   }
