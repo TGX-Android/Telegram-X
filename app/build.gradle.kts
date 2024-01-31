@@ -201,7 +201,7 @@ dependencies {
   implementation("androidx.work:work-runtime:2.9.0")
   implementation("androidx.browser:browser:1.5.0") // 1.7.0+ requires minSdkVersion 19
   implementation("androidx.exifinterface:exifinterface:1.3.7")
-  implementation("androidx.collection:collection:1.3.0")
+  implementation("androidx.collection:collection:1.4.0")
   implementation("androidx.interpolator:interpolator:1.0.0")
   implementation("androidx.gridlayout:gridlayout:1.0.0")
   // CameraX: https://developer.android.com/jetpack/androidx/releases/camera
