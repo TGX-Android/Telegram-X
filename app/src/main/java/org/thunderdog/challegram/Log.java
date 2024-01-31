@@ -453,13 +453,15 @@ public class Log {
         level = Log.LEVEL_VERBOSE;
         tags = TAG_NDK | TAG_CRASH;
       } else {
-        settings = prefs.getInt(Settings.KEY_LOG_SETTINGS, 0);
-        level = prefs.getInt(Settings.KEY_LOG_LEVEL, Log.LEVEL_ASSERT);
-        long defaultTags = Log.TAG_CRASH | Log.TAG_FCM | Log.TAG_ACCOUNTS;
+        int defaultLogSettings = BuildConfig.DEBUG ? Log.SETTING_ANDROID_LOG : 0;
+        int defaultLogLevel = BuildConfig.DEBUG ? Log.LEVEL_VERBOSE : Log.LEVEL_ASSERT;
+        long defaultLogTags = Log.TAG_CRASH | Log.TAG_FCM | Log.TAG_ACCOUNTS;
         if (Config.DEBUG_GALAXY_TAB_2) {
-          defaultTags |= Log.TAG_INTRO;
+          defaultLogTags |= Log.TAG_INTRO;
         }
-        tags = prefs.getLong(Settings.KEY_LOG_TAGS, defaultTags);
+        settings = prefs.getInt(Settings.KEY_LOG_SETTINGS, defaultLogSettings);
+        level = prefs.getInt(Settings.KEY_LOG_LEVEL, defaultLogLevel);
+        tags = prefs.getLong(Settings.KEY_LOG_TAGS, defaultLogTags);
       }
 
       setLogLevelImpl(level);
