@@ -869,9 +869,6 @@ public class TdlibMessageViewer {
     }
     if (this.needRestrictScreenshots != needRestrictScreenshots) {
       this.needRestrictScreenshots = needRestrictScreenshots;
-      if (BuildConfig.DEBUG) {
-        UI.showToast("update restrictScreenshots to " + needRestrictScreenshots, Toast.LENGTH_SHORT);
-      }
       for (Listener listener : listeners) {
         listener.onNeedRestrictScreenshots(this, needRestrictScreenshots);
       }
