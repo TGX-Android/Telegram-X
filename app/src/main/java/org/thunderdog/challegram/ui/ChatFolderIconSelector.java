@@ -47,6 +47,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.ObjectUtils;
 import me.vkryl.core.StringUtils;
 
 public class ChatFolderIconSelector {
@@ -81,7 +82,8 @@ public class ChatFolderIconSelector {
           @Override
           protected void onDraw (Canvas canvas) {
             ListItem item = (ListItem) getTag();
-            if (ObjectsCompat.equals(selectedIconName, item.getStringValue())) {
+            String iconName = item.getStringValue();
+            if (isSelectedIcon(iconName)) {
               canvas.drawCircle(getWidth() / 2f, getHeight() / 2f, Screen.dp(24f), Paints.fillingPaint(Theme.fillingColor()));
             }
             super.onDraw(canvas);
@@ -168,6 +170,18 @@ public class ChatFolderIconSelector {
   private int computeSpanCount (int width) {
     int itemSize = Screen.dp(56f);
     return Math.max(width / itemSize, 3);
+  }
+
+  private boolean isSelectedIcon (@Nullable String iconName) {
+    return isSameIcon(selectedIconName, iconName);
+  }
+
+  private static boolean isSameIcon (@Nullable String a, @Nullable String b) {
+    return ObjectUtils.equals(a, b) || (isFolderIcon(a) && isFolderIcon(b));
+  }
+
+  private static boolean isFolderIcon (@Nullable String iconName) {
+    return StringUtils.isEmpty(iconName) || "Custom".equals(iconName);
   }
 
   public interface Delegate {
