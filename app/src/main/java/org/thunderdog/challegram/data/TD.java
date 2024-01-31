@@ -243,7 +243,7 @@ public class TD {
         return permissions.canPinMessages;
       // Same right, but different meaning
       case RightId.MANAGE_OR_CREATE_TOPICS:
-        return permissions.canManageTopics;
+        return permissions.canCreateTopics;
       // Admin-only
       case RightId.ADD_NEW_ADMINS:
       case RightId.BAN_USERS:
@@ -270,7 +270,7 @@ public class TD {
     if (a.forwardInfo == null) {
       return a.chatId == b.chatId;
     }
-    if (a.forwardInfo.origin.getConstructor() != b.forwardInfo.origin.getConstructor() || a.forwardInfo.fromChatId != b.forwardInfo.fromChatId)
+    if (a.forwardInfo.origin.getConstructor() != b.forwardInfo.origin.getConstructor() || !Td.equalsTo(a.forwardInfo.source, b.forwardInfo.source, false))
       return false;
     if (splitAuthors) {
       switch (a.forwardInfo.origin.getConstructor()) {
@@ -1094,7 +1094,7 @@ public class TD {
         return false;
       }
       default: {
-        Td.assertMessageContent_d40af239();
+        Td.assertMessageContent_cfe6660a();
       }
     }
     return true;
@@ -1218,7 +1218,7 @@ public class TD {
       (a.canInviteUsers != defaultPermissions.canInviteUsers && defaultPermissions.canInviteUsers) ||
       (a.canPinMessages != defaultPermissions.canPinMessages && defaultPermissions.canPinMessages) ||
       (a.canChangeInfo != defaultPermissions.canChangeInfo && defaultPermissions.canChangeInfo) ||
-      (a.canManageTopics != defaultPermissions.canManageTopics && defaultPermissions.canManageTopics);
+      (a.canCreateTopics != defaultPermissions.canCreateTopics && defaultPermissions.canCreateTopics);
   }
 
   public static int getCombineMode (TdApi.Message message) {
@@ -2028,17 +2028,11 @@ public class TD {
       TdlibAccentColor.defaultAccentColorIdForUserId(userId), 0,
       0, 0,
       null,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      null,
-      false,
-      false,
+      false, false, false,
       false, false,
-      true,
+      false, null, false, false,
+      false, false,
+      false, true,
       new TdApi.UserTypeRegular(),
       null,
       false
@@ -5047,9 +5041,11 @@ public class TD {
     switch (message.content.getConstructor()) {
       case TdApi.MessageExpiredPhoto.CONSTRUCTOR:
       case TdApi.MessageExpiredVideo.CONSTRUCTOR:
+      case TdApi.MessageExpiredVoiceNote.CONSTRUCTOR:
+      case TdApi.MessageExpiredVideoNote.CONSTRUCTOR:
         return true;
       default:
-        Td.assertMessageContent_d40af239();
+        Td.assertMessageContent_cfe6660a();
         break;
     }
     return false;

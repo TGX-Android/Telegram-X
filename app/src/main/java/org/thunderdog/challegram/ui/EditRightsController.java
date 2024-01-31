@@ -1471,7 +1471,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         if (getArgumentsStrict().mode == MODE_ADMIN_PROMOTION) {
           targetAdmin.rights.canManageTopics = newValue;
         } else {
-          targetRestrict.permissions.canManageTopics = newValue;
+          targetRestrict.permissions.canCreateTopics = newValue;
         }
         break;
       case RightId.POST_STORIES:
@@ -1615,7 +1615,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         if (getArgumentsStrict().mode == MODE_ADMIN_PROMOTION) {
           return targetAdmin.rights.canManageTopics;
         } else {
-          return canViewMessages && targetRestrict.permissions.canManageTopics;
+          return canViewMessages && targetRestrict.permissions.canCreateTopics;
         }
       case RightId.POST_STORIES:
         return targetAdmin.rights.canPostStories;

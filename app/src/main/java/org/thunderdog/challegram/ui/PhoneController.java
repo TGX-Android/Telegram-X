@@ -65,10 +65,8 @@ import org.thunderdog.challegram.tool.TGCountry;
 import org.thunderdog.challegram.tool.TGPhoneFormat;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
-import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.NoUnderlineClickableSpan;
-import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import org.thunderdog.challegram.widget.NoScrollTextView;
@@ -1079,12 +1077,17 @@ public class PhoneController extends EditBaseController<Void> implements Setting
     }
   }
 
+  private AlertDialog emulatorPrompt;
+
   private void showEmulatorPrompt () {
     if (mode != MODE_LOGIN) {
       return;
     }
     context.forceRunEmulatorChecks(detectionResult -> executeOnUiThreadOptional(() -> {
-      if (detectionResult != null && (detectionResult.isEmulatorDetected() || BuildConfig.DEBUG)) {
+      if (detectionResult != null && detectionResult.isEmulatorDetected()) {
+        if (emulatorPrompt != null && emulatorPrompt.isShowing()) {
+          return;
+        }
         AlertDialog.Builder b = new AlertDialog.Builder(context, Theme.dialogTheme());
         b.setTitle(Lang.getString(R.string.EmulatorWarningTitle));
         b.setMessage(Lang.getMarkdownStringSecure(this, R.string.EmulatorWarning));
@@ -1145,7 +1148,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
           }
         });
         b.setCancelable(false);
-        showAlert(b);
+        emulatorPrompt = showAlert(b);
       }
     }));
   }

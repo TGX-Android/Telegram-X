@@ -16,6 +16,7 @@ package org.thunderdog.challegram.ui;
 
 import android.content.Context;
 import android.os.Build;
+import android.text.TextUtils;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,6 +31,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.emoji.GifView;
 import org.thunderdog.challegram.component.emoji.MediaStickersAdapter;
@@ -59,6 +61,8 @@ import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.ForceTouchView;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
@@ -68,6 +72,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.collection.LongList;
+import me.vkryl.td.Td;
 
 public class EmojiStatusListController extends ViewController<EmojiLayout> implements
   StickerSmallView.StickerMovementCallback, StickerPreviewView.MenuStickerPreviewCallback,
@@ -938,34 +943,23 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
                 getCustomEmojiStickers(recentEmojiList.get(), serviceStickersHandler(null))))))
         );
       } else {
-        if (StringUtils.isEmpty(currentEmojiSearchRequest)) {
-          tdlib.client().send(new TdApi.SearchEmojis(currentTextSearchRequest, false, new String[] {"en"}), obj -> {
-            switch (obj.getConstructor()) {
-              case TdApi.Emojis.CONSTRUCTOR: {
-                TdApi.Emojis emojis = (TdApi.Emojis) obj;
-                if (emojis.emojis.length > 0) {
-                  StringBuilder b = new StringBuilder();
-                  for (String emoji : emojis.emojis) {
-                    if (b.length() > 0) {
-                      b.append(" ");
-                    }
-                    b.append(emoji);
-                  }
-
-                  tdlib.client().send(new TdApi.SearchStickers(new TdApi.StickerTypeCustomEmoji(), b.toString(), 200), serviceStickersHandler(currentTextSearchRequest));
-                } else {
-                  tdlib.client().send(new TdApi.SearchInstalledStickerSets(new TdApi.StickerTypeCustomEmoji(), currentTextSearchRequest, 200), stickerSetsHandler(false));
-                }
-                break;
-              }
-              case TdApi.Error.CONSTRUCTOR: {
-                UI.showError(obj);
-                break;
-              }
+        if (!StringUtils.isEmpty(currentEmojiSearchRequest)) {
+          tdlib.client().send(new TdApi.SearchStickers(new TdApi.StickerTypeCustomEmoji(), currentEmojiSearchRequest, 200), serviceStickersHandler(currentTextSearchRequest));
+        } else {
+          final String textQuery = currentTextSearchRequest;
+          tdlib.send(new TdApi.SearchEmojis(textQuery, U.getInputLanguages()), (keywords, error) -> {
+            if (error != null) {
+              UI.showError(error);
+              return;
+            }
+            String[] uniqueEmojis = Td.findUniqueEmojis(keywords.emojiKeywords);
+            if (uniqueEmojis.length > 0) {
+              String uniqueEmojisQuery = TextUtils.join(" ", uniqueEmojis);
+              tdlib.client().send(new TdApi.SearchStickers(new TdApi.StickerTypeCustomEmoji(), uniqueEmojisQuery, 200), serviceStickersHandler(currentTextSearchRequest));
+            } else {
+              tdlib.client().send(new TdApi.SearchInstalledStickerSets(new TdApi.StickerTypeCustomEmoji(), textQuery, 200), stickerSetsHandler(false));
             }
           });
-        } else {
-          tdlib.client().send(new TdApi.SearchStickers(new TdApi.StickerTypeCustomEmoji(), currentEmojiSearchRequest, 200), serviceStickersHandler(currentTextSearchRequest));
         }
       }
     }

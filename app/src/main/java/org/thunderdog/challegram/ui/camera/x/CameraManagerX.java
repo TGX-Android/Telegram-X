@@ -22,7 +22,6 @@ import android.view.TextureView;
 import android.view.View;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraInfoUnavailableException;
@@ -31,9 +30,19 @@ import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageCapture;
 import androidx.camera.core.ImageCaptureException;
 import androidx.camera.core.Preview;
-import androidx.camera.core.VideoCapture;
 import androidx.camera.core.ZoomState;
+import androidx.camera.core.impl.UseCaseConfigFactory;
+import androidx.camera.core.resolutionselector.AspectRatioStrategy;
+import androidx.camera.core.resolutionselector.ResolutionSelector;
 import androidx.camera.lifecycle.ProcessCameraProvider;
+import androidx.camera.video.FallbackStrategy;
+import androidx.camera.video.FileOutputOptions;
+import androidx.camera.video.Quality;
+import androidx.camera.video.QualitySelector;
+import androidx.camera.video.Recorder;
+import androidx.camera.video.Recording;
+import androidx.camera.video.VideoCapture;
+import androidx.camera.video.VideoRecordEvent;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
@@ -50,13 +59,12 @@ import org.thunderdog.challegram.ui.camera.CameraQrBridge;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @TargetApi(Build.VERSION_CODES.LOLLIPOP)
 public class CameraManagerX extends CameraManager<PreviewView> {
-  private static final boolean REUSE_PREVIEW_DISABLED = true;
-  private static final boolean REUSE_CAPTURE_DISABLED = true;
-
   public CameraManagerX (Context context, CameraDelegate delegate) {
     super(context, delegate);
   }
@@ -74,14 +82,14 @@ public class CameraManagerX extends CameraManager<PreviewView> {
   private boolean isOpen;
   private ProcessCameraProvider cameraProvider;
   private ImageCapture imageCapture;
-  private VideoCapture videoCapture;
+  private VideoCapture<Recorder> videoCapture;
+  private Recording videoRecording;
+  private VideoRecordEvent videoRecordStatus;
   private Preview preview;
   private int previewRotation;
   private Camera camera;
   private int flashMode = ImageCapture.FLASH_MODE_OFF;
   private boolean originalFacing;
-  private int lastAspectRatio;
-  private Rational lastAspectRatioCustom;
   private CameraQrBridge cameraQrBridge;
 
   @Override
@@ -122,9 +130,7 @@ public class CameraManagerX extends CameraManager<PreviewView> {
       } else {
         aspectRatioCustom = new Rational(Math.min(width, height), Math.max(width, height));
       }
-      if (lastAspectRatio != aspectRatio || (aspectRatioCustom == null) != (lastAspectRatioCustom == null) || (aspectRatioCustom != null && !aspectRatioCustom.equals(lastAspectRatioCustom))) {
-        bindPreview();
-      }
+      bindPreview();
     }
   }
 
@@ -139,42 +145,26 @@ public class CameraManagerX extends CameraManager<PreviewView> {
     if (!isOpen || isPaused || cameraProvider == null)
       return;
 
+    // Must unbind the use-cases before rebinding them
+    cameraProvider.unbindAll();
+
+    AspectRatioStrategy aspectRatioStrategy;
     int aspectRatioMode = Settings.instance().getCameraAspectRatioMode();
-    Rational aspectRatioCustom = null;
-    int aspectRatio = AspectRatio.RATIO_16_9;
     switch (aspectRatioMode) {
-      case Settings.CAMERA_RATIO_1_1:
-        aspectRatioCustom = new Rational(1, 1);
-        break;
-      case Settings.CAMERA_RATIO_4_3:
-        aspectRatio = AspectRatio.RATIO_4_3;
-        break;
-      case Settings.CAMERA_RATIO_FULL_SCREEN: {
-        int width = getParentWidth();
-        int height = getParentHeight();
-        if (width == 0 || height == 0)
-          return;
-        float ratio = (float) Math.max(width, height) / (float) Math.min(width, height);
-        if (ratio == 16f / 9f) {
-          aspectRatio = AspectRatio.RATIO_16_9;
-        } else if (ratio == 4f / 3f) {
-          aspectRatio = AspectRatio.RATIO_4_3;
-        } else if (ratio == 1f) {
-          aspectRatioCustom = new Rational(1, 1);
-        } else {
-          aspectRatioCustom = new Rational(Math.min(width, height), Math.max(width, height));
-        }
-        break;
-      }
+      case Settings.CAMERA_RATIO_FULL_SCREEN:
       case Settings.CAMERA_RATIO_16_9:
+        aspectRatioStrategy = AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY;
+        break;
+      case Settings.CAMERA_RATIO_1_1:
+      case Settings.CAMERA_RATIO_4_3:
       default:
-        aspectRatio = AspectRatio.RATIO_16_9;
+        aspectRatioStrategy = AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY;
         break;
     }
 
-
-    // Must unbind the use-cases before rebinding them
-    cameraProvider.unbindAll();
+    ResolutionSelector resolutionSelector = new ResolutionSelector.Builder()
+      .setAspectRatioStrategy(aspectRatioStrategy)
+      .build();
 
     final int lensFacing = preferFrontFacingCamera() ? CameraSelector.LENS_FACING_FRONT : CameraSelector.LENS_FACING_BACK;
 
@@ -190,65 +180,51 @@ public class CameraManagerX extends CameraManager<PreviewView> {
       Log.e(Log.TAG_CAMERA, "Unable to camera %d", lensFacing);
     }
 
-    if (REUSE_PREVIEW_DISABLED || preview == null || previewRotation != getSurfaceRotation()) {
-      Preview.Builder previewBuilder = new Preview.Builder()
-        .setTargetRotation(previewRotation = getSurfaceRotation());
-      if (aspectRatioCustom != null) {
-        previewBuilder.setTargetResolution(toSize(aspectRatioCustom, getSurfaceRotation()));
-      } else {
-        previewBuilder.setTargetAspectRatio(aspectRatio);
-      }
-      preview = previewBuilder.build();
-    }
+    Preview.Builder previewBuilder = new Preview.Builder()
+      .setTargetRotation(previewRotation = getSurfaceRotation())
+      .setResolutionSelector(resolutionSelector);
+    preview = previewBuilder.build();
 
-    if (REUSE_CAPTURE_DISABLED || imageCapture == null) {
-      ImageCapture.Builder imageCaptureBuilder = new ImageCapture.Builder()
-        .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-        .setFlashMode(flashMode)
-        .setTargetRotation(getSurfaceRotation());
-      if (aspectRatioCustom != null) {
-        imageCaptureBuilder.setTargetResolution(toSize(aspectRatioCustom, getSurfaceRotation()));
-      } else {
-        imageCaptureBuilder.setTargetAspectRatio(aspectRatio);
-      }
-      imageCapture = imageCaptureBuilder.build();
-    } else {
-      imageCapture.setFlashMode(flashMode);
-      imageCapture.setTargetRotation(getSurfaceRotation());
-    }
-    if (REUSE_CAPTURE_DISABLED || videoCapture == null) {
-      VideoCapture.Builder b = new VideoCapture.Builder()
-        .setTargetRotation(getSurfaceRotation());
-      if (aspectRatioCustom != null) {
-        b.setTargetResolution(toSize(aspectRatioCustom, getSurfaceRotation()));
-      } else {
-        b.setTargetAspectRatio(aspectRatio);
-      }
-      videoCapture = b.build();
-    } else {
-      videoCapture.setTargetRotation(getSurfaceRotation());
-    }
-
-    ImageAnalysis imageAnalyzer = new ImageAnalysis.Builder()
+    ImageCapture.Builder imageCaptureBuilder = new ImageCapture.Builder()
+      .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+      .setFlashMode(flashMode)
       .setTargetRotation(getSurfaceRotation())
-      .setTargetAspectRatio(aspectRatio)
+      .setResolutionSelector(resolutionSelector);
+    imageCapture = imageCaptureBuilder.build();
+
+    QualitySelector qualitySelector = QualitySelector.fromOrderedList(
+      Arrays.asList(Quality.FHD, Quality.HD, Quality.SD),
+      FallbackStrategy.lowerQualityOrHigherThan(Quality.SD)
+    );
+    Recorder recorder = new Recorder.Builder()
+      .setQualitySelector(qualitySelector)
+      .build();
+    videoCapture = new VideoCapture.Builder<>(recorder)
+      .setCaptureType(UseCaseConfigFactory.CaptureType.VIDEO_CAPTURE)
+      .setTargetRotation(getSurfaceRotation())
+      .setResolutionSelector(resolutionSelector)
       .build();
 
-    if (delegate.useQrScanner()) {
+    ImageAnalysis imageAnalyzer;
+
+    boolean needQrScanner = delegate.useQrScanner();
+    if (needQrScanner) {
+      imageAnalyzer = new ImageAnalysis.Builder()
+        .setTargetRotation(getSurfaceRotation())
+        .setResolutionSelector(resolutionSelector)
+        .build();
       if (cameraQrBridge == null) {
         cameraQrBridge = new CameraQrBridge(this);
       }
-
       imageAnalyzer.setAnalyzer(cameraQrBridge.backgroundExecutor, proxy -> cameraQrBridge.processImage(proxy));
+    } else {
+      imageAnalyzer = null;
     }
-
-    lastAspectRatio = aspectRatio;
-    lastAspectRatioCustom = aspectRatioCustom;
 
     try {
       // A variable number of use-cases can be passed here -
       // camera provides access to CameraControl & CameraInfo
-      if (delegate.useQrScanner()) {
+      if (needQrScanner) {
         // We probably don't want to take photos or videos while scanning QR codes. (Also, there are 3 use case limit in CameraX)
         this.camera = cameraProvider.bindToLifecycle((LifecycleOwner) context, cameraSelector, preview, imageAnalyzer);
       } else {
@@ -271,13 +247,14 @@ public class CameraManagerX extends CameraManager<PreviewView> {
     if (this.isOpen) {
       if (cameraProvider != null) {
         cameraProvider.unbindAll();
-        if (REUSE_PREVIEW_DISABLED) {
-          preview = null;
+        preview = null;
+        videoRecordStatus = null;
+        if (videoRecording != null) {
+          videoRecording.close();
+          videoRecording = null;
         }
-        if (REUSE_CAPTURE_DISABLED) {
-          videoCapture = null;
-          imageCapture = null;
-        }
+        videoCapture = null;
+        imageCapture = null;
         cameraProvider = null;
         camera = null;
       }
@@ -478,41 +455,67 @@ public class CameraManagerX extends CameraManager<PreviewView> {
     }
   }
 
-  @SuppressWarnings("RestrictedApi")
   @Override
   protected boolean onStartVideoCapture (int outRotation) {
     if (videoCapture != null) {
       boolean success;
+      File outFile = getOutputFile(true);
+      boolean forceEnableTorch = flashMode == ImageCapture.FLASH_MODE_ON && camera.getCameraInfo().hasFlashUnit();
       try {
-        File outFile = getOutputFile(true);
-        videoCapture.startRecording(new VideoCapture.OutputFileOptions.Builder(outFile).build(), ContextCompat.getMainExecutor(context), new VideoCapture.OnVideoSavedCallback() {
-          @Override
-          public void onVideoSaved (@NonNull VideoCapture.OutputFileResults ignored) {
-            U.toGalleryFile(outFile, true, file -> {
-              setTakingVideo(false, -1);
-              onTakeMediaResult(file, true);
-            });
-          }
+        if (!outFile.createNewFile()) {
+          return false;
+        }
+      } catch (Throwable t) {
+        Log.w(Log.TAG_CAMERA, "Unable to create output file for video", t);
+        return false;
+      }
+      if (forceEnableTorch) {
+        forceEnableTorch();
+      }
+      try {
+        AtomicBoolean isFinished = new AtomicBoolean(false);
+        videoRecording = videoCapture.getOutput()
+          .prepareRecording(context, new FileOutputOptions.Builder(outFile).build())
+          .withAudioEnabled()
+          .start(ContextCompat.getMainExecutor(context), event -> {
+            if (!(event instanceof VideoRecordEvent.Status)) {
+              videoRecordStatus = event;
+            }
+            if (event instanceof VideoRecordEvent.Start) {
+              VideoRecordEvent.Start start = (VideoRecordEvent.Start) event;
+              setTakingVideo(true, SystemClock.uptimeMillis());
+            } else if (event instanceof VideoRecordEvent.Finalize) {
+              if (isFinished.getAndSet(true)) {
+                return;
+              }
+              VideoRecordEvent.Finalize finalize = (VideoRecordEvent.Finalize) event;
 
-          @Override
-          public void onError (int videoCaptureError, @NonNull String message, @Nullable Throwable cause) {
-            setTakingVideo(false, -1);
-            Log.e(Log.TAG_CAMERA, "Failed to capture video: %d, message: %s", cause, videoCaptureError, message);
-            onTakeMediaError(true);
-          }
-        });
+              if (finalize.hasError()) {
+                if (outFile.exists()) {
+                  if (!outFile.delete()) {
+                    Log.e(Log.TAG_CAMERA, "Unable to delete video output file");
+                  }
+                }
+                setTakingVideo(false, -1);
+                Log.e(Log.TAG_CAMERA, "Failed to capture video: %d", finalize.getCause(), finalize.getError());
+                onTakeMediaError(true);
+              } else {
+                U.toGalleryFile(outFile, true, file -> {
+                  setTakingVideo(false, -1);
+                  onTakeMediaResult(file, true);
+                });
+              }
+            }
+          });
         success = true;
       } catch (Throwable t) {
         Log.e("Cannot start recording video", t);
         success = false;
       }
-      if (success) {
-        if (flashMode == ImageCapture.FLASH_MODE_ON && camera.getCameraInfo().hasFlashUnit()) {
-          camera.getCameraControl().enableTorch(true);
-        }
-        UI.post(() -> setTakingVideo(true, SystemClock.uptimeMillis()));
-        return true;
+      if (!success) {
+        disableTorch();
       }
+      return success;
     }
     return false;
   }
@@ -520,13 +523,31 @@ public class CameraManagerX extends CameraManager<PreviewView> {
   @SuppressWarnings("RestrictedApi")
   @Override
   protected void onFinishOrCancelVideoCapture () {
-    if (videoCapture != null) {
-      videoCapture.stopRecording();
-      if (flashMode == ImageCapture.FLASH_MODE_ON && camera.getCameraInfo().hasFlashUnit()) {
-        camera.getCameraControl().enableTorch(false);
-      }
-      delegate.onVideoCaptureEnded();
+    if (videoRecording != null) {
+      videoRecording.stop();
+      onVideoRecordingFinished();
     }
+  }
+
+  private boolean torchForceEnabled;
+
+  private void forceEnableTorch () {
+    if (!torchForceEnabled) {
+      torchForceEnabled = true;
+      camera.getCameraControl().enableTorch(true);
+    }
+  }
+
+  private void disableTorch () {
+    if (torchForceEnabled) {
+      torchForceEnabled = false;
+      camera.getCameraControl().enableTorch(false);
+    }
+  }
+
+  private void onVideoRecordingFinished () {
+    disableTorch();
+    delegate.onVideoCaptureEnded();
   }
 
   @Override

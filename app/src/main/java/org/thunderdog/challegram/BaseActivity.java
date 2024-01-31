@@ -1160,6 +1160,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       Tracer.onUiError(t);
       throw t;
     }
+    setOrientationLockFlags(0);
     if (navigation != null) {
       navigation.destroy();
     }
@@ -1413,17 +1414,6 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     return currentOrientation;
   }
 
-  public void lockOrientation (int newOrientation) {
-    if (currentOrientation != newOrientation) {
-      currentOrientation = newOrientation;
-      if (mIsOrientationBlocked) {
-        requestAndroidOrientation(newOrientation);
-      } else {
-        setIsOrientationBlocked(true);
-      }
-    }
-  }
-
   private void setIsOrientationBlocked (boolean blocked) {
     if (mIsOrientationBlocked == blocked || mIsOrientationRequested)
       return;
@@ -1431,21 +1421,24 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     mIsOrientationBlocked = blocked;
 
     if (blocked) {
-      int rotation = getWindowManager().getDefaultDisplay().getRotation();
-
-      if (currentOrientation == Configuration.ORIENTATION_LANDSCAPE &&
-        (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_90)) {
-        requestAndroidOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-      } else if (currentOrientation == Configuration.ORIENTATION_PORTRAIT &&
-        (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_90)) {
-        requestAndroidOrientationPortrait();
-      } else if (currentOrientation == Configuration.ORIENTATION_LANDSCAPE &&
-        (rotation == Surface.ROTATION_180 || rotation == Surface.ROTATION_270)) {
-        requestAndroidOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+        requestAndroidOrientation(ActivityInfo.SCREEN_ORIENTATION_LOCKED);
       } else {
-        if (currentOrientation == Configuration.ORIENTATION_PORTRAIT &&
-          (rotation == Surface.ROTATION_180 || rotation == Surface.ROTATION_270)) {
+        int rotation = getWindowManager().getDefaultDisplay().getRotation();
+        if (currentOrientation == Configuration.ORIENTATION_LANDSCAPE &&
+          (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_90)) {
+          requestAndroidOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        } else if (currentOrientation == Configuration.ORIENTATION_PORTRAIT &&
+          (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_90)) {
           requestAndroidOrientationPortrait();
+        } else if (currentOrientation == Configuration.ORIENTATION_LANDSCAPE &&
+          (rotation == Surface.ROTATION_180 || rotation == Surface.ROTATION_270)) {
+          requestAndroidOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+        } else {
+          if (currentOrientation == Configuration.ORIENTATION_PORTRAIT &&
+            (rotation == Surface.ROTATION_180 || rotation == Surface.ROTATION_270)) {
+            requestAndroidOrientationPortrait();
+          }
         }
       }
     } else {
@@ -2914,36 +2907,47 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
   }
 
-  private boolean cameraOrientationBlocked;
-  private int savedAnimation;
+  private int savedRotationAnimation = -1;
 
-  private void checkCameraOrientationBlocked () {
-    boolean isBlocked = ((cameraFactor < 1f && isCameraOpen) || (cameraFactor != 0f && cameraFactor != 1f) || isCameraDragging || (cameraFactor == 1f && camera != null && camera.supportsCustomRotations())) && !(camera != null && camera.hasOpenEditor());
-    if (cameraOrientationBlocked != isBlocked) {
-      cameraOrientationBlocked = isBlocked;
-      setIsOrientationBlocked(isBlocked);
-    }
+  private void requestWindowRotationAnimation (int requestedAnimation) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-      boolean needCrossFadeAnimation = cameraFactor == 1f;
-      int desiredRotation;
       Window window = getWindow();
       WindowManager.LayoutParams attrs = window.getAttributes();
-      if (needCrossFadeAnimation) {
-        if (attrs.rotationAnimation != WindowManager.LayoutParams.ROTATION_ANIMATION_JUMPCUT) {
-          savedAnimation = attrs.rotationAnimation;
-        }
-        desiredRotation = WindowManager.LayoutParams.ROTATION_ANIMATION_JUMPCUT;
+      int pendingRotationAnimation;
+      if (requestedAnimation == -1) {
+        pendingRotationAnimation = savedRotationAnimation;
+        savedRotationAnimation = -1;
       } else {
-        desiredRotation = savedAnimation;
+        pendingRotationAnimation = requestedAnimation;
+        if (savedRotationAnimation == -1) {
+          savedRotationAnimation = attrs.rotationAnimation;
+        }
       }
-      if (attrs.rotationAnimation != desiredRotation) {
-        attrs.rotationAnimation = desiredRotation;
+      if (pendingRotationAnimation != -1 && attrs.rotationAnimation != pendingRotationAnimation) {
+        attrs.rotationAnimation = pendingRotationAnimation;
         window.setAttributes(attrs);
       }
     }
-    /*if (isBlocked && camera != null && !camera.supportsCustomRotations()) {
-      lockOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-    }*/
+  }
+
+  private void checkCameraOrientationBlocked () {
+    boolean isBlocked = ((cameraFactor < 1f && isCameraOpen) || (cameraFactor != 0f && cameraFactor != 1f) || isCameraDragging || (cameraFactor == 1f && camera != null && camera.supportsCustomRotations())) && !(camera != null && camera.hasOpenEditor());
+    setOrientationLockFlagEnabled(ORIENTATION_FLAG_CAMERA, isBlocked);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+      boolean needCrossFadeAnimation = cameraFactor == 1f;
+      int rotationAnimation;
+      if (needCrossFadeAnimation) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && false) {
+          // looks bad on AOSP (Pixel Fold), and exactly like JUMPCUT on Samsung devices
+          rotationAnimation = WindowManager.LayoutParams.ROTATION_ANIMATION_SEAMLESS;
+        } else {
+          rotationAnimation = WindowManager.LayoutParams.ROTATION_ANIMATION_JUMPCUT;
+        }
+      } else {
+        rotationAnimation = -1;
+      }
+      requestWindowRotationAnimation(rotationAnimation);
+    }
   }
 
   private void setCameraOpen (ViewController.CameraOpenOptions options, boolean isOpen, boolean byDrag) {
@@ -3544,16 +3548,21 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   public static final int ORIENTATION_FLAG_RECORDING = 1 << 5;
   public static final int ORIENTATION_FLAG_CROP = 1 << 6;
   public static final int ORIENTATION_FLAG_PROXIMITY = 1 << 7;
+  public static final int ORIENTATION_FLAG_CAMERA = 1 << 8;
 
   private int orientationFlags;
 
-  public void setOrientationLockFlagEnabled (int flag, boolean enabled) {
+  private void setOrientationLockFlags (int flags) {
     boolean oldLocked = this.orientationFlags != 0;
-    this.orientationFlags = BitwiseUtils.setFlag(this.orientationFlags, flag, enabled);
+    this.orientationFlags = flags;
     boolean newLocked =  this.orientationFlags != 0;
     if (oldLocked != newLocked) {
       setIsOrientationBlocked(newLocked);
     }
+  }
+
+  public void setOrientationLockFlagEnabled (int flag, boolean enabled) {
+    setOrientationLockFlags(BitwiseUtils.setFlag(this.orientationFlags, flag, enabled));
   }
 
   // Language

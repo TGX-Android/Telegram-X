@@ -115,7 +115,6 @@ android {
         ndkPath = File(sdkDirectory, "ndk/$ndkVersion").absolutePath
         buildConfigString("NDK_VERSION", ndkVersion)
         buildConfigBool("WEBP_ENABLED", true) // variant.minSdkVersion < 19
-        buildConfigBool("SIDE_LOAD_ONLY", variant.sideLoadOnly)
         ndk.abiFilters.clear()
         ndk.abiFilters.addAll(variant.filters)
         externalNativeBuild.ndkBuild.abiFilters(*variant.filters)
@@ -202,13 +201,14 @@ dependencies {
   implementation("androidx.work:work-runtime:2.9.0")
   implementation("androidx.browser:browser:1.5.0") // 1.7.0+ requires minSdkVersion 19
   implementation("androidx.exifinterface:exifinterface:1.3.7")
-  implementation("androidx.collection:collection:1.3.0")
+  implementation("androidx.collection:collection:1.4.0")
   implementation("androidx.interpolator:interpolator:1.0.0")
   implementation("androidx.gridlayout:gridlayout:1.0.0")
   // CameraX: https://developer.android.com/jetpack/androidx/releases/camera
-  implementation("androidx.camera:camera-camera2:1.2.3")
-  implementation("androidx.camera:camera-lifecycle:1.2.3")
-  implementation("androidx.camera:camera-view:1.2.3")
+  implementation("androidx.camera:camera-camera2:1.3.1")
+  implementation("androidx.camera:camera-video:1.3.1")
+  implementation("androidx.camera:camera-lifecycle:1.3.1")
+  implementation("androidx.camera:camera-view:1.3.1")
   // Google Play Services: https://developers.google.com/android/guides/releases
   implementation("com.google.android.gms:play-services-base:17.6.0")
   implementation("com.google.android.gms:play-services-basement:17.6.0")

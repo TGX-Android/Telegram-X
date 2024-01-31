@@ -18,7 +18,6 @@ import android.os.Build;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
-import android.widget.Toast;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.UiThread;
@@ -28,6 +27,7 @@ import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.loader.ImageReader;
 import org.thunderdog.challegram.loader.ImageStrictCache;
@@ -215,9 +215,9 @@ public abstract class CameraManager <T extends View> {
     }
   }
 
-  public final void setFinishingVideo (boolean isVideo) {
-    if (this.finishingVideo != isVideo) {
-      this.finishingVideo = isVideo;
+  public final void setFinishingVideo (boolean isFinishingVideo) {
+    if (this.finishingVideo != isFinishingVideo) {
+      this.finishingVideo = isFinishingVideo;
       checkUiBlocked();
     }
   }
@@ -262,10 +262,15 @@ public abstract class CameraManager <T extends View> {
 
     if (isVideo) {
       setTakingVideo(false, -1);
-      UI.showToast(R.string.TakeVideoError, Toast.LENGTH_SHORT);
+      UI.post(() -> {
+        setFinishingVideo(false);
+        delegate.displayHint(Lang.getString(R.string.TakeVideoError));
+      }, 20);
     } else {
       setTakingPhoto(false);
-      UI.showToast(R.string.TakePhotoError, Toast.LENGTH_SHORT);
+      UI.post(() -> {
+        delegate.displayHint(Lang.getString(R.string.TakePhotoError));
+      });
     }
   }
 
@@ -282,7 +287,7 @@ public abstract class CameraManager <T extends View> {
 
     if (!delegate.usePrivateFolder()) {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        U.copyToGallery(UI.getContext(context), resultFile.getFilePath(), U.TYPE_PHOTO, false, resultFile::trackCopy);
+        U.copyToGallery(UI.getContext(context), resultFile.getFilePath(), isVideo ? U.TYPE_VIDEO : U.TYPE_PHOTO, false, resultFile::trackCopy);
       } else {
         U.addToGallery(new File(resultFile.getFilePath()));
       }
@@ -301,8 +306,12 @@ public abstract class CameraManager <T extends View> {
     }
   }
 
+  private boolean inPrivateMode () {
+    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q || delegate.usePrivateFolder();
+  }
+
   public final File getOutputFile (boolean isVideo) {
-    final boolean isPrivate = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q || delegate.usePrivateFolder();
+    final boolean isPrivate = inPrivateMode();
     if (isVideo) {
       return U.generateVideoPath(isPrivate);
     } else {

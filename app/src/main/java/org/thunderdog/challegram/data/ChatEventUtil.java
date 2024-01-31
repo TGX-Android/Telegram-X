@@ -599,7 +599,7 @@ public class ChatEventUtil {
           appendRight(b, R.string.EventLogRestrictedAddUsers, oldBan != null ? oldBan.permissions.canInviteUsers : oldCanReadMessages, newBan != null ? newBan.permissions.canInviteUsers : newCanReadMessages, false);
           appendRight(b, R.string.EventLogRestrictedPinMessages, oldBan != null ? oldBan.permissions.canPinMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canPinMessages : newCanReadMessages, false);
           appendRight(b, R.string.EventLogRestrictedChangeInfo, oldBan != null ? oldBan.permissions.canChangeInfo : oldCanReadMessages, newBan != null ? newBan.permissions.canChangeInfo : newCanReadMessages, false);
-          appendRight(b, R.string.EventLogRestrictedTopics, oldBan != null ? oldBan.permissions.canManageTopics : oldCanReadMessages, newBan != null ? newBan.permissions.canManageTopics : newCanReadMessages, false);
+          appendRight(b, R.string.EventLogRestrictedTopics, oldBan != null ? oldBan.permissions.canCreateTopics : oldCanReadMessages, newBan != null ? newBan.permissions.canCreateTopics : newCanReadMessages, false);
         }
 
         TdApi.FormattedText formattedText = new TdApi.FormattedText(b.toString().trim(), null);
@@ -745,7 +745,7 @@ public class ChatEventUtil {
         appendRight(b, R.string.EventLogPermissionAddUsers, permissions.oldPermissions.canInviteUsers, permissions.newPermissions.canInviteUsers, true);
         appendRight(b, R.string.EventLogPermissionPinMessages, permissions.oldPermissions.canPinMessages, permissions.newPermissions.canPinMessages, true);
         appendRight(b, R.string.EventLogPermissionChangeInfo, permissions.oldPermissions.canChangeInfo, permissions.newPermissions.canChangeInfo, true);
-        appendRight(b, R.string.EventLogPermissionTopicsCreate, permissions.oldPermissions.canManageTopics, permissions.newPermissions.canManageTopics, true);
+        appendRight(b, R.string.EventLogPermissionTopicsCreate, permissions.oldPermissions.canCreateTopics, permissions.newPermissions.canCreateTopics, true);
 
         TdApi.FormattedText formattedText = new TdApi.FormattedText(b.toString().trim(), new TdApi.TextEntity[] {new TdApi.TextEntity(0, length, new TdApi.TextEntityTypeItalic())});
 

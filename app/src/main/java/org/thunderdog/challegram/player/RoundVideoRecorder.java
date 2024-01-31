@@ -747,7 +747,7 @@ public class RoundVideoRecorder {
     }
   }
 
-  private boolean doCapture () {
+  public boolean isCapturing () {
     return isCapturing || finishCapture || recording;
   }
 
@@ -764,7 +764,7 @@ public class RoundVideoRecorder {
     }
     cameraSurface.updateTexImage();
 
-    if (doCapture()) {
+    if (isCapturing()) {
       if (!recording) {
         int resolution;
         int bitrate;

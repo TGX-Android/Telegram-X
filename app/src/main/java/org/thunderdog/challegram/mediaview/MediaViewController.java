@@ -225,6 +225,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     private boolean reverseMode;
 
     private long receiverChatId, messageThreadId;
+    private @Nullable TdApi.SavedMessagesTopic savedMessagesTopic;
 
     private boolean areOnlyScheduled, deleteOnExit;
 
@@ -281,6 +282,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       return this;
     }
 
+    public Args setSavedMessagesTopic (@Nullable TdApi.SavedMessagesTopic savedMessagesTopic) {
+      this.savedMessagesTopic = savedMessagesTopic;
+      return this;
+    }
+
     public @Nullable TdApi.SearchMessagesFilter filter;
 
     public void setFilter (@Nullable TdApi.SearchMessagesFilter filter) {
@@ -308,6 +314,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private MediaStack stack;
   private @Nullable TdApi.SearchMessagesFilter filter;
   private long messageThreadId;
+  private @Nullable TdApi.SavedMessagesTopic savedMessagesTopic;
 
   @Override
   public void setArguments (Args args) {
@@ -320,6 +327,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     this.reverseMode = args.reverseMode;
     this.filter = args.filter;
     this.messageThreadId = args.messageThreadId;
+    this.savedMessagesTopic = args.savedMessagesTopic;
   }
 
   public MediaViewThumbLocation getCurrentTargetLocation () {
@@ -2088,7 +2096,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
             chatId, null, null,
             initialFromMessageId, 0,
             LOAD_COUNT, searchFilter(),
-            messageThreadId
+            messageThreadId,
+            savedMessagesTopic
           );
           tdlib.client().send(searchFunction, foundChatMessagesHandler(chatId, initialFromMessageId, LOAD_COUNT));
         }
@@ -2104,7 +2113,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
             chatId, null, null,
             initialFromMessageId, 0,
             LOAD_COUNT_PROFILE, searchFilter(),
-            messageThreadId
+            messageThreadId,
+            savedMessagesTopic
           );
           tdlib.client().send(searchFunction, foundChatMessagesHandler(chatId, initialFromMessageId, LOAD_COUNT_PROFILE));
         }
@@ -2211,7 +2221,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         chatId, null, null,
         messages.nextFromMessageId, 0,
         loadCount, searchFilter(),
-        messageThreadId
+        messageThreadId,
+        savedMessagesTopic
       );
       tdlib.client().send(retryFunction, foundChatMessagesHandler(chatId, messages.nextFromMessageId, loadCount));
       return;

@@ -242,14 +242,14 @@
 
     <activity
       android:name=".voip.gui.VoIPPermissionActivity"
-      android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+      android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
       android:excludeFromRecents="true"
       android:taskAffinity="${applicationId}.voip"
       android:theme="@style/TransparentTheme"
       android:exported="false" />
     <activity
       android:name=".voip.gui.VoIPFeedbackActivity"
-      android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+      android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout"
       android:excludeFromRecents="true"
       android:taskAffinity="${applicationId}.voip"
       android:theme="@style/TransparentTheme"
@@ -341,14 +341,14 @@
 
     <activity
       android:name=".ManageSpaceActivity"
-      android:configChanges="keyboard|keyboardHidden|orientation|screenSize|locale|layoutDirection|uiMode"
+      android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout|locale|layoutDirection|uiMode"
       android:launchMode="singleTask"
       android:windowSoftInputMode="adjustPan"
       android:exported="true" />
 
     <activity
       android:name=".MainActivity"
-      android:configChanges="keyboard|keyboardHidden|orientation|screenSize|locale|layoutDirection|uiMode"
+      android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout|locale|layoutDirection|uiMode"
       android:launchMode="singleTask"
       android:windowSoftInputMode="stateHidden|adjustPan"
       android:exported="true">

@@ -16,6 +16,7 @@ package org.thunderdog.challegram.component.popups;
 
 import android.content.Context;
 import android.text.style.ClickableSpan;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -38,6 +39,7 @@ import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.ui.SettingsAdapter;
@@ -220,12 +222,22 @@ public class GiftCodeController extends MediaBottomBaseController<Void> implemen
 
   @Override
   public boolean ignoreStartHeightLimits () {
-    return true;
+    if (UI.isLandscape()) {
+      return super.ignoreStartHeightLimits();
+    }
+
+    final int h = Screen.currentActualHeight() - HeaderView.getSize(false);
+    return measuredRecyclerHeight < h;
   }
 
   @Override
   protected boolean canExpandHeight () {
-    return false;
+    if (UI.isLandscape()) {
+      return super.canExpandHeight();
+    }
+
+    final int h = Screen.currentActualHeight() - HeaderView.getSize(false);
+    return measuredRecyclerHeight >= h;
   }
 
   @Override
