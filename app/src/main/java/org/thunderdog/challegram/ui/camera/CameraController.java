@@ -571,6 +571,16 @@ public class CameraController extends ViewController<Void> implements CameraDele
     }
   }
 
+  @Override
+  public void displayHint (String hint) {
+    if (!UI.inUiThread()) {
+      handler.sendMessage(Message.obtain(handler, ACTION_DISPLAY_HINT, hint));
+      return;
+    }
+
+    context().tooltipManager().builder(button).controller(this).show(tdlib, hint).hideDelayed();
+  }
+
   private int availableCameraCount = -1;
 
   @AnyThread
@@ -1823,6 +1833,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
   private static final int ACTION_ZOOM_CHANGED = 9;
   private static final int ACTION_PERFORM_SUCCESS_HINT = 10;
   private static final int ACTION_UPDATE_DURATION = 11;
+  private static final int ACTION_DISPLAY_HINT = 12;
 
   private static class CameraUiHandler extends Handler {
     private final CameraController context;
@@ -1837,6 +1848,10 @@ public class CameraController extends ViewController<Void> implements CameraDele
       switch (msg.what) {
         case ACTION_DISPATCH_ERROR: {
           context.displayFatalErrorMessage((String) msg.obj);
+          break;
+        }
+        case ACTION_DISPLAY_HINT: {
+          context.displayHint((String) msg.obj);
           break;
         }
         case ACTION_CHANGE_CAMERA_COUNT: {

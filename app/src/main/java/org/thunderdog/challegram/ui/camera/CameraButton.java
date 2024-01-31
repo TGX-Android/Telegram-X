@@ -124,7 +124,10 @@ public class CameraButton extends View implements FactorAnimator.Target, Runnabl
     return false;
   }
 
+  private boolean takeVideoRequested;
+
   public void takeVideo () {
+    takeVideoRequested = true;
     if (listener != null) {
       inVideoCapture = listener.onStartVideoCapture(this);
     } else {
@@ -248,8 +251,9 @@ public class CameraButton extends View implements FactorAnimator.Target, Runnabl
         if (isActive) {
           super.onTouchEvent(e);
         }
-        finishVideoCapture(!isInRecordMode && e.getAction() == MotionEvent.ACTION_UP && isActive);
+        finishVideoCapture(!isInRecordMode && e.getAction() == MotionEvent.ACTION_UP && isActive && !takeVideoRequested);
         isActive = false;
+        takeVideoRequested = false;
         break;
 
       default: {
