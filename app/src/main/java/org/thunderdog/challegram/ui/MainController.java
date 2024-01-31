@@ -866,7 +866,9 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       composeWrap.show();
     }
     if (hasFolders()) {
-      composeWrap.replaceMainButton(R.id.btn_float_compose, R.drawable.baseline_create_24);
+      if (composeWrap.getMainButtonId() != R.id.btn_float_compose) {
+        composeWrap.replaceMainButton(R.id.btn_float_compose, R.drawable.baseline_create_24);
+      }
       return;
     }
     switch (position) {
