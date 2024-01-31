@@ -66,6 +66,8 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
   }
 
   ImageView closeView;
+  ImageView replaceMediaView;
+  ImageView editMediaView;
   LinkPreviewToggleView linkPreviewToggleView;
 
   public void checkRtl () {
@@ -138,6 +140,21 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
 
     params = FrameLayoutFix.newParams(Screen.dp(56f), ViewGroup.LayoutParams.MATCH_PARENT);
     params.gravity = Lang.reverseGravity();
+    replaceMediaView = newButton(R.id.btn_replace, R.drawable.baseline_repeat_24, themeProvider);
+    replaceMediaView.setLayoutParams(params);
+    replaceMediaView.setVisibility(View.GONE);
+    addView(replaceMediaView);
+
+    params = FrameLayoutFix.newParams(Screen.dp(56f), ViewGroup.LayoutParams.MATCH_PARENT);
+    params.gravity = Lang.reverseGravity();
+    params.rightMargin = Screen.dp(46);
+    editMediaView = newButton(R.id.btn_edit, R.drawable.baseline_edit_24, themeProvider);
+    editMediaView.setLayoutParams(params);
+    editMediaView.setVisibility(View.GONE);
+    addView(editMediaView);
+
+    params = FrameLayoutFix.newParams(Screen.dp(56f), ViewGroup.LayoutParams.MATCH_PARENT);
+    params.gravity = Lang.reverseGravity();
     linkPreviewToggleView = new LinkPreviewToggleView(getContext());
     linkPreviewToggleView.setLayoutParams(params);
     linkPreviewToggleView.setVisibility(View.GONE);
@@ -199,7 +216,15 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
   private void setLinkPreviewToggleVisible (boolean isVisible) {
     if (isVisible != (linkPreviewToggleView.getVisibility() == View.VISIBLE)) {
       linkPreviewToggleView.setVisibility(isVisible ? View.VISIBLE : View.GONE);
-      pinnedMessagesBar.setPadding(Screen.dp(49.5f), 0, isVisible ? Screen.dp(49.5f) : 0, 0);
+      checkPinnedMessagesBarPadding();
+    }
+  }
+
+  private void setMediaEditToggleVisible (boolean isVisible) {
+    if (isVisible != (editMediaView.getVisibility() == View.VISIBLE)) {
+      editMediaView.setVisibility(isVisible ? View.VISIBLE : View.GONE);
+      replaceMediaView.setVisibility(isVisible ? View.VISIBLE : View.GONE);
+      checkPinnedMessagesBarPadding();
     }
   }
 
@@ -246,18 +271,21 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
     }
     pinnedMessagesBar.setStaticMessageList(entryList, selectedUrlIndex);
     setLinkPreviewToggleVisible(true);
+    setMediaEditToggleVisible(false);
     setMessageInputContext(context);
   }
 
   public void setReplyTo (TdApi.Message msg, @Nullable TdApi.InputTextQuote quote) {
     pinnedMessagesBar.setMessage(tdlib, msg, quote);
     setLinkPreviewToggleVisible(false);
+    setMediaEditToggleVisible(false);
     setMessageInputContext(null);
   }
 
   public void setEditingMessage (TdApi.Message msg) {
     pinnedMessagesBar.setMessage(tdlib, msg);
     setLinkPreviewToggleVisible(false);
+    setMediaEditToggleVisible(msg.mediaAlbumId != 0);
     setMessageInputContext(null);
   }
 
@@ -285,5 +313,12 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
     void onSelectLinkPreviewUrl (ReplyBarView view, MessagesController.MessageInputContext messageContext, String url);
     boolean onRequestToggleShowAbove (ReplyBarView view, View buttonView, MessagesController.MessageInputContext messageContext);
     boolean onRequestToggleLargeMedia (ReplyBarView view, View buttonView, MessagesController.MessageInputContext messageContext, LinkPreview linkPreview);
+  }
+
+  private void checkPinnedMessagesBarPadding () {
+    final int buttonsCount = (Views.isValid(linkPreviewToggleView) ? 1 : 0)
+      + (Views.isValid(editMediaView) ? 1 : 0)
+      + (Views.isValid(replaceMediaView) ? 1 : 0);
+    pinnedMessagesBar.setPadding(Screen.dp(49.5f), 0, buttonsCount > 0 ? Screen.dp(buttonsCount * 48f + 1.5f) : 0, 0);
   }
 }

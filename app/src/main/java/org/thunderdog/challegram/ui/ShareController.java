@@ -2265,6 +2265,10 @@ public class ShareController extends TelegramViewController<ShareController.Args
   private PopupLayout popupLayout;
 
   public void show () {
+    show(false);
+  }
+
+  public void show (boolean overlayStatusBar) {
     if (tdlib == null) {
       if (getExportContentState() == EXPORT_AVAILABLE) {
         exportContent();
@@ -2290,6 +2294,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     popupLayout.setNeedRootInsets();
     popupLayout.setTouchProvider(this);
     popupLayout.setIgnoreHorizontal();
+    popupLayout.setOverlayStatusBar(overlayStatusBar);
     getValue();
     context().addFullScreenView(this, false);
   }
