@@ -236,6 +236,8 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
       if (chatFolderId != NO_CHAT_FOLDER_ID) {
         items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_visible, 0, R.string.FolderVisible));
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      } else {
+        items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
       }
     } else {
       items.add(new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.FolderName));
