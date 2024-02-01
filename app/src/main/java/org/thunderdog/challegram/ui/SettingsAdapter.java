@@ -2274,6 +2274,13 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     }
   }
 
+  public void notifyLastItemChanged () {
+    int itemCount = getItemCount();
+    if (itemCount > 0) {
+      notifyItemChanged(itemCount - 1);
+    }
+  }
+
   public void notifyItemsChanged (@NonNull Filter<ListItem> filter) {
     notifyItemsChangedImpl(item -> filter.accept(item) ? wouldUpdateItem(item) : CellFilterImpl.REJECTED);
   }

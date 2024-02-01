@@ -19,6 +19,7 @@ import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 import static androidx.core.util.ObjectsCompat.requireNonNull;
 
 import android.content.Context;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.text.InputFilter;
 import android.text.InputType;
@@ -31,6 +32,7 @@ import android.widget.ImageView;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.IdRes;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.core.util.ObjectsCompat;
@@ -276,6 +278,8 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
       items.add(new ListItem(ListItem.TYPE_PADDING).setHeight(Screen.dp(12f)));
     }
 
+    items.add(new ListItem(ListItem.TYPE_ZERO_VIEW));
+
     adapter = new Adapter(this);
     if (input != null) {
       adapter.setLockFocusOn(this, /* showAlways */ StringUtils.isEmpty(editedChatFolder.title));
@@ -285,6 +289,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
     CustomItemAnimator itemAnimator = new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
     itemAnimator.setSupportsChangeAnimations(false);
     recyclerView.setItemAnimator(itemAnimator);
+    recyclerView.addItemDecoration(new ItemDecoration());
     recyclerView.setAdapter(adapter);
     RemoveHelper.attach(recyclerView, new RemoveHelperCallback());
 
@@ -295,6 +300,14 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
       updateInviteLinks();
       tdlib.listeners().subscribeToChatFoldersUpdates(this);
       tdlib.listeners().addChatFolderListener(chatFolderId, this);
+    }
+  }
+
+  @Override
+  protected void onDoneVisibleChanged (boolean isVisible) {
+    if (recyclerView != null) {
+      recyclerView.invalidateItemDecorations();
+      adapter.notifyLastItemChanged();
     }
   }
 
@@ -1206,6 +1219,17 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
     boolean isFolderDeleted = tdlib.chatFolderInfo(chatFolderId) == null;
     if (isFolderDeleted) {
       closeSelf();
+    }
+  }
+
+  private class ItemDecoration extends RecyclerView.ItemDecoration {
+    @Override
+    public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+      outRect.setEmpty();
+      RecyclerView.ViewHolder viewHolder = parent.getChildViewHolder(view);
+      if (viewHolder.getItemViewType() == ListItem.TYPE_ZERO_VIEW && isDoneVisible()) {
+        outRect.bottom = Screen.dp(76);
+      }
     }
   }
 }
