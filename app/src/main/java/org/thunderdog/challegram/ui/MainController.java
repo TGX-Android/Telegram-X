@@ -21,6 +21,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
@@ -2344,8 +2345,17 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   @AnyThread
   private void createChatFolderInviteLink (int chatFolderId, TdApi.ChatFolder chatFolder) {
     if (TD.countIncludedChatTypes(chatFolder) > 0 || TD.countExcludedChatTypes(chatFolder) > 0) {
-      CharSequence message = Lang.getMarkdownString(this, R.string.ChatFolderInviteLinkChatTypesNotSupported);
-      UI.showCustomToast(message, Toast.LENGTH_LONG, 0);
+      runOnUiThreadOptional(() -> {
+        CharSequence message = Lang.getMarkdownString(this, R.string.ChatFolderInviteLinkChatTypesNotSupported);
+        if (showFolderTooltip(chatFolderId, message)) {
+          View topView = headerCell != null ? headerCell.getTopView() : null;
+          if (topView != null) {
+            UI.forceVibrateError(topView);
+          }
+        } else {
+          UI.showCustomToast(message, Toast.LENGTH_LONG, 0);
+        }
+      });
       return;
     }
     tdlib.send(new TdApi.GetChatsForChatFolderInviteLink(chatFolderId), (chats, error) -> {
@@ -2411,6 +2421,50 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       invalidateBottomBarOffset();
     }
     return result;
+  }
+
+  private boolean showFolderTooltip (int chatFolderId, CharSequence message) {
+    return showFolderTooltip(new TdApi.ChatListFolder(chatFolderId), message);
+  }
+
+  private boolean showFolderTooltip (TdApi.ChatList chatList, CharSequence message) {
+    if (headerCell == null) {
+      return false;
+    }
+    int index = indexOfChatList(chatList);
+    if (index == -1) {
+      return false;
+    }
+    ViewPagerTopView topView = headerCell.getTopView();
+    Rect itemRect = new Rect();
+    if (topView == null || !topView.getItemRect(index, itemRect)) {
+      return false;
+    }
+    int topViewX = Math.round(topView.getX());
+    int topViewParentWidth = ((View) topView.getParent()).getWidth();
+    int horizontalInset = Screen.dp(16f);
+    itemRect.left = Math.max(itemRect.left, horizontalInset - topViewX);
+    itemRect.right = Math.min(itemRect.right, topViewParentWidth - topViewX - horizontalInset);
+    if (itemRect.isEmpty()) {
+      return false;
+    }
+    context()
+      .tooltipManager()
+      .builder(topView)
+      .locate((targetView, outRect) -> outRect.set(itemRect))
+      .controller(this)
+      .show(tdlib, message)
+      .hideDelayed(3500, TimeUnit.MILLISECONDS);
+    return true;
+  }
+
+  private int indexOfChatList (TdApi.ChatList chatList) {
+    for (int i = 0; i < pagerChatLists.size(); i++) {
+      if (Td.equalsTo(chatList, pagerChatLists.get(i))) {
+        return i;
+      }
+    }
+    return -1;
   }
 
   private void checkTabs () {

@@ -17,6 +17,7 @@ package org.thunderdog.challegram.navigation;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
 import android.text.Layout;
@@ -961,6 +962,16 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       c.drawCircle(x, y, radius, Paints.fillingPaint(TGTheme.fillingColor())); // Utils.alphaColor(overlayFactor, TGTheme.fillingColor())
       c.restore();*/
     }
+  }
+
+  public boolean getItemRect (int position, Rect outRect) {
+    View child = getChildAt(position);
+    if (child != null) {
+      outRect.set(0, 0, child.getWidth(), child.getHeight());
+      outRect.offset((int) child.getX(), (int) child.getY());
+      return true;
+    }
+    return false;
   }
 
   private void drawLabel (Canvas c, Layout layout, float x, float y, int color, float selectionFactor) {
