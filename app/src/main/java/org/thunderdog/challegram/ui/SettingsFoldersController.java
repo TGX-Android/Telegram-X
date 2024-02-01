@@ -295,7 +295,7 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
           view.setIgnoreEnabled(true);
           view.setVisuallyEnabled(canCreateChatFolder, isUpdate);
           view.setIconColorId(canCreateChatFolder ? ColorId.inlineIcon : ColorId.iconLight);
-          PremiumLockModifier modifier = canCreateChatFolder ? null : premiumLockModifier;
+          PremiumLockModifier modifier = (canCreateChatFolder || tdlib.hasPremium()) ? null : premiumLockModifier;
           view.setDrawModifier(modifier);
           view.setTooltipLocationProvider(modifier);
         } else {
