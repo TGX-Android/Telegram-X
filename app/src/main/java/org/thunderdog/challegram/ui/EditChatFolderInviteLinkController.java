@@ -1,12 +1,12 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
+import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
@@ -15,6 +15,7 @@ import androidx.core.content.res.ResourcesCompat;
 import androidx.core.util.ObjectsCompat;
 import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
@@ -23,6 +24,7 @@ import org.thunderdog.challegram.charts.LayoutHelper;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -31,7 +33,6 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
-import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.MaterialEditText;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
@@ -45,7 +46,7 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.LongSet;
 
-public class EditChatFolderInviteLinkController extends RecyclerViewController<EditChatFolderInviteLinkController.Arguments> implements View.OnClickListener, View.OnLongClickListener, SettingsAdapter.TextChangeListener {
+public class EditChatFolderInviteLinkController extends EditBaseController<EditChatFolderInviteLinkController.Arguments> implements View.OnClickListener, View.OnLongClickListener, SettingsAdapter.TextChangeListener {
 
   public static class Arguments {
     private final int chatFolderId;
@@ -99,6 +100,11 @@ public class EditChatFolderInviteLinkController extends RecyclerViewController<E
   }
 
   @Override
+  protected int getRecyclerBackgroundColorId () {
+    return ColorId.background;
+  }
+
+  @Override
   public void setArguments (Arguments args) {
     super.setArguments(args);
     this.chatFolderId = args.chatFolderId;
@@ -112,7 +118,7 @@ public class EditChatFolderInviteLinkController extends RecyclerViewController<E
   }
 
   @Override
-  protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
+  protected void onCreateView (Context context, FrameLayoutFix contentView, RecyclerView recyclerView) {
     ArrayList<ListItem> items = new ArrayList<>();
 
     if (isNoChatsToShare()) {
@@ -208,12 +214,16 @@ public class EditChatFolderInviteLinkController extends RecyclerViewController<E
   }
 
   @Override
-  protected void onDoneClick () {
+  protected boolean onDoneClick () {
+    if (isInProgress()) {
+      return true;
+    }
     if (hasUnsavedChanges()) {
       saveChanges();
     } else {
       showInviteLinkOptions();
     }
+    return true;
   }
 
   @Override
@@ -268,6 +278,9 @@ public class EditChatFolderInviteLinkController extends RecyclerViewController<E
   }
 
   private void onSelectedChatsChanged () {
+    if (getWrapUnchecked() == null) {
+      return;
+    }
     updateItemsWithCounter();
     updateChatItems();
     updateDoneButton();
@@ -282,6 +295,10 @@ public class EditChatFolderInviteLinkController extends RecyclerViewController<E
     adapter.updateAllValuedSettingsById(R.id.chat);
   }
 
+  private boolean hasSelectedChats () {
+    return !selectedChatIds.isEmpty();
+  }
+
   private boolean hasUnsavedChanges () {
     if (inviteLink == null) {
       return false;
@@ -293,13 +310,22 @@ public class EditChatFolderInviteLinkController extends RecyclerViewController<E
     if (!hasUnsavedChanges()) return;
     TdApi.ChatFolderInviteLink inviteLink = ObjectsCompat.requireNonNull(this.inviteLink);
     long[] chatIds = selectedChatIds.toArray();
+    setInProgress(true);
     tdlib.editChatFolderInviteLink(chatFolderId, inviteLink.inviteLink, inviteLinkName, chatIds, (result, error) -> runOnUiThreadOptional(() -> {
+      setInProgress(false);
+      CharSequence message;
       if (error != null) {
-        UI.showError(error);
+        message = TD.toErrorString(error);
+        updateDoneButton();
       } else {
-        UI.showCustomToast(R.string.Saved, Toast.LENGTH_SHORT, 0);
+        message = Lang.getString(R.string.Saved);
         updateInviteLink(result);
       }
+      context.tooltipManager()
+        .builder(getDoneButton())
+        .controller(this)
+        .show(tdlib, message)
+        .hideDelayed();
     }));
   }
 
@@ -363,20 +389,23 @@ public class EditChatFolderInviteLinkController extends RecyclerViewController<E
     return new ListItem(ListItem.TYPE_CHAT_SMALL, R.id.chat).setLongId(chatId).setData(data);
   }
 
-  private @DrawableRes int doneIconRes;
+  private @DrawableRes int doneIconRes = ResourcesCompat.ID_NULL;
 
   private void updateDoneButton () {
     if (inviteLink == null) {
       return;
     }
-    setDoneVisible(selectedChatIds.size() > 0, doneIconRes != ResourcesCompat.ID_NULL);
     int iconRes = hasUnsavedChanges() ? R.drawable.baseline_check_24 : R.drawable.baseline_share_arrow_24;
-    if (doneIconRes == ResourcesCompat.ID_NULL) {
-      getDoneButton().setIcon(iconRes);
-    } else if (doneIconRes != iconRes) {
-      getDoneButton().replaceIcon(iconRes);
+    if (doneIconRes != iconRes) {
+      doneIconRes = iconRes;
+      setDoneIcon(iconRes);
     }
-    doneIconRes = iconRes;
+    boolean isVisible = isInProgress() || hasSelectedChats();
+    if (isFocused()) {
+      setDoneVisible(isVisible);
+    } else {
+      setInstantDoneVisible(isVisible);
+    }
   }
 
   private class Adapter extends SettingsAdapter {
@@ -418,6 +447,7 @@ public class EditChatFolderInviteLinkController extends RecyclerViewController<E
       if (item.getId() == R.id.btn_inviteLinkName) {
         editText.setEmptyHint(R.string.ChatFolderInviteLinkNameHint);
         editText.setText(inviteLinkName);
+        editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
 
         ImageView iconView = parent.findViewById(android.R.id.icon);
         iconView.setImageResource(item.getIconResource());

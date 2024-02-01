@@ -30,6 +30,7 @@ import android.widget.Toast;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.core.os.CancellationSignal;
 import androidx.core.view.ViewCompat;
 
@@ -1295,7 +1296,7 @@ public class TooltipOverlayView extends ViewGroup {
       return show(new TooltipContentViewText(parentView, tdlib, text, 0, urlOpenParameters));
     }
 
-    public TooltipInfo show (Tdlib tdlib, int stringRes) {
+    public TooltipInfo show (Tdlib tdlib, @StringRes int stringRes) {
       return show(tdlib, new TdApi.FormattedText(Lang.getString(stringRes), null));
     }
 
