@@ -4972,6 +4972,15 @@
   <string name="SuperGroupId">Supergroup ID</string>
   <string name="ChannelId">Channel ID</string>
 
+  <!-- RESOLUTION STRING SECTION -->
+
+  <string name="Experiment_SendHQPhoto">Send large photo</string>
+  <string name="Experiment_ResolutionOption">Photo Resolution Selector</string>
+  <string name="Experiment_ResolutionInfo">Resolution Selector (Experimental): Possible instability or app crashes.</string>
+  <string name="ResolutionLow">Low (800px)</string>
+  <string name="ResolutionMedium">Medium (1280px)</string>
+  <string name="ResolutionHigh">High (2560px)</string>
+
   <string name="BoostingGiveawayJustStarted">%1$s just started a giveaway of Telegram Premium subscriptions for its followers.</string>
   <string name="BoostingGiveawayServiceWinnersSelected_one">%1$s winner of the giveaway was randomly selected by Telegram and received their gift link in a private message.</string>
   <string name="BoostingGiveawayServiceWinnersSelected_other">%1$s winners of the giveaway were randomly selected by Telegram and received their gift link in a private message.</string>
@@ -4996,7 +5005,6 @@
 
   <string name="ReplyMessageDeletedHint">This message is a reply to the message that was deleted.</string>
   <string name="AnotherChatReplyHint">This message is from another chat. Tap again to view.</string>
-  
   <string name="SwipeToSwapLinkPreview">Swipe to choose specific link preview</string>
 
   <string name="MessageRestrictedByTelegram">This is a service message from Telegram</string>

@@ -1026,7 +1026,23 @@ public final class TdlibFileGenerationManager {
     final boolean applyLessCompression = U.isScreenshotFolder(originalPath);
     boolean isTransparent = info.getAllowTransparency() || (!applyLessCompression && isTransparent(originalPath, uri));
 
-    final int maxSize = info.getResolutionLimit() != 0 ? info.getResolutionLimit() : PhotoGenerationInfo.SIZE_LIMIT;
+    final int maxSize;
+
+    switch (Settings.instance().getResolutionOption()) {
+      case Settings.RESOLUTION_OPTION_LOW:
+        maxSize = info.getResolutionLimit() != 0 ? info.getResolutionLimit() : 800;
+        break;
+      /*case Settings.RESOLUTION_OPTION_MEDIUM:
+        maxSize = info.getResolutionLimit() != 0 ? info.getResolutionLimit() : 1280;
+        break;*/
+      case Settings.RESOLUTION_OPTION_HIGH:
+        maxSize = info.getResolutionLimit() != 0 ? info.getResolutionLimit() : 2560;
+        break;
+      default:
+        maxSize = info.getResolutionLimit() != 0 ? info.getResolutionLimit() : 1280;
+        break;
+    }
+
     final boolean saveToGallery = Settings.instance().needSaveEditedMediaToGallery() && info.isEdited();
 
     Bitmap bitmap = null;
