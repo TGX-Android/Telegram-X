@@ -52,6 +52,7 @@ import java.io.File;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
+import me.vkryl.android.AppInstallationUtil;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.reference.ReferenceList;
@@ -120,7 +121,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
     this.context = context;
     this.listeners = new ReferenceList<>();
     AppUpdateManager appUpdateManager = null;
-    if (AppInstallationUtil.allowInAppGooglePlayUpdates()) {
+    if (AppInstallationUtil.allowInAppGooglePlayUpdates(context)) {
       try {
         appUpdateManager = AppUpdateManagerFactory.create(context);
       } catch (Throwable t) {
@@ -183,7 +184,23 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
     // TODO: add server config to force
     return googlePlayUpdateManager == null ||
       forceTelegramChannelFlow ||
-      (googlePlayFlowError && AppInstallationUtil.isAppSideLoaded());
+      (googlePlayFlowError && AppInstallationUtil.isAppSideLoaded(UI.getAppContext()));
+  }
+
+  public static AppInstallationUtil.PublicMarketUrls publicMarketUrls () {
+    return new AppInstallationUtil.PublicMarketUrls(
+      BuildConfig.DOWNLOAD_URL,
+      BuildConfig.GOOGLE_PLAY_URL,
+      BuildConfig.GALAXY_STORE_URL,
+      BuildConfig.HUAWEI_APPGALLERY_URL,
+      BuildConfig.AMAZON_APPSTORE_URL
+    );
+  }
+
+  public static AppInstallationUtil.DownloadUrl getDownloadUrl (@Nullable String serverSuggestedDownloadUrl) {
+    @AppInstallationUtil.InstallerId int installerId = AppInstallationUtil.getInstallerId(UI.getAppContext());
+    AppInstallationUtil.PublicMarketUrls publicMarketUrls = publicMarketUrls();
+    return publicMarketUrls.toDownloadUrl(installerId, serverSuggestedDownloadUrl);
   }
 
   private void setState (@State int state) {
@@ -219,7 +236,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
           }
           case UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS:
           case UpdateAvailability.UPDATE_NOT_AVAILABLE: {
-            if (AppInstallationUtil.isAppSideLoaded()) {
+            if (AppInstallationUtil.isAppSideLoaded(UI.getAppContext())) {
               onGooglePlayFlowError();
             } else {
               onUpdateUnavailable();
@@ -308,7 +325,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
       onUpdateUnavailable();
       return;
     }
-    if (!AppInstallationUtil.allowInAppTelegramUpdates() && !tdlib.hasUrgentInAppUpdate()) {
+    if (BuildConfig.EXPERIMENTAL || (!AppInstallationUtil.allowInAppTelegramUpdates(UI.getAppContext()) && !tdlib.hasUrgentInAppUpdate())) {
       onUpdateUnavailable();
       return;
     }

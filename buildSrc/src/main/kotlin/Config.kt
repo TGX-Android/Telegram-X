@@ -28,7 +28,7 @@ object LibraryVersions {
   const val ANNOTATIONS = "1.3.0"
 }
 
-class AbiVariant (val flavor: String, vararg val filters: String = arrayOf(), val displayName: String = filters[0], val sideLoadOnly: Boolean = false) {
+class AbiVariant (val flavor: String, vararg val filters: String = arrayOf(), val displayName: String = filters[0]) {
   init {
     if (filters.isEmpty())
       error("Empty filters passed")

@@ -284,8 +284,8 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
     if (context.isRepliesChat()) {
       TdApi.MessageForwardInfo forwardInfo = context.msg.forwardInfo;
       MessageId replyToMessageId = MessageId.valueOf(context.msg.replyTo);
-      if (forwardInfo != null && forwardInfo.fromChatId != 0 && forwardInfo.fromMessageId != 0) {
-        MessageId replyMessageId = new MessageId(forwardInfo.fromChatId, forwardInfo.fromMessageId);
+      if (forwardInfo != null && forwardInfo.source != null && forwardInfo.source.chatId != 0 && forwardInfo.source.messageId != 0) {
+        MessageId replyMessageId = new MessageId(forwardInfo.source);
         context.openMessageThread(replyMessageId, replyToMessageId);
       } else if (replyToMessageId != null) {
         context.openMessageThread(replyToMessageId);
@@ -645,8 +645,9 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
     MessageId messageId, fallbackMessageId;
     if (context.isRepliesChat()) {
       MessageId replyToMessageId = MessageId.valueOf(context.msg.replyTo);
-      if (context.msg.forwardInfo != null) {
-        messageId = new MessageId(context.msg.forwardInfo.fromChatId, context.msg.forwardInfo.fromMessageId);
+      TdApi.MessageForwardInfo forwardInfo = context.msg.forwardInfo;
+      if (forwardInfo != null && forwardInfo.source != null && forwardInfo.source.chatId != 0 && forwardInfo.source.messageId != 0) {
+        messageId = new MessageId(forwardInfo.source);
         fallbackMessageId = replyToMessageId;
       } else {
         messageId = replyToMessageId;

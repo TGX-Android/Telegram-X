@@ -25,6 +25,11 @@ public interface CameraDelegate {
   void displayFatalErrorMessage (String msg);
 
   /**
+   * Show hint over record button
+   * */
+  void displayHint (String hint);
+
+  /**
    * Start error resolution, e.g.
    *
    * @param code Error code

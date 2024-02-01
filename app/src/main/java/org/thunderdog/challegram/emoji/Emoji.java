@@ -28,6 +28,7 @@ import androidx.annotation.Nullable;
 
 import com.coremedia.iso.Hex;
 
+import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
@@ -79,6 +80,19 @@ public class Emoji {
   private final ReferenceList<EmojiChangeListener> emojiChangeListeners = new ReferenceList<>();
 
   private final CountLimiter singleLimiter = newSingleLimiter();
+
+  public static String cleanupEmoji (String emoji) {
+    if (StringUtils.isEmpty(emoji)) {
+      return emoji;
+    }
+    StringBuilder b = new StringBuilder(emoji);
+    int end = b.length();
+    while (b.charAt(end - 1) == '\uFE0F') {
+      b.delete(end - 1, end);
+      end--;
+    }
+    return b.toString();
+  }
 
   public static boolean equals (String a, String b) {
     int end1 = a.length();
@@ -1122,5 +1136,13 @@ public class Emoji {
     if (code.endsWith("\uFE0F"))
       return code.substring(0, code.length() - 1);
     return code;
+  }
+
+  public static String getEmojiFlagFromCountry (String countryCode) {
+    try {
+      return Client.execute(new TdApi.GetCountryFlagEmoji(countryCode)).text;
+    } catch (Client.ExecutionException e) {
+      return null;
+    }
   }
 }

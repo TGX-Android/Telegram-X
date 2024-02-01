@@ -1031,7 +1031,12 @@ public class Lang {
         res = R.string.ActionPinnedVideo;
         break;
       case TdApi.MessageVoiceNote.CONSTRUCTOR:
+      case TdApi.MessageExpiredVoiceNote.CONSTRUCTOR:
         res = R.string.ActionPinnedVoice;
+        break;
+      case TdApi.MessageVideoNote.CONSTRUCTOR:
+      case TdApi.MessageExpiredVideoNote.CONSTRUCTOR:
+        res = R.string.ActionPinnedRound;
         break;
       case TdApi.MessageContact.CONSTRUCTOR:
         res = R.string.ActionPinnedContact;
@@ -1047,9 +1052,6 @@ public class Lang {
         break;
       case TdApi.MessageVenue.CONSTRUCTOR:
         res = R.string.ActionPinnedGeo;
-        break;
-      case TdApi.MessageVideoNote.CONSTRUCTOR:
-        res = R.string.ActionPinnedRound;
         break;
       case TdApi.MessageStory.CONSTRUCTOR:
         res = R.string.ActionPinnedStory;
@@ -1113,7 +1115,7 @@ public class Lang {
       case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
         break;
       default:
-        Td.assertMessageContent_d40af239();
+        Td.assertMessageContent_cfe6660a();
         throw Td.unsupported(message.content);
     }
     String format = Lang.getString(res);

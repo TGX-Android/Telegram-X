@@ -66,7 +66,6 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.EditRightsController;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
-import org.thunderdog.challegram.util.AppInstallationUtil;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.UserProvider;
 import org.thunderdog.challegram.util.WrapperProvider;
@@ -100,6 +99,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import me.vkryl.android.AppInstallationUtil;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.FileUtils;
@@ -357,12 +357,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       client.send(new TdApi.GetApplicationConfig(), tdlib.configHandler);
     }
 
-    public void sendFakeUpdate (TdApi.Update update, boolean forceUi) {
-      if (forceUi) {
-        tdlib.processUpdate(this, update);
-      } else {
-        runOnTdlibThread(() -> tdlib.processUpdate(this, update));
-      }
+    public void sendFakeUpdate (TdApi.Update update) {
+      runOnTdlibThread(() -> tdlib.processUpdate(this, update));
     }
 
     @Override
@@ -569,9 +565,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         BuildConfig.TELEGRAM_API_ID,
         BuildConfig.TELEGRAM_API_HASH,
         null, null, null, // updateParameters
-        BuildConfig.VERSION_NAME,
-        false,
-        false
+        BuildConfig.VERSION_NAME
       );
     } else {
       this.parameters = new TdApi.SetTdlibParameters(
@@ -584,9 +578,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         BuildConfig.TELEGRAM_API_ID,
         BuildConfig.TELEGRAM_API_HASH,
         null, null, null, // updateParameters
-        BuildConfig.VERSION_NAME,
-        false,
-        false
+        BuildConfig.VERSION_NAME
       );
     }
 
@@ -3758,6 +3750,27 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
+  public long senderUserId (@NonNull TdApi.MessageSender senderId) {
+    switch (senderId.getConstructor()) {
+      case TdApi.MessageSenderChat.CONSTRUCTOR: {
+        long chatId = ((TdApi.MessageSenderChat) senderId).chatId;
+        return chatUserId(chatId);
+      }
+      case TdApi.MessageSenderUser.CONSTRUCTOR: {
+        return ((TdApi.MessageSenderUser) senderId).userId;
+      }
+      default: {
+        Td.assertMessageSender_439d4c9c();
+        throw Td.unsupported(senderId);
+      }
+    }
+  }
+
+  public @Nullable TdApi.User senderUser (@NonNull TdApi.MessageSender senderId) {
+    long userId = senderUserId(senderId);
+    return userId != 0 ? cache().user(userId) : null;
+  }
+
   public String senderName (TdApi.Message msg, boolean allowForward, boolean shorten) {
     long authorId = Td.getMessageAuthorId(msg, allowForward);
     if (authorId == 0 && allowForward) {
@@ -4019,6 +4032,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return chatUserId(chatId) != 0;
   }
 
+  public boolean isChannel (@Nullable TdApi.ForwardSource source) {
+    return source != null && source.chatId != 0 && isChannel(source.chatId);
+  }
+
   public boolean isChannel (long chatId) {
     TdApi.Supergroup supergroup = chatToSupergroup(chatId);
     return supergroup != null && supergroup.isChannel;
@@ -4031,11 +4048,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   public boolean isChannelAutoForward (@Nullable TdApi.Message message) {
     return message != null && message.chatId != 0 && message.forwardInfo != null &&
-      message.forwardInfo.fromChatId != 0 && message.forwardInfo.fromMessageId != 0 &&
-      message.forwardInfo.fromChatId != message.chatId &&
+      Td.hasMessageSource(message.forwardInfo) &&
+      message.forwardInfo.source.chatId != message.chatId &&
       message.senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR &&
-      ((TdApi.MessageSenderChat) message.senderId).chatId == message.forwardInfo.fromChatId &&
-      isSupergroup(message.chatId) && isChannel(message.forwardInfo.fromChatId);
+      ((TdApi.MessageSenderChat) message.senderId).chatId == message.forwardInfo.source.chatId &&
+      isSupergroup(message.chatId) && isChannel(message.forwardInfo.source.chatId);
   }
 
   public boolean canDisablePinnedMessageNotifications (long chatId) {
@@ -4774,7 +4791,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
           return Td.textOrCaption(messageText);
       }
-      Td.assertMessageContent_d40af239();
+      Td.assertMessageContent_cfe6660a();
       throw Td.unsupported(messageText);
     }
     return getPendingMessageCaption(chatId, messageId);
@@ -5848,13 +5865,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           throw new IllegalStateException(Integer.toString(state));
       }
     }
-    long timeZoneOffset = timeZoneOffset();
-    params.put("package_id", UI.getAppContext().getPackageName());
-    String installerName = AppInstallationUtil.getInstallerPackageName();
+    final long timeZoneOffset = timeZoneOffset();
+    final Context context = UI.getAppContext();
+    params.put("package_id", context.getPackageName());
+    String installerName = AppInstallationUtil.getInstallerPackageName(context);
     if (!StringUtils.isEmpty(installerName)) {
       params.put("installer", installerName);
     }
-    String initiatorName = AppInstallationUtil.getInitiatorPackageName();
+    String initiatorName = AppInstallationUtil.getInitiatorPackageName(context);
     if (!StringUtils.isEmpty(initiatorName) && !initiatorName.equals(installerName)) {
       params.put("initiator", initiatorName);
     }
@@ -5943,7 +5961,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       updateNotificationParameters(client);
       client.send(new TdApi.SetOption("storage_max_files_size", new TdApi.OptionValueInteger(Integer.MAX_VALUE)), okHandler);
       client.send(new TdApi.SetOption("ignore_default_disable_notification", new TdApi.OptionValueBoolean(true)), okHandler);
-      client.send(new TdApi.SetOption("ignore_platform_restrictions", new TdApi.OptionValueBoolean(AppInstallationUtil.isAppSideLoaded())), okHandler);
+      client.send(new TdApi.SetOption("ignore_platform_restrictions", new TdApi.OptionValueBoolean(AppInstallationUtil.isAppSideLoaded(UI.getAppContext()))), okHandler);
       client.send(new TdApi.SetOption("process_pinned_messages_as_mentions", new TdApi.OptionValueBoolean(true)), okHandler);
     }
     checkConnectionParams(client, true);
@@ -6770,7 +6788,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public boolean youtubePipEnabled () {
-    return !youtubePipDisabled || AppInstallationUtil.isAppSideLoaded();
+    return !youtubePipDisabled || AppInstallationUtil.isAppSideLoaded(UI.getAppContext());
   }
 
   public RtcServer[] rtcServers () {
@@ -9486,31 +9504,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
-  /*private void updateReactions (TdApi.UpdateReactions update) {
-    synchronized (dataLock) {
-      HashMap<String, TGReaction> supportedTGReactionsMap = new HashMap<>();
-      ArrayList<TGReaction> notPremiumReactions = new ArrayList<>();
-      ArrayList<TGReaction> onlyPremiumReactions = new ArrayList<>();
-
-      for (int a = 0; a < update.reactions.length; a++) {
-        TdApi.Reaction reaction = update.reactions[a];
-        TGReaction tgReaction = new TGReaction(this, reaction);
-        supportedTGReactionsMap.put(reaction.reaction, tgReaction);
-        if (reaction.isActive) {
-          if (reaction.isPremium) {
-            onlyPremiumReactions.add(tgReaction);
-          } else {
-            notPremiumReactions.add(tgReaction);
-          }
-        }
-      }
-
-      this.supportedTGReactionsMap = supportedTGReactionsMap;
-      this.notPremiumReactions = notPremiumReactions;
-      this.onlyPremiumReactions = onlyPremiumReactions;
-    }
-  }*/
-
   private void updateStickerSet (TdApi.StickerSet stickerSet) {
     animatedTgxEmoji.update(this, stickerSet);
     animatedDiceExplicit.update(this, stickerSet);
@@ -9547,90 +9540,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     filegen().updateFileGenerationStop(update);
   }
 
-  // Updates: ENTRY
-
-  /*public void doFake () {
-    // Captain Raptor =
-    // Lucky = 472280754
-
-    TdApi.Chat captainRaptor = chat(73083932);
-    TdApi.Chat lucky = chat(472280754);
-    TdApi.Chat kepler = chat(636750);
-    TdApi.Chat sajil = chat(47518346);
-    TdApi.Chat nepho = chat(213963390);
-
-
-    if (captainRaptor == null || lucky == null || kepler == null || sajil == null || nepho == null) {
-      return;
-    }
-
-    sendFakeUpdate(new TdApi.UpdateUserChatAction(captainRaptor.id, (int) captainRaptor.id, new TdApi.ChatActionTyping()), false);
-    sendFakeUpdate(new TdApi.UpdateUserChatAction(lucky.id, (int) lucky.id, new TdApi.ChatActionRecordingVoiceNote()), false);
-    sendFakeUpdate(new TdApi.UpdateUserChatAction(kepler.id, (int) kepler.id, new TdApi.ChatActionRecordingVideoNote()), false);
-    sendFakeUpdate(new TdApi.UpdateUserChatAction(nepho.id, (int) nepho.id, new TdApi.ChatActionStartPlayingGame()), false);
-    int stepsCount = 8;
-    int factorPerStep = 100 / stepsCount;
-    long delay = 300;
-    for (int i = 0; i <= stepsCount; i++) {
-      final int progress = i * factorPerStep;
-      if (i == 0) {
-        sendFakeUpdate(new TdApi.UpdateUserChatAction(sajil.id, (int) sajil.id, new TdApi.ChatActionUploadingPhoto()), false);
-      } else {
-        UI.post(new Runnable() {
-          @Override
-          public void run () {
-            sendFakeUpdate(new TdApi.UpdateUserChatAction(sajil.id, (int) sajil.id, new TdApi.ChatActionUploadingPhoto(progress)), false);
-          }
-        }, delay * i);
-        if (i == stepsCount) {
-          UI.post(new Runnable() {
-            @Override
-            public void run () {
-              sendFakeMessage(captainRaptor, new TdApi.MessageText(new TdApi.FormattedText("Hello!", null), null));
-              sendFakeMessage(lucky, new TdApi.MessageVoiceNote(null, new TdApi.FormattedText(), false));
-              sendFakeMessage(kepler, new TdApi.MessageVideoNote(null, false, false));
-              sendFakeMessage(sajil, new TdApi.MessagePhoto(null, new TdApi.FormattedText(), false));
-              sendFakeMessage(nepho, new TdApi.MessageGameScore(0, 0, 9138));
-
-              sendFakeUpdate(new TdApi.UpdateUserChatAction(captainRaptor.id, (int) captainRaptor.id, new TdApi.ChatActionCancel()), false);
-              sendFakeUpdate(new TdApi.UpdateUserChatAction(lucky.id, (int) lucky.id, new TdApi.ChatActionCancel()), false);
-              sendFakeUpdate(new TdApi.UpdateUserChatAction(kepler.id, (int) kepler.id, new TdApi.ChatActionCancel()), false);
-              sendFakeUpdate(new TdApi.UpdateUserChatAction(sajil.id, (int) sajil.id, new TdApi.ChatActionCancel()), false);
-              sendFakeUpdate(new TdApi.UpdateUserChatAction(nepho.id, (int) nepho.id, new TdApi.ChatActionCancel()), false);
-            }
-          }, delay * (i + 1));
-        }
-      }
-    }
-  }
-
-  private void sendFakeMessage (TdApi.Chat chat, TdApi.MessageContent content) {
-    TdApi.Message message = TD.newFakeMessage(content);
-    message.chatId = chat.id;
-    message.senderUserId = (int) chat.id;
-    message.date = (int) (System.currentTimeMillis() / 1000l);
-    sendFakeUpdate(new TdApi.UpdateChatReadInbox(chat.id, chat.lastReadInboxMessageId, chat.unreadCount + 1), false);
-    // sendFakeUpdate(new TdApi.UpdateNewMessage(message, false, false), false);
-    sendFakeUpdate(new TdApi.UpdateChatLastMessage(chat.id, message, chat.order), false);
-  }*/
-
-  public void sendFakeUpdate (TdApi.Update update, boolean forceUi) {
-    clientHolder().sendFakeUpdate(update, forceUi);
-  }
-
-  public void __sendFakeAction (TdApi.ChatAction action) {
-    ArrayList<TdApi.Chat> chats;
-    synchronized (dataLock) {
-      chats = new ArrayList<>(this.chats.size());
-      for (Map.Entry<Long, TdApi.Chat> chat : this.chats.entrySet()) {
-        chats.add(chat.getValue());
-      }
-    }
-    for (TdApi.Chat chat : chats) {
-      if (chat.lastMessage != null) {
-        sendFakeUpdate(new TdApi.UpdateChatAction(chat.id, 0, chat.lastMessage.senderId, action), false);
-      }
-    }
+  public void sendFakeUpdate (TdApi.Update update) {
+    clientHolder().sendFakeUpdate(update);
   }
 
   private void processUpdate (ClientHolder context, TdApi.Update update) {
@@ -9755,6 +9666,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       // Join requests
       case TdApi.UpdateChatPendingJoinRequests.CONSTRUCTOR: {
         updateChatPendingJoinRequests((TdApi.UpdateChatPendingJoinRequests) update);
+        break;
+      }
+
+      // Saved messages
+      case TdApi.UpdatePinnedSavedMessagesTopics.CONSTRUCTOR: {
+        // TODO
+        break;
+      }
+      case TdApi.UpdateSavedMessagesTags.CONSTRUCTOR: {
+        // TODO
         break;
       }
 
@@ -10147,7 +10068,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         throw Td.unsupported(update);
       }
       default: {
-        Td.assertUpdate_618db8c7();
+        Td.assertUpdate_f1964de1();
         throw Td.unsupported(update);
       }
     }
@@ -10417,7 +10338,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     boolean needFilter = !StringUtils.isEmpty(query) || filter != null;
     TdApi.Function<?> function;
     if (needFilter) {
-      function = new TdApi.SearchChatMessages(chatId, query, null, 0, 0, 100, filter, 0);
+      function = new TdApi.SearchChatMessages(chatId, query, null, 0, 0, 100, filter, 0, null);
     } else {
       function = new TdApi.GetChatHistory(chatId, 0, 0, 0, false);
     }
@@ -10505,7 +10426,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           version = document.fileName.substring(prefix.length(), i == -1 ? document.fileName.length() : i);
           if (version.matches("^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$")) {
             buildNo = StringUtils.parseInt(version.substring(version.lastIndexOf('.') + 1));
-            if (buildNo > BuildConfig.ORIGINAL_VERSION_CODE || BuildConfig.DEBUG) {
+            if (buildNo > BuildConfig.ORIGINAL_VERSION_CODE) {
               ok = true;
             }
           }
@@ -11068,8 +10989,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageStory.CONSTRUCTOR:
           return getStoryRestrictionText(chat);
         case TdApi.MessageVideoNote.CONSTRUCTOR:
+        case TdApi.MessageExpiredVideoNote.CONSTRUCTOR:
           return getDefaultRestrictionText(chat, RightId.SEND_VIDEO_NOTES);
         case TdApi.MessageVoiceNote.CONSTRUCTOR:
+        case TdApi.MessageExpiredVoiceNote.CONSTRUCTOR:
           return getDefaultRestrictionText(chat, RightId.SEND_VOICE_NOTES);
         // RightId.SEND_BASIC_MESSAGES
         case TdApi.MessageText.CONSTRUCTOR:
@@ -11134,7 +11057,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           // assuming we want to check RightId.SEND_BASIC_MESSAGES
           return getBasicMessageRestrictionText(chat);
         default:
-          Td.assertMessageContent_d40af239();
+          Td.assertMessageContent_cfe6660a();
           throw Td.unsupported(message.content);
       }
     }

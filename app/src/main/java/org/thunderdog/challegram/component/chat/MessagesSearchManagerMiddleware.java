@@ -236,7 +236,7 @@ public class MessagesSearchManagerMiddleware {
 
   @UiThread
   public void sendSearchRequest (SendSearchRequestArguments args) {
-    TdApi.SearchChatMessages query = cloneSearchChatQuery(args.function);
+    TdApi.SearchChatMessages query = Td.copyOf(args.function);
     query.limit = Math.min(query.limit, 25);
     query.offset = args.direction == SEARCH_DIRECTION_TOP ? 0 : 1 - query.limit;
     query.fromMessageId = args.fromMessageId != 0 ? args.fromMessageId : query.fromMessageId;
@@ -492,7 +492,7 @@ public class MessagesSearchManagerMiddleware {
 
     if (queryIsEmpty) {
       if (hasMediaFilter) {
-        return new TdApi.SearchChatMessages(query.chatId, query.query, null, !StringUtils.isEmpty(query.offset) ? Long.parseLong(query.offset) : 0, 0, query.limit, safeFilter, 0);
+        return new TdApi.SearchChatMessages(query.chatId, query.query, null, !StringUtils.isEmpty(query.offset) ? Long.parseLong(query.offset) : 0, 0, query.limit, safeFilter, 0, null);
       } else {
         return new TdApi.GetChatHistory(query.chatId, !StringUtils.isEmpty(query.offset) ? Long.parseLong(query.offset) : 0, 0, query.limit, false);
       }
@@ -502,19 +502,29 @@ public class MessagesSearchManagerMiddleware {
   }
 
   private static TdApi.SearchSecretMessages cloneSearchSecretQuery (TdApi.SearchSecretMessages query, String newOffset) {
-    return new TdApi.SearchSecretMessages(query.chatId, query.query, newOffset, query.limit, query.filter);
+    TdApi.SearchSecretMessages modifiedQuery = Td.copyOf(query);
+    modifiedQuery.offset = newOffset;
+    return modifiedQuery;
   }
 
   private static TdApi.SearchChatMessages safeSearchChatQuery (TdApi.SearchChatMessages query, boolean withoutSenderId, boolean withoutFilter) {
-    return new TdApi.SearchChatMessages(query.chatId, query.query, withoutSenderId ? null : query.senderId, query.fromMessageId, query.offset, query.limit, withoutFilter ? null : safeFilter(query.filter), query.messageThreadId);
+    TdApi.SearchChatMessages modifiedQuery = Td.copyOf(query);
+    if (withoutSenderId) {
+      modifiedQuery.senderId = null;
+    }
+    if (withoutFilter) {
+      modifiedQuery.filter = null;
+    } else {
+      modifiedQuery.filter = safeFilter(query.filter);
+    }
+    return modifiedQuery;
   }
 
   private static TdApi.SearchChatMessages cloneSearchChatQuery (TdApi.SearchChatMessages query, long newFromMessageId, int newOffset) {
-    return new TdApi.SearchChatMessages(query.chatId, query.query, query.senderId, newFromMessageId, newOffset, query.limit, query.filter, query.messageThreadId);
-  }
-
-  private static TdApi.SearchChatMessages cloneSearchChatQuery (TdApi.SearchChatMessages query) {
-    return new TdApi.SearchChatMessages(query.chatId, query.query, query.senderId, query.fromMessageId, query.offset, query.limit, query.filter, query.messageThreadId);
+    TdApi.SearchChatMessages modifiedQuery = Td.copyOf(query);
+    modifiedQuery.fromMessageId = newFromMessageId;
+    modifiedQuery.offset = newOffset;
+    return modifiedQuery;
   }
 
   private static TdApi.FoundMessages messagesToFoundMessages (TdApi.FoundChatMessages messages) {

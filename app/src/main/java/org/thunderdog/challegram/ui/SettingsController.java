@@ -71,7 +71,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.AppBuildInfo;
-import org.thunderdog.challegram.util.AppInstallationUtil;
+import org.thunderdog.challegram.util.AppUpdater;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.PullRequest;
 import org.thunderdog.challegram.util.StringList;
@@ -83,6 +83,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import me.vkryl.android.AppInstallationUtil;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.ColorUtils;
@@ -621,7 +622,7 @@ public class SettingsController extends ViewController<Void> implements
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    AppInstallationUtil.DownloadUrl downloadUrl = AppInstallationUtil.getDownloadUrl(null);
+    AppInstallationUtil.DownloadUrl downloadUrl = AppUpdater.getDownloadUrl(null);
     @DrawableRes int downloadIconRes;
     @StringRes int downloadStringRes = R.string.CheckForUpdates;
     if (tdlib.hasUrgentInAppUpdate() && tdlib.isProduction()) {
@@ -629,7 +630,8 @@ public class SettingsController extends ViewController<Void> implements
       downloadUrl = new AppInstallationUtil.DownloadUrl(downloadUrl.installerId, tdlib.tMeUrl(BuildConfig.TELEGRAM_UPDATES_CHANNEL));
     } else {
       switch (downloadUrl.installerId) {
-        case AppInstallationUtil.InstallerId.UNKNOWN: {
+        case AppInstallationUtil.InstallerId.UNKNOWN:
+        case AppInstallationUtil.InstallerId.MEMU_EMULATOR: {
           if (!StringUtils.isEmpty(BuildConfig.GOOGLE_PLAY_URL)) {
             downloadUrl = new AppInstallationUtil.DownloadUrl(AppInstallationUtil.InstallerId.GOOGLE_PLAY, BuildConfig.GOOGLE_PLAY_URL);
             downloadIconRes = R.drawable.baseline_google_play_24;

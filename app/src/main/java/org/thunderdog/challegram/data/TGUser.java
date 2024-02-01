@@ -242,6 +242,10 @@ public class TGUser implements UserProvider {
     }
   }
 
+  public boolean belongsToSenderId (@NonNull TdApi.MessageSender senderId) {
+    return getChatId() == Td.getSenderId(senderId);
+  }
+
   public void setChat (long chatId, @Nullable TdApi.Chat chat) {
     this.user = null;
     this.chatId = chatId;
@@ -345,6 +349,10 @@ public class TGUser implements UserProvider {
 
   public String getName () {
     return nameText;
+  }
+
+  public String getShorterName () {
+    return TD.getShorterUserNameOrNull(getFirstName(), getLastName());
   }
 
   public float getNameWidth () {

@@ -62,7 +62,7 @@ public class ThreadInfo {
     boolean areComments = tdlib.isChannelAutoForward(oldestMessage);
     if (contextChatId == 0 && areComments && oldestMessage != null && chatId != oldestMessage.chatId) {
       //noinspection ConstantConditions
-      contextChatId = oldestMessage.forwardInfo.fromChatId;
+      contextChatId = oldestMessage.forwardInfo.source.chatId;
     }
     return new ThreadInfo(tdlib, threadInfo, contextChatId, areComments);
   }

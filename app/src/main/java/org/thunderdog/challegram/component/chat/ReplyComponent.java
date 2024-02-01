@@ -592,8 +592,8 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
           }
         }
         if (replyToMessage.origin == null) {
-          if (message.forwardInfo != null && message.forwardInfo.fromChatId != 0 && message.forwardInfo.fromMessageId != 0 && !parent.isRepliesChat()) {
-            function = new TdApi.GetRepliedMessage(message.forwardInfo.fromChatId, message.forwardInfo.fromMessageId);
+          if (Td.hasMessageSource(message.forwardInfo) && !parent.isRepliesChat()) {
+            function = new TdApi.GetRepliedMessage(message.forwardInfo.source.chatId, message.forwardInfo.source.messageId);
           } else {
             function = new TdApi.GetRepliedMessage(message.chatId, message.id);
           }

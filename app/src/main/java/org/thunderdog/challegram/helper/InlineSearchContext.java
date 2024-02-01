@@ -55,7 +55,9 @@ import org.thunderdog.challegram.util.CancellableResultHandler;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
@@ -1270,31 +1272,31 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
         }
 
         if (!StringUtils.isEmpty(query)) {
-          tdlib.client().send(new TdApi.SearchEmojis(query, false, U.getInputLanguages()), result -> {
-            if (result.getConstructor() == TdApi.Emojis.CONSTRUCTOR) {
-              TdApi.Emojis emojis = (TdApi.Emojis) result;
-              ArrayList<InlineResult<?>> addedResults = new ArrayList<>(emojis.emojis.length);
-              for (String emoji : emojis.emojis) {
-                boolean found = false;
-                if (inlineResults != null) {
-                  for (InlineResult<?> existingResult : inlineResults) {
-                    if (existingResult instanceof InlineResultEmojiSuggestion && Emoji.equals(emoji, ((InlineResultEmojiSuggestion) existingResult).getEmoji())) {
-                      found = true;
-                      break;
-                    }
-                  }
-                }
-                if (!found) {
-                  addedResults.add(new InlineResultEmojiSuggestion(context, tdlib, new N.Suggestion(emoji, null, null), null).setTarget(startIndex, endIndex));
+          final String searchQuery = query;
+          Set<String> addedEmojis = new LinkedHashSet<>();
+          if (inlineResults != null) {
+            for (InlineResult<?> existingResult : inlineResults) {
+              if (existingResult instanceof InlineResultEmojiSuggestion) {
+                String emoji = ((InlineResultEmojiSuggestion) existingResult).getEmoji();
+                addedEmojis.add(Emoji.cleanupEmoji(emoji));
+              }
+            }
+          }
+          tdlib.send(new TdApi.SearchEmojis(searchQuery, U.getInputLanguages()), (keywords, error) -> {
+            if (keywords != null) {
+              ArrayList<InlineResult<?>> extraResults = new ArrayList<>(keywords.emojiKeywords.length);
+              for (TdApi.EmojiKeyword keyword : keywords.emojiKeywords) {
+                if (addedEmojis.add(Emoji.cleanupEmoji(keyword.emoji))) {
+                  extraResults.add(new InlineResultEmojiSuggestion(context, tdlib, new N.Suggestion(keyword.emoji, !StringUtils.isEmpty(keyword.keyword) ? keyword.keyword : null, null), searchQuery).setTarget(startIndex, endIndex));
                 }
               }
-              if (!addedResults.isEmpty()) {
+              if (!extraResults.isEmpty()) {
                 tdlib.ui().post(() -> {
                   if (isPending() && StringUtils.equalsOrBothEmpty(currentInput, currentText)) {
                     if (inlineResults == null || inlineResults.isEmpty()) {
-                      showEmojiSuggestions(addedResults);
+                      showEmojiSuggestions(extraResults);
                     } else {
-                      inlineResults.addAll(addedResults);
+                      inlineResults.addAll(extraResults);
                       showEmojiSuggestions(inlineResults);
                     }
                   }

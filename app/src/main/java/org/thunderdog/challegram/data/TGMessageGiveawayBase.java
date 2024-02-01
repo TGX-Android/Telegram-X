@@ -100,7 +100,7 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
   }
 
   @Override
-  public boolean isValidPosition (int x, int y) {
+  public boolean isValidPosition (float x, float y) {
     return y < content.getHeight() && content.isValidPosition(x - (useFullWidthParticles ? getContentX() : 0) - Screen.dp(CONTENT_PADDING_DP), y);
   }
 
@@ -246,7 +246,7 @@ public abstract class TGMessageGiveawayBase extends TGMessage implements TGInlin
     private final RectF tmpRectF = new RectF();
 
     @Override
-    public boolean isValidPosition (int x, int y) {
+    public boolean isValidPosition (float x, float y) {
       for (ContentPart p : parts) {
         int w = p.getWidth();
         int h = p.getHeight();
