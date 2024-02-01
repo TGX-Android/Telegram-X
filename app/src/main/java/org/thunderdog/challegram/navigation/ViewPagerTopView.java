@@ -36,6 +36,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.Px;
 
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.core.Lang;
@@ -163,7 +164,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       final float labelWidth = string != null ? U.measureEmojiText(string, paint) * labelFactor : 0f;
       final float counterWidthWithSpacing = counter != null ? counter.getScaledWidth(horizontalSpacing) : 0f;
       final float iconWidth = iconRes != 0 ? Screen.dp(ICON_SIZE) : 0;
-      final float iconWidthWithLabelSpacing = iconRes != 0 ? iconWidth + horizontalSpacing * labelFactor : 0;
+      final float iconWidthWithLabelSpacing = iconRes != 0 ? (iconWidth + horizontalSpacing * labelFactor) : 0;
       if (staticWidth != -1) {
         width = staticWidth;
       } else if (counter != null) {
@@ -259,13 +260,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     if (this.itemPadding != itemPadding) {
       this.itemPadding = itemPadding;
       if (items != null && !items.isEmpty()) {
-        this.lastMeasuredWidth = 0;
-        this.totalWidth = 0;
-        for (Item item : items) {
-          this.totalWidth += item.width + itemPadding * 2;
-        }
-        this.maxItemWidth = items.isEmpty() ? 0 : totalWidth / items.size();
-        requestLayout();
+        relayout();
       }
     }
   }
@@ -274,9 +269,8 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     if (this.itemSpacing != itemSpacing) {
       this.itemSpacing = itemSpacing;
       if (items != null && !items.isEmpty()) {
-        this.lastMeasuredWidth = 0;
         measureItems();
-        requestLayout();
+        relayout();
       }
     }
   }
@@ -304,9 +298,8 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     if (this.showLabelOnActiveOnly != showLabelOnActiveOnly) {
       this.showLabelOnActiveOnly = showLabelOnActiveOnly;
       if (items != null && !items.isEmpty()) {
-        this.lastMeasuredWidth = 0;
         measureItems();
-        requestLayout();
+        relayout();
       }
     }
   }
@@ -416,17 +409,11 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   }
 
   public void setItemAt (int index, Item item) {
-    Item oldItem = this.items.get(index);
     this.items.set(index, item);
     onUpdateItems();
-    totalWidth -= oldItem.width + itemPadding * 2;
 
     measureItem(item, index, getItemTextPaint(item));
-    totalWidth += item.width + itemPadding * 2;
-    maxItemWidth = totalWidth / items.size();
-
-    this.lastMeasuredWidth = 0;
-    requestLayout();
+    relayout();
     invalidate();
   }
 
@@ -459,11 +446,11 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     this.items = items;
     onUpdateItems();
 
-    this.lastMeasuredWidth = 0;
     measureItems();
     for (int i = 0; i < items.size(); i++) {
       addView(newBackgroundView(i));
     }
+    relayout();
   }
 
   public void addItem (String item) {
@@ -543,18 +530,21 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     return Paints.getViewPagerTextPaint(Theme.headerTextColor(), item.needFakeBold);
   }
 
+  private void relayout () {
+    this.totalWidth = calculateTotalWidth();
+    this.maxItemWidth = items == null || items.isEmpty() ? 0 : (totalWidth / items.size());
+    this.lastMeasuredWidth = 0; // force layout
+    requestLayout();
+  }
+
   private void measureItems () {
-    if (items == null) {
+    if (items == null || items.isEmpty()) {
       return;
     }
-    int totalWidth = 0;
     for (int i = 0; i < items.size(); i++) {
       Item item = items.get(i);
       measureItem(item, i, getItemTextPaint(item));
-      totalWidth += item.width + itemPadding * 2;
     }
-    this.totalWidth = totalWidth;
-    this.maxItemWidth = items.isEmpty() ? 0 : totalWidth / items.size();
   }
 
   private void measureItem (Item item, int itemIndex, TextPaint paint) {
@@ -563,6 +553,17 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
 
   private boolean shouldWrapContent () {
     return getLayoutParams().width == ViewGroup.LayoutParams.WRAP_CONTENT;
+  }
+
+  private int calculateTotalWidth () {
+    if (items == null || items.isEmpty()) {
+      return 0;
+    }
+    int sum = 0;
+    for (Item item : items) {
+      sum += item.width + itemPadding * 2;
+    }
+    return sum;
   }
 
   private void onUpdateItems () {
@@ -587,6 +588,10 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     if (shouldWrapContent()) {
+      int totalWidth = calculateTotalWidth();
+      if (totalWidth != this.totalWidth && BuildConfig.DEBUG) {
+        throw new IllegalStateException("this.totalWidth = " + this.totalWidth + ", totalWidth = " + totalWidth);
+      }
       super.onMeasure(MeasureSpec.makeMeasureSpec(totalWidth, MeasureSpec.EXACTLY), heightMeasureSpec);
       layout(totalWidth, true);
     } else {
@@ -717,8 +722,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
 
       if (showLabelOnActiveOnly) {
         measureItems();
-        requestLayout();
-        lastMeasuredWidth = 0;
+        relayout();
       } else {
         recalculateSelection(selectionFactor, true);
       }
