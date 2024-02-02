@@ -69,6 +69,7 @@ import org.thunderdog.challegram.component.preview.FlingDetector;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.core.Media;
 import org.thunderdog.challegram.data.InlineResult;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
@@ -227,7 +228,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     private long receiverChatId, messageThreadId;
     private @Nullable TdApi.SavedMessagesTopic savedMessagesTopic;
 
-    private boolean areOnlyScheduled, deleteOnExit;
+    private boolean areOnlyScheduled;
 
     public Args (ViewController<?> parentController, int mode, MediaViewDelegate delegate, MediaSelectDelegate selectDelegate, MediaSendDelegate sendDelegate, MediaStack stack) {
       this.parentController = parentController;
@@ -249,16 +250,16 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     private @AvatarPickerMode int avatarPickerMode;
 
-    public Args setAvatarPickerMode (@AvatarPickerMode int isProfilePhotoEditor) {
+    public Args setAvatarPickerMode (@AvatarPickerMode int avatarPickerMode) {
       if (mode != MODE_GALLERY) {
         throw new IllegalStateException();
       }
-      this.avatarPickerMode = isProfilePhotoEditor;
-      return this;
-    }
+      this.avatarPickerMode = avatarPickerMode;
+      setSendButtonIcon(MediaViewController.getResId(avatarPickerMode, 0,
+        R.drawable.dot_baseline_profile_accept_24,
+        R.drawable.dot_baseline_group_accept_24,
+        R.drawable.dot_baseline_channel_accept_24));
 
-    public Args setDeleteOnExit (boolean deleteOnExit) {
-      this.deleteOnExit = deleteOnExit;
       return this;
     }
 
@@ -295,6 +296,36 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     public static Args fromGallery (ViewController<?> context, MediaViewDelegate delegate, MediaSelectDelegate selectDelegate, MediaSendDelegate sendDelegate, MediaStack galleryStack, boolean areOnlyScheduled) {
       return new Args(context, MODE_GALLERY, delegate, selectDelegate, sendDelegate, galleryStack).setOnlyScheduled(areOnlyScheduled);
+    }
+
+    /* */
+
+    private @DrawableRes int sendButtonIcon;
+
+    public Args setSendButtonIcon (@DrawableRes int icon) {
+      this.sendButtonIcon = icon;
+      return this;
+    }
+
+
+
+    private int flags;
+    public static final int FLAG_DISALLOW_MULTI_SELECTION_MEDIA = 1;
+    public static final int FLAG_DISALLOW_SET_DESTRUCTION_TIMER = 1 << 1;
+    public static final int FLAG_DELETE_FILE_ON_EXIT = 1 << 2;
+
+    public Args setFlag (int flag) {
+      this.flags = BitwiseUtils.setFlag(flags, flag, true);
+      return this;
+    }
+
+    public Args setFlag (int flag, boolean value) {
+      this.flags = BitwiseUtils.setFlag(flags, flag, value);
+      return this;
+    }
+
+    public boolean hasFlag (int flag) {
+      return BitwiseUtils.hasFlag(flags, flag);
     }
   }
 
@@ -1570,6 +1601,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
       TdApi.Chat chat = tdlib.chat(item.getSourceChatId());
 
+      if (tdlib.canEditMedia(item.getMessage())) {
+        ids.append(R.id.btn_replace);
+        strings.append(item.isVideo() ? R.string.ReplaceVideo : R.string.ReplaceImage);
+      }
+
       if (item.isLoaded() && item.canBeSaved()) {
         if ((item.isVideo() && !item.isGifType()) || (getArgumentsStrict().forceOpenIn)) {
           ids.append(R.id.btn_open);
@@ -1709,6 +1745,14 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         TdApi.Document document = item.getSourceDocument();
         U.openFile(this, document.fileName, new File(document.document.local.path), document.mimeType, 0);
       }
+    } else if (id == R.id.btn_replace) {
+      if (mediaPickerManager == null) {
+        mediaPickerManager = new TdlibUi.SingleMediaPickerManager(this);
+      }
+      mediaPickerManager.openMediaView(file -> Media.instance().post(() -> {
+        TdApi.InputMessageContent content = TD.toContent(tdlib, file, false, true, false, false);
+        UI.post(() -> tdlib.editMessageMedia(item.getSourceChatId(), item.getSourceMessageId(), content));
+      }), findOutputController());
     } else if (id == R.id.btn_share) {
       ShareController c;
       if (item.getMessage() != null) {
@@ -1790,6 +1834,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       close();
     }
   }
+
+  private TdlibUi.SingleMediaPickerManager mediaPickerManager;
 
   @Override
   public View getCustomHeaderCell () {
@@ -5123,6 +5169,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private int getResId (int defaultResId, int profileResId, int groupResId, int channelResId) {
     final int mode = getArgumentsStrict().avatarPickerMode;
+    return getResId(mode, defaultResId, profileResId, groupResId, channelResId);
+  }
+
+  private static int getResId (@AvatarPickerMode int mode, int defaultResId, int profileResId, int groupResId, int channelResId) {
     if (mode == AvatarPickerMode.PROFILE) {
       return profileResId;
     } else if (mode == AvatarPickerMode.CHANNEL) {
@@ -5135,6 +5185,14 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private boolean inProfilePhotoEditMode () {
     return getArgumentsStrict().avatarPickerMode != AvatarPickerMode.NONE;
+  }
+
+  private boolean inSingleMediaMode () {
+    return hasFlag(Args.FLAG_DISALLOW_MULTI_SELECTION_MEDIA) || inProfilePhotoEditMode();
+  }
+
+  private boolean hasFlag (int flag) {
+    return getArgumentsStrict().hasFlag(flag);
   }
 
   private int controlsMargin;
@@ -5193,7 +5251,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (current != null && current.isViewOnce()) {
       current.viewContent(true);
     }
-    if (!isMediaSent && getArguments() != null && getArgumentsStrict().deleteOnExit && stack != null) {
+    if (!isMediaSent && getArguments() != null && hasFlag(Args.FLAG_DELETE_FILE_ON_EXIT) && stack != null) {
       for (int i = 0; i < stack.getCurrentSize(); i++) {
         MediaItem item = stack.get(i);
         if (item.getSourceGalleryFile().isFromCamera()) {
@@ -7135,12 +7193,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void setDefaultSendButtonIcon (boolean animated) {
-    sendButton.setIcon(getResId(
-      R.drawable.deproko_baseline_send_24,
-      R.drawable.dot_baseline_profile_accept_24,
-      R.drawable.dot_baseline_group_accept_24,
-      R.drawable.dot_baseline_channel_accept_24
-    ), animated, false);
+    final int forced = getArgumentsStrict().sendButtonIcon;
+    sendButton.setIcon(forced != 0 ? forced : R.drawable.deproko_baseline_send_24, animated, false);
     sendButton.setSlowModeVisibility(true, animated);
   }
 
@@ -8293,6 +8347,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         return;
       }
 
+      imageGalleryFile.setCaption(stack.getCurrent().getCaption());
       final MediaItem mediaItem = new MediaItem(context, tdlib, imageGalleryFile);
       final MediaStack mediaStack = new MediaStack(context, tdlib);
       mediaStack.set(mediaItem);
@@ -8607,7 +8662,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     adjustOrTextButton.setLayoutParams(new LinearLayout.LayoutParams(Screen.dp(56f), ViewGroup.LayoutParams.MATCH_PARENT));
     editButtons.addView(adjustOrTextButton);
 
-    if (chat != null && chat.type.getConstructor() == TdApi.ChatTypePrivate.CONSTRUCTOR && !tdlib.isBotChat(chat)) {
+    if (chat != null && chat.type.getConstructor() == TdApi.ChatTypePrivate.CONSTRUCTOR && !tdlib.isBotChat(chat) && !hasFlag(Args.FLAG_DISALLOW_SET_DESTRUCTION_TIMER)) {
       stopwatchButton = new StopwatchHeaderButton(context);
       stopwatchButton.setBackgroundResource(R.drawable.bg_btn_header_light);
       stopwatchButton.forceValue(null, true);
@@ -8910,7 +8965,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     counterView.initCounter(Math.max(count, 1), false);
     forceCounterFactor(count == 0 ? 0f : 1f);
 
-    if (!inProfilePhotoEditMode && !hideCheckViews) {
+    if (!inProfilePhotoEditMode && !hideCheckViews && !inSingleMediaMode()) {
       contentView.addView(checkView);
       contentView.addView(counterView);
       attachedViews.add(checkView);

@@ -211,7 +211,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
     decoration = new GridSpacingItemDecoration(spanCount, Screen.dp(4f), true, true, true);
     GridLayoutManager manager = new RtlGridLayoutManager(context(), spanCount);
 
-    int options = inAvatarPickerMode() ? MediaGalleryAdapter.OPTION_NEVER_SELECTABLE :
+    int options = inSingleMediaMode() ? MediaGalleryAdapter.OPTION_NEVER_SELECTABLE :
       MediaGalleryAdapter.OPTION_SELECTABLE | MediaGalleryAdapter.OPTION_ALWAYS_SELECTABLE;
     /*if (U.deviceHasAnyCamera(context)) {
       options |= MediaGalleryAdapter.OPTION_CAMERA_AVAILABLE;
@@ -577,6 +577,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
       controller.setArguments(
         MediaViewController.Args.fromGallery(this, this, this, this, stack, mediaLayout.areScheduledOnly())
           .setReceiverChatId(mediaLayout.getTargetChatId()).setAvatarPickerMode(mediaLayout.getAvatarPickerMode())
+          .setFlag(MediaViewController.Args.FLAG_DISALLOW_MULTI_SELECTION_MEDIA, mediaLayout.inSingleMediaMode())
       );
       controller.open();
 
@@ -584,6 +585,10 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
     }
 
     return false;
+  }
+
+  private boolean inSingleMediaMode () {
+    return mediaLayout.inSingleMediaMode();
   }
 
   private boolean inAvatarPickerMode () {

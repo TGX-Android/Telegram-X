@@ -7045,18 +7045,14 @@ public class TdlibUi extends Handler {
   }
 
 
-  public static class AvatarPickerManager {
+  public static class AvatarPickerManager extends MediaPickerManager {
     public static final int MODE_PROFILE = 0;
     public static final int MODE_PROFILE_PUBLIC = 1;
     public static final int MODE_CHAT = 2;
     public static final int MODE_NON_CREATED = 3;
 
-    private final ViewController<?> context;
-    private final Tdlib tdlib;
-
     public AvatarPickerManager (ViewController<?> context) {
-      this.context = context;
-      this.tdlib = context.tdlib();
+      super(context);
     }
 
     public void showMenuForProfile (@Nullable MediaCollectorDelegate delegate, boolean isPublic) {
@@ -7087,7 +7083,7 @@ public class TdlibUi extends Handler {
         if (id == R.id.btn_open) {
           MediaViewController.openFromProfile(context, user, delegate);
         } else if (id == R.id.btn_changePhotoGallery) {
-          openMediaView(false, false, AvatarPickerMode.PROFILE, f -> onProfilePhotoReceived(f, isPublic),
+          openMediaView(AvatarPickerMode.PROFILE, f -> onProfilePhotoReceived(f, isPublic),
             profilePhotoToDelete != 0 ? Lang.getString(isPublic ? R.string.RemovePublicPhoto : R.string.RemoveProfilePhoto) : null,
             ColorId.textNegative, deleteRunnable);
         } else if (id == R.id.btn_changePhotoDelete) {
@@ -7120,7 +7116,7 @@ public class TdlibUi extends Handler {
             MediaViewController.openFromChat(context, chat, delegate);
           }
         } else if (id == R.id.btn_changePhotoGallery) {
-          openMediaView(false, false, isChannel ? AvatarPickerMode.CHANNEL : AvatarPickerMode.GROUP, f -> onChatPhotoReceived(f, chat.id),
+          openMediaView(isChannel ? AvatarPickerMode.CHANNEL : AvatarPickerMode.GROUP, f -> onChatPhotoReceived(f, chat.id),
             canDelete ? Lang.getString(isChannel ? R.string.RemoveChannelPhoto : R.string.RemoveGroupPhoto) : null, ColorId.textNegative, () -> showDeletePhotoConfirm(() -> setChatPhoto(chat.id, null)));
         }
         return true;
@@ -7136,7 +7132,7 @@ public class TdlibUi extends Handler {
       final boolean canDelete = headerView.getImageFile() != null;
       showOptions(b.build(), (itemView, id) -> {
         if (id == R.id.btn_changePhotoGallery) {
-          openMediaView(false, false, isChannel ? AvatarPickerMode.CHANNEL : AvatarPickerMode.GROUP, headerView::setPhoto,
+          openMediaView(isChannel ? AvatarPickerMode.CHANNEL : AvatarPickerMode.GROUP, headerView::setPhoto,
           canDelete ? Lang.getString(isChannel ? R.string.RemoveChannelPhoto : R.string.RemoveGroupPhoto) : null, ColorId.textNegative, () -> showDeletePhotoConfirm(() -> headerView.setPhoto(null)));
         }
         return true;
@@ -7164,67 +7160,58 @@ public class TdlibUi extends Handler {
 
     /* Picker */
 
-    private MediaLayout currentMediaLayout;
-    private boolean openingMediaLayout;
+    private void openMediaView (@AvatarPickerMode int avatarPickerMode, RunnableData<ImageGalleryFile> callback, String customButtonText, @ColorId int customButtonColorId, Runnable customButtonCallback) {
+      waitPermissionsForOpen(hasMedia -> {
+        final MediaLayout mediaLayout = new MediaLayout(context) {
+          @Override
+          public int getCameraButtonOffset () {
+            return !StringUtils.isEmpty(customButtonText) ? super.getCameraButtonOffset() : 0;
+          }
+        };
+        mediaLayout.setAvatarPickerMode(avatarPickerMode);
+        mediaLayout.init(MediaLayout.MODE_AVATAR_PICKER, null);
+        mediaLayout.setCallback(new MediaLayout.MediaGalleryCallback() {
+          @Override
+          public void onSendVideo (ImageGalleryFile file, boolean isFirst) {
+            if (!isFirst) return;
+            callback.runWithData(file);
+          }
 
-    private void openMediaView (boolean ignorePermissionRequest, boolean noMedia, @AvatarPickerMode int avatarPickerMode, RunnableData<ImageGalleryFile> callback, String customButtonText, @ColorId int customButtonColorId, Runnable customButtonCallback) {
-      if (openingMediaLayout || currentMediaLayout != null && currentMediaLayout.isVisible()) {
-        return;
-      }
-
-      if (!ignorePermissionRequest && context.context().permissions().requestReadExternalStorage(Permissions.ReadType.IMAGES_AND_VIDEOS, grantType -> openMediaView(true, grantType == Permissions.GrantResult.NONE, avatarPickerMode, callback, customButtonText, customButtonColorId, customButtonCallback))) {
-        return;
-      }
-
-      final MediaLayout mediaLayout = new MediaLayout(context) {
-        @Override
-        public int getCameraButtonOffset () {
-          return !StringUtils.isEmpty(customButtonText) ? super.getCameraButtonOffset() : 0;
+          @Override
+          public void onSendPhoto (ImageGalleryFile file, boolean isFirst) {
+            if (!isFirst) return;
+            callback.runWithData(file);
+          }
+        });
+        if (!hasMedia) {
+          mediaLayout.setNoMediaAccess();
         }
-      };
-      mediaLayout.setAvatarPickerMode(avatarPickerMode);
-      mediaLayout.init(MediaLayout.MODE_AVATAR_PICKER, null);
-      mediaLayout.setCallback(new MediaLayout.MediaGalleryCallback() {
-        @Override
-        public void onSendVideo (ImageGalleryFile file, boolean isFirst) {
-          if (!isFirst) return;
-          callback.runWithData(file);
+
+
+        if (!StringUtils.isEmpty(customButtonText)) {
+          TextView button = Views.newTextView(context.context(), 16, Theme.getColor(customButtonColorId), Gravity.CENTER, Views.TEXT_FLAG_BOLD | Views.TEXT_FLAG_HORIZONTAL_PADDING);
+          context.addThemeTextColorListener(button, customButtonColorId);
+
+          button.setText(customButtonText.toUpperCase());
+          button.setOnClickListener(v -> customButtonCallback.run());
+
+          RippleSupport.setSimpleWhiteBackground(button, context);
+          Views.setClickable(button);
+
+          mediaLayout.setCustomBottomBar(button);
+          button.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(55f), Gravity.BOTTOM));
         }
 
-        @Override
-        public void onSendPhoto (ImageGalleryFile file, boolean isFirst) {
-          if (!isFirst) return;
-          callback.runWithData(file);
-        }
+        openingMediaLayout = true;
+        mediaLayout.preload(() -> {
+          if (context.isFocused() && !context.isDestroyed()) {
+            mediaLayout.show();
+          }
+          openingMediaLayout = false;
+        }, 300L);
+
+        currentMediaLayout = mediaLayout;
       });
-      if (noMedia) {
-        mediaLayout.setNoMediaAccess();
-      }
-
-
-      if (!StringUtils.isEmpty(customButtonText)) {
-        TextView button = Views.newTextView(context.context(), 16, Theme.getColor(customButtonColorId), Gravity.CENTER, Views.TEXT_FLAG_BOLD | Views.TEXT_FLAG_HORIZONTAL_PADDING);
-        context.addThemeTextColorListener(button, customButtonColorId);
-
-        button.setText(customButtonText.toUpperCase());
-        button.setOnClickListener(v -> customButtonCallback.run());
-
-        RippleSupport.setSimpleWhiteBackground(button, context);
-        Views.setClickable(button);
-
-        mediaLayout.setCustomBottomBar(button);
-        button.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(55f), Gravity.BOTTOM));
-      }
-
-      openingMediaLayout = true;
-      mediaLayout.preload(() -> {
-        if (context.isFocused() && !context.isDestroyed()) {
-          mediaLayout.show();
-        }
-        openingMediaLayout = false;
-      }, 300L);
-
-      currentMediaLayout = mediaLayout;
     }
 
 
@@ -7308,6 +7295,80 @@ public class TdlibUi extends Handler {
         UI.showToast(R.string.UploadingPhotoWait, Toast.LENGTH_SHORT);
       }
       tdlib.client().send(new TdApi.SetChatPhoto(chatId, inputFile != null ? new TdApi.InputChatPhotoStatic(inputFile) : null), tdlib.okHandler());
+    }
+  }
+
+  public static class SingleMediaPickerManager extends MediaPickerManager {
+    public SingleMediaPickerManager (ViewController<?> context) {
+      super(context);
+    }
+
+    public void openMediaView (RunnableData<ImageGalleryFile> callback, @Nullable MessagesController target) {
+      waitPermissionsForOpen(hasMedia -> {
+        final MediaLayout mediaLayout = new MediaLayout(context) {
+          @Override
+          public int getCameraButtonOffset () {
+            return 0;
+          }
+        };
+        mediaLayout.setSingleMediaMode(true);
+        mediaLayout.init(MediaLayout.MODE_AVATAR_PICKER, target);
+        mediaLayout.setCallback(new MediaLayout.MediaGalleryCallback() {
+          @Override
+          public void onSendVideo (ImageGalleryFile file, boolean isFirst) {
+            if (!isFirst) return;
+            callback.runWithData(file);
+          }
+
+          @Override
+          public void onSendPhoto (ImageGalleryFile file, boolean isFirst) {
+            if (!isFirst) return;
+            callback.runWithData(file);
+          }
+        });
+        if (!hasMedia) {
+          mediaLayout.setNoMediaAccess();
+        }
+
+        openingMediaLayout = true;
+        mediaLayout.preload(() -> {
+          if (!context.isDestroyed()) {
+            mediaLayout.show(true);
+          }
+          openingMediaLayout = false;
+        }, 300L);
+
+        currentMediaLayout = mediaLayout;
+      });
+    }
+  }
+
+  public static abstract class MediaPickerManager {
+    protected MediaLayout currentMediaLayout;
+    protected boolean openingMediaLayout;
+
+    protected final ViewController<?> context;
+    protected final Tdlib tdlib;
+
+    public MediaPickerManager (ViewController<?> context) {
+      this.context = context;
+      this.tdlib = context.tdlib();
+    }
+
+    protected final void waitPermissionsForOpen (RunnableBool onOpen) {
+      waitPermissionsForOpen(false, false, onOpen);
+    }
+
+    private void waitPermissionsForOpen (boolean ignorePermissionRequest, boolean noMedia, RunnableBool onOpen) {
+      if (openingMediaLayout || currentMediaLayout != null && currentMediaLayout.isVisible()) {
+        return;
+      }
+
+      if (!ignorePermissionRequest && context.context().permissions().requestReadExternalStorage(Permissions.ReadType.IMAGES_AND_VIDEOS, grantType -> waitPermissionsForOpen(true, grantType == Permissions.GrantResult.NONE, onOpen))) {
+        return;
+      }
+
+      onOpen.runWithBool(!noMedia);
     }
   }
 }

@@ -29,6 +29,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.helper.FoundUrls;
 import org.thunderdog.challegram.helper.LinkPreview;
+import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
@@ -61,6 +62,10 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
       final int id = v.getId();
       if (id == R.id.btn_close) {
         callback.onDismissReplyBar(this);
+      } else if (id == R.id.btn_replace) {
+        callback.onMessageMediaReplaceRequested(this, displayedMessage);
+      } else if (id == R.id.btn_edit) {
+        callback.onMessageMediaEditRequested(this, displayedMessage);
       }
     }
   }
@@ -275,17 +280,19 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
     setMessageInputContext(context);
   }
 
+  private TdApi.Message displayedMessage;
+
   public void setReplyTo (TdApi.Message msg, @Nullable TdApi.InputTextQuote quote) {
-    pinnedMessagesBar.setMessage(tdlib, msg, quote);
+    pinnedMessagesBar.setMessage(tdlib, displayedMessage = msg, quote);
     setLinkPreviewToggleVisible(false);
     setMediaEditToggleVisible(false);
     setMessageInputContext(null);
   }
 
-  public void setEditingMessage (TdApi.Message msg) {
-    pinnedMessagesBar.setMessage(tdlib, msg);
+  public void setEditingMessage (TdApi.Message msg, @Nullable ImageFile forcedMediaFile) {
+    pinnedMessagesBar.setMessage(tdlib, displayedMessage = msg, null, forcedMediaFile);
     setLinkPreviewToggleVisible(false);
-    setMediaEditToggleVisible(msg.mediaAlbumId != 0);
+    setMediaEditToggleVisible(tdlib.canEditMedia(msg));
     setMessageInputContext(null);
   }
 
@@ -309,6 +316,8 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
 
   public interface Callback {
     void onDismissReplyBar (ReplyBarView view);
+    void onMessageMediaReplaceRequested (ReplyBarView view, TdApi.Message message);
+    void onMessageMediaEditRequested (ReplyBarView view, TdApi.Message message);
     void onMessageHighlightRequested (ReplyBarView view, TdApi.Message message, @Nullable TdApi.InputTextQuote quote);
     void onSelectLinkPreviewUrl (ReplyBarView view, MessagesController.MessageInputContext messageContext, String url);
     boolean onRequestToggleShowAbove (ReplyBarView view, View buttonView, MessagesController.MessageInputContext messageContext);

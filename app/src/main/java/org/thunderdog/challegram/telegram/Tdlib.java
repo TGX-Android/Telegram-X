@@ -4681,6 +4681,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   private final HashMap<String, TdApi.MessageContent> pendingMessageTexts = new HashMap<>();
   private final HashMap<String, TdApi.FormattedText> pendingMessageCaptions = new HashMap<>();
+  private final HashMap<String, TdApi.InputMessageContent> pendingMessageMedia = new HashMap<>();
+
+  public boolean canEditMedia (TdApi.Message message) {
+    return message != null && message.canBeEdited && message.content != null && (Td.isPhoto(message.content) || message.content.getConstructor() == TdApi.MessageVideo.CONSTRUCTOR);
+  }
+
 
   public void editMessageText (long chatId, long messageId, TdApi.InputMessageText content, @Nullable TdApi.WebPage webPage) {
     if (content.linkPreviewOptions != null && content.linkPreviewOptions.isDisabled) {
@@ -4731,6 +4737,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     performEdit(chatId, messageId, caption, new TdApi.EditMessageCaption(chatId, messageId, null, caption), pendingMessageCaptions);
   }
 
+  public void editMessageMedia (long chatId, long messageId, TdApi.InputMessageContent content) {
+    performEdit(chatId, messageId, content, new TdApi.EditMessageMedia(chatId, messageId, null, content), pendingMessageMedia);
+  }
+
   public TdApi.FormattedText getFormattedText (TdApi.Message message) {
     if (message == null)
       return null;
@@ -4753,6 +4763,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       Td.assertMessageContent_cfe6660a();
       throw Td.unsupported(messageText);
     }
+    TdApi.InputMessageContent messageContent = getPendingMessageMedia(chatId, messageId);
+    if (messageContent != null) {
+      return TD.textOrCaption(messageContent);
+    }
+
     return getPendingMessageCaption(chatId, messageId);
   }
 
@@ -4765,6 +4780,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   public TdApi.FormattedText getPendingMessageCaption (long chatId, long messageId) {
     synchronized (pendingMessageCaptions) {
       return pendingMessageCaptions.get(chatId + "_" + messageId);
+    }
+  }
+
+  public TdApi.InputMessageContent getPendingMessageMedia (long chatId, long messageId) {
+    synchronized (pendingMessageMedia) {
+      return pendingMessageMedia.get(chatId + "_" + messageId);
     }
   }
 

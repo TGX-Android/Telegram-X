@@ -1420,6 +1420,23 @@ public class U {
     });
   }
 
+  public static boolean toGalleryFile (TdApi.Message message, RunnableData<ImageGalleryFile> callback) {
+    final TdApi.File file = TD.getFile(message);
+    if (!TD.isFileLoaded(file)) {
+      return false;
+    }
+
+    final boolean isVideo = message.content.getConstructor() == TdApi.MessageVideo.CONSTRUCTOR;
+    toGalleryFile(new File(file.local.path), isVideo, imageGalleryFile -> {
+      if (imageGalleryFile != null) {
+        imageGalleryFile.setCaption(Td.textOrCaption(message.content));
+      }
+      callback.runWithData(imageGalleryFile);
+    });
+
+    return true;
+  }
+
   public static String getFileName (String path) {
     int i = path.lastIndexOf('/');
     return i != -1 ? path.substring(i + 1) : path;
