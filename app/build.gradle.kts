@@ -86,6 +86,10 @@ android {
     disable += "MissingTranslation"
     checkDependencies = true
   }
+  
+  buildFeatures {
+    buildConfig = true
+  }
 
   buildTypes {
     getByName("release") {
