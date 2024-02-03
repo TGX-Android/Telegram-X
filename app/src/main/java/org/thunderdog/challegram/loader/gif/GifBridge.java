@@ -55,7 +55,6 @@ public class GifBridge {
   private final GifThread[] lottieThreads;
 
   private GifBridge () {
-    N.gifInit();
     thread = new GifBridgeThread();
     // TODO: rework to executors
     threads = new GifThread[THREAD_POOL_SIZE];

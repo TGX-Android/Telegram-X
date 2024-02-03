@@ -34,12 +34,11 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.ExoPlayer;
-import com.google.android.exoplayer2.PlaybackException;
-import com.google.android.exoplayer2.Player;
-import com.google.android.exoplayer2.source.MediaSource;
+import androidx.media3.common.C;
+import androidx.media3.common.PlaybackException;
+import androidx.media3.common.Player;
+import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.source.MediaSource;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
@@ -1739,7 +1738,7 @@ public class RoundVideoController extends BasePlaybackController implements
 
   private void setExoPlayerParameters () {
     if (exoPlayer != null) {
-      TdlibManager.instance().player().proximityManager().modifyExoPlayer(exoPlayer, C.CONTENT_TYPE_MOVIE);
+      TdlibManager.instance().player().proximityManager().modifyExoPlayer(exoPlayer, C.AUDIO_CONTENT_TYPE_MOVIE);
     }
   }
 

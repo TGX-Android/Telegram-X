@@ -210,17 +210,17 @@ add_library(${NATIVE_LIB} SHARED
   gif.cpp
   views.c
 
-  "${THIRDPARTY_DIR}/exoplayer/opus_jni.cc"
-  "${THIRDPARTY_DIR}/exoplayer/flac_jni.cc"
-  "${THIRDPARTY_DIR}/exoplayer/flac_parser.cc"
-  "${THIRDPARTY_DIR}/exoplayer/ffmpeg_jni.cc"
-  "${THIRDPARTY_DIR}/exoplayer/vpx_jni.cc"
+  "${THIRDPARTY_DIR}/androidx-media/opus_jni.cc"
+  "${THIRDPARTY_DIR}/androidx-media/flac_jni.cc"
+  "${THIRDPARTY_DIR}/androidx-media/flac_parser.cc"
+  "${THIRDPARTY_DIR}/androidx-media/ffmpeg_jni.cc"
+  "${THIRDPARTY_DIR}/androidx-media/vpx_jni.cc"
 
   bridge.cpp
 )
 target_include_directories(${NATIVE_LIB} PRIVATE
   "${THIRDPARTY_DIR}/telegram_intro"
-  "${THIRDPARTY_DIR}/exoplayer"
+  "${THIRDPARTY_DIR}/androidx-media"
 
   "${THIRDPARTY_DIR}"
   .
@@ -247,7 +247,7 @@ target_compile_options(${NATIVE_LIB} PUBLIC
   -fno-rtti
 )
 # TODO: remove -Wno-macro-redefined -Wno-unused-variable
-# only "${THIRDPARTY_DIR}/exoplayer/ffmpeg_jni.cc" needs them.
+# only "${THIRDPARTY_DIR}/androidx-media/ffmpeg_jni.cc" needs them.
 
 # == Linking dependencies ==
 

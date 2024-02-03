@@ -1,9 +1,9 @@
 # flac
 
 set(FLAC_DIR "${THIRDPARTY_DIR}/flac")
-set(EXO_FLAC_DIR "${CMAKE_HOME_DIRECTORY}/../../thirdparty/ExoPlayer/extensions/flac/src/main/jni")
+set(ANDROIDX_MEDIA_FLAC_DIR "${CMAKE_HOME_DIRECTORY}/../../thirdparty/androidx-media/libraries/decoder_flac/src/main/jni")
 
-ReadVariables("${EXO_FLAC_DIR}/flac_sources.mk")
+ReadVariables("${ANDROIDX_MEDIA_FLAC_DIR}/flac_sources.mk")
 list(FILTER FLAC_SOURCES INCLUDE REGEX "^flac/.+$")
 Transform(FLAC_SOURCES "^flac/" "${FLAC_DIR}/")
 
