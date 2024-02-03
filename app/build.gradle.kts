@@ -7,27 +7,27 @@ plugins {
   id("cmake-plugin")
 }
 
-task<me.vkryl.task.GenerateResourcesAndThemesTask>("generateResourcesAndThemes") {
+val generateResourcesAndThemes by tasks.registering(me.vkryl.task.GenerateResourcesAndThemesTask::class) {
   group = "Setup"
   description = "Generates fresh strings, ids, theme resources and utility methods based on current static files"
 }
-task<me.vkryl.task.FetchLanguagesTask>("updateLanguages") {
+val updateLanguages by tasks.registering(me.vkryl.task.FetchLanguagesTask::class) {
   group = "Setup"
   description = "Generates and updates all strings.xml resources based on translations.telegram.org"
 }
-task<me.vkryl.task.ValidateApiTokensTask>("validateApiTokens") {
+val validateApiTokens by tasks.registering(me.vkryl.task.ValidateApiTokensTask::class) {
   group = "Setup"
   description = "Validates some API tokens to make sure they work properly and won't cause problems"
 }
-task<me.vkryl.task.UpdateExceptionsTask>("updateExceptions") {
+val updateExceptions by tasks.registering(me.vkryl.task.UpdateExceptionsTask::class) {
   group = "Setup"
   description = "Updates exception class names with the app or TDLib version number in order to have separate group on Google Play Developer Console"
 }
-task<me.vkryl.task.GeneratePhoneFormatTask>("generatePhoneFormat") {
+val generatePhoneFormat by tasks.registering(me.vkryl.task.GeneratePhoneFormatTask::class) {
   group = "Setup"
   description = "Generates utility methods for phone formatting, e.g. +12345678901 -> +1 (234) 567 89-01"
 }
-task<me.vkryl.task.CheckEmojiKeyboardTask>("checkEmojiKeyboard") {
+val checkEmojiKeyboard by tasks.registering(me.vkryl.task.CheckEmojiKeyboardTask::class) {
   group = "Setup"
   description = "Checks that all supported emoji can be entered from the keyboard"
 }
@@ -86,7 +86,7 @@ android {
     disable += "MissingTranslation"
     checkDependencies = true
   }
-  
+
   buildFeatures {
     buildConfig = true
   }
@@ -174,17 +174,19 @@ android {
 }
 
 gradle.projectsEvaluated {
-  tasks.getByName("preBuild").dependsOn(
-    "generateResourcesAndThemes",
-    "checkEmojiKeyboard",
-    "generatePhoneFormat",
-    "updateExceptions"
-  )
+  tasks.named("preBuild").configure {
+    dependsOn(
+      generateResourcesAndThemes,
+      checkEmojiKeyboard,
+      generatePhoneFormat,
+      updateExceptions,
+    )
+  }
   Abi.VARIANTS.forEach { (_, variant) ->
-    tasks.getByName("pre${variant.flavor[0].uppercaseChar() + variant.flavor.substring(1)}ReleaseBuild").let { task ->
-      task.dependsOn("updateLanguages")
+    tasks.named("pre${variant.flavor[0].uppercaseChar() + variant.flavor.substring(1)}ReleaseBuild") {
+      dependsOn(updateLanguages)
       if (!isExperimentalBuild) {
-        task.dependsOn("validateApiTokens")
+        dependsOn(validateApiTokens)
       }
     }
   }
