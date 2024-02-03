@@ -92,7 +92,7 @@ android {
   }
 
   buildTypes {
-    getByName("release") {
+    release {
       Config.EXOPLAYER_EXTENSIONS.forEach { module ->
         val proguardFile = file("../thirdparty/ExoPlayer/extensions/${module}/proguard-rules.txt")
         if (proguardFile.exists()) {
