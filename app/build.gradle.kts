@@ -126,32 +126,31 @@ android {
       }
     }
   }
-  applicationVariants.all {
-    val variant = this
 
-    val abi = (variant.productFlavors[0].versionCode ?: error("null")) - 1
+  applicationVariants.configureEach {
+    val abi = (productFlavors[0].versionCode ?: error("null")) - 1
     val abiVariant = Abi.VARIANTS[abi] ?: error("null")
     val versionCode = defaultConfig.versionCode ?: error("null")
 
     val versionCodeOverride = versionCode * 1000 + abi * 10
-    val versionNameOverride = "${variant.versionName}.${defaultConfig.versionCode}${if (extra.has("app_version_suffix")) extra["app_version_suffix"] else ""}-${abiVariant.displayName}${if (extra.has("app_name_suffix")) "-" + extra["app_name_suffix"] else ""}${if (variant.buildType.isDebuggable) "-debug" else ""}"
+    val versionNameOverride = "${versionName}.${defaultConfig.versionCode}${if (extra.has("app_version_suffix")) extra["app_version_suffix"] else ""}-${abiVariant.displayName}${if (extra.has("app_name_suffix")) "-" + extra["app_name_suffix"] else ""}${if (buildType.isDebuggable) "-debug" else ""}"
     val outputFileNamePrefix = properties.getProperty("app.file", projectName.replace(" ", "-").replace("#", ""))
     val fileName = "${outputFileNamePrefix}-${versionNameOverride.replace("-universal(?=-|\$)", "")}"
 
-    variant.buildConfigField("int", "ORIGINAL_VERSION_CODE", versionCode.toString())
-    variant.buildConfigField("int", "ABI", abi.toString())
-    variant.buildConfigField("String", "ORIGINAL_VERSION_NAME", "\"${variant.versionName}.${defaultConfig.versionCode}\"")
+    buildConfigField("int", "ORIGINAL_VERSION_CODE", versionCode.toString())
+    buildConfigField("int", "ABI", abi.toString())
+    buildConfigField("String", "ORIGINAL_VERSION_NAME", "\"${versionName}.${defaultConfig.versionCode}\"")
 
-    variant.outputs.map { it as ApkVariantOutputImpl }.forEach { output ->
+    outputs.map { it as ApkVariantOutputImpl }.forEach { output ->
       output.versionCodeOverride = versionCodeOverride
       output.versionNameOverride = versionNameOverride
       output.outputFileName = "${fileName}.apk"
     }
 
-    if (variant.buildType.isMinifyEnabled) {
-      variant.assembleProvider!!.configure {
+    if (buildType.isMinifyEnabled) {
+      assembleProvider!!.configure {
         doLast {
-          variant.mappingFileProvider.get().files.forEach { mappingFile ->
+          mappingFileProvider.get().files.forEach { mappingFile ->
             mappingFile.renameTo(File(mappingFile.parentFile, "${fileName}.txt"))
           }
         }
