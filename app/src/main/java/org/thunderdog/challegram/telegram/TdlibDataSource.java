@@ -14,12 +14,12 @@ package org.thunderdog.challegram.telegram;
 
 import android.net.Uri;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.upstream.BaseDataSource;
-import com.google.android.exoplayer2.upstream.DataSource;
-import com.google.android.exoplayer2.upstream.DataSpec;
+import androidx.media3.common.C;
+import androidx.media3.datasource.BaseDataSource;
+import androidx.media3.datasource.DataSource;
+import androidx.media3.datasource.DataSpec;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.U;
@@ -85,6 +85,7 @@ public final class TdlibDataSource extends BaseDataSource {
 
   public static final class Factory implements DataSource.Factory {
     @Override
+    @NonNull
     public DataSource createDataSource () {
       return new TdlibDataSource();
     }
@@ -216,7 +217,7 @@ public final class TdlibDataSource extends BaseDataSource {
   }
 
   @Override
-  public int read (byte[] buffer, int bufferOffset, int readLength) throws TdlibDataSourceException {
+  public int read (@NonNull byte[] buffer, int bufferOffset, int readLength) throws TdlibDataSourceException {
     if (readLength == 0) {
       return 0;
     }

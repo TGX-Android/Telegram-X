@@ -4177,6 +4177,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       headerCell.pause();
     }
 
+    Views.destroyRecyclerView(messagesView);
+
     // TODO chat = null;
 
     if (destroyInstance || !reuseEnabled) {
@@ -4205,7 +4207,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
         botHelper.destroy();
       }
       removeStaticListeners();
-      Views.destroyRecyclerView(messagesView);
       Views.destroyRecyclerView(wallpapersList);
       if (wallpapersList != null) {
         ((WallpaperAdapter) wallpapersList.getAdapter()).destroy();

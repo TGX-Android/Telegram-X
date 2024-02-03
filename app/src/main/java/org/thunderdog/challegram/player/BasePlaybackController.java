@@ -16,9 +16,8 @@ package org.thunderdog.challegram.player;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
-import com.google.android.exoplayer2.PlaybackException;
-import com.google.android.exoplayer2.Player;
+import androidx.media3.common.PlaybackException;
+import androidx.media3.common.Player;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;

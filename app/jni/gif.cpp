@@ -23,7 +23,9 @@
 extern "C" {
 #include <libavformat/avformat.h>
 #include <libavutil/eval.h>
+#include <libavutil/imgutils.h>
 #include <libswscale/swscale.h>
+#include <libavcodec/avcodec.h>
 
 }
 
@@ -88,9 +90,7 @@ struct VideoInfo {
 
   const std::string path;
 
-  VideoInfo (std::string path) : path(std::move(path)), pkt(), orig_pkt() {
-
-  }
+  VideoInfo (const std::string &path) : path(path) { }
 
   ~VideoInfo () {
     if (video_dec_ctx) {
@@ -109,8 +109,10 @@ struct VideoInfo {
       sws_freeContext(scale_ctx);
       scale_ctx = nullptr;
     }
-    av_free_packet(&orig_pkt);
-
+    if (packet != nullptr) {
+      av_packet_free(&packet);
+      packet = nullptr;
+    }
     video_stream_idx = -1;
     video_stream = nullptr;
   }
@@ -124,21 +126,17 @@ struct VideoInfo {
   AVFrame *frame = nullptr;
   int srcWidth = -1, srcHeight = -1;
   int dstWidth = -1, dstHeight = -1;
+  int frameRate = -1;
   bool has_decoded_frames = false;
   bool is_broken = false;
-  AVPacket pkt;
-  AVPacket orig_pkt;
-};
+  bool had_invalid_frames = false;
 
-JNI_FUNC(void, gifInit) {
-  av_register_all();
-  avcodec_register_all();
-}
+  AVPacket *packet = nullptr;
+};
 
 int open_codec_context (int *stream_idx, AVCodecContext **dec_ctx, AVFormatContext *fmt_ctx, enum AVMediaType type) {
   int ret;
   AVStream *st;
-  AVCodec *dec = nullptr;
   AVDictionary *opts = nullptr;
 
   ret = av_find_best_stream(fmt_ctx, type, -1, -1, nullptr, 0);
@@ -149,7 +147,7 @@ int open_codec_context (int *stream_idx, AVCodecContext **dec_ctx, AVFormatConte
     *stream_idx = ret;
     st = fmt_ctx->streams[*stream_idx];
 
-    dec = avcodec_find_decoder(st->codecpar->codec_id);
+    const AVCodec *dec = avcodec_find_decoder(st->codecpar->codec_id);
     if (!dec) {
       loge(TAG_GIF_LOADER, "failed to find %s decoder for %s", av_get_media_type_string(type), avcodec_get_name(st->codecpar->codec_id));
       return -1;
@@ -166,6 +164,16 @@ int open_codec_context (int *stream_idx, AVCodecContext **dec_ctx, AVFormatConte
       return ret;
     }
 
+    auto context = *dec_ctx;
+    context->thread_count = 0;
+    if (dec->capabilities & AV_CODEC_CAP_FRAME_THREADS) {
+      context->thread_type = FF_THREAD_FRAME;
+    } else if (dec->capabilities & AV_CODEC_CAP_SLICE_THREADS) {
+      context->thread_type = FF_THREAD_SLICE;
+    } else {
+      context->thread_count = 1;
+    }
+
     av_dict_set(&opts, "refcounted_frames", "1", 0);
     if ((ret = avcodec_open2(*dec_ctx, dec, &opts)) < 0) {
       loge(TAG_GIF_LOADER, "failed to open %s decoder for %s", av_get_media_type_string(type), avcodec_get_name(st->codecpar->codec_id));
@@ -174,36 +182,6 @@ int open_codec_context (int *stream_idx, AVCodecContext **dec_ctx, AVFormatConte
   }
 
   return 0;
-}
-
-int decode_packet (VideoInfo *info, int *got_frame) {
-  int ret = 0;
-  int decoded = info->pkt.size;
-
-  *got_frame = 0;
-  if (info->pkt.stream_index == info->video_stream_idx) {
-    ret = avcodec_decode_video2(info->video_dec_ctx, info->frame, got_frame, &info->pkt);
-    if (ret != 0) {
-      return ret;
-    }
-  }
-
-  return decoded;
-}
-
-AVFrame *alloc_picture (AVPixelFormat pix_fmt, int width, int height) {
-  AVFrame *f = av_frame_alloc();
-  if (!f) {
-    return nullptr;
-  }
-  int size = avpicture_get_size(pix_fmt, width, height);
-  uint8_t *buffer = (uint8_t *) av_malloc(size);
-  if (!buffer) {
-    av_free(f);
-    return nullptr;
-  }
-  avpicture_fill((AVPicture *) f, buffer, pix_fmt, width, height);
-  return f;
 }
 
 JNI_FUNC(jlong, createDecoder, jstring src, jintArray data, jdouble startMediaTimestamp) {
@@ -241,9 +219,11 @@ JNI_FUNC(jlong, createDecoder, jstring src, jintArray data, jdouble startMediaTi
     return 0;
   }
 
-  av_init_packet(&info->pkt);
-  info->pkt.data = nullptr;
-  info->pkt.size = 0;
+  info->packet = av_packet_alloc();
+  if (info->packet == nullptr) {
+    loge(TAG_GIF_LOADER, "can't allocate packet %s", info->path.c_str());
+    return 0;
+  }
 
   const int srcWidth = info->srcWidth = info->video_dec_ctx->width;
   const int srcHeight = info->srcHeight = info->video_dec_ctx->height;
@@ -282,8 +262,11 @@ JNI_FUNC(jlong, createDecoder, jstring src, jintArray data, jdouble startMediaTi
     }
   }
 
+  int frameRate = (int) (1000 * av_q2d(info->video_stream->avg_frame_rate));
+
   info->dstWidth = dstWidth;
   info->dstHeight = dstHeight;
+  info->frameRate = frameRate;
 
   if (startMediaTimestamp != 0) {
     int ret = 0;
@@ -299,7 +282,7 @@ JNI_FUNC(jlong, createDecoder, jstring src, jintArray data, jdouble startMediaTi
   if (dataArr != nullptr) {
     dataArr[0] = dstWidth;
     dataArr[1] = dstHeight;
-    dataArr[2] = (int) (1000 * av_q2d(info->video_stream->avg_frame_rate));
+    dataArr[2] = frameRate;
     /*AVDictionaryEntry *rotate_tag = av_dict_get(info->video_stream->metadata, "rotate", nullptr, 0);
     if (rotate_tag && *rotate_tag->value && strcmp(rotate_tag->value, "0") != 0) {
       char *tail;
@@ -366,6 +349,75 @@ JNI_FUNC(jboolean, isVideoBroken, jlong ptr) {
   }
 }
 
+void to_android_bitmap (JNIEnv *env, VideoInfo *info, jobject bitmap, jintArray data) {
+  auto fmt = (AVPixelFormat) info->frame->format;
+
+  AndroidBitmapInfo bitmapInfo;
+  AndroidBitmap_getInfo(env, bitmap, &bitmapInfo);
+
+  if (bitmapInfo.width == info->dstWidth && bitmapInfo.height == info->dstHeight) {
+    jint *dataArr = env->GetIntArrayElements(data, 0);
+    if (dataArr != nullptr) {
+      dataArr[3] = (int) (1000 * info->frame->pts * av_q2d(info->video_stream->time_base));
+      env->ReleaseIntArrayElements(data, dataArr, 0);
+    }
+
+    AVFrame *frame = info->frame;
+    int frameWidth = frame->width;
+    int frameHeight = frame->height;
+
+    void *pixels;
+    if (AndroidBitmap_lockPixels(env, bitmap, &pixels) == ANDROID_BITMAP_RESULT_SUCCESS) {
+      if (info->scale_ctx != nullptr) {
+        uint8_t *dst_data[1];
+        dst_data[0] = (uint8_t *) pixels;
+        info->dst_linesize[0] = bitmapInfo.stride;
+        // TODO: find out why sws_scale doesn't support transparency (AV_PIX_FMT_YUVA420P) properly
+        // note: for now, updated libyuv + kYvuI601Constants in I420AlphaToARGBMatrix fixes AV_PIX_FMT_YUVA420P issue - but still needs to be researched
+        /*int res =*/ sws_scale(info->scale_ctx, frame->data, frame->linesize, 0, frame->height, dst_data, info->dst_linesize);
+      } else {
+        // TODO: find out why libyuv damages the color palette
+        switch (fmt) {
+          case BITMAP_TARGET_FORMAT: {
+            int size = av_image_get_buffer_size(fmt, frameWidth, frameHeight, 1);
+            memcpy((uint8_t *) pixels, frame->data[0], size);
+            break;
+          }
+          case AV_PIX_FMT_YUV420P:
+          case AV_PIX_FMT_YUVJ420P:
+            if (frame->colorspace == AVColorSpace::AVCOL_SPC_BT709) {
+              libyuv::H420ToARGB(frame->data[0], frame->linesize[0], frame->data[2],
+                                 frame->linesize[2], frame->data[1], frame->linesize[1],
+                                 (uint8_t *) pixels, frameWidth * 4, frameWidth, frameHeight);
+            } else {
+              libyuv::I420ToARGB(frame->data[0], frame->linesize[0], frame->data[2],
+                                 frame->linesize[2], frame->data[1], frame->linesize[1],
+                                 (uint8_t *) pixels, frameWidth * 4, frameWidth, frameHeight);
+            }
+            break;
+          case AV_PIX_FMT_YUVA420P:
+            libyuv::I420AlphaToARGBMatrix(frame->data[0], frame->linesize[0], frame->data[2],
+                                          frame->linesize[2], frame->data[1], frame->linesize[1],
+                                          frame->data[3], frame->linesize[3],
+                                          (uint8_t *) pixels, frameWidth * 4,
+                                          &libyuv::kYvuI601Constants, frameWidth, frameHeight,
+                                          50);
+            break;
+          case AV_PIX_FMT_BGRA:
+            libyuv::ABGRToARGB(frame->data[0], frame->linesize[0], (uint8_t *) pixels,
+                               frameWidth * 4, frameWidth, frameHeight);
+            break;
+          default:
+            // TODO more libyuv cases?
+            logw(TAG_GIF_LOADER, "unsupported pixel format: %d", fmt);
+            break;
+        }
+      }
+      AndroidBitmap_unlockPixels(env, bitmap);
+    }
+  }
+}
+
 JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jintArray data) {
   if (ptr == 0 || bitmap == nullptr) {
     return 0;
@@ -375,135 +427,105 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jintArray data) {
     return 0;
   }
 
-  int ret = 0;
-  int got_frame = 0;
-  bool looped = false;
+  bool gotFrame = false;
+  bool hasLooped = false;
+  bool eofReached = false;
+  bool fatalError = false;
+  size_t errorCount = 0;
+  size_t maxErrorCount = round(std::min(120.0, (double) info->frameRate / 1000.0) * 2.5);
 
-  while (true) {
-    if (info->pkt.size == 0) {
-      ret = av_read_frame(info->fmt_ctx, &info->pkt);
-      if (ret >= 0) {
-        info->orig_pkt = info->pkt;
-      } else if (!info->has_decoded_frames) {
-        info->is_broken = true;
-        loge(TAG_GIF_LOADER, "gif file is broken, abort: %s", av_err2str(ret));
-        return 0;
+  do {
+    int ret;
+
+    if (eofReached) {
+      ret = avformat_seek_file(
+        info->fmt_ctx, -1,
+        std::numeric_limits<int64_t>::min(), 0,
+        std::numeric_limits<int64_t>::max(), 0
+      );
+      if (ret != 0) {
+        loge(TAG_GIF_LOADER, "can't seek %s to start, %s",info->path.c_str(), av_err2str(ret));
+        fatalError = true;
+        break;
       }
+      info->has_decoded_frames = false;
+      eofReached = false;
+      hasLooped = true;
+      avcodec_flush_buffers(info->video_dec_ctx);
     }
-
-    if (info->pkt.size > 0) {
-      ret = decode_packet(info, &got_frame);
-      if (ret < 0) {
-        if (info->has_decoded_frames) {
-          ret = 0;
-        }
-        info->pkt.size = 0;
-      } else {
-        // logd(TAG_GIF_LOADER, "read size %d from packet", ret);
-        info->pkt.data += ret;
-        info->pkt.size -= ret;
+    ret = av_read_frame(info->fmt_ctx, info->packet);
+    if (ret != 0) {
+      if (!info->has_decoded_frames) {
+        loge(TAG_GIF_LOADER, "av_read_frame fatal error for %s: %s", info->path.c_str(), av_err2str(ret));
+        fatalError = true;
+        break;
       }
-
-      if (info->pkt.size == 0) {
-        av_free_packet(&info->orig_pkt);
+      if (ret == AVERROR_EOF) {
+        eofReached = true;
+        continue;
+      }
+      loge(TAG_GIF_LOADER, "av_read_frame fatal error for %s: %s", info->path.c_str(), av_err2str(ret));
+      fatalError = true;
+      break;
+    }
+    ret = avcodec_send_packet(info->video_dec_ctx, info->packet);
+    if (ret != 0) {
+      if (ret == AVERROR_INVALIDDATA && info->has_decoded_frames && errorCount < maxErrorCount) {
+        errorCount++;
+        if (errorCount == 1 && !info->had_invalid_frames) {
+          logv(TAG_GIF_LOADER, "avcodec_send_packet error #%zu for %s: %s maxErrorCount: %zu size: %d pts: %lld flags: %d",
+               errorCount,
+               info->path.c_str(),
+               av_err2str(ret),
+               maxErrorCount,
+               info->packet->size,
+               info->packet->pts,
+               info->packet->flags);
+        }
+      } else if (ret != AVERROR(EAGAIN)) {
+        loge(TAG_GIF_LOADER, "avcodec_send_packet fatal error for %s: %s", info->path.c_str(),
+             av_err2str(ret));
+        fatalError = true;
       }
     } else {
-      info->pkt.data = nullptr;
-      info->pkt.size = 0;
-      ret = decode_packet(info, &got_frame);
-      if (ret < 0) {
-        loge(TAG_GIF_LOADER, "can't decode packet flushed %s", info->path.c_str());
-        return 0;
-      }
-      if (got_frame == 0) {
-        if (info->has_decoded_frames) {
-          // logd(TAG_GIF_LOADER, "file end reached %s", info->src);
-          if ((ret = avformat_seek_file(info->fmt_ctx, -1, std::numeric_limits<int64_t>::min(), 0,
-                                        std::numeric_limits<int64_t>::max(), 0)) < 0) {
-            loge(TAG_GIF_LOADER, "can't seek to begin of file %s, %s", info->path.c_str(),
-                 av_err2str(ret));
-            return 0;
-          } else {
-            avcodec_flush_buffers(info->video_dec_ctx);
-          }
-          looped = true;
+      ret = avcodec_receive_frame(info->video_dec_ctx, info->frame);
+      if (ret != 0) {
+        if (ret != AVERROR(EAGAIN)) {
+          loge(TAG_GIF_LOADER, "avcodec_receive_frame fatal error for %s: %s",
+               info->path.c_str(),
+               av_err2str(ret));
+          fatalError = true;
         }
+      } else {
+        if (errorCount > 0 && !info->had_invalid_frames) {
+          info->had_invalid_frames = true;
+          logv(TAG_GIF_LOADER, "avcodec_send_packet got #%zu errors for file %s maxErrorCount: %zu size: %d pts: %lld flags: %d",
+               errorCount,
+               info->path.c_str(),
+               maxErrorCount,
+               info->packet->size,
+               info->packet->pts,
+               info->packet->flags);
+        }
+        // Done.
+        gotFrame = true;
       }
     }
-    if (ret < 0) {
-      return 0;
-    }
-    if (got_frame) {
-      auto fmt = (AVPixelFormat) info->frame->format;
+    av_packet_unref(info->packet);
+  } while (!info->is_broken && !fatalError && !gotFrame);
 
-      AndroidBitmapInfo bitmapInfo;
-      AndroidBitmap_getInfo(env, bitmap, &bitmapInfo);
-
-      if (bitmapInfo.width == info->dstWidth && bitmapInfo.height == info->dstHeight) {
-        jint *dataArr = env->GetIntArrayElements(data, 0);
-        if (dataArr != nullptr) {
-          dataArr[3] = (int) (1000 * info->frame->pts * av_q2d(info->video_stream->time_base));
-          env->ReleaseIntArrayElements(data, dataArr, 0);
-        }
-
-        AVFrame *frame = info->frame;
-        int frameWidth = frame->width;
-        int frameHeight = frame->height;
-
-        void *pixels;
-        if (AndroidBitmap_lockPixels(env, bitmap, &pixels) == ANDROID_BITMAP_RESULT_SUCCESS) {
-          if (info->scale_ctx != nullptr) {
-            uint8_t *dst_data[1];
-            dst_data[0] = (uint8_t *) pixels;
-            info->dst_linesize[0] = bitmapInfo.stride;
-            // TODO: find out why sws_scale doesn't support transparency (AV_PIX_FMT_YUVA420P) properly
-            // note: for now, updated libyuv + kYvuI601Constants in I420AlphaToARGBMatrix fixes AV_PIX_FMT_YUVA420P issue - but still needs to be researched
-            /*int res =*/ sws_scale(info->scale_ctx, frame->data, frame->linesize, 0, frame->height, dst_data, info->dst_linesize);
-          } else {
-            // TODO: find out why libyuv damages the color palette
-            switch (fmt) {
-              case BITMAP_TARGET_FORMAT:
-                memcpy((uint8_t *) pixels, frame->data[0], avpicture_get_size(fmt, frameWidth, frameHeight));
-                break;
-              case AV_PIX_FMT_YUV420P:
-              case AV_PIX_FMT_YUVJ420P:
-                if (frame->colorspace == AVColorSpace::AVCOL_SPC_BT709) {
-                  libyuv::H420ToARGB(frame->data[0], frame->linesize[0], frame->data[2],
-                                     frame->linesize[2], frame->data[1], frame->linesize[1],
-                                     (uint8_t *) pixels, frameWidth * 4, frameWidth, frameHeight);
-                } else {
-                  libyuv::I420ToARGB(frame->data[0], frame->linesize[0], frame->data[2],
-                                     frame->linesize[2], frame->data[1], frame->linesize[1],
-                                     (uint8_t *) pixels, frameWidth * 4, frameWidth, frameHeight);
-                }
-                break;
-              case AV_PIX_FMT_YUVA420P:
-                libyuv::I420AlphaToARGBMatrix(frame->data[0], frame->linesize[0], frame->data[2],
-                                              frame->linesize[2], frame->data[1], frame->linesize[1],
-                                              frame->data[3], frame->linesize[3],
-                                              (uint8_t *) pixels, frameWidth * 4,
-                                              &libyuv::kYvuI601Constants, frameWidth, frameHeight,
-                                              50);
-                break;
-              case AV_PIX_FMT_BGRA:
-                libyuv::ABGRToARGB(frame->data[0], frame->linesize[0], (uint8_t *) pixels,
-                                   frameWidth * 4, frameWidth, frameHeight);
-                break;
-              default:
-                // TODO more libyuv cases?
-                logw(TAG_GIF_LOADER, "unsupported pixel format: %d", fmt);
-                break;
-            }
-          }
-          AndroidBitmap_unlockPixels(env, bitmap);
-        }
-      }
-
-      info->has_decoded_frames = true;
-      av_frame_unref(info->frame);
-      return looped ? 2 : 1;
-    }
+  if (fatalError) {
+    info->is_broken = true;
   }
+
+  if (gotFrame) {
+    to_android_bitmap(env, info, bitmap, data);
+    info->has_decoded_frames = true;
+    av_frame_unref(info->frame);
+    return hasLooped ? 2 : 1;
+  }
+
+  return 0;
 }
 
 JNI_FUNC(void, cancelLottieDecoder, jlong ptr) {

@@ -8,8 +8,8 @@ function build_one {
   fi
   validate_dir "$ANDROID_NDK_ROOT"
 
-  LIBVPX_INCLUDE_DIR="$THIRDPARTY_LIBRARIES/libvpx/build/$CPU/include"
-  LIBVPX_LIB_DIR="$THIRDPARTY_LIBRARIES/libvpx/build/$CPU/lib"
+  LIBVPX_INCLUDE_DIR="$THIRDPARTY_LIBRARIES/libvpx/build/$FLAVOR/include"
+  LIBVPX_LIB_DIR="$THIRDPARTY_LIBRARIES/libvpx/build/$FLAVOR/lib"
 
   validate_dir "$LIBVPX_INCLUDE_DIR"
   validate_dir "$LIBVPX_LIB_DIR"
@@ -150,10 +150,11 @@ CC=${CROSS_PREFIX}${ANDROID_API}-clang
 CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
 LD=$CC
 AS=$CC
-ARCH=arm64
-CPU=arm64-v8a
-PREFIX=./build/$CPU
-ADDITIONAL_CONFIGURE_FLAG="--disable-asm --enable-optimizations"
+ARCH=aarch64
+CPU=armv8-a
+FLAVOR=arm64-v8a
+PREFIX=./build/$FLAVOR
+ADDITIONAL_CONFIGURE_FLAG="--enable-optimizations --disable-x86asm"
 OPTIMIZE_CFLAGS=""
 EXTRA_LIBS="-lunwind"
 EXTRA_LDFLAGS=""
@@ -170,7 +171,8 @@ LD=$CC
 AS=$CC
 ARCH=x86_64
 CPU=x86_64
-PREFIX=./build/$CPU
+FLAVOR=x86_64
+PREFIX=./build/$FLAVOR
 ADDITIONAL_CONFIGURE_FLAG="--disable-asm"
 OPTIMIZE_CFLAGS=""
 EXTRA_LIBS="-lunwind"
@@ -195,14 +197,15 @@ CXX=$PREBUILT/bin/armv7a-linux-androideabi${ANDROID_API}-clang++
 AS=$CC
 ARCH=arm
 CPU=armv7-a
-PREFIX=./build/$CPU
-ADDITIONAL_CONFIGURE_FLAG="--enable-neon"
+FLAVOR=armv7-a
+PREFIX=./build/$FLAVOR
+ADDITIONAL_CONFIGURE_FLAG="--enable-neon --disable-x86asm"
 OPTIMIZE_CFLAGS="-marm -march=$CPU -mfloat-abi=softfp"
 if [[ ${ANDROID_NDK_VERSION%%.*} -ge 23 ]]; then
   LD=$CC
   LIBS_DIR="${PREBUILT}/lib64/clang/12.0.9/lib/linux"
   validate_dir "$LIBS_DIR"
-  EXTRA_LDFLAGS="-L${LIBS_DIR}"
+  EXTRA_LDFLAGS="-L${LIBS_DIR} -Wl,--fix-cortex-a8"
   EXTRA_LIBS="-lunwind -lclang_rt.builtins-arm-android"
 else
   LD="${PREBUILT}/arm-linux-androideabi/bin/ld.gold"
@@ -220,8 +223,9 @@ CXX=${CROSS_PREFIX}${ANDROID_API}-clang++
 AS=$CC
 ARCH=x86
 CPU=i686
-PREFIX=./build/$CPU
-ADDITIONAL_CONFIGURE_FLAG="--disable-x86asm --disable-inline-asm --disable-asm"
+FLAVOR=i686
+PREFIX=./build/$FLAVOR
+ADDITIONAL_CONFIGURE_FLAG="--disable-asm"
 OPTIMIZE_CFLAGS="-march=$CPU"
 if [[ ${ANDROID_NDK_VERSION%%.*} -ge 23 ]]; then
   LD=$CC
