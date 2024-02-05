@@ -101,6 +101,7 @@ public class Intents {
 
   public static final String ACTION_MESSAGE_REPLY = PACKAGE_NAME + ".ACTION_MESSAGE_REPLY";
   public static final String ACTION_MESSAGE_MUTE = PACKAGE_NAME + ".ACTION_MESSAGE_MUTE";
+  public static final String ACTION_MESSAGE_UNMUTE = PACKAGE_NAME + ".ACTION_MESSAGE_UNMUTE";
   public static final String ACTION_MESSAGE_READ = PACKAGE_NAME + ".ACTION_MESSAGE_READ";
   /// public static final String ACTION_MESSAGE_HIDE = PACKAGE_NAME + ".ACTION_MESSAGE_HIDE";
   public static final String ACTION_MESSAGE_HEARD = PACKAGE_NAME + ".ACTION_MESSAGE_HEARD"; // chat_id, last_message_id
