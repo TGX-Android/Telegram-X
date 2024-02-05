@@ -134,10 +134,21 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     }
   }
 
-  public static final int EXTERNAL_ACTION_MARK_AS_HIDDEN = 0;
-  public static final int EXTERNAL_ACTION_MARK_ALL_AS_HIDDEN = 1;
-  public static final int EXTERNAL_ACTION_MARK_AS_READ = 2;
-  public static final int EXTERNAL_ACTION_MUTE = 3;
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    ExternalAction.MARK_AS_HIDDEN,
+    ExternalAction.MARK_ALL_AS_HIDDEN,
+    ExternalAction.MARK_AS_READ,
+    ExternalAction.MUTE,
+    ExternalAction.UNMUTE
+  })
+  public @interface ExternalAction {
+    int MARK_AS_HIDDEN = 0,
+      MARK_ALL_AS_HIDDEN = 1,
+      MARK_AS_READ = 2,
+      MUTE = 3,
+      UNMUTE = 4;
+  }
 
   private interface NotificationTask {
     void onPerformTask (Tdlib tdlib, Runnable onDone);
@@ -174,17 +185,20 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     performSyncTask(context, extras.accountId, "external:" + action, (tdlib, onDone) -> {
       tdlib.incrementNotificationReferenceCount();
       switch (action) {
-        case EXTERNAL_ACTION_MARK_AS_HIDDEN:
+        case ExternalAction.MARK_AS_HIDDEN:
           tdlib.notifications().onHide(extras);
           break;
-        case EXTERNAL_ACTION_MARK_ALL_AS_HIDDEN:
+        case ExternalAction.MARK_ALL_AS_HIDDEN:
           tdlib.notifications().onHideAll(extras.category);
           break;
-        case EXTERNAL_ACTION_MARK_AS_READ:
+        case ExternalAction.MARK_AS_READ:
           extras.read(tdlib);
           break;
-        case EXTERNAL_ACTION_MUTE:
+        case ExternalAction.MUTE:
           extras.mute(tdlib);
+          break;
+        case ExternalAction.UNMUTE:
+          extras.unmute(tdlib);
           break;
       }
       tdlib.notifications().releaseTdlibReference(onDone);

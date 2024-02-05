@@ -82,22 +82,22 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.os.EnvironmentCompat;
 import androidx.exifinterface.media.ExifInterface;
+import androidx.media3.common.PlaybackException;
+import androidx.media3.datasource.FileDataSource;
+import androidx.media3.exoplayer.DefaultLoadControl;
+import androidx.media3.exoplayer.DefaultRenderersFactory;
+import androidx.media3.exoplayer.ExoPlaybackException;
+import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.RenderersFactory;
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
+import androidx.media3.exoplayer.source.MediaSource;
+import androidx.media3.exoplayer.source.MediaSourceFactory;
+import androidx.media3.exoplayer.source.ProgressiveMediaSource;
+import androidx.media3.exoplayer.source.UnrecognizedInputFormatException;
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector;
+import androidx.media3.extractor.DefaultExtractorsFactory;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.exoplayer2.DefaultLoadControl;
-import com.google.android.exoplayer2.DefaultRenderersFactory;
-import com.google.android.exoplayer2.ExoPlaybackException;
-import com.google.android.exoplayer2.ExoPlayer;
-import com.google.android.exoplayer2.PlaybackException;
-import com.google.android.exoplayer2.RenderersFactory;
-import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
-import com.google.android.exoplayer2.source.DefaultMediaSourceFactory;
-import com.google.android.exoplayer2.source.MediaSource;
-import com.google.android.exoplayer2.source.MediaSourceFactory;
-import com.google.android.exoplayer2.source.ProgressiveMediaSource;
-import com.google.android.exoplayer2.source.UnrecognizedInputFormatException;
-import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
-import com.google.android.exoplayer2.upstream.FileDataSource;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 
@@ -733,8 +733,8 @@ public class U {
     return new ProgressiveMediaSource.Factory(new FileDataSource.Factory()).createMediaSource(newMediaItem(Uri.fromFile(file)));
   }
 
-  public static com.google.android.exoplayer2.MediaItem newMediaItem (Uri uri) {
-    return new com.google.android.exoplayer2.MediaItem.Builder().setUri(uri).build();
+  public static androidx.media3.common.MediaItem newMediaItem (Uri uri) {
+    return new androidx.media3.common.MediaItem.Builder().setUri(uri).build();
   }
 
   public static MediaSource newMediaSource (int accountId, TdApi.Message message) {

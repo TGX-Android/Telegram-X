@@ -18,11 +18,10 @@ import android.content.Context;
 import android.view.TextureView;
 
 import androidx.annotation.Nullable;
-
-import com.google.android.exoplayer2.ExoPlayer;
-import com.google.android.exoplayer2.Player;
-import com.google.android.exoplayer2.source.ClippingMediaSource;
-import com.google.android.exoplayer2.source.MediaSource;
+import androidx.media3.common.Player;
+import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.source.ClippingMediaSource;
+import androidx.media3.exoplayer.source.MediaSource;
 
 import org.thunderdog.challegram.U;
 
