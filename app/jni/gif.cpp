@@ -130,6 +130,10 @@ struct VideoInfo {
   bool has_decoded_frames = false;
   bool is_broken = false;
   bool had_invalid_frames = false;
+  bool eof_reached = false;
+  bool draining = false;
+  size_t drained_count = 0;
+  size_t loop_count = 0;
 
   AVPacket *packet = nullptr;
 };
@@ -256,7 +260,7 @@ JNI_FUNC(jlong, createDecoder, jstring src, jintArray data, jdouble startMediaTi
         if (info->scale_ctx != nullptr) {
           dstWidth = newWidth;
           dstHeight = newHeight;
-          logi(TAG_GIF_LOADER, "Created scale context %dx%d -> %dx%d, format: %d", srcWidth, srcHeight, dstWidth, dstHeight, BITMAP_TARGET_FORMAT);
+          logi(TAG_GIF_LOADER, "Created scale context %dx%d -> %dx%d, format: %d -> %d", srcWidth, srcHeight, dstWidth, dstHeight, fmt, BITMAP_TARGET_FORMAT);
         }
       }
     }
@@ -271,8 +275,10 @@ JNI_FUNC(jlong, createDecoder, jstring src, jintArray data, jdouble startMediaTi
   if (startMediaTimestamp != 0) {
     int ret = 0;
     int64_t ts = (int64_t) (startMediaTimestamp * (double) AV_TIME_BASE);
-    ret = avformat_seek_file(info->fmt_ctx, -1, std::numeric_limits<int64_t>::min(), ts,
-                             std::numeric_limits<int64_t>::max(), 0);
+    ret = avformat_seek_file(
+      info->fmt_ctx, -1,
+      std::numeric_limits<int64_t>::min(), ts,
+      std::numeric_limits<int64_t>::max(), 0);
     if (ret < 0) {
       loge(TAG_GIF_LOADER, "can't seek to startMediaTimestamp %s, %s", info->path.c_str(), av_err2str(ret));
     }
@@ -326,8 +332,10 @@ JNI_FUNC(jboolean, seekVideoToStart, jlong ptr) {
   VideoInfo *info = jni::jlong_to_ptr<VideoInfo *>(ptr);
 
   int ret = 0;
-  ret = avformat_seek_file(info->fmt_ctx, -1, std::numeric_limits<int64_t>::min(), 0,
-                           std::numeric_limits<int64_t>::max(), 0);
+  ret = avformat_seek_file(
+    info->fmt_ctx, -1,
+    std::numeric_limits<int64_t>::min(), 0,
+    std::numeric_limits<int64_t>::max(), 0);
   if (ret < 0) {
     loge(TAG_GIF_LOADER, "can't forcely seek to beginning of file %s, %s", info->path.c_str(),
          av_err2str(ret));
@@ -376,7 +384,6 @@ void to_android_bitmap (JNIEnv *env, VideoInfo *info, jobject bitmap, jintArray 
         // note: for now, updated libyuv + kYvuI601Constants in I420AlphaToARGBMatrix fixes AV_PIX_FMT_YUVA420P issue - but still needs to be researched
         /*int res =*/ sws_scale(info->scale_ctx, frame->data, frame->linesize, 0, frame->height, dst_data, info->dst_linesize);
       } else {
-        // TODO: find out why libyuv damages the color palette
         switch (fmt) {
           case BITMAP_TARGET_FORMAT: {
             int size = av_image_get_buffer_size(fmt, frameWidth, frameHeight, 1);
@@ -429,7 +436,6 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jintArray data) {
 
   bool gotFrame = false;
   bool hasLooped = false;
-  bool eofReached = false;
   bool fatalError = false;
   size_t errorCount = 0;
   size_t maxErrorCount = round(std::min(120.0, (double) info->frameRate / 1000.0) * 2.5);
@@ -437,7 +443,28 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jintArray data) {
   do {
     int ret;
 
-    if (eofReached) {
+    if (info->draining) {
+      ret = avcodec_receive_frame(info->video_dec_ctx, info->frame);
+      if (ret == 0) {
+        info->drained_count++;
+        gotFrame = true;
+        break;
+      }
+      info->draining = false;
+      if (info->loop_count == 0) {
+        logv(TAG_GIF_LOADER, "avcodec_receive_frame drain mode finished for %s: %s (%zu frames, eof: %b)", info->path.c_str(),
+             av_err2str(ret),
+             info->drained_count,
+             info->eof_reached);
+        info->drained_count = 0;
+      }
+    }
+
+    if (info->eof_reached) {
+      if (info->loop_count == SIZE_T_MAX) {
+        info->loop_count = 0;
+      }
+      info->loop_count++;
       ret = avformat_seek_file(
         info->fmt_ctx, -1,
         std::numeric_limits<int64_t>::min(), 0,
@@ -449,7 +476,7 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jintArray data) {
         break;
       }
       info->has_decoded_frames = false;
-      eofReached = false;
+      info->eof_reached = false;
       hasLooped = true;
       avcodec_flush_buffers(info->video_dec_ctx);
     }
@@ -461,7 +488,14 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jintArray data) {
         break;
       }
       if (ret == AVERROR_EOF) {
-        eofReached = true;
+        info->eof_reached = true;
+        ret = avcodec_send_packet(info->video_dec_ctx, NULL);
+        if (ret == 0) {
+          info->draining = true;
+        } else if (info->loop_count == 0) {
+          logv(TAG_GIF_LOADER, "avcodec_send_packet can't enter drain mode for %s: %s", info->path.c_str(),
+               av_err2str(ret));
+        }
         continue;
       }
       loge(TAG_GIF_LOADER, "av_read_frame fatal error for %s: %s", info->path.c_str(), av_err2str(ret));
