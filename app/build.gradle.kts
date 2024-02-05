@@ -77,8 +77,8 @@ android {
       "./jni/third_party/webrtc/sdk/android/src/java",
       "../thirdparty/WebRTC/src/java"
     )
-    Config.EXOPLAYER_EXTENSIONS.forEach { module ->
-      java.srcDirs("../thirdparty/ExoPlayer/extensions/${module}/src/main/java")
+    Config.ANDROIDX_MEDIA_EXTENSIONS.forEach { extension ->
+      java.srcDirs("../thirdparty/androidx-media/libraries/${extension}/src/main/java")
     }
   }
 
@@ -93,10 +93,12 @@ android {
 
   buildTypes {
     release {
-      Config.EXOPLAYER_EXTENSIONS.forEach { module ->
-        val proguardFile = file("../thirdparty/ExoPlayer/extensions/${module}/proguard-rules.txt")
+      Config.ANDROIDX_MEDIA_EXTENSIONS.forEach { extension ->
+        val proguardFile = file(
+          "../thirdparty/androidx-media/libraries/${extension}/proguard-rules.txt"
+        }
         if (proguardFile.exists()) {
-          project.logger.lifecycle("Applying thirdparty/ExoPlayer/extensions/${module}/proguard-rules.pro")
+          project.logger.lifecycle("Applying ${proguardFile.path}")
           proguardFile(proguardFile)
         }
       }
@@ -199,6 +201,7 @@ dependencies {
   implementation(project(":vkryl:android"))
   implementation(project(":vkryl:td"))
   // AndroidX: https://developer.android.com/jetpack/androidx/versions
+  implementation("androidx.core:core:1.12.0")
   implementation("androidx.activity:activity:1.8.2")
   implementation("androidx.palette:palette:1.0.0")
   implementation("androidx.recyclerview:recyclerview:1.3.2")
@@ -229,8 +232,8 @@ dependencies {
   implementation("com.google.firebase:firebase-appcheck-safetynet:16.1.2")
   // Play In-App Updates: https://developer.android.com/reference/com/google/android/play/core/release-notes-in_app_updates
   implementation("com.google.android.play:app-update:2.1.0")
-  // ExoPlayer: https://github.com/google/ExoPlayer/blob/release-v2/RELEASENOTES.md
-  implementation("com.google.android.exoplayer:exoplayer-core:2.19.1")
+  // AndroidX/media: https://github.com/androidx/media/blob/release/RELEASENOTES.md
+  implementation("androidx.media3:media3-exoplayer:1.2.1")
   // 17.x version requires minSdk 19 or higher
   implementation("com.google.mlkit:language-id:16.1.1")
   // The Checker Framework: https://checkerframework.org/CHANGELOG.md

@@ -33,10 +33,13 @@ public class TGMessageReceiver extends BroadcastReceiver {
     int externalActionId;
     switch (action) {
       case Intents.ACTION_MESSAGE_READ:
-        externalActionId = TdlibManager.EXTERNAL_ACTION_MARK_AS_READ;
+        externalActionId = TdlibManager.ExternalAction.MARK_AS_READ;
         break;
       case Intents.ACTION_MESSAGE_MUTE:
-        externalActionId = TdlibManager.EXTERNAL_ACTION_MUTE;
+        externalActionId = TdlibManager.ExternalAction.MUTE;
+        break;
+      case Intents.ACTION_MESSAGE_UNMUTE:
+        externalActionId = TdlibManager.ExternalAction.UNMUTE;
         break;
       default:
         return;

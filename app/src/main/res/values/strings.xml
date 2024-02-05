@@ -3122,21 +3122,22 @@
   <string name="ActionMutePerson">Mute %1$s</string>
   <string name="ActionMuteEveryone">Mute all</string>
 
+  <string name="ActionUnmute">Unute</string>
+  <string name="ActionUnmutePerson">Unmute %1$s</string>
+  <string name="ActionUnmuteEveryone">Unmute all</string>
+
   <string name="NotificationMutedChat">Muted %1$s for 1 hour</string>
   <string name="NotificationMutedPerson">Muted %1$s for 1 hour</string>
   <string name="NotificationMutedPersons_one">Muted %1$s person for 1 hour</string>
   <string name="NotificationMutedPersons_other">Muted %1$s people for 1 hour</string>
+
+  <string name="NotificationUnmutedChat">Unmuted %1$s</string>
+  <string name="NotificationUnmutedPerson">Unmuted %1$s</string>
+  <string name="NotificationUnmutedPeople_one">Unmuted %1$s person</string>
+  <string name="NotificationUnmutedPeople_other">Unmuted %1$s people</string>
+
   <string name="NotificationRead">Marked messages as read</string>
   <string name="NotificationReadMentions">Marked mentions as read</string>
-
-  <!--<string name="ActionMuteHours_one">Mute for %1$sh</string>
-  <string name="ActionMuteHours_other">Mute for %1$sh</string>
-
-  <string name="ActionMutePersonHours_one">Mute %2$s for %1$sh</string>
-  <string name="ActionMutePersonHours_other">Mute %2$s for %1$sh</string>
-
-  <string name="ActionMuteAll_one">Mute all for %1$sh</string>
-  <string name="ActionMuteAll_other">Mute all for %1$sh</string>-->
 
   <string name="MessagePreviewDefault">Default</string>
   <string name="MessagePreviewEnabled">Enabled</string>

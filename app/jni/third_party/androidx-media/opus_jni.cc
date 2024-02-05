@@ -34,25 +34,21 @@
   } while (0)
 #endif  //  __ANDROID__
 
-#define DECODER_FUNC(RETURN_TYPE, NAME, ...)                          \
-  extern "C" {                                                        \
-  JNIEXPORT RETURN_TYPE                                               \
-      Java_com_google_android_exoplayer2_ext_opus_OpusDecoder_##NAME( \
-          JNIEnv* env, jobject thiz, ##__VA_ARGS__);                  \
-  }                                                                   \
-  JNIEXPORT RETURN_TYPE                                               \
-      Java_com_google_android_exoplayer2_ext_opus_OpusDecoder_##NAME( \
-          JNIEnv* env, jobject thiz, ##__VA_ARGS__)
+#define DECODER_FUNC(RETURN_TYPE, NAME, ...)                                  \
+  extern "C" {                                                                \
+  JNIEXPORT RETURN_TYPE Java_androidx_media3_decoder_opus_OpusDecoder_##NAME( \
+      JNIEnv* env, jobject thiz, ##__VA_ARGS__);                              \
+  }                                                                           \
+  JNIEXPORT RETURN_TYPE Java_androidx_media3_decoder_opus_OpusDecoder_##NAME( \
+      JNIEnv* env, jobject thiz, ##__VA_ARGS__)
 
-#define LIBRARY_FUNC(RETURN_TYPE, NAME, ...)                          \
-  extern "C" {                                                        \
-  JNIEXPORT RETURN_TYPE                                               \
-      Java_com_google_android_exoplayer2_ext_opus_OpusLibrary_##NAME( \
-          JNIEnv* env, jobject thiz, ##__VA_ARGS__);                  \
-  }                                                                   \
-  JNIEXPORT RETURN_TYPE                                               \
-      Java_com_google_android_exoplayer2_ext_opus_OpusLibrary_##NAME( \
-          JNIEnv* env, jobject thiz, ##__VA_ARGS__)
+#define LIBRARY_FUNC(RETURN_TYPE, NAME, ...)                                  \
+  extern "C" {                                                                \
+  JNIEXPORT RETURN_TYPE Java_androidx_media3_decoder_opus_OpusLibrary_##NAME( \
+      JNIEnv* env, jobject thiz, ##__VA_ARGS__);                              \
+  }                                                                           \
+  JNIEXPORT RETURN_TYPE Java_androidx_media3_decoder_opus_OpusLibrary_##NAME( \
+      JNIEnv* env, jobject thiz, ##__VA_ARGS__)
 
 // JNI references for SimpleOutputBuffer class.
 static jmethodID outputBufferInit;
@@ -94,8 +90,8 @@ DECODER_FUNC(jlong, opusInit, jint sampleRate, jint channelCount,
   }
 
   // Populate JNI References.
-  const jclass outputBufferClass = env->FindClass(
-      "com/google/android/exoplayer2/decoder/SimpleDecoderOutputBuffer");
+  const jclass outputBufferClass =
+      env->FindClass("androidx/media3/decoder/SimpleDecoderOutputBuffer");
   outputBufferInit =
       env->GetMethodID(outputBufferClass, "init", "(JI)Ljava/nio/ByteBuffer;");
 

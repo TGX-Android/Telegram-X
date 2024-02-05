@@ -20,8 +20,7 @@ import android.os.Message;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
-import com.google.android.exoplayer2.PlaybackParameters;
+import androidx.media3.common.PlaybackParameters;
 
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
