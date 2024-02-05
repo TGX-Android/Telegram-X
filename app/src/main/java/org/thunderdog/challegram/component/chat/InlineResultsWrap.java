@@ -666,7 +666,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
 
   private ArrayList<InlineResult<?>> currentItems;
 
-  private void removeItem (InlineResult<?> result) {
+  public void removeItem (InlineResult<?> result) {
     if (currentItems == null) {
       return;
     }
@@ -849,8 +849,16 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
   @Override
   public int provideHeight () {
     int height = offsetProvider != null ? offsetProvider.provideParentHeight(this) : ((BaseActivity) getContext()).getContentView().getMeasuredHeight(); //  - measureItemsHeight();
-    height -= Math.min(measureItemsHeight(), Screen.smallestActualSide() / 2);
+    height -= getMinItemsHeight();
     return Math.max(0, height);
+  }
+
+  public int getMinItemsHeight () {
+    return Math.min(measureItemsHeight(), Screen.smallestActualSide() / 2);
+  }
+
+  public ArrayList<InlineResult<?>> getCurrentItems () {
+    return currentItems;
   }
 
   // Switch pm utils
@@ -902,11 +910,11 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
   // Interfaces
 
   public interface PickListener {
-    void onHashtagPick (InlineResultHashtag result);
-    void onMentionPick (InlineResultMention result, @Nullable String usernamelessText);
-    void onCommandPick (InlineResultCommand result, boolean isLongPress);
-    void onEmojiSuggestionPick (InlineResultEmojiSuggestion result);
-    void onInlineQueryResultPick (InlineResult<?> result);
+    default void onHashtagPick (InlineResultHashtag result) {}
+    default void onMentionPick (InlineResultMention result, @Nullable String usernamelessText) {}
+    default void onCommandPick (InlineResultCommand result, boolean isLongPress) {}
+    default void onEmojiSuggestionPick (InlineResultEmojiSuggestion result) {}
+    default void onInlineQueryResultPick (InlineResult<?> result) {}
   }
 
   private PickListener listener;

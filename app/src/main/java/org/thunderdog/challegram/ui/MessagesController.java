@@ -134,6 +134,7 @@ import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.data.InlineResult;
 import org.thunderdog.challegram.data.InlineResultButton;
 import org.thunderdog.challegram.data.InlineResultCommand;
+import org.thunderdog.challegram.data.InlineResultCommon;
 import org.thunderdog.challegram.data.InlineResultSticker;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGAudio;
@@ -205,6 +206,7 @@ import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.TGBackground;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeManager;
@@ -2034,11 +2036,42 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void send (TdApi.MessageSendOptions sendOptions) {
+    final boolean applyMarkdown = true;
     if (!sendShowingVoice(sendButton, sendOptions)) {
       if (isEditingMessage()) {
-        saveMessage(true);
+        saveMessage(applyMarkdown);
+      } else if (hasAttachedFiles()) {
+        final TdApi.FormattedText caption = inputView != null ? inputView.getOutputText(applyMarkdown) : null;
+        final ArrayList<InlineResult<?>> selectedItems = attachedFiles.getCurrentItems();
+
+        final ArrayList<MediaBottomFilesController.MusicEntry> musicEntries = new ArrayList<>();
+        final ArrayList<String> files = new ArrayList<>();
+
+        for (InlineResult<?> result : selectedItems) {
+          switch (result.getType()) {
+            case InlineResult.TYPE_AUDIO: {
+              musicEntries.add((MediaBottomFilesController.MusicEntry) ((InlineResultCommon) result).getTag());
+              break;
+            }
+            case InlineResult.TYPE_DOCUMENT: {
+              files.add(result.getId());
+              break;
+            }
+          }
+        }
+
+        if (musicEntries.isEmpty() && files.isEmpty()) {
+          return;
+        }
+
+        sendFiles(sendButton, files, needGroupAttachedFiles, true, !musicEntries.isEmpty() && !files.isEmpty() ? null : caption, sendOptions);
+        sendMusic(sendButton, musicEntries, needGroupAttachedFiles, true, caption, sendOptions);
+        discardAttachedFiles(true);
+        if (inputView != null) {
+          inputView.setInput("", false, true);
+        }
       } else {
-        sendText(true, sendOptions);
+        sendText(applyMarkdown, sendOptions);
       }
     }
   }
@@ -2555,6 +2588,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     this.chat = args.chat;
     this.customBotPlaceholder = null;
+    this.customCaptionPlaceholder = null;
     this.messageThread = args.messageThread;
     this.openedFromChatList = args.chatList;
     this.linkedChatId = 0;
@@ -2777,7 +2811,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       checkJoinRequests(chat.pendingJoinRequests);
     }
     if (inputView != null) {
-      inputView.setChat(chat, messageThread, customBotPlaceholder, silentButton != null && silentButton.getIsSilent());
+      inputView.setChat(chat, messageThread, getCustomInputPlaceholder(), silentButton != null && silentButton.getIsSilent());
     }
     ignoreDraftLoad = false;
     updateBottomBar(false);
@@ -3023,7 +3057,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public void updateInputHint () {
     if (inputView != null) {
-      inputView.updateMessageHint(chat, messageThread, customBotPlaceholder, Config.NEED_SILENT_BROADCAST && silentButton != null ? silentButton.getIsSilent() : tdlib.chatDefaultDisableNotifications(getChatId()));
+      inputView.updateMessageHint(chat, messageThread, getCustomInputPlaceholder(), Config.NEED_SILENT_BROADCAST && silentButton != null ? silentButton.getIsSilent() : tdlib.chatDefaultDisableNotifications(getChatId()));
     }
   }
 
@@ -3298,6 +3332,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     if (pagerScrollOffset > 0f) {
+      return false;
+    }
+
+    if (hasAttachedFiles()) {
       return false;
     }
 
@@ -3949,7 +3987,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void saveDraft () {
     if (canSaveDraft()) {
-      if (isEditingMessage()) {
+      if (isEditingMessage() || hasAttachedFiles()) {
         // TODO save local draft
       } else if (inputView != null && inputView.textChangedSinceChatOpened() && isFocused()) {
         final TdApi.FormattedText outputText = inputView.getOutputText(false);
@@ -4077,6 +4115,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void destroy () {
     resetSelectableControl();
 
+    discardAttachedFiles(false);
     setScrollToBottomVisible(false, false);
     applyPlayerOffset(0f, 0f);
     hideActionButton();
@@ -5702,7 +5741,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private final BoolAnimator bottomBarVisible = new BoolAnimator(ANIMATOR_BOTTOM_BUTTON, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
 
   public int getBottomOffset () {
-    return (int) getReplyOffset();
+    return (int) (getReplyOffset() + getAttachedFilesOffset());
   }
 
   private static final int ACTION_DELETE_CHAT = 1;
@@ -6400,7 +6439,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private float getButtonsOffset () {
-    return getReplyOffset() + getSearchControlsOffset();
+    return getReplyOffset() + getAttachedFilesOffset() + getSearchControlsOffset();
   }
 
   private float getMentionButtonY () {
@@ -6453,8 +6492,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void updateReplyView () {
     float y = -getReplyOffset();
-    messagesView.setTranslationY(y);
-    bottomShadowView.setTranslationY(y);
+    float offset = -getAttachedFilesOffset();
+    messagesView.setTranslationY(y + offset);
+    bottomShadowView.setTranslationY(y + offset);
     if (replyBarView != null) {
       replyBarView.setTranslationY(y);
     }
@@ -6765,6 +6805,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     needShowEmojiKeyboardAfterHideMessageOptions = false;
     saveDraft();
+    discardAttachedFiles(true);
 
     if (inSelectMode()) {
       finishSelectMode(-1);
@@ -7399,6 +7440,25 @@ public class MessagesController extends ViewController<MessagesController.Argume
       updateInputHint();
     }
   }
+
+  private String customCaptionPlaceholder;
+
+  public void setCustomCaptionPlaceholder (@Nullable String customPlaceholder) {
+    if (!StringUtils.equalsOrBothEmpty(this.customCaptionPlaceholder, customPlaceholder)) {
+      this.customCaptionPlaceholder = customPlaceholder;
+      updateInputHint();
+    }
+  }
+
+  private String getCustomInputPlaceholder () {
+    if (!StringUtils.isEmpty(customBotPlaceholder)) {
+      return customBotPlaceholder;
+    } else if (!StringUtils.isEmpty(customCaptionPlaceholder)) {
+      return customCaptionPlaceholder;
+    }
+    return null;
+  }
+
   @Override
   protected void onTranslationChanged (float newTranslationX) {
     context().reactionsOverlayManager().setControllerTranslationX((int) newTranslationX);
@@ -8238,6 +8298,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return true;
     }
 
+    if (hasAttachedFiles()) {
+      showUnsavedChangesPromptBeforeLeaving(Lang.getString(R.string.DiscardCaptionHint), Lang.getString(R.string.DiscardEditCaption), null);
+      return true;
+    }
+
     if (fromTop) {
       return false;
     }
@@ -8458,6 +8523,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public final void onMessagesFrameChanged () {
     context().updateHackyOverlaysPositions();
     manager.onViewportMeasure();
+    if (attachedFiles != null && attachedFiles.getParent() != null) {
+      attachedFiles.updatePosition(true);
+    }
   }
 
   private final int[] cursorCoordinates = new int[2], symbolUnderCursorPosition = new int[2];
@@ -8989,7 +9057,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void checkSendButton (boolean animated) {
-    setSendVisible(inputView.getText().length() > 0 || isEditingMessage() || isVoiceShowing, animated && getParentOrSelf().isAttachedToNavigationController());
+    setSendVisible(inputView.getText().length() > 0 || isEditingMessage() || hasAttachedFiles() || isVoiceShowing, animated && getParentOrSelf().isAttachedToNavigationController());
   }
 
   private void displaySendButton () {
@@ -9313,11 +9381,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void sendMusic (View view, List<MediaBottomFilesController.MusicEntry> musicFiles, boolean needGroupMedia, boolean allowReply, TdApi.MessageSendOptions initialSendOptions) {
+    sendMusic(view, musicFiles, needGroupMedia, allowReply, null, initialSendOptions);
+  }
+
+  public void sendMusic (View view, List<MediaBottomFilesController.MusicEntry> musicFiles, boolean needGroupMedia, boolean allowReply, @Nullable TdApi.FormattedText lastFileCaption, TdApi.MessageSendOptions initialSendOptions) {
     if (!showSlowModeRestriction(view, initialSendOptions) && !showRestriction(view, RightId.SEND_AUDIO)) {
       TdApi.InputMessageContent[] content = new TdApi.InputMessageContent[musicFiles.size()];
       for (int i = 0; i < content.length; i++) {
+        final TdApi.FormattedText caption = i == content.length - 1 ? lastFileCaption : null;
         MediaBottomFilesController.MusicEntry musicFile = musicFiles.get(i);
-        content[i] = tdlib.filegen().createThumbnail(new TdApi.InputMessageAudio(TD.createInputFile(musicFile.getPath(), musicFile.getMimeType()), null, (int) (musicFile.getDuration() / 1000l), musicFile.getTitle(), musicFile.getArtist(), null), isSecretChat());
+        content[i] = tdlib.filegen().createThumbnail(new TdApi.InputMessageAudio(TD.createInputFile(musicFile.getPath(), musicFile.getMimeType()), null, (int) (musicFile.getDuration() / 1000l), musicFile.getTitle(), musicFile.getArtist(), caption), isSecretChat());
       }
       TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(initialSendOptions, obtainSilentMode());
       List<TdApi.Function<?>> functions = TD.toFunctions(chat.id, getMessageThreadId(), allowReply ? obtainReplyTo() : null, finalSendOptions, content, needGroupMedia);
@@ -9524,6 +9597,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void sendFiles (View view, final List<String> paths, boolean needGroupMedia, boolean allowReply, TdApi.MessageSendOptions initialSendOptions) {
+    sendFiles(view, paths, needGroupMedia, allowReply, null, initialSendOptions);
+  }
+
+  public void sendFiles (View view, final List<String> paths, boolean needGroupMedia, boolean allowReply, @Nullable TdApi.FormattedText lastFileCaption, TdApi.MessageSendOptions initialSendOptions) {
     if (showSlowModeRestriction(view, initialSendOptions)) {
       return;
     }
@@ -9539,10 +9616,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
     Media.instance().post(() -> {
       boolean restrictionFailed = false;
       List<TdApi.InputMessageContent> content = new ArrayList<>();
-      for (String path : paths) {
+      for (int a = 0; a < paths.size(); a++) {
+        final String path = paths.get(a);
+        final TdApi.FormattedText caption = a == paths.size() - 1 ? lastFileCaption : null;
         TD.FileInfo info = new TD.FileInfo();
         TdApi.InputFile inputFile = TD.createInputFile(path, null, info);
-        TdApi.InputMessageContent inputMessageContent = TD.toInputMessageContent(path, inputFile, info, null, allowAudio, allowGifs, allowVideos, allowDocs, false);
+        TdApi.InputMessageContent inputMessageContent = TD.toInputMessageContent(path, inputFile, info, caption, allowAudio, allowGifs, allowVideos, allowDocs, false);
         if (inputMessageContent == null) {
           restrictionFailed = true;
           break;
@@ -10936,6 +11015,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   protected void onEnterSearchMode () {
     super.onEnterSearchMode();
+    discardAttachedFiles(true);
     manager.onPrepareToSearch();
     if (searchByUserViewWrapper != null) {
       searchByUserViewWrapper.prepare();
@@ -11923,5 +12003,113 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public long getCurrentChatId () {
     return getChatId();
+  }
+
+  private final FactorAnimator attachedFilesHeight = new FactorAnimator(0, (id, factor, fraction, callee) -> updateReplyView(), AnimatorUtils.DECELERATE_INTERPOLATOR, 200, 0);
+
+  private void checkAttachedFiles (boolean animated) {
+    final boolean hasAttachedFiles = hasAttachedFiles();
+    final float height = hasAttachedFiles ? attachedFiles.getMinItemsHeight() : 0;
+
+    setCustomCaptionPlaceholder(hasAttachedFiles ? Lang.getString(R.string.Caption) : null);
+    checkSendButton(animated);
+
+    if (animated) {
+      attachedFilesHeight.animateTo(height);
+    } else {
+      attachedFilesHeight.forceFactor(height);
+    }
+  }
+
+  private float getAttachedFilesOffset () {
+    return attachedFilesHeight.getFactor();
+  }
+
+  public boolean hasAttachedFiles () {
+    return attachedFiles != null && attachedFiles.isDisplayingItems();
+  }
+
+  public void discardAttachedFiles (boolean animated) {
+    if (attachedFiles != null) {
+      attachedFiles.showItems(this, null, false, null, null, null, !isFocused());
+      checkAttachedFiles(animated);
+    }
+  }
+
+  @Override
+  public void onThemeColorsChanged (boolean areTemp, ColorState state) {
+    super.onThemeColorsChanged(areTemp, state);
+    if (attachedFiles != null) {
+      attachedFiles.getThemeProvider().onThemeColorsChanged(areTemp);
+    }
+  }
+
+  private InlineResultsWrap attachedFiles;
+  private boolean needGroupAttachedFiles;
+  private ClickHelper.Delegate attachedFilesClickHelperDelegate;
+
+  private ClickHelper.Delegate getAttachedFilesClickHelperDelegate () {
+    if (attachedFilesClickHelperDelegate == null) {
+      attachedFilesClickHelperDelegate = new ClickHelper.Delegate() {
+        @Override
+        public boolean needClickAt (View view, float x, float y) {
+          return true;
+        }
+
+        @Override
+        public void onClickAt (View view, float x, float y) {
+          if (x < view.getMeasuredWidth() - Screen.dp(36)) {
+            return;
+          }
+
+          Object tag = view.getTag();
+          if (tag instanceof InlineResult<?>) {
+            attachedFiles.removeItem((InlineResult<?>) tag);
+            checkAttachedFiles(true);
+          }
+        }
+      };
+    }
+    return attachedFilesClickHelperDelegate;
+  }
+
+  public void setFilesToAttach (ArrayList<InlineResult<?>> results, boolean needGroupMedia) {
+    if (results == null || results.isEmpty()) {
+      discardAttachedFiles(true);
+      return;
+    }
+
+    for (InlineResult<?> result : results) {
+      if (result instanceof InlineResultCommon) {
+        ((InlineResultCommon) result).setNeedCloseButton(true);
+        ((InlineResultCommon) result).setClickHelper(new ClickHelper(getAttachedFilesClickHelperDelegate()));
+      }
+    }
+
+    if (attachedFiles == null) {
+      attachedFiles = new InlineResultsWrap(context);
+      // attachedFiles.getRecyclerView().setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 150l));
+      attachedFiles.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+      attachedFiles.setOffsetProvider(new InlineResultsWrap.OffsetProvider() {
+        @Override
+        public int provideOffset (InlineResultsWrap v) {
+          return getInputOffset(false);
+        }
+
+        @Override
+        public int provideParentHeight (InlineResultsWrap v) {
+          return contentView.getMeasuredHeight();
+        }
+      });
+      attachedFiles.setListener(new InlineResultsWrap.PickListener() {});
+    }
+
+    if (attachedFiles.getParent() == null) {
+      contentView.addView(attachedFiles);
+    }
+
+    needGroupAttachedFiles = needGroupMedia;
+    attachedFiles.showItems(this, results, false, null, null, null, !isFocused());
+    checkAttachedFiles(true);
   }
 }
