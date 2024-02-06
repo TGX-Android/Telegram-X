@@ -76,7 +76,7 @@ open class CMakePlugin : Plugin<Project> {
                 "-DCMAKE_CXX_VISIBILITY_PRESET=hidden",
                 "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--gc-sections,--icf=safe -Wl,--build-id=sha1",
                 "-DCMAKE_C_FLAGS=-D_LARGEFILE_SOURCE=1 ${flags.joinToString(" ")}",
-                "-DCMAKE_CXX_FLAGS=-std=c++17 ${flags.joinToString(" ")}",
+                "-DCMAKE_CXX_FLAGS=-std=c++17 ${flags.joinToString(" ")}"
               )
             }
           }
