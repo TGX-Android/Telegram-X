@@ -27,7 +27,7 @@ open class CMakePlugin : Plugin<Project> {
         }
       }
       buildTypes {
-        getByName("debug") {
+        named("debug") {
           externalNativeBuild {
             cmake {
               val flags = arrayOf(
