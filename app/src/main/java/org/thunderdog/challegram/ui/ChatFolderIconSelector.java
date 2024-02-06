@@ -14,9 +14,6 @@
  */
 package org.thunderdog.challegram.ui;
 
-import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
-import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
-
 import android.content.Context;
 import android.graphics.Canvas;
 import android.view.Gravity;
@@ -132,9 +129,9 @@ public class ChatFolderIconSelector {
     owner.addThemeInvalidateListener(shadowView);
 
     FrameLayoutFix popupView = new FrameLayoutFix(context);
-    popupView.addView(shadowView, FrameLayoutFix.newParams(MATCH_PARENT, Screen.dp(7f), Gravity.TOP));
-    popupView.addView(recyclerView, FrameLayoutFix.newParams(MATCH_PARENT, WRAP_CONTENT, Gravity.TOP, 0, Screen.dp(7f), 0, 0));
-    popupView.setLayoutParams(FrameLayoutFix.newParams(MATCH_PARENT, WRAP_CONTENT, Gravity.BOTTOM));
+    popupView.addView(shadowView, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(7f), Gravity.TOP));
+    popupView.addView(recyclerView, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP, 0, Screen.dp(7f), 0, 0));
+    popupView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
     this.popupView = popupView;
   }
 

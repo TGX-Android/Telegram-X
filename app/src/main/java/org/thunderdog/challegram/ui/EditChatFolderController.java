@@ -14,10 +14,6 @@
  */
 package org.thunderdog.challegram.ui;
 
-import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
-import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
-import static androidx.core.util.ObjectsCompat.requireNonNull;
-
 import android.content.Context;
 import android.graphics.Rect;
 import android.os.Bundle;
@@ -857,7 +853,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
     @Override
     protected SettingHolder initCustom (ViewGroup parent) {
       FrameLayoutFix frameLayout = new FrameLayoutFix(parent.getContext());
-      frameLayout.setLayoutParams(new RecyclerView.LayoutParams(MATCH_PARENT, Screen.dp(57f)));
+      frameLayout.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(57f)));
       ViewSupport.setThemedBackground(frameLayout, ColorId.filling, EditChatFolderController.this);
 
       MaterialEditTextGroup editText = new MaterialEditTextGroup(parent.getContext(), false);
@@ -871,7 +867,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
       editText.getEditText().setLineDisabled(true);
       editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
 
-      FrameLayout.LayoutParams editTextParams = new FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
+      FrameLayout.LayoutParams editTextParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
       editTextParams.leftMargin = Screen.dp(16f);
       editTextParams.rightMargin = Screen.dp(57f);
       editTextParams.bottomMargin = Screen.dp(8f);
@@ -914,7 +910,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
 
       if (item.getId() == R.id.btn_createInviteLink) {
         view.setName(hasInviteLinks() ? R.string.CreateANewLink : R.string.CreateAnInviteLink);
-        PremiumLockModifier modifier = (PremiumLockModifier) requireNonNull(item.getDrawModifier());
+        PremiumLockModifier modifier = (PremiumLockModifier) ObjectsCompat.requireNonNull(item.getDrawModifier());
         boolean showLockIcon = !canCreateInviteLink() && !tdlib.hasPremium() && chatTypeCount() == 0;
         modifier.setVisible(showLockIcon);
         view.setTooltipLocationProvider(showLockIcon ? modifier : null);
