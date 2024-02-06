@@ -64,7 +64,7 @@ open class CMakePlugin : Plugin<Project> {
                 "-fno-exceptions",
 
                 "-O3",
-                "-finline-functions",
+                "-finline-functions"
               )
 
               arguments(
