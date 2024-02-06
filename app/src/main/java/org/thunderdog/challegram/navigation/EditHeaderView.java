@@ -26,15 +26,19 @@ import android.view.MotionEvent;
 import android.view.ViewGroup;
 import android.widget.EditText;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.StringRes;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Size;
@@ -49,11 +53,12 @@ import me.vkryl.td.TdConstants;
 
 public class EditHeaderView extends FrameLayoutFix implements RtlCheckListener, Destroyable, StretchyHeaderView, TextWatcher, HeaderView.OffsetChangeListener {
   private final ViewController<?> parent;
-  private HeaderEditText input;
+  private final HeaderEditText input;
   private final ImageReceiver receiver;
   private final Path clipPath = new Path();
 
-  private final Drawable icon;
+  private Drawable icon;
+  private @PorterDuffColorId int iconColorId = ColorId.white;
 
   public EditHeaderView (Context context, ViewController<?> parent) {
     super(context);
@@ -274,7 +279,7 @@ public class EditHeaderView extends FrameLayoutFix implements RtlCheckListener, 
     int cx = receiver.centerX();
     int cy = receiver.centerY();
     c.drawCircle(cx, cy, avatarRadius, Paints.fillingPaint(0x20000000));
-    Drawables.draw(c, icon, cx - (int) (icon.getMinimumWidth() * .5f), cy - (int) (icon.getMinimumHeight() * .5f), Paints.whitePorterDuffPaint());
+    Drawables.draw(c, icon, cx - (int) (icon.getMinimumWidth() * .5f), cy - (int) (icon.getMinimumHeight() * .5f), PorterDuffPaint.get(iconColorId));
   }
 
   public void setInputEnabled (boolean enabled) {
@@ -286,6 +291,12 @@ public class EditHeaderView extends FrameLayoutFix implements RtlCheckListener, 
   public void setPhoto (ImageGalleryFile file) {
     this.file = file;
     receiver.requestFile(file);
+  }
+
+  public void setIcon (@DrawableRes int iconRes, @PorterDuffColorId int colorId) {
+    icon = Drawables.get(getResources(), iconRes);
+    iconColorId = colorId;
+    invalidate();
   }
 
   public ImageGalleryFile getImageFile () {

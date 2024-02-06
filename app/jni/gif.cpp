@@ -132,8 +132,8 @@ struct VideoInfo {
   bool had_invalid_frames = false;
   bool eof_reached = false;
   bool draining = false;
-  size_t drained_count = 0;
   size_t loop_count = 0;
+  size_t drained_count = 0;
 
   AVPacket *packet = nullptr;
 };
@@ -446,34 +446,32 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jintArray data) {
     if (info->draining) {
       ret = avcodec_receive_frame(info->video_dec_ctx, info->frame);
       if (ret == 0) {
-        info->drained_count++;
+        if (info->loop_count == 0) { // First loop
+          info->drained_count++;
+        }
         gotFrame = true;
         break;
       }
       info->draining = false;
-      if (info->loop_count == 0) {
-        logv(TAG_GIF_LOADER, "avcodec_receive_frame drain mode finished for %s: %s (%zu frames, eof: %b)", info->path.c_str(),
-             av_err2str(ret),
-             info->drained_count,
-             info->eof_reached);
-        info->drained_count = 0;
-      }
     }
 
     if (info->eof_reached) {
-      if (info->loop_count == SIZE_T_MAX) {
-        info->loop_count = 0;
-      }
-      info->loop_count++;
       ret = avformat_seek_file(
         info->fmt_ctx, -1,
         std::numeric_limits<int64_t>::min(), 0,
         std::numeric_limits<int64_t>::max(), 0
       );
       if (ret != 0) {
-        loge(TAG_GIF_LOADER, "can't seek %s to start, %s",info->path.c_str(), av_err2str(ret));
+        loge(TAG_GIF_LOADER, "can't seek %s to start, %s, drained_count: %zu", info->path.c_str(),
+             av_err2str(ret),
+             info->drained_count);
         fatalError = true;
         break;
+      }
+      if (info->loop_count == SIZE_T_MAX) {
+        info->loop_count = 1;
+      } else {
+        info->loop_count++;
       }
       info->has_decoded_frames = false;
       info->eof_reached = false;

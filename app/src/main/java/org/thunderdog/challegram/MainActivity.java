@@ -88,6 +88,7 @@ import org.thunderdog.challegram.ui.SettingsNotificationController;
 import org.thunderdog.challegram.ui.SettingsPrivacyController;
 import org.thunderdog.challegram.ui.SettingsPrivacyKeyController;
 import org.thunderdog.challegram.ui.SettingsThemeController;
+import org.thunderdog.challegram.ui.EditChatFolderInviteLinkController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.widget.GearView;
@@ -1245,6 +1246,8 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
       restore = new SettingsFoldersController(context, tdlib);
     } else if (id == R.id.controller_editChatFolders) {
       restore = new EditChatFolderController(context, tdlib);
+    } else if (id == R.id.controller_editChatFolderInviteLink) {
+      restore = new EditChatFolderInviteLinkController(context, tdlib);
     } else if (id == R.id.controller_bug_killer) {
       restore = new SettingsBugController(context, tdlib);
     } else {

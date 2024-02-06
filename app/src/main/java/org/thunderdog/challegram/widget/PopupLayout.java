@@ -26,6 +26,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.PopupWindow;
 
 import androidx.annotation.Nullable;
@@ -42,6 +43,7 @@ import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.MenuMoreWrap;
 import org.thunderdog.challegram.navigation.OptionsLayout;
 import org.thunderdog.challegram.navigation.RootDrawable;
+import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Keyboard;
@@ -909,6 +911,25 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
 
   public void addStatusBar () {
     useStatusBar = true;
+  }
+
+  private @Nullable TooltipOverlayView tooltipOverlayView;
+
+  public TooltipOverlayView tooltipManager () {
+    if (tooltipOverlayView == null) {
+      tooltipOverlayView = new TooltipOverlayView(getContext());
+      tooltipOverlayView.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+      tooltipOverlayView.setAvailabilityListener((overlayView, hasChildren) -> {
+        if (hasChildren) {
+          if (tooltipOverlayView.getParent() != null)
+            return;
+          addView(tooltipOverlayView);
+        } else {
+          removeView(tooltipOverlayView);
+        }
+      });
+    }
+    return tooltipOverlayView;
   }
 
   public static PopupLayout parentOf (View view) {

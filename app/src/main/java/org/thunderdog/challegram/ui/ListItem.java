@@ -162,6 +162,9 @@ public class ListItem {
 
   public static final int TYPE_GIFT_HEADER = 142;
 
+  public static final int TYPE_HEADER_WITH_TEXT_BUTTON = 143;
+  public static final int TYPE_HEADER_WITH_CHECKBOX = 144;
+
   private static final int FLAG_SELECTED = 1;
   private static final int FLAG_BOOL_VALUE = 1 << 1;
   private static final int FLAG_USE_SELECTION_INDEX = 1 << 2;
@@ -184,7 +187,7 @@ public class ListItem {
   private String stringKey, stringValue;
   private @PorterDuffColorId int textColorId;
   private TdlibAccentColor accentColor;
-  private int textPaddingLeft;
+  private int textPaddingLeft, textPaddingRight;
   private int intValue;
   private long longValue;
 
@@ -333,6 +336,11 @@ public class ListItem {
     return this;
   }
 
+  public ListItem setTextPaddingRight (int textPaddingRight) {
+    this.textPaddingRight = textPaddingRight;
+    return this;
+  }
+
   public ListItem setData (Object data) {
     this.data = data;
     return this;
@@ -363,6 +371,10 @@ public class ListItem {
 
   public int getTextPaddingLeft () {
     return textPaddingLeft;
+  }
+
+  public int getTextPaddingRight () {
+    return textPaddingRight;
   }
 
   public ListItem setStringValue (String value) {

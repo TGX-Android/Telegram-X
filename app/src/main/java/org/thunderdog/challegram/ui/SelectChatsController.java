@@ -51,6 +51,7 @@ import org.thunderdog.challegram.data.TGFoundChat;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.ChatListListener;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -111,30 +112,32 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     private final @Nullable Delegate delegate;
     private final Set<Long> selectedChatIds;
     private final Set<Integer> selectedChatTypes;
+    private final boolean showChatTypes;
 
-    private Arguments (@Mode int mode, @Nullable Delegate delegate, int chatFolderId, @Nullable TdApi.ChatFolder chatFolder, Set<Long> selectedChatIds, Set<Integer> selectedChatTypes) {
+    private Arguments (@Mode int mode, @Nullable Delegate delegate, int chatFolderId, @Nullable TdApi.ChatFolder chatFolder, Set<Long> selectedChatIds, Set<Integer> selectedChatTypes, boolean showChatTypes) {
       this.mode = mode;
       this.delegate = delegate;
       this.chatFolder = chatFolder;
       this.chatFolderId = chatFolderId;
       this.selectedChatIds = selectedChatIds;
       this.selectedChatTypes = selectedChatTypes;
+      this.showChatTypes = showChatTypes;
     }
 
-    public static Arguments includedChats (int chatFolderId, TdApi.ChatFolder chatFolder) {
-      return includedChats(null, chatFolderId, chatFolder);
+    public static Arguments includedChats (int chatFolderId, TdApi.ChatFolder chatFolder, boolean showChatTypes) {
+      return includedChats(null, chatFolderId, chatFolder, showChatTypes);
     }
 
-    public static Arguments includedChats (@Nullable Delegate delegate, int chatFolderId, TdApi.ChatFolder chatFolder) {
+    public static Arguments includedChats (@Nullable Delegate delegate, int chatFolderId, TdApi.ChatFolder chatFolder, boolean showChatTypes) {
       Set<Long> selectedChatIds = unmodifiableLinkedHashSetOf(chatFolder.pinnedChatIds, chatFolder.includedChatIds);
       Set<Integer> selectedChatTypes = U.unmodifiableTreeSetOf(TD.includedChatTypes(chatFolder));
-      return new Arguments(MODE_FOLDER_INCLUDE_CHATS, delegate, chatFolderId, chatFolder, selectedChatIds, selectedChatTypes);
+      return new Arguments(MODE_FOLDER_INCLUDE_CHATS, delegate, chatFolderId, chatFolder, selectedChatIds, selectedChatTypes, showChatTypes);
     }
 
-    public static Arguments excludedChats (@Nullable Delegate delegate, int chatFolderId, TdApi.ChatFolder chatFolder) {
+    public static Arguments excludedChats (@Nullable Delegate delegate, int chatFolderId, TdApi.ChatFolder chatFolder, boolean showChatTypes) {
       Set<Long> selectedChatIds = unmodifiableLinkedHashSetOf(chatFolder.excludedChatIds);
       Set<Integer> selectedChatTypes = U.unmodifiableTreeSetOf(TD.excludedChatTypes(chatFolder));
-      return new Arguments(MODE_FOLDER_EXCLUDE_CHATS, delegate, chatFolderId, chatFolder, selectedChatIds, selectedChatTypes);
+      return new Arguments(MODE_FOLDER_EXCLUDE_CHATS, delegate, chatFolderId, chatFolder, selectedChatIds, selectedChatTypes, showChatTypes);
     }
 
     private static Set<Long> unmodifiableLinkedHashSetOf (long[]... arrays) {
@@ -163,6 +166,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
 
   private Set<Long> selectedChatIds = Collections.emptySet();
   private Set<Integer> selectedChatTypes = Collections.emptySet();
+  private boolean showChatTypes;
 
   private int secretChatCount;
   private int nonSecretChatCount;
@@ -184,6 +188,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     delegate = args.delegate;
     selectedChatIds = new LinkedHashSet<>(args.selectedChatIds);
     selectedChatTypes = new TreeSet<>(args.selectedChatTypes);
+    showChatTypes = args.showChatTypes;
 
     secretChatCount = 0;
     nonSecretChatCount = 0;
@@ -244,19 +249,21 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
         items.add(new ListItem(ListItem.TYPE_DESCRIPTION, R.id.description, 0, description));
       }
 
-      items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.ChatTypes));
-      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-      if (arguments.mode == MODE_FOLDER_INCLUDE_CHATS) {
-        for (int chatType : TD.CHAT_TYPES_TO_INCLUDE) {
-          items.add(chatTypeItem(chatType));
+      if (showChatTypes) {
+        items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.ChatTypes));
+        items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+        if (arguments.mode == MODE_FOLDER_INCLUDE_CHATS) {
+          for (int chatType : TD.CHAT_TYPES_TO_INCLUDE) {
+            items.add(chatTypeItem(chatType));
+          }
         }
-      }
-      if (arguments.mode == MODE_FOLDER_EXCLUDE_CHATS) {
-        for (int chatType : TD.CHAT_TYPES_TO_EXCLUDE) {
-          items.add(chatTypeItem(chatType));
+        if (arguments.mode == MODE_FOLDER_EXCLUDE_CHATS) {
+          for (int chatType : TD.CHAT_TYPES_TO_EXCLUDE) {
+            items.add(chatTypeItem(chatType));
+          }
         }
+        items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       }
-      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
       items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.Chats));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP, chatsHeaderId));
@@ -339,6 +346,11 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
       return true;
     }
     return super.onBackPressed(fromTop);
+  }
+
+  @Override
+  public boolean canSlideBackFrom (NavigationController navigationController, float x, float y) {
+    return !hasChanges();
   }
 
   private void updateDoneButton () {
@@ -791,7 +803,7 @@ class Chip extends Drawable implements FlowListAnimator.Measurable, Drawable.Cal
   }
 
   @Override
-  public void draw (Canvas canvas) {
+  public void draw (@NonNull Canvas canvas) {
     Rect bounds = getBounds();
     if (bounds.isEmpty() || alpha == 0) {
       return;

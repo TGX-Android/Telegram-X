@@ -109,6 +109,10 @@ public abstract class EditBaseController<T> extends ViewController<T> implements
     return wrapper;
   }
 
+  public RecyclerView getRecyclerView () {
+    return recyclerView;
+  }
+
   @Override
   public int getRootColorId () {
     return getRecyclerBackgroundColorId();
@@ -169,6 +173,10 @@ public abstract class EditBaseController<T> extends ViewController<T> implements
     return doneVisible;
   }
 
+  protected void onDoneVisibleChanged (boolean isVisible) {
+    // override
+  }
+
   protected void setDoneVisible (boolean isVisible) {
     if (this.doneVisible != isVisible) {
       this.doneVisible = isVisible;
@@ -189,6 +197,7 @@ public abstract class EditBaseController<T> extends ViewController<T> implements
         }
         doneButton.setIsVisible(isVisible, false);
       }
+      onDoneVisibleChanged(isVisible);
     }
   }
 
@@ -198,6 +207,7 @@ public abstract class EditBaseController<T> extends ViewController<T> implements
       this.doneVisibilityFactor = 1f;
       doneButton.setMaximumAlpha(1f);
       doneButton.setIsVisible(isVisible, false);
+      onDoneVisibleChanged(isVisible);
     }
   }
 

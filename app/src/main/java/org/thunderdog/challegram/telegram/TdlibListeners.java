@@ -41,6 +41,7 @@ public class TdlibListeners {
   final ReferenceList<MessageEditListener> messageEditListeners;
   final ReferenceList<ChatListener> chatListeners;
   final ReferenceList<ChatFoldersListener> chatFoldersListeners;
+  final ReferenceIntMap<ChatFolderListener> chatFolderListeners;
   final ReferenceMap<String, ChatListListener> chatListListeners;
   final ReferenceList<StoryListener> storyListeners;
   final ReferenceList<NotificationSettingsListener> settingsListeners;
@@ -84,6 +85,7 @@ public class TdlibListeners {
     this.storyListeners = new ReferenceList<>();
     this.chatListListeners = new ReferenceMap<>(true);
     this.chatFoldersListeners = new ReferenceList<>(true);
+    this.chatFolderListeners = new ReferenceIntMap<>(true);
     this.settingsListeners = new ReferenceList<>(true);
     this.stickersListeners = new ReferenceList<>(true);
     this.animationsListeners = new ReferenceList<>();
@@ -428,6 +430,21 @@ public class TdlibListeners {
   @AnyThread
   public void unsubscribeFromChatFoldersUpdates (ChatFoldersListener listener) {
     chatFoldersListeners.remove(listener);
+  }
+
+  @AnyThread
+  public void addChatFolderListener (int chatFolderId, ChatFolderListener listener) {
+    if (chatFolderId != 0) {
+      chatFolderListeners.add(chatFolderId, listener);
+    }
+
+  }
+
+  @AnyThread
+  public void removeChatFolderListener (int chatFolderId, ChatFolderListener listener) {
+    if (chatFolderId != 0) {
+      chatFolderListeners.remove(chatFolderId, listener);
+    }
   }
 
   @AnyThread
@@ -826,6 +843,32 @@ public class TdlibListeners {
         loadListener.onReactionLoaded(reactionKey);
       }
     }
+  }
+
+  // notifyChatFolder*
+
+  public void notifyChatFolderNewChatsChanged (int chatFolderId) {
+    runUpdate(chatFolderListeners.iterator(chatFolderId), (listener) -> {
+      listener.onChatFolderNewChatsChanged(chatFolderId);
+    });
+  }
+
+  public void notifyChatFolderInviteLinkDeleted (int chatFolderId, String inviteLink) {
+    runUpdate(chatFolderListeners.iterator(chatFolderId), (listener) -> {
+      listener.onChatFolderInviteLinkDeleted(chatFolderId, inviteLink);
+    });
+  }
+
+  public void notifyChatFolderInviteLinkChanged (int chatFolderId, TdApi.ChatFolderInviteLink inviteLink) {
+    runUpdate(chatFolderListeners.iterator(chatFolderId), (listener) -> {
+      listener.onChatFolderInviteLinkChanged(chatFolderId, inviteLink);
+    });
+  }
+
+  public void notifyChatFolderInviteLinkCreated (int chatFolderId, TdApi.ChatFolderInviteLink inviteLink) {
+    runUpdate(chatFolderListeners.iterator(chatFolderId), (listener) -> {
+      listener.onChatFolderInviteLinkCreated(chatFolderId, inviteLink);
+    });
   }
 
   // updateMessageInteractionInfo

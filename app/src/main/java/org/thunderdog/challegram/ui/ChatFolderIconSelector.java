@@ -14,16 +14,15 @@
  */
 package org.thunderdog.challegram.ui;
 
-import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
-import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
-
 import android.content.Context;
+import android.graphics.Canvas;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import androidx.annotation.Nullable;
+import androidx.core.util.ObjectsCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -35,6 +34,7 @@ import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
+import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.widget.PopupLayout;
@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.ObjectUtils;
 import me.vkryl.core.StringUtils;
 
 public class ChatFolderIconSelector {
@@ -52,12 +53,14 @@ public class ChatFolderIconSelector {
   private final Delegate delegate;
   private final View popupView;
   private final GridLayoutManager layoutManager;
+  private final @Nullable String selectedIconName;
 
   private PopupLayout popupLayout;
 
-  public ChatFolderIconSelector (ViewController<?> owner, Delegate delegate) {
+  public ChatFolderIconSelector (ViewController<?> owner, @Nullable String selectedIconName, Delegate delegate) {
     this.context = owner.context();
     this.delegate = delegate;
+    this.selectedIconName = selectedIconName;
 
     List<ListItem> items = new ArrayList<>(TD.ICON_NAMES.length);
     for (String iconName : TD.ICON_NAMES) {
@@ -72,10 +75,18 @@ public class ChatFolderIconSelector {
             int size = MeasureSpec.getSize(widthMeasureSpec);
             setMeasuredDimension(size, size);
           }
+
+          @Override
+          protected void onDraw (Canvas canvas) {
+            ListItem item = (ListItem) getTag();
+            String iconName = item.getStringValue();
+            if (isSelectedIcon(iconName)) {
+              canvas.drawCircle(getWidth() / 2f, getHeight() / 2f, Screen.dp(24f), Paints.fillingPaint(Theme.fillingColor()));
+            }
+            super.onDraw(canvas);
+          }
         };
         imageView.setScaleType(ImageView.ScaleType.CENTER);
-        imageView.setColorFilter(Theme.getColor(ColorId.icon));
-        owner.addThemeFilterListener(imageView, ColorId.icon);
         Views.setClickable(imageView);
         imageView.setOnClickListener(v -> {
           ListItem item = (ListItem) imageView.getTag();
@@ -94,6 +105,12 @@ public class ChatFolderIconSelector {
         int iconResource = item.getIconResource();
         if (iconResource != 0) {
           imageView.setImageDrawable(Drawables.get(imageView.getResources(), iconResource));
+          String iconName = item.getStringValue();
+          boolean isSelected = ObjectsCompat.equals(iconName, selectedIconName);
+          int iconColorId = isSelected ? ColorId.iconActive : ColorId.icon;
+          imageView.setColorFilter(Theme.getColor(iconColorId));
+          owner.removeThemeListenerByTarget(imageView);
+          owner.addThemeFilterListener(imageView, iconColorId);
         } else {
           imageView.setImageDrawable(null);
         }
@@ -112,9 +129,9 @@ public class ChatFolderIconSelector {
     owner.addThemeInvalidateListener(shadowView);
 
     FrameLayoutFix popupView = new FrameLayoutFix(context);
-    popupView.addView(shadowView, FrameLayoutFix.newParams(MATCH_PARENT, Screen.dp(7f), Gravity.TOP));
-    popupView.addView(recyclerView, FrameLayoutFix.newParams(MATCH_PARENT, WRAP_CONTENT, Gravity.TOP, 0, Screen.dp(7f), 0, 0));
-    popupView.setLayoutParams(FrameLayoutFix.newParams(MATCH_PARENT, WRAP_CONTENT, Gravity.BOTTOM));
+    popupView.addView(shadowView, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(7f), Gravity.TOP));
+    popupView.addView(recyclerView, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP, 0, Screen.dp(7f), 0, 0));
+    popupView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
     this.popupView = popupView;
   }
 
@@ -152,6 +169,18 @@ public class ChatFolderIconSelector {
     return Math.max(width / itemSize, 3);
   }
 
+  private boolean isSelectedIcon (@Nullable String iconName) {
+    return isSameIcon(selectedIconName, iconName);
+  }
+
+  private static boolean isSameIcon (@Nullable String a, @Nullable String b) {
+    return ObjectUtils.equals(a, b) || (isFolderIcon(a) && isFolderIcon(b));
+  }
+
+  private static boolean isFolderIcon (@Nullable String iconName) {
+    return StringUtils.isEmpty(iconName) || "Custom".equals(iconName);
+  }
+
   public interface Delegate {
     void onIconClick (@Nullable TdApi.ChatFolderIcon icon);
 
@@ -160,8 +189,8 @@ public class ChatFolderIconSelector {
     default void onDismiss () {}
   }
 
-  public static ChatFolderIconSelector show (ViewController<?> owner, Delegate delegate) {
-    ChatFolderIconSelector selector = new ChatFolderIconSelector(owner, delegate);
+  public static ChatFolderIconSelector show (ViewController<?> owner, @Nullable String selectedIconName, Delegate delegate) {
+    ChatFolderIconSelector selector = new ChatFolderIconSelector(owner, selectedIconName, delegate);
     selector.show();
     return selector;
   }
