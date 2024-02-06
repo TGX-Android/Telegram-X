@@ -6805,7 +6805,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     needShowEmojiKeyboardAfterHideMessageOptions = false;
     saveDraft();
-    discardAttachedFiles(true);
+    // discardAttachedFiles(true);
 
     if (inSelectMode()) {
       finishSelectMode(-1);
