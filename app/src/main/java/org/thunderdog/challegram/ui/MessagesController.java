@@ -247,6 +247,7 @@ import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.RippleRevealView;
 import org.thunderdog.challegram.widget.SendButton;
 import org.thunderdog.challegram.widget.SeparatorView;
+import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.TextFormattingLayout;
 import org.thunderdog.challegram.widget.TripleAvatarView;
 import org.thunderdog.challegram.widget.ViewPager;
@@ -12087,8 +12088,27 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     if (attachedFiles == null) {
-      attachedFiles = new InlineResultsWrap(context);
-      // attachedFiles.getRecyclerView().setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 150l));
+      attachedFiles = new InlineResultsWrap(context) {
+        public int detectRecyclerTopEdge () {
+          final RecyclerView recyclerView = getRecyclerView();
+          final LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
+          int i = manager.findFirstVisibleItemPosition();
+          if (i != 0) {
+            return 0;
+          }
+
+          int top = recyclerView.getMeasuredHeight();
+          for (int a = 0; a < recyclerView.getChildCount(); a++) {
+            View view = recyclerView.getChildAt(a);
+            if (view instanceof ShadowView) {
+              continue;
+            }
+            top = Math.min(top, (int) (view.getTop() + view.getTranslationY() + (view.getMeasuredHeight() * (1f - view.getAlpha()))));
+          }
+          return top;
+        }
+      };
+      attachedFiles.getRecyclerView().setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 150L));
       attachedFiles.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
       attachedFiles.setOffsetProvider(new InlineResultsWrap.OffsetProvider() {
         @Override

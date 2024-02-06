@@ -395,7 +395,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
     return getVisibility() != View.VISIBLE || getAlpha() == 0f || super.onInterceptTouchEvent(ev);
   }
 
-  private int detectRecyclerTopEdge () {
+  public int detectRecyclerTopEdge () {
     int top;
     LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
     int i = manager.findFirstVisibleItemPosition();
