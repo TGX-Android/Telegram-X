@@ -22,8 +22,12 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.Px;
+import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.dialogs.ChatsAdapter.ViewType;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGChat;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -33,13 +37,30 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.ui.ChatsController;
+import org.thunderdog.challegram.ui.ListItem;
+import org.thunderdog.challegram.ui.SettingHolder;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.widget.BaseView;
 import org.thunderdog.challegram.widget.ListInfoView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
+import org.thunderdog.challegram.widget.SuggestedChatsView;
 
 public class ChatsViewHolder extends RecyclerView.ViewHolder {
   public ChatsViewHolder (View itemView) {
     super(itemView);
+  }
+
+  public static @Px int measureHeightForType (@ViewType int viewType) {
+    switch (viewType) {
+      case ChatsAdapter.VIEW_TYPE_CHAT:
+        return ChatView.getViewHeight(Settings.instance().getChatListMode());
+      case ChatsAdapter.VIEW_TYPE_INFO:
+        return SettingHolder.measureHeightForType(ListItem.TYPE_LIST_INFO_VIEW);
+      case ChatsAdapter.VIEW_TYPE_SUGGESTED_CHATS:
+        return Screen.dp(SuggestedChatsView.DEFAULT_HEIGHT_DP);
+      default:
+        throw new IllegalArgumentException("viewType = " + viewType);
+    }
   }
 
   public void setChat (TGChat chat, boolean needBackground, boolean noSeparator, boolean isSelected) {
@@ -60,7 +81,14 @@ public class ChatsViewHolder extends RecyclerView.ViewHolder {
     ((ListInfoView) itemView).showEmpty(Lang.getString(empty));
   }
 
-  public static ChatsViewHolder create (Context context, Tdlib tdlib, int viewType, @Nullable ChatsController parentController, @Nullable ViewController<?> themeProvider, BaseView.ActionListProvider actionListProvider) {
+  public void setChatIds (long[] chatIds) {
+    boolean hasContent = Boolean.TRUE.equals(itemView.getTag(R.id.state));
+    boolean animated = ViewCompat.isAttachedToWindow(itemView) && hasContent;
+    itemView.setTag(R.id.state, chatIds.length > 0);
+    ((SuggestedChatsView) itemView).setChatIds(chatIds, animated);
+  }
+
+  public static ChatsViewHolder create (Context context, Tdlib tdlib, @ViewType int viewType, @Nullable ChatsController parentController, @Nullable ViewController<?> themeProvider, BaseView.ActionListProvider actionListProvider) {
     switch (viewType) {
       case ChatsAdapter.VIEW_TYPE_CHAT: {
         ChatView view = new ChatView(context, tdlib);
@@ -99,6 +127,16 @@ public class ChatsViewHolder extends RecyclerView.ViewHolder {
         }
         textView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         return new ChatsViewHolder(textView);
+      }
+      case ChatsAdapter.VIEW_TYPE_SUGGESTED_CHATS: {
+        SuggestedChatsView view = new SuggestedChatsView(context, tdlib);
+        view.setId(R.id.btn_chatsSuggestion);
+        view.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        view.setOnClickListener(parentController);
+        if (themeProvider != null) {
+          themeProvider.addThemeInvalidateListener(view);
+        }
+        return new ChatsViewHolder(view);
       }
       default: {
         throw new IllegalArgumentException("viewType == " + viewType);

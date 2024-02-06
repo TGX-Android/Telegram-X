@@ -2253,6 +2253,7 @@ public class TD {
   public static final String ERROR_USER_CHANNELS_TOO_MUCH = "USER_CHANNELS_TOO_MUCH";
   public static final String ERROR_CHANNELS_ADMIN_PUBLIC_TOO_MUCH = "CHANNELS_ADMIN_PUBLIC_TOO_MUCH";
   public static final String ERROR_CHANNELS_ADMIN_LOCATED_TOO_MUCH = "CHANNELS_ADMIN_LOCATED_TOO_MUCH";
+  public static final String ERROR_CHATLISTS_TOO_MUCH = "CHATLISTS_TOO_MUCH";
 
   public static @Nullable String translateError (int code, String message) {
     if (StringUtils.isEmpty(message)) {
@@ -2291,6 +2292,8 @@ public class TD {
       case "PEER_FLOOD": res = R.string.NobodyLikesSpam2; break;
       case "STICKERSET_INVALID": res = R.string.error_STICKERSET_INVALID; break;
       case "CHANNELS_TOO_MUCH": res = R.string.error_CHANNELS_TOO_MUCH; break;
+      case ERROR_CHATLISTS_TOO_MUCH: res = R.string.error_CHATLISTS_TOO_MUCH; break;
+      case "INVITES_TOO_MUCH": res = R.string.error_INVITES_TOO_MUCH; break;
       case "BOTS_TOO_MUCH": res = R.string.error_BOTS_TOO_MUCH; break;
       case "ADMINS_TOO_MUCH": res = R.string.error_ADMINS_TOO_MUCH; break;
       case "Not enough rights to invite members to the group chat": res = R.string.YouCantInviteMembers; break;
@@ -5375,6 +5378,14 @@ public class TD {
     }
   }
 
+  public static @Nullable String getIconName (@Nullable TdApi.ChatFolderInfo info) {
+    return info != null && info.icon != null ? info.icon.name : null;
+  }
+
+  public static @Nullable String getIconName (@Nullable TdApi.ChatFolder folder) {
+    return folder != null && folder.icon != null ? folder.icon.name : null;
+  }
+
   public static @DrawableRes int iconByName (String iconName, @DrawableRes int defaultIcon) {
     if (StringUtils.isEmpty(iconName))
       return defaultIcon;
@@ -5396,7 +5407,7 @@ public class TD {
       case "Cat":
         return R.drawable.templarian_baseline_cat_24;
       case "Crown":
-        return R.drawable.baseline_crown_circle_24;
+        return R.drawable.baseline_crown_24;
       case "Favorite":
         return R.drawable.baseline_star_24;
       case "Flower":
@@ -5418,7 +5429,6 @@ public class TD {
       case "Work":
         return R.drawable.baseline_work_24;
       case "Airplane":
-        // return R.drawable.baseline_flight_24;
         return R.drawable.baseline_logo_telegram_24;
       case "Book":
         return R.drawable.baseline_book_24;
@@ -5431,13 +5441,11 @@ public class TD {
       case "Note":
         return R.drawable.baseline_music_note_24;
       case "Palette":
-        // return R.drawable.baseline_palette_24;
-        return R.drawable.baseline_brush_24;
+        return R.drawable.baseline_palette_24;
       case "Unread":
         return R.drawable.baseline_mark_chat_unread_24;
       case "Travel":
-        // return R.drawable.baseline_explore_24;
-        return R.drawable.baseline_flight_24;
+        return R.drawable.baseline_airplane_24;
       case "Custom":
         return R.drawable.baseline_folder_24;
       case "Trade":

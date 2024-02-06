@@ -245,6 +245,8 @@
   <item type="id" name="controller_sponsoredMessagesInfo" />
   <item type="id" name="controller_featureToggles" />
   <item type="id" name="controller_chatFolders" />
+  <item type="id" name="controller_editChatFolderInviteLink" />
+  <item type="id" name="controller_chatFolderInviteLink" />
   <item type="id" name="controller_editChatFolders" />
   <item type="id" name="controller_selectChats" />
 
@@ -336,6 +338,7 @@
   <item type="id" name="btn_unarchiveChat" />
   <item type="id" name="btn_markChatAsRead" />
   <item type="id" name="btn_markChatAsUnread" />
+  <item type="id" name="btn_markFolderAsRead" />
   <item type="id" name="btn_addChatToFolder" />
   <item type="id" name="btn_removeChatFromFolder" />
   <item type="id" name="btn_members" />
@@ -789,6 +792,7 @@
   <item type="id" name="btn_openLink" />
   <item type="id" name="btn_copyLink" />
   <item type="id" name="btn_archive" />
+  <item type="id" name="btn_archiveAsFolder" />
   <item type="id" name="btn_installStickerSet" />
   <item type="id" name="btn_shareLink" />
   <item type="id" name="btn_disabled" />
@@ -1276,6 +1280,7 @@
   <item type="id" name="btn_createNewFolder" />
   <item type="id" name="btn_editFolder" />
   <item type="id" name="btn_hideFolder" />
+  <item type="id" name="btn_shareFolder" />
   <item type="id" name="btn_removeFolder" />
   <item type="id" name="btn_folderIncludeChats" />
   <item type="id" name="btn_folderExcludeChats" />
@@ -1284,6 +1289,7 @@
   <item type="id" name="btn_labelOnly" />
   <item type="id" name="btn_iconOnly" />
   <item type="id" name="btn_labelAndIcon" />
+  <item type="id" name="btn_iconWithLabelOnActiveFolder" />
   <item type="id" name="btn_countMutedChats" />
   <item type="id" name="btn_displayFoldersAtTop" />
 
@@ -1344,6 +1350,8 @@
 
   <!-- * -->
 
+  <item type="id" name="tag_tooltip_location_provider" />
+
   <item type="id" name="view_emojiPacksCount" />
   <item type="id" name="view_customEmojiSuggestions" />
 
@@ -1354,6 +1362,7 @@
   <item type="id" name="btn_avatarsInReactionsSmartFilter" />
   <item type="id" name="btn_avatarsInReactionsNever" />
   <item type="id" name="btn_emojiPackInfoButton" />
+  <item type="id" name="btn_chatsSuggestion" />
 
   <item type="id" name="controller_stickersAndEmoji" />
   <item type="id" name="controller_emojiLayoutStickers" />

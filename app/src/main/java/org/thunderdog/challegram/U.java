@@ -107,7 +107,6 @@ import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.emoji.EmojiSpan;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.loader.ImageLoader;
 import org.thunderdog.challegram.loader.ImageReader;
@@ -127,6 +126,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.TextController;
 import org.thunderdog.challegram.util.AppBuildInfo;
 import org.thunderdog.challegram.util.Permissions;
+import org.thunderdog.challegram.util.text.TextReplacementSpan;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
 import java.io.BufferedReader;
@@ -2056,7 +2056,7 @@ public class U {
     }
 
     final Spannable s = (Spannable) in;
-    EmojiSpan[] spans = s.getSpans(start, end, EmojiSpan.class);
+    TextReplacementSpan[] spans = s.getSpans(start, end, TextReplacementSpan.class);
     if (spans == null || spans.length == 0) {
       return measureText(in, start, end, p);
     }
@@ -2069,7 +2069,7 @@ public class U {
 
     float textWidth = 0;
     int startIndex = start;
-    for (EmojiSpan span : spans) {
+    for (TextReplacementSpan span : spans) {
       int spanStart = s.getSpanStart(span);
       if (startIndex < spanStart) {
         textWidth += measureText(in, startIndex, spanStart, p);
@@ -3685,5 +3685,11 @@ public class U {
       set.add(value);
     }
     return Collections.unmodifiableSet(set);
+  }
+
+  public static long[] concat (long[] first, long[] second) {
+    long[] result = Arrays.copyOf(first, first.length + second.length);
+    System.arraycopy(second, 0, result, first.length, second.length);
+    return result;
   }
 }

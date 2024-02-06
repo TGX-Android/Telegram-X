@@ -660,9 +660,9 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
   }
   protected abstract void onCreateView (Context context, FrameLayoutFix contentView, ViewPager pager);
   protected abstract ViewController<?> onCreatePagerItemForPosition (Context context, int position);
-  protected @Nullable abstract String[] getPagerSections ();
+  protected @Nullable abstract CharSequence[] getPagerSections ();
   protected @Nullable List<ViewPagerTopView.Item> getPagerSectionItems () {
-    String[] pagerSections = getPagerSections();
+    CharSequence[] pagerSections = getPagerSections();
     if (pagerSections == null) {
       return cachedPagerSectionItems = null;
     }
@@ -682,7 +682,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
       }
     }
     List<ViewPagerTopView.Item> pagerSectionItems = new ArrayList<>(pagerSections.length);
-    for (String pagerSection : pagerSections) {
+    for (CharSequence pagerSection : pagerSections) {
       pagerSectionItems.add(new ViewPagerTopView.Item(pagerSection));
     }
     cachedPagerSectionItems = pagerSectionItems;

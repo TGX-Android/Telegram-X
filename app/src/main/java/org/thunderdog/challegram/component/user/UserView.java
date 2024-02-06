@@ -462,7 +462,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
 
   public void setChecked (boolean isChecked, boolean animated) {
     if (checkBoxHelper == null) {
-      checkBoxHelper = new SimplestCheckBoxHelper(this, avatarReceiver);
+      checkBoxHelper = new SimplestCheckBoxHelper(this);
     }
     checkBoxHelper.setIsChecked(isChecked, animated);
   }

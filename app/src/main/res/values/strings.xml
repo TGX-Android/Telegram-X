@@ -566,6 +566,7 @@
   <string name="LinkInfo">Anyone who has Telegram installed will be able to join your group by following this link.</string>
   <string name="ChannelAddAdmin">Add administrator</string>
   <string name="InviteLink">Invite Link</string>
+  <string name="FolderLink">Folder Link</string>
   <string name="DismissAdmin">Dismiss admin</string>
   <string name="ChannelBroadcast">Broadcast</string>
   <string name="LeaveChannel">Leave channel</string>
@@ -1008,6 +1009,7 @@
   <string name="EmailMatchesOldOne">Email address hasn\'t changed.</string>
   <string name="EmailInvalid">Invalid email format.</string>
   <string name="Hint">Hint: %1$s</string>
+  <string name="PrivateChat">Private Chat</string>
   <string name="PrivateChats">Private Chats</string>
   <string name="PrivateChatsMentions">Private Chats and Mentions</string>
   <string name="MessagePreview">Message Preview</string>
@@ -1300,6 +1302,8 @@
   <string name="PublicPhotoNoSet">No Photo set</string>
   <string name="PublicPhotoHint">Public Photo will be visible for everyone who is restricted from seeing your regular profile photo.</string>
   <string name="Group">Group</string>
+  <string name="GroupPublic">Public Group</string>
+  <string name="GroupPrivate">Private Group</string>
   <string name="RenameContact">Rename contact</string>
   <string name="Themes">Themes</string>
   <string name="ThemeSettings">Themes and Chats</string>
@@ -1908,6 +1912,8 @@
   <string name="LinkCurrent">t.me/%1$s is your current public link.</string>
   <string name="LoadingActions">Loading actions…</string>
   <string name="JoinChat">Join Chat</string>
+  <string name="JoinXChats_one">Join %1$s chat</string>
+  <string name="JoinXChats_other">Join %1$s chats</string>
   <string name="RequestJoinChannel">Request to Join Channel</string>
   <string name="RequestJoinGroup">Request to Join Group</string>
   <string name="MemberCanJoinGroup">%1$s will be able to return to the group.</string>
@@ -2570,7 +2576,10 @@
   <string name="SuggestContactsDone">Delete and Disable</string>
   <string name="MarkAsRead">Mark as read</string>
   <string name="MarkAsUnread">Mark as unread</string>
+  <string name="MarkFolderAsRead">Mark Folder as Read</string>
   <string name="CreateLink">Create Link</string>
+  <string name="CreateANewLink">Create a New Link</string>
+  <string name="CreateAnInviteLink">Create an Invite Link</string>
   <string name="URL">URL</string>
   <string name="CreateLinkDone">Save</string>
   <string name="CreateLinkCancel">Cancel</string>
@@ -3231,6 +3240,8 @@
   <string name="error_BOTS_TOO_MUCH">There are too many bots in this group. Please remove some of the bots you\'re not using first.</string>
   <string name="error_ADMINS_TOO_MUCH">Sorry, this group has too many admins. Please remove one of the existing admins first.</string>
   <string name="error_FolderMustContainAtLeast1Chat">Folder must contain at least one chat</string>
+  <string name="error_CHATLISTS_TOO_MUCH">Sorry, you have too many shareable folders.</string>
+  <string name="error_INVITES_TOO_MUCH">Sorry, you have too many invite links.</string>
 
   <string name="NotificationImportance">Notification Style</string>
   <string name="NotificationImportanceHigh">Sound and pop-up</string>
@@ -4693,6 +4704,8 @@
   <string name="PremiumRequiredMoveFolder">Subscribe to **Telegram Premium** to move the "%1$s" folder.</string>
   <string name="PremiumRequiredCreateFolder">You have reached the limit of **%1$d** folders. You can double the limit to **%2$d** folders by subscribing to **Telegram Premium**.</string>
   <string name="PremiumRequiredChatsInFolder">Sorry, you can\'t add more than **%1$d** chats to a folder. You can increase this limit to **%2$d** by subscribing to **Telegram Premium**.</string>
+  <string name="PremiumRequiredAddShareableFolder">You can only have **%1$d** shareable folders. Upgrade to **Telegram Premium** to increase this limit to **%2$d**.</string>
+  <string name="PremiumRequiredCreateChatFolderInviteLink">You reached the limit of links, either remove some or upgrade to Telegram Premium.</string>
 
   <string name="XRestrictedVoiceMessages">%1$s doesn\'t accept voice messages.</string>
   <string name="XRestrictedVideoMessages">%1$s doesn\'t accept video messages.</string>
@@ -4907,6 +4920,7 @@
   <string name="ChatTypes">Chat types</string>
   <string name="ChatFolders">Chat Folders</string>
   <string name="ChatFoldersInfo">Create folders for different groups of chats and quickly switch between them.</string>
+  <string name="ChatFoldersReorderTip">Tip: Hold and drag to reorder</string>
   <string name="ChatFoldersSettings">Settings</string>
   <string name="ChatFoldersAppearance">Appearance</string>
   <string name="ChatFoldersPositionTop">Top</string>
@@ -4915,6 +4929,9 @@
   <string name="ChatFolderAddChats">Add Chats</string>
   <string name="ChatFolderLimitReached">You have reached the limit of **%1$d** folders.</string>
   <string name="ChatsInFolderLimitReached">Sorry, you can\'t add more than **%1$d** chats to a folder. Please create a new one.</string>
+  <string name="ChatFolderInviteLinksLimitReached">Sorry, you can\'t have more than **%1$d** links to a folder.</string>
+  <string name="ShareableFoldersLimitReached">Sorry, you can\'t have more than **%1$d** shareable folders.</string>
+  <string name="FolderVisible">Folder visible</string>
   <string name="NewFolder">New Folder</string>
   <string name="CreateNewFolder">Create New Folder</string>
   <string name="HideFolder">Hide Folder</string>
@@ -4922,8 +4939,10 @@
   <string name="HideAllChats">Hide All Chats</string>
   <string name="EditFolder">Edit Folder</string>
   <string name="EditFolders">Edit Folders</string>
+  <string name="ShareFolder">Share Folder</string>
   <string name="RemoveFolder">Remove Folder</string>
   <string name="RemoveFolderConfirm">Are you sure you want to remove this folder? Your chats will not be deleted.</string>
+  <string name="DeleteFolderWithInviteLinksConfirm">Are you sure you want to delete this folder? This will also **deactivate all the invite links** created to share this folder.</string>
   <string name="FolderNoChatsToDisplay">**Folder is empty**\n\nNo chats currently belong to this folder.</string>
   <string name="FolderRemoveInclusionConfirmChat">Are you sure you want to remove "%1$s" from the always included list?</string>
   <string name="FolderRemoveInclusionConfirmUser">Are you sure you want to remove "%1$s" from the always included list?</string>
@@ -4949,11 +4968,13 @@
   <string name="AddToFolder">Add to folder</string>
   <string name="RemoveFromFolder">Remove from folder</string>
   <string name="ChooseFolder">Choose a folder</string>
+  <string name="LocalFolder">Local Folder</string>
   <string name="LocalFolderBadge">local folder</string>
   <string name="MainListBadge">main list</string>
   <string name="IconOnly">Icon only</string>
   <string name="LabelOnly">Label only</string>
   <string name="LabelAndIcon">Label with icon</string>
+  <string name="IconWithLabelOnActiveFolder">[WIP] Icon with label on active folder</string>
   <string name="DisplayFoldersAtTheTop">Display folders at the top</string>
   <string name="ChatsXShowMore_one">Show %1$s more</string>
   <string name="ChatsXShowMore_other">Show %1$s more</string>
@@ -4997,7 +5018,7 @@
 
   <string name="ReplyMessageDeletedHint">This message is a reply to the message that was deleted.</string>
   <string name="AnotherChatReplyHint">This message is from another chat. Tap again to view.</string>
-  
+
   <string name="SwipeToSwapLinkPreview">Swipe to choose specific link preview</string>
 
   <string name="MessageRestrictedByTelegram">This is a service message from Telegram</string>
@@ -5129,5 +5150,43 @@
   <string name="EmulatorWarningBtnOk">Got it</string>
   <string name="EmulatorWarningReport">**Note**: you will need **GitHub account** to report this issue.\n\nAlternatively you can copy the link and send it to tgx-android@pm.me</string>
   <string name="EmulatorWarningReportBtn">Report on GitHub</string>
+
+  <string name="AddFolderAndJoinXChats_one">Add Folder and Join %1$s chat</string>
+  <string name="AddFolderAndJoinXChats_other">Add Folder and Join %1$s chats</string>
+  <string name="DoNotAddFolder">Do not add folder</string>
+  <string name="DoNotJoinAnyChats">Do not join any chats</string>
+  <string name="DoNotJoinAnyNewChats">Do not join any new chats</string>
+  <string name="DeleteFolder">Delete Folder</string>
+  <string name="DeleteFolderAndLeaveXChats_one">Delete Folder and Leave %1$s chat</string>
+  <string name="DeleteFolderAndLeaveXChats_other">Delete Folder and Leave %1$s chats</string>
+
+  <string name="ChatFolderInviteLinkJoinChatsHint">You can deselect the chats you don’t want to join.</string>
+  <string name="ChatFolderInviteLinkLeaveChatsHint">You can deselect the chats you don’t want to leave.</string>
+  <string name="ChatFolderInviteLinkInfoNoCounter">Anyone with this link can add %1$s folder and the chats selected below.</string>
+  <string name="ChatFolderInviteLinkInfo_one">Anyone with this link can add %2$s folder and the %1$s chat selected below.</string>
+  <string name="ChatFolderInviteLinkInfo_other">Anyone with this link can add %2$s folder and the %1$s chats selected below.</string>
+  <string name="ChatFolderInviteLinkSelectGroupsAndChannelsInfo">Select groups and channels that you want everyone who adds this folder to join.</string>
+  <string name="ChatFolderInviteLinkChatTypesNotSupported">You can’t share folders which include or exclude specific chat types like **Groups**, **Contacts**, etc.</string>
+  <string name="ChatFolderInviteLinkNoChatsToShare">There are no chats in this folder that you can share with others.</string>
+  <string name="ChatFolderInviteLinkNoChatsToShareHeader">These chats cannot be shared</string>
+  <string name="ChatFolderInviteLinkNoChatsToShareInfo">You can only share groups and channels in which you are allowed to create invite links.</string>
+  <string name="ChatFolderInviteLinkNameHint">Name</string>
+  <string name="ChatFolderInviteLinksInfo">Share access to some of this folder’s groups and channels with others.</string>
+  <string name="ChatFolderSaveChangesBeforeCreatingANewInviteLink">Changes must be saved before creating a new link</string>
+
+  <string name="xChatsToJoin_one">%1$s chat to join</string>
+  <string name="xChatsToJoin_other">%1$s chats to join</string>
+  <string name="xChatsToLeave_one">%1$s chat to leave</string>
+  <string name="xChatsToLeave_other">%1$s chats to leave</string>
+  <string name="xChatsAlreadyJoined_one">%1$s chat already joined</string>
+  <string name="xChatsAlreadyJoined_other">%1$s chats already joined</string>
+  <string name="xNewChatsToJoin_one">%1$s new chat to join</string>
+  <string name="xNewChatsToJoin_other">%1$s new chats to join</string>
+  <string name="xNewChatsAvailableToJoin_one">**%1$s new chat** available to join</string>
+  <string name="xNewChatsAvailableToJoin_other">**%1$s new chats** available to join</string>
+  <string name="xOfYChatsSelected">%1$d/%2$d chats selected</string>
+  <string name="ThisChatCantBeShared">This chat can’t be shared</string>
+  <string name="ArchiveAsFolder">Archive as Folder</string>
+  <string name="HoldAndDragToReorder">Hold and drag to reorder</string>
 
 </resources>

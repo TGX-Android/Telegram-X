@@ -1793,6 +1793,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         }
       };
     }
+
+    default ResultHandler<T> doOnResult (RunnableData<T> action) {
+      return (result, error) -> {
+        onResult(result, error);
+        if (result != null) {
+          action.runWithData(result);
+        }
+      };
+    }
   }
 
   public <T extends TdApi.Object> void send (TdApi.Function<T> function, ResultHandler<T> handler) {
@@ -3487,7 +3496,36 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
-  public int chatFoldersCount () {
+  public boolean isFolderShareable (int chatFolderId) {
+    TdApi.ChatFolderInfo chatFolderInfo = chatFolderInfo(chatFolderId);
+    return chatFolderInfo != null && chatFolderInfo.isShareable;
+  }
+
+  public boolean canAddShareableFolder () {
+    return shareableChatFolderCount() < addedShareableChatFolderCountMax();
+  }
+
+  public int shareableChatFolderCount () {
+    synchronized (dataLock) {
+      int count = 0;
+      for (TdApi.ChatFolderInfo chatFolder : chatFolders) {
+        if (chatFolder.isShareable) {
+          count++;
+        }
+      }
+      return count;
+    }
+  }
+
+  public int addedShareableChatFolderCountMax () {
+    return addedShareableChatFolderMaxCount;
+  }
+
+  public boolean canCreateChatFolder () {
+    return chatFolderCount() < chatFolderCountMax();
+  }
+
+  public int chatFolderCount () {
     synchronized (dataLock) {
       return chatFolders.length;
     }
@@ -3506,6 +3544,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public TdApi.ChatFolderInfo chatFolderInfo (int chatFolderId) {
+    if (chatFolderId == 0) {
+      return null;
+    }
     synchronized (dataLock) {
       if (chatFolders != null) {
         for (TdApi.ChatFolderInfo filter : chatFolders) {
@@ -7023,13 +7064,21 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   public int maxMessageTextLength () {
     return maxMessageTextLength;
   }
-  
-  public long chatFolderCountMax () {
+
+  public int chatFolderCountMax () {
     return chatFolderMaxCount;
   }
 
-  public long chatFolderChosenChatCountMax () {
+  public int chatFolderChosenChatCountMax () {
     return folderChosenChatMaxCount;
+  }
+
+  public int chatFolderInviteLinkCountMax () {
+    return chatFolderInviteLinkMaxCount;
+  }
+
+  public long chatFolderUpdatePeriodMillis () {
+    return TimeUnit.SECONDS.toMillis(chatFolderUpdatePeriod);
   }
 
   public long telegramAntiSpamUserId () {
@@ -8351,7 +8400,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
     return null;
   }
-  
+
   @TdlibThread
   private void updateStoryListChatCount (TdApi.UpdateStoryListChatCount update) {
     synchronized (dataLock) {
@@ -11588,5 +11637,29 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         UI.showError(error);
       }
     });
+  }
+
+  public void processChatFolderNewChats (int chatFolderId, long[] addedChatIds, ResultHandler<TdApi.Ok> resultHandler) {
+    send(new TdApi.ProcessChatFolderNewChats(chatFolderId, addedChatIds), resultHandler.doOnResult((result) -> {
+      listeners().notifyChatFolderNewChatsChanged(chatFolderId);
+    }));
+  }
+
+  public void deleteChatFolderInviteLink (int chatFolderId, String inviteLink, ResultHandler<TdApi.Ok> resultHandler) {
+    send(new TdApi.DeleteChatFolderInviteLink(chatFolderId, inviteLink), resultHandler.doOnResult((result) -> {
+      listeners().notifyChatFolderInviteLinkDeleted(chatFolderId, inviteLink);
+    }));
+  }
+
+  public void createChatFolderInviteLink (int chatFolderId, String name, long[] chatIds, ResultHandler<TdApi.ChatFolderInviteLink> resultHandler) {
+    send(new TdApi.CreateChatFolderInviteLink(chatFolderId, name, chatIds), resultHandler.doOnResult((result) -> {
+      listeners().notifyChatFolderInviteLinkCreated(chatFolderId, result);
+    }));
+  }
+
+  public void editChatFolderInviteLink (int chatFolderId, String inviteLink, String name, long[] chatIds, ResultHandler<TdApi.ChatFolderInviteLink> resultHandler) {
+    send(new TdApi.EditChatFolderInviteLink(chatFolderId, inviteLink, name, chatIds), resultHandler.doOnResult((result) -> {
+      listeners().notifyChatFolderInviteLinkChanged(chatFolderId, result);
+    }));
   }
 }

@@ -134,10 +134,13 @@ public class OptionsLayout extends LinearLayout implements Animated {
     }
   }
 
-  public static @ColorId int getOptionColorId (int color) {
+  public static @ColorId int getOptionColorId (@ViewController.OptionColor int color) {
     switch (color) {
       case ViewController.OptionColor.NORMAL: {
         return ColorId.text;
+      }
+      case ViewController.OptionColor.INACTIVE: {
+        return ColorId.controlInactive;
       }
       case ViewController.OptionColor.RED: {
         return ColorId.textNegative;
@@ -152,7 +155,7 @@ public class OptionsLayout extends LinearLayout implements Animated {
     throw new IllegalArgumentException("color == " + color);
   }
 
-  public static TextView genOptionView (Context context, int id, CharSequence string, int color, int icon, OnClickListener onClickListener, @Nullable ThemeListenerList themeProvider, @Nullable ThemeDelegate forcedTheme) {
+  public static TextView genOptionView (Context context, int id, CharSequence string, @ViewController.OptionColor int color, int icon, OnClickListener onClickListener, @Nullable ThemeListenerList themeProvider, @Nullable ThemeDelegate forcedTheme) {
     EmojiTextView text = new EmojiTextView(context);
     text.setScrollDisabled(true);
 
@@ -176,7 +179,14 @@ public class OptionsLayout extends LinearLayout implements Animated {
     if (icon != 0) {
       Drawable drawable = Drawables.get(context.getResources(), icon);
       if (drawable != null) {
-        final int drawableColorId = color == ViewController.OptionColor.NORMAL ? ColorId.icon : colorId;
+        final int drawableColorId;
+        if (color == ViewController.OptionColor.NORMAL) {
+          drawableColorId = ColorId.icon;
+        } else if (color == ViewController.OptionColor.INACTIVE) {
+          drawableColorId = ColorId.controlInactive;
+        } else {
+          drawableColorId = colorId;
+        }
         drawable.setColorFilter(Paints.getColorFilter(forcedTheme != null ? forcedTheme.getColor(drawableColorId) : Theme.getColor(drawableColorId)));
         if (themeProvider != null) {
           themeProvider.addThemeFilterListener(drawable, drawableColorId);

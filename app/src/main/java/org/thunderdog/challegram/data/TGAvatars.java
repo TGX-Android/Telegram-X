@@ -2,6 +2,7 @@ package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
 import android.view.Gravity;
+import android.view.View;
 
 import androidx.annotation.Dimension;
 import androidx.annotation.NonNull;
@@ -10,7 +11,6 @@ import androidx.annotation.Px;
 import androidx.core.util.ObjectsCompat;
 
 import org.drinkless.tdlib.TdApi;
-import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -25,6 +25,7 @@ import java.util.Set;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.animator.ListAnimator;
+import me.vkryl.android.util.SingleViewProvider;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.MathUtils;
 import me.vkryl.td.Td;
@@ -52,6 +53,10 @@ public final class TGAvatars implements FactorAnimator.Target {
   public interface Callback {
     void onSizeChanged ();
     void onInvalidateMedia (TGAvatars avatars);
+  }
+
+  public TGAvatars (@NonNull Tdlib tdlib, @NonNull Callback callback, @NonNull View view) {
+    this(tdlib, callback, new SingleViewProvider(view));
   }
 
   public TGAvatars (@NonNull Tdlib tdlib, @NonNull Callback callback, @Nullable ViewProvider viewProvider) {
@@ -182,7 +187,7 @@ public final class TGAvatars implements FactorAnimator.Target {
     return MathUtils.clamp(countAnimator.getFactor());
   }
 
-  public void draw (@NonNull MessageView view, @NonNull Canvas c, @Nullable ComplexReceiver avatarsReceiver, int x, int cy, int gravity, float alpha) {
+  public void draw (@NonNull Canvas c, @Nullable ComplexReceiver avatarsReceiver, int x, int cy, int gravity, float alpha) {
     if (animator == null || animator.size() == 0 || alpha == 0f || avatarsReceiver == null) {
       return;
     }
