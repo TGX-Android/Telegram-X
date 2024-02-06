@@ -54,7 +54,7 @@ open class CMakePlugin : Plugin<Project> {
           }
         }
 
-        getByName("release") {
+        named("release") {
           externalNativeBuild {
             cmake {
               val flags = listOf(
