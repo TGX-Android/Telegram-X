@@ -705,7 +705,6 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       try {
         if (Config.TEST_NOTIFICATION_PROBLEM_RESOLUTION)
           throw new RuntimeException();
-        Log.v("manager.notify(...) (1) isRebuild:%b isSummary:%b", isRebuild, isSummary);
         manager.notify(notificationId, notification);
         state = DISPLAY_STATE_OK;
       } catch (Throwable t) {
