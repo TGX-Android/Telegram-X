@@ -1,0 +1,56 @@
+updates:
+  - package-ecosystem: "gradle"
+    commit-message:
+      prefix: "Gradle"
+    directory: "/" 
+    schedule:
+      day: "saturday"
+      interval: "weekly"
+      time: "03:00"
+
+  - package-ecosystem: "gradle"
+    commit-message:
+      prefix: "Gradle"
+    directory: "/app"
+    schedule:
+      day: "saturday"
+      interval: "weekly"
+      time: "03:00"
+
+  - package-ecosystem: "gradle"
+    commit-message:
+      prefix: "Gradle"
+    directory: "/buildSrc"
+    schedule:
+      day: "saturday"
+      interval: "weekly"
+      time: "03:00"
+
+  - package-ecosystem: "maven"
+    commit-message:
+      prefix: "Maven"
+    directory: "/" 
+    schedule:
+      day: "saturday"
+      interval: "weekly"
+      time: "03:00"
+      
+  - package-ecosystem: "maven"
+    commit-message:
+      prefix: "Maven"
+    directory: "/app" 
+    schedule:
+      day: "saturday"
+      interval: "weekly"
+      time: "03:00"
+
+  - package-ecosystem: "gradle"
+    commit-message:
+      prefix: "Gradle"
+    directory: "/buildSrc"
+    schedule:
+      day: "saturday"
+      interval: "weekly"
+      time: "03:00"
+    
+version: 2
