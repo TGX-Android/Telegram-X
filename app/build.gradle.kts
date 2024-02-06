@@ -96,7 +96,7 @@ android {
       Config.ANDROIDX_MEDIA_EXTENSIONS.forEach { extension ->
         val proguardFile = file(
           "../thirdparty/androidx-media/libraries/${extension}/proguard-rules.txt"
-        }
+        )
         if (proguardFile.exists()) {
           project.logger.lifecycle("Applying ${proguardFile.path}")
           proguardFile(proguardFile)
