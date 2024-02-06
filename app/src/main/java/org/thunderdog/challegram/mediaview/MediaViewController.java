@@ -62,6 +62,7 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.attach.MediaLayout;
+import org.thunderdog.challegram.component.attach.SingleMediaPickerManager;
 import org.thunderdog.challegram.component.chat.EmojiToneHelper;
 import org.thunderdog.challegram.component.chat.InlineResultsWrap;
 import org.thunderdog.challegram.component.chat.InputView;
@@ -260,6 +261,14 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         R.drawable.dot_baseline_group_accept_24,
         R.drawable.dot_baseline_channel_accept_24));
 
+      final int textRes = getResId(avatarPickerMode, 0, R.string.ProfilePhoto, R.string.GroupPhoto, R.string.ChannelPhoto);
+      setReceiverRow(getResId(avatarPickerMode, 0,
+        R.drawable.dot_baseline_account_circle_18,
+        R.drawable.dot_baseline_group_circle_18,
+        R.drawable.dot_baseline_channel_circle_18),
+        textRes != 0 ? Lang.getString(textRes) : null
+      );
+
       return this;
     }
 
@@ -298,7 +307,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       return new Args(context, MODE_GALLERY, delegate, selectDelegate, sendDelegate, galleryStack).setOnlyScheduled(areOnlyScheduled);
     }
 
-    /* */
+    /* * */
 
     private @DrawableRes int sendButtonIcon;
 
@@ -307,12 +316,22 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       return this;
     }
 
+    private @DrawableRes int receiverRowIcon;
+    private CharSequence receiverRowText;
 
+    public Args setReceiverRow (@DrawableRes int receiverRowIcon, CharSequence receiverRowText) {
+      this.receiverRowIcon = receiverRowIcon;
+      this.receiverRowText = receiverRowText;
+      return this;
+    }
+
+    /* * */
 
     private int flags;
     public static final int FLAG_DISALLOW_MULTI_SELECTION_MEDIA = 1;
     public static final int FLAG_DISALLOW_SET_DESTRUCTION_TIMER = 1 << 1;
     public static final int FLAG_DELETE_FILE_ON_EXIT = 1 << 2;
+    public static final int FLAG_DISALLOW_SEND_BUTTON_HAPTIC_MENU = 1 << 3;
 
     public Args setFlag (int flag) {
       this.flags = BitwiseUtils.setFlag(flags, flag, true);
@@ -1747,12 +1766,14 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       }
     } else if (id == R.id.btn_replace) {
       if (mediaPickerManager == null) {
-        mediaPickerManager = new TdlibUi.SingleMediaPickerManager(this);
+        mediaPickerManager = new SingleMediaPickerManager(this);
       }
+      MessagesController c = findOutputController();
+
       mediaPickerManager.openMediaView(file -> Media.instance().post(() -> {
         TdApi.InputMessageContent content = TD.toContent(tdlib, file, false, true, false, false);
         UI.post(() -> tdlib.editMessageMedia(item.getSourceChatId(), item.getSourceMessageId(), content));
-      }), findOutputController());
+      }), c != null ? c.getChatId() : 0);
     } else if (id == R.id.btn_share) {
       ShareController c;
       if (item.getMessage() != null) {
@@ -1835,7 +1856,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
   }
 
-  private TdlibUi.SingleMediaPickerManager mediaPickerManager;
+  private SingleMediaPickerManager mediaPickerManager;
 
   @Override
   public View getCustomHeaderCell () {
@@ -5165,11 +5186,6 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
 
     return contentView;
-  }
-
-  private int getResId (int defaultResId, int profileResId, int groupResId, int channelResId) {
-    final int mode = getArgumentsStrict().avatarPickerMode;
-    return getResId(mode, defaultResId, profileResId, groupResId, channelResId);
   }
 
   private static int getResId (@AvatarPickerMode int mode, int defaultResId, int profileResId, int groupResId, int channelResId) {
@@ -8528,6 +8544,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private List<View> createViewGalleryMode (Context context, boolean hideCheckViews) {
     final boolean inProfilePhotoEditMode = inProfilePhotoEditMode();
     final ArrayList<View> attachedViews = new ArrayList<>(7);
+    final Args args = getArgumentsStrict();
 
     TdApi.Chat chat = getArgumentsStrict().receiverChatId != 0 ? tdlib.chat(getArgumentsStrict().receiverChatId) : null;
 
@@ -8554,7 +8571,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
     editWrap.addView(sendButton);
 
-    if (chat != null) {
+    if (chat != null && !hasFlag(Args.FLAG_DISALLOW_SEND_BUTTON_HAPTIC_MENU)) {
       tdlib.ui().createSimpleHapticMenu(this, chat.id, () -> currentActiveButton == 0, this::canDisableMarkdown, () -> true, hapticItems -> {
         if (sendDelegate != null && sendDelegate.allowHideMedia()) {
           hapticItems.add(0,
@@ -8972,55 +8989,68 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       attachedViews.add(counterView);
     }
 
-    if (chat != null || inProfilePhotoEditMode) {
-      fp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.getStatusBarHeight());
-      if (HeaderView.getTopOffset() > 0) {
-        fp.leftMargin = Screen.dp(8f);
-        fp.topMargin = HeaderView.getTopOffset() + Screen.dp(4f);
-      } else {
-        fp.leftMargin = Screen.dp(12f);
-        fp.topMargin = Screen.dp(4f);
-      }
+    receiverView = buildReceiverRowView(chat);
+    if (receiverView != null) {
+      contentView.addView(receiverView);
+      attachedViews.add(receiverView);
+    }
+    return attachedViews;
+  }
 
-      receiverView = new LinearLayout(context);
-      receiverView.setOrientation(LinearLayout.HORIZONTAL);
-      receiverView.setAlpha(0f);
-      receiverView.setLayoutParams(fp);
+  @Nullable
+  private LinearLayout buildReceiverRowView (TdApi.Chat chat) {
+    final Args args = getArgumentsStrict();
 
-      LinearLayout.LayoutParams lp;
+    final boolean needReceiverRow = (chat != null || args.receiverRowIcon != 0 || !StringUtils.isEmpty(args.receiverRowText));
+    if (!needReceiverRow) {
+      return null;
+    }
 
-      lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(17f));
+    final @DrawableRes int icon = args.receiverRowIcon != 0 ? args.receiverRowIcon : R.drawable.baseline_arrow_upward_18;
+    final CharSequence text = StringUtils.isEmpty(args.receiverRowText) ? (chat != null ? tdlib.chatTitle(chat) : null) : args.receiverRowText;
 
-      ImageView imageView = new ImageView(context);
-      imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-      imageView.setImageResource(getResId(
-        R.drawable.baseline_arrow_upward_18,
-        R.drawable.dot_baseline_account_circle_18,
-        R.drawable.dot_baseline_group_circle_18,
-        R.drawable.dot_baseline_channel_circle_18));
-      imageView.setColorFilter(0xffffffff);
-      imageView.setAlpha((float) 0xaa / (float) 0xff);
-      imageView.setLayoutParams(lp);
-      receiverView.addView(imageView);
+    FrameLayoutFix.LayoutParams fp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.getStatusBarHeight());
+    if (HeaderView.getTopOffset() > 0) {
+      fp.leftMargin = Screen.dp(8f);
+      fp.topMargin = HeaderView.getTopOffset() + Screen.dp(4f);
+    } else {
+      fp.leftMargin = Screen.dp(12f);
+      fp.topMargin = Screen.dp(4f);
+    }
 
-      lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-      lp.leftMargin = Screen.dp(6f);
+    LinearLayout receiverView = new LinearLayout(context);
+    receiverView.setOrientation(LinearLayout.HORIZONTAL);
+    receiverView.setAlpha(0f);
+    receiverView.setLayoutParams(fp);
 
-      final int textRes = getResId(0, R.string.ProfilePhoto, R.string.GroupPhoto, R.string.ChannelPhoto);
+    LinearLayout.LayoutParams lp;
+
+    lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(17f));
+
+    ImageView imageView = new ImageView(context);
+    imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+    imageView.setImageResource(icon);
+    imageView.setColorFilter(0xffffffff);
+    imageView.setAlpha((float) 0xaa / (float) 0xff);
+    imageView.setLayoutParams(lp);
+    receiverView.addView(imageView);
+
+    lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+    lp.leftMargin = Screen.dp(6f);
+
+    if (!StringUtils.isEmpty(text)) {
       TextView textView = new NoScrollTextView(context);
       textView.setTextColor(0xaaffffff);
       textView.setSingleLine(true);
       textView.setEllipsize(TextUtils.TruncateAt.END);
       textView.setTypeface(Fonts.getRobotoMedium());
       textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13f);
-      textView.setText(textRes != 0 ? Lang.getString(textRes) : (chat != null ? tdlib.chatTitle(chat) : null));
+      textView.setText(text);
       textView.setLayoutParams(lp);
       receiverView.addView(textView);
-
-      contentView.addView(receiverView);
-      attachedViews.add(receiverView);
     }
-    return attachedViews;
+
+    return receiverView;
   }
 
   /* * */

@@ -27,6 +27,7 @@ import androidx.annotation.Nullable;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.helper.FoundUrls;
 import org.thunderdog.challegram.helper.LinkPreview;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -225,10 +226,17 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
     }
   }
 
-  private void setMediaEditToggleVisible (boolean isVisible) {
-    if (isVisible != (editMediaView.getVisibility() == View.VISIBLE)) {
-      editMediaView.setVisibility(isVisible ? View.VISIBLE : View.GONE);
-      replaceMediaView.setVisibility(isVisible ? View.VISIBLE : View.GONE);
+  private void setMediaEditToggleVisible (boolean canReplace, boolean canEdit) {
+    boolean needUpdate = false;
+    if (canEdit != (editMediaView.getVisibility() == View.VISIBLE)) {
+      editMediaView.setVisibility(canEdit ? View.VISIBLE : View.GONE);
+      needUpdate = true;
+    }
+    if (canReplace != (replaceMediaView.getVisibility() == View.VISIBLE)) {
+      replaceMediaView.setVisibility(canReplace ? View.VISIBLE : View.GONE);
+      needUpdate = true;
+    }
+    if (needUpdate) {
       checkPinnedMessagesBarPadding();
     }
   }
@@ -276,7 +284,7 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
     }
     pinnedMessagesBar.setStaticMessageList(entryList, selectedUrlIndex);
     setLinkPreviewToggleVisible(true);
-    setMediaEditToggleVisible(false);
+    setMediaEditToggleVisible(false, false);
     setMessageInputContext(context);
   }
 
@@ -285,14 +293,14 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
   public void setReplyTo (TdApi.Message msg, @Nullable TdApi.InputTextQuote quote) {
     pinnedMessagesBar.setMessage(tdlib, displayedMessage = msg, quote);
     setLinkPreviewToggleVisible(false);
-    setMediaEditToggleVisible(false);
+    setMediaEditToggleVisible(false, false);
     setMessageInputContext(null);
   }
 
   public void setEditingMessage (TdApi.Message msg, @Nullable ImageFile forcedMediaFile) {
     pinnedMessagesBar.setMessage(tdlib, displayedMessage = msg, null, forcedMediaFile);
     setLinkPreviewToggleVisible(false);
-    setMediaEditToggleVisible(tdlib.canEditMedia(msg));
+    setMediaEditToggleVisible(tdlib.canEditMedia(msg), TD.isFileLoaded(msg));
     setMessageInputContext(null);
   }
 

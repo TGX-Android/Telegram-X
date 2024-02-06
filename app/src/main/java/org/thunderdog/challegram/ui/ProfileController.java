@@ -56,6 +56,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
+import org.thunderdog.challegram.component.attach.AvatarPickerManager;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
@@ -360,11 +361,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   // Controller
 
-  private final TdlibUi.AvatarPickerManager avatarPickerManager;
+  private final AvatarPickerManager avatarPickerManager;
 
   public ProfileController (Context context, Tdlib tdlib) {
     super(context, tdlib);
-    avatarPickerManager = new TdlibUi.AvatarPickerManager(this);
+    avatarPickerManager = new AvatarPickerManager(this);
   }
 
   @Override
@@ -4446,7 +4447,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onActivityResult (int requestCode, int resultCode, Intent data) {
-    avatarPickerManager.handleActivityResult(requestCode, resultCode, data, TdlibUi.AvatarPickerManager.MODE_CHAT, chat, null);
+    avatarPickerManager.handleActivityResult(requestCode, resultCode, data, AvatarPickerManager.MODE_CHAT, chat, null);
   }
 
   private void changeProfilePhoto () {

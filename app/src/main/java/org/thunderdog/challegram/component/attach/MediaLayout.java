@@ -46,6 +46,7 @@ import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.mediaview.AvatarPickerMode;
+import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.navigation.ActivityResultHandler;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.BackListener;
@@ -72,6 +73,7 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.CreatePollController;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.ui.SetSenderController;
+import org.thunderdog.challegram.unsorted.Editor;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.Permissions;
@@ -90,6 +92,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.Td;
 import me.vkryl.td.TdConstants;
 
@@ -693,6 +696,20 @@ public class MediaLayout extends FrameLayoutFix implements
     addView(toView, 1);
 
     return true;
+  }
+
+  private Editor<MediaViewController.Args> mediaViewControllerArgumentsEditor;
+
+  public void setMediaViewControllerArgumentsEditor (Editor<MediaViewController.Args> mediaViewControllerArgumentsEditor) {
+    this.mediaViewControllerArgumentsEditor = mediaViewControllerArgumentsEditor;
+  }
+
+  public MediaViewController.Args prepareMediaViewArguments (MediaViewController.Args args) {
+    if (mediaViewControllerArgumentsEditor != null) {
+      return mediaViewControllerArgumentsEditor.edit(args);
+    }
+
+    return args;
   }
 
   @Override

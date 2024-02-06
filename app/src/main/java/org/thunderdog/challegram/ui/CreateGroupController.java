@@ -30,6 +30,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.attach.AvatarPickerManager;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
@@ -44,7 +45,6 @@ import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
-import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
@@ -62,12 +62,12 @@ import me.vkryl.core.ArrayUtils;
 public class CreateGroupController extends ViewController<Void> implements EditHeaderView.ReadyCallback, Client.ResultHandler, Unlockable, ActivityResultHandler,
   TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener {
 
-  private final TdlibUi.AvatarPickerManager avatarPickerManager;
+  private final AvatarPickerManager avatarPickerManager;
   private ArrayList<TGUser> members;
 
   public CreateGroupController (Context context, Tdlib tdlib) {
     super(context, tdlib);
-    avatarPickerManager = new TdlibUi.AvatarPickerManager(this);
+    avatarPickerManager = new AvatarPickerManager(this);
   }
 
   public void setMembers (ArrayList<TGUser> members) {
@@ -367,7 +367,7 @@ public class CreateGroupController extends ViewController<Void> implements EditH
 
   @Override
   public void onActivityResult (int requestCode, int resultCode, Intent data) {
-    avatarPickerManager.handleActivityResult(requestCode, resultCode, data, TdlibUi.AvatarPickerManager.MODE_NON_CREATED, null, headerCell);
+    avatarPickerManager.handleActivityResult(requestCode, resultCode, data, AvatarPickerManager.MODE_NON_CREATED, null, headerCell);
   }
 
   @Override

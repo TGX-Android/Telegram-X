@@ -574,11 +574,11 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
       Log.i("stack.set complete for %d files in %dms", stack.getCurrentSize(), SystemClock.elapsedRealtime() - time);
 
       MediaViewController controller = new MediaViewController(context, tdlib);
-      controller.setArguments(
+      controller.setArguments(mediaLayout.prepareMediaViewArguments(
         MediaViewController.Args.fromGallery(this, this, this, this, stack, mediaLayout.areScheduledOnly())
           .setReceiverChatId(mediaLayout.getTargetChatId()).setAvatarPickerMode(mediaLayout.getAvatarPickerMode())
           .setFlag(MediaViewController.Args.FLAG_DISALLOW_MULTI_SELECTION_MEDIA, mediaLayout.inSingleMediaMode())
-      );
+      ));
       controller.open();
 
       return true;
@@ -589,10 +589,6 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
 
   private boolean inSingleMediaMode () {
     return mediaLayout.inSingleMediaMode();
-  }
-
-  private boolean inAvatarPickerMode () {
-    return mediaLayout.getAvatarPickerMode() != AvatarPickerMode.NONE;
   }
 
   @Override

@@ -87,6 +87,7 @@ import org.thunderdog.challegram.component.MediaCollectorDelegate;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.attach.MediaBottomFilesController;
 import org.thunderdog.challegram.component.attach.MediaLayout;
+import org.thunderdog.challegram.component.attach.SingleMediaPickerManager;
 import org.thunderdog.challegram.component.attach.SponsoredMessagesInfoController;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.chat.AttachLinearLayout;
@@ -6261,14 +6262,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  private TdlibUi.SingleMediaPickerManager mediaPickerManager;
+  private SingleMediaPickerManager mediaPickerManager;
 
   @Override
   public void onMessageMediaReplaceRequested (ReplyBarView view, TdApi.Message message) {
     if (mediaPickerManager == null) {
-      mediaPickerManager = new TdlibUi.SingleMediaPickerManager(this);
+      mediaPickerManager = new SingleMediaPickerManager(this);
     }
-    mediaPickerManager.openMediaView(this::setMessageMediaEdited, this);
+    mediaPickerManager.openMediaView(this::setMessageMediaEdited, getChatId());
   }
 
   @Override
@@ -6337,6 +6338,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           stack, areScheduledOnly())
         .setFlag(MediaViewController.Args.FLAG_DISALLOW_MULTI_SELECTION_MEDIA)
         .setFlag(MediaViewController.Args.FLAG_DISALLOW_SET_DESTRUCTION_TIMER)
+        .setFlag(MediaViewController.Args.FLAG_DISALLOW_SEND_BUTTON_HAPTIC_MENU)
         .setSendButtonIcon(R.drawable.baseline_check_circle_24)
         .setReceiverChatId(getChatId()));
     controller.open();

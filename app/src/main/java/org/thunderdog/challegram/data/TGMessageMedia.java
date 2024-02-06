@@ -230,8 +230,28 @@ public class TGMessageMedia extends TGMessage {
         captionMessageId = msg.id;
       }
     }
-    this.isBeingEdited = hasEditedText;
-    return setCaption(caption, captionMessageId, force);
+
+    boolean hasEditedMedia = !hasEditedText && hasEditedMedia();
+    this.isBeingEdited = hasEditedText || hasEditedMedia;
+    return setCaption(caption, captionMessageId, force || hasEditedMedia);
+  }
+
+  public boolean hasEditedMedia () {
+    synchronized (this) {
+      ArrayList<TdApi.Message> combinedMessages = getCombinedMessagesUnsafely();
+      if (combinedMessages != null && !combinedMessages.isEmpty()) {
+        for (TdApi.Message message: combinedMessages) {
+          if (tdlib.getPendingMessageMedia(message.chatId, message.id) != null) {
+            return true;
+          }
+        }
+      } else {
+        if (tdlib.getPendingMessageMedia(msg.chatId, msg.id) != null) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   @Override
