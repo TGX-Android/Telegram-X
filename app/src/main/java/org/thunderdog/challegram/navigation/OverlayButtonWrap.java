@@ -33,6 +33,7 @@ import android.widget.TextView;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
+import androidx.core.content.res.ResourcesCompat;
 
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.support.RippleSupport;
@@ -81,6 +82,11 @@ public class OverlayButtonWrap extends FrameLayoutFix implements View.OnClickLis
       }
     }
     addMainButton(parent, ids[0], resources[0], backgrounds[0], colors[0], overlayColorId, overlayIconColorId);
+  }
+
+  @IdRes
+  public int getMainButtonId () {
+    return mainButton != null ? mainButton.getId() : ResourcesCompat.ID_NULL;
   }
 
   public void replaceMainButton (@IdRes int id, @DrawableRes int icon) {

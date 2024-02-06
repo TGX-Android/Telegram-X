@@ -1073,6 +1073,9 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   private static final int DEFAULT_CHAT_FOLDER_BADGE_FLAGS = 0;
 
   private boolean isMainChatListEnabled () {
+    if (Config.RESTRICT_HIDING_MAIN_LIST) {
+      return true;
+    }
     if (_mainChatListEnabled == null) {
       _mainChatListEnabled = Settings.instance().getBoolean(key(MAIN_CHAT_LIST_ENABLED, tdlib.accountId()), DEFAULT_MAIN_CHAT_LIST_ENABLED);
     }
@@ -1080,6 +1083,9 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   }
 
   private void setMainChatListEnabled (boolean isMainChatListEnabled) {
+    if (Config.RESTRICT_HIDING_MAIN_LIST && !isMainChatListEnabled) {
+      return;
+    }
     if (isMainChatListEnabled() != isMainChatListEnabled) {
       _mainChatListEnabled = isMainChatListEnabled;
       Settings.instance().putBoolean(key(MAIN_CHAT_LIST_ENABLED, tdlib.accountId()), isMainChatListEnabled);
@@ -1134,6 +1140,29 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     return !disabledChatFolderIds.has(chatFolderId);
   }
 
+  public void setChatFolderEnabled (int chatFolderId, boolean isEnabled) {
+    if (isChatFolderEnabled(chatFolderId) == isEnabled) {
+      return;
+    }
+    IntSet disabledChatFolderIds = disabledChatFolderIds();
+    if (isEnabled) {
+      disabledChatFolderIds.remove(chatFolderId);
+    } else {
+      disabledChatFolderIds.add(chatFolderId);
+    }
+    if (disabledChatFolderIds.isEmpty()) {
+      Settings.instance().remove(key(DISABLED_CHAT_FILTER_IDS, tdlib.accountId()));
+    } else {
+      Settings.instance().putIntArray(key(DISABLED_CHAT_FILTER_IDS, tdlib.accountId()), disabledChatFolderIds.toArray());
+    }
+    if (chatListPositionListeners != null) {
+      TdApi.ChatListFolder chatList = new TdApi.ChatListFolder(chatFolderId);
+      for (ChatListPositionListener chatListPositionListener : chatListPositionListeners) {
+        chatListPositionListener.onChatListStateChanged(tdlib, chatList, isEnabled);
+      }
+    }
+  }
+
   public boolean isChatListEnabled (TdApi.ChatList chatList) {
     switch (chatList.getConstructor()) {
       case TdApi.ChatListMain.CONSTRUCTOR: {
@@ -1171,27 +1200,12 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
       }
       case TdApi.ChatListFolder.CONSTRUCTOR: {
         int chatFolderId = ((TdApi.ChatListFolder) chatList).chatFolderId;
-        IntSet disabledChatFolderIds = disabledChatFolderIds();
-        if (isEnabled) {
-          disabledChatFolderIds.remove(chatFolderId);
-        } else {
-          disabledChatFolderIds.add(chatFolderId);
-        }
-        if (disabledChatFolderIds.isEmpty()) {
-          Settings.instance().remove(key(DISABLED_CHAT_FILTER_IDS, tdlib.accountId()));
-        } else {
-          Settings.instance().putIntArray(key(DISABLED_CHAT_FILTER_IDS, tdlib.accountId()), disabledChatFolderIds.toArray());
-        }
+        setChatFolderEnabled(chatFolderId, isEnabled);
         break;
       }
       default: {
         Td.assertChatList_db6c93ab();
         throw Td.unsupported(chatList);
-      }
-    }
-    if (chatListPositionListeners != null) {
-      for (ChatListPositionListener chatListPositionListener : chatListPositionListeners) {
-        chatListPositionListener.onChatListStateChanged(tdlib, chatList, isEnabled);
       }
     }
   }

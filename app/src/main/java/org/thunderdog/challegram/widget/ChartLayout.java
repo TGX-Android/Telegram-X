@@ -12,11 +12,9 @@
  */
 package org.thunderdog.challegram.widget;
 
-import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
-import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
-
 import android.content.Context;
 import android.graphics.Canvas;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
@@ -61,7 +59,7 @@ public class ChartLayout extends FrameLayout implements FactorAnimator.Target, A
     this.progressReceiver.detach();
 
     setWillNotDraw(false);
-    setLayoutParams(new RecyclerView.LayoutParams(MATCH_PARENT, MATCH_PARENT));
+    setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
   }
 
   private Tdlib tdlib;
@@ -247,7 +245,7 @@ public class ChartLayout extends FrameLayout implements FactorAnimator.Target, A
     // zoomedChartView.sharedUiComponents = sharedUiComponents;
 
     addView(chartView);
-    addView(chartView.legendSignatureView, WRAP_CONTENT, WRAP_CONTENT);
+    addView(chartView.legendSignatureView, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
     /*addView(zoomedChartView);
     addView(zoomedChartView.legendSignatureView, WRAP_CONTENT, WRAP_CONTENT);*/
 

@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -35,6 +36,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
@@ -47,6 +49,7 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSetOverride;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextMedia;
+import org.thunderdog.challegram.widget.SimplestCheckBoxHelper;
 
 import me.vkryl.android.animator.BounceAnimator;
 import me.vkryl.android.util.MultipleViewProvider;
@@ -270,9 +273,10 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
   }
 
   private TdApi.ChatMessageSender chatMessageSender;
+  private @Nullable SimplestCheckBoxHelper checkBoxHelper;
   private boolean isPremiumLocked;
   private boolean drawAnonymousIcon;
-  private boolean drawFakeCheckbox;
+  private boolean drawCrossIcon;
 
   public void setChatMessageSender (TdApi.ChatMessageSender sender) {
     this.chatMessageSender = sender;
@@ -282,8 +286,35 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
     buildTitle();
   }
 
-  public void setDrawFakeCheckbox (boolean drawFakeCheckbox) {
-    this.drawFakeCheckbox = drawFakeCheckbox;
+  public void setIsChecked (boolean isChecked, boolean animated) {
+    if (isChecked != isChecked()) {
+      if (checkBoxHelper == null) {
+        checkBoxHelper = new SimplestCheckBoxHelper(currentViews);
+      }
+      checkBoxHelper.setIsChecked(isChecked, animated);
+      if (isChecked) {
+        this.drawCrossIcon = false;
+      }
+      currentViews.invalidate();
+    }
+  }
+
+  public boolean isChecked () {
+    return checkBoxHelper != null && checkBoxHelper.isChecked();
+  }
+
+  public void setDrawCrossIcon (boolean drawCrossIcon) {
+    if (this.drawCrossIcon != drawCrossIcon) {
+      this.drawCrossIcon = drawCrossIcon;
+      if (drawCrossIcon) {
+        setIsChecked(/* isChecked */ false, /* animated */ false);
+      }
+      currentViews.invalidate();
+    }
+  }
+
+  public boolean isDrawCrossIcon () {
+    return drawCrossIcon;
   }
 
   public boolean isPremiumLocked () {
@@ -487,7 +518,6 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
 
   public <T extends View & DrawableProvider> void draw (T view, Receiver receiver, Canvas c, ComplexReceiver emojiStatusReceiver) {
     int left = Screen.dp(72f);
-    boolean rtl = Lang.rtl();
     int viewWidth = view.getMeasuredWidth();
 
     final float anonymousFactor = isAnonymous.getFloatValue();
@@ -507,22 +537,27 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
       }
     }
 
-    if (drawFakeCheckbox) {
-      double radians = Math.toRadians(45f);
-      float cx = receiver.centerX() + (float) ((double) (receiver.getWidth() / 2) * Math.sin(radians));
-      float cy = receiver.centerY() + (float) ((double) (receiver.getHeight() / 2) * Math.cos(radians));
-      c.drawCircle(cx, cy, Screen.dp(11.5f), Paints.fillingPaint(Theme.fillingColor()));
-      c.drawCircle(cx, cy, Screen.dp(10f), Paints.fillingPaint(Theme.radioFillingColor()));
-      c.save();
-      float lineSize = Screen.dp(2);
-      float x1 = cx - Screen.dp(1.5f);
-      float y1 = cy + Screen.dp(5.5f);
-      float w2 = Screen.dp(10f);
-      float h1 = Screen.dp(6f);
-      c.rotate(-45f, x1, y1);
-      c.drawRect(x1, y1 - h1, x1 + lineSize, y1, Paints.fillingPaint(Theme.radioCheckColor()));
-      c.drawRect(x1, y1 - lineSize, x1 + w2, y1, Paints.fillingPaint(Theme.radioCheckColor()));
-      c.restore();
+    final float checkFactor = checkBoxHelper != null ? checkBoxHelper.getCheckFactor() : 0f;
+    boolean drawCheckBox = checkFactor > 0f;
+    if (drawCheckBox || drawCrossIcon) {
+      if (drawCheckBox) {
+        DrawAlgorithms.drawSimplestCheckBox(c, receiver, checkFactor);
+      } else {
+        float lineSize = Screen.dp(2);
+        double radians = Math.toRadians(45f);
+        float cx = receiver.centerX() + (float) ((double) (receiver.getWidth() / 2) * Math.sin(radians));
+        float cy = receiver.centerY() + (float) ((double) (receiver.getHeight() / 2) * Math.cos(radians));
+        c.drawCircle(cx, cy, Screen.dp(11.5f), Paints.fillingPaint(Theme.fillingColor()));
+        int backgroundColor = Theme.textDecentColor();
+        c.drawCircle(cx, cy, Screen.dp(10f), Paints.fillingPaint(backgroundColor));
+        c.save();
+        float h = Screen.dp(5.5f);
+        c.rotate(45f, cx, cy);
+        int color = Theme.isDark() ? Color.BLACK : Color.WHITE;
+        c.drawRect(cx - h, cy - lineSize / 2f, cx + h, cy + lineSize / 2f, Paints.fillingPaint(color));
+        c.drawRect(cx - lineSize / 2f, cy - h, cx + lineSize / 2f, cy + h, Paints.fillingPaint(color));
+        c.restore();
+      }
     }
     if (drawAnonymousIcon) {
       Drawable incognitoIcon = view.getSparseDrawable(R.drawable.dot_baseline_acc_anon_24, ColorId.icon);

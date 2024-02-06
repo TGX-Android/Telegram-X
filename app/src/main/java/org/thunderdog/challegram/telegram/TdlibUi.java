@@ -42,6 +42,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.collection.LongSparseArray;
 import androidx.core.os.CancellationSignal;
+import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -100,6 +101,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.ui.ChatFolderInviteLinkController;
 import org.thunderdog.challegram.ui.ChatJoinRequestsController;
 import org.thunderdog.challegram.ui.ChatLinkMembersController;
 import org.thunderdog.challegram.ui.ChatLinksController;
@@ -160,6 +162,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -1459,6 +1462,10 @@ public class TdlibUi extends Handler {
     }
   }
 
+  public void shareUrl (TdlibDelegate context, String url) {
+    shareUrl(context, url, null, url, null);
+  }
+
   public void shareUrl (TdlibDelegate context, String url, String internalShareText, String externalShareText, String externalShareButton) {
     if (!StringUtils.isEmpty(url)) {
       ShareController c = new ShareController(context.context(), context.tdlib());
@@ -2534,6 +2541,28 @@ public class TdlibUi extends Handler {
     });
   }
 
+  private static void checkChatFolderInviteLink(TdlibDelegate context, String inviteLinkUrl, TdApi.InternalLinkTypeChatFolderInvite invite, @Nullable UrlOpenParameters openParameters) {
+    context.tdlib().send(new TdApi.CheckChatFolderInviteLink(invite.inviteLink), (result, error) -> {
+      if (error != null) {
+        showLinkTooltip(context.tdlib(), R.drawable.baseline_error_24, TD.toErrorString(error), openParameters);
+      } else {
+        showChatFolderInviteLinkInfo(context, inviteLinkUrl, result);
+      }
+    });
+  }
+
+  private static void showChatFolderInviteLinkInfo (TdlibDelegate context, String inviteLinkUrl, TdApi.ChatFolderInviteLinkInfo inviteLinkInfo) {
+    if (TdlibManager.inBackgroundThread()) {
+      context.tdlib().ui().post(() -> {
+        showChatFolderInviteLinkInfo(context, inviteLinkUrl, inviteLinkInfo);
+      });
+      return;
+    }
+    ChatFolderInviteLinkController controller = new ChatFolderInviteLinkController(context.context(), context.tdlib());
+    controller.setArguments(new ChatFolderInviteLinkController.Arguments(inviteLinkUrl, inviteLinkInfo));
+    controller.show();
+  }
+
   private boolean installLanguage (final TdlibDelegate context, final String languagePackId, @Nullable UrlOpenParameters openParameters) {
     if (TD.isLocalLanguagePackId(languagePackId)) {
       Log.e("Attempt to install custom local languagePackId:%s", languagePackId);
@@ -3553,7 +3582,6 @@ public class TdlibUi extends Handler {
       }
 
       case TdApi.InternalLinkTypeStory.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeChatFolderInvite.CONSTRUCTOR:
       case TdApi.InternalLinkTypeDefaultMessageAutoDeleteTimerSettings.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypeAttachmentMenuBot.CONSTRUCTOR:
@@ -3639,6 +3667,15 @@ public class TdlibUi extends Handler {
         }
         break;
       }
+      case TdApi.InternalLinkTypeChatFolderInvite.CONSTRUCTOR: {
+        if (Settings.instance().chatFoldersEnabled()) {
+          TdApi.InternalLinkTypeChatFolderInvite invite = (TdApi.InternalLinkTypeChatFolderInvite) linkType;
+          checkChatFolderInviteLink(context, originalUrl, invite, openParameters);
+        } else {
+          showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
+        }
+        break;
+      }
       case TdApi.InternalLinkTypeUnknownDeepLink.CONSTRUCTOR: {
         // TODO progress
         TdApi.InternalLinkTypeUnknownDeepLink unknownDeepLink = (TdApi.InternalLinkTypeUnknownDeepLink) linkType;
@@ -3713,7 +3750,7 @@ public class TdlibUi extends Handler {
       } else if (id == R.id.btn_copyLink) {
         UI.copyText(url, R.string.CopiedLink);
       } else if (id == R.id.btn_share) {
-        shareUrl(context, url, null, url, null);
+        shareUrl(context, url);
       }
       return true;
     });
@@ -4863,7 +4900,7 @@ public class TdlibUi extends Handler {
     for (TdApi.ChatFolderInfo chatFolderInfo : chatFolders) {
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.chatFolder, TD.findFolderIcon(chatFolderInfo.icon, R.drawable.baseline_folder_24), chatFolderInfo.title).setIntValue(chatFolderInfo.id));
     }
-    if (tdlib.chatFoldersCount() < tdlib.chatFolderCountMax()) {
+    if (tdlib.canCreateChatFolder()) {
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_createNewFolder, R.drawable.baseline_create_new_folder_24, R.string.CreateNewFolder).setTextColorId(ColorId.textNeutral));
     }
     SettingsWrap[] settings = new SettingsWrap[1];
@@ -4889,6 +4926,13 @@ public class TdlibUi extends Handler {
           after.run();
         }
       }));
+  }
+
+  public void showDeleteChatFolderConfirm (ViewController<?> context, boolean hasMyInviteLinks, Runnable after) {
+    // TODO(nikita-toropov) wording
+    int infoRes = hasMyInviteLinks ? R.string.DeleteFolderWithInviteLinksConfirm : R.string.RemoveFolderConfirm;
+    int actionRes = hasMyInviteLinks ? R.string.Delete : R.string.Remove;
+    context.showConfirm(Lang.getMarkdownString(context, infoRes), Lang.getString(actionRes), R.drawable.baseline_delete_24, ViewController.OptionColor.RED, after);
   }
 
   public boolean processChatAction (ViewController<?> context, final TdApi.ChatList chatList, final long chatId, final @Nullable ThreadInfo messageThread, final TdApi.MessageSource source, final int actionId, @Nullable Runnable after) {
@@ -6605,7 +6649,24 @@ public class TdlibUi extends Handler {
       RESTRICT_VOICE_AND_VIDEO_MESSAGES = 2;
   }
 
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    PremiumLimit.SHAREABLE_FOLDER_COUNT,
+    PremiumLimit.CHAT_FOLDER_COUNT,
+    PremiumLimit.CHAT_FOLDER_INVITE_LINK_COUNT,
+  })
+  public @interface PremiumLimit {
+    int
+      SHAREABLE_FOLDER_COUNT = 1,
+      CHAT_FOLDER_COUNT = 2,
+      CHAT_FOLDER_INVITE_LINK_COUNT = 3;
+  }
+
   public boolean showPremiumAlert (ViewController<?> context, View view, @PremiumFeature int premiumFeature) {
+    return showPremiumAlert(context, context.context().tooltipManager(), view, premiumFeature);
+  }
+
+  public boolean showPremiumAlert (ViewController<?> context, TooltipOverlayView tooltipManager, View view, @PremiumFeature int premiumFeature) {
     if (tdlib.hasPremium())
       return false;
     int stringRes;
@@ -6619,21 +6680,51 @@ public class TdlibUi extends Handler {
       default:
         throw new IllegalStateException();
     }
-    // TODO proper alert with sections
-    context
-      .context()
-      .tooltipManager()
+    showPremiumRequiredTooltip(context, tooltipManager, view, stringRes);
+    return true;
+  }
+
+  public void showPremiumLimitInfo (ViewController<?> context, View view, @PremiumLimit int premiumLimit) {
+    showPremiumLimitInfo(context, context.context().tooltipManager(), view, premiumLimit);
+  }
+
+  public void showPremiumLimitInfo (ViewController<?> context, TooltipOverlayView tooltipManager, View view, @PremiumLimit int premiumLimit) {
+    if (tdlib.hasPremium())
+      return;
+    switch (premiumLimit) {
+      case PremiumLimit.SHAREABLE_FOLDER_COUNT:
+        showPremiumLimitTooltip(context, tooltipManager, view, R.string.PremiumRequiredAddShareableFolder, new TdApi.PremiumLimitTypeShareableChatFolderCount());
+        break;
+      case PremiumLimit.CHAT_FOLDER_COUNT:
+        showPremiumLimitTooltip(context, tooltipManager, view, R.string.PremiumRequiredCreateFolder, new TdApi.PremiumLimitTypeChatFolderCount());
+        break;
+      case PremiumLimit.CHAT_FOLDER_INVITE_LINK_COUNT:
+        showPremiumRequiredTooltip(context, tooltipManager, view, R.string.PremiumRequiredCreateChatFolderInviteLink);
+        break;
+      default:
+        throw new IllegalStateException();
+    }
+  }
+
+  private void showPremiumLimitTooltip (ViewController<?> context, TooltipOverlayView tooltipManager, View view, @StringRes int markdownStringRes, TdApi.PremiumLimitType premiumLimitType) {
+    WeakReference<View> viewRef = new WeakReference<>(view);
+    Object viewTag = view.getTag();
+    tdlib.send(new TdApi.GetPremiumLimit(premiumLimitType), (result, error) -> context.runOnUiThreadOptional(() -> {
+      View targetView = viewRef.get();
+      if (targetView != null && ViewCompat.isAttachedToWindow(targetView) && viewTag == targetView.getTag() && result.defaultValue < result.premiumValue) {
+        showPremiumRequiredTooltip(context, tooltipManager, targetView, markdownStringRes, result.defaultValue, result.premiumValue);
+      }
+    }));
+  }
+
+  private void showPremiumRequiredTooltip (ViewController<?> context, TooltipOverlayView tooltipManager, View view, @StringRes int markdownStringRes, Object... formatArgs) {
+      // TODO proper alert with sections
+      tooltipManager
       .builder(view)
       .icon(R.drawable.baseline_warning_24)
       .controller(context)
-      .show(tdlib,
-        Strings.buildMarkdown(context,
-          Lang.getString(stringRes),
-          null
-        )
-      )
+      .show(tdlib, Lang.getMarkdownString(context, markdownStringRes, formatArgs))
       .hideDelayed();
-    return true;
   }
 
   // Video Chats & Live Streams

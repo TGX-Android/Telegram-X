@@ -1,7 +1,5 @@
 package org.thunderdog.challegram.ui;
 
-import static androidx.core.text.HtmlCompat.fromHtml;
-
 import android.content.Context;
 import android.view.View;
 
@@ -67,8 +65,8 @@ public final class FeatureToggles {
         header("Threads > First Open"),
         shadowTop(),
         toggle("Scroll to header message", () -> SCROLL_TO_HEADER_MESSAGE_ON_THREAD_FIRST_OPEN, (value) -> SCROLL_TO_HEADER_MESSAGE_ON_THREAD_FIRST_OPEN = value),
-        descriptionSmall(fromHtml("<b>On</b> - Trying to show header message fully unless it takes more than half of the RecyclerView's height in which messages display, in which case it should scroll to the maximum position that fits that half", HtmlCompat.FROM_HTML_MODE_COMPACT)),
-        descriptionSmall(fromHtml("<b>Off</b> - Showing with displayed header message preview showing and \"Discussion started\" aligned right below it", HtmlCompat.FROM_HTML_MODE_COMPACT)),
+        descriptionSmall(HtmlCompat.fromHtml("<b>On</b> - Trying to show header message fully unless it takes more than half of the RecyclerView's height in which messages display, in which case it should scroll to the maximum position that fits that half", HtmlCompat.FROM_HTML_MODE_COMPACT)),
+        descriptionSmall(HtmlCompat.fromHtml("<b>Off</b> - Showing with displayed header message preview showing and \"Discussion started\" aligned right below it", HtmlCompat.FROM_HTML_MODE_COMPACT)),
         shadowBottom(),
 
         header("Threads > Preview"),

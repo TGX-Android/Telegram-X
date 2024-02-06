@@ -16,71 +16,68 @@ import Config
 import com.android.build.gradle.BaseExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.kotlin.dsl.getByType
 
 open class CMakePlugin : Plugin<Project> {
-  override fun apply (project: Project) {
-    val androidExt = project.extensions.getByName("android")
-
-    if (androidExt is BaseExtension) {
-      androidExt.apply {
-        externalNativeBuild {
-          cmake {
-            path("jni/CMakeLists.txt")
-          }
+  override fun apply(project: Project) {
+    project.extensions.getByType<BaseExtension>().apply {
+      externalNativeBuild {
+        cmake {
+          path("jni/CMakeLists.txt")
         }
-        buildTypes {
-          getByName("debug") {
-            externalNativeBuild {
-              cmake {
-                val flags = arrayOf(
-                  "-w",
-                  "-Werror=return-type",
-                  "-ferror-limit=0",
-                  "-fno-exceptions",
+      }
+      buildTypes {
+        named("debug") {
+          externalNativeBuild {
+            cmake {
+              val flags = arrayOf(
+                "-w",
+                "-Werror=return-type",
+                "-ferror-limit=0",
+                "-fno-exceptions",
 
-                  "-O2",
-                  "-fno-omit-frame-pointer"
-                )
-                arguments(
-                  "-DANDROID_STL=c++_shared",
-                  "-DANDROID_PLATFORM=android-${Config.MIN_SDK_VERSION}",
-                  "-DCMAKE_BUILD_WITH_INSTALL_RPATH=ON",
-                  "-DCMAKE_SKIP_RPATH=ON",
-                  "-DCMAKE_C_VISIBILITY_PRESET=hidden",
-                  "-DCMAKE_CXX_VISIBILITY_PRESET=hidden",
-                  "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--gc-sections,--icf=safe -Wl,--build-id=sha1",
-                  "-DCMAKE_C_FLAGS=-D_LARGEFILE_SOURCE=1 ${flags.joinToString(" ")}",
-                  "-DCMAKE_CXX_FLAGS=-std=c++17 ${flags.joinToString(" ")}"
-                )
-              }
+                "-O2",
+                "-fno-omit-frame-pointer",
+              )
+              arguments(
+                "-DANDROID_STL=c++_shared",
+                "-DANDROID_PLATFORM=android-${Config.MIN_SDK_VERSION}",
+                "-DCMAKE_BUILD_WITH_INSTALL_RPATH=ON",
+                "-DCMAKE_SKIP_RPATH=ON",
+                "-DCMAKE_C_VISIBILITY_PRESET=hidden",
+                "-DCMAKE_CXX_VISIBILITY_PRESET=hidden",
+                "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--gc-sections,--icf=safe -Wl,--build-id=sha1",
+                "-DCMAKE_C_FLAGS=-D_LARGEFILE_SOURCE=1 ${flags.joinToString(" ")}",
+                "-DCMAKE_CXX_FLAGS=-std=c++17 ${flags.joinToString(" ")}",
+              )
             }
           }
+        }
 
-          getByName("release") {
-            externalNativeBuild {
-              cmake {
-                val flags = listOf(
-                  "-w",
-                  "-Werror=return-type",
-                  "-ferror-limit=0",
-                  "-fno-exceptions",
+        named("release") {
+          externalNativeBuild {
+            cmake {
+              val flags = listOf(
+                "-w",
+                "-Werror=return-type",
+                "-ferror-limit=0",
+                "-fno-exceptions",
 
-                  "-O3",
-                  "-finline-functions"
-                )
+                "-O3",
+                "-finline-functions"
+              )
 
-                arguments(
-                  "-DANDROID_STL=c++_shared",
-                  "-DANDROID_PLATFORM=android-${Config.MIN_SDK_VERSION}",
-                  "-DCMAKE_BUILD_WITH_INSTALL_RPATH=ON",
-                  "-DCMAKE_SKIP_RPATH=ON",
-                  "-DCMAKE_C_VISIBILITY_PRESET=hidden",
-                  "-DCMAKE_CXX_VISIBILITY_PRESET=hidden",
-                  "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--gc-sections,--icf=safe -Wl,--build-id=sha1",
-                  "-DCMAKE_C_FLAGS=-D_LARGEFILE_SOURCE=1 ${flags.joinToString(" ")}",
-                  "-DCMAKE_CXX_FLAGS=-std=c++17 ${flags.joinToString(" ")}"
-                )
-              }
+              arguments(
+                "-DANDROID_STL=c++_shared",
+                "-DANDROID_PLATFORM=android-${Config.MIN_SDK_VERSION}",
+                "-DCMAKE_BUILD_WITH_INSTALL_RPATH=ON",
+                "-DCMAKE_SKIP_RPATH=ON",
+                "-DCMAKE_C_VISIBILITY_PRESET=hidden",
+                "-DCMAKE_CXX_VISIBILITY_PRESET=hidden",
+                "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--gc-sections,--icf=safe -Wl,--build-id=sha1",
+                "-DCMAKE_C_FLAGS=-D_LARGEFILE_SOURCE=1 ${flags.joinToString(" ")}",
+                "-DCMAKE_CXX_FLAGS=-std=c++17 ${flags.joinToString(" ")}"
+              )
             }
           }
         }

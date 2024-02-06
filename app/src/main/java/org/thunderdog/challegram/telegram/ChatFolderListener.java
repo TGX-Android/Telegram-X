@@ -10,17 +10,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
- * File created on 17/07/2023
+ * File created on 19/01/2024
  */
 package org.thunderdog.challegram.telegram;
 
-import androidx.annotation.IntDef;
+import org.drinkless.tdlib.TdApi;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+public interface ChatFolderListener {
+  default void onChatFolderNewChatsChanged (int chatFolderId) {
+  }
 
-@Retention(RetentionPolicy.SOURCE)
-@IntDef({ChatFolderStyle.LABEL_ONLY, ChatFolderStyle.ICON_ONLY, ChatFolderStyle.LABEL_AND_ICON, ChatFolderStyle.ICON_WITH_LABEL_ON_ACTIVE})
-public @interface ChatFolderStyle {
-  int LABEL_ONLY = 0, ICON_ONLY = 1, LABEL_AND_ICON = 2, ICON_WITH_LABEL_ON_ACTIVE = 3;
+  default void onChatFolderInviteLinkDeleted (int chatFolderId, String inviteLink) {
+
+  }
+
+  default void onChatFolderInviteLinkChanged (int chatFolderId, TdApi.ChatFolderInviteLink inviteLink) {
+
+  }
+
+  default void onChatFolderInviteLinkCreated (int chatFolderId, TdApi.ChatFolderInviteLink inviteLink) {
+
+  }
 }

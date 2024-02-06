@@ -2286,14 +2286,14 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public static class OptionItem {
-    public static final OptionItem SEPARATOR = new OptionItem(0, null, 0, 0);
+    public static final OptionItem SEPARATOR = new OptionItem(0, null, OptionColor.NORMAL, 0);
 
     public final int id;
     public final CharSequence name;
     public final int color;
     public final int icon;
 
-    public OptionItem (int id, CharSequence name, int color, int icon) {
+    public OptionItem (int id, CharSequence name, @OptionColor int color, int icon) {
       this.id = id;
       this.name = name;
       this.color = color;
@@ -2307,7 +2307,6 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       private int icon;
 
       public Builder () {
-        this.id = id;
       }
 
       public Builder id (int id) {
@@ -2357,7 +2356,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       private CharSequence info;
       private CharSequence title;
       private OptionItem subtitle;
-      private List<OptionItem> items = new ArrayList<>();
+      private final List<OptionItem> items = new ArrayList<>();
 
       public Builder () {
       }

@@ -864,6 +864,16 @@ public class Views {
     }
   }
 
+  public static void setLeftMargin (View view, int margin) {
+    if (view != null) {
+      ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
+      if (params.leftMargin != margin) {
+        params.leftMargin = margin;
+        view.setLayoutParams(params);
+      }
+    }
+  }
+
   public static int getTopMargin (View view) {
     if (view != null) {
       ViewGroup.LayoutParams params = view.getLayoutParams();

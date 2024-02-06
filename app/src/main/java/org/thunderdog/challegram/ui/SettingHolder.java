@@ -35,12 +35,14 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.thunderdog.challegram.FillingDrawable;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.charts.LayoutHelper;
 import org.thunderdog.challegram.charts.data.ChartDataUtil;
 import org.thunderdog.challegram.charts.view_data.ChartHeaderView;
 import org.thunderdog.challegram.component.RelativeSessionLayout;
@@ -206,7 +208,9 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         return Screen.dp(32f) + Screen.dp(4f);
       }
       case ListItem.TYPE_HEADER:
-      case ListItem.TYPE_HEADER_WITH_ACTION: {
+      case ListItem.TYPE_HEADER_WITH_ACTION:
+      case ListItem.TYPE_HEADER_WITH_TEXT_BUTTON:
+      case ListItem.TYPE_HEADER_WITH_CHECKBOX: {
         return Screen.dp(32f);
       }
       case ListItem.TYPE_SESSION:
@@ -484,6 +488,8 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_CHECKBOX_OPTION_DOUBLE_LINE:
       case ListItem.TYPE_CHECKBOX_OPTION_MULTILINE:
       case ListItem.TYPE_REACTION_CHECKBOX:
+      case ListItem.TYPE_HEADER_WITH_TEXT_BUTTON:
+      case ListItem.TYPE_HEADER_WITH_CHECKBOX:
       case ListItem.TYPE_RADIO_OPTION:
       case ListItem.TYPE_RADIO_OPTION_LEFT:
       case ListItem.TYPE_RADIO_OPTION_WITH_AVATAR:
@@ -1277,6 +1283,8 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_HEADER:
       case ListItem.TYPE_HEADER_MULTILINE:
       case ListItem.TYPE_HEADER_WITH_ACTION:
+      case ListItem.TYPE_HEADER_WITH_TEXT_BUTTON:
+      case ListItem.TYPE_HEADER_WITH_CHECKBOX:
       case ListItem.TYPE_HEADER_PADDED: {
         final boolean isRtl = Lang.rtl();
 
@@ -1292,29 +1300,69 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         }
         textView.setTypeface(Fonts.getRobotoMedium());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
-        if (viewType != ListItem.TYPE_HEADER_WITH_ACTION) {
-          textView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, viewType == ListItem.TYPE_HEADER_MULTILINE ? ViewGroup.LayoutParams.WRAP_CONTENT : Screen.dp(32f) + paddingTop));
-          adapter.modifyHeaderTextView(textView, Screen.dp(32f), paddingTop);
-          return new SettingHolder(textView);
+
+        if (viewType == ListItem.TYPE_HEADER_WITH_ACTION) {
+          FrameLayoutFix wrapView = new FrameLayoutFix(context);
+          textView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+          wrapView.addView(textView);
+
+          ImageView imageView = new ImageView(context);
+          imageView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(52f), ViewGroup.LayoutParams.MATCH_PARENT, isRtl ? Gravity.LEFT : Gravity.RIGHT));
+          imageView.setScaleType(ImageView.ScaleType.CENTER);
+          imageView.setColorFilter(Theme.getColor(ColorId.background_textLight));
+          if (themeProvider != null) {
+            themeProvider.addThemeFilterListener(imageView, ColorId.background_textLight);
+          }
+          imageView.setOnClickListener(onClickListener);
+          wrapView.addView(imageView);
+          wrapView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(32f)));
+          return new SettingHolder(wrapView);
         }
 
-        FrameLayoutFix wrapView = new FrameLayoutFix(context);
-        textView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        wrapView.addView(textView);
+        if (viewType == ListItem.TYPE_HEADER_WITH_TEXT_BUTTON) {
+          textView.setId(android.R.id.text1);
+          LinearLayout wrapView = new LinearLayout(context);
+          wrapView.addView(textView, LayoutHelper.createLinear(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f));
 
-        ImageView imageView = new ImageView(context);
-        imageView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(52f), ViewGroup.LayoutParams.MATCH_PARENT, isRtl ? Gravity.LEFT : Gravity.RIGHT));
-        imageView.setScaleType(ImageView.ScaleType.CENTER);
-        imageView.setColorFilter(Theme.getColor(ColorId.background_textLight));
-        if (themeProvider != null) {
-          themeProvider.addThemeFilterListener(imageView, ColorId.background_textLight);
+          ScalableTextView textButton = new ScalableTextView(context) {
+            @Override
+            protected void onReplaceText (@NonNull CharSequence replacement) {
+              setText(replacement);
+            }
+          };
+          textButton.setPadding(Screen.dp(16f), 0, Screen.dp(16f), 0);
+          textButton.setGravity(Gravity.CENTER_VERTICAL);
+          textButton.setSingleLine(true);
+          textButton.setTextColor(Theme.textAccent2Color());
+          if (themeProvider != null) {
+            themeProvider.addThemeTextColorListener(textButton, ColorId.background_text);
+          }
+          textButton.setTypeface(Fonts.getRobotoRegular());
+          textButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
+          textButton.setOnClickListener(onClickListener);
+          wrapView.addView(textButton, isRtl ? 0 : 1, LayoutHelper.createLinear(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
+          wrapView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(32f)));
+          return new SettingHolder(wrapView);
         }
-        imageView.setOnClickListener(onClickListener);
-        wrapView.addView(imageView);
 
-        wrapView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(32f)));
+        if (viewType == ListItem.TYPE_HEADER_WITH_CHECKBOX) {
+          textView.setId(android.R.id.text1);
+          FrameLayoutFix wrapView = new FrameLayoutFix(context);
+          wrapView.addView(textView, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-        return new SettingHolder(wrapView);
+          CheckBoxView checkBox = CheckBoxView.simpleCheckBox(context, isRtl);
+          checkBox.setOnClickListener(onClickListener);
+          if (themeProvider != null) {
+            themeProvider.addThemeInvalidateListener(checkBox);
+          }
+          wrapView.addView(checkBox);
+          wrapView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(32f)));
+          return new SettingHolder(wrapView);
+        }
+
+        textView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, viewType == ListItem.TYPE_HEADER_MULTILINE ? ViewGroup.LayoutParams.WRAP_CONTENT : Screen.dp(32f) + paddingTop));
+        adapter.modifyHeaderTextView(textView, Screen.dp(32f), paddingTop);
+        return new SettingHolder(textView);
       }
       case ListItem.TYPE_DESCRIPTION:
       case ListItem.TYPE_DESCRIPTION_CENTERED:

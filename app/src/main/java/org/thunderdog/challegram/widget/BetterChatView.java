@@ -147,7 +147,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
   public void setIsChecked (boolean isChecked, boolean animated) {
     if (isChecked != (checkBoxHelper != null && checkBoxHelper.isChecked())) {
       if (checkBoxHelper == null) {
-        checkBoxHelper = new SimplestCheckBoxHelper(this, avatarReceiver);
+        checkBoxHelper = new SimplestCheckBoxHelper(this);
       }
       checkBoxHelper.setIsChecked(isChecked, animated);
     }
