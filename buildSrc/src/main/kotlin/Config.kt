@@ -24,8 +24,8 @@ object Config {
 object LibraryVersions {
   const val MULTIDEX = "2.0.1"
   const val DESUGAR = "1.1.5"
-  const val ANDROIDX_CORE = "1.7.0"
-  const val ANNOTATIONS = "1.3.0"
+  const val ANDROIDX_CORE = "1.12.0"
+  const val ANNOTATIONS = "1.7.1"
 }
 
 class AbiVariant (val flavor: String, vararg val filters: String = arrayOf(), val displayName: String = filters[0]) {
@@ -56,6 +56,7 @@ class AbiVariant (val flavor: String, vararg val filters: String = arrayOf(), va
     }
 }
 
+@Suppress("MemberVisibilityCanBePrivate")
 object Abi {
   const val UNIVERSAL = 0
   const val ARMEABI_V7A = 1
