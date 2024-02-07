@@ -110,21 +110,17 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
   private void showSystemPicker (boolean forceDownloads) {
     RunnableData<Set<Uri>> callback = uris -> {
       if (uris != null && !uris.isEmpty()) {
-        List<String> files = new ArrayList<>(uris.size());
+        final ArrayList<InlineResult<?>> results = new ArrayList<>(uris.size());
         for (Uri uri : uris) {
           String filePath = U.tryResolveFilePath(uri);
           if (!StringUtils.isEmpty(filePath) && U.canReadFile(filePath)) {
-            files.add(filePath);
+            results.add(createItem(context, tdlib, new File(filePath), null));
           } else {
-            files.add(uri.toString());
+            results.add(createItem(context, tdlib, uri.toString(), R.drawable.baseline_insert_drive_file_24, uri.getLastPathSegment(), ""));
           }
         }
-        final ArrayList<InlineResult<?>> results = new ArrayList<>(files.size());
-        for (String path : files) {
-          results.add(createItem(context, tdlib, new File(path), null));
-        }
         if (mediaLayout.getTarget() != null) {
-          mediaLayout.getTarget().setFilesToAttach(results, mediaLayout.isNeedGroupMedia());
+          mediaLayout.getTarget().setFilesToAttach(results);
           mediaLayout.hide(false);
         }
       }
@@ -1022,7 +1018,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
     final int id = view.getId();
     if (id == R.id.btn_addCaption) {
       if (mediaLayout.getTarget() != null) {
-        mediaLayout.getTarget().setFilesToAttach(new ArrayList<>(selectedItems), mediaLayout.isNeedGroupMedia());
+        mediaLayout.getTarget().setFilesToAttach(new ArrayList<>(selectedItems));
         mediaLayout.hide(false);
       }
     }
@@ -1049,7 +1045,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
           selectItem(item, result);
         } else {
           if (mediaLayout.getTarget() != null) {
-            mediaLayout.getTarget().setFilesToAttach(new ArrayList<>(Collections.singleton(result)), mediaLayout.isNeedGroupMedia());
+            mediaLayout.getTarget().setFilesToAttach(new ArrayList<>(Collections.singleton(result)));
             mediaLayout.hide(false);
           }
         }

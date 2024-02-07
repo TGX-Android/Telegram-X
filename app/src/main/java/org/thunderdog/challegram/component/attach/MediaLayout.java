@@ -1350,10 +1350,6 @@ public class MediaLayout extends FrameLayoutFix implements
     }
   }
 
-  public boolean isNeedGroupMedia () {
-    return needGroupMedia;
-  }
-
   private void prepareCounter () {
     if (counterView == null && bottomBar != null) {
       FrameLayoutFix.LayoutParams params;
