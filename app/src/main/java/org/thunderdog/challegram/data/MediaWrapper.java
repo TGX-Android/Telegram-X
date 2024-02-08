@@ -59,6 +59,7 @@ import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.MessageEditMediaPending;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.theme.ColorId;
@@ -359,6 +360,56 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     }
     this.fileProgress.setFile(targetFile, source != null ? source.getMessage(messageId) : null);
     updateDuration();
+  }
+
+
+  public MediaWrapper (BaseActivity context, Tdlib tdlib, @Nullable TGMessage source, @NonNull MessageEditMediaPending pending) {
+    this.tdlib = tdlib;
+    this.source = source;
+    this.sourceMessageId = pending.messageId;
+    this.useHotStuff = false;
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+      this.path = new Path();
+    }
+
+    this.fileProgress = new FileProgressComponent(context, tdlib, pending.isVideo() ? TdlibFilesManager.DOWNLOAD_FLAG_VIDEO : TdlibFilesManager.DOWNLOAD_FLAG_PHOTO, !isHot(), pending.chatId, pending.messageId);
+    this.fileProgress.setSimpleListener(this);
+    this.fileProgress.setFallbackFileProvider(this);
+
+    setNativeEmbed(null, false);
+
+    if (isHot() && source != null) {
+      fileProgress.setDownloadedIconRes(source.isHotDone() ? R.drawable.baseline_check_24 : R.drawable.deproko_baseline_whatshot_24);
+      if (source.isHotTimerStarted() && !source.isOutgoing()) {
+        fileProgress.setHideDownloadedIcon(true);
+      }
+    }
+
+    setEditingFile(pending);
+  }
+
+  private MessageEditMediaPending pendingEdit;
+
+  private void setEditingFile (MessageEditMediaPending pendingEdit) {
+    this.pendingEdit = pendingEdit;
+
+    this.contentWidth = pendingEdit.width();
+    this.contentHeight = pendingEdit.height();
+    if (contentWidth == 0 || contentHeight == 0) {
+      contentWidth = contentHeight = Screen.dp(100f);
+    }
+
+    this.targetFile = pendingEdit.getFile();
+    this.targetImageFile = new ImageFile(tdlib, targetFile);
+    this.targetImageFile.setScaleType(ImageFile.CENTER_CROP);
+    this.targetImageFile.setNoBlur();
+
+    this.fileProgress.setFile(targetFile, source != null ? source.getMessage(pendingEdit.messageId) : null);
+  }
+
+  public boolean isPendingEdited () {
+    return pendingEdit != null;
   }
 
   public void setOnClickListener (@Nullable OnClickListener onClickListener) {

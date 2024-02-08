@@ -450,6 +450,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private final TdlibNotificationManager notificationManager;
   private final TdlibFileGenerationManager fileGenerationManager;
   private final TdlibSingleUnreadReactionsManager unreadReactionsManager;
+  private final TdlibEditMediaManager editMediaManager;
   private final TdlibMessageViewer messageViewer;
 
   private final HashSet<Long> channels = new HashSet<>();
@@ -655,6 +656,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       ms = SystemClock.uptimeMillis();
     }
     this.unreadReactionsManager = new TdlibSingleUnreadReactionsManager(this);
+    this.editMediaManager = new TdlibEditMediaManager(this);
     this.applicationConfigJson = settings().getApplicationConfig();
     if (!StringUtils.isEmpty(applicationConfigJson)) {
       TdApi.JsonValue value = JSON.parse(applicationConfigJson);
@@ -4722,7 +4724,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   private final HashMap<String, TdApi.MessageContent> pendingMessageTexts = new HashMap<>();
   private final HashMap<String, TdApi.FormattedText> pendingMessageCaptions = new HashMap<>();
-  private final HashMap<String, TdApi.InputMessageContent> pendingMessageMedia = new HashMap<>();
 
   public boolean canEditMedia (TdApi.Message message) {
     return message != null && message.canBeEdited && message.content != null && (Td.isPhoto(message.content) || message.content.getConstructor() == TdApi.MessageVideo.CONSTRUCTOR);
@@ -4779,7 +4780,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public void editMessageMedia (long chatId, long messageId, TdApi.InputMessageContent content) {
-    performEdit(chatId, messageId, content, new TdApi.EditMessageMedia(chatId, messageId, null, content), pendingMessageMedia);
+    editMediaManager.editMediaStart(chatId, messageId, content);
   }
 
   public TdApi.FormattedText getFormattedText (TdApi.Message message) {
@@ -4804,9 +4805,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       Td.assertMessageContent_cfe6660a();
       throw Td.unsupported(messageText);
     }
-    TdApi.InputMessageContent messageContent = getPendingMessageMedia(chatId, messageId);
-    if (messageContent != null) {
-      return TD.textOrCaption(messageContent);
+    MessageEditMediaPending pendingEditMedia = getPendingMessageMedia(chatId, messageId);
+    if (pendingEditMedia != null) {
+      return TD.textOrCaption(pendingEditMedia.content);
     }
 
     return getPendingMessageCaption(chatId, messageId);
@@ -4824,10 +4825,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
-  public TdApi.InputMessageContent getPendingMessageMedia (long chatId, long messageId) {
-    synchronized (pendingMessageMedia) {
-      return pendingMessageMedia.get(chatId + "_" + messageId);
-    }
+  public MessageEditMediaPending getPendingMessageMedia (long chatId, long messageId) {
+    return editMediaManager.getPendingMessageMedia(chatId, messageId);
   }
 
   private <T extends TdApi.Object> void performEdit (long chatId, long messageId, T pendingData, TdApi.Function<?> function, Map<String, T> map) {

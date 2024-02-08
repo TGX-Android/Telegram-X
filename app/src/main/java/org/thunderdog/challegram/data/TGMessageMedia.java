@@ -36,6 +36,7 @@ import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.MessageEditMediaPending;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -125,6 +126,7 @@ public class TGMessageMedia extends TGMessage {
     updateRounds();
     setCaption(caption, msg.id);
     checkCommonCaption();
+    checkMedia();
     if (isHotTimerStarted()) {
       onHotTimerStarted(false);
     }
@@ -132,12 +134,12 @@ public class TGMessageMedia extends TGMessage {
 
   @Override
   protected boolean isBeingEdited () {
-    return this.isBeingEdited;
+    return this.hasEditedText || hasEditedMedia;
   }
 
   @Override
   protected int onMessagePendingContentChanged (long chatId, long messageId, int oldHeight) {
-    if (checkCommonCaption()) {
+    if (checkCommonCaption() || checkMedia()) {
       rebuildContent();
       return (getHeight() == oldHeight ? MESSAGE_INVALIDATED : MESSAGE_CHANGED);
     }
@@ -197,7 +199,8 @@ public class TGMessageMedia extends TGMessage {
     }
   }
 
-  private boolean isBeingEdited;
+  private boolean hasEditedText;
+  private boolean hasEditedMedia;
 
   private boolean checkCommonCaption () {
     return checkCommonCaption(false);
@@ -231,27 +234,46 @@ public class TGMessageMedia extends TGMessage {
       }
     }
 
-    boolean hasEditedMedia = !hasEditedText && hasEditedMedia();
-    this.isBeingEdited = hasEditedText || hasEditedMedia;
-    return setCaption(caption, captionMessageId, force || hasEditedMedia);
+    this.hasEditedText = hasEditedText;
+    return setCaption(caption, captionMessageId, force);
   }
 
-  public boolean hasEditedMedia () {
+  private boolean checkMedia () {
+    boolean hasEditedMedia = false;
+
     synchronized (this) {
       ArrayList<TdApi.Message> combinedMessages = getCombinedMessagesUnsafely();
       if (combinedMessages != null && !combinedMessages.isEmpty()) {
         for (TdApi.Message message: combinedMessages) {
-          if (tdlib.getPendingMessageMedia(message.chatId, message.id) != null) {
-            return true;
-          }
+          final MessageEditMediaPending pending = tdlib.getPendingMessageMedia(message.chatId, message.id);
+          checkPendingMediaWrapper(pending);
+          hasEditedMedia |= pending != null;
         }
       } else {
-        if (tdlib.getPendingMessageMedia(msg.chatId, msg.id) != null) {
-          return true;
-        }
+        final MessageEditMediaPending pending = tdlib.getPendingMessageMedia(msg.chatId, msg.id);
+        checkPendingMediaWrapper(pending);
+        hasEditedMedia = pending != null;
       }
     }
-    return false;
+
+    this.hasEditedMedia = hasEditedMedia;
+    boolean needRebuild = hasEditedMedia; // fixme
+    return needRebuild;
+  }
+
+  private void checkPendingMediaWrapper (MessageEditMediaPending pending) {
+    if (pending == null || pending.getFile() == null) {
+      return;
+    }
+    MediaWrapper mv = mosaicWrapper.findMediaWrapperByMessageId(pending.messageId);
+    if (mv == null || mv.isPendingEdited()) {
+      return;
+    }
+
+    MediaWrapper mediaWrapper = new MediaWrapper(context(), tdlib, this, pending);
+    mediaWrapper.setViewProvider(currentViews);
+    mosaicWrapper.replaceMediaWrapper(mediaWrapper);
+    mosaicWrapper.rebuild();
   }
 
   @Override
@@ -375,7 +397,8 @@ public class TGMessageMedia extends TGMessage {
   protected boolean updateMessageContent (TdApi.Message message, TdApi.MessageContent newContent, boolean isBottomMessage) {
     int changed = 0;
 
-    if (message.content.getConstructor() != newContent.getConstructor()) {
+    final MediaWrapper mw = mosaicWrapper.findMediaWrapperByMessageId(message.id);
+    if (message.content.getConstructor() != newContent.getConstructor() || (mw != null && mw.isPendingEdited())) {
       MediaWrapper wrapper = createMediaWrapper(message, newContent);
       synchronized (this) {
         if (mosaicWrapper.replaceMediaWrapper(wrapper) != MosaicWrapper.MOSAIC_NOT_CHANGED) {
@@ -512,6 +535,7 @@ public class TGMessageMedia extends TGMessage {
   @Override
   protected void onMessageCombinedWithOtherMessage (TdApi.Message otherMessage, boolean atBottom, boolean local) {
     checkCommonCaption();
+    checkMedia();
     mosaicWrapper.addItem(createMediaWrapper(otherMessage), atBottom);
   }
 
