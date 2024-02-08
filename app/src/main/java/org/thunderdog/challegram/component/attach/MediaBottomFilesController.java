@@ -47,6 +47,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.core.Media;
 import org.thunderdog.challegram.data.InlineResult;
 import org.thunderdog.challegram.data.InlineResultCommon;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.navigation.HeaderView;
@@ -110,19 +111,26 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
   private void showSystemPicker (boolean forceDownloads) {
     RunnableData<Set<Uri>> callback = uris -> {
       if (uris != null && !uris.isEmpty()) {
-        final ArrayList<InlineResult<?>> results = new ArrayList<>(uris.size());
-        for (Uri uri : uris) {
-          String filePath = U.tryResolveFilePath(uri);
-          if (!StringUtils.isEmpty(filePath) && U.canReadFile(filePath)) {
-            results.add(createItem(context, tdlib, new File(filePath), null));
-          } else {
-            results.add(createItem(context, tdlib, uri.toString(), R.drawable.baseline_insert_drive_file_24, uri.getLastPathSegment(), ""));
+        Media.instance().post(() -> {
+          final ArrayList<InlineResult<?>> results = new ArrayList<>(uris.size());
+          final TD.FileInfo fileInfo = new TD.FileInfo();
+          for (Uri uri : uris) {
+            String filePath = U.tryResolveFilePath(uri);
+            if (!StringUtils.isEmpty(filePath) && U.canReadFile(filePath)) {
+              results.add(createItem(context, tdlib, new File(filePath), null));
+            } else {
+              final String path = uri.toString();
+              TD.createInputFile(path, null, fileInfo);
+              results.add(createItem(context, tdlib, path, R.drawable.baseline_insert_drive_file_24, fileInfo.title, Strings.buildSize(fileInfo.knownSize)));
+            }
           }
-        }
-        if (mediaLayout.getTarget() != null) {
-          mediaLayout.getTarget().setFilesToAttach(results);
-          mediaLayout.hide(false);
-        }
+          UI.post(() -> {
+            if (mediaLayout.getTarget() != null && mediaLayout.getTarget().isFocused()) {
+              mediaLayout.getTarget().setFilesToAttach(results);
+              mediaLayout.hide(false);
+            }
+          });
+        });
       }
     };
     final Intent intent = new Intent(Intent.ACTION_GET_CONTENT)
