@@ -1772,7 +1772,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
       mediaPickerManager.openMediaView(file -> Media.instance().post(() -> {
         TdApi.InputMessageContent content = TD.toContent(tdlib, file, false, true, false, false);
-        UI.post(() -> tdlib.editMessageMedia(item.getSourceChatId(), item.getSourceMessageId(), content));
+        UI.post(() -> tdlib.editMessageMedia(item.getSourceChatId(), item.getSourceMessageId(), content, file));
       }), c != null ? c.getChatId() : 0);
     } else if (id == R.id.btn_share) {
       ShareController c;
@@ -3138,6 +3138,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       mediaView.normalizeZoom();
       return true;
     }
+    if (inForceEditMode()) {
+      closeForceEditMode();
+      return true;
+    }
     return false;
   }
 
@@ -3416,7 +3420,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void checkBottomWrapY () {
-    int thumbsDistance = Screen.dp(THUMBS_PADDING) * 2 + Screen.dp(THUMBS_HEIGHT);
+    int thumbsDistance = (Screen.dp(THUMBS_PADDING) * 2 + Screen.dp(THUMBS_HEIGHT)) * (inForceEditMode() ? 0 : 1);
     float offsetDistance = (float) measureBottomWrapHeight() * dismissFactor;
     // int appliedBottomPadding = -this.appliedBottomPadding;
     if (bottomWrap != null) {

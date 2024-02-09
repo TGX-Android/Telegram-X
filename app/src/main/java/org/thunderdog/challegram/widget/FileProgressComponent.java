@@ -397,13 +397,17 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   private boolean isSendingMessage;
 
   public void setFile (@Nullable TdApi.File file, @Nullable TdApi.Message message) {
+    setFile(file, message, message != null && !Td.isPhoto(message.content));
+  }
+
+  public void setFile (@Nullable TdApi.File file, @Nullable TdApi.Message message, boolean allowUseGenerationProgress) {
     if (this.file != null && !isLocal) {
       tdlib.files().unsubscribe(this.file.id, this);
     }
     this.file = file;
     if (file != null && file.local != null) {
       this.isDownloaded = file.local.isDownloadingCompleted;
-      this.useGenerationProgress = !file.local.isDownloadingCompleted && !file.remote.isUploadingCompleted && message != null && !Td.isPhoto(message.content);
+      this.useGenerationProgress = !file.local.isDownloadingCompleted && !file.remote.isUploadingCompleted && allowUseGenerationProgress;
     } else {
       this.isDownloaded = this.useGenerationProgress = false;
     }

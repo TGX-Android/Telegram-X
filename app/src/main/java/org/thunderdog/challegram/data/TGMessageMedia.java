@@ -139,7 +139,9 @@ public class TGMessageMedia extends TGMessage {
 
   @Override
   protected int onMessagePendingContentChanged (long chatId, long messageId, int oldHeight) {
-    if (checkCommonCaption() || checkMedia()) {
+    final boolean captionChanged = checkCommonCaption();
+    final boolean mediaChanged = checkMedia();
+    if (captionChanged || mediaChanged) {
       rebuildContent();
       return (getHeight() == oldHeight ? MESSAGE_INVALIDATED : MESSAGE_CHANGED);
     }
@@ -240,40 +242,43 @@ public class TGMessageMedia extends TGMessage {
 
   private boolean checkMedia () {
     boolean hasEditedMedia = false;
+    boolean needRebuild = false;
 
     synchronized (this) {
       ArrayList<TdApi.Message> combinedMessages = getCombinedMessagesUnsafely();
       if (combinedMessages != null && !combinedMessages.isEmpty()) {
         for (TdApi.Message message: combinedMessages) {
           final MessageEditMediaPending pending = tdlib.getPendingMessageMedia(message.chatId, message.id);
-          checkPendingMediaWrapper(pending);
+          needRebuild |= checkPendingMediaWrapper(pending);
           hasEditedMedia |= pending != null;
         }
       } else {
         final MessageEditMediaPending pending = tdlib.getPendingMessageMedia(msg.chatId, msg.id);
-        checkPendingMediaWrapper(pending);
+        needRebuild = checkPendingMediaWrapper(pending);
         hasEditedMedia = pending != null;
       }
     }
 
     this.hasEditedMedia = hasEditedMedia;
-    boolean needRebuild = hasEditedMedia; // fixme
+    if (needRebuild) {
+      invalidateContentReceiver();
+    }
     return needRebuild;
   }
 
-  private void checkPendingMediaWrapper (MessageEditMediaPending pending) {
+  private boolean checkPendingMediaWrapper (MessageEditMediaPending pending) {
     if (pending == null || pending.getFile() == null) {
-      return;
+      return false;
     }
     MediaWrapper mv = mosaicWrapper.findMediaWrapperByMessageId(pending.messageId);
     if (mv == null || mv.isPendingEdited()) {
-      return;
+      return false;
     }
 
     MediaWrapper mediaWrapper = new MediaWrapper(context(), tdlib, this, pending);
     mediaWrapper.setViewProvider(currentViews);
     mosaicWrapper.replaceMediaWrapper(mediaWrapper);
-    mosaicWrapper.rebuild();
+    return true;
   }
 
   @Override
@@ -401,9 +406,8 @@ public class TGMessageMedia extends TGMessage {
     if (message.content.getConstructor() != newContent.getConstructor() || (mw != null && mw.isPendingEdited())) {
       MediaWrapper wrapper = createMediaWrapper(message, newContent);
       synchronized (this) {
-        if (mosaicWrapper.replaceMediaWrapper(wrapper) != MosaicWrapper.MOSAIC_NOT_CHANGED) {
-          changed |= FLAG_CHANGED_RECEIVERS;
-        }
+        mosaicWrapper.replaceMediaWrapper(wrapper);
+        changed |= FLAG_CHANGED_RECEIVERS;
       }
     } else {
       MediaWrapper wrapper = mosaicWrapper.findMediaWrapperByMessageId(message.id);

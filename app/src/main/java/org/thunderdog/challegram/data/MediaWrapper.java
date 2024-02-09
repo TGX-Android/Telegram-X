@@ -265,6 +265,9 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   }
 
   private void setVideo (long messageId, TdApi.Video video) {
+    if (isPendingEdited()) {
+      throw new IllegalStateException("You should replace MediaWrapper, not update");
+    }
     this.video = video;
 
     if ((video.width == 0 || video.height == 0) && video.thumbnail != null) {
@@ -338,6 +341,9 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   }
 
   private void setAnimation (long messageId, TdApi.Animation animation) {
+    if (isPendingEdited()) {
+      throw new IllegalStateException("You should replace MediaWrapper, not update");
+    }
     this.animation = animation;
 
     setPreviewFile(animation.minithumbnail, animation.thumbnail);
@@ -401,11 +407,13 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     }
 
     this.targetFile = pendingEdit.getFile();
-    this.targetImageFile = new ImageFile(tdlib, targetFile);
-    this.targetImageFile.setScaleType(ImageFile.CENTER_CROP);
-    this.targetImageFile.setNoBlur();
+    this.targetImageFile = pendingEdit.getPreviewFile();
+    if (this.targetImageFile != null) {
+      this.targetImageFile.setScaleType(ImageFile.CENTER_CROP);
+      this.targetImageFile.setNoBlur();
+    }
 
-    this.fileProgress.setFile(targetFile, source != null ? source.getMessage(pendingEdit.messageId) : null);
+    this.fileProgress.setFile(targetFile, source != null ? source.getMessage(pendingEdit.messageId) : null, pendingEdit.isVideo());
   }
 
   public boolean isPendingEdited () {
@@ -673,6 +681,10 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   }
 
   private void setPhoto (long messageId, @NonNull TdApi.Photo photo, boolean isWebp) {
+    if (isPendingEdited()) {
+      throw new IllegalStateException("You should replace MediaWrapper, not update");
+    }
+
     this.photo = photo;
     this.isPhotoWebp = isWebp;
 
@@ -828,7 +840,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   }
 
   private boolean showImage () {
-    return targetImageFile != null && TD.isFileLoaded(targetFile) && (fileProgress == null || fileProgress.isDownloaded()) && !isHot();
+    return targetImageFile != null && (isPendingEdited() || TD.isFileLoaded(targetFile) && (fileProgress == null || fileProgress.isDownloaded())) && !isHot();
   }
 
   public void requestImage (ImageReceiver receiver) {

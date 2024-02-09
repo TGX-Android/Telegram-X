@@ -4779,8 +4779,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     performEdit(chatId, messageId, caption, new TdApi.EditMessageCaption(chatId, messageId, null, caption), pendingMessageCaptions);
   }
 
-  public void editMessageMedia (long chatId, long messageId, TdApi.InputMessageContent content) {
-    editMediaManager.editMediaStart(chatId, messageId, content);
+  public void editMessageMedia (long chatId, long messageId, TdApi.InputMessageContent content, @Nullable ImageFile preview) {
+    editMediaManager.editMediaStart(chatId, messageId, content, preview);
   }
 
   public TdApi.FormattedText getFormattedText (TdApi.Message message) {

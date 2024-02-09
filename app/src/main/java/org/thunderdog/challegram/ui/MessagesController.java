@@ -6956,7 +6956,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             editContext.replacedMediaFile.setCaption(newText);
             Media.instance().post(() -> {
               TdApi.InputMessageContent content = TD.toContent(tdlib, editContext.replacedMediaFile, false, true, false, false);
-              UI.post(() -> tdlib.editMessageMedia(editContext.message.chatId, editContext.message.id, content));
+              UI.post(() -> tdlib.editMessageMedia(editContext.message.chatId, editContext.message.id, content, editContext.replacedMediaFile));
             });
           } else {
             tdlib.editMessageCaption(editContext.message.chatId, editContext.message.id, newText);

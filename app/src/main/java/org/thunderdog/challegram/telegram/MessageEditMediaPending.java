@@ -4,6 +4,7 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.loader.ImageFile;
 
 import me.vkryl.td.ChatId;
 
@@ -19,13 +20,15 @@ public class MessageEditMediaPending implements TdlibEditMediaManager.UploadFutu
   public final TdApi.InputMessageContent content;
   private final TdlibEditMediaManager.UploadFuture inputFileFuture;
   private final @Nullable TdlibEditMediaManager.UploadFuture inputFileThumbnailFuture;
+  private final @Nullable ImageFile preview;
 
-  MessageEditMediaPending (Tdlib tdlib, long chatId, long messageId, TdApi.InputMessageContent content) {
+  MessageEditMediaPending (Tdlib tdlib, long chatId, long messageId, TdApi.InputMessageContent content, @Nullable ImageFile preview) {
     this.chatId = chatId;
     this.messageId = messageId;
     this.content = content;
     this.inputFile = TD.getInputFile(content);
     this.inputFileThumbnail = TD.getInputFileThumbnail(content);
+    this.preview = preview;
 
     final boolean isSecret = ChatId.isSecret(chatId);
 
@@ -108,6 +111,11 @@ public class MessageEditMediaPending implements TdlibEditMediaManager.UploadFutu
 
   public TdApi.File getFile () {
     return inputFileFuture.file;
+  }
+
+  @Nullable
+  public ImageFile getPreviewFile () {
+    return preview;
   }
 
   private void checkStatus () {
