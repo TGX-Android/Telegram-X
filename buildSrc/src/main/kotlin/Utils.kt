@@ -52,21 +52,6 @@ fun loadProperties (path: String = "local.properties"): Properties {
   return properties
 }
 
-fun buildDate (timeZone: TimeZone): Calendar {
-  val c = Calendar.getInstance(timeZone)
-  var commitTime: String
-  val process = ProcessBuilder("git", "show", "-s", "--format=%ct").start()
-  process.inputStream.reader(Charsets.UTF_8).use {
-    commitTime = it.readText().trim()
-  }
-  process.waitFor()
-  val unixTime = commitTime.toLongOrNull()
-  unixTime?.let {
-    c.timeInMillis = unixTime * 1000L
-  }
-  return c
-}
-
 fun monthYears (now: Calendar, then: Calendar): String {
   var years = now.get(Calendar.YEAR) - then.get(Calendar.YEAR)
   var months = if (now.get(Calendar.MONTH) < then.get(Calendar.MONTH) ||
