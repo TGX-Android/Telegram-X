@@ -7,9 +7,13 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.View;
 
+import androidx.annotation.ColorInt;
+import androidx.annotation.Dimension;
+
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -25,21 +29,39 @@ public class ToggleHeaderView2 extends View {
   private final ReplaceAnimator<TrimmedText> subtitleR = new ReplaceAnimator<>((r) -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
   private final Drawable arrowDrawable;
 
-  private int textPadding;
-  private int textTop;
+  @Dimension(unit = Dimension.DP)
+  private float textPaddingDp = 10f;
+  @Dimension(unit = Dimension.DP)
+  private float textTopDp = 8.5f;
+  @Dimension(unit = Dimension.DP)
+  private float triangleTopDp = 8.5f;
 
-  private float triangleTop;
+  private ColorSet colorSet = ColorSet.DEFAULT;
 
-  public ToggleHeaderView2(Context context) {
+  public interface ColorSet {
+    ColorSet DEFAULT = new ColorSet() {
+    };
+
+    @ColorInt default int titleColor () {
+      return Theme.getColor(ColorId.text);
+    }
+
+    @ColorInt default int subtitleColor () {
+      return Theme.getColor(ColorId.textLight);
+    }
+
+    @PorterDuffColorId default int iconColorId () {
+      return ColorId.icon;
+    }
+  }
+
+  public ToggleHeaderView2 (Context context) {
     super(context);
     arrowDrawable = Drawables.get(R.drawable.baseline_keyboard_arrow_down_20);
   }
 
   public void setTitle (String title, boolean animated) {
     titleR.replace(new TrimmedText(title), animated);
-    triangleTop = Screen.dp(3f + 8.5f);
-    textTop = Screen.dp(17f + 8.5f);
-    textPadding = Screen.dp(10f);
     trimTexts();
     invalidate();
   }
@@ -50,13 +72,29 @@ public class ToggleHeaderView2 extends View {
     invalidate();
   }
 
+  public void setTextTop (@Dimension(unit = Dimension.DP) float textTop) {
+    textTopDp = textTop;
+  }
+
+  public void setTriangleTop (@Dimension(unit = Dimension.DP) float triangleTop) {
+    triangleTopDp = triangleTop;
+  }
+
+  public void setTextPadding (@Dimension(unit = Dimension.DP) float textPadding) {
+    textPaddingDp = textPadding;
+  }
+
+  public void setColorSet (ColorSet colorSet) {
+    this.colorSet = colorSet;
+  }
+
   private void trimTexts () {
-    int avail = getMeasuredWidth() - textPadding - Screen.dp(12f);
+    int avail = getMeasuredWidth() - Screen.dp(textPaddingDp) - Screen.dp(12f);
     for (ListAnimator.Entry<TrimmedText> entry : titleR) {
-      entry.item.measure(avail, Paints.getMediumTextPaint(18f, Theme.headerTextColor(), false));
+      entry.item.measure(avail, Paints.getMediumTextPaint(18f, colorSet.titleColor(), false));
     }
     for (ListAnimator.Entry<TrimmedText> entry : subtitleR) {
-      entry.item.measure(avail, Paints.getRegularTextPaint(14f, Theme.getColor(ColorId.textLight)));
+      entry.item.measure(avail, Paints.getRegularTextPaint(14f, colorSet.subtitleColor()));
     }
   }
 
@@ -77,20 +115,22 @@ public class ToggleHeaderView2 extends View {
 
   @Override
   protected void onDraw (Canvas c) {
+    final int textTop = Screen.dp(textTopDp);
+    final int triangleTop = Screen.dp(triangleTopDp);
     for (ListAnimator.Entry<TrimmedText> entry : titleR) {
       final int offset2 = (int) ((!entry.isAffectingList() ?
-        ((entry.getVisibility() - 1f) * Screen.dp(18)):
+        ((entry.getVisibility() - 1f) * Screen.dp(18)) :
         ((1f - entry.getVisibility()) * Screen.dp(18))));
-      entry.item.draw(c, getPaddingLeft(), textTop + offset2, entry.getVisibility(), Paints.getMediumTextPaint(18f, Theme.getColor(ColorId.text), false));
+      entry.item.draw(c, getPaddingLeft(), getPaddingTop() + textTop + Screen.dp(17) + offset2, entry.getVisibility(), Paints.getMediumTextPaint(18f, colorSet.titleColor(), false));
     }
     for (ListAnimator.Entry<TrimmedText> entry : subtitleR) {
       final int offset2 = (int) ((!entry.isAffectingList() ?
-        ((entry.getVisibility() - 1f) * Screen.dp(14)):
+        ((entry.getVisibility() - 1f) * Screen.dp(14)) :
         ((1f - entry.getVisibility()) * Screen.dp(14))));
-      entry.item.draw(c, getPaddingLeft(), textTop + Screen.dp(19) + offset2, entry.getVisibility(), Paints.getRegularTextPaint(14f, Theme.getColor(ColorId.textLight)));
+      entry.item.draw(c, getPaddingLeft(), getPaddingTop() + textTop + Screen.dp(19) + offset2, entry.getVisibility(), Paints.getRegularTextPaint(14f, colorSet.subtitleColor()));
     }
 
-    Drawables.draw(c, arrowDrawable, getTitleWidth() + Screen.dp(2), triangleTop, PorterDuffPaint.get(ColorId.icon));
+    Drawables.draw(c, arrowDrawable, getTitleWidth() + Screen.dp(2), getPaddingTop() + triangleTop + Screen.dp(3f), PorterDuffPaint.get(colorSet.iconColorId()));
   }
 
 
