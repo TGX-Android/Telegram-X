@@ -1,6 +1,7 @@
 @file:Suppress("UnstableApiUsage")
 
 import com.android.build.gradle.internal.api.ApkVariantOutputImpl
+import me.vkryl.task.GitVersionValueSource
 import java.util.*
 
 plugins {
@@ -39,6 +40,22 @@ val properties = extra["properties"] as Properties
 val projectName = extra["app_name"] as String
 val versions = extra["versions"] as Properties
 
+data class PullRequest (
+  val id: Long,
+  val commitShort: String,
+  val commitLong: String,
+  val commitDate: Long,
+  val author: String
+) {
+  constructor(id: Long, properties: Properties) : this(
+    id,
+    properties.getOrThrow("pr.$id.commit_short"),
+    properties.getOrThrow("pr.$id.commit_long"),
+    properties.getLongOrThrow("pr.$id.date"),
+    properties.getOrThrow("pr.$id.author")
+  )
+}
+
 android {
   namespace = "org.thunderdog.challegram"
 
@@ -65,6 +82,115 @@ android {
     buildConfigString("LANGUAGE_PACK", Telegram.LANGUAGE_PACK)
 
     buildConfigString("THEME_FILE_EXTENSION", App.THEME_EXTENSION)
+
+    // Library versions in BuildConfig.java
+
+    var openSslVersion: String = ""
+    var openSslVersionFull: String = ""
+    val openSslVersionFile = File(project.rootDir.absoluteFile, "tdlib/source/openssl/include/openssl/opensslv.h")
+    openSslVersionFile.bufferedReader().use { reader ->
+      val regex = Regex("^#\\s*define OPENSSL_VERSION_NUMBER\\s*((?:0x)[0-9a-fAF]+)L?\$")
+      while (true) {
+        val line = reader.readLine() ?: break
+        val result = regex.find(line)
+        if (result != null) {
+          val rawVersion = result.groupValues[1]
+          val version = if (rawVersion.startsWith("0x")) {
+            rawVersion.substring(2).toLong(16)
+          } else {
+            rawVersion.toLong()
+          }
+          // MNNFFPPS: major minor fix patch status
+          val major = ((version shr 28) and 0xf).toInt()
+          val minor = ((version shr 20) and 0xff).toInt()
+          val fix = ((version shr 12) and 0xff).toInt()
+          val patch = ((version shr 4) and 0xff).toInt()
+          val status = (version and 0xf).toInt()
+          if (status != 0xf) {
+            error("Using non-stable OpenSSL version: $rawVersion (status = ${status.toString(16)})")
+          }
+          openSslVersion = "${major}.${minor}"
+          openSslVersionFull = "${major}.${minor}.${fix}${('a'.code - 1 + patch).toChar()}"
+          break
+        }
+      }
+    }
+    if (openSslVersion.isEmpty()) {
+      error("OpenSSL not found!")
+    }
+
+    var tdlibVersion = ""
+    val tdlibCommit = File(project.rootDir.absoluteFile, "tdlib/version.txt").bufferedReader().readLine().take(7)
+    val tdlibVerisonFile = File(project.rootDir.absoluteFile, "tdlib/source/td/CMakeLists.txt")
+    tdlibVerisonFile.bufferedReader().use { reader ->
+      val regex = Regex("^project\\(TDLib VERSION (\\d+\\.\\d+\\.\\d+) LANGUAGES CXX C\\)$")
+      while (true) {
+        val line = reader.readLine() ?: break
+        val result = regex.find(line)
+        if (result != null) {
+          tdlibVersion = "${result.groupValues[1]}-${tdlibCommit}"
+          break
+        }
+      }
+    }
+    if (tdlibVersion.isEmpty()) {
+      error("TDLib not found!")
+    }
+
+    val pullRequests: List<PullRequest> = properties.getProperty("pr.ids", "").split(',').filter { it.matches(Regex("^[0-9]+$")) }.map {
+      PullRequest(it.toLong(), properties)
+    }.sortedBy { it.id }
+
+    buildConfigString("OPENSSL_VERSION", openSslVersion)
+    buildConfigString("OPENSSL_VERSION_FULL", openSslVersionFull)
+    buildConfigString("TDLIB_VERSION", tdlibVersion)
+
+    val gitVersionProvider = providers.of(GitVersionValueSource::class) {}
+    val git = gitVersionProvider.get()
+
+    buildConfigString("REMOTE_URL", git.remoteUrl)
+    buildConfigString("COMMIT_URL", git.commitUrl)
+    buildConfigString("COMMIT", git.commitHashShort)
+    buildConfigString("COMMIT_FULL", git.commitHashLong)
+    buildConfigLong("COMMIT_DATE", git.commitDate)
+    buildConfigString("SOURCES_URL", properties.getProperty("app.sources_url", git.remoteUrl))
+
+    buildConfigField("long[]", "PULL_REQUEST_ID", "{${
+      pullRequests.joinToString(", ") { it.id.toString() }
+    }}")
+    buildConfigField("long[]", "PULL_REQUEST_COMMIT_DATE", "{${
+      pullRequests.joinToString(", ") { it.commitDate.toString() }
+    }}")
+    buildConfigField("String[]", "PULL_REQUEST_COMMIT", "{${
+      pullRequests.joinToString(", ") { "\"${it.commitShort}\"" }
+    }}")
+    buildConfigField("String[]", "PULL_REQUEST_COMMIT_FULL", "{${
+      pullRequests.joinToString(", ") { "\"${it.commitLong}\"" }
+    }}")
+    buildConfigField("String[]", "PULL_REQUEST_URL", "{${
+      pullRequests.joinToString(", ") { "\"${git.remoteUrl}/pull/${it.id}/files/${it.commitLong}\"" }
+    }}")
+    buildConfigField("String[]", "PULL_REQUEST_AUTHOR", "{${
+      pullRequests.joinToString(", ") { "\"${it.author}\"" }
+    }}")
+
+    // Set application version
+
+    val appVersionOverride = properties.getProperty("app.version", "0").toInt()
+    val appVersion = if (appVersionOverride > 0) appVersionOverride else versions.getOrThrow("version.app").toInt()
+    val majorVersion = versions.getOrThrow("version.major").toInt()
+
+    val timeZone = TimeZone.getTimeZone("UTC")
+    val then = Calendar.getInstance(timeZone)
+    then.timeInMillis = versions.getOrThrow("version.creation").toLong()
+    val now = Calendar.getInstance(timeZone)
+    now.timeInMillis = git.commitDate * 1000L
+    if (now.timeInMillis < then.timeInMillis)
+      error("Invalid commit time!")
+    val minorVersion = monthYears(now, then)
+
+    versionCode = appVersion
+    versionName = "${majorVersion}.${minorVersion}"
   }
 
   // TODO: needs performance tests. Must be used once custom icon sets will be available
@@ -203,7 +329,6 @@ dependencies {
   implementation(project(":vkryl:android"))
   implementation(project(":vkryl:td"))
   // AndroidX: https://developer.android.com/jetpack/androidx/versions
-  implementation("androidx.core:core:${LibraryVersions.ANDROIDX_CORE}")
   implementation("androidx.activity:activity:1.8.2")
   implementation("androidx.palette:palette:1.0.0")
   implementation("androidx.recyclerview:recyclerview:1.3.2")
