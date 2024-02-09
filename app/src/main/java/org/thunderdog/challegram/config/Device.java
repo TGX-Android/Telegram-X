@@ -190,6 +190,6 @@ public class Device {
 
   public static final boolean FLYME = !StringUtils.isEmpty(Build.DISPLAY) && Build.DISPLAY.toLowerCase().contains("flyme");
 
-  // Android >= 13 has builtin clipboard toasts, but MIUI based on Android 13 ships without them
-  public static final boolean HAS_BUILTIN_CLIPBOARD_TOASTS = IS_XIAOMI ? Build.VERSION.SDK_INT > Build.VERSION_CODES.TIRAMISU : Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU;
+  // Android >= 13 has builtin clipboard toasts, but MIUI/HyperOs ships without them
+  public static final boolean HAS_BUILTIN_CLIPBOARD_TOASTS = !IS_XIAOMI && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU;
 }
