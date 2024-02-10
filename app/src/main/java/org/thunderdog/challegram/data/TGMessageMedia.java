@@ -116,6 +116,13 @@ public class TGMessageMedia extends TGMessage {
     return mediaWrapper;
   }
 
+  private MediaWrapper createMediaWrapper (MessageEditMediaPending pending) {
+    MediaWrapper mediaWrapper = MediaWrapper.valueOf(context(), tdlib, this, pending);
+    mediaWrapper.setViewProvider(currentViews);
+    mediaWrapper.setSelectionAnimator(findSelectionAnimator(pending.messageId));
+    return mediaWrapper;
+  }
+
   private MosaicWrapper mosaicWrapper;
 
   private void init (MediaWrapper wrapper, TdApi.FormattedText caption) {
@@ -287,7 +294,7 @@ public class TGMessageMedia extends TGMessage {
       return mv.updateAnimation(pending.messageId, pending.getAnimation(), pending.hasSpoiler());
     }
 
-    MediaWrapper mediaWrapper = MediaWrapper.valueOf(context(), tdlib, msg.chatId, msg.id, this, pending);
+    MediaWrapper mediaWrapper = createMediaWrapper(pending);
     mediaWrapper.setViewProvider(currentViews);
     mediaWrapper.setSelectionAnimator(findSelectionAnimator(pending.messageId));
     mosaicWrapper.replaceMediaWrapper(mediaWrapper);

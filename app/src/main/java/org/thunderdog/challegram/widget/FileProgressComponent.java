@@ -397,17 +397,13 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   private boolean isSendingMessage;
 
   public void setFile (@Nullable TdApi.File file, @Nullable TdApi.Message message) {
-    setFile(file, message, message != null && !Td.isPhoto(message.content));
-  }
-
-  public void setFile (@Nullable TdApi.File file, @Nullable TdApi.Message message, boolean allowUseGenerationProgress) {
     if (this.file != null && !isLocal) {
       tdlib.files().unsubscribe(this.file.id, this);
     }
     this.file = file;
     if (file != null && file.local != null) {
       this.isDownloaded = file.local.isDownloadingCompleted;
-      this.useGenerationProgress = !file.local.isDownloadingCompleted && !file.remote.isUploadingCompleted && allowUseGenerationProgress;
+      this.useGenerationProgress = !file.local.isDownloadingCompleted && !file.remote.isUploadingCompleted && message != null && !Td.isPhoto(message.content);
     } else {
       this.isDownloaded = this.useGenerationProgress = false;
     }
@@ -783,6 +779,9 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
       }
       case TdlibFilesManager.STATE_IN_PROGRESS: {
         if (file != null) {
+          if (tdlib.cancelEditMessageMedia(chatId, messageId)) {
+            return true;
+          }
           if (file.remote.isUploadingActive || isSendingMessage) {
             tdlib.deleteMessagesIfOk(chatId, new long[] {messageId}, true);
           } else {

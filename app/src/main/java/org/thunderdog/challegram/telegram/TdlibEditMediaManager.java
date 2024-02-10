@@ -23,7 +23,17 @@ public class TdlibEditMediaManager implements MessageEditMediaUploadCallback {
     final MessageEditMediaPending pendingEdit = new MessageEditMediaPending(tdlib, chatId, messageId, inputMessageContent, preview);
     pendingEdit.init(this);
     addPendingEditAndNotify(pendingEdit);
-    tdlib.listeners().updateMessagePendingContentChanged(chatId, messageId);
+  }
+
+  public boolean editMediaCancel (long chatId, long messageId) {
+    synchronized (pendingMessageMedia) {
+      MessageEditMediaPending pending = pendingMessageMedia.get(toKey(chatId, messageId));
+      if (pending != null) {
+        pending.cancel();
+        return true;
+      }
+    }
+    return false;
   }
 
   public boolean hasPendingMessageMedia (long chatId, long messageId) {

@@ -362,15 +362,15 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     updateDuration();
   }
 
-  public static MediaWrapper valueOf (BaseActivity context, Tdlib tdlib, long chatId, long messageId, @Nullable TGMessage source, @NonNull MessageEditMediaPending pending) {
+  public static MediaWrapper valueOf (BaseActivity context, Tdlib tdlib, @Nullable TGMessage source, @NonNull MessageEditMediaPending pending) {
     if (pending.isPhoto()) {
-      return new MediaWrapper(context, tdlib, pending.getPhoto(), chatId, messageId, source, false, pending.isWebp(), null);
+      return new MediaWrapper(context, tdlib, pending.getPhoto(), pending.chatId, pending.messageId, source, false, pending.isWebp(), null);
     }
     if (pending.isVideo()) {
-      return new MediaWrapper(context, tdlib, pending.getVideo(), chatId, messageId, source, false);
+      return new MediaWrapper(context, tdlib, pending.getVideo(), pending.chatId, pending.messageId, source, false);
     }
     if (pending.isAnimation()) {
-      return new MediaWrapper(context, tdlib, pending.getAnimation(), chatId, messageId, source, false, false, false, null);
+      return new MediaWrapper(context, tdlib, pending.getAnimation(), pending.chatId, pending.messageId, source, false, false, false, null);
     }
     throw new IllegalArgumentException();
   }

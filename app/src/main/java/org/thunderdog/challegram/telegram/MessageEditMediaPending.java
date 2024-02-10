@@ -9,7 +9,6 @@ import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 
 import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
 
 public class MessageEditMediaPending implements TdlibEditMediaManager.UploadFuture.Callback {
   public static final int FUTURE_ID_MAIN = 0;
@@ -138,7 +137,7 @@ public class MessageEditMediaPending implements TdlibEditMediaManager.UploadFutu
       needUpdate = true;
     }
 
-    if (inputFileFuture.file != null && (inputFileThumbnailFuture == null || inputFileThumbnailFuture.file != null)) {
+    if (needUpdate && inputFileFuture.file != null && (inputFileThumbnailFuture == null || inputFileThumbnailFuture.file != null)) {
       callback.onMediaPreliminaryUploadStart(this, inputFileFuture.file);
     }
   }
@@ -148,8 +147,14 @@ public class MessageEditMediaPending implements TdlibEditMediaManager.UploadFutu
     checkStatus();
   }
 
+  private boolean failed;
+
   @Override
   public void onFail (int id, boolean isCanceled) {
+    if (failed) {
+      return;
+    }
+    failed = true;
     cancel();
     callback.onMediaPreliminaryUploadFailed(this, isCanceled);
   }
@@ -160,11 +165,6 @@ public class MessageEditMediaPending implements TdlibEditMediaManager.UploadFutu
 
   public TdApi.File getFile () {
     return inputFileFuture.file;
-  }
-
-  @Nullable
-  public ImageFile getPreviewFile () {
-    return preview;
   }
 
   private void checkStatus () {
