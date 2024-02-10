@@ -21,6 +21,7 @@ public class SingleMediaPickerManager extends MediaLayoutManager {
         }
       };
       mediaLayout.setSingleMediaMode(true);
+      mediaLayout.setDisallowGallerySystemPicker(true);
       mediaLayout.init(MediaLayout.MODE_AVATAR_PICKER, null);
       mediaLayout.setMediaViewControllerArgumentsEditor(args -> args
         .setSendButtonIcon(R.drawable.baseline_check_circle_24)

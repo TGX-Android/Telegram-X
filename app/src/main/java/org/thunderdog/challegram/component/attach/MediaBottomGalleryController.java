@@ -97,6 +97,9 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
 
   @Override
   protected int getMenuId () {
+    if (mediaLayout.isDisallowGallerySystemPicker()) {
+      return 0;
+    }
     return R.id.menu_more;
   }
 

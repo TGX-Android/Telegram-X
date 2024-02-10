@@ -434,6 +434,16 @@ public class MediaLayout extends FrameLayoutFix implements
     return bottomBar != null ? controllers[bottomBar.getCurrentIndex()] : controllers[0];
   }
 
+  private boolean disallowGallerySystemPicker;
+
+  public void setDisallowGallerySystemPicker (boolean disallowGallerySystemPicker) {
+    this.disallowGallerySystemPicker = disallowGallerySystemPicker;
+  }
+
+  public boolean isDisallowGallerySystemPicker () {
+    return disallowGallerySystemPicker;
+  }
+
   // Setters
 
   public void setNoMediaAccess () {

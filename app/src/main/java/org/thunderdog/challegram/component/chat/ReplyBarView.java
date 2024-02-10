@@ -146,15 +146,15 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
 
     params = FrameLayoutFix.newParams(Screen.dp(56f), ViewGroup.LayoutParams.MATCH_PARENT);
     params.gravity = Lang.reverseGravity();
-    replaceMediaView = newButton(R.id.btn_replace, R.drawable.baseline_repeat_24, themeProvider);
+    params.rightMargin = Screen.dp(46);
+    replaceMediaView = newButton(R.id.btn_replace, R.drawable.baseline_replace_24, themeProvider);
     replaceMediaView.setLayoutParams(params);
     replaceMediaView.setVisibility(View.GONE);
     addView(replaceMediaView);
 
     params = FrameLayoutFix.newParams(Screen.dp(56f), ViewGroup.LayoutParams.MATCH_PARENT);
     params.gravity = Lang.reverseGravity();
-    params.rightMargin = Screen.dp(46);
-    editMediaView = newButton(R.id.btn_edit, R.drawable.baseline_edit_24, themeProvider);
+    editMediaView = newButton(R.id.btn_edit, R.drawable.baseline_brush_24, themeProvider);
     editMediaView.setLayoutParams(params);
     editMediaView.setVisibility(View.GONE);
     addView(editMediaView);
@@ -298,9 +298,10 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
   }
 
   public void setEditingMessage (TdApi.Message msg, @Nullable ImageFile forcedMediaFile) {
+    final boolean canEdit = tdlib.canEditMedia(msg);
     pinnedMessagesBar.setMessage(tdlib, displayedMessage = msg, null, forcedMediaFile);
     setLinkPreviewToggleVisible(false);
-    setMediaEditToggleVisible(tdlib.canEditMedia(msg), TD.isFileLoaded(msg));
+    setMediaEditToggleVisible(canEdit, canEdit && TD.isFileLoaded(msg));
     setMessageInputContext(null);
   }
 

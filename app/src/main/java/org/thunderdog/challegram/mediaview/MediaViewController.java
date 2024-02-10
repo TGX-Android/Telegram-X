@@ -1597,6 +1597,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     shareButton.setVisibility(canShare() ? View.VISIBLE : View.GONE);
 
     HeaderButton editButton = header.addEditButton(menu, null, ColorId.white);
+    editButton.setImageResource(R.drawable.baseline_brush_24);
     editButton.setBackgroundResource(R.drawable.bg_btn_header_light);
     editButton.setVisibility(canEdit() ? View.VISIBLE : View.GONE);
 

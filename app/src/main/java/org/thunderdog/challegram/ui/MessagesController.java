@@ -6347,7 +6347,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private void setMessageMediaEdited (ImageGalleryFile imageGalleryFile) {
     editContext.replacedMediaFile = imageGalleryFile;
     if (inputView != null) {
-      inputView.setText(TD.toCharSequence(imageGalleryFile.getCaption(true, false)));
+      TdApi.FormattedText formattedText = imageGalleryFile.getCaption(true, false);
+      if (!Td.isEmpty(formattedText)) {
+        CharSequence text = TD.toCharSequence(formattedText);
+        inputView.setText(text);
+        inputView.setSelection(text.length());
+      }
     }
     updateReplyBarVisibility(true);
   }
