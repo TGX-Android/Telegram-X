@@ -2,7 +2,7 @@ plugins {
   `kotlin-dsl`
 }
 
-val kotlinVersion = "1.8.22"
+val kotlinVersion = "1.9.22"
 
 gradlePlugin {
   plugins {
@@ -27,13 +27,16 @@ configurations.all {
     if (requested.group == "org.jetbrains.kotlin") {
       when (requested.name) {
         "kotlin-assignment",
+        "kotlin-assignment-compiler-plugin-embeddable",
         "kotlin-stdlib",
         "kotlin-stdlib-common",
+        "kotlin-stdlib-jdk7",
         "kotlin-stdlib-jdk8",
         "kotlin-reflect",
         "kotlin-compiler-embeddable",
         "kotlin-scripting-compiler-embeddable",
-        "kotlin-sam-with-receiver" -> {
+        "kotlin-sam-with-receiver",
+        "kotlin-sam-with-receiver-compiler-plugin-embeddable" -> {
           this.useVersion(kotlinVersion)
         }
         else -> if (requested.version != kotlinVersion) {
