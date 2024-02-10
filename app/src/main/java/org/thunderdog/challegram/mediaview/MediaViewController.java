@@ -118,6 +118,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.CallManager;
 import org.thunderdog.challegram.telegram.MessageListener;
+import org.thunderdog.challegram.telegram.RightId;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -8432,7 +8433,16 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         private boolean onSendMedia (ImageGalleryFile file, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean hasSpoiler) {
           MessagesController m = findOutputController();
           if (m != null) {
+            if (m.showSlowModeRestriction(sendButton, options)) {
+              return false;
+            }
             context.forceCloseCamera();
+            CharSequence restriction = tdlib.getDefaultRestrictionText(m.getChat(), file.isVideo() ? RightId.SEND_VIDEOS : RightId.SEND_PHOTOS);
+            if (restriction != null) {
+              openShareControllerForItem(new MediaItem(context, tdlib, file));
+              UI.showToast(restriction, Toast.LENGTH_LONG);
+              return false;
+            }
             return m.sendPhotosAndVideosCompressed(new ImageGalleryFile[] {file}, false, options, disableMarkdown, asFiles, hasSpoiler);
           }
           return false;
@@ -8620,13 +8630,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         if (inForceEditMode()) {
           hapticItems.add(1, new HapticMenuHelper.MenuItem(R.id.btn_share, Lang.getString(R.string.MediaHapticForward), R.drawable.baseline_forward_24).setOnClickListener((view, parentView, item) -> {
             if (view.getId() == R.id.btn_share) {
-              final MediaItem item2 = stack.getCurrent();
-              ShareController c = new ShareController(context, tdlib);
-              CharSequence caption = Td.isEmpty(item2.getCaption()) ? null : TD.toCharSequence(item2.getCaption());
-              c.setArguments(new ShareController.Args(item2, caption, caption).setAfter(() -> {
-                close();
-              }));
-              c.show(true);
+              openShareControllerForCurrentItem();
             }
             return true;
           }));
@@ -9000,6 +9004,17 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       attachedViews.add(receiverView);
     }
     return attachedViews;
+  }
+
+  private void openShareControllerForCurrentItem () {
+    openShareControllerForItem(stack.getCurrent());
+  }
+
+  private void openShareControllerForItem (MediaItem item2) {
+    ShareController c = new ShareController(context, tdlib);
+    CharSequence caption = Td.isEmpty(item2.getCaption()) ? null : TD.toCharSequence(item2.getCaption());
+    c.setArguments(new ShareController.Args(item2, caption, caption).setAfter(this::forceClose));
+    c.show(true);
   }
 
   @Nullable
