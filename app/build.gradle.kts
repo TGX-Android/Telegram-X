@@ -379,7 +379,7 @@ dependencies {
   implementation("com.luckycatlabs:SunriseSunsetCalculator:1.2")
 
   // ZXing: https://github.com/zxing/zxing/blob/master/CHANGES
-  implementation("com.google.zxing:core:3.5.2")
+  implementation("com.google.zxing:core:3.5.3")
 
   // subsampling-scale-image-view: https://github.com/davemorrissey/subsampling-scale-image-view
   implementation("com.davemorrissey.labs:subsampling-scale-image-view-androidx:3.10.0")
