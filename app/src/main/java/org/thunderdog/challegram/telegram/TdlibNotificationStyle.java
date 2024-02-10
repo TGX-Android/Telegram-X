@@ -634,16 +634,20 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     }
 
     if (!Passcode.instance().isLocked()) {
-      if (muteAction != null)
-        builder.addInvisibleAction(muteAction);
-      if (unmuteAction != null)
-        builder.addInvisibleAction(unmuteAction);
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        if (muteAction != null)
+          builder.addInvisibleAction(muteAction);
+        if (unmuteAction != null)
+          builder.addInvisibleAction(unmuteAction);
+      }
       if (replyAction != null)
         builder.addAction(replyAction);
       if (readAction != null)
         builder.addAction(readAction);
     }
-    builder.extend(new NotificationCompat.CarExtender());
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      builder.extend(new NotificationCompat.CarExtender());
+    }
 
     styleNotification(tdlib, builder, chatId, chat, allowPreview);
 
