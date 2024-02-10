@@ -1000,16 +1000,16 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     style.addMessage(new NotificationCompat.MessagingStyle.Message(Lang.getSilentNotificationTitle(messageText, false, tdlib.isSelfChat(chat), tdlib.isMultiChat(chat), tdlib.isChannelChat(chat), isExclusivelyScheduled, isExclusivelySilent), TimeUnit.SECONDS.toMillis(notification.getDate()), person));
   }
 
-  @SuppressWarnings("deprecation")
   public static NotificationCompat.MessagingStyle newMessagingStyle (TdlibNotificationManager context, TdApi.Chat chat, int messageCount, boolean areMentions, boolean arePinned, boolean areOnlyScheduled, boolean areOnlySilent, boolean allowDownload) {
     Tdlib tdlib = context.tdlib();
     TdApi.User user = context.myUser();
-    NotificationCompat.MessagingStyle style;
+    Person person;
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && user != null) {
-      style = new NotificationCompat.MessagingStyle(buildPerson(context, tdlib.isSelfChat(chat), tdlib.isMultiChat(chat), tdlib.isChannelChat(chat), user, null, false, false, allowDownload));
+      person = buildPerson(context, tdlib.isSelfChat(chat), tdlib.isMultiChat(chat), tdlib.isChannelChat(chat), user, null, false, false, allowDownload);
     } else {
-      style = new NotificationCompat.MessagingStyle("");
+      person = new Person.Builder().setName("\u200B" /*zero-width space*/).build();
     }
+    NotificationCompat.MessagingStyle style = new NotificationCompat.MessagingStyle(person);
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
       boolean isGroupConversation = !tdlib.isUserChat(chat) && !tdlib.isChannelChat(chat);
