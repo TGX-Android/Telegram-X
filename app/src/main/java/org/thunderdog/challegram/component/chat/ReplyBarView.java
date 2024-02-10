@@ -146,7 +146,6 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
 
     params = FrameLayoutFix.newParams(Screen.dp(56f), ViewGroup.LayoutParams.MATCH_PARENT);
     params.gravity = Lang.reverseGravity();
-    params.rightMargin = Screen.dp(46);
     replaceMediaView = newButton(R.id.btn_replace, R.drawable.baseline_replace_24, themeProvider);
     replaceMediaView.setLayoutParams(params);
     replaceMediaView.setVisibility(View.GONE);
@@ -154,6 +153,7 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
 
     params = FrameLayoutFix.newParams(Screen.dp(56f), ViewGroup.LayoutParams.MATCH_PARENT);
     params.gravity = Lang.reverseGravity();
+    params.rightMargin = Screen.dp(46);
     editMediaView = newButton(R.id.btn_edit, R.drawable.baseline_brush_24, themeProvider);
     editMediaView.setLayoutParams(params);
     editMediaView.setVisibility(View.GONE);

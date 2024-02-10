@@ -26,6 +26,7 @@ import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageFileLocal;
 import org.thunderdog.challegram.loader.ImageFileRemote;
+import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.loader.ImageVideoThumbFile;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
@@ -267,6 +268,9 @@ public class MediaPreviewSimple extends MediaPreview {
     gifReceiver.requestFile(targetGif);
 
     DoubleImageReceiver imageReceiver = receiver.getPreviewReceiver(0);
+    if (previewImage instanceof ImageGalleryFile || targetImage instanceof ImageGalleryFile) {
+      imageReceiver.getImageReceiver().prepareToBeCropped();
+    }
     imageReceiver.requestFile(previewImage, targetImage);
   }
 

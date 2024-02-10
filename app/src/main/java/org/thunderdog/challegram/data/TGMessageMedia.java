@@ -271,12 +271,25 @@ public class TGMessageMedia extends TGMessage {
       return false;
     }
     MediaWrapper mv = mosaicWrapper.findMediaWrapperByMessageId(pending.messageId);
-    if (mv == null || mv.isPendingEdited()) {
+    if (mv == null) {
       return false;
     }
 
-    MediaWrapper mediaWrapper = new MediaWrapper(context(), tdlib, this, pending);
+    if (mv.isPhoto() && pending.isPhoto()) {
+      return mv.updatePhoto(pending.messageId, pending.getPhoto(), pending.hasSpoiler(), pending.isWebp());
+    }
+
+    if (mv.isVideo() && pending.isVideo()) {
+      return mv.updateVideo(pending.messageId, pending.getVideo(), pending.hasSpoiler());
+    }
+
+    if (mv.isGif() && pending.isAnimation()) {
+      return mv.updateAnimation(pending.messageId, pending.getAnimation(), pending.hasSpoiler());
+    }
+
+    MediaWrapper mediaWrapper = MediaWrapper.valueOf(context(), tdlib, msg.chatId, msg.id, this, pending);
     mediaWrapper.setViewProvider(currentViews);
+    mediaWrapper.setSelectionAnimator(findSelectionAnimator(pending.messageId));
     mosaicWrapper.replaceMediaWrapper(mediaWrapper);
     return true;
   }
@@ -398,19 +411,35 @@ public class TGMessageMedia extends TGMessage {
     return false;
   }
 
+  private boolean needReplaceMediaWrapper (MediaWrapper mw, TdApi.MessageContent newContent) {
+    if (mw == null) {
+      return false;
+    }
+
+    if (mw.isPhoto() && Td.isPhoto(newContent)) {
+      return false;
+    }
+    if (mw.isVideo() && newContent != null && newContent.getConstructor() == TdApi.MessageVideo.CONSTRUCTOR) {
+      return false;
+    }
+    if (mw.isGif() && Td.isAnimation(newContent)) {
+      return false;
+    }
+    return true;
+  }
+
   @Override
   protected boolean updateMessageContent (TdApi.Message message, TdApi.MessageContent newContent, boolean isBottomMessage) {
     int changed = 0;
 
-    final MediaWrapper mw = mosaicWrapper.findMediaWrapperByMessageId(message.id);
-    if (message.content.getConstructor() != newContent.getConstructor() || (mw != null && mw.isPendingEdited())) {
-      MediaWrapper wrapper = createMediaWrapper(message, newContent);
+    final MediaWrapper wrapper = mosaicWrapper.findMediaWrapperByMessageId(message.id);
+    if (needReplaceMediaWrapper(wrapper, newContent)) {
+      MediaWrapper newWrapper = createMediaWrapper(message, newContent);
       synchronized (this) {
-        mosaicWrapper.replaceMediaWrapper(wrapper);
+        mosaicWrapper.replaceMediaWrapper(newWrapper);
         changed |= FLAG_CHANGED_RECEIVERS;
       }
     } else {
-      MediaWrapper wrapper = mosaicWrapper.findMediaWrapperByMessageId(message.id);
       if (wrapper != null) {
         int oldContentWidth = wrapper.getContentWidth();
         int oldContentHeight = wrapper.getContentHeight();

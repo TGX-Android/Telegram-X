@@ -265,9 +265,6 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   }
 
   private void setVideo (long messageId, TdApi.Video video) {
-    if (isPendingEdited()) {
-      throw new IllegalStateException("You should replace MediaWrapper, not update");
-    }
     this.video = video;
 
     if ((video.width == 0 || video.height == 0) && video.thumbnail != null) {
@@ -341,9 +338,6 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   }
 
   private void setAnimation (long messageId, TdApi.Animation animation) {
-    if (isPendingEdited()) {
-      throw new IllegalStateException("You should replace MediaWrapper, not update");
-    }
     this.animation = animation;
 
     setPreviewFile(animation.minithumbnail, animation.thumbnail);
@@ -368,56 +362,17 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     updateDuration();
   }
 
-
-  public MediaWrapper (BaseActivity context, Tdlib tdlib, @Nullable TGMessage source, @NonNull MessageEditMediaPending pending) {
-    this.tdlib = tdlib;
-    this.source = source;
-    this.sourceMessageId = pending.messageId;
-    this.useHotStuff = false;
-
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-      this.path = new Path();
+  public static MediaWrapper valueOf (BaseActivity context, Tdlib tdlib, long chatId, long messageId, @Nullable TGMessage source, @NonNull MessageEditMediaPending pending) {
+    if (pending.isPhoto()) {
+      return new MediaWrapper(context, tdlib, pending.getPhoto(), chatId, messageId, source, false, pending.isWebp(), null);
     }
-
-    this.fileProgress = new FileProgressComponent(context, tdlib, pending.isVideo() ? TdlibFilesManager.DOWNLOAD_FLAG_VIDEO : TdlibFilesManager.DOWNLOAD_FLAG_PHOTO, !isHot(), pending.chatId, pending.messageId);
-    this.fileProgress.setSimpleListener(this);
-    this.fileProgress.setFallbackFileProvider(this);
-
-    setNativeEmbed(null, false);
-
-    if (isHot() && source != null) {
-      fileProgress.setDownloadedIconRes(source.isHotDone() ? R.drawable.baseline_check_24 : R.drawable.deproko_baseline_whatshot_24);
-      if (source.isHotTimerStarted() && !source.isOutgoing()) {
-        fileProgress.setHideDownloadedIcon(true);
-      }
+    if (pending.isVideo()) {
+      return new MediaWrapper(context, tdlib, pending.getVideo(), chatId, messageId, source, false);
     }
-
-    setEditingFile(pending);
-  }
-
-  private MessageEditMediaPending pendingEdit;
-
-  private void setEditingFile (MessageEditMediaPending pendingEdit) {
-    this.pendingEdit = pendingEdit;
-
-    this.contentWidth = pendingEdit.width();
-    this.contentHeight = pendingEdit.height();
-    if (contentWidth == 0 || contentHeight == 0) {
-      contentWidth = contentHeight = Screen.dp(100f);
+    if (pending.isAnimation()) {
+      return new MediaWrapper(context, tdlib, pending.getAnimation(), chatId, messageId, source, false, false, false, null);
     }
-
-    this.targetFile = pendingEdit.getFile();
-    this.targetImageFile = pendingEdit.getPreviewFile();
-    if (this.targetImageFile != null) {
-      this.targetImageFile.setScaleType(ImageFile.CENTER_CROP);
-      this.targetImageFile.setNoBlur();
-    }
-
-    this.fileProgress.setFile(targetFile, source != null ? source.getMessage(pendingEdit.messageId) : null, pendingEdit.isVideo());
-  }
-
-  public boolean isPendingEdited () {
-    return pendingEdit != null;
+    throw new IllegalArgumentException();
   }
 
   public void setOnClickListener (@Nullable OnClickListener onClickListener) {
@@ -681,10 +636,6 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   }
 
   private void setPhoto (long messageId, @NonNull TdApi.Photo photo, boolean isWebp) {
-    if (isPendingEdited()) {
-      throw new IllegalStateException("You should replace MediaWrapper, not update");
-    }
-
     this.photo = photo;
     this.isPhotoWebp = isWebp;
 
@@ -840,7 +791,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   }
 
   private boolean showImage () {
-    return targetImageFile != null && (isPendingEdited() || TD.isFileLoaded(targetFile) && (fileProgress == null || fileProgress.isDownloaded())) && !isHot();
+    return targetImageFile != null && (TD.isFileLoaded(targetFile) && (fileProgress == null || fileProgress.isDownloaded())) && !isHot();
   }
 
   public void requestImage (ImageReceiver receiver) {
@@ -1318,29 +1269,41 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   // Stuff
 
   public boolean updatePhoto (long sourceMessageId, TdApi.MessagePhoto newPhoto) {
+    return updatePhoto(sourceMessageId, newPhoto.photo, newPhoto.hasSpoiler, isPhotoWebp);
+  }
+
+  public boolean updatePhoto (long sourceMessageId, TdApi.Photo photo, boolean hasSpoiler, boolean isWebp) {
     if (this.sourceMessageId != sourceMessageId) {
       return false;
     }
-    setPhoto(sourceMessageId, newPhoto.photo, isPhotoWebp);
-    setRevealOnTap(newPhoto.hasSpoiler);
+    setPhoto(sourceMessageId, photo, isWebp);
+    setRevealOnTap(hasSpoiler);
     return true;
   }
 
   public boolean updateVideo (long sourceMessageId, TdApi.MessageVideo newVideo) {
+    return updateVideo(sourceMessageId, newVideo.video, newVideo.hasSpoiler);
+  }
+
+  public boolean updateVideo (long sourceMessageId, TdApi.Video video, boolean hasSpoiler) {
     if (this.sourceMessageId != sourceMessageId) {
       return false;
     }
-    setVideo(sourceMessageId, newVideo.video);
-    setRevealOnTap(newVideo.hasSpoiler);
+    setVideo(sourceMessageId, video);
+    setRevealOnTap(hasSpoiler);
     return true;
   }
 
   public boolean updateAnimation (long sourceMessageId, TdApi.MessageAnimation newAnimation) {
+    return updateAnimation(sourceMessageId, newAnimation.animation, newAnimation.hasSpoiler);
+  }
+
+  public boolean updateAnimation (long sourceMessageId, TdApi.Animation animation, boolean hasSpoiler) {
     if (this.sourceMessageId != sourceMessageId) {
       return false;
     }
-    setAnimation(sourceMessageId, newAnimation.animation);
-    setRevealOnTap(newAnimation.hasSpoiler);
+    setAnimation(sourceMessageId, animation);
+    setRevealOnTap(hasSpoiler);
     return true;
   }
 

@@ -991,9 +991,7 @@ public class MosaicWrapper implements FactorAnimator.Target, ComplexReceiver.Key
       if (mediaWrapper.getSourceMessageId() == existingWrapper.getSourceMessageId()) {
         items.set(i, mediaWrapper);
         if (existingWrapper.getContentWidth() != mediaWrapper.getContentWidth() ||
-            existingWrapper.getContentHeight() != mediaWrapper.getContentHeight() ||
-            existingWrapper.isPendingEdited() != mediaWrapper.isPendingEdited()
-        ) {
+            existingWrapper.getContentHeight() != mediaWrapper.getContentHeight()) {
           return rebuild();
         }
         break;
