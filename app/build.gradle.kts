@@ -1,7 +1,7 @@
 @file:Suppress("UnstableApiUsage")
 
 import com.android.build.gradle.internal.api.ApkVariantOutputImpl
-import me.vkryl.task.GitVersionValueSource
+import me.vkryl.task.*
 import java.util.*
 
 plugins {
@@ -10,27 +10,27 @@ plugins {
   id("cmake-plugin")
 }
 
-val generateResourcesAndThemes by tasks.registering(me.vkryl.task.GenerateResourcesAndThemesTask::class) {
+val generateResourcesAndThemes by tasks.registering(GenerateResourcesAndThemesTask::class) {
   group = "Setup"
   description = "Generates fresh strings, ids, theme resources and utility methods based on current static files"
 }
-val updateLanguages by tasks.registering(me.vkryl.task.FetchLanguagesTask::class) {
+val updateLanguages by tasks.registering(FetchLanguagesTask::class) {
   group = "Setup"
   description = "Generates and updates all strings.xml resources based on translations.telegram.org"
 }
-val validateApiTokens by tasks.registering(me.vkryl.task.ValidateApiTokensTask::class) {
+val validateApiTokens by tasks.registering(ValidateApiTokensTask::class) {
   group = "Setup"
   description = "Validates some API tokens to make sure they work properly and won't cause problems"
 }
-val updateExceptions by tasks.registering(me.vkryl.task.UpdateExceptionsTask::class) {
+val updateExceptions by tasks.registering(UpdateExceptionsTask::class) {
   group = "Setup"
   description = "Updates exception class names with the app or TDLib version number in order to have separate group on Google Play Developer Console"
 }
-val generatePhoneFormat by tasks.registering(me.vkryl.task.GeneratePhoneFormatTask::class) {
+val generatePhoneFormat by tasks.registering(GeneratePhoneFormatTask::class) {
   group = "Setup"
   description = "Generates utility methods for phone formatting, e.g. +12345678901 -> +1 (234) 567 89-01"
 }
-val checkEmojiKeyboard by tasks.registering(me.vkryl.task.CheckEmojiKeyboardTask::class) {
+val checkEmojiKeyboard by tasks.registering(CheckEmojiKeyboardTask::class) {
   group = "Setup"
   description = "Checks that all supported emoji can be entered from the keyboard"
 }
@@ -85,8 +85,8 @@ android {
 
     // Library versions in BuildConfig.java
 
-    var openSslVersion: String = ""
-    var openSslVersionFull: String = ""
+    var openSslVersion = ""
+    var openSslVersionFull = ""
     val openSslVersionFile = File(project.rootDir.absoluteFile, "tdlib/source/openssl/include/openssl/opensslv.h")
     openSslVersionFile.bufferedReader().use { reader ->
       val regex = Regex("^#\\s*define OPENSSL_VERSION_NUMBER\\s*((?:0x)[0-9a-fAF]+)L?\$")
@@ -121,8 +121,8 @@ android {
 
     var tdlibVersion = ""
     val tdlibCommit = File(project.rootDir.absoluteFile, "tdlib/version.txt").bufferedReader().readLine().take(7)
-    val tdlibVerisonFile = File(project.rootDir.absoluteFile, "tdlib/source/td/CMakeLists.txt")
-    tdlibVerisonFile.bufferedReader().use { reader ->
+    val tdlibVersionFile = File(project.rootDir.absoluteFile, "tdlib/source/td/CMakeLists.txt")
+    tdlibVersionFile.bufferedReader().use { reader ->
       val regex = Regex("^project\\(TDLib VERSION (\\d+\\.\\d+\\.\\d+) LANGUAGES CXX C\\)$")
       while (true) {
         val line = reader.readLine() ?: break

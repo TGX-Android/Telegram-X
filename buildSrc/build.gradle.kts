@@ -2,7 +2,7 @@ plugins {
   `kotlin-dsl`
 }
 
-val kotlinVersion = "1.8.20"
+val kotlinVersion = "1.8.22"
 
 gradlePlugin {
   plugins {
@@ -26,6 +26,7 @@ configurations.all {
   resolutionStrategy.eachDependency {
     if (requested.group == "org.jetbrains.kotlin") {
       when (requested.name) {
+        "kotlin-assignment",
         "kotlin-stdlib",
         "kotlin-stdlib-common",
         "kotlin-stdlib-jdk8",
@@ -36,7 +37,7 @@ configurations.all {
           this.useVersion(kotlinVersion)
         }
         else -> if (requested.version != kotlinVersion) {
-          throw RuntimeException("Incompatible package: ${requested.group}:${requested.name}:${requested.version}, ${target.group}:${target.name}:${target.version}")
+          error("Incompatible package: ${requested.group}:${requested.name}:${requested.version}, ${target.group}:${target.name}:${target.version}")
         }
       }
     }
