@@ -1000,6 +1000,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     style.addMessage(new NotificationCompat.MessagingStyle.Message(Lang.getSilentNotificationTitle(messageText, false, tdlib.isSelfChat(chat), tdlib.isMultiChat(chat), tdlib.isChannelChat(chat), isExclusivelyScheduled, isExclusivelySilent), TimeUnit.SECONDS.toMillis(notification.getDate()), person));
   }
 
+  @SuppressWarnings("deprecation")
   public static NotificationCompat.MessagingStyle newMessagingStyle (TdlibNotificationManager context, TdApi.Chat chat, int messageCount, boolean areMentions, boolean arePinned, boolean areOnlyScheduled, boolean areOnlySilent, boolean allowDownload) {
     Tdlib tdlib = context.tdlib();
     TdApi.User user = context.myUser();
@@ -1007,7 +1008,6 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && user != null) {
       style = new NotificationCompat.MessagingStyle(buildPerson(context, tdlib.isSelfChat(chat), tdlib.isMultiChat(chat), tdlib.isChannelChat(chat), user, null, false, false, allowDownload));
     } else {
-      //noinspection deprecation
       style = new NotificationCompat.MessagingStyle("");
     }
 
