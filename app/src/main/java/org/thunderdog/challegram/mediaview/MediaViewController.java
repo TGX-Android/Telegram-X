@@ -7124,6 +7124,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void changeSectionImpl (int section, boolean useFastAnimation) {
+    changeSectionImpl(section, useFastAnimation ? 220L : 380L);
+  }
+
+  private void changeSectionImpl (int section, long duration) {
     if (scheduleSectionChange(currentSection, section)) {
       return;
     }
@@ -7150,14 +7154,18 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     updateIconStates(true);
 
-    final long duration = useFastAnimation ? 220L : 380L;
     if (sectionChangeAnimator == null) {
       sectionChangeAnimator = new FactorAnimator(ANIMATOR_SECTION, this, AnimatorUtils.LINEAR_INTERPOLATOR, duration);
     } else {
       sectionChangeAnimator.forceFactor(0f);
       sectionChangeAnimator.setDuration(duration);
     }
-    sectionChangeAnimator.animateTo(1f);
+
+    if (duration > 0) {
+      sectionChangeAnimator.animateTo(1f);
+    } else {
+      sectionChangeAnimator.forceFactor(1f);
+    }
   }
 
   private int prevActiveButtonId;
@@ -8460,6 +8468,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     stack.notifyMediaChanged(true);
     setForceEditModeVisibility(true);
+
+    // openPaintCanvas();
+    changeSectionImpl(SECTION_PAINT, 0);
   }
 
   private void closeForceEditMode () {

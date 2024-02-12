@@ -277,22 +277,30 @@ public class TGMessageMedia extends TGMessage {
     if (pending == null || pending.getFile() == null) {
       return false;
     }
-    MediaWrapper mv = mosaicWrapper.findMediaWrapperByMessageId(pending.messageId);
-    if (mv == null) {
+    MediaWrapper wrapper = mosaicWrapper.findMediaWrapperByMessageId(pending.messageId);
+    if (wrapper == null) {
       return false;
     }
 
-    if (mv.isPhoto() && pending.isPhoto()) {
-      return mv.updatePhoto(pending.messageId, pending.getPhoto(), pending.hasSpoiler(), pending.isWebp());
+    int oldContentWidth = wrapper.getContentWidth();
+    int oldContentHeight = wrapper.getContentHeight();
+    boolean changed = false;
+
+    if (wrapper.isPhoto() && pending.isPhoto()) {
+      changed = wrapper.updatePhoto(pending.messageId, pending.getPhoto(), pending.hasSpoiler(), pending.isWebp());
+    } else if (wrapper.isVideo() && pending.isVideo()) {
+      changed = wrapper.updateVideo(pending.messageId, pending.getVideo(), pending.hasSpoiler());
+    } else if (wrapper.isGif() && pending.isAnimation()) {
+      changed = wrapper.updateAnimation(pending.messageId, pending.getAnimation(), pending.hasSpoiler());
     }
 
-    if (mv.isVideo() && pending.isVideo()) {
-      return mv.updateVideo(pending.messageId, pending.getVideo(), pending.hasSpoiler());
+    if (changed) {
+      if (oldContentWidth != wrapper.getContentWidth() || oldContentHeight != wrapper.getContentHeight()) {
+        mosaicWrapper.rebuild();
+      }
+      return true;
     }
 
-    if (mv.isGif() && pending.isAnimation()) {
-      return mv.updateAnimation(pending.messageId, pending.getAnimation(), pending.hasSpoiler());
-    }
 
     MediaWrapper mediaWrapper = createMediaWrapper(pending);
     mediaWrapper.setViewProvider(currentViews);
