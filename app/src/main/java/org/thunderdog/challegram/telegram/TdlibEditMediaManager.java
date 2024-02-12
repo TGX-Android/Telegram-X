@@ -56,10 +56,10 @@ public class TdlibEditMediaManager implements MessageEditMediaUploadCallback {
   @Override
   public void onMediaPreliminaryUploadComplete (MessageEditMediaPending pendingEdit, TdApi.InputMessageContent content) {
     tdlib.send(new TdApi.EditMessageMedia(pendingEdit.chatId, pendingEdit.messageId, null, content), (result, error) -> {
-      removePendingEditAndNotify(pendingEdit);
       if (error != null) {
         UI.showError(error);
       }
+      UI.post(() -> removePendingEditAndNotify(pendingEdit));
     });
 
   }
