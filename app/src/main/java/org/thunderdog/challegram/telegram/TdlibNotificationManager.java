@@ -1919,6 +1919,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   private final SparseIntArray loadedSounds;
   private final SparseIntArray sounds;
 
+  @SuppressWarnings("deprecation")
   private void playSound (@RawRes int soundResource, int delayAfter) {
     if (audioManager() == null || Recorder.instance().isRecording()) {
       return;
@@ -1940,9 +1941,11 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
             .setUsage(android.media.AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
             .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
             .build();
-          soundPool = new SoundPool.Builder().setMaxStreams(MAX_STREAM_COUNT).setAudioAttributes(attributes).build();
+          soundPool = new SoundPool.Builder()
+            .setMaxStreams(MAX_STREAM_COUNT)
+            .setAudioAttributes(attributes)
+            .build();
         } else {
-          //noinspection deprecation
           soundPool = new SoundPool(3, AudioManager.STREAM_SYSTEM, 0);
         }
         soundPool.setOnLoadCompleteListener((soundPool, sampleId, status) -> {

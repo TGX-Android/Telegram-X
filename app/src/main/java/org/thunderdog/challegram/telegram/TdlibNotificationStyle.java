@@ -240,6 +240,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
 
   private static final long CHAT_MAX_DELAY = 200;
 
+  @SuppressWarnings("deprecation")
   protected final int displayChildNotification (NotificationManagerCompat manager, Context context, @NonNull TdlibNotificationHelper helper, int badgeCount, boolean allowPreview, @NonNull TdlibNotificationGroup group, TdlibNotificationSettings settings, int notificationId, boolean isSummary, boolean isRebuild) {
     if (!allowPreview || group.isEmpty()) {
       manager.cancel(notificationId);
@@ -599,8 +600,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
         Log.i(Log.TAG_FCM, "displaying notification with behavior:%d", behavior);
       }
     } else {
-      //noinspection deprecation
-      builder = new NotificationCompat.Builder(UI.getAppContext()/*, notificationChannel*/);
+      builder = new NotificationCompat.Builder(UI.getAppContext());
     }
 
     builder

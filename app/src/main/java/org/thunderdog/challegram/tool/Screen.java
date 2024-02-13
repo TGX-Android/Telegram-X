@@ -16,6 +16,7 @@ package org.thunderdog.challegram.tool;
 
 import android.content.Context;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.os.Build;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
@@ -207,40 +208,29 @@ public class Screen {
 
   private static Point point;
 
-  /*public static int getDisplayWidth () {
-    if (UI.getUiContext() == null)
-      return 0;
-
-    Display display;
-
-    display = UI.getUiContext().getWindowManager().getDefaultDisplay();
-
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
-      if (point == null)
-        point = new Point();
-      display.getSize(point);
-      return point.x;
-    } else {
-      //noinspection deprecation
-      return display.getWidth();
-    }
-  }*/
-
+  @SuppressWarnings("deprecation")
   public static int getDisplayHeight () {
     final BaseActivity context = UI.getUiContext();
     if (context == null) {
       return 0;
     }
+    WindowManager windowManager = context.getWindowManager();
 
-    Display display = context.getWindowManager().getDefaultDisplay();
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      try {
+        android.view.WindowMetrics windowMetrics = windowManager.getCurrentWindowMetrics();
+        Rect bounds = windowMetrics.getBounds();
+        return bounds.height();
+      } catch (Throwable ignored) { }
+    }
 
+    Display display = windowManager.getDefaultDisplay();
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
       if (point == null)
         point = new Point();
       display.getSize(point);
       return point.y;
     } else {
-      //noinspection deprecation
       return display.getHeight();
     }
   }
