@@ -9067,7 +9067,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void checkSendButton (boolean animated) {
-    setSendVisible(inputView.getText().length() > 0 || isEditingMessage() || hasAttachedFiles() || isVoiceShowing, animated && getParentOrSelf().isAttachedToNavigationController());
+    setSendVisible(inputView != null && inputView.getText().length() > 0 || isEditingMessage() || hasAttachedFiles() || isVoiceShowing, animated && getParentOrSelf().isAttachedToNavigationController());
   }
 
   private void displaySendButton () {
