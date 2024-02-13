@@ -6960,7 +6960,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           if (editContext.replacedMediaFile != null) {
             editContext.replacedMediaFile.setCaption(newText);
             Media.instance().post(() -> {
-              TdApi.InputMessageContent content = TD.toContent(tdlib, editContext.replacedMediaFile, false, true, false, false);
+              TdApi.InputMessageContent content = TD.toContent(tdlib, editContext.replacedMediaFile, false, false, false, isSecretChat());
               UI.post(() -> tdlib.editMessageMedia(editContext.message.chatId, editContext.message.id, content, editContext.replacedMediaFile));
             });
           } else {

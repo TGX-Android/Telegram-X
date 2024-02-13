@@ -1770,12 +1770,22 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       if (mediaPickerManager == null) {
         mediaPickerManager = new SingleMediaPickerManager(this);
       }
-      MessagesController c = findOutputController();
 
       mediaPickerManager.openMediaView(file -> Media.instance().post(() -> {
-        TdApi.InputMessageContent content = TD.toContent(tdlib, file, false, true, false, false);
-        UI.post(() -> tdlib.editMessageMedia(item.getSourceChatId(), item.getSourceMessageId(), content, file));
-      }), c != null ? c.getChatId() : 0);
+        if (!file.hasCaption()) {
+          file.setCaption(item.getCaption());
+        }
+        TdApi.InputMessageContent content = TD.toContent(tdlib, file, false, false, item.hasSpoiler(), ChatId.isSecret(item.getSourceChatId()));
+        UI.post(() -> {
+          tdlib.editMessageMedia(item.getSourceChatId(), item.getSourceMessageId(), content, file);
+          forceClose();
+
+          ViewController<?> c = context.navigation().getCurrentStackItem();
+          if (c instanceof MessagesController) {
+            ((MessagesController) c).highlightMessage(new MessageId(item.getSourceChatId(), item.getSourceMessageId()));
+          }
+        });
+      }), item.getSourceChatId());
     } else if (id == R.id.btn_share) {
       ShareController c;
       if (item.getMessage() != null) {
@@ -8377,7 +8387,6 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         return;
       }
 
-      imageGalleryFile.setCaption(stack.getCurrent().getCaption());
       final MediaItem mediaItem = new MediaItem(context, tdlib, imageGalleryFile);
       final MediaStack mediaStack = new MediaStack(context, tdlib);
       mediaStack.set(mediaItem);
@@ -8441,14 +8450,24 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         private boolean onSendMedia (ImageGalleryFile file, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean hasSpoiler) {
           MessagesController m = findOutputController();
           if (m != null) {
+            final @RightId int rightId = file.isVideo() ? RightId.SEND_VIDEOS : RightId.SEND_PHOTOS;
             if (m.showSlowModeRestriction(sendButton, options)) {
               return false;
             }
+
+            final MediaItem oldItem = forceEditModeOld_arguments != null && forceEditModeOld_arguments.stack != null ?
+              forceEditModeOld_arguments.stack.getCurrent() : null;
+            final boolean canShare = oldItem != null && oldItem.canBeSaved() && oldItem.canBeShared();
+
             context.forceCloseCamera();
-            CharSequence restriction = tdlib.getDefaultRestrictionText(m.getChat(), file.isVideo() ? RightId.SEND_VIDEOS : RightId.SEND_PHOTOS);
+            CharSequence restriction = tdlib.getDefaultRestrictionText(m.getChat(), rightId);
             if (restriction != null) {
-              openShareControllerForItem(new MediaItem(context, tdlib, file));
-              UI.showToast(restriction, Toast.LENGTH_LONG);
+              if (canShare) {
+                openShareControllerForItem(new MediaItem(context, tdlib, file));
+                UI.showToast(restriction, Toast.LENGTH_LONG);
+              } else {
+                m.showRestriction(sendButton, restriction);
+              }
               return false;
             }
             return m.sendPhotosAndVideosCompressed(new ImageGalleryFile[] {file}, false, options, disableMarkdown, asFiles, hasSpoiler);
@@ -8639,12 +8658,17 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           );
         }
         if (inForceEditMode()) {
-          hapticItems.add(1, new HapticMenuHelper.MenuItem(R.id.btn_share, Lang.getString(R.string.MediaHapticForward), R.drawable.baseline_forward_24).setOnClickListener((view, parentView, item) -> {
-            if (view.getId() == R.id.btn_share) {
-              openShareControllerForCurrentItem();
-            }
-            return true;
-          }));
+          final MediaItem oldItem = forceEditModeOld_arguments != null && forceEditModeOld_arguments.stack != null ?
+            forceEditModeOld_arguments.stack.getCurrent() : null;
+          final boolean canShare = oldItem != null && oldItem.canBeSaved() && oldItem.canBeShared();
+          if (canShare) {
+            hapticItems.add(1, new HapticMenuHelper.MenuItem(R.id.btn_share, Lang.getString(R.string.MediaHapticForward), R.drawable.baseline_forward_24).setOnClickListener((view, parentView, item) -> {
+              if (view.getId() == R.id.btn_share) {
+                openShareControllerForCurrentItem();
+              }
+              return true;
+            }));
+          }
         }
         int sendAsFile = canSendAsFile();
         if (sendAsFile != SEND_MODE_NONE) {
