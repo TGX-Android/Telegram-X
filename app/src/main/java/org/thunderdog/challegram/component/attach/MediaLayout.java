@@ -73,7 +73,6 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.CreatePollController;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.ui.SetSenderController;
-import org.thunderdog.challegram.unsorted.Editor;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.Permissions;
@@ -708,9 +707,13 @@ public class MediaLayout extends FrameLayoutFix implements
     return true;
   }
 
-  private Editor<MediaViewController.Args> mediaViewControllerArgumentsEditor;
+  public interface MediaViewArgumentsEditor {
+    MediaViewController.Args edit (MediaViewController.Args args);
+  }
 
-  public void setMediaViewControllerArgumentsEditor (Editor<MediaViewController.Args> mediaViewControllerArgumentsEditor) {
+  private MediaViewArgumentsEditor mediaViewControllerArgumentsEditor;
+
+  public void setMediaViewControllerArgumentsEditor (MediaViewArgumentsEditor mediaViewControllerArgumentsEditor) {
     this.mediaViewControllerArgumentsEditor = mediaViewControllerArgumentsEditor;
   }
 
