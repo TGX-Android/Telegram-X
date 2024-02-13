@@ -1503,7 +1503,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           return false;
         }
         MessagesController c = msg.messagesController();
-        if (c.isEditingMessage() || c.hasAttachedFiles()) {
+        if (c.isEditingMessage()) {
           return false;
         }
         touchX = e.getX();

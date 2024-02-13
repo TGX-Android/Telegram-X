@@ -543,6 +543,10 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
   private BoolAnimator hideAnimator;
 
   public void setHidden (boolean isHidden) {
+    setHidden(isHidden, true);
+  }
+
+  public void setHidden (boolean isHidden, boolean animated) {
     if (hideAnimator == null) {
       if (!isHidden) {
         return;
@@ -550,7 +554,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
       hideAnimator = new BoolAnimator(ANIMATOR_HIDE, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
     }
     calculateTranslateY();
-    hideAnimator.setValue(isHidden, showFactor > 0f);
+    hideAnimator.setValue(isHidden, animated && showFactor > 0f);
   }
 
   @Override
