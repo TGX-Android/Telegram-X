@@ -425,19 +425,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
     } else if (viewId == R.id.btn_sendOnceOnline) {
       TdApi.MessageSendOptions sendOptions = Td.newSendOptions(new TdApi.MessageSchedulingStateSendWhenOnline());
       if (!sendShowingVoice(sendButton, sendOptions)) {
-        sendText(true, sendOptions);
+        send(sendOptions, true);
       }
     } else if (viewId == R.id.btn_sendScheduled) {
       tdlib.ui().pickSchedulingState(this, sendOptions -> {
         if (!sendShowingVoice(sendButton, sendOptions)) {
-          sendText(true, sendOptions);
+          send(sendOptions, true);
         }
       }, getChatId(), false, false, null, null);
     } else if (viewId == R.id.btn_sendNoMarkdown) {
       if (isEditingMessage()) {
         saveMessage(false);
       } else {
-        pickDateOrProceed(Td.newSendOptions(), (sendOptions, disableMarkdown) -> sendText(false, sendOptions));
+        pickDateOrProceed(Td.newSendOptions(), (sendOptions, disableMarkdown) -> send(sendOptions, false));
       }
     } else if (viewId == R.id.btn_sendToast) {
       TdApi.FormattedText newText = inputView.getOutputText(true);
@@ -446,7 +446,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     } else if (viewId == R.id.btn_sendNoSound) {
       pickDateOrProceed(Td.newSendOptions(true), (modifiedSendOptions, disableMarkdown) -> {
         if (!sendShowingVoice(sendButton, modifiedSendOptions)) {
-          sendText(true, modifiedSendOptions);
+          send(modifiedSendOptions, true);
         }
       });
     }
@@ -2037,7 +2037,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void send (TdApi.MessageSendOptions sendOptions) {
-    final boolean applyMarkdown = true;
+    send(sendOptions, true);
+  }
+
+  private void send (TdApi.MessageSendOptions sendOptions, boolean applyMarkdown) {
     if (!sendShowingVoice(sendButton, sendOptions)) {
       if (isEditingMessage()) {
         saveMessage(applyMarkdown);
