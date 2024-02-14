@@ -72,6 +72,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import me.vkryl.android.StorageUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;
@@ -233,7 +234,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
         final String environmentPath = baseExternalDir.getPath();
         final boolean isRemovable = Environment.isExternalStorageRemovable();
         StatFs fs = new StatFs(environmentPath);
-        String text = Lang.getString(R.string.FreeXofY, Strings.buildSize(U.getFreeMemorySize(fs)), Strings.buildSize(U.getTotalMemorySize(fs)));
+        String text = Lang.getString(R.string.FreeXofY, Strings.buildSize(StorageUtils.freeMemorySize(fs)), Strings.buildSize(StorageUtils.totalMemorySize(fs)));
         InlineResultCommon internalStorage = new InlineResultCommon(context, tdlib, KEY_FOLDER + environmentPath, ColorId.fileAttach, isRemovable ? R.drawable.baseline_sd_storage_24 : R.drawable.baseline_storage_24, Lang.getString(isRemovable ? R.string.SdCard : R.string.InternalStorage), text);
         items.add(createItem(internalStorage, R.id.btn_internalStorage));
       }

@@ -868,13 +868,13 @@ public class Strings {
     }
   }
 
+  @SuppressWarnings("deprecation")
   public static String systemFormat (String formatPhone) {
     String result;
     try {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
         result = PhoneNumberUtils.formatNumber(formatPhone, "US");
       } else {
-        //noinspection deprecation
         result = PhoneNumberUtils.formatNumber(formatPhone);
       }
     } catch (Throwable t) {

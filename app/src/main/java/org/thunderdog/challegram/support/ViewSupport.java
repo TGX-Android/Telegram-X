@@ -157,11 +157,11 @@ public class ViewSupport {
     BaseActivity.modifyAlert(dialog.getContext(), dialog, null);
   }
 
+  @SuppressWarnings("deprecation")
   public static Drawable getDrawable (final Context context, final @DrawableRes int resource) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       return context.getDrawable(resource);
     } else {
-      //noinspection deprecation
       return context.getResources().getDrawable(resource);
     }
   }
