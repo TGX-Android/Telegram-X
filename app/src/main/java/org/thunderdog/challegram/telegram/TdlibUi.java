@@ -220,13 +220,17 @@ public class TdlibUi extends Handler {
         android.app.NotificationManager.IMPORTANCE_MIN, // Silent and minimized
       };
     } else {
-      //noinspection deprecation
-      return new int[] {
-        android.app.Notification.PRIORITY_MAX,
-        android.app.Notification.PRIORITY_HIGH, // (default)
-        android.app.Notification.PRIORITY_LOW,
-      };
+      return getAvailablePriorityListLegacy();
     }
+  }
+
+  @SuppressWarnings("deprecation")
+  private static int[] getAvailablePriorityListLegacy () {
+    return new int[] {
+      android.app.Notification.PRIORITY_MAX,
+      android.app.Notification.PRIORITY_HIGH, // (default)
+      android.app.Notification.PRIORITY_LOW,
+    };
   }
 
   @IdRes

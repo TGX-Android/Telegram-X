@@ -809,15 +809,6 @@ public class U {
     return Environment.MEDIA_MOUNTED.equals(state) || Environment.MEDIA_MOUNTED_READ_ONLY.equals(state);
   }
 
-  public static long getFreeMemorySize (StatFs statFs) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-      return statFs.getBlockSizeLong() * statFs.getAvailableBlocksLong();
-    } else {
-      //noinspection deprecation
-      return (long) statFs.getBlockSize() * (long) statFs.getAvailableBlocks();
-    }
-  }
-
   public static String getOtherNotificationChannel () {
     return getNotificationChannel("other", R.string.NotificationChannelOther);
   }
@@ -938,15 +929,6 @@ public class U {
       b.append(hourOfDay < 12 ? " AM" : " PM");
     }
     return b.toString();
-  }
-
-  public static long getTotalMemorySize (StatFs statFs) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-      return statFs.getBlockSizeLong() * statFs.getBlockCountLong();
-    } else {
-      //noinspection deprecation
-      return (long) statFs.getBlockSize() * (long) statFs.getBlockCount();
-    }
   }
 
   private static final String MAP_DARK_STYLE = "&style=element:geometry%7Ccolor:0x212121&style=element:labels.icon%7Cvisibility:off&style=element:labels.text.fill%7Ccolor:0x757575&style=element:labels.text.stroke%7Ccolor:0x212121&style=feature:administrative%7Celement:geometry%7Ccolor:0x757575&style=feature:administrative.country%7Celement:labels.text.fill%7Ccolor:0x9e9e9e&style=feature:administrative.land_parcel%7Cvisibility:off&style=feature:administrative.locality%7Celement:labels.text.fill%7Ccolor:0xbdbdbd&style=feature:poi%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:poi.park%7Celement:geometry%7Ccolor:0x181818&style=feature:poi.park%7Celement:labels.text.fill%7Ccolor:0x616161&style=feature:poi.park%7Celement:labels.text.stroke%7Ccolor:0x1b1b1b&style=feature:road%7Celement:geometry.fill%7Ccolor:0x2c2c2c&style=feature:road%7Celement:labels.text.fill%7Ccolor:0x8a8a8a&style=feature:road.arterial%7Celement:geometry%7Ccolor:0x373737&style=feature:road.highway%7Celement:geometry%7Ccolor:0x3c3c3c&style=feature:road.highway.controlled_access%7Celement:geometry%7Ccolor:0x4e4e4e&style=feature:road.local%7Celement:labels.text.fill%7Ccolor:0x616161&style=feature:transit%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:water%7Celement:geometry%7Ccolor:0x000000&style=feature:water%7Celement:labels.text.fill%7Ccolor:0x3d3d3d";
@@ -3493,12 +3475,15 @@ public class U {
         clipboard.setPrimaryClip(clip);
       }
     } else {
-      //noinspection deprecation
-      android.text.ClipboardManager clipboard = (android.text.ClipboardManager) UI.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
-      if (clipboard != null) {
-        //noinspection deprecation
-        clipboard.setText(text);
-      }
+      copyTextLegacy(text);
+    }
+  }
+
+  @SuppressWarnings("deprecation")
+  private static void copyTextLegacy (CharSequence text) {
+    android.text.ClipboardManager clipboard = (android.text.ClipboardManager) UI.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+    if (clipboard != null) {
+      clipboard.setText(text);
     }
   }
 
@@ -3521,12 +3506,16 @@ public class U {
         return null;
       }
     } else {
-      //noinspection deprecation
-      android.text.ClipboardManager clipboard = (android.text.ClipboardManager) UI.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
-      if (clipboard != null) {
-        //noinspection deprecation
-        return clipboard.getText();
-      }
+      return getCopyTextLegacy();
+    }
+    return null;
+  }
+
+  @SuppressWarnings("deprecation")
+  private static CharSequence getCopyTextLegacy () {
+    android.text.ClipboardManager clipboard = (android.text.ClipboardManager) UI.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+    if (clipboard != null) {
+      return clipboard.getText();
     }
     return null;
   }

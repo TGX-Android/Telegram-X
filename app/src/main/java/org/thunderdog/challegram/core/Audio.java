@@ -252,6 +252,7 @@ public class Audio implements MediaPlayer.OnCompletionListener {
     return playAudio(audio, 0, false);
   }
 
+  @SuppressWarnings("deprecation")
   public boolean playAudio (TGAudio audio, final int startTime, boolean forceRaiseState) {
     if (audio == null || StringUtils.isEmpty(audio.getPath())) {
       return false;
@@ -285,7 +286,6 @@ public class Audio implements MediaPlayer.OnCompletionListener {
           currentTotalPcmDuration = N.getTotalPcmDuration();
 
           audioTrackPlayer = new AudioTrack(inRaiseMode ? AudioManager.STREAM_VOICE_CALL : AudioManager.STREAM_MUSIC, 48000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT, playerBufferSize, AudioTrack.MODE_STREAM);
-          //noinspection deprecation
           audioTrackPlayer.setStereoVolume(1.0f, 1.0f);
           audioTrackPlayer.setPlaybackPositionUpdateListener(new AudioTrack.OnPlaybackPositionUpdateListener() {
             @Override

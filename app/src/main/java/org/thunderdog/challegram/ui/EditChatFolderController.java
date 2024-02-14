@@ -188,8 +188,8 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   protected int getHeaderHeight () {
-    //noinspection deprecation
     return headerCell != null ? Size.getHeaderBigPortraitSize(false) : super.getHeaderHeight();
   }
 
@@ -207,6 +207,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   protected void onCreateView (Context context, FrameLayoutFix contentView, RecyclerView recyclerView) {
     if (Config.CHAT_FOLDERS_REDESIGN) {
       headerCell = new EditHeaderView(context, this);
@@ -223,7 +224,6 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
         return Unit.INSTANCE;
       });
       setLockFocusView(headerCell.getInputView(), /* showAlways */ StringUtils.isEmpty(editedChatFolder.title));
-      //noinspection deprecation
       Views.setTopMargin(recyclerView, Size.getHeaderSizeDifference(false));
       updateFolderIcon();
     }
