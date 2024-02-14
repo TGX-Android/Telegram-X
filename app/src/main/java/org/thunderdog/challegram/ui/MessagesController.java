@@ -2983,7 +2983,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     checkRoundVideo();
     checkInlineResults();
     checkBroadcastingSomeAction();
-    checkAttachedFiles(false);
     if (pinnedMessagesBar != null) {
       pinnedMessagesBar.setAnimationsDisabled(!isFocused());
     }
@@ -9068,7 +9067,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void checkSendButton (boolean animated) {
-    setSendVisible(inputView != null && inputView.getText().length() > 0 || isEditingMessage() || hasAttachedFiles() || isVoiceShowing, animated && getParentOrSelf().isAttachedToNavigationController());
+    setSendVisible(inputView.getText().length() > 0 || isEditingMessage() || hasAttachedFiles() || isVoiceShowing, animated && getParentOrSelf().isAttachedToNavigationController());
   }
 
   private void displaySendButton () {
@@ -12031,7 +12030,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     setCustomCaptionPlaceholder(hasAttachedFiles ? Lang.getString(R.string.Caption) : null);
-    checkSendButton(animated);
+    if (inputView != null) {
+      checkSendButton(animated);
+    }
     if (emojiLayout != null) {
       emojiLayout.setAllowMedia(!hasAttachedFiles);
     }
@@ -12059,7 +12060,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private boolean needHideAttachedFiles () {
-    return inSearchMode() || !isFocused() || isEditingMessage();
+    return inSearchMode() || isEditingMessage();
   }
 
   @Override
