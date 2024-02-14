@@ -12072,6 +12072,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private InlineResultsWrap attachedFiles;
+  private CustomItemAnimator attachedFilesAnimator;
   private ClickHelper.Delegate attachedFilesClickHelperDelegate;
 
   private ClickHelper.Delegate getAttachedFilesClickHelperDelegate () {
@@ -12090,13 +12091,38 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
           Object tag = view.getTag();
           if (tag instanceof InlineResult<?>) {
+            if (attachedFiles.getRecyclerView().getItemAnimator() == null) {
+              attachedFiles.getRecyclerView().setItemAnimator(attachedFilesAnimator);
+            }
+
             attachedFiles.removeItem((InlineResult<?>) tag);
+            scheduleRemoveAttachedFilesAnimator();
             checkAttachedFiles(true);
           }
         }
       };
     }
     return attachedFilesClickHelperDelegate;
+  }
+
+  private Runnable attachedFilesAnimatorRemoveRunnable;
+
+  private void scheduleRemoveAttachedFilesAnimator () {
+    if (attachedFilesAnimatorRemoveRunnable != null) {
+      UI.cancel(attachedFilesAnimatorRemoveRunnable);
+    }
+    attachedFilesAnimatorRemoveRunnable = this::removeAttachedFilesAnimator;
+    UI.post(attachedFilesAnimatorRemoveRunnable, 500);
+  }
+
+  private void removeAttachedFilesAnimator () {
+    attachedFilesAnimatorRemoveRunnable = null;
+    final RecyclerView recyclerView = attachedFiles.getRecyclerView();
+    if (recyclerView.getItemAnimator() != null && recyclerView.getItemAnimator().isRunning()) {
+      scheduleRemoveAttachedFilesAnimator();
+      return;
+    }
+    recyclerView.setItemAnimator(null);
   }
 
   public void setFilesToAttach (ArrayList<InlineResult<?>> results) {
@@ -12134,7 +12160,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
           return top;
         }
       };
-      attachedFiles.getRecyclerView().setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 150L));
+      attachedFilesAnimator = new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 150L);
+      attachedFiles.getRecyclerView().setItemAnimator(null);
       attachedFiles.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
       attachedFiles.setOffsetProvider(new InlineResultsWrap.OffsetProvider() {
         @Override
