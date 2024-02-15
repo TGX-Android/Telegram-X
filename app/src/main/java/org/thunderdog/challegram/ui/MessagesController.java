@@ -12183,5 +12183,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     attachedFiles.showItems(this, results, false, null, null, null, needHideAttachedFiles());
     checkAttachedFiles(true);
+    if (inputView != null) {
+      showKeyboard();
+    }
   }
 }
