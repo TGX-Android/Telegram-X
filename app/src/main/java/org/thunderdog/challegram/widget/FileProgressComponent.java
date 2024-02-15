@@ -542,6 +542,10 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   public boolean openFile (ViewController<?> c, Runnable defaultOpen) {
     if (file != null && fileType == TdlibFilesManager.DOWNLOAD_FLAG_FILE) {
       if (c != null && c.tdlib() == tdlib) {
+        if (isLocal) {
+          runOnUiThreadOptional(c, defaultOpen);
+          return true;
+        }
         tdlib.files().downloadFile(file, TdlibFilesManager.DEFAULT_DOWNLOAD_PRIORITY, 0, 0, result -> {
           switch (result.getConstructor()) {
             case TdApi.File.CONSTRUCTOR: {
