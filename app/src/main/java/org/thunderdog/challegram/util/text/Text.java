@@ -1034,8 +1034,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
       do {
         if (part.isEssential()) {
-          int partDirection = Strings.getTextDirection(part.getLine(), part.getStart(), part.getEnd());
-          // part.setPartDirection(partDirection);
+          int partDirection = part.getTextDirection();
           if (partDirection != Strings.DIRECTION_NEUTRAL) {
             if (direction == Strings.DIRECTION_NEUTRAL)
               direction = partDirection;
@@ -1058,7 +1057,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
           }
         }
         partIndex++;
-      } while (partIndex < partsCount && (part = out.get(partIndex)).getLineIndex() == currentLine);
+      } while (partIndex < partsCount && (part = out.get(partIndex)).getParagraphIndex() == currentParagraphIndex);
 
       switch (direction) {
         case Strings.DIRECTION_LTR: {
@@ -1107,6 +1106,15 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
         }
       } else {
         prevIsRtl = false;
+      }
+
+      if (direction != Strings.DIRECTION_NEUTRAL) {
+        for (int i = startIndex; i < partIndex; i++) {
+          TextPart textPart = out.get(i);
+          if (textPart.getTextDirection() != direction) {
+            textPart.setFixVisualDirection(direction);
+          }
+        }
       }
     }
 

@@ -64,6 +64,7 @@ public class TextPart {
     this.end = end;
     this.lineIndex = lineIndex;
     this.paragraphIndex = paragraphIndex;
+    checkLineToDraw();
   }
 
   public TooltipOverlayView.TooltipBuilder newTooltipBuilder (View view) {
@@ -78,6 +79,7 @@ public class TextPart {
     this.line = line;
     this.start = start;
     this.end = end;
+    checkLineToDraw();
   }
 
   public void setXY (int x, int y) {
@@ -205,9 +207,13 @@ public class TextPart {
       this.end = end;
       if (trimmedLine != null) {
         trimContents(trimmedMaxWidth);
+      } else {
+        checkLineToDraw();
       }
     }
   }
+
+  private String lineToDraw = null;
 
   private String trimmedLine;
   private float trimmedWidth;
@@ -225,6 +231,39 @@ public class TextPart {
       trimmedLine = trimmedLine + "…";
       trimmedWidth += ellipsis;
     }
+    checkLineToDraw();
+  }
+
+
+  private String directionFix;
+
+  public void setFixVisualDirection (int direction) {
+    if (direction == Strings.DIRECTION_RTL) {
+      directionFix = Strings.RTL_CHAR;
+    } else if (direction == Strings.DIRECTION_LTR) {
+      directionFix = Strings.LTR_CHAR;
+    } else {
+      directionFix = null;
+    }
+    checkLineToDraw();
+  }
+
+  private void checkLineToDraw () {
+    textDirection = -1;
+    if (directionFix != null) {
+      lineToDraw = directionFix + (trimmedLine != null ? trimmedLine : (line.substring(start, end)));
+    } else {
+      lineToDraw = trimmedLine != null ? trimmedLine : (line.substring(start, end));
+    }
+  }
+
+  private int textDirection = -1;
+
+  public int getTextDirection () {
+    if (textDirection == -1) {
+      textDirection = Strings.getTextDirection(line, start, end);
+    }
+    return textDirection;
   }
 
   public boolean isClickable () {
@@ -451,11 +490,7 @@ public class TextPart {
       drawEmoji(c, x, y, textPaint, alpha);
     } else {
       final int textY = y + source.getAscent(textSize) + textPaint.baselineShift;
-      if (trimmedLine != null) {
-        c.drawText(trimmedLine, x, textY, textPaint);
-      } else {
-        c.drawText(line, start, end, x, textY, textPaint);
-      }
+      c.drawText(lineToDraw, x, textY, textPaint);
     }
   }
 }
