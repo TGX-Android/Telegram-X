@@ -3967,12 +3967,16 @@
   <string name="SendInXMinutes_other">Send in %1$s minutes</string>
   <string name="SendInXHours_one">Send in %1$s hour</string>
   <string name="SendInXHours_other">Send in %1$s hours</string>
+  <string name="SendInXYears_one">Send in %1$s year</string>
+  <string name="SendInXYears_other">Send in %1$s years</string>
   <string name="SendAtCustomTime">Send at specific date…</string>
 
   <string name="RemindInXMinutes_one">Remind in %1$s minute</string>
   <string name="RemindInXMinutes_other">Remind in %1$s minutes</string>
   <string name="RemindInXHours_one">Remind in %1$s hour</string>
   <string name="RemindInXHours_other">Remind in %1$s hours</string>
+  <string name="RemindInXYears_one">Remind in %1$s year</string>
+  <string name="RemindInXYears_other">Remind in %1$s years</string>
   <string name="RemindAtCustomTime">Remind at specific date…</string>
 
   <string name="ScheduledMessages">Scheduled Messages</string>
