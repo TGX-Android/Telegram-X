@@ -14,10 +14,13 @@
  */
 package org.thunderdog.challegram.component.attach;
 
+import androidx.annotation.Nullable;
+
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.widget.PopupLayout;
 
 import me.vkryl.core.lambda.RunnableData;
 
@@ -26,12 +29,19 @@ public class SingleMediaPickerManager extends MediaLayoutManager {
     super(context);
   }
 
-  public void openMediaView (RunnableData<ImageGalleryFile> callback, long chatId) {
+  public void openMediaView (RunnableData<ImageGalleryFile> callback, long chatId, @Nullable Runnable onDismissPrepare) {
     waitPermissionsForOpen(hasMedia -> {
       final MediaLayout mediaLayout = new MediaLayout(context) {
         @Override
         public int getCameraButtonOffset () {
           return 0;
+        }
+
+        @Override
+        public void onPopupDismissPrepare (PopupLayout popup) {
+          if (onDismissPrepare != null) {
+            onDismissPrepare.run();
+          }
         }
       };
       mediaLayout.setSingleMediaMode(true);

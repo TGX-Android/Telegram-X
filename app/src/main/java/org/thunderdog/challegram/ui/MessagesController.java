@@ -6269,7 +6269,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (mediaPickerManager == null) {
       mediaPickerManager = new SingleMediaPickerManager(this);
     }
-    mediaPickerManager.openMediaView(this::setMessageMediaEdited, getChatId());
+    mediaPickerManager.openMediaView(this::setMessageMediaEdited, getChatId(), null);
   }
 
   @Override

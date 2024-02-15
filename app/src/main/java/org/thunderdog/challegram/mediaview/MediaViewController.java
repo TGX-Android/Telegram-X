@@ -1771,6 +1771,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         mediaPickerManager = new SingleMediaPickerManager(this);
       }
 
+      stopFullScreenTemporarily(true);
       mediaPickerManager.openMediaView(file -> Media.instance().post(() -> {
         if (!file.hasCaption()) {
           file.setCaption(item.getCaption());
@@ -1785,7 +1786,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
             ((MessagesController) c).highlightMessage(new MessageId(item.getSourceChatId(), item.getSourceMessageId()));
           }
         });
-      }), item.getSourceChatId());
+      }), item.getSourceChatId(), () -> stopFullScreenTemporarily(false));
     } else if (id == R.id.btn_share) {
       ShareController c;
       if (item.getMessage() != null) {
@@ -3358,9 +3359,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private boolean ignoreCaptionUpdate;
 
   private boolean canRunFullscreen () {
-    /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && Config.CUTOUT_ENABLED && mode == MODE_MESSAGES) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && Config.CUTOUT_ENABLED && mode == MODE_MESSAGES) {
       return true;
-    }*/
+    }
     return mode == MODE_SECRET && Build.VERSION.SDK_INT < Build.VERSION_CODES.O && Config.CUTOUT_ENABLED; // mode != MODE_GALLERY && mode != MODE_MESSAGES; // mode == MODE_PROFILE || mode == MODE_CHAT_PROFILE;
   }
 
@@ -8395,11 +8396,26 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     });
   }
 
+  private void stopFullScreenTemporarily (boolean stop) {
+    if (stop) {
+      setFullScreen(false);
+      popupView.setIgnoreBottom(false);
+      popupView.setIgnoreAllInsets(false);
+    } else {
+      setFullScreen(true);
+      boolean b = canRunFullscreen();
+      popupView.setIgnoreBottom(b);
+      popupView.setIgnoreAllInsets(b);
+    }
+  }
+
   private void openForceEditModeImpl (MediaStack mediaStack) {
     forceEditModeOld_arguments = getArgumentsStrict();
     forceEditModeOld_bottomWrap = bottomWrap;
     forceEditModeOld_captionView = captionView;
     forceEditModeOld_captionWrapView = captionWrapView;
+
+    stopFullScreenTemporarily(true);
 
     replaceArguments(MediaViewController.Args.fromGallery(this, null,
       new MediaSelectDelegate() {
@@ -8523,6 +8539,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     forceEditModeOld_bottomWrap = null;
     forceEditModeOld_arguments = null;
     forceEditMode_views = null;
+
+    stopFullScreenTemporarily(false);
   }
 
   private void replaceArguments (Args args) {
