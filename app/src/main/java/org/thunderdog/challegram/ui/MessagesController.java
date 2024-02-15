@@ -12125,7 +12125,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     recyclerView.setItemAnimator(null);
   }
 
-  public void setFilesToAttach (ArrayList<InlineResult<?>> results) {
+  public void setFilesToAttach (ArrayList<InlineResult<?>> results, boolean needShowKeyboard) {
     if (results == null || results.isEmpty()) {
       discardAttachedFiles(true);
       return;
@@ -12183,7 +12183,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     attachedFiles.showItems(this, results, false, null, null, null, needHideAttachedFiles());
     checkAttachedFiles(true);
-    if (inputView != null) {
+    if (inputView != null && needShowKeyboard) {
       showKeyboard();
     }
   }

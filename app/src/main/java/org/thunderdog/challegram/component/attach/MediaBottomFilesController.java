@@ -127,7 +127,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
           }
           UI.post(() -> {
             if (mediaLayout.getTarget() != null && mediaLayout.getTarget().isFocused()) {
-              mediaLayout.getTarget().setFilesToAttach(results);
+              mediaLayout.getTarget().setFilesToAttach(results, false);
               mediaLayout.hide(false);
             }
           });
@@ -1027,7 +1027,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
     final int id = view.getId();
     if (id == R.id.btn_addCaption) {
       if (mediaLayout.getTarget() != null) {
-        mediaLayout.getTarget().setFilesToAttach(new ArrayList<>(selectedItems));
+        mediaLayout.getTarget().setFilesToAttach(new ArrayList<>(selectedItems), true);
         mediaLayout.hide(false);
       }
     }
@@ -1054,7 +1054,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
           selectItem(item, result);
         } else {
           if (mediaLayout.getTarget() != null) {
-            mediaLayout.getTarget().setFilesToAttach(new ArrayList<>(Collections.singleton(result)));
+            mediaLayout.getTarget().setFilesToAttach(new ArrayList<>(Collections.singleton(result)), false);
             mediaLayout.hide(false);
           }
         }
