@@ -5195,4 +5195,7 @@
   <string name="ArchiveAsFolder">Archive as Folder</string>
   <string name="HoldAndDragToReorder">Hold and drag to reorder</string>
 
+
+  <string name="SlowFileAccess">Slow file access. Message will be sent after reading the files</string>
+
 </resources>

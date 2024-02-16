@@ -2045,6 +2045,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (isEditingMessage()) {
         saveMessage(applyMarkdown);
       } else if (hasAttachedFiles()) {
+        if (isSendingText) {
+          return;
+        }
+
         final TdApi.FormattedText caption = inputView != null ? inputView.getOutputText(applyMarkdown) : null;
         final ArrayList<InlineResult<?>> selectedItems = attachedFiles.getCurrentItems();
 
@@ -2068,8 +2072,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
           return;
         }
 
-        ArrayList<TdApi.Function<?>> functions = new ArrayList<>();
-        TdApi.InputMessageReplyTo replyTo = getCurrentReplyId();
+        final List<TdApi.Message> sentMessages = new ArrayList<>(selectedItems.size());
+        final TdApi.InputMessageReplyTo replyTo = getCurrentReplyId();
+        final ArrayList<TdApi.Function<?>> functions = new ArrayList<>();
+        final boolean[] isTimeout = new boolean[1];
+
+        setIsSendingText(true);
+        manager.setSentMessages(sentMessages);
+        Runnable clearInputRunnable = () -> {
+          clearInputAfterSend(true, true, replyTo, true);
+          UI.showToast(Lang.getString(R.string.SlowFileAccess), Toast.LENGTH_LONG);
+          isTimeout[0] = true;
+        };
+
+        UI.post(clearInputRunnable, MathUtils.clamp(50 * selectedItems.size(), 200, 500));
+
         sendFiles(sendButton, files, true, true, !musicEntries.isEmpty() && !files.isEmpty() ? null : caption, sendOptions, filesFunctions -> {
           if (filesFunctions != null) {
             functions.addAll(filesFunctions);
@@ -2078,7 +2095,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
             if (musicFunctions != null) {
               functions.addAll(musicFunctions);
             }
-            executeSendMessageFunctions(functions, true, sendOptions != null && sendOptions.schedulingState != null, replyTo, true, true);
+            executeSendMessageFunctions(functions, sentMessages, true, sendOptions != null && sendOptions.schedulingState != null, success -> UI.post(() -> {
+              if (!isTimeout[0]) {
+                clearInputAfterSend(true, true, replyTo, true);
+                UI.cancel(clearInputRunnable);
+              }
+            }));
           });
         });
       } else {
@@ -9253,37 +9275,38 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
 
-    executeSendMessageFunctions(functions, clearInput, finalSendOptions.schedulingState != null, replyTo, allowReply, allowLinkPreview);
+    final List<TdApi.Message> sentMessages = new ArrayList<>(functions.size());
+    setIsSendingText(true);
+    manager.setSentMessages(sentMessages);
+    executeSendMessageFunctions(functions, sentMessages, clearInput, finalSendOptions.schedulingState != null, success -> {
+      clearInputAfterSend(success, allowReply, replyTo, allowLinkPreview);
+    });
   }
 
-  public void executeSendMessageFunctions (List<TdApi.Function<?>> functions, boolean clearInput, final boolean isSchedule, @Nullable TdApi.InputMessageReplyTo replyTo, boolean allowReply, boolean allowLinkPreview) {
+  private void clearInputAfterSend (boolean success, boolean allowReply, TdApi.InputMessageReplyTo replyTo, boolean allowLinkPreview) {
+    if (!isDestroyed()) {
+      manager.setSentMessages(null);
+      if (success) {
+        if (allowReply && replyTo != null && Td.equalsTo(getCurrentReplyId(), replyTo)) {
+          obtainReplyTo();
+        }
+        if (allowLinkPreview) {
+          obtainLinkPreviewOptions(true);
+        }
+        discardAttachedFiles(true);
+        inputView.setInput("", false, true);
+      }
+      setIsSendingText(false);
+      /*if (success) {
+        inputView.setInput("", false);
+      }*/
+    }
+  }
+
+  private void executeSendMessageFunctions (List<TdApi.Function<?>> functions, List<TdApi.Message> sentMessages, boolean clearInput, final boolean isSchedule, RunnableBool onDone) {
     if (clearInput) {
       final int expectedCount = functions.size();
-      final List<TdApi.Message> sentMessages = new ArrayList<>(expectedCount);
       final int[] sentFunctionsCount = new int[1];
-
-      setIsSendingText(true);
-      manager.setSentMessages(sentMessages);
-
-      RunnableBool onDone = success -> {
-        if (!isDestroyed()) {
-          manager.setSentMessages(null);
-          if (success) {
-            if (allowReply && replyTo != null && Td.equalsTo(getCurrentReplyId(), replyTo)) {
-              obtainReplyTo();
-            }
-            if (allowLinkPreview) {
-              obtainLinkPreviewOptions(true);
-            }
-            discardAttachedFiles(true);
-            inputView.setInput("", false, true);
-          }
-          setIsSendingText(false);
-          /*if (success) {
-            inputView.setInput("", false);
-          }*/
-        }
-      };
 
       Client.ResultHandler handler = new Client.ResultHandler() {
         @Override
