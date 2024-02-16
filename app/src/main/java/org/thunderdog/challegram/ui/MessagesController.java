@@ -12142,12 +12142,22 @@ public class MessagesController extends ViewController<MessagesController.Argume
           return top;
         }
 
+        @Override
         public int detectRecyclerTopEdge () {
           final RecyclerView recyclerView = getRecyclerView();
           final LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
           int i = manager.findFirstVisibleItemPosition();
           if (i != 0) {
             return checkTopEdge(0);
+          }
+
+          int topA = 0;
+          if (i == 0) {
+            View view = manager.findViewByPosition(0);
+            if (view != null) {
+              topA = view.getMeasuredHeight();
+              topA += view.getTop();
+            }
           }
 
           int top = recyclerView.getMeasuredHeight();
@@ -12158,7 +12168,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
             }
             top = Math.min(top, (int) (view.getTop() + view.getTranslationY() + (view.getMeasuredHeight() * (1f - view.getAlpha()))));
           }
-          return checkTopEdge(top);
+          return checkTopEdge(Math.min(top, topA));
+
         }
 
         @Override
