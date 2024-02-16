@@ -487,7 +487,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
   private boolean animationNeeded;
   private float showFactor;
 
-  private float getVisibleFactor () {
+  public float getVisibleFactor () {
     return showFactor * (1f - hideFactor);
   }
 
@@ -858,7 +858,11 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
   }
 
   public int getMinItemsHeight () {
-    return Math.min(measureItemsHeight(), Screen.smallestActualSide() / 2);
+    return Math.min(measureItemsHeight(), getHeightLimit());
+  }
+
+  public static int getHeightLimit () {
+    return Screen.smallestActualSide() / 2;
   }
 
   public ArrayList<InlineResult<?>> getCurrentItems () {

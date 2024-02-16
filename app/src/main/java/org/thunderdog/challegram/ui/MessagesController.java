@@ -12019,11 +12019,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return getChatId();
   }
 
-  private final FactorAnimator attachedFilesHeight = new FactorAnimator(0, (id, factor, fraction, callee) -> updateReplyView(), AnimatorUtils.DECELERATE_INTERPOLATOR, 200, 0);
-
   private void checkAttachedFiles (boolean animated) {
     final boolean hasAttachedFiles = hasAttachedFiles();
-    final float height = hasAttachedFiles ? attachedFiles.getMinItemsHeight() : 0;
 
     if (attachedFiles != null) {
       attachedFiles.setHidden(!hasAttachedFiles, animated);
@@ -12036,16 +12033,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (emojiLayout != null) {
       emojiLayout.setAllowMedia(!hasAttachedFiles);
     }
-
-    if (animated) {
-      attachedFilesHeight.animateTo(height);
-    } else {
-      attachedFilesHeight.forceFactor(height);
-    }
   }
 
   private float getAttachedFilesOffset () {
-    return attachedFilesHeight.getFactor() * (1f - getSearchTransformFactor());
+    return attachedFilesLastHeight * (1f - getSearchTransformFactor()) * (attachedFiles != null ? attachedFiles.getVisibleFactor() : 0f);
   }
 
   public boolean hasAttachedFiles () {
@@ -12074,6 +12065,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private InlineResultsWrap attachedFiles;
   private CustomItemAnimator attachedFilesAnimator;
   private ClickHelper.Delegate attachedFilesClickHelperDelegate;
+  private int attachedFilesLastHeight;
 
   private ClickHelper.Delegate getAttachedFilesClickHelperDelegate () {
     if (attachedFilesClickHelperDelegate == null) {
@@ -12141,12 +12133,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (attachedFiles == null) {
       attachedFiles = new InlineResultsWrap(context) {
+        private int checkTopEdge (int top) {
+          int height = Math.min(getHeightLimit(), Math.max(getMinItemsHeight(), getRecyclerView().getMeasuredHeight() - top));
+          if (attachedFilesLastHeight != height) {
+            attachedFilesLastHeight = height;
+            UI.post(MessagesController.this::updateReplyView);
+          }
+          return top;
+        }
+
         public int detectRecyclerTopEdge () {
           final RecyclerView recyclerView = getRecyclerView();
           final LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
           int i = manager.findFirstVisibleItemPosition();
           if (i != 0) {
-            return 0;
+            return checkTopEdge(0);
           }
 
           int top = recyclerView.getMeasuredHeight();
@@ -12157,7 +12158,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
             }
             top = Math.min(top, (int) (view.getTop() + view.getTranslationY() + (view.getMeasuredHeight() * (1f - view.getAlpha()))));
           }
-          return top;
+          return checkTopEdge(top);
+        }
+
+        @Override
+        public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
+          super.onFactorChanged(id, factor, fraction, callee);
+          updateReplyView();
         }
       };
       attachedFilesAnimator = new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 150L);
