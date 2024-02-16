@@ -2068,12 +2068,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
           return;
         }
 
-        sendFiles(sendButton, files, true, true, !musicEntries.isEmpty() && !files.isEmpty() ? null : caption, sendOptions);
-        sendMusic(sendButton, musicEntries, true, true, caption, sendOptions);
-        discardAttachedFiles(true);
-        if (inputView != null) {
-          inputView.setInput("", false, true);
-        }
+        ArrayList<TdApi.Function<?>> functions = new ArrayList<>();
+        TdApi.InputMessageReplyTo replyTo = getCurrentReplyId();
+        sendFiles(sendButton, files, true, true, !musicEntries.isEmpty() && !files.isEmpty() ? null : caption, sendOptions, filesFunctions -> {
+          if (filesFunctions != null) {
+            functions.addAll(filesFunctions);
+          }
+          sendMusic(sendButton, musicEntries, true, true, caption, sendOptions, musicFunctions -> {
+            if (musicFunctions != null) {
+              functions.addAll(musicFunctions);
+            }
+            executeSendMessageFunctions(functions, true, sendOptions != null && sendOptions.schedulingState != null, replyTo, true, true);
+          });
+        });
       } else {
         sendText(applyMarkdown, sendOptions);
       }
@@ -9240,16 +9247,20 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     final TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(initialSendOptions, obtainSilentMode());
-    List<TdApi.SendMessage> functions = TD.sendMessageText(chatId, messageThreadId, replyTo, finalSendOptions, content, tdlib.maxMessageTextLength());
-    final boolean isSchedule = finalSendOptions.schedulingState != null;
+    List<TdApi.Function<?>> functions = (List<TdApi.Function<?>>) (List<?>) TD.sendMessageText(chatId, messageThreadId, replyTo, finalSendOptions, content, tdlib.maxMessageTextLength());
 
     if (showSlowModeRestriction(sendButton != null ? sendButton : inputView, finalSendOptions)) {
       return;
     }
 
+    executeSendMessageFunctions(functions, clearInput, finalSendOptions.schedulingState != null, replyTo, allowReply, allowLinkPreview);
+  }
+
+  public void executeSendMessageFunctions (List<TdApi.Function<?>> functions, boolean clearInput, final boolean isSchedule, @Nullable TdApi.InputMessageReplyTo replyTo, boolean allowReply, boolean allowLinkPreview) {
     if (clearInput) {
       final int expectedCount = functions.size();
       final List<TdApi.Message> sentMessages = new ArrayList<>(expectedCount);
+      final int[] sentFunctionsCount = new int[1];
 
       setIsSendingText(true);
       manager.setSentMessages(sentMessages);
@@ -9264,6 +9275,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             if (allowLinkPreview) {
               obtainLinkPreviewOptions(true);
             }
+            discardAttachedFiles(true);
             inputView.setInput("", false, true);
           }
           setIsSendingText(false);
@@ -9281,9 +9293,30 @@ public class MessagesController extends ViewController<MessagesController.Argume
             case TdApi.Message.CONSTRUCTOR: {
               TdApi.Message message = (TdApi.Message) result;
               sentMessages.add(message);
-              int sentCount = sentMessages.size();
+              sentFunctionsCount[0] += 1;
+              int sentCount = sentFunctionsCount[0];
               if (sentCount < expectedCount) {
                 tdlib.listeners().subscribeToUpdates(message);
+                tdlib.client().send(functions.get(sentCount), this);
+              } else {
+                done = true;
+              }
+              tdlib.messageHandler().onResult(result);
+              break;
+            }
+            case TdApi.Messages.CONSTRUCTOR: {
+              TdApi.Messages messages = (TdApi.Messages) result;
+              for (TdApi.Message message: messages.messages) {
+                if (message == null) continue;
+                sentMessages.add(message);
+              }
+              sentFunctionsCount[0] += 1;
+              int sentCount = sentFunctionsCount[0];
+              if (sentCount < expectedCount) {
+                for (TdApi.Message message: messages.messages) {
+                  if (message == null) continue;
+                  tdlib.listeners().subscribeToUpdates(message);
+                }
                 tdlib.client().send(functions.get(sentCount), this);
               } else {
                 done = true;
@@ -9307,9 +9340,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
             }
           }
           if (done) {
-            int sentCount = sentMessages.size();
-            if (sentCount > 0) {
-              for (int i = sentCount - 1; i >= 0; i--) {
+            int sentMessagesCount = sentMessages.size();
+            if (sentMessagesCount > 0) {
+              for (int i = sentMessagesCount - 1; i >= 0; i--) {
                 tdlib.listeners().unsubscribeFromUpdates(sentMessages.get(i));
               }
               List<TGMessage> parsedMessages = manager.parseMessages(sentMessages);
@@ -9317,7 +9350,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
                 if (isSchedule == areScheduled) {
                   manager.addSentMessages(parsedMessages);
                 }
-                onDone.runWithBool(sentCount == expectedCount);
+                onDone.runWithBool(sentFunctionsCount[0] == expectedCount);
                 if (!areScheduled && isSchedule && isFocused()) {
                   viewScheduledMessages(true);
                 }
@@ -9330,7 +9363,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       };
       tdlib.client().send(functions.get(0), handler);
     } else {
-      for (TdApi.SendMessage function : functions) {
+      for (TdApi.Function<?> function : functions) {
         tdlib.client().send(function, tdlib.messageHandler());
       }
     }
@@ -9398,6 +9431,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void sendMusic (View view, List<MediaBottomFilesController.MusicEntry> musicFiles, boolean needGroupMedia, boolean allowReply, @Nullable TdApi.FormattedText lastFileCaption, TdApi.MessageSendOptions initialSendOptions) {
+    sendMusic(view, musicFiles, needGroupMedia, allowReply, lastFileCaption, initialSendOptions, functions -> {
+      if (functions == null) {
+        return;
+      }
+      for (TdApi.Function<?> function : functions) {
+        tdlib.client().send(function, tdlib.messageHandler());
+      }
+    });
+  }
+
+  public void sendMusic (View view, List<MediaBottomFilesController.MusicEntry> musicFiles, boolean needGroupMedia, boolean allowReply, @Nullable TdApi.FormattedText lastFileCaption, TdApi.MessageSendOptions initialSendOptions, RunnableData<List<TdApi.Function<?>>> onReadyToSend) {
     if (!showSlowModeRestriction(view, initialSendOptions) && !showRestriction(view, RightId.SEND_AUDIO)) {
       TdApi.InputMessageContent[] content = new TdApi.InputMessageContent[musicFiles.size()];
       for (int i = 0; i < content.length; i++) {
@@ -9407,9 +9451,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(initialSendOptions, obtainSilentMode());
       List<TdApi.Function<?>> functions = TD.toFunctions(chat.id, getMessageThreadId(), allowReply ? obtainReplyTo() : null, finalSendOptions, content, needGroupMedia);
-      for (TdApi.Function<?> function : functions) {
-        tdlib.client().send(function, tdlib.messageHandler());
-      }
+      onReadyToSend.runWithData(functions);
+    } else {
+      onReadyToSend.runWithData(null);
     }
   }
 
@@ -9614,7 +9658,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void sendFiles (View view, final List<String> paths, boolean needGroupMedia, boolean allowReply, @Nullable TdApi.FormattedText lastFileCaption, TdApi.MessageSendOptions initialSendOptions) {
+    sendFiles(view, paths, needGroupMedia, allowReply, lastFileCaption, initialSendOptions, functions -> {
+      if (functions == null) {
+        return;
+      }
+      for (TdApi.Function<?> function : functions) {
+        tdlib.client().send(function, tdlib.messageHandler());
+      }
+    });
+  }
+
+  private void sendFiles (View view, final List<String> paths, boolean needGroupMedia, boolean allowReply, @Nullable TdApi.FormattedText lastFileCaption, TdApi.MessageSendOptions initialSendOptions, RunnableData<List<TdApi.Function<?>>> onReadyToSend) {
     if (showSlowModeRestriction(view, initialSendOptions)) {
+      onReadyToSend.runWithData(null);
       return;
     }
 
@@ -9644,6 +9700,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (restrictionFailed) {
         runOnUiThreadOptional(() -> {
           showRestriction(view, RightId.SEND_DOCS);
+          onReadyToSend.runWithData(null);
         });
         return;
       }
@@ -9653,9 +9710,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
 
       List<TdApi.Function<?>> functions = TD.toFunctions(chatId, getMessageThreadId(), replyTo, finalSendOptions, content.toArray(new TdApi.InputMessageContent[0]), needGroupMedia);
-      for (TdApi.Function<?> function : functions) {
-        tdlib.client().send(function, tdlib.messageHandler());
-      }
+      UI.post(() -> onReadyToSend.runWithData(functions));
     });
   }
 
