@@ -2076,32 +2076,34 @@ public class MessagesController extends ViewController<MessagesController.Argume
         final TdApi.InputMessageReplyTo replyTo = getCurrentReplyId();
         final ArrayList<TdApi.Function<?>> functions = new ArrayList<>();
         final boolean[] isTimeout = new boolean[1];
+        final long chatId = getChatId();
 
         setIsSendingText(true);
         manager.setSentMessages(sentMessages);
         Runnable clearInputRunnable = () -> {
-          clearInputAfterSend(true, true, replyTo, true);
-          UI.showToast(Lang.getString(R.string.SlowFileAccess), Toast.LENGTH_LONG);
-          isTimeout[0] = true;
+          if (getChatId() == chatId) {
+            clearInputAfterSend(true, true, replyTo, true);
+            UI.showToast(Lang.getString(R.string.SlowFileAccess), Toast.LENGTH_LONG);
+            isTimeout[0] = true;
+          }
         };
 
         UI.post(clearInputRunnable, MathUtils.clamp(50 * selectedItems.size(), 200, 500));
 
+        final List<TdApi.Function<?>> musicFunctions = getSendMusicFunctions(sendButton, musicEntries, true, true, caption, sendOptions);
         sendFiles(sendButton, files, true, true, !musicEntries.isEmpty() && !files.isEmpty() ? null : caption, sendOptions, filesFunctions -> {
           if (filesFunctions != null) {
             functions.addAll(filesFunctions);
           }
-          sendMusic(sendButton, musicEntries, true, true, caption, sendOptions, musicFunctions -> {
-            if (musicFunctions != null) {
-              functions.addAll(musicFunctions);
+          if (musicFunctions != null) {
+            functions.addAll(musicFunctions);
+          }
+          executeSendMessageFunctions(functions, sentMessages, true, sendOptions != null && sendOptions.schedulingState != null, success -> UI.post(() -> {
+            if (!isTimeout[0] && getChatId() == chatId) {
+              clearInputAfterSend(true, true, replyTo, true);
             }
-            executeSendMessageFunctions(functions, sentMessages, true, sendOptions != null && sendOptions.schedulingState != null, success -> UI.post(() -> {
-              if (!isTimeout[0]) {
-                clearInputAfterSend(true, true, replyTo, true);
-                UI.cancel(clearInputRunnable);
-              }
-            }));
-          });
+            UI.cancel(clearInputRunnable);
+          }));
         });
       } else {
         sendText(applyMarkdown, sendOptions);
@@ -9454,17 +9456,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void sendMusic (View view, List<MediaBottomFilesController.MusicEntry> musicFiles, boolean needGroupMedia, boolean allowReply, @Nullable TdApi.FormattedText lastFileCaption, TdApi.MessageSendOptions initialSendOptions) {
-    sendMusic(view, musicFiles, needGroupMedia, allowReply, lastFileCaption, initialSendOptions, functions -> {
-      if (functions == null) {
-        return;
-      }
-      for (TdApi.Function<?> function : functions) {
-        tdlib.client().send(function, tdlib.messageHandler());
-      }
-    });
+    List<TdApi.Function<?>> functions = getSendMusicFunctions(view, musicFiles, needGroupMedia, allowReply, lastFileCaption, initialSendOptions);
+    if (functions == null) {
+      return;
+    }
+    for (TdApi.Function<?> function : functions) {
+      tdlib.client().send(function, tdlib.messageHandler());
+    }
   }
 
-  public void sendMusic (View view, List<MediaBottomFilesController.MusicEntry> musicFiles, boolean needGroupMedia, boolean allowReply, @Nullable TdApi.FormattedText lastFileCaption, TdApi.MessageSendOptions initialSendOptions, RunnableData<List<TdApi.Function<?>>> onReadyToSend) {
+  private List<TdApi.Function<?>> getSendMusicFunctions (View view, List<MediaBottomFilesController.MusicEntry> musicFiles, boolean needGroupMedia, boolean allowReply, @Nullable TdApi.FormattedText lastFileCaption, TdApi.MessageSendOptions initialSendOptions) {
     if (!showSlowModeRestriction(view, initialSendOptions) && !showRestriction(view, RightId.SEND_AUDIO)) {
       TdApi.InputMessageContent[] content = new TdApi.InputMessageContent[musicFiles.size()];
       for (int i = 0; i < content.length; i++) {
@@ -9473,11 +9474,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         content[i] = tdlib.filegen().createThumbnail(new TdApi.InputMessageAudio(TD.createInputFile(musicFile.getPath(), musicFile.getMimeType()), null, (int) (musicFile.getDuration() / 1000l), musicFile.getTitle(), musicFile.getArtist(), caption), isSecretChat());
       }
       TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(initialSendOptions, obtainSilentMode());
-      List<TdApi.Function<?>> functions = TD.toFunctions(chat.id, getMessageThreadId(), allowReply ? obtainReplyTo() : null, finalSendOptions, content, needGroupMedia);
-      onReadyToSend.runWithData(functions);
-    } else {
-      onReadyToSend.runWithData(null);
+      return TD.toFunctions(chat.id, getMessageThreadId(), allowReply ? obtainReplyTo() : null, finalSendOptions, content, needGroupMedia);
     }
+    return null;
   }
 
   public boolean sendRecord (View view, final TGRecord record, boolean allowReply, TdApi.MessageSendOptions initialSendOptions) {
