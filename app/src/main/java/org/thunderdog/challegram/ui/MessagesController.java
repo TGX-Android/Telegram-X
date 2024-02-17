@@ -3375,6 +3375,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return false;
     }
 
+    if (hasAttachedFiles()) {
+      return false;
+    }
+
     if (hasEditedChanges()) {
       return false;
     }
@@ -8335,6 +8339,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
       } else {
         showUnsavedChangesPromptBeforeLeaving(Lang.getString(R.string.DiscardEditMsgHint), Lang.getString(R.string.DiscardEditMsg), null);
       }
+      return true;
+    }
+
+    if (hasAttachedFiles()) {
+      showUnsavedChangesPromptBeforeLeaving(Lang.getString(R.string.DiscardCaptionHint), Lang.getString(R.string.DiscardEditCaption), null);
       return true;
     }
 
