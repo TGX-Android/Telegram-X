@@ -1123,51 +1123,131 @@ public class TD {
 
   public static TdApi.InputMessageContent toInputMessageContent (String filePath, TdApi.InputFile inputFile, @NonNull FileInfo info, TdApi.FormattedText caption, boolean allowAudio, boolean allowAnimation, boolean allowVideo, boolean allowDocs, boolean hasSpoiler) {
     if (!StringUtils.isEmpty(info.mimeType)) {
-      if (allowAudio && info.mimeType.startsWith("audio/") && !info.mimeType.equals("audio/ogg")) {
+      boolean isContent = filePath.startsWith("content://");
+      boolean isAudio = info.mimeType.startsWith("audio/") && !info.mimeType.equals("audio/ogg");
+      boolean isVideo = info.mimeType.startsWith("video/");
+
+      if (isAudio && allowAudio) {
+        // TODO rework U.MediaMetadata to support audio
         String title = null, performer = null;
-        int duration = 0;
-        MediaMetadataRetriever retriever;
-        try {
-          retriever = U.openRetriever(filePath);
-        } catch (Throwable ignored) {
-          retriever = null;
-        }
-        if (retriever != null) {
+        long durationMs = 0;
+
+        if (isContent) {
+          Uri uri = Uri.parse(filePath);
+          List<String> columns = new ArrayList<>();
+          columns.add(MediaStore.MediaColumns.TITLE);
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            columns.add(MediaStore.MediaColumns.DURATION);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+              columns.add(MediaStore.MediaColumns.ARTIST);
+              columns.add(MediaStore.MediaColumns.AUTHOR);
+            }
+          }
+
+          try (Cursor c = UI.getContext().getContentResolver().query(uri, columns.toArray(new String[0]), null, null, null)) {
+            if (c != null && c.moveToFirst()) {
+              title = c.getString(0);
+              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                durationMs = c.getLong(1);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                  performer = c.getString(2);
+                  if (StringUtils.isEmpty(performer)) {
+                    performer = c.getString(3);
+                  }
+                }
+              }
+              return new TdApi.InputMessageAudio(inputFile, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), title, performer, caption);
+            }
+          } catch (Throwable t) {
+            Log.w("Unable to fetch audio information", t);
+          }
+        } else {
+          MediaMetadataRetriever retriever;
           try {
-            duration = StringUtils.parseInt(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)) / 1000;
-            title = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
-            performer = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
-            if (StringUtils.isEmpty(performer)) {
-              performer = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_AUTHOR);
-            }
-          } finally {
-            U.closeRetriever(retriever);
+            retriever = U.openRetriever(filePath);
+          } catch (Throwable ignored) {
+            retriever = null;
           }
+          if (retriever != null) {
+            try {
+              durationMs = StringUtils.parseLong(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION));
+              title = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
+              performer = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
+              if (StringUtils.isEmpty(performer)) {
+                performer = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_AUTHOR);
+              }
+            } finally {
+              U.closeRetriever(retriever);
+            }
+          }
+          return new TdApi.InputMessageAudio(inputFile, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), title, performer, caption);
         }
-        return new TdApi.InputMessageAudio(inputFile, null, duration, title, performer, caption);
       }
-      if (info.mimeType.startsWith("video/")) {
-        try {
-          U.MediaMetadata metadata = U.getMediaMetadata(filePath);
-          if (metadata != null) {
-            int durationSeconds = (int) metadata.getDuration(TimeUnit.SECONDS);
-            if (metadata.hasVideo) {
-              int videoWidth = metadata.width;
-              int videoHeight = metadata.height;
-              if (U.isRotated(metadata.rotation)) {
-                int temp = videoWidth;
-                videoWidth = videoHeight;
-                videoHeight = temp;
+      if (isVideo && (allowVideo || allowAnimation)) {
+        long durationMs = 0;
+
+        if (isContent) {
+          Uri uri = Uri.parse(filePath);
+          List<String> columns = new ArrayList<>();
+          columns.add(MediaStore.MediaColumns.WIDTH);
+          columns.add(MediaStore.MediaColumns.HEIGHT);
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            columns.add(MediaStore.MediaColumns.ORIENTATION);
+            columns.add(MediaStore.MediaColumns.DURATION);
+            columns.add(MediaStore.MediaColumns.NUM_TRACKS);
+          }
+
+          try (Cursor c = UI.getContext().getContentResolver().query(uri, columns.toArray(new String[0]), null, null, null)) {
+            if (c != null && c.moveToFirst()) {
+              int width = c.getInt(0);
+              int height = c.getInt(1);
+              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                int orientation = c.getInt(2);
+                durationMs = c.getLong(3);
+                int numTracks = c.getInt(4);
+
+                if (U.isRotated(orientation)) {
+                  int temp = width;
+                  width = height;
+                  height = temp;
+                }
+
+                if (allowAnimation && durationMs < TimeUnit.SECONDS.toMillis(30) && info.knownSize < ByteUnit.MB.toBytes(10) && numTracks == 1) {
+                  return new TdApi.InputMessageAnimation(inputFile, null, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), width, height, caption, hasSpoiler);
+                } else if (allowVideo && durationMs > 0) {
+                  return new TdApi.InputMessageVideo(inputFile, null, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), width, height, U.canStreamVideo(inputFile), caption, null, hasSpoiler);
+                }
               }
-              if (allowAnimation && durationSeconds < 30 && info.knownSize < ByteUnit.MB.toBytes(10) && !metadata.hasAudio) {
-                return new TdApi.InputMessageAnimation(inputFile, null, null, durationSeconds, videoWidth, videoHeight, caption, hasSpoiler);
-              } else if (allowVideo && durationSeconds > 0) {
-                return new TdApi.InputMessageVideo(inputFile, null, null, durationSeconds, videoWidth, videoHeight, U.canStreamVideo(inputFile), caption, null, hasSpoiler);
+              if (width > 0 && height > 0 && allowVideo) {
+                return new TdApi.InputMessageVideo(inputFile, null, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), width, height, U.canStreamVideo(inputFile), caption, null, hasSpoiler);
               }
             }
+          } catch (Throwable t) {
+            Log.w("Unable to fetch audio information", t);
           }
-        } catch (Throwable t) {
-          Log.w("Cannot extract media metadata", t);
+        } else {
+          try {
+            U.MediaMetadata metadata = U.getMediaMetadata(filePath);
+            if (metadata != null) {
+              durationMs = metadata.getDuration(TimeUnit.MILLISECONDS);
+              if (metadata.hasVideo) {
+                int videoWidth = metadata.width;
+                int videoHeight = metadata.height;
+                if (U.isRotated(metadata.rotation)) {
+                  int temp = videoWidth;
+                  videoWidth = videoHeight;
+                  videoHeight = temp;
+                }
+                if (allowAnimation && durationMs < TimeUnit.SECONDS.toMillis(30) && info.knownSize < ByteUnit.MB.toBytes(10) && !metadata.hasAudio) {
+                  return new TdApi.InputMessageAnimation(inputFile, null, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), videoWidth, videoHeight, caption, hasSpoiler);
+                } else if (allowVideo && durationMs > 0) {
+                  return new TdApi.InputMessageVideo(inputFile, null, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), videoWidth, videoHeight, U.canStreamVideo(inputFile), caption, null, hasSpoiler);
+                }
+              }
+            }
+          } catch (Throwable t) {
+            Log.w("Cannot extract media metadata", t);
+          }
         }
       }
     }
