@@ -1176,6 +1176,7 @@
   <string name="YouSetAutoDeletePostsMonths_one">You set posts to auto-delete in %1$s month</string>
   <string name="YouSetAutoDeletePostsMonths_other">You set posts to auto-delete in %1$s months</string>
 
+  <string name="Caption">Сaption</string>
   <string name="AddCaption">Add a caption…</string>
   <string name="Enhance">Enhance</string>
   <string name="Exposure">Exposure</string>
@@ -3639,6 +3640,7 @@
   <string name="DiscardEditMsgHint">Are you sure you want to discard edited message? These changes will be lost.</string>
 
   <string name="DiscardEditCaption">Discard caption</string>
+  <string name="DiscardCaptionHint">Are you sure you want to discard caption? These changes will be lost.</string>
   <string name="DiscardEditCaptionHint">Are you sure you want to discard edited caption? These changes will be lost.</string>
 
   <string name="ChatContentScreenshot">Took a screenshot</string>
@@ -5192,5 +5194,8 @@
   <string name="ThisChatCantBeShared">This chat can’t be shared</string>
   <string name="ArchiveAsFolder">Archive as Folder</string>
   <string name="HoldAndDragToReorder">Hold and drag to reorder</string>
+
+
+  <string name="SlowFileAccess">Slow file access. Message will be sent after reading the files</string>
 
 </resources>
