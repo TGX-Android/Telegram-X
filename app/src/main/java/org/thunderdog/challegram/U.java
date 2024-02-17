@@ -813,6 +813,10 @@ public class U {
     return getNotificationChannel("other", R.string.NotificationChannelOther);
   }
 
+  public static String getMaybeNotificationChannel () {
+    return getNotificationChannel("maybe", R.string.NotificationChannelMaybe);
+  }
+
   public static String getNotificationChannel (String id, int stringRes) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       android.app.NotificationChannel channel = new android.app.NotificationChannel(id, Lang.getString(stringRes), NotificationManager.IMPORTANCE_LOW);

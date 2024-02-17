@@ -43,6 +43,7 @@ import org.thunderdog.challegram.navigation.SettingsWrap;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.sync.TemporaryNotification;
 import org.thunderdog.challegram.telegram.AccountSwitchReason;
 import org.thunderdog.challegram.telegram.GlobalAccountListener;
 import org.thunderdog.challegram.telegram.GlobalCountersListener;
@@ -66,6 +67,7 @@ import org.thunderdog.challegram.ui.CallController;
 import org.thunderdog.challegram.ui.CreateChannelController;
 import org.thunderdog.challegram.ui.CreateGroupController;
 import org.thunderdog.challegram.ui.EditChatFolderController;
+import org.thunderdog.challegram.ui.EditChatFolderInviteLinkController;
 import org.thunderdog.challegram.ui.EditNameController;
 import org.thunderdog.challegram.ui.IntroController;
 import org.thunderdog.challegram.ui.ListItem;
@@ -88,7 +90,6 @@ import org.thunderdog.challegram.ui.SettingsNotificationController;
 import org.thunderdog.challegram.ui.SettingsPrivacyController;
 import org.thunderdog.challegram.ui.SettingsPrivacyKeyController;
 import org.thunderdog.challegram.ui.SettingsThemeController;
-import org.thunderdog.challegram.ui.EditChatFolderInviteLinkController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.widget.GearView;
@@ -665,12 +666,6 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     MainController c = new MainController(this, account.tdlib());
     c.getValue();
     navigation.insertController(c, 0);
-  }
-
-  @Override
-  public void onPause () {
-    super.onPause();
-    Log.i("MainActivity.onPause");
   }
 
   @Override
@@ -1439,6 +1434,28 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
   }
 
   @Override
+  public void onPause () {
+    super.onPause();
+    Log.i("MainActivity.onPause");
+    /*if (BuildConfig.DEBUG && Settings.instance().getNewSetting(Settings.SETTING_FLAG_FOREGROUND_SERVICE_ENABLED)) {
+      tdlib.ui().postDelayed(() -> {
+        ForegroundService.startForegroundTask(this,
+          Lang.getString(R.string.RetrievingMessages), Lang.getString(R.string.RetrievingText, tdlib.account().getLongName()),
+          U.getOtherNotificationChannel(),
+          0,
+          -1,
+          tdlib.accountId()
+        );
+        tdlib.sync(-1, () -> {
+          runOnUiThread(() -> {
+            ForegroundService.stopForegroundTask(this, -1, tdlib.accountId());
+          });
+        }, true, true);
+      }, 2000);
+    }*/
+  }
+
+  @Override
   public void onResume () {
     super.onResume();
     Log.i("MainActivity.onResume");
@@ -1447,6 +1464,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     tdlib.context().global().notifyResolvableProblemAvailabilityMightHaveChanged();
     tdlib.context().dateManager().checkCurrentDate();
     UI.startNotificationService();
+    TemporaryNotification.hide(this);
   }
 
   @Override

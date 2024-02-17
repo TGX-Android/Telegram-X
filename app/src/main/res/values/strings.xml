@@ -3423,6 +3423,9 @@
   <string name="RetrievingMessages">Checking for new messages</string>
   <string name="RetrievingText">Account: %1$s</string>
   <string name="RetrieveMessagesError">Failed to fetch messages. Tap to resolve.</string>
+  <string name="MissingMessages">You may have a new message</string>
+  <string name="MissingMessagesText">Account: %1$s</string>
+  <string name="NotificationChannelMaybe">Missed notifications</string>
 
   <string name="AllowNotifications">Display Notifications Content</string>
   <string name="AllowNotificationsInfo">If enabled, you will see notifications content when app is locked, however, actions such as Reply or Mark as Read will not be available until you unlock the app.</string>
@@ -5195,7 +5198,11 @@
   <string name="ArchiveAsFolder">Archive as Folder</string>
   <string name="HoldAndDragToReorder">Hold and drag to reorder</string>
 
-
   <string name="SlowFileAccess">Slow file access. Message will be sent after reading the files</string>
+
+  <string name="ForegroundSync">Fetch missing notifications</string>
+  <string name="ForegroundSyncDesc">Allow app to show **\"Checking for new messages\"** in the system tray to fetch missing data required to display a notification about a new message.</string>
+  <string name="ForegroundSyncDescOn">You may periodically see **\"Checking for new messages\"** in the system tray while app is closed until all notifications are properly shown.</string>
+  <string name="ForegroundSyncDescOff">You may see **\"You may have a new message\"** notification in the system tray when some notifications couldn\'t be shown.</string>
 
 </resources>

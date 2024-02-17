@@ -759,6 +759,7 @@
   <item type="id" name="btn_setMsgSender" />
   <item type="id" name="btn_sendNoSound" />
   <item type="id" name="btn_sendAsFile" />
+  <item type="id" name="btn_foregroundSync" />
 
   <item type="id" name="btn_ledDisabled" />
 
