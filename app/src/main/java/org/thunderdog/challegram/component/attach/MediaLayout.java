@@ -458,17 +458,12 @@ public class MediaLayout extends FrameLayoutFix implements
   private PopupLayout popupLayout;
 
   public void show () {
-    show(false);
-  }
-
-  public void show (boolean overlayStatusBar) {
     popupLayout = new PopupLayout(getContext());
     popupLayout.setTouchDownInterceptor(this);
     popupLayout.setActivityListener(this);
     popupLayout.setHideKeyboard();
     popupLayout.setDismissListener(this);
     popupLayout.setNeedRootInsets();
-    popupLayout.setOverlayStatusBar(overlayStatusBar);
     popupLayout.init(true);
     popupLayout.showAnimatedPopupView(this, this);
   }

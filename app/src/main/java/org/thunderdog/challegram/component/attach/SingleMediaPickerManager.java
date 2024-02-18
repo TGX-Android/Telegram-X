@@ -62,7 +62,7 @@ public class SingleMediaPickerManager extends MediaLayoutManager {
       openingMediaLayout = true;
       mediaLayout.preload(() -> {
         if (!context.isDestroyed()) {
-          mediaLayout.show(true);
+          mediaLayout.show();
         }
         openingMediaLayout = false;
       }, 300L);

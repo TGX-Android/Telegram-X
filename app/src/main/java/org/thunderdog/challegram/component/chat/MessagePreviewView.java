@@ -31,6 +31,7 @@ import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.helper.LinkPreview;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
+import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.ChatListener;
@@ -374,6 +375,16 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
       this.contentPreview = new ContentPreview(data.quote.text, false);
     } else {
       this.contentPreview = ContentPreview.getChatListPreview(tdlib, data.message.chatId, data.messageDeleted ? null : data.message, true);
+    }
+    if (data.forceDisplayMedia instanceof ImageGalleryFile) {
+      ImageGalleryFile imageGalleryFile = (ImageGalleryFile) data.forceDisplayMedia;
+      if (imageGalleryFile.isVideo()) {
+        this.contentPreview.setEmoji(ContentPreview.EMOJI_VIDEO);
+        this.contentPreview.setPlaceholderText(R.string.ChatContentVideo);
+      } else {
+        this.contentPreview.setEmoji(ContentPreview.EMOJI_PHOTO);
+        this.contentPreview.setPlaceholderText(R.string.ChatContentPhoto);
+      }
     }
     if (contentPreview.hasRefresher() && !(BitwiseUtils.hasFlag(data.options, Options.IGNORE_ALBUM_REFRESHERS) && contentPreview.isMediaGroup())) {
       contentPreview.refreshContent((chatId, messageId, newPreview, oldPreview) -> {

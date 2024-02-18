@@ -8609,7 +8609,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     final ArrayList<View> attachedViews = new ArrayList<>(7);
     final Args args = getArgumentsStrict();
 
-    TdApi.Chat chat = getArgumentsStrict().receiverChatId != 0 ? tdlib.chat(getArgumentsStrict().receiverChatId) : null;
+    TdApi.Chat chat = args.receiverChatId != 0 ? tdlib.chat(args.receiverChatId) : null;
 
     mediaView.setOffsets(0, 0, 0, 0, 0); // Screen.dp(56f)
     editWrap = new FrameLayoutFix(context);
@@ -9067,7 +9067,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     ShareController c = new ShareController(context, tdlib);
     CharSequence caption = Td.isEmpty(item2.getCaption()) ? null : TD.toCharSequence(item2.getCaption());
     c.setArguments(new ShareController.Args(item2, caption, caption).setAfter(this::forceClose));
-    c.show(true);
+    c.show();
   }
 
   @Nullable

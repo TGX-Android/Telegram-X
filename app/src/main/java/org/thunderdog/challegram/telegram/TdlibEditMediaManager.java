@@ -36,6 +36,7 @@ public class TdlibEditMediaManager implements MessageEditMediaUploadCallback {
   public void editMediaStart (long chatId, long messageId, TdApi.InputMessageContent inputMessageContent, @Nullable ImageFile preview) {
     final MessageEditMediaPending pendingEdit = new MessageEditMediaPending(tdlib, chatId, messageId, inputMessageContent, preview);
     pendingEdit.init(this);
+    editMediaCancel(chatId, messageId);
     addPendingEditAndNotify(pendingEdit);
   }
 
