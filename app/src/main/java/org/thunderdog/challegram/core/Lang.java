@@ -1074,6 +1074,7 @@ public class Lang {
       case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR:
       case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR:
       case TdApi.MessagePremiumGiveaway.CONSTRUCTOR:
+      case TdApi.MessageChatBoost.CONSTRUCTOR:
       case TdApi.MessageBasicGroupChatCreate.CONSTRUCTOR:
       case TdApi.MessageCall.CONSTRUCTOR:
       case TdApi.MessageChatAddMembers.CONSTRUCTOR:
@@ -1115,7 +1116,7 @@ public class Lang {
       case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
         break;
       default:
-        Td.assertMessageContent_cfe6660a();
+        Td.assertMessageContent_4113f183();
         throw Td.unsupported(message.content);
     }
     String format = Lang.getString(res);

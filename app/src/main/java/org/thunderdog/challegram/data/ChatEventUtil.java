@@ -93,6 +93,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventHasProtectedContentToggled.CONSTRUCTOR:
       case TdApi.ChatEventIsAllHistoryAvailableToggled.CONSTRUCTOR:
       case TdApi.ChatEventStickerSetChanged.CONSTRUCTOR:
+      case TdApi.ChatEventCustomEmojiStickerSetChanged.CONSTRUCTOR:
       case TdApi.ChatEventLinkedChatChanged.CONSTRUCTOR:
       case TdApi.ChatEventSlowModeDelayChanged.CONSTRUCTOR:
       case TdApi.ChatEventLocationChanged.CONSTRUCTOR:
@@ -129,7 +130,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
         return ActionMessageMode.ONLY_FULL;
       default: {
-        Td.assertChatEventAction_57377883();
+        Td.assertChatEventAction_c4c039bc();
         throw Td.unsupported(action);
       }
     }
@@ -172,6 +173,8 @@ public class ChatEventUtil {
         return new TGMessageService(context, msg, (TdApi.ChatEventIsAllHistoryAvailableToggled) action);
       case TdApi.ChatEventStickerSetChanged.CONSTRUCTOR:
         return new TGMessageService(context, msg, (TdApi.ChatEventStickerSetChanged) action);
+      case TdApi.ChatEventCustomEmojiStickerSetChanged.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventCustomEmojiStickerSetChanged) action);
       case TdApi.ChatEventLinkedChatChanged.CONSTRUCTOR:
         return new TGMessageService(context, msg, (TdApi.ChatEventLinkedChatChanged) action);
       case TdApi.ChatEventSlowModeDelayChanged.CONSTRUCTOR:
@@ -226,7 +229,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
         throw new IllegalArgumentException(action.toString());
       default: {
-        Td.assertChatEventAction_57377883();
+        Td.assertChatEventAction_c4c039bc();
         throw Td.unsupported(action);
       }
     }
@@ -620,6 +623,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventHasProtectedContentToggled.CONSTRUCTOR:
       case TdApi.ChatEventIsAllHistoryAvailableToggled.CONSTRUCTOR:
       case TdApi.ChatEventStickerSetChanged.CONSTRUCTOR:
+      case TdApi.ChatEventCustomEmojiStickerSetChanged.CONSTRUCTOR:
       case TdApi.ChatEventLinkedChatChanged.CONSTRUCTOR:
       case TdApi.ChatEventSlowModeDelayChanged.CONSTRUCTOR:
       case TdApi.ChatEventLocationChanged.CONSTRUCTOR:
@@ -641,7 +645,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventForumTopicToggleIsHidden.CONSTRUCTOR:
         throw new IllegalArgumentException(action.toString());
       default: {
-        Td.assertChatEventAction_57377883();
+        Td.assertChatEventAction_c4c039bc();
         throw Td.unsupported(action);
       }
     }
@@ -933,6 +937,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
       case TdApi.ChatEventSlowModeDelayChanged.CONSTRUCTOR:
       case TdApi.ChatEventStickerSetChanged.CONSTRUCTOR:
+      case TdApi.ChatEventCustomEmojiStickerSetChanged.CONSTRUCTOR:
       case TdApi.ChatEventUsernameChanged.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatMuteNewParticipantsToggled.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
@@ -950,7 +955,7 @@ public class ChatEventUtil {
 
       // Unsupported
       default: {
-        Td.assertChatEventAction_57377883();
+        Td.assertChatEventAction_c4c039bc();
         throw Td.unsupported(event.action);
       }
     }

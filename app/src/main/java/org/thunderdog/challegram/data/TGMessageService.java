@@ -376,7 +376,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              Td.assertMessageContent_cfe6660a();
+              Td.assertMessageContent_4113f183();
               throw Td.unsupported(message.content);
           }
           String format = Lang.getString(staticResId);
@@ -1485,6 +1485,26 @@ public final class TGMessageService extends TGMessageServiceImpl {
     long stickerSetId = stickerSetChanged.newStickerSetId != 0 ?
       stickerSetChanged.newStickerSetId :
       stickerSetChanged.oldStickerSetId;
+    if (stickerSetId != 0) {
+      setOnClickListener(() ->
+        tdlib.ui().showStickerSet(controller(), stickerSetId, openParameters())
+      );
+    }
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventCustomEmojiStickerSetChanged customEmojiStickerSetChanged) {
+    super(context, msg);
+    setTextCreator(() ->
+      getText(
+        customEmojiStickerSetChanged.newStickerSetId != 0 ?
+          R.string.XChangedGroupEmojiSet :
+          R.string.XRemovedGroupStickerSet,
+        new SenderArgument(sender)
+      )
+    );
+    long stickerSetId = customEmojiStickerSetChanged.newStickerSetId != 0 ?
+      customEmojiStickerSetChanged.newStickerSetId :
+      customEmojiStickerSetChanged.oldStickerSetId;
     if (stickerSetId != 0) {
       setOnClickListener(() ->
         tdlib.ui().showStickerSet(controller(), stickerSetId, openParameters())
