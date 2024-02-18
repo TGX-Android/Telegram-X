@@ -61,7 +61,6 @@ import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
-import me.vkryl.android.util.ClickHelper;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
@@ -74,7 +73,6 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
 
   private FileProgressComponent fileProgress;
   private boolean disableProgressInteract;
-  private boolean needCloseButton;
   private TdApi.File targetFile;
 
   private static final float AVATAR_PLACEHOLDER_RADIUS = 25f;
@@ -536,33 +534,12 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
     if (isTrack()) {
       lastAvailWidth -= Screen.dp(16f) + Screen.dp(23f) + Screen.dp(9f);
     }
-    if (needCloseButton) {
-      lastAvailWidth -= Screen.dp(36);
-    }
     trimmedTitle = !StringUtils.isEmpty(title) ? new Text.Builder(title, lastAvailWidth, Paints.getTitleStyleProvider(), TextColorSets.Regular.NORMAL).singleLine().allBold().build() : null;
     trimmedDesc = !StringUtils.isEmpty(description) ? new Text.Builder(description, lastAvailWidth, Paints.getSubtitleStyleProvider(), TextColorSets.Regular.LIGHT).singleLine().build() : null;
   }
 
-  public InlineResultCommon setDisableProgressInteract (boolean disableProgressInteract) {
-    this.disableProgressInteract = disableProgressInteract;
-    return this;
-  }
-
-  public void setNeedCloseButton (boolean needCloseButton) {
-    this.needCloseButton = needCloseButton;
-  }
-
-  private ClickHelper clickHelper;
-
-  public void setClickHelper (ClickHelper clickHelper) {
-    this.clickHelper = clickHelper;
-  }
-
   @Override
   public boolean onTouchEvent (View view, MotionEvent e) {
-    if (clickHelper != null && clickHelper.onTouchEvent(view, e)) {
-      return true;
-    }
     return !disableProgressInteract && fileProgress != null && fileProgress.onTouchEvent(view, e);
   }
 
@@ -627,11 +604,6 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
         }
       }
       fileProgress.draw(view, c);
-    }
-
-    if (needCloseButton) {
-      Drawable drawable = view.getSparseDrawable(R.drawable.baseline_close_20, ColorId.NONE);
-      Drawables.draw(c, drawable, viewWidth - Screen.dp(11) - drawable.getMinimumWidth(), rectF.centerY() - drawable.getMinimumHeight() / 2f, Paints.getIconGrayPorterDuffPaint());
     }
 
     if (trimmedTitle != null) {

@@ -89,6 +89,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
@@ -953,6 +954,9 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           } else {
             view.setData(R.string.Default);
           }
+        } else if (itemId == R.id.btn_foregroundSync) {
+          boolean value = Settings.instance().getNewSetting(Settings.SETTING_FLAG_FOREGROUND_SERVICE_ENABLED);
+          view.getToggler().setRadioEnabled(value, isUpdate);
         } else if (itemId == R.id.btn_inApp_chatSounds) {
           view.getToggler().setRadioEnabled(tdlib.notifications().areInAppChatSoundsEnabled(), isUpdate);
         } else if (itemId == R.id.btn_customChat_pinnedMessages) {
@@ -1203,6 +1207,13 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_notifications_snooze, R.drawable.baseline_bullhorn_24, R.string.Channels).setData(tdlib.notifications().scopeChannel()));
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
+        if (!Config.FOREGROUND_SYNC_ALWAYS_ENABLED) {
+          items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+          items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_foregroundSync, 0, R.string.ForegroundSync));
+          items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+          items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, R.string.ForegroundSyncDesc)));
+        }
+
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
         items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_archiveSettings, 0, R.string.ArchiveSettings));
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
@@ -1438,6 +1449,12 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     } else if (viewId == R.id.btn_customChat_preview) {
       tdlib.notifications().toggleShowPreview(customChatId);
       adapter.updateValuedSettingById(R.id.btn_customChat_preview);
+    } else if (viewId == R.id.btn_foregroundSync) {
+      boolean value = adapter.toggleView(v);
+      Settings.instance().setNewSetting(Settings.SETTING_FLAG_FOREGROUND_SERVICE_ENABLED, value);
+      context.tooltipManager().builder(v).icon(R.drawable.baseline_info_24)
+        .show(tdlib, Lang.getMarkdownString(this, value ? R.string.ForegroundSyncDescOn : R.string.ForegroundSyncDescOff))
+        .hideDelayed(true, 5, TimeUnit.SECONDS);
     } else if (viewId == R.id.btn_inApp_chatSounds) {
       tdlib.notifications().toggleInAppChatSoundsEnabled();
       adapter.updateValuedSettingById(R.id.btn_inApp_chatSounds);

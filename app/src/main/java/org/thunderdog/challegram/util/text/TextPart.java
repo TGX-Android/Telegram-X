@@ -244,7 +244,6 @@ public class TextPart {
   }
 
   private @Nullable TextMedia media;
-  private int displayMediaKeyOffset = -1;
   private EmojiInfo emojiInfo;
 
   public void setEmoji (@Nullable EmojiInfo emoji) {
