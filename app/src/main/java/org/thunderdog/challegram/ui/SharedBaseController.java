@@ -510,7 +510,7 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
 
   protected TdApi.Function<?> buildRequest (final long chatId, final long messageThreadId, final String query, final long offset, final String secretOffset, final int limit) {
     if (StringUtils.isEmpty(query) || !ChatId.isSecret(chatId)) {
-      return new TdApi.SearchChatMessages(chatId, query, null, offset, 0, limit, provideSearchFilter(), messageThreadId, /*TODO*/ null);
+      return new TdApi.SearchChatMessages(chatId, query, null, offset, 0, limit, provideSearchFilter(), messageThreadId, 0);
     } else {
       return new TdApi.SearchSecretMessages(chatId, query, secretOffset, limit, provideSearchFilter());
     }

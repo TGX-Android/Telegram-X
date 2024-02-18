@@ -1523,7 +1523,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
         playlistSearchNextFromMessageId != 0 ? Math.min(minMessageId, playlistSearchNextFromMessageId) : minMessageId,
         0, 100, filter,
         playlistMessageThreadId,
-        null
+        0
       ) : null;
       requestNew = allowNewer ? playlistInlineQuery != null ? makeNextInlineQuery() : new TdApi.SearchChatMessages(
         chatId,
@@ -1532,7 +1532,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
         -99, 100,
         filter,
         playlistMessageThreadId,
-        null
+        0
       ) : null;
     }
 

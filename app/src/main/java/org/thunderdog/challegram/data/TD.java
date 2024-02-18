@@ -1094,7 +1094,7 @@ public class TD {
         return false;
       }
       default: {
-        Td.assertMessageContent_cfe6660a();
+        Td.assertMessageContent_4113f183();
       }
     }
     return true;
@@ -5128,7 +5128,7 @@ public class TD {
       case TdApi.MessageExpiredVideoNote.CONSTRUCTOR:
         return true;
       default:
-        Td.assertMessageContent_cfe6660a();
+        Td.assertMessageContent_4113f183();
         break;
     }
     return false;

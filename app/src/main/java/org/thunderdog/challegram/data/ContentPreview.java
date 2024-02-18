@@ -651,6 +651,7 @@ public class ContentPreview {
       case TdApi.MessageUnsupported.CONSTRUCTOR:
       case TdApi.MessageUsersShared.CONSTRUCTOR:
       case TdApi.MessageChatShared.CONSTRUCTOR:
+      case TdApi.MessageChatBoost.CONSTRUCTOR:
       case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
       case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
       case TdApi.MessageForumTopicEdited.CONSTRUCTOR:
@@ -665,7 +666,7 @@ public class ContentPreview {
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_cfe6660a();
+        Td.assertMessageContent_4113f183();
         throw Td.unsupported(message.content);
     }
     Refresher refresher = null;
@@ -1332,6 +1333,7 @@ public class ContentPreview {
       case TdApi.MessagePassportDataSent.CONSTRUCTOR:
       case TdApi.MessageChatSetBackground.CONSTRUCTOR:
       case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
+      case TdApi.MessageChatBoost.CONSTRUCTOR:
         // TODO support these previews
         return new ContentPreview(EMOJI_QUIZ, R.string.UnsupportedMessage);
         
@@ -1343,7 +1345,7 @@ public class ContentPreview {
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_cfe6660a();
+        Td.assertMessageContent_4113f183();
         throw new UnsupportedOperationException(Integer.toString(type));
     }
   }

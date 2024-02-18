@@ -4791,7 +4791,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
           return Td.textOrCaption(messageText);
       }
-      Td.assertMessageContent_cfe6660a();
+      Td.assertMessageContent_4113f183();
       throw Td.unsupported(messageText);
     }
     return getPendingMessageCaption(chatId, messageId);
@@ -7685,6 +7685,23 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     cache.deleteOutputMessages(update.chatId, update.messageIds);
   }
 
+  // Updates: SAVED MESSAGES
+
+  @TdlibThread
+  private void updateSavedMessagesTopic (TdApi.UpdateSavedMessagesTopic update) {
+
+  }
+
+  @TdlibThread
+  private void updateSavedMessagesTopicCount (TdApi.UpdateSavedMessagesTopicCount update) {
+
+  }
+
+  @TdlibThread
+  private void updateSavedMessagesTags (TdApi.UpdateSavedMessagesTags update) {
+
+  }
+
   // Updates: CHATS
 
   @TdlibThread
@@ -9670,12 +9687,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       }
 
       // Saved messages
-      case TdApi.UpdatePinnedSavedMessagesTopics.CONSTRUCTOR: {
-        // TODO
+      case TdApi.UpdateSavedMessagesTopic.CONSTRUCTOR: {
+        updateSavedMessagesTopic((TdApi.UpdateSavedMessagesTopic) update);
+        break;
+      }
+      case TdApi.UpdateSavedMessagesTopicCount.CONSTRUCTOR: {
+        updateSavedMessagesTopicCount((TdApi.UpdateSavedMessagesTopicCount) update);
         break;
       }
       case TdApi.UpdateSavedMessagesTags.CONSTRUCTOR: {
-        // TODO
+        updateSavedMessagesTags((TdApi.UpdateSavedMessagesTags) update);
         break;
       }
 
@@ -10068,7 +10089,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         throw Td.unsupported(update);
       }
       default: {
-        Td.assertUpdate_f1964de1();
+        Td.assertUpdate_35ea7792();
         throw Td.unsupported(update);
       }
     }
@@ -10338,7 +10359,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     boolean needFilter = !StringUtils.isEmpty(query) || filter != null;
     TdApi.Function<?> function;
     if (needFilter) {
-      function = new TdApi.SearchChatMessages(chatId, query, null, 0, 0, 100, filter, 0, null);
+      function = new TdApi.SearchChatMessages(chatId, query, null, 0, 0, 100, filter, 0, 0);
     } else {
       function = new TdApi.GetChatHistory(chatId, 0, 0, 0, false);
     }
@@ -11034,6 +11055,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
         case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
         case TdApi.MessageGiftedPremium.CONSTRUCTOR:
+        case TdApi.MessageChatBoost.CONSTRUCTOR:
         case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
         case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR:
         case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR:
@@ -11057,7 +11079,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           // assuming we want to check RightId.SEND_BASIC_MESSAGES
           return getBasicMessageRestrictionText(chat);
         default:
-          Td.assertMessageContent_cfe6660a();
+          Td.assertMessageContent_4113f183();
           throw Td.unsupported(message.content);
       }
     }
