@@ -1229,7 +1229,6 @@
 
   <item type="id" name="btn_caption_done" />
   <item type="id" name="btn_caption_emoji" />
-  <item type="id" name="btn_addCaption" />
 
   <item type="id" name="btn_photos" />
   <item type="id" name="btn_voice" />
