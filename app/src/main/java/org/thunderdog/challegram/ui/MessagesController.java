@@ -2098,7 +2098,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           if (musicFunctions != null) {
             functions.addAll(musicFunctions);
           }
-          executeSendMessageFunctions(functions, sentMessages, true, sendOptions != null && sendOptions.schedulingState != null, success -> UI.post(() -> {
+          executeSendMessageFunctions(functions, sentMessages, sendOptions != null && sendOptions.schedulingState != null, success -> UI.post(() -> {
             if (!isTimeout[0] && getChatId() == chatId) {
               clearInputAfterSend(true, true, replyTo, true);
             }
@@ -9277,12 +9277,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
 
-    final List<TdApi.Message> sentMessages = new ArrayList<>(functions.size());
-    setIsSendingText(true);
-    manager.setSentMessages(sentMessages);
-    executeSendMessageFunctions(functions, sentMessages, clearInput, finalSendOptions.schedulingState != null, success -> {
-      clearInputAfterSend(success, allowReply, replyTo, allowLinkPreview);
-    });
+    if (clearInput) {
+      final List<TdApi.Message> sentMessages = new ArrayList<>(functions.size());
+      setIsSendingText(true);
+      manager.setSentMessages(sentMessages);
+      executeSendMessageFunctions(functions, sentMessages, finalSendOptions.schedulingState != null, success -> {
+        clearInputAfterSend(success, allowReply, replyTo, allowLinkPreview);
+      });
+    } else {
+      for (TdApi.Function<?> function : functions) {
+        tdlib.client().send(function, tdlib.messageHandler());
+      }
+    }
   }
 
   private void clearInputAfterSend (boolean success, boolean allowReply, TdApi.InputMessageReplyTo replyTo, boolean allowLinkPreview) {
@@ -9305,93 +9311,87 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  private void executeSendMessageFunctions (List<TdApi.Function<?>> functions, List<TdApi.Message> sentMessages, boolean clearInput, final boolean isSchedule, RunnableBool onDone) {
-    if (clearInput) {
-      final int expectedCount = functions.size();
-      final int[] sentFunctionsCount = new int[1];
+  private void executeSendMessageFunctions (List<TdApi.Function<?>> functions, List<TdApi.Message> sentMessages, final boolean isSchedule, RunnableBool onDone) {
+    final int expectedCount = functions.size();
+    final int[] sentFunctionsCount = new int[1];
 
-      Client.ResultHandler handler = new Client.ResultHandler() {
-        @Override
-        public void onResult (TdApi.Object result) {
-          boolean done = false;
-          switch (result.getConstructor()) {
-            case TdApi.Message.CONSTRUCTOR: {
-              TdApi.Message message = (TdApi.Message) result;
-              sentMessages.add(message);
-              sentFunctionsCount[0] += 1;
-              int sentCount = sentFunctionsCount[0];
-              if (sentCount < expectedCount) {
-                tdlib.listeners().subscribeToUpdates(message);
-                tdlib.client().send(functions.get(sentCount), this);
-              } else {
-                done = true;
-              }
-              tdlib.messageHandler().onResult(result);
-              break;
+    Client.ResultHandler handler = new Client.ResultHandler() {
+      @Override
+      public void onResult (TdApi.Object result) {
+        boolean done = false;
+        switch (result.getConstructor()) {
+          case TdApi.Message.CONSTRUCTOR: {
+            TdApi.Message message = (TdApi.Message) result;
+            sentMessages.add(message);
+            sentFunctionsCount[0] += 1;
+            int sentCount = sentFunctionsCount[0];
+            if (sentCount < expectedCount) {
+              tdlib.listeners().subscribeToUpdates(message);
+              tdlib.client().send(functions.get(sentCount), this);
+            } else {
+              done = true;
             }
-            case TdApi.Messages.CONSTRUCTOR: {
-              TdApi.Messages messages = (TdApi.Messages) result;
+            tdlib.messageHandler().onResult(result);
+            break;
+          }
+          case TdApi.Messages.CONSTRUCTOR: {
+            TdApi.Messages messages = (TdApi.Messages) result;
+            for (TdApi.Message message: messages.messages) {
+              if (message == null) continue;
+              sentMessages.add(message);
+            }
+            sentFunctionsCount[0] += 1;
+            int sentCount = sentFunctionsCount[0];
+            if (sentCount < expectedCount) {
               for (TdApi.Message message: messages.messages) {
                 if (message == null) continue;
-                sentMessages.add(message);
+                tdlib.listeners().subscribeToUpdates(message);
               }
-              sentFunctionsCount[0] += 1;
-              int sentCount = sentFunctionsCount[0];
-              if (sentCount < expectedCount) {
-                for (TdApi.Message message: messages.messages) {
-                  if (message == null) continue;
-                  tdlib.listeners().subscribeToUpdates(message);
-                }
-                tdlib.client().send(functions.get(sentCount), this);
-              } else {
-                done = true;
-              }
-              tdlib.messageHandler().onResult(result);
-              break;
-            }
-            case TdApi.Error.CONSTRUCTOR: {
-              tdlib.ui().post(() -> {
-                if (isFocused()) {
-                  showBottomHint(TD.toErrorString(result), true);
-                } else {
-                  UI.showError(result);
-                }
-              });
-              done = true;
-              break;
-            }
-            default: {
-              throw new UnsupportedOperationException(result.toString());
-            }
-          }
-          if (done) {
-            int sentMessagesCount = sentMessages.size();
-            if (sentMessagesCount > 0) {
-              for (int i = sentMessagesCount - 1; i >= 0; i--) {
-                tdlib.listeners().unsubscribeFromUpdates(sentMessages.get(i));
-              }
-              List<TGMessage> parsedMessages = manager.parseMessages(sentMessages);
-              tdlib.ui().post(() -> {
-                if (isSchedule == areScheduled) {
-                  manager.addSentMessages(parsedMessages);
-                }
-                onDone.runWithBool(sentFunctionsCount[0] == expectedCount);
-                if (!areScheduled && isSchedule && isFocused()) {
-                  viewScheduledMessages(true);
-                }
-              });
+              tdlib.client().send(functions.get(sentCount), this);
             } else {
-              tdlib.ui().post(() -> onDone.runWithBool(false));
+              done = true;
             }
+            tdlib.messageHandler().onResult(result);
+            break;
+          }
+          case TdApi.Error.CONSTRUCTOR: {
+            tdlib.ui().post(() -> {
+              if (isFocused()) {
+                showBottomHint(TD.toErrorString(result), true);
+              } else {
+                UI.showError(result);
+              }
+            });
+            done = true;
+            break;
+          }
+          default: {
+            throw new UnsupportedOperationException(result.toString());
           }
         }
-      };
-      tdlib.client().send(functions.get(0), handler);
-    } else {
-      for (TdApi.Function<?> function : functions) {
-        tdlib.client().send(function, tdlib.messageHandler());
+        if (done) {
+          int sentMessagesCount = sentMessages.size();
+          if (sentMessagesCount > 0) {
+            for (int i = sentMessagesCount - 1; i >= 0; i--) {
+              tdlib.listeners().unsubscribeFromUpdates(sentMessages.get(i));
+            }
+            List<TGMessage> parsedMessages = manager.parseMessages(sentMessages);
+            tdlib.ui().post(() -> {
+              if (isSchedule == areScheduled) {
+                manager.addSentMessages(parsedMessages);
+              }
+              onDone.runWithBool(sentFunctionsCount[0] == expectedCount);
+              if (!areScheduled && isSchedule && isFocused()) {
+                viewScheduledMessages(true);
+              }
+            });
+          } else {
+            tdlib.ui().post(() -> onDone.runWithBool(false));
+          }
+        }
       }
-    }
+    };
+    tdlib.client().send(functions.get(0), handler);
   }
 
   public void sendContact (TdApi.User user, boolean allowReply, TdApi.MessageSendOptions initialSendOptions) {
