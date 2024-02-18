@@ -2208,6 +2208,8 @@
   <string name="XMadeGroupHistoryVisible">%1$s made group history visible for new members</string>
   <string name="XChangedGroupStickerSet">%1$s changed group sticker set</string>
   <string name="XRemovedGroupStickerSet">%1$s removed group sticker set</string>
+  <string name="XChangedGroupEmojiSet">%1$s changed group emoji set</string>
+  <string name="XRemovedGroupEmojiSet">%1$s removed group emoji set</string>
   <string name="ChatHistory">Chat History for New Members</string>
   <string name="ChatHistoryVisibleInfo">New members will see messages that were sent before they joined.</string>
   <string name="ChatHistoryHiddenInfo">New members won\'t see earlier messages.</string>

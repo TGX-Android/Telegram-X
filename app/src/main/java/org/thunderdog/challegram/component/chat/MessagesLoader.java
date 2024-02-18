@@ -1107,7 +1107,7 @@ public class MessagesLoader implements Client.ResultHandler {
             function = new TdApi.SearchSecretMessages(sourceChatId, searchQuery, lastSearchNextOffset, limit, searchFilter);
           } else {
             Log.ensureReturnType(TdApi.SearchChatMessages.class, TdApi.FoundChatMessages.class);
-            function = new TdApi.SearchChatMessages(sourceChatId, searchQuery, searchSender, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, searchFilter, messageThread != null ? messageThread.getMessageThreadId() : 0, null);
+            function = new TdApi.SearchChatMessages(sourceChatId, searchQuery, searchSender, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, searchFilter, messageThread != null ? messageThread.getMessageThreadId() : 0, 0);
           }
           break;
         }
@@ -1120,7 +1120,7 @@ public class MessagesLoader implements Client.ResultHandler {
           if (hasSearchFilter()) {
             loadingLocal = false;
             Log.ensureReturnType(TdApi.SearchChatMessages.class, TdApi.FoundChatMessages.class);
-            function = new TdApi.SearchChatMessages(sourceChatId, null, null, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, searchFilter, messageThread != null ? messageThread.getMessageThreadId() : 0, null);
+            function = new TdApi.SearchChatMessages(sourceChatId, null, null, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, searchFilter, messageThread != null ? messageThread.getMessageThreadId() : 0, 0);
           } else if (messageThread != null) {
             loadingLocal = false;
             Log.ensureReturnType(TdApi.GetMessageThreadHistory.class, TdApi.Messages.class);
@@ -1214,9 +1214,9 @@ public class MessagesLoader implements Client.ResultHandler {
       false,
       event.date, 0,
       null, null, null, null,
-      null, 0,
-      null, null, 0, 0,
-      0, null,
+      null, 0, 0,
+      null, 0, 0,
+      0, 0, null,
       0,
       null,
       null,

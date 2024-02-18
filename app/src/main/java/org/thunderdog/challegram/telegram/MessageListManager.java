@@ -38,8 +38,7 @@ public final class MessageListManager extends ListManager<TdApi.Message> impleme
   private final @Nullable String query;
   private final @Nullable TdApi.MessageSender sender;
   private final @Nullable TdApi.SearchMessagesFilter filter;
-  private final long messageThreadId;
-  private final @Nullable TdApi.SavedMessagesTopic savedMessagesTopic;
+  private final long messageThreadId, savedMessagesTopicId;
 
   private boolean onlyLocalEndReached, onlyLocalReverseEndReached;
 
@@ -48,7 +47,7 @@ public final class MessageListManager extends ListManager<TdApi.Message> impleme
                              @Nullable TdApi.MessageSender sender,
                              @Nullable TdApi.SearchMessagesFilter filter,
                              long messageThreadId,
-                             @Nullable TdApi.SavedMessagesTopic savedMessagesTopic) {
+                             long savedMessagesTopicId) {
     super(tdlib, initialLoadCount, loadCount, startFromMessageId != 0, listener);
     this.chatId = chatId;
     this.startFromMessageId = startFromMessageId;
@@ -56,7 +55,7 @@ public final class MessageListManager extends ListManager<TdApi.Message> impleme
     this.sender = sender;
     this.filter = filter;
     this.messageThreadId = messageThreadId;
-    this.savedMessagesTopic = savedMessagesTopic;
+    this.savedMessagesTopicId = savedMessagesTopicId;
     subscribeToUpdates();
     loadTotalCount(null);
     addChangeListener(maxMessageIdListener);
@@ -120,7 +119,7 @@ public final class MessageListManager extends ListManager<TdApi.Message> impleme
 
   private void fetchMessageCount (boolean local, @Nullable RunnableInt callback) {
     if (!hasComplexFilter() && filter != null) {
-      tdlib.send(new TdApi.GetChatMessageCount(chatId, filter, savedMessagesTopic, local), (chatMessageCount, error) -> {
+      tdlib.send(new TdApi.GetChatMessageCount(chatId, filter, savedMessagesTopicId, local), (chatMessageCount, error) -> {
         final int count;
         if (error != null) {
           Log.e("GetChatMessageCount: %s, filter:%s, chatId:%s", TD.toErrorString(error), filter, chatId);
@@ -142,7 +141,7 @@ public final class MessageListManager extends ListManager<TdApi.Message> impleme
           }
           return;
         }
-        tdlib.send(new TdApi.SearchChatMessages(chatId, query, sender, 0, 0, 1, filter, messageThreadId, savedMessagesTopic), (foundChatMessages, error) -> {
+        tdlib.send(new TdApi.SearchChatMessages(chatId, query, sender, 0, 0, 1, filter, messageThreadId, savedMessagesTopicId), (foundChatMessages, error) -> {
           final int count;
           if (error != null) {
             Log.e("SearchChatMessages: %s, chatId: %d", TD.toErrorString(error), chatId);
@@ -219,9 +218,9 @@ public final class MessageListManager extends ListManager<TdApi.Message> impleme
     long fromMessageId = this.items.isEmpty() ? startFromMessageId : this.items.get(reverse ? 0 : this.items.size() - 1).id;
     if (hasFilter()) {
       if (reverse) {
-        return new TdApi.SearchChatMessages(chatId, query, sender, fromMessageId, -loadCount, loadCount + 1, filter, messageThreadId, savedMessagesTopic);
+        return new TdApi.SearchChatMessages(chatId, query, sender, fromMessageId, -loadCount, loadCount + 1, filter, messageThreadId, savedMessagesTopicId);
       } else {
-        return new TdApi.SearchChatMessages(chatId, query, sender, nextSearchFromMessageId != null && nextSearchFromMessageId != 0 ? nextSearchFromMessageId : fromMessageId, 0, loadCount, filter, messageThreadId, savedMessagesTopic);
+        return new TdApi.SearchChatMessages(chatId, query, sender, nextSearchFromMessageId != null && nextSearchFromMessageId != 0 ? nextSearchFromMessageId : fromMessageId, 0, loadCount, filter, messageThreadId, savedMessagesTopicId);
       }
     } else {
       if (reverse) {

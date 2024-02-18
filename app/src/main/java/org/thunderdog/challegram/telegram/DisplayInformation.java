@@ -250,7 +250,7 @@ public class DisplayInformation {
       editor.putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_ACCENT_BUILT_IN_ACCENT_COLOR_ID, accentColor.builtInAccentColorId);
       editor.putIntArray(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_LIGHT_THEME_COLORS, accentColor.lightThemeColors);
       editor.putIntArray(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_DARK_THEME_COLORS, accentColor.darkThemeColors);
-      editor.putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_MIN_CHAT_BOOST_LEVEL, accentColor.minChatBoostLevel);
+      editor.putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_MIN_CHAT_BOOST_LEVEL, accentColor.minChannelChatBoostLevel);
     } else {
       editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_ACCENT_BUILT_IN_ACCENT_COLOR_ID);
       editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_LIGHT_THEME_COLORS);
@@ -363,7 +363,7 @@ public class DisplayInformation {
               info.accentColor.darkThemeColors = entry.asIntArray();
               break;
             case Settings.KEY_ACCOUNT_INFO_SUFFIX_MIN_CHAT_BOOST_LEVEL:
-              info.accentColor.minChatBoostLevel = entry.asInt();
+              info.accentColor.minChannelChatBoostLevel = entry.asInt();
               break;
           }
           break;
