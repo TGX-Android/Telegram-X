@@ -29,7 +29,7 @@ public class SingleMediaPickerManager extends MediaLayoutManager {
     super(context);
   }
 
-  public void openMediaView (RunnableData<ImageGalleryFile> callback, long chatId, @Nullable Runnable onDismissPrepare) {
+  public void openMediaView (RunnableData<ImageGalleryFile> callback, long chatId, @Nullable Runnable onDismissPrepare, boolean overlayStatusBar) {
     waitPermissionsForOpen(hasMedia -> {
       final MediaLayout mediaLayout = new MediaLayout(context) {
         @Override
@@ -62,7 +62,7 @@ public class SingleMediaPickerManager extends MediaLayoutManager {
       openingMediaLayout = true;
       mediaLayout.preload(() -> {
         if (!context.isDestroyed()) {
-          mediaLayout.show();
+          mediaLayout.show(overlayStatusBar);
         }
         openingMediaLayout = false;
       }, 300L);

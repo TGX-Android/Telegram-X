@@ -1784,7 +1784,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
             ((MessagesController) c).highlightMessage(new MessageId(item.getSourceChatId(), item.getSourceMessageId()));
           }
         });
-      }), item.getSourceChatId(), () -> stopFullScreenTemporarily(false));
+      }), item.getSourceChatId(), () -> stopFullScreenTemporarily(false), true);
     } else if (id == R.id.btn_share) {
       ShareController c;
       if (item.getMessage() != null) {
@@ -7180,6 +7180,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private int prevActiveButtonId;
 
   private void fillIcons (int section) {
+    fillIcons(section, true);
+  }
+
+  private void fillIcons (int section, boolean animated) {
     int activeButtonId = 0;
     boolean isSticker = false;
     switch (section) {
@@ -7207,27 +7211,27 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       // cropOrStickerButton.setIcon(R.drawable.ic_addsticker, true, false);
     } else {
       if (stack.getCurrent().isVideo()) {
-        adjustOrTextButton.setIcon(R.drawable.baseline_settings_24, true, section == SECTION_QUALITY);
-        cropOrStickerButton.setIcon(R.drawable.baseline_rotate_90_degrees_ccw_24, true, false);
+        adjustOrTextButton.setIcon(R.drawable.baseline_settings_24, animated, section == SECTION_QUALITY);
+        cropOrStickerButton.setIcon(R.drawable.baseline_rotate_90_degrees_ccw_24, animated, false);
       } else {
-        adjustOrTextButton.setIcon(R.drawable.baseline_tune_24, true, section == SECTION_FILTERS);
-        cropOrStickerButton.setIcon(R.drawable.baseline_crop_rotate_24, true, section == SECTION_CROP);
+        adjustOrTextButton.setIcon(R.drawable.baseline_tune_24, animated, section == SECTION_FILTERS);
+        cropOrStickerButton.setIcon(R.drawable.baseline_crop_rotate_24, animated, section == SECTION_CROP);
       }
     }
 
     if (prevActiveButtonId != 0 && activeButtonId != prevActiveButtonId) {
-      setButtonActive(prevActiveButtonId, false);
+      setButtonActive(prevActiveButtonId, false, animated);
     }
 
     prevActiveButtonId = activeButtonId;
 
     if (activeButtonId != 0) {
-      backButton.setIcon(R.drawable.baseline_close_24, true, false);
-      sendButton.setIcon(R.drawable.baseline_check_24, true, false);
-      sendButton.setSlowModeVisibility(false, true);
+      backButton.setIcon(R.drawable.baseline_close_24, animated, false);
+      sendButton.setIcon(R.drawable.baseline_check_24, animated, false);
+      sendButton.setSlowModeVisibility(false, animated);
     } else {
-      backButton.setIcon(R.drawable.baseline_arrow_back_24, true, false);
-      setDefaultSendButtonIcon(true);
+      backButton.setIcon(R.drawable.baseline_arrow_back_24, animated, false);
+      setDefaultSendButtonIcon(animated);
     }
   }
 
@@ -7284,12 +7288,16 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void setButtonActive (int id, boolean isActive) {
+    setButtonActive(id, isActive, true);
+  }
+
+  private void setButtonActive (int id, boolean isActive, boolean animated) {
     if (id == R.id.btn_crop) {
-      cropOrStickerButton.setActive(isActive, true);
+      cropOrStickerButton.setActive(isActive, animated);
     } else if (id == R.id.btn_paint) {
-      paintOrMuteButton.setActive(isActive, true);
+      paintOrMuteButton.setActive(isActive, animated);
     } else if (id == R.id.btn_adjust) {
-      adjustOrTextButton.setActive(isActive, true);
+      adjustOrTextButton.setActive(isActive, animated);
     }
   }
 
@@ -8396,14 +8404,16 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private void stopFullScreenTemporarily (boolean stop) {
     if (stop) {
-      setFullScreen(false);
       popupView.setIgnoreBottom(false);
       popupView.setIgnoreAllInsets(false);
+      // setLowProfile(false);
+      setFullScreen(false);
     } else {
-      setFullScreen(true);
       boolean b = canRunFullscreen();
       popupView.setIgnoreBottom(b);
       popupView.setIgnoreAllInsets(b);
+      // setLowProfile(true);
+      setFullScreen(true);
     }
   }
 
@@ -8502,8 +8512,12 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     stack.notifyMediaChanged(true);
     setForceEditModeVisibility(true);
 
-    // openPaintCanvas();
-    changeSectionImpl(SECTION_PAINT, 0);
+    final View captionWrapViewFinal = captionWrapView;
+
+    fillIcons(SECTION_PAINT, false);
+    captionWrapViewFinal.setVisibility(View.INVISIBLE);
+    UI.post(() -> captionWrapViewFinal.setVisibility(View.VISIBLE), 300);
+    changeSectionImpl(SECTION_PAINT, false);
   }
 
   private void closeForceEditMode () {
@@ -9065,7 +9079,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     ShareController c = new ShareController(context, tdlib);
     CharSequence caption = Td.isEmpty(item2.getCaption()) ? null : TD.toCharSequence(item2.getCaption());
     c.setArguments(new ShareController.Args(item2, caption, caption).setAfter(this::forceClose));
-    c.show();
+    c.show(true);
   }
 
   @Nullable
