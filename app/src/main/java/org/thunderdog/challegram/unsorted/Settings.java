@@ -3223,8 +3223,10 @@ public class Settings {
       return fps > 0 ? Math.min(frameRate, this.fps) : DEFAULT_FRAME_RATE;
     }
 
+    public static final double BITRATE_SCALE = 0.109;
+
     public long getOutputBitrate (Settings.VideoSize size, int frameRate, long inputBitrate) {
-      return Math.round((size.majorSize * size.minorSize * frameRate) * 0.089);
+      return Math.round((size.majorSize * size.minorSize * frameRate) * BITRATE_SCALE);
     }
 
     @Nullable
