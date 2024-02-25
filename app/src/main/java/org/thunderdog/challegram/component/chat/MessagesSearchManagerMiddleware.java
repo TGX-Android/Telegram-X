@@ -492,7 +492,7 @@ public class MessagesSearchManagerMiddleware {
 
     if (queryIsEmpty) {
       if (hasMediaFilter) {
-        return new TdApi.SearchChatMessages(query.chatId, query.query, null, !StringUtils.isEmpty(query.offset) ? Long.parseLong(query.offset) : 0, 0, query.limit, safeFilter, 0, null);
+        return new TdApi.SearchChatMessages(query.chatId, query.query, null, !StringUtils.isEmpty(query.offset) ? Long.parseLong(query.offset) : 0, 0, query.limit, safeFilter, 0, 0);
       } else {
         return new TdApi.GetChatHistory(query.chatId, !StringUtils.isEmpty(query.offset) ? Long.parseLong(query.offset) : 0, 0, query.limit, false);
       }

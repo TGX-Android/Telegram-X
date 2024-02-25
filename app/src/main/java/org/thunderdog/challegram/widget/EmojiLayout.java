@@ -302,6 +302,23 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     this.classicEmojiOnly = classicEmojiOnly;
     this.useDarkMode = useDarkMode;
 
+    /*
+    this.emojiSections = new ArrayList<>();
+    this.emojiSections.add(new EmojiSection(this, 0, R.drawable.baseline_access_time_24, R.drawable.baseline_watch_later_24).setFactor(1f, false).setMakeFirstTransparent().setOffsetHalf(false));
+    this.emojiSections.add(new EmojiSection(this, 1, R.drawable.baseline_emoticon_outline_24, R.drawable.baseline_emoticon_24).setMakeFirstTransparent());
+    this.emojiSections.add(new EmojiSection(this, 2, R.drawable.deproko_baseline_animals_outline_24, R.drawable.deproko_baseline_animals_24).setIsPanda(!useDarkMode));
+    this.emojiSections.add(new EmojiSection(this, 3, R.drawable.baseline_restaurant_menu_24, R.drawable.baseline_restaurant_menu_24));
+    this.emojiSections.add(new EmojiSection(this, 4, R.drawable.baseline_directions_car_24, R.drawable.baseline_directions_car_24));
+    this.emojiSections.add(new EmojiSection(this, 5, R.drawable.deproko_baseline_lamp_24, R.drawable.deproko_baseline_lamp_filled_24));
+    this.emojiSections.add(new EmojiSection(this, 6, R.drawable.deproko_baseline_flag_outline_24, R.drawable.deproko_baseline_flag_filled_24).setMakeFirstTransparent());
+
+    if (allowMedia) {
+      this.emojiSections.add(new EmojiSection(this, 7, R.drawable.deproko_baseline_stickers_24, 0).setActiveDisabled().setOffsetHalf(true));
+    } else {
+      this.emojiSections.get(this.emojiSections.size() - 1).setOffsetHalf(true);
+    }
+    */
+
     emojiSectionsSize = 7 + (allowMedia ? 1 : 0);
 
     adapter = new Adapter(context, this, allowMedia, themeProvider);
@@ -409,20 +426,6 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     // NewEmoji.instance().loadAllEmoji();
 
     setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-  }
-
-  public void setAllowMedia (boolean allowMedia) {
-    if (this.allowMedia != allowMedia) {
-      this.allowMedia = allowMedia;
-
-      if (pager.getCurrentItem() != 0) {
-        this.pager.setCurrentItem(0, false);
-      }
-      this.mediaSectionsView.setVisibility(allowMedia ? VISIBLE : INVISIBLE);
-      this.emojiHeaderView.setAllowMedia(allowMedia);
-      this.adapter.allowMedia = allowMedia;
-      this.adapter.notifyDataSetChanged();
-    }
   }
 
   private void checkBackground () {
@@ -917,7 +920,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     private final ViewController<?> context;
     private final EmojiLayout parent;
     private final SparseArrayCompat<ViewController<?>> cachedItems;
-    private boolean allowMedia;
+    private final boolean allowMedia;
     private final ViewController<?> themeProvider;
 
     public Adapter (ViewController<?> context, EmojiLayout parent, boolean allowMedia, @Nullable ViewController<?> themeProvider) {
@@ -1003,14 +1006,6 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       container.addView(c.getValue());
       return c;
     }
-
-    @Override
-    public int getItemPosition(Object object) {
-      if (object instanceof EmojiMediaListController && !allowMedia) {
-        return PagerAdapter.POSITION_NONE;
-      }
-      return super.getItemPosition(object);
-    };
 
     @Override
     public boolean isViewFromObject (@NonNull View view, @NonNull Object object) {

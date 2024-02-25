@@ -759,6 +759,7 @@
   <item type="id" name="btn_setMsgSender" />
   <item type="id" name="btn_sendNoSound" />
   <item type="id" name="btn_sendAsFile" />
+  <item type="id" name="btn_foregroundSync" />
 
   <item type="id" name="btn_ledDisabled" />
 
@@ -1228,7 +1229,6 @@
 
   <item type="id" name="btn_caption_done" />
   <item type="id" name="btn_caption_emoji" />
-  <item type="id" name="btn_addCaption" />
 
   <item type="id" name="btn_photos" />
   <item type="id" name="btn_voice" />

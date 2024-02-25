@@ -28,10 +28,12 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.BaseThread;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.sync.SyncTask;
+import org.thunderdog.challegram.sync.TemporaryNotification;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -48,9 +50,12 @@ import me.vkryl.core.lambda.CancellableRunnable;
 
 public class PushProcessor {
   private final Context context;
+  private final boolean allowForegroundService;
 
   public PushProcessor (Context context) {
     this.context = context;
+    this.allowForegroundService = Config.FOREGROUND_SYNC_ALWAYS_ENABLED ||
+      Settings.instance().getNewSetting(Settings.SETTING_FLAG_FOREGROUND_SERVICE_ENABLED);
   }
 
   private static int determineAccountId (long pushId, String payload, long sentTime) {
@@ -214,19 +219,29 @@ public class PushProcessor {
               }
               if (releaseLoaders) {
                 if (manager.notifyPushProcessingTakesTooLong(accountId, pushId)) {
-                  // Allow final 100ms to show notification, if it was stuck because of some media download
+                  // Allow final 500ms to show notification, if it was stuck because of some media download
                   queue().post(() -> {
                     synchronized (foregroundLock) {
                       int currentState = state.get();
                       if (currentState != State.FINISHED) {
                         TDLib.Tag.notifications(pushId, accountId, "Releasing push processing to avoid ANR. Notification may be missing (intentionally).");
-                        // TODO show some generic "You may have a new message" notification?
+                        if (!allowForegroundService) {
+                          TDLib.Tag.notifications(pushId, accountId, "Showing \"You may have a new message\" notification.");
+                          String title = Lang.getString(R.string.MissingMessages);
+                          String text;
+                          if (accountId != TdlibAccount.NO_ID && manager.isMultiUser()) {
+                            text = Lang.getString(R.string.MissingMessagesText, manager.account(accountId).getLongName());
+                          } else {
+                            text = null;
+                          }
+                          TemporaryNotification.showNotification(context, U.getMaybeNotificationChannel(), title, text);
+                        }
                       } else {
                         TDLib.Tag.notifications(pushId, accountId, "Push was processed by canceling some of operations");
                       }
                     }
                     latch.countDown();
-                  }, 100);
+                  }, 500);
                 } else {
                   TDLib.Tag.notifications(pushId, accountId, "Allowing ANR because one of Tdlib instances is in critical state");
                 }
@@ -256,6 +271,10 @@ public class PushProcessor {
   }
 
   private boolean showForegroundNotification (TdlibManager manager, boolean inRecovery, long pushId, int accountId) {
+    if (!allowForegroundService) {
+      TDLib.Tag.notifications(pushId, accountId, "Can't show foreground notification, because user didn't provide explicit permission. inRecovery: %b", inRecovery);
+      return false;
+    }
     String text;
     if (accountId != TdlibAccount.NO_ID && manager.isMultiUser()) {
       text = Lang.getString(R.string.RetrievingText, manager.account(accountId).getLongName());

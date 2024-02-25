@@ -360,7 +360,10 @@ dependencies {
   // Play In-App Updates: https://developer.android.com/reference/com/google/android/play/core/release-notes-in_app_updates
   implementation("com.google.android.play:app-update:2.1.0")
   // AndroidX/media: https://github.com/androidx/media/blob/release/RELEASENOTES.md
-  implementation("androidx.media3:media3-exoplayer:1.2.1")
+  implementation("androidx.media3:media3-exoplayer:${LibraryVersions.ANDROIDX_MEDIA}")
+  implementation("androidx.media3:media3-transformer:${LibraryVersions.ANDROIDX_MEDIA}")
+  implementation("androidx.media3:media3-effect:${LibraryVersions.ANDROIDX_MEDIA}")
+  implementation("androidx.media3:media3-common:${LibraryVersions.ANDROIDX_MEDIA}")
   // 17.x version requires minSdk 19 or higher
   implementation("com.google.mlkit:language-id:16.1.1")
   // The Checker Framework: https://checkerframework.org/CHANGELOG.md

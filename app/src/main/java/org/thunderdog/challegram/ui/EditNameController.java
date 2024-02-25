@@ -315,7 +315,8 @@ public class EditNameController extends EditBaseController<EditNameController.Ar
           CharSequence text = TD.formatString(this, termsOfService.text.text, termsOfService.text.entities, null, null);
           openAlert(R.string.TermsOfService, text, Lang.getString(R.string.TermsOfServiceDone), (dialog, which) -> {
             setDoneInProgress(true);
-            tdlib.client().send(new TdApi.RegisterUser(firstName, lastName), this);
+            // TODO: add checkbox & explanation that this allows
+            tdlib.client().send(new TdApi.RegisterUser(firstName, lastName, true), this);
           }, ALERT_NO_CANCELABLE | ALERT_HAS_LINKS);
           break;
         }

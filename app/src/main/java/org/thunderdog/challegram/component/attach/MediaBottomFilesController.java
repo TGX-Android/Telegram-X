@@ -47,7 +47,6 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.core.Media;
 import org.thunderdog.challegram.data.InlineResult;
 import org.thunderdog.challegram.data.InlineResultCommon;
-import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.navigation.HeaderView;
@@ -62,7 +61,6 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.SettingsAdapter;
-import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.Permissions;
 
 import java.io.File;
@@ -112,26 +110,18 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
   private void showSystemPicker (boolean forceDownloads) {
     RunnableData<Set<Uri>> callback = uris -> {
       if (uris != null && !uris.isEmpty()) {
-        Media.instance().post(() -> {
-          final ArrayList<InlineResult<?>> results = new ArrayList<>(uris.size());
-          final TD.FileInfo fileInfo = new TD.FileInfo();
-          for (Uri uri : uris) {
-            String filePath = U.tryResolveFilePath(uri);
-            if (!StringUtils.isEmpty(filePath) && U.canReadFile(filePath)) {
-              results.add(createItem(context, tdlib, new File(filePath), null));
-            } else {
-              final String path = uri.toString();
-              TD.createInputFile(path, null, fileInfo);
-              results.add(createItem(context, tdlib, path, R.drawable.baseline_insert_drive_file_24, fileInfo.title, Strings.buildSize(fileInfo.knownSize)));
-            }
+        List<String> files = new ArrayList<>(uris.size());
+        for (Uri uri : uris) {
+          String filePath = U.tryResolveFilePath(uri);
+          if (!StringUtils.isEmpty(filePath) && U.canReadFile(filePath)) {
+            files.add(filePath);
+          } else {
+            files.add(uri.toString());
           }
-          UI.post(() -> {
-            if (mediaLayout.getTarget() != null && mediaLayout.getTarget().isFocused()) {
-              mediaLayout.getTarget().setFilesToAttach(results, false);
-              mediaLayout.hide(false);
-            }
-          });
-        });
+        }
+        mediaLayout.pickDateOrProceed((sendOptions, disableMarkdown) ->
+          mediaLayout.sendFilesMixed(mediaLayout.getTarget() != null ? mediaLayout.getTarget().getAttachButton() : null, files, null, sendOptions, false)
+        );
       }
     };
     final Intent intent = new Intent(Intent.ACTION_GET_CONTENT)
@@ -245,14 +235,14 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
         final boolean isRemovable = Environment.isExternalStorageRemovable();
         StatFs fs = new StatFs(environmentPath);
         String text = Lang.getString(R.string.FreeXofY, Strings.buildSize(StorageUtils.freeMemorySize(fs)), Strings.buildSize(StorageUtils.totalMemorySize(fs)));
-        InlineResultCommon internalStorage = new InlineResultCommon(context, tdlib, KEY_FOLDER + environmentPath, ColorId.fileAttach, isRemovable ? R.drawable.baseline_sd_storage_24 : R.drawable.baseline_storage_24, Lang.getString(isRemovable ? R.string.SdCard : R.string.InternalStorage), text).setDisableProgressInteract(true);
+        InlineResultCommon internalStorage = new InlineResultCommon(context, tdlib, KEY_FOLDER + environmentPath, ColorId.fileAttach, isRemovable ? R.drawable.baseline_sd_storage_24 : R.drawable.baseline_storage_24, Lang.getString(isRemovable ? R.string.SdCard : R.string.InternalStorage), text);
         items.add(createItem(internalStorage, R.id.btn_internalStorage));
       }
 
       final ArrayList<String> externalStorageFiles = U.getExternalStorageDirectories(baseExternalDir != null ? baseExternalDir.getPath() : null, false);
       if (externalStorageFiles != null) {
         for (String dir : externalStorageFiles) {
-          InlineResultCommon internalStorage = new InlineResultCommon(context, tdlib, KEY_FOLDER + dir, ColorId.fileAttach, R.drawable.baseline_storage_24, Lang.getString(R.string.Storage), dir).setDisableProgressInteract(true);
+          InlineResultCommon internalStorage = new InlineResultCommon(context, tdlib, KEY_FOLDER + dir, ColorId.fileAttach, R.drawable.baseline_storage_24, Lang.getString(R.string.Storage), dir);
           items.add(createItem(internalStorage, R.id.btn_internalStorage));
         }
       }
@@ -309,7 +299,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
           text = Lang.plural(R.string.xFolders, foldersCount);
         else
           text = Lang.plural(R.string.xFiles, filesCount);
-        InlineResultCommon rootDirectory = new InlineResultCommon(context, tdlib, KEY_FOLDER + rootDir.getPath(), ColorId.fileAttach, R.drawable.baseline_folder_24, Lang.getString(R.string.RootDirectory), text).setDisableProgressInteract(true);
+        InlineResultCommon rootDirectory = new InlineResultCommon(context, tdlib, KEY_FOLDER + rootDir.getPath(), ColorId.fileAttach, R.drawable.baseline_folder_24, Lang.getString(R.string.RootDirectory), text);
         items.add(createItem(rootDirectory, R.id.btn_folder));
         hasRoot = true;
       }
@@ -698,7 +688,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
 
             for (FileEntry entry : entries) {
               final String subtitle = Lang.getFileTimestamp(Math.max(entry.getDateModified(), entry.getDateAdded()), TimeUnit.SECONDS, entry.getSize());
-              InlineResultCommon fileItem = new InlineResultCommon(context, tdlib, new File(entry.getData()), entry.getDisplayName(), subtitle, entry, false).setDisableProgressInteract(true);
+              InlineResultCommon fileItem = new InlineResultCommon(context, tdlib, new File(entry.getData()), entry.getDisplayName(), subtitle, entry, false);
               items.add(createItem(fileItem, R.id.btn_file));
             }
 
@@ -767,7 +757,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
           items.add(createItem(result, R.id.btn_folder_upper));
 
           for (MusicEntry entry : entries) {
-            items.add(new ListItem(ListItem.TYPE_CUSTOM_INLINE, R.id.btn_file).setData(new InlineResultCommon(context, tdlib, entry, MediaBottomFilesController.this).setDisableProgressInteract(true)));
+            items.add(new ListItem(ListItem.TYPE_CUSTOM_INLINE, R.id.btn_file).setData(new InlineResultCommon(context, tdlib, entry, MediaBottomFilesController.this)));
           }
 
           return new Result(items, true);
@@ -968,12 +958,12 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
 
   public static InlineResultCommon createItem (BaseActivity context, Tdlib tdlib, File file, @Nullable Object tag, String title, long lastModifiedTime, String subtitle, boolean isFolder) {
     if (file.isDirectory()) {
-      return new InlineResultCommon(context, tdlib, KEY_FOLDER + file.getPath(), ColorId.fileAttach, R.drawable.baseline_folder_24, file.getName(), Lang.getString(R.string.Folder)).setDisableProgressInteract(true);
+      return new InlineResultCommon(context, tdlib, KEY_FOLDER + file.getPath(), ColorId.fileAttach, R.drawable.baseline_folder_24, file.getName(), Lang.getString(R.string.Folder));
     } else {
       if (subtitle == null) {
         subtitle = Lang.getFileTimestamp(lastModifiedTime, TimeUnit.MILLISECONDS, file.length());
       }
-      return new InlineResultCommon(context, tdlib, file, title != null ? title : file.getName(), subtitle, tag, isFolder).setDisableProgressInteract(true);
+      return new InlineResultCommon(context, tdlib, file, title != null ? title : file.getName(), subtitle, tag, isFolder);
     }
   }
 
@@ -982,7 +972,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
   }
 
   public static InlineResultCommon createItem (BaseActivity context, Tdlib tdlib, String path, int iconRes, String title, String subtitle) {
-    return new InlineResultCommon(context, tdlib, path, ColorId.fileAttach, iconRes, title, subtitle).setDisableProgressInteract(true);
+    return new InlineResultCommon(context, tdlib, path, ColorId.fileAttach, iconRes, title, subtitle);
   }
 
   public static ListItem createItem (InlineResult<?> result, int id) {
@@ -1019,22 +1009,6 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
   }
 
   @Override
-  protected void addCustomItems (View view, @NonNull List<HapticMenuHelper.MenuItem> hapticItems) {
-    hapticItems.add(0, new HapticMenuHelper.MenuItem(R.id.btn_addCaption, Lang.getString(R.string.AddCaption), R.drawable.baseline_file_caption_24).setOnClickListener(this::onHapticMenuItemClick));
-  }
-
-  private boolean onHapticMenuItemClick (View view, View parentView, HapticMenuHelper.MenuItem item) {
-    final int id = view.getId();
-    if (id == R.id.btn_addCaption) {
-      if (mediaLayout.getTarget() != null) {
-        mediaLayout.getTarget().setFilesToAttach(new ArrayList<>(selectedItems), true);
-        mediaLayout.hide(false);
-      }
-    }
-    return true;
-  }
-
-  @Override
   public void onClick (View v) {
     if (v.getId() == R.id.btn_folder_upper) {
       navigateUpper();
@@ -1053,9 +1027,15 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
         if (inFileSelectMode) {
           selectItem(item, result);
         } else {
-          if (mediaLayout.getTarget() != null) {
-            mediaLayout.getTarget().setFilesToAttach(new ArrayList<>(Collections.singleton(result)), false);
-            mediaLayout.hide(false);
+          switch (result.getType()) {
+            case InlineResult.TYPE_AUDIO: {
+              mediaLayout.sendMusic(v, (MusicEntry) result.getTag());
+              break;
+            }
+            case InlineResult.TYPE_DOCUMENT: {
+              mediaLayout.sendFile(v, result.getId());
+              break;
+            }
           }
         }
       } else if (itemId == R.id.btn_bucket) {
