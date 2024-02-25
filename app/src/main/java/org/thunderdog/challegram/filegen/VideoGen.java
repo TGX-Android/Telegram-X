@@ -14,13 +14,31 @@
  */
 package org.thunderdog.challegram.filegen;
 
+import android.annotation.TargetApi;
 import android.media.MediaFormat;
+import android.media.MediaMetadataRetriever;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Message;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
+import androidx.media3.common.Effect;
+import androidx.media3.common.MediaItem;
+import androidx.media3.common.MimeTypes;
+import androidx.media3.effect.FrameDropEffect;
+import androidx.media3.effect.Presentation;
+import androidx.media3.effect.ScaleAndRotateTransformation;
+import androidx.media3.transformer.Composition;
+import androidx.media3.transformer.DefaultEncoderFactory;
+import androidx.media3.transformer.EditedMediaItem;
+import androidx.media3.transformer.Effects;
+import androidx.media3.transformer.ExportException;
+import androidx.media3.transformer.ExportResult;
+import androidx.media3.transformer.ProgressHolder;
+import androidx.media3.transformer.Transformer;
+import androidx.media3.transformer.VideoEncoderSettings;
 
 import com.otaliastudios.transcoder.Transcoder;
 import com.otaliastudios.transcoder.TranscoderListener;
@@ -46,13 +64,19 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableLong;
 import me.vkryl.core.unit.ByteUnit;
@@ -92,7 +116,7 @@ public class VideoGen {
     private final VideoGen context;
     private final long generationId;
     private Future<Void> task;
-    // private String liTrRequestId;
+    private Transformer transformer;
 
     private Entry (VideoGen context, long generationId) {
       this.context = context;
@@ -132,12 +156,12 @@ public class VideoGen {
     }
 
     public void cancel () {
-      if (task != null) {
+      if (task != null && !task.isDone()) {
         task.cancel(true);
       }
-      /*if (!Strings.isEmpty(liTrRequestId) && context.mediaTransformer != null) {
-        context.mediaTransformer.cancel(liTrRequestId);
-      }*/
+      if (transformer != null) {
+        transformer.cancel();
+      }
     }
   }
 
@@ -183,12 +207,14 @@ public class VideoGen {
     convertVideo(info, entry);
   }
 
+  private static final boolean USE_MODERN_TRANSCODING = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
+
   @WorkerThread
   private void convertVideo (final VideoGenerationInfo info, final Entry entry) {
     final String sourcePath = info.getOriginalPath();
     final String destinationPath = info.getDestinationPath();
 
-    boolean canUseSimplePath = info.canTakeSimplePath();
+    boolean canUseSimplePath = !USE_MODERN_TRANSCODING && info.canTakeSimplePath();
 
     long sourceSize = getBytesCount(sourcePath, true);
     ProgressCallback onProgress = new ProgressCallback() {
@@ -251,10 +277,8 @@ public class VideoGen {
         entries.remove(destinationPath);
       }
       try {
-        if (entry.task != null && !entry.task.isDone()) {
-          Log.i("Cancelling video generation");
-          entry.task.cancel(true);
-        }
+        Log.i("Cancelling video generation");
+        entry.cancel();
       } catch (Throwable t) {
         Log.i(t);
       }
@@ -283,21 +307,172 @@ public class VideoGen {
     }
 
     try {
-      convertVideoComplex(sourcePath, destinationPath, info, entry, onProgress, onComplete, onCancel, onFailure);
+      if (USE_MODERN_TRANSCODING) {
+        convertVideoComplexV2(sourcePath, destinationPath, info, entry, onProgress, onComplete, onCancel, onFailure);
+      } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+        convertVideoComplex(sourcePath, destinationPath, info, entry, onProgress, onComplete, onCancel, onFailure);
+      } else {
+        onFailure.runWithData(new RuntimeException());
+      }
     } catch (Throwable t) {
       Log.e(t);
       onFailure.runWithData(t);
     }
   }
 
-  private void convertVideoComplex (String sourcePath, String destinationPath, VideoGenerationInfo info, Entry entry, ProgressCallback onProgress, Runnable onComplete, Runnable onCancel, RunnableData<Throwable> onFailure) {
-    DataSource dataSource;
-    if (sourcePath.startsWith("content://")) {
-      dataSource = new UriDataSource(UI.getAppContext(), Uri.parse(sourcePath));
+  @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+  private void convertVideoComplexV2 (String sourcePath, String destinationPath, VideoGenerationInfo info, Entry entry, ProgressCallback onProgress, Runnable onComplete, Runnable onCancel, RunnableData<Throwable> onFailure) throws FileNotFoundException {
+    MediaMetadataRetriever retriever = U.openRetriever(sourcePath);
+    if (retriever == null)
+      throw new NullPointerException();
+
+    int inputVideoWidth = StringUtils.parseInt(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH));
+    int inputVideoHeight = StringUtils.parseInt(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT));
+    int inputVideoRotation;
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+      inputVideoRotation = StringUtils.parseInt(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION));
     } else {
-      dataSource = new FilePathDataSource(sourcePath);
-      dataSource.initialize();
+      inputVideoRotation = 0;
     }
+    long inputVideoBitrate = StringUtils.parseInt(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE));
+    U.closeRetriever(retriever);
+
+    Settings.VideoLimit videoLimit = info.getVideoLimit();
+    if (videoLimit == null)
+      videoLimit = new Settings.VideoLimit();
+
+    int inputVideoFrameRate = getFrameRate(sourcePath);
+    int outputVideoFrameRate = videoLimit.fps != 0 ? videoLimit.fps : Settings.DEFAULT_FRAME_RATE;
+    if (inputVideoFrameRate > 0) {
+      outputVideoFrameRate = Math.min(inputVideoFrameRate, outputVideoFrameRate);
+    }
+
+    int outputVideoSquare;
+    int outputHeightLimit;
+    if (!info.disableTranscoding() && !videoLimit.size.isUnlimited() && (inputVideoWidth * inputVideoHeight) > (videoLimit.size.majorSize * videoLimit.size.minorSize)) {
+      if (U.isRotated(inputVideoRotation)) {
+        outputHeightLimit = inputVideoWidth > inputVideoHeight ? videoLimit.size.majorSize : videoLimit.size.minorSize;
+      } else {
+        outputHeightLimit = inputVideoHeight > inputVideoWidth ? videoLimit.size.majorSize : videoLimit.size.minorSize;
+      }
+      outputVideoSquare = videoLimit.size.majorSize * videoLimit.size.minorSize;
+    } else {
+      outputHeightLimit = 0;
+      outputVideoSquare = inputVideoWidth * inputVideoHeight;
+    }
+    long outputVideoBitrate = Math.min(
+      (videoLimit.bitrate != DefaultVideoStrategy.BITRATE_UNKNOWN ? videoLimit.bitrate :
+      (int) Math.round(outputVideoSquare * outputVideoFrameRate * Settings.VideoLimit.BITRATE_SCALE)),
+      inputVideoBitrate
+    );
+
+    MediaItem.Builder mediaItemBuilder = new MediaItem.Builder()
+      .setUri(sourcePath);
+    if (info.needTrim()) {
+      mediaItemBuilder.setClippingConfiguration(new MediaItem.ClippingConfiguration.Builder()
+        .setStartPositionMs(TimeUnit.MICROSECONDS.toMillis(info.getStartTimeUs()))
+        .setEndPositionMs(TimeUnit.MICROSECONDS.toMillis(info.getEndTimeUs()))
+        .build()
+      );
+    }
+    MediaItem mediaItem = mediaItemBuilder.build();
+
+    EditedMediaItem.Builder editedMediaItemBuilder = new EditedMediaItem.Builder(mediaItem)
+      .setRemoveAudio(info.needMute());
+
+    List<Effect> videoEffects = new ArrayList<>();
+    videoEffects.add(FrameDropEffect.createDefaultFrameDropEffect(outputVideoFrameRate));
+    if (outputHeightLimit > 0) {
+      videoEffects.add(Presentation.createForHeight(outputHeightLimit));
+    }
+    int outputVideoRotation = info.getRotate();
+    if (outputVideoRotation != 0) {
+      videoEffects.add(new ScaleAndRotateTransformation.Builder().setRotationDegrees(360 - outputVideoRotation).build());
+    }
+    if (!videoEffects.isEmpty()) {
+      editedMediaItemBuilder.setEffects(new Effects(
+        Collections.emptyList(),
+        videoEffects
+      ));
+    }
+
+    EditedMediaItem editedMediaItem = editedMediaItemBuilder.build();
+
+    // Transformer
+    Transformer.Builder transformerBuilder = new Transformer.Builder(UI.getAppContext())
+      .setVideoMimeType(MimeTypes.VIDEO_H264)
+      .addListener(new Transformer.Listener() {
+        @Override
+        public void onCompleted (@NonNull Composition composition, @NonNull ExportResult exportResult) {
+          onComplete.run();
+        }
+
+        @Override
+        public void onError (@NonNull Composition composition, @NonNull ExportResult exportResult,
+                             @NonNull ExportException exportException) {
+          onFailure.runWithData(exportException);
+        }
+      });
+    if (!editedMediaItem.removeAudio) {
+      transformerBuilder.setAudioMimeType(MimeTypes.AUDIO_AAC);
+    }
+    if (inputVideoBitrate > outputVideoBitrate) {
+      VideoEncoderSettings videoEncoderSettings = new VideoEncoderSettings.Builder()
+        .setBitrate((int) outputVideoBitrate)
+        .build();
+      transformerBuilder.setEncoderFactory(new DefaultEncoderFactory.Builder(UI.getAppContext())
+        .setRequestedVideoEncoderSettings(videoEncoderSettings)
+        .build());
+    }
+
+    entry.transformer = transformerBuilder.build();
+
+    ProgressHolder progressHolder = new ProgressHolder();
+    File outFile = new File(destinationPath);
+    Runnable progressRunner = new Runnable() {
+      @Override
+      public void run () {
+        if (entry.transcodeFinished.get() || entry.canceled.get()) {
+          return;
+        }
+        @Transformer.ProgressState int progressState = entry.transformer.getProgress(progressHolder);
+        if (progressState == Transformer.PROGRESS_STATE_NOT_STARTED) {
+          onCancel.run();
+        } else {
+          if (progressState == Transformer.PROGRESS_STATE_AVAILABLE) {
+            onProgress.onTranscodeProgress((double) progressHolder.progress / 100.0, outFile.length());
+          }
+        }
+        queue.post(this, 500L);
+      }
+    };
+
+    entry.transformer.start(editedMediaItem, destinationPath);
+    progressRunner.run();
+  }
+
+  private static DataSource toDataSource (String sourcePath) {
+    if (sourcePath.startsWith("content://")) {
+      return new UriDataSource(UI.getAppContext(), Uri.parse(sourcePath));
+    } else {
+      FilePathDataSource dataSource = new FilePathDataSource(sourcePath);
+      dataSource.initialize();
+      return dataSource;
+    }
+  }
+
+  private static int getFrameRate (String sourcePath) {
+    DataSource dataSource = toDataSource(sourcePath);
+    MediaFormat format = dataSource.getTrackFormat(TrackType.VIDEO);
+    if (format != null) {
+      return format.getInteger(MediaFormat.KEY_FRAME_RATE);
+    }
+    return -1;
+  }
+
+  @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
+  private void convertVideoComplex (String sourcePath, String destinationPath, VideoGenerationInfo info, Entry entry, ProgressCallback onProgress, Runnable onComplete, Runnable onCancel, RunnableData<Throwable> onFailure) {
+    DataSource dataSource = toDataSource(sourcePath);
 
     if (info.needTrim()) {
       long trimEnd = dataSource.getDurationUs() - info.getEndTimeUs();
