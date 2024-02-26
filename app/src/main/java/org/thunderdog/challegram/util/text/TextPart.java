@@ -16,6 +16,7 @@ package org.thunderdog.challegram.util.text;
 
 import android.graphics.Canvas;
 import android.graphics.Rect;
+import android.os.Build;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.View;
@@ -48,6 +49,7 @@ public class TextPart {
   private final Text source;
   private String line;
   private @Nullable TextEntity entity;
+  private @Nullable Text.DirectionEntity directionEntity;
 
   private int flags;
   private int x, y;
@@ -57,14 +59,14 @@ public class TextPart {
 
   private final int lineIndex, paragraphIndex;
 
-  public TextPart (Text source, String line, int start, int end, int lineIndex, int paragraphIndex) {
+  public TextPart (Text source, String line, int start, int end, int lineIndex, int paragraphIndex, @Nullable Text.DirectionEntity directionEntity) {
     this.source = source;
     this.line = line;
     this.start = start;
     this.end = end;
     this.lineIndex = lineIndex;
     this.paragraphIndex = paragraphIndex;
-    checkLineToDraw();
+    this.directionEntity = directionEntity;
   }
 
   public TooltipOverlayView.TooltipBuilder newTooltipBuilder (View view) {
@@ -79,7 +81,6 @@ public class TextPart {
     this.line = line;
     this.start = start;
     this.end = end;
-    checkLineToDraw();
   }
 
   public void setXY (int x, int y) {
@@ -109,6 +110,10 @@ public class TextPart {
 
   public @Nullable TextEntity getEntity () {
     return entity;
+  }
+
+  public @Nullable Text.DirectionEntity getDirectionEntity () {
+    return directionEntity;
   }
 
   public float getWidth () {
@@ -207,13 +212,9 @@ public class TextPart {
       this.end = end;
       if (trimmedLine != null) {
         trimContents(trimmedMaxWidth);
-      } else {
-        checkLineToDraw();
       }
     }
   }
-
-  private String lineToDraw = null;
 
   private String trimmedLine;
   private float trimmedWidth;
@@ -231,39 +232,6 @@ public class TextPart {
       trimmedLine = trimmedLine + "…";
       trimmedWidth += ellipsis;
     }
-    checkLineToDraw();
-  }
-
-
-  private String directionFix;
-
-  public void setFixVisualDirection (int direction) {
-    if (direction == Strings.DIRECTION_RTL) {
-      directionFix = Strings.RTL_CHAR;
-    } else if (direction == Strings.DIRECTION_LTR) {
-      directionFix = Strings.LTR_CHAR;
-    } else {
-      directionFix = null;
-    }
-    checkLineToDraw();
-  }
-
-  private void checkLineToDraw () {
-    textDirection = -1;
-    if (directionFix != null) {
-      lineToDraw = directionFix + (trimmedLine != null ? trimmedLine : (line.substring(start, end)));
-    } else {
-      lineToDraw = trimmedLine != null ? trimmedLine : (line.substring(start, end));
-    }
-  }
-
-  private int textDirection = -1;
-
-  public int getTextDirection () {
-    if (textDirection == -1) {
-      textDirection = Strings.getTextDirection(line, start, end);
-    }
-    return textDirection;
   }
 
   public boolean isClickable () {
@@ -356,7 +324,7 @@ public class TextPart {
   }
 
   public boolean wouldMergeWithNextPart (TextPart part) {
-    return part != null && part != this && emojiInfo == null && part.emojiInfo == null && media == null && part.media == null && trimmedLine == null && part.trimmedLine == null && this.y == part.y && line == part.line && end == part.start && isSameEntity(part.entity) && requiresTopLayer() == part.requiresTopLayer();
+    return part != null && part != this && emojiInfo == null && part.emojiInfo == null && media == null && part.media == null && trimmedLine == null && part.trimmedLine == null && this.y == part.y && line == part.line && end == part.start && isSameEntity(part.entity) && directionEntity == part.directionEntity && requiresTopLayer() == part.requiresTopLayer();
   }
 
   @NonNull
@@ -489,7 +457,22 @@ public class TextPart {
       drawEmoji(c, x, y, textPaint, alpha);
     } else {
       final int textY = y + source.getAscent(textSize) + textPaint.baselineShift;
-      c.drawText(lineToDraw, x, textY, textPaint);
+      if (DEBUG) {
+        if (color == 0 && directionEntity != null) {
+          color = ColorUtils.alphaColor(0.5f, ColorUtils.hslToRgb((float) Math.random(), 0.5f, 0.5f));
+          // color = ColorUtils.alphaColor(0.5f, ColorUtils.hslToRgb(directionEntity.paragraphIndex / 6f, 0.5f, 0.5f));
+        }
+        c.drawRect(x, textY - Screen.dp(16), x + width, textY, Paints.fillingPaint(color));
+        c.drawRect(x, textY - Screen.dp(16), x + width, textY, Paints.strokeSmallPaint(0xFF000000));
+      }
+      if (trimmedLine != null) {
+        c.drawText(trimmedLine, x, textY, textPaint);
+      } else {
+        c.drawText(line, start, end, x, textY, textPaint);
+      }
     }
   }
+
+  private static final boolean DEBUG = false;
+  private int color;
 }
