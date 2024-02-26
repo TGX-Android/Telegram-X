@@ -459,8 +459,9 @@ public class TextPart {
       final int textY = y + source.getAscent(textSize) + textPaint.baselineShift;
       if (DEBUG) {
         if (color == 0 && directionEntity != null) {
-          color = ColorUtils.alphaColor(0.5f, ColorUtils.hslToRgb((float) Math.random(), 0.5f, 0.5f));
+          // color = ColorUtils.alphaColor(0.5f, ColorUtils.hslToRgb((float) Math.random(), 0.5f, 0.5f));
           // color = ColorUtils.alphaColor(0.5f, ColorUtils.hslToRgb(directionEntity.paragraphIndex / 6f, 0.5f, 0.5f));
+          color = directionEntity.direction == Strings.DIRECTION_RTL ? 0x400000FF : (directionEntity.direction == Strings.DIRECTION_LTR ? 0x40FF0000 : 0);
         }
         c.drawRect(x, textY - Screen.dp(16), x + width, textY, Paints.fillingPaint(color));
         c.drawRect(x, textY - Screen.dp(16), x + width, textY, Paints.strokeSmallPaint(0xFF000000));

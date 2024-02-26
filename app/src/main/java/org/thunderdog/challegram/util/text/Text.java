@@ -3150,6 +3150,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   /* BiDi */
 
   private static DirectionEntity[] makeDirectionEntities (String in) {
+    if (in.contains("Wtf")) {
+      android.util.Log.i("WTF_DEBUG", "");
+    }
+
     final ArrayList<DirectionEntity> entities = new ArrayList<>();
 
     final int totalLength = in.length();
@@ -3169,7 +3173,12 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       if (codePointDirectionality == Character.DIRECTIONALITY_PARAGRAPH_SEPARATOR) {
         if (!prevSymbolIsParagraphSeparator) {
           if (lastParsedIndex != index) {
-            entities.add(new DirectionEntity(in, lastParsedIndex, index, lastDirection, paragraphIndex, lastParagraphDirection));
+            if (lastDirectionIndex == index - 1 || lastDirection == lastParagraphDirection) {
+              entities.add(new DirectionEntity(in, lastParsedIndex, index, lastDirection, paragraphIndex, lastParagraphDirection));
+            } else {
+              entities.add(new DirectionEntity(in, lastParsedIndex, lastDirectionIndex + 1, lastDirection, paragraphIndex, lastParagraphDirection));
+              entities.add(new DirectionEntity(in, lastDirectionIndex + 1, index, lastParagraphDirection, paragraphIndex, lastParagraphDirection));
+            }
             lastParsedIndex = index;
           }
           paragraphIndex += 1;
@@ -3183,19 +3192,18 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
         prevSymbolIsParagraphSeparator = false;
       }
 
-      final byte codePointDirectionStrong = simplifyDirectionality(codePointDirectionality, false);
-      final byte codePointDirection = simplifyDirectionality(codePointDirectionality, true);
-      if (lastParagraphDirection == Strings.DIRECTION_NEUTRAL && codePointDirectionStrong != Strings.DIRECTION_NEUTRAL) {
+      final byte codePointDirection = simplifyDirectionality(codePointDirectionality);
+      if (lastParagraphDirection == Strings.DIRECTION_NEUTRAL && codePointDirection != Strings.DIRECTION_NEUTRAL) {
         for (int a = entities.size() - 1; a >= 0; a--) {
           DirectionEntity directionEntity = entities.get(a);
           if (directionEntity.paragraphIndex == paragraphIndex) {
-            directionEntity.setParagraphDirection(codePointDirectionStrong);
+            directionEntity.setParagraphDirection(codePointDirection);
           } else {
             break;
           }
         }
 
-        lastParagraphDirection = codePointDirectionStrong;
+        lastParagraphDirection = codePointDirection;
       }
 
       if (codePointDirection == Strings.DIRECTION_NEUTRAL) {
@@ -3216,7 +3224,12 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     }
 
     if (lastParsedIndex != totalLength) {
-      entities.add(new DirectionEntity(in, lastParsedIndex, totalLength, lastDirection, paragraphIndex, lastParagraphDirection));
+      if (lastDirectionIndex == totalLength - 1 || lastDirection == lastParagraphDirection) {
+        entities.add(new DirectionEntity(in, lastParsedIndex, totalLength, lastDirection, paragraphIndex, lastParagraphDirection));
+      } else {
+        entities.add(new DirectionEntity(in, lastParsedIndex, lastDirectionIndex + 1, lastDirection, paragraphIndex, lastParagraphDirection));
+        entities.add(new DirectionEntity(in, lastDirectionIndex + 1, totalLength, lastParagraphDirection, paragraphIndex, lastParagraphDirection));
+      }
     }
 
     if (in.startsWith("test")) { // in.contains("I enjoyed staying") || in.contains("C++")
@@ -3229,18 +3242,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return entities.toArray(new DirectionEntity[0]);
   }
 
-  private static byte simplifyDirectionality (byte directionality, boolean allowWeak) {
-    if (allowWeak) {
-      switch (directionality) {
-        case Character.DIRECTIONALITY_EUROPEAN_NUMBER:
-        case Character.DIRECTIONALITY_EUROPEAN_NUMBER_SEPARATOR:
-        case Character.DIRECTIONALITY_EUROPEAN_NUMBER_TERMINATOR:
-          return Strings.DIRECTION_LTR;
-        case Character.DIRECTIONALITY_ARABIC_NUMBER:
-          return Strings.DIRECTION_RTL;
-      }
-    }
-
+  private static byte simplifyDirectionality (byte directionality) {
     switch (directionality) {
       case Character.DIRECTIONALITY_LEFT_TO_RIGHT:
       case Character.DIRECTIONALITY_LEFT_TO_RIGHT_EMBEDDING:
