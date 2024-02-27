@@ -59,14 +59,13 @@ public class TextPart {
 
   private final int lineIndex, paragraphIndex;
 
-  public TextPart (Text source, String line, int start, int end, int lineIndex, int paragraphIndex, @Nullable Text.DirectionEntity directionEntity) {
+  public TextPart (Text source, String line, int start, int end, int lineIndex, int paragraphIndex) {
     this.source = source;
     this.line = line;
     this.start = start;
     this.end = end;
     this.lineIndex = lineIndex;
     this.paragraphIndex = paragraphIndex;
-    this.directionEntity = directionEntity;
   }
 
   public TooltipOverlayView.TooltipBuilder newTooltipBuilder (View view) {
@@ -106,6 +105,10 @@ public class TextPart {
 
   public void setEntity (@Nullable TextEntity entity) {
     this.entity = entity;
+  }
+
+  public void setDirectionEntity (@Nullable Text.DirectionEntity directionEntity) {
+    this.directionEntity = directionEntity;
   }
 
   public @Nullable TextEntity getEntity () {
@@ -461,15 +464,24 @@ public class TextPart {
         if (color == 0 && directionEntity != null) {
           // color = ColorUtils.alphaColor(0.5f, ColorUtils.hslToRgb((float) Math.random(), 0.5f, 0.5f));
           // color = ColorUtils.alphaColor(0.5f, ColorUtils.hslToRgb(directionEntity.paragraphIndex / 6f, 0.5f, 0.5f));
-          color = directionEntity.direction == Strings.DIRECTION_RTL ? 0x400000FF : (directionEntity.direction == Strings.DIRECTION_LTR ? 0x40FF0000 : 0);
+          color = directionEntity.isRtl() ? 0x400000FF : 0x40FF0000;
         }
         c.drawRect(x, textY - Screen.dp(16), x + width, textY, Paints.fillingPaint(color));
         c.drawRect(x, textY - Screen.dp(16), x + width, textY, Paints.strokeSmallPaint(0xFF000000));
       }
-      if (trimmedLine != null) {
-        c.drawText(trimmedLine, x, textY, textPaint);
+
+      if (directionEntity != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (trimmedLine != null) {
+          c.drawTextRun(trimmedLine, 0, trimmedLine.length(), 0, trimmedLine.length(), x, textY, directionEntity.isRtl(), textPaint);
+        } else {
+          c.drawTextRun(line, start, end, start, end, x, textY, directionEntity.isRtl(), textPaint);
+        }
       } else {
-        c.drawText(line, start, end, x, textY, textPaint);
+        if (trimmedLine != null) {
+          c.drawText(trimmedLine, x, textY, textPaint);
+        } else {
+          c.drawText(line, start, end, x, textY, textPaint);
+        }
       }
     }
   }

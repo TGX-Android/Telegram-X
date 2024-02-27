@@ -59,6 +59,7 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.EmojiStatusHelper;
 
+import java.text.Bidi;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -992,7 +993,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     if (!StringUtils.isEmpty(suffix) && !out.isEmpty()) {
       TextPart lastPart = out.get(out.size() - 1);
       int[] lastLineSize = getLineSize(getLineCount() - 1);
-      TextPart suffixPart = new TextPart(this, suffix, 0, suffix.length(), lastPart.getLineIndex(), lastPart.getParagraphIndex(), lastPart.getDirectionEntity());
+      TextPart suffixPart = new TextPart(this, suffix, 0, suffix.length(), lastPart.getLineIndex(), lastPart.getParagraphIndex());
+      suffixPart.setDirectionEntity(lastPart.getDirectionEntity());
       suffixPart.setXY(lastLineSize[0], lastPart.getY());
       suffixPart.setWidth(suffixWidth);
       lastLineSize[0] += suffixWidth;
@@ -1021,8 +1023,57 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       }
     }
 
-    final int partsCount = out.size();
+    // Now check RTL lines (V2)
 
+    final int partsCount = out.size();
+    int rtlPartsCount = 0;
+
+    int runIndex = 0;
+    DirectionEntity directionEntity = directionEntities[0];
+
+    for (int partIndex = 0; partIndex < partsCount; partIndex++) {
+      final TextPart part = out.get(partIndex);
+      final int partStart = part.getStart();
+      while (directionEntity.end <= partStart) {
+        runIndex += 1;
+        directionEntity = directionEntities[runIndex];
+      }
+
+      final boolean paragraphIsRtl = directionEntity.isParagraphRtl();
+
+      part.setDirectionEntity(directionEntity);
+      part.setRtlMode(paragraphIsRtl, false);
+
+      if (paragraphIsRtl) {
+        rtlPartsCount += 1;
+      }
+    }
+
+    // Fix order
+    TextPart[] partsArray = out.toArray(new TextPart[0]);
+    byte[] partsLevels = new byte[out.size()];
+    for (int a = 0; a < partsLevels.length; a++) {
+      partsLevels[a] = partsArray[a].getDirectionEntity().level;
+    }
+
+    int lineIndex = 0;
+    int lastLineStartIndex = 0;
+    for (int partIndex = 0; partIndex < partsCount; partIndex++) {
+      final TextPart part = out.get(partIndex);
+      final int partLineIndex = part.getLineIndex();
+      if (lineIndex != partLineIndex) {
+        fixPartsOrder(partsArray, partsLevels, lastLineStartIndex, partIndex);
+        lastLineStartIndex = partIndex;
+        lineIndex = partLineIndex;
+      }
+    }
+    fixPartsOrder(partsArray, partsLevels, lastLineStartIndex, partsCount);
+
+
+
+
+
+    /*
     // Now check RTL lines
     int rtlPartsCount = 0;
 
@@ -1070,7 +1121,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
           }
         }
         partIndex++;
-      } while (partIndex < partsCount && (part = out.get(partIndex)).getParagraphIndex() == currentParagraphIndex);
+      } while (partIndex < partsCount && (part = out.get(partIndex)).getLineIndex() == currentLine);
 
       switch (direction) {
         case Strings.DIRECTION_LTR: {
@@ -1121,12 +1172,15 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
         prevIsRtl = false;
       }
     }
-
+    */
     if (rtlPartsCount == partsCount) {
       textFlags |= FLAG_FULL_RTL;
-    } else if (ltrLineCount == 0 && neutralLineCount == getLineCount() - rtlLineCount) {
+    }
+    /*
+    else if (ltrLineCount == 0 && neutralLineCount == getLineCount() - rtlLineCount) {
       textFlags |= FLAG_MAY_APPLY_RTL;
     }
+    */
 
     if (BuildConfig.DEBUG) {
       int partCount = parts.size();
@@ -1134,6 +1188,37 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
         getLineWidth(parts.get(i).getLineIndex());
       }
     }
+  }
+
+  private void fixPartsOrder (TextPart[] partsArray, byte[] partsLevels, int partStart, int partEnd) {
+    if (partEnd - partStart < 2) {
+      return;
+    }
+
+    final boolean isRtl = partsArray[partStart].getDirectionEntity().isParagraphRtl(); //& 1) == 1;
+    int x = partsArray[partStart].getX();
+    Bidi.reorderVisually(partsLevels, partStart, partsArray, partStart, partEnd - partStart);
+
+    if (!isRtl) {
+      for (int index = partStart; index < partEnd; index++) {
+        TextPart part = partsArray[index];
+        part.setXY(x, part.getY());
+        x += part.getWidth();
+      }
+    } else {
+      for (int index = partEnd - 1; index >= partStart; index--) {
+        TextPart part = partsArray[index];
+        part.setXY(x, part.getY());
+        x += part.getWidth();
+      }
+    }
+
+    /*
+    for (int index = partStart; index < partEnd; index++) {
+      TextPart part1 = out.get(index);
+      part1.setXY(x, part1.getY());
+      x += part1.getWidth();
+    }*/
   }
 
   private static int findMoreSpaces (String in, int start) {
@@ -1322,11 +1407,12 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
     TextPart part;
 
-    part = new TextPart(this, in, index, index, getLineCount(), paragraphCount, directionEntity);
+    part = new TextPart(this, in, index, index, getLineCount(), paragraphCount);
     part.setXY(currentX, currentY);
     part.setWidth(iconWidth);
     part.setHeight(iconHeight);
     part.setEntity(entity);
+    part.setDirectionEntity(directionEntity);
     part.attachToMedia(newOrExistingMedia(TextMedia.keyForIcon(entity.tdlib, icon), index, index, (keyId, id) ->
       new TextMedia(this, entity.tdlib, keyId, id, icon)
     ));
@@ -1347,10 +1433,11 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
     TextPart part;
 
-    part = new TextPart(this, in, start, end, getLineCount(), paragraphCount, directionEntity);
+    part = new TextPart(this, in, start, end, getLineCount(), paragraphCount);
     part.setXY(currentX, currentY);
     part.setWidth(emojiSize);
     part.setEntity(entity);
+    part.setDirectionEntity(directionEntity);
     part.setEmoji(info);
     if (entity != null && entity.tdlib != null && entity.isCustomEmoji()) {
       part.attachToMedia(newOrExistingMedia(TextMedia.keyForEmoji(entity.getCustomEmojiId(), emojiSize), start, end, (keyId, id) ->
@@ -1810,10 +1897,11 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     if (lastPart == null || lastPart.getEntity() != entity || lastPart.getDirectionEntity() != directionEntity) {
       TextPart part;
 
-      part = new TextPart(this, in, start, end, getLineCount(), paragraphCount, directionEntity);
+      part = new TextPart(this, in, start, end, getLineCount(), paragraphCount);
       part.setXY(currentX, currentY);
       part.setWidth(fullWidth);
       part.setEntity(entity);
+      part.setDirectionEntity(directionEntity);
 
       lastPart = part;
 
@@ -1929,10 +2017,11 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
           addLine(0, getCurrentLineHeight());
           lineIndex++;
         }
-        TextPart ellipsisPart = new TextPart(this, ellipsis, 0, ellipsis.length(), lineIndex, paragraphIndex, directionEntity);
+        TextPart ellipsisPart = new TextPart(this, ellipsis, 0, ellipsis.length(), lineIndex, paragraphIndex);
         ellipsisPart.setXY(currentX, currentY);
         ellipsisPart.setWidth(ellipsisWidth);
         ellipsisPart.setEntity(entity);
+        ellipsisPart.setDirectionEntity(directionEntity);
         out.add(ellipsisPart);
         currentX += ellipsisWidth;
       } else {
@@ -1954,10 +2043,11 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
             }
             ellipsisWidth = changedEllipsis || !lastPart.isSameEntity(entity) ? U.measureText(ellipsis, getTextPaint(lastPart.getEntity())) : ellipsisWidth;
 
-            TextPart ellipsisPart = new TextPart(this, ellipsis, 0, ellipsis.length(), lastPart.getLineIndex(), lastPart.getParagraphIndex(), lastPart.getDirectionEntity());
+            TextPart ellipsisPart = new TextPart(this, ellipsis, 0, ellipsis.length(), lastPart.getLineIndex(), lastPart.getParagraphIndex());
             ellipsisPart.setXY(currentX, currentY);
             ellipsisPart.setWidth(ellipsisWidth);
             ellipsisPart.setEntity(lastPart.getEntity());
+            ellipsisPart.setDirectionEntity(lastPart.getDirectionEntity());
             out.set(out.size() - 1, ellipsisPart);
             currentX += ellipsisPart.getWidth();
 
@@ -3149,137 +3239,72 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
   /* BiDi */
 
-  private static DirectionEntity[] makeDirectionEntities (String in) {
-    if (in.contains("Wtf")) {
-      android.util.Log.i("WTF_DEBUG", "");
+  private static void processBidi (String in, int inStart, int inEnd, int paragraphIndex, List<DirectionEntity> out) {
+    if (inStart == inEnd) {
+      return;
     }
+    final Bidi bidi = new Bidi(in.substring(inStart, inEnd), Lang.rtl() ? Bidi.DIRECTION_DEFAULT_RIGHT_TO_LEFT : Bidi.DIRECTION_DEFAULT_LEFT_TO_RIGHT);
+    for (int a = 0; a < bidi.getRunCount(); a++) {
+      final int start = inStart + bidi.getRunStart(a);
+      final int end = inStart + bidi.getRunLimit(a);
+      final byte level = (byte) bidi.getRunLevel(a);
+      final byte paragraphLevel = (byte) bidi.getBaseLevel();
 
-    final ArrayList<DirectionEntity> entities = new ArrayList<>();
-
-    final int totalLength = in.length();
-
-    byte lastParagraphDirection = Strings.DIRECTION_NEUTRAL;
-    int lastParsedIndex = 0;
-    int paragraphIndex = 0;
-
-    int lastDirectionIndex = 0;
-    byte lastDirection = Strings.DIRECTION_NEUTRAL;
-    boolean prevSymbolIsParagraphSeparator = false;
-
-    for (int index = 0; index < totalLength; index++) {
-      final int codePoint = in.codePointAt(index);
-
-      final byte codePointDirectionality = Character.getDirectionality(codePoint);
-      if (codePointDirectionality == Character.DIRECTIONALITY_PARAGRAPH_SEPARATOR) {
-        if (!prevSymbolIsParagraphSeparator) {
-          if (lastParsedIndex != index) {
-            if (lastDirectionIndex == index - 1 || lastDirection == lastParagraphDirection) {
-              entities.add(new DirectionEntity(in, lastParsedIndex, index, lastDirection, paragraphIndex, lastParagraphDirection));
-            } else {
-              entities.add(new DirectionEntity(in, lastParsedIndex, lastDirectionIndex + 1, lastDirection, paragraphIndex, lastParagraphDirection));
-              entities.add(new DirectionEntity(in, lastDirectionIndex + 1, index, lastParagraphDirection, paragraphIndex, lastParagraphDirection));
-            }
-            lastParsedIndex = index;
-          }
-          paragraphIndex += 1;
-        }
-
-        lastParagraphDirection = Strings.DIRECTION_NEUTRAL;
-        lastDirection = Strings.DIRECTION_NEUTRAL;
-        prevSymbolIsParagraphSeparator = true;
-        continue;
-      } else {
-        prevSymbolIsParagraphSeparator = false;
-      }
-
-      final byte codePointDirection = simplifyDirectionality(codePointDirectionality);
-      if (lastParagraphDirection == Strings.DIRECTION_NEUTRAL && codePointDirection != Strings.DIRECTION_NEUTRAL) {
-        for (int a = entities.size() - 1; a >= 0; a--) {
-          DirectionEntity directionEntity = entities.get(a);
-          if (directionEntity.paragraphIndex == paragraphIndex) {
-            directionEntity.setParagraphDirection(codePointDirection);
-          } else {
-            break;
-          }
-        }
-
-        lastParagraphDirection = codePointDirection;
-      }
-
-      if (codePointDirection == Strings.DIRECTION_NEUTRAL) {
-        continue;
-      }
-
-      if (codePointDirection != lastDirection) {
-        if (lastDirection != Strings.DIRECTION_NEUTRAL) {
-          int splitIndex = lastDirection == lastParagraphDirection ? index : (lastDirectionIndex + 1);
-          if (lastParsedIndex != splitIndex) {
-            entities.add(new DirectionEntity(in, lastParsedIndex, splitIndex, lastDirection, paragraphIndex, lastParagraphDirection));
-            lastParsedIndex = splitIndex;
-          }
-        }
-        lastDirection = codePointDirection;
-      }
-      lastDirectionIndex = index;
+      out.add(new DirectionEntity(in, start, end, level, paragraphIndex, paragraphLevel));
     }
-
-    if (lastParsedIndex != totalLength) {
-      if (lastDirectionIndex == totalLength - 1 || lastDirection == lastParagraphDirection) {
-        entities.add(new DirectionEntity(in, lastParsedIndex, totalLength, lastDirection, paragraphIndex, lastParagraphDirection));
-      } else {
-        entities.add(new DirectionEntity(in, lastParsedIndex, lastDirectionIndex + 1, lastDirection, paragraphIndex, lastParagraphDirection));
-        entities.add(new DirectionEntity(in, lastDirectionIndex + 1, totalLength, lastParagraphDirection, paragraphIndex, lastParagraphDirection));
-      }
-    }
-
-    if (in.startsWith("test")) { // in.contains("I enjoyed staying") || in.contains("C++")
-      for (DirectionEntity entity: entities) {
-        android.util.Log.i("WTF_DEBUG part:", in.substring(entity.start, entity.end));
-        android.util.Log.i("WTF_DEBUG stat:", entity.start + " " + entity.end + " " + entity.direction + " " + entity.paragraphIndex + " " + entity.paragraphDirection);
-      }
-    }
-
-    return entities.toArray(new DirectionEntity[0]);
   }
 
-  private static byte simplifyDirectionality (byte directionality) {
-    switch (directionality) {
-      case Character.DIRECTIONALITY_LEFT_TO_RIGHT:
-      case Character.DIRECTIONALITY_LEFT_TO_RIGHT_EMBEDDING:
-      case Character.DIRECTIONALITY_LEFT_TO_RIGHT_OVERRIDE:
-        return Strings.DIRECTION_LTR;
-      case Character.DIRECTIONALITY_RIGHT_TO_LEFT:
-      case Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC:
-      case Character.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING:
-      case Character.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE:
-        return Strings.DIRECTION_RTL;
+  private static DirectionEntity[] makeDirectionEntities (String in) {
+    final ArrayList<DirectionEntity> entities = new ArrayList<>();
+    final int totalLength = in.length();
+
+    int lastParsedIndex = 0;
+    int paragraphIndex = 0;
+    boolean prevSymbolIsParagraphSeparator = false;
+    for (int index = 0; index < totalLength; index++) {
+      final byte codePointDirectionality = Character.getDirectionality(in.codePointAt(index));
+      final boolean isParagraphSeparator = codePointDirectionality == Character.DIRECTIONALITY_PARAGRAPH_SEPARATOR;
+      if (isParagraphSeparator) {
+        if (!prevSymbolIsParagraphSeparator) {
+          processBidi(in, lastParsedIndex, index + 1, paragraphIndex, entities);
+          paragraphIndex += 1;
+        }
+        lastParsedIndex = index + 1;
+      }
+      prevSymbolIsParagraphSeparator = isParagraphSeparator;
     }
-    return Strings.DIRECTION_NEUTRAL;
+    processBidi(in, lastParsedIndex, totalLength, paragraphIndex, entities);
+    return entities.toArray(new DirectionEntity[0]);
   }
 
   static class DirectionEntity {
     public final String in;
+    // public final String debug;
     public final int start, end;
-    public final byte direction;
+    public final byte level, paragraphLevel;
     public final int paragraphIndex;
 
-    public byte paragraphDirection;
-
-    private DirectionEntity (String in, int start, int end, byte direction, int paragraphIndex, byte paragraphDirection) {
+    private DirectionEntity (String in, int start, int end, byte level, int paragraphIndex, byte paragraphLevel) {
       if (start < 0 || end < 0 || end < start) {
         throw new IllegalArgumentException();
       }
 
+      // this.debug = in.substring(start, end);
+
       this.in = in;
       this.start = start;
       this.end = end;
-      this.direction = direction;
+      this.level = level;
       this.paragraphIndex = paragraphIndex;
-      this.paragraphDirection = paragraphDirection;
+      this.paragraphLevel = paragraphLevel;
     }
 
-    public void setParagraphDirection (byte paragraphDirection) {
-      this.paragraphDirection = paragraphDirection;
+    public boolean isRtl () {
+      return (level & 1) == 1;
+    }
+
+    public boolean isParagraphRtl () {
+      return (paragraphLevel & 1) == 1;
     }
   }
 }
