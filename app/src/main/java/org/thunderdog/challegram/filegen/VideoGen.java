@@ -24,12 +24,12 @@ import android.os.Message;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
+import androidx.media3.common.C;
 import androidx.media3.common.Effect;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MimeTypes;
 import androidx.media3.effect.FrameDropEffect;
 import androidx.media3.effect.Presentation;
-import androidx.media3.effect.ScaleAndRotateTransformation;
 import androidx.media3.transformer.Composition;
 import androidx.media3.transformer.DefaultEncoderFactory;
 import androidx.media3.transformer.EditedMediaItem;
@@ -57,8 +57,11 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.BaseThread;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.mediaview.crop.CropEffectFactory;
+import org.thunderdog.challegram.mediaview.crop.CropState;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -207,14 +210,12 @@ public class VideoGen {
     convertVideo(info, entry);
   }
 
-  private static final boolean USE_MODERN_TRANSCODING = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
-
   @WorkerThread
   private void convertVideo (final VideoGenerationInfo info, final Entry entry) {
     final String sourcePath = info.getOriginalPath();
     final String destinationPath = info.getDestinationPath();
 
-    boolean canUseSimplePath = !USE_MODERN_TRANSCODING && info.canTakeSimplePath();
+    boolean canUseSimplePath = info.canTakeSimplePath();
 
     long sourceSize = getBytesCount(sourcePath, true);
     ProgressCallback onProgress = new ProgressCallback() {
@@ -307,7 +308,7 @@ public class VideoGen {
     }
 
     try {
-      if (USE_MODERN_TRANSCODING) {
+      if (Config.MODERN_VIDEO_TRANSCODING_ENABLED) {
         convertVideoComplexV2(sourcePath, destinationPath, info, entry, onProgress, onComplete, onCancel, onFailure);
       } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
         convertVideoComplex(sourcePath, destinationPath, info, entry, onProgress, onComplete, onCancel, onFailure);
@@ -371,7 +372,7 @@ public class VideoGen {
     if (info.needTrim()) {
       mediaItemBuilder.setClippingConfiguration(new MediaItem.ClippingConfiguration.Builder()
         .setStartPositionMs(TimeUnit.MICROSECONDS.toMillis(info.getStartTimeUs()))
-        .setEndPositionMs(TimeUnit.MICROSECONDS.toMillis(info.getEndTimeUs()))
+        .setEndPositionMs(info.getEndTimeUs() == -1 ? C.TIME_END_OF_SOURCE : TimeUnit.MICROSECONDS.toMillis(info.getEndTimeUs()))
         .build()
       );
     }
@@ -385,10 +386,14 @@ public class VideoGen {
     if (outputHeightLimit > 0) {
       videoEffects.add(Presentation.createForHeight(outputHeightLimit));
     }
-    int outputVideoRotation = info.getRotate();
-    if (outputVideoRotation != 0) {
-      videoEffects.add(new ScaleAndRotateTransformation.Builder().setRotationDegrees(360 - outputVideoRotation).build());
+    CropState cropState = info.getCrop();
+    if (CropEffectFactory.needScaleAndRotateEffect(cropState, info.getRotate())) {
+      videoEffects.add(CropEffectFactory.createScaleAndRotateEffect(cropState, info.getRotate()));
     }
+    if (CropEffectFactory.needCropRegionEffect(cropState)) {
+      videoEffects.add(CropEffectFactory.createCropRegionEffect(cropState));
+    }
+
     if (!videoEffects.isEmpty()) {
       editedMediaItemBuilder.setEffects(new Effects(
         Collections.emptyList(),
@@ -472,10 +477,14 @@ public class VideoGen {
 
   @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
   private void convertVideoComplex (String sourcePath, String destinationPath, VideoGenerationInfo info, Entry entry, ProgressCallback onProgress, Runnable onComplete, Runnable onCancel, RunnableData<Throwable> onFailure) {
+    if (info.hasCrop()) {
+      throw new IllegalArgumentException();
+    }
+
     DataSource dataSource = toDataSource(sourcePath);
 
     if (info.needTrim()) {
-      long trimEnd = dataSource.getDurationUs() - info.getEndTimeUs();
+      long trimEnd = info.getEndTimeUs() == -1 ? 0 : dataSource.getDurationUs() - info.getEndTimeUs();
       dataSource = new TrimDataSource(dataSource, info.getStartTimeUs(), trimEnd < 1000 ? 0 : trimEnd);
     }
 
@@ -571,7 +580,7 @@ public class VideoGen {
 
     entry.transcodeFinished.set(false);
 
-    if (info.needTrim() || info.needMute() || info.getRotate() != 0) {
+    if (info.needTrim() || info.needMute() || info.getRotate() != 0 || info.hasCrop()) {
       entry.resetProgress(0);
       boolean success = false;
       try {
@@ -623,9 +632,12 @@ public class VideoGen {
   }
 
   private boolean convertVideoSimple (String sourcePath, String destinationPath, VideoGenerationInfo info, @Nullable AtomicBoolean isCancelled, RunnableLong onProgress) throws Throwable {
+    if (info.hasCrop()) {
+      return false;
+    }
     VideoData videoData = new VideoData(sourcePath);
     return info.needTrim() ?
-        videoData.editMovie(destinationPath, info.needMute(), info.getRotate(), (double) info.getStartTimeUs() / 1_000_000.0, (double) info.getEndTimeUs() / 1_000_000.0, onProgress, isCancelled) :
+        videoData.editMovie(destinationPath, info.needMute(), info.getRotate(), (double) info.getStartTimeUs() / 1_000_000.0, info.getEndTimeUs() == -1 ? -1 : (double) info.getEndTimeUs() / 1_000_000.0, onProgress, isCancelled) :
         videoData.editMovie(destinationPath, info.needMute(), info.getRotate(), onProgress, isCancelled);
   }
 }

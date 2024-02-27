@@ -19,7 +19,7 @@ import android.content.Context;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
-import android.view.SurfaceView;
+import android.text.TextUtils;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,6 +28,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.media3.common.C;
+import androidx.media3.common.Effect;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.common.VideoSize;
@@ -44,6 +45,9 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.mediaview.crop.CropEffectFactory;
+import org.thunderdog.challegram.mediaview.crop.CropState;
+import org.thunderdog.challegram.mediaview.crop.CroppedLayout;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.telegram.CallManager;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -53,8 +57,11 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 
 public class VideoPlayerView implements Player.Listener, CallManager.CurrentCallListener, Runnable {
@@ -69,40 +76,46 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
   // private final TrackSelector selector;
   // private final LoadControl loadControl;
   private @Nullable ExoPlayer player;
+  private String appliedEffectsId;
+  private TextureView renderView;
+  private CroppedLayout croppedLayout;
   private View targetView;
 
   private boolean noProgressUpdates;
   private boolean isLooping, forceLooping;
-  private boolean inForceTouchMode;
 
   private final ViewGroup parentView;
   private final int addIndex;
+  private final boolean enableCropping;
 
-  public VideoPlayerView (Context context, ViewGroup parentView, int addIndex) {
+  public VideoPlayerView (Context context, ViewGroup parentView, int addIndex, boolean enableCropping) {
     this.context = context;
     this.parentView = parentView;
     this.addIndex = addIndex;
     this.seekHandler = new SeekHandler();
+    this.enableCropping = !APPLY_CROP_EFFECTS && enableCropping;
   }
 
-  public View prepareTextureView (boolean allowSurface) {
-    if (targetView == null) {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && allowSurface && false) {
-        this.targetView = new SurfaceView(context);
-      } else {
-        this.targetView = new TextureView(context);
-      }
-      this.targetView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+  public void prepareTextureView () {
+    if (renderView == null) {
+      this.renderView = new TextureView(context);
+      this.renderView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     }
-    return targetView;
+    if (enableCropping) {
+      if (croppedLayout == null) {
+        croppedLayout = new CroppedLayout(context);
+        croppedLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        croppedLayout.addView(renderView);
+        croppedLayout.setTag(this);
+      }
+      targetView = croppedLayout;
+    } else {
+      targetView = renderView;
+    }
   }
 
   public View getTargetView () {
     return targetView;
-  }
-
-  public void setInForceTouch () {
-    inForceTouchMode = true;
   }
 
   public void forceLooping (boolean force) {
@@ -128,7 +141,7 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
       }
       return;
     }
-    prepareTextureView(mediaItem == null || mediaItem.getSourceGalleryFile() == null);
+    prepareTextureView();
     setMuted(mediaItem != null && mediaItem.needMute());
     setLooping(forceLooping || (mediaItem != null && mediaItem.isSecret()));
     setNoProgressUpdates(mediaItem != null && mediaItem.isSecret());
@@ -186,11 +199,7 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
       this.player = U.newExoPlayer(context, preferExtensions);
       this.player.addListener(this);
       checkMuted();
-      if (targetView instanceof SurfaceView) {
-        this.player.setVideoSurfaceView((SurfaceView) targetView);
-      } else {
-        this.player.setVideoTextureView((TextureView) targetView);
-      }
+      this.player.setVideoTextureView(renderView);
 
       // FIXME: Must not be just a timeout alert.
       //        It should be shown once a significant part of file is downloaded and
@@ -208,6 +217,13 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
       if (targetView.getParent() == null) {
         this.parentView.addView(targetView, addIndex);
       }
+    }
+    if (enableCropping) {
+      croppedLayout.setCropState(mediaItem.getCropState());
+    } else if (APPLY_CROP_EFFECTS) {
+      CropState cropState = mediaItem.getCropState();
+      applyEffects(player, cropState, false);
+      this.appliedEffectsId = makeEffectsId(cropState);
     }
     this.originalSource = source;
     this.trimStartUs = this.trimEndUs = -1;
@@ -268,6 +284,63 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
     pendingLsAlert = UI.getContext(context).showAlert(b);
   }
 
+  private static String makeEffectsId (@Nullable CropState cropState) {
+    if (cropState == null) {
+      return null;
+    }
+    List<String> ids = new ArrayList<>();
+    if (CropEffectFactory.needCropRegionEffect(cropState)) {
+      ids.add("crop_" +
+        cropState.getLeft() + ":" +
+        cropState.getTop() + ":" +
+        cropState.getRight() + ":" +
+        cropState.getBottom() + ":"
+      );
+    }
+    if (CropEffectFactory.needScaleAndRotateEffect(cropState, 0)) {
+      ids.add("scaleRotate_" + cropState.getRotateBy() + "_" + cropState.getFlags());
+    }
+    if (ids.isEmpty()) {
+      return null;
+    }
+    return TextUtils.join(",", ids);
+  }
+
+  // FIXME[exoplayer]: There are at least two render bugs in media3 that might go away with future versions.
+  public static final boolean APPLY_CROP_EFFECTS = false; // Config.MODERN_VIDEO_TRANSCODING_ENABLED
+
+  private static void applyEffects (@NonNull ExoPlayer player, @Nullable CropState cropState, boolean needEmpty) {
+    List<Effect> effects = new ArrayList<>();
+    if (cropState != null) {
+      if (CropEffectFactory.needCropRegionEffect(cropState)) {
+        effects.add(CropEffectFactory.createCropRegionEffect(cropState, true));
+      }
+      if (CropEffectFactory.needScaleAndRotateEffect(cropState, 0)) {
+        effects.add(CropEffectFactory.createScaleAndRotateEffect(cropState, 0));
+      }
+    }
+    if (needEmpty || !effects.isEmpty()) {
+      player.setVideoEffects(effects);
+    }
+  }
+
+  public void checkCrop () {
+    if (currentItem != null) {
+      CropState cropState = currentItem.getCropState();
+      if (enableCropping) {
+        croppedLayout.setCropState(cropState);
+      } else if (APPLY_CROP_EFFECTS && !isDetached) {
+        String newId = makeEffectsId(cropState);
+        if (player != null && !StringUtils.equalsOrBothEmpty(this.appliedEffectsId, newId)) {
+          applyEffects(player, cropState, true);
+          player.prepare();
+          this.appliedEffectsId = newId;
+          requestLayout();
+        }
+      }
+    }
+  }
+
   public boolean checkTrim () {
     if (currentItem != null && !isDetached) {
       if (currentItem.needTrim()) {
@@ -312,8 +385,11 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
   public void onVideoSizeChanged (@NonNull VideoSize videoSize) {
     if (player == null || currentItem == null || videoSize.width == 0 || videoSize.height == 0)
       return;
-    if (currentItem.setDimensions(videoSize.width, videoSize.height) && targetView != null) {
-      targetView.requestLayout();
+    if (enableCropping) {
+      croppedLayout.setSourceDimensions(videoSize.width, videoSize.height, videoSize.unappliedRotationDegrees);
+    }
+    if (currentItem.setDimensions(videoSize.width, videoSize.height, videoSize.unappliedRotationDegrees)) {
+      requestLayout();
     }
   }
 
@@ -362,42 +438,7 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
     }
   }
 
-  /*@Override
-  protected void onAttachedToWindow () {
-    super.onAttachedToWindow();
-    attach();
-  }
-
-  @Override
-  protected void onDetachedFromWindow () {
-    super.onDetachedFromWindow();
-    detach();
-  }*/
-
-  // extractor listener
-
-  /*@Override
-  public void onLoadError (IOException error) {
-    if (!destroyed && currentItem != null && !inForceTouchMode) {
-      UI.showToast("Error playing video", Toast.LENGTH_SHORT);
-    }
-  }*/
-
   // utils
-
-  public void layoutInner (int width, int height, int offsetHorizontal, int offsetTop, int offsetBottom) {
-    /*int availWidth = receiver.getWidth();
-    int availHeight = receiver.getHeight();
-
-
-
-    float scale = Math.min((float) receiver.getWidth() / (float) getMeasuredWidth(), (float) receiver.getHeight() / (float) getMeasuredHeight());
-
-    playerView.setPivotX(receiver.getWidth() / 2);
-    playerView.setPivotY(receiver.getHeight() / 2);
-    playerView.setScaleX(scale);
-    playerView.setScaleY(scale);*/
-  }
 
   private MediaCellView boundCell;
 

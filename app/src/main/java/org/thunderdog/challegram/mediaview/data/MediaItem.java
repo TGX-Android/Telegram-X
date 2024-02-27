@@ -986,16 +986,22 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     return null;
   }
 
+  // TODO: rework entirely the rendering the legacy mess
+
   public boolean isRotated () {
     return isGalleryType(type) && U.isRotated(sourceGalleryFile.getRotation());
   }
 
+  public boolean isVideoRenderRotated (boolean allowCrop) {
+    return isVideo() && isGalleryType(type) && U.isRotated(sourceGalleryFile.getRotation() + (allowCrop && sourceGalleryFile.getCropState() != null ? sourceGalleryFile.getCropState().getRotateBy() : 0));
+  }
+
   public boolean isPostRotated () {
-    return isGalleryType(type) && U.isRotated(getPostRotation());
+    return isGalleryType(type) && U.isRotated(getPostRotate());
   }
 
   public boolean isFinallyRotated () {
-    return isGalleryType(type) && U.isRotated(sourceGalleryFile.getRotation() + getPostRotation());
+    return isGalleryType(type) && U.isRotated(sourceGalleryFile.getRotation() + getPostRotate());
   }
 
   public int getFileId () {
@@ -1103,6 +1109,21 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     if (previewImageFile != null) {
       previewImageFile.setCropState(state);
     }
+    if (miniThumbnail != null) {
+      miniThumbnail.setCropState(state);
+    }
+    if (blurredPreviewImageFile != null) {
+      blurredPreviewImageFile.setCropState(state);
+    }
+    if (thumbImageMiniThumb != null) {
+      thumbImageMiniThumb.setCropState(state);
+    }
+    if (thumbImageFile != null) {
+      thumbImageFile.setCropState(state);
+    }
+    if (thumbImageFileNoScale != null) {
+      thumbImageFileNoScale.setCropState(state);
+    }
   }
 
   /*Paint*/
@@ -1135,8 +1156,8 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
 
   /*Video rotation*/
 
-  public float getPostRotation () {
-    return sourceGalleryFile != null ? sourceGalleryFile.getPostRotate() : 0f;
+  public int getPostRotate () {
+    return sourceGalleryFile != null ? sourceGalleryFile.getPostRotate() : 0;
   }
 
   public int postRotateBy90Degrees () {
@@ -1180,8 +1201,9 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
   public long getTrimEndUs () {
     if (needTrim()) {
       return sourceGalleryFile.getEndTimeUs();
+    } else {
+      return -1;
     }
-    return -1;
   }
 
   public long getTotalDurationUs () {
@@ -1288,6 +1310,10 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
 
   public boolean canSeekVideo () {
     return isVideo() && (Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE || getFileProgress().isDownloaded());
+  }
+
+  public boolean isVideoOrGif () {
+    return isVideo() || isGif();
   }
 
   public boolean isVideo () {
@@ -1731,21 +1757,19 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
 
   // Image-related stuff
 
-  public boolean setDimensions (int width, int height) {
-    boolean rotated;
-    if (sourceGalleryFile != null) {
-      rotated = U.isRotated(sourceGalleryFile.getRotation());
-    } else if (targetImage instanceof ImageVideoThumbFile) {
-      rotated = U.isRotated(((ImageVideoThumbFile) targetImage).getVideoRotation());
-    } else {
-      rotated = false;
-    }
+  public boolean setDimensions (int width, int height, int unappliedRotationDegrees) {
+    boolean rotated = U.isRotated(unappliedRotationDegrees);
     if (rotated) {
       int temp = width;
       width = height;
       height = temp;
     }
     if (this.width != width || this.height != height) {
+      Log.i("videoSizeChanged: %dx%d -> %dx%d (rotation: %d)",
+        this.width, this.height,
+        width, height,
+        unappliedRotationDegrees
+      );
       this.width = width;
       this.height = height;
       // TODO
@@ -1755,8 +1779,16 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
   }
 
   public int getWidth () {
-    if (sourceGalleryFile != null && sourceGalleryFile.getCropState() != null) {
-      CropState cropState = sourceGalleryFile.getCropState();
+    return getWidth(true);
+  }
+
+  public int getHeight () {
+    return getHeight(true);
+  }
+
+  public int getWidth (boolean allowCrop) {
+    CropState cropState = getCropState();
+    if (allowCrop && cropState != null) {
       if (U.isRotated(cropState.getRotateBy())) {
         return (int) (height * cropState.getRegionWidth());
       } else {
@@ -1766,9 +1798,9 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     return width;
   }
 
-  public int getHeight () {
-    if (sourceGalleryFile != null && sourceGalleryFile.getCropState() != null) {
-      CropState cropState = sourceGalleryFile.getCropState();
+  public int getHeight (boolean allowCrop) {
+    CropState cropState = getCropState();
+    if (allowCrop && cropState != null) {
       if (U.isRotated(cropState.getRotateBy())) {
         return (int) (width * cropState.getRegionWidth());
       } else {

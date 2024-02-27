@@ -25,6 +25,8 @@ import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
+import org.thunderdog.challegram.mediaview.crop.CropState;
+import org.thunderdog.challegram.mediaview.crop.CropStateParser;
 import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.unsorted.Settings;
 
@@ -42,6 +44,7 @@ public class VideoGenerationInfo extends GenerationInfo implements AbstractVideo
   private int rotate;
   private long startTime = -1, endTime = -1;
   private boolean noTranscoding;
+  private @Nullable CropState cropState;
   private Settings.VideoLimit videoLimit;
 
   public static void parseConversion (AbstractVideoGenerationInfo out, String conversion) {
@@ -54,6 +57,8 @@ public class VideoGenerationInfo extends GenerationInfo implements AbstractVideo
     boolean noTranscoding = false;
     long bitrate = DefaultVideoStrategy.BITRATE_UNKNOWN;
     int frameRate = Settings.DEFAULT_FRAME_RATE;
+    CropState cropState = null;
+    int argIndex = 0;
     for (String arg : args) {
       if (arg.startsWith(PREFIX_ROTATE)) {
         rotate = StringUtils.parseInt(arg.substring(PREFIX_ROTATE.length()));
@@ -75,21 +80,26 @@ public class VideoGenerationInfo extends GenerationInfo implements AbstractVideo
         sourceId = StringUtils.parseInt(arg.substring(PREFIX_SOURCE_FILE_ID.length()));
       } else if (arg.startsWith(PREFIX_NO_TRANSCODING)) {
         noTranscoding = StringUtils.parseInt(arg.substring(PREFIX_NO_TRANSCODING.length())) == 1;
-      } else if (!(arg.startsWith(PREFIX_RANDOM) || arg.startsWith(PREFIX_LAST_MODIFIED))) {
-        Log.w("Unknown video conversion argument: %s", arg);
+      } else if (arg.startsWith(PREFIX_CROP)) {
+        String in = arg.substring(PREFIX_CROP.length());
+        cropState = CropStateParser.parse(in);
+      } else if (argIndex != 0 && !(arg.startsWith(PREFIX_RANDOM) || arg.startsWith(PREFIX_LAST_MODIFIED))) {
+        Log.w("Unknown video conversion argument: %s, full: %s", arg, conversion);
       }
+      argIndex++;
     }
     out.setVideoGenerationInfo(sourceId,
       needMute,
       new Settings.VideoLimit(new Settings.VideoSize(mostMajor, mostMinor), frameRate, bitrate),
       rotate,
       startTime, endTime,
-      noTranscoding
+      noTranscoding,
+      cropState
     );
   }
 
   @Override
-  public void setVideoGenerationInfo (int sourceFileId, boolean needMute, Settings.VideoLimit videoLimit, int rotate, long startTime, long endTime, boolean noTranscoding) {
+  public void setVideoGenerationInfo (int sourceFileId, boolean needMute, Settings.VideoLimit videoLimit, int rotate, long startTime, long endTime, boolean noTranscoding, @Nullable CropState cropState) {
     this.sourceFileId = sourceFileId;
     this.needMute = needMute;
     this.videoLimit = videoLimit;
@@ -97,6 +107,7 @@ public class VideoGenerationInfo extends GenerationInfo implements AbstractVideo
     this.startTime = startTime;
     this.endTime = endTime;
     this.noTranscoding = noTranscoding;
+    this.cropState = cropState;
   }
 
   public Settings.VideoLimit getVideoLimit () {
@@ -124,7 +135,16 @@ public class VideoGenerationInfo extends GenerationInfo implements AbstractVideo
   }
 
   public boolean needTrim () {
-    return startTime != -1 && endTime != -1;
+    return startTime != -1;
+  }
+
+  public boolean hasCrop () {
+    return cropState != null && !cropState.isEmpty();
+  }
+
+  @Nullable
+  public CropState getCrop () {
+    return cropState;
   }
 
   public boolean disableTranscoding () {
@@ -137,18 +157,18 @@ public class VideoGenerationInfo extends GenerationInfo implements AbstractVideo
 
   private static String makeConversion (String path, @Nullable ImageGalleryFile file, boolean noTranscoding) {
     if (file != null) {
-      return makeConversion(0, file.shouldMuteVideo(), file.getPostRotate(), file.getStartTimeUs(), file.getEndTimeUs(), noTranscoding, lastModified(path));
+      return makeConversion(0, file.shouldMuteVideo(), file.getPostRotate(), file.getStartTimeUs(), file.getEndTimeUs(), noTranscoding, file.getCropState(), lastModified(path));
     } else {
-      return makeConversion(0, false, 0, -1, -1, noTranscoding, lastModified(path));
+      return makeConversion(0, false, 0, -1, -1, noTranscoding, null, lastModified(path));
     }
   }
 
   public static boolean isEmpty (ImageGalleryFile file) {
-    return file != null && !file.shouldMuteVideo() && file.getPostRotate() == 0 && file.getStartTimeUs() == -1 && file.getEndTimeUs() == -1;
+    return file != null && !file.shouldMuteVideo() && file.getPostRotate() == 0 && !file.hasTrim();
   }
 
   public boolean canTakeSimplePath () {
-    return true;
+    return !hasCrop();
   }
 
   private static boolean isSupportedOutputFormat (ImageGalleryFile file, String mimeType) {
@@ -166,12 +186,12 @@ public class VideoGenerationInfo extends GenerationInfo implements AbstractVideo
     return file != null && (!(file.hasTrim() || file.getPostRotate() != 0 || file.shouldMuteVideo()) || isSupportedOutputFormat(file, TGMimeType.mimeTypeForExtension(U.getExtension(file.getFilePath()))));
   }
 
-  public static String makeConversion (int sourceFileId, boolean mute, int postRotate, long startTimeUs, long endTimeUs, boolean noTranscoding, long lastModified) {
+  public static String makeConversion (int sourceFileId, boolean mute, int postRotate, long startTimeUs, long endTimeUs, boolean noTranscoding, @Nullable CropState cropState, long lastModified) {
     Settings.VideoLimit videoLimit = Settings.instance().getPreferredVideoLimit();
-    return makeConversion(sourceFileId, mute, videoLimit, postRotate, startTimeUs, endTimeUs, noTranscoding, lastModified);
+    return makeConversion(sourceFileId, mute, videoLimit, postRotate, startTimeUs, endTimeUs, noTranscoding, cropState, lastModified);
   }
 
-  public static String makeConversion (int sourceFileId, boolean mute, Settings.VideoLimit videoLimit, int postRotate, long startTimeUs, long endTimeUs, boolean noTranscoding, long lastModified) {
+  public static String makeConversion (int sourceFileId, boolean mute, Settings.VideoLimit videoLimit, int postRotate, long startTimeUs, long endTimeUs, boolean noTranscoding, @Nullable CropState cropState, long lastModified) {
     StringBuilder b = new StringBuilder(TYPE_VIDEO);
     b.append(mute ? 1 : 0);
     if (postRotate != 0) {
@@ -214,6 +234,11 @@ public class VideoGenerationInfo extends GenerationInfo implements AbstractVideo
       b.append(PREFIX_NO_TRANSCODING);
       b.append('1');
     }
+    if (cropState != null && !cropState.isEmpty()) {
+      b.append(',');
+      b.append(PREFIX_CROP);
+      b.append(CropStateParser.toParsableString(cropState));
+    }
     if (lastModified != 0) {
       b.append(',');
       b.append(PREFIX_LAST_MODIFIED);
@@ -225,9 +250,5 @@ public class VideoGenerationInfo extends GenerationInfo implements AbstractVideo
       b.append(Math.random());
     }
     return b.toString();
-  }
-
-  public static String cleanVideoConversion (String conversion) {
-    return conversion.substring(TYPE_VIDEO.length());
   }
 }

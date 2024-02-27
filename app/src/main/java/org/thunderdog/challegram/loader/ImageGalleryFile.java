@@ -136,7 +136,7 @@ public class ImageGalleryFile extends ImageFile implements Comparable<ImageGalle
   }
 
   public boolean hasTrim () {
-    return startTimeUs != -1 && endTimeUs != -1 && totalDurationUs != -1;
+    return startTimeUs != -1 && totalDurationUs != -1;
   }
 
   public boolean setVideoInformation (long totalDurationUs, double width, double height, int frameRate, long bitrate) {
@@ -291,7 +291,17 @@ public class ImageGalleryFile extends ImageFile implements Comparable<ImageGalle
   }
 
   public long getVideoDuration (boolean trimmed, TimeUnit unit) {
-    return trimmed && hasTrim() ? unit.convert(endTimeUs - startTimeUs, TimeUnit.MICROSECONDS) : unit.convert(duration, TimeUnit.MILLISECONDS);
+    if (trimmed && hasTrim()) {
+      if (endTimeUs == -1) {
+        return unit.convert(
+          TimeUnit.MILLISECONDS.toMicros(duration) - startTimeUs,
+          TimeUnit.MICROSECONDS
+        );
+      } else {
+        return unit.convert(endTimeUs - startTimeUs, TimeUnit.MICROSECONDS);
+      }
+    }
+    return unit.convert(duration, TimeUnit.MILLISECONDS);
   }
 
   public long getGalleryId () {

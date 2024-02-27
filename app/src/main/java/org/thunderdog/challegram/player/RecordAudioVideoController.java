@@ -1668,7 +1668,11 @@ public class RecordAudioVideoController implements
         tdlib.client().send(new TdApi.CancelPreliminaryUploadFile(roundFile.id), tdlib.okHandler());
         double startTimeSeconds = videoPreviewView.getStartTime();
         double endTimeSeconds = videoPreviewView.getEndTime();
-        String conversion = VideoGenerationInfo.makeConversion(roundFile.id, false, 0, (long) (startTimeSeconds * 1_000_000), (long) (endTimeSeconds * 1_000_000), true, 0);
+        String conversion = VideoGenerationInfo.makeConversion(roundFile.id, false, 0,
+          (long) (startTimeSeconds * 1_000_000), (long) (endTimeSeconds * 1_000_000),
+          true, null,
+          0
+        );
         TdApi.InputFileGenerated trimmedFile = new TdApi.InputFileGenerated(roundFile.local.path, conversion, 0);
         sendVideoNote(new TdApi.InputMessageVideoNote(trimmedFile, null, (int) Math.round(endTimeSeconds - startTimeSeconds), VIDEO_NOTE_LENGTH, null), initialSendOptions, null);
       } else {

@@ -2203,7 +2203,7 @@
   <string name="DiscardVideoMessageTitle">Discard Video Message</string>
   <string name="DiscardVideoMessageDescription">Are you sure you want to discard your video message?</string>
   <string name="Discard">Discard</string>
-  <string name="MediaTypeUnsupported">Feature is unsupported for this type of media</string>
+  <string name="MediaFeatureUnavailable">Feature is not available for this type of media</string>
   <string name="XMadeGroupHistoryHidden">%1$s made group history hidden for new members</string>
   <string name="XMadeGroupHistoryVisible">%1$s made group history visible for new members</string>
   <string name="XChangedGroupStickerSet">%1$s changed group sticker set</string>

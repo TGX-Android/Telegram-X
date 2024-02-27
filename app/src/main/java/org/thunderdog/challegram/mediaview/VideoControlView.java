@@ -205,11 +205,16 @@ public class VideoControlView extends FrameLayoutFix implements FactorAnimator.T
         long durationUs = file.getTotalDurationUs();
         long startUs = file.getStartTimeUs();
         long endUs = file.getEndTimeUs();
-        newStart = (float) ((double) startUs / (double) durationUs);
-        newEnd = (float) ((double) endUs / (double) durationUs);
-        startTime = (double) startUs / 1_000_000.0;
-        endTime = (double) endUs / 1_000_000.0;
         duration = (double) durationUs / 1_000_000.0;
+        newStart = (float) ((double) startUs / (double) durationUs);
+        startTime = (double) startUs / 1_000_000.0;
+        if (endUs == -1) {
+          newEnd = 1.0f;
+          endTime = duration;
+        } else {
+          newEnd = (float) ((double) endUs / (double) durationUs);
+          endTime = (double) endUs / 1_000_000.0;
+        }
       } else {
         newStart = 0f;
         newEnd = 1f;

@@ -26,6 +26,7 @@ import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Parcelable;
 import android.os.SystemClock;
 import android.provider.ContactsContract;
@@ -1700,12 +1701,26 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     }).start();
   }
 
+  @SuppressWarnings("deprecation")
+  @Nullable
+  private static Uri getUri (@NonNull Bundle bundle, @NonNull String key) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      return bundle.getParcelable(key, Uri.class);
+    } else {
+      return (Uri) bundle.get(key);
+    }
+  }
+
   private void shareIntentImplSingle (Tdlib tdlib, final Intent intent) throws Throwable {
     String type = intent.getType();
     final ArrayList<TdApi.InputMessageContent> out = new ArrayList<>();
 
     if (!StringUtils.isEmpty(type) && ContactsContract.Contacts.CONTENT_VCARD_TYPE.equals(type)) {
-      Uri uri = (Uri) intent.getExtras().get(Intent.EXTRA_STREAM);
+      Bundle extras = intent.getExtras();
+      if (extras == null) {
+        throw new IllegalArgumentException("extras == null");
+      }
+      Uri uri = getUri(extras, Intent.EXTRA_STREAM);
       if (uri == null) {
         throw new IllegalArgumentException("uri == null");
       }
