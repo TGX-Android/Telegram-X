@@ -14,6 +14,9 @@
  */
 package org.thunderdog.challegram.filegen;
 
+import androidx.annotation.Nullable;
+
+import org.thunderdog.challegram.mediaview.crop.CropState;
 import org.thunderdog.challegram.unsorted.Settings;
 
 public interface AbstractVideoGenerationInfo {
@@ -27,11 +30,13 @@ public interface AbstractVideoGenerationInfo {
   String PREFIX_QUALITY = "limit";
   String PREFIX_FRAME_RATE = "fps";
   String PREFIX_BITRATE = "bitrate";
+  String PREFIX_CROP = "crop";
 
   void setVideoGenerationInfo (int sourceFileId,
                                boolean needMute,
                                Settings.VideoLimit videoLimit,
                                int rotate,
                                long startTime, long endTime,
-                               boolean noTranscoding);
+                               boolean noTranscoding,
+                               @Nullable CropState cropState);
 }
