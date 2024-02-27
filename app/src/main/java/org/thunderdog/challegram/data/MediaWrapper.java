@@ -277,12 +277,13 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       video.height = temp;
     }*/
 
-    setPreviewFile(video.minithumbnail, video.thumbnail);
-
     this.targetFile = video.video;
 
-    this.targetImageFile = createThumbFile(tdlib, video.video);
-    this.targetImageFile.setScaleType(ImageFile.CENTER_CROP);
+    if (!ignoreUpcomingContentUpdate()) {
+      setPreviewFile(video.minithumbnail, video.thumbnail);
+      this.targetImageFile = createThumbFile(tdlib, video.video);
+      this.targetImageFile.setScaleType(ImageFile.CENTER_CROP);
+    }
 
     this.contentWidth = video.width;
     this.contentHeight = video.height;
@@ -724,13 +725,24 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     return fileProgress;
   }
 
+  private boolean ignoreUpcomingContentUpdate;
+
   public void updateMessageId (long oldMessageId, long newMessageId, boolean success) {
     if (this.sourceMessageId == oldMessageId) {
       this.sourceMessageId = newMessageId;
+      this.ignoreUpcomingContentUpdate = isVideo();
     }
     getFileProgress().updateMessageId(oldMessageId, newMessageId, success);
     updateDuration();
     updateRevealOnTap();
+  }
+
+  public boolean ignoreUpcomingContentUpdate () {
+    if (ignoreUpcomingContentUpdate) {
+      ignoreUpcomingContentUpdate = false;
+      return true;
+    }
+    return false;
   }
 
   public @Nullable TdApi.Photo getPhoto () {

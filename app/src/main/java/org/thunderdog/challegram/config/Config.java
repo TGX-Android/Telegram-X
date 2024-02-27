@@ -147,6 +147,7 @@ public class Config {
 
   public static final boolean CROP_USE_REGION_READER = true;
   public static final boolean CROP_ENABLED = true;
+  public static final boolean MODERN_VIDEO_TRANSCODING_ENABLED = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
 
   public static final boolean IN_APP_BROWSER_AVAILABLE = Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1;
 
