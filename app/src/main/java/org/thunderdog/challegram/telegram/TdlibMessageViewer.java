@@ -23,8 +23,6 @@ import androidx.collection.LongSparseArray;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
-import org.thunderdog.challegram.BuildConfig;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TD;
@@ -763,8 +761,6 @@ public class TdlibMessageViewer {
           }
           if (error != null) {
             TDLib.w("Unable to view %d messages in chat %d, source: %s, error: %s", messageIds.length, chatId, messageSource, TD.toErrorString(error));
-          } else if (BuildConfig.DEBUG) {
-            Log.i("Viewed %d messages in chat %d, source: %s", messageIds.length, chatId, messageSource);
           }
         });
       }

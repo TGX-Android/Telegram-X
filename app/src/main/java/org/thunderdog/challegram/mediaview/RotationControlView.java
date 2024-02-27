@@ -34,7 +34,7 @@ import me.vkryl.core.ColorUtils;
 
 public class RotationControlView extends View implements FactorAnimator.Target {
   public interface Callback {
-    boolean allowPreciseRotation ();
+    boolean allowPreciseRotation (RotationControlView view);
     void onPreciseActiveFactorChanged (float activeFactor);
     void onPreciseActiveStateChanged (boolean isActive);
     void onPreciseRotationChanged (float newValue);
@@ -203,7 +203,7 @@ public class RotationControlView extends View implements FactorAnimator.Target {
   public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) { }
 
   private void setUp (boolean isUp) {
-    isUp = isUp && (callback == null || callback.allowPreciseRotation());
+    isUp = isUp && (callback == null || callback.allowPreciseRotation(this));
     if (this.isUp != isUp) {
       this.isUp = isUp;
       animateFactor(isUp ? 1f : 0f);

@@ -14,22 +14,31 @@
  */
 package org.thunderdog.challegram.mediaview.crop;
 
-import androidx.annotation.Nullable;
+import androidx.annotation.IntDef;
+import androidx.annotation.NonNull;
 
-import org.thunderdog.challegram.Log;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.MathUtils;
-import me.vkryl.core.StringUtils;
 
 public class CropState {
-  public static final int FLAG_MIRROR_HORIZONTALLY = 1;
-  public static final int FLAG_MIRROR_VERTICALLY = 1 << 1;
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef(value = {
+    Flags.MIRROR_HORIZONTALLY,
+    Flags.MIRROR_VERTICALLY
+  }, flag = true)
+  public @interface Flags {
+    int
+      MIRROR_HORIZONTALLY = 1,
+      MIRROR_VERTICALLY = 1 << 1;
+  }
 
   private double left = 0.0, top = 0.0, right = 1.0, bottom = 1.0;
   private int rotateBy = 0;
   private float degreesAroundCenter = 0;
-  private int flags;
+  private @Flags int flags;
 
   public CropState () { }
 
@@ -67,43 +76,10 @@ public class CropState {
     }
   }
 
-  public static @Nullable CropState parse (String in) {
-    if (StringUtils.isEmpty(in)) {
-      return null;
-    }
-    try {
-      String[] data = in.split(":");
-      if (data.length < 6 || data.length > 7) {
-        throw new IllegalArgumentException("data.length < 6 || data.length > 7 (" + data.length + ", " + in + ")");
-      }
-      double left = Double.parseDouble(data[0]);
-      double top = Double.parseDouble(data[1]);
-      double right = Double.parseDouble(data[2]);
-      double bottom = Double.parseDouble(data[3]);
-      int rotateBy = Integer.parseInt(data[4]);
-      float degreesAroundCenter = Float.parseFloat(data[5]);
-      int flags = data.length > 6 ? Integer.parseInt(data[6]) : 0;
-      return new CropState(left, top, right, bottom, rotateBy, degreesAroundCenter, flags);
-    } catch (Throwable t) {
-      Log.e(t);
-    }
-    return null;
-  }
-
   @Override
+  @NonNull
   public String toString () {
-    return String.valueOf(left) +
-      ':' +
-      top +
-      ':' +
-      right +
-      ':' +
-      bottom +
-      ':' +
-      rotateBy +
-      ':' +
-      degreesAroundCenter +
-      (flags != 0 ? ":" + flags : "");
+    return CropStateParser.toParsableString(this);
   }
 
   public boolean isEmpty () {
@@ -118,8 +94,16 @@ public class CropState {
     return (right - left);
   }
 
+  public double getRegionCenterX () {
+    return left + (right - left) / 2.0;
+  }
+
   public double getRegionHeight () {
     return (bottom - top);
+  }
+
+  public double getRegionCenterY () {
+    return top + (bottom - top) / 2.0;
   }
 
   public boolean hasRotations () {
@@ -131,15 +115,15 @@ public class CropState {
   }
 
   public boolean needMirror () {
-    return BitwiseUtils.hasFlag(flags, FLAG_MIRROR_HORIZONTALLY | FLAG_MIRROR_VERTICALLY);
+    return BitwiseUtils.hasFlag(flags, Flags.MIRROR_HORIZONTALLY | Flags.MIRROR_VERTICALLY);
   }
 
   public boolean needMirrorHorizontally () {
-    return hasFlag(FLAG_MIRROR_HORIZONTALLY);
+    return hasFlag(Flags.MIRROR_HORIZONTALLY);
   }
 
   public boolean needMirrorVertically () {
-    return hasFlag(FLAG_MIRROR_VERTICALLY);
+    return hasFlag(Flags.MIRROR_VERTICALLY);
   }
 
   public int getFlags () {
@@ -165,15 +149,13 @@ public class CropState {
     return this == obj || (obj instanceof CropState && compare((CropState) obj));
   }
 
-  private void invokeCallbacks (boolean rectChanged) {
-    // TODO ?
-  }
+  protected void onCropChanged (boolean rectChanged) { }
 
   public int rotateBy (int rotateDelta) {
     int rotateBy = MathUtils.modulo(this.rotateBy + rotateDelta, 360);
     if (this.rotateBy != rotateBy) {
       this.rotateBy = rotateBy;
-      invokeCallbacks((right - left) != (bottom - top));
+      onCropChanged((right - left) != (bottom - top));
     }
     return rotateBy;
   }
@@ -181,14 +163,14 @@ public class CropState {
   public void setDegreesAroundCenter (float degreesAroundCenter) {
     if (this.degreesAroundCenter != degreesAroundCenter) {
       this.degreesAroundCenter = degreesAroundCenter;
-      invokeCallbacks(false);
+      onCropChanged(false);
     }
   }
 
   public void setFlags (int flags) {
     if (this.flags != flags) {
       this.flags = flags;
-      invokeCallbacks(false);
+      onCropChanged(false);
     }
   }
 
@@ -222,7 +204,7 @@ public class CropState {
       this.top = top;
       this.right = right;
       this.bottom = bottom;
-      invokeCallbacks(true);
+      onCropChanged(true);
     }
   }
 }
