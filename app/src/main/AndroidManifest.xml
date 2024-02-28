@@ -3,7 +3,7 @@
   xmlns:tools="http://schemas.android.com/tools"
   android:installLocation="auto">
 
-  <uses-sdk tools:overrideLibrary="androidx.camera.camera2, androidx.camera.core, androidx.camera.view, androidx.camera.lifecycle, androidx.camera.extensions, com.otaliastudios.transcoder, com.otaliastudios.opengl, com.linkedin.android.litr, com.linkedin.android.litr.filter" />
+  <uses-sdk tools:overrideLibrary="androidx.media3.effect, androidx.media3.transformer, androidx.camera.camera2, androidx.camera.core, androidx.camera.view, androidx.camera.lifecycle, androidx.camera.extensions, com.otaliastudios.transcoder, com.otaliastudios.opengl" />
 
   <uses-feature
     android:glEsVersion="0x00020000"
