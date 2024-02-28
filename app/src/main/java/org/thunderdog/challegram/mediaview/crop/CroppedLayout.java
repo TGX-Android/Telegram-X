@@ -94,6 +94,8 @@ public class CroppedLayout extends ViewGroup {
       int croppedWidth, croppedHeight;
       int rotateBy = (cropState != null ? cropState.getRotateBy() : 0) + unappliedRotationDegrees;
       boolean isRotated = U.isRotated(rotateBy);
+      boolean mirrorHorizontally = cropState != null && cropState.needMirrorHorizontally();
+      boolean mirrorVertically = cropState != null && cropState.needMirrorVertically();
       if (cropState != null && !cropState.isRegionEmpty()) {
         double left, top, right, bottom;
         switch (cropState.getRotateBy()) {
@@ -129,6 +131,17 @@ public class CroppedLayout extends ViewGroup {
             throw new IllegalStateException();
         }
 
+        if (mirrorHorizontally) {
+          double temp = left;
+          left = 1.0 - right;
+          right = 1.0 - temp;
+        }
+        if (mirrorVertically) {
+          double temp = top;
+          top = 1.0 - bottom;
+          bottom = 1.0 - temp;
+        }
+
         pivotX = (int) (width * (left + (right - left) / 2.0));
         pivotY = (int) (height * (top + (bottom - top) / 2.0));
 
@@ -154,8 +167,8 @@ public class CroppedLayout extends ViewGroup {
       );
       view.setPivotX(pivotX);
       view.setPivotY(pivotY);
-      view.setScaleX(scale);
-      view.setScaleY(scale);
+      view.setScaleX(scale * (mirrorHorizontally ? -1.0f : 1.0f));
+      view.setScaleY(scale * (mirrorVertically ? -1.0f : 1.0f));
       view.setRotation(rotateBy);
     }
   }
