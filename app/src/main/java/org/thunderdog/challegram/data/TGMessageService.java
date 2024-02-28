@@ -1611,6 +1611,35 @@ public final class TGMessageService extends TGMessageServiceImpl {
     }
   }
 
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventBackgroundChanged backgroundChanged) {
+    super(context, msg);
+    setTextCreator(() -> {
+      if (backgroundChanged.newBackground != null) {
+        if (msg.isOutgoing) {
+          return getText(
+            msg.isChannelPost ? R.string.EventLogChannelBackgroundChangedYou : R.string.EventLogChatBackgroundChangedYou
+          );
+        } else {
+          return getText(
+            msg.isChannelPost ? R.string.EventLogChannelBackgroundChanged : R.string.EventLogChatBackgroundChanged,
+            new SenderArgument(sender)
+          );
+        }
+      } else {
+        if (msg.isOutgoing) {
+          return getText(
+            msg.isChannelPost ? R.string.EventLogChannelBackgroundUnsetYou : R.string.EventLogChatBackgroundUnsetYou
+          );
+        } else {
+          return getText(
+            msg.isChannelPost ? R.string.EventLogChannelBackgroundUnset : R.string.EventLogChatBackgroundUnset,
+            new SenderArgument(sender)
+          );
+        }
+      }
+    });
+  }
+
   private void setBackgroundTextCreator (int oldAccentColorId, int newAccentColorId,
                                          long oldBackgroundCustomEmojiId, long newBackgroundCustomEmojiId,
                                          boolean isProfile) {
