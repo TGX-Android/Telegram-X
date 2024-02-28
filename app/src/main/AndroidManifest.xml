@@ -3,7 +3,7 @@
   xmlns:tools="http://schemas.android.com/tools"
   android:installLocation="auto">
 
-  <uses-sdk tools:overrideLibrary="androidx.camera.camera2, androidx.camera.core, androidx.camera.view, androidx.camera.lifecycle, androidx.camera.extensions, com.otaliastudios.transcoder, com.otaliastudios.opengl, com.linkedin.android.litr, com.linkedin.android.litr.filter" />
+  <uses-sdk tools:overrideLibrary="androidx.media3.effect, androidx.media3.transformer, androidx.camera.camera2, androidx.camera.core, androidx.camera.view, androidx.camera.lifecycle, androidx.camera.extensions, com.otaliastudios.transcoder, com.otaliastudios.opengl" />
 
   <uses-feature
     android:glEsVersion="0x00020000"
@@ -66,7 +66,6 @@
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
-  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
   <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
   <uses-permission android:name="android.permission.CHANGE_CONFIGURATION" />
   <uses-permission android:name="android.permission.READ_PHONE_STATE" />
@@ -166,7 +165,7 @@
       android:name=".service.ForegroundService"
       android:enabled="true"
       android:exported="false"
-      android:foregroundServiceType="dataSync"
+      android:foregroundServiceType="shortService"
       android:stopWithTask="false" />
 
     <service

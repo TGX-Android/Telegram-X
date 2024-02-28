@@ -87,6 +87,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventAccentColorChanged.CONSTRUCTOR:
       case TdApi.ChatEventProfileAccentColorChanged.CONSTRUCTOR:
       case TdApi.ChatEventEmojiStatusChanged.CONSTRUCTOR:
+      case TdApi.ChatEventBackgroundChanged.CONSTRUCTOR:
       case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
       case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
       case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
@@ -161,6 +162,8 @@ public class ChatEventUtil {
         return new TGMessageService(context, msg, (TdApi.ChatEventProfileAccentColorChanged) action);
       case TdApi.ChatEventEmojiStatusChanged.CONSTRUCTOR:
         return new TGMessageService(context, msg, (TdApi.ChatEventEmojiStatusChanged) action);
+      case TdApi.ChatEventBackgroundChanged.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventBackgroundChanged) action);
       case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
         return new TGMessageService(context, msg, (TdApi.ChatEventMessageUnpinned) action);
       case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
@@ -220,7 +223,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventMemberJoined.CONSTRUCTOR:
       case TdApi.ChatEventMemberLeft.CONSTRUCTOR:
       case TdApi.ChatEventTitleChanged.CONSTRUCTOR:
-        // only full
+      // only full
       case TdApi.ChatEventMemberPromoted.CONSTRUCTOR:
       case TdApi.ChatEventMemberRestricted.CONSTRUCTOR:
       case TdApi.ChatEventMemberInvited.CONSTRUCTOR:
@@ -248,6 +251,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventMemberLeft.CONSTRUCTOR:
       case TdApi.ChatEventTitleChanged.CONSTRUCTOR:
       case TdApi.ChatEventPhotoChanged.CONSTRUCTOR:
+      case TdApi.ChatEventBackgroundChanged.CONSTRUCTOR:
       case TdApi.ChatEventPermissionsChanged.CONSTRUCTOR:
       case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
       case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR: {
@@ -586,6 +590,24 @@ public class ChatEventUtil {
           final TdApi.ChatMemberStatusRestricted oldBan = oldStatus.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR ? (TdApi.ChatMemberStatusRestricted) oldStatus : null;
           final TdApi.ChatMemberStatusRestricted newBan = newStatus.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR ? (TdApi.ChatMemberStatusRestricted) newStatus : null;
 
+          if (Config.COMPILE_CHECK) {
+            new TdApi.ChatPermissions(
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            );
+          }
           if (memberId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
             appendRight(b, R.string.EventLogRestrictedReadMessages, oldCanReadMessages, newCanReadMessages, false);
           }
@@ -708,6 +730,10 @@ public class ChatEventUtil {
         } else {
           return new TdApi.MessageChatDeletePhoto();
         }
+      }
+      case TdApi.ChatEventBackgroundChanged.CONSTRUCTOR: {
+        TdApi.ChatEventBackgroundChanged background = (TdApi.ChatEventBackgroundChanged) event.action;
+        return new TdApi.MessageChatSetBackground(0, background.newBackground, false);
       }
       case TdApi.ChatEventPermissionsChanged.CONSTRUCTOR: {
         StringBuilder b = new StringBuilder(Lang.getString(R.string.EventLogPermissions));
