@@ -2189,6 +2189,16 @@
   <string name="EventLogProfileColorIconUnset">%1$s changed profile color and icon from %2$s to none</string>
   <string name="EventLogProfileColorIconUnsetYou">You changed profile color and icon from %1$s to none</string>
 
+  <string name="EventLogChannelBackgroundChanged">%1$s changed the channel background</string>
+  <string name="EventLogChannelBackgroundChangedYou">You changed the channel background</string>
+  <string name="EventLogChannelBackgroundUnset">%1$s unset the channel background</string>
+  <string name="EventLogChannelBackgroundUnsetYou">You unset the channel background</string>
+
+  <string name="EventLogChatBackgroundChanged">%1$s changed the chat background</string>
+  <string name="EventLogChatBackgroundChangedYou">You changed the chat background</string>
+  <string name="EventLogChatBackgroundUnset">%1$s unset the chat background</string>
+  <string name="EventLogChatBackgroundUnsetYou">You unset the chat background</string>
+
   <string name="UntilX">Until %1$s</string>
   <string name="NetworkUsage">Network Usage</string>
   <string name="RecentStickers">Recently Used</string>
