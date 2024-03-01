@@ -1029,7 +1029,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     int rtlPartsCount = 0;
 
     int runIndex = 0;
-    DirectionEntity directionEntity = directionEntities[0];
+    DirectionEntity directionEntity = directionEntities.length > 0 ? directionEntities[0] : null;
 
     for (int partIndex = 0; partIndex < partsCount; partIndex++) {
       final TextPart part = out.get(partIndex);
@@ -1060,7 +1060,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     int lastLineStartIndex = 0;
     for (int partIndex = 0; partIndex < partsCount; partIndex++) {
       final TextPart part = out.get(partIndex);
-      final int partLineIndex = part.getLineIndex();
+      final int partLineIndex = part.getY(); //getLineIndex();
       if (lineIndex != partLineIndex) {
         fixPartsOrder(partsArray, partsLevels, lastLineStartIndex, partIndex);
         lastLineStartIndex = partIndex;
