@@ -498,7 +498,7 @@ public class U {
             knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE;
           } else {
             // FOREGROUND_SERVICE_TYPE_SHORT_SERVICE was added in Android 14.
-            knownType = (1 << 11);
+            knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST;
           }
           break;
       }
