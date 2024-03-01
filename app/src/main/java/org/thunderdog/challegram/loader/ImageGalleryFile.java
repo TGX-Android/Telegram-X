@@ -139,6 +139,11 @@ public class ImageGalleryFile extends ImageFile implements Comparable<ImageGalle
     return startTimeUs != -1 && totalDurationUs != -1;
   }
 
+  public boolean hasCrop () {
+    CropState cropState = getCropState();
+    return cropState != null && !cropState.isEmpty();
+  }
+
   public boolean setVideoInformation (long totalDurationUs, double width, double height, int frameRate, long bitrate) {
     if (this.totalDurationUs != totalDurationUs || this.videoWidth != width || this.videoHeight != height || this.videoFrameRate != frameRate || this.videoBitrate != bitrate) {
       this.totalDurationUs = totalDurationUs;

@@ -343,10 +343,7 @@ public class VideoGen {
       videoLimit = new Settings.VideoLimit();
 
     int inputVideoFrameRate = getFrameRate(sourcePath);
-    int outputVideoFrameRate = videoLimit.fps != 0 ? videoLimit.fps : Settings.DEFAULT_FRAME_RATE;
-    if (inputVideoFrameRate > 0) {
-      outputVideoFrameRate = Math.min(inputVideoFrameRate, outputVideoFrameRate);
-    }
+    int outputVideoFrameRate = videoLimit.getOutputFrameRate(inputVideoFrameRate);
 
     int outputVideoSquare;
     int outputHeightLimit;
@@ -469,7 +466,11 @@ public class VideoGen {
   private static int getFrameRate (String sourcePath) {
     DataSource dataSource = toDataSource(sourcePath);
     MediaFormat format = dataSource.getTrackFormat(TrackType.VIDEO);
-    if (format != null) {
+    return getFrameRate(format);
+  }
+
+  private static int getFrameRate (@Nullable MediaFormat format) {
+    if (format != null && format.containsKey(MediaFormat.KEY_FRAME_RATE)) {
       return format.getInteger(MediaFormat.KEY_FRAME_RATE);
     }
     return -1;
@@ -496,7 +497,7 @@ public class VideoGen {
       if (videoLimit == null)
         videoLimit = new Settings.VideoLimit();
       long outputBitrate = videoLimit.bitrate;
-      int outputFrameRate = videoLimit.fps != 0 ? videoLimit.fps : Settings.DEFAULT_FRAME_RATE;
+      int outputFrameRate = videoLimit.getOutputFrameRate(-1);
       int maxTextureSize = U.getMaxTextureSize();
       if (maxTextureSize > 0 && videoLimit.size.majorSize > maxTextureSize) {
         float scale = (float) maxTextureSize / (float) videoLimit.size.majorSize;
@@ -513,7 +514,8 @@ public class VideoGen {
             format.getInteger(MediaFormat.KEY_WIDTH),
             format.getInteger(MediaFormat.KEY_HEIGHT)
           );
-          outputFrameRate = videoLimit.getOutputFrameRate(format.getInteger(MediaFormat.KEY_FRAME_RATE));
+          int inputFrameRate = getFrameRate(format);
+          outputFrameRate = videoLimit.getOutputFrameRate(inputFrameRate);
           outputBitrate = videoLimit.getOutputBitrate(outputSize, outputFrameRate, videoLimit.bitrate);
         }
       }

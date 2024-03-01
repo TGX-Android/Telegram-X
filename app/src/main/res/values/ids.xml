@@ -982,6 +982,7 @@
   <item type="id" name="btn_secret_pushDuration" />
   <item type="id" name="btn_secret_pushConfig" />
   <item type="id" name="btn_secret_appFingerprint" />
+  <item type="id" name="btn_secret_testForeground" />
   <item type="id" name="btn_string" />
 
   <item type="id" name="btn_test_database" />
