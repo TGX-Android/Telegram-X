@@ -494,7 +494,12 @@ public class U {
           knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL;
           break;
         case TdlibNotificationManager.ID_PENDING_TASK:
-          knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC;
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE;
+          } else {
+            // FOREGROUND_SERVICE_TYPE_SHORT_SERVICE was added in Android 14.
+            knownType = (1 << 11);
+          }
           break;
       }
       if (knownType != android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_NONE) {

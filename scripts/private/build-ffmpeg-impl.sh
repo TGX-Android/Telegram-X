@@ -225,7 +225,7 @@ ARCH=x86
 CPU=i686
 FLAVOR=i686
 PREFIX=./build/$FLAVOR
-ADDITIONAL_CONFIGURE_FLAG="--disable-asm"
+ADDITIONAL_CONFIGURE_FLAG="--disable-asm --disable-x86asm"
 OPTIMIZE_CFLAGS="-march=$CPU"
 if [[ ${ANDROID_NDK_VERSION%%.*} -ge 23 ]]; then
   LD=$CC
