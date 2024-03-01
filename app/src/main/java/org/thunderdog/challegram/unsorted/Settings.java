@@ -3220,7 +3220,10 @@ public class Settings {
     }
 
     public int getOutputFrameRate (int frameRate) {
-      return fps > 0 ? Math.min(frameRate, this.fps) : DEFAULT_FRAME_RATE;
+      return Math.min(
+        frameRate > 0 ? frameRate : DEFAULT_FRAME_RATE,
+        fps > 0 ? fps : DEFAULT_FRAME_RATE
+      );
     }
 
     public static final double BITRATE_SCALE = 0.109;
