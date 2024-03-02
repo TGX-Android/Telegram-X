@@ -215,7 +215,7 @@ public class VideoGen {
     final String sourcePath = info.getOriginalPath();
     final String destinationPath = info.getDestinationPath();
 
-    boolean canUseSimplePath = info.canTakeSimplePath();
+    boolean sendOriginalInCaseFileSizeGrows = !Config.MODERN_VIDEO_TRANSCODING_ENABLED && info.canTakeSimplePath();
 
     long sourceSize = getBytesCount(sourcePath, true);
     ProgressCallback onProgress = new ProgressCallback() {
@@ -225,7 +225,7 @@ public class VideoGen {
           if (entry.transcodeFinished.get() || entry.sendOriginal.get() || progress <= 0) {
             return;
           }
-          if (sourceSize != 0 && expectedSize > sourceSize && canUseSimplePath) {
+          if (sourceSize != 0 && expectedSize > sourceSize && sendOriginalInCaseFileSizeGrows) {
             if (!entry.sendOriginal.getAndSet(true)) {
               entry.cancel();
             }
@@ -241,7 +241,7 @@ public class VideoGen {
           if (entry.transcodeFinished.get() || entry.sendOriginal.get() || bytesCount <= 0) {
             return;
           }
-          if (sourceSize != 0 && bytesCount > sourceSize && canUseSimplePath) {
+          if (sourceSize != 0 && bytesCount > sourceSize && sendOriginalInCaseFileSizeGrows) {
             if (!entry.sendOriginal.getAndSet(true)) {
               entry.cancel();
             }
@@ -259,13 +259,21 @@ public class VideoGen {
         }
       }
     };
-    Runnable onCancel = () -> {
+    RunnableData<String> onCancel = message -> {
       synchronized (entry) {
         if (!entry.transcodeFinished.getAndSet(true)) {
           if (!entry.canceled.get() && entry.sendOriginal.get()) {
             sendOriginal(info, entry);
           } else {
-            tdlib.filegen().failGeneration(info, -1, "Video conversion has been cancelled");
+            StringBuilder b = new StringBuilder("Video conversion has been cancelled");
+            if (entry.canceled.get()) {
+              b.append(" by TDLib");
+            }
+            if (!StringUtils.isEmpty(message)) {
+              b.append(": ").append(message);
+            }
+            String error = b.toString();
+            tdlib.filegen().failGeneration(info, -1, error);
             entries.remove(destinationPath);
           }
         }
@@ -292,7 +300,7 @@ public class VideoGen {
           } else {
             Log.i("No need to transcode video: %s", sourcePath);
           }
-          if (!entry.canceled.get() && canUseSimplePath) {
+          if (!entry.canceled.get() && sendOriginalInCaseFileSizeGrows) {
             sendOriginal(info, entry);
           } else {
             tdlib.filegen().failGeneration(info, -1, Lang.getString(R.string.SendVideoError));
@@ -302,7 +310,8 @@ public class VideoGen {
       }
     };
 
-    if (info.disableTranscoding() && canUseSimplePath) {
+    if (!Config.MODERN_VIDEO_TRANSCODING_ENABLED && info.disableTranscoding()) {
+      // Send original file only in case Transformer isn't used.
       sendOriginal(info, entry);
       return;
     }
@@ -322,7 +331,7 @@ public class VideoGen {
   }
 
   @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-  private void convertVideoComplexV2 (String sourcePath, String destinationPath, VideoGenerationInfo info, Entry entry, ProgressCallback onProgress, Runnable onComplete, Runnable onCancel, RunnableData<Throwable> onFailure) throws FileNotFoundException {
+  private void convertVideoComplexV2 (String sourcePath, String destinationPath, VideoGenerationInfo info, Entry entry, ProgressCallback onProgress, Runnable onComplete, RunnableData<String> onCancel, RunnableData<Throwable> onFailure) throws FileNotFoundException {
     MediaMetadataRetriever retriever = U.openRetriever(sourcePath);
     if (retriever == null)
       throw new NullPointerException();
@@ -439,7 +448,7 @@ public class VideoGen {
         }
         @Transformer.ProgressState int progressState = entry.transformer.getProgress(progressHolder);
         if (progressState == Transformer.PROGRESS_STATE_NOT_STARTED) {
-          onCancel.run();
+          onCancel.runWithData("PROGRESS_STATE_NOT_STARTED");
         } else {
           if (progressState == Transformer.PROGRESS_STATE_AVAILABLE) {
             onProgress.onTranscodeProgress((double) progressHolder.progress / 100.0, outFile.length());
@@ -477,7 +486,7 @@ public class VideoGen {
   }
 
   @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
-  private void convertVideoComplex (String sourcePath, String destinationPath, VideoGenerationInfo info, Entry entry, ProgressCallback onProgress, Runnable onComplete, Runnable onCancel, RunnableData<Throwable> onFailure) {
+  private void convertVideoComplex (String sourcePath, String destinationPath, VideoGenerationInfo info, Entry entry, ProgressCallback onProgress, Runnable onComplete, RunnableData<String> onCancel, RunnableData<Throwable> onFailure) {
     if (info.hasCrop()) {
       throw new IllegalArgumentException();
     }
@@ -564,7 +573,7 @@ public class VideoGen {
 
         @Override
         public void onTranscodeCanceled () {
-          onCancel.run();
+          onCancel.runWithData("Transcode canceled");
         }
 
         @Override
