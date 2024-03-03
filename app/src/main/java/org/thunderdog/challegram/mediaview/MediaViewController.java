@@ -1570,7 +1570,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private boolean canEdit () {
     MediaItem current = stack.getCurrent();
-    return (mode == MODE_MESSAGES || mode == MODE_SIMPLE) && current != null && !current.isVideo() && !current.isGifType();
+    return (mode == MODE_MESSAGES || mode == MODE_SIMPLE) && current != null && !current.isVideo() && !current.isGifType() && (current.canBeShared() && current.canBeSaved() || !tdlib.hasRestriction(current.getSourceChatId(), RightId.SEND_PHOTOS));
   }
 
   private boolean canShare () {
@@ -8480,6 +8480,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     stopFullScreenTemporarily(true);
 
+    final long chatId = context.navigation().getCurrentStackItem().getChatId();
+    final boolean hasRestriction = tdlib.hasRestriction(chatId, RightId.SEND_PHOTOS);
+
     replaceArguments(MediaViewController.Args.fromGallery(this, null,
       new MediaSelectDelegate() {
         @Override
@@ -8529,14 +8532,24 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         private boolean onSendMedia (ImageGalleryFile file, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean hasSpoiler) {
           MessagesController m = findOutputController();
           if (m != null) {
+            final MediaItem oldItem = forceEditModeOld_arguments != null && forceEditModeOld_arguments.stack != null ?
+              forceEditModeOld_arguments.stack.getCurrent() : null;
+            final boolean canShare = oldItem != null && oldItem.canBeSaved() && oldItem.canBeShared();
+
+            if (hasRestriction) {
+              if (canShare) {
+                openShareControllerForItem(new MediaItem(context, tdlib, file));
+              } else {
+                m.showRestriction(sendButton, Lang.getString(tdlib.isChannel(chatId) ?
+                  R.string.RestrictSavingChannelInfo: R.string.RestrictSavingGroupInfo));
+              }
+              return false;
+            }
+
             final @RightId int rightId = file.isVideo() ? RightId.SEND_VIDEOS : RightId.SEND_PHOTOS;
             if (m.showSlowModeRestriction(sendButton, options)) {
               return false;
             }
-
-            final MediaItem oldItem = forceEditModeOld_arguments != null && forceEditModeOld_arguments.stack != null ?
-              forceEditModeOld_arguments.stack.getCurrent() : null;
-            final boolean canShare = oldItem != null && oldItem.canBeSaved() && oldItem.canBeShared();
 
             context.forceCloseCamera();
             CharSequence restriction = tdlib.getDefaultRestrictionText(m.getChat(), rightId);
@@ -8554,7 +8567,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           return false;
         }
       }, mediaStack, false
-    ).setReceiverChatId(context.navigation().getCurrentStackItem().getChatId()));
+    ).setReceiverChatId(chatId).setSendButtonIcon(hasRestriction ? R.drawable.baseline_forward_24 : 0));
 
     if (thumbsRecyclerView != null) {
       thumbsRecyclerView.setVisibility(View.GONE);
