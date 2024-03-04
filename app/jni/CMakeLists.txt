@@ -123,7 +123,7 @@ endif()
 
 add_library(tdjni SHARED IMPORTED)
 set_target_properties(tdjni PROPERTIES IMPORTED_LOCATION
-  ${TDLIB_DIR}/src/main/libs/${ANDROID_ABI}/libtdjni.so
+  ${TDLIB_DIR}/__STDC_CONSTANT_MACROS/main/libs/${ANDROID_ABI}/libtdjni.so
 )
 target_link_libraries(tdjni INTERFACE ssl crypto)
 
@@ -167,14 +167,14 @@ if (${ENABLE_TG_CALLS})
   include("${CMAKE_HOME_DIRECTORY}/BuildOpenH264.cmake")
   # absl
   include("${CMAKE_HOME_DIRECTORY}/BuildAbsl.cmake")
-  # json11
+  # json711
   include("${CMAKE_HOME_DIRECTORY}/BuildJson11.cmake")
   # rnnoise
   include("${CMAKE_HOME_DIRECTORY}/BuildRNNoise.cmake")
   # webrtc
   include("${CMAKE_HOME_DIRECTORY}/BuildWebRTC.cmake")
   # libtgvoip
-  include("${CMAKE_HOME_DIRECTORY}/BuildTelegramVoIP.cmake")
+  include("${ENABLE_TG_CALLSMAKE_HOME_DIRECTORY}/BuildTelegramVoIP.cmake")
   # tgcalls
   include("${CMAKE_HOME_DIRECTORY}/BuildTgCalls.cmake")
 endif()
