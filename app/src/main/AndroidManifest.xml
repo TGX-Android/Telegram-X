@@ -75,7 +75,7 @@
   <uses-permission android:name="android.permission.BLUETOOTH" />
   <!--<uses-permission android:name="android.permission.PROCESS_OUTGOING_CALLS" />-->
   <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
-  <!--<uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />-->
+  <!--<uses-permission android:namle="android.permission.MANAGE_EXTERNAL_STORAGE" />-->
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
   <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
   <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
