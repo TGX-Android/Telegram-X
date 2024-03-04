@@ -5099,6 +5099,9 @@
   <string name="xGiveawayPrizeReceivedInfo_one">Your prize is a **Telegram Premium** subscription for **%1$s** month.</string>
   <string name="xGiveawayPrizeReceivedInfo_other">Your prize is a **Telegram Premium** subscription for **%1$s** months.</string>
 
+  <string name="xGiveawayWinnersCountMore_one">and %1$s more.</string>
+  <string name="xGiveawayWinnersCountMore_other">and %1$s more.</string>
+
   <string name="xGiveawayUnclaimedPrizeReceivedInfo_one">This prize is a **Telegram Premium** subscription for **%1$s** month.</string>
   <string name="xGiveawayUnclaimedPrizeReceivedInfo_other">This prize is a **Telegram Premium** subscription for **%1$s** months.</string>
 

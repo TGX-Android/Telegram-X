@@ -109,6 +109,11 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
     content.padding(Screen.dp(6));
     content.add(new ContentBubbles(this, maxWidth - Screen.dp(CONTENT_PADDING_DP * 2 + 60)).setOnClickListener(this::onBubbleClick).addChatIds(giveawayWinners.winnerUserIds));
 
+    if (giveawayWinners.winnerUserIds != null && giveawayWinners.winnerCount > giveawayWinners.winnerUserIds.length) {
+      content.padding(Screen.dp(6));
+      content.add(Lang.pluralBold(R.string.xGiveawayWinnersCountMore, giveawayWinners.winnerCount - giveawayWinners.winnerUserIds.length), getTextColorSet(), currentViews);
+    }
+
     content.padding(Screen.dp(BLOCK_MARGIN));
     content.add(Lang.getString(R.string.GiveawayAllWinnersReceivedLinks), getTextColorSet(), currentViews);
 
