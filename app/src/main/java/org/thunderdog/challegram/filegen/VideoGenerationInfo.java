@@ -24,6 +24,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.mediaview.crop.CropState;
 import org.thunderdog.challegram.mediaview.crop.CropStateParser;
@@ -164,7 +165,7 @@ public class VideoGenerationInfo extends GenerationInfo implements AbstractVideo
   }
 
   public static boolean isEmpty (ImageGalleryFile file) {
-    return file != null && !file.shouldMuteVideo() && file.getPostRotate() == 0 && !file.hasTrim();
+    return file != null && !file.shouldMuteVideo() && file.getPostRotate() == 0 && !file.hasTrim() && !file.hasCrop();
   }
 
   public boolean canTakeSimplePath () {
@@ -183,7 +184,20 @@ public class VideoGenerationInfo extends GenerationInfo implements AbstractVideo
   }
 
   public static boolean canSendInOriginalQuality (ImageGalleryFile file) {
-    return file != null && (!(file.hasTrim() || file.getPostRotate() != 0 || file.shouldMuteVideo()) || isSupportedOutputFormat(file, TGMimeType.mimeTypeForExtension(U.getExtension(file.getFilePath()))));
+    if (file == null) {
+      return false;
+    }
+    if (Config.MODERN_VIDEO_TRANSCODING_ENABLED) {
+      return true;
+    }
+    if (file.hasCrop()) {
+      return false;
+    }
+    if (!(file.hasTrim() || file.getPostRotate() != 0 || file.shouldMuteVideo())) {
+      return true;
+    }
+    String mimeType = TGMimeType.mimeTypeForExtension(U.getExtension(file.getFilePath()));
+    return isSupportedOutputFormat(file, mimeType);
   }
 
   public static String makeConversion (int sourceFileId, boolean mute, int postRotate, long startTimeUs, long endTimeUs, boolean noTranscoding, @Nullable CropState cropState, long lastModified) {
