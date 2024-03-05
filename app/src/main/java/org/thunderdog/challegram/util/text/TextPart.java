@@ -49,13 +49,13 @@ public class TextPart {
   private final Text source;
   private String line;
   private @Nullable TextEntity entity;
-  private @Nullable Text.DirectionEntity directionEntity;
 
   private int flags;
   private int x, y;
   private int start, end;
   private float width;
   private int height = -1;
+  private byte level, paragraphLevel;
 
   private final int lineIndex, paragraphIndex;
 
@@ -107,16 +107,21 @@ public class TextPart {
     this.entity = entity;
   }
 
-  public void setDirectionEntity (@Nullable Text.DirectionEntity directionEntity) {
-    this.directionEntity = directionEntity;
+  public void setBidiLevel (byte level, byte paragraphLevel) {
+    this.level = level;
+    this.paragraphLevel = paragraphLevel;
   }
 
   public @Nullable TextEntity getEntity () {
     return entity;
   }
 
-  public @Nullable Text.DirectionEntity getDirectionEntity () {
-    return directionEntity;
+  public byte getLevel () {
+    return level;
+  }
+
+  public byte getParagraphLevel () {
+    return paragraphLevel;
   }
 
   public float getWidth () {
@@ -327,7 +332,7 @@ public class TextPart {
   }
 
   public boolean wouldMergeWithNextPart (TextPart part) {
-    return part != null && part != this && emojiInfo == null && part.emojiInfo == null && media == null && part.media == null && trimmedLine == null && part.trimmedLine == null && this.y == part.y && line == part.line && end == part.start && isSameEntity(part.entity) && directionEntity == part.directionEntity && requiresTopLayer() == part.requiresTopLayer();
+    return part != null && part != this && emojiInfo == null && part.emojiInfo == null && media == null && part.media == null && trimmedLine == null && part.trimmedLine == null && this.y == part.y && line == part.line && end == part.start && isSameEntity(part.entity) && level == part.level && paragraphLevel == part.paragraphLevel && requiresTopLayer() == part.requiresTopLayer();
   }
 
   @NonNull
@@ -461,20 +466,20 @@ public class TextPart {
     } else {
       final int textY = y + source.getAscent(textSize) + textPaint.baselineShift;
       if (DEBUG) {
-        if (color == 0 && directionEntity != null) {
+        if (color == 0) {
           // color = ColorUtils.alphaColor(0.5f, ColorUtils.hslToRgb((float) Math.random(), 0.5f, 0.5f));
           // color = ColorUtils.alphaColor(0.5f, ColorUtils.hslToRgb(directionEntity.paragraphIndex / 6f, 0.5f, 0.5f));
-          color = directionEntity.isRtl() ? 0x400000FF : 0x40FF0000;
+          color = (level & 1) == 1 ? 0x400000FF : 0x40FF0000;
         }
         c.drawRect(x, textY - Screen.dp(16), x + width, textY, Paints.fillingPaint(color));
         c.drawRect(x, textY - Screen.dp(16), x + width, textY, Paints.strokeSmallPaint(0xFF000000));
       }
 
-      if (directionEntity != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
         if (trimmedLine != null) {
-          c.drawTextRun(trimmedLine, 0, trimmedLine.length(), 0, trimmedLine.length(), x, textY, directionEntity.isRtl(), textPaint);
+          c.drawTextRun(trimmedLine, 0, trimmedLine.length(), 0, trimmedLine.length(), x, textY, (level & 1) == 1, textPaint);
         } else {
-          c.drawTextRun(line, start, end, start, end, x, textY, directionEntity.isRtl(), textPaint);
+          c.drawTextRun(line, start, end, start, end, x, textY, (level & 1) == 1, textPaint);
         }
       } else {
         if (trimmedLine != null) {
@@ -486,6 +491,6 @@ public class TextPart {
     }
   }
 
-  private static final boolean DEBUG = false;
+  private static final boolean DEBUG = true;
   private int color;
 }
