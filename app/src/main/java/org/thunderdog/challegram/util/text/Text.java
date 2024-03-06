@@ -58,6 +58,8 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.EmojiStatusHelper;
+import org.thunderdog.challegram.util.text.bidi.BiDiEntity;
+import org.thunderdog.challegram.util.text.bidi.BiDiUtils;
 
 import java.text.Bidi;
 import java.util.ArrayList;
@@ -981,7 +983,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       TextPart lastPart = out.get(out.size() - 1);
       int[] lastLineSize = getLineSize(getLineCount() - 1);
       TextPart suffixPart = new TextPart(this, suffix, 0, suffix.length(), lastPart.getLineIndex(), lastPart.getParagraphIndex());
-      suffixPart.setBidiLevel(lastPart.getLevel(), lastPart.getParagraphLevel());
+      suffixPart.setBidiEntity(lastPart.getBidiEntity());
       suffixPart.setXY(lastLineSize[0], lastPart.getY());
       suffixPart.setWidth(suffixWidth);
       lastLineSize[0] += suffixWidth;
@@ -1017,7 +1019,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
     for (int partIndex = 0; partIndex < partsCount; partIndex++) {
       final TextPart part = out.get(partIndex);
-      final boolean paragraphIsRtl = (part.getParagraphLevel() & 1) == 1;
+      final boolean paragraphIsRtl = BiDiUtils.isParagraphRtl(part.getBidiEntity());
       // part.setDirectionEntity(directionEntity);
       part.setRtlMode(paragraphIsRtl, false);
 
@@ -1030,7 +1032,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     TextPart[] partsArray = out.toArray(new TextPart[0]);
     byte[] partsLevels = new byte[out.size()];
     for (int a = 0; a < partsLevels.length; a++) {
-      partsLevels[a] = partsArray[a].getLevel(); //.getDirectionEntity().level;
+      partsLevels[a] = (byte) BiDiUtils.getLevel(partsArray[a].getBidiEntity());
     }
 
     int lineIndex = 0;
@@ -1172,7 +1174,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       return;
     }
 
-    final boolean isRtl = (partsArray[partStart].getParagraphLevel() & 1) == 1;
+    final boolean isRtl = BiDiUtils.isParagraphRtl(partsArray[partStart].getBidiEntity());
     int x = partsArray[partStart].getX();
     Bidi.reorderVisually(partsLevels, partStart, partsArray, partStart, partEnd - partStart);
 
@@ -1258,16 +1260,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   private Bidi currentParagraphBidi;
   private int currentParagraphStart;
 
-  private byte getLevel (int start) {
-    if (currentParagraphBidi != null) {
-      return (byte) currentParagraphBidi.getLevelAt(start - currentParagraphStart);
-    }
-    return 0;
-  }
-
-  private byte getParagraphLevel (int start) {
-    if (currentParagraphBidi != null) {
-      return (byte) currentParagraphBidi.getBaseLevel();
+  private @BiDiEntity int getBidiEntity (int start) {
+    int offset = start - currentParagraphStart;
+    if (currentParagraphBidi != null && 0 <= offset && offset < currentParagraphBidi.getLength()) {
+      return BiDiUtils.create(currentParagraphBidi.getLevelAt(offset), currentParagraphBidi.getBaseLevel());
     }
     return 0;
   }
@@ -1447,7 +1443,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     part.setWidth(iconWidth);
     part.setHeight(iconHeight);
     part.setEntity(entity);
-    part.setBidiLevel(getLevel(index), getParagraphLevel(index));
+    part.setBidiEntity(getBidiEntity(index));
     part.attachToMedia(newOrExistingMedia(TextMedia.keyForIcon(entity.tdlib, icon), index, index, (keyId, id) ->
       new TextMedia(this, entity.tdlib, keyId, id, icon)
     ));
@@ -1472,7 +1468,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     part.setXY(currentX, currentY);
     part.setWidth(emojiSize);
     part.setEntity(entity);
-    part.setBidiLevel(getLevel(start), getParagraphLevel(start));
+    part.setBidiEntity(getBidiEntity(start));
     part.setEmoji(info);
     if (entity != null && entity.tdlib != null && entity.isCustomEmoji()) {
       part.attachToMedia(newOrExistingMedia(TextMedia.keyForEmoji(entity.getCustomEmojiId(), emojiSize), start, end, (keyId, id) ->
@@ -1929,17 +1925,16 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       lastPart = null;
     }
 
-    final byte level = getLevel(start);
-    final byte paragraphLevel = getParagraphLevel(start);
+    final @BiDiEntity int bidiEntity = getBidiEntity(start);
 
-    if (lastPart == null || lastPart.getEntity() != entity || lastPart.getLevel() != level || lastPart.getParagraphLevel() != paragraphLevel) {
+    if (lastPart == null || lastPart.getEntity() != entity || lastPart.getBidiEntity() != bidiEntity) {
       TextPart part;
 
       part = new TextPart(this, in, start, end, getLineCount(), paragraphCount);
       part.setXY(currentX, currentY);
       part.setWidth(fullWidth);
       part.setEntity(entity);
-      part.setBidiLevel(level, paragraphLevel);
+      part.setBidiEntity(bidiEntity);
 
       lastPart = part;
 
@@ -2059,7 +2054,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
         ellipsisPart.setXY(currentX, currentY);
         ellipsisPart.setWidth(ellipsisWidth);
         ellipsisPart.setEntity(entity);
-        ellipsisPart.setBidiLevel(getLevel(start), getParagraphLevel(start));
+        ellipsisPart.setBidiEntity(getBidiEntity(start));
         out.add(ellipsisPart);
         currentX += ellipsisWidth;
       } else {
@@ -2085,7 +2080,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
             ellipsisPart.setXY(currentX, currentY);
             ellipsisPart.setWidth(ellipsisWidth);
             ellipsisPart.setEntity(lastPart.getEntity());
-            ellipsisPart.setBidiLevel(lastPart.getLevel(), lastPart.getParagraphLevel());
+            ellipsisPart.setBidiEntity(lastPart.getBidiEntity());
             out.set(out.size() - 1, ellipsisPart);
             currentX += ellipsisPart.getWidth();
 
