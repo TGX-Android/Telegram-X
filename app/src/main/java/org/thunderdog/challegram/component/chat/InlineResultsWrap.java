@@ -395,7 +395,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
     return getVisibility() != View.VISIBLE || getAlpha() == 0f || super.onInterceptTouchEvent(ev);
   }
 
-  private int detectRecyclerTopEdge () {
+  public int detectRecyclerTopEdge () {
     int top;
     LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
     int i = manager.findFirstVisibleItemPosition();
@@ -487,7 +487,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
   private boolean animationNeeded;
   private float showFactor;
 
-  private float getVisibleFactor () {
+  public float getVisibleFactor () {
     return showFactor * (1f - hideFactor);
   }
 
@@ -543,6 +543,10 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
   private BoolAnimator hideAnimator;
 
   public void setHidden (boolean isHidden) {
+    setHidden(isHidden, true);
+  }
+
+  public void setHidden (boolean isHidden, boolean animated) {
     if (hideAnimator == null) {
       if (!isHidden) {
         return;
@@ -550,7 +554,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
       hideAnimator = new BoolAnimator(ANIMATOR_HIDE, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
     }
     calculateTranslateY();
-    hideAnimator.setValue(isHidden, showFactor > 0f);
+    hideAnimator.setValue(isHidden, animated && showFactor > 0f);
   }
 
   @Override
@@ -666,7 +670,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
 
   private ArrayList<InlineResult<?>> currentItems;
 
-  private void removeItem (InlineResult<?> result) {
+  public void removeItem (InlineResult<?> result) {
     if (currentItems == null) {
       return;
     }
@@ -849,8 +853,20 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
   @Override
   public int provideHeight () {
     int height = offsetProvider != null ? offsetProvider.provideParentHeight(this) : ((BaseActivity) getContext()).getContentView().getMeasuredHeight(); //  - measureItemsHeight();
-    height -= Math.min(measureItemsHeight(), Screen.smallestActualSide() / 2);
+    height -= getMinItemsHeight();
     return Math.max(0, height);
+  }
+
+  public int getMinItemsHeight () {
+    return Math.min(measureItemsHeight(), getHeightLimit());
+  }
+
+  public static int getHeightLimit () {
+    return Screen.smallestActualSide() / 2;
+  }
+
+  public ArrayList<InlineResult<?>> getCurrentItems () {
+    return currentItems;
   }
 
   // Switch pm utils
@@ -902,11 +918,11 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
   // Interfaces
 
   public interface PickListener {
-    void onHashtagPick (InlineResultHashtag result);
-    void onMentionPick (InlineResultMention result, @Nullable String usernamelessText);
-    void onCommandPick (InlineResultCommand result, boolean isLongPress);
-    void onEmojiSuggestionPick (InlineResultEmojiSuggestion result);
-    void onInlineQueryResultPick (InlineResult<?> result);
+    default void onHashtagPick (InlineResultHashtag result) {}
+    default void onMentionPick (InlineResultMention result, @Nullable String usernamelessText) {}
+    default void onCommandPick (InlineResultCommand result, boolean isLongPress) {}
+    default void onEmojiSuggestionPick (InlineResultEmojiSuggestion result) {}
+    default void onInlineQueryResultPick (InlineResult<?> result) {}
   }
 
   private PickListener listener;
