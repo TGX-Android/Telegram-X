@@ -4725,8 +4725,22 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private final HashMap<String, TdApi.MessageContent> pendingMessageTexts = new HashMap<>();
   private final HashMap<String, TdApi.FormattedText> pendingMessageCaptions = new HashMap<>();
 
-  public boolean canEditMedia (TdApi.Message message) {
-    return message != null && message.canBeEdited && message.content != null && (Td.isPhoto(message.content) || message.content.getConstructor() == TdApi.MessageVideo.CONSTRUCTOR);
+  public boolean canEditMedia (TdApi.Message message, boolean photoVideoOnly) {
+    if (message == null || !message.canBeEdited || message.content == null) {
+      return false;
+    }
+
+    switch (message.content.getConstructor()) {
+      case TdApi.MessagePhoto.CONSTRUCTOR:
+      case TdApi.MessageVideo.CONSTRUCTOR:
+        return true;
+      case TdApi.MessageAudio.CONSTRUCTOR:
+      case TdApi.MessageDocument.CONSTRUCTOR:
+      case TdApi.MessageAnimation.CONSTRUCTOR:
+        return !photoVideoOnly;
+    }
+
+    return false;
   }
 
 
@@ -4783,8 +4797,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return editMediaManager.editMediaCancel(chatId, messageId);
   }
 
-  public void editMessageMedia (long chatId, long messageId, TdApi.InputMessageContent content, @Nullable ImageFile preview) {
-    editMediaManager.editMediaStart(chatId, messageId, content, preview);
+  public void editMessageMedia (long chatId, long messageId, TdApi.InputMessageContent content, @NonNull MessageEditMediaPending.LocalPickedFile localPickedFile) {
+    editMediaManager.editMediaStart(chatId, messageId, content, localPickedFile);
   }
 
   public TdApi.FormattedText getFormattedText (TdApi.Message message) {
@@ -4824,6 +4838,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public TdApi.FormattedText getPendingMessageCaption (long chatId, long messageId) {
+    final MessageEditMediaPending pending = getPendingMessageMedia(chatId, messageId);
+    if (pending != null) {
+      return pending.getCaption();
+    }
+
     synchronized (pendingMessageCaptions) {
       return pendingMessageCaptions.get(chatId + "_" + messageId);
     }

@@ -117,6 +117,7 @@ import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.CallManager;
+import org.thunderdog.challegram.telegram.MessageEditMediaPending;
 import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.RightId;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
@@ -1624,7 +1625,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
       TdApi.Chat chat = tdlib.chat(item.getSourceChatId());
 
-      if (tdlib.canEditMedia(item.getMessage())) {
+      if (tdlib.canEditMedia(item.getMessage(), true)) {
         ids.append(R.id.btn_replace);
         strings.append(item.isVideo() ? R.string.ReplaceVideo : R.string.ReplaceImage);
       }
@@ -1780,7 +1781,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         }
         TdApi.InputMessageContent content = TD.toContent(tdlib, file, false, false, item.hasSpoiler(), ChatId.isSecret(item.getSourceChatId()));
         UI.post(() -> {
-          tdlib.editMessageMedia(item.getSourceChatId(), item.getSourceMessageId(), content, file);
+          tdlib.editMessageMedia(item.getSourceChatId(), item.getSourceMessageId(), content, new MessageEditMediaPending.LocalPickedFile(file, null));
           forceClose();
 
           ViewController<?> c = context.navigation().getCurrentStackItem();
@@ -1788,7 +1789,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
             ((MessagesController) c).highlightMessage(new MessageId(item.getSourceChatId(), item.getSourceMessageId()));
           }
         });
-      }), item.getSourceChatId(), () -> stopFullScreenTemporarily(false), true);
+      }), null, item.getSourceChatId(), () -> stopFullScreenTemporarily(false), true, null, item.getMessage(), true);
     } else if (id == R.id.btn_share) {
       ShareController c;
       if (item.getMessage() != null) {

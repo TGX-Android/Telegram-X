@@ -16,6 +16,7 @@ package org.thunderdog.challegram.telegram;
 
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
@@ -33,8 +34,8 @@ public class TdlibEditMediaManager implements MessageEditMediaUploadCallback {
     this.tdlib = tdlib;
   }
 
-  public void editMediaStart (long chatId, long messageId, TdApi.InputMessageContent inputMessageContent, @Nullable ImageFile preview) {
-    final MessageEditMediaPending pendingEdit = new MessageEditMediaPending(tdlib, chatId, messageId, inputMessageContent, preview);
+  public void editMediaStart (long chatId, long messageId, TdApi.InputMessageContent inputMessageContent, @NonNull MessageEditMediaPending.LocalPickedFile localPickedFile) {
+    final MessageEditMediaPending pendingEdit = new MessageEditMediaPending(tdlib, chatId, messageId, inputMessageContent, localPickedFile);
     pendingEdit.init(this);
     editMediaCancel(chatId, messageId);
     addPendingEditAndNotify(pendingEdit);
@@ -147,12 +148,16 @@ public class TdlibEditMediaManager implements MessageEditMediaUploadCallback {
           listener.onFail(id, false);
           return;
         }
+        final boolean isUploaded = TD.isFileUploaded(file);
+        if (!isUploaded) {
+          tdlib.files().subscribe(file, this);
+        }
         UI.post(() -> {
           if (isCanceled) {
             return;
           }
 
-          if (TD.isFileUploaded(file)) {
+          if (isUploaded) {
             onUpdateFileImpl(file);
             this.isCompleted = true;
             this.listener.onComplete(id, file.id, file);
@@ -160,7 +165,6 @@ public class TdlibEditMediaManager implements MessageEditMediaUploadCallback {
           }
 
           onUpdateFileImpl(file);
-          tdlib.files().subscribe(file, this);
         });
       });
     }
@@ -205,6 +209,11 @@ public class TdlibEditMediaManager implements MessageEditMediaUploadCallback {
 
         Log.i("WTF_DEBUG", "state " + fileId + " " + state + " ");
       });
+    }
+
+    @Override
+    public void onFileGenerationFinished (@NonNull TdApi.File file) {
+      Log.i("WTF_DEBUG", "generation finished " + file.toString());
     }
 
     private void onUpdateFileImpl (TdApi.File file) {

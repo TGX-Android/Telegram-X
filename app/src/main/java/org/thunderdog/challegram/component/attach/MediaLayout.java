@@ -42,6 +42,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.InlineResult;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
@@ -115,6 +116,7 @@ public class MediaLayout extends FrameLayoutFix implements
   public static final int MODE_GALLERY = 2;
   public static final int MODE_CUSTOM_POPUP = 3;
   public static final int MODE_AVATAR_PICKER = 4;
+  public static final int MODE_GALLERY_AND_FILES = 5;
 
   private int mode;
   private @AvatarPickerMode int avatarPickerMode = AvatarPickerMode.NONE;
@@ -195,6 +197,15 @@ public class MediaLayout extends FrameLayoutFix implements
           new MediaBottomBar.BarItem(R.drawable.baseline_location_on_24, R.string.Gallery, ColorId.attachPhoto, Screen.dp(1f))
         };
         index = 0;
+        break;
+      }
+      case MODE_GALLERY_AND_FILES: {
+        items = new MediaBottomBar.BarItem[] {
+          new MediaBottomBar.BarItem(R.drawable.baseline_insert_drive_file_24, R.string.File, ColorId.attachFile),
+          new MediaBottomBar.BarItem(R.drawable.baseline_image_24, R.string.Gallery, ColorId.attachPhoto)
+        };
+        index = 1;
+        mode = MODE_DEFAULT;
         break;
       }
       default: {
@@ -414,6 +425,13 @@ public class MediaLayout extends FrameLayoutFix implements
         MediaBottomGalleryController c = new MediaBottomGalleryController(this);
         c.setArguments(new MediaBottomGalleryController.Arguments(mode == MODE_GALLERY || (mode == MODE_AVATAR_PICKER && avatarPickerMode == AvatarPickerMode.NONE)));
         return c;
+      }
+      case MODE_GALLERY_AND_FILES: {
+        switch (index) {
+          case 0: return new MediaBottomFilesController(this);
+          case 1: return new MediaBottomGalleryController(this);
+          default: throw new IllegalArgumentException("Unknown index passed: " + index);
+        }
       }
     }
     if (rtl) {
@@ -785,7 +803,7 @@ public class MediaLayout extends FrameLayoutFix implements
     int height = getBottomBarHeight();
     float factor = Math.max(bottomBarFactor, counterFactor);
     float y = height - (int) ((float) height * factor);
-    if (!inSpecificMode() || mode == MODE_AVATAR_PICKER) {
+    if (!inSpecificMode() || mode == MODE_AVATAR_PICKER || mode == MODE_GALLERY_AND_FILES) {
       if (bottomBar != null) {
         if (currentController != null) {
           currentController.onUpdateBottomBarFactor(bottomBarFactor, counterFactor, y);
@@ -1906,5 +1924,36 @@ public class MediaLayout extends FrameLayoutFix implements
     }
 
     return false;
+  }
+
+
+  /* * */
+
+  private MediaBottomFilesController.Delegate filesControllerDelegate;
+
+  public void setFilesControllerDelegate (MediaBottomFilesController.Delegate filesControllerDelegate) {
+    this.filesControllerDelegate = filesControllerDelegate;
+  }
+
+  @NonNull
+  public MediaBottomFilesController.Delegate getFilesControllerDelegate () {
+    if (filesControllerDelegate == null) {
+      filesControllerDelegate = new MediaBottomFilesController.Delegate() {
+        @Override
+        public boolean showRestriction (View view, int rightId) {
+          return (target != null && target.showRestriction(view, rightId));
+        }
+
+        @Override
+        public void onFilesSelected (ArrayList<InlineResult<?>> results, boolean needShowKeyboard) {
+          if (target != null && target.isFocused()) {
+            target.setFilesToAttach(results, needShowKeyboard);
+            hide(false);
+          }
+        }
+      };
+    }
+
+    return filesControllerDelegate;
   }
 }

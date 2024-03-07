@@ -31,10 +31,10 @@ import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.helper.LinkPreview;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
-import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.ChatListener;
+import org.thunderdog.challegram.telegram.MessageEditMediaPending;
 import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -144,7 +144,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     public boolean messageDeleted;
     public @Nullable LinkPreview linkPreview;
     public @Nullable View.OnClickListener onMediaClickListener;
-    public @Nullable ImageFile forceDisplayMedia;
+    public @Nullable MessageEditMediaPending.LocalPickedFile forcedLocalPickedFile;
 
     public DisplayData (Tdlib tdlib, TdApi.Message message, @Nullable TdApi.InputTextQuote quote, int options) {
       this.tdlib = tdlib;
@@ -161,8 +161,8 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
       return false;
     }
 
-    public void setForceDisplayMedia (ImageFile forceDisplayMedia) {
-      this.forceDisplayMedia = forceDisplayMedia;
+    public void setForcedLocalPickedFile (@Nullable MessageEditMediaPending.LocalPickedFile localPickedFile) {
+      this.forcedLocalPickedFile = localPickedFile;
     }
 
     public void setOnMediaClickListener (View.OnClickListener onClickListener) {
@@ -181,8 +181,8 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
        return linkPreview != null && linkPreview.hasMedia() && !linkPreview.getOutputShowLargeMedia();
     }
 
-    public boolean equalsTo (TdApi.Message message, @Nullable TdApi.InputTextQuote quote, @Options int options, @Nullable LinkPreview linkPreview, @Nullable ImageFile forceDisplayMedia) {
-      return this.message == message && Td.equalsTo(this.quote, quote) && this.options == options && this.linkPreview == linkPreview && this.forceDisplayMedia == forceDisplayMedia;
+    public boolean equalsTo (TdApi.Message message, @Nullable TdApi.InputTextQuote quote, @Options int options, @Nullable LinkPreview linkPreview, @Nullable MessageEditMediaPending.LocalPickedFile forceDisplayMedia) {
+      return this.message == message && Td.equalsTo(this.quote, quote) && this.options == options && this.linkPreview == linkPreview && this.forcedLocalPickedFile == forceDisplayMedia;
     }
 
     public TdlibAccentColor accentColor () {
@@ -254,12 +254,12 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     setMessage(message, quote, filter, forcedTitle, options, null);
   }
 
-  public void setMessage (@Nullable TdApi.Message message, @Nullable TdApi.InputTextQuote quote, @Nullable TdApi.SearchMessagesFilter filter, @Nullable String forcedTitle, @Options int options, @Nullable ImageFile forcedMedia) {
+  public void setMessage (@Nullable TdApi.Message message, @Nullable TdApi.InputTextQuote quote, @Nullable TdApi.SearchMessagesFilter filter, @Nullable String forcedTitle, @Options int options, @Nullable MessageEditMediaPending.LocalPickedFile localPickedFile) {
     if (message != null) {
       DisplayData displayData = new DisplayData(tdlib, message, quote, options);
       displayData.setPreviewFilter(filter);
       displayData.setForcedTitle(forcedTitle);
-      displayData.setForceDisplayMedia(forcedMedia);
+      displayData.setForcedLocalPickedFile(localPickedFile);
       setDisplayData(displayData);
     } else {
       setDisplayData(null);
@@ -299,7 +299,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     if (this.data == null && data == null) {
       return;
     }
-    if (this.data != null && data != null && this.data.equalsTo(data.message, data.quote, data.options, data.linkPreview, data.forceDisplayMedia)) {
+    if (this.data != null && data != null && this.data.equalsTo(data.message, data.quote, data.options, data.linkPreview, data.forcedLocalPickedFile)) {
       if (data.setForcedTitle(data.forcedTitle)) {
         updateTitleText();
       }
@@ -371,20 +371,16 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     if (data == null) {
       throw new IllegalStateException();
     }
-    if (!Td.isEmpty(data.quote)) {
+
+    final ContentPreview forcedContentPreview = data.forcedLocalPickedFile != null ?
+      data.forcedLocalPickedFile.buildContentPreview() : null;
+
+    if (forcedContentPreview != null) {
+      this.contentPreview = forcedContentPreview;
+    } else if (!Td.isEmpty(data.quote)) {
       this.contentPreview = new ContentPreview(data.quote.text, false);
     } else {
       this.contentPreview = ContentPreview.getChatListPreview(tdlib, data.message.chatId, data.messageDeleted ? null : data.message, true);
-    }
-    if (data.forceDisplayMedia instanceof ImageGalleryFile) {
-      ImageGalleryFile imageGalleryFile = (ImageGalleryFile) data.forceDisplayMedia;
-      if (imageGalleryFile.isVideo()) {
-        this.contentPreview.setEmoji(ContentPreview.EMOJI_VIDEO);
-        this.contentPreview.setPlaceholderText(R.string.ChatContentVideo);
-      } else {
-        this.contentPreview.setEmoji(ContentPreview.EMOJI_PHOTO);
-        this.contentPreview.setPlaceholderText(R.string.ChatContentPhoto);
-      }
     }
     if (contentPreview.hasRefresher() && !(BitwiseUtils.hasFlag(data.options, Options.IGNORE_ALBUM_REFRESHERS) && contentPreview.isMediaGroup())) {
       contentPreview.refreshContent((chatId, messageId, newPreview, oldPreview) -> {
@@ -475,8 +471,8 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     MediaPreview preview;
     boolean showSmallMedia = false;
 
-    if (data != null && data.forceDisplayMedia != null) {
-      preview = new MediaPreviewSimple(Screen.dp(IMAGE_HEIGHT), /*Screen.dp(3f)*/0, data.forceDisplayMedia);
+    if (data != null && data.forcedLocalPickedFile != null) {
+      preview = data.forcedLocalPickedFile.buildMediaPreview(tdlib, Screen.dp(IMAGE_HEIGHT), Screen.dp(3f));
     } else if (data != null) {
       preview = MediaPreview.valueOf(tdlib, data.message, contentPreview, Screen.dp(IMAGE_HEIGHT), Screen.dp(3f));
       if (preview == null && useAvatarFallback) {

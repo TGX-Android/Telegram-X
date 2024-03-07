@@ -153,14 +153,6 @@ public class ContentPreview {
     this.parentEmoji = parentEmoji;
   }
 
-  public void setPlaceholderText (int placeholderText) {
-    this.placeholderText = placeholderText;
-  }
-
-  public void setEmoji (@Nullable Emoji emoji) {
-    this.emoji = emoji;
-  }
-
   private interface MessageContentBuilder {
     ContentPreview runBuilder (TdApi.Message message);
   }

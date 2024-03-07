@@ -196,6 +196,7 @@ import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.telegram.GlobalAccountListener;
 import org.thunderdog.challegram.telegram.ListManager;
+import org.thunderdog.challegram.telegram.MessageEditMediaPending;
 import org.thunderdog.challegram.telegram.MessageListManager;
 import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
@@ -2855,6 +2856,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     updateBottomBar(false);
 
     closeCommandsKeyboard(false);
+    discardAttachedFiles(false);
 
     if (previewSearchSender == null) {
       manager.openChat(chat, messageThread, previewSearchFilter, this, areScheduled, !inPreviewMode && !isInForceTouchMode());
@@ -6316,7 +6318,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (showingLinkPreview()) {
       replyBarView.showWebPage(findTargetContext(), findTargetContext().findSelectedUrlIndex());
     } else if (isEditingMessage()) {
-      replyBarView.setEditingMessage(editContext.message, editContext.replacedMediaFile);
+      replyBarView.setEditingMessage(editContext.message, editContext.localPickedFile);
     } else if (reply != null) {
       replyBarView.setReplyTo(reply.message, reply.quote);
     } else {
@@ -6347,13 +6349,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (mediaPickerManager == null) {
       mediaPickerManager = new SingleMediaPickerManager(this);
     }
-    mediaPickerManager.openMediaView(this::setMessageMediaEdited, getChatId(), null, false);
+    mediaPickerManager.openMediaView(this::setMessageMediaEdited, this::setMessageMediaEdited, getChatId(), null, false, this, message, false);
   }
 
   @Override
   public void onMessageMediaEditRequested (ReplyBarView view, TdApi.Message message) {
-    if (editContext != null && editContext.replacedMediaFile != null) {
-      onMessageMediaEditRequestedImpl(editContext.replacedMediaFile);
+    if (editContext != null && editContext.localPickedFile != null && editContext.localPickedFile.imageGalleryFile != null) {
+      onMessageMediaEditRequestedImpl(editContext.localPickedFile.imageGalleryFile);
     } else {
       U.toGalleryFile(message, this::onMessageMediaEditRequestedImpl);
     }
@@ -6422,8 +6424,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
     controller.open();
   }
 
+  private void setMessageMediaEdited (InlineResult<?> file) {
+    editContext.localPickedFile = new MessageEditMediaPending.LocalPickedFile(null, file);
+    updateReplyBarVisibility(true);
+  }
+
   private void setMessageMediaEdited (ImageGalleryFile imageGalleryFile) {
-    editContext.replacedMediaFile = imageGalleryFile;
+    editContext.localPickedFile = new MessageEditMediaPending.LocalPickedFile(imageGalleryFile, null);
     if (inputView != null) {
       TdApi.FormattedText formattedText = imageGalleryFile.getCaption(true, false);
       if (!Td.isEmpty(formattedText)) {
@@ -6694,7 +6701,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     private final Tdlib tdlib;
     private final TdApi.Message message;
     private @NonNull FoundUrls foundUrls;
-    private ImageGalleryFile replacedMediaFile;
+    private MessageEditMediaPending.LocalPickedFile localPickedFile;
 
     private FoundUrls dismissedFoundUrls;
 
@@ -7030,7 +7037,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       case TdApi.MessageAnimation.CONSTRUCTOR: {
         final MessageInputContext editContext = this.editContext;
         final TdApi.FormattedText oldText = Td.textOrCaption(editContext.message.content);
-        if (!Td.equalsTo(oldText, newText) || editContext.replacedMediaFile != null) {
+        if (!Td.equalsTo(oldText, newText) || editContext.localPickedFile != null) {
           String newString = newText.text.trim();
           final int maxLength = tdlib.maxCaptionLength();
           final int newCaptionLength = newString.codePointCount(0, newString.length());
@@ -7038,11 +7045,26 @@ public class MessagesController extends ViewController<MessagesController.Argume
             showBottomHint(Lang.pluralBold(R.string.EditMessageCaptionTooLong, newCaptionLength - maxLength), true);
             return;
           }
-          if (editContext.replacedMediaFile != null) {
-            editContext.replacedMediaFile.setCaption(newText);
+          if (editContext.localPickedFile != null && editContext.localPickedFile.inlineResult != null) {
+            final boolean allowPhoto = tdlib.getRestrictionStatus(chat, RightId.SEND_PHOTOS) == null;
+            final boolean allowAudio = tdlib.getRestrictionStatus(chat, RightId.SEND_AUDIO) == null;
+            final boolean allowDocs = tdlib.getRestrictionStatus(chat, RightId.SEND_DOCS) == null;
+            final boolean allowVideos = tdlib.getRestrictionStatus(chat, RightId.SEND_VIDEOS) == null;
+            final boolean allowGifs = tdlib.getRestrictionStatus(chat, RightId.SEND_OTHER_MESSAGES) == null;
+
             Media.instance().post(() -> {
-              TdApi.InputMessageContent content = TD.toContent(tdlib, editContext.replacedMediaFile, false, false, false, isSecretChat());
-              UI.post(() -> tdlib.editMessageMedia(editContext.message.chatId, editContext.message.id, content, editContext.replacedMediaFile));
+              TdApi.InputMessageContent content = TD.toInputMessageContent(newText, editContext.localPickedFile.inlineResult, false, allowDocs, allowAudio, allowPhoto, allowVideos, allowGifs);
+              if (content != null) {
+                content = tdlib.filegen().createThumbnail(content, isSecretChat());
+                TdApi.InputMessageContent finalContent = content;
+                UI.post(() -> tdlib.editMessageMedia(editContext.message.chatId, editContext.message.id, finalContent, editContext.localPickedFile));
+              }
+            });
+          } else if (editContext.localPickedFile != null && editContext.localPickedFile.imageGalleryFile != null) {
+            editContext.localPickedFile.imageGalleryFile.setCaption(newText);
+            Media.instance().post(() -> {
+              TdApi.InputMessageContent content = TD.toContent(tdlib, editContext.localPickedFile.imageGalleryFile, false, false, false, isSecretChat());
+              UI.post(() -> tdlib.editMessageMedia(editContext.message.chatId, editContext.message.id, content, editContext.localPickedFile));
             });
           } else {
             tdlib.editMessageCaption(editContext.message.chatId, editContext.message.id, newText);

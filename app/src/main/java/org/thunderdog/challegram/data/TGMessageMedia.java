@@ -376,6 +376,11 @@ public class TGMessageMedia extends TGMessage {
     return isAcceptedMessageContent(messageContent) && isAcceptedMessageContent(message.content);
   }
 
+  @Override
+  protected boolean isSupportedMessagePendingContent (@NonNull MessageEditMediaPending pending) {
+    return pending.isPhoto() || pending.isVideo() || pending.isAnimation();
+  }
+
   private static final int FLAG_CHANGED_SIMPLY = 1;
   private static final int FLAG_CHANGED_RECEIVERS = 1 << 1;
 

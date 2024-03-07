@@ -30,8 +30,8 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.helper.FoundUrls;
 import org.thunderdog.challegram.helper.LinkPreview;
-import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.telegram.MessageEditMediaPending;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -47,6 +47,7 @@ import me.vkryl.android.ViewUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.RunnableData;
+import me.vkryl.td.Td;
 
 public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener, Destroyable {
   protected final Tdlib tdlib;
@@ -297,11 +298,19 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
     setMessageInputContext(null);
   }
 
-  public void setEditingMessage (TdApi.Message msg, @Nullable ImageFile forcedMediaFile) {
-    final boolean canEdit = tdlib.canEditMedia(msg);
-    pinnedMessagesBar.setMessage(tdlib, displayedMessage = msg, null, forcedMediaFile);
+  public void setEditingMessage (TdApi.Message msg, @Nullable MessageEditMediaPending.LocalPickedFile localPickedFile) {
+    final boolean hasReplacedImage = localPickedFile != null && localPickedFile.imageGalleryFile != null;
+
+    final boolean canReplace = localPickedFile != null || tdlib.canEditMedia(msg, false);
+    final boolean canEdit = canReplace && (localPickedFile == null && tdlib.canEditMedia(msg, true) || hasReplacedImage);
+
+    final boolean usePhotoIcon = Td.isPhoto(msg.content) || hasReplacedImage
+      || (msg.content != null && msg.content.getConstructor() == TdApi.MessageVideo.CONSTRUCTOR);
+
+    replaceMediaView.setImageResource(usePhotoIcon ? R.drawable.dot_baseline_image_replace_24 : R.drawable.dot_baseline_file_replace_24);
+    pinnedMessagesBar.setMessage(tdlib, displayedMessage = msg, null, localPickedFile);
     setLinkPreviewToggleVisible(false);
-    setMediaEditToggleVisible(canEdit, canEdit && TD.isFileLoaded(msg));
+    setMediaEditToggleVisible(canReplace, canEdit && TD.isFileLoaded(msg));
     setMessageInputContext(null);
   }
 

@@ -390,6 +390,11 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     this.mimeType = mimeType;
   }
 
+  @Nullable
+  public String getMimeType () {
+    return mimeType;
+  }
+
   public void setFile (@Nullable TdApi.File file) {
     setFile(file, null);
   }

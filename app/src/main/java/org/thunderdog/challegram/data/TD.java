@@ -57,6 +57,7 @@ import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.component.attach.MediaBottomFilesController;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
@@ -1120,15 +1121,37 @@ public class TD {
     return user != null && user.type.getConstructor() == TdApi.UserTypeRegular.CONSTRUCTOR;
   }
 
+  public static TdApi.InputMessageContent toInputMessageContent (TdApi.FormattedText caption, InlineResult<?> result, boolean hasSpoiler, boolean allowDocument, boolean allowAudio, boolean allowPhoto, boolean allowVideo, boolean allowAnimation) {
+    if (result.getType() == InlineResult.TYPE_AUDIO) {
+      final MediaBottomFilesController.MusicEntry musicFile = (MediaBottomFilesController.MusicEntry) ((InlineResultCommon) result).getTag();
+      if (allowAudio) {
+        return new TdApi.InputMessageAudio(TD.createInputFile(musicFile.getPath(), musicFile.getMimeType()), null, (int) (musicFile.getDuration() / 1000L), musicFile.getTitle(), musicFile.getArtist(), caption);
+      } else if (allowDocument) {
+        return new TdApi.InputMessageDocument(TD.createInputFile(musicFile.getPath(), musicFile.getMimeType()), null, true, caption);
+      }
+    } else if (result.getType() == InlineResult.TYPE_DOCUMENT) {
+      final String path = result.getId();
+      final TD.FileInfo info = new TD.FileInfo();
+      final TdApi.InputFile inputFile = TD.createInputFile(path, null, info);
+      return TD.toInputMessageContent(path, inputFile, info, caption, allowAudio, allowAnimation, allowPhoto, allowVideo, allowDocument, hasSpoiler);
+    }
+    return null;
+  }
+
   public static TdApi.InputMessageContent toInputMessageContent (String filePath, TdApi.InputFile inputFile, @NonNull FileInfo info, TdApi.FormattedText caption, boolean hasSpoiler) {
     return toInputMessageContent(filePath, inputFile, info, caption, true, true, true, true, hasSpoiler);
   }
 
   public static TdApi.InputMessageContent toInputMessageContent (String filePath, TdApi.InputFile inputFile, @NonNull FileInfo info, TdApi.FormattedText caption, boolean allowAudio, boolean allowAnimation, boolean allowVideo, boolean allowDocs, boolean hasSpoiler) {
+    return toInputMessageContent(filePath, inputFile, info, caption, allowAudio, allowAnimation, false, allowVideo, allowDocs, hasSpoiler);
+  }
+
+  public static TdApi.InputMessageContent toInputMessageContent (String filePath, TdApi.InputFile inputFile, @NonNull FileInfo info, TdApi.FormattedText caption, boolean allowAudio, boolean allowAnimation, boolean allowPhoto, boolean allowVideo, boolean allowDocs, boolean hasSpoiler) {
     if (!StringUtils.isEmpty(info.mimeType)) {
       boolean isContent = filePath.startsWith("content://");
       boolean isAudio = info.mimeType.startsWith("audio/") && !info.mimeType.equals("audio/ogg");
       boolean isVideo = info.mimeType.startsWith("video/");
+      boolean isPhoto = info.mimeType.startsWith("image/");
 
       if (isAudio && allowAudio) {
         // TODO rework U.MediaMetadata to support audio
@@ -1253,6 +1276,46 @@ public class TD {
           }
         }
       }
+      /*if (isPhoto && allowPhoto && !allowDocs) {
+        if (isContent) {
+          Uri uri = Uri.parse(filePath);
+          List<String> columns = new ArrayList<>();
+          columns.add(MediaStore.MediaColumns.WIDTH);
+          columns.add(MediaStore.MediaColumns.HEIGHT);
+
+          try (Cursor c = UI.getContext().getContentResolver().query(uri, columns.toArray(new String[0]), null, null, null)) {
+            if (c != null && c.moveToFirst()) {
+              int width = c.getInt(0);
+              int height = c.getInt(1);
+              if (width > 0 && height > 0) {
+                return new TdApi.InputMessagePhoto(inputFile, null, null, width, height, caption, null, hasSpoiler);
+              }
+            }
+          } catch (Throwable t) {
+            Log.w("Unable to fetch photo information", t);
+          }
+        } else {
+          try {
+            U.MediaMetadata metadata = U.getMediaMetadata(filePath);
+            if (metadata != null) {
+              if (metadata.hasVideo) {
+                int width = metadata.width;
+                int height = metadata.height;
+                if (U.isRotated(metadata.rotation)) {
+                  int temp = width;
+                  width = height;
+                  height = temp;
+                }
+                if (width > 0 && height > 0) {
+                  return new TdApi.InputMessagePhoto(inputFile, null, null, width, height, caption, null, hasSpoiler);
+                }
+              }
+            }
+          } catch (Throwable t) {
+            Log.w("Cannot extract media metadata", t);
+          }
+        }
+      }*/
     }
     if (allowDocs) {
       return new TdApi.InputMessageDocument(inputFile, null, false, caption);

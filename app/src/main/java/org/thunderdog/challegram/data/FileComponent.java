@@ -125,7 +125,11 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
     }
     this.needFakeTitle = Text.needFakeBold(title);
     initSubtitle();
-    if (doc.thumbnail == null && context.isSending() && TGMimeType.isImageMimeType(U.resolveMimeType(doc.document.local.path))) {
+    this.hasPreview = false;
+    this.preview = null;
+    this.miniThumbnail = null;
+    this.fullPreview = null;
+    if (doc.thumbnail == null && /*context.isSending() &&*/ TGMimeType.isImageMimeType(U.resolveMimeType(doc.document.local.path))) {
       hasPreview = true;
 
       preview = new ImageFileLocal(doc.document.local.path);
@@ -187,6 +191,9 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
     this.needFakeTitle = Text.needFakeBold(title);
     initSubtitle();
 
+    this.preview = null;
+    this.miniThumbnail = null;
+    this.fullPreview = null;
     this.hasPreview = audio.albumCoverThumbnail != null && (Config.ALLOW_BOT_COVERS || context.getMessage().viaBotUserId == 0); // preventing shit covers from @music and other bots
     if (hasPreview) {
       if (audio.albumCoverMinithumbnail != null) {
@@ -329,6 +336,14 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
 
   public FileProgressComponent getFileProgress () {
     return progress;
+  }
+
+  public void rebuildLayout () {
+    if (lastMaxWidth != 0) {
+      int width = lastMaxWidth;
+      lastMaxWidth = 0;
+      buildLayout(width);
+    }
   }
 
   public void buildLayout (int maxWidth) {

@@ -30,10 +30,10 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.helper.LinkPreview;
-import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ListManager;
+import org.thunderdog.challegram.telegram.MessageEditMediaPending;
 import org.thunderdog.challegram.telegram.MessageListManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccentColor;
@@ -437,7 +437,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
         } else if (data.isMessage()) {
           TdApi.Message message = data.message;
           TdApi.InputTextQuote quote = data.quote;
-          previewView.setMessage(message, quote, new TdApi.SearchMessagesFilterPinned(), item.getStringValue(), ignoreAlbums ? MessagePreviewView.Options.IGNORE_ALBUM_REFRESHERS : MessagePreviewView.Options.NONE, data.forceDisplayMedia);
+          previewView.setMessage(message, quote, new TdApi.SearchMessagesFilterPinned(), item.getStringValue(), ignoreAlbums ? MessagePreviewView.Options.IGNORE_ALBUM_REFRESHERS : MessagePreviewView.Options.NONE, data.localPickedFile);
           if (messageList == null) {
             // override message preview
             MessageId highlightMessageId;
@@ -632,7 +632,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
 
     public final MessagesController.MessageInputContext linkPreviewContext;
     public final String linkPreviewUrl;
-    public @Nullable ImageFile forceDisplayMedia;
+    public @Nullable MessageEditMediaPending.LocalPickedFile localPickedFile;
 
     public Entry (Tdlib tdlib, TdApi.Message message, @Nullable TdApi.InputTextQuote quote) {
       this.tdlib = tdlib;
@@ -652,8 +652,8 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
       this.quote = null;
     }
 
-    public Entry setForceDisplayMedia (@Nullable ImageFile forceDisplayMedia) {
-      this.forceDisplayMedia = forceDisplayMedia;
+    public Entry setForceLocalPicledFile (@Nullable MessageEditMediaPending.LocalPickedFile localPickedFile) {
+      this.localPickedFile = localPickedFile;
       return this;
     }
 
@@ -788,9 +788,9 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     setMessage(tdlib, message, quote, null);
   }
 
-  public void setMessage (@Nullable Tdlib tdlib, @Nullable TdApi.Message message, @Nullable TdApi.InputTextQuote quote, @Nullable ImageFile forcedMediaFile) {
+  public void setMessage (@Nullable Tdlib tdlib, @Nullable TdApi.Message message, @Nullable TdApi.InputTextQuote quote, @Nullable MessageEditMediaPending.LocalPickedFile localPickedFile) {
     if (tdlib != null && message != null) {
-      setStaticMessageList(Collections.singletonList(new Entry(tdlib, message, quote).setForceDisplayMedia(forcedMediaFile)), RecyclerView.NO_POSITION);
+      setStaticMessageList(Collections.singletonList(new Entry(tdlib, message, quote).setForceLocalPicledFile(localPickedFile)), RecyclerView.NO_POSITION);
     } else {
       setMessageList(null);
     }

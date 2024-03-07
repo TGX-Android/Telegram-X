@@ -18,10 +18,20 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.chat.MediaPreview;
+import org.thunderdog.challegram.component.chat.MediaPreviewSimple;
+import org.thunderdog.challegram.data.ContentPreview;
+import org.thunderdog.challegram.data.InlineResult;
+import org.thunderdog.challegram.data.InlineResultCommon;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
+import org.thunderdog.challegram.tool.Screen;
 
+import java.io.File;
+
+import me.vkryl.core.StringUtils;
 import me.vkryl.td.ChatId;
 
 public class MessageEditMediaPending implements TdlibEditMediaManager.UploadFuture.Callback {
@@ -36,20 +46,24 @@ public class MessageEditMediaPending implements TdlibEditMediaManager.UploadFutu
   public final TdApi.InputMessageContent content;
   private final TdlibEditMediaManager.UploadFuture inputFileFuture;
   private final @Nullable TdlibEditMediaManager.UploadFuture inputFileThumbnailFuture;
-  private final @NonNull ImageFile preview;
+  private final @NonNull LocalPickedFile pickedFile;
 
-  MessageEditMediaPending (Tdlib tdlib, long chatId, long messageId, TdApi.InputMessageContent content, @NonNull ImageFile preview) {
+  MessageEditMediaPending (Tdlib tdlib, long chatId, long messageId, TdApi.InputMessageContent content, @NonNull LocalPickedFile pickedFile) {
     this.chatId = chatId;
     this.messageId = messageId;
     this.content = content;
     this.inputFile = TD.getInputFile(content);
     this.inputFileThumbnail = TD.getInputFileThumbnail(content);
-    this.preview = preview;
+    this.pickedFile = pickedFile;
 
     final boolean isSecret = ChatId.isSecret(chatId);
 
     this.inputFileFuture = new TdlibEditMediaManager.UploadFuture(tdlib, FUTURE_ID_MAIN, inputFile, isSecret ? new TdApi.FileTypeSecret() : TD.toFileType(content), this);
-    this.inputFileThumbnailFuture = (inputFileThumbnail != null) ? new TdlibEditMediaManager.UploadFuture(tdlib, FUTURE_ID_THUMB, inputFileThumbnail, isSecret ? new TdApi.FileTypeSecretThumbnail() : new TdApi.FileTypeThumbnail(), this) : null;
+    if (content.getConstructor() == TdApi.InputMessagePhoto.CONSTRUCTOR || content.getConstructor() == TdApi.InputMessageVideo.CONSTRUCTOR) {
+      this.inputFileThumbnailFuture = (inputFileThumbnail != null) ? new TdlibEditMediaManager.UploadFuture(tdlib, FUTURE_ID_THUMB, inputFileThumbnail, isSecret ? new TdApi.FileTypeSecretThumbnail() : new TdApi.FileTypeThumbnail(), this) : null;
+    } else {
+      this.inputFileThumbnailFuture = null;
+    }
   }
 
   public void init (MessageEditMediaUploadCallback callback) {
@@ -65,7 +79,7 @@ public class MessageEditMediaPending implements TdlibEditMediaManager.UploadFutu
   }
 
   public boolean isWebp () {
-    return preview.isWebp();
+    return pickedFile.imageGalleryFile != null && pickedFile.imageGalleryFile.isWebp();
   }
 
   public TdApi.Photo getPhoto () {
@@ -87,10 +101,9 @@ public class MessageEditMediaPending implements TdlibEditMediaManager.UploadFutu
     if (content.getConstructor() != TdApi.InputMessageVideo.CONSTRUCTOR) {
       throw new IllegalStateException();
     }
-    TdApi.InputMessageVideo video = (TdApi.InputMessageVideo) content;
 
-    return new TdApi.Video(video.duration, video.width, video.height, "",
-      ((ImageGalleryFile) preview).getVideoMimeType(),
+    final TdApi.InputMessageVideo video = (TdApi.InputMessageVideo) content;
+    return new TdApi.Video(video.duration, video.width, video.height, pickedFile.getFileName(""), pickedFile.getMimeType("video/mp4"),
       video.addedStickerFileIds != null && video.addedStickerFileIds.length > 0, video.supportsStreaming, null,
       inputFileThumbnailFuture != null ?
         new TdApi.Thumbnail(new TdApi.ThumbnailFormatJpeg(), video.thumbnail.width, video.thumbnail.height, inputFileThumbnailFuture.file) : null,
@@ -105,13 +118,62 @@ public class MessageEditMediaPending implements TdlibEditMediaManager.UploadFutu
     if (content.getConstructor() != TdApi.InputMessageAnimation.CONSTRUCTOR) {
       throw new IllegalStateException();
     }
-    TdApi.InputMessageAnimation animation = (TdApi.InputMessageAnimation) content;
 
-    return new TdApi.Animation(animation.duration, animation.width, animation.height, "",
-      ((ImageGalleryFile) preview).getVideoMimeType(), animation.addedStickerFileIds != null && animation.addedStickerFileIds.length > 0, null,
+    final TdApi.InputMessageAnimation animation = (TdApi.InputMessageAnimation) content;
+    return new TdApi.Animation(animation.duration, animation.width, animation.height, pickedFile.getFileName(""),
+      pickedFile.getMimeType("video/mp4"), animation.addedStickerFileIds != null && animation.addedStickerFileIds.length > 0, null,
       inputFileThumbnailFuture != null ?
         new TdApi.Thumbnail(new TdApi.ThumbnailFormatJpeg(), animation.thumbnail.width, animation.thumbnail.height, inputFileThumbnailFuture.file) : null,
       inputFileFuture.file);
+  }
+
+  public boolean isDocument () {
+    return content.getConstructor() == TdApi.InputMessageDocument.CONSTRUCTOR;
+  }
+
+  public TdApi.Document getDocument () {
+    if (content.getConstructor() != TdApi.InputMessageDocument.CONSTRUCTOR) {
+      throw new IllegalStateException();
+    }
+
+    return new TdApi.Document(pickedFile.getFileName(""), pickedFile.getMimeType(""), null, null, inputFileFuture.file);
+  }
+
+  public boolean isAudio () {
+    return content.getConstructor() == TdApi.InputMessageAudio.CONSTRUCTOR;
+  }
+
+  public TdApi.Audio getAudio () {
+    if (content.getConstructor() != TdApi.InputMessageAudio.CONSTRUCTOR) {
+      throw new IllegalStateException();
+    }
+
+    final TdApi.InputMessageAudio audio = (TdApi.InputMessageAudio) content;
+    return new TdApi.Audio(audio.duration, audio.title, audio.performer, pickedFile.getFileName(""), pickedFile.getMimeType(""), null, null, new TdApi.Thumbnail[0], inputFileFuture.file);
+  }
+
+  public TdApi.MessagePhoto getMessagePhoto () {
+    return new TdApi.MessagePhoto(getPhoto(), getCaption(), hasSpoiler(), false);
+  }
+
+  public TdApi.MessageVideo getMessageVideo () {
+    return new TdApi.MessageVideo(getVideo(), getCaption(), hasSpoiler(), false);
+  }
+
+  public TdApi.MessageAnimation getMessageAnimation () {
+    return new TdApi.MessageAnimation(getAnimation(), getCaption(), hasSpoiler(), false);
+  }
+
+  public TdApi.MessageAudio getMessageAudio () {
+    return new TdApi.MessageAudio(getAudio(), getCaption());
+  }
+
+  public TdApi.MessageDocument getMessageDocument () {
+    return new TdApi.MessageDocument(getDocument(), getCaption());
+  }
+
+  public TdApi.FormattedText getCaption () {
+    return TD.textOrCaption(content);
   }
 
   public boolean hasSpoiler () {
@@ -188,6 +250,76 @@ public class MessageEditMediaPending implements TdlibEditMediaManager.UploadFutu
         TD.setInputFileThumbnail(content, new TdApi.InputFileId(inputFileThumbnailFuture.file.id));
       }
       callback.onMediaPreliminaryUploadComplete(this, content);
+    }
+  }
+
+  public static class LocalPickedFile {
+    public final ImageGalleryFile imageGalleryFile;
+    public final InlineResult<?> inlineResult;
+
+    public LocalPickedFile (ImageGalleryFile imageGalleryFile, InlineResult<?> inlineResult) {
+      this.imageGalleryFile = imageGalleryFile;
+      this.inlineResult = inlineResult;
+    }
+
+    public String getFileName (String defaultName) {
+      if (inlineResult instanceof InlineResultCommon) {
+        return ((InlineResultCommon) inlineResult).getTrackTitle();
+      }
+      return defaultName;
+    }
+
+    public String getMimeType (String defaultMimeType) {
+      String mimeType = null;
+
+      if (inlineResult instanceof InlineResultCommon) {
+        mimeType = ((InlineResultCommon) inlineResult).getMimeType();
+      } else if (imageGalleryFile != null && imageGalleryFile.isVideo()) {
+        mimeType = imageGalleryFile.getVideoMimeType();
+      }
+
+      return !StringUtils.isEmpty(mimeType) ? mimeType : defaultMimeType;
+    }
+
+    public boolean isMusic () {
+      return inlineResult != null && inlineResult.getType() == InlineResult.TYPE_AUDIO;
+    }
+
+    @Nullable
+    public MediaPreview buildMediaPreview (Tdlib tdlib, int size, int cornerRadius) {
+      if (imageGalleryFile != null) {
+        return new MediaPreviewSimple(size, 0, imageGalleryFile);
+      } else if (inlineResult instanceof InlineResultCommon) {
+        final TdApi.File file = ((InlineResultCommon) inlineResult).getTrackFile();
+        final String path = TD.getFilePath(file);
+        final String mimeType = getMimeType(null);
+
+        if (!StringUtils.isEmpty(path) && !StringUtils.isEmpty(mimeType)) {
+          return MediaPreview.valueOf(tdlib, new File(path), mimeType, size, cornerRadius);
+        }
+      }
+
+      return null;
+    }
+
+    @Nullable
+    public ContentPreview buildContentPreview () {
+      if (imageGalleryFile != null) {
+        if (imageGalleryFile.isVideo()) {
+          return new ContentPreview(ContentPreview.EMOJI_VIDEO, R.string.ChatContentVideo);
+        } else {
+          return new ContentPreview(ContentPreview.EMOJI_PHOTO, R.string.ChatContentPhoto);
+        }
+      } else if (inlineResult != null) {
+        final String fileName = getFileName(null);
+        final boolean isMusic = isMusic();
+        if (StringUtils.isEmpty(fileName)) {
+          return new ContentPreview(isMusic ? ContentPreview.EMOJI_AUDIO : ContentPreview.EMOJI_FILE, R.string.ChatContentFile);
+        } else {
+          return new ContentPreview(isMusic ? ContentPreview.EMOJI_AUDIO : ContentPreview.EMOJI_FILE, 0, fileName, false);
+        }
+      }
+      return null;
     }
   }
 }
