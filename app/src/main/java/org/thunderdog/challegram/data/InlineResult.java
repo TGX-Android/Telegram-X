@@ -300,10 +300,6 @@ public abstract class InlineResult <T> implements MessageSourceProvider {
     }
   }
 
-  public final void rebuildLayout () {
-    layoutInternal(lastLayoutWidth);
-  }
-
   private int lastLayoutWidth;
 
   public final void layout (int width, ComplexReceiver receiver) {
