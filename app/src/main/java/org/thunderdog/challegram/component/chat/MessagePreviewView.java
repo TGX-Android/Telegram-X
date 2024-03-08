@@ -26,15 +26,14 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.attach.MediaToReplacePickerManager;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.helper.LinkPreview;
 import org.thunderdog.challegram.loader.ComplexReceiver;
-import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.ChatListener;
-import org.thunderdog.challegram.telegram.MessageEditMediaPending;
 import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -144,7 +143,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     public boolean messageDeleted;
     public @Nullable LinkPreview linkPreview;
     public @Nullable View.OnClickListener onMediaClickListener;
-    public @Nullable MessageEditMediaPending.LocalPickedFile forcedLocalPickedFile;
+    public @Nullable MediaToReplacePickerManager.LocalPickedFile forcedLocalPickedFile;
 
     public DisplayData (Tdlib tdlib, TdApi.Message message, @Nullable TdApi.InputTextQuote quote, int options) {
       this.tdlib = tdlib;
@@ -161,7 +160,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
       return false;
     }
 
-    public void setForcedLocalPickedFile (@Nullable MessageEditMediaPending.LocalPickedFile localPickedFile) {
+    public void setForcedLocalPickedFile (@Nullable MediaToReplacePickerManager.LocalPickedFile localPickedFile) {
       this.forcedLocalPickedFile = localPickedFile;
     }
 
@@ -181,7 +180,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
        return linkPreview != null && linkPreview.hasMedia() && !linkPreview.getOutputShowLargeMedia();
     }
 
-    public boolean equalsTo (TdApi.Message message, @Nullable TdApi.InputTextQuote quote, @Options int options, @Nullable LinkPreview linkPreview, @Nullable MessageEditMediaPending.LocalPickedFile forceDisplayMedia) {
+    public boolean equalsTo (TdApi.Message message, @Nullable TdApi.InputTextQuote quote, @Options int options, @Nullable LinkPreview linkPreview, @Nullable MediaToReplacePickerManager.LocalPickedFile forceDisplayMedia) {
       return this.message == message && Td.equalsTo(this.quote, quote) && this.options == options && this.linkPreview == linkPreview && this.forcedLocalPickedFile == forceDisplayMedia;
     }
 
@@ -254,7 +253,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     setMessage(message, quote, filter, forcedTitle, options, null);
   }
 
-  public void setMessage (@Nullable TdApi.Message message, @Nullable TdApi.InputTextQuote quote, @Nullable TdApi.SearchMessagesFilter filter, @Nullable String forcedTitle, @Options int options, @Nullable MessageEditMediaPending.LocalPickedFile localPickedFile) {
+  public void setMessage (@Nullable TdApi.Message message, @Nullable TdApi.InputTextQuote quote, @Nullable TdApi.SearchMessagesFilter filter, @Nullable String forcedTitle, @Options int options, @Nullable MediaToReplacePickerManager.LocalPickedFile localPickedFile) {
     if (message != null) {
       DisplayData displayData = new DisplayData(tdlib, message, quote, options);
       displayData.setPreviewFilter(filter);

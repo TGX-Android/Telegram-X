@@ -62,7 +62,7 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.attach.MediaLayout;
-import org.thunderdog.challegram.component.attach.SingleMediaPickerManager;
+import org.thunderdog.challegram.component.attach.MediaToReplacePickerManager;
 import org.thunderdog.challegram.component.chat.EmojiToneHelper;
 import org.thunderdog.challegram.component.chat.InlineResultsWrap;
 import org.thunderdog.challegram.component.chat.InputView;
@@ -117,7 +117,6 @@ import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.CallManager;
-import org.thunderdog.challegram.telegram.MessageEditMediaPending;
 import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.RightId;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
@@ -1771,17 +1770,17 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       }
     } else if (id == R.id.btn_replace) {
       if (mediaPickerManager == null) {
-        mediaPickerManager = new SingleMediaPickerManager(this);
+        mediaPickerManager = new MediaToReplacePickerManager(this);
       }
 
       stopFullScreenTemporarily(true);
       mediaPickerManager.openMediaView(file -> Media.instance().post(() -> {
-        if (!file.hasCaption()) {
-          file.setCaption(item.getCaption());
+        if (!file.imageGalleryFile.hasCaption()) {
+          file.imageGalleryFile.setCaption(item.getCaption());
         }
-        TdApi.InputMessageContent content = TD.toContent(tdlib, file, false, false, item.hasSpoiler(), ChatId.isSecret(item.getSourceChatId()));
+        TdApi.InputMessageContent content = TD.toContent(tdlib, file.imageGalleryFile, false, false, item.hasSpoiler(), ChatId.isSecret(item.getSourceChatId()));
         UI.post(() -> {
-          tdlib.editMessageMedia(item.getSourceChatId(), item.getSourceMessageId(), content, new MessageEditMediaPending.LocalPickedFile(file, null));
+          tdlib.editMessageMedia(item.getSourceChatId(), item.getSourceMessageId(), content, new MediaToReplacePickerManager.LocalPickedFile(file.imageGalleryFile, null));
           forceClose();
 
           ViewController<?> c = context.navigation().getCurrentStackItem();
@@ -1789,7 +1788,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
             ((MessagesController) c).highlightMessage(new MessageId(item.getSourceChatId(), item.getSourceMessageId()));
           }
         });
-      }), null, item.getSourceChatId(), () -> stopFullScreenTemporarily(false), true, null, item.getMessage(), true);
+      }), item.getSourceChatId(), () -> stopFullScreenTemporarily(false), true, null, (1 << RightId.SEND_PHOTOS) | (1 << RightId.SEND_VIDEOS));
     } else if (id == R.id.btn_share) {
       ShareController c;
       if (item.getMessage() != null) {
@@ -1872,7 +1871,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
   }
 
-  private SingleMediaPickerManager mediaPickerManager;
+  private MediaToReplacePickerManager mediaPickerManager;
 
   @Override
   public View getCustomHeaderCell () {

@@ -28,12 +28,12 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
+import org.thunderdog.challegram.component.attach.MediaToReplacePickerManager;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.helper.LinkPreview;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ListManager;
-import org.thunderdog.challegram.telegram.MessageEditMediaPending;
 import org.thunderdog.challegram.telegram.MessageListManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccentColor;
@@ -632,7 +632,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
 
     public final MessagesController.MessageInputContext linkPreviewContext;
     public final String linkPreviewUrl;
-    public @Nullable MessageEditMediaPending.LocalPickedFile localPickedFile;
+    public @Nullable MediaToReplacePickerManager.LocalPickedFile localPickedFile;
 
     public Entry (Tdlib tdlib, TdApi.Message message, @Nullable TdApi.InputTextQuote quote) {
       this.tdlib = tdlib;
@@ -652,7 +652,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
       this.quote = null;
     }
 
-    public Entry setForceLocalPicledFile (@Nullable MessageEditMediaPending.LocalPickedFile localPickedFile) {
+    public Entry setForceLocalPicledFile (@Nullable MediaToReplacePickerManager.LocalPickedFile localPickedFile) {
       this.localPickedFile = localPickedFile;
       return this;
     }
@@ -788,7 +788,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     setMessage(tdlib, message, quote, null);
   }
 
-  public void setMessage (@Nullable Tdlib tdlib, @Nullable TdApi.Message message, @Nullable TdApi.InputTextQuote quote, @Nullable MessageEditMediaPending.LocalPickedFile localPickedFile) {
+  public void setMessage (@Nullable Tdlib tdlib, @Nullable TdApi.Message message, @Nullable TdApi.InputTextQuote quote, @Nullable MediaToReplacePickerManager.LocalPickedFile localPickedFile) {
     if (tdlib != null && message != null) {
       setStaticMessageList(Collections.singletonList(new Entry(tdlib, message, quote).setForceLocalPicledFile(localPickedFile)), RecyclerView.NO_POSITION);
     } else {

@@ -87,7 +87,7 @@ import org.thunderdog.challegram.component.MediaCollectorDelegate;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.attach.MediaBottomFilesController;
 import org.thunderdog.challegram.component.attach.MediaLayout;
-import org.thunderdog.challegram.component.attach.SingleMediaPickerManager;
+import org.thunderdog.challegram.component.attach.MediaToReplacePickerManager;
 import org.thunderdog.challegram.component.attach.SponsoredMessagesInfoController;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.chat.AttachLinearLayout;
@@ -196,7 +196,6 @@ import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.telegram.GlobalAccountListener;
 import org.thunderdog.challegram.telegram.ListManager;
-import org.thunderdog.challegram.telegram.MessageEditMediaPending;
 import org.thunderdog.challegram.telegram.MessageListManager;
 import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
@@ -6342,14 +6341,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  private SingleMediaPickerManager mediaPickerManager;
+  private MediaToReplacePickerManager mediaPickerManager;
 
   @Override
   public void onMessageMediaReplaceRequested (ReplyBarView view, TdApi.Message message) {
     if (mediaPickerManager == null) {
-      mediaPickerManager = new SingleMediaPickerManager(this);
+      mediaPickerManager = new MediaToReplacePickerManager(this);
     }
-    mediaPickerManager.openMediaView(this::setMessageMediaEdited, this::setMessageMediaEdited, getChatId(), null, false, this, message, false);
+    mediaPickerManager.openMediaView(this::setMessageMediaEdited, getChatId(), null, false, this, message);
   }
 
   @Override
@@ -6411,7 +6410,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
               if (isDestroyed()) {
                 return false;
               }
-              setMessageMediaEdited(imageGalleryFile);
+              setMessageMediaEdited(new MediaToReplacePickerManager.LocalPickedFile(imageGalleryFile));
               return true;
             }
           },
@@ -6424,21 +6423,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
     controller.open();
   }
 
-  private void setMessageMediaEdited (InlineResult<?> file) {
-    editContext.localPickedFile = new MessageEditMediaPending.LocalPickedFile(null, file);
-    updateReplyBarVisibility(true);
-  }
-
-  private void setMessageMediaEdited (ImageGalleryFile imageGalleryFile) {
-    editContext.localPickedFile = new MessageEditMediaPending.LocalPickedFile(imageGalleryFile, null);
-    if (inputView != null) {
-      TdApi.FormattedText formattedText = imageGalleryFile.getCaption(true, false);
+  private void setMessageMediaEdited (MediaToReplacePickerManager.LocalPickedFile file) {
+    editContext.localPickedFile = file;
+    if (inputView != null && file.imageGalleryFile != null) {
+      TdApi.FormattedText formattedText = file.imageGalleryFile.getCaption(true, false);
       if (!Td.isEmpty(formattedText)) {
         CharSequence text = TD.toCharSequence(formattedText);
         inputView.setText(text);
         inputView.setSelection(text.length());
       }
     }
+
     updateReplyBarVisibility(true);
   }
 
@@ -6701,7 +6696,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     private final Tdlib tdlib;
     private final TdApi.Message message;
     private @NonNull FoundUrls foundUrls;
-    private MessageEditMediaPending.LocalPickedFile localPickedFile;
+    private MediaToReplacePickerManager.LocalPickedFile localPickedFile;
 
     private FoundUrls dismissedFoundUrls;
 
@@ -7046,18 +7041,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
             return;
           }
           if (editContext.localPickedFile != null && editContext.localPickedFile.inlineResult != null) {
-            final boolean allowPhoto = tdlib.getRestrictionStatus(chat, RightId.SEND_PHOTOS) == null;
-            final boolean allowAudio = tdlib.getRestrictionStatus(chat, RightId.SEND_AUDIO) == null;
-            final boolean allowDocs = tdlib.getRestrictionStatus(chat, RightId.SEND_DOCS) == null;
-            final boolean allowVideos = tdlib.getRestrictionStatus(chat, RightId.SEND_VIDEOS) == null;
-            final boolean allowGifs = tdlib.getRestrictionStatus(chat, RightId.SEND_OTHER_MESSAGES) == null;
+            final boolean allowAudio = !tdlib.hasReplaceMediaRestriction(editContext.message, RightId.SEND_AUDIO) && tdlib.getRestrictionStatus(chat, RightId.SEND_AUDIO) == null;
+            final boolean allowDocs = !tdlib.hasReplaceMediaRestriction(editContext.message, RightId.SEND_DOCS) && tdlib.getRestrictionStatus(chat, RightId.SEND_DOCS) == null;
+            final boolean allowVideos = !tdlib.hasReplaceMediaRestriction(editContext.message, RightId.SEND_VIDEOS) && tdlib.getRestrictionStatus(chat, RightId.SEND_VIDEOS) == null;
+            final boolean allowGifs = !tdlib.hasReplaceMediaRestriction(editContext.message, RightId.SEND_OTHER_MESSAGES) && tdlib.getRestrictionStatus(chat, RightId.SEND_OTHER_MESSAGES) == null;
 
             Media.instance().post(() -> {
-              TdApi.InputMessageContent content = TD.toInputMessageContent(newText, editContext.localPickedFile.inlineResult, false, allowDocs, allowAudio, allowPhoto, allowVideos, allowGifs);
+              TdApi.InputMessageContent content = TD.toInputMessageContent(newText, editContext.localPickedFile.inlineResult, false, allowDocs, allowAudio, allowVideos, allowGifs);
               if (content != null) {
                 content = tdlib.filegen().createThumbnail(content, isSecretChat());
                 TdApi.InputMessageContent finalContent = content;
                 UI.post(() -> tdlib.editMessageMedia(editContext.message.chatId, editContext.message.id, finalContent, editContext.localPickedFile));
+              } else {
+                UI.post(() -> showRestriction(sendButton, Lang.getString(R.string.EditMediaRestricted)));
               }
             });
           } else if (editContext.localPickedFile != null && editContext.localPickedFile.imageGalleryFile != null) {

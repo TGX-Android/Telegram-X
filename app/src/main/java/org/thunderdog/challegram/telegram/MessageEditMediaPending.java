@@ -18,20 +18,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
-import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.component.chat.MediaPreview;
-import org.thunderdog.challegram.component.chat.MediaPreviewSimple;
-import org.thunderdog.challegram.data.ContentPreview;
-import org.thunderdog.challegram.data.InlineResult;
-import org.thunderdog.challegram.data.InlineResultCommon;
+import org.thunderdog.challegram.component.attach.MediaToReplacePickerManager;
 import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.loader.ImageFile;
-import org.thunderdog.challegram.loader.ImageGalleryFile;
-import org.thunderdog.challegram.tool.Screen;
 
-import java.io.File;
-
-import me.vkryl.core.StringUtils;
 import me.vkryl.td.ChatId;
 
 public class MessageEditMediaPending implements TdlibEditMediaManager.UploadFuture.Callback {
@@ -46,9 +35,9 @@ public class MessageEditMediaPending implements TdlibEditMediaManager.UploadFutu
   public final TdApi.InputMessageContent content;
   private final TdlibEditMediaManager.UploadFuture inputFileFuture;
   private final @Nullable TdlibEditMediaManager.UploadFuture inputFileThumbnailFuture;
-  private final @NonNull LocalPickedFile pickedFile;
+  private final @NonNull MediaToReplacePickerManager.LocalPickedFile pickedFile;
 
-  MessageEditMediaPending (Tdlib tdlib, long chatId, long messageId, TdApi.InputMessageContent content, @NonNull LocalPickedFile pickedFile) {
+  MessageEditMediaPending (Tdlib tdlib, long chatId, long messageId, TdApi.InputMessageContent content, @NonNull MediaToReplacePickerManager.LocalPickedFile pickedFile) {
     this.chatId = chatId;
     this.messageId = messageId;
     this.content = content;
@@ -253,73 +242,4 @@ public class MessageEditMediaPending implements TdlibEditMediaManager.UploadFutu
     }
   }
 
-  public static class LocalPickedFile {
-    public final ImageGalleryFile imageGalleryFile;
-    public final InlineResult<?> inlineResult;
-
-    public LocalPickedFile (ImageGalleryFile imageGalleryFile, InlineResult<?> inlineResult) {
-      this.imageGalleryFile = imageGalleryFile;
-      this.inlineResult = inlineResult;
-    }
-
-    public String getFileName (String defaultName) {
-      if (inlineResult instanceof InlineResultCommon) {
-        return ((InlineResultCommon) inlineResult).getTrackTitle();
-      }
-      return defaultName;
-    }
-
-    public String getMimeType (String defaultMimeType) {
-      String mimeType = null;
-
-      if (inlineResult instanceof InlineResultCommon) {
-        mimeType = ((InlineResultCommon) inlineResult).getMimeType();
-      } else if (imageGalleryFile != null && imageGalleryFile.isVideo()) {
-        mimeType = imageGalleryFile.getVideoMimeType();
-      }
-
-      return !StringUtils.isEmpty(mimeType) ? mimeType : defaultMimeType;
-    }
-
-    public boolean isMusic () {
-      return inlineResult != null && inlineResult.getType() == InlineResult.TYPE_AUDIO;
-    }
-
-    @Nullable
-    public MediaPreview buildMediaPreview (Tdlib tdlib, int size, int cornerRadius) {
-      if (imageGalleryFile != null) {
-        return new MediaPreviewSimple(size, 0, imageGalleryFile);
-      } else if (inlineResult instanceof InlineResultCommon) {
-        final TdApi.File file = ((InlineResultCommon) inlineResult).getTrackFile();
-        final String path = TD.getFilePath(file);
-        final String mimeType = getMimeType(null);
-
-        if (!StringUtils.isEmpty(path) && !StringUtils.isEmpty(mimeType)) {
-          return MediaPreview.valueOf(tdlib, new File(path), mimeType, size, cornerRadius);
-        }
-      }
-
-      return null;
-    }
-
-    @Nullable
-    public ContentPreview buildContentPreview () {
-      if (imageGalleryFile != null) {
-        if (imageGalleryFile.isVideo()) {
-          return new ContentPreview(ContentPreview.EMOJI_VIDEO, R.string.ChatContentVideo);
-        } else {
-          return new ContentPreview(ContentPreview.EMOJI_PHOTO, R.string.ChatContentPhoto);
-        }
-      } else if (inlineResult != null) {
-        final String fileName = getFileName(null);
-        final boolean isMusic = isMusic();
-        if (StringUtils.isEmpty(fileName)) {
-          return new ContentPreview(isMusic ? ContentPreview.EMOJI_AUDIO : ContentPreview.EMOJI_FILE, R.string.ChatContentFile);
-        } else {
-          return new ContentPreview(isMusic ? ContentPreview.EMOJI_AUDIO : ContentPreview.EMOJI_FILE, 0, fileName, false);
-        }
-      }
-      return null;
-    }
-  }
 }

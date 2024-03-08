@@ -26,12 +26,12 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.attach.MediaToReplacePickerManager;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.helper.FoundUrls;
 import org.thunderdog.challegram.helper.LinkPreview;
 import org.thunderdog.challegram.navigation.ViewController;
-import org.thunderdog.challegram.telegram.MessageEditMediaPending;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -298,7 +298,7 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
     setMessageInputContext(null);
   }
 
-  public void setEditingMessage (TdApi.Message msg, @Nullable MessageEditMediaPending.LocalPickedFile localPickedFile) {
+  public void setEditingMessage (TdApi.Message msg, @Nullable MediaToReplacePickerManager.LocalPickedFile localPickedFile) {
     final boolean hasReplacedImage = localPickedFile != null && localPickedFile.imageGalleryFile != null;
 
     final boolean canReplace = localPickedFile != null || tdlib.canEditMedia(msg, false);

@@ -5217,6 +5217,7 @@
   <string name="HoldAndDragToReorder">Hold and drag to reorder</string>
 
   <string name="SlowFileAccess">Slow file access. Message will be sent after reading the files</string>
+  <string name="EditMediaRestricted">You cannot change the media type</string>
 
   <string name="ForegroundSync">Fetch missing notifications</string>
   <string name="ForegroundSyncDesc">Allow app to show **\"Checking for new messages\"** in the system tray to fetch missing data required to display a notification about a new message.</string>

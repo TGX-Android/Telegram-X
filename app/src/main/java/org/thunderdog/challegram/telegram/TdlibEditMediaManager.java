@@ -20,8 +20,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.component.attach.MediaToReplacePickerManager;
 import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.tool.UI;
 
 import java.util.HashMap;
@@ -34,7 +34,7 @@ public class TdlibEditMediaManager implements MessageEditMediaUploadCallback {
     this.tdlib = tdlib;
   }
 
-  public void editMediaStart (long chatId, long messageId, TdApi.InputMessageContent inputMessageContent, @NonNull MessageEditMediaPending.LocalPickedFile localPickedFile) {
+  public void editMediaStart (long chatId, long messageId, TdApi.InputMessageContent inputMessageContent, @NonNull MediaToReplacePickerManager.LocalPickedFile localPickedFile) {
     final MessageEditMediaPending pendingEdit = new MessageEditMediaPending(tdlib, chatId, messageId, inputMessageContent, localPickedFile);
     pendingEdit.init(this);
     editMediaCancel(chatId, messageId);

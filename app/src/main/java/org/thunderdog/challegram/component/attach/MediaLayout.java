@@ -92,7 +92,6 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.Td;
 import me.vkryl.td.TdConstants;
 
@@ -116,7 +115,7 @@ public class MediaLayout extends FrameLayoutFix implements
   public static final int MODE_GALLERY = 2;
   public static final int MODE_CUSTOM_POPUP = 3;
   public static final int MODE_AVATAR_PICKER = 4;
-  public static final int MODE_GALLERY_AND_FILES = 5;
+  public static final int MODE_CUSTOM_ADAPTER = 5;
 
   private int mode;
   private @AvatarPickerMode int avatarPickerMode = AvatarPickerMode.NONE;
@@ -175,6 +174,19 @@ public class MediaLayout extends FrameLayoutFix implements
 
   private boolean rtl, needVote;
 
+  private ItemsAdapter itemsAdapter;
+
+  public void setItemsAdapter (ItemsAdapter itemsAdapter) {
+    this.itemsAdapter = itemsAdapter;
+  }
+
+  public interface ItemsAdapter {
+    MediaBottomBar.BarItem[] getBottomBarItems ();
+    int getDefaultItemIndex ();
+    MediaBottomBaseController<?> createControllerForIndex(int index);
+    boolean needBottomBar ();
+  }
+
   public void init (int mode, MessagesController target) {
     this.mode = mode;
     this.target = target;
@@ -199,13 +211,12 @@ public class MediaLayout extends FrameLayoutFix implements
         index = 0;
         break;
       }
-      case MODE_GALLERY_AND_FILES: {
-        items = new MediaBottomBar.BarItem[] {
-          new MediaBottomBar.BarItem(R.drawable.baseline_insert_drive_file_24, R.string.File, ColorId.attachFile),
-          new MediaBottomBar.BarItem(R.drawable.baseline_image_24, R.string.Gallery, ColorId.attachPhoto)
-        };
-        index = 1;
-        mode = MODE_DEFAULT;
+      case MODE_CUSTOM_ADAPTER: {
+        items = itemsAdapter.getBottomBarItems();
+        index = itemsAdapter.getDefaultItemIndex();
+        if (itemsAdapter.needBottomBar()) {
+          mode = MODE_DEFAULT;
+        }
         break;
       }
       default: {
@@ -426,12 +437,8 @@ public class MediaLayout extends FrameLayoutFix implements
         c.setArguments(new MediaBottomGalleryController.Arguments(mode == MODE_GALLERY || (mode == MODE_AVATAR_PICKER && avatarPickerMode == AvatarPickerMode.NONE)));
         return c;
       }
-      case MODE_GALLERY_AND_FILES: {
-        switch (index) {
-          case 0: return new MediaBottomFilesController(this);
-          case 1: return new MediaBottomGalleryController(this);
-          default: throw new IllegalArgumentException("Unknown index passed: " + index);
-        }
+      case MODE_CUSTOM_ADAPTER: {
+        return itemsAdapter.createControllerForIndex(index);
       }
     }
     if (rtl) {
@@ -803,7 +810,7 @@ public class MediaLayout extends FrameLayoutFix implements
     int height = getBottomBarHeight();
     float factor = Math.max(bottomBarFactor, counterFactor);
     float y = height - (int) ((float) height * factor);
-    if (!inSpecificMode() || mode == MODE_AVATAR_PICKER || mode == MODE_GALLERY_AND_FILES) {
+    if (!inSpecificMode() || mode == MODE_AVATAR_PICKER || mode == MODE_CUSTOM_ADAPTER) {
       if (bottomBar != null) {
         if (currentController != null) {
           currentController.onUpdateBottomBarFactor(bottomBarFactor, counterFactor, y);

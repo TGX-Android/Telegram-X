@@ -43,6 +43,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.component.attach.MediaToReplacePickerManager;
 import org.thunderdog.challegram.component.chat.TdlibSingleUnreadReactionsManager;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.config.Config;
@@ -4797,7 +4798,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return editMediaManager.editMediaCancel(chatId, messageId);
   }
 
-  public void editMessageMedia (long chatId, long messageId, TdApi.InputMessageContent content, @NonNull MessageEditMediaPending.LocalPickedFile localPickedFile) {
+  public void editMessageMedia (long chatId, long messageId, TdApi.InputMessageContent content, @NonNull MediaToReplacePickerManager.LocalPickedFile localPickedFile) {
     editMediaManager.editMediaStart(chatId, messageId, content, localPickedFile);
   }
 
@@ -11173,6 +11174,26 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
     // Assuming if null is passed, we want to check if we can write text messages
     return getBasicMessageRestrictionText(chat);
+  }
+
+  public boolean hasReplaceMediaRestriction (TdApi.Message message, @RightId int rightId) {
+    if (message.mediaAlbumId == 0 || message.content == null) {
+      return false;
+    }
+
+    switch (message.content.getConstructor()) {
+      case TdApi.MessagePhoto.CONSTRUCTOR:
+      case TdApi.MessageVideo.CONSTRUCTOR:
+        return (rightId != RightId.SEND_PHOTOS && rightId != RightId.SEND_VIDEOS);
+      case TdApi.MessageAudio.CONSTRUCTOR:
+        return rightId != RightId.SEND_AUDIO;
+      case TdApi.MessageAnimation.CONSTRUCTOR:
+        return rightId != RightId.SEND_OTHER_MESSAGES;
+      case TdApi.MessageDocument.CONSTRUCTOR:
+        return rightId != RightId.SEND_DOCS;
+    }
+
+    return true;
   }
 
   public CharSequence getBasicMessageRestrictionText (TdApi.Chat chat) {
