@@ -20,21 +20,19 @@ import androidx.annotation.Nullable;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.component.attach.MediaToReplacePickerManager;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.tool.UI;
 
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 
-public class MessageEditMediaPending implements TdlibEditMediaManager.UploadFuture.Callback {
-  public static final int FUTURE_ID_MAIN = 0;
-  public static final int FUTURE_ID_THUMB = 1;
-
-  public MessageEditMediaUploadCallback callback;
+public class MessageEditMediaPending implements Tdlib.UploadFutureSimple.Callback {
   public final long chatId, messageId;
 
   public final TdApi.InputFile inputFile;
   public final TdApi.InputFile inputFileThumbnail;
   public final TdApi.InputMessageContent content;
-  private final TdlibEditMediaManager.UploadFuture inputFileFuture;
-  private final @Nullable TdlibEditMediaManager.UploadFuture inputFileThumbnailFuture;
+  private final Tdlib.UploadFutureSimple inputFileFuture;
+  private final @Nullable Tdlib.UploadFutureSimple inputFileThumbnailFuture;
   private final @NonNull MediaToReplacePickerManager.LocalPickedFile pickedFile;
 
   MessageEditMediaPending (Tdlib tdlib, long chatId, long messageId, TdApi.InputMessageContent content, @NonNull MediaToReplacePickerManager.LocalPickedFile pickedFile) {
@@ -47,15 +45,15 @@ public class MessageEditMediaPending implements TdlibEditMediaManager.UploadFutu
 
     final boolean isSecret = ChatId.isSecret(chatId);
 
-    this.inputFileFuture = new TdlibEditMediaManager.UploadFuture(tdlib, FUTURE_ID_MAIN, inputFile, isSecret ? new TdApi.FileTypeSecret() : TD.toFileType(content), this);
-    if (content.getConstructor() == TdApi.InputMessagePhoto.CONSTRUCTOR || content.getConstructor() == TdApi.InputMessageVideo.CONSTRUCTOR) {
-      this.inputFileThumbnailFuture = (inputFileThumbnail != null) ? new TdlibEditMediaManager.UploadFuture(tdlib, FUTURE_ID_THUMB, inputFileThumbnail, isSecret ? new TdApi.FileTypeSecretThumbnail() : new TdApi.FileTypeThumbnail(), this) : null;
-    } else {
-      this.inputFileThumbnailFuture = null;
-    }
+    this.inputFileFuture = new Tdlib.UploadFutureSimple(tdlib, inputFile, isSecret ? new TdApi.FileTypeSecret() : TD.toFileType(content), this);
+    //if (content.getConstructor() == TdApi.InputMessagePhoto.CONSTRUCTOR || content.getConstructor() == TdApi.InputMessageVideo.CONSTRUCTOR) {
+      this.inputFileThumbnailFuture = (inputFileThumbnail != null) ? new Tdlib.UploadFutureSimple(tdlib, inputFileThumbnail, isSecret ? new TdApi.FileTypeSecretThumbnail() : new TdApi.FileTypeThumbnail(), this) : null;
+    //} else {
+    //  this.inputFileThumbnailFuture = null;
+    //}
   }
 
-  public void init (MessageEditMediaUploadCallback callback) {
+  public void init (Callback callback) {
     this.callback = callback;
     inputFileFuture.init();
     if (inputFileThumbnailFuture != null) {
@@ -178,68 +176,99 @@ public class MessageEditMediaPending implements TdlibEditMediaManager.UploadFutu
     }
   }
 
-  public void cancel () {
-    inputFileFuture.cancel();
-    if (inputFileThumbnailFuture != null) {
-      inputFileThumbnailFuture.cancel();
-    }
+  public interface Callback {
+    void onMediaUploadStart (MessageEditMediaPending pending);
+    void onMediaUploadComplete (MessageEditMediaPending pending);
+    // void onMediaEditFinished (MessageEditMediaPending pending);
+    void onMediaUploadFailed (MessageEditMediaPending pending);
   }
 
-  private boolean fileCreated;
-  private boolean thumbCreated;
+  private static final int FLAG_UPLOAD_STARTED = 1;
+  private static final int FLAG_UPLOAD_COMPLETED = 1 << 1;
+  private static final int FLAG_FAILED = 1 << 2;
 
-  @Override
-  public void onFileUpdate (int id, long fileId, TdApi.File file) {
-    boolean needUpdate = false;
+  private Callback callback;
+  private int flags;
 
-    if (id == FUTURE_ID_MAIN && !fileCreated) {
-      fileCreated = true;
-      needUpdate = true;
+  private void fail (TdApi.Error error, boolean isCanceled) {
+    if (!BitwiseUtils.hasFlag(flags, FLAG_UPLOAD_COMPLETED | FLAG_FAILED)) {
+      inputFileFuture.cancel(false);
+      if (inputFileThumbnailFuture != null) {
+        inputFileThumbnailFuture.cancel(false);
+      }
+
+      if (error != null) {
+        UI.showError(error);
+      }
+
+      flags = BitwiseUtils.setFlag(flags, FLAG_FAILED, true);
+      callback.onMediaUploadFailed(this);
     }
-
-    if (id == FUTURE_ID_THUMB && !thumbCreated) {
-      thumbCreated = true;
-      needUpdate = true;
-    }
-
-    if (needUpdate && inputFileFuture.file != null && (inputFileThumbnailFuture == null || inputFileThumbnailFuture.file != null)) {
-      callback.onMediaPreliminaryUploadStart(this, inputFileFuture.file);
-    }
-  }
-
-  @Override
-  public void onComplete (int id, long fileId, TdApi.File file) {
-    checkStatus();
-  }
-
-  private boolean failed;
-
-  @Override
-  public void onFail (int id, boolean isCanceled) {
-    if (failed) {
-      return;
-    }
-    failed = true;
-    cancel();
-    callback.onMediaPreliminaryUploadFailed(this, isCanceled);
-  }
-
-  public boolean isCompleted () {
-    return inputFileFuture.isCompleted() && (inputFileThumbnailFuture == null || inputFileThumbnailFuture.isCompleted());
   }
 
   public TdApi.File getFile () {
     return inputFileFuture.file;
   }
 
-  private void checkStatus () {
-    if (isCompleted()) {
-      TD.setInputFile(content, new TdApi.InputFileId(inputFileFuture.file.id));
-      if (inputFileThumbnailFuture != null) {
-        TD.setInputFileThumbnail(content, new TdApi.InputFileId(inputFileThumbnailFuture.file.id));
-      }
-      callback.onMediaPreliminaryUploadComplete(this, content);
+  public void cancel () {
+    fail(null, true);
+  }
+
+  private void start () {
+    if (!BitwiseUtils.hasFlag(flags, FLAG_UPLOAD_COMPLETED | FLAG_FAILED | FLAG_UPLOAD_STARTED)) {
+      flags = BitwiseUtils.setFlag(flags, FLAG_UPLOAD_STARTED, true);
+      callback.onMediaUploadStart(this);
     }
   }
 
+  private void complete () {
+    if (!BitwiseUtils.hasFlag(flags, FLAG_UPLOAD_COMPLETED | FLAG_FAILED)) {
+      flags = BitwiseUtils.setFlag(flags, FLAG_UPLOAD_COMPLETED, true);
+      callback.onMediaUploadComplete(this);
+    }
+  }
+
+  @Override
+  public void onUploadStart (Tdlib.UploadFutureSimple future, TdApi.File file, @Nullable TdApi.Error error) {
+    if (error != null) {
+      fail(error, false);
+    }
+    checkFuturesStarted();
+  }
+
+  @Override
+  public void onUploadFinish (Tdlib.UploadFutureSimple future) {
+    checkFuturesFinished();
+  }
+
+  private void checkFuturesStarted () {
+    if (!BitwiseUtils.hasFlag(flags, FLAG_UPLOAD_COMPLETED | FLAG_FAILED | FLAG_UPLOAD_STARTED)) {
+      final boolean isStarted = inputFileFuture.isStarted() && (inputFileThumbnailFuture == null || inputFileThumbnailFuture.isStarted());
+      if (isStarted) {
+        start();
+      }
+    }
+  }
+
+  private void checkFuturesFinished () {
+    if (!BitwiseUtils.hasFlag(flags, FLAG_UPLOAD_COMPLETED | FLAG_FAILED)) {
+      final boolean isFinished = inputFileFuture.isFinished() && (inputFileThumbnailFuture == null || inputFileThumbnailFuture.isFinished());
+      if (isFinished) {
+        final boolean isSuccess = inputFileFuture.isCompleted();
+        if (isSuccess) {
+          TD.setInputFile(content, new TdApi.InputFileId(inputFileFuture.file.id));
+          if (inputFileThumbnailFuture != null) {
+            if (inputFileThumbnailFuture.isCompleted()) {
+              TD.setInputFileThumbnail(content, new TdApi.InputFileId(inputFileThumbnailFuture.file.id));
+            } else {
+              TD.setInputFileThumbnail(content, null);
+            }
+          }
+          complete();
+        } else {
+          fail(null, false);
+        }
+      }
+    }
+  }
 }

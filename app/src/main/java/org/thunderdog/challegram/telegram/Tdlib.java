@@ -11748,4 +11748,134 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       listeners().notifyChatFolderInviteLinkChanged(chatFolderId, result);
     }));
   }
+
+  public static class UploadFutureSimple implements TdlibFilesManager.FileListener {
+    private static final int FLAG_STARTED = 1;
+    private static final int FLAG_COMPLETED = 1 << 1;
+    private static final int FLAG_FAILED = 1 << 2;
+
+    private final Tdlib tdlib;
+    private final UploadFutureSimple.Callback callback;
+    private final TdApi.InputFile inputFile;
+    private final TdApi.FileType fileType;
+
+    private int flags;
+
+    public interface Callback {
+      void onUploadStart (UploadFutureSimple future, TdApi.File file, @Nullable TdApi.Error error);
+      void onUploadFinish (UploadFutureSimple future);
+    }
+
+    TdApi.File file;
+
+    public UploadFutureSimple (Tdlib tdlib, TdApi.InputFile inputFile, TdApi.FileType fileType, UploadFutureSimple.Callback callback) {
+      this.tdlib = tdlib;
+      this.callback = callback;
+      this.inputFile = inputFile;
+      this.fileType = fileType;
+    }
+
+    public void init () {
+      tdlib.send(new TdApi.PreliminaryUploadFile(inputFile, fileType, 1), (file, err) -> {
+        this.file = file;
+
+        if (BitwiseUtils.hasFlag(flags, FLAG_FAILED)) {
+          return;
+        }
+
+        final boolean isUploaded = TD.isFileUploaded(file);
+        if (file != null && err == null && !isUploaded) {
+          tdlib.files().subscribe(file, this);
+        }
+        UI.post(() -> {
+          if (BitwiseUtils.hasFlag(flags, FLAG_FAILED)) {
+            return;
+          }
+
+          update(file);
+          flags = BitwiseUtils.setFlag(flags, FLAG_STARTED, true);
+          callback.onUploadStart(this, file, err);
+
+          if (err != null) {
+            fail(true);
+          }
+
+          if (isUploaded) {
+            complete();
+          }
+        });
+      });
+    }
+
+    @UiThread
+    private void complete () {
+      if (!BitwiseUtils.hasFlag(flags, FLAG_COMPLETED | FLAG_FAILED)) {
+        flags = BitwiseUtils.setFlag(flags, FLAG_COMPLETED, true);
+        if (file != null) {
+          tdlib.files().unsubscribe(file.id, this);
+        }
+        callback.onUploadFinish(this);
+      }
+    }
+
+    @UiThread
+    private void update (TdApi.File file) {
+      this.file = file;
+    }
+
+    @UiThread
+    private void fail (boolean runCallback) {
+      if (!BitwiseUtils.hasFlag(flags, FLAG_COMPLETED | FLAG_FAILED)) {
+        flags = BitwiseUtils.setFlag(flags, FLAG_FAILED, true);
+        if (file != null) {
+          tdlib.files().unsubscribe(file.id, this);
+        }
+        if (runCallback) {
+          callback.onUploadFinish(this);
+        }
+      }
+    }
+
+    public void cancel (boolean runCallback) {
+      fail(runCallback);
+    }
+
+    @Override
+    public void onFileLoadProgress (TdApi.File file) {
+      UI.execute(() -> update(file));
+    }
+
+    @Override
+    public void onFileLoadStateChanged (Tdlib tdlib, int fileId, int state, @Nullable TdApi.File downloadedFile) {
+      UI.execute(() -> {
+        if (downloadedFile != null) {
+          update(downloadedFile);
+        }
+
+        if (state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED) {
+          complete();
+        }
+
+        if (state == TdlibFilesManager.STATE_FAILED || state == TdlibFilesManager.STATE_PAUSED) {
+          fail(true);
+        }
+      });
+    }
+
+    public boolean isFinished () {
+      return BitwiseUtils.hasFlag(flags, FLAG_COMPLETED | FLAG_FAILED);
+    }
+
+    public boolean isCompleted () {
+      return BitwiseUtils.hasFlag(flags, FLAG_COMPLETED);
+    }
+
+    public boolean isFailed () {
+      return BitwiseUtils.hasFlag(flags, FLAG_FAILED);
+    }
+
+    public boolean isStarted () {
+      return BitwiseUtils.hasFlag(flags, FLAG_STARTED);
+    }
+  }
 }
