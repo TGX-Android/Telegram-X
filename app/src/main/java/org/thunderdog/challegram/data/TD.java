@@ -5580,6 +5580,10 @@ public class TD {
         return ((TdApi.InputMessagePhoto) inputMessageContent).caption;
       case TdApi.InputMessageVideo.CONSTRUCTOR:
         return ((TdApi.InputMessageVideo) inputMessageContent).caption;
+      case TdApi.InputMessageDocument.CONSTRUCTOR:
+        return ((TdApi.InputMessageDocument) inputMessageContent).caption;
+      case TdApi.InputMessageAudio.CONSTRUCTOR:
+        return ((TdApi.InputMessageAudio) inputMessageContent).caption;
       default:
         return null; // todo
     }

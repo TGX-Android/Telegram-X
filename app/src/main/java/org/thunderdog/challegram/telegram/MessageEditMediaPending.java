@@ -92,7 +92,7 @@ public class MessageEditMediaPending implements Tdlib.UploadFutureSimple.Callbac
     final TdApi.InputMessageVideo video = (TdApi.InputMessageVideo) content;
     return new TdApi.Video(video.duration, video.width, video.height, pickedFile.getFileName(""), pickedFile.getMimeType("video/mp4"),
       video.addedStickerFileIds != null && video.addedStickerFileIds.length > 0, video.supportsStreaming, null,
-      inputFileThumbnailFuture != null ?
+      inputFileThumbnailFuture != null && inputFileThumbnailFuture.file != null ?
         new TdApi.Thumbnail(new TdApi.ThumbnailFormatJpeg(), video.thumbnail.width, video.thumbnail.height, inputFileThumbnailFuture.file) : null,
       inputFileFuture.file);
   }
@@ -109,7 +109,7 @@ public class MessageEditMediaPending implements Tdlib.UploadFutureSimple.Callbac
     final TdApi.InputMessageAnimation animation = (TdApi.InputMessageAnimation) content;
     return new TdApi.Animation(animation.duration, animation.width, animation.height, pickedFile.getFileName(""),
       pickedFile.getMimeType("video/mp4"), animation.addedStickerFileIds != null && animation.addedStickerFileIds.length > 0, null,
-      inputFileThumbnailFuture != null ?
+      inputFileThumbnailFuture != null && inputFileThumbnailFuture.file != null ?
         new TdApi.Thumbnail(new TdApi.ThumbnailFormatJpeg(), animation.thumbnail.width, animation.thumbnail.height, inputFileThumbnailFuture.file) : null,
       inputFileFuture.file);
   }
@@ -123,7 +123,11 @@ public class MessageEditMediaPending implements Tdlib.UploadFutureSimple.Callbac
       throw new IllegalStateException();
     }
 
-    return new TdApi.Document(pickedFile.getFileName(""), pickedFile.getMimeType(""), null, null, inputFileFuture.file);
+    final TdApi.InputMessageDocument document = (TdApi.InputMessageDocument) content;
+    return new TdApi.Document(pickedFile.getFileName(""), pickedFile.getMimeType(""), null,
+      inputFileThumbnailFuture != null && inputFileThumbnailFuture.file != null ?
+        new TdApi.Thumbnail(new TdApi.ThumbnailFormatJpeg(), document.thumbnail.width, document.thumbnail.height, inputFileThumbnailFuture.file) : null,
+      inputFileFuture.file);
   }
 
   public boolean isAudio () {
@@ -136,7 +140,10 @@ public class MessageEditMediaPending implements Tdlib.UploadFutureSimple.Callbac
     }
 
     final TdApi.InputMessageAudio audio = (TdApi.InputMessageAudio) content;
-    return new TdApi.Audio(audio.duration, audio.title, audio.performer, pickedFile.getFileName(""), pickedFile.getMimeType(""), null, null, new TdApi.Thumbnail[0], inputFileFuture.file);
+    return new TdApi.Audio(audio.duration, audio.title, audio.performer, pickedFile.getFileName(""), pickedFile.getMimeType(""), null,
+      inputFileThumbnailFuture != null && inputFileThumbnailFuture.file != null ?
+        new TdApi.Thumbnail(new TdApi.ThumbnailFormatJpeg(), audio.albumCoverThumbnail.width, audio.albumCoverThumbnail.height, inputFileThumbnailFuture.file) : null,
+      new TdApi.Thumbnail[0], inputFileFuture.file);
   }
 
   public TdApi.MessagePhoto getMessagePhoto () {

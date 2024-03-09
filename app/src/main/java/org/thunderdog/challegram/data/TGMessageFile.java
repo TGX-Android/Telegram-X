@@ -296,12 +296,17 @@ public class TGMessageFile extends TGMessage {
 
   protected TGMessageFile (MessagesManager context, TdApi.Message msg, TdApi.MessageContent messageContent) {
     super(context, msg);
+    checkHasEditedMedia();
     filesList.add(newFile(this, msg, messageContent));
     files.reset(filesList, false);
   }
 
   @Override
   protected boolean isBeingEdited () {
+    if (hasEditedMedia) {
+      return true;
+    }
+
     for (CaptionedFile file : filesList) {
       if (file.pendingCaption != null)
         return true;
@@ -323,6 +328,8 @@ public class TGMessageFile extends TGMessage {
 
   @Override
   protected int onMessagePendingContentChanged (long chatId, long messageId, int oldHeight) {
+    checkHasEditedMedia();
+
     final TdApi.Message message = getMessage(messageId);
     if (true) {
       return updateMessageContentImpl(chatId, messageId, message != null ? message.content : null) != 0 ? MESSAGE_INVALIDATED : MESSAGE_NOT_CHANGED;
@@ -476,12 +483,10 @@ public class TGMessageFile extends TGMessage {
 
 
     final TdApi.FormattedText pendingCaption = tdlib.getPendingMessageCaption(chatId, messageId);
-    if (pendingCaption != null) {
-      file.pendingCaption = pendingCaption;
-      boolean hadMedia = file.hasTextMedia();
-      if (file.updateCaption(needAnimateChanges()) && (hadMedia || file.hasTextMedia())) {
-        result |= FLAG_CHANGED_TEXT_RECEIVERS | FLAG_CHANGED_LAYOUT;
-      }
+    file.pendingCaption = pendingCaption;
+    boolean hadMedia = file.hasTextMedia();
+    if (file.updateCaption(needAnimateChanges()) && (hadMedia || file.hasTextMedia())) {
+      result |= FLAG_CHANGED_TEXT_RECEIVERS | FLAG_CHANGED_LAYOUT;
     }
 
     final MessageEditMediaPending pending = tdlib.getPendingMessageMedia(chatId, messageId);
@@ -754,6 +759,8 @@ public class TGMessageFile extends TGMessage {
 
   @Override
   protected void onMessageCombinedWithOtherMessage (TdApi.Message otherMessage, boolean atBottom, boolean local) {
+    checkHasEditedMedia();
+
     CaptionedFile file = newFile(this, otherMessage);
     if (local) {
       int maxWidth = getContentMaxWidth();
@@ -930,5 +937,28 @@ public class TGMessageFile extends TGMessage {
     rebuildAndUpdateContent();
     invalidateTextMediaReceiver();
     super.setTranslationResult(text);
+  }
+
+
+
+  private boolean hasEditedMedia;
+
+  private void checkHasEditedMedia () {
+    boolean hasEditedMedia = false;
+
+    synchronized (this) {
+      ArrayList<TdApi.Message> combinedMessages = getCombinedMessagesUnsafely();
+      if (combinedMessages != null && !combinedMessages.isEmpty()) {
+        for (TdApi.Message message: combinedMessages) {
+          final MessageEditMediaPending pending = tdlib.getPendingMessageMedia(message.chatId, message.id);
+          hasEditedMedia |= pending != null;
+        }
+      } else {
+        final MessageEditMediaPending pending = tdlib.getPendingMessageMedia(msg.chatId, msg.id);
+        hasEditedMedia = pending != null;
+      }
+    }
+
+    this.hasEditedMedia = hasEditedMedia;
   }
 }
