@@ -304,10 +304,15 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
     final boolean canReplace = localPickedFile != null || tdlib.canEditMedia(msg, false);
     final boolean canEdit = canReplace && (localPickedFile == null && tdlib.canEditMedia(msg, true) || hasReplacedImage);
 
-    final boolean usePhotoIcon = Td.isPhoto(msg.content) || hasReplacedImage
-      || (msg.content != null && msg.content.getConstructor() == TdApi.MessageVideo.CONSTRUCTOR);
+    if (msg.mediaAlbumId != 0) {
+      final boolean usePhotoIcon = Td.isPhoto(msg.content) || hasReplacedImage
+        || (msg.content != null && msg.content.getConstructor() == TdApi.MessageVideo.CONSTRUCTOR);
 
-    replaceMediaView.setImageResource(usePhotoIcon ? R.drawable.dot_baseline_image_replace_24 : R.drawable.dot_baseline_file_replace_24);
+      replaceMediaView.setImageResource(usePhotoIcon ? R.drawable.dot_baseline_image_replace_24 : R.drawable.dot_baseline_file_replace_24);
+    } else {
+      replaceMediaView.setImageResource(R.drawable.dot_baseline_file_media_replace_24);
+    }
+
     pinnedMessagesBar.setMessage(tdlib, displayedMessage = msg, null, localPickedFile);
     setLinkPreviewToggleVisible(false);
     setMediaEditToggleVisible(canReplace, canEdit && TD.isFileLoaded(msg));

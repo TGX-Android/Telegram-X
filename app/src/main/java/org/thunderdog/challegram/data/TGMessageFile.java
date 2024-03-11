@@ -331,22 +331,7 @@ public class TGMessageFile extends TGMessage {
     checkHasEditedMedia();
 
     final TdApi.Message message = getMessage(messageId);
-    if (true) {
-      return updateMessageContentImpl(chatId, messageId, message != null ? message.content : null) != 0 ? MESSAGE_INVALIDATED : MESSAGE_NOT_CHANGED;
-    }
-
-    boolean updated = false;
-    for (CaptionedFile file : filesList) {
-      if (file.messageId == messageId) {
-        file.pendingCaption = tdlib.getPendingMessageCaption(chatId, messageId);
-        boolean hadMedia = file.hasTextMedia();
-        if (file.updateCaption(needAnimateChanges()) && (hadMedia || file.hasTextMedia())) {
-          invalidateTextMediaReceiver();
-        }
-        updated = true;
-      }
-    }
-    return updated ? MESSAGE_INVALIDATED : MESSAGE_NOT_CHANGED;
+    return updateMessageContentImpl(chatId, messageId, message != null ? message.content : null) != 0 ? MESSAGE_INVALIDATED : MESSAGE_NOT_CHANGED;
   }
 
   @Override
@@ -376,79 +361,7 @@ public class TGMessageFile extends TGMessage {
 
   @Override
   protected boolean updateMessageContent (TdApi.Message message, TdApi.MessageContent newContent, boolean isBottomMessage) {
-    if (true) {
-      return updateMessageContentImpl(message.chatId, message.id, newContent) != 0;
-    }
-
-    boolean captionsChanged = false;
-    boolean captionMediaChanged = false;
-    boolean filesChanged = false;
-    for (CaptionedFile file : filesList) {
-      if (file.messageId != message.id) {
-        continue;
-      }
-      boolean fileChanged = false;
-      TdApi.FormattedText serverCaption;
-      FileComponent component = file.component;
-      //noinspection SwitchIntDef
-      switch (newContent.getConstructor()) {
-        case TdApi.MessageAudio.CONSTRUCTOR: {
-          TdApi.MessageAudio audio = (TdApi.MessageAudio) newContent;
-          TdApi.Audio oldAudio = ((TdApi.MessageAudio) message.content).audio;
-          if (component != null /*&& oldAudio.audio.id != audio.audio.audio.id*/) {
-            component.getFileProgress().replaceFile(audio.audio.audio, message);
-            fileChanged = true;
-          }
-          serverCaption = audio.caption;
-          break;
-        }
-        case TdApi.MessageDocument.CONSTRUCTOR: {
-          TdApi.MessageDocument document = (TdApi.MessageDocument) newContent;
-          TdApi.Document oldDocument = ((TdApi.MessageDocument) message.content).document;
-          if (component != null /*&& oldDocument.document.id != document.document.document.id*/) {
-            component.getFileProgress().replaceFile(document.document.document, message);
-            component.setDoc(document.document);
-            component.rebuildLayout();
-            invalidateContentReceiver();
-            fileChanged = true;
-          }
-          serverCaption = document.caption;
-          break;
-        }
-        case TdApi.MessageVoiceNote.CONSTRUCTOR: {
-          TdApi.MessageVoiceNote voiceNote = (TdApi.MessageVoiceNote) newContent;
-          TdApi.VoiceNote oldVoiceNote = ((TdApi.MessageVoiceNote) message.content).voiceNote;
-          if (component != null /*&& oldVoiceNote.voice.id != voiceNote.voiceNote.voice.id*/) {
-            component.getFileProgress().replaceFile(voiceNote.voiceNote.voice, message);
-            fileChanged = true;
-          }
-          serverCaption = voiceNote.caption;
-          break;
-        }
-        default: {
-          return false;
-        }
-      }
-
-      boolean hadTextMedia = file.hasTextMedia();
-      file.serverCaption = serverCaption;
-      boolean changed = file.updateCaption(needAnimateChanges());
-
-      if (changed && (hadTextMedia || file.hasTextMedia())) {
-        captionMediaChanged = true;
-      }
-
-      captionsChanged = changed || captionsChanged;
-      filesChanged = fileChanged || filesChanged;
-    }
-    if (captionsChanged) {
-      files.measure(needAnimateChanges());
-      if (captionMediaChanged) {
-        invalidateTextMediaReceiver();
-      }
-      return true;
-    }
-    return filesChanged;
+    return updateMessageContentImpl(message.chatId, message.id, newContent) != 0;
   }
 
   @Nullable

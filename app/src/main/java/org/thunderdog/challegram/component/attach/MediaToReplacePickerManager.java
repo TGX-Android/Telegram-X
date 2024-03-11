@@ -51,6 +51,12 @@ public class MediaToReplacePickerManager extends MediaLayoutManager {
 
   public void openMediaView (RunnableData<LocalPickedFile> callback, long chatId, @Nullable Runnable onDismissPrepare, boolean overlayStatusBar, @Nullable MessagesController messagesController, @NonNull TdApi.Message messageToReplace) {
     final int rightsFlags;
+
+    final int constructor = messageToReplace.content.getConstructor();
+    final boolean filesAsDefault = constructor == TdApi.MessageAudio.CONSTRUCTOR
+      || constructor == TdApi.MessageDocument.CONSTRUCTOR
+      || constructor == TdApi.MessageAnimation.CONSTRUCTOR;
+
     if (messageToReplace.mediaAlbumId != 0) {
       switch (messageToReplace.content.getConstructor()) {
         case TdApi.MessagePhoto.CONSTRUCTOR:
@@ -74,10 +80,10 @@ public class MediaToReplacePickerManager extends MediaLayoutManager {
       rightsFlags = (1 << RightId.SEND_PHOTOS) | (1 << RightId.SEND_VIDEOS) | (1 << RightId.SEND_DOCS) | (1 << RightId.SEND_AUDIO) | (1 << RightId.SEND_OTHER_MESSAGES);
     }
 
-    openMediaView(callback, chatId, onDismissPrepare, overlayStatusBar, messagesController, rightsFlags);
+    openMediaView(callback, chatId, onDismissPrepare, overlayStatusBar, messagesController, rightsFlags, filesAsDefault);
   }
 
-  public void openMediaView (RunnableData<LocalPickedFile> callback, long chatId, @Nullable Runnable onDismissPrepare, boolean overlayStatusBar, @Nullable MessagesController messagesController, int rightsFlags) {
+  public void openMediaView (RunnableData<LocalPickedFile> callback, long chatId, @Nullable Runnable onDismissPrepare, boolean overlayStatusBar, @Nullable MessagesController messagesController, int rightsFlags, boolean filesAsDefault) {
     waitPermissionsForOpen(hasMedia -> {
       final MediaLayout mediaLayout = new MediaLayout(context) {
         @Override
@@ -149,7 +155,7 @@ public class MediaToReplacePickerManager extends MediaLayoutManager {
 
         @Override
         public int getDefaultItemIndex () {
-          return allowGallery && allowFiles ? 1 : 0;
+          return allowGallery && allowFiles && !filesAsDefault ? 1 : 0;
         }
 
         @Override
