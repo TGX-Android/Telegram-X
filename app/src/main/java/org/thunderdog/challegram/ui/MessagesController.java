@@ -2855,7 +2855,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     updateBottomBar(false);
 
     closeCommandsKeyboard(false);
-    discardAttachedFiles(false);
 
     if (previewSearchSender == null) {
       manager.openChat(chat, messageThread, previewSearchFilter, this, areScheduled, !inPreviewMode && !isInForceTouchMode());
