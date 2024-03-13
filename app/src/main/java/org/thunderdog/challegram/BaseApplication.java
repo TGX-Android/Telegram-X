@@ -15,14 +15,12 @@
 package org.thunderdog.challegram;
 
 import androidx.annotation.NonNull;
-import androidx.camera.camera2.Camera2Config;
-import androidx.camera.core.CameraXConfig;
 import androidx.multidex.MultiDexApplication;
 import androidx.work.Configuration;
 
 import org.thunderdog.challegram.tool.UI;
 
-public final class BaseApplication extends MultiDexApplication implements Configuration.Provider, CameraXConfig.Provider {
+public final class BaseApplication extends MultiDexApplication implements Configuration.Provider {
   @Override
   public void onCreate () {
     super.onCreate();
@@ -33,11 +31,5 @@ public final class BaseApplication extends MultiDexApplication implements Config
   @Override
   public Configuration getWorkManagerConfiguration () {
     return new Configuration.Builder().build();
-  }
-
-  @NonNull
-  @Override
-  public CameraXConfig getCameraXConfig () {
-    return Camera2Config.defaultConfig();
   }
 }
