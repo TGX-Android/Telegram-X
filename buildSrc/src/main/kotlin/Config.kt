@@ -27,6 +27,7 @@ object LibraryVersions {
   const val ANDROIDX_CORE = "1.12.0"
   const val ANNOTATIONS = "1.7.1"
   const val ANDROIDX_MEDIA = "1.3.0"
+  const val ANDROIDX_CAMERA = "1.3.2"
 }
 
 class AbiVariant (val flavor: String, vararg val filters: String = arrayOf(), val displayName: String = filters[0]) {
