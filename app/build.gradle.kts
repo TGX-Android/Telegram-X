@@ -221,7 +221,18 @@ android {
 
   buildTypes {
     release {
-      Config.ANDROIDX_MEDIA_EXTENSIONS.forEach { extension ->
+      arrayOf(
+        "exoplayer",
+        "common",
+        "transformer",
+        "extractor",
+        "muxer",
+        "decoder",
+        "container",
+        "datasource",
+        "database",
+        "effect"
+      ).plus(Config.ANDROIDX_MEDIA_EXTENSIONS).forEach { extension ->
         val proguardFile = file(
           "../thirdparty/androidx-media/libraries/${extension}/proguard-rules.txt"
         )
