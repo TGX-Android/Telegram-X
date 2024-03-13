@@ -256,6 +256,9 @@ android {
         } else {
           "version.ndk_legacy"
         }
+        if (variant.minSdkVersion < Config.PRIMARY_SDK_VERSION) {
+          proguardFile("proguard-r8-bug-android-4.x-workaround.pro")
+        }
         ndkVersion = versions.getProperty(ndkVersionKey)
         ndkPath = File(sdkDirectory, "ndk/$ndkVersion").absolutePath
         buildConfigString("NDK_VERSION", ndkVersion)
