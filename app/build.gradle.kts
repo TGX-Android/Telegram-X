@@ -221,7 +221,18 @@ android {
 
   buildTypes {
     release {
-      Config.ANDROIDX_MEDIA_EXTENSIONS.forEach { extension ->
+      arrayOf(
+        "exoplayer",
+        "common",
+        "transformer",
+        "extractor",
+        "muxer",
+        "decoder",
+        "container",
+        "datasource",
+        "database",
+        "effect"
+      ).plus(Config.ANDROIDX_MEDIA_EXTENSIONS).forEach { extension ->
         val proguardFile = file(
           "../thirdparty/androidx-media/libraries/${extension}/proguard-rules.txt"
         )
@@ -244,6 +255,9 @@ android {
           "version.ndk_primary"
         } else {
           "version.ndk_legacy"
+        }
+        if (variant.minSdkVersion < Config.PRIMARY_SDK_VERSION) {
+          proguardFile("proguard-r8-bug-android-4.x-workaround.pro")
         }
         ndkVersion = versions.getProperty(ndkVersionKey)
         ndkPath = File(sdkDirectory, "ndk/$ndkVersion").absolutePath
@@ -340,10 +354,10 @@ dependencies {
   implementation("androidx.interpolator:interpolator:1.0.0")
   implementation("androidx.gridlayout:gridlayout:1.0.0")
   // CameraX: https://developer.android.com/jetpack/androidx/releases/camera
-  implementation("androidx.camera:camera-camera2:1.3.1")
-  implementation("androidx.camera:camera-video:1.3.1")
-  implementation("androidx.camera:camera-lifecycle:1.3.1")
-  implementation("androidx.camera:camera-view:1.3.1")
+  implementation("androidx.camera:camera-camera2:${LibraryVersions.ANDROIDX_CAMERA}")
+  implementation("androidx.camera:camera-video:${LibraryVersions.ANDROIDX_CAMERA}")
+  implementation("androidx.camera:camera-lifecycle:${LibraryVersions.ANDROIDX_CAMERA}")
+  implementation("androidx.camera:camera-view:${LibraryVersions.ANDROIDX_CAMERA}")
   // Google Play Services: https://developers.google.com/android/guides/releases
   implementation("com.google.android.gms:play-services-base:17.6.0")
   implementation("com.google.android.gms:play-services-basement:17.6.0")

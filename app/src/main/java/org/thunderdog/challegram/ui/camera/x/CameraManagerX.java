@@ -22,6 +22,7 @@ import android.view.TextureView;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.camera.camera2.Camera2Config;
 import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraInfoUnavailableException;
@@ -222,6 +223,7 @@ public class CameraManagerX extends CameraManager<PreviewView> {
     }
 
     try {
+      configureCameraX();
       // A variable number of use-cases can be passed here -
       // camera provides access to CameraControl & CameraInfo
       if (needQrScanner) {
@@ -240,6 +242,16 @@ public class CameraManagerX extends CameraManager<PreviewView> {
     UI.post(delegate::onRenderedFirstFrame, 800);
 
     reportFlashMode();
+  }
+
+  private static boolean cameraXConfigured;
+
+  @SuppressWarnings("UnsafeOptInUsageError")
+  private static synchronized void configureCameraX () {
+    if (!cameraXConfigured) {
+      ProcessCameraProvider.configureInstance(Camera2Config.defaultConfig());
+      cameraXConfigured = true;
+    }
   }
 
   @Override
