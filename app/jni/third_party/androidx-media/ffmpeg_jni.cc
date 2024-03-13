@@ -34,6 +34,8 @@ extern "C" {
 
 #define LOGE(...) \
   ((void)loge(TAG_NDK, __VA_ARGS__))
+#define LOGD(...) \
+  ((void)logd(TAG_NDK, __VA_ARGS__))
 
 #define LIBRARY_FUNC(RETURN_TYPE, NAME, ...)                                   \
   extern "C" {                                                                 \
@@ -66,6 +68,8 @@ static const AVSampleFormat OUTPUT_FORMAT_PCM_FLOAT = AV_SAMPLE_FMT_FLT;
 static const int AUDIO_DECODER_ERROR_INVALID_DATA = -1;
 static const int AUDIO_DECODER_ERROR_OTHER = -2;
 
+static jmethodID growOutputBufferMethod;
+
 /**
  * Returns the AVCodec with the specified name, or NULL if it is not available.
  */
@@ -80,13 +84,22 @@ AVCodecContext *createContext(JNIEnv *env, const AVCodec *codec,
                               jbyteArray extraData, jboolean outputFloat,
                               jint rawSampleRate, jint rawChannelCount);
 
+struct GrowOutputBufferCallback {
+  uint8_t *operator()(int requiredSize) const;
+
+  JNIEnv *env;
+  jobject thiz;
+  jobject decoderOutputBuffer;
+};
+
 /**
  * Decodes the packet into the output buffer, returning the number of bytes
  * written, or a negative AUDIO_DECODER_ERROR constant value in the case of an
  * error.
  */
 int decodePacket(AVCodecContext *context, AVPacket *packet,
-                 uint8_t *outputBuffer, int outputSize);
+                 uint8_t *outputBuffer, int outputSize,
+                 GrowOutputBufferCallback growBuffer);
 
 /**
  * Transforms ffmpeg AVERROR into a negative AUDIO_DECODER_ERROR constant value.
@@ -106,6 +119,21 @@ void releaseContext(AVCodecContext *context);
 /*jint JNI_OnLoad(JavaVM *vm, void *reserved) {
   JNIEnv *env;
   if (vm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6) != JNI_OK) {
+    LOGE("JNI_OnLoad: GetEnv failed");
+    return -1;
+  }
+  jclass clazz =
+      env->FindClass("androidx/media3/decoder/ffmpeg/FfmpegAudioDecoder");
+  if (!clazz) {
+    LOGE("JNI_OnLoad: FindClass failed");
+    return -1;
+  }
+  growOutputBufferMethod =
+      env->GetMethodID(clazz, "growOutputBuffer",
+                       "(Landroidx/media3/decoder/"
+                       "SimpleDecoderOutputBuffer;I)Ljava/nio/ByteBuffer;");
+  if (!growOutputBufferMethod) {
+    LOGE("JNI_OnLoad: GetMethodID failed");
     return -1;
   }
   return JNI_VERSION_1_6;
@@ -136,12 +164,13 @@ AUDIO_DECODER_FUNC(jlong, ffmpegInitialize, jstring codecName,
 }
 
 AUDIO_DECODER_FUNC(jint, ffmpegDecode, jlong context, jobject inputData,
-                   jint inputSize, jobject outputData, jint outputSize) {
+                   jint inputSize, jobject decoderOutputBuffer,
+                   jobject outputData, jint outputSize) {
   if (!context) {
     LOGE("Context must be non-NULL.");
     return -1;
   }
-  if (!inputData || !outputData) {
+  if (!inputData || !decoderOutputBuffer || !outputData) {
     LOGE("Input and output buffers must be non-NULL.");
     return -1;
   }
@@ -163,9 +192,21 @@ AUDIO_DECODER_FUNC(jint, ffmpegDecode, jlong context, jobject inputData,
   packet->data = inputBuffer;
   packet->size = inputSize;
   const int ret =
-      decodePacket((AVCodecContext *)context, packet, outputBuffer, outputSize);
+      decodePacket((AVCodecContext *)context, packet, outputBuffer, outputSize,
+                   GrowOutputBufferCallback{env, thiz, decoderOutputBuffer});
   av_packet_free(&packet);
   return ret;
+}
+
+uint8_t *GrowOutputBufferCallback::operator()(int requiredSize) const {
+  jobject newOutputData = env->CallObjectMethod(
+      thiz, growOutputBufferMethod, decoderOutputBuffer, requiredSize);
+  if (env->ExceptionCheck()) {
+    LOGE("growOutputBuffer() failed");
+    env->ExceptionDescribe();
+    return nullptr;
+  }
+  return static_cast<uint8_t *>(env->GetDirectBufferAddress(newOutputData));
 }
 
 AUDIO_DECODER_FUNC(jint, ffmpegGetChannelCount, jlong context) {
@@ -266,7 +307,8 @@ AVCodecContext *createContext(JNIEnv *env, const AVCodec *codec,
 }
 
 int decodePacket(AVCodecContext *context, AVPacket *packet,
-                 uint8_t *outputBuffer, int outputSize) {
+                 uint8_t *outputBuffer, int outputSize,
+                 GrowOutputBufferCallback growBuffer) {
   int result = 0;
   // Queue input data.
   result = avcodec_send_packet(context, packet);
@@ -326,15 +368,22 @@ int decodePacket(AVCodecContext *context, AVPacket *packet,
       }
       context->opaque = resampleContext;
     }
-    int inSampleSize = av_get_bytes_per_sample(sampleFormat);
+
     int outSampleSize = av_get_bytes_per_sample(context->request_sample_fmt);
     int outSamples = swr_get_out_samples(resampleContext, sampleCount);
     int bufferOutSize = outSampleSize * channelCount * outSamples;
     if (outSize + bufferOutSize > outputSize) {
-      LOGE("Output buffer size (%d) too small for output data (%d).",
-           outputSize, outSize + bufferOutSize);
-      av_frame_free(&frame);
-      return AUDIO_DECODER_ERROR_INVALID_DATA;
+      LOGD(
+          "Output buffer size (%d) too small for output data (%d), "
+          "reallocating buffer.",
+          outputSize, outSize + bufferOutSize);
+      outputSize = outSize + bufferOutSize;
+      outputBuffer = growBuffer(outputSize);
+      if (!outputBuffer) {
+        LOGE("Failed to reallocate output buffer.");
+        av_frame_free(&frame);
+        return AUDIO_DECODER_ERROR_OTHER;
+      }
     }
     result = swr_convert(resampleContext, &outputBuffer, bufferOutSize,
                          (const uint8_t **)frame->data, frame->nb_samples);
