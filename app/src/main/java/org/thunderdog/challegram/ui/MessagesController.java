@@ -2092,7 +2092,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
         UI.post(clearInputRunnable, MathUtils.clamp(50 * selectedItems.size(), 200, 500));
 
-        final List<TdApi.Function<?>> musicFunctions = getSendMusicFunctions(sendButton, musicEntries, true, true, caption, sendOptions);
+        final List<TdApi.Function<?>> musicFunctions = getSendMusicFunctions(sendButton, musicEntries, true, !musicEntries.isEmpty(), caption, sendOptions);
         sendFiles(sendButton, files, true, true, !musicEntries.isEmpty() && !files.isEmpty() ? null : caption, sendOptions, filesFunctions -> {
           if (filesFunctions != null) {
             functions.addAll(filesFunctions);
