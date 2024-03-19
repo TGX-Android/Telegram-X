@@ -201,7 +201,6 @@ public class CameraControlButton extends View implements FactorAnimator.Target {
     switch (id) {
       case ANIMATOR_CHANGE: {
         icon = toIcon;
-        toIcon = null;
         changeAnimator.forceFactor(0f);
         changeFactor = 0f;
         break;
