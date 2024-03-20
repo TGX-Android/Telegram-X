@@ -86,8 +86,8 @@ public class ContentPreview {
   private static final int ARG_RECURRING_PAYMENT = -3;
   private static final long ADDITIONAL_MESSAGE_UI_LOAD_TIMEOUT_MS = -1; // Always async
   private static final long ADDITIONAL_MESSAGE_LOAD_TIMEOUT_MS = 0;
-  public @Nullable Emoji emoji, parentEmoji;
-  public @StringRes int placeholderText;
+  public final @Nullable Emoji emoji, parentEmoji;
+  public final @StringRes int placeholderText;
   public final @Nullable TdApi.FormattedText formattedText;
   public final boolean isTranslatable;
   public final boolean hideAuthor;
