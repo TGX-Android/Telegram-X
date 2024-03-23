@@ -1089,7 +1089,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
   }
 
   public FiltersState getFiltersState () {
-    return sourceGalleryFile.getFiltersState();
+    return sourceGalleryFile != null ? sourceGalleryFile.getFiltersState() : null;
   }
 
   /*Crop*/
@@ -1701,6 +1701,8 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     TdApi.InputFile file;
     if (type == TYPE_CHAT_PROFILE || type == TYPE_USER_PROFILE || (sourceChatId != 0 && ChatId.isSecret(sourceChatId))) {
       file = TD.createFileCopy(targetFile);
+    } else if (type == TYPE_GALLERY_PHOTO) {
+      file = PhotoGenerationInfo.newFile(sourceGalleryFile);
     } else {
       file = new TdApi.InputFileId(targetFile.id);
     }
@@ -1715,7 +1717,8 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
         }
         return new TdApi.InputMessagePhoto(file, null, null, 640, 640, caption, null, false);
       case TYPE_PHOTO:
-        return new TdApi.InputMessagePhoto(file, null, null, width, height, caption, null, false);
+      case TYPE_GALLERY_PHOTO:
+        return new TdApi.InputMessagePhoto(file, null, null, width, height, caption, null, type == TYPE_GALLERY_PHOTO && hasSpoiler);
       case TYPE_VIDEO:
         return new TdApi.InputMessageVideo(file, null, null, sourceVideo.duration, sourceVideo.width, sourceVideo.height, sourceVideo.supportsStreaming, caption, null, false);
       case TYPE_GIF:

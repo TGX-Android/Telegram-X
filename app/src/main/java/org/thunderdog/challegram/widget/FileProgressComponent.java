@@ -390,6 +390,11 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     this.mimeType = mimeType;
   }
 
+  @Nullable
+  public String getMimeType () {
+    return mimeType;
+  }
+
   public void setFile (@Nullable TdApi.File file) {
     setFile(file, null);
   }
@@ -783,6 +788,9 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
       }
       case TdlibFilesManager.STATE_IN_PROGRESS: {
         if (file != null) {
+          if (tdlib.cancelEditMessageMedia(chatId, messageId)) {
+            return true;
+          }
           if (file.remote.isUploadingActive || isSendingMessage) {
             tdlib.deleteMessagesIfOk(chatId, new long[] {messageId}, true);
           } else {

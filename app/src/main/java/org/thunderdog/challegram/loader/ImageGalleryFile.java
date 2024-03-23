@@ -274,6 +274,10 @@ public class ImageGalleryFile extends ImageFile implements Comparable<ImageGalle
     return !Td.equalsTo(markdown, noMarkdown, true);
   }
 
+  public boolean hasCaption () {
+    return !Td.isEmpty(caption);
+  }
+
   public TdApi.FormattedText getCaption (boolean obtain, boolean parseMarkdown) {
     if (obtain) {
       if (Td.isEmpty(caption)) {

@@ -26,6 +26,7 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.attach.MediaToReplacePickerManager;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.helper.LinkPreview;
@@ -142,6 +143,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     public boolean messageDeleted;
     public @Nullable LinkPreview linkPreview;
     public @Nullable View.OnClickListener onMediaClickListener;
+    public @Nullable MediaToReplacePickerManager.LocalPickedFile forcedLocalPickedFile;
 
     public DisplayData (Tdlib tdlib, TdApi.Message message, @Nullable TdApi.InputTextQuote quote, int options) {
       this.tdlib = tdlib;
@@ -156,6 +158,10 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
         return true;
       }
       return false;
+    }
+
+    public void setForcedLocalPickedFile (@Nullable MediaToReplacePickerManager.LocalPickedFile localPickedFile) {
+      this.forcedLocalPickedFile = localPickedFile;
     }
 
     public void setOnMediaClickListener (View.OnClickListener onClickListener) {
@@ -174,8 +180,8 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
        return linkPreview != null && linkPreview.hasMedia() && !linkPreview.getOutputShowLargeMedia();
     }
 
-    public boolean equalsTo (TdApi.Message message, @Nullable TdApi.InputTextQuote quote, @Options int options, @Nullable LinkPreview linkPreview) {
-      return this.message == message && Td.equalsTo(this.quote, quote) && this.options == options && this.linkPreview == linkPreview;
+    public boolean equalsTo (TdApi.Message message, @Nullable TdApi.InputTextQuote quote, @Options int options, @Nullable LinkPreview linkPreview, @Nullable MediaToReplacePickerManager.LocalPickedFile forceDisplayMedia) {
+      return this.message == message && Td.equalsTo(this.quote, quote) && this.options == options && this.linkPreview == linkPreview && this.forcedLocalPickedFile == forceDisplayMedia;
     }
 
     public TdlibAccentColor accentColor () {
@@ -244,10 +250,15 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   }
 
   public void setMessage (@Nullable TdApi.Message message, @Nullable TdApi.InputTextQuote quote, @Nullable TdApi.SearchMessagesFilter filter, @Nullable String forcedTitle, @Options int options) {
+    setMessage(message, quote, filter, forcedTitle, options, null);
+  }
+
+  public void setMessage (@Nullable TdApi.Message message, @Nullable TdApi.InputTextQuote quote, @Nullable TdApi.SearchMessagesFilter filter, @Nullable String forcedTitle, @Options int options, @Nullable MediaToReplacePickerManager.LocalPickedFile localPickedFile) {
     if (message != null) {
       DisplayData displayData = new DisplayData(tdlib, message, quote, options);
       displayData.setPreviewFilter(filter);
       displayData.setForcedTitle(forcedTitle);
+      displayData.setForcedLocalPickedFile(localPickedFile);
       setDisplayData(displayData);
     } else {
       setDisplayData(null);
@@ -287,7 +298,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     if (this.data == null && data == null) {
       return;
     }
-    if (this.data != null && data != null && this.data.equalsTo(data.message, data.quote, data.options, data.linkPreview)) {
+    if (this.data != null && data != null && this.data.equalsTo(data.message, data.quote, data.options, data.linkPreview, data.forcedLocalPickedFile)) {
       if (data.setForcedTitle(data.forcedTitle)) {
         updateTitleText();
       }
@@ -359,7 +370,13 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     if (data == null) {
       throw new IllegalStateException();
     }
-    if (!Td.isEmpty(data.quote)) {
+
+    final ContentPreview forcedContentPreview = data.forcedLocalPickedFile != null ?
+      data.forcedLocalPickedFile.buildContentPreview() : null;
+
+    if (forcedContentPreview != null) {
+      this.contentPreview = forcedContentPreview;
+    } else if (!Td.isEmpty(data.quote)) {
       this.contentPreview = new ContentPreview(data.quote.text, false);
     } else {
       this.contentPreview = ContentPreview.getChatListPreview(tdlib, data.message.chatId, data.messageDeleted ? null : data.message, true);
@@ -453,7 +470,9 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     MediaPreview preview;
     boolean showSmallMedia = false;
 
-    if (data != null) {
+    if (data != null && data.forcedLocalPickedFile != null) {
+      preview = data.forcedLocalPickedFile.buildMediaPreview(tdlib, Screen.dp(IMAGE_HEIGHT), Screen.dp(3f));
+    } else if (data != null) {
       preview = MediaPreview.valueOf(tdlib, data.message, contentPreview, Screen.dp(IMAGE_HEIGHT), Screen.dp(3f));
       if (preview == null && useAvatarFallback) {
         TdApi.Chat chat = tdlib.chat(data.message.chatId);

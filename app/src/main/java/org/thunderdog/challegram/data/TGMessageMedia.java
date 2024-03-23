@@ -36,6 +36,7 @@ import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.MessageEditMediaPending;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -91,27 +92,34 @@ public class TGMessageMedia extends TGMessage {
   }
 
   private MediaWrapper createMediaWrapper (TdApi.Message message) {
-    return createMediaWrapper(message, message.content);
+    return createMediaWrapper(message.chatId, message.id, message.content);
   }
 
-  private MediaWrapper createMediaWrapper (TdApi.Message message, TdApi.MessageContent content) {
+  private MediaWrapper createMediaWrapper (long chatId, long messageId, TdApi.MessageContent content) {
     MediaWrapper mediaWrapper;
     //noinspection SwitchIntDef
     switch (content.getConstructor()) {
       case TdApi.MessagePhoto.CONSTRUCTOR:
-        mediaWrapper = new MediaWrapper(context(), tdlib, (TdApi.MessagePhoto) content, message.chatId, message.id, this, true);
+        mediaWrapper = new MediaWrapper(context(), tdlib, (TdApi.MessagePhoto) content, chatId, messageId, this, true);
         break;
       case TdApi.MessageVideo.CONSTRUCTOR:
-        mediaWrapper = new MediaWrapper(context(), tdlib, (TdApi.MessageVideo) content, message.chatId, message.id, this, true);
+        mediaWrapper = new MediaWrapper(context(), tdlib, (TdApi.MessageVideo) content, chatId, messageId, this, true);
         break;
       case TdApi.MessageAnimation.CONSTRUCTOR:
-        mediaWrapper = new MediaWrapper(context(), tdlib, (TdApi.MessageAnimation) content, message.chatId, message.id, this, true);
+        mediaWrapper = new MediaWrapper(context(), tdlib, (TdApi.MessageAnimation) content, chatId, messageId, this, true);
         break;
       default:
         throw new UnsupportedOperationException(content.toString());
     }
     mediaWrapper.setViewProvider(currentViews);
-    mediaWrapper.setSelectionAnimator(findSelectionAnimator(message.id));
+    mediaWrapper.setSelectionAnimator(findSelectionAnimator(messageId));
+    return mediaWrapper;
+  }
+
+  private MediaWrapper createMediaWrapper (MessageEditMediaPending pending) {
+    MediaWrapper mediaWrapper = MediaWrapper.valueOf(context(), tdlib, this, pending);
+    mediaWrapper.setViewProvider(currentViews);
+    mediaWrapper.setSelectionAnimator(findSelectionAnimator(pending.messageId));
     return mediaWrapper;
   }
 
@@ -125,6 +133,7 @@ public class TGMessageMedia extends TGMessage {
     updateRounds();
     setCaption(caption, msg.id);
     checkCommonCaption();
+    checkHasEditedMedia();
     if (isHotTimerStarted()) {
       onHotTimerStarted(false);
     }
@@ -132,12 +141,19 @@ public class TGMessageMedia extends TGMessage {
 
   @Override
   protected boolean isBeingEdited () {
-    return this.isBeingEdited;
+    return this.hasEditedText || hasEditedMedia;
   }
 
   @Override
   protected int onMessagePendingContentChanged (long chatId, long messageId, int oldHeight) {
-    if (checkCommonCaption()) {
+    final TdApi.Message message = getMessage(messageId);
+    final boolean captionChanged = checkCommonCaption();
+    final boolean mediaChanged = updateMediaWrapperImpl(chatId, messageId, message != null ? message.content : null, tdlib.getPendingMessageMedia(chatId, messageId));
+    checkHasEditedMedia();
+    if (captionChanged || mediaChanged) {
+      if (mediaChanged) {
+        invalidateContentReceiver();
+      }
       rebuildContent();
       return (getHeight() == oldHeight ? MESSAGE_INVALIDATED : MESSAGE_CHANGED);
     }
@@ -197,7 +213,8 @@ public class TGMessageMedia extends TGMessage {
     }
   }
 
-  private boolean isBeingEdited;
+  private boolean hasEditedText;
+  private boolean hasEditedMedia;
 
   private boolean checkCommonCaption () {
     return checkCommonCaption(false);
@@ -230,8 +247,28 @@ public class TGMessageMedia extends TGMessage {
         captionMessageId = msg.id;
       }
     }
-    this.isBeingEdited = hasEditedText;
+
+    this.hasEditedText = hasEditedText;
     return setCaption(caption, captionMessageId, force);
+  }
+
+  private void checkHasEditedMedia () {
+    boolean hasEditedMedia = false;
+
+    synchronized (this) {
+      ArrayList<TdApi.Message> combinedMessages = getCombinedMessagesUnsafely();
+      if (combinedMessages != null && !combinedMessages.isEmpty()) {
+        for (TdApi.Message message: combinedMessages) {
+          final MessageEditMediaPending pending = tdlib.getPendingMessageMedia(message.chatId, message.id);
+          hasEditedMedia |= pending != null;
+        }
+      } else {
+        final MessageEditMediaPending pending = tdlib.getPendingMessageMedia(msg.chatId, msg.id);
+        hasEditedMedia = pending != null;
+      }
+    }
+
+    this.hasEditedMedia = hasEditedMedia;
   }
 
   @Override
@@ -339,6 +376,11 @@ public class TGMessageMedia extends TGMessage {
     return isAcceptedMessageContent(messageContent) && isAcceptedMessageContent(message.content);
   }
 
+  @Override
+  protected boolean isSupportedMessagePendingContent (@NonNull MessageEditMediaPending pending) {
+    return pending.isPhoto() || pending.isVideo() || pending.isAnimation();
+  }
+
   private static final int FLAG_CHANGED_SIMPLY = 1;
   private static final int FLAG_CHANGED_RECEIVERS = 1 << 1;
 
@@ -355,46 +397,8 @@ public class TGMessageMedia extends TGMessage {
   protected boolean updateMessageContent (TdApi.Message message, TdApi.MessageContent newContent, boolean isBottomMessage) {
     int changed = 0;
 
-    if (message.content.getConstructor() != newContent.getConstructor()) {
-      MediaWrapper wrapper = createMediaWrapper(message, newContent);
-      synchronized (this) {
-        if (mosaicWrapper.replaceMediaWrapper(wrapper) != MosaicWrapper.MOSAIC_NOT_CHANGED) {
-          changed |= FLAG_CHANGED_RECEIVERS;
-        }
-      }
-    } else {
-      MediaWrapper wrapper = mosaicWrapper.findMediaWrapperByMessageId(message.id);
-      if (wrapper != null) {
-        int oldContentWidth = wrapper.getContentWidth();
-        int oldContentHeight = wrapper.getContentHeight();
-        boolean updated;
-        //noinspection SwitchIntDef
-        switch (newContent.getConstructor()) {
-          case TdApi.MessagePhoto.CONSTRUCTOR: {
-            TdApi.MessagePhoto newPhoto = (TdApi.MessagePhoto) newContent;
-            updated = wrapper.updatePhoto(message.id, newPhoto);
-            break;
-          }
-          case TdApi.MessageVideo.CONSTRUCTOR: {
-            TdApi.MessageVideo newVideo = (TdApi.MessageVideo) newContent;
-            updated = wrapper.updateVideo(message.id, newVideo);
-            break;
-          }
-          case TdApi.MessageAnimation.CONSTRUCTOR: {
-            TdApi.MessageAnimation newAnimation = (TdApi.MessageAnimation) newContent;
-            updated = wrapper.updateAnimation(message.id, newAnimation);
-            break;
-          }
-          default:
-            throw new UnsupportedOperationException(newContent.toString());
-        }
-        if (updated) {
-          if (oldContentWidth != wrapper.getContentWidth() || oldContentHeight != wrapper.getContentHeight()) {
-            mosaicWrapper.rebuild();
-          }
-          changed |= FLAG_CHANGED_RECEIVERS;
-        }
-      }
+    if (updateMediaWrapperImpl(message.chatId, message.id, newContent, tdlib.getPendingMessageMedia(message.chatId, message.id))) {
+      changed |= FLAG_CHANGED_RECEIVERS;
     }
 
     message.content = newContent;
@@ -492,6 +496,7 @@ public class TGMessageMedia extends TGMessage {
   @Override
   protected void onMessageCombinedWithOtherMessage (TdApi.Message otherMessage, boolean atBottom, boolean local) {
     checkCommonCaption();
+    checkHasEditedMedia();
     mosaicWrapper.addItem(createMediaWrapper(otherMessage), atBottom);
   }
 
@@ -878,5 +883,74 @@ public class TGMessageMedia extends TGMessage {
     rebuildAndUpdateContent();
     invalidateTextMediaReceiver();
     super.setTranslationResult(text);
+  }
+
+
+  private boolean updateMediaWrapperImpl (long chatId, long messageId, @Nullable TdApi.MessageContent content, @Nullable MessageEditMediaPending pending) {
+    final MediaWrapper wrapper = mosaicWrapper.findMediaWrapperByMessageId(messageId);
+
+    int oldContentWidth = wrapper.getContentWidth();
+    int oldContentHeight = wrapper.getContentHeight();
+    boolean updated = false;
+    boolean ignoreCheckSize = false;
+
+    if (pending != null && pending.getFile() != null) {
+      if (pending.isPhoto() && wrapper.isPhoto()) {
+        updated = wrapper.updatePhoto(messageId, pending.getPhoto(), pending.hasSpoiler(), pending.isWebp());
+      } else if (pending.isVideo() && wrapper.isVideo()) {
+        updated = wrapper.updateVideo(messageId, pending.getVideo(), pending.hasSpoiler());
+      } else if (pending.isAnimation() && wrapper.isGif()) {
+        updated = wrapper.updateAnimation(messageId, pending.getAnimation(), pending.hasSpoiler());
+      } else {
+        mosaicWrapper.replaceMediaWrapper(createMediaWrapper(pending));
+        ignoreCheckSize = true;
+        updated = true;
+      }
+    } else if (content != null) {
+      boolean needReplace = false;
+      switch (content.getConstructor()) {
+        case TdApi.MessagePhoto.CONSTRUCTOR: {
+          TdApi.MessagePhoto newPhoto = (TdApi.MessagePhoto) content;
+          if (wrapper.isPhoto()) {
+            updated = wrapper.updatePhoto(messageId, newPhoto);
+          } else {
+            needReplace = true;
+          }
+          break;
+        }
+        case TdApi.MessageVideo.CONSTRUCTOR: {
+          TdApi.MessageVideo newVideo = (TdApi.MessageVideo) content;
+          if (wrapper.isVideo()) {
+            updated = wrapper.updateVideo(messageId, newVideo);
+          } else {
+            needReplace = true;
+          }
+          break;
+        }
+        case TdApi.MessageAnimation.CONSTRUCTOR: {
+          TdApi.MessageAnimation newAnimation = (TdApi.MessageAnimation) content;
+          if (wrapper.isGif()) {
+            updated = wrapper.updateAnimation(messageId, newAnimation);
+          } else {
+            needReplace = true;
+          }
+          break;
+        }
+        default:
+          throw new UnsupportedOperationException(content.toString());
+      }
+      if (needReplace) {
+        mosaicWrapper.replaceMediaWrapper(createMediaWrapper(chatId, messageId, content));
+        ignoreCheckSize = true;
+        updated = true;
+      }
+    }
+    if (updated && !ignoreCheckSize) {
+      if (oldContentWidth != wrapper.getContentWidth() || oldContentHeight != wrapper.getContentHeight()) {
+        mosaicWrapper.rebuild();
+      }
+    }
+
+    return updated;
   }
 }
