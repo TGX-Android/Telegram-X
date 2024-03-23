@@ -81,6 +81,7 @@ import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ReactionsOverlayView;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.telegram.MessageEditMediaPending;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
@@ -5361,6 +5362,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return message.content.getConstructor() == messageContent.getConstructor();
   }
 
+  protected boolean isSupportedMessagePendingContent (@NonNull MessageEditMediaPending pending) {
+    return false;
+  }
+
   @MessageChangeType
   public int replaceMessageContent (long chatId, long messageId, TdApi.MessageContent newContent) {
     if (msg.chatId != chatId || !isDescendantOrSelf(messageId)) {
@@ -5669,7 +5674,27 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return false;
   }
 
+  private boolean isMediaPending;
+
+  protected TGMessage setIsMediaPending () {
+    isMediaPending = true;
+    return this;
+  }
+
   public final int setMessagePendingContentChanged (long chatId, long messageId) {
+    final MessageEditMediaPending pending = tdlib.getPendingMessageMedia(chatId, messageId);
+    if (pending != null && pending.getFile() != null && !isSupportedMessagePendingContent(pending)) {
+      return MESSAGE_REPLACE_REQUIRED;
+    }
+
+    if (isMediaPending && pending == null) {
+      isMediaPending = false;
+      final TdApi.Message message = getMessage(messageId);
+      if (!isSupportedMessageContent(message, message.content)) {
+        return MESSAGE_REPLACE_REQUIRED;
+      }
+    }
+
     int oldHeight = getHeight();
     return onMessagePendingContentChanged(chatId, messageId, oldHeight);
   }
@@ -8021,32 +8046,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     } else {
       return new TGMessageSticker(context, msg, oldContent, pendingContent);
     }
-    /*
-    final TdApi.MessageText pendingMessageText = pendingContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR ?
-      ((TdApi.MessageText) pendingContent) : null;
-    final TdApi.MessageAnimatedEmoji pendingMessageEmoji = pendingContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR ?
-      ((TdApi.MessageAnimatedEmoji) pendingContent) : null;
-    final boolean pendingContentIsCustomEmoji = allowCustomEmoji && (
-      (pendingMessageText != null && NonBubbleEmojiLayout.isValidEmojiText(pendingMessageText.text)) || (pendingMessageEmoji != null));
-    if (oldContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
-      TdApi.MessageAnimatedEmoji oldEmoji = nonNull((TdApi.MessageAnimatedEmoji) oldContent);
-      if (pendingContentIsCustomEmoji) {
-        return new TGMessageSticker(context, msg, oldEmoji, pendingContent);
-      } else {
-        return new TGMessageText(context, msg, new TdApi.MessageText(Td.textOrCaption(oldEmoji), null, null),
-          new TdApi.MessageText(Td.textOrCaption(pendingContent), null, null));
-      }
-    } else if (oldContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
-      TdApi.MessageText oldText = nonNull((TdApi.MessageText) oldContent);
-      if (pendingContentIsCustomEmoji) {
-        return new TGMessageSticker(context, msg, oldContent, pendingContent);
-      } else {
-        return new TGMessageText(context, msg, oldText, pendingMessageText);
-      }
-    }
-
-    return null;
-    */
   }
 
   public static TGMessage valueOf (MessagesManager context, TdApi.Message msg, TdApi.MessageContent content) {
@@ -8072,7 +8071,25 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
       final boolean allowAnimatedEmoji = !Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI);
       final boolean allowNonBubbleEmoji = Settings.instance().useBigEmoji();
+      final MessageEditMediaPending pendingMedia = tdlib.getPendingMessageMedia(msg.chatId, msg.id);
       final TdApi.MessageContent pendingContent = tdlib.getPendingMessageText(msg.chatId, msg.id);
+
+      if (pendingMedia != null && pendingMedia.getFile() != null) {
+        if (pendingMedia.isPhoto()) {
+          TdApi.MessagePhoto messagePhoto = pendingMedia.getMessagePhoto();
+          return new TGMessageMedia(context, msg, messagePhoto, messagePhoto.caption).setIsMediaPending();
+        } else if (pendingMedia.isVideo()) {
+          TdApi.MessageVideo messageVideo = (TdApi.MessageVideo) pendingMedia.getMessageVideo();
+          return new TGMessageMedia(context, msg, messageVideo, messageVideo.caption).setIsMediaPending();
+        } else if (pendingMedia.isAnimation()) {
+          TdApi.MessageAnimation messageAnimation = pendingMedia.getMessageAnimation();
+          return new TGMessageMedia(context, msg, messageAnimation, messageAnimation.caption).setIsMediaPending();
+        } else if (pendingMedia.isDocument()) {
+          return new TGMessageFile(context, msg, pendingMedia.getMessageDocument()).setIsMediaPending();
+        } else if (pendingMedia.isAudio()) {
+          return new TGMessageFile(context, msg, pendingMedia.getMessageAudio()).setIsMediaPending();
+        }
+      }
 
       TGMessage message = checkPendingContent(context, msg, content, pendingContent, allowAnimatedEmoji, allowNonBubbleEmoji);
       if (message != null) {

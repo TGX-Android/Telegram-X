@@ -43,6 +43,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.component.attach.MediaToReplacePickerManager;
 import org.thunderdog.challegram.component.chat.TdlibSingleUnreadReactionsManager;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.config.Config;
@@ -450,6 +451,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private final TdlibNotificationManager notificationManager;
   private final TdlibFileGenerationManager fileGenerationManager;
   private final TdlibSingleUnreadReactionsManager unreadReactionsManager;
+  private final TdlibEditMediaManager editMediaManager;
   private final TdlibMessageViewer messageViewer;
 
   private final HashSet<Long> channels = new HashSet<>();
@@ -655,6 +657,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       ms = SystemClock.uptimeMillis();
     }
     this.unreadReactionsManager = new TdlibSingleUnreadReactionsManager(this);
+    this.editMediaManager = new TdlibEditMediaManager(this);
     this.applicationConfigJson = settings().getApplicationConfig();
     if (!StringUtils.isEmpty(applicationConfigJson)) {
       TdApi.JsonValue value = JSON.parse(applicationConfigJson);
@@ -4723,6 +4726,25 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private final HashMap<String, TdApi.MessageContent> pendingMessageTexts = new HashMap<>();
   private final HashMap<String, TdApi.FormattedText> pendingMessageCaptions = new HashMap<>();
 
+  public boolean canEditMedia (TdApi.Message message, boolean photoVideoOnly) {
+    if (message == null || !message.canBeEdited || message.content == null) {
+      return false;
+    }
+
+    switch (message.content.getConstructor()) {
+      case TdApi.MessagePhoto.CONSTRUCTOR:
+      case TdApi.MessageVideo.CONSTRUCTOR:
+        return true;
+      case TdApi.MessageAudio.CONSTRUCTOR:
+      case TdApi.MessageDocument.CONSTRUCTOR:
+      case TdApi.MessageAnimation.CONSTRUCTOR:
+        return !photoVideoOnly;
+    }
+
+    return false;
+  }
+
+
   public void editMessageText (long chatId, long messageId, TdApi.InputMessageText content, @Nullable TdApi.WebPage webPage) {
     if (content.linkPreviewOptions != null && content.linkPreviewOptions.isDisabled) {
       webPage = null;
@@ -4772,6 +4794,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     performEdit(chatId, messageId, caption, new TdApi.EditMessageCaption(chatId, messageId, null, caption), pendingMessageCaptions);
   }
 
+  public boolean cancelEditMessageMedia (long chatId, long messageId) {
+    return editMediaManager.editMediaCancel(chatId, messageId);
+  }
+
+  public void editMessageMedia (long chatId, long messageId, TdApi.InputMessageContent content, @NonNull MediaToReplacePickerManager.LocalPickedFile localPickedFile) {
+    editMediaManager.editMediaStart(chatId, messageId, content, localPickedFile);
+  }
+
   public TdApi.FormattedText getFormattedText (TdApi.Message message) {
     if (message == null)
       return null;
@@ -4794,6 +4824,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       Td.assertMessageContent_4113f183();
       throw Td.unsupported(messageText);
     }
+    MessageEditMediaPending pendingEditMedia = getPendingMessageMedia(chatId, messageId);
+    if (pendingEditMedia != null) {
+      return TD.textOrCaption(pendingEditMedia.content);
+    }
+
     return getPendingMessageCaption(chatId, messageId);
   }
 
@@ -4804,9 +4839,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public TdApi.FormattedText getPendingMessageCaption (long chatId, long messageId) {
+    final MessageEditMediaPending pending = getPendingMessageMedia(chatId, messageId);
+    if (pending != null) {
+      return pending.getCaption();
+    }
+
     synchronized (pendingMessageCaptions) {
       return pendingMessageCaptions.get(chatId + "_" + messageId);
     }
+  }
+
+  public MessageEditMediaPending getPendingMessageMedia (long chatId, long messageId) {
+    return editMediaManager.getPendingMessageMedia(chatId, messageId);
   }
 
   private <T extends TdApi.Object> void performEdit (long chatId, long messageId, T pendingData, TdApi.Function<?> function, Map<String, T> map) {
@@ -11132,6 +11176,26 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return getBasicMessageRestrictionText(chat);
   }
 
+  public boolean hasReplaceMediaRestriction (TdApi.Message message, @RightId int rightId) {
+    if (message.mediaAlbumId == 0 || message.content == null) {
+      return false;
+    }
+
+    switch (message.content.getConstructor()) {
+      case TdApi.MessagePhoto.CONSTRUCTOR:
+      case TdApi.MessageVideo.CONSTRUCTOR:
+        return (rightId != RightId.SEND_PHOTOS && rightId != RightId.SEND_VIDEOS);
+      case TdApi.MessageAudio.CONSTRUCTOR:
+        return rightId != RightId.SEND_AUDIO;
+      case TdApi.MessageAnimation.CONSTRUCTOR:
+        return rightId != RightId.SEND_OTHER_MESSAGES;
+      case TdApi.MessageDocument.CONSTRUCTOR:
+        return rightId != RightId.SEND_DOCS;
+    }
+
+    return true;
+  }
+
   public CharSequence getBasicMessageRestrictionText (TdApi.Chat chat) {
     return getDefaultRestrictionText(chat, RightId.SEND_BASIC_MESSAGES);
   }
@@ -11683,5 +11747,135 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     send(new TdApi.EditChatFolderInviteLink(chatFolderId, inviteLink, name, chatIds), resultHandler.doOnResult((result) -> {
       listeners().notifyChatFolderInviteLinkChanged(chatFolderId, result);
     }));
+  }
+
+  public static class UploadFutureSimple implements TdlibFilesManager.FileListener {
+    private static final int FLAG_STARTED = 1;
+    private static final int FLAG_COMPLETED = 1 << 1;
+    private static final int FLAG_FAILED = 1 << 2;
+
+    private final Tdlib tdlib;
+    private final UploadFutureSimple.Callback callback;
+    private final TdApi.InputFile inputFile;
+    private final TdApi.FileType fileType;
+
+    private int flags;
+
+    public interface Callback {
+      void onUploadStart (UploadFutureSimple future, TdApi.File file, @Nullable TdApi.Error error);
+      void onUploadFinish (UploadFutureSimple future);
+    }
+
+    TdApi.File file;
+
+    public UploadFutureSimple (Tdlib tdlib, TdApi.InputFile inputFile, TdApi.FileType fileType, UploadFutureSimple.Callback callback) {
+      this.tdlib = tdlib;
+      this.callback = callback;
+      this.inputFile = inputFile;
+      this.fileType = fileType;
+    }
+
+    public void init () {
+      tdlib.send(new TdApi.PreliminaryUploadFile(inputFile, fileType, 1), (file, err) -> {
+        this.file = file;
+
+        if (BitwiseUtils.hasFlag(flags, FLAG_FAILED)) {
+          return;
+        }
+
+        final boolean isUploaded = TD.isFileUploaded(file);
+        if (file != null && err == null && !isUploaded) {
+          tdlib.files().subscribe(file, this);
+        }
+        UI.post(() -> {
+          if (BitwiseUtils.hasFlag(flags, FLAG_FAILED)) {
+            return;
+          }
+
+          update(file);
+          flags = BitwiseUtils.setFlag(flags, FLAG_STARTED, true);
+          callback.onUploadStart(this, file, err);
+
+          if (err != null) {
+            fail(true);
+          }
+
+          if (isUploaded) {
+            complete();
+          }
+        });
+      });
+    }
+
+    @UiThread
+    private void complete () {
+      if (!BitwiseUtils.hasFlag(flags, FLAG_COMPLETED | FLAG_FAILED)) {
+        flags = BitwiseUtils.setFlag(flags, FLAG_COMPLETED, true);
+        if (file != null) {
+          tdlib.files().unsubscribe(file.id, this);
+        }
+        callback.onUploadFinish(this);
+      }
+    }
+
+    @UiThread
+    private void update (TdApi.File file) {
+      this.file = file;
+    }
+
+    @UiThread
+    private void fail (boolean runCallback) {
+      if (!BitwiseUtils.hasFlag(flags, FLAG_COMPLETED | FLAG_FAILED)) {
+        flags = BitwiseUtils.setFlag(flags, FLAG_FAILED, true);
+        if (file != null) {
+          tdlib.files().unsubscribe(file.id, this);
+        }
+        if (runCallback) {
+          callback.onUploadFinish(this);
+        }
+      }
+    }
+
+    public void cancel (boolean runCallback) {
+      fail(runCallback);
+    }
+
+    @Override
+    public void onFileLoadProgress (TdApi.File file) {
+      UI.execute(() -> update(file));
+    }
+
+    @Override
+    public void onFileLoadStateChanged (Tdlib tdlib, int fileId, int state, @Nullable TdApi.File downloadedFile) {
+      UI.execute(() -> {
+        if (downloadedFile != null) {
+          update(downloadedFile);
+        }
+
+        if (state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED) {
+          complete();
+        }
+
+        if (state == TdlibFilesManager.STATE_FAILED || state == TdlibFilesManager.STATE_PAUSED) {
+          fail(true);
+        }
+      });
+    }
+
+    public boolean isFinished () {
+      return BitwiseUtils.hasFlag(flags, FLAG_COMPLETED | FLAG_FAILED);
+    }
+
+    public boolean isCompleted () {
+      return BitwiseUtils.hasFlag(flags, FLAG_COMPLETED);
+    }
+
+    public boolean isFailed () {
+      return BitwiseUtils.hasFlag(flags, FLAG_FAILED);
+    }
+
+    public boolean isStarted () {
+      return BitwiseUtils.hasFlag(flags, FLAG_STARTED);
+    }
   }
 }

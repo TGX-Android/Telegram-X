@@ -27,6 +27,7 @@ import androidx.annotation.NonNull;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.attach.AvatarPickerManager;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.dialogs.SearchManager;
 import org.thunderdog.challegram.component.user.BubbleView;
@@ -651,14 +652,14 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
 
   @Override
   public void onActivityResult (int requestCode, int resultCode, Intent data) {
-    getAvatarPickerManager().handleActivityResult(requestCode, resultCode, data, TdlibUi.AvatarPickerManager.MODE_PROFILE_PUBLIC, null, null);
+    getAvatarPickerManager().handleActivityResult(requestCode, resultCode, data, AvatarPickerManager.MODE_PROFILE_PUBLIC, null, null);
   }
 
-  private TdlibUi.AvatarPickerManager avatarPickerManager;
+  private AvatarPickerManager avatarPickerManager;
 
-  private TdlibUi.AvatarPickerManager getAvatarPickerManager () {
+  private AvatarPickerManager getAvatarPickerManager () {
     if (avatarPickerManager == null) {
-      avatarPickerManager = new TdlibUi.AvatarPickerManager(this);
+      avatarPickerManager = new AvatarPickerManager(this);
     }
     return avatarPickerManager;
   }
