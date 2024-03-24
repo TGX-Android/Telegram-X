@@ -410,18 +410,25 @@ public class VideoGen {
     EditedMediaItem editedMediaItem = editedMediaItemBuilder.build();
 
     // Transformer
+    final AtomicBoolean transformFinished = new AtomicBoolean();
     Transformer.Builder transformerBuilder = new Transformer.Builder(UI.getAppContext())
       .setVideoMimeType(MimeTypes.VIDEO_H264)
       .addListener(new Transformer.Listener() {
         @Override
         public void onCompleted (@NonNull Composition composition, @NonNull ExportResult exportResult) {
-          onComplete.run();
+          synchronized (transformFinished) {
+            transformFinished.set(true);
+            onComplete.run();
+          }
         }
 
         @Override
         public void onError (@NonNull Composition composition, @NonNull ExportResult exportResult,
                              @NonNull ExportException exportException) {
-          onFailure.runWithData(exportException);
+          synchronized (transformFinished) {
+            transformFinished.set(true);
+            onFailure.runWithData(exportException);
+          }
         }
       });
     if (!editedMediaItem.removeAudio) {
@@ -446,15 +453,18 @@ public class VideoGen {
         if (entry.transcodeFinished.get() || entry.canceled.get()) {
           return;
         }
-        @Transformer.ProgressState int progressState = entry.transformer.getProgress(progressHolder);
-        if (progressState == Transformer.PROGRESS_STATE_NOT_STARTED) {
-          onCancel.runWithData("PROGRESS_STATE_NOT_STARTED");
-        } else {
-          if (progressState == Transformer.PROGRESS_STATE_AVAILABLE) {
-            onProgress.onTranscodeProgress((double) progressHolder.progress / 100.0, outFile.length());
+        synchronized (transformFinished) {
+          if (transformFinished.get()) {
+            return;
           }
+          @Transformer.ProgressState int progressState = entry.transformer.getProgress(progressHolder);
+          if (progressState == Transformer.PROGRESS_STATE_AVAILABLE) {
+            double progress = (double) progressHolder.progress / 100.0;
+            long fileSize = outFile.length();
+            onProgress.onTranscodeProgress(progress, fileSize);
+          }
+          queue.post(this, 500L);
         }
-        queue.post(this, 500L);
       }
     };
 

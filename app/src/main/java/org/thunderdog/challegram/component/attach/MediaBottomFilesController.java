@@ -125,12 +125,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
               results.add(createItem(context, tdlib, path, R.drawable.baseline_insert_drive_file_24, fileInfo.title, Strings.buildSize(fileInfo.knownSize)));
             }
           }
-          UI.post(() -> {
-            if (mediaLayout.getTarget() != null && mediaLayout.getTarget().isFocused()) {
-              mediaLayout.getTarget().setFilesToAttach(results, false);
-              mediaLayout.hide(false);
-            }
-          });
+          UI.post(() -> mediaLayout.getFilesControllerDelegate().onFilesSelected(results, false));
         });
       }
     };
@@ -192,10 +187,9 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
     ArrayList<ListItem> items = new ArrayList<>();
 
     if (currentPath != null && !currentPath.isEmpty()) {
-      if (!isUpper && mediaLayout.getTarget() != null) {
+      if (!isUpper) {
         boolean isMusic = KEY_MUSIC.equals(currentPath);
-        boolean res = mediaLayout.getTarget().showRestriction(view, isMusic ? RightId.SEND_AUDIO : RightId.SEND_DOCS);
-        if (res) {
+        if (mediaLayout.getFilesControllerDelegate().showRestriction(view, isMusic ? RightId.SEND_AUDIO : RightId.SEND_DOCS)) {
           return;
         }
       }
@@ -1026,10 +1020,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
   private boolean onHapticMenuItemClick (View view, View parentView, HapticMenuHelper.MenuItem item) {
     final int id = view.getId();
     if (id == R.id.btn_addCaption) {
-      if (mediaLayout.getTarget() != null) {
-        mediaLayout.getTarget().setFilesToAttach(new ArrayList<>(selectedItems), true);
-        mediaLayout.hide(false);
-      }
+      mediaLayout.getFilesControllerDelegate().onFilesSelected(new ArrayList<>(selectedItems), true);
     }
     return true;
   }
@@ -1053,21 +1044,15 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
         if (inFileSelectMode) {
           selectItem(item, result);
         } else {
-          if (mediaLayout.getTarget() != null) {
-            mediaLayout.getTarget().setFilesToAttach(new ArrayList<>(Collections.singleton(result)), false);
-            mediaLayout.hide(false);
-          }
+          mediaLayout.getFilesControllerDelegate().onFilesSelected(new ArrayList<>(Collections.singleton(result)), false);
         }
       } else if (itemId == R.id.btn_bucket) {
         navigateInside(v, KEY_BUCKET, result);
       } else {
         String path = result.getId();
         boolean isMusic = KEY_MUSIC.equals(path);
-        if (mediaLayout.getTarget() != null) {
-          boolean res = mediaLayout.getTarget().showRestriction(v, isMusic ? RightId.SEND_AUDIO : RightId.SEND_DOCS);
-          if (res) {
-            return;
-          }
+        if (mediaLayout.getFilesControllerDelegate().showRestriction(v, isMusic ? RightId.SEND_AUDIO : RightId.SEND_DOCS)) {
+          return;
         }
         boolean isDownloads = KEY_DOWNLOADS.equals(path);
         if (v.getId() == R.id.btn_internalStorage || isDownloads) {
@@ -1139,6 +1124,10 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
 
   @Override
   public boolean onLongClick (View v) {
+    if (mediaLayout.inSingleMediaMode()) {
+      return false;
+    }
+
     Object tag = v.getTag();
     if (tag != null && tag instanceof ListItem) {
       ListItem item = (ListItem) tag;
@@ -1314,6 +1303,11 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
   @Override
   protected int getRecyclerHeaderOffset () {
     return Screen.dp(101f);
+  }
+
+  public interface Delegate {
+    boolean showRestriction (View view, @RightId int rightId);
+    void onFilesSelected (ArrayList<InlineResult<?>> results, boolean needShowKeyboard);
   }
 }
 

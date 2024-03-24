@@ -26,7 +26,9 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.attach.MediaToReplacePickerManager;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.helper.FoundUrls;
 import org.thunderdog.challegram.helper.LinkPreview;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -45,6 +47,7 @@ import me.vkryl.android.ViewUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.RunnableData;
+import me.vkryl.td.Td;
 
 public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener, Destroyable {
   protected final Tdlib tdlib;
@@ -61,11 +64,17 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
       final int id = v.getId();
       if (id == R.id.btn_close) {
         callback.onDismissReplyBar(this);
+      } else if (id == R.id.btn_replace) {
+        callback.onMessageMediaReplaceRequested(this, displayedMessage);
+      } else if (id == R.id.btn_edit) {
+        callback.onMessageMediaEditRequested(this, displayedMessage);
       }
     }
   }
 
   ImageView closeView;
+  ImageView replaceMediaView;
+  ImageView editMediaView;
   LinkPreviewToggleView linkPreviewToggleView;
 
   public void checkRtl () {
@@ -138,6 +147,21 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
 
     params = FrameLayoutFix.newParams(Screen.dp(56f), ViewGroup.LayoutParams.MATCH_PARENT);
     params.gravity = Lang.reverseGravity();
+    replaceMediaView = newButton(R.id.btn_replace, R.drawable.dot_baseline_image_replace_24, themeProvider);
+    replaceMediaView.setLayoutParams(params);
+    replaceMediaView.setVisibility(View.GONE);
+    addView(replaceMediaView);
+
+    params = FrameLayoutFix.newParams(Screen.dp(56f), ViewGroup.LayoutParams.MATCH_PARENT);
+    params.gravity = Lang.reverseGravity();
+    params.rightMargin = Screen.dp(46);
+    editMediaView = newButton(R.id.btn_edit, R.drawable.baseline_brush_24, themeProvider);
+    editMediaView.setLayoutParams(params);
+    editMediaView.setVisibility(View.GONE);
+    addView(editMediaView);
+
+    params = FrameLayoutFix.newParams(Screen.dp(56f), ViewGroup.LayoutParams.MATCH_PARENT);
+    params.gravity = Lang.reverseGravity();
     linkPreviewToggleView = new LinkPreviewToggleView(getContext());
     linkPreviewToggleView.setLayoutParams(params);
     linkPreviewToggleView.setVisibility(View.GONE);
@@ -199,7 +223,22 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
   private void setLinkPreviewToggleVisible (boolean isVisible) {
     if (isVisible != (linkPreviewToggleView.getVisibility() == View.VISIBLE)) {
       linkPreviewToggleView.setVisibility(isVisible ? View.VISIBLE : View.GONE);
-      pinnedMessagesBar.setPadding(Screen.dp(49.5f), 0, isVisible ? Screen.dp(49.5f) : 0, 0);
+      checkPinnedMessagesBarPadding();
+    }
+  }
+
+  private void setMediaEditToggleVisible (boolean canReplace, boolean canEdit) {
+    boolean needUpdate = false;
+    if (canEdit != (editMediaView.getVisibility() == View.VISIBLE)) {
+      editMediaView.setVisibility(canEdit ? View.VISIBLE : View.GONE);
+      needUpdate = true;
+    }
+    if (canReplace != (replaceMediaView.getVisibility() == View.VISIBLE)) {
+      replaceMediaView.setVisibility(canReplace ? View.VISIBLE : View.GONE);
+      needUpdate = true;
+    }
+    if (needUpdate) {
+      checkPinnedMessagesBarPadding();
     }
   }
 
@@ -246,18 +285,37 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
     }
     pinnedMessagesBar.setStaticMessageList(entryList, selectedUrlIndex);
     setLinkPreviewToggleVisible(true);
+    setMediaEditToggleVisible(false, false);
     setMessageInputContext(context);
   }
 
+  private TdApi.Message displayedMessage;
+
   public void setReplyTo (TdApi.Message msg, @Nullable TdApi.InputTextQuote quote) {
-    pinnedMessagesBar.setMessage(tdlib, msg, quote);
+    pinnedMessagesBar.setMessage(tdlib, displayedMessage = msg, quote);
     setLinkPreviewToggleVisible(false);
+    setMediaEditToggleVisible(false, false);
     setMessageInputContext(null);
   }
 
-  public void setEditingMessage (TdApi.Message msg) {
-    pinnedMessagesBar.setMessage(tdlib, msg);
+  public void setEditingMessage (TdApi.Message msg, @Nullable MediaToReplacePickerManager.LocalPickedFile localPickedFile) {
+    final boolean hasReplacedImage = localPickedFile != null && localPickedFile.imageGalleryFile != null;
+
+    final boolean canReplace = localPickedFile != null || tdlib.canEditMedia(msg, false);
+    final boolean canEdit = canReplace && (localPickedFile == null && tdlib.canEditMedia(msg, true) || hasReplacedImage);
+
+    if (msg.mediaAlbumId != 0) {
+      final boolean usePhotoIcon = Td.isPhoto(msg.content) || hasReplacedImage
+        || (msg.content != null && msg.content.getConstructor() == TdApi.MessageVideo.CONSTRUCTOR);
+
+      replaceMediaView.setImageResource(usePhotoIcon ? R.drawable.dot_baseline_image_replace_24 : R.drawable.dot_baseline_file_replace_24);
+    } else {
+      replaceMediaView.setImageResource(R.drawable.dot_baseline_file_media_replace_24);
+    }
+
+    pinnedMessagesBar.setMessage(tdlib, displayedMessage = msg, null, localPickedFile);
     setLinkPreviewToggleVisible(false);
+    setMediaEditToggleVisible(canReplace, canEdit && TD.isFileLoaded(msg));
     setMessageInputContext(null);
   }
 
@@ -281,9 +339,18 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
 
   public interface Callback {
     void onDismissReplyBar (ReplyBarView view);
+    void onMessageMediaReplaceRequested (ReplyBarView view, TdApi.Message message);
+    void onMessageMediaEditRequested (ReplyBarView view, TdApi.Message message);
     void onMessageHighlightRequested (ReplyBarView view, TdApi.Message message, @Nullable TdApi.InputTextQuote quote);
     void onSelectLinkPreviewUrl (ReplyBarView view, MessagesController.MessageInputContext messageContext, String url);
     boolean onRequestToggleShowAbove (ReplyBarView view, View buttonView, MessagesController.MessageInputContext messageContext);
     boolean onRequestToggleLargeMedia (ReplyBarView view, View buttonView, MessagesController.MessageInputContext messageContext, LinkPreview linkPreview);
+  }
+
+  private void checkPinnedMessagesBarPadding () {
+    final int buttonsCount = (Views.isValid(linkPreviewToggleView) ? 1 : 0)
+      + (Views.isValid(editMediaView) ? 1 : 0)
+      + (Views.isValid(replaceMediaView) ? 1 : 0);
+    pinnedMessagesBar.setPadding(Screen.dp(49.5f), 0, buttonsCount > 0 ? Screen.dp(buttonsCount * 48f + 1.5f) : 0, 0);
   }
 }

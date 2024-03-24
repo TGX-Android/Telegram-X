@@ -72,6 +72,7 @@ open class ModulePlugin : Plugin<Project> {
     val isExampleBuild = appId.startsWith("com.example.") || appId.startsWith("org.example.")
     val isExperimentalBuild = isExampleBuild || keystore == null || properties.getProperty("app.experimental", "false") == "true"
     val dontObfuscate = isExampleBuild || properties.getProperty("app.dontobfuscate", "false") == "true"
+    val forceOptimize = properties.getProperty("app.forceoptimize") == "true"
 
     project.extra.set("experimental", isExperimentalBuild)
     project.extra.set("app_name", appName)
@@ -183,6 +184,13 @@ open class ModulePlugin : Plugin<Project> {
 
                   ndk.debugSymbolLevel = "full"
                   ndk.jobs = Runtime.getRuntime().availableProcessors()
+
+                  if (forceOptimize) {
+                    proguardFiles(
+                      getDefaultProguardFile(ProguardFiles.ProguardFile.OPTIMIZE.fileName),
+                      "proguard-rules.pro"
+                    )
+                  }
                 }
 
                 getByName("release") {

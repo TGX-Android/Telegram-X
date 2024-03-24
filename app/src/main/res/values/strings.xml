@@ -767,6 +767,8 @@
   <string name="GroupPhoto">Group photo</string>
   <string name="ChannelPhoto">Channel photo</string>
   <string name="ShowInChat">Show in Chat</string>
+  <string name="ReplaceImage">Replace Image</string>
+  <string name="ReplaceVideo">Replace Video</string>
   <string name="ShowInDiscussionGroup">Show in discussion group</string>
   <string name="GroupIsFull">The group you tried to join is full</string>
   <string name="PasswordIsInvalid">The password you have entered is invalid</string>
@@ -4818,6 +4820,7 @@
 
   <string name="MediaSpoilerHint">Media will be blurred inside the chat and reveal after additional tap.</string>
   <string name="HideMedia">Hide media</string>
+  <string name="MediaHapticForward">Forward</string>
 
   <string name="ShowXMoreStickers_one">show %1$s more</string>
   <string name="ShowXMoreStickers_other">show %1$s more</string>
@@ -5098,6 +5101,9 @@
   <string name="xGiveawayPrizeReceivedInfo_one">Your prize is a **Telegram Premium** subscription for **%1$s** month.</string>
   <string name="xGiveawayPrizeReceivedInfo_other">Your prize is a **Telegram Premium** subscription for **%1$s** months.</string>
 
+  <string name="xGiveawayWinnersCountMore_one">and %1$s more.</string>
+  <string name="xGiveawayWinnersCountMore_other">and %1$s more.</string>
+
   <string name="xGiveawayUnclaimedPrizeReceivedInfo_one">This prize is a **Telegram Premium** subscription for **%1$s** month.</string>
   <string name="xGiveawayUnclaimedPrizeReceivedInfo_other">This prize is a **Telegram Premium** subscription for **%1$s** months.</string>
 
@@ -5211,6 +5217,7 @@
   <string name="HoldAndDragToReorder">Hold and drag to reorder</string>
 
   <string name="SlowFileAccess">Slow file access. Message will be sent after reading the files</string>
+  <string name="EditMediaRestricted">You cannot change the media type</string>
 
   <string name="ForegroundSync">Fetch missing notifications</string>
   <string name="ForegroundSyncDesc">Allow app to show **\"Checking for new messages\"** in the system tray to fetch missing data required to display a notification about a new message.</string>

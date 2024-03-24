@@ -33,6 +33,7 @@ sed_rules=\
 '$!N;s/^#define LOG_TAG "[^"]+"\n//g;'\
 '$!N;s/^(#define A?LOGE\(\.\.\.\) (\\\n *)*\((\(void\))?)[a-zA-Z_]+\([^\\)]+(\\\n[^\\)]+)*\)/\1loge(TAG_NDK, __VA_ARGS__)/g;'\
 '$!N;s/^(#define A?LOGV\(\.\.\.\) (\\\n *)*\((\(void\))?)[a-zA-Z_]+\([^\\)]+(\\\n[^\\)]+)*\)/\1logv(TAG_NDK, __VA_ARGS__)/g;'\
+'$!N;s/^(#define A?LOGD\(\.\.\.\) (\\\n *)*\((\(void\))?)[a-zA-Z_]+\([^\\)]+(\\\n[^\\)]+)*\)/\1logd(TAG_NDK, __VA_ARGS__)/g;'\
 '$!N;s/^(#define LOG_ALWAYS_FATAL\(\.\.\.\) (\\\n *)*\((\(void\))?)[a-zA-Z_]+\([^\\)]+(\\\n[^\\)]+)*\)/\1loga(TAG_NDK, __VA_ARGS__)/g;'\
 '$!N;s/(^jint JNI_OnLoad\(JavaVM *\* *[a-zA-Z0-9_]*, void *\* *[a-zA-Z0-9_]*\) \{\n(  [^\n]+\n)*\})/\/*\1*\//g;P;D'
 

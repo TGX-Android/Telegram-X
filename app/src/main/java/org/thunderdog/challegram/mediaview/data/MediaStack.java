@@ -233,7 +233,7 @@ public class MediaStack {
 
   // appliers
 
-  private void notifyMediaChanged (boolean itemCountChanged) {
+  public void notifyMediaChanged (boolean itemCountChanged) {
     if (callback != null) {
       callback.onMediaChanged(estimatedBefore + currentIndex, getEstimatedSize(), items.get(currentIndex), itemCountChanged);
     }

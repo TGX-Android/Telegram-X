@@ -97,6 +97,9 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
 
   @Override
   protected int getMenuId () {
+    if (mediaLayout.isDisallowGallerySystemPicker()) {
+      return 0;
+    }
     return R.id.menu_more;
   }
 
@@ -211,7 +214,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
     decoration = new GridSpacingItemDecoration(spanCount, Screen.dp(4f), true, true, true);
     GridLayoutManager manager = new RtlGridLayoutManager(context(), spanCount);
 
-    int options = inAvatarPickerMode() ? MediaGalleryAdapter.OPTION_NEVER_SELECTABLE :
+    int options = inSingleMediaMode() ? MediaGalleryAdapter.OPTION_NEVER_SELECTABLE :
       MediaGalleryAdapter.OPTION_SELECTABLE | MediaGalleryAdapter.OPTION_ALWAYS_SELECTABLE;
     /*if (U.deviceHasAnyCamera(context)) {
       options |= MediaGalleryAdapter.OPTION_CAMERA_AVAILABLE;
@@ -574,10 +577,11 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
       Log.i("stack.set complete for %d files in %dms", stack.getCurrentSize(), SystemClock.elapsedRealtime() - time);
 
       MediaViewController controller = new MediaViewController(context, tdlib);
-      controller.setArguments(
+      controller.setArguments(mediaLayout.prepareMediaViewArguments(
         MediaViewController.Args.fromGallery(this, this, this, this, stack, mediaLayout.areScheduledOnly())
           .setReceiverChatId(mediaLayout.getTargetChatId()).setAvatarPickerMode(mediaLayout.getAvatarPickerMode())
-      );
+          .setFlag(MediaViewController.Args.FLAG_DISALLOW_MULTI_SELECTION_MEDIA, mediaLayout.inSingleMediaMode())
+      ));
       controller.open();
 
       return true;
@@ -586,8 +590,8 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
     return false;
   }
 
-  private boolean inAvatarPickerMode () {
-    return mediaLayout.getAvatarPickerMode() != AvatarPickerMode.NONE;
+  private boolean inSingleMediaMode () {
+    return mediaLayout.inSingleMediaMode();
   }
 
   @Override

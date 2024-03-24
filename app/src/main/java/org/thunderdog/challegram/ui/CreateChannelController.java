@@ -31,6 +31,7 @@ import android.widget.TextView;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.attach.AvatarPickerManager;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.emoji.EmojiFilter;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
@@ -41,7 +42,6 @@ import org.thunderdog.challegram.navigation.EditHeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
@@ -61,11 +61,11 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.td.TdConstants;
 
 public class CreateChannelController extends ViewController<String[]> implements EditHeaderView.ReadyCallback, ActivityResultHandler, TextView.OnEditorActionListener {
-  private final TdlibUi.AvatarPickerManager avatarPickerManager;
+  private final AvatarPickerManager avatarPickerManager;
 
   public CreateChannelController (Context context, Tdlib tdlib) {
     super(context, tdlib);
-    avatarPickerManager = new TdlibUi.AvatarPickerManager(this);
+    avatarPickerManager = new AvatarPickerManager(this);
   }
 
   private EditText descView;
@@ -224,7 +224,7 @@ public class CreateChannelController extends ViewController<String[]> implements
 
   @Override
   public void onActivityResult (int requestCode, int resultCode, Intent data) {
-    avatarPickerManager.handleActivityResult(requestCode, resultCode, data, TdlibUi.AvatarPickerManager.MODE_NON_CREATED, null, headerCell);
+    avatarPickerManager.handleActivityResult(requestCode, resultCode, data, AvatarPickerManager.MODE_NON_CREATED, null, headerCell);
   }
 
   @Override
