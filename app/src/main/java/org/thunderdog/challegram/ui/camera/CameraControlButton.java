@@ -200,10 +200,12 @@ public class CameraControlButton extends View implements FactorAnimator.Target {
   public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
     switch (id) {
       case ANIMATOR_CHANGE: {
-        icon = toIcon;
-        toIcon = null;
-        changeAnimator.forceFactor(0f);
-        changeFactor = 0f;
+        if (finalFactor == 1f) {
+          icon = toIcon;
+          toIcon = null;
+          changeAnimator.forceFactor(0f);
+          changeFactor = 0f;
+        }
         break;
       }
     }

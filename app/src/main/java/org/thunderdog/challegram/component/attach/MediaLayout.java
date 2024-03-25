@@ -42,10 +42,12 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.InlineResult;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.mediaview.AvatarPickerMode;
+import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.navigation.ActivityResultHandler;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.BackListener;
@@ -113,6 +115,7 @@ public class MediaLayout extends FrameLayoutFix implements
   public static final int MODE_GALLERY = 2;
   public static final int MODE_CUSTOM_POPUP = 3;
   public static final int MODE_AVATAR_PICKER = 4;
+  public static final int MODE_CUSTOM_ADAPTER = 5;
 
   private int mode;
   private @AvatarPickerMode int avatarPickerMode = AvatarPickerMode.NONE;
@@ -155,11 +158,34 @@ public class MediaLayout extends FrameLayoutFix implements
     return avatarPickerMode;
   }
 
+  private boolean singleMediaMode;
+
+  public void setSingleMediaMode (boolean singleMediaMode) {
+    this.singleMediaMode = singleMediaMode;
+  }
+
+  public boolean inSingleMediaMode () {
+    return singleMediaMode || avatarPickerMode != AvatarPickerMode.NONE || mode == MODE_AVATAR_PICKER;
+  }
+
   public void setAvatarPickerMode (@AvatarPickerMode int avatarPickerMode) {
     this.avatarPickerMode = avatarPickerMode;
   }
 
   private boolean rtl, needVote;
+
+  private ItemsAdapter itemsAdapter;
+
+  public void setItemsAdapter (ItemsAdapter itemsAdapter) {
+    this.itemsAdapter = itemsAdapter;
+  }
+
+  public interface ItemsAdapter {
+    MediaBottomBar.BarItem[] getBottomBarItems ();
+    int getDefaultItemIndex ();
+    MediaBottomBaseController<?> createControllerForIndex(int index);
+    boolean needBottomBar ();
+  }
 
   public void init (int mode, MessagesController target) {
     this.mode = mode;
@@ -183,6 +209,14 @@ public class MediaLayout extends FrameLayoutFix implements
           new MediaBottomBar.BarItem(R.drawable.baseline_location_on_24, R.string.Gallery, ColorId.attachPhoto, Screen.dp(1f))
         };
         index = 0;
+        break;
+      }
+      case MODE_CUSTOM_ADAPTER: {
+        items = itemsAdapter.getBottomBarItems();
+        index = itemsAdapter.getDefaultItemIndex();
+        if (itemsAdapter.needBottomBar()) {
+          mode = MODE_DEFAULT;
+        }
         break;
       }
       default: {
@@ -400,8 +434,11 @@ public class MediaLayout extends FrameLayoutFix implements
       case MODE_AVATAR_PICKER:
       case MODE_GALLERY: {
         MediaBottomGalleryController c = new MediaBottomGalleryController(this);
-        c.setArguments(new MediaBottomGalleryController.Arguments(mode == MODE_GALLERY));
+        c.setArguments(new MediaBottomGalleryController.Arguments(mode == MODE_GALLERY || (mode == MODE_AVATAR_PICKER && avatarPickerMode == AvatarPickerMode.NONE)));
         return c;
+      }
+      case MODE_CUSTOM_ADAPTER: {
+        return itemsAdapter.createControllerForIndex(index);
       }
     }
     if (rtl) {
@@ -421,6 +458,16 @@ public class MediaLayout extends FrameLayoutFix implements
     return bottomBar != null ? controllers[bottomBar.getCurrentIndex()] : controllers[0];
   }
 
+  private boolean disallowGallerySystemPicker;
+
+  public void setDisallowGallerySystemPicker (boolean disallowGallerySystemPicker) {
+    this.disallowGallerySystemPicker = disallowGallerySystemPicker;
+  }
+
+  public boolean isDisallowGallerySystemPicker () {
+    return disallowGallerySystemPicker;
+  }
+
   // Setters
 
   public void setNoMediaAccess () {
@@ -436,12 +483,17 @@ public class MediaLayout extends FrameLayoutFix implements
   private PopupLayout popupLayout;
 
   public void show () {
+    show(false);
+  }
+
+  public void show (boolean overlayStatusBar) {
     popupLayout = new PopupLayout(getContext());
     popupLayout.setTouchDownInterceptor(this);
     popupLayout.setActivityListener(this);
     popupLayout.setHideKeyboard();
     popupLayout.setDismissListener(this);
     popupLayout.setNeedRootInsets();
+    popupLayout.setOverlayStatusBar(overlayStatusBar);
     popupLayout.init(true);
     popupLayout.showAnimatedPopupView(this, this);
   }
@@ -680,6 +732,24 @@ public class MediaLayout extends FrameLayoutFix implements
     return true;
   }
 
+  public interface MediaViewArgumentsEditor {
+    MediaViewController.Args edit (MediaViewController.Args args);
+  }
+
+  private MediaViewArgumentsEditor mediaViewControllerArgumentsEditor;
+
+  public void setMediaViewControllerArgumentsEditor (MediaViewArgumentsEditor mediaViewControllerArgumentsEditor) {
+    this.mediaViewControllerArgumentsEditor = mediaViewControllerArgumentsEditor;
+  }
+
+  public MediaViewController.Args prepareMediaViewArguments (MediaViewController.Args args) {
+    if (mediaViewControllerArgumentsEditor != null) {
+      return mediaViewControllerArgumentsEditor.edit(args);
+    }
+
+    return args;
+  }
+
   @Override
   public void onBottomSectionChanged (int index) {
     removeView(fromView);
@@ -740,7 +810,7 @@ public class MediaLayout extends FrameLayoutFix implements
     int height = getBottomBarHeight();
     float factor = Math.max(bottomBarFactor, counterFactor);
     float y = height - (int) ((float) height * factor);
-    if (!inSpecificMode() || mode == MODE_AVATAR_PICKER) {
+    if (!inSpecificMode() || mode == MODE_AVATAR_PICKER || mode == MODE_CUSTOM_ADAPTER) {
       if (bottomBar != null) {
         if (currentController != null) {
           currentController.onUpdateBottomBarFactor(bottomBarFactor, counterFactor, y);
@@ -1724,7 +1794,7 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   public void setCounter (int count) {
-    if (mode == MODE_AVATAR_PICKER) {
+    if (inSingleMediaMode()) {
       return;
     }
 
@@ -1861,5 +1931,36 @@ public class MediaLayout extends FrameLayoutFix implements
     }
 
     return false;
+  }
+
+
+  /* * */
+
+  private MediaBottomFilesController.Delegate filesControllerDelegate;
+
+  public void setFilesControllerDelegate (MediaBottomFilesController.Delegate filesControllerDelegate) {
+    this.filesControllerDelegate = filesControllerDelegate;
+  }
+
+  @NonNull
+  public MediaBottomFilesController.Delegate getFilesControllerDelegate () {
+    if (filesControllerDelegate == null) {
+      filesControllerDelegate = new MediaBottomFilesController.Delegate() {
+        @Override
+        public boolean showRestriction (View view, int rightId) {
+          return (target != null && target.showRestriction(view, rightId));
+        }
+
+        @Override
+        public void onFilesSelected (ArrayList<InlineResult<?>> results, boolean needShowKeyboard) {
+          if (target != null && target.isFocused()) {
+            target.setFilesToAttach(results, needShowKeyboard);
+            hide(false);
+          }
+        }
+      };
+    }
+
+    return filesControllerDelegate;
   }
 }

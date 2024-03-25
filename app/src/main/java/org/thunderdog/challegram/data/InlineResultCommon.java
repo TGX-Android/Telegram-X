@@ -273,6 +273,11 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
     return title;
   }
 
+  @Nullable
+  public String getMimeType () {
+    return fileProgress != null ? fileProgress.getMimeType() : null;
+  }
+
   public String getTrackSubtitle () {
     return TD.getSubtitle(audio);
   }
