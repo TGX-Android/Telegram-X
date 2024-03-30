@@ -113,6 +113,7 @@
   <string name="login_SmsHint">We will send an SMS with a confirmation code to your phone number.</string>
   <string name="Registration">Registration</string>
   <string name="login_FirstName">First name</string>
+  <string name="BotName">Name</string>
   <string name="LastName">Last name</string>
   <string name="login_LastName">Last name (optional)</string>
   <string name="login_InvalidPhone">Please enter a valid phone number</string>
@@ -596,10 +597,12 @@
   <string name="SetProfilePhoto">Set Profile Photo</string>
   <string name="SetGroupPhoto">Set Group Photo</string>
   <string name="SetChannelPhoto">Set Channel Photo</string>
+  <string name="SetBotPhoto">Set Bot Photo</string>
   <string name="SetPublicPhoto">Set Public Photo</string>
   <string name="RemoveProfilePhoto">Remove Profile Photo</string>
   <string name="RemoveGroupPhoto">Remove Group Photo</string>
   <string name="RemoveChannelPhoto">Remove Channel Photo</string>
+  <string name="RemoveBotPhoto">Remove Bot Photo</string>
   <string name="RemovePublicPhoto">Remove Public Photo</string>
   <string name="RemovePhotoConfirm">Delete current photo?</string>
 
@@ -745,6 +748,15 @@
   <string name="SecretLinkPreviewEnable">Enable</string>
   <string name="AirplaneModeDisable">Disable</string>
   <string name="EditName">Edit name</string>
+  <string name="EditBotName">Edit name</string>
+  <string name="EditBotInfo">Edit description</string>
+  <string name="EditBotDescription">Edit intro</string>
+  <string name="EditBotDescriptionMedia">Edit intro media</string>
+  <string name="EditBotSettings">Change bot settings</string>
+  <string name="EditBotCommands">Edit bot commands</string>
+  <string name="EditBotHint">Use @BotFather to manage this bot.</string>
+  <string name="EditBotUsernameHint">You can\'t edit this username. You may acquire additional usernames on [Fragment](%1$s).</string>
+  <string name="BotDescriptionEmpty">Tap to set intro</string>
   <string name="Stickers">Stickers</string>
   <string name="NoAppToOpen">Application to open this file not found</string>
   <string name="CopyLine">Copy line</string>
@@ -766,6 +778,7 @@
   <string name="ProfilePhoto">Profile photo</string>
   <string name="GroupPhoto">Group photo</string>
   <string name="ChannelPhoto">Channel photo</string>
+  <string name="BotPhoto">Bot photo</string>
   <string name="ShowInChat">Show in Chat</string>
   <string name="ReplaceImage">Replace Image</string>
   <string name="ReplaceVideo">Replace Video</string>
@@ -1308,6 +1321,8 @@
   <string name="GroupPublic">Public Group</string>
   <string name="GroupPrivate">Private Group</string>
   <string name="RenameContact">Rename contact</string>
+  <string name="RenameBot">Edit bot name</string>
+  <string name="RenameBotHint">**Warning**: this will update the default bot name for **all users**.</string>
   <string name="Themes">Themes</string>
   <string name="ThemeSettings">Themes and Chats</string>
   <string name="Tweaks">Interface Options</string>
@@ -1650,6 +1665,10 @@
   <string name="SendSticker">Send sticker</string>
   <string name="ViewPackPreview">View Pack</string>
   <string name="UserBio">Bio</string>
+  <string name="BotInfo">Description</string>
+  <string name="BotDescription">Intro</string>
+  <string name="EditBotUsername">Public Link</string>
+  <string name="BotUsername">Bot Link</string>
   <string name="BioDescription">Any details such as age, occupation or city.\nExample: 23 y.o. designer from San Francisco.</string>
   <string name="AttachPhotoExpired">Expired photo</string>
   <string name="AttachVideoExpired">Expired video</string>
@@ -1746,6 +1765,9 @@
   <string name="NoResultsToShowDesc">Try changing your search query.</string>
   <string name="ManageChannel">Manage Channel</string>
   <string name="ManageGroup">Manage Group</string>
+  <string name="EditBot">Edit Bot</string>
+  <string name="BotAboutTextHint">**Warning**: this will update the default bot information shown on the profile page for **all users**.</string>
+  <string name="BotDescriptionHint">**Warning**: this will update the default bot intro shown on the chat page for **all users**.</string>
   <string name="RoleOwner">chat owner</string>
   <string name="RoleLeft">not a member</string>
   <string name="RoleBanned">banned member</string>

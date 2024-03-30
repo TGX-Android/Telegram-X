@@ -1490,8 +1490,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       case ListItem.TYPE_EDITTEXT_NO_PADDING_REUSABLE:
       case ListItem.TYPE_EDITTEXT_COUNTERED:
       case ListItem.TYPE_EDITTEXT_CHANNEL_DESCRIPTION:
-      case ListItem.TYPE_EDITTEXT_WITH_PHOTO:
-      case ListItem.TYPE_EDITTEXT_WITH_PHOTO_SMALLER: {
+      case ListItem.TYPE_EDITTEXT_WITH_PHOTO: {
         MaterialEditTextGroup editText = (MaterialEditTextGroup) ((ViewGroup) holder.itemView).getChildAt(0);
         editText.applyRtl(Lang.rtl());
         editText.setHint(item.getString());
@@ -2346,7 +2345,6 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       case ListItem.TYPE_EDITTEXT_COUNTERED:
       case ListItem.TYPE_EDITTEXT_CHANNEL_DESCRIPTION:
       case ListItem.TYPE_EDITTEXT_WITH_PHOTO:
-      case ListItem.TYPE_EDITTEXT_WITH_PHOTO_SMALLER:
         return CellFilterImpl.ABORTED;
     }
     if (item.hasStringResources())

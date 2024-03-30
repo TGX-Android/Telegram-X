@@ -40,6 +40,7 @@ import android.widget.Toast;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.IdRes;
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
@@ -128,6 +129,8 @@ import org.thunderdog.challegram.widget.ViewControllerPagerAdapter;
 import org.thunderdog.challegram.widget.ViewPager;
 import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -173,14 +176,30 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   DoneListener {
   // Constants
 
-  public static final int MODE_USER = 0;
-  public static final int MODE_SECRET = 1;
-  public static final int MODE_GROUP = 2;
-  public static final int MODE_SUPERGROUP = 3;
-  public static final int MODE_CHANNEL = 4;
-  public static final int MODE_EDIT_GROUP = 5;
-  public static final int MODE_EDIT_SUPERGROUP = 6;
-  public static final int MODE_EDIT_CHANNEL = 7;
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    Mode.USER,
+    Mode.SECRET,
+    Mode.GROUP,
+    Mode.SUPERGROUP,
+    Mode.CHANNEL,
+    Mode.EDIT_GROUP,
+    Mode.EDIT_SUPERGROUP,
+    Mode.EDIT_CHANNEL,
+    Mode.EDIT_BOT_USER
+  })
+  public @interface Mode {
+    int
+      USER = 0,
+      SECRET = 1,
+      GROUP = 2,
+      SUPERGROUP = 3,
+      CHANNEL = 4,
+      EDIT_GROUP = 5,
+      EDIT_SUPERGROUP = 6,
+      EDIT_CHANNEL = 7,
+      EDIT_BOT_USER = 8;
+  }
 
   // Arguments
 
@@ -242,10 +261,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     return false;
   }
 
-  private int mode;
+  private @Mode int mode;
 
   private boolean isUserMode () {
-    return mode == MODE_USER || mode == MODE_SECRET;
+    return mode == Mode.USER || mode == Mode.SECRET || mode == Mode.EDIT_BOT_USER;
   }
 
   public boolean isSameProfile (ProfileController controller) {
@@ -276,50 +295,58 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     switch (chat.type.getConstructor()) {
       case TdApi.ChatTypePrivate.CONSTRUCTOR: {
         this.user = tdlib.cache().userStrict(ChatId.toUserId(chat.id));
-        this.mode = MODE_USER;
+        this.mode = Mode.USER;
         break;
       }
       case TdApi.ChatTypeSecret.CONSTRUCTOR: {
         this.secretChat = tdlib.cache().secretChatStrict(ChatId.toSecretChatId(chat.id));
         this.user = tdlib.cache().userStrict(this.secretChat.userId);
-        this.mode = MODE_SECRET;
+        this.mode = Mode.SECRET;
         break;
       }
       case TdApi.ChatTypeBasicGroup.CONSTRUCTOR: {
         this.group = tdlib.cache().basicGroupStrict(ChatId.toBasicGroupId(chat.id));
-        this.mode = MODE_GROUP;
+        this.mode = Mode.GROUP;
         break;
       }
       case TdApi.ChatTypeSupergroup.CONSTRUCTOR: {
         this.supergroup = tdlib.cache().supergroupStrict(ChatId.toSupergroupId(chat.id));
-        this.mode = supergroup.isChannel ? MODE_CHANNEL : MODE_SUPERGROUP;
+        this.mode = supergroup.isChannel ? Mode.CHANNEL : Mode.SUPERGROUP;
         break;
       }
     }
 
     if (args.isEdit) {
       switch (mode) {
-        case MODE_CHANNEL:
-          mode = MODE_EDIT_CHANNEL;
+        case Mode.CHANNEL:
+          mode = Mode.EDIT_CHANNEL;
           break;
-        case MODE_GROUP:
-          mode = MODE_EDIT_GROUP;
+        case Mode.GROUP:
+          mode = Mode.EDIT_GROUP;
           break;
-        case MODE_SUPERGROUP:
-          mode = MODE_EDIT_SUPERGROUP;
+        case Mode.SUPERGROUP:
+          mode = Mode.EDIT_SUPERGROUP;
+          break;
+        case Mode.USER:
+          mode = Mode.EDIT_BOT_USER;
           break;
       }
       switch (mode) {
-        case MODE_EDIT_CHANNEL:
-        case MODE_EDIT_SUPERGROUP:
+        case Mode.EDIT_CHANNEL:
+        case Mode.EDIT_SUPERGROUP:
           supergroupFull = tdlib.cache().supergroupFull(supergroup.id);
           if (supergroupFull == null)
             throw new IllegalStateException("id:" + supergroup.id);
           break;
-        case MODE_EDIT_GROUP:
+        case Mode.EDIT_GROUP:
           groupFull = tdlib.cache().basicGroupFull(group.id);
           if (groupFull == null)
             throw new IllegalStateException("id:" + group.id);
+          break;
+        case Mode.EDIT_BOT_USER:
+          userFull = tdlib.cache().userFull(user.id);
+          if (userFull == null)
+            throw new IllegalStateException(Long.toString(user.id));
           break;
       }
     }
@@ -328,7 +355,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private void replaceWithSupergroup (long supergroupId) {
     if (isDestroyed())
       return;
-    if (mode != MODE_EDIT_GROUP && mode != MODE_GROUP)
+    if (mode != Mode.EDIT_GROUP && mode != Mode.GROUP)
       return;
     if (isEditing()) {
       TdApi.SupergroupFullInfo supergroupFullInfo = tdlib.cache().supergroupFull(supergroupId);
@@ -376,9 +403,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   @Override
   protected int getMenuId () {
     switch (mode) {
-      case MODE_SECRET:
+      case Mode.SECRET:
         return R.id.menu_profile_secret;
-      case MODE_USER:
+      case Mode.USER:
         return TD.isBot(user) ? R.id.menu_profile_bot : user != null && (user.id == 0 || (user.type.getConstructor() != TdApi.UserTypeRegular.CONSTRUCTOR && user.type.getConstructor() != TdApi.UserTypeBot.CONSTRUCTOR)) ? 0 : R.id.menu_profile_private;
       default:
         return isEditing() ? R.id.menu_profile_manage : R.id.menu_profile;
@@ -398,23 +425,24 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
       int buttonColorId = getHeaderIconColorId();
 
-      if (mode == MODE_SECRET || mode == MODE_USER) {
+      if (mode == Mode.SECRET || mode == Mode.USER) {
         callButton = header.addButton(realMenu, R.id.menu_btn_call, R.drawable.baseline_phone_24, buttonColorId, this, Screen.dp(48f));
         callButton.setAlpha(userFull != null && (userFull.canBeCalled || userFull.hasPrivateCalls) ? 1f : 0f);
       }
 
-      if (mode == MODE_SECRET) {
+      if (mode == Mode.SECRET) {
         StopwatchHeaderButton headerButton = header.addStopwatchButton(realMenu, this);
         headerButton.forceValue(tdlib.ui().getTTLShort(chat.id), tdlib.canChangeMessageAutoDeleteTime(chat.id));
         if (!headerButton.getIsVisible()) {
           callButton.setTranslationX(Screen.dp(StopwatchHeaderButton.WIDTH));
         }
       }
-      if (id == R.id.menu_profile) {
+      if (id == R.id.menu_profile || id == R.id.menu_profile_bot) {
         HeaderButton button = header.addButton(realMenu, R.id.menu_btn_manage, R.drawable.baseline_edit_24, buttonColorId, this, Screen.dp(49f));
         button.setVisibility(canManageChat() ? View.VISIBLE : View.GONE);
-
-        button = header.addButton(realMenu, R.id.menu_btn_addContact, R.drawable.baseline_person_add_24, buttonColorId, this, Screen.dp(49f));
+      }
+      if (id == R.id.menu_profile) {
+        HeaderButton button = header.addButton(realMenu, R.id.menu_btn_addContact, R.drawable.baseline_person_add_24, buttonColorId, this, Screen.dp(49f));
         button.setVisibility(canAddAnyKindOfMembers() ? View.VISIBLE : View.GONE);
       }
       HeaderButton moreButton = header.addMoreButton(realMenu, this, buttonColorId);
@@ -427,7 +455,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       transformedMenu.setOrientation(LinearLayout.HORIZONTAL);
       transformedMenu.setAlpha(0f);
       transformedMenu.setTranslationY(HeaderView.getSize(false));
-      if (Config.USE_SECRET_SEARCH || mode != MODE_SECRET) {
+      if (Config.USE_SECRET_SEARCH || mode != Mode.SECRET) {
         HeaderButton button = header.addSearchButton(transformedMenu, this, ColorId.icon).setThemeColorId(ColorId.icon);
         List<SharedBaseController<?>> list = getControllers();
         button.setVisibility(!list.isEmpty() && list.get(0).canSearch() ? View.VISIBLE : View.INVISIBLE);
@@ -515,20 +543,20 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private void showMore () {
     switch (mode) {
-      case MODE_USER:
-      case MODE_SECRET: {
+      case Mode.USER:
+      case Mode.SECRET: {
         showPrivateMore();
         break;
       }
-      case MODE_GROUP:
-      case MODE_SUPERGROUP:
-      case MODE_CHANNEL: {
+      case Mode.GROUP:
+      case Mode.SUPERGROUP:
+      case Mode.CHANNEL: {
         showCommonMore();
         break;
       }
-      case MODE_EDIT_GROUP:
-      case MODE_EDIT_CHANNEL:
-      case MODE_EDIT_SUPERGROUP: {
+      case Mode.EDIT_GROUP:
+      case Mode.EDIT_CHANNEL:
+      case Mode.EDIT_SUPERGROUP: {
         int count = 0;
         if (canClearHistory())
           count++;
@@ -569,12 +597,22 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     IntList ids = new IntList(4);
     StringList strings = new StringList(4);
 
-    if (isBot && ((TdApi.UserTypeBot) user.type).canJoinGroups) {
-      ids.append(R.id.more_btn_addToGroup);
-      strings.append(R.string.BotInvite);
+    if (isBot) {
+      if (TD.canEditBot(user)) {
+        ids.append(R.id.more_btn_edit);
+        strings.append(R.string.EditBotName);
+        /*if (userFull != null) {
+          ids.append(R.id.more_btn_editDescription);
+          strings.append(R.string.EditBotDescription);
+        }*/
+      }
+      if (((TdApi.UserTypeBot) user.type).canJoinGroups) {
+        ids.append(R.id.more_btn_addToGroup);
+        strings.append(R.string.BotInvite);
+      }
     }
 
-    if (mode == MODE_USER && user.id != myUserId && !TD.isBot(user)) {
+    if (mode == Mode.USER && user.id != myUserId && !TD.isBot(user)) {
       ids.append(R.id.btn_newSecretChat);
       strings.append(R.string.StartEncryptedChat);
     }
@@ -617,7 +655,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       strings.append(R.string.AddContact);
     }
 
-    if (mode == MODE_SECRET) {
+    if (mode == Mode.SECRET) {
       ids.append(R.id.more_btn_cloudChat);
       strings.append(R.string.OpenCloudChat);
     }
@@ -638,14 +676,14 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       ids.append(R.id.more_btn_addMember);
       strings.append(Lang.getString(R.string.AddMember));
     }
-    if (mode == MODE_CHANNEL || mode == MODE_SUPERGROUP) {
+    if (mode == Mode.CHANNEL || mode == Mode.SUPERGROUP) {
       if (Td.hasUsername(supergroup)) {
         ids.append(R.id.more_btn_share);
         strings.append(R.string.Share);
       }
     }
 
-    if (mode == MODE_SUPERGROUP || mode == MODE_GROUP) {
+    if (mode == Mode.SUPERGROUP || mode == Mode.GROUP) {
       if (!canManageChat()) {
         ids.append(R.id.more_btn_viewAdmins);
         strings.append(R.string.ViewAdmins);
@@ -680,9 +718,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       return;
     }
     switch (mode) {
-      case MODE_EDIT_CHANNEL:
-      case MODE_EDIT_SUPERGROUP:
-      case MODE_EDIT_GROUP: {
+      case Mode.EDIT_CHANNEL:
+      case Mode.EDIT_SUPERGROUP:
+      case Mode.EDIT_GROUP: {
         if (id == R.id.btn_destroyChat) {
           destroyChat();
         } else if (id == R.id.btn_inviteLink) {
@@ -690,11 +728,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         }
         break;
       }
-      case MODE_USER:
-      case MODE_SECRET: {
+      case Mode.USER:
+      case Mode.SECRET: {
         if (userFull != null && !tdlib.ui().handleProfileMore(this, id, user, userFull)) {
           if (id == R.id.more_btn_cloudChat) {
             tdlib.ui().openPrivateChat(this, user.id, null);
+          } else if (id == R.id.more_btn_editDescription && TD.canEditBot(user)) {
+            editDescription(true);
           } else if (id == R.id.btn_newSecretChat) {
             tdlib.ui().startSecretChat(this, user.id, true, null);
           } else if (id == R.id.more_btn_privacy) {
@@ -730,9 +770,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         }
         break;
       }
-      case MODE_SUPERGROUP:
-      case MODE_CHANNEL:
-      case MODE_GROUP: {
+      case Mode.SUPERGROUP:
+      case Mode.CHANNEL:
+      case Mode.GROUP: {
         if (id == R.id.more_btn_addMember) {
           addMember(null);
         } else if (id == R.id.btn_recentActions) {
@@ -749,7 +789,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         } else if (id == R.id.more_btn_viewStats) {
           openStats();
         } else if (id == R.id.more_btn_editDescription) {
-          editDescription();
+          editDescription(false);
           return;
         } else if (id == R.id.more_btn_join) {
           joinChannel();
@@ -805,7 +845,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (id == R.id.btn_copyText) {
       copyDescription();
     } else if (id == R.id.btn_editUsername) {
-      editChannelUsername();
+      editUsername();
     } else if (id == R.id.btn_manageInviteLinks) {
       openInviteLink();
     } else if (id == R.id.btn_manageJoinRequests) {
@@ -834,10 +874,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private boolean canEditDescription () {
     switch (mode) {
-      case MODE_SUPERGROUP:
-      case MODE_CHANNEL:
-      case MODE_GROUP:
+      case Mode.SUPERGROUP:
+      case Mode.CHANNEL:
+      case Mode.GROUP:
         return canChangeInfo();
+      case Mode.USER:
+        return TD.canEditBot(user);
     }
     return false;
   }
@@ -846,9 +888,17 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     return (supergroupFull != null && tdlib.canChangeInfo(chat)) || (groupFull != null && tdlib.canChangeInfo(chat));
   }
 
-  private void editDescription () {
+  private void editDescription (boolean needFull) {
     EditBioController c = new EditBioController(context, tdlib);
-    c.setArguments(new EditBioController.Arguments(getDescriptionValue(), chat.id).setBioChangeListener(this));
+    String currentBio;
+    if (needFull && TD.canEditBot(user)) {
+      currentBio = userFull.botInfo.description;
+    } else {
+      currentBio = getDescriptionValue();
+    }
+    c.setArguments(new EditBioController.Arguments(currentBio, chat.id)
+      .setBioChangeListener(this)
+      .setChangeFullDescription(needFull));
     navigateTo(c);
   }
 
@@ -871,7 +921,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   @Override
   public void onPrepareToShow () {
     super.onPrepareToShow();
-    if (mode == MODE_SECRET) {
+    if (mode == Mode.SECRET) {
       tdlib.ui().updateTTLButton(R.id.menu_secretChat, headerView, chat, true);
     }
     if (headerView != null) {
@@ -913,7 +963,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   protected void onFloatingButtonPressed () {
-    if (mode == MODE_CHANNEL && FeatureToggles.CHANNEL_PROFILE_FLOATING_BUTTON_OPENS_DISCUSSION_GROUP) {
+    if (mode == Mode.CHANNEL && FeatureToggles.CHANNEL_PROFILE_FLOATING_BUTTON_OPENS_DISCUSSION_GROUP) {
       if (supergroup != null && supergroup.isChannel && supergroup.hasLinkedChat) {
         long linkedChatId = supergroupFull != null ? supergroupFull.linkedChatId : 0;
         if (linkedChatId != 0) {
@@ -1379,6 +1429,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       public boolean onInterceptTouchEvent (MotionEvent ev) {
         switch (ev.getAction()) {
           case MotionEvent.ACTION_DOWN: {
+            if (controllers.isEmpty()) {
+              isIntercepting = false;
+              break;
+            }
             isIntercepting = true;
             float x = ev.getX();
             float y = ev.getY();
@@ -1729,7 +1783,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           if (canEditDescription() && !hasDescription()) {
             view.setName(R.string.TapToSetup);
           } else {
-            view.setName(isUserMode() && !TD.isBot(user) ? R.string.UserBio : R.string.Description);
+            view.setName(TD.isBot(user) ? R.string.BotInfo : isUserMode() ? R.string.UserBio : R.string.Description);
           }
         } else if (itemId == R.id.btn_manageInviteLinks) {
           if (inviteLinksCount == -1) {
@@ -1744,12 +1798,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         } else if (itemId == R.id.btn_inviteLink) {
           TdApi.ChatInviteLink inviteLink;
           switch (mode) {
-            case MODE_GROUP: {
+            case Mode.GROUP: {
               inviteLink = groupFull != null ? groupFull.inviteLink : null;
               break;
             }
-            case MODE_SUPERGROUP:
-            case MODE_CHANNEL: {
+            case Mode.SUPERGROUP:
+            case Mode.CHANNEL: {
               inviteLink = supergroupFull != null ? supergroupFull.inviteLink : null;
               break;
             }
@@ -1795,8 +1849,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           // EDIT stuff
         } else if (itemId == R.id.btn_channelType) {
           switch (mode) {
-            case MODE_EDIT_SUPERGROUP:
-            case MODE_EDIT_CHANNEL: {
+            case Mode.EDIT_SUPERGROUP:
+            case Mode.EDIT_CHANNEL: {
               if (Td.isEmpty(supergroup.usernames)) {
                 // view.setName(supergroup.isChannel ? R.string.ChannelType : R.string.GroupType);
                 view.setData(supergroup.isChannel ? R.string.ChannelLinkSet : R.string.GroupLinkSet);
@@ -1806,16 +1860,27 @@ public class ProfileController extends ViewController<ProfileController.Args> im
               }
               break;
             }
-            case MODE_EDIT_GROUP: {
+            case Mode.EDIT_GROUP: {
               // view.setName(R.string.GroupType);
               view.setData(R.string.GroupLinkSet);
               break;
             }
+            case Mode.EDIT_BOT_USER: {
+              view.setData(tdlib.tMeUrl(user.usernames, true));
+              break;
+            }
+          }
+        } else if (itemId == R.id.btn_botDescription) {
+          String description = userFull.botInfo != null ? userFull.botInfo.description : "";
+          if (!StringUtils.isEmpty(description)) {
+            view.setData(description);
+          } else {
+            view.setData(R.string.BotDescriptionEmpty);
           }
         } else if (itemId == R.id.btn_linkedChat) {
           switch (mode) {
-            case MODE_EDIT_SUPERGROUP:
-            case MODE_EDIT_CHANNEL: {
+            case Mode.EDIT_SUPERGROUP:
+            case Mode.EDIT_CHANNEL: {
               if (supergroup.hasLinkedChat) {
                 TdApi.Chat chat = supergroupFull != null && supergroupFull.linkedChatId != 0 ? tdlib.chat(supergroupFull.linkedChatId) : null;
                 String username = chat != null ? tdlib.chatUsername(chat.id) : null;
@@ -1825,17 +1890,17 @@ public class ProfileController extends ViewController<ProfileController.Args> im
               }
               break;
             }
-            case MODE_EDIT_GROUP: {
+            case Mode.EDIT_GROUP: {
               view.setData(R.string.LinkChannel);
               break;
             }
           }
         } else if (itemId == R.id.btn_prehistoryMode) {
           switch (mode) {
-            case MODE_EDIT_SUPERGROUP:
+            case Mode.EDIT_SUPERGROUP:
               view.setData(supergroupFull != null ? (supergroupFull.isAllHistoryAvailable ? R.string.ChatHistoryVisible : R.string.ChatHistoryHidden) : R.string.LoadingInformation);
               break;
-            case MODE_EDIT_GROUP:
+            case Mode.EDIT_GROUP:
               view.setData(R.string.ChatHistoryHidden);
               break;
           }
@@ -1883,11 +1948,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
     // Binding data
     if (headerCell != null) {
-      headerCell.setShowLock(mode == MODE_SECRET);
+      headerCell.setShowLock(mode == Mode.SECRET);
       setHeaderMute(false);
       setHeaderText();
       setHeaderPhoto(false);
-      if (mode == MODE_SECRET) {
+      if (mode == Mode.SECRET) {
         tdlib.ui().updateTTLButton(getMenuId(), headerView, chat, true);
       }
     }
@@ -1899,17 +1964,17 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       tdlib.refreshChatState(chat.id);
 
       switch (mode) {
-        case MODE_USER:
-        case MODE_SECRET: {
+        case Mode.USER:
+        case Mode.SECRET: {
           processUserFull(tdlib.cache().userFull(user.id));
           break;
         }
-        case MODE_GROUP: {
+        case Mode.GROUP: {
           processGroupFull(tdlib.cache().basicGroupFull(group.id));
           break;
         }
-        case MODE_SUPERGROUP:
-        case MODE_CHANNEL: {
+        case Mode.SUPERGROUP:
+        case Mode.CHANNEL: {
           processChannelFull(tdlib.cache().supergroupFull(supergroup.id));
           break;
         }
@@ -1968,10 +2033,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private int calculateMenuWidth () {
     int totalWidth = 0;
-    if (mode == MODE_SECRET || mode == MODE_USER) {
+    if (mode == Mode.SECRET || mode == Mode.USER) {
       totalWidth += Screen.dp(48f);
     }
-    if (mode == MODE_SECRET && tdlib.canChangeMessageAutoDeleteTime(chat.id)) {
+    if (mode == Mode.SECRET && tdlib.canChangeMessageAutoDeleteTime(chat.id)) {
       totalWidth += Screen.dp(StopwatchHeaderButton.WIDTH);
     }
     final int menuId = getMenuId();
@@ -2009,10 +2074,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private boolean needTabs () {
     switch (mode) {
-      case MODE_EDIT_GROUP:
+      case Mode.EDIT_GROUP:
         return TD.isCreator(group.status);
-      case MODE_EDIT_SUPERGROUP:
+      case Mode.EDIT_SUPERGROUP:
         return TD.isAdmin(supergroup.status);
+      case Mode.EDIT_BOT_USER:
+        return false;
     }
     return true;
   }
@@ -2238,24 +2305,25 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private void buildCells () {
     switch (mode) {
-      case MODE_USER:
-      case MODE_SECRET: {
+      case Mode.USER:
+      case Mode.SECRET: {
         buildUserCells();
         break;
       }
-      case MODE_SUPERGROUP:
-      case MODE_GROUP: {
+      case Mode.SUPERGROUP:
+      case Mode.GROUP: {
         buildGroupCells();
         break;
       }
-      case MODE_CHANNEL: {
+      case Mode.CHANNEL: {
         buildChannelCells();
         break;
       }
 
-      case MODE_EDIT_GROUP:
-      case MODE_EDIT_CHANNEL:
-      case MODE_EDIT_SUPERGROUP: {
+      case Mode.EDIT_GROUP:
+      case Mode.EDIT_CHANNEL:
+      case Mode.EDIT_SUPERGROUP:
+      case Mode.EDIT_BOT_USER: {
         buildEditCells();
         break;
       }
@@ -2279,7 +2347,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private boolean setDescription (TdApi.FormattedText text) {
     if (Td.isEmpty(text)) {
       if (canEditDescription()) {
-        text = TD.toFormattedText(Lang.getString(R.string.Description), false);
+        text = TD.toFormattedText(Lang.getString(TD.isBot(user) ? R.string.BotInfo : R.string.Description), false);
       } else {
         text = null;
       }
@@ -2332,7 +2400,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private ListItem newDescriptionItem () {
-    return new ListItem(ListItem.TYPE_INFO_MULTILINE, R.id.btn_description, R.drawable.baseline_info_24, isUserMode() && !TD.isBot(user) ? R.string.UserBio : R.string.Description);
+    return new ListItem(ListItem.TYPE_INFO_MULTILINE, R.id.btn_description, R.drawable.baseline_info_24, TD.isBot(user) ? R.string.BotInfo : isUserMode() ? R.string.UserBio : R.string.Description);
   }
 
   private ListItem newPeerIdItem () {
@@ -2382,7 +2450,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         items.add(newPhoneItem());
         addedCount++;
       }
-      if (mode == MODE_SECRET && TD.hasEncryptionKey(secretChat)) {
+      if (mode == Mode.SECRET && TD.hasEncryptionKey(secretChat)) {
         if (addedCount > 0) {
           items.add(new ListItem(ListItem.TYPE_SEPARATOR));
         }
@@ -2434,7 +2502,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private void checkUserButtons () {
-    if (headerView != null) {
+    if (headerView != null && !isEditing()) {
       headerView.updateButtonAlpha(getMenuId(), R.id.menu_btn_call, userFull.canBeCalled || userFull.hasPrivateCalls ? 1f : 0f);
     }
   }
@@ -2467,6 +2535,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private void checkGroupsInCommon () {
+    if (isEditing()) {
+      return;
+    }
     final boolean needGroups = userFull != null && userFull.groupInCommonCount > 0;
     final SharedChatsController existingGroupsController = getGroupsController();
     boolean hasGroups = existingGroupsController != null;
@@ -2618,7 +2689,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private void removeMembersItemIfNeeded () {
-    if (mode == MODE_SUPERGROUP) {
+    if (mode == Mode.SUPERGROUP) {
       removeTopItem(baseAdapter.indexOfViewById(R.id.membersList));
     }
   }
@@ -2706,7 +2777,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private int testerLevel = -1;
 
   private void checkEasterEggs () {
-    if (mode != MODE_CHANNEL)
+    if (mode != Mode.CHANNEL)
       return;
     long chatId = getChatId();
     if (chatId == Tdlib.TRENDING_STICKERS_CHAT_ID && Config.EXPLICIT_DICE_AVAILABLE) {
@@ -2742,13 +2813,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private void checkUsername () {
     TdApi.Usernames usernames;
     switch (mode) {
-      case MODE_USER:
-      case MODE_SECRET: {
+      case Mode.USER:
+      case Mode.SECRET: {
         usernames = user.usernames;
         break;
       }
-      case MODE_CHANNEL:
-      case MODE_SUPERGROUP: {
+      case Mode.CHANNEL:
+      case Mode.SUPERGROUP: {
         usernames = supergroup.usernames;
         break;
       }
@@ -2763,14 +2834,14 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       if (hadUsername) {
         removeTopItem(foundIndex);
         switch (mode) {
-          case MODE_SUPERGROUP: {
+          case Mode.SUPERGROUP: {
             if (tdlib.canCreateInviteLink(chat)) {
               addInviteLink();
             }
             setHeaderText();
             break;
           }
-          case MODE_CHANNEL: {
+          case Mode.CHANNEL: {
             if (tdlib.canCreateInviteLink(chat)) {
               addInviteLink();
             }
@@ -2787,7 +2858,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           addTopItem(usernameItem, index);
 
           switch (mode) {
-            case MODE_SUPERGROUP: {
+            case Mode.SUPERGROUP: {
               removeMembersItemIfNeeded();
               if (tdlib.canCreateInviteLink(chat)) {
                 removeInviteLink();
@@ -2795,7 +2866,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
               setHeaderText();
               break;
             }
-            case MODE_CHANNEL: {
+            case Mode.CHANNEL: {
               if (tdlib.canCreateInviteLink(chat)) {
                 removeInviteLink();
               }
@@ -2886,24 +2957,22 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   // Group
 
   private boolean isPublicGroup () {
-    return (mode == MODE_SUPERGROUP || mode == MODE_EDIT_SUPERGROUP) && Td.hasUsername(supergroup);
+    return (mode == Mode.SUPERGROUP || mode == Mode.EDIT_SUPERGROUP) && Td.hasUsername(supergroup);
   }
 
   private boolean isPublicChannel () {
-    return (mode == MODE_CHANNEL || mode == MODE_EDIT_CHANNEL) && Td.hasUsername(supergroup);
+    return (mode == Mode.CHANNEL || mode == Mode.EDIT_CHANNEL) && Td.hasUsername(supergroup);
   }
 
   private boolean canManageChat () {
+    if (mode == Mode.USER) {
+      return TD.canEditBot(user);
+    }
     if (tdlib.canChangeInfo(chat)) {
       return true;
     }
-    switch (mode) {
-      /*case MODE_GROUP:
-        return TD.isAdmin(group.status);*/
-      case MODE_CHANNEL:
-        return TD.isAdmin(supergroup.status);
-      case MODE_SUPERGROUP: // ((TdApi.ChatMember) null).joinedChatDate
-        return TD.isAdmin(supergroup.status);
+    if (mode == Mode.CHANNEL || mode == Mode.SUPERGROUP) {
+      return TD.isAdmin(supergroup.status);
     }
     return false;
   }
@@ -3114,9 +3183,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private boolean isEditing () {
     switch (mode) {
-      case MODE_EDIT_CHANNEL:
-      case MODE_EDIT_GROUP:
-      case MODE_EDIT_SUPERGROUP:
+      case Mode.EDIT_CHANNEL:
+      case Mode.EDIT_GROUP:
+      case Mode.EDIT_SUPERGROUP:
+      case Mode.EDIT_BOT_USER:
         return true;
     }
     return false;
@@ -3131,7 +3201,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (supergroupFull != null) {
       runnable.setSupergroupFeatureValue(supergroup.id, supergroupFull, newValue);
       baseAdapter.updateValuedSettingById(toggleViewId);
-    } else if (mode == MODE_EDIT_GROUP) {
+    } else if (mode == Mode.EDIT_GROUP) {
       showConfirm(Lang.getMarkdownString(this, R.string.UpgradeChatPrompt), Lang.getString(R.string.Proceed), () ->
         tdlib.upgradeToSupergroup(chat.id, (oldChatId, newChatId, error) -> {
           if (newChatId != 0) {
@@ -3300,7 +3370,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     navigateTo(c);
   }
 
-  private void editChannelUsername () {
+  private void editUsername () {
     EditUsernameController c = new EditUsernameController(context, tdlib);
     c.setArguments(new EditUsernameController.Args(chat.id));
     navigateTo(c);
@@ -3316,7 +3386,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         }
       };
     switch (mode) {
-      case MODE_EDIT_CHANNEL: {
+      case Mode.EDIT_CHANNEL: {
         int size = linkedChat != null ? 3 : 2;
         IntList ids = new IntList(size);
         StringList strings = new StringList(size);
@@ -3383,7 +3453,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         }, null);
         break;
       }
-      case MODE_EDIT_SUPERGROUP: {
+      case Mode.EDIT_SUPERGROUP: {
         if (linkedChat == null)
           return;
         CharSequence info = Lang.getString(R.string.GroupChannelInfo, linkedChatCreator, tdlib.chatTitle(linkedChat));
@@ -3529,7 +3599,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   @Override
   public boolean onDoneClick (View v) {
     applyChatChanges();
-    return false; // mode == MODE_EDIT_GROUP && !TD.isCreator(group.status);
+    return false; // mode == Mode.EDIT_GROUP && !TD.isCreator(group.status);
   }
 
   private void modifyEditTextImpl (ListItem item, ViewGroup parent, MaterialEditTextGroup editText) {
@@ -3583,13 +3653,21 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           UI.showToast(R.string.ChatTitleEmpty, Toast.LENGTH_SHORT);
           return;
         }
-        changes.add(new TdApi.SetChatTitle(chat.id, newTitle));
+        if (mode == Mode.EDIT_BOT_USER) {
+          changes.add(new TdApi.SetBotName(tdlib.chatUserId(chat.id), "", newTitle));
+        } else {
+          changes.add(new TdApi.SetChatTitle(chat.id, newTitle));
+        }
       }
     }
     final String newDescription = chatDescriptionItem != null ? chatDescriptionItem.getStringValue() : null;
     if (chatDescriptionItem != null) {
       if (!StringUtils.equalsOrBothEmpty(getDescriptionValue(), chatDescriptionItem.getStringValue())) {
-        changes.add(new TdApi.SetChatDescription(chat.id, newDescription));
+        if (mode == Mode.EDIT_BOT_USER) {
+          changes.add(new TdApi.SetBotInfoShortDescription(tdlib.chatUserId(chat.id), "", newDescription));
+        } else {
+          changes.add(new TdApi.SetChatDescription(chat.id, newDescription));
+        }
       }
     }
 
@@ -3730,8 +3808,26 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private void buildEditCells () {
     ArrayList<ListItem> items = new ArrayList<>();
 
-    if (tdlib.canChangeInfo(chat)) {
-      chatTitleItem = new ListItem(mode == MODE_EDIT_GROUP ? ListItem.TYPE_EDITTEXT_WITH_PHOTO : ListItem.TYPE_EDITTEXT_WITH_PHOTO_SMALLER, R.id.title, 0, mode == MODE_EDIT_CHANNEL ? R.string.ChannelName : R.string.GroupName)
+    if (tdlib.canChangeInfo(chat) || TD.canEditBot(user)) {
+      @StringRes int titleRes, descRes;
+      switch (mode) {
+        case Mode.EDIT_CHANNEL:
+          titleRes = R.string.ChannelName;
+          descRes = R.string.Description;
+          break;
+        case Mode.EDIT_SUPERGROUP:
+        case Mode.EDIT_GROUP:
+          titleRes = R.string.GroupName;
+          descRes = R.string.Description;
+          break;
+        case Mode.EDIT_BOT_USER:
+          titleRes = R.string.BotName;
+          descRes = R.string.BotInfo;
+          break;
+        default:
+          throw new IllegalStateException();
+      }
+      chatTitleItem = new ListItem(ListItem.TYPE_EDITTEXT_WITH_PHOTO, R.id.title, 0, titleRes)
         .setStringValue(chat.title)
         .setInputFilters(new InputFilter[]{
           new CodePointCountFilter(TdConstants.MAX_CHAT_TITLE_LENGTH),
@@ -3741,7 +3837,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         .setOnEditorActionListener(new EditBaseController.SimpleEditorActionListener(EditorInfo.IME_ACTION_DONE, this));
       items.add(chatTitleItem);
 
-      chatDescriptionItem = new ListItem(ListItem.TYPE_EDITTEXT_CHANNEL_DESCRIPTION, R.id.description, 0, R.string.Description).setStringValue(getDescriptionValue()).setInputFilters(new InputFilter[]{
+      chatDescriptionItem = new ListItem(ListItem.TYPE_EDITTEXT_CHANNEL_DESCRIPTION, R.id.description, 0, descRes).setStringValue(getDescriptionValue()).setInputFilters(new InputFilter[]{
         new CodePointCountFilter(TdConstants.MAX_CHANNEL_DESCRIPTION_LENGTH),
         new EmojiFilter(),
         new CharacterStyleFilter()
@@ -3763,19 +3859,24 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         }
       });
     } else {
-      items.add(new ListItem(ListItem.TYPE_CHAT_BETTER).setData(new TGFoundChat(tdlib, null, chat.id, false)));
+      TGFoundChat displayChat = new TGFoundChat(tdlib, null, chat.id, false);
+      items.add(new ListItem(ListItem.TYPE_CHAT_BETTER).setData(displayChat));
     }
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM, R.id.shadowMiddle));
 
-    TdApi.ChatMemberStatus myStatus = supergroup != null ? supergroup.status : group.status;
+    TdApi.ChatMemberStatus myStatus = tdlib.chatStatus(chat.id);
 
     int itemCount = 0;
     if (canSetUsername()) {
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_channelType, 0, mode == MODE_EDIT_CHANNEL ? R.string.ChannelLink : R.string.GroupLink));
+      if (mode == Mode.EDIT_BOT_USER) {
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_channelType, R.drawable.baseline_link_24, R.string.EditBotUsername));
+      } else {
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_channelType, 0, mode == Mode.EDIT_CHANNEL ? R.string.ChannelLink : R.string.GroupLink));
+      }
       itemCount++;
     }
-    if (canChangeInfo() && supergroupFull != null && (mode == MODE_EDIT_CHANNEL || (mode == MODE_EDIT_SUPERGROUP && supergroupFull.linkedChatId != 0))) {
+    if (canChangeInfo() && supergroupFull != null && (mode == Mode.EDIT_CHANNEL || (mode == Mode.EDIT_SUPERGROUP && supergroupFull.linkedChatId != 0))) {
       items.add(new ListItem(itemCount > 0 ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
       items.add(newLinkedChatItem());
       itemCount++;
@@ -3807,11 +3908,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(toggleSignMessagesItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleSignatures, 0, R.string.ChannelSignMessages, supergroup.signMessages));
       added = true;
     }
-    if (tdlib.canToggleContentProtection(chat.id) || TD.isAdmin(supergroup != null ? supergroup.status : group.status)) {
+    if (tdlib.canToggleContentProtection(chat.id) || (myStatus != null && TD.isAdmin(myStatus))) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
       items.add(toggleHasProtectionItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleProtection, 0, R.string.RestrictSaving, chat.hasProtectedContent));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, mode == MODE_EDIT_CHANNEL ? R.string.RestrictSavingChannelHint : R.string.RestrictSavingGroupHint));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, mode == Mode.EDIT_CHANNEL ? R.string.RestrictSavingChannelHint : R.string.RestrictSavingGroupHint));
       added = false;
     }
     if (tdlib.canToggleAllHistory(chat)) {
@@ -3819,9 +3920,32 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_prehistoryMode, 0, R.string.ChatHistory));
       added = true;
     }
-    if (!isChannel()) {
+    if (!isChannel() && mode != Mode.EDIT_BOT_USER) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_chatPermissions, 0, R.string.ChatPermissions));
+      added = true;
+    }
+
+    if (mode == Mode.EDIT_BOT_USER) {
+      items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_botDescription, R.drawable.dotvhs_baseline_help_24, R.string.EditBotDescription));
+      if (userFull.botInfo != null) {
+        if (userFull.botInfo.editDescriptionMediaLink != null) {
+          items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_botEdit, R.drawable.baseline_image_24, R.string.EditBotDescriptionMedia)
+            .setData(userFull.botInfo.editDescriptionMediaLink));
+        }
+        if (userFull.botInfo.editCommandsLink != null) {
+          items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_botEdit, R.drawable.dotvhs_baseline_command_24, R.string.EditBotCommands)
+            .setData(userFull.botInfo.editCommandsLink));
+        }
+        if (userFull.botInfo.editSettingsLink != null) {
+          items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_botEdit, R.drawable.dotvhs_baseline_settings_24, R.string.EditBotSettings)
+            .setData(userFull.botInfo.editSettingsLink));
+        }
+      }
       added = true;
     }
 
@@ -3837,7 +3961,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       added = true;
     }
     boolean hasActions = false;
-    if (TD.isAdmin(myStatus) && supergroup != null) { // TODO server: recent actions for basic groups?
+
+    if (supergroup != null && TD.isAdmin(myStatus)) { // TODO server: recent actions for basic groups?
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_recentActions, 0, R.string.EventLog));
       added = true;
@@ -3846,7 +3971,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (added)
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM, R.id.belowRecentActions));
     if (hasActions) {
-      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, mode == MODE_EDIT_CHANNEL ? R.string.RecentActionsChannelHint : R.string.RecentActionsGroupHint));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, mode == Mode.EDIT_CHANNEL ? R.string.RecentActionsChannelHint : R.string.RecentActionsGroupHint));
+    } else if (mode == Mode.EDIT_BOT_USER) {
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, TD.makeClickable(Lang.getMarkdownStringSecure(this, R.string.EditBotHint)), false));
     }
 
     if ((supergroupFull != null && supergroupFull.canToggleAggressiveAntiSpam) || (groupFull != null && groupFull.canToggleAggressiveAntiSpam && tdlib.canUpgradeChat(chat.id))) {
@@ -3923,11 +4050,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(ttlDescItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.btn_chatTtlDescription, 0, getTtlDescription(ttlValue, isChannel), false));
     }
 
-    addMediaItems(items);
+    if (mode != Mode.EDIT_BOT_USER) {
+      addMediaItems(items);
+    }
     baseAdapter.setItems(items, false);
 
     if (tdlib.canInviteUsers(chat)) {
-      requestInviteLinks(tdlib.chatStatus(chat.id).getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR);
+      requestInviteLinks(TD.isCreator(myStatus));
     }
   }
 
@@ -4017,13 +4146,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     baseAdapter.updateValuedSettingById(R.id.btn_toggleProtection);
 
     switch (mode) {
-      case MODE_EDIT_SUPERGROUP: {
+      case Mode.EDIT_SUPERGROUP: {
         baseAdapter.updateValuedSettingById(R.id.btn_channelType);
         baseAdapter.updateValuedSettingById(R.id.btn_linkedChat);
         checkPrehistory();
         break;
       }
-      case MODE_EDIT_CHANNEL: {
+      case Mode.EDIT_CHANNEL: {
         baseAdapter.updateValuedSettingById(R.id.btn_toggleSignatures);
         baseAdapter.updateValuedSettingById(R.id.btn_linkedChat);
         baseAdapter.updateValuedSettingById(R.id.btn_channelType);
@@ -4033,18 +4162,20 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private ListItem newLinkedChatItem () {
-    return new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_linkedChat, 0, mode == MODE_EDIT_CHANNEL ? R.string.LinkedGroup : R.string.LinkedChannel);
+    return new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_linkedChat, 0, mode == Mode.EDIT_CHANNEL ? R.string.LinkedGroup : R.string.LinkedChannel);
   }
 
   @Override
   public CharSequence getName () {
     switch (mode) {
-      case MODE_EDIT_GROUP:
+      case Mode.EDIT_GROUP:
         return Lang.getString(TD.isCreator(group.status) ? R.string.ManageGroup : TD.isAdmin(group.status) || chat.permissions.canChangeInfo ? R.string.EditGroup : R.string.GroupInfo);
-      case MODE_EDIT_SUPERGROUP:
+      case Mode.EDIT_SUPERGROUP:
         return Lang.getString(TD.isAdmin(supergroup.status) ? R.string.ManageGroup : chat.permissions.canChangeInfo ? R.string.EditGroup : R.string.GroupInfo);
-      case MODE_EDIT_CHANNEL:
+      case Mode.EDIT_CHANNEL:
         return Lang.getString(R.string.ManageChannel);
+      case Mode.EDIT_BOT_USER:
+        return Lang.getString(R.string.EditBot);
     }
     return super.getName();
   }
@@ -4052,27 +4183,27 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   // Utils
 
   public boolean isSupergroup () {
-    return (mode == MODE_SUPERGROUP || mode == MODE_EDIT_SUPERGROUP);
+    return (mode == Mode.SUPERGROUP || mode == Mode.EDIT_SUPERGROUP);
   }
 
   public boolean isBasicGroup () {
-    return (mode == MODE_GROUP || mode == MODE_EDIT_GROUP);
+    return (mode == Mode.GROUP || mode == Mode.EDIT_GROUP);
   }
 
   public boolean isChannel () {
-    return (mode == MODE_CHANNEL || mode == MODE_EDIT_CHANNEL);
+    return (mode == Mode.CHANNEL || mode == Mode.EDIT_CHANNEL);
   }
 
   public boolean isCreator () {
     switch (mode) {
-      case MODE_GROUP:
-      case MODE_EDIT_GROUP: {
+      case Mode.GROUP:
+      case Mode.EDIT_GROUP: {
         return TD.isCreator(group.status);
       }
-      case MODE_SUPERGROUP:
-      case MODE_CHANNEL:
-      case MODE_EDIT_CHANNEL:
-      case MODE_EDIT_SUPERGROUP: {
+      case Mode.SUPERGROUP:
+      case Mode.CHANNEL:
+      case Mode.EDIT_CHANNEL:
+      case Mode.EDIT_SUPERGROUP: {
         return TD.isCreator(supergroup.status);
       }
     }
@@ -4080,15 +4211,15 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   public boolean isMember () {
-    return (mode == MODE_GROUP && !TD.isNotInChat(group.status)) || (mode != MODE_GROUP && !TD.isNotInChat(supergroup.status));
+    return (mode == Mode.GROUP && !TD.isNotInChat(group.status)) || (mode != Mode.GROUP && !TD.isNotInChat(supergroup.status));
   }
 
   // UI utils
 
   public boolean canBanMembers () {
     switch (mode) {
-      case MODE_SUPERGROUP:
-      case MODE_CHANNEL:
+      case Mode.SUPERGROUP:
+      case Mode.CHANNEL:
         switch (supergroup.status.getConstructor()) {
           case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
             return true;
@@ -4102,8 +4233,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   public boolean canPromoteMembers () {
     switch (mode) {
-      case MODE_SUPERGROUP:
-      case MODE_CHANNEL:
+      case Mode.SUPERGROUP:
+      case Mode.CHANNEL:
         switch (supergroup.status.getConstructor()) {
           case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
             return true;
@@ -4111,7 +4242,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             return ((TdApi.ChatMemberStatusAdministrator) supergroup.status).rights.canPromoteMembers;
         }
         break;
-      case MODE_GROUP:
+      case Mode.GROUP:
         return TD.isCreator(group.status);
     }
     return false;
@@ -4139,7 +4270,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private void addMember (View view) {
     if (canAddAnyKindOfMembers() && !isStackLocked()) {
-      if (mode == MODE_SUPERGROUP) {
+      if (mode == Mode.SUPERGROUP) {
         if (supergroupFull == null) {
           return;
         }
@@ -4170,7 +4301,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
       if (canBanMembers()) {
         ids.append(R.id.btn_banMember);
-        if (mode == MODE_SUPERGROUP) {
+        if (mode == Mode.SUPERGROUP) {
           icons.append(R.drawable.baseline_block_24);
           strings.append(R.string.BanMember);
         } else {
@@ -4406,19 +4537,20 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       String exportText;
       int textRes = R.string.ShareTextLink;
       switch (mode) {
-        case MODE_USER:
-        case MODE_SECRET:
+        case Mode.USER:
+        case Mode.SECRET:
+        case Mode.EDIT_BOT_USER:
           exportText = Lang.getString(tdlib.isBotChat(chat) ? R.string.ShareTextBotLink : R.string.ShareTextProfileLink, name, link);
           textRes = R.string.ShareTextProfileLink2;
           break;
-        case MODE_GROUP:
-        case MODE_EDIT_GROUP:
-        case MODE_SUPERGROUP:
-        case MODE_EDIT_SUPERGROUP:
+        case Mode.GROUP:
+        case Mode.EDIT_GROUP:
+        case Mode.SUPERGROUP:
+        case Mode.EDIT_SUPERGROUP:
           exportText = Lang.getString(R.string.ShareTextChatLink, name, link);
           break;
-        case MODE_CHANNEL:
-        case MODE_EDIT_CHANNEL:
+        case Mode.CHANNEL:
+        case Mode.EDIT_CHANNEL:
           exportText = Lang.getString(R.string.ShareTextChannelLink, name, link);
           break;
         default:
@@ -4435,8 +4567,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private void joinChannel () {
     switch (mode) {
-      case MODE_CHANNEL:
-      case MODE_SUPERGROUP: {
+      case Mode.CHANNEL:
+      case Mode.SUPERGROUP: {
         tdlib.client().send(new TdApi.AddChatMember(chat.id, tdlib.myUserId(), 0), tdlib.okHandler());
         break;
       }
@@ -4600,7 +4732,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       showOptions("@" + tdlib.chatUsername(chat.id), ids.get(), strings.get(), null, icons.get());
     } else if (viewId == R.id.btn_description) {
       if (canEditDescription() && !hasDescription()) {
-        editDescription();
+        editDescription(false);
         return;
       }
       if (Settings.instance().getChatTranslateMode() != Settings.TRANSLATE_MODE_NONE) {
@@ -4644,7 +4776,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     } else if (viewId == R.id.btn_enabledReactions) {
       openEnabledReactions();
     } else if (viewId == R.id.btn_channelType) {
-      editChannelUsername();
+      editUsername();
+    } else if (viewId == R.id.btn_botDescription) {
+      editDescription(true);
+    } else if (viewId == R.id.btn_botEdit) {
+      TdApi.InternalLinkType internalLinkType = (TdApi.InternalLinkType) ((ListItem) v.getTag()).getData();
+      tdlib.ui().openInternalLinkType(this, null, internalLinkType, new TdlibUi.UrlOpenParameters().ignoreExplicitUserInteraction(true), null);
     } else if (viewId == R.id.btn_linkedChat) {
       editLinkedChat();
     } else if (viewId == R.id.btn_toggleSignatures) {
@@ -4722,7 +4859,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private boolean canSetUsername () {
-    return (supergroup != null && TD.isCreator(supergroup.status)) || (group != null && TD.isCreator(group.status));
+    return
+      (supergroup != null && TD.isCreator(supergroup.status)) ||
+      (group != null && TD.isCreator(group.status)) ||
+      (mode == Mode.EDIT_BOT_USER && TD.canEditBot(user));
   }
 
   private TranslationControllerV2.Wrapper translationPopup;
@@ -4734,7 +4874,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
     if (canEditDescription()) {
       ids.append(R.id.btn_edit);
-      strings.append(R.string.edit);
+      strings.append(TD.canEditBot(user) ? R.string.EditBotInfo : R.string.edit);
       icons.append(R.drawable.baseline_edit_24);
     }
 
@@ -4752,7 +4892,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       if (id == R.id.btn_copyText) {
         copyDescription();
       } else if (id == R.id.btn_edit) {
-        editDescription();
+        editDescription(false);
       } else if (id == R.id.btn_chatTranslate) {
         translationPopup = new TranslationControllerV2.Wrapper(context, tdlib, this);
         translationPopup.setArguments(new TranslationControllerV2.Args(new TranslationsManager.Translatable() {
@@ -4779,12 +4919,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private TdApi.ChatInviteLink getInviteLink () {
     TdApi.ChatInviteLink inviteLink;
     switch (mode) {
-      case MODE_GROUP: {
+      case Mode.GROUP: {
         inviteLink = groupFull != null ? groupFull.inviteLink : null;
         break;
       }
-      case MODE_SUPERGROUP:
-      case MODE_CHANNEL: {
+      case Mode.SUPERGROUP:
+      case Mode.CHANNEL: {
         inviteLink = supergroupFull != null ? supergroupFull.inviteLink : null;
         break;
       }
@@ -4903,15 +5043,15 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   @Override
   public void onInviteLinkChanged (TdApi.ChatInviteLink newInviteLink) {
     switch (mode) {
-      case MODE_GROUP: {
+      case Mode.GROUP: {
         if (groupFull != null) {
           groupFull.inviteLink = newInviteLink;
           updateValuedItem(R.id.btn_inviteLink);
         }
         break;
       }
-      case MODE_CHANNEL:
-      case MODE_SUPERGROUP: {
+      case Mode.CHANNEL:
+      case Mode.SUPERGROUP: {
         if (supergroupFull != null) {
           supergroupFull.inviteLink = newInviteLink;
           updateValuedItem(R.id.btn_inviteLink);
@@ -5516,7 +5656,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private ArrayList<SharedBaseController<?>> getControllers () {
     if (controllers.isEmpty()) {
       switch (mode) {
-        case MODE_EDIT_CHANNEL: {
+        case Mode.EDIT_CHANNEL: {
           controllers.add(new SharedMembersController(context, tdlib)
             .setSpecificFilter(new TdApi.SupergroupMembersFilterAdministrators()));
           controllers.add(new SharedMembersController(context, tdlib)
@@ -5528,11 +5668,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           }
           break;
         }
-        case MODE_EDIT_SUPERGROUP:
-        case MODE_EDIT_GROUP: {
+        case Mode.EDIT_SUPERGROUP:
+        case Mode.EDIT_GROUP: {
           controllers.add(new SharedMembersController(context, tdlib)
             .setSpecificFilter(new TdApi.SupergroupMembersFilterAdministrators()));
-          if (mode == MODE_EDIT_SUPERGROUP ? TD.isAdmin(supergroup.status) : TD.isCreator(group.status)) {
+          if (mode == Mode.EDIT_SUPERGROUP ? TD.isAdmin(supergroup.status) : TD.isCreator(group.status)) {
             controllers.add(new SharedMembersController(context, tdlib)
               .setSpecificFilter(new TdApi.SupergroupMembersFilterRestricted()));
             controllers.add(new SharedMembersController(context, tdlib)
@@ -5540,12 +5680,16 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           }
           break;
         }
+        case Mode.EDIT_BOT_USER: {
+          // No tabs.
+          break;
+        }
         default: {
           String restrictionReason = tdlib.chatRestrictionReason(chat);
 
-          if (mode == MODE_GROUP) {
+          if (mode == Mode.GROUP) {
             controllers.add(new SharedMembersController(context, tdlib));
-          } else if (mode == MODE_SUPERGROUP) {
+          } else if (mode == Mode.SUPERGROUP) {
             TdApi.SupergroupFullInfo supergroupFull = tdlib.cache().supergroupFull(supergroup.id);
             if (supergroupFull != null && supergroupFull.canGetMembers) {
               SharedMembersController c = new SharedMembersController(context, tdlib);
@@ -5585,14 +5729,14 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           }
 
           switch (mode) {
-            case MODE_USER:
-            case MODE_SECRET:
+            case Mode.USER:
+            case Mode.SECRET:
               TdApi.UserFullInfo userFull = tdlib.cache().userFull(user.id);
               if (userFull != null && userFull.groupInCommonCount > 0) {
                 controllers.add(new SharedChatsController(context, tdlib));
               }
               break;
-            case MODE_CHANNEL:
+            case Mode.CHANNEL:
               // Nothing?
               break;
           }
@@ -5831,7 +5975,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   // Manage chat
 
   private void manageChat () {
-    if (supergroupFull != null || groupFull != null) {
+    if (supergroupFull != null || groupFull != null || (userFull != null && TD.canEditBot(user))) {
       ProfileController controller = new ProfileController(context, tdlib);
       controller.setArguments(new Args(chat, messageThread, true));
       navigateTo(controller);
@@ -5849,23 +5993,23 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     tdlib.listeners().subscribeToChatUpdates(chat.id, this);
 
     switch (mode) {
-      case MODE_USER:
-      case MODE_SECRET: {
+      case Mode.USER:
+      case Mode.SECRET: {
         tdlib.cache().subscribeToUserUpdates(user.id, this);
-        if (mode == MODE_SECRET) {
+        if (mode == Mode.SECRET) {
           tdlib.cache().subscribeToSecretChatUpdates(secretChat.id, this);
         }
         break;
       }
-      case MODE_GROUP:
-      case MODE_EDIT_GROUP: {
+      case Mode.GROUP:
+      case Mode.EDIT_GROUP: {
         tdlib.cache().subscribeToGroupUpdates(group.id, this);
         break;
       }
-      case MODE_SUPERGROUP:
-      case MODE_CHANNEL:
-      case MODE_EDIT_CHANNEL:
-      case MODE_EDIT_SUPERGROUP: {
+      case Mode.SUPERGROUP:
+      case Mode.CHANNEL:
+      case Mode.EDIT_CHANNEL:
+      case Mode.EDIT_SUPERGROUP: {
         tdlib.cache().subscribeToSupergroupUpdates(supergroup.id, this);
         break;
       }
@@ -5880,23 +6024,23 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
     tdlib.listeners().unsubscribeFromChatUpdates(chat.id, this);
     switch (mode) {
-      case MODE_USER:
-      case MODE_SECRET: {
+      case Mode.USER:
+      case Mode.SECRET: {
         tdlib.cache().unsubscribeFromUserUpdates(user.id, this);
-        if (mode == MODE_SECRET) {
+        if (mode == Mode.SECRET) {
           tdlib.cache().unsubscribeFromSecretChatUpdates(secretChat.id, this);
         }
         break;
       }
-      case MODE_GROUP:
-      case MODE_EDIT_GROUP: {
+      case Mode.GROUP:
+      case Mode.EDIT_GROUP: {
         tdlib.cache().unsubscribeFromGroupUpdates(group.id, this);
         break;
       }
-      case MODE_CHANNEL:
-      case MODE_SUPERGROUP:
-      case MODE_EDIT_CHANNEL:
-      case MODE_EDIT_SUPERGROUP: {
+      case Mode.CHANNEL:
+      case Mode.SUPERGROUP:
+      case Mode.EDIT_CHANNEL:
+      case Mode.EDIT_SUPERGROUP: {
         tdlib.cache().unsubscribeFromSupergroupUpdates(supergroup.id, this);
         break;
       }
@@ -5911,6 +6055,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         updateHeader(true);
         checkUsername();
         checkPhone();
+        if (mode == Mode.EDIT_BOT_USER && !TD.canEditBot(user)) {
+          // Bot is no longer editable.
+          // This is possible when the account got deleted while this screen is open.
+          navigateBack();
+        }
       });
     }
   }
@@ -5930,6 +6079,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       if (isUpdate) {
         checkUserButtons();
         checkGroupsInCommon();
+        checkDescription();
+        if (mode == Mode.EDIT_BOT_USER) {
+          updateValuedItem(R.id.btn_botDescription);
+        }
       } else {
         addFullCells(userFull);
       }
@@ -5950,8 +6103,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   @Override
   public void onUserStatusChanged (final long userId, TdApi.UserStatus status, boolean uiOnly) {
     switch (mode) {
-      case MODE_USER:
-      case MODE_SECRET: {
+      case Mode.USER:
+      case Mode.SECRET: {
         if (headerCell != null) {
           headerCell.setSubtitle(makeSubtitle(false));
           headerCell.setExpandedSubtitle(makeSubtitle(true));
@@ -6062,7 +6215,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onBasicGroupUpdated (final TdApi.BasicGroup basicGroup, boolean migratedToSupergroup) {
-    if (mode == MODE_GROUP || mode == MODE_EDIT_GROUP) {
+    if (mode == Mode.GROUP || mode == Mode.EDIT_GROUP) {
       runOnUiThreadOptional(() -> {
         if (ProfileController.this.group != null && ProfileController.this.group.id == basicGroup.id) {
           setHeaderText();
@@ -6116,7 +6269,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onSupergroupUpdated (final TdApi.Supergroup supergroup) {
-    if (mode == MODE_CHANNEL || mode == MODE_SUPERGROUP) {
+    if (mode == Mode.CHANNEL || mode == Mode.SUPERGROUP) {
       runOnUiThreadOptional(() -> {
         if (ProfileController.this.supergroup != null && ProfileController.this.supergroup.id == supergroup.id) {
           ProfileController.this.supergroup = supergroup;
@@ -6126,7 +6279,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           updateHeader(false);
         }
       });
-    } else if (mode == MODE_EDIT_CHANNEL || mode == MODE_EDIT_SUPERGROUP) {
+    } else if (mode == Mode.EDIT_CHANNEL || mode == Mode.EDIT_SUPERGROUP) {
       runOnUiThreadOptional(() -> {
         if (ProfileController.this.supergroup != null && ProfileController.this.supergroup.id == supergroup.id) {
           processEditContentChanged(supergroup);
@@ -6147,7 +6300,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     final Runnable act;
 
     if (!isUpdate) {
-      if (mode == MODE_SUPERGROUP) {
+      if (mode == Mode.SUPERGROUP) {
         prepareSupergroupCells(supergroupFull);
       } else {
         prepareChannelCells(supergroupFull);
@@ -6155,7 +6308,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
       act = () -> {
         if (!isDestroyed()) {
-          if (mode == MODE_SUPERGROUP) {
+          if (mode == Mode.SUPERGROUP) {
             addFullSupergroupCells(supergroupFull);
           } else {
             addFullChannelCells(supergroupFull);
@@ -6175,10 +6328,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             updateValuedItem(R.id.btn_linkedChat);
             updateValuedItem(R.id.btn_toggleAggressiveAntiSpam);
             updateValuedItem(R.id.btn_toggleHideMembers);
-            if (mode == MODE_EDIT_CHANNEL || mode == MODE_EDIT_SUPERGROUP) {
+            if (mode == Mode.EDIT_CHANNEL || mode == Mode.EDIT_SUPERGROUP) {
               int i = baseAdapter.indexOfViewById(R.id.btn_linkedChat);
               boolean hasLinkedChat = i != -1;
-              boolean needLinkedChat = canChangeInfo() && (mode == MODE_EDIT_CHANNEL || supergroupFull.linkedChatId != 0);
+              boolean needLinkedChat = canChangeInfo() && (mode == Mode.EDIT_CHANNEL || supergroupFull.linkedChatId != 0);
               if (hasLinkedChat != needLinkedChat) {
                 boolean changed = false;
                 if (needLinkedChat) {
@@ -6225,7 +6378,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           }
           checkDescription();
           checkManage();
-          if (mode == MODE_EDIT_CHANNEL) {
+          if (mode == Mode.EDIT_CHANNEL) {
             checkChannelMembers();
           }
 

@@ -197,7 +197,7 @@ public class SettingsController extends ViewController<Void> implements
   @Override
   protected void onFloatingButtonPressed () {
     EditNameController editNameController = new EditNameController(context, tdlib);
-    editNameController.setMode(EditNameController.MODE_RENAME_SELF);
+    editNameController.setMode(EditNameController.Mode.RENAME_SELF);
     navigateTo(editNameController);
   }
 

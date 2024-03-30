@@ -20,9 +20,11 @@ import android.text.InputFilter;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 
 import androidx.annotation.IntDef;
+import androidx.annotation.StringRes;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.Client;
@@ -67,11 +69,13 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
   }
 
   private long chatId;
+  private boolean isBotEdit;
 
   @Override
   public void setArguments (Args args) {
     super.setArguments(args);
     this.chatId = args.chatId;
+    this.isBotEdit = tdlib.canEditBotChat(chatId);
   }
 
   @Override
@@ -81,7 +85,11 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
 
   @Override
   public CharSequence getName () {
-    return Lang.getString(chatId != 0 ? (tdlib.isChannel(chatId) ? R.string.ChannelLink : R.string.GroupLink) : R.string.Username);
+    if (isBotEdit) {
+      return Lang.getString(R.string.BotUsername);
+    } else {
+      return Lang.getString(chatId != 0 ? (tdlib.isChannel(chatId) ? R.string.ChannelLink : R.string.GroupLink) : R.string.Username);
+    }
   }
 
   private SettingsAdapter adapter;
@@ -111,9 +119,16 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
       protected void setChatData (ListItem item, int position, BetterChatView chatView) {
         chatView.setChat((TGFoundChat) item.getData());
       }
+
+      @Override
+      protected void modifyEditText (ListItem item, ViewGroup parent, MaterialEditTextGroup editText) {
+        if (isBotEdit) {
+          editText.setInputEnabled(false);
+        }
+      }
     };
     adapter.setTextChangeListener(this);
-    adapter.setLockFocusOn(this, true);
+    adapter.setLockFocusOn(this, !isBotEdit);
 
     ArrayList<ListItem> items = new ArrayList<>();
     items.add(new ListItem(ListItem.TYPE_EDITTEXT, R.id.input, 0, chatId != 0 ? tdlib.tMeHost() : Lang.getString(R.string.Username), false).setStringValue(currentUsername)
@@ -133,7 +148,9 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
     recyclerView.setAdapter(adapter);
     recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
 
-    setDoneVisible(true);
+    if (!isBotEdit) {
+      setDoneVisible(true);
+    }
   }
 
   @Override
@@ -449,9 +466,30 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
 
   private CharSequence genDescription () {
     if (helpSequence == null) {
-      helpSequence = Strings.replaceBoldTokens(Lang.getString(chatId != 0 ? (tdlib.isChannel(chatId) ? R.string.LinkChannelHelp : R.string.LinkGroupHelp) : R.string.UsernameHelp), ColorId.textLight);
+      if (isBotEdit) {
+        String fragmentUsername = new Uri.Builder()
+          .scheme("https")
+          .authority(TdConstants.FRAGMENT_HOST)
+          .path("username")
+          .build()
+          .toString();
+        helpSequence = Lang.getMarkdownStringSecure(this, R.string.EditBotUsernameHint, fragmentUsername);
+      } else {
+        @StringRes int res;
+        if (chatId != 0) {
+          if (tdlib.isChannel(chatId)) {
+            res = R.string.LinkChannelHelp;
+          } else {
+            res = R.string.LinkGroupHelp;
+          }
+        } else {
+          res = R.string.UsernameHelp;
+        }
+        helpSequence = Strings.replaceBoldTokens(Lang.getString(res), ColorId.textLight);
+      }
     }
-    if (currentUsername.length() >= MIN_USERNAME_LENGTH && currentUsername.length() <= 32 && chatId == 0) {
+    int usernameLength = currentUsername.length();
+    if (usernameLength >= MIN_USERNAME_LENGTH && usernameLength <= TdConstants.MAX_USERNAME_LENGTH && chatId == 0) {
       SpannableStringBuilder b = new SpannableStringBuilder(helpSequence);
       b.append("\n\n");
       b.append(Lang.getString(currentUsername.equals(sourceUsername) ? R.string.ThisLinkOpens : R.string.ThisLinkWillOpen));

@@ -106,6 +106,7 @@ public class AvatarPickerManager extends MediaLayoutManager {
       return;
     }
 
+    final boolean isBot = tdlib.canEditBotChat(chat.id);
     final boolean isChannel = tdlib.isChannel(chat.id);
     ViewController.Options.Builder b = new ViewController.Options.Builder();
 
@@ -114,7 +115,7 @@ public class AvatarPickerManager extends MediaLayoutManager {
         ViewController.OptionColor.NORMAL, R.drawable.baseline_visibility_24));
     }
 
-    b.item(new ViewController.OptionItem(R.id.btn_changePhotoGallery, Lang.getString(isChannel ? R.string.SetChannelPhoto : R.string.SetGroupPhoto),
+    b.item(new ViewController.OptionItem(R.id.btn_changePhotoGallery, Lang.getString(isBot ? R.string.SetBotPhoto : isChannel ? R.string.SetChannelPhoto : R.string.SetGroupPhoto),
       ViewController.OptionColor.NORMAL, R.drawable.baseline_image_24));
 
     final boolean canDelete = chat.photo != null;
@@ -124,8 +125,9 @@ public class AvatarPickerManager extends MediaLayoutManager {
           MediaViewController.openFromChat(context, chat, delegate);
         }
       } else if (id == R.id.btn_changePhotoGallery) {
-        openMediaView(isChannel ? AvatarPickerMode.CHANNEL : AvatarPickerMode.GROUP, f -> onChatPhotoReceived(f, chat.id),
-          canDelete ? Lang.getString(isChannel ? R.string.RemoveChannelPhoto : R.string.RemoveGroupPhoto) : null, ColorId.textNegative, () -> showDeletePhotoConfirm(() -> setChatPhoto(chat.id, null)));
+        @AvatarPickerMode int mode = isBot ? AvatarPickerMode.BOT : isChannel ? AvatarPickerMode.CHANNEL : AvatarPickerMode.GROUP;
+        openMediaView(mode, f -> onChatPhotoReceived(f, chat.id),
+          canDelete ? Lang.getString(isBot ? R.string.RemoveBotPhoto : isChannel ? R.string.RemoveChannelPhoto : R.string.RemoveGroupPhoto) : null, ColorId.textNegative, () -> showDeletePhotoConfirm(() -> setChatPhoto(chat.id, null)));
       }
       return true;
     });
@@ -290,6 +292,13 @@ public class AvatarPickerManager extends MediaLayoutManager {
     if (inputFile != null) {
       UI.showToast(R.string.UploadingPhotoWait, Toast.LENGTH_SHORT);
     }
-    tdlib.client().send(new TdApi.SetChatPhoto(chatId, inputFile != null ? new TdApi.InputChatPhotoStatic(inputFile) : null), tdlib.okHandler());
+    TdApi.InputChatPhoto chatPhoto = inputFile != null ? new TdApi.InputChatPhotoStatic(inputFile) : null;
+    TdApi.Function<TdApi.Ok> function;
+    if (tdlib.canEditBotChat(chatId)) {
+      function = new TdApi.SetBotProfilePhoto(tdlib.chatUserId(chatId), chatPhoto);
+    } else {
+      function = new TdApi.SetChatPhoto(chatId, chatPhoto);
+    }
+    tdlib.send(function, tdlib.typedOkHandler());
   }
 }

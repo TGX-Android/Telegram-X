@@ -3269,6 +3269,10 @@ public class TD {
     return false;
   }
 
+  public static boolean canEditBot (@Nullable TdApi.User user) {
+    return isBot(user) && ((TdApi.UserTypeBot) user.type).canBeEdited;
+  }
+
   public static boolean isChannel (TdApi.ChatType type) {
     return type != null && type.getConstructor() == TdApi.ChatTypeSupergroup.CONSTRUCTOR && ((TdApi.ChatTypeSupergroup) type).isChannel;
   }

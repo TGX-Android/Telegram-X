@@ -14,10 +14,8 @@
  */
 package org.thunderdog.challegram.telegram;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
-import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -28,7 +26,6 @@ import android.os.SystemClock;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
-import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -54,9 +51,6 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.MainActivity;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
-import org.thunderdog.challegram.component.MediaCollectorDelegate;
-import org.thunderdog.challegram.component.attach.MediaLayout;
-import org.thunderdog.challegram.component.attach.MediaLayoutManager;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.popups.ModernActionedLayout;
@@ -66,18 +60,12 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.core.LangUtils;
-import org.thunderdog.challegram.core.Media;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGBotStart;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGSwitchInline;
 import org.thunderdog.challegram.data.ThreadInfo;
-import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
-import org.thunderdog.challegram.filegen.SimpleGenerationInfo;
-import org.thunderdog.challegram.loader.ImageGalleryFile;
-import org.thunderdog.challegram.mediaview.AvatarPickerMode;
 import org.thunderdog.challegram.mediaview.MediaViewController;
-import org.thunderdog.challegram.navigation.EditHeaderView;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.NavigationStack;
@@ -85,7 +73,6 @@ import org.thunderdog.challegram.navigation.SettingsWrap;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
-import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.PropertyId;
 import org.thunderdog.challegram.theme.Theme;
@@ -101,7 +88,6 @@ import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
-import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.ChatFolderInviteLinkController;
 import org.thunderdog.challegram.ui.ChatJoinRequestsController;
 import org.thunderdog.challegram.ui.ChatLinkMembersController;
@@ -175,7 +161,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
@@ -1352,9 +1337,13 @@ public class TdlibUi extends Handler {
       if (user != null) {
         EditNameController c = new EditNameController(context.context(), context.tdlib());
         if (context.tdlib().isSelfUserId(user.id)) {
-          c.setMode(EditNameController.MODE_RENAME_SELF);
+          c.setMode(EditNameController.Mode.RENAME_SELF);
         } else {
-          c.setMode(EditNameController.MODE_RENAME_CONTACT);
+          if (TD.canEditBot(user)) {
+            c.setMode(EditNameController.Mode.RENAME_BOT);
+          } else {
+            c.setMode(EditNameController.Mode.RENAME_CONTACT);
+          }
           c.setUser(user);
         }
         context.navigationController().navigateTo(c);
@@ -1404,7 +1393,7 @@ public class TdlibUi extends Handler {
       return;
     }
     EditNameController controller = new EditNameController(context.context(), context.tdlib());
-    controller.setMode(EditNameController.MODE_ADD_CONTACT);
+    controller.setMode(EditNameController.Mode.ADD_CONTACT);
     controller.setUser(user);
     controller.setKnownPhoneNumber(knownPhoneNumber);
     context.navigationController().navigateTo(controller);
@@ -2363,13 +2352,13 @@ public class TdlibUi extends Handler {
           }*/
           switch (botMode) {
             case BOT_MODE_START: {
-              openChat(context, chat, new ChatOpenParameters().urlOpenParameters(openParameters).shareItem(new TGBotStart(user.id, startArgument, false)).keepStack());
+              openChat(context, chat, new ChatOpenParameters().urlOpenParameters(openParameters).shareItem(new TGBotStart(user.id, startArgument, false, openParameters != null && openParameters.ignoreExplicitUserInteraction)).keepStack());
               break;
             }
             case BOT_MODE_START_IN_GROUP:
             case BOT_MODE_START_GAME: {
               final boolean isGame = botMode == BOT_MODE_START_GAME;
-              addToGroup(context, new TGBotStart(user.id, startArgument, isGame), isGame);
+              addToGroup(context, new TGBotStart(user.id, startArgument, isGame, openParameters != null && openParameters.ignoreExplicitUserInteraction), isGame);
               break;
             }
           }
@@ -2609,7 +2598,7 @@ public class TdlibUi extends Handler {
     public MessageId messageId;
     public String refererUrl, instantViewFallbackUrl, originalUrl;
     public TooltipOverlayView.TooltipBuilder tooltip;
-    public boolean requireOpenPrompt;
+    public boolean requireOpenPrompt, ignoreExplicitUserInteraction;
     public String displayUrl;
 
     private ViewController<?> parentController;
@@ -2626,6 +2615,7 @@ public class TdlibUi extends Handler {
         this.instantViewFallbackUrl = options.instantViewFallbackUrl;
         this.tooltip = options.tooltip;
         this.requireOpenPrompt = options.requireOpenPrompt;
+        this.ignoreExplicitUserInteraction = options.ignoreExplicitUserInteraction;
         this.displayUrl = options.displayUrl;
         this.parentController = options.parentController;
         this.originalUrl = options.originalUrl;
@@ -2701,6 +2691,11 @@ public class TdlibUi extends Handler {
 
     public UrlOpenParameters requireOpenPrompt (boolean requirePrompt) {
       this.requireOpenPrompt = requirePrompt;
+      return this;
+    }
+
+    public UrlOpenParameters ignoreExplicitUserInteraction (boolean ignoreExplicitUserInteraction) {
+      this.ignoreExplicitUserInteraction = ignoreExplicitUserInteraction;
       return this;
     }
 

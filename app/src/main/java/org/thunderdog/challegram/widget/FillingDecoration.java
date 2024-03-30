@@ -160,6 +160,9 @@ public class FillingDecoration extends RecyclerView.ItemDecoration {
         return Theme.getColor(fillingColorId);
       }
     }
+    if (bottomId != 0 && i < maxIndex) {
+      return Theme.getColor(fillingColorId);
+    }
     return 0;
   }
 }

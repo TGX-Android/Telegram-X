@@ -259,13 +259,17 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       setSendButtonIcon(MediaViewController.getResId(avatarPickerMode, 0,
         R.drawable.dot_baseline_profile_accept_24,
         R.drawable.dot_baseline_group_accept_24,
-        R.drawable.dot_baseline_channel_accept_24));
+        R.drawable.dot_baseline_channel_accept_24,
+        R.drawable.dot_baseline_profile_accept_24
+      ));
 
-      final int textRes = getResId(avatarPickerMode, 0, R.string.ProfilePhoto, R.string.GroupPhoto, R.string.ChannelPhoto);
+      final int textRes = getResId(avatarPickerMode, 0,
+        R.string.ProfilePhoto, R.string.GroupPhoto, R.string.ChannelPhoto, R.string.BotPhoto);
       setReceiverRow(getResId(avatarPickerMode, 0,
         R.drawable.dot_baseline_account_circle_18,
         R.drawable.dot_baseline_group_circle_18,
-        R.drawable.dot_baseline_channel_circle_18),
+        R.drawable.dot_baseline_channel_circle_18,
+        R.drawable.dot_baseline_account_circle_18),
         textRes != 0 ? Lang.getString(textRes) : null
       );
 
@@ -2105,7 +2109,15 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           return stack.getEstimatedSize() != 1 ? Lang.getString(R.string.format_mediaIndexAndTime, getXofY(), time) : time;
         }
         int resId;
-        if (mode == MODE_CHAT_PROFILE) {
+        if (getArgumentsStrict().avatarPickerMode != AvatarPickerMode.NONE) {
+          resId = getResId(getArgumentsStrict().avatarPickerMode,
+            R.string.ProfilePhoto,
+            R.string.ProfilePhoto,
+            R.string.GroupPhoto,
+            R.string.ChannelPhoto,
+            R.string.BotPhoto
+          );
+        } else if (mode == MODE_CHAT_PROFILE) {
           resId = (tdlib.isChannel(stack.getCurrent().getSourceChatId()) ? R.string.ChannelPhoto : R.string.GroupPhoto);
         } else {
           resId = R.string.ProfilePhoto;
@@ -5207,13 +5219,18 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     return contentView;
   }
 
-  private static int getResId (@AvatarPickerMode int mode, int defaultResId, int profileResId, int groupResId, int channelResId) {
-    if (mode == AvatarPickerMode.PROFILE) {
-      return profileResId;
-    } else if (mode == AvatarPickerMode.CHANNEL) {
-      return channelResId;
-    } else if (mode == AvatarPickerMode.GROUP) {
-      return groupResId;
+  private static int getResId (@AvatarPickerMode int mode,
+                               int defaultResId,
+                               int profileResId, int groupResId, int channelResId, int botResId) {
+    switch (mode) {
+      case AvatarPickerMode.PROFILE:
+        return profileResId;
+      case AvatarPickerMode.CHANNEL:
+        return channelResId;
+      case AvatarPickerMode.GROUP:
+        return groupResId;
+      case AvatarPickerMode.BOT:
+        return botResId;
     }
     return defaultResId;
   }

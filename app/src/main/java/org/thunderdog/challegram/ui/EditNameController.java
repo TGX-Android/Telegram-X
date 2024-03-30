@@ -21,6 +21,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 
+import androidx.annotation.IntDef;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.Client;
@@ -39,6 +41,8 @@ import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,10 +52,22 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.td.TdConstants;
 
 public class EditNameController extends EditBaseController<EditNameController.Args> implements SettingsAdapter.TextChangeListener, Client.ResultHandler, TdlibCache.UserDataChangeListener, View.OnClickListener {
-  public static final int MODE_SIGNUP = 0;
-  public static final int MODE_RENAME_SELF = 1;
-  public static final int MODE_RENAME_CONTACT = 2;
-  public static final int MODE_ADD_CONTACT = 3;
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    Mode.SIGNUP,
+    Mode.RENAME_SELF,
+    Mode.RENAME_CONTACT,
+    Mode.ADD_CONTACT,
+    Mode.RENAME_BOT
+  })
+  public @interface Mode {
+    int
+      SIGNUP = 0,
+      RENAME_SELF = 1,
+      RENAME_CONTACT = 2,
+      ADD_CONTACT = 3,
+      RENAME_BOT = 4;
+  }
 
   public static class Args {
     public int mode;
@@ -77,7 +93,7 @@ public class EditNameController extends EditBaseController<EditNameController.Ar
 
   @Override
   public boolean isUnauthorized () {
-    return mode == EditNameController.MODE_SIGNUP;
+    return mode == Mode.SIGNUP;
   }
 
   public void setMode (int mode) {
@@ -109,7 +125,8 @@ public class EditNameController extends EditBaseController<EditNameController.Ar
   }
 
   private SettingsAdapter adapter;
-  private ListItem firstName, lastName, shareMyNumber;
+  private ListItem firstName, shareMyNumber;
+  private @Nullable ListItem lastName;
 
   @Override
   protected void onCreateView (Context context, FrameLayoutFix contentView, RecyclerView recyclerView) {
@@ -131,12 +148,13 @@ public class EditNameController extends EditBaseController<EditNameController.Ar
     TdApi.User user;
 
     switch (mode) {
-      case MODE_ADD_CONTACT:
-      case MODE_RENAME_CONTACT: {
+      case Mode.ADD_CONTACT:
+      case Mode.RENAME_CONTACT:
+      case Mode.RENAME_BOT: {
         user = this.user;
         break;
       }
-      case MODE_RENAME_SELF: {
+      case Mode.RENAME_SELF: {
         user = tdlib.myUser();
         break;
       }
@@ -153,43 +171,48 @@ public class EditNameController extends EditBaseController<EditNameController.Ar
       setDoneVisible(isGoodInput(firstNameValue, lastNameValue));
     } else {
       firstNameValue = lastNameValue = "";
-      if (mode == MODE_SIGNUP && UI.inTestMode()) {
+      if (mode == Mode.SIGNUP && UI.inTestMode()) {
         firstNameValue = "Robot #" + tdlib.robotId();
       }
     }
 
     List<ListItem> items = new ArrayList<>();
-    if ((mode == MODE_RENAME_CONTACT || mode == MODE_ADD_CONTACT) && user != null) {
-      items.add(new ListItem(ListItem.TYPE_CHAT_BETTER)
-        .setData(new TGFoundChat(tdlib, user.id)
-        .setForcedSubtitle(
+    if ((mode == Mode.RENAME_CONTACT || mode == Mode.ADD_CONTACT || mode == Mode.RENAME_BOT) && user != null) {
+      TGFoundChat chat = new TGFoundChat(tdlib, user.id);
+      if (mode == Mode.RENAME_BOT) {
+        chat.setForceUsername();
+      } else {
+        chat.setForcedSubtitle(
           !StringUtils.isEmpty(knownPhoneNumber) ?
             Strings.formatPhone(knownPhoneNumber) :
-          TD.hasPhoneNumber(user) ?
-            Strings.formatPhone(user.phoneNumber) :
-          Lang.getString(R.string.NumberHidden))
-        )
-      );
+            TD.hasPhoneNumber(user) ?
+              Strings.formatPhone(user.phoneNumber) :
+              Lang.getString(R.string.NumberHidden)
+        );
+      }
+      items.add(new ListItem(ListItem.TYPE_CHAT_BETTER).setData(chat));
     }
-    items.add((firstName = new ListItem(items.isEmpty() ? ListItem.TYPE_EDITTEXT : ListItem.TYPE_EDITTEXT_NO_PADDING, R.id.edit_first_name, 0, R.string.login_FirstName)
+    items.add((firstName = new ListItem(items.isEmpty() ? ListItem.TYPE_EDITTEXT : ListItem.TYPE_EDITTEXT_NO_PADDING, R.id.edit_first_name, 0, mode == Mode.RENAME_BOT ? R.string.BotName : R.string.login_FirstName)
       .setStringValue(firstNameValue)
       .setInputFilters(new InputFilter[] {
         new CodePointCountFilter(TdConstants.MAX_NAME_LENGTH),
         new EmojiFilter(),
         new CharacterStyleFilter()
       })));
-    items.add((lastName = new ListItem(ListItem.TYPE_EDITTEXT_NO_PADDING, R.id.edit_last_name, 0, mode == MODE_RENAME_CONTACT || mode == MODE_ADD_CONTACT ? R.string.LastName : R.string.login_LastName)
-      .setStringValue(lastNameValue)
-      .setInputFilters(new InputFilter[] {
-        new CodePointCountFilter(TdConstants.MAX_NAME_LENGTH),
-        new EmojiFilter(),
-        new CharacterStyleFilter()
-      }).setOnEditorActionListener(new SimpleEditorActionListener(EditorInfo.IME_ACTION_DONE, this))));
-    TdApi.TermsOfService termsOfService = mode == MODE_SIGNUP ? getArgumentsStrict().authState.termsOfService : null;
+    if (mode != Mode.RENAME_BOT) {
+      items.add((lastName = new ListItem(ListItem.TYPE_EDITTEXT_NO_PADDING, R.id.edit_last_name, 0, mode == Mode.RENAME_CONTACT || mode == Mode.ADD_CONTACT ? R.string.LastName : R.string.login_LastName)
+        .setStringValue(lastNameValue)
+        .setInputFilters(new InputFilter[] {
+          new CodePointCountFilter(TdConstants.MAX_NAME_LENGTH),
+          new EmojiFilter(),
+          new CharacterStyleFilter()
+        }).setOnEditorActionListener(new SimpleEditorActionListener(EditorInfo.IME_ACTION_DONE, this))));
+    }
+    TdApi.TermsOfService termsOfService = mode == Mode.SIGNUP ? getArgumentsStrict().authState.termsOfService : null;
     if (termsOfService != null && termsOfService.minUserAge != 0) {
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.plural(R.string.AgeVerification, termsOfService.minUserAge), false));
     }
-    if ((mode == MODE_RENAME_CONTACT || mode == MODE_ADD_CONTACT) && user != null) {
+    if ((mode == Mode.RENAME_CONTACT || mode == Mode.ADD_CONTACT) && user != null) {
       if (StringUtils.isEmpty(knownPhoneNumber) && !TD.hasPhoneNumber(user)) {
         items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getStringBold(R.string.NumberHiddenHint, tdlib.cache().userName(user.id)), false));
       }
@@ -199,16 +222,19 @@ public class EditNameController extends EditBaseController<EditNameController.Ar
         items.add(shareMyNumber = newShareItem());
       }
     }
+    if (mode == Mode.RENAME_BOT) {
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownStringSecure(this, R.string.RenameBotHint), false));
+    }
     adapter.setItems(items, false);
     recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
     recyclerView.setAdapter(adapter);
-    setDoneIcon(mode == MODE_SIGNUP ? R.drawable.baseline_arrow_forward_24 : R.drawable.baseline_check_24);
+    setDoneIcon(mode == Mode.SIGNUP ? R.drawable.baseline_arrow_forward_24 : R.drawable.baseline_check_24);
   }
 
   @Override
   public void onFocus () {
     super.onFocus();
-    if (mode == MODE_SIGNUP) {
+    if (mode == Mode.SIGNUP) {
       ViewController<?> c = previousStackItem();
       destroyStackItemById(R.id.controller_code);
       if (UI.inTestMode()) {
@@ -221,7 +247,7 @@ public class EditNameController extends EditBaseController<EditNameController.Ar
   @Override
   public void destroy () {
     super.destroy();
-    if (mode == MODE_ADD_CONTACT) {
+    if (mode == Mode.ADD_CONTACT) {
       tdlib.cache().removeUserDataListener(user.id, this);
     }
   }
@@ -236,7 +262,7 @@ public class EditNameController extends EditBaseController<EditNameController.Ar
   @Override
   public void onUserFullUpdated (long userId, TdApi.UserFullInfo userFull) {
     tdlib.ui().post(() -> {
-      if (isDestroyed() && adapter != null && mode == MODE_ADD_CONTACT && user != null && userId == user.id) {
+      if (isDestroyed() && adapter != null && mode == Mode.ADD_CONTACT && user != null && userId == user.id) {
         if (userFull.needPhoneNumberPrivacyException) {
           if (adapter.findItemById(R.id.btn_shareMyContact) == null) {
             adapter.addItem(adapter.getItemCount(), shareMyNumber = newShareItem());
@@ -259,16 +285,19 @@ public class EditNameController extends EditBaseController<EditNameController.Ar
   @Override
   public CharSequence getName () {
     switch (mode) {
-      case MODE_RENAME_CONTACT: {
+      case Mode.RENAME_CONTACT: {
         return Lang.getString(R.string.RenameContact);
       }
-      case MODE_ADD_CONTACT: {
+      case Mode.RENAME_BOT: {
+        return Lang.getString(R.string.RenameBot);
+      }
+      case Mode.ADD_CONTACT: {
         return Lang.getString(R.string.AddContact);
       }
-      case MODE_RENAME_SELF: {
+      case Mode.RENAME_SELF: {
         return Lang.getString(R.string.EditName);
       }
-      case MODE_SIGNUP: {
+      case Mode.SIGNUP: {
         return Lang.getString(R.string.Registration);
       }
     }
@@ -280,9 +309,10 @@ public class EditNameController extends EditBaseController<EditNameController.Ar
       return true;
     if (!StringUtils.isEmpty(lastName)) {
       switch (mode) {
-        case MODE_RENAME_SELF:
-        case MODE_RENAME_CONTACT:
-        case MODE_ADD_CONTACT:
+        case Mode.RENAME_SELF:
+        case Mode.RENAME_CONTACT:
+        case Mode.RENAME_BOT:
+        case Mode.ADD_CONTACT:
           return true;
       }
     }
@@ -292,17 +322,17 @@ public class EditNameController extends EditBaseController<EditNameController.Ar
   @Override
   protected boolean onDoneClick () {
     final String firstName = this.firstName.getStringValue().trim();
-    final String lastName = this.lastName.getStringValue().trim();
+    final String lastName = this.lastName != null ? this.lastName.getStringValue().trim() : "";
 
     if (isGoodInput(firstName, lastName)) {
       switch (mode) {
-        case MODE_RENAME_SELF: {
+        case Mode.RENAME_SELF: {
           setDoneInProgress(true);
           tdlib.client().send(new TdApi.SetName(firstName, lastName), this);
           break;
         }
-        case MODE_ADD_CONTACT:
-        case MODE_RENAME_CONTACT: {
+        case Mode.ADD_CONTACT:
+        case Mode.RENAME_CONTACT: {
           if (user != null) {
             setDoneInProgress(true);
             TdApi.Contact contact = new TdApi.Contact(!StringUtils.isEmpty(knownPhoneNumber) ? knownPhoneNumber : user.phoneNumber, firstName, lastName, null, user.id);
@@ -310,7 +340,14 @@ public class EditNameController extends EditBaseController<EditNameController.Ar
           }
           break;
         }
-        case MODE_SIGNUP: {
+        case Mode.RENAME_BOT: {
+          if (TD.canEditBot(user)) {
+            setDoneInProgress(true);
+            tdlib.client().send(new TdApi.SetBotName(user.id, "", firstName), this);
+          }
+          break;
+        }
+        case Mode.SIGNUP: {
           TdApi.TermsOfService termsOfService = getArgumentsStrict().authState.termsOfService;
           CharSequence text = TD.formatString(this, termsOfService.text.text, termsOfService.text.entities, null, null);
           openAlert(R.string.TermsOfService, text, Lang.getString(R.string.TermsOfServiceDone), (dialog, which) -> {
@@ -334,7 +371,7 @@ public class EditNameController extends EditBaseController<EditNameController.Ar
         switch (object.getConstructor()) {
           case TdApi.Ok.CONSTRUCTOR:
           case TdApi.ImportedContacts.CONSTRUCTOR: {
-            if (mode == MODE_SIGNUP) {
+            if (mode == Mode.SIGNUP) {
               hideSoftwareKeyboard();
             } else {
               onSaveCompleted();
@@ -355,13 +392,13 @@ public class EditNameController extends EditBaseController<EditNameController.Ar
     if (id == R.id.edit_first_name) {
       firstName.setStringValue(text);
       updateDoneState();
-    } else if (id == R.id.edit_last_name) {
+    } else if (id == R.id.edit_last_name && lastName != null) {
       lastName.setStringValue(text);
       updateDoneState();
     }
   }
 
   private void updateDoneState () {
-    setDoneVisible(isGoodInput(firstName.getStringValue().trim(), lastName.getStringValue().trim()));
+    setDoneVisible(isGoodInput(firstName.getStringValue().trim(), lastName != null ? lastName.getStringValue().trim() : ""));
   }
 }
