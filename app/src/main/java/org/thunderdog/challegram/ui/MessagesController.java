@@ -2712,10 +2712,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (start.isGame()) {
         tdlib.sendMessage(chat.id, getMessageThreadId(), null, Td.newSendOptions(obtainSilentMode()), new TdApi.InputMessageGame(start.getUserId(), start.getArgument()));
       } else if (start.useDeepLinking()) {
-        if (ChatId.isUserChat(chat.id)) {
-          showActionBotButton(start.getArgument());
-        } else {
+        if (!ChatId.isUserChat(chat.id) || start.ignoreExplicitUserInteraction()) {
           tdlib.sendBotStartMessage(start.getUserId(), chat.id, start.getArgument());
+        } else {
+          showActionBotButton(start.getArgument());
         }
         return;
       } else if (ChatId.isPrivate(chat.id)) {

@@ -544,17 +544,26 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public final void runOnUiThreadOptional (Runnable runnable) {
-    runOnUiThreadOptional(runnable, null);
+    runOnUiThreadOptional(runnable, null, 0);
   }
 
   public final void runOnUiThreadOptional (Runnable runnable, @Nullable FutureBool condition) {
+    runOnUiThreadOptional(runnable, condition, 0);
+  }
+
+  public final void runOnUiThreadOptional (Runnable runnable, @Nullable FutureBool condition, long delay) {
     if (runnable == null)
       return;
-    runOnUiThread(() -> {
+    Runnable act = () -> {
       if (!isDestroyed() && (condition == null || condition.getBoolValue())) {
         runnable.run();
       }
-    });
+    };
+    if (delay > 0) {
+      runOnUiThread(act, delay);
+    } else {
+      runOnUiThread(act);
+    }
   }
 
   protected final void runOnUiThread (@NonNull Runnable runnable) {
@@ -849,6 +858,10 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   public View getLockFocusView () {
     return lockFocusView;
+  }
+
+  public final boolean needAlwaysShowKeyboardOnFocusView () {
+    return BitwiseUtils.hasFlag(flags, FLAG_LOCK_ALWAYS);
   }
 
   public void setLockFocusView (View view, boolean showAlways) {

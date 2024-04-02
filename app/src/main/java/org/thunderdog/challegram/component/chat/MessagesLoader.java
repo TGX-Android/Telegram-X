@@ -60,6 +60,7 @@ import me.vkryl.td.Td;
 import me.vkryl.td.TdConstants;
 
 public class MessagesLoader implements Client.ResultHandler {
+  private static final boolean DEBUG_HANDLER = false;
   private static final int CHUNK_SIZE_BIG = 50;
   private static final int CHUNK_SIZE_SMALL = 19;
 
@@ -232,6 +233,9 @@ public class MessagesLoader implements Client.ResultHandler {
 
   private Client.ResultHandler newHandler (final boolean allowMoreTop, final boolean allowMoreBottom, boolean needFindUnread) {
     final long currentContextId = contextId;
+    if (DEBUG_HANDLER) {
+      Log.w("lastHandler = [new instance], error: %b", Log.generateException(1), lastHandler != null);
+    }
     if (lastHandler != null) {
       throw new IllegalStateException("lastHandler != null");
     }
@@ -511,6 +515,9 @@ public class MessagesLoader implements Client.ResultHandler {
         mergeMode = MERGE_MODE_NONE;
         mergeChunk = null;
         synchronized (lock) {
+          if (DEBUG_HANDLER) {
+            Log.w("lastHandler = null [1]", Log.generateException(1));
+          }
           lastHandler = null;
         }
 
@@ -545,6 +552,9 @@ public class MessagesLoader implements Client.ResultHandler {
     }
 
     synchronized (lock) {
+      if (DEBUG_HANDLER) {
+        Log.w("lastHandler = null [2]", Log.generateException(1));
+      }
       lastHandler = null;
       isLoading = false;
     }

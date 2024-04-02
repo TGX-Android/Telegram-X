@@ -574,7 +574,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
       case TdApi.AuthorizationStateWaitRegistration.CONSTRUCTOR: {
         TdApi.AuthorizationStateWaitRegistration state = (TdApi.AuthorizationStateWaitRegistration) authState;
         EditNameController c = new EditNameController(this, tdlib);
-        c.setArguments(new EditNameController.Args(EditNameController.MODE_SIGNUP, state, tdlib.authPhoneNumberFormatted()));
+        c.setArguments(new EditNameController.Args(EditNameController.Mode.SIGNUP, state, tdlib.authPhoneNumberFormatted()));
         return c;
       }
       case TdApi.AuthorizationStateWaitPassword.CONSTRUCTOR: {

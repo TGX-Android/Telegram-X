@@ -18,11 +18,13 @@ public class TGBotStart { // Used only in MessagesController arguments to add a 
   private final long userId;
   private final String argument;
   private final boolean isGame;
+  private final boolean ignoreExplicitUserInteraction;
 
-  public TGBotStart (long userId, String argument, boolean isGame) {
+  public TGBotStart (long userId, String argument, boolean isGame, boolean ignoreExplicitUserInteraction) {
     this.userId = userId;
     this.argument = argument;
     this.isGame = isGame;
+    this.ignoreExplicitUserInteraction = ignoreExplicitUserInteraction;
   }
 
   public boolean isGame () {
@@ -31,6 +33,10 @@ public class TGBotStart { // Used only in MessagesController arguments to add a 
 
   public long getUserId () {
     return userId;
+  }
+
+  public boolean ignoreExplicitUserInteraction () {
+    return ignoreExplicitUserInteraction;
   }
 
   public boolean useDeepLinking () {

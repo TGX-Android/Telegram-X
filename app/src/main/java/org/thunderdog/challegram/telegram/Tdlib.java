@@ -2784,6 +2784,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
+  public boolean isAdminOrOwner (long chatId) {
+    TdApi.ChatMemberStatus status = chatStatus(chatId);
+    return status != null && TD.isAdmin(status);
+  }
+
   public boolean isAnonymousAdmin (long chatId) {
     TdApi.ChatMemberStatus status = chatStatus(chatId);
     return status != null && Td.isAnonymous(status);
@@ -4120,6 +4125,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   public boolean isBotChat (long chatId) {
     long userId = chatUserId(chatId);
     return cache().userBot(userId);
+  }
+
+  public boolean canEditBotChat (long chatId) {
+    TdApi.User user = chatUser(chatId);
+    return user != null && TD.canEditBot(user);
   }
 
   public boolean isBotChat (TdApi.Chat chat) {

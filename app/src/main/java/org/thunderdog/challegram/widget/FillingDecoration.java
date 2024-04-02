@@ -58,8 +58,16 @@ public class FillingDecoration extends RecyclerView.ItemDecoration {
     return ranges.get(index);
   }
 
+  public int[] firstRange () {
+    return ranges.get(0);
+  }
+
   public int[] lastRange () {
     return ranges.get(ranges.size() - 1);
+  }
+
+  public int rangesCount () {
+    return ranges.size();
   }
 
   private int bottomId = View.NO_ID;
@@ -159,6 +167,9 @@ public class FillingDecoration extends RecyclerView.ItemDecoration {
       if (i >= range[0] && i < range[1]) {
         return Theme.getColor(fillingColorId);
       }
+    }
+    if (bottomId != 0 && i < maxIndex) {
+      return Theme.getColor(fillingColorId);
     }
     return 0;
   }

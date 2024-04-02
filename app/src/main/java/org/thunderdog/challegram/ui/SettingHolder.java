@@ -264,8 +264,6 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_CHAT_HEADER_LARGE: {
         return DetachedChatHeaderView.getViewHeight();
       }
-      case ListItem.TYPE_EDITTEXT_WITH_PHOTO_SMALLER:
-        return Screen.dp(82f);
       case ListItem.TYPE_LIVE_LOCATION_PROMO:
         return Screen.dp(132f);
       case ListItem.TYPE_COLOR_PICKER: {
@@ -993,13 +991,11 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_EDITTEXT_COUNTERED:
       case ListItem.TYPE_EDITTEXT_CHANNEL_DESCRIPTION:
       case ListItem.TYPE_EDITTEXT_WITH_PHOTO:
-      case ListItem.TYPE_EDITTEXT_WITH_PHOTO_SMALLER:
       case ListItem.TYPE_EDITTEXT_POLL_OPTION:
       case ListItem.TYPE_EDITTEXT_POLL_OPTION_ADD: {
         FrameLayoutFix frameLayout;
         switch (viewType) {
-          case ListItem.TYPE_EDITTEXT_WITH_PHOTO:
-          case ListItem.TYPE_EDITTEXT_WITH_PHOTO_SMALLER: {
+          case ListItem.TYPE_EDITTEXT_WITH_PHOTO: {
             frameLayout = new ScoutFrameLayout(context);
             frameLayout.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, measureHeightForType(viewType)));
             ViewSupport.setThemedBackground(frameLayout, ColorId.filling, themeProvider);
@@ -1104,8 +1100,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         frameLayout.addView(editText);
 
         switch (viewType) {
-          case ListItem.TYPE_EDITTEXT_WITH_PHOTO:
-          case ListItem.TYPE_EDITTEXT_WITH_PHOTO_SMALLER: {
+          case ListItem.TYPE_EDITTEXT_WITH_PHOTO: {
             FrameLayoutFix.LayoutParams params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             if (Lang.rtl()) {
               params.rightMargin = Screen.dp(82f);

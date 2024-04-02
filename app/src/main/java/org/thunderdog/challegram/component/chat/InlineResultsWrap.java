@@ -899,7 +899,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
           UI.post(() -> {
             if (!isCancelled()) {
               setItems(null);
-              delegate.tdlib().ui().openChat(c, chatId, new TdlibUi.ChatOpenParameters().keepStack().shareItem(new TGBotStart(delegate.tdlib().chatUserId(chatId), button.botStartParameter(), false)));
+              delegate.tdlib().ui().openChat(c, chatId, new TdlibUi.ChatOpenParameters().keepStack().shareItem(new TGBotStart(delegate.tdlib().chatUserId(chatId), button.botStartParameter(), false, true)));
             }
           });
         } else {

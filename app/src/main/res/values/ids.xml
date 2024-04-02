@@ -425,6 +425,8 @@
   <item type="id" name="btn_hidden" />
   <item type="id" name="btn_visible" />
   <item type="id" name="btn_channelType" />
+  <item type="id" name="btn_botDescription" />
+  <item type="id" name="btn_botEdit" />
   <item type="id" name="btn_linkedChat" />
   <item type="id" name="btn_paintType" />
   <item type="id" name="btn_recentActions" />

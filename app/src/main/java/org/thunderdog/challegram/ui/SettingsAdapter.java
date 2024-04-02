@@ -696,6 +696,8 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         View view = parentView.getLayoutManager().findViewByPosition(position);
         if (view != null && view.getId() == item.getId()) {
           if (view instanceof SettingView) {
+            ((SettingView) view).setIcon(item.getIconResource());
+            ((SettingView) view).setName(item.getString());
             setValuedSetting(item, (SettingView) view, true);
           } else {
             boolean ok = false;
@@ -1490,8 +1492,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       case ListItem.TYPE_EDITTEXT_NO_PADDING_REUSABLE:
       case ListItem.TYPE_EDITTEXT_COUNTERED:
       case ListItem.TYPE_EDITTEXT_CHANNEL_DESCRIPTION:
-      case ListItem.TYPE_EDITTEXT_WITH_PHOTO:
-      case ListItem.TYPE_EDITTEXT_WITH_PHOTO_SMALLER: {
+      case ListItem.TYPE_EDITTEXT_WITH_PHOTO: {
         MaterialEditTextGroup editText = (MaterialEditTextGroup) ((ViewGroup) holder.itemView).getChildAt(0);
         editText.applyRtl(Lang.rtl());
         editText.setHint(item.getString());
@@ -2044,6 +2045,13 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     }
   }
 
+  public void removeItem (ListItem item) {
+    int index = indexOfView(item);
+    if (index != -1) {
+      removeItem(index);
+    }
+  }
+
   @Override
   public int measureHeight (int maxHeight) {
     final int itemCount = getItemCount();
@@ -2346,7 +2354,6 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       case ListItem.TYPE_EDITTEXT_COUNTERED:
       case ListItem.TYPE_EDITTEXT_CHANNEL_DESCRIPTION:
       case ListItem.TYPE_EDITTEXT_WITH_PHOTO:
-      case ListItem.TYPE_EDITTEXT_WITH_PHOTO_SMALLER:
         return CellFilterImpl.ABORTED;
     }
     if (item.hasStringResources())
