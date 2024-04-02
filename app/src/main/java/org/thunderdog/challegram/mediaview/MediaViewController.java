@@ -260,7 +260,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         R.drawable.dot_baseline_profile_accept_24,
         R.drawable.dot_baseline_group_accept_24,
         R.drawable.dot_baseline_channel_accept_24,
-        R.drawable.dot_baseline_profile_accept_24
+        R.drawable.dot_baseline_bot_accept_24
       ));
 
       final int textRes = getResId(avatarPickerMode, 0,
@@ -269,7 +269,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         R.drawable.dot_baseline_account_circle_18,
         R.drawable.dot_baseline_group_circle_18,
         R.drawable.dot_baseline_channel_circle_18,
-        R.drawable.dot_baseline_account_circle_18),
+        R.drawable.dot_baseline_bot_circle_18),
         textRes != 0 ? Lang.getString(textRes) : null
       );
 
