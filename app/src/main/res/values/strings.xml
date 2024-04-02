@@ -5246,4 +5246,24 @@
   <string name="ForegroundSyncDescOn">You may periodically see **\"Checking for new messages\"** in the system tray while app is closed until all notifications are properly shown.</string>
   <string name="ForegroundSyncDescOff">You may see **\"You may have a new message\"** notification in the system tray when some notifications couldn\'t be shown.</string>
 
+  <string name="UsernamesMy">Active Usernames</string>
+  <string name="UsernamesMyHint">Drag and drop usernames to change order of their appearance on the profile screen.</string>
+  <string name="UsernamesBot">Bot Links</string>
+  <string name="UsernamesBotHint">Drag and drop links to change order of their appearance on the profile screen.</string>
+  <string name="UsernamesChannel">Channel Links</string>
+  <string name="UsernamesChannelHint">Drag and drop links to change order of their appearance on the channel profile screen.</string>
+  <string name="UsernamesChat">Chat Links</string>
+  <string name="UsernamesChatHint">Drag and drop links to change order of their appearance on the chat profile screen.</string>
+
+  <string name="PrimaryUsername">Primary username</string>
+  <string name="PrimaryLink">Primary link</string>
+  <string name="PrimaryUsernameHint">Primary username can\'t be disabled. You can remove it using the field above.</string>
+  <string name="PrimaryLinkHint">Primary link can\'t be disabled. You can remove it using the field above.</string>
+  <string name="PrimaryLinkBotHint">Primary link can\'t be disabled.</string>
+
+  <string name="ActivatingUsername">Activating username, please wait…</string>
+  <string name="ActivatingLink">Activating public link, please wait…</string>
+  <string name="DeactivatingUsername">Deactivating username, please wait…</string>
+  <string name="DeactivatingLink">Deactivating public link, please wait…</string>
+
 </resources>

@@ -178,12 +178,16 @@ public abstract class EditBaseController<T> extends ViewController<T> implements
   }
 
   protected void setDoneVisible (boolean isVisible) {
+    setDoneVisible(isVisible, true);
+  }
+
+  protected void setDoneVisible (boolean isVisible, boolean allowAnimation) {
     if (this.doneVisible != isVisible) {
       this.doneVisible = isVisible;
       if (contentView.getParent() != null && doneButton.getMeasuredWidth() != 0 && isFocused()) {
         this.doneVisibilityFactor = 1f;
         doneButton.setMaximumAlpha(1f);
-        doneButton.setIsVisible(isVisible, true);
+        doneButton.setIsVisible(isVisible, allowAnimation);
       } else {
         if (isVisible) {
           if (needShowAnimationDelay()) {

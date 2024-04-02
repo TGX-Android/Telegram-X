@@ -58,8 +58,16 @@ public class FillingDecoration extends RecyclerView.ItemDecoration {
     return ranges.get(index);
   }
 
+  public int[] firstRange () {
+    return ranges.get(0);
+  }
+
   public int[] lastRange () {
     return ranges.get(ranges.size() - 1);
+  }
+
+  public int rangesCount () {
+    return ranges.size();
   }
 
   private int bottomId = View.NO_ID;

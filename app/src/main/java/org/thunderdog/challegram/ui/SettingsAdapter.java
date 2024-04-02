@@ -696,6 +696,8 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         View view = parentView.getLayoutManager().findViewByPosition(position);
         if (view != null && view.getId() == item.getId()) {
           if (view instanceof SettingView) {
+            ((SettingView) view).setIcon(item.getIconResource());
+            ((SettingView) view).setName(item.getString());
             setValuedSetting(item, (SettingView) view, true);
           } else {
             boolean ok = false;
@@ -2040,6 +2042,13 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     } else {
       items.remove(index);
       notifyItemRemoved(index);
+    }
+  }
+
+  public void removeItem (ListItem item) {
+    int index = indexOfView(item);
+    if (index != -1) {
+      removeItem(index);
     }
   }
 
