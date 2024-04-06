@@ -1574,15 +1574,15 @@ public class TD {
 
     int res, exceptRes;
     switch (ruleType) {
-      case PrivacySettings.MODE_NOBODY:
+      case PrivacySettings.Mode.NOBODY:
         res = nobodyRes;
         exceptRes = nobodyExceptRes;
         break;
-      case PrivacySettings.MODE_CONTACTS:
+      case PrivacySettings.Mode.CONTACTS:
         res = contactsRes;
         exceptRes = contactsExceptRes;
         break;
-      case PrivacySettings.MODE_EVERYBODY:
+      case PrivacySettings.Mode.EVERYBODY:
         res = everybodyRes;
         exceptRes = everybodyExceptRes;
         break;

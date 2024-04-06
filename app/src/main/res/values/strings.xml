@@ -5266,4 +5266,8 @@
   <string name="DeactivatingUsername">Deactivating username, please wait…</string>
   <string name="DeactivatingLink">Deactivating public link, please wait…</string>
 
+  <string name="HideReadTime">Hide Read Time</string>
+  <string name="HideReadTimeDesc">Hide the time when you read messages from people who can\'t see your last seen. If you turn this on, their read time will also be hidden from you (unless you are a Premium user).\n\nThis setting does not affect group chats.</string>
+
+
 </resources>

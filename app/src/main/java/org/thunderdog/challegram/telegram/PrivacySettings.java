@@ -12,10 +12,13 @@
  */
 package org.thunderdog.challegram.telegram;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -26,9 +29,14 @@ import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
 public class PrivacySettings {
-  public static final int MODE_NOBODY = 0;
-  public static final int MODE_CONTACTS = 1;
-  public static final int MODE_EVERYBODY = 2;
+
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    Mode.NOBODY, Mode.CONTACTS, Mode.EVERYBODY
+  })
+  public @interface Mode {
+    int NOBODY = 0, CONTACTS = 1, EVERYBODY = 2;
+  }
 
   private final List<TdApi.UserPrivacySettingRule> rules;
   private final int mode;
@@ -47,7 +55,7 @@ public class PrivacySettings {
   }
 
   public boolean needNeverAllow () {
-    if (mode != MODE_NOBODY)
+    if (mode != Mode.NOBODY)
       return true;
     /*for (TdApi.UserPrivacySettingRule rule : rules) {
       if (isGeneral(rule, false))
@@ -59,7 +67,7 @@ public class PrivacySettings {
   }
 
   public boolean needAlwaysAllow () {
-    if (mode != PrivacySettings.MODE_EVERYBODY)
+    if (mode != Mode.EVERYBODY)
       return true;
     for (TdApi.UserPrivacySettingRule rule : rules) {
       if (isGeneral(rule, false))
@@ -164,11 +172,11 @@ public class PrivacySettings {
 
   public TdApi.UserPrivacySettingRules toggleGlobal (int mode) {
     switch (mode) {
-      case MODE_NOBODY:
+      case Mode.NOBODY:
         return toggleGlobal(false, false);
-      case MODE_CONTACTS:
+      case Mode.CONTACTS:
         return toggleGlobal(true, false);
-      case MODE_EVERYBODY:
+      case Mode.EVERYBODY:
         return toggleGlobal(true, true);
     }
     throw new UnsupportedOperationException("mode == " + mode);
@@ -743,6 +751,6 @@ public class PrivacySettings {
         }
       }
     }
-    return new PrivacySettings(rules, allowAll ? MODE_EVERYBODY : allowContacts ? MODE_CONTACTS : MODE_NOBODY, plusUserIds != null ? plusUserIds.get() : null, minusUserIds != null ? minusUserIds.get() : null, plusChatIds != null ? plusChatIds.get() : null, minusChatIds != null ? minusChatIds.get() : null);
+    return new PrivacySettings(rules, allowAll ? Mode.EVERYBODY : allowContacts ? Mode.CONTACTS : Mode.NOBODY, plusUserIds != null ? plusUserIds.get() : null, minusUserIds != null ? minusUserIds.get() : null, plusChatIds != null ? plusChatIds.get() : null, minusChatIds != null ? minusChatIds.get() : null);
   }
 }
