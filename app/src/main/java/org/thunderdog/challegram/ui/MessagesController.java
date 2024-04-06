@@ -1182,7 +1182,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
     }
 
-    sendButton = new SendButton(context, areScheduled ? R.drawable.baseline_schedule_24 : R.drawable.deproko_baseline_send_24);
+    sendButton = new SendButton(context, areScheduled ? R.drawable.dotvhs_baseline_send_schedule_24 : R.drawable.deproko_baseline_send_24);
     sendButton.setIgnoreDrawMessageSender();
     sendButton.setOnClickListener(this);
     addThemeInvalidateListener(sendButton);
