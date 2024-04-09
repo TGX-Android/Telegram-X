@@ -27,6 +27,7 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -391,10 +392,12 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
   private TdApi.MessageViewers messageViewers;
   private void getMessageOptions () {
-    tdlib.client().send(new TdApi.GetMessageViewers(state.message.getChatId(), state.message.getId()), (obj) -> {
-      if (obj.getConstructor() != TdApi.MessageViewers.CONSTRUCTOR) return;
+    tdlib.send(new TdApi.GetMessageViewers(state.message.getChatId(), state.message.getId()), (messageViewers, error) -> {
+      if (error != null) {
+        return;
+      }
       runOnUiThreadOptional(() -> {
-        messageViewers = (TdApi.MessageViewers) obj;
+        this.messageViewers = messageViewers;
         if (SEEN_POSITION != -1) {
           counters[SEEN_POSITION].counter.setCount(messageViewers.viewers.length, false);
         }
@@ -427,6 +430,10 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     if (state.emojiPackIds.length > 0) {
       hintHeight += Screen.dp(40);
     }
+    if (state.options.subtitle != null) {
+      // FIXME: this works only for single line
+      hintHeight += Screen.dp(15f) + Screen.dp(7f) + Screen.dp(8f);
+    }
     return optionItemsHeight + hintHeight;
   }
 
@@ -449,10 +456,12 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   private final int ALL_REACTED_POSITION;
   private final int REACTED_START_POSITION;
 
+  public @Nullable MessageOptionsController findOptionsController () {
+    return (MessageOptionsController) findCachedControllerByPosition(OPTIONS_POSITION);
+  }
+
   @Override
   protected ViewController<?> onCreatePagerItemForPosition (Context context, int position) {
-    View v = null;
-
     if (position == OPTIONS_POSITION) {
       View.OnClickListener onClickListener = view -> {
         if (getArgumentsStrict().onOptionItemPressed(view, view.getId())) {

@@ -2206,10 +2206,11 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     OptionColor.RED,
     OptionColor.BLUE,
     OptionColor.GREEN,
-    OptionColor.INACTIVE
+    OptionColor.INACTIVE,
+    OptionColor.LIGHT
   })
   public @interface OptionColor {
-    int NORMAL = 1, RED = 2, BLUE = 3, GREEN = 4, INACTIVE = 5;
+    int NORMAL = 1, RED = 2, BLUE = 3, GREEN = 4, INACTIVE = 5, LIGHT = 6;
   }
 
   public final void showCallOptions (final String phoneNumber, final long userId) {
@@ -2299,27 +2300,36 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public static class OptionItem {
-    public static final OptionItem SEPARATOR = new OptionItem(0, null, OptionColor.NORMAL, 0);
+    public static final OptionItem SEPARATOR = new OptionItem(0, null, OptionColor.NORMAL, 0, 0);
 
     public final int id;
     public final CharSequence name;
-    public final int color;
+    public final @OptionColor int textColor, iconColor;
     public final int icon;
 
     public OptionItem (int id, CharSequence name, @OptionColor int color, int icon) {
+      this(id, name, color, icon, color);
+    }
+
+    public OptionItem (int id, CharSequence name, @OptionColor int textColor, int icon, @OptionColor int iconColor) {
       this.id = id;
       this.name = name;
-      this.color = color;
+      this.textColor = textColor;
       this.icon = icon;
+      this.iconColor = iconColor;
     }
 
     public static class Builder {
       private int id;
       private CharSequence name;
-      private int color = OptionColor.NORMAL;
+      private int textColor = OptionColor.NORMAL, iconColor = OptionColor.NORMAL;
       private int icon;
 
       public Builder () {
+      }
+
+      public Builder (int id) {
+        this.id = id;
       }
 
       public Builder id (int id) {
@@ -2336,8 +2346,15 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         return name(Lang.getString(resId));
       }
 
-      public Builder color (int color) {
-        this.color = color;
+      public Builder color (@OptionColor int color) {
+        this.textColor = color;
+        this.iconColor = color;
+        return this;
+      }
+
+      public Builder color (@OptionColor int textColor, @OptionColor int iconColor) {
+        this.textColor = textColor;
+        this.iconColor = iconColor;
         return this;
       }
 
@@ -2347,7 +2364,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       }
 
       public OptionItem build () {
-        return new OptionItem(id, name, color, icon);
+        return new OptionItem(id, name, textColor, icon, iconColor);
       }
     }
   }
@@ -2396,6 +2413,19 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         return this;
       }
 
+      public Builder items (int[] ids, String[] titles, int[] colors, int[] icons) {
+        for (int i = 0; i < ids.length; i++) {
+          OptionItem item = new OptionItem.Builder()
+            .id(ids[i])
+            .name(titles[i])
+            .color(colors != null ? colors[i] : OptionColor.NORMAL)
+            .icon(icons != null ? icons[i] : 0)
+            .build();
+          items.add(item);
+        }
+        return this;
+      }
+
       public Builder cancelItem () {
         return item(new OptionItem.Builder().id(R.id.btn_cancel).name(R.string.Cancel).icon(R.drawable.baseline_cancel_24).build());
       }
@@ -2417,7 +2447,11 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   public final Options getOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons) {
     OptionItem[] items = new OptionItem[ids.length];
     for (int i = 0; i < ids.length; i++) {
-      items[i] = new OptionItem(ids != null ? ids[i] : i, titles[i], colors != null ? colors[i] : OptionColor.NORMAL, icons != null ? icons[i] : 0);
+      items[i] = new OptionItem.Builder()
+        .id(ids != null ? ids[i] : i)
+        .color(colors != null ? colors[i] : OptionColor.NORMAL)
+        .icon(icons != null ? icons[i] : 0)
+        .build();
     }
     return new Options(info, null, null, items);
   }
@@ -2445,7 +2479,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     OptionsLayout optionsWrap = new OptionsLayout(context(), this, forcedTheme);
     optionsWrap.setHeader(options.title);
     if (options.subtitle != null) {
-      optionsWrap.setSubtitle(options.subtitle.name, options.subtitle.icon, options.subtitle.color);
+      optionsWrap.setSubtitle(options.subtitle);
     }
 
     optionsWrap.setInfo(this, tdlib(), options.info, false);
@@ -2498,7 +2532,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         totalHeight += shadowViewBottom.getLayoutParams().height + shadowViewTop.getLayoutParams().height;
         continue;
       }
-      TextView text = OptionsLayout.genOptionView(context, item.id, item.name, item.color, item.icon, onClickListener, getThemeListeners(), forcedTheme);
+      TextView text = OptionsLayout.genOptionView(context, item.id, item.name, item.textColor, item.icon, item.iconColor, onClickListener, getThemeListeners(), forcedTheme);
       RippleSupport.setTransparentSelector(text);
       if (forcedTheme != null)
         Theme.forceTheme(text, forcedTheme);

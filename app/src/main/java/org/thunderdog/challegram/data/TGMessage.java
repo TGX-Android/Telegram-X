@@ -137,6 +137,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.SdkVersion;
@@ -5822,6 +5823,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     dst.id = src.id;
     dst.date = src.date;
     dst.sendingState = src.sendingState;
+    dst.schedulingState = src.schedulingState;
 
     dst.canBeDeletedOnlyForSelf = src.canBeDeletedOnlyForSelf;
     dst.canBeDeletedForAllUsers = src.canBeDeletedForAllUsers;
@@ -5829,7 +5831,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     dst.canBeForwarded = src.canBeForwarded;
     dst.canBeSaved = src.canBeSaved;
     dst.canBeEdited = src.canBeEdited;
+    dst.canBeRepliedInAnotherChat = src.canBeRepliedInAnotherChat;
     dst.canGetAddedReactions = src.canGetAddedReactions;
+    dst.canGetReadDate = src.canGetReadDate;
     dst.canGetStatistics = src.canGetStatistics;
     dst.canGetViewers = src.canGetViewers;
     dst.canReportReactions = src.canReportReactions;
@@ -8393,9 +8397,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   public final boolean useBubbles () {
     return manager().useBubbles();
   }
-  /*public static boolean useBubbles () {
-    return ThemeManager.getChatStyle() == ThemeManager.CHAT_STYLE_BUBBLES;
-  }*/
 
   public final boolean useReactionBubbles () {
     return manager().useReactionBubbles();
@@ -8403,22 +8404,46 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   //
 
+  private TdApi.MessageReadDate readDate;
+
+  public final void checkReadDate (RunnableBool after, long timeoutMs) {
+    if (!msg.canGetReadDate || readDate != null || (isUnread() && !noUnread())) {
+      after.runWithBool(false);
+      return;
+    }
+    final AtomicBoolean callbackInvoked = new AtomicBoolean();
+    if (timeoutMs > 0) {
+      runOnUiThreadOptional(() -> {
+        if (!callbackInvoked.getAndSet(true)) {
+          after.runWithBool(true);
+        }
+      }, timeoutMs);
+    }
+    tdlib.send(new TdApi.GetMessageReadDate(msg.chatId, msg.id), (readDate, error) -> {
+      if (readDate != null) {
+        this.readDate = readDate;
+      }
+      runOnUiThreadOptional(() -> {
+        callbackInvoked.set(true);
+        after.runWithBool(false);
+      });
+    });
+  }
+
+  public TdApi.MessageReadDate getReadDate () {
+    return readDate;
+  }
+
   public final void checkAvailableReactions (Runnable after) {
-    tdlib().client().send(new TdApi.GetMessageAvailableReactions(msg.chatId, getSmallestId(), 25), result -> {
-      switch (result.getConstructor()) {
-        case TdApi.AvailableReactions.CONSTRUCTOR: {
-          TdApi.AvailableReactions availableReactions = (TdApi.AvailableReactions) result;
-          tdlib.ensureReactionsAvailable(availableReactions, reactionsUpdated -> {
-            messageAvailableReactions = availableReactions;
-            computeQuickButtons();
-            runOnUiThreadOptional(after);
-          });
-          break;
-        }
-        case TdApi.Error.CONSTRUCTOR: {
+    tdlib.send(new TdApi.GetMessageAvailableReactions(msg.chatId, getSmallestId(), 25), (availableReactions, error) -> {
+      if (error != null) {
+        runOnUiThreadOptional(after);
+      } else {
+        tdlib.ensureReactionsAvailable(availableReactions, reactionsUpdated -> {
+          messageAvailableReactions = availableReactions;
+          computeQuickButtons();
           runOnUiThreadOptional(after);
-          break;
-        }
+        });
       }
     });
   }
@@ -8429,11 +8454,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       r.run();
       return;
     }
-
-    tdlib().client().send(new TdApi.GetMessageLocally(msg.chatId, msg.id), (TdApi.Object object) -> {
-      if (object.getConstructor() == TdApi.Message.CONSTRUCTOR) {
-        TdApi.Message message = (TdApi.Message) object;
-        copyFlags(message, msg);
+    // Fetch fresh info from TDLib
+    tdlib().send(new TdApi.GetMessageLocally(msg.chatId, msg.id), (localMessage, error) -> {
+      if (localMessage != null) {
+        copyFlags(localMessage, msg);
         tdlib().ui().post(r);
       }
     });
@@ -8538,15 +8562,23 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public void runOnUiThread (Runnable act, long delayMillis) {
-    tdlib.ui().postDelayed(act, delayMillis);
+    if (delayMillis > 0) {
+      tdlib.ui().postDelayed(act, delayMillis);
+    } else {
+      tdlib.ui().post(act);
+    }
   }
 
   public void runOnUiThreadOptional (Runnable act) {
+    runOnUiThreadOptional(act, 0);
+  }
+
+  public void runOnUiThreadOptional (Runnable act, long delayMs) {
     runOnUiThread(() -> {
       if (!isDestroyed()) {
         act.run();
       }
-    });
+    }, delayMs);
   }
 
   public void executeOnUiThreadOptional (Runnable act) {

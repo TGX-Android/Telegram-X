@@ -267,6 +267,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
@@ -4443,6 +4444,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
     showMessageOptions(new MessageContext(msg, selectedMessageTag, selectedMessageSender, disableMessageMetadata), ids, options, icons);
   }
 
+  private static OptionItem readItem (Tdlib tdlib, int readDate) {
+    return new OptionItem.Builder()
+      .name(Lang.getRelativeDate(readDate, TimeUnit.SECONDS, tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS, false, 0, R.string.ReadDate, false))
+      .icon(R.drawable.deproko_baseline_check_double_24)
+      .color(OptionColor.LIGHT, OptionColor.BLUE)
+      .build();
+  }
+
   public void showMessageOptions (MessageContext messageContext, int[] ids, String[] options, int[] icons) {
     final TGMessage msg = messageContext.message;
     SpannableStringBuilder b = new SpannableStringBuilder();
@@ -4530,15 +4539,75 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     msg.checkMessageFlags(() -> {
       msg.checkAvailableReactions(() -> {
-        OptionDelegate messageHandler = newMessageOptionDelegate(messageContext);
-        if (!messageContext.disableMetadata && msg.canBeReacted()) {
-          Options messageOptions = getOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons);
-          showMessageOptions(messageOptions, messageContext.message, null, messageHandler);
-        } else {
-          PopupLayout popupLayout = showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons, messageHandler);
-          patchReadReceiptsOptions(popupLayout, messageContext);
-          patchUsedEmojiPacks(popupLayout, messageContext);
-        }
+        AtomicBoolean shown = new AtomicBoolean(false);
+        AtomicReference<RunnableData<TdApi.MessageReadDate>> inject = new AtomicReference<>();
+        msg.checkReadDate(expectAgain -> {
+          TdApi.MessageReadDate readDate = msg.getReadDate();
+
+          if (shown.getAndSet(true)) {
+            if (!expectAgain && readDate != null && readDate.getConstructor() == TdApi.MessageReadDateRead.CONSTRUCTOR) {
+              RunnableData<TdApi.MessageReadDate> act = inject.get();
+              if (act != null) {
+                act.runWithData(readDate);
+              }
+            }
+            return;
+          }
+
+          OptionDelegate messageHandler = newMessageOptionDelegate(messageContext);
+          Options.Builder messageOptionsBuilder = new Options.Builder()
+            .info(StringUtils.isEmpty(text) ? null : text)
+            .items(ids, options, null, icons);
+          if (readDate != null) {
+            switch (readDate.getConstructor()) {
+              case TdApi.MessageReadDateRead.CONSTRUCTOR: {
+                int date = ((TdApi.MessageReadDateRead) readDate).readDate;
+                messageOptionsBuilder.subtitle(readItem(tdlib, date));
+                break;
+              }
+              // Nothing to show
+              case TdApi.MessageReadDateUnread.CONSTRUCTOR:
+              case TdApi.MessageReadDateTooOld.CONSTRUCTOR:
+              case TdApi.MessageReadDateUserPrivacyRestricted.CONSTRUCTOR:
+              // TODO?: "View read date by allowing X to see yours or by subscribing to Telegram Premium."
+              case TdApi.MessageReadDateMyPrivacyRestricted.CONSTRUCTOR: {
+                break;
+              }
+              default: {
+                Td.assertMessageReadDate_5a6e5fbf();
+                throw Td.unsupported(readDate);
+              }
+            }
+          }
+          Options messageOptions = messageOptionsBuilder.build();
+          if (!messageContext.disableMetadata && msg.canBeReacted()) {
+            PopupLayout popupLayout = showMessageOptions(messageOptions, messageContext.message, null, messageHandler);
+            if (expectAgain && popupLayout != null) {
+              inject.set((loadedReadDate) -> {
+                if (!popupLayout.isDestroyed() && loadedReadDate.getConstructor() == TdApi.MessageReadDateRead.CONSTRUCTOR) {
+                  OptionItem item = readItem(tdlib, ((TdApi.MessageReadDateRead) loadedReadDate).readDate);
+                  messageOptionsBuilder.subtitle(item);
+                  MessageOptionsController c = ((MessageOptionsPagerController) popupLayout.getBoundController()).findOptionsController();
+                  if (c != null) {
+                    c.updateSubtitle(messageOptionsBuilder.build());
+                  }
+                }
+              });
+            }
+          } else {
+            PopupLayout popupLayout = showOptions(messageOptions, messageHandler);
+            patchReadReceiptsOptions(popupLayout, messageContext);
+            patchUsedEmojiPacks(popupLayout, messageContext);
+            if (expectAgain && popupLayout != null) {
+              inject.set((loadedReadDate) -> {
+                if (!popupLayout.isDestroyed() && loadedReadDate.getConstructor() == TdApi.MessageReadDateRead.CONSTRUCTOR) {
+                  OptionItem item = readItem(tdlib, ((TdApi.MessageReadDateRead) loadedReadDate).readDate);
+                  ((OptionsLayout) popupLayout.getBoundView()).setSubtitle(item);
+                }
+              });
+            }
+          }
+        }, 200L);
       });
     });
   }
@@ -4549,9 +4618,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private boolean isMessageOptionsVisible;
 
-  private void showMessageOptions (Options options, TGMessage message, @Nullable TdApi.ReactionType reactionType, OptionDelegate optionsDelegate) {
+  private PopupLayout showMessageOptions (Options options, TGMessage message, @Nullable TdApi.ReactionType reactionType, OptionDelegate optionsDelegate) {
     if (isMessageOptionsVisible) {
-      return;
+      return null;
     }
     isMessageOptionsVisible = true;
 
@@ -4562,7 +4631,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         optimizeEmojiLayoutForOptionsWindow(true);
       }
     };
-    r.show();
+    PopupLayout result = r.show();
     r.setDismissListener(new PopupLayout.DismissListener() {
       @Override
       public void onPopupDismiss (PopupLayout popup) {
@@ -4577,6 +4646,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     });
     prepareToShowMessageOptions();
     hideCursorsForInputView();
+    return result;
   }
 
   private boolean needShowKeyboardAfterHideMessageOptions;
@@ -4641,7 +4711,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     FrameLayout frameLayout = new FrameLayoutFix(layout.getContext());
     frameLayout.setLayoutParams(new LinearLayout.LayoutParams(0, Screen.dp(54f), 1f));
-    TextView receiptText = OptionsLayout.genOptionView(layout.getContext(), R.id.more_btn_openReadReceipts, Lang.getString(R.string.LoadingMessageSeen), OptionColor.NORMAL, 0, null, getThemeListeners(), null);
+    TextView receiptText = OptionsLayout.genOptionView(layout.getContext(), R.id.more_btn_openReadReceipts, Lang.getString(R.string.LoadingMessageSeen), OptionColor.NORMAL, 0, OptionColor.NORMAL, null, getThemeListeners(), null);
 
     TripleAvatarView tav = new TripleAvatarView(layout.getContext());
 
@@ -4672,7 +4742,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     optionsLayout.addView(receiptWrap, 2);
 
-    TextView subtitleView = OptionsLayout.genOptionView(layout.getContext(), 0, null, OptionColor.NORMAL, 0, null, getThemeListeners(), null);
+    TextView subtitleView = OptionsLayout.genOptionView(layout.getContext(), 0, null, OptionColor.NORMAL, 0, OptionColor.NORMAL, null, getThemeListeners(), null);
 
     BoolAnimator isSubtitleVisible = new BoolAnimator(0, (id, factor, fraction, callee) -> {
       receiptText.setTranslationY(-Screen.dp(10f) * factor);
@@ -5515,9 +5585,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
         final long chatId = selectedMessage.getChatId();
         if (ChatId.isMultiChat(chatId) && !tdlib.isChannel(chatId) && TD.isAdmin(tdlib.chatStatus(chatId)) && Td.getSenderId(selectedMessage.getMessage().senderId) != chatId) {
           TdApi.MessageSender senderId = selectedMessage.getMessage().senderId;
-          tdlib.client().send(new TdApi.GetChatMember(chatId, senderId), result -> {
-            TdApi.ChatMember otherMember = result.getConstructor() == TdApi.ChatMember.CONSTRUCTOR ? ((TdApi.ChatMember) result) : null;
-            tdlib.ui().post(() -> {
+          tdlib.send(new TdApi.GetChatMember(chatId, senderId), (otherMember, error) -> {
+            runOnUiThreadOptional(() -> {
               if (!selectedMessage.isDestroyed()) {
                 Object tag = MessageView.fillMessageOptions(this, selectedMessage, otherMember, ids, icons, strings, true);
                 if (!ids.isEmpty()) {
