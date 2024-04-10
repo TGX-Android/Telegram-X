@@ -139,8 +139,6 @@ namespace tgcalls {
     REGISTER(InstanceImplLegacy)
     // "2.7.7", "5.0.0"
     REGISTER(InstanceImpl)
-    // "6.0.0"
-    REGISTER(InstanceV2_4_0_0Impl)
     // "7.0.0", "8.0.0", "9.0.0"
     REGISTER(InstanceV2Impl)
     // "10.0.0", "11.0.0"

@@ -74,7 +74,7 @@ target_include_directories(openh264 PRIVATE
   "${OPENH264_DIR}/codec/encoder/plus/inc"
   "${OPENH264_DIR}/codec/decoder/plus/inc"
   "${OPENH264_DIR}/codec/common/inc"
-  "${OPENH264_DIR}/codec/api/svc"
+  "${OPENH264_DIR}/codec/api/wels"
   "${OPENH264_DIR}/codec/processing/interface"
   "${OPENH264_DIR}/codec/processing/src/common"
 )

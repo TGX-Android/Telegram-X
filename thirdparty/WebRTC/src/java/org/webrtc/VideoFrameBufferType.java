@@ -18,7 +18,7 @@ import java.lang.annotation.RetentionPolicy;
 @IntDef({
   VideoFrameBufferType.NATIVE, VideoFrameBufferType.I420, VideoFrameBufferType.I420A,
   VideoFrameBufferType.I422, VideoFrameBufferType.I444, VideoFrameBufferType.I010,
-  VideoFrameBufferType.I210, VideoFrameBufferType.NV12
+  VideoFrameBufferType.I210, VideoFrameBufferType.I410, VideoFrameBufferType.NV12
 })
 @Retention(RetentionPolicy.SOURCE)
 public @interface VideoFrameBufferType {
@@ -29,5 +29,6 @@ public @interface VideoFrameBufferType {
   int I444 = 4;
   int I010 = 5;
   int I210 = 6;
-  int NV12 = 7;
+  int I410 = 7;
+  int NV12 = 8;
 }

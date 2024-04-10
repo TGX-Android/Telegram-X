@@ -276,7 +276,7 @@ public class PhotoGenerationInfo extends GenerationInfo {
       }
 
       final float preRotate = cropState.getDegreesAroundCenter();
-      if (preRotate != 0f) {
+      if (preRotate != 0f || (rotation != 0 && (needMirrorHorizontal || needMirrorVertical))) {
         float w = source.getWidth();
         float h = source.getHeight();
 
@@ -293,7 +293,9 @@ public class PhotoGenerationInfo extends GenerationInfo {
 
         Bitmap rotated = Bitmap.createBitmap(source.getWidth(), source.getHeight(), Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(rotated);
-        c.rotate(preRotate, w / 2, h / 2);
+        if (preRotate != 0f) {
+          c.rotate(preRotate, w / 2, h / 2);
+        }
         if (scale != 1f) {
           c.scale(scale, scale, w / 2, h / 2);
         }
@@ -317,6 +319,7 @@ public class PhotoGenerationInfo extends GenerationInfo {
     }
 
     if ((needMirrorVertical || needMirrorHorizontal) && paintState == null) {
+      //TODO?: this doesn't affect the output bitmap.
       matrixEmpty = false;
       matrix.preScale(needMirrorHorizontal ? -1.0f : 1.0f, needMirrorVertical ? -1.0f : 1.0f);
       needMirrorVertical = needMirrorHorizontal = false;

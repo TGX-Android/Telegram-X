@@ -378,9 +378,9 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
   private boolean openLaunched;
   protected boolean isFirstCreation = true;
 
-  public void show () {
+  public PopupLayout show () {
     if (tdlib == null) {
-      return;
+      return null;
     }
     popupLayout = new PopupLayout(context()) {
       @Override
@@ -404,6 +404,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
     setupPopupLayout(popupLayout);
     getValue();
     context().addFullScreenView(this, false);
+    return popupLayout;
   }
 
   protected void onCustomShowComplete () {

@@ -5266,4 +5266,19 @@
   <string name="DeactivatingUsername">Deactivating username, please wait…</string>
   <string name="DeactivatingLink">Deactivating public link, please wait…</string>
 
+  <string name="HideReadTime">Hide Read Time</string>
+  <string name="HideReadTimeDesc">Hide the time when you read messages from people who can\'t see your last seen. If you turn this on, their read time will also be hidden from you (unless you are a Premium user).\n\nThis setting does not affect group chats.</string>
+
+  <string name="ReadDate_now">Read just now</string>
+  <string name="ReadDate_seconds_one">Read %1$s second ago</string>
+  <string name="ReadDate_seconds_other">Read %1$s seconds ago</string>
+  <string name="ReadDate_minutes_one">Read %1$s minute ago</string>
+  <string name="ReadDate_minutes_other">Read %1$s minutes ago</string>
+  <string name="ReadDate_hours_one">Read %1$s hour ago</string>
+  <string name="ReadDate_hours_other">Read %1$s hours ago</string>
+  <string name="ReadDate_today">Read at %1$s</string>
+  <string name="ReadDate_yesterday">Read yesterday at %1$s</string>
+  <string name="ReadDate_weekday">Read %1$s at %2$s</string>
+  <string name="ReadDate_date">Read %1$s at %2$s</string>
+
 </resources>

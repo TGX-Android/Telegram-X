@@ -414,8 +414,15 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
     }
   }
 
+  private boolean isDestroyed;
+
+  public boolean isDestroyed () {
+    return isDestroyed;
+  }
+
   @Override
   public void performDestroy () {
+    isDestroyed = true;
     for (int i = getChildCount() - 1; i >= 0; i--) {
       View view = getChildAt(i);
       if (view instanceof Destroyable) {
