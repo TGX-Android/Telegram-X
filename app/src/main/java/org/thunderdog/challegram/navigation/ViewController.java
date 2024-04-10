@@ -2328,10 +2328,6 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       public Builder () {
       }
 
-      public Builder (int id) {
-        this.id = id;
-      }
-
       public Builder id (int id) {
         this.id = id;
         return this;
@@ -2427,7 +2423,12 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       }
 
       public Builder cancelItem () {
-        return item(new OptionItem.Builder().id(R.id.btn_cancel).name(R.string.Cancel).icon(R.drawable.baseline_cancel_24).build());
+        return item(new OptionItem.Builder()
+          .id(R.id.btn_cancel)
+          .name(R.string.Cancel)
+          .icon(R.drawable.baseline_cancel_24)
+          .build()
+        );
       }
 
       public int itemCount () {
@@ -2448,7 +2449,8 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     OptionItem[] items = new OptionItem[ids.length];
     for (int i = 0; i < ids.length; i++) {
       items[i] = new OptionItem.Builder()
-        .id(ids != null ? ids[i] : i)
+        .id(ids[i])
+        .name(titles[i])
         .color(colors != null ? colors[i] : OptionColor.NORMAL)
         .icon(icons != null ? icons[i] : 0)
         .build();
