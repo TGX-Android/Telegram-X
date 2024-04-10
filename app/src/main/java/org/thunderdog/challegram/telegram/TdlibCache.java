@@ -1000,7 +1000,8 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     Letters avatarLetters = userLetters(user);
     int extraDrawableRes = /*tdlib.isSelfUserId(user.id) ? R.drawable.baseline_add_a_photo_56 :*/
       /*tdlib.isRepliesChat(ChatId.fromUserId(user.id)) ? R.drawable.baseline_reply_56 :*/
-      TD.isBot(user) ? R.drawable.deproko_baseline_bots_56 :
+      TD.isBot(user) ?
+        (((TdApi.UserTypeBot) user.type).canBeEdited ? R.drawable.baseline_add_a_photo_56 : R.drawable.deproko_baseline_bots_56) :
       R.drawable.baseline_person_56;
     return new AvatarPlaceholder.Metadata(accentColor, avatarLetters, 0, extraDrawableRes);
   }

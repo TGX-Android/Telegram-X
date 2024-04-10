@@ -4588,7 +4588,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void performComplexPhotoOpen () {
-    if (tdlib.canChangeInfo(chat)) {
+    if (tdlib.canChangeInfo(chat) || tdlib.canEditBotChat(chat.id)) {
       changeProfilePhoto();
     } else {
       openPhoto();
