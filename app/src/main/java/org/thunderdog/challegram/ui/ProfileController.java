@@ -5994,7 +5994,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
     switch (mode) {
       case Mode.USER:
-      case Mode.SECRET: {
+      case Mode.SECRET:
+      case Mode.EDIT_BOT_USER: {
         tdlib.cache().subscribeToUserUpdates(user.id, this);
         if (mode == Mode.SECRET) {
           tdlib.cache().subscribeToSecretChatUpdates(secretChat.id, this);
@@ -6053,12 +6054,16 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       runOnUiThreadOptional(() -> {
         ProfileController.this.user = user;
         updateHeader(true);
-        checkUsername();
-        checkPhone();
-        if (mode == Mode.EDIT_BOT_USER && !TD.canEditBot(user)) {
+        if (mode != Mode.EDIT_BOT_USER) {
+          checkUsername();
+          checkPhone();
+        } else if (!TD.canEditBot(user)) {
           // Bot is no longer editable.
           // This is possible when the account got deleted while this screen is open.
           navigateBack();
+        } else {
+          updateValuedItem(R.id.btn_username);
+          checkDoneButton();
         }
       });
     }
