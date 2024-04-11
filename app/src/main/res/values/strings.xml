@@ -4196,6 +4196,16 @@
   <string name="EditPrivacyPhoneNumber">Phone Number</string>
   <string name="EditPrivacyBio">Bio</string>
 
+  <string name="EditPrivacyReadDate">See My Read Date</string>
+  <string name="EditPrivacyReadDateToggleHint">You can hide your **Read Date** only from everyone who can\'t see your **Last Seen &amp; Online**.\n\nSee **[Privacy and Security](tg://settings/privacy)** – **Last Seen &amp; Online** – **Hide Read Time**.</string>
+  <string name="EditPrivacyReadDateAllowHint">Allow %1$s to see your **Last Seen &amp; Online** to affect this setting.\n\nSee **[Privacy and Security](tg://settings/privacy)** – **Last Seen &amp; Online** – **Hide Read Time**.</string>
+  <string name="EditPrivacyReadDateRestrictHint">Restrict %1$s from seeing your **Last Seen &amp; Online** to affect this setting.\n\nSee **[Privacy and Security](tg://settings/privacy)** – **Last Seen &amp; Online** – **Hide Read Time**.</string>
+
+  <string name="PrivacyReadDateExceptionOn">Allowed</string>
+  <string name="PrivacyReadDateExceptionOff">Disallowed</string>
+  <string name="PrivacyReadDateExceptionContacts">Only contacts</string>
+  <string name="PrivacyReadDateDefaultAll">Default</string>
+
   <string name="EditPrivacyForward">Forward My Messages</string>
   <string name="EditPrivacyCall">Call Me</string>
   <string name="EditPrivacyCallP2P">Use Peer-to-Peer in Calls</string>

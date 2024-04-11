@@ -1708,6 +1708,13 @@ public class TdlibListeners {
     }
   }
 
+  @AnyThread
+  public void updateReadDatePrivacySettings (TdApi.ReadDatePrivacySettings settings) {
+    for (PrivacySettingsListener listener : privacySettingsListeners) {
+      listener.onReadDatePrivacySettingsChanged(settings);
+    }
+  }
+
   // updateFile
 
   void updateFile (TdApi.UpdateFile update) {

@@ -17,7 +17,6 @@ package org.thunderdog.challegram.ui;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.CancellationSignal;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.view.View;
@@ -735,7 +734,10 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
         case TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR: {
           if (readDatePrivacySetting != null) {
             readDatePrivacySetting.showReadDate = !adapter.toggleView(v);
-            tdlib.send(new TdApi.SetReadDatePrivacySettings(readDatePrivacySetting), tdlib.typedOkHandler());
+            TdApi.ReadDatePrivacySettings newPrivacySettings = new TdApi.ReadDatePrivacySettings(readDatePrivacySetting.showReadDate);
+            tdlib.send(new TdApi.SetReadDatePrivacySettings(newPrivacySettings), tdlib.typedOkHandler(() -> {
+              tdlib.listeners().updateReadDatePrivacySettings(newPrivacySettings);
+            }));
           }
           break;
         }
