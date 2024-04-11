@@ -554,7 +554,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
             }
             case TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR: {
               view.setEnabledAnimated(readDatePrivacySetting != null, isUpdate);
-              view.getToggler().setRadioEnabled(readDatePrivacySetting != null && readDatePrivacySetting.showReadDate, isUpdate);
+              view.getToggler().setRadioEnabled(readDatePrivacySetting != null && !readDatePrivacySetting.showReadDate, isUpdate);
               break;
             }
             default:
@@ -734,7 +734,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
         }
         case TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR: {
           if (readDatePrivacySetting != null) {
-            readDatePrivacySetting.showReadDate = adapter.toggleView(v);
+            readDatePrivacySetting.showReadDate = !adapter.toggleView(v);
             tdlib.send(new TdApi.SetReadDatePrivacySettings(readDatePrivacySetting), tdlib.typedOkHandler());
           }
           break;
