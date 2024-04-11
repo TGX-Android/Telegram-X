@@ -951,6 +951,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
           adapter.setData(resultArray, finalSectionCount, finalSections, finalLetters);
         }
         recyclerView.postInvalidate();
+        onContactsLoaded();
       });
     });
   }
@@ -1240,6 +1241,24 @@ public class ContactsController extends TelegramViewController<ContactsControlle
     }
   }
 
+  // Async opening
+
+  private boolean contactsLoaded;
+
+  private void onContactsLoaded () {
+    executeOnUiThreadOptional(() -> {
+      if (!contactsLoaded) {
+        contactsLoaded = true;
+        executeScheduledAnimation();
+      }
+    });
+  }
+
+  @Override
+  public boolean needAsynchronousAnimation () {
+    return !contactsLoaded;
+  }
+
   // Data
 
   public static final int DISPLAY_LIMIT = 1024 * 10;
@@ -1267,6 +1286,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
             }
             case TdApi.Error.CONSTRUCTOR: {
               UI.showError(object);
+              onContactsLoaded();
               break;
             }
           }
@@ -1308,6 +1328,7 @@ public class ContactsController extends TelegramViewController<ContactsControlle
         if (isDestroyed()) return;
         hideProgress();
         showEmptyView();
+        onContactsLoaded();
       });
     } else {
       sortUsers(users, null, false);
