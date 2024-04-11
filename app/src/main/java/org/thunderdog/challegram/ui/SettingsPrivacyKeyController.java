@@ -464,7 +464,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
       case TdApi.UserPrivacySettingShowProfilePhoto.CONSTRUCTOR:
         return true;
       case TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR:
-        return privacyRules.getMode() != PrivacySettings.Mode.EVERYBODY || privacyRules.getPlusUserIdCount() > 0;
+        return privacyRules.getMode() != PrivacySettings.Mode.EVERYBODY || privacyRules.getMinusUserIdCount() > 0;
     }
     return false;
   }
@@ -682,11 +682,16 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
           throw Td.unsupported(entry.senderId);
       }
     }
+    long[] pickedUserIds = userIds.get();
+    long[] pickedChatIds = chatIds.get();
     if (userPickMode == R.id.btn_alwaysAllow) {
-      setAllowUsers(userIds.get(), chatIds.get());
+      setAllowUsers(pickedUserIds, pickedChatIds);
     } else if (userPickMode == R.id.btn_neverAllow) {
-      setNeverAllow(userIds.get(), chatIds.get());
+      setNeverAllow(pickedUserIds, pickedChatIds);
+    } else {
+      return;
     }
+    updateExtraToggle(changedPrivacyRules);
   }
 
   @Override
