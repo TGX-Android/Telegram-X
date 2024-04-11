@@ -17,6 +17,7 @@ package org.thunderdog.challegram.ui;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.CancellationSignal;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.view.View;
@@ -502,6 +503,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
         int atIndex = adapter.getItems().size();
         adapter.getItems().addAll(extraItems);
         adapter.notifyItemRangeInserted(atIndex, extraItems.size());
+        loadExtraToggle();
       } else {
         adapter.removeRange(index - 1, 4);
       }
@@ -578,16 +580,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
         setPrivacyRules(rules);
       }
     }));
-    if (getArgumentsStrict().getConstructor() == TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR) {
-      tdlib.send(new TdApi.GetReadDatePrivacySettings(), (readDatePrivacySetting, error) -> runOnUiThreadOptional(() -> {
-        if (error != null) {
-          UI.showError(error);
-        } else {
-          this.readDatePrivacySetting = readDatePrivacySetting;
-          updateExtraToggle(privacyRules);
-        }
-      }));
-    }
+    loadExtraToggle();
 
     subscribedToUserId = tdlib.myUserId();
     tdlib.cache().addUserDataListener(subscribedToUserId, this);
@@ -601,6 +594,19 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
         adapter.updateValuedSettingById(R.id.btn_togglePermission);
       }
     });
+  }
+
+  private void loadExtraToggle () {
+    if (getArgumentsStrict().getConstructor() == TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR) {
+      tdlib.send(new TdApi.GetReadDatePrivacySettings(), (readDatePrivacySetting, error) -> runOnUiThreadOptional(() -> {
+        if (error != null) {
+          UI.showError(error);
+        } else {
+          this.readDatePrivacySetting = readDatePrivacySetting;
+          updateExtraToggle(currentRules());
+        }
+      }));
+    }
   }
 
   @Override
