@@ -464,7 +464,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
       case TdApi.UserPrivacySettingShowProfilePhoto.CONSTRUCTOR:
         return true;
       case TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR:
-        return privacyRules.getMode() != PrivacySettings.Mode.EVERYBODY || privacyRules.getPlusUserIdCount() > 0;
+        return privacyRules.getMode() != PrivacySettings.Mode.EVERYBODY || privacyRules.getMinusUserIdCount() > 0;
     }
     return false;
   }
@@ -502,6 +502,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
         int atIndex = adapter.getItems().size();
         adapter.getItems().addAll(extraItems);
         adapter.notifyItemRangeInserted(atIndex, extraItems.size());
+        loadExtraToggle();
       } else {
         adapter.removeRange(index - 1, 4);
       }
@@ -552,7 +553,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
             }
             case TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR: {
               view.setEnabledAnimated(readDatePrivacySetting != null, isUpdate);
-              view.getToggler().setRadioEnabled(readDatePrivacySetting != null && readDatePrivacySetting.showReadDate, isUpdate);
+              view.getToggler().setRadioEnabled(readDatePrivacySetting != null && !readDatePrivacySetting.showReadDate, isUpdate);
               break;
             }
             default:
@@ -578,16 +579,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
         setPrivacyRules(rules);
       }
     }));
-    if (getArgumentsStrict().getConstructor() == TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR) {
-      tdlib.send(new TdApi.GetReadDatePrivacySettings(), (readDatePrivacySetting, error) -> runOnUiThreadOptional(() -> {
-        if (error != null) {
-          UI.showError(error);
-        } else {
-          this.readDatePrivacySetting = readDatePrivacySetting;
-          updateExtraToggle(privacyRules);
-        }
-      }));
-    }
+    loadExtraToggle();
 
     subscribedToUserId = tdlib.myUserId();
     tdlib.cache().addUserDataListener(subscribedToUserId, this);
@@ -601,6 +593,19 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
         adapter.updateValuedSettingById(R.id.btn_togglePermission);
       }
     });
+  }
+
+  private void loadExtraToggle () {
+    if (getArgumentsStrict().getConstructor() == TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR) {
+      tdlib.send(new TdApi.GetReadDatePrivacySettings(), (readDatePrivacySetting, error) -> runOnUiThreadOptional(() -> {
+        if (error != null) {
+          UI.showError(error);
+        } else {
+          this.readDatePrivacySetting = readDatePrivacySetting;
+          updateExtraToggle(currentRules());
+        }
+      }));
+    }
   }
 
   @Override
@@ -682,11 +687,16 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
           throw Td.unsupported(entry.senderId);
       }
     }
+    long[] pickedUserIds = userIds.get();
+    long[] pickedChatIds = chatIds.get();
     if (userPickMode == R.id.btn_alwaysAllow) {
-      setAllowUsers(userIds.get(), chatIds.get());
+      setAllowUsers(pickedUserIds, pickedChatIds);
     } else if (userPickMode == R.id.btn_neverAllow) {
-      setNeverAllow(userIds.get(), chatIds.get());
+      setNeverAllow(pickedUserIds, pickedChatIds);
+    } else {
+      return;
     }
+    updateExtraToggle(changedPrivacyRules);
   }
 
   @Override
@@ -723,8 +733,11 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
         }
         case TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR: {
           if (readDatePrivacySetting != null) {
-            readDatePrivacySetting.showReadDate = adapter.toggleView(v);
-            tdlib.send(new TdApi.SetReadDatePrivacySettings(readDatePrivacySetting), tdlib.typedOkHandler());
+            readDatePrivacySetting.showReadDate = !adapter.toggleView(v);
+            TdApi.ReadDatePrivacySettings newPrivacySettings = new TdApi.ReadDatePrivacySettings(readDatePrivacySetting.showReadDate);
+            tdlib.send(new TdApi.SetReadDatePrivacySettings(newPrivacySettings), tdlib.typedOkHandler(() -> {
+              tdlib.listeners().updateReadDatePrivacySettings(newPrivacySettings);
+            }));
           }
           break;
         }

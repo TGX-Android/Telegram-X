@@ -555,6 +555,7 @@
   <item type="id" name="btn_declineCall" />
   <item type="id" name="btn_lastSeen" />
   <item type="id" name="btn_privacyRule" />
+  <item type="id" name="btn_extraPrivacyRule" />
   <item type="id" name="btn_forwardLink" />
   <item type="id" name="btn_profilePhoto" />
   <item type="id" name="btn_calls" />

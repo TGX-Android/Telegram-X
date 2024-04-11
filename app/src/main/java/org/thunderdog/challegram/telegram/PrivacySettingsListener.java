@@ -16,4 +16,5 @@ import org.drinkless.tdlib.TdApi;
 
 public interface PrivacySettingsListener {
   void onPrivacySettingRulesChanged (TdApi.UserPrivacySetting setting, TdApi.UserPrivacySettingRules rules);
+  default void onReadDatePrivacySettingsChanged (TdApi.ReadDatePrivacySettings settings) { }
 }
