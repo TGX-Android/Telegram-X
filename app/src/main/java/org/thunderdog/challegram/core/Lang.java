@@ -151,15 +151,70 @@ public class Lang {
     return keys;
   }
 
+  public static String escapeMarkdown (String str) {
+    if (str == null || str.isEmpty()) {
+      return str;
+    }
+    return str.replaceAll("([_~|*`\\[\\]()])", "\u200B$1");
+  }
+
+  public static CharSequence escapeMarkdown (CharSequence cs) {
+    if (cs == null) {
+      return null;
+    }
+    if (cs instanceof String) {
+      return escapeMarkdown((String) cs);
+    }
+    SpannableStringBuilder b = new SpannableStringBuilder(cs);
+    int index = b.length() - 1;
+    while (index >= 0) {
+      char c = b.charAt(index);
+      if (needMarkdownEscape(c)) {
+        b.insert(index, "\u200B");
+      }
+      index--;
+    }
+    return b;
+  }
+
+  private static boolean needMarkdownEscape (char c) {
+    switch (c) {
+      case '_':
+      case '~':
+      case '|':
+      case '*':
+      case '`':
+      case '[': case ']': case '(': case ')':
+        return true;
+    }
+    return false;
+  }
+
+
+  private static void sanitizeMarkdownFormatArgs (Object[] args) {
+    if (args == null || args.length == 0) {
+      return;
+    }
+    for (int i = 0; i < args.length; i++) {
+      Object arg = args[i];
+      if (arg instanceof CharSequence) {
+        args[i] = escapeMarkdown((CharSequence) arg);
+      }
+    }
+  }
+
   public static CharSequence getMarkdownString (TdlibDelegate context, @StringRes int resId, SpanCreator spanCreator, Object... formatArgs) {
+    sanitizeMarkdownFormatArgs(formatArgs);
     return Strings.buildMarkdown(context, Lang.getString(resId, spanCreator, formatArgs), null);
   }
 
   public static CharSequence getMarkdownString (TdlibDelegate context, @StringRes int resId, Object... formatArgs) {
+    sanitizeMarkdownFormatArgs(formatArgs);
     return Strings.buildMarkdown(context, Lang.getString(resId, formatArgs), null);
   }
 
   public static CharSequence getMarkdownStringSecure (TdlibDelegate context, @StringRes int resId, Object... formatArgs) {
+    sanitizeMarkdownFormatArgs(formatArgs);
     return Strings.buildMarkdown(context, Lang.getStringSecure(resId, formatArgs), null);
   }
 
