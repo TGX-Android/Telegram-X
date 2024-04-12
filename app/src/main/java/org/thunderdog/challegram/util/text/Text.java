@@ -2645,7 +2645,14 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
           lineMargin = Math.max(getLineStartMargin(i, 0/*FIXME*/), lineMargin);
         }
       }
-      c.clipRect(startX - bound, startY - bound, startX + getWidth() + bound + lineMargin, startY + getHeight() + bound);
+      if (isFullyRtl()) {
+        // c.drawRect(endX - lineMargin - getWidth() - bound, startY - bound, endX + bound, startY + getHeight() + bound, Paints.strokeSmallPaint(0xFF000000));
+        c.clipRect(endX - lineMargin - getWidth() - bound, startY - bound, endX + bound, startY + getHeight() + bound);
+      } else {
+        // c.drawRect(startX - bound, startY - bound, startX + getWidth() + bound + lineMargin, startY + getHeight() + bound, Paints.strokeSmallPaint(0xFF000000));
+        c.clipRect(startX - bound, startY - bound, startX + getWidth() + bound + lineMargin, startY + getHeight() + bound);
+      }
+
     } else {
       saveCount = -1;
     }
