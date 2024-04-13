@@ -2507,7 +2507,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
   }
 
-  private SharedChatsController getGroupsController () {
+  private SharedChatsController getCommonChatsController () {
     ArrayList<SharedBaseController<?>> controllers = getControllers();
     final int count = controllers.size();
     for (int i = count - 1; i >= 0; i--) {
@@ -2539,30 +2539,15 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       return;
     }
     final boolean needGroups = userFull != null && userFull.groupInCommonCount > 0;
-    final SharedChatsController existingGroupsController = getGroupsController();
+    final SharedChatsController existingGroupsController = getCommonChatsController();
     boolean hasGroups = existingGroupsController != null;
     if (needGroups != hasGroups) {
       if (needGroups) {
         SharedChatsController c = new SharedChatsController(context, tdlib);
-        registerController(c);
-        controllers.add(c);
-        pagerAdapter.notifyItemInserted(controllers.size() - 1);
-        if (Config.USE_ICON_TABS) {
-          // topCellView.getTopView().addItem(c.getIcon());
-        } else {
-          topCellView.getTopView().addItem(c.getName().toString().toUpperCase());
-        }
+        addControllerTab(c);
       } else {
-        int i = controllers.indexOf(existingGroupsController);
-        if (i == -1)
-          return;
-        ViewController<?> c = controllers.remove(i);
-        pagerAdapter.notifyItemRemoved(i);
-        unregisterController(c);
-        topCellView.getTopView().removeItemAt(i);
-        c.destroy();
+        removeControllerTab(existingGroupsController);
       }
-      pagerAdapter.notifyDataSetChanged();
     }
   }
 
@@ -5724,6 +5709,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             } else {
               fillMediaControllers(controllers, context, tdlib);
             }
+            getSimilarChatsCount(true);
           } else {
             controllers.add(new SharedRestrictionController(context, tdlib).setRestrictionReason(restrictionReason));
           }
@@ -5765,6 +5751,73 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     return buildingTabsCount > 0;
   }
 
+  private void addControllerTab (SharedBaseController<?> c) {
+    registerController(c);
+    controllers.add(c);
+    pagerAdapter.notifyItemInserted(controllers.size() - 1);
+    if (Config.USE_ICON_TABS) {
+      // topCellView.getTopView().addItem(c.getIcon());
+    } else {
+      topCellView.getTopView().addItem(c.getName().toString().toUpperCase());
+    }
+    pagerAdapter.notifyDataSetChanged();
+  }
+
+  private void removeControllerTab (SharedBaseController<?> c) {
+    int i = controllers.indexOf(c);
+    if (i == -1)
+      return;
+    ViewController<?> removed = controllers.remove(i);
+    if (removed != c)
+      throw new IllegalStateException();
+    pagerAdapter.notifyItemRemoved(i);
+    unregisterController(c);
+    topCellView.getTopView().removeItemAt(i);
+    c.destroy();
+    pagerAdapter.notifyDataSetChanged();
+  }
+
+  private int similarChatCount;
+
+  private void setSimilarChatCount (int count) {
+    boolean needSimilarChats = count > 0;
+    final SharedChatsController existingChatsController = getCommonChatsController();
+    boolean hasSimilarChats = existingChatsController != null;
+    this.similarChatCount = count;
+
+    if (needSimilarChats != hasSimilarChats) {
+      if (needSimilarChats) {
+        SharedChatsController c = new SharedChatsController(context, tdlib);
+        c.setMode(SharedChatsController.Mode.SIMILAR_CHANNELS);
+        c.setTotalCountWithPremium(count);
+        addControllerTab(c);
+      } else {
+        removeControllerTab(existingChatsController);
+      }
+    }
+  }
+
+  private void getSimilarChatsCount (boolean returnLocal) {
+    if (!isChannel() || isEditing()) {
+      return;
+    }
+    tdlib.send(new TdApi.GetChatSimilarChatCount(getChatId(), returnLocal), (similarChatCount, error) -> {
+      int count;
+      if (error != null) {
+        Log.e("TDLib error getChatSimilarChatCount chatId:%d, returnLocal:%b: %s", getChatId(), returnLocal, TD.toErrorString(error));
+        count = -1;
+      } else {
+        count = similarChatCount.count;
+      }
+      runOnUiThreadOptional(() -> {
+        setSimilarChatCount(count);
+      });
+      if (returnLocal && count == -1) {
+        getSimilarChatsCount(false);
+      }
+    });
+  }
+
   private void getMessageCount (TdApi.SearchMessagesFilter filter, boolean returnLocal) {
     tdlib.send(new TdApi.GetChatMessageCount(getChatId(), filter, 0, returnLocal), (messageCount, error) -> {
       int count;
@@ -5774,21 +5827,14 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       } else {
         count = messageCount.count;
       }
-      if (returnLocal) {
-        tdlib.ui().post(() -> {
-          if (!isDestroyed()) {
-            setMediaCount(filter, count);
-            if (!isSyncTab(filter) && --buildingTabsCount == 0)
-              executeScheduledAnimation();
-          }
-        });
-        if (count == -1) {
-          getMessageCount(filter, false);
+      runOnUiThreadOptional(() -> {
+        setMediaCount(filter, count);
+        if (returnLocal && !isSyncTab(filter) && --buildingTabsCount == 0) {
+          executeScheduledAnimation();
         }
-      } else {
-        runOnUiThreadOptional(() -> {
-          setMediaCount(filter, count);
-        });
+      });
+      if (returnLocal && count == -1) {
+        getMessageCount(filter, false);
       }
     });
   }
@@ -6126,6 +6172,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
   }
 
+
+
   private CharSequence makeSubtitle (boolean isExpanded) {
     if (needMediaSubtitle) {
       if (isExpanded) {
@@ -6134,8 +6182,18 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       ViewController<?> c = findCurrentCachedController();
       if (c != null) {
         if (c instanceof SharedChatsController) {
-          if (userFull != null && userFull.groupInCommonCount > 0) {
-            return Lang.pluralBold(R.string.xGroups, userFull.groupInCommonCount);
+          switch (((SharedChatsController) c).getMode()) {
+            case SharedChatsController.Mode.GROUPS_IN_COMMON: {
+              if (userFull != null && userFull.groupInCommonCount > 0) {
+                return Lang.pluralBold(R.string.xGroups, userFull.groupInCommonCount);
+              }
+              break;
+            }
+            case SharedChatsController.Mode.SIMILAR_CHANNELS: {
+              return Lang.pluralBold(R.string.xSimilarChannels, similarChatCount);
+            }
+            default:
+              throw new IllegalStateException();
           }
         } else if (c instanceof SharedRestrictionController) {
           return Lang.getString(R.string.MediaRestricted);

@@ -1302,6 +1302,12 @@
   <string name="SetUpUsername">Set Username</string>
   <string name="PhoneMobile">Mobile</string>
   <string name="GroupsInCommon">Groups in Common</string>
+  <string name="SimilarChannels">Similar Channels</string>
+  <string name="xSimilarChannels_one">%1$s similar channel</string>
+  <string name="xSimilarChannels_other">%1$s similar channels</string>
+  <string name="xMoreWithPremium_one">%1$s more with **Telegram Premium**</string>
+  <string name="xMoreWithPremium_other">%1$s more with **Telegram Premium**</string>
+  <string name="format_xChatsAndMoreWithPremium">%1$s, %2$s</string>
   <string name="EncryptionKey">Encryption Key</string>
   <string name="PictureAndText">Picture and text</string>
   <string name="TapToSetup">Tap to set</string>
@@ -2703,6 +2709,7 @@
   <string name="TabLinks">Links</string>
   <string name="TabAudio">Audio</string>
   <string name="TabSharedGroups">Groups</string>
+  <string name="TabSimilarChannels">Similar</string>
   <string name="TabAdmins">Admins</string>
   <string name="TabBlacklist">Blocked</string>
   <string name="TabRestricted">Restricted</string>
