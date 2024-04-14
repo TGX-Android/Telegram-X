@@ -44,9 +44,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 
 public class TextPart {
-  private static final int FLAG_LINE_RTL = 1;
-  private static final int FLAG_LINE_RTL_FAKE = 1 << 2;
-  private static final int FLAG_ANIMATED_EMOJI = 1 << 3;
+  private static final int FLAG_ANIMATED_EMOJI = 1 << 3;    // unused flag?
 
   private final Text source;
   private String line;
@@ -90,7 +88,7 @@ public class TextPart {
   }
 
   public boolean isRtl () {
-    return (flags & FLAG_LINE_RTL) != 0 || (flags & FLAG_LINE_RTL_FAKE) != 0;
+    return BiDiUtils.isParagraphRtl(bidiEntity);
   }
 
   public void setAnimateEmoji (boolean animate) {
@@ -179,34 +177,6 @@ public class TextPart {
 
   public boolean isEssential () {
     return emojiInfo == null && (this.entity == null || this.entity.isEssential());
-  }
-
-  public void setPartDirection (int direction, boolean fake) {
-    int flags = this.flags;
-    /*switch (direction) {
-      case Strings.DIRECTION_LTR:
-        flags &= ~FLAG_DIRECTION_RTL;
-        flags |= FLAG_DIRECTION_LTR;
-        break;
-      case Strings.DIRECTION_RTL:
-        flags |= FLAG_DIRECTION_RTL;
-        flags &= ~FLAG_DIRECTION_LTR;
-        break;
-      case Strings.DIRECTION_NEUTRAL:
-        flags &= ~FLAG_DIRECTION_LTR;
-        flags &= ~FLAG_DIRECTION_RTL;
-        break;
-    }*/
-    // flags = U.setFlag(flags, )
-    // flags = U.setFlag(flags, FLAG_LINE_RTL_FAKE, fake);
-    this.flags = flags;
-  }
-
-  public void setRtlMode (boolean isRtl, boolean fake) {
-    int flags = this.flags;
-    flags = BitwiseUtils.setFlag(flags, FLAG_LINE_RTL, isRtl);
-    flags = BitwiseUtils.setFlag(flags, FLAG_LINE_RTL_FAKE, fake);
-    this.flags = flags;
   }
 
   public void setEnd (int end) {
@@ -311,9 +281,9 @@ public class TextPart {
       startXPadding = lineStartMargin;
       endXPadding = lineEndMargin;
     }
-    boolean rtl = (flags & FLAG_LINE_RTL) != 0;
+    boolean rtl = isRtl();
     if ((rtl || source.alignRight()) && endX != startX) {
-      if (!rtl || (flags & FLAG_LINE_RTL_FAKE) != 0) {
+      if (!rtl) {
         int lineWidth = source.getLineWidth(lineIndex);
         x = endX - lineWidth + this.x - endXPadding;
       } else {

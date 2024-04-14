@@ -111,7 +111,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   private static final int FLAG_ABORT_PROCESS = 1 << 25;
   private static final int FLAG_FAKE_BOLD = 1 << 26;
   private static final int FLAG_FULL_RTL = 1 << 27;
-  private static final int FLAG_MAY_APPLY_RTL = 1 << 28;
   private static final int FLAG_ELLIPSIZED = 1 << 29;
   private static final int FLAG_NEED_BACKGROUND = 1 << 30;
   private static final int FLAG_HAS_SPOILERS = 1 << 31;
@@ -769,7 +768,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     lastPart = null;
     textFlags &= ~(
       FLAG_FULL_RTL |
-      FLAG_MAY_APPLY_RTL |
       FLAG_ELLIPSIZED |
       FLAG_NEED_BACKGROUND |
       FLAG_HAS_SPOILERS
@@ -1020,38 +1018,36 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     // Now check RTL lines (V2)
 
     final int partsCount = out.size();
-    int rtlPartsCount = 0;
-
-    for (int partIndex = 0; partIndex < partsCount; partIndex++) {
-      final TextPart part = out.get(partIndex);
-      final boolean paragraphIsRtl = BiDiUtils.isParagraphRtl(part.getBidiEntity());
-      // part.setDirectionEntity(directionEntity);
-      part.setRtlMode(paragraphIsRtl, false);
-
-      if (paragraphIsRtl) {
-        rtlPartsCount += 1;
-      }
-    }
 
     // Fix order
+    final boolean useExtraWidth = BitwiseUtils.hasAllFlags(textFlags, Text.FLAG_IGNORE_NEWLINES | Text.FLAG_IGNORE_CONTINUOUS_NEWLINES);
     TextPart[] partsArray = out.toArray(new TextPart[0]);
+    float[] extraWidth = new float[out.size()];
     byte[] partsLevels = new byte[out.size()];
     for (int a = 0; a < partsLevels.length; a++) {
       partsLevels[a] = (byte) BiDiUtils.getLevel(partsArray[a].getBidiEntity());
     }
 
     int lineIndex = 0;
+    int rtlPartsCount = 0;
     int lastLineStartIndex = 0;
     for (int partIndex = 0; partIndex < partsCount; partIndex++) {
-      final TextPart part = out.get(partIndex);
+      final TextPart part = partsArray[partIndex];
+      final boolean paragraphIsRtl = BiDiUtils.isParagraphRtl(part.getBidiEntity());
       final int partLineIndex = part.getY(); //getLineIndex();
+      if (useExtraWidth && (partIndex < (partsCount - 1))) {
+        extraWidth[partIndex] = Math.max(partsArray[partIndex + 1].getX() - part.getX() - part.getWidth(), 0f);
+      }
       if (lineIndex != partLineIndex) {
-        fixPartsOrder(partsArray, partsLevels, lastLineStartIndex, partIndex);
+        fixPartsOrder(partsArray, partsLevels, extraWidth, lastLineStartIndex, partIndex);
         lastLineStartIndex = partIndex;
         lineIndex = partLineIndex;
       }
+      if (paragraphIsRtl) {
+        rtlPartsCount += 1;
+      }
     }
-    fixPartsOrder(partsArray, partsLevels, lastLineStartIndex, partsCount);
+    fixPartsOrder(partsArray, partsLevels, extraWidth, lastLineStartIndex, partsCount);
 
 
 
@@ -1178,7 +1174,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return BitwiseUtils.hasFlag(textFlags, FLAG_IGNORE_NEWLINES);
   }
 
-  private void fixPartsOrder (TextPart[] partsArray, byte[] partsLevels, int partStart, int partEnd) {
+  private void fixPartsOrder (TextPart[] partsArray, byte[] partsLevels, float[] extraWidths, int partStart, int partEnd) {
     if (partEnd - partStart < 2) {
       return;
     }
@@ -1189,24 +1185,19 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
     if (!isRtl) {
       for (int index = partStart; index < partEnd; index++) {
-        TextPart part = partsArray[index];
+        final TextPart part = partsArray[index];
+        final float extraWidth = extraWidths[index];
         part.setXY(x, part.getY());
-        x += part.getWidth();
+        x += (int)(part.getWidth() + extraWidth);
       }
     } else {
       for (int index = partEnd - 1; index >= partStart; index--) {
-        TextPart part = partsArray[index];
-        part.setXY(x, part.getY());
-        x += part.getWidth();
+        final TextPart part = partsArray[index];
+        final float extraWidth = extraWidths[index];
+        part.setXY((int) (x + extraWidth), part.getY());
+        x += (int)(part.getWidth() + extraWidth);
       }
     }
-
-    /*
-    for (int index = partStart; index < partEnd; index++) {
-      TextPart part1 = out.get(index);
-      part1.setXY(x, part1.getY());
-      x += part1.getWidth();
-    }*/
   }
 
   private static int findMoreSpaces (String in, int start) {
@@ -2245,7 +2236,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   }
 
   public boolean alignRight () {
-    return (textFlags & FLAG_ALIGN_RIGHT) != 0 || (Lang.rtl() && (textFlags & FLAG_MAY_APPLY_RTL) != 0);
+    return (textFlags & FLAG_ALIGN_RIGHT) != 0;
   }
 
   public int getLineCount () {
