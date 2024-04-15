@@ -283,12 +283,8 @@ public class TextPart {
     }
     boolean rtl = isRtl();
     if ((rtl || source.alignRight()) && endX != startX) {
-      if (!rtl) {
-        int lineWidth = source.getLineWidth(lineIndex);
-        x = endX - lineWidth + this.x - endXPadding;
-      } else {
-        x = endX - this.x - (int) this.width - endXPadding;
-      }
+      int lineWidth = source.getLineWidth(lineIndex);
+      x = endX - lineWidth + this.x - endXPadding;
       if (lineIndex + 1 == source.getLineCount()) {
         x -= endXBottomPadding;
       }

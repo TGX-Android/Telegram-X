@@ -1179,24 +1179,14 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       return;
     }
 
-    final boolean isRtl = BiDiUtils.isParagraphRtl(partsArray[partStart].getBidiEntity());
     int x = partsArray[partStart].getX();
     Bidi.reorderVisually(partsLevels, partStart, partsArray, partStart, partEnd - partStart);
 
-    if (!isRtl) {
-      for (int index = partStart; index < partEnd; index++) {
-        final TextPart part = partsArray[index];
-        final float extraWidth = extraWidths[index];
-        part.setXY(x, part.getY());
-        x += (int)(part.getWidth() + extraWidth);
-      }
-    } else {
-      for (int index = partEnd - 1; index >= partStart; index--) {
-        final TextPart part = partsArray[index];
-        final float extraWidth = extraWidths[index];
-        part.setXY((int) (x + extraWidth), part.getY());
-        x += (int)(part.getWidth() + extraWidth);
-      }
+    for (int index = partStart; index < partEnd; index++) {
+      final TextPart part = partsArray[index];
+      final float extraWidth = extraWidths[index];
+      part.setXY(x, part.getY());
+      x += (int)(part.getWidth() + extraWidth);
     }
   }
 
@@ -2614,7 +2604,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   }
 
   public void draw (Canvas c, int startX, int startY, @Nullable TextColorSet defaultTheme, @FloatRange(from = 0f, to = 1f) float alpha, ComplexReceiver receiver) {
-    draw(c, startX, startX + getWidth(), 0, startY, defaultTheme, alpha, receiver);
+    draw(c, startX, startX /* + getWidth()*/, 0, startY, defaultTheme, alpha, receiver);
   }
 
   public void draw (Canvas c, int startX, int endX, int endXBottomPadding, int startY, @Nullable TextColorSet defaultTheme, @FloatRange(from = 0f, to = 1f) float alpha) {
