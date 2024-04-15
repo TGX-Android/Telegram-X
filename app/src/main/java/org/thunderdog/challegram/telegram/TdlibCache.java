@@ -1350,9 +1350,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     }
   }
 
-  @Deprecated
   /*pacakge*/ long myUserId () {
-    // TODO move myUserId to TdlibContext
     return myUserId;
   }
 
@@ -1360,9 +1358,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     return myUserId == userId;
   }
 
-  @Deprecated
   public @Nullable TdApi.User myUser () {
-    // TODO move to TdlibContext
     TdApi.User result;
     synchronized (dataLock) {
       result = myUserId != 0 ? users.get(myUserId) : null;

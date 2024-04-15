@@ -1434,7 +1434,7 @@ public class DrawAlgorithms {
  }
 
  public static void drawSticker (Canvas c, TGStickerSetInfo info, GifReceiver gifReceiver, ImageReceiver receiver, Path contour) {
-   if (info != null && info.isAnimated()) {
+   if (info != null && info.isPreviewAnimated()) {
      if (gifReceiver.needPlaceholder()) {
        if (receiver.needPlaceholder()) {
          receiver.drawPlaceholderContour(c, contour);

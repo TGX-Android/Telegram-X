@@ -1029,6 +1029,20 @@ public class TdlibListeners {
     listChange.list.onUpdateChatPosition(listChange.chat, listChange.change);
   }
 
+  // updateChatAddedToList, updateChatRemovedFromList
+
+  void updateChatAddedToList (TdApi.UpdateChatAddedToList update) {
+    runChatUpdate(update.chatId, listener ->
+      listener.onChatAddedToList(update.chatId, update.chatList)
+    );
+  }
+
+  void updateChatRemovedFromList (TdApi.UpdateChatRemovedFromList update) {
+    runChatUpdate(update.chatId, listener ->
+      listener.onChatRemovedFromList(update.chatId, update.chatList)
+    );
+  }
+
   // updateChatPermissions
 
   private static void updateChatPermissions (long chatId, TdApi.ChatPermissions permissions, @Nullable Iterator<ChatListener> list) {
@@ -1897,6 +1911,12 @@ public class TdlibListeners {
   void updateSuggestedActions (TdApi.UpdateSuggestedActions update) {
     for (TdlibOptionListener listener : optionListeners) {
       listener.onSuggestedActionsChanged(update.addedActions, update.removedActions);
+    }
+  }
+
+  void updateContactCloseBirthdayUsers (TdApi.UpdateContactCloseBirthdays update) {
+    for (TdlibOptionListener listener : optionListeners) {
+      listener.onContactCloseBirthdayUsersChanged(update.closeBirthdayUsers);
     }
   }
 }

@@ -203,7 +203,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
     super.setArguments(args);
     this.chatFolderId = args.chatFolderId;
     this.originChatFolder = args.chatFolder;
-    this.editedChatFolder = args.chatFolder != null ? TD.copyOf(args.chatFolder) : TD.newChatFolder(args.chatFolderName);
+    this.editedChatFolder = args.chatFolder != null ? Td.copyOf(args.chatFolder) : TD.newChatFolder(args.chatFolderName);
   }
 
   @Override
@@ -593,7 +593,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
 
   private void updateChatFolder (TdApi.ChatFolder chatFolder) {
     if (this.originChatFolder == null) {
-      this.originChatFolder = TD.copyOf(chatFolder);
+      this.originChatFolder = Td.copyOf(chatFolder);
     }
     this.editedChatFolder = chatFolder;
     updateDoneButton();
@@ -778,9 +778,9 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
 
   private void saveChanges (Runnable after) {
     if (chatFolderId != NO_CHAT_FOLDER_ID) {
-      editChatFolder(chatFolderId, TD.copyOf(editedChatFolder), after);
+      editChatFolder(chatFolderId, Td.copyOf(editedChatFolder), after);
     } else {
-      createChatFolder(TD.copyOf(editedChatFolder), after);
+      createChatFolder(Td.copyOf(editedChatFolder), after);
     }
   }
 

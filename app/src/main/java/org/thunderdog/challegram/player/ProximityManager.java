@@ -193,20 +193,9 @@ public class ProximityManager implements Settings.RaiseToSpeakListener, SensorEv
     if (am != null) {
       isWiredHeadsetOn = U.isWiredHeadsetOn(am);
       BluetoothAdapter btAdapter = am.isBluetoothScoAvailableOffCall() ? BluetoothAdapter.getDefaultAdapter() : null;
-
-      IntentFilter filter = new IntentFilter();
-      filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-        filter.addAction(AudioManager.ACTION_HEADSET_PLUG);
-      } else {
-        filter.addAction(Intent.ACTION_HEADSET_PLUG);
-      }
-      if (btAdapter != null) {
-        filter.addAction(BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED);
-        filter.addAction(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED);
-      }
+      IntentFilter intentFilter = newIntentFilter(btAdapter);
       try {
-        UI.getAppContext().registerReceiver(receiver, filter);
+        UI.getAppContext().registerReceiver(receiver, intentFilter);
       } catch (Throwable t) {
         Log.e("Unable to register headset broadcast receiver", t);
       }
@@ -214,6 +203,21 @@ public class ProximityManager implements Settings.RaiseToSpeakListener, SensorEv
       isWiredHeadsetOn = false;
     }
     return true;
+  }
+
+  private static IntentFilter newIntentFilter (BluetoothAdapter btAdapter) {
+    IntentFilter filter = new IntentFilter();
+    filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      filter.addAction(AudioManager.ACTION_HEADSET_PLUG);
+    } else {
+      filter.addAction(Intent.ACTION_HEADSET_PLUG);
+    }
+    if (btAdapter != null) {
+      filter.addAction(BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED);
+      filter.addAction(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED);
+    }
+    return filter;
   }
 
   private boolean unregisterProximitySensor () {
@@ -247,6 +251,7 @@ public class ProximityManager implements Settings.RaiseToSpeakListener, SensorEv
       AudioManager am = (AudioManager) UI.getAppContext().getSystemService(Context.AUDIO_SERVICE);
       if (am != null) {
         if (playingThroughEarpiece) {
+          // TODO: rework to setCommunicationDevice(AudioDeviceInfo) or clearCommunicationDevice()
           am.setSpeakerphoneOn(false);
           am.setMode(AudioManager.MODE_IN_COMMUNICATION);
         } else {

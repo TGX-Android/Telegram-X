@@ -1686,6 +1686,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
   private static final int ACTION_REDUCE_VOLUME = 9;
   private static final int ACTION_SET_SPEED = 10;
 
+  @SuppressWarnings("unchecked")
   private void processMessage (Message msg) {
     switch (msg.what) {
       case ACTION_DELETE_MESSAGES: {
@@ -1726,7 +1727,6 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
         break;
       }
       case ACTION_ADD_MESSAGES: {
-        //noinspection unchecked
         addMessages(msg.arg1, (List<TdApi.Message>) msg.obj, msg.arg2 == 1);
         break;
       }

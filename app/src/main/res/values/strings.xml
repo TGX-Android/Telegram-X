@@ -89,6 +89,8 @@
   <string name="format_plus">+%1$d</string>
   <string name="format_minus">-%1$d</string>
   <string name="format_minusPlus">-%1$d, +%2$d</string>
+  <string name="format_exceptionPlusPremium">%1$s, +premium</string>
+  <string name="format_plusPremium">+premium</string>
   <string name="format_ping">ping: %1$sms</string>
   <string name="format_pingBest">ping: %1$sms, best</string>
   <string name="format_ivAuthorDateSeparator">" • "</string>
@@ -1671,6 +1673,7 @@
   <string name="SendSticker">Send sticker</string>
   <string name="ViewPackPreview">View Pack</string>
   <string name="UserBio">Bio</string>
+  <string name="UserBirthdate">Date of Birth</string>
   <string name="BotInfo">Description</string>
   <string name="BotDescription">Intro</string>
   <string name="EditBotUsername">Public Link</string>
@@ -2561,6 +2564,8 @@
   <string name="PrivacyAddToGroupsExceptionOn">Allowed</string>
   <string name="PrivacyAddToGroupsExceptionOff">Disallowed</string>
   <string name="PrivacyAddToGroupsExceptionContacts">Only contacts</string>
+  <string name="PrivacyAddToGroupsExceptionContactsAndPremium">Only contacts and **Telegram Premium** users</string>
+  <string name="PrivacyAddToGroupsExceptionPremium">Only **Telegram Premium** users</string>
   <string name="PrivacyCallsNobody">Nobody can call you</string>
   <string name="PrivacyCallsNobodyExcept">Nobody (%1$s) can call you</string>
   <string name="PrivacyCallsContacts">Only contacts can call you</string>
@@ -3763,6 +3768,8 @@
   <string name="WhoCanSeePhoneInfo">Users who have your number saved in their contacts will also see it on Telegram.</string>
   <string name="WhoCanSeeBio">Who can see your bio?</string>
   <string name="WhoCanSeeBioInfo">You can restrict who can see the bio on your profile with granular precision.</string>
+  <string name="WhoCanSeeBirthdate">Who can see your date of birth?</string>
+  <string name="WhoCanSeeBirthdateInfo">You can restrict who can see the date of birth on your profile with granular precision.</string>
 
   <string name="PrivacyShowNumberExceptionOn">Visible</string>
   <string name="PrivacyShowNumberExceptionContacts">Visible only for contacts</string>
@@ -3783,6 +3790,16 @@
   <string name="PrivacyShowBioContactsExcept">Only contacts (%1$s) can see your bio</string>
   <string name="PrivacyShowBioEverybody">Everybody can see your bio</string>
   <string name="PrivacyShowBioEverybodyExcept">Everybody (%1$s) can see your bio</string>
+
+  <string name="PrivacyShowBirthdateExceptionOn">Visible</string>
+  <string name="PrivacyShowBirthdateExceptionContacts">Visible only for contacts</string>
+  <string name="PrivacyShowBirthdateExceptionOff">Hidden</string>
+  <string name="PrivacyShowBirthdateNobody">Nobody can see your date of birth</string>
+  <string name="PrivacyShowBirthdateNobodyExcept">Nobody (%1$s) can see your date of birth</string>
+  <string name="PrivacyShowBirthdateContacts">Only contacts can see your date of birth</string>
+  <string name="PrivacyShowBirthdateContactsExcept">Only contacts (%1$s) can see your date of birth</string>
+  <string name="PrivacyShowBirthdateEverybody">Everybody can see your date of birth</string>
+  <string name="PrivacyShowBirthdateEverybodyExcept">Everybody (%1$s) can see your date of birth</string>
 
   <!--<string name="PrivacyAllowFindingNobody">Nobody can see your phone number</string>
   <string name="PrivacyAllowFindingNobodyExcept">Nobody (%1$s) can see your phone number</string>-->
@@ -4195,6 +4212,7 @@
   <string name="PrivacyDefault">Default</string>
   <string name="PrivacyDefaultChat">Default for %1$s</string>
   <string name="PrivacyDefaultContacts">Default for contacts</string>
+  <string name="PrivacyDefaultPremium">Default for **Telegram Premium** users</string>
   <string name="PrivacyDefaultXChats_one">Default for %1$s chat</string>
   <string name="PrivacyDefaultXChats_other">Default for %1$s chats</string>
 
@@ -4202,6 +4220,7 @@
   <string name="EditPrivacyStatus">Last Seen &amp; Online</string>
   <string name="EditPrivacyPhoneNumber">Phone Number</string>
   <string name="EditPrivacyBio">Bio</string>
+  <string name="EditPrivacyBirthdate">Date of Birth</string>
 
   <string name="EditPrivacyReadDate">See My Read Date</string>
   <string name="EditPrivacyReadDateToggleHint">You can hide your **Read Date** only from everyone who can\'t see your **Last Seen &amp; Online**.\n\nSee **[Privacy and Security](tg://settings/privacy)** – **Last Seen &amp; Online** – **Hide Read Time**.</string>
@@ -4211,6 +4230,8 @@
   <string name="PrivacyReadDateExceptionOn">Allowed</string>
   <string name="PrivacyReadDateExceptionOff">Disallowed</string>
   <string name="PrivacyReadDateExceptionContacts">Only contacts</string>
+  <string name="PrivacyReadDateExceptionPremium">Only **Telegram Premium** users</string>
+  <string name="PrivacyReadDateExceptionContactsAndPremium">Only contacts and **Telegram Premium** users</string>
   <string name="PrivacyReadDateDefaultAll">Default</string>
 
   <string name="EditPrivacyForward">Forward My Messages</string>
@@ -5282,6 +5303,9 @@
   <string name="ActivatingLink">Activating public link, please wait…</string>
   <string name="DeactivatingUsername">Deactivating username, please wait…</string>
   <string name="DeactivatingLink">Deactivating public link, please wait…</string>
+
+  <string name="AllowPremiumInvite">**Telegram Premium** subscribers</string>
+  <string name="AllowPremiumInviteDesc">Always allow users with **Telegram Premium** subscription to add you to groups and channels.</string>
 
   <string name="HideReadTime">Hide Read Time</string>
   <string name="HideReadTimeDesc">Hide the time when you read messages from people who can\'t see your last seen. If you turn this on, their read time will also be hidden from you (unless you are a Premium user).\n\nThis setting does not affect group chats.</string>

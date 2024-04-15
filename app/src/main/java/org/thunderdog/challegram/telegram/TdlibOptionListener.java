@@ -22,6 +22,7 @@ public interface TdlibOptionListener {
   default void onSuggestedLanguagePackChanged (String suggestedLanguagePackId, TdApi.LanguagePackInfo suggestedLanguagePack) { }
   default void onContactRegisteredNotificationsDisabled (boolean areDisabled) { }
   default void onSuggestedActionsChanged (TdApi.SuggestedAction[] addedActions, TdApi.SuggestedAction[] removedActions) { }
+  default void onContactCloseBirthdayUsersChanged (TdApi.CloseBirthdayUser[] birthdayUsers) { }
   default void onArchiveAndMuteChatsFromUnknownUsersEnabled (boolean enabled) { }
   default void onAccentColorsChanged () { }
   default void onProfileAccentColorsChanged (boolean listChanged) { }

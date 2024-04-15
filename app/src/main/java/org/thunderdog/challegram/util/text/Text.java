@@ -234,7 +234,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       // TODO move particles faster when pressed
     }
 
-    public void draw (Canvas c, @Deprecated int iconColor) {
+    public void draw (Canvas c, int iconColor) {
       // TODO proper particles
       c.drawPath(path, Paints.fillingPaint(ColorUtils.alphaColor(1f - getContentAlpha(), iconColor)));
     }

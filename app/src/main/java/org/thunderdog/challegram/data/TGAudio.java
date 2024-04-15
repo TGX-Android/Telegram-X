@@ -23,7 +23,6 @@ import org.thunderdog.challegram.tool.UI;
 
 import me.vkryl.td.Td;
 
-@Deprecated
 public class TGAudio {
   private final Tdlib tdlib;
   private final TdApi.Message msg;

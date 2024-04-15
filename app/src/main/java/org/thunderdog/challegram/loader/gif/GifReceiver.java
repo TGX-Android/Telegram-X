@@ -100,8 +100,8 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     this.croppedClipRegion = new RectF();
   }
 
-  /** @noinspection unchecked*/
   @Override
+  @SuppressWarnings("unchecked")
   public final GifReceiver setUpdateListener (ReceiverUpdateListener listener) {
     this.updateListener = listener;
     return this;

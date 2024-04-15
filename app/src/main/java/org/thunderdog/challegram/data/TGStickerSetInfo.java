@@ -426,8 +426,8 @@ public class TGStickerSetInfo {
     return previewAnimation;
   }
 
-  public boolean isAnimated () {
-    return info != null && Td.isAnimated(info.stickerFormat);
+  public boolean isPreviewAnimated () {
+    return previewAnimation != null;
   }
 
   public int getSize () {

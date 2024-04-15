@@ -15,9 +15,15 @@
 package org.thunderdog.challegram.loader;
 
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 
 public class ImageAnimatorHandler extends Handler {
+
+  public ImageAnimatorHandler () {
+    super(Looper.getMainLooper());
+  }
+
   @Override
   public void handleMessage (Message msg) {
     ((ImageAnimator) msg.obj).onFrame(msg.what);

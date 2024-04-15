@@ -3707,4 +3707,13 @@ public class U {
     System.arraycopy(second, 0, result, first.length, second.length);
     return result;
   }
+
+  @SuppressWarnings("deprecation")
+  public static String getCpuAbi () {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      return Build.SUPPORTED_ABIS[0];
+    } else {
+      return Build.CPU_ABI;
+    }
+  }
 }
