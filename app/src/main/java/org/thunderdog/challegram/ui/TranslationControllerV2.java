@@ -684,7 +684,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     protected void onDraw (Canvas canvas) {
       float alpha = translationCounterDrawable.getLoadingTextAlpha();
       for (ListAnimator.Entry<TextWrapper> entry : text) {
-        entry.item.draw(canvas, Screen.dp(18), Screen.dp(6), null, alpha * entry.getVisibility(), textMediaReceiver);
+        entry.item.draw(canvas, Screen.dp(18), getMeasuredWidth() - Screen.dp(18), 0, Screen.dp(6), null, alpha * entry.getVisibility(), textMediaReceiver);
       }
       invalidate();
     }
