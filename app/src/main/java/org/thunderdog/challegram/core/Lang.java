@@ -203,6 +203,16 @@ public class Lang {
     }
   }
 
+  public static CharSequence getMarkdownPlural (TdlibDelegate context, @StringRes int resId, long num, Object... formatArgs) {
+    sanitizeMarkdownFormatArgs(formatArgs);
+    return Strings.buildMarkdown(context, Lang.plural(resId, num, formatArgs), null);
+  }
+
+  public static CharSequence getMarkdownPlural (TdlibDelegate context, @StringRes int resId, long num, SpanCreator spanCreator, Object... formatArgs) {
+    sanitizeMarkdownFormatArgs(formatArgs);
+    return Strings.buildMarkdown(context, Lang.plural(resId, num, spanCreator, formatArgs), null);
+  }
+
   public static CharSequence getMarkdownString (TdlibDelegate context, @StringRes int resId, SpanCreator spanCreator, Object... formatArgs) {
     sanitizeMarkdownFormatArgs(formatArgs);
     return Strings.buildMarkdown(context, Lang.getString(resId, spanCreator, formatArgs), null);

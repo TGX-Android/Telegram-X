@@ -1478,6 +1478,7 @@ public class TD {
     int ruleType = privacy.getMode();
     int minus = privacy.getMinusTotalCount(tdlib);
     int plus = privacy.getPlusTotalCount(tdlib);
+    boolean plusPremium = privacy.needPlusPremium();
 
     int nobodyExceptRes, nobodyRes;
     int contactsExceptRes, contactsRes;
@@ -1506,8 +1507,16 @@ public class TD {
         everybodyExceptRes = R.string.PrivacyShowBioEverybodyExcept;
         everybodyRes = R.string.PrivacyShowBioEverybody;
         break;
+      case TdApi.UserPrivacySettingShowBirthdate.CONSTRUCTOR:
+        nobodyExceptRes = R.string.PrivacyShowBirthdateNobodyExcept;
+        nobodyRes = R.string.PrivacyShowBirthdateNobody;
+        contactsExceptRes = R.string.PrivacyShowBirthdateContactsExcept;
+        contactsRes = R.string.PrivacyShowBirthdateContacts;
+        everybodyExceptRes = R.string.PrivacyShowBirthdateEverybodyExcept;
+        everybodyRes = R.string.PrivacyShowBirthdateEverybody;
+        break;
       case TdApi.UserPrivacySettingAllowChatInvites.CONSTRUCTOR:
-        nobodyExceptRes = R.string.PrivacyAddToGroupsNobodyExcept;
+        nobodyExceptRes =  R.string.PrivacyAddToGroupsNobodyExcept;
         nobodyRes = R.string.PrivacyAddToGroupsNobody;
         contactsExceptRes = R.string.PrivacyAddToGroupsContactsExcept;
         contactsRes = R.string.PrivacyAddToGroupsContacts;
@@ -1568,7 +1577,7 @@ public class TD {
         everybodyRes = R.string.PrivacyVoiceVideoEverybody;
         break;
       default:
-        Td.assertUserPrivacySetting_21d3f4();
+        Td.assertUserPrivacySetting_39dfff4d();
         throw new UnsupportedOperationException(Integer.toString(privacyKey));
     }
 
@@ -1593,6 +1602,11 @@ public class TD {
     String exception = plus > 0 && minus > 0 ? Lang.getString(R.string.format_minusPlus, minus, plus) :
                        minus > 0 ? Lang.getString(R.string.format_minus, minus) :
                        plus > 0 ? Lang.getString(R.string.format_plus, plus) : null;
+    if (plusPremium) {
+      exception = exception != null ?
+        Lang.getString(R.string.format_exceptionPlusPremium, exception) :
+        Lang.getString(R.string.format_plusPremium);
+    }
     if (exception != null) {
       return exceptRes != 0 ? Lang.getString(exceptRes, exception) : Lang.getString(res) + " " + exception;
     } else {
@@ -5233,7 +5247,23 @@ public class TD {
   }
 
   public static TdApi.ChatFolder newChatFolder () {
-    return new TdApi.ChatFolder("", null, false, ArrayUtils.EMPTY_LONGS, ArrayUtils.EMPTY_LONGS, ArrayUtils.EMPTY_LONGS, false, false, false, false, false, false, false, false);
+    return new TdApi.ChatFolder(
+      "",
+      null,
+      -1,
+      false,
+      ArrayUtils.EMPTY_LONGS,
+      ArrayUtils.EMPTY_LONGS,
+      ArrayUtils.EMPTY_LONGS,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    );
   }
 
   public static TdApi.ChatFolder newChatFolder (String title) {
@@ -5276,25 +5306,6 @@ public class TD {
     chatFolder.pinnedChatIds = U.removeAll(chatFolder.pinnedChatIds, chatIds);
     chatFolder.includedChatIds = U.removeAll(chatFolder.includedChatIds, chatIds);
     chatFolder.excludedChatIds = U.toArray(chatIds);
-  }
-
-  public static TdApi.ChatFolder copyOf (TdApi.ChatFolder folder) {
-    return new TdApi.ChatFolder(
-      folder.title,
-      folder.icon,
-      folder.isShareable,
-      folder.pinnedChatIds,
-      folder.includedChatIds,
-      folder.excludedChatIds,
-      folder.excludeMuted,
-      folder.excludeRead,
-      folder.excludeArchived,
-      folder.includeContacts,
-      folder.includeNonContacts,
-      folder.includeBots,
-      folder.includeGroups,
-      folder.includeChannels
-    );
   }
 
   public static boolean contentEquals (TdApi.ChatFolder lhs, TdApi.ChatFolder rhs) {

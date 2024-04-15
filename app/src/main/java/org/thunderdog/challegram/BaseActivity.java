@@ -3249,6 +3249,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
   }
 
+  @SuppressWarnings("deprecation")
   private void updateNavigationBarColor () {
     if (Config.USE_CUSTOM_NAVIGATION_COLOR) {
       int color;
@@ -3283,6 +3284,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         if (Theme.needLightStatusBar()) {
           visibility |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
         }
+        // TODO: rework to WindowInsetsControlle
         getWindow().getDecorView().setSystemUiVisibility(visibility);
       }
     }

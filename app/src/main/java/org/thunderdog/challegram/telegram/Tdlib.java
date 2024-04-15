@@ -460,6 +460,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private long authorizationDate = 0;
   private int supergroupMaxSize = 200000;
   private int maxBioLength = 70;
+  private int chatAvailableReactionsMaxCount = 100, chatBoostLevelMax = 100;
   private int chatFolderMaxCount = 10, folderChosenChatMaxCount = 100;
   private int addedShareableChatFolderMaxCount = 2, chatFolderInviteLinkMaxCount = 3;
   private long chatFolderUpdatePeriod = 300; // Seconds
@@ -469,6 +470,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private int storySuggestedReactionAreaCountMax = 5;
   private int storyViewersExpirationDelay = 86400;
   private int storyStealhModeCooldownPeriod = 3600, storyStealthModeFuturePeriod = 1500, storyStealthModePastPeriod = 300;
+  private int businessIntroTitleLengthMax = 32, businessIntroMessageLengthMax = 70;
+  private int
+    giveawayBoostCountPerPremium = 4,
+    giveawayAdditionalChatCountMax = 10,
+    giveawayDurationMax = 2678400,
+    giveawayCountryCountMax = 10;
+  private int
+    quickReplyShortcutCountMax = 100,
+    quickReplyShortcutMessageCountMax = 20;
+  private int premiumGiftBoostCount = 3;
   private boolean isPremium, isPremiumAvailable;
   private @GiftPremiumOption int giftPremiumOptions;
   private boolean suggestOnlyApiStickers;
@@ -476,7 +487,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private long roundVideoBitrate = 1000, roundAudioBitrate = 64, roundVideoMaxSize = 12582912, roundVideoDiameter = 384;
   private int forwardMaxCount = 100;
   private int groupMaxSize = 200;
-  private int pinnedChatsMaxCount = 5, pinnedArchivedChatsMaxCount = 100, pinnedForumTopicMaxCount = 5;
+  private int
+    pinnedChatsMaxCount = 5,
+    pinnedArchivedChatsMaxCount = 100,
+    pinnedForumTopicMaxCount = 5,
+    pinnedSavedMessagesTopicMaxCount = 5;
   private int favoriteStickersMaxCount = 5;
   private double emojiesAnimatedZoom = .75f;
   private boolean youtubePipDisabled, qrLoginCamera, dialogFiltersTooltip, dialogFiltersEnabled, forceUrgentInAppUpdate;
@@ -486,7 +501,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private final Map<String, TGReaction> cachedReactions = new HashMap<>();
   private boolean callsEnabled = true, expectBlocking, isLocationVisible;
   private boolean canIgnoreSensitiveContentRestrictions, ignoreSensitiveContentRestrictions;
-  private boolean canArchiveAndMuteNewChatsFromUnknownUsers;
+  private boolean canArchiveAndMuteNewChatsFromUnknownUsers, canSetNewChatPrivacySettings;
   private RtcServer[] rtcServers;
 
   private long unixTime;
@@ -535,8 +550,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return counter;
   }
 
-  private int maxMessageCaptionLength = 1024;
-  private int maxMessageTextLength = 4000;
+  private int
+    maxMessageCaptionLength = 1024,
+    maxMessageTextLength = 4000,
+    maxMessageReplyQuoteLength = 1024;
 
   private int installedStickerSetLimit = 200;
 
@@ -1786,12 +1803,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   public interface ResultHandler<T extends TdApi.Object> {
     void onResult (T result, @Nullable TdApi.Error error);
 
+    @SuppressWarnings("unchecked")
     static <T extends TdApi.Object> Client.ResultHandler toTdlibHandler (ResultHandler<T> handler) {
       return result -> {
         if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
           handler.onResult(null, (TdApi.Error) result);
         } else {
-          //noinspection unchecked
           handler.onResult((T) result, null);
         }
       };
@@ -2248,6 +2265,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return clientExecuteT(function, 0, throwErrors);
   }
 
+  @SuppressWarnings("unchecked")
   public <T extends TdApi.Object> T clientExecuteT (TdApi.Function<T> function, long timeoutMs, boolean throwErrors) throws TdlibException {
     TdApi.Object result = clientExecute(function, timeoutMs);
     if (result instanceof TdApi.Error) {
@@ -2257,7 +2275,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       Log.i("clientExecute %s failed: %s", function.getClass().getName(), TD.toErrorString(result));
       return null;
     }
-    //noinspection unchecked
     return (T) result;
   }
 
@@ -6833,6 +6850,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return pinnedArchivedChatsMaxCount;
   }
 
+  public int pinnedForumTopicMaxCount () {
+    return pinnedForumTopicMaxCount;
+  }
+
+  public int pinnedSavedMessagesTopicMaxCount () {
+    return pinnedSavedMessagesTopicMaxCount;
+  }
+
   public int favoriteStickersMaxCount () {
     return favoriteStickersMaxCount;
   }
@@ -6851,6 +6876,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   public boolean autoArchiveAvailable () {
     return canArchiveAndMuteNewChatsFromUnknownUsers;
+  }
+
+  public boolean canSetNewChatPrivacySettings () {
+    return canSetNewChatPrivacySettings;
   }
 
   public String tMeUrl () {
@@ -7111,6 +7140,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return maxMessageCaptionLength;
   }
 
+  public int maxMessageReplyQuoteLength () {
+    return maxMessageReplyQuoteLength;
+  }
+
   public boolean suggestOnlyApiStickers () {
     return suggestOnlyApiStickers;
   }
@@ -7335,6 +7368,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     animatedTgxEmoji.clear();
     cachedReactions.clear();
     activeEmojiReactions = null;
+    closeBirthdayUsers = null;
   }
 
   public static class RtcServer {
@@ -7756,6 +7790,28 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   }
 
+  // Updates: SHORTCUTS
+
+  @TdlibThread
+  private void updateQuickReplyShortcuts (TdApi.UpdateQuickReplyShortcuts update) {
+
+  }
+
+  @TdlibThread
+  private void updateQuickReplyShortcut (TdApi.UpdateQuickReplyShortcut update) {
+
+  }
+
+  @TdlibThread
+  private void updateQuickReplyShortcutMessages (TdApi.UpdateQuickReplyShortcutMessages update) {
+
+  }
+
+  @TdlibThread
+  private void updateQuickReplyShortcutDeleted (TdApi.UpdateQuickReplyShortcutDeleted update) {
+
+  }
+
   // Updates: CHATS
 
   @TdlibThread
@@ -8091,6 +8147,58 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     if (chatListChange != null) {
       listeners.updateChatPosition(update, chatListChange);
     }
+  }
+
+  @TdlibThread
+  private void updateChatAddedToList (TdApi.UpdateChatAddedToList update) {
+    synchronized (dataLock) {
+      final TdApi.Chat chat = chats.get(update.chatId);
+      if (TdlibUtils.assertChat(update.chatId, chat, update)) {
+        return;
+      }
+      TdApi.ChatList[] oldChatLists = chat.chatLists;
+      if (oldChatLists != null) {
+        for (TdApi.ChatList chatList : oldChatLists) {
+          if (Td.equalsTo(chatList, update.chatList)) {
+            return;
+          }
+        }
+      }
+      List<TdApi.ChatList> list = new ArrayList<>((oldChatLists != null ? oldChatLists.length : 0) + 1);
+      if (oldChatLists != null) {
+        Collections.addAll(list, oldChatLists);
+      }
+      list.add(update.chatList);
+      // TODO: sort?
+      chat.chatLists = list.toArray(new TdApi.ChatList[0]);
+    }
+    listeners.updateChatAddedToList(update);
+  }
+
+  @TdlibThread
+  private void updateChatRemovedFromList (TdApi.UpdateChatRemovedFromList update) {
+    synchronized (dataLock) {
+      final TdApi.Chat chat = chats.get(update.chatId);
+      if (TdlibUtils.assertChat(update.chatId, chat, update)) {
+        return;
+      }
+
+      TdApi.ChatList[] oldChatLists = chat.chatLists;
+      int foundIndex = -1;
+      if (oldChatLists != null) {
+        for (int i = 0; i < oldChatLists.length; i++) {
+          if (Td.equalsTo(oldChatLists[i], update.chatList)) {
+            foundIndex = i;
+            break;
+          }
+        }
+      }
+      if (foundIndex == -1) {
+        return;
+      }
+      chat.chatLists = ArrayUtils.removeElement(oldChatLists, foundIndex, new TdApi.ChatList[oldChatLists.length - 1]);
+    }
+    listeners.updateChatRemovedFromList(update);
   }
 
   @TdlibThread
@@ -8714,7 +8822,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   @TdlibThread
   private void updateUnconfirmedSession (TdApi.UpdateUnconfirmedSession update) {
-
+    // TODO
   }
 
   // Updates: FILES
@@ -8994,6 +9102,23 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   public TdApi.SuggestedAction[] getSuggestedActions () {
     synchronized (dataLock) {
       return suggestedActions.toArray(new TdApi.SuggestedAction[0]);
+    }
+  }
+
+  private TdApi.CloseBirthdayUser[] closeBirthdayUsers;
+
+  @TdlibThread
+  private void updateContactCloseBirthdays (TdApi.UpdateContactCloseBirthdays update) {
+    synchronized (dataLock) {
+      closeBirthdayUsers = update.closeBirthdayUsers;
+    }
+    listeners().updateContactCloseBirthdayUsers(update); // TODO move to some SuggestionListener?
+  }
+
+  @AnyThread
+  public TdApi.CloseBirthdayUser[] closeBirthdayUsers () {
+    synchronized (dataLock) {
+      return closeBirthdayUsers;
     }
   }
 
@@ -9292,6 +9417,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case "pinned_forum_topic_count_max":
         this.pinnedForumTopicMaxCount = Td.intValue(update.value);
         break;
+      case "pinned_saved_messages_topic_count_max":
+        this.pinnedSavedMessagesTopicMaxCount = Td.intValue(update.value);
+        break;
 
       case "message_text_length_max":
         this.maxMessageTextLength = Td.intValue(update.value);
@@ -9299,11 +9427,20 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case "message_caption_length_max":
         this.maxMessageCaptionLength = Td.intValue(update.value);
         break;
+      case "message_reply_quote_length_max":
+        this.maxMessageReplyQuoteLength = Td.intValue(update.value);
+        break;
 
       case "forwarded_message_count_max":
         this.forwardMaxCount = Td.intValue(update.value);
         break;
 
+      case "chat_available_reaction_count_max":
+        this.chatAvailableReactionsMaxCount = Td.intValue(update.value);
+        break;
+      case "chat_boost_level_max":
+        this.chatBoostLevelMax = Td.intValue(update.value);
+        break;
       case "chat_folder_count_max":
         this.chatFolderMaxCount = Td.intValue(update.value);
         break;
@@ -9358,6 +9495,37 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         this.storyStealthModePastPeriod = Td.intValue(update.value);
         break;
 
+      case "business_intro_title_length_max":
+        this.businessIntroTitleLengthMax = Td.intValue(update.value);
+        break;
+      case "business_intro_message_length_max":
+        this.businessIntroMessageLengthMax = Td.intValue(update.value);
+        break;
+
+      case "giveaway_boost_count_per_premium":
+        this.giveawayBoostCountPerPremium = Td.intValue(update.value);
+        break;
+      case "giveaway_additional_chat_count_max":
+        this.giveawayAdditionalChatCountMax = Td.intValue(update.value);
+        break;
+      case "giveaway_duration_max":
+        this.giveawayDurationMax = Td.intValue(update.value);
+        break;
+      case "giveaway_country_count_max":
+        this.giveawayCountryCountMax = Td.intValue(update.value);
+        break;
+
+      case "quick_reply_shortcut_count_max":
+        this.quickReplyShortcutCountMax = Td.intValue(update.value);
+        break;
+      case "quick_reply_shortcut_message_count_max":
+        this.quickReplyShortcutMessageCountMax = Td.intValue(update.value);
+        break;
+
+      case "premium_gift_boost_count":
+        this.premiumGiftBoostCount = Td.intValue(update.value);
+        break;
+
       // Service accounts and chats
 
       case "anti_spam_bot_user_id":
@@ -9399,6 +9567,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case "can_archive_and_mute_new_chats_from_unknown_users":
         this.canArchiveAndMuteNewChatsFromUnknownUsers = Td.boolValue(update.value);
         break;
+      case "can_set_new_chat_privacy_settings":
+        this.canSetNewChatPrivacySettings = Td.boolValue(update.value);
+        break;
+
       case "disable_top_chats":
         setDisableTopChatsImpl(Td.boolValue(update.value));
         break;
@@ -9444,6 +9616,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case "is_emulator":
       case "use_storage_optimizer":
       case "storage_max_files_size":
+      case "storage_max_time_from_last_access":
       case "use_pfs":
       case "process_pinned_messages_as_mentions":
       case "use_quick_ack":
@@ -9801,6 +9974,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateChatPosition((TdApi.UpdateChatPosition) update);
         break;
       }
+      case TdApi.UpdateChatAddedToList.CONSTRUCTOR: {
+        updateChatAddedToList((TdApi.UpdateChatAddedToList) update);
+        break;
+      }
+      case TdApi.UpdateChatRemovedFromList.CONSTRUCTOR: {
+        updateChatRemovedFromList((TdApi.UpdateChatRemovedFromList) update);
+        break;
+      }
       case TdApi.UpdateChatIsMarkedAsUnread.CONSTRUCTOR: {
         updateChatIsMarkedAsUnread((TdApi.UpdateChatIsMarkedAsUnread) update);
         break;
@@ -10032,6 +10213,25 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         break;
       }
 
+      // Shortcuts
+
+      case TdApi.UpdateQuickReplyShortcuts.CONSTRUCTOR: {
+        updateQuickReplyShortcuts((TdApi.UpdateQuickReplyShortcuts) update);
+        break;
+      }
+      case TdApi.UpdateQuickReplyShortcut.CONSTRUCTOR: {
+        updateQuickReplyShortcut((TdApi.UpdateQuickReplyShortcut) update);
+        break;
+      }
+      case TdApi.UpdateQuickReplyShortcutDeleted.CONSTRUCTOR: {
+        updateQuickReplyShortcutDeleted((TdApi.UpdateQuickReplyShortcutDeleted) update);
+        break;
+      }
+      case TdApi.UpdateQuickReplyShortcutMessages.CONSTRUCTOR: {
+        updateQuickReplyShortcutMessages((TdApi.UpdateQuickReplyShortcutMessages) update);
+        break;
+      }
+
 
       // Accent colors
       case TdApi.UpdateAccentColors.CONSTRUCTOR: {
@@ -10096,6 +10296,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateSuggestedActions((TdApi.UpdateSuggestedActions) update);
         break;
       }
+      case TdApi.UpdateContactCloseBirthdays.CONSTRUCTOR: {
+        updateContactCloseBirthdays((TdApi.UpdateContactCloseBirthdays) update);
+        break;
+      }
       case TdApi.UpdateChatThemes.CONSTRUCTOR: {
         updateChatThemes((TdApi.UpdateChatThemes) update);
         break;
@@ -10138,12 +10342,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.UpdateChatMember.CONSTRUCTOR:
       case TdApi.UpdateChatBoost.CONSTRUCTOR:
       case TdApi.UpdateMessageReaction.CONSTRUCTOR:
-      case TdApi.UpdateMessageReactions.CONSTRUCTOR: {
+      case TdApi.UpdateMessageReactions.CONSTRUCTOR:
+      case TdApi.UpdateBusinessConnection.CONSTRUCTOR:
+      case TdApi.UpdateNewBusinessMessage.CONSTRUCTOR:
+      case TdApi.UpdateBusinessMessageEdited.CONSTRUCTOR:
+      case TdApi.UpdateBusinessMessagesDeleted.CONSTRUCTOR: {
         // Must never come from TDLib. If it does, there's a bug on TDLib side.
         throw Td.unsupported(update);
       }
       default: {
-        Td.assertUpdate_35ea7792();
+        Td.assertUpdate_93243dfd();
         throw Td.unsupported(update);
       }
     }
@@ -10470,12 +10678,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public void findUpdateFile (@NonNull RunnableData<UpdateFileInfo> onDone) {
-    final String abi;
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-      abi = Build.SUPPORTED_ABIS[0];
-    } else {
-      abi = Build.CPU_ABI;
-    }
+    final String abi = U.getCpuAbi();
     final String hashtag;
     switch (abi) {
       case "armeabi-v7a": hashtag = "arm32"; break;

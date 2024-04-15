@@ -67,6 +67,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -388,9 +389,11 @@ public class UI {
     }
   }
 
+  @SuppressWarnings("deprecation")
   public static void startActivityForResult (Intent intent, int reqCode) {
     final BaseActivity context = getUiContext();
     if (context != null) {
+      // TODO: rework to Activity Result API
       context.startActivityForResult(intent, reqCode);
     }
   }
@@ -429,8 +432,24 @@ public class UI {
     return appContext.getResources();
   }
 
+  @SuppressWarnings("deprecation")
+  public static Locale getLocale (Configuration configuration) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+      android.os.LocaleList list = configuration.getLocales();
+      return list.get(0);
+    } else {
+      return configuration.locale;
+    }
+  }
+
+  public static Locale getSystemLocale () {
+    Configuration configuration = Resources.getSystem().getConfiguration();
+    return getLocale(configuration);
+  }
+
   public static Locale getConfigurationLocale () {
-    return getAppContext().getResources().getConfiguration().locale;
+    Configuration configuration = getAppContext().getResources().getConfiguration();
+    return getLocale(configuration);
   }
 
   public static void removePendingRunnable (Runnable runnable) {
@@ -587,9 +606,11 @@ public class UI {
 
   public static final int NAVIGATION_BAR_COLOR = false && Device.NEED_LIGHT_NAVIGATION_COLOR ? 0xfff0f0f0 : 0xff000000;
 
+  @SuppressWarnings("deprecation")
   public static void clearActivity (BaseActivity a) {
     a.requestWindowFeature(Window.FEATURE_NO_TITLE);
     Window w = a.getWindow();
+    // TODO: rework to Window.setDecorFitsSystemWindows(boolean)
     w.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
       w.setBackgroundDrawableResource(R.drawable.transparent);
@@ -598,6 +619,7 @@ public class UI {
       if (Config.USE_CUSTOM_NAVIGATION_COLOR) {
         w.setNavigationBarColor(Theme.backgroundColor());
         if (!Theme.isDark()) {
+          // TODO: rework to WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
           visibility |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
         }
       } else {
@@ -605,10 +627,12 @@ public class UI {
       }
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
         if (Theme.needLightStatusBar()) {
+          // TODO: rework to WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
           visibility |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
         }
       }
       if (visibility != 0) {
+        // TODO: rework to WindowInsetsController
         w.getDecorView().setSystemUiVisibility(visibility);
       }
       RootDrawable d = new RootDrawable(a);
@@ -618,6 +642,7 @@ public class UI {
         w.setStatusBarColor(0); // 0x4c000000
       } else {
         w.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        // TODO: rework to Window.setStatusBarColor(int)
         w.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
         w.setStatusBarColor(HeaderView.defaultStatusColor());
       }
@@ -629,9 +654,11 @@ public class UI {
     }
   }
 
+  @SuppressWarnings("deprecation")
   public static void setFullscreenIfNeeded (View view) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && Config.USE_FULLSCREEN_NAVIGATION) {
       view.setFitsSystemWindows(true);
+      // TODO: rework to WindowInsetsController
       view.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
     }
   }
@@ -791,7 +818,7 @@ public class UI {
 
   @Nullable
   public static String[] getInputLanguages () {
-    final List<String> inputLanguages = new ArrayList<>();
+    final Set<String> inputLanguages = new LinkedHashSet<>();
     InputMethodManager imm = (InputMethodManager) UI.getAppContext().getSystemService(Context.INPUT_METHOD_SERVICE);
     if (imm != null) {
       String inputLanguageCode = null;
@@ -846,15 +873,16 @@ public class UI {
     }
     if (inputLanguages.isEmpty()) {
       try {
+        Configuration configuration = Resources.getSystem().getConfiguration();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-          LocaleList locales = Resources.getSystem().getConfiguration().getLocales();
+          LocaleList locales = configuration.getLocales();
           for (int i = 0; i < locales.size(); i++) {
             String code = LocaleUtils.toBcp47Language(locales.get(i));
-            if (!StringUtils.isEmpty(code) && !inputLanguages.contains(code))
+            if (!StringUtils.isEmpty(code))
               inputLanguages.add(code);
           }
         } else {
-          String code = LocaleUtils.toBcp47Language(Resources.getSystem().getConfiguration().locale);
+          String code = LocaleUtils.toBcp47Language(getSystemLocale());
           if (!StringUtils.isEmpty(code)) {
             inputLanguages.add(code);
           }

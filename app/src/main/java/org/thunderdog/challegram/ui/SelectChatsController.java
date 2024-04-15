@@ -93,6 +93,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
+import me.vkryl.td.Td;
 
 public class SelectChatsController extends RecyclerViewController<SelectChatsController.Arguments> implements View.OnClickListener, ChatListListener {
 
@@ -428,7 +429,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
       Arguments arguments = getArgumentsStrict();
       if (arguments.chatFolder != null && (mode == MODE_FOLDER_INCLUDE_CHATS || mode == MODE_FOLDER_EXCLUDE_CHATS)) {
         int chatFolderId = arguments.chatFolderId;
-        TdApi.ChatFolder chatFolder = TD.copyOf(arguments.chatFolder);
+        TdApi.ChatFolder chatFolder = Td.copyOf(arguments.chatFolder);
         if (mode == MODE_FOLDER_INCLUDE_CHATS) {
           TD.updateIncludedChats(chatFolder, selectedChatIds);
           TD.updateIncludedChatTypes(chatFolder, selectedChatTypes);

@@ -142,7 +142,8 @@ public class LocationHelper implements ActivityResultHandler {
     // TODO
   }
 
-  private GoogleApiClient client;
+  @SuppressWarnings("deprecation")
+  private GoogleApiClient client; // TODO: rework to GoogleApi
 
   public static final int ERROR_CODE_NONE = 0;
   public static final int ERROR_CODE_PERMISSION = -1;
@@ -168,6 +169,7 @@ public class LocationHelper implements ActivityResultHandler {
     return PackageManager.PERMISSION_GRANTED;
   }
 
+  @SuppressWarnings("deprecation")
   private void receiveLocationInternal (final BaseActivity activity, final boolean allowResolution, final boolean onlyCheck, final boolean skipAlert) {
     final boolean[] sendStatus = new boolean[1];
     lastSignal = sendStatus;
@@ -204,6 +206,7 @@ public class LocationHelper implements ActivityResultHandler {
 
     try {
       if (client == null) {
+        // TODO rework to GoogleApi
         GoogleApiClient.Builder b = new GoogleApiClient.Builder(context);
         b.addApi(LocationServices.API);
         client = b.build();

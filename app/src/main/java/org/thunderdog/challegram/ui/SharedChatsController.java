@@ -15,8 +15,10 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
+import android.text.SpannableStringBuilder;
 import android.view.View;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
@@ -30,13 +32,42 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.v.MediaRecyclerView;
 import org.thunderdog.challegram.widget.EmptySmartView;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 
 import me.vkryl.td.ChatId;
 
 public class SharedChatsController extends SharedBaseController<DoubleTextWrapper> implements TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener, ChatListener {
+  @IntDef({
+    Mode.GROUPS_IN_COMMON,
+    Mode.SIMILAR_CHANNELS
+  })
+  @Retention(RetentionPolicy.SOURCE)
+  public @interface Mode {
+    int
+      GROUPS_IN_COMMON = 0,
+      SIMILAR_CHANNELS = 1;
+  }
+
+  private @Mode int mode = Mode.GROUPS_IN_COMMON;
+
   public SharedChatsController (Context context, Tdlib tdlib) {
     super(context, tdlib);
+  }
+
+  public void setMode (@Mode int mode) {
+    this.mode = mode;
+  }
+
+  public @Mode int getMode () {
+    return mode;
+  }
+
+  private int totalCountWithPremium;
+
+  public void setTotalCountWithPremium (int totalCountWithPremium) {
+    this.totalCountWithPremium = totalCountWithPremium;
   }
 
   /*@Override
@@ -46,17 +77,40 @@ public class SharedChatsController extends SharedBaseController<DoubleTextWrappe
 
   @Override
   public CharSequence getName () {
-    return Lang.getString(R.string.TabSharedGroups);
+    switch (mode) {
+      case Mode.GROUPS_IN_COMMON:
+        return Lang.getString(R.string.TabSharedGroups);
+      case Mode.SIMILAR_CHANNELS:
+        return Lang.getString(R.string.TabSimilarChannels);
+    }
+    throw new IllegalStateException();
   }
 
   @Override
   protected TdApi.Function<?> buildRequest (long chatId, long messageThreadId, String query, long offset, String secretOffset, int limit) {
-    return new TdApi.GetGroupsInCommon(tdlib.chatUserId(chatId), offset, limit);
+    switch (mode) {
+      case Mode.GROUPS_IN_COMMON:
+        return new TdApi.GetGroupsInCommon(tdlib.chatUserId(chatId), offset, limit);
+      case Mode.SIMILAR_CHANNELS:
+        return new TdApi.GetChatSimilarChats(chatId);
+    }
+    throw new IllegalStateException();
+  }
+
+  @Override
+  protected boolean supportsLoadingMore (boolean isMore) {
+    return mode != Mode.SIMILAR_CHANNELS;
   }
 
   @Override
   protected String getExplainedTitle () {
-    return Lang.getString(R.string.GroupsInCommon);
+    switch (mode) {
+      case Mode.GROUPS_IN_COMMON:
+        return Lang.getString(R.string.GroupsInCommon);
+      case Mode.SIMILAR_CHANNELS:
+        return Lang.getString(R.string.SimilarChannels);
+    }
+    throw new IllegalStateException();
   }
 
   protected boolean supportsMessageContent () {
@@ -75,7 +129,22 @@ public class SharedChatsController extends SharedBaseController<DoubleTextWrappe
 
   @Override
   protected CharSequence buildTotalCount (ArrayList<DoubleTextWrapper> data) {
-    return Lang.pluralBold(R.string.xGroups, data.size());
+    switch (mode) {
+      case Mode.GROUPS_IN_COMMON:
+        return Lang.pluralBold(R.string.xGroups, data.size());
+      case Mode.SIMILAR_CHANNELS: {
+        CharSequence cs = Lang.pluralBold(R.string.xChannels, data.size());
+        int remaining = totalCountWithPremium - data.size();
+        if (remaining > 0 && !tdlib.hasPremium()) {
+          return Lang.getCharSequence(R.string.format_xChatsAndMoreWithPremium,
+            cs,
+            Lang.getMarkdownPlural(this, R.string.xMoreWithPremium, remaining, Lang.boldCreator())
+          );
+        }
+        return cs;
+      }
+    }
+    throw new IllegalStateException();
   }
 
   @Override
@@ -97,7 +166,18 @@ public class SharedChatsController extends SharedBaseController<DoubleTextWrappe
   public void onClick (View view) {
     ListItem item = (ListItem) view.getTag();
     if (item != null && item.getViewType() == ListItem.TYPE_CHAT_SMALL) {
-      tdlib.ui().openChat(this, ((DoubleTextWrapper) item.getData()).getChatId(),null);
+      long chatId = ((DoubleTextWrapper) item.getData()).getChatId();
+      switch (mode) {
+        case Mode.GROUPS_IN_COMMON:
+          tdlib.ui().openChat(this, chatId,null);
+          break;
+        case Mode.SIMILAR_CHANNELS:
+          tdlib.send(new TdApi.OpenChatSimilarChat(getChatId(), chatId), tdlib.typedOkHandler());
+          tdlib.ui().openChat(this, chatId,null);
+          break;
+        default:
+          throw new IllegalStateException();
+      }
     }
   }
 
@@ -154,8 +234,8 @@ public class SharedChatsController extends SharedBaseController<DoubleTextWrappe
   }
 
   private void updateChatSubtitle (final long chatId) {
-    tdlib.ui().post(() -> {
-      if (!isDestroyed() && data != null && !data.isEmpty()) {
+    runOnUiThreadOptional(() -> {
+      if (data != null && !data.isEmpty()) {
         for (DoubleTextWrapper wrapper : data) {
           if (chatId == wrapper.getChatId()) {
             wrapper.updateSubtitle();

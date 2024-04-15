@@ -220,25 +220,33 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
             view.getToggler().setRadioEnabled(true, isUpdate);
             return;
           }
-          boolean isContact = !isMultiChat && tdlib.cache().userContact(userId);
-          TdApi.UserPrivacySettingRule matchingRule = isMultiChat ? privacy.firstMatchingRule(chatId, false) : privacy.firstMatchingRule(userId, isContact, groupsInCommon != null ? groupsInCommon.get() : null);
+          TdApi.User user = !isMultiChat ? tdlib.cache().user(userId) : null;
+          boolean isPremium = user != null && user.isPremium;
+          boolean isContact = user != null && user.isContact;
+          TdApi.UserPrivacySettingRule matchingRule = isMultiChat ?
+            privacy.firstMatchingRuleForChat(chatId) :
+            privacy.firstMatchingRuleForUser(userId, isPremium, isContact, groupsInCommon != null ? groupsInCommon.get() : null);
           view.setEnabledAnimated(true, isUpdate);
           boolean isActive = PrivacySettings.isAllow(matchingRule);
           view.getToggler().setRadioEnabled(isActive, isUpdate);
-          if (PrivacySettings.isGeneral(matchingRule, !isMultiChat)) {
+          if (PrivacySettings.isGeneral(matchingRule, true, !isMultiChat)) {
             view.setDataColorId(0);
-            TdApi.UserPrivacySettingRule ancestorRule = privacy.findTopRule(isContact);
+            TdApi.UserPrivacySettingRule ancestorRule = privacy.findTopRule(isPremium, isContact);
             if (PrivacySettings.isAllow(ancestorRule) == PrivacySettings.isAllow(matchingRule)) {
               matchingRule = ancestorRule;
             }
             long[] chatIds = null;
             if (matchingRule != null) {
+              //noinspection SwitchIntDef
               switch (matchingRule.getConstructor()) {
                 case TdApi.UserPrivacySettingRuleAllowChatMembers.CONSTRUCTOR:
                   chatIds = ArrayUtils.intersect(((TdApi.UserPrivacySettingRuleAllowChatMembers) matchingRule).chatIds, groupsInCommon != null ? groupsInCommon.get() : null);
                   break;
                 case TdApi.UserPrivacySettingRuleRestrictChatMembers.CONSTRUCTOR:
                   chatIds = ArrayUtils.intersect(((TdApi.UserPrivacySettingRuleRestrictChatMembers) matchingRule).chatIds, groupsInCommon != null ? groupsInCommon.get() : null);
+                  break;
+                default:
+                  Td.assertUserPrivacySettingRule_c58ead3c();
                   break;
               }
             }
@@ -248,13 +256,16 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
               } else {
                 view.setData(Lang.pluralBold(R.string.PrivacyDefaultXChats, chatIds.length));
               }
-            } else if (isMultiChat && !PrivacySettings.isAllow(matchingRule) && PrivacySettings.isAllow(privacy.firstMatchingRule(chatId, true))) {
+            } else if (isMultiChat && !PrivacySettings.isAllow(matchingRule) && PrivacySettings.isAllow(privacy.firstMatchingRuleForChat(chatId, true, true))) {
               switch (setting.getConstructor()) {
                 case TdApi.UserPrivacySettingShowPhoneNumber.CONSTRUCTOR:
                   view.setData(R.string.PrivacyShowNumberExceptionContacts);
                   break;
                 case TdApi.UserPrivacySettingShowBio.CONSTRUCTOR:
                   view.setData(R.string.PrivacyShowBioExceptionContacts);
+                  break;
+                case TdApi.UserPrivacySettingShowBirthdate.CONSTRUCTOR:
+                  view.setData(R.string.PrivacyShowBirthdateExceptionContacts);
                   break;
                 case TdApi.UserPrivacySettingShowProfilePhoto.CONSTRUCTOR:
                   view.setData(R.string.PrivacyPhotoExceptionContacts);
@@ -265,9 +276,24 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
                 case TdApi.UserPrivacySettingShowLinkInForwardedMessages.CONSTRUCTOR:
                   view.setData(R.string.PrivacyForwardLinkExceptionContacts);
                   break;
-                case TdApi.UserPrivacySettingAllowChatInvites.CONSTRUCTOR:
-                  view.setData(R.string.PrivacyAddToGroupsExceptionContacts);
+                case TdApi.UserPrivacySettingAllowChatInvites.CONSTRUCTOR: {
+                  @PrivacySettings.ResolvedMatch int match = privacy.resolveMatchingAllowRulesForChat(chatId);
+                  switch (match) {
+                    case PrivacySettings.ResolvedMatch.CONTACTS:
+                      view.setData(R.string.PrivacyAddToGroupsExceptionContacts);
+                      break;
+                    case PrivacySettings.ResolvedMatch.PREMIUM:
+                      view.setData(Lang.getMarkdownString(PrivacyExceptionController.this, R.string.PrivacyAddToGroupsExceptionPremium));
+                      break;
+                    case PrivacySettings.ResolvedMatch.CONTACTS_AND_PREMIUM:
+                      view.setData(Lang.getMarkdownString(PrivacyExceptionController.this, R.string.PrivacyAddToGroupsExceptionContactsAndPremium));
+                      break;
+                    default:
+                      // unreachable
+                      throw new IllegalStateException(Integer.toString(match));
+                  }
                   break;
+                }
                 case TdApi.UserPrivacySettingAllowCalls.CONSTRUCTOR:
                   view.setData(R.string.PrivacyCallsExceptionContacts);
                   break;
@@ -280,12 +306,27 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
                 case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR:
                   throw new IllegalStateException();
                 default: {
-                  Td.assertUserPrivacySetting_21d3f4();
+                  Td.assertUserPrivacySetting_39dfff4d();
                   throw Td.unsupported(setting);
                 }
               }
+            } else if (matchingRule != null) {
+              //noinspection SwitchIntDef
+              switch (matchingRule.getConstructor()) {
+                case TdApi.UserPrivacySettingRuleAllowContacts.CONSTRUCTOR:
+                case TdApi.UserPrivacySettingRuleRestrictContacts.CONSTRUCTOR:
+                  view.setData(R.string.PrivacyDefaultContacts);
+                  break;
+                case TdApi.UserPrivacySettingRuleAllowPremiumUsers.CONSTRUCTOR:
+                  view.setData(Lang.getMarkdownString(PrivacyExceptionController.this, R.string.PrivacyDefaultPremium));
+                  break;
+                default:
+                  Td.assertUserPrivacySettingRule_c58ead3c();
+                  view.setData(R.string.PrivacyDefault);
+                  break;
+              }
             } else {
-              view.setData(matchingRule != null && (matchingRule.getConstructor() == TdApi.UserPrivacySettingRuleAllowContacts.CONSTRUCTOR || matchingRule.getConstructor() == TdApi.UserPrivacySettingRuleRestrictContacts.CONSTRUCTOR) ? R.string.PrivacyDefaultContacts : R.string.PrivacyDefault);
+              view.setData(R.string.PrivacyDefault);
             }
           } else {
             view.setDataColorId(ColorId.textNeutral);
@@ -295,6 +336,9 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
                 break;
               case TdApi.UserPrivacySettingShowBio.CONSTRUCTOR:
                 view.setData(isActive ? R.string.PrivacyShowBioExceptionOn : R.string.PrivacyShowBioExceptionOff);
+                break;
+              case TdApi.UserPrivacySettingShowBirthdate.CONSTRUCTOR:
+                view.setData(isActive ? R.string.PrivacyShowBirthdateExceptionOn : R.string.PrivacyShowBirthdateExceptionOff);
                 break;
               case TdApi.UserPrivacySettingShowProfilePhoto.CONSTRUCTOR:
                 view.setData(isActive ? R.string.PrivacyPhotoExceptionOn : R.string.PrivacyPhotoExceptionOff);
@@ -320,7 +364,7 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
               case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR:
                 throw new IllegalStateException();
               default: {
-                Td.assertUserPrivacySetting_21d3f4();
+                Td.assertUserPrivacySetting_39dfff4d();
                 throw Td.unsupported(setting);
               }
             }
@@ -343,27 +387,36 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
             view.getToggler().setRadioEnabled(true, isUpdate);
             return;
           }
-          boolean isContact = !isMultiChat && tdlib.cache().userContact(userId);
-          TdApi.UserPrivacySettingRule matchingRule = isMultiChat ? privacy.firstMatchingRule(chatId, false) : privacy.firstMatchingRule(userId, isContact, groupsInCommon != null ? groupsInCommon.get() : null);
+          TdApi.User user = !isMultiChat ? tdlib.cache().user(userId) : null;
+          boolean isPremium = user != null && user.isPremium;
+          boolean isContact = user != null && user.isContact;
+          TdApi.UserPrivacySettingRule matchingRule = isMultiChat ?
+            privacy.firstMatchingRuleForChat(chatId) :
+            privacy.firstMatchingRuleForUser(userId, isPremium, isContact, groupsInCommon != null ? groupsInCommon.get() : null
+          );
           boolean isActive = PrivacySettings.isAllow(matchingRule);
           view.getToggler().setRadioEnabled(isActive || defaultIsActive, isUpdate);
           if (defaultIsActive) {
             view.setDataColorId(0);
             view.setData(R.string.PrivacyReadDateDefaultAll);
-          } else if (PrivacySettings.isGeneral(matchingRule, !isMultiChat)) {
+          } else if (PrivacySettings.isGeneral(matchingRule, true, !isMultiChat)) {
             view.setDataColorId(0);
-            TdApi.UserPrivacySettingRule ancestorRule = privacy.findTopRule(isContact);
+            TdApi.UserPrivacySettingRule ancestorRule = privacy.findTopRule(isPremium, isContact);
             if (PrivacySettings.isAllow(ancestorRule) == PrivacySettings.isAllow(matchingRule)) {
               matchingRule = ancestorRule;
             }
             long[] chatIds = null;
             if (matchingRule != null) {
+              //noinspection SwitchIntDef
               switch (matchingRule.getConstructor()) {
                 case TdApi.UserPrivacySettingRuleAllowChatMembers.CONSTRUCTOR:
                   chatIds = ArrayUtils.intersect(((TdApi.UserPrivacySettingRuleAllowChatMembers) matchingRule).chatIds, groupsInCommon != null ? groupsInCommon.get() : null);
                   break;
                 case TdApi.UserPrivacySettingRuleRestrictChatMembers.CONSTRUCTOR:
                   chatIds = ArrayUtils.intersect(((TdApi.UserPrivacySettingRuleRestrictChatMembers) matchingRule).chatIds, groupsInCommon != null ? groupsInCommon.get() : null);
+                  break;
+                default:
+                  Td.assertUserPrivacySettingRule_c58ead3c();
                   break;
               }
             }
@@ -373,11 +426,39 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
               } else {
                 view.setData(Lang.pluralBold(R.string.PrivacyDefaultXChats, chatIds.length));
               }
+            } else if (matchingRule != null) {
+              switch (matchingRule.getConstructor()) {
+                case TdApi.UserPrivacySettingRuleAllowContacts.CONSTRUCTOR:
+                case TdApi.UserPrivacySettingRuleRestrictContacts.CONSTRUCTOR:
+                  view.setData(R.string.PrivacyDefaultContacts);
+                  break;
+                case TdApi.UserPrivacySettingRuleAllowPremiumUsers.CONSTRUCTOR:
+                  view.setData(Lang.getMarkdownString(PrivacyExceptionController.this, R.string.PrivacyDefaultPremium));
+                  break;
+                default:
+                  Td.assertUserPrivacySettingRule_c58ead3c();
+                  view.setData(R.string.PrivacyDefault);
+                  break;
+              }
             } else {
-              view.setData(matchingRule != null && (matchingRule.getConstructor() == TdApi.UserPrivacySettingRuleAllowContacts.CONSTRUCTOR || matchingRule.getConstructor() == TdApi.UserPrivacySettingRuleRestrictContacts.CONSTRUCTOR) ? R.string.PrivacyDefaultContacts : R.string.PrivacyDefault);
+              view.setData(R.string.PrivacyDefault);
             }
-          } else if (isMultiChat && !PrivacySettings.isAllow(matchingRule) && PrivacySettings.isAllow(privacy.firstMatchingRule(chatId, true))) {
-            view.setData(R.string.PrivacyReadDateExceptionContacts);
+          } else if (isMultiChat && !PrivacySettings.isAllow(matchingRule) && PrivacySettings.isAllow(privacy.firstMatchingRuleForChat(chatId, true, true))) {
+            @PrivacySettings.ResolvedMatch int match = privacy.resolveMatchingAllowRulesForChat(chatId);
+            switch (match) {
+              case PrivacySettings.ResolvedMatch.CONTACTS:
+                view.setData(R.string.PrivacyReadDateExceptionContacts);
+                break;
+              case PrivacySettings.ResolvedMatch.PREMIUM:
+                view.setData(Lang.getMarkdownString(PrivacyExceptionController.this, R.string.PrivacyReadDateExceptionPremium));
+                break;
+              case PrivacySettings.ResolvedMatch.CONTACTS_AND_PREMIUM:
+                view.setData(Lang.getMarkdownString(PrivacyExceptionController.this, R.string.PrivacyReadDateExceptionContactsAndPremium));
+                break;
+              default:
+                // unreachable
+                throw new IllegalStateException(Integer.toString(match));
+            }
           } else {
             view.setDataColorId(ColorId.textNeutral);
             view.setData(isActive ? R.string.PrivacyReadDateExceptionOn : R.string.PrivacyReadDateExceptionOff);
@@ -423,6 +504,7 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
       new TdApi.UserPrivacySetting[] {
         new TdApi.UserPrivacySettingShowStatus(),
         new TdApi.UserPrivacySettingShowProfilePhoto(),
+        // TODO: new TdApi.UserPrivacySettingShowBirthdate(),
         new TdApi.UserPrivacySettingShowBio(),
         new TdApi.UserPrivacySettingShowPhoneNumber(),
 
@@ -496,9 +578,18 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
       long userId = tdlib.chatUserId(chatId);
       TdApi.UserPrivacySettingRules rules;
       if (isMultiChat) {
-        rules = privacy.toggleChat(chatId, false, value);
+        rules = privacy.toggleChat(chatId, value);
       } else {
-        rules = privacy.toggleUser(userId, tdlib.cache().userContact(userId), groupsInCommon != null ? groupsInCommon.get() : null, value);
+        TdApi.User user = tdlib.cache().user(userId);
+        boolean isPremium = user != null && user.isPremium;
+        boolean isContact = user != null && user.isContact;
+        rules = privacy.toggleUser(
+          userId,
+          isPremium,
+          isContact,
+          groupsInCommon != null ? groupsInCommon.get() : null,
+          value
+        );
       }
       if (pendingRequests == null)
         pendingRequests = new SparseArrayCompat<>();
@@ -531,8 +622,13 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
           return;
         }
 
-        boolean isContact = !isMultiChat && tdlib.cache().userContact(userId);
-        TdApi.UserPrivacySettingRule matchingRule = isMultiChat ? privacy.firstMatchingRule(chatId, false) : privacy.firstMatchingRule(userId, isContact, groupsInCommon != null ? groupsInCommon.get() : null);
+        TdApi.User user = !isMultiChat ? tdlib.cache().user(userId) : null;
+        boolean isPremium = user != null && user.isPremium;
+        boolean isContact = user != null && user.isContact;
+        TdApi.UserPrivacySettingRule matchingRule = isMultiChat ?
+          privacy.firstMatchingRuleForChat(chatId) :
+          privacy.firstMatchingRuleForUser(userId, isPremium, isContact, groupsInCommon != null ? groupsInCommon.get() : null
+        );
 
         CharSequence hint;
         if (readDatePrivacySettings.showReadDate) {

@@ -10146,12 +10146,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (actions == null) {
       actions = new SparseIntArray(5);
     }
-    Client.ResultHandler handler = result -> {
-      if (result instanceof TdApi.Error) {
-        TdApi.Error error = (TdApi.Error) result;
-        if (error.code != 400 || !"Have no rights to send a message".equals(error.message)) {
-          tdlib.okHandler().onResult(result);
-        }
+    Tdlib.ResultHandler<TdApi.Ok> handler = (ok, error) -> {
+      if (error != null && (error.code != 400 || !"Have no rights to send a message".equals(error.message))) {
+        tdlib.okHandler().onResult(error);
       }
     };
     long messageThreadId;
@@ -10167,13 +10164,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
       int time = (int) (SystemClock.uptimeMillis() / 1000l);
       if (time - actions.get(action) >= 4 || force || lastActionCancelled) {
         actions.put(action, time);
-        tdlib.client().send(new TdApi.SendChatAction(chat.id, messageThreadId, Td.constructChatAction(action)), handler);
+        tdlib.send(new TdApi.SendChatAction(chat.id, messageThreadId, null, Td.constructChatAction(action)), handler);
         lastActionCancelled = false;
       }
     } else {
       if (actions.get(action, 0) != 0) {
         actions.delete(action);
-        tdlib.client().send(new TdApi.SendChatAction(chat.id, messageThreadId, new TdApi.ChatActionCancel()), handler);
+        tdlib.send(new TdApi.SendChatAction(chat.id, messageThreadId, null, new TdApi.ChatActionCancel()), handler);
         lastActionCancelled = true;
       }
     }

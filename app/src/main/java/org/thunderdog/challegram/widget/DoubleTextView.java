@@ -309,7 +309,7 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
         avatarReceiver.drawPlaceholder(c);
       }
       avatarReceiver.draw(c);
-    } else if (stickerSetInfo != null && stickerSetInfo.isAnimated()) {
+    } else if (stickerSetInfo != null && stickerSetInfo.isPreviewAnimated()) {
       GifReceiver gifReceiver = receiver.getGifReceiver(0);
       if (needThemedColorFilter) {
         gifReceiver.setThemedPorterDuffColorId(ColorId.iconActive);

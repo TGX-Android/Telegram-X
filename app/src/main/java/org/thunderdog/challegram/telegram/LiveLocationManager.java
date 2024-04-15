@@ -383,6 +383,7 @@ public class LiveLocationManager implements LocationHelper.LocationChangeListene
   private static final int ACTION_DISPATCH_ERROR_STATE = 6;
   private static final int ACTION_REQUEST_LOCATION_UPDATE = 7;
 
+  @SuppressWarnings("unchecked")
   private void handleUiMessage (Message msg) {
     switch (msg.what) {
       case ACTION_PERFORM_WORKER: {
@@ -412,7 +413,6 @@ public class LiveLocationManager implements LocationHelper.LocationChangeListene
       case ACTION_DISPATCH_LIST_CHANGED: {
         Object[] data = (Object[]) msg.obj;
         for (Listener listener : listeners) {
-          //noinspection unchecked
           listener.onLiveLocationsListChanged((Tdlib) data[0], (ArrayList<TdApi.Message>) data[1]);
         }
         data[0] = null;
