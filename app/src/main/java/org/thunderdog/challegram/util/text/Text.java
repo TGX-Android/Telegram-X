@@ -2615,6 +2615,9 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     if (parts == null || alpha == 0f)
       return;
 
+    //c.drawRect(startX, startY, startX + getWidth(), startY + getHeight(), Paints.strokeSmallPaint(0xFF000000));
+    //c.drawRect(startX, startY, endX, startY + getHeight(), Paints.strokeSmallPaint(0xFF00FF00));
+
     final boolean needRestore = BitwiseUtils.hasFlag(textFlags, FLAG_NEED_CLIP_TEXT_AREA);
     final int saveCount;
     if (needRestore) {
@@ -2626,7 +2629,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
           lineMargin = Math.max(getLineStartMargin(i, 0/*FIXME*/), lineMargin);
         }
       }
-      if (isFullyRtl()) {
+      if (isFullyRtl() && startX != endX) {
         // c.drawRect(endX - lineMargin - getWidth() - bound, startY - bound, endX + bound, startY + getHeight() + bound, Paints.strokeSmallPaint(0xFF000000));
         c.clipRect(endX - lineMargin - getWidth() - bound, startY - bound, endX + bound, startY + getHeight() + bound);
       } else {
