@@ -2460,6 +2460,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   private int drawPart (final int partIndex, Canvas c, int startX, int endX, int endXBottomPadding, int y, float alpha, @Nullable TextColorSet defaultTheme, @Nullable ComplexReceiver receiver) {
     TextPart part = parts.get(partIndex);
 
+    final int firstPartX = part.getX();
+    int mergeOffset = 0;
     int count = 1;
     int partCount = parts.size();
     TextPart lastPart = part;
@@ -2469,6 +2471,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       if (lastPart.wouldMergeWithNextPart(curPart)) {
         lastPart = curPart;
         count++;
+        mergeOffset = Math.max(mergeOffset, firstPartX - curPart.getX());
       } else {
         break;
       }
@@ -2482,7 +2485,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     }
     if (alpha > 0f) {
       if (count > 1) {
-        part.drawMerged(partIndex, c, lastPart.getEnd(), startX, endX, endXBottomPadding, y, alpha, defaultTheme);
+        part.drawMerged(partIndex, c, lastPart.getEnd(), startX - mergeOffset, endX - mergeOffset, endXBottomPadding, y, alpha, defaultTheme);
       } else {
         part.draw(partIndex, c, startX, endX, endXBottomPadding, y, alpha, defaultTheme, receiver);
       }
