@@ -89,6 +89,7 @@
   <string name="format_plus">+%1$d</string>
   <string name="format_minus">-%1$d</string>
   <string name="format_minusPlus">-%1$d, +%2$d</string>
+  <string name="format_birthdateAndAge">%1$s (%2$s)</string>
   <string name="format_exceptionPlusPremium">%1$s, +premium</string>
   <string name="format_plusPremium">+premium</string>
   <string name="format_ping">ping: %1$sms</string>
@@ -158,6 +159,15 @@
   <string name="DeleteAccountIfAwayForMonths_other">%1$s months</string>
   <string name="DeleteAccountIfAwayForYears_one">%1$s year</string>
   <string name="DeleteAccountIfAwayForYears_other">%1$s years</string>
+
+  <string name="age_one">%1$s year old</string>
+  <string name="age_other">%1$s years old</string>
+
+  <string name="turnsToday_one">Turns %1$s year old today</string>
+  <string name="turnsToday_other">Turns %1$s years old today</string>
+
+  <string name="turnsTomorrow_one">Turns %1$s year old tomorrow</string>
+  <string name="turnsTomorrow_other">Turns %1$s years old tomorrow</string>
 
   <string name="xSeconds_one">%1$s second</string>
   <string name="xSeconds_other">%1$s seconds</string>
@@ -892,6 +902,7 @@
   <string name="Off">Off</string>
   <string name="TimerInstant">Immediately</string>
   <string name="Chats">Chats</string>
+  <string name="Birthdate">Date of birth</string>
   <string name="Notifications">Notifications</string>
   <string name="NotificationsEnabled">Enabled</string>
   <string name="NotificationsEnabledHint">Enabled (%1$s)</string>
@@ -3180,7 +3191,7 @@
   <string name="ActionMutePerson">Mute %1$s</string>
   <string name="ActionMuteEveryone">Mute all</string>
 
-  <string name="ActionUnmute">Unute</string>
+  <string name="ActionUnmute">Unmute</string>
   <string name="ActionUnmutePerson">Unmute %1$s</string>
   <string name="ActionUnmuteEveryone">Unmute all</string>
 

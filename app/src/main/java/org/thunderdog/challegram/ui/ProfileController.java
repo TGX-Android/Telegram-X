@@ -1778,6 +1778,14 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         } else if (itemId == R.id.btn_peer_id) {
           view.setName(getPeerTypeStringResourceId());
           view.setData(Strings.buildCounter(getPeerId()));
+        } else if (itemId == R.id.btn_birthdate) {
+          view.setData(R.string.Birthdate);
+          TdApi.Birthdate birthdate = userFull != null ? userFull.birthdate : null;
+          if (birthdate != null) {
+            view.setName(Lang.getBirthdate(birthdate, true));
+          } else {
+            view.setName(Lang.getString(R.string.LoadingInformation));
+          }
         } else if (itemId == R.id.btn_description) {
           view.setText(aboutWrapper);
           if (canEditDescription() && !hasDescription()) {
@@ -2356,7 +2364,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       currentAbout = text;
       if (text != null) {
         // TODO: custom emoji support
-        aboutWrapper = new TextWrapper(tdlib, text, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, new TdlibUi.UrlOpenParameters().sourceChat(getChatId()), null);
+        aboutWrapper = new TextWrapper(tdlib, text, Paints.robotoStyleProvider(16f), TextColorSets.Regular.NORMAL, new TdlibUi.UrlOpenParameters().sourceChat(getChatId()), null);
         aboutWrapper.addTextFlags(Text.FLAG_CUSTOM_LONG_PRESS | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0));
         aboutWrapper.prepare(getTextWidth(Screen.currentWidth()));
       } else {
@@ -2377,6 +2385,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private ListItem newNotificationItem () {
     return new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_notifications, R.drawable.baseline_notifications_24, R.string.Notifications);
+  }
+
+  private ListItem newBirthdateItem () {
+    return new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_birthdate, R.drawable.baseline_cake_variant_24, R.string.Birthdate);
   }
 
   private ListItem newUsernameItem () {
@@ -2437,12 +2449,24 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
     }
 
-    if (TD.isBot(user)) {
-      if (userFull != null && (!Td.isEmpty(userFull.bio) || (userFull.botInfo != null && !StringUtils.isEmpty(userFull.botInfo.shortDescription)))) {
+    if (userFull != null) {
+      if (userFull.birthdate != null) {
+        if (addedCount > 0) {
+          items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+        }
+        items.add(newBirthdateItem());
+        addedCount++;
+      }
+      if (!Td.isEmpty(userFull.bio) || (userFull.botInfo != null && !StringUtils.isEmpty(userFull.botInfo.shortDescription))) {
+        if (addedCount > 0) {
+          items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+        }
         items.add(newDescriptionItem());
         addedCount++;
       }
-    } else {
+    }
+
+    if (!TD.isBot(user)) {
       if (needPhoneCell()) {
         if (addedCount > 0) {
           items.add(new ListItem(ListItem.TYPE_SEPARATOR));
@@ -2485,6 +2509,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private void addFullCells (TdApi.UserFullInfo userFull) {
+    checkBirthdate();
     checkDescription();
     checkGroupsInCommon();
 
@@ -2726,6 +2751,31 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     return false;
   }
 
+  private void checkBirthdate () {
+    if (isEditing()) {
+      return;
+    }
+    int foundIndex = baseAdapter.indexOfViewById(R.id.btn_birthdate);
+    boolean hadBirthdate = foundIndex != -1;
+    boolean hasBirthdate = userFull != null && userFull.birthdate != null;
+    if (hadBirthdate != hasBirthdate) {
+      if (hadBirthdate) {
+        removeTopItem(foundIndex);
+      } else {
+        int index = 0;
+        if (Settings.instance().showPeerIds() && baseAdapter.indexOfViewById(R.id.btn_peer_id) != -1) {
+          index++;
+        }
+        if (baseAdapter.indexOfViewById(R.id.btn_username) != -1) {
+          index++;
+        }
+        addTopItem(newBirthdateItem(), index); // after peer_id, username
+      }
+    } else if (hasBirthdate) {
+      updateValuedItem(R.id.btn_birthdate);
+    }
+  }
+
   private void checkDescription () {
     if (isEditing())
       return;
@@ -2746,7 +2796,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         if (baseAdapter.indexOfViewById(R.id.btn_username) != -1) {
           index++;
         }
-        addTopItem(descriptionItem, index); // after peer_id, username
+        if (baseAdapter.indexOfViewById(R.id.btn_birthdate) != -1) {
+          index++;
+        }
+        addTopItem(descriptionItem, index); // after peer_id, username, birthdate
       }
     } else if (hasDescription) {
       if (setDescription()) {
@@ -4715,6 +4768,23 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       icons.append(R.drawable.baseline_forward_24);
 
       showOptions("@" + tdlib.chatUsername(chat.id), ids.get(), strings.get(), null, icons.get());
+    } else if (viewId == R.id.btn_birthdate) {
+      TdApi.Birthdate birthdate = userFull != null ? userFull.birthdate : null;
+      if (birthdate != null) {
+        CharSequence text = Lang.getBirthdate(birthdate, false);
+        showOptions(text,
+          new int[] {R.id.btn_copyText},
+          new String[] {Lang.getString(R.string.Copy)},
+          null,
+          new int[] {R.drawable.baseline_content_copy_24},
+          (optionItemView, id) -> {
+            if (id == R.id.btn_copyText) {
+              UI.copyText(text, R.string.CopiedText);
+            }
+            return true;
+          }
+        );
+      }
     } else if (viewId == R.id.btn_description) {
       if (canEditDescription() && !hasDescription()) {
         editDescription(false);

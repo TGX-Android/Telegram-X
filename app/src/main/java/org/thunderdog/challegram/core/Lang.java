@@ -2363,6 +2363,44 @@ public class Lang {
 
   // Dates
 
+  public static CharSequence getBirthdate (@NonNull TdApi.Birthdate birthdate, boolean includeAge) {
+    Calendar c = Calendar.getInstance();
+    c.set(Calendar.DAY_OF_MONTH, birthdate.day);
+    c.set(Calendar.MONTH, birthdate.month - 1);
+    String date;
+    if (birthdate.year != 0) {
+      c.set(Calendar.YEAR, birthdate.year);
+      date = dateYearShort(c);
+    } else {
+      date = dateShort(c);
+    }
+    int ageYears = -1;
+    int daysTillBirthday = 0;
+    if (birthdate.year != 0) {
+      Calendar now = DateUtils.getNowCalendar();
+      ageYears = now.get(Calendar.YEAR) - c.get(Calendar.YEAR);
+      int today = now.get(Calendar.DAY_OF_YEAR);
+      int birthday = c.get(Calendar.DAY_OF_YEAR);
+      if (today < birthday) {
+        ageYears--;
+      }
+      daysTillBirthday = birthday - today;
+    }
+    if (includeAge && ageYears > 0) {
+      CharSequence age;
+      if (daysTillBirthday == 1) {
+        age = Lang.pluralBold(R.string.turnsTomorrow, ageYears + 1);
+      } else if (daysTillBirthday == 0) {
+        age = Lang.pluralBold(R.string.turnsToday, ageYears);
+      } else {
+        age = Lang.pluralBold(R.string.age, ageYears);
+      }
+      return Lang.getCharSequence(R.string.format_birthdateAndAge, date, age);
+    } else {
+      return date;
+    }
+  }
+
   public static String getDate (long unixDate, TimeUnit unit) {
     if (DateUtils.isThisYear(unixDate, unit)) {
       return dateFull(unixDate, unit);
