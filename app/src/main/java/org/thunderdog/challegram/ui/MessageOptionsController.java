@@ -352,7 +352,7 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
     if (adapter.subtitlePosition >= 0) {
       View view = recyclerView.getLayoutManager().findViewByPosition(adapter.subtitlePosition);
       int height = view != null ? view.getMeasuredHeight() : 0;
-      totalHeight += height != 0 ? height : Screen.dp(15f) + Screen.dp(7f) + Screen.dp(8f);
+      totalHeight += height != 0 ? height : Screen.dp(40f);
     }
     return totalHeight;
   }
