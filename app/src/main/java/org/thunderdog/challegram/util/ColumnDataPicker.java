@@ -48,13 +48,29 @@ import me.vkryl.core.lambda.Destroyable;
 
 public final class ColumnDataPicker implements Destroyable {
   public static class Column {
+    public static class StylingOptions {
+      public final float weight;
+
+      public StylingOptions (float weight) {
+        this.weight = weight;
+      }
+
+      public boolean noPadding;
+
+
+      public StylingOptions setNoPadding (boolean noPadding) {
+        this.noPadding = noPadding;
+        return this;
+      }
+    }
+
     public final List<SimpleStringItem> rows;
-    public final float weight;
+    public final StylingOptions style;
     public int index;
 
-    public Column (List<SimpleStringItem> rows, float weight, int index) {
+    public Column (List<SimpleStringItem> rows, @NonNull StylingOptions style, int index) {
       this.rows = rows;
-      this.weight = weight;
+      this.style = style;
       this.index = index;
     }
 
@@ -144,8 +160,11 @@ public final class ColumnDataPicker implements Destroyable {
         picker.setItemChangeListener(column.itemChangeListener);
         picker.setForcedTheme(forcedTheme);
         picker.addThemeListeners(c);
+        if (column.style.noPadding) {
+          picker.setItemPadding(0);
+        }
         picker.initWithItems(column.rows, column.index);
-        picker.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, column.weight));
+        picker.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, column.style.weight));
         columnWrap.addView(picker);
         column.view = picker;
       }
