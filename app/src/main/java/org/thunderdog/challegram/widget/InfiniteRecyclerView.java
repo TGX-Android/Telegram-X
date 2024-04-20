@@ -81,9 +81,16 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
     this.textPaint.setTypeface(Fonts.getRobotoRegular());
     this.textPaint.setColor(Theme.textAccentColor());
     this.textPaint.setTextSize(Screen.dp(17f));
+    this.itemPadding = Screen.dp(36f);
 
     setItemAnimator(null);
     setLayoutManager(this.manager = new LinearLayoutManager(context, RecyclerView.VERTICAL, false));
+  }
+
+  private int itemPadding;
+
+  public void setItemPadding (int padding) {
+    this.itemPadding = padding;
   }
 
   public void setNeedSeparators (boolean needSeparators) {
@@ -142,7 +149,7 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
       visibleItemCount--;
     }
     if (visibleItemCount > 0) {
-      adapter = new InfiniteAdapter<>(getContext(), this, repeatItems, trimItems, visibleItemCount, items, textPaint, forcedTheme == null ? themeProvider : null);
+      adapter = new InfiniteAdapter<>(getContext(), this, repeatItems, trimItems, visibleItemCount, items, textPaint, itemPadding, forcedTheme == null ? themeProvider : null);
       setAdapter(adapter);
       if (repeatItems) {
         int centerPosition = adapter.getItemCount() / 2;
@@ -176,8 +183,6 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
 
       // manager.scrollToPositionWithOffset(centerPosition - centerPosition % visibleItemCount - visibleItemCount / 2, 0);
       addOnScrollListener(new OnScrollListener() {
-        private boolean scrollByUser;
-
         @Override
         public void onScrollStateChanged (RecyclerView recyclerView, int newState) {
           if (newState == SCROLL_STATE_DRAGGING) {
@@ -206,7 +211,7 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
               }
             } else {
               int targetIndex = findCurrentIndex();
-              setCurrentIndex(targetIndex, true);
+              selectIndex(targetIndex, true);
             }
           }
         }
@@ -247,6 +252,8 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
     }
   }
 
+  private boolean scrollByUser;
+
   @Override
   public void draw (Canvas c) {
     super.draw(c);
@@ -270,13 +277,18 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
         while (indexDiff < 0) {
           indexDiff += items.size();
         }
-        setCurrentIndex((findCurrentIndex() + indexDiff) % items.size());
+        int index = (findCurrentIndex() + indexDiff) % items.size();
+        setCurrentIndex(index);
         smoothScrollBy(0, byHeights);
+        if (itemChangeListener != null) {
+          itemChangeListener.onCurrentIndexFinalized(this, index);
+        }
       }
     } else if (v instanceof ItemView) {
       Item<?> item = ((ItemView) v).getItem();
       if (item != null) {
-        setCurrentIndex(minMaxProvider != null ? minMaxProvider.getMinMax(this, item.index) : item.index, true);
+        int index = minMaxProvider != null ? minMaxProvider.getMinMax(this, item.index) : item.index;
+        selectIndex(index, true);
       }
     }
   }
@@ -324,14 +336,14 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
     if (minMaxProvider != null) {
       int newIndex = minMaxProvider.getMinMax(this, currentIndex);
       if (this.currentIndex != newIndex) {
-        setCurrentIndex(newIndex, true);
+        selectIndex(newIndex, true);
       }
     }
   }
 
-  private void setCurrentIndex (int targetIndex, boolean scroll) {
+  private void selectIndex (int targetIndex, boolean isFinalized) {
     setCurrentIndex(targetIndex);
-    if (!scroll || targetIndex == -1)
+    if (targetIndex == -1)
       return;
     int targetScrollTop;
     int viewTop;
@@ -358,10 +370,15 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
     } else {
       manager.scrollToPositionWithOffset(targetIndex, viewTop);
     }
+
+    if (itemChangeListener != null) {
+      itemChangeListener.onCurrentIndexFinalized(this, targetIndex);
+    }
   }
 
   public interface ItemChangeListener<T> {
     void onCurrentIndexChanged (InfiniteRecyclerView<T> v, int index);
+    default void onCurrentIndexFinalized (InfiniteRecyclerView<T> v, int index) { }
   }
 
   private ItemChangeListener<T> itemChangeListener;
@@ -371,7 +388,7 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
   }
 
   public void setCurrentItem (int index) {
-    setCurrentIndex(index, true);
+    selectIndex(index, true);
   }
 
   private void setCurrentIndex (int index) {
@@ -390,6 +407,7 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
     private final int index;
     private final String text;
     private final TextPaint textPaint;
+    private final int padding;
     private final int measuredWidth;
     private final int visibleItemCount;
 
@@ -398,7 +416,7 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
     private String trimmedText;
     private int trimmedTextWidth;
 
-    public Item (int index, T item, TextPaint paint, int visibleItemCount, boolean needTrim) {
+    public Item (int index, T item, TextPaint paint, int padding, int visibleItemCount, boolean needTrim) {
       this.index = index;
       this.text = item.toString();
       this.needTrim = needTrim;
@@ -409,13 +427,14 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
         this.textPaint = null;
         this.measuredWidth = 0;
       }
+      this.padding = padding;
       this.visibleItemCount = visibleItemCount;
     }
 
     public void layout (int width) {
       if (lastLayoutWidth != width && width != 0 && text != null) {
         lastLayoutWidth = width;
-        int availableWidth = width - Screen.dp(36f) /* padding */;
+        int availableWidth = width - padding;
         if (measuredWidth <= availableWidth || !needTrim) {
           trimmedText = text;
           trimmedTextWidth = measuredWidth;
@@ -538,22 +557,24 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
     private final boolean repeatItems;
 
     private final TextPaint textPaint;
+    private final int padding;
     private final boolean trimItems;
 
-    public InfiniteAdapter (Context context, View.OnClickListener onClickListener, boolean repeatItems, boolean trimItems, int visibleItemCount, List<T> data, TextPaint textPaint, @Nullable ViewController<?> themeProvider) {
+    public InfiniteAdapter (Context context, View.OnClickListener onClickListener, boolean repeatItems, boolean trimItems, int visibleItemCount, List<T> data, TextPaint textPaint, int padding, @Nullable ViewController<?> themeProvider) {
       this.context = context;
       this.onClickListener = onClickListener;
       this.repeatItems = repeatItems;
       this.themeProvider = themeProvider;
 
       this.textPaint = textPaint;
+      this.padding = padding;
       this.trimItems = trimItems;
 
       int index = 0;
       this.items = new ArrayList<>();
       this.items.ensureCapacity(data.size());
       for (T item : data) {
-        items.add(new Item<>(index, item, textPaint, visibleItemCount, trimItems));
+        items.add(new Item<>(index, item, textPaint, padding, visibleItemCount, trimItems));
         index++;
       }
     }
@@ -576,7 +597,7 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
     public void addRange (int index, List<T> addedItems, int visibleItemCount) {
       int prevSize = items.size();
       for (int i = 0; i < addedItems.size(); i++) {
-        Item<T> item = new Item<>(index + i, addedItems.get(i), textPaint, visibleItemCount, trimItems);
+        Item<T> item = new Item<>(index + i, addedItems.get(i), textPaint, padding, visibleItemCount, trimItems);
         items.add(index + i, item);
       }
       if (repeatItems) {

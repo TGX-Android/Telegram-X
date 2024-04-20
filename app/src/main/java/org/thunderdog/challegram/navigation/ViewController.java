@@ -2663,9 +2663,9 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     }
     int yearIndex = yearOptional && year == 0 ? yearItems.size() - 1 : year - minYear;
 
-    ColumnDataPicker.Column dayColumn = new ColumnDataPicker.Column(dayItems, 1f, day - 1);
-    ColumnDataPicker.Column monthColumn = new ColumnDataPicker.Column(monthItems, 2.5f, month);
-    ColumnDataPicker.Column yearColumn = new ColumnDataPicker.Column(yearItems, 1f, yearIndex);
+    ColumnDataPicker.Column dayColumn = new ColumnDataPicker.Column(dayItems, new ColumnDataPicker.Column.StylingOptions(1f).setNoPadding(true), day - 1);
+    ColumnDataPicker.Column monthColumn = new ColumnDataPicker.Column(monthItems, new ColumnDataPicker.Column.StylingOptions(2.5f), month);
+    ColumnDataPicker.Column yearColumn = new ColumnDataPicker.Column(yearItems, new ColumnDataPicker.Column.StylingOptions(1f).setNoPadding(true), yearIndex);
 
     List<ColumnDataPicker.Column> columns = Arrays.asList(
       dayColumn,
@@ -2725,7 +2725,6 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         dayColumn.index = index;
         // c.set(Calendar.DAY_OF_MONTH, index + 1);
         onValueChanged.runWithBool(false);
-        monthColumn.view.checkFitsMinMax();
       }
     });
     monthColumn.setMinMaxProvider((v, index) -> {
@@ -2738,21 +2737,35 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       }
       return index;
     });
-    monthColumn.setItemChangeListener((v, newMonth) -> {
-      if (monthColumn.index != newMonth) {
-        monthColumn.index = newMonth;
-        c.set(Calendar.MONTH, newMonth);
-        onValueChanged.runWithBool(true);
+    monthColumn.setItemChangeListener(new InfiniteRecyclerView.ItemChangeListener<SimpleStringItem>() {
+      @Override
+      public void onCurrentIndexChanged (InfiniteRecyclerView<SimpleStringItem> v, int newMonth) {
+        if (monthColumn.index != newMonth) {
+          monthColumn.index = newMonth;
+          c.set(Calendar.MONTH, newMonth);
+          onValueChanged.runWithBool(true);
+        }
+      }
+
+      @Override
+      public void onCurrentIndexFinalized (InfiniteRecyclerView<SimpleStringItem> v, int index) {
         dayColumn.view.checkFitsMinMax();
       }
     });
-    yearColumn.setItemChangeListener((v, newYearIndex) -> {
-      if (yearColumn.index != newYearIndex) {
-        yearColumn.index = newYearIndex;
-        int newYear = yearOptional && newYearIndex == yearItems.size() - 1 ? 2024 :
-          minYear + newYearIndex;
-        c.set(Calendar.YEAR, newYear);
-        onValueChanged.runWithBool(true);
+    yearColumn.setItemChangeListener(new InfiniteRecyclerView.ItemChangeListener<SimpleStringItem>() {
+      @Override
+      public void onCurrentIndexChanged (InfiniteRecyclerView<SimpleStringItem> v, int newYearIndex) {
+        if (yearColumn.index != newYearIndex) {
+          yearColumn.index = newYearIndex;
+          int newYear = yearOptional && newYearIndex == yearItems.size() - 1 ? 2024 :
+            minYear + newYearIndex;
+          c.set(Calendar.YEAR, newYear);
+          onValueChanged.runWithBool(true);
+        }
+      }
+
+      @Override
+      public void onCurrentIndexFinalized (InfiniteRecyclerView<SimpleStringItem> v, int newYearIndex) {
         monthColumn.view.checkFitsMinMax();
         dayColumn.view.checkFitsMinMax();
       }

@@ -7220,6 +7220,8 @@ public class TdlibUi extends Handler {
               });
             }
           });
+        } else if (id == R.id.btn_suggestion) {
+          context.tdlib().send(new TdApi.HideSuggestedAction(new TdApi.SuggestedActionSetBirthdate()), tdlib.typedOkHandler());
         }
         return true;
       });

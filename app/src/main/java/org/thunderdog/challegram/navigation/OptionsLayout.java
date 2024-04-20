@@ -32,6 +32,7 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -256,6 +257,7 @@ public class OptionsLayout extends LinearLayout implements Animated {
   public static EmojiTextView genSubtitle (Context context) {
     EmojiTextView text = new EmojiTextView(context);
     text.setScrollDisabled(true);
+    text.setMinHeight(Screen.dp(40f));
     text.setTypeface(Fonts.getRobotoRegular());
     text.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
     text.setGravity(Lang.rtl() ? Gravity.RIGHT | Gravity.CENTER_VERTICAL : Gravity.LEFT | Gravity.CENTER_VERTICAL);
