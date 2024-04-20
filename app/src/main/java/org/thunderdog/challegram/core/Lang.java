@@ -57,6 +57,7 @@ import org.thunderdog.challegram.util.text.Text;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.text.DateFormatSymbols;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -2363,7 +2364,7 @@ public class Lang {
 
   // Dates
 
-  public static CharSequence getBirthdate (@NonNull TdApi.Birthdate birthdate, boolean includeAge) {
+  public static CharSequence getBirthdate (@NonNull TdApi.Birthdate birthdate, boolean includeAge, boolean isSelf) {
     Calendar c = Calendar.getInstance();
     c.set(Calendar.DAY_OF_MONTH, birthdate.day);
     c.set(Calendar.MONTH, birthdate.month - 1);
@@ -2389,9 +2390,9 @@ public class Lang {
     if (includeAge && ageYears > 0) {
       CharSequence age;
       if (daysTillBirthday == 1) {
-        age = Lang.pluralBold(R.string.turnsTomorrow, ageYears + 1);
+        age = Lang.pluralBold(isSelf ? R.string.turnSelfTomorrow : R.string.turnsTomorrow, ageYears + 1);
       } else if (daysTillBirthday == 0) {
-        age = Lang.pluralBold(R.string.turnsToday, ageYears);
+        age = Lang.pluralBold(isSelf ? R.string.turnSelfToday :R.string.turnsToday, ageYears);
       } else {
         age = Lang.pluralBold(R.string.age, ageYears);
       }
@@ -2407,6 +2408,15 @@ public class Lang {
     } else {
       return dateYearFull(unixDate, unit);
     }
+  }
+
+  public static String[] getMonths (Locale locale) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+      try {
+        return android.icu.text.DateFormatSymbols.getInstance(locale).getMonths();
+      } catch (Throwable ignored) { }
+    }
+    return DateFormatSymbols.getInstance(locale).getMonths();
   }
 
   public static String getUntilDate (long unixTime, TimeUnit unit) {

@@ -209,13 +209,13 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
     receiver.requestAccount(tdlib, account.id, AvatarReceiver.Options.NONE);
   }
 
-  public void setError (boolean error, int errorIcon, boolean animated) {
-    if (errorIcon != 0) {
-      setErrorIcon(errorIcon, animated);
-    } else if (error) {
+  public void setClickBait (boolean isError, @DrawableRes int iconRes, boolean animated) {
+    if (iconRes != 0) {
+      setClickBaitIcon(iconRes, isError, animated);
+    } else if (isError) {
       setUnreadCount(Tdlib.CHAT_FAILED, counter != null && counter.isMuted(), animated);
     } else if (iconDrawableRes != 0) {
-      setErrorIcon(0, animated);
+      setClickBaitIcon(0, false, animated);
     } else {
       setUnreadCount(0, false, animated);
     }
@@ -223,7 +223,7 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
 
   private @DrawableRes int iconDrawableRes;
 
-  public void setErrorIcon (@DrawableRes int drawableRes, boolean animated) {
+  public void setClickBaitIcon (@DrawableRes int drawableRes, boolean isError, boolean animated) {
     if (this.iconDrawableRes != drawableRes) {
       this.iconDrawableRes = drawableRes;
       if (drawableRes != 0) {
@@ -236,7 +236,7 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
           }
           invalidate();
         }).build();
-        this.counter.setCount(Tdlib.CHAT_FAILED, animated);
+        this.counter.setCount(isError ? Tdlib.CHAT_FAILED : Tdlib.CHAT_MARKED_AS_UNREAD, animated);
       } else if (animated && counter != null) {
         this.counter.hide(true);
       } else {

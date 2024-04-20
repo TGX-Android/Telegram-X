@@ -63,7 +63,6 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGFoundChat;
-import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.data.TranslationsManager;
@@ -1782,7 +1781,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           view.setData(R.string.Birthdate);
           TdApi.Birthdate birthdate = userFull != null ? userFull.birthdate : null;
           if (birthdate != null) {
-            view.setName(Lang.getBirthdate(birthdate, true));
+            view.setName(Lang.getBirthdate(birthdate, true, tdlib.isSelfUserId(user.id)));
           } else {
             view.setName(Lang.getString(R.string.LoadingInformation));
           }
@@ -4771,7 +4770,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     } else if (viewId == R.id.btn_birthdate) {
       TdApi.Birthdate birthdate = userFull != null ? userFull.birthdate : null;
       if (birthdate != null) {
-        CharSequence text = Lang.getBirthdate(birthdate, false);
+        CharSequence text = Lang.getBirthdate(birthdate, false, tdlib.isSelfUserId(user.id));
         showOptions(text,
           new int[] {R.id.btn_copyText},
           new String[] {Lang.getString(R.string.Copy)},

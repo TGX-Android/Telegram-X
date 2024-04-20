@@ -11702,8 +11702,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return getRestrictionStatus(chat, kindResId) == null;
   }
 
-  public boolean isSettingSuggestion (TdApi.SuggestedAction action) {
-    return action.getConstructor() == TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR || action.getConstructor() == TdApi.SuggestedActionCheckPassword.CONSTRUCTOR;
+  public static boolean isSettingSuggestion (TdApi.SuggestedAction action) {
+    switch (action.getConstructor()) {
+      case TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR:
+      case TdApi.SuggestedActionCheckPassword.CONSTRUCTOR:
+      case TdApi.SuggestedActionSetBirthdate.CONSTRUCTOR: {
+        return true;
+      }
+      default: {
+        Td.assertSuggestedAction_b50c1148();
+        break;
+      }
+    }
+    return false;
   }
 
   public int getSettingSuggestionCount () {
@@ -11760,7 +11771,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     ResolvableProblem.MIXED,
     ResolvableProblem.NOTIFICATIONS,
     ResolvableProblem.CHECK_PASSWORD,
-    ResolvableProblem.CHECK_PHONE_NUMBER
+    ResolvableProblem.CHECK_PHONE_NUMBER,
+    ResolvableProblem.SET_BIRTHDATE
   })
   public @interface ResolvableProblem {
     int
@@ -11768,7 +11780,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       MIXED = 1,
       NOTIFICATIONS = 2,
       CHECK_PASSWORD = 3,
-      CHECK_PHONE_NUMBER = 4;
+      CHECK_PHONE_NUMBER = 4,
+      SET_BIRTHDATE = 5;
   }
 
   @ResolvableProblem
@@ -11787,8 +11800,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           return ResolvableProblem.CHECK_PASSWORD;
         case TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR:
           return ResolvableProblem.CHECK_PHONE_NUMBER;
+        case TdApi.SuggestedActionSetBirthdate.CONSTRUCTOR:
+          return ResolvableProblem.SET_BIRTHDATE;
         default:
-          throw new UnsupportedOperationException(singleAction.toString());
+          Td.assertSuggestedAction_b50c1148();
+          throw Td.unsupported(singleAction);
       }
     }
     return ResolvableProblem.NONE;

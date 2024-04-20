@@ -169,6 +169,12 @@
   <string name="turnsTomorrow_one">Turns %1$s year old tomorrow</string>
   <string name="turnsTomorrow_other">Turns %1$s years old tomorrow</string>
 
+  <string name="turnSelfToday_one">Turning %1$s year old today</string>
+  <string name="turnSelfToday_other">Turning %1$s years old today</string>
+
+  <string name="turnSelfTomorrow_one">Turning %1$s year old tomorrow</string>
+  <string name="turnSelfTomorrow_other">Turning %1$s years old tomorrow</string>
+
   <string name="xSeconds_one">%1$s second</string>
   <string name="xSeconds_other">%1$s seconds</string>
   <string name="xMinutes_one">%1$s minute</string>
@@ -237,6 +243,8 @@
   <string name="xOtherPeopleNames_other">and %1$s others</string>
   <string name="xOtherChatTitles_one">and %1$s other</string>
   <string name="xOtherChatTitles_other">and %1$s others</string>
+  <string name="xOtherUsernames_one">%1$s other</string>
+  <string name="xOtherUsernames_other">%1$s others</string>
   <string name="xContacts_one">%1$s contact</string>
   <string name="xContacts_other">%1$s contacts</string>
   <string name="xContactsJoined_one">%1$s contact on Telegram</string>
@@ -1313,6 +1321,15 @@
   <string name="SuccessfullyChangedNumber">Successfully changed number to %1$s.</string>
   <string name="YourPhone">Your Phone</string>
   <string name="SetUpUsername">Set Username</string>
+  <string name="SetBirthdateWarning">Set birthdate to %1$s? There\'s a time frame before you can change it to another date.</string>
+  <string name="SetBirthdateOk">Confirm</string>
+  <string name="SetBirthdate">Tap to set</string>
+  <string name="BirthdayPopupTitle">Date of Birth</string>
+  <string name="BirthdateEmpty">Unset</string>
+  <string name="MenuBirthdateSet">Add Date of Birth</string>
+  <string name="MenuBirthdateEdit">Edit Date of Birth</string>
+  <string name="MenuBirthdatePrivacy">Change Privacy Settings</string>
+  <string name="MenuBirthdateRemove">Remove</string>
   <string name="PhoneMobile">Mobile</string>
   <string name="GroupsInCommon">Groups in Common</string>
   <string name="SimilarChannels">Similar Channels</string>
@@ -3302,6 +3319,7 @@
   <string name="error_FolderMustContainAtLeast1Chat">Folder must contain at least one chat</string>
   <string name="error_CHATLISTS_TOO_MUCH">Sorry, you have too many shareable folders.</string>
   <string name="error_INVITES_TOO_MUCH">Sorry, you have too many invite links.</string>
+  <string name="error_BIRTHDAY_INVALID">The date you specified is invalid.</string>
 
   <string name="NotificationImportance">Notification Style</string>
   <string name="NotificationImportanceHigh">Sound and pop-up</string>
@@ -4588,6 +4606,9 @@
   <string name="ReminderCheckTfaPasswordText">Do you still remember your password?</string>
   <string name="ReminderCheckTfaPasswordDescription">Check that you still remember your 2-Step Verification password to ensure you can always log into Telegram.</string>
   <string name="ReminderCheckTfaPasswordHide">Hide Suggestion</string>
+  <string name="ReminderSetBirthdate">Let people know when you\'re celebrating</string>
+  <string name="ReminderSetBirthdateText">Add your birthday</string>
+  <string name="ReminderSetBirthdateHide">Hide Suggestion</string>
   <string name="ReminderActionLearnMore">Learn More</string>
   <string name="ReminderActionChangePhoneNumber">Change Phone Number</string>
   <string name="ReminderActionVerifyPassword">Verify Password</string>
