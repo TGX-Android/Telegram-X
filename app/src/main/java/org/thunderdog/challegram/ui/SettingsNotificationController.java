@@ -1421,7 +1421,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       adapter.processToggle(v, item, toggleValue);
       tdlib.context().setForceEnableNotifications(selectedAccount.id, toggleValue);
       if (selectedAccount.id == tdlib.id()) {
-        context.getDrawer().checkSettingsError(); // FIXME re-work to listeners
+        context.getDrawer().checkSettingsClickBait(); // FIXME re-work to listeners
       }
       updateNotificationModeHint(true);
       tdlib.context().onUpdateNotifications(null, notificationAccount -> notificationAccount.id == selectedAccount.id);

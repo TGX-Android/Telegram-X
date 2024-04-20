@@ -104,6 +104,7 @@ import org.thunderdog.challegram.ui.camera.CameraController;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
+import org.thunderdog.challegram.util.ColumnDataPicker;
 import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.SimpleStringItem;
@@ -124,6 +125,7 @@ import org.thunderdog.challegram.widget.TimerView;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
@@ -142,6 +144,7 @@ import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.Future;
 import me.vkryl.core.lambda.FutureBool;
+import me.vkryl.core.lambda.FutureInt;
 import me.vkryl.core.lambda.FutureLong;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
@@ -2370,12 +2373,17 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     public final CharSequence title;
     public final OptionItem subtitle;
     public final OptionItem[] items;
+    public boolean ignoreOtherPopUps;
 
     public Options (CharSequence info, CharSequence header, OptionItem subtitle, OptionItem[] items) {
       this.info = info;
       this.title = header;
       this.subtitle = subtitle;
       this.items = items;
+    }
+
+    public void setIgnoreOtherPopUps (boolean ignoreOtherPopUps) {
+      this.ignoreOtherPopUps = ignoreOtherPopUps;
     }
 
     public static class Builder {
@@ -2473,6 +2481,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
     popupLayout.setTag(this);
     popupLayout.init(true);
+    popupLayout.setDismissOtherPopUps(!options.ignoreOtherPopUps);
 
     if (delegate != null) {
       popupLayout.setDisableCancelOnTouchDown(delegate.disableCancelOnTouchdown());
@@ -2559,7 +2568,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     int onBuildPopUp (PopupLayout popupLayout, OptionsLayout optionsLayout);
   }
 
-  protected final PopupLayout showPopup (CharSequence title, boolean isTitle, @NonNull PopUpBuilder popUpBuilder, @Nullable ThemeDelegate forcedTheme) {
+  public final PopupLayout showPopup (CharSequence title, boolean isTitle, @NonNull PopUpBuilder popUpBuilder, @Nullable ThemeDelegate forcedTheme) {
     final PopupLayout popupLayout = new PopupLayout(context);
     popupLayout.setTag(this);
     popupLayout.init(true);
@@ -2603,6 +2612,162 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     }, forcedTheme);
   }
 
+  public interface CalendarDatePickerListener {
+    boolean onCommitDate (ColumnDataPicker picker, View commitButtonView, int newDay, int newMonth, int newYear);
+    default void onPendingCommitDateChanged (ColumnDataPicker picker, int newDay, int newMonth, int newYear) { }
+  }
+
+  public final ColumnDataPicker showCalendarDatePicker (CharSequence title, CharSequence commitButtonText, int day, int month, int year, boolean yearOptional, CalendarDatePickerListener listener) {
+    ColumnDataPicker dataPicker = new ColumnDataPicker();
+
+    Calendar c = Calendar.getInstance();
+
+    final int minYear = 1875;
+    final int minDayOfMonth = 1;
+    final int minMonth = Calendar.JANUARY;
+    final int maxYear = c.get(Calendar.YEAR);
+    final int maxMonth = c.get(Calendar.MONTH);
+    final int maxDayOfMonth = c.get(Calendar.DAY_OF_MONTH);
+
+    c.set(Calendar.DAY_OF_MONTH, 1);
+    c.set(Calendar.MONTH, month);
+    c.set(Calendar.YEAR, year != 0 ? year : 2024 /*leap year*/);
+
+    int daysCount = c.getActualMaximum(Calendar.DAY_OF_MONTH);
+    final List<SimpleStringItem> dayItems = new ArrayList<>();
+    for (int currentDay = 1; currentDay <= daysCount; currentDay++) {
+      String str = currentDay < 10 ?
+        "0" + currentDay :
+        Integer.toString(currentDay);
+      dayItems.add(new SimpleStringItem(0, str)
+        .setArg1(currentDay));
+    }
+
+    String[] monthItemsRaw = Lang.getMonths(Lang.locale());
+    final List<SimpleStringItem> monthItems = new ArrayList<>();
+    int currentMonth = 0;
+    for (String monthItem : monthItemsRaw) {
+      monthItems.add(new SimpleStringItem(0, monthItem)
+        .setArg1(currentMonth));
+      currentMonth++;
+    }
+
+    final List<SimpleStringItem> yearItems = new ArrayList<>();
+    for (int currentYear = minYear; currentYear <= maxYear; currentYear++) {
+      String str = Integer.toString(currentYear);
+      yearItems.add(new SimpleStringItem(0, str)
+        .setArg1(currentYear));
+    }
+    if (yearOptional) {
+      yearItems.add(new SimpleStringItem(0, "—"));
+    }
+    int yearIndex = yearOptional && year == 0 ? yearItems.size() - 1 : year - minYear;
+
+    ColumnDataPicker.Column dayColumn = new ColumnDataPicker.Column(dayItems, 1f, day - 1);
+    ColumnDataPicker.Column monthColumn = new ColumnDataPicker.Column(monthItems, 2.5f, month);
+    ColumnDataPicker.Column yearColumn = new ColumnDataPicker.Column(yearItems, 1f, yearIndex);
+
+    List<ColumnDataPicker.Column> columns = Arrays.asList(
+      dayColumn,
+      monthColumn,
+      yearColumn
+    );
+
+    FutureInt getDay = () -> dayColumn.index + 1;
+    FutureInt getMonth = () -> monthColumn.index;
+    FutureInt getYear = () -> yearOptional && yearColumn.index == yearColumn.rows.size() - 1 ? 0 : minYear + yearColumn.index;
+
+    RunnableBool onValueChanged = checkMaxDay -> {
+      if (checkMaxDay) {
+        int maxDayCount = c.getActualMaximum(Calendar.DAY_OF_MONTH);
+        int prevMaxDayCount = dayColumn.rows.size();
+        while (dayColumn.rows.size() != maxDayCount) {
+          if (dayColumn.rows.size() > maxDayCount) {
+            dayColumn.rows.remove(dayColumn.rows.size() - 1);
+          } else {
+            int addedDay = dayColumn.rows.size() + 1;
+            String str = addedDay < 10 ? "0" + addedDay : Integer.toString(addedDay);
+            dayColumn.rows.add(new SimpleStringItem(0, str)
+              .setArg1(addedDay));
+          }
+        }
+        if (dayColumn.index >= maxDayCount) {
+          dayColumn.index = maxDayCount - 1;
+          // c.set(Calendar.DAY_OF_MONTH, maxDayCount);
+        }
+        if (maxDayCount > prevMaxDayCount) {
+          dayColumn.view.addRange(prevMaxDayCount, dayColumn.rows.subList(prevMaxDayCount, maxDayCount));
+        } else if (prevMaxDayCount > maxDayCount) {
+          dayColumn.view.removeRange(maxDayCount, prevMaxDayCount - maxDayCount);
+        }
+      }
+      if (listener != null) {
+        int newDay = getDay.getIntValue();
+        int newMonth = getMonth.getIntValue();
+        int newYear = getYear.getIntValue();
+        listener.onPendingCommitDateChanged(dataPicker, newDay, newMonth, newYear);
+      }
+    };
+
+    dayColumn.setMinMaxProvider((v, index) -> {
+      int newMonth = getMonth.getIntValue();
+      int newYear = getYear.getIntValue();
+      if (newYear == maxYear && newMonth == maxMonth) {
+        index = Math.min(index, maxDayOfMonth - 1);
+      }
+      if (newYear == minYear && newMonth == minMonth) {
+        index = Math.max(index, minDayOfMonth - 1);
+      }
+      return index;
+    });
+    dayColumn.setItemChangeListener((v, index) -> {
+      if (dayColumn.index != index) {
+        dayColumn.index = index;
+        // c.set(Calendar.DAY_OF_MONTH, index + 1);
+        onValueChanged.runWithBool(false);
+        monthColumn.view.checkFitsMinMax();
+      }
+    });
+    monthColumn.setMinMaxProvider((v, index) -> {
+      int newYear = getYear.getIntValue();
+      if (newYear == maxYear) {
+        index = Math.min(index, maxMonth);
+      }
+      if (newYear == minYear) {
+        index = Math.max(index, minMonth);
+      }
+      return index;
+    });
+    monthColumn.setItemChangeListener((v, newMonth) -> {
+      if (monthColumn.index != newMonth) {
+        monthColumn.index = newMonth;
+        c.set(Calendar.MONTH, newMonth);
+        onValueChanged.runWithBool(true);
+        dayColumn.view.checkFitsMinMax();
+      }
+    });
+    yearColumn.setItemChangeListener((v, newYearIndex) -> {
+      if (yearColumn.index != newYearIndex) {
+        yearColumn.index = newYearIndex;
+        int newYear = yearOptional && newYearIndex == yearItems.size() - 1 ? 2024 :
+          minYear + newYearIndex;
+        c.set(Calendar.YEAR, newYear);
+        onValueChanged.runWithBool(true);
+        monthColumn.view.checkFitsMinMax();
+        dayColumn.view.checkFitsMinMax();
+      }
+    });
+
+    dataPicker.setColumns(columns);
+    dataPicker.setSpacing(.5f, .5f);
+    dataPicker.showPopup(this, title, commitButtonText, null, (picker, commitButtonView) -> {
+      int newDay = getDay.getIntValue();
+      int newMonth = getMonth.getIntValue();
+      int newYear = getYear.getIntValue();
+      return listener != null && listener.onCommitDate(picker, commitButtonView, newDay, newMonth, newYear);
+    });
+    return dataPicker;
+  }
 
   public final PopupLayout showDateTimePicker (CharSequence title, @StringRes int todayRes, @StringRes int tomorrowRes, @StringRes int futureRes, final RunnableLong callback, final @Nullable ThemeDelegate forcedTheme) {
     return showDateTimePicker(tdlib, title, todayRes, tomorrowRes, futureRes, callback, forcedTheme);
@@ -2631,14 +2796,10 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         }
 
         @Override
-        public void setAlpha (int alpha) {
-
-        }
+        public void setAlpha (int alpha) { }
 
         @Override
-        public void setColorFilter (@Nullable ColorFilter colorFilter) {
-
-        }
+        public void setColorFilter (@Nullable ColorFilter colorFilter) { }
 
         @Override
         public int getOpacity () {
@@ -2839,6 +3000,24 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   public final int tdlibId () {
     return tdlib != null ? tdlib.id() : TdlibAccount.NO_ID;
+  }
+
+  public final TooltipOverlayView.TooltipInfo showErrorTooltip (View view, CharSequence text) {
+    return showTooltip(view, R.drawable.baseline_error_24, text);
+  }
+
+  public final TooltipOverlayView.TooltipInfo showWarningTooltip (View view, CharSequence text) {
+    return showTooltip(view, R.drawable.baseline_warning_24, text);
+  }
+
+  public final TooltipOverlayView.TooltipInfo showInfoTooltip (View view, CharSequence text) {
+    return showTooltip(view, R.drawable.baseline_info_24, text);
+  }
+
+  public final TooltipOverlayView.TooltipInfo showTooltip (View view, @DrawableRes int icon, CharSequence text) {
+    return context.tooltipManager()
+      .builder(view)
+      .show(this, tdlib, icon, text);
   }
 
   public final void openTdlibLogs (int testerLevel, Crash crashInfo) {

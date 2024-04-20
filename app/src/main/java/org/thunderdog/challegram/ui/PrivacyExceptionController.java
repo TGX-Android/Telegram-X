@@ -504,7 +504,7 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
       new TdApi.UserPrivacySetting[] {
         new TdApi.UserPrivacySettingShowStatus(),
         new TdApi.UserPrivacySettingShowProfilePhoto(),
-        // TODO: new TdApi.UserPrivacySettingShowBirthdate(),
+        new TdApi.UserPrivacySettingShowBirthdate(),
         new TdApi.UserPrivacySettingShowBio(),
         new TdApi.UserPrivacySettingShowPhoneNumber(),
 

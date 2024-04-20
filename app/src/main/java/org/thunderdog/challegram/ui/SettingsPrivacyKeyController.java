@@ -359,7 +359,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.CustomShareSettingsHelp));
     }
 
-    if (needsExtraToggle(privacyRules)) {
+    if (needExtraToggle(privacyRules)) {
       List<ListItem> extraItems = newExtraToggleItems();
       items.addAll(extraItems);
     }
@@ -468,9 +468,10 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
     }
   }
 
-  private boolean needsExtraToggle (PrivacySettings privacyRules) {
+  private boolean needExtraToggle (PrivacySettings privacyRules) {
     switch (getArgumentsStrict().getConstructor()) {
       case TdApi.UserPrivacySettingShowProfilePhoto.CONSTRUCTOR:
+      case TdApi.UserPrivacySettingShowBirthdate.CONSTRUCTOR:
         return true;
       case TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR:
         return privacyRules.getMode() != PrivacySettings.Mode.EVERYBODY || privacyRules.getMinusUserIdCount() > 0;
@@ -478,6 +479,14 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
         return privacyRules.getMode() != PrivacySettings.Mode.EVERYBODY;
     }
     return false;
+  }
+
+  private int getExtraItemCount () {
+    if (getArgumentsStrict().getConstructor() == TdApi.UserPrivacySettingShowBirthdate.CONSTRUCTOR) {
+      return 3;
+    } else {
+      return 4;
+    }
   }
 
   private List<ListItem> newExtraToggleItems () {
@@ -488,6 +497,13 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
           new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_togglePermission, 0, R.string.PublicPhoto),
           new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
           new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.PublicPhotoHint)
+        );
+      }
+      case TdApi.UserPrivacySettingShowBirthdate.CONSTRUCTOR: {
+        return Arrays.asList(
+          new ListItem(ListItem.TYPE_SHADOW_TOP),
+          new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_togglePermission, 0, R.string.Birthdate),
+          new ListItem(ListItem.TYPE_SHADOW_BOTTOM)
         );
       }
       case TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR: {
@@ -514,7 +530,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
   private void updateExtraToggle (PrivacySettings newPrivacySettings) {
     int index = adapter.indexOfViewById(R.id.btn_togglePermission);
     boolean prevHadExtraToggle = index != -1;
-    boolean nowHasExtraToggle = needsExtraToggle(newPrivacySettings);
+    boolean nowHasExtraToggle = needExtraToggle(newPrivacySettings);
     if (prevHadExtraToggle != nowHasExtraToggle) {
       if (nowHasExtraToggle) {
         List<ListItem> extraItems = newExtraToggleItems();
@@ -523,7 +539,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
         adapter.notifyItemRangeInserted(atIndex, extraItems.size());
         loadExtraToggle();
       } else {
-        adapter.removeRange(index - 1, 4);
+        adapter.removeRange(index - 1, getExtraItemCount());
       }
     } else if (nowHasExtraToggle) {
       adapter.updateValuedSettingByPosition(index);
@@ -570,6 +586,21 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
               view.setDrawModifier(new ProfilePhotoDrawModifier().requestFiles(view.getComplexReceiver(), tdlib));
               break;
             }
+            case TdApi.UserPrivacySettingShowBirthdate.CONSTRUCTOR: {
+              final TdApi.UserFullInfo myUserFull = tdlib.myUserFull();
+              if (myUserFull != null) {
+                if (myUserFull.birthdate != null) {
+                  view.setName(R.string.UserBirthdate);
+                  view.setData(Lang.getBirthdate(myUserFull.birthdate, true, true));
+                } else {
+                  view.setName(Lang.getString(R.string.ReminderSetBirthdateText));
+                  view.setData(Lang.getString(R.string.ReminderSetBirthdate));
+                }
+              } else {
+                view.setData(R.string.LoadingInformation);
+              }
+              break;
+            }
             case TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR: {
               view.setEnabledAnimated(readDatePrivacySetting != null, isUpdate);
               view.getToggler().setRadioEnabled(readDatePrivacySetting != null && !readDatePrivacySetting.showReadDate, isUpdate);
@@ -579,8 +610,10 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
               view.getToggler().setRadioEnabled(currentRules().needPlusPremium(), isUpdate);
               break;
             }
-            default:
-              throw new IllegalStateException();
+            default: {
+              Td.assertUserPrivacySetting_39dfff4d();
+              throw Td.unsupported(getArgumentsStrict());
+            }
           }
         } else {
           view.setDrawModifier(null);
@@ -753,6 +786,10 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
       switch (getArgumentsStrict().getConstructor()) {
         case TdApi.UserPrivacySettingShowProfilePhoto.CONSTRUCTOR: {
           getAvatarPickerManager().showMenuForProfile(null, true);
+          break;
+        }
+        case TdApi.UserPrivacySettingShowBirthdate.CONSTRUCTOR: {
+          tdlib.ui().openBirthdateEditor(SettingsPrivacyKeyController.this, v, TdlibUi.BirthdateOpenOrigin.PRIVACY_SETTINGS);
           break;
         }
         case TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR: {

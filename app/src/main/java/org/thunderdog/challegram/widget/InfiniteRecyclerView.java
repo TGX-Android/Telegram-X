@@ -42,6 +42,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClickListener {
   private final TextPaint textPaint;
@@ -50,7 +51,7 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
   private final boolean repeatItems;
 
   private int currentIndex;
-  private ArrayList<T> items;
+  private List<T> items;
   private int visibleItemCount;
   private boolean needSeparators = true;
 
@@ -116,7 +117,24 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
     this.trimItems = trimItems;
   }
 
-  public void initWithItems (final ArrayList<T> items, int currentIndex) {
+  public void removeRange (int index, int count) {
+    adapter.removeRange(index, count);
+    this.visibleItemCount = Math.min(items.size(), 5);
+    if (this.visibleItemCount % 2 == 0) {
+      visibleItemCount--;
+    }
+    invalidateItemDecorations();
+  }
+
+  public void addRange (int index, List<T> items) {
+    adapter.addRange(index, items, visibleItemCount);
+    invalidateItemDecorations();
+  }
+
+  private InfiniteAdapter<T> adapter;
+  public void initWithItems (final List<T> items, int currentIndex) {
+    if (adapter != null)
+      throw new IllegalStateException();
     this.currentIndex = currentIndex;
     this.items = items;
     this.visibleItemCount = Math.min(items.size(), 5);
@@ -124,7 +142,7 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
       visibleItemCount--;
     }
     if (visibleItemCount > 0) {
-      InfiniteAdapter<?> adapter = new InfiniteAdapter<>(getContext(), this, repeatItems, trimItems, visibleItemCount, items, textPaint, forcedTheme == null ? themeProvider : null);
+      adapter = new InfiniteAdapter<>(getContext(), this, repeatItems, trimItems, visibleItemCount, items, textPaint, forcedTheme == null ? themeProvider : null);
       setAdapter(adapter);
       if (repeatItems) {
         int centerPosition = adapter.getItemCount() / 2;
@@ -299,6 +317,15 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
       firstVisiblePosition += Math.round(-viewTop / (float) getItemHeight());
       int resultIndex = Math.max(0, Math.min(items.size() - 1, firstVisiblePosition));
       return minMaxProvider != null ? minMaxProvider.getMinMax(this, resultIndex) : resultIndex;
+    }
+  }
+
+  public void checkFitsMinMax () {
+    if (minMaxProvider != null) {
+      int newIndex = minMaxProvider.getMinMax(this, currentIndex);
+      if (this.currentIndex != newIndex) {
+        setCurrentIndex(newIndex, true);
+      }
     }
   }
 
@@ -510,11 +537,17 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
     private final ArrayList<Item<T>> items;
     private final boolean repeatItems;
 
-    public InfiniteAdapter (Context context, View.OnClickListener onClickListener, boolean repeatItems, boolean trimItems, int visibleItemCount, ArrayList<T> data, TextPaint textPaint, @Nullable ViewController<?> themeProvider) {
+    private final TextPaint textPaint;
+    private final boolean trimItems;
+
+    public InfiniteAdapter (Context context, View.OnClickListener onClickListener, boolean repeatItems, boolean trimItems, int visibleItemCount, List<T> data, TextPaint textPaint, @Nullable ViewController<?> themeProvider) {
       this.context = context;
       this.onClickListener = onClickListener;
       this.repeatItems = repeatItems;
       this.themeProvider = themeProvider;
+
+      this.textPaint = textPaint;
+      this.trimItems = trimItems;
 
       int index = 0;
       this.items = new ArrayList<>();
@@ -538,6 +571,29 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
     @Override
     public int getItemCount () {
       return repeatItems ? items.size() * 2 : items.size();
+    }
+
+    public void addRange (int index, List<T> addedItems, int visibleItemCount) {
+      int prevSize = items.size();
+      for (int i = 0; i < addedItems.size(); i++) {
+        Item<T> item = new Item<>(index + i, addedItems.get(i), textPaint, visibleItemCount, trimItems);
+        items.add(index + i, item);
+      }
+      if (repeatItems) {
+        notifyItemRangeInserted(prevSize + index, addedItems.size());
+      }
+      notifyItemRangeInserted(index, addedItems.size());
+    }
+
+    public void removeRange (int index, int removedCount) {
+      int oldItemCount = items.size();
+      for (int i = index + removedCount - 1; i >= index; i--) {
+        items.remove(i);
+      }
+      if (repeatItems) {
+        notifyItemRangeRemoved(oldItemCount + index, removedCount);
+      }
+      notifyItemRangeRemoved(index, removedCount);
     }
   }
 }

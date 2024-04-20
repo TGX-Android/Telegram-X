@@ -60,6 +60,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.ComponentActivity;
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
@@ -200,7 +201,18 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     return gestureController;
   }
 
-  public int getSettingsErrorIcon () {
+  public static class ClickBait {
+    public final int iconRes;
+    public final boolean isError;
+
+    public ClickBait (@DrawableRes int iconRes, boolean isError) {
+      this.iconRes = iconRes;
+      this.isError = isError;
+    }
+  }
+
+  @Nullable
+  public ClickBait getSettingsClickBait () {
     // It's located here for future display inside header menu button
     if (hasTdlib()) {
       Tdlib tdlib = currentTdlib();
@@ -209,16 +221,18 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         case Tdlib.ResolvableProblem.NONE:
           break;
         case Tdlib.ResolvableProblem.MIXED:
-          return Tdlib.CHAT_FAILED;
+          return new ClickBait(0, true);
         case Tdlib.ResolvableProblem.NOTIFICATIONS:
-          return R.drawable.baseline_notification_important_14;
+          return new ClickBait(R.drawable.baseline_notification_important_14, true);
         case Tdlib.ResolvableProblem.CHECK_PASSWORD:
-          return R.drawable.baseline_gpp_maybe_14;
+          return new ClickBait(R.drawable.baseline_gpp_maybe_14, true);
         case Tdlib.ResolvableProblem.CHECK_PHONE_NUMBER:
-          return R.drawable.baseline_sim_card_alert_14;
+          return new ClickBait(R.drawable.baseline_sim_card_alert_14, true);
+        case Tdlib.ResolvableProblem.SET_BIRTHDATE:
+          return new ClickBait(R.drawable.baseline_cake_variant_14, false);
       }
     }
-    return 0;
+    return null;
   }
 
   public boolean isAnimating (boolean intercept) {
@@ -2272,7 +2286,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         return;
       }
     }
-    hideContextualPopups(false);
+    if (window.needDismissOtherPopUps()) {
+      hideContextualPopups(false);
+    }
     windows.add(window);
     checkDisallowScreenshots();
     window.showBoundWindow(rootView);
