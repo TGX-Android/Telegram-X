@@ -71,6 +71,8 @@ import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.UserProvider;
 import org.thunderdog.challegram.util.WrapperProvider;
 import org.thunderdog.challegram.util.text.Letters;
+import org.thunderdog.challegram.voip.VoIP;
+import org.thunderdog.challegram.voip.VoIPLogs;
 import org.thunderdog.challegram.voip.annotation.CallState;
 
 import java.io.File;
@@ -7625,6 +7627,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     if (!isDebugInstance() && update.message.chatId == ChatId.fromUserId(TdConstants.TELEGRAM_ACCOUNT_ID)) {
       listeners.notifySessionListPossiblyChanged(true);
     }
+
+    if (update.message.content.getConstructor() == TdApi.MessageCall.CONSTRUCTOR) {
+      updateSuitableCallLogInformation(update.message.chatId, update.message.isOutgoing, update.message);
+    }
   }
 
   private void updateMessageSendSucceeded (TdApi.UpdateMessageSendSucceeded update) {
@@ -8683,14 +8689,86 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
+  private static class CallLog {
+    public final int callId;
+    public final long chatId;
+    public final boolean isOutgoing;
+    public final VoIPLogs.Pair files;
+
+    public long guessedMessageId;
+
+    public CallLog (TdApi.Call call, VoIPLogs.Pair files) {
+      this.callId = call.id;
+      this.chatId = ChatId.fromUserId(call.userId);
+      this.isOutgoing = call.isOutgoing;
+      this.files = files;
+    }
+  }
+
+  private Map<Long, List<CallLog>> callLogs;
+
+  @AnyThread
+  public @Nullable VoIPLogs.Pair findCallLogInformation (long chatId, long messageId) {
+    synchronized (dataLock) {
+      List<CallLog> list = callLogs != null ? callLogs.get(chatId) : null;
+      if (list != null) {
+        for (CallLog callLog : list) {
+          if (callLog.chatId == chatId && callLog.guessedMessageId == messageId) {
+            return callLog.files;
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  @AnyThread
+  public void updateSuitableCallLogInformation (long chatId, boolean isOutgoing, TdApi.Message callMessage) {
+    synchronized (dataLock) {
+      List<CallLog> list = callLogs != null ? callLogs.get(chatId) : null;
+      if (list != null) {
+        for (CallLog callLog : list) {
+          if (callLog.guessedMessageId == 0 && callLog.chatId == chatId && callLog.isOutgoing == isOutgoing) {
+            callLog.guessedMessageId = callMessage.id;
+            // TODO some persistence?
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  @AnyThread
+  public void storeCallLogInformation (TdApi.Call call, VoIPLogs.Pair logFiles) {
+    CallLog callLog = new CallLog(call, logFiles);
+    synchronized (dataLock) {
+      if (callLogs == null) {
+        callLogs = new LinkedHashMap<>();
+      }
+      long chatId = ChatId.fromUserId(call.userId);
+      List<CallLog> list = callLogs.get(chatId);
+      if (list == null) {
+        list = new ArrayList<>();
+        callLogs.put(chatId, list);
+      }
+      list.add(callLog);
+    }
+  }
+
   @TdlibThread
   private void updateCall (TdApi.UpdateCall update) {
-    if (TD.isActive(update.call)) {
-      activeCalls.put(update.call.id, update.call);
-    } else {
-      activeCalls.remove(update.call.id);
+    boolean haveActiveCalls;
+    synchronized (dataLock) {
+      boolean wasActive = activeCalls.containsKey(update.call.id);
+      boolean nowActive = TD.isActive(update.call);
+      if (nowActive) {
+        activeCalls.put(update.call.id, update.call);
+      } else {
+        activeCalls.remove(update.call.id);
+      }
+      haveActiveCalls = !activeCalls.isEmpty();
     }
-    setHaveActiveCalls(!activeCalls.isEmpty());
+    setHaveActiveCalls(haveActiveCalls);
 
     ui().sendMessage(ui().obtainMessage(MSG_ACTION_UPDATE_CALL, update));
     listeners.updateCall(update);

@@ -34,6 +34,18 @@ public class VoIPLogs {
       this.logFile = logFile;
       this.statsLogFile = statsLogFile;
     }
+
+    public boolean exists () {
+      return hasPrimaryLogFile() || hasStatsLogFile();
+    }
+
+    public boolean hasPrimaryLogFile () {
+      return (logFile.exists() && logFile.length() > 0);
+    }
+
+    public boolean hasStatsLogFile () {
+      return (statsLogFile.exists() && statsLogFile.length() > 0);
+    }
   }
 
   @Nullable
@@ -49,7 +61,7 @@ public class VoIPLogs {
     File[] files = new File[2];
     for (int i = 0; i < files.length; i++) {
       String logFileName = String.format(Locale.US,
-        "logs/%s%02d_%02d_%04d_%02d_%02d_%02d%s.log",
+        "%s%02d_%02d_%04d_%02d_%02d_%02d%s.log",
         Log.CALL_PREFIX,
         c.get(Calendar.DATE),
         c.get(Calendar.MONTH) + 1,
@@ -59,7 +71,16 @@ public class VoIPLogs {
         c.get(Calendar.SECOND),
         i == 1 ? ".stats" : ""
       );
-      files[i] = new File(dir, logFileName);
+      File file = new File(dir, logFileName);
+      /*try {
+        if (!file.createNewFile()) {
+          return null;
+        }
+      } catch (Throwable t) {
+        Log.e(Log.TAG_VOIP, "Unable to create call log file", t);
+        return null;
+      }*/
+      files[i] = file;
     }
     return new Pair(files[0], files[1]);
   }

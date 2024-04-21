@@ -1575,6 +1575,7 @@
   <string name="Incoming">Incoming</string>
   <string name="CallAgain">Call Again</string>
   <string name="CallBack">Call Back</string>
+  <string name="ShareCallLogs">Share Call Diagnostics</string>
   <string name="Busy">Busy</string>
   <string name="TextSize">Message Font Size</string>
   <string name="TextSizeScaleEnable">Enable Size Scaling</string>
@@ -2957,6 +2958,7 @@
   <string name="TdlibLogs">TDLib Logs</string>
   <string name="TdlibLogsWarning">**Warning:** TDLib Logs may contain **private data**.\n\nDo not share them with anyone, unless you know what you are doing.</string>
   <string name="TdlibLogsWarningConfirm">Proceed</string>
+  <string name="CallLogsWarning">**Warning:** call diagnostics may contain **private data** such as IP addresses of the parties.\n\nDo not share them with anyone, unless you know what you are doing.</string>
 
   <string name="NoEmailApp">No email application found</string>
 
@@ -3173,6 +3175,9 @@
   <string name="ShareTitleFile">Share file to…</string>
   <string name="ShareTitleFileX_one">Share %1$s file to…</string>
   <string name="ShareTitleFileX_other">Share %1$s files to…</string>
+
+  <string name="ShareTitleFiles_one">Share %1$s file to…</string>
+  <string name="ShareTitleFiles_other">Share %1$s files to…</string>
 
   <string name="ShareTextMedia">Media from %1$s</string>
   <string name="ShareTitleMedia">Share media to…</string>
@@ -3747,10 +3752,6 @@
   <string name="ChatListStyle1">Two lines</string>
   <string name="ChatListStyle2">Three lines</string>
   <string name="ChatListStyle3">Three lines (bigger text)</string>
-
-  <!--<string name="TonLogsWarning">**Warning:** TON Logs may contain your wallet\'s **private key**.\n\nDo not share them with anyone, unless you know what you are doing.</string>
-  <string name="TonLogs">TON Logs</string>
-  <string name="Wallet">Wallet</string>-->
 
   <string name="format_tracksAndDuration">%1$s, %2$s</string>
 

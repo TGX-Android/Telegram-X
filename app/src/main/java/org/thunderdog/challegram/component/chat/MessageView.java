@@ -68,6 +68,7 @@ import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
+import org.thunderdog.challegram.voip.VoIPLogs;
 import org.thunderdog.challegram.widget.SparseDrawableView;
 
 import java.util.List;
@@ -1144,6 +1145,16 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         icons.append(icon);
       } else {
         moreOptions++;
+      }
+    }
+
+    if (!isMore && content.getConstructor() == TdApi.MessageCall.CONSTRUCTOR) {
+      VoIPLogs.Pair callLogs = msg.tdlib().findCallLogInformation(msg.getChatId(), msg.getId());
+      if (callLogs != null && callLogs.exists()) {
+        ids.append(R.id.btn_messageShareCallLogs);
+        icons.append(R.drawable.baseline_bug_report_24);
+        strings.append(R.string.ShareCallLogs);
+        tag = callLogs;
       }
     }
 

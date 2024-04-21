@@ -186,6 +186,7 @@ public class VoIP {
     final String[] tgCallsVersions = N.getTgCallsVersions();
 
     final VoIPLogs.Pair logFiles = VoIPLogs.getNewFile(true);
+    tdlib.storeCallLogInformation(call, logFiles);
 
     final File persistentStateFile = VoIPPersistentConfig.getVoipConfigFile();
 
