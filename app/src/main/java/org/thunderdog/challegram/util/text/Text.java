@@ -20,6 +20,8 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.icu.lang.UCharacter;
+import android.os.Build;
 import android.os.SystemClock;
 import android.text.TextPaint;
 import android.text.TextUtils;
@@ -757,9 +759,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   // Text
 
   private void reset () {
-    currentParagraphBidi = null;
-    currentParagraphStart = 0;
-    currentParagraphBidiIndex = 0;
+    bidiClear();
     entityIndex = -1;
     entityStart = entityEnd = 0;
     pressHighlight = null;
@@ -1012,172 +1012,14 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       }
     }
 
-    // Now check RTL lines (V2)
-
-    final int partsCount = out.size();
-
-    // Fix order
-    TextPart[] partsArray = out.toArray(new TextPart[0]);
-    byte[] partsLevels = new byte[out.size()];
-    for (int a = 0; a < partsLevels.length; a++) {
-      partsLevels[a] = (byte) BiDiUtils.getLevel(partsArray[a].getBidiEntity());
-    }
-
-    int currentBidiIndex = 0;
-    int lineIndex = 0;
-    int rtlPartsCount = 0;
-    int lastLineStartIndex = 0;
-    for (int partIndex = 0; partIndex < partsCount; partIndex++) {
-      final TextPart part = partsArray[partIndex];
-      final @BiDiEntity int bidiEntity = part.getBidiEntity();
-      final boolean paragraphIsRtl = BiDiUtils.isParagraphRtl(bidiEntity);
-      final int bidiIndex = BiDiUtils.getIndex(bidiEntity);
-      final int partLineIndex = part.getY(); //getLineIndex();
-      if (lineIndex != partLineIndex || currentBidiIndex != bidiIndex) {
-        fixPartsOrder(partsArray, partsLevels, lastLineStartIndex, partIndex);
-        currentBidiIndex = bidiIndex;
-        lastLineStartIndex = partIndex;
-        lineIndex = partLineIndex;
-      }
-      if (paragraphIsRtl) {
-        rtlPartsCount += 1;
-      }
-    }
-    fixPartsOrder(partsArray, partsLevels, lastLineStartIndex, partsCount);
-
-
-
-
-
-    /*
-    // Now check RTL lines
-    int rtlPartsCount = 0;
-
-    int paragraphIndex = 0;
-    boolean prevIsRtl = false;
-    boolean prevParagraphRtl = false;
-    int neutralLineCount = 0, ltrLineCount = 0, rtlLineCount = 0;
-    for (int partIndex = 0; partIndex < partsCount; ) {
-      int direction = Strings.DIRECTION_NEUTRAL;
-      int startIndex = partIndex;
-
-      TextPart part = out.get(partIndex);
-      int currentLine = part.getLineIndex();
-      int currentParagraphIndex = part.getParagraphIndex();
-      if (paragraphIndex != currentParagraphIndex) {
-        prevParagraphRtl = prevIsRtl;
-
-        paragraphIndex = currentParagraphIndex;
-        neutralLineCount = ltrLineCount = rtlLineCount = 0;
-        prevIsRtl = false;
-      }
-
-      do {
-        if (part.isEssential()) {
-          int partDirection = Strings.getTextDirection(part.getLine(), part.getStart(), part.getEnd());
-          if (partDirection != Strings.DIRECTION_NEUTRAL) {
-            if (direction == Strings.DIRECTION_NEUTRAL)
-              direction = partDirection;
-            if (partDirection == Strings.DIRECTION_RTL && part.getEnd() - part.getStart() > 0) {
-              int start = part.getStart();
-              int checkIndex = part.getEnd() - 1;
-              if (part.getLine().charAt(checkIndex) == '\u2068') {
-                int spacebarCount = 0;
-                while (--checkIndex >= start) {
-                  char c = part.getLine().charAt(checkIndex);
-                  if (c == ' ')
-                    spacebarCount++;
-                  else if (c != '\u2068')
-                    break;
-                }
-                if (spacebarCount > 0)
-                  part.setXY(part.getX() - (int) makeSpaceSize(getTextPaint(part.getEntity())), part.getY() * spacebarCount);
-              }
-            }
-          }
-        }
-        partIndex++;
-      } while (partIndex < partsCount && (part = out.get(partIndex)).getLineIndex() == currentLine);
-
-      switch (direction) {
-        case Strings.DIRECTION_LTR: {
-          if (ltrLineCount == 0 && rtlLineCount == 0 && neutralLineCount > 0 && prevParagraphRtl) {
-            int prevPartIndex = startIndex - 1;
-            TextPart prevPart;
-            while (prevPartIndex >= 0 && (prevPart = out.get(prevPartIndex)).getParagraphIndex() == paragraphIndex) {
-              prevPart.setRtlMode(false, false);
-              rtlPartsCount--;
-              prevPartIndex--;
-            }
-            prevIsRtl = false;
-            prevParagraphRtl = false;
-          }
-          ltrLineCount++;
-          break;
-        }
-        case Strings.DIRECTION_RTL: {
-          if (rtlLineCount == 0 && ltrLineCount == 0 && neutralLineCount > 0) {
-            int prevPartIndex = startIndex - 1;
-            TextPart prevPart;
-            while (prevPartIndex >= 0 && (prevPart = out.get(prevPartIndex)).getParagraphIndex() == paragraphIndex) {
-              prevPart.setRtlMode(true, true);
-              rtlPartsCount++;
-              prevPartIndex--;
-            }
-            prevIsRtl = true;
-          }
-          rtlLineCount++;
-          break;
-        }
-        case Strings.DIRECTION_NEUTRAL: {
-          neutralLineCount++;
-          break;
-        }
-        default:
-          throw new IllegalStateException("direction == " + direction);
-      }
-
-      if (direction == Strings.DIRECTION_RTL || (direction == Strings.DIRECTION_NEUTRAL && (prevIsRtl || prevParagraphRtl))) {
-        prevIsRtl = true;
-        boolean isFakeRtl = direction != Strings.DIRECTION_RTL;
-        for (int i = startIndex; i < partIndex; i++) {
-          out.get(i).setRtlMode(true, isFakeRtl);
-          rtlPartsCount++;
-        }
-      } else {
-        prevIsRtl = false;
-      }
-    }
-    */
-    if (rtlPartsCount == partsCount) {
-      textFlags |= FLAG_FULL_RTL;
-    }
-    /*
-    else if (ltrLineCount == 0 && neutralLineCount == getLineCount() - rtlLineCount) {
-      textFlags |= FLAG_MAY_APPLY_RTL;
-    }
-    */
+    bidiPartsReorder();
+    bidiClear();
 
     if (BuildConfig.DEBUG) {
       int partCount = parts.size();
       for (int i = 0; i < partCount; i++) {
         getLineWidth(parts.get(i).getLineIndex());
       }
-    }
-  }
-
-  private void fixPartsOrder (TextPart[] partsArray, byte[] partsLevels, int partStart, int partEnd) {
-    if (partEnd - partStart < 2) {
-      return;
-    }
-
-    int x = partsArray[partStart].getX();
-    Bidi.reorderVisually(partsLevels, partStart, partsArray, partStart, partEnd - partStart);
-
-    for (int index = partStart; index < partEnd; index++) {
-      final TextPart part = partsArray[index];
-      part.setXY(x, part.getY());
-      x += (int)(part.getWidth());
     }
   }
 
@@ -1238,26 +1080,13 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return -1;
   }
 
-  private Bidi currentParagraphBidi;
-  private int currentParagraphStart;
-  private int currentParagraphBidiIndex;
-
-  private @BiDiEntity int getBidiEntity (int start) {
-    int offset = start - currentParagraphStart;
-    if (currentParagraphBidi != null && 0 <= offset && offset < currentParagraphBidi.getLength()) {
-      return BiDiUtils.create(currentParagraphBidi.getLevelAt(offset), currentParagraphBidi.getBaseLevel(), currentParagraphBidiIndex);
-    }
-    return 0;
-  }
-
   private void processLine (String in, int start, int end, ArrayList<TextPart> out, Emoji.Callback emojiCallback) {
     if (start == end) {
       processEntities(in, start, end, out, emojiCallback, false);
       return;
     }
 
-    currentParagraphStart = start;
-    currentParagraphBidi = new Bidi(in.substring(start, end), Lang.rtl() ? Bidi.DIRECTION_DEFAULT_RIGHT_TO_LEFT : Bidi.DIRECTION_DEFAULT_LEFT_TO_RIGHT);
+    bidiProcessLineStart(in, start, end);
 
     boolean first = true;
     boolean lastIsSpace = false;
@@ -1288,27 +1117,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       processEntities(in, start + count, end, out, emojiCallback, false);
     }
 
-    currentParagraphBidi = null;
-    currentParagraphBidiIndex++;
-  }
-
-  private int findBidiRunEnd (int start) {
-    if (currentParagraphBidi == null) {
-      return -1;
-    }
-
-    final int runsCount = currentParagraphBidi.getRunCount();
-    if (runsCount > 1) {
-      for (int a = 0; a < runsCount; a++) {
-        int runEnd = currentParagraphStart + currentParagraphBidi.getRunLimit(a);
-        if (start < runEnd) {
-          return runEnd;
-        }
-      }
-      throw new RuntimeException("Cannot find bidi run");
-    }
-
-    return -1;
+    bidiProcessLineComplete();
   }
 
   private int processEntities (String in, int start, int end, ArrayList<TextPart> out, Emoji.Callback emojiCallback, boolean isChild) {
@@ -3264,5 +3073,163 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   public @Nullable TextMedia getTextMediaFromLastPart () {
     if (parts == null || parts.isEmpty()) return null;
     return parts.get(0).getMedia();
+  }
+
+
+
+  /* Bidi */
+
+  private Bidi bidi;
+  private boolean bidiRequired;
+  private char[] bidiTmpChars;
+  private int bidiStart;
+  private int bidiLength;
+  private int bidiIndex;
+  private int bidiParagraphCount;
+
+  private void bidiProcessLineStart (String in, int start, int end) {
+    bidiStart = start;
+    bidiLength = end - start;
+    bidiRequired = requiresBidi(in, start, end);
+
+    if (bidiRequired) {
+      if (bidiTmpChars == null || bidiTmpChars.length < bidiLength) {
+        final int size = Math.min(bidiLength * 3 / 2, in.length());
+        bidiTmpChars = new char[size];
+      }
+
+      in.getChars(start, end, bidiTmpChars, 0);
+      bidi = new Bidi(bidiTmpChars, 0, null, 0, bidiLength, Lang.rtl() ? Bidi.DIRECTION_DEFAULT_RIGHT_TO_LEFT : Bidi.DIRECTION_DEFAULT_LEFT_TO_RIGHT);
+      bidiParagraphCount++;
+    } else {
+      bidi = null;
+    }
+  }
+
+  private void bidiProcessLineComplete () {
+    bidi = null;
+    bidiIndex++;
+  }
+
+  private void bidiPartsReorder () {
+    if (bidiParagraphCount == 0) {
+      return;
+    }
+
+    final int partsCount = parts.size();
+
+    // Fix order
+    TextPart[] partsArray = parts.toArray(new TextPart[0]);
+    byte[] partsLevels = new byte[parts.size()];
+    for (int a = 0; a < partsLevels.length; a++) {
+      partsLevels[a] = (byte) BiDiUtils.getLevel(partsArray[a].getBidiEntity());
+    }
+
+    int currentBidiIndex = 0;
+    int lineIndex = 0;
+    int rtlPartsCount = 0;
+    int lastLineStartIndex = 0;
+    for (int partIndex = 0; partIndex < partsCount; partIndex++) {
+      final TextPart part = partsArray[partIndex];
+      final @BiDiEntity int bidiEntity = part.getBidiEntity();
+      final boolean paragraphIsRtl = BiDiUtils.isParagraphRtl(bidiEntity);
+      final int bidiIndex = BiDiUtils.getIndex(bidiEntity);
+      final int partLineIndex = part.getY(); //getLineIndex();
+      if (lineIndex != partLineIndex || currentBidiIndex != bidiIndex) {
+        bidiPartsReorder(partsArray, partsLevels, lastLineStartIndex, partIndex);
+        currentBidiIndex = bidiIndex;
+        lastLineStartIndex = partIndex;
+        lineIndex = partLineIndex;
+      }
+      if (paragraphIsRtl) {
+        rtlPartsCount += 1;
+      }
+    }
+    bidiPartsReorder(partsArray, partsLevels, lastLineStartIndex, partsCount);
+
+    if (rtlPartsCount == partsCount) {
+      textFlags |= FLAG_FULL_RTL;
+    }
+  }
+
+  private void bidiClear () {
+    bidi = null;
+    bidiRequired = false;
+    bidiTmpChars = null;
+    bidiStart = 0;
+    bidiLength = 0;
+    bidiIndex = 0;
+    bidiParagraphCount = 0;
+  }
+
+  private @BiDiEntity int getBidiEntity (int start) {
+    final int offset = start - bidiStart;
+    if (0 <= offset && offset < bidiLength) {
+      if (bidi != null) {
+        return BiDiUtils.create(bidi.getLevelAt(offset), bidi.getBaseLevel(), bidiIndex);
+      }
+      if (!bidiRequired) {
+        return BiDiUtils.create(0, 0, bidiIndex);
+      }
+    }
+
+    return 0;   // illegal state ?
+  }
+
+  private int findBidiRunEnd (int start) {
+    if (bidi == null) {
+      return -1;
+    }
+
+    final int runsCount = bidi.getRunCount();
+    if (runsCount > 1) {
+      for (int a = 0; a < runsCount; a++) {
+        int runEnd = bidiStart + bidi.getRunLimit(a);
+        if (start < runEnd) {
+          return runEnd;
+        }
+      }
+      throw new RuntimeException("Cannot find bidi run");
+    }
+
+    return -1;
+  }
+
+  private static void bidiPartsReorder (TextPart[] partsArray, byte[] partsLevels, int partStart, int partEnd) {
+    if (partEnd - partStart < 2) {
+      return;
+    }
+
+    int x = partsArray[partStart].getX();
+    Bidi.reorderVisually(partsLevels, partStart, partsArray, partStart, partEnd - partStart);
+
+    for (int index = partStart; index < partEnd; index++) {
+      final TextPart part = partsArray[index];
+      part.setXY(x, part.getY());
+      x += (int)(part.getWidth());
+    }
+  }
+
+  private static boolean requiresBidi (String text, int start, int end) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+      // Source: android.icu.text.Bidi
+      // but uses String instead of char[]
+
+      final int RTLMask = (1 << UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT |
+        1 << UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC |
+        1 << UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING |
+        1 << UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE |
+        1 << UCharacter.DIRECTIONALITY_ARABIC_NUMBER);
+
+      for (int i = start; i < end; ++i) {
+        if (((1 << UCharacter.getDirection(text.charAt(i))) & RTLMask) != 0) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // Always create a Bidi object for legacy androids
+    return true;
   }
 }
