@@ -992,9 +992,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     }
 
     out.trimToSize();
-    if (BitwiseUtils.hasFlag(textFlags, FLAG_ANIMATED_EMOJI) && out.size() == 1 && out.get(0).isRecognizedEmoji()) {
-      out.get(0).setAnimateEmoji(true);
-    }
     this.parts = out;
     if (this.pressHighlights != null)
       this.pressHighlights.clear();

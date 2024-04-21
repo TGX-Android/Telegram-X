@@ -40,17 +40,13 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.bidi.BiDiEntity;
 import org.thunderdog.challegram.util.text.bidi.BiDiUtils;
 
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 
 public class TextPart {
-  private static final int FLAG_ANIMATED_EMOJI = 1 << 3;    // unused flag?
-
   private final Text source;
   private String line;
   private @Nullable TextEntity entity;
 
-  private int flags;
   private int x, y;
   private int start, end;
   private float width;
@@ -89,10 +85,6 @@ public class TextPart {
 
   public boolean isRtl () {
     return BiDiUtils.isParagraphRtl(bidiEntity);
-  }
-
-  public void setAnimateEmoji (boolean animate) {
-    this.flags = BitwiseUtils.setFlag(flags, FLAG_ANIMATED_EMOJI, animate);
   }
 
   public void setWidth (float width) {
@@ -429,11 +421,7 @@ public class TextPart {
     } else {
       final int textY = y + source.getAscent(textSize) + textPaint.baselineShift;
       if (DEBUG && BiDiUtils.isValid(bidiEntity)) {
-        if (color == 0) {
-          // color = ColorUtils.alphaColor(0.5f, ColorUtils.hslToRgb((float) Math.random(), 0.5f, 0.5f));
-          // color = ColorUtils.alphaColor(0.5f, ColorUtils.hslToRgb(directionEntity.paragraphIndex / 6f, 0.5f, 0.5f));
-          color = BiDiUtils.isRtl(bidiEntity) ? 0x400000FF : 0x40FF0000;
-        }
+        final int color = BiDiUtils.isRtl(bidiEntity) ? 0x400000FF : 0x40FF0000;
         c.drawRect(x, textY - Screen.dp(16), x + width, textY, Paints.fillingPaint(color));
         c.drawRect(x, textY - Screen.dp(16), x + width, textY, Paints.strokeSmallPaint(0xFF000000));
       }
@@ -455,5 +443,4 @@ public class TextPart {
   }
 
   private static final boolean DEBUG = false;
-  private int color;
 }
