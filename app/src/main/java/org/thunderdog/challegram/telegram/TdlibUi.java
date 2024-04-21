@@ -134,6 +134,7 @@ import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.StringList;
+import org.thunderdog.challegram.voip.VoIPLogs;
 import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.InfiniteRecyclerView;
@@ -7294,5 +7295,32 @@ public class TdlibUi extends Handler {
         return false;
       }
     );
+  }
+
+  public void shareCallLogs (ViewController<?> context, VoIPLogs.Pair logFiles, boolean needWarning) {
+    if (logFiles != null && logFiles.exists()) {
+      Runnable act = () -> {
+        ShareController c = new ShareController(context.context(), tdlib);
+        List<ShareController.FileInfo> list = new ArrayList<>();
+        if (logFiles.hasPrimaryLogFile()) {
+          list.add(new ShareController.FileInfo(logFiles.logFile.getPath(), "text/plain"));
+        }
+        if (logFiles.hasStatsLogFile()) {
+          list.add(new ShareController.FileInfo(logFiles.statsLogFile.getPath(), "text/plain"));
+        }
+        ShareController.FileInfo[] array = list.toArray(new ShareController.FileInfo[0]);
+        c.setArguments(new ShareController.Args(array));
+        c.show();
+      };
+      if (needWarning) {
+        context.showWarning(Lang.getMarkdownStringSecure(context, R.string.CallLogsWarning), accepted -> {
+          if (accepted) {
+            act.run();
+          }
+        });
+      } else {
+        act.run();
+      }
+    }
   }
 }

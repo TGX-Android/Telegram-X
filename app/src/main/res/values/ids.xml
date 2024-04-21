@@ -1137,6 +1137,7 @@
   <item type="id" name="btn_messageStickerSet" />
   <item type="id" name="btn_messageEdit" />
   <item type="id" name="btn_messageCall" />
+  <item type="id" name="btn_messageShareCallLogs" />
   <item type="id" name="btn_messageRetractVote" />
   <item type="id" name="btn_messagePollStop" />
   <item type="id" name="btn_messageApplyLocalization" />
