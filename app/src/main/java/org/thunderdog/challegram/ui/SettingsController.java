@@ -541,7 +541,7 @@ public class SettingsController extends ViewController<Void> implements
           } else if (userFull.birthdate == null) {
             view.setData(R.string.SetBirthdate);
           } else {
-            view.setData(Lang.getBirthdate(userFull.birthdate, false, true));
+            view.setData(Lang.getBirthdate(userFull.birthdate, true, true));
           }
         } else if (itemId == R.id.btn_username) {
           if (myUsernames == null) {

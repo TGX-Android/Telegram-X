@@ -90,6 +90,7 @@
   <string name="format_minus">-%1$d</string>
   <string name="format_minusPlus">-%1$d, +%2$d</string>
   <string name="format_birthdateAndAge">%1$s (%2$s)</string>
+  <string name="format_birthdateAndTurns">%1$s (%2$s)</string>
   <string name="format_exceptionPlusPremium">%1$s, +premium</string>
   <string name="format_plusPremium">+premium</string>
   <string name="format_ping">ping: %1$sms</string>
@@ -163,17 +164,14 @@
   <string name="age_one">%1$s year old</string>
   <string name="age_other">%1$s years old</string>
 
-  <string name="turnsToday_one">Turns %1$s year old today</string>
-  <string name="turnsToday_other">Turns %1$s years old today</string>
+  <string name="turnsToday_one">turns %1$s today</string>
+  <string name="turnsToday_other">turns %1$s today</string>
 
-  <string name="turnsTomorrow_one">Turns %1$s year old tomorrow</string>
-  <string name="turnsTomorrow_other">Turns %1$s years old tomorrow</string>
+  <string name="turnsTomorrow_one">turns %1$s tomorrow</string>
+  <string name="turnsTomorrow_other">turns %1$s tomorrow</string>
 
-  <string name="turnSelfToday_one">Turning %1$s year old today</string>
-  <string name="turnSelfToday_other">Turning %1$s years old today</string>
-
-  <string name="turnSelfTomorrow_one">Turning %1$s year old tomorrow</string>
-  <string name="turnSelfTomorrow_other">Turning %1$s years old tomorrow</string>
+  <string name="turnSelfToday_one">turning %1$s today</string>
+  <string name="turnSelfToday_other">turning %1$s today</string>
 
   <string name="xSeconds_one">%1$s second</string>
   <string name="xSeconds_other">%1$s seconds</string>
