@@ -15,7 +15,6 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
-import android.text.SpannableStringBuilder;
 import android.view.View;
 
 import androidx.annotation.IntDef;
@@ -30,7 +29,9 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.v.MediaRecyclerView;
+import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.EmptySmartView;
+import org.thunderdog.challegram.widget.SmallChatView;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -163,6 +164,21 @@ public class SharedChatsController extends SharedBaseController<DoubleTextWrappe
   }
 
   @Override
+  protected void modifyChatViewIfNeeded (ListItem item, SmallChatView chatView, @Nullable CheckBoxView checkBox, boolean isUpdate) {
+    switch (mode) {
+      case Mode.GROUPS_IN_COMMON:
+        // Do nothing
+        break;
+      case Mode.SIMILAR_CHANNELS:
+        chatView.setMaximizedChatModifier(messagesController -> {
+          long openedChatId = messagesController.getChatId();
+          tdlib.send(new TdApi.OpenChatSimilarChat(getChatId(), openedChatId), tdlib.typedOkHandler());
+        });
+        break;
+    }
+  }
+
+  @Override
   public void onClick (View view) {
     ListItem item = (ListItem) view.getTag();
     if (item != null && item.getViewType() == ListItem.TYPE_CHAT_SMALL) {
@@ -173,7 +189,7 @@ public class SharedChatsController extends SharedBaseController<DoubleTextWrappe
           break;
         case Mode.SIMILAR_CHANNELS:
           tdlib.send(new TdApi.OpenChatSimilarChat(getChatId(), chatId), tdlib.typedOkHandler());
-          tdlib.ui().openChat(this, chatId,null);
+          tdlib.ui().openChat(this, chatId, null);
           break;
         default:
           throw new IllegalStateException();

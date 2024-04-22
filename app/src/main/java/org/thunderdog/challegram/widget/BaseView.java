@@ -49,6 +49,7 @@ import me.vkryl.android.util.ClickHelper;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
+import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 
@@ -557,6 +558,12 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
 
   private ViewController<?> currentOpenPreview;
 
+  private @Nullable RunnableData<MessagesController> maximiedChatModifier;
+
+  public void setMaximizedChatModifier (@Nullable RunnableData<MessagesController> modifier) {
+    this.maximiedChatModifier = modifier;
+  }
+
   private void openPreview (ViewController<?> controller, float x, float y) {
     ViewController<?> ancestor = ViewController.findAncestor(this);
     if ((ancestor != null && tdlib != null && ancestor.tdlib() != null && ancestor.tdlib().id() != tdlib.id())) {
@@ -576,7 +583,9 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
     // context.setAdditionalOffsetView(UI.getCurrentStackItem(getContext()).getViewForApplyingOffsets());
 
     if (controller instanceof MessagesController && allowMaximizePreview) {
-      context.setMaximizeListener((target, animateToWhenReady, arg) -> MessagesController.maximizeFrom(tdlib, getContext(), target, animateToWhenReady, arg));
+      context.setMaximizeListener((target, animateToWhenReady, arg) ->
+        MessagesController.maximizeFrom(tdlib, getContext(), target, animateToWhenReady, (MessagesController) arg, maximiedChatModifier)
+      );
     }
 
     ArrayList<ActionItem> actions = new ArrayList<>(5);

@@ -11439,10 +11439,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
     context.setAnimationType(ForceTouchView.ForceTouchContext.ANIMATION_TYPE_EXPAND_VERTICALLY);
   }
 
-  public static boolean maximizeFrom (final Tdlib tdlib, final Context context, final FactorAnimator target, final float animateToWhenReady, final Object arg) {
+  public static boolean maximizeFrom (final Tdlib tdlib, final Context context, final FactorAnimator target, final float animateToWhenReady, final MessagesController controller, final RunnableData<MessagesController> modifier) {
     MessagesController c = new MessagesController(context, tdlib);
-    c.setArguments(((MessagesController) arg).getArgumentsStrict());
+    c.setArguments(controller.getArgumentsStrict());
     c.forceFastAnimationOnce();
+    if (modifier != null) {
+      modifier.runWithData(c);
+    }
     c.postOnAnimationReady(() -> target.animateTo(animateToWhenReady));
     UI.getContext(context).navigation().navigateTo(c);
     return true;
