@@ -297,10 +297,6 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     return file != null ? file.remote.isUploadingActive ? file.remote.uploadedSize : file.local.downloadedSize : 0;
   }
 
-  public boolean isInGenerationProgress () {
-    return file != null && currentProgress == 0f && useGenerationProgress && file.local.isDownloadingActive;
-  }
-
   public boolean isProcessing () {
     return file != null && !file.local.isDownloadingCompleted && !file.remote.isUploadingCompleted && file.remote.uploadedSize == 0;
   }
@@ -408,7 +404,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     this.file = file;
     if (file != null && file.local != null) {
       this.isDownloaded = file.local.isDownloadingCompleted;
-      this.useGenerationProgress = !file.local.isDownloadingCompleted && !file.remote.isUploadingCompleted && message != null && !Td.isPhoto(message.content);
+      this.useGenerationProgress = NEED_GENERATION_PROGRESS && !file.local.isDownloadingCompleted && !file.remote.isUploadingCompleted && message != null && !Td.isPhoto(message.content);
     } else {
       this.isDownloaded = this.useGenerationProgress = false;
     }
@@ -1612,6 +1608,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     /*setCurrentView(null);*/
   }
 
+  private static final boolean NEED_GENERATION_PROGRESS = false;
   private static final float GENERATION_PROGRESS_PART = .35f;
 
   private float getVisualProgress (float progress) {
