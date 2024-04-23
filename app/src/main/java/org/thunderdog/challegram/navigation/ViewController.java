@@ -284,6 +284,10 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     return entry;
   }
 
+  public final void addThemeCompoundDrawableColorListener (TextView view, @ColorId int colorId) {
+    addThemeListener(new ThemeListenerEntry(ThemeListenerEntry.MODE_COMPOUND_DRAWABLE_COLOR, colorId, view));
+  }
+
   public final ThemeListenerEntry addOrUpdateThemeTextColorListener (Object view, @ColorId int colorId) {
     ThemeListenerEntry entry = getThemeListeners().findThemeListenerByTarget(view, ThemeListenerEntry.MODE_TEXT_COLOR);
     if (entry != null) {

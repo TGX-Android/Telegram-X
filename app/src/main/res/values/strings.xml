@@ -950,6 +950,7 @@
   <string name="NoVoiceMessages">No Voice messages</string>
   <string name="NoFiles">No Files</string>
   <string name="NoMusic">No Music</string>
+  <string name="NoFilter">No Filter</string>
   <string name="Other">Other</string>
   <string name="AutoplayGifs">Autoplay GIFs</string>
   <string name="QuickTranslate">Quick translate</string>

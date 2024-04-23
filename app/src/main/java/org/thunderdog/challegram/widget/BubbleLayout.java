@@ -73,10 +73,11 @@ public class BubbleLayout extends AnimatedLinearLayout implements FactorAnimator
           backgroundDrawable.setBounds(0, cornerHeight - Screen.dp(2f), viewWidth, viewHeight);
           backgroundDrawable.draw(c);
 
-          int cornerX = viewWidth / 2 - cornerWidth / 2;
+          int pivotX = (cornerCenterChanged ? cornerCenterX : viewWidth / 2);
+          int cornerX = pivotX - cornerWidth / 2;
           cornerDrawable.setBounds(cornerX, 0, cornerX + cornerWidth, cornerHeight);
           c.save();
-          c.rotate(180f, viewWidth / 2f, cornerHeight / 2f);
+          c.rotate(180f, pivotX, cornerHeight / 2f);
           cornerDrawable.draw(c);
           c.restore();
         } else {
