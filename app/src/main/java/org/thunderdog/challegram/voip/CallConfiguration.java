@@ -63,7 +63,19 @@ public class CallConfiguration {
     boolean enableH264Encoder,
     boolean enableH264Decoder
   ) {
-    this.state = state;
+    if (VoIP.needFilterCallServers()) {
+      this.state = new TdApi.CallStateReady(
+        state.protocol,
+        VoIP.filterCallServers(state.servers),
+        state.config,
+        state.encryptionKey,
+        state.emojis,
+        state.allowP2p,
+        state.customParameters
+      );
+    } else {
+      this.state = state;
+    }
     this.isOutgoing = isOutgoing;
 
     this.persistentStateFilePath = persistentStateFile.getAbsolutePath();
