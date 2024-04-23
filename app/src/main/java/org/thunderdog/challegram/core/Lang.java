@@ -2389,14 +2389,17 @@ public class Lang {
     }
     if (includeAge && ageYears > 0) {
       CharSequence age;
-      if (daysTillBirthday == 1) {
-        age = Lang.pluralBold(isSelf ? R.string.turnSelfTomorrow : R.string.turnsTomorrow, ageYears + 1);
+      @StringRes int formatRes = R.string.format_birthdateAndAge;
+      if (daysTillBirthday == 1 && !isSelf) {
+        age = Lang.pluralBold(R.string.turnsTomorrow, ageYears + 1);
+        formatRes = R.string.format_birthdateAndTurns;
       } else if (daysTillBirthday == 0) {
-        age = Lang.pluralBold(isSelf ? R.string.turnSelfToday :R.string.turnsToday, ageYears);
+        age = Lang.pluralBold(isSelf ? R.string.turnSelfToday : R.string.turnsToday, ageYears);
+        formatRes = R.string.format_birthdateAndTurns;
       } else {
         age = Lang.pluralBold(R.string.age, ageYears);
       }
-      return Lang.getCharSequence(R.string.format_birthdateAndAge, date, age);
+      return Lang.getCharSequence(formatRes, date, age);
     } else {
       return date;
     }

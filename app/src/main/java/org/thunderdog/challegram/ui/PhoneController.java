@@ -894,7 +894,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
         function = new TdApi.ImportContacts(new TdApi.Contact[] {new TdApi.Contact(phone, getFirstName(), getLastName(), null, 0)});
         break;
       case MODE_CHANGE_NUMBER:
-        function = new TdApi.ChangePhoneNumber(phone, tdlib.phoneNumberAuthenticationSettings(context));
+        function = new TdApi.SendPhoneNumberCode(phone, tdlib.phoneNumberAuthenticationSettings(context), new TdApi.PhoneNumberCodeTypeChange());
         break;
       case MODE_LOGIN:
         function = new TdApi.SetAuthenticationPhoneNumber(phone, tdlib.phoneNumberAuthenticationSettings(context));

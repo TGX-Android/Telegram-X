@@ -36,6 +36,7 @@ public interface ChatListener extends ForumTopicInfoListener {
 
   default void onChatBackgroundCustomEmojiChanged (long chatId, long customEmojiId) { }
   default void onChatActionBarChanged (long chatId, TdApi.ChatActionBar actionBar) { }
+  default void onChatBusinessBotManageBarChanged (long chatId, @Nullable TdApi.BusinessBotManageBar botManageBar) { }
   default void onChatPhotoChanged (long chatId, @Nullable TdApi.ChatPhotoInfo photo) { }
   default void onChatReadInbox (long chatId, long lastReadInboxMessageId, int unreadCount, boolean availabilityChanged) { }
   default void onChatHasScheduledMessagesChanged (long chatId, boolean hasScheduledMessages) { }
