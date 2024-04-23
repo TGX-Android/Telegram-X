@@ -20,7 +20,6 @@ import org.thunderdog.challegram.component.attach.MediaBottomBaseController;
 import org.thunderdog.challegram.component.attach.MediaLayout;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.navigation.ViewController;
-import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.UI;
 
 public class ModernActionedLayout extends MediaLayout {

@@ -16,7 +16,6 @@ package org.thunderdog.challegram.component.popups;
 
 import android.content.Context;
 import android.text.style.ClickableSpan;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;

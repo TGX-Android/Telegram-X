@@ -45,7 +45,6 @@ import org.thunderdog.challegram.core.Media;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
-import org.thunderdog.challegram.mediaview.AvatarPickerMode;
 import org.thunderdog.challegram.mediaview.MediaSelectDelegate;
 import org.thunderdog.challegram.mediaview.MediaSendDelegate;
 import org.thunderdog.challegram.mediaview.MediaViewController;
