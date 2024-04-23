@@ -2444,7 +2444,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     public Referrer referrer;
     public TdApi.InternalLinkTypeVideoChat videoChatOrLiveStreamInvitation;
-    public TdApi.DraftMessage fillDraft;
+    public TdApi.FormattedText fillDraft;
 
     public long eventLogUserId;
 
@@ -2560,9 +2560,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     public Arguments fillDraft (@Nullable TdApi.FormattedText fillDraft) {
-      this.fillDraft = !Td.isEmpty(fillDraft) ?
-        new TdApi.DraftMessage(null, 0, new TdApi.InputMessageText(fillDraft, null, false)) :
-        null;
+      this.fillDraft = !Td.isEmpty(fillDraft) ? fillDraft : null;
       return this;
     }
 
@@ -2610,6 +2608,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private boolean areScheduled;
   private Referrer referrer;
   private TdApi.InternalLinkTypeVideoChat voiceChatInvitation;
+  private TdApi.FormattedText fillDraft;
   private boolean openKeyboard;
 
   public boolean inWallpaperMode () {
@@ -2629,7 +2628,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private long linkedChatId;
-  private TdApi.DraftMessage fillDraft;
 
   public void setArguments (Arguments args) {
     super.setArguments(args);
@@ -2651,6 +2649,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     this.previewMode = args.previewMode;
     this.openKeyboard = args.openKeyboard;
     this.foundMessageId = args.foundMessageId;
+    this.fillDraft = args.fillDraft;
 
     if (contentView != null) {
       updateView();
@@ -2844,12 +2843,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
     }
 
+    TdApi.DraftMessage draftMessage = null;
     if (tdlib.canSendBasicMessage(chat)) {
-      TdApi.DraftMessage draftMessage = getDraftMessage();
+      draftMessage = getDraftMessage();
       if (!Td.isEmpty(fillDraft)) {
         if (Td.isEmpty(draftMessage) || Td.isEmpty(((TdApi.InputMessageText) draftMessage.inputMessageText).text) /*allow dropping replyTo*/) {
-          draftMessage = fillDraft;
-        } else if (!Td.equalsTo(((TdApi.InputMessageText) draftMessage.inputMessageText).text, ((TdApi.InputMessageText) fillDraft.inputMessageText).text)) {
+          draftMessage = new TdApi.DraftMessage(null, 0, new TdApi.InputMessageText(fillDraft, null, false));
+        } else if (!Td.equalsTo(((TdApi.InputMessageText) draftMessage.inputMessageText).text, fillDraft)) {
           promptDraftPrefillOnFocus = true;
         }
       }
@@ -2866,7 +2866,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       checkJoinRequests(chat.pendingJoinRequests);
     }
     if (inputView != null) {
-      inputView.setChat(chat, messageThread, getCustomInputPlaceholder(), silentButton != null && silentButton.getIsSilent());
+      inputView.setChat(chat, messageThread, draftMessage != null ? draftMessage.inputMessageText : null, getCustomInputPlaceholder(), silentButton != null && silentButton.getIsSilent());
     }
     ignoreDraftLoad = false;
     discardAttachedFiles(false);
@@ -3913,18 +3913,37 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private boolean promptDraftPrefillOnFocus;
 
+  public boolean fillDraft (TdApi.FormattedText fillDraft, boolean checkCurrentDraft) {
+    if (Td.isEmpty(fillDraft)) {
+      return false;
+    }
+    Runnable act = () -> {
+      if (inputView != null) {
+        inputView.setDraft(new TdApi.InputMessageText(fillDraft, null, false));
+      }
+    };
+    TdApi.DraftMessage currentDraft = getDraftMessage();
+    if (checkCurrentDraft && !Td.isEmpty(currentDraft)) {
+      TdApi.FormattedText currentText = ((TdApi.InputMessageText) currentDraft.inputMessageText).text;
+      if (!Td.isEmpty(currentText) && !Td.equalsTo(currentText, fillDraft)) {
+        showWarning(Lang.getMarkdownString(this, R.string.DraftPreFillWarning), isConfirmed -> {
+          if (isConfirmed) {
+            act.run();
+          }
+        });
+        return true;
+      }
+    }
+    act.run();
+    return true;
+  }
+
   @Override
   public void onFocus () {
     super.onFocus();
     if (promptDraftPrefillOnFocus) {
       promptDraftPrefillOnFocus = false;
-      if (!Td.isEmpty(fillDraft)) {
-        showWarning(Lang.getMarkdownString(this, R.string.DraftPreFillWarning), isConfirmed -> {
-          if (isConfirmed && inputView != null) {
-            inputView.setDraft(fillDraft.inputMessageText);
-          }
-        });
-      }
+      fillDraft(this.fillDraft, true);
     }
     if (chat != null && !isInForceTouchMode()) {
       TdApi.ChatSource source = tdlib.chatSource(openedFromChatList, chat.id);
@@ -7073,7 +7092,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     if (inputView != null) {
-      inputView.setDraft(chat != null && chat.draftMessage != null ? chat.draftMessage.inputMessageText : null);
+      TdApi.DraftMessage draftMessage = getDraftMessage();
+      inputView.setDraft(draftMessage != null ? draftMessage.inputMessageText : null);
       setInputBlockFlag(FLAG_INPUT_EDITING, false);
     }
     setInEditMode(false, "");

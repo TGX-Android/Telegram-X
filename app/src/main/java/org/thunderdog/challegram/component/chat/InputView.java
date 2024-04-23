@@ -1120,10 +1120,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   private boolean textChangedSinceChatOpened;
 
-  public void setChat (TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable String customInputField, boolean isSilent) {
+  public void setChat (TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable TdApi.InputMessageContent forceDraft, @Nullable String customInputField, boolean isSilent) {
     textChangedSinceChatOpened = false;
     updateMessageHint(chat, messageThread, customInputField, isSilent);
-    setDraft(!tdlib.canSendBasicMessage(chat) ? null :
+    setDraft(forceDraft != null ? forceDraft : !tdlib.canSendBasicMessage(chat) ? null :
       messageThread != null ? messageThread.getDraftContent() :
       chat.draftMessage != null ? chat.draftMessage.inputMessageText : null
     );
