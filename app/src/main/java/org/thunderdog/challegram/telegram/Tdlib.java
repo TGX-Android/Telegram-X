@@ -480,8 +480,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private int
     quickReplyShortcutCountMax = 100,
     quickReplyShortcutMessageCountMax = 20;
-  private int premiumGiftBoostCount = 3, premiumUploadSpeedup = 10;
+  private int premiumGiftBoostCount = 3, premiumUploadSpeedup = 10, premiumDownloadSpeedup = 10;
   private boolean isPremium, isPremiumAvailable;
+  private boolean canWithdrawChatRevenue;
   private @GiftPremiumOption int giftPremiumOptions;
   private boolean suggestOnlyApiStickers;
   private int maxGroupCallParticipantCount = 10000;
@@ -9618,6 +9619,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         break;
       case "premium_upload_speedup":
         this.premiumUploadSpeedup = Td.intValue(update.value);
+        break;
+      case "premium_download_speedup":
+        this.premiumDownloadSpeedup = Td.intValue(update.value);
+        break;
+
+      case "can_withdraw_chat_revenue":
+        this.canWithdrawChatRevenue = Td.boolValue(update.value);
         break;
 
       // Service accounts and chats
