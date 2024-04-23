@@ -1183,9 +1183,12 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         builder.addHeaderItem("Disabling all tgcalls versions enables libtgvoip " + VoIPController.getVersion() + " without tgcalls wrapper.");
       } else {
         int index = 0;
-        items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, viewId, 0, "Acoustic Echo Cancellation", !VoIP.needDisableAcousticEchoCancellation()).setIntValue(index++));
-        items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, viewId, 0, "Noise Suppression", !VoIP.needDisableNoiseSuppressor()).setIntValue(index++));
-        items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, viewId, 0, "Automatic Gain Control", !VoIP.needDisableAutomaticGainControl()).setIntValue(index++));
+        int[] options = VoIP.getAllDebugOptions();
+        for (@VoIP.DebugOption int option : options) {
+          items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, viewId, 0, VoIP.getDebugOptionName(option), VoIP.isDebugOptionEnabled(option))
+            .setIntValue(option)
+          );
+        }
       }
 
       builder.setRawItems(items);
@@ -1208,11 +1211,8 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
               String version = item.getStringValue();
               VoIP.setForceDisableVersion(version, !isEnabled);
             } else if (viewId == R.id.btn_secret_tgcallsOptions) {
-              switch (item.getIntValue()) {
-                case 0: VoIP.setForceDisableAcousticEchoCancellation(!isEnabled); break;
-                case 1: VoIP.setForceDisableNoiseSuppressor(!isEnabled); break;
-                case 2: VoIP.setForceDisableAutomaticGainControl(!isEnabled); break;
-              }
+              //noinspection SwitchIntDef
+              VoIP.setDebugOptionEnabled(item.getIntValue(), isEnabled);
             }
           }
         }

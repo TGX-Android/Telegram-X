@@ -16,7 +16,6 @@ package org.thunderdog.challegram.component.popups;
 
 import android.content.Context;
 import android.text.style.ClickableSpan;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -36,6 +35,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
@@ -267,7 +267,7 @@ public class GiftCodeController extends MediaBottomBaseController<Void> implemen
     } else if (id == R.id.btn_openGiftSender) {
       final TdApi.MessageSender creatorId = getCreatorId();
       if (creatorId != null) {
-        tdlib.ui().openChat(this, creatorId, null);
+        tdlib.ui().openChat(this, creatorId, new TdlibUi.ChatOpenParameters().keepStack());
         mediaLayout.hide(false);
       }
     } else if (id == R.id.btn_openGiftReceiver) {

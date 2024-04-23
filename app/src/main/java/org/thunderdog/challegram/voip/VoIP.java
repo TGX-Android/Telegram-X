@@ -20,6 +20,7 @@ import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Build;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
@@ -31,12 +32,16 @@ import org.thunderdog.challegram.voip.annotation.CallNetworkType;
 import org.webrtc.ContextUtils;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.td.Td;
 
 public class VoIP {
   public static class Version implements Comparable<Version> {
@@ -98,30 +103,118 @@ public class VoIP {
     }
   }
 
-  private static boolean forceDisableAcousticEchoCancellation, forceDisableNoiseSuppressor, forceDisableAutomaticGainControl;
+  @IntDef(value = {
+    DebugOption.DISABLE_ACOUSTIC_ECHO_CANCELLATION,
+    DebugOption.DISABLE_NOISE_SUPPRESSOR,
+    DebugOption.DISABLE_AUTOMATIC_GAIN_CONTROL,
+    DebugOption.DISABLE_P2P,
+    DebugOption.DISABLE_IPV4,
+    DebugOption.IGNORE_TURN_SERVERS,
+    DebugOption.IGNORE_NON_TURN_SERVERS
+  }, flag = true)
+  public @interface DebugOption {
+    int
+      DISABLE_ACOUSTIC_ECHO_CANCELLATION = 1,
+      DISABLE_NOISE_SUPPRESSOR = 1 << 1,
+      DISABLE_AUTOMATIC_GAIN_CONTROL = 1 << 2,
+      DISABLE_P2P = 1 << 3,
+      DISABLE_IPV4 = 1 << 4,
+      IGNORE_TURN_SERVERS = 1 << 5,
+      IGNORE_NON_TURN_SERVERS = 1 << 6;
+  }
+  private static @DebugOption int debugOptions;
 
-  public static void setForceDisableAcousticEchoCancellation (boolean forceDisableAcousticEchoCancellation) {
-    VoIP.forceDisableAcousticEchoCancellation = forceDisableAcousticEchoCancellation;
+  public static boolean isDebugOptionEnabled (@DebugOption int options) {
+    return BitwiseUtils.hasFlag(debugOptions, options);
   }
 
-  public static void setForceDisableNoiseSuppressor (boolean forceDisableNoiseSuppressor) {
-    VoIP.forceDisableNoiseSuppressor = forceDisableNoiseSuppressor;
+  public static void setDebugOptionEnabled (@DebugOption int option, boolean isEnabled) {
+    debugOptions = BitwiseUtils.setFlag(debugOptions, option, isEnabled);
   }
 
-  public static void setForceDisableAutomaticGainControl (boolean forceDisableAutomaticGainControl) {
-    VoIP.forceDisableAutomaticGainControl = forceDisableAutomaticGainControl;
+  public static int[] getAllDebugOptions () {
+    return new int[] {
+      DebugOption.DISABLE_ACOUSTIC_ECHO_CANCELLATION,
+      DebugOption.DISABLE_NOISE_SUPPRESSOR,
+      DebugOption.DISABLE_AUTOMATIC_GAIN_CONTROL,
+      DebugOption.DISABLE_IPV4,
+      DebugOption.IGNORE_TURN_SERVERS,
+      DebugOption.IGNORE_NON_TURN_SERVERS,
+      DebugOption.DISABLE_P2P
+    };
   }
 
-  public static boolean needDisableAcousticEchoCancellation () {
-    return forceDisableAcousticEchoCancellation;
+  public static String getDebugOptionName (@DebugOption int option) {
+    switch (option) {
+      case DebugOption.DISABLE_ACOUSTIC_ECHO_CANCELLATION:
+        return "Disable AEC";
+      case DebugOption.DISABLE_NOISE_SUPPRESSOR:
+        return "Disable NS";
+      case DebugOption.DISABLE_AUTOMATIC_GAIN_CONTROL:
+        return "Disable AGC";
+      case DebugOption.DISABLE_IPV4:
+        return "Disable ipv4";
+      case DebugOption.IGNORE_TURN_SERVERS:
+        return "Exclude TURN servers & crash if none remaining";
+      case DebugOption.IGNORE_NON_TURN_SERVERS:
+        return "Exclude non-TURN servers & crash if none remaining";
+      case DebugOption.DISABLE_P2P:
+        return "Disable P2P";
+    }
+    return null;
   }
 
-  public static boolean needDisableNoiseSuppressor () {
-    return forceDisableNoiseSuppressor;
+  public static boolean needFilterCallServers () {
+    return VoIP.isDebugOptionEnabled(
+      VoIP.DebugOption.DISABLE_IPV4 |
+        VoIP.DebugOption.IGNORE_TURN_SERVERS |
+        VoIP.DebugOption.IGNORE_NON_TURN_SERVERS
+    );
   }
 
-  public static boolean needDisableAutomaticGainControl () {
-    return forceDisableAutomaticGainControl;
+  public static TdApi.CallServer[] filterCallServers (TdApi.CallServer[] servers) {
+    if (!needFilterCallServers()) {
+      return servers;
+    }
+    boolean disableIpv4 = VoIP.isDebugOptionEnabled(VoIP.DebugOption.DISABLE_IPV4);
+    boolean ignoreTurnServers = VoIP.isDebugOptionEnabled(VoIP.DebugOption.IGNORE_TURN_SERVERS);
+    boolean ignoreNonTurnServers = VoIP.isDebugOptionEnabled(VoIP.DebugOption.IGNORE_NON_TURN_SERVERS);
+    List<TdApi.CallServer> filteredCallServers = new ArrayList<>();
+    for (TdApi.CallServer server : servers) {
+      if (ignoreTurnServers || ignoreNonTurnServers) {
+        switch (server.type.getConstructor()) {
+          case TdApi.CallServerTypeTelegramReflector.CONSTRUCTOR: {
+            TdApi.CallServerTypeTelegramReflector telegramReflector = (TdApi.CallServerTypeTelegramReflector) server.type;
+            // Nothing to check
+            break;
+          }
+          case TdApi.CallServerTypeWebrtc.CONSTRUCTOR: {
+            TdApi.CallServerTypeWebrtc webrtc = (TdApi.CallServerTypeWebrtc) server.type;
+            if (webrtc.supportsTurn && ignoreTurnServers) {
+              continue;
+            }
+            if (!webrtc.supportsTurn && ignoreNonTurnServers) {
+              continue;
+            }
+            break;
+          }
+          default: {
+            Td.assertCallServerType_569fa9f7();
+            throw Td.unsupported(server.type);
+          }
+        }
+      }
+      if (disableIpv4) {
+        if (StringUtils.isEmpty(server.ipv6Address))
+          continue;
+        server = new TdApi.CallServer(server.id, "", server.ipv6Address, server.port, server.type);
+      }
+      filteredCallServers.add(server);
+    }
+    if (filteredCallServers.isEmpty()) {
+      throw new IllegalStateException();
+    }
+    return filteredCallServers.toArray(new TdApi.CallServer[0]);
   }
 
   public static String[] getAvailableVersions (boolean allowFilter) {

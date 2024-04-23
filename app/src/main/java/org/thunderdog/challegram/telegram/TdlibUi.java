@@ -1940,21 +1940,9 @@ public class TdlibUi extends Handler {
     }
   }
 
-  public void openChat (final TdlibDelegate context, final TdApi.MessageSender senderId, final @Nullable ChatOpenParameters params) {
-    switch (senderId.getConstructor()) {
-      case TdApi.MessageSenderUser.CONSTRUCTOR: {
-        openPrivateChat(context, ((TdApi.MessageSenderUser) senderId).userId, new TdlibUi.ChatOpenParameters().keepStack());
-        break;
-      }
-      case TdApi.MessageSenderChat.CONSTRUCTOR: {
-        openPrivateChat(context, ((TdApi.MessageSenderChat) senderId).chatId, new TdlibUi.ChatOpenParameters().keepStack());
-        break;
-      }
-      default: {
-        Td.assertMessageSender_439d4c9c();
-        throw Td.unsupported(senderId);
-      }
-    }
+  public void openChat (final TdlibDelegate context, final TdApi.MessageSender senderId, @Nullable ChatOpenParameters openParameters) {
+    long chatId = Td.getSenderId(senderId);
+    openChat(context, chatId, openParameters);
   }
 
   private void openChat (final TdlibDelegate context, final long chatId, final TdApi.Function<?> createRequest, final @Nullable ChatOpenParameters params) {
@@ -2092,6 +2080,7 @@ public class TdlibUi extends Handler {
     final ThreadInfo messageThread = params != null ? params.threadInfo : null;
     final TdApi.SearchMessagesFilter filter = params != null ? params.filter : null;
     final MessagesController.Referrer referrer = params != null && !StringUtils.isEmpty(params.inviteLink) ? new MessagesController.Referrer(params.inviteLink) : null;
+    final TdApi.FormattedText forceDraft = params != null && !Td.isEmpty(params.fillDraft) ? params.fillDraft : null;
 
     if ((options & CHAT_OPTION_NEED_PRIVATE_PROFILE) != 0 && TD.isPrivateChat(chat.type)) {
       openChatProfile(context, chat, messageThread, urlOpenParameters);
@@ -2132,6 +2121,10 @@ public class TdlibUi extends Handler {
       }
       if (voiceChatInvitation != null) {
         ((MessagesController) context).openVoiceChatInvitation(voiceChatInvitation);
+        doneSomething = true;
+      }
+      if (forceDraft != null) {
+        ((MessagesController) context).fillDraft(forceDraft, false);
         doneSomething = true;
       }
 
@@ -2226,6 +2219,7 @@ public class TdlibUi extends Handler {
       .setScheduled(onlyScheduled)
       .referrer(referrer)
       .voiceChatInvitation(voiceChatInvitation)
+      .fillDraft(forceDraft)
     );
 
     View view = controller.getValue();
@@ -3683,9 +3677,12 @@ public class TdlibUi extends Handler {
         TdApi.InternalLinkTypeBusinessChat businessChatLink = (TdApi.InternalLinkTypeBusinessChat) linkType;
         tdlib.send(new TdApi.GetBusinessChatLinkInfo(businessChatLink.linkName), (businessChatLinkInfo, error) -> {
           if (error != null) {
-            if (after != null) {
-              post(() -> after.runWithBool(false));
-            }
+            post(() -> {
+              showLinkTooltip(tdlib, R.drawable.baseline_warning_24, TD.toErrorString(error), openParameters);
+              if (after != null) {
+                after.runWithBool(false);
+              }
+            });
           } else {
             post(() -> {
               openChat(context, businessChatLinkInfo.chatId, new ChatOpenParameters()
