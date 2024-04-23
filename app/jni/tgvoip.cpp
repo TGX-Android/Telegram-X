@@ -535,10 +535,11 @@ JNI_OBJECT_FUNC(jlong, voip_TgCallsController, newInstance,
 
     auto id = (int64_t) server.getLong("id");
     std::string ipAddress (jni::from_jstring(env, server.getString("ipAddress")));
+    std::string ipv6Address (jni::from_jstring(env, server.getString("ipv6Address")));
     auto port = (uint16_t) server.getInt("port");
 
     tgcalls::RtcServer rtcServer {
-      .host = ipAddress,
+      .host = ipAddress.empty() ? ipv6Address : ipAddress,
       .port = port
     };
     if (serverTypeConstructor == typeTelegramReflector) {
