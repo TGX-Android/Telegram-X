@@ -2444,6 +2444,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     public Referrer referrer;
     public TdApi.InternalLinkTypeVideoChat videoChatOrLiveStreamInvitation;
+    public TdApi.DraftMessage fillDraft;
 
     public long eventLogUserId;
 
@@ -2558,6 +2559,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return this;
     }
 
+    public Arguments fillDraft (@Nullable TdApi.FormattedText fillDraft) {
+      this.fillDraft = !Td.isEmpty(fillDraft) ?
+        new TdApi.DraftMessage(null, 0, new TdApi.InputMessageText(fillDraft, null, false)) :
+        null;
+      return this;
+    }
+
     public Arguments setOpenKeyboard (boolean openKeyboard) {
       this.openKeyboard = openKeyboard;
       return this;
@@ -2621,6 +2629,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private long linkedChatId;
+  private TdApi.DraftMessage fillDraft;
 
   public void setArguments (Arguments args) {
     super.setArguments(args);
@@ -2837,6 +2846,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (tdlib.canSendBasicMessage(chat)) {
       TdApi.DraftMessage draftMessage = getDraftMessage();
+      if (!Td.isEmpty(fillDraft)) {
+        if (Td.isEmpty(draftMessage) || Td.isEmpty(((TdApi.InputMessageText) draftMessage.inputMessageText).text) /*allow dropping replyTo*/) {
+          draftMessage = fillDraft;
+        } else if (!Td.equalsTo(((TdApi.InputMessageText) draftMessage.inputMessageText).text, ((TdApi.InputMessageText) fillDraft.inputMessageText).text)) {
+          promptDraftPrefillOnFocus = true;
+        }
+      }
       if (draftMessage != null && draftMessage.replyTo != null && draftMessage.replyTo.getConstructor() == TdApi.InputMessageReplyToMessage.CONSTRUCTOR) {
         if (!ignoreDraftLoad) {
           TdApi.InputMessageReplyToMessage replyToMessage = (TdApi.InputMessageReplyToMessage) draftMessage.replyTo;
@@ -3895,9 +3911,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
     tdlib.ui().openVoiceChatInvitation(this, invitation);
   }
 
+  private boolean promptDraftPrefillOnFocus;
+
   @Override
   public void onFocus () {
     super.onFocus();
+    if (promptDraftPrefillOnFocus) {
+      promptDraftPrefillOnFocus = false;
+      if (!Td.isEmpty(fillDraft)) {
+        showWarning(Lang.getMarkdownString(this, R.string.DraftPreFillWarning), isConfirmed -> {
+          if (isConfirmed && inputView != null) {
+            inputView.setDraft(fillDraft.inputMessageText);
+          }
+        });
+      }
+    }
     if (chat != null && !isInForceTouchMode()) {
       TdApi.ChatSource source = tdlib.chatSource(openedFromChatList, chat.id);
       if (source != null && Settings.instance().needTutorial(source)) {

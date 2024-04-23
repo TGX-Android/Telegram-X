@@ -71,7 +71,6 @@ import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.UserProvider;
 import org.thunderdog.challegram.util.WrapperProvider;
 import org.thunderdog.challegram.util.text.Letters;
-import org.thunderdog.challegram.voip.VoIP;
 import org.thunderdog.challegram.voip.VoIPLogs;
 import org.thunderdog.challegram.voip.annotation.CallState;
 
@@ -472,7 +471,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private int storySuggestedReactionAreaCountMax = 5;
   private int storyViewersExpirationDelay = 86400;
   private int storyStealhModeCooldownPeriod = 3600, storyStealthModeFuturePeriod = 1500, storyStealthModePastPeriod = 300;
-  private int businessIntroTitleLengthMax = 32, businessIntroMessageLengthMax = 70;
+  private int businessIntroTitleLengthMax = 32, businessIntroMessageLengthMax = 70, businessChatLinkCountMax = 100;
   private int
     giveawayBoostCountPerPremium = 4,
     giveawayAdditionalChatCountMax = 10,
@@ -481,7 +480,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private int
     quickReplyShortcutCountMax = 100,
     quickReplyShortcutMessageCountMax = 20;
-  private int premiumGiftBoostCount = 3;
+  private int premiumGiftBoostCount = 3, premiumUploadSpeedup = 10;
   private boolean isPremium, isPremiumAvailable;
   private @GiftPremiumOption int giftPremiumOptions;
   private boolean suggestOnlyApiStickers;
@@ -8312,6 +8311,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   @TdlibThread
+  private void updateChatBusinessBotManageBar (TdApi.UpdateChatBusinessBotManageBar update) {
+    synchronized (dataLock) {
+      final TdApi.Chat chat = chats.get(update.chatId);
+      if (TdlibUtils.assertChat(update.chatId, chat, update)) {
+        return;
+      }
+      chat.businessBotManageBar = update.businessBotManageBar;
+    }
+
+    listeners.updateChatBusinessBotManageBar(update);
+  }
+
+  @TdlibThread
   private void updateChatHasScheduledMessages (TdApi.UpdateChatHasScheduledMessages update) {
     synchronized (dataLock) {
       final TdApi.Chat chat = chats.get(update.chatId);
@@ -8847,13 +8859,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     listeners.updatePrivacySettingRules(update.setting, update.rules);
   }
 
-  // Updates: ADD MEMBERS PRIVACY
-
-  @TdlibThread
-  private void updateAddChatMembersPrivacyForbidden (TdApi.UpdateAddChatMembersPrivacyForbidden update) {
-    // TODO show alert
-  }
-
   // Updates: CHAT ACTION
 
   @TdlibThread
@@ -9174,6 +9179,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
     listeners().updateSuggestedActions(update);
     context().global().notifyResolvableProblemAvailabilityMightHaveChanged();
+  }
+
+  @TdlibThread
+  private void updateSpeedLimitNotification (TdApi.UpdateSpeedLimitNotification update) {
+    listeners().updateSpeedLimitNotification(update);
   }
 
   @AnyThread
@@ -9573,11 +9583,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         this.storyStealthModePastPeriod = Td.intValue(update.value);
         break;
 
-      case "business_intro_title_length_max":
+      case "business_start_page_title_length_max":
         this.businessIntroTitleLengthMax = Td.intValue(update.value);
         break;
-      case "business_intro_message_length_max":
+      case "business_start_page_message_length_max":
         this.businessIntroMessageLengthMax = Td.intValue(update.value);
+        break;
+      case "business_chat_link_count_max":
+        this.businessChatLinkCountMax = Td.intValue(update.value);
         break;
 
       case "giveaway_boost_count_per_premium":
@@ -9602,6 +9615,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
       case "premium_gift_boost_count":
         this.premiumGiftBoostCount = Td.intValue(update.value);
+        break;
+      case "premium_upload_speedup":
+        this.premiumUploadSpeedup = Td.intValue(update.value);
         break;
 
       // Service accounts and chats
@@ -10100,6 +10116,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateChatActionBar((TdApi.UpdateChatActionBar) update);
         break;
       }
+      case TdApi.UpdateChatBusinessBotManageBar.CONSTRUCTOR: {
+        updateChatBusinessBotManageBar((TdApi.UpdateChatBusinessBotManageBar) update);
+        break;
+      }
       case TdApi.UpdateChatHasScheduledMessages.CONSTRUCTOR: {
         updateChatHasScheduledMessages((TdApi.UpdateChatHasScheduledMessages) update);
         break;
@@ -10182,10 +10202,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       }
       case TdApi.UpdateUserPrivacySettingRules.CONSTRUCTOR: {
         updatePrivacySettingRules((TdApi.UpdateUserPrivacySettingRules) update);
-        break;
-      }
-      case TdApi.UpdateAddChatMembersPrivacyForbidden.CONSTRUCTOR: {
-        updateAddChatMembersPrivacyForbidden((TdApi.UpdateAddChatMembersPrivacyForbidden) update);
         break;
       }
 
@@ -10374,6 +10390,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateSuggestedActions((TdApi.UpdateSuggestedActions) update);
         break;
       }
+      case TdApi.UpdateSpeedLimitNotification.CONSTRUCTOR: {
+        updateSpeedLimitNotification((TdApi.UpdateSpeedLimitNotification) update);
+        break;
+      }
       case TdApi.UpdateContactCloseBirthdays.CONSTRUCTOR: {
         updateContactCloseBirthdays((TdApi.UpdateContactCloseBirthdays) update);
         break;
@@ -10429,7 +10449,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         throw Td.unsupported(update);
       }
       default: {
-        Td.assertUpdate_93243dfd();
+        Td.assertUpdate_dd796769();
         throw Td.unsupported(update);
       }
     }

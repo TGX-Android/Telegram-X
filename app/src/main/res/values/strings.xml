@@ -5335,6 +5335,8 @@
   <string name="DeactivatingUsername">Deactivating username, please wait…</string>
   <string name="DeactivatingLink">Deactivating public link, please wait…</string>
 
+  <string name="DraftPreFillWarning">Your previous draft message in this chat is about to be replaced.</string>
+
   <string name="AllowPremiumInvite">**Telegram Premium** subscribers</string>
   <string name="AllowPremiumInviteDesc">Always allow users with **Telegram Premium** subscription to add you to groups and channels.</string>
 

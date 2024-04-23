@@ -639,16 +639,26 @@ public class PasswordController extends ViewController<PasswordController.Args> 
           executeOnUiThreadOptional(onAttestationFailure);
         } else {
           TDLib.Tag.safetyNet("Attestation success: %s", attestationResult);
-          tdlib.client().send(new TdApi.SendAuthenticationFirebaseSms(attestationResult), result -> {
+          TdApi.Function<TdApi.Ok> function;
+          switch (mode) {
+            case MODE_CODE_PHONE_CONFIRM:
+            case MODE_CODE_CHANGE:
+              function = new TdApi.SendPhoneNumberFirebaseSms(attestationResult);
+              break;
+            default:
+              function = new TdApi.SendAuthenticationFirebaseSms(attestationResult);
+              break;
+          }
+          tdlib.send(function, (ok, error) -> {
             runOnUiThreadOptional(() -> {
-              if (result.getConstructor() == TdApi.Ok.CONSTRUCTOR) {
+              if (error != null) {
+                lastSafetyNetError = TD.toErrorString(error);
+                TDLib.Tag.safetyNet("Attestation failed by server, retrying once: %s", TD.toErrorString(error));
+                requestNextCodeType(false, true);
+              } else {
                 isFirebaseSmsSent = true;
                 updateAuthState();
                 TDLib.Tag.safetyNet("Attestation finished successfully");
-              } else {
-                lastSafetyNetError = TD.toErrorString(result);
-                TDLib.Tag.safetyNet("Attestation failed by server, retrying once: %s", TD.toErrorString(result));
-                requestNextCodeType(false, true);
               }
             });
           });
@@ -1000,10 +1010,8 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     TdApi.Function<?> function;
     switch (mode) {
       case MODE_CODE_PHONE_CONFIRM:
-        function = new TdApi.ResendPhoneNumberConfirmationCode();
-        break;
       case MODE_CODE_CHANGE:
-        function = new TdApi.ResendChangePhoneNumberCode();
+        function = new TdApi.ResendPhoneNumberCode();
         break;
       default:
         function = new TdApi.ResendAuthenticationCode();
@@ -1507,10 +1515,8 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     TdApi.Function<?> function;
     switch (mode) {
       case MODE_CODE_PHONE_CONFIRM:
-        function = new TdApi.CheckPhoneNumberConfirmationCode(code);
-        break;
       case MODE_CODE_CHANGE:
-        function = new TdApi.CheckChangePhoneNumberCode(code);
+        function = new TdApi.CheckPhoneNumberCode(code);
         break;
       case MODE_CODE_EMAIL:
         // TODO sign in with Google (+ Apple ID?)

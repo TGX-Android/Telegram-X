@@ -1119,17 +1119,18 @@ public class TdlibListeners {
 
   // updateChatActionBar
 
-  private static void updateChatActionBar (TdApi.UpdateChatActionBar update, @Nullable Iterator<ChatListener> list) {
-    if (list != null) {
-      while (list.hasNext()) {
-        list.next().onChatActionBarChanged(update.chatId, update.actionBar);
-      }
-    }
+  void updateChatActionBar (TdApi.UpdateChatActionBar update) {
+    runChatUpdate(update.chatId, listener ->
+      listener.onChatActionBarChanged(update.chatId, update.actionBar)
+    );
   }
 
-  void updateChatActionBar (TdApi.UpdateChatActionBar update) {
-    updateChatActionBar(update, chatListeners.iterator());
-    updateChatActionBar(update, specificChatListeners.iterator(update.chatId));
+  // updateChatBusinessBotManagerBar
+
+  void updateChatBusinessBotManageBar (TdApi.UpdateChatBusinessBotManageBar update) {
+    runChatUpdate(update.chatId, listener ->
+      listener.onChatBusinessBotManageBarChanged(update.chatId, update.businessBotManageBar)
+    );
   }
 
   // updateChatHasScheduledMessages
@@ -1911,6 +1912,12 @@ public class TdlibListeners {
   void updateSuggestedActions (TdApi.UpdateSuggestedActions update) {
     for (TdlibOptionListener listener : optionListeners) {
       listener.onSuggestedActionsChanged(update.addedActions, update.removedActions);
+    }
+  }
+
+  void updateSpeedLimitNotification (TdApi.UpdateSpeedLimitNotification update) {
+    for (TdlibOptionListener listener : optionListeners) {
+      listener.onSpeedLimitNotification(update.isUpload);
     }
   }
 
