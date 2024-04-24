@@ -1863,7 +1863,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public interface OnSettingItemClick {
-    void onSettingItemClick (View view, @IdRes int settingsId, ListItem item, TextView doneButton, SettingsAdapter settingsAdapter);
+    void onSettingItemClick (View view, @IdRes int settingsId, ListItem item, TextView doneButton, SettingsAdapter settingsAdapter, PopupLayout window);
   }
 
   public final void showSettings (final @IdRes int id, ListItem[] rawItems, final SettingsIntDelegate delegate) {
@@ -2009,7 +2009,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
           settings.adapter.processToggle(v);
         }
         if (tag != null && tag instanceof ListItem && b.onSettingItemClick != null) {
-          b.onSettingItemClick.onSettingItemClick(v, b.id, (ListItem) tag, settings.doneButton, settings.adapter);
+          b.onSettingItemClick.onSettingItemClick(v, b.id, (ListItem) tag, settings.doneButton, settings.adapter, settings.window);
         }
       }
     };

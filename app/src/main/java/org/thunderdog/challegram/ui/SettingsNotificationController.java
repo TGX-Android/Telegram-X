@@ -1718,7 +1718,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         rawItems[4] = new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_vibrateOnlyIfSilent, 0, R.string.OnlyIfSilent, R.id.btn_vibrateOnlyIfSilent, currentSilentOnly);
       }
 
-      showSettings(new SettingsWrapBuilder(id).setRawItems(rawItems).setIntDelegate(this).setOnSettingItemClick((view, settingId, settingItem, doneButton, settingsAdapter) -> {
+      showSettings(new SettingsWrapBuilder(id).setRawItems(rawItems).setIntDelegate(this).setOnSettingItemClick((view, settingId, settingItem, doneButton, settingsAdapter, window) -> {
         final int settingItemId = settingItem.getId();
         if (settingItemId == R.id.btn_short) {
           try {
@@ -1883,7 +1883,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         items[i++] = new ListItem(ListItem.TYPE_RADIO_OPTION, 0, 0, ringtoneItem.isDefault() ? Lang.getString(R.string.IsDefault, ringtoneItem.getName()) : ringtoneItem.getName(), v.getId(), isCurrent).setStringKey(ringtoneItem.getUri().toString());
       }
 
-      showSettings(new SettingsWrapBuilder(v.getId()).setRawItems(items).setStringDelegate(this).setOnSettingItemClick((view, settingId, settingItem, doneButton, settingsAdapter) -> {
+      showSettings(new SettingsWrapBuilder(v.getId()).setRawItems(items).setStringDelegate(this).setOnSettingItemClick((view, settingId, settingItem, doneButton, settingsAdapter, window) -> {
         String path = settingItem.getStringCheckResult();
         if (path != null) {
           for (RingtoneItem ringtoneItem : ringtoneItems) {

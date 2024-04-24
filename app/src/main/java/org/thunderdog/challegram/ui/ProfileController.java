@@ -3346,7 +3346,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_hidden, 0, R.string.ChatHistoryHidden, R.id.btn_prehistoryMode, !currentValue)
         })
         .setHeaderItem(headerItem)
-        .setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter) -> {
+        .setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter, window) -> {
           boolean visible = settingsAdapter.getCheckIntResults().get(R.id.btn_prehistoryMode) == R.id.btn_visible;
           if (groupFull != null && !visible) {
             headerItem.setString(Lang.plural(R.string.ChatHistoryPartiallyHiddenInfo, 100));

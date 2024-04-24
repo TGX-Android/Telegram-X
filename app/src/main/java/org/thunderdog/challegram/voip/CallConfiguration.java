@@ -63,7 +63,7 @@ public class CallConfiguration {
     boolean enableH264Encoder,
     boolean enableH264Decoder
   ) {
-    if (VoIP.needFilterCallServers()) {
+    if (VoIP.needModifyCallServers()) {
       this.state = new TdApi.CallStateReady(
         state.protocol,
         VoIP.filterCallServers(state.servers),

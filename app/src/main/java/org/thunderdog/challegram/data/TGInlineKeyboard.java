@@ -1282,7 +1282,7 @@ public class TGInlineKeyboard {
                       break;
                   }
                 })
-              .setOnSettingItemClick(confirm.requestWriteAccess ? (itemView, settingsId, item, doneButton, settingsAdapter) -> {
+              .setOnSettingItemClick(confirm.requestWriteAccess ? (itemView, settingsId, item, doneButton, settingsAdapter, window) -> {
                 final int itemId = item.getId();
                 if (itemId == R.id.btn_signIn) {
                   boolean needSignIn = settingsAdapter.getCheckIntResults().get(R.id.btn_signIn) == R.id.btn_signIn;

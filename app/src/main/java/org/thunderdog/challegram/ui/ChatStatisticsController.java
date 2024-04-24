@@ -622,7 +622,7 @@ public class ChatStatisticsController extends RecyclerViewController<ChatStatist
           }
         }
       })
-      .setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter) -> {
+      .setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter, window) -> {
         headerItem.setString(Lang.getStringBold(settingsAdapter.getCheckIntResults().get(R.id.btn_restrictMember) != 0 ? R.string.MemberCannotJoinGroup : R.string.MemberCanJoinGroup, tdlib.cache().userName(content.getUserId())));
         settingsAdapter.updateValuedSettingByPosition(settingsAdapter.indexOfView(headerItem));
       })
