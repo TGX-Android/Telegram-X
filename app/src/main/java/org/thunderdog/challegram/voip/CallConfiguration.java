@@ -66,7 +66,7 @@ public class CallConfiguration {
     if (VoIP.needModifyCallServers()) {
       this.state = new TdApi.CallStateReady(
         state.protocol,
-        VoIP.filterCallServers(state.servers),
+        VoIP.modifyCallServers(state.servers),
         state.config,
         state.encryptionKey,
         state.emojis,

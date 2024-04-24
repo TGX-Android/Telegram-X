@@ -443,6 +443,7 @@ JNI_OBJECT_FUNC(jlong, voip_TgCallsController, newInstance,
   bool useBuiltInNoiseSuppressor = configuration.getBoolean("enableNoiseSuppressor") == JNI_TRUE;
   bool useBuiltInAutomaticGainControl = configuration.getBoolean("enableAutomaticGainControl") == JNI_TRUE;
   bool enableStunMarking = configuration.getBoolean("enableStunMarking") == JNI_TRUE;
+  std::string customParameters = jni::from_jstring(env, callStateReady.getString("customParameters"));
 
   // tgcalls::EncryptionKey
   jbyteArray jEncryptionKey = callStateReady.getByteArray("encryptionKey");
@@ -596,6 +597,7 @@ JNI_OBJECT_FUNC(jlong, voip_TgCallsController, newInstance,
       .maxApiLayer = maxApiLayer,
       .enableHighBitrateVideo = false,
       .preferredVideoCodecs = {/*cricket::kVp9CodecName*/},
+      .customParameters = customParameters
     },
     .endpoints = endpoints,
     .rtcServers = rtcServers,

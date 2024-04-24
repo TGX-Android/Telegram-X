@@ -191,7 +191,7 @@ public class VoIP {
     );
   }
 
-  public static TdApi.CallServer[] filterCallServers (TdApi.CallServer[] servers) {
+  public static TdApi.CallServer[] modifyCallServers (TdApi.CallServer[] servers) {
     if (!needModifyCallServers()) {
       return servers;
     }
