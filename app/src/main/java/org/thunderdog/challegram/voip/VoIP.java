@@ -184,6 +184,26 @@ public class VoIP {
     return null;
   }
 
+  private static String toHexString (byte[] array) {
+    StringBuilder result = new StringBuilder(array.length * 2);
+    for (byte b : array) {
+      result
+        .append(Character.forDigit((b >> 4) & 0xF, 16))
+        .append(Character.forDigit(b & 0xF, 16));
+    }
+    return result.toString();
+  }
+
+  private static void validateModifiedCallServer (TdApi.CallServer server) {
+    if (server.type.getConstructor() == TdApi.CallServerTypeTelegramReflector.CONSTRUCTOR) {
+      TdApi.CallServerTypeTelegramReflector telegramReflector = (TdApi.CallServerTypeTelegramReflector) server.type;
+      String myHex = N.toHexString(telegramReflector.peerTag);
+      String validHex = toHexString(telegramReflector.peerTag);
+      if (!myHex.equals(validHex))
+        throw new UnsupportedOperationException(myHex + " != " + validHex);
+    }
+  }
+
   public static boolean needModifyCallServers () {
     return isDebugOptionEnabled(
       DebugOption.DISABLE_IPV4 |
@@ -230,6 +250,7 @@ public class VoIP {
           continue;
         server = new TdApi.CallServer(server.id, "", server.ipv6Address, server.port, server.type);
       }
+      validateModifiedCallServer(server);
       filteredCallServers.add(server);
     }
     if (filteredCallServers.isEmpty()) {
