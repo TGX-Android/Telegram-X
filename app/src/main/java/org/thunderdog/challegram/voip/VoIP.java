@@ -116,7 +116,8 @@ public class VoIP {
     DebugOption.ONLY_TELEGRAM_REFLECTOR_SERVERS,
     DebugOption.ONLY_WEBRTC_SERVERS,
     DebugOption.ONLY_WEBRTC_TURN_SERVERS,
-    DebugOption.ONLY_WEBRTC_NON_TURN_SERVERS
+    DebugOption.ONLY_WEBRTC_NON_TURN_SERVERS,
+    DebugOption.TEST_INVALID_SERVERS
   }, flag = true)
   public @interface DebugOption {
     int
@@ -128,7 +129,8 @@ public class VoIP {
       ONLY_TELEGRAM_REFLECTOR_SERVERS = 1 << 5,
       ONLY_WEBRTC_SERVERS = 1 << 6,
       ONLY_WEBRTC_TURN_SERVERS = 1 << 7,
-      ONLY_WEBRTC_NON_TURN_SERVERS = 1 << 8;
+      ONLY_WEBRTC_NON_TURN_SERVERS = 1 << 8,
+      TEST_INVALID_SERVERS = 1 << 9;
 
     @DebugOption int SERVER_FILTERS_MASK =
       ONLY_TELEGRAM_REFLECTOR_SERVERS |
@@ -156,7 +158,8 @@ public class VoIP {
       DebugOption.ONLY_TELEGRAM_REFLECTOR_SERVERS,
       DebugOption.ONLY_WEBRTC_SERVERS,
       DebugOption.ONLY_WEBRTC_TURN_SERVERS,
-      DebugOption.ONLY_WEBRTC_NON_TURN_SERVERS
+      DebugOption.ONLY_WEBRTC_NON_TURN_SERVERS,
+      DebugOption.TEST_INVALID_SERVERS
     };
   }
 
@@ -180,6 +183,8 @@ public class VoIP {
         return "Only TURN servers (crash if none)";
       case DebugOption.ONLY_WEBRTC_NON_TURN_SERVERS:
         return "Only non-TURN servers (crash if none)";
+      case DebugOption.TEST_INVALID_SERVERS:
+        return "Test handling non-existing servers";
     }
     return null;
   }
@@ -207,6 +212,7 @@ public class VoIP {
   public static boolean needModifyCallServers () {
     return isDebugOptionEnabled(
       DebugOption.DISABLE_IPV4 |
+        DebugOption.TEST_INVALID_SERVERS |
         DebugOption.SERVER_FILTERS_MASK
     );
   }
@@ -215,6 +221,7 @@ public class VoIP {
     if (!needModifyCallServers()) {
       return servers;
     }
+    final boolean testInvalidServers = isDebugOptionEnabled(DebugOption.TEST_INVALID_SERVERS);
     final boolean disableIpv4 = isDebugOptionEnabled(DebugOption.DISABLE_IPV4);
     final int filterOption = debugOptions & DebugOption.SERVER_FILTERS_MASK;
     final Filter<TdApi.CallServer> filter;
@@ -240,6 +247,8 @@ public class VoIP {
         filter = null;
         break;
     }
+    int telegramReflectorCount = 0;
+    int webrtcReflectorCount = 0;
     List<TdApi.CallServer> filteredCallServers = new ArrayList<>();
     for (TdApi.CallServer server : servers) {
       if (filter != null && !filter.accept(server)) {
@@ -251,10 +260,49 @@ public class VoIP {
         server = new TdApi.CallServer(server.id, "", server.ipv6Address, server.port, server.type);
       }
       validateModifiedCallServer(server);
+      switch (server.type.getConstructor()) {
+        case TdApi.CallServerTypeTelegramReflector.CONSTRUCTOR:
+          telegramReflectorCount++;
+          break;
+        case TdApi.CallServerTypeWebrtc.CONSTRUCTOR:
+          webrtcReflectorCount++;
+          break;
+        default:
+          Td.assertCallServerType_569fa9f7();
+          throw Td.unsupported(server.type);
+      }
       filteredCallServers.add(server);
     }
     if (filteredCallServers.isEmpty()) {
       throw new IllegalStateException();
+    }
+    if (testInvalidServers) {
+      int remainingWebrtcReflectors = webrtcReflectorCount;
+      int remainingTelegramReflectors = telegramReflectorCount;
+      for (int i = 0; i < filteredCallServers.size(); i++) {
+        TdApi.CallServer server = filteredCallServers.get(i);
+        boolean makeInvalid;
+        switch (server.type.getConstructor()) {
+          case TdApi.CallServerTypeTelegramReflector.CONSTRUCTOR:
+            makeInvalid = --remainingTelegramReflectors > 0;
+            break;
+          case TdApi.CallServerTypeWebrtc.CONSTRUCTOR:
+            makeInvalid = --remainingWebrtcReflectors > 0;
+            break;
+          default:
+            Td.assertCallServerType_569fa9f7();
+            throw Td.unsupported(server.type);
+        }
+        if (makeInvalid) {
+          server = new TdApi.CallServer(server.id,
+            "192.168.0.0",
+            "0:0:0:0:0:ffff:c0a8:0",
+            server.port,
+            server.type
+          );
+          filteredCallServers.set(i, server);
+        }
+      }
     }
     return filteredCallServers.toArray(new TdApi.CallServer[0]);
   }
