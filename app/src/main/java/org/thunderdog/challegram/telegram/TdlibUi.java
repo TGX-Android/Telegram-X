@@ -2124,7 +2124,7 @@ public class TdlibUi extends Handler {
         doneSomething = true;
       }
       if (forceDraft != null) {
-        ((MessagesController) context).fillDraft(forceDraft, false);
+        ((MessagesController) context).fillDraft(forceDraft, true);
         doneSomething = true;
       }
 
