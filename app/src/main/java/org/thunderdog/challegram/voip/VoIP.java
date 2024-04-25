@@ -32,6 +32,8 @@ import org.thunderdog.challegram.voip.annotation.CallNetworkType;
 import org.webrtc.ContextUtils;
 
 import java.io.File;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -41,6 +43,7 @@ import java.util.Set;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.Filter;
 import me.vkryl.td.Td;
 
 public class VoIP {
@@ -103,14 +106,17 @@ public class VoIP {
     }
   }
 
+  @Retention(RetentionPolicy.SOURCE)
   @IntDef(value = {
     DebugOption.DISABLE_ACOUSTIC_ECHO_CANCELLATION,
     DebugOption.DISABLE_NOISE_SUPPRESSOR,
     DebugOption.DISABLE_AUTOMATIC_GAIN_CONTROL,
     DebugOption.DISABLE_P2P,
     DebugOption.DISABLE_IPV4,
-    DebugOption.IGNORE_TURN_SERVERS,
-    DebugOption.IGNORE_NON_TURN_SERVERS
+    DebugOption.ONLY_TELEGRAM_REFLECTOR_SERVERS,
+    DebugOption.ONLY_WEBRTC_SERVERS,
+    DebugOption.ONLY_WEBRTC_TURN_SERVERS,
+    DebugOption.ONLY_WEBRTC_NON_TURN_SERVERS
   }, flag = true)
   public @interface DebugOption {
     int
@@ -119,8 +125,16 @@ public class VoIP {
       DISABLE_AUTOMATIC_GAIN_CONTROL = 1 << 2,
       DISABLE_P2P = 1 << 3,
       DISABLE_IPV4 = 1 << 4,
-      IGNORE_TURN_SERVERS = 1 << 5,
-      IGNORE_NON_TURN_SERVERS = 1 << 6;
+      ONLY_TELEGRAM_REFLECTOR_SERVERS = 1 << 5,
+      ONLY_WEBRTC_SERVERS = 1 << 6,
+      ONLY_WEBRTC_TURN_SERVERS = 1 << 7,
+      ONLY_WEBRTC_NON_TURN_SERVERS = 1 << 8;
+
+    @DebugOption int SERVER_FILTERS_MASK =
+      ONLY_TELEGRAM_REFLECTOR_SERVERS |
+      ONLY_WEBRTC_SERVERS |
+      ONLY_WEBRTC_TURN_SERVERS |
+      ONLY_WEBRTC_NON_TURN_SERVERS;
   }
   private static @DebugOption int debugOptions;
 
@@ -138,9 +152,11 @@ public class VoIP {
       DebugOption.DISABLE_NOISE_SUPPRESSOR,
       DebugOption.DISABLE_AUTOMATIC_GAIN_CONTROL,
       DebugOption.DISABLE_IPV4,
-      DebugOption.IGNORE_TURN_SERVERS,
-      DebugOption.IGNORE_NON_TURN_SERVERS,
-      DebugOption.DISABLE_P2P
+      DebugOption.DISABLE_P2P,
+      DebugOption.ONLY_TELEGRAM_REFLECTOR_SERVERS,
+      DebugOption.ONLY_WEBRTC_SERVERS,
+      DebugOption.ONLY_WEBRTC_TURN_SERVERS,
+      DebugOption.ONLY_WEBRTC_NON_TURN_SERVERS
     };
   }
 
@@ -154,61 +170,87 @@ public class VoIP {
         return "Disable AGC";
       case DebugOption.DISABLE_IPV4:
         return "Disable ipv4";
-      case DebugOption.IGNORE_TURN_SERVERS:
-        return "Exclude TURN servers & crash if none remaining";
-      case DebugOption.IGNORE_NON_TURN_SERVERS:
-        return "Exclude non-TURN servers & crash if none remaining";
       case DebugOption.DISABLE_P2P:
         return "Disable P2P";
+      case DebugOption.ONLY_TELEGRAM_REFLECTOR_SERVERS:
+        return "Only TelegramReflector servers (crash if none)";
+      case DebugOption.ONLY_WEBRTC_SERVERS:
+        return "Only WebRTC servers (crash if none)";
+      case DebugOption.ONLY_WEBRTC_TURN_SERVERS:
+        return "Only TURN servers (crash if none)";
+      case DebugOption.ONLY_WEBRTC_NON_TURN_SERVERS:
+        return "Only non-TURN servers (crash if none)";
     }
     return null;
   }
 
-  public static boolean needFilterCallServers () {
-    return VoIP.isDebugOptionEnabled(
-      VoIP.DebugOption.DISABLE_IPV4 |
-        VoIP.DebugOption.IGNORE_TURN_SERVERS |
-        VoIP.DebugOption.IGNORE_NON_TURN_SERVERS
+  private static String toHexString (byte[] array) {
+    StringBuilder result = new StringBuilder(array.length * 2);
+    for (byte b : array) {
+      result
+        .append(Character.forDigit((b >> 4) & 0xF, 16))
+        .append(Character.forDigit(b & 0xF, 16));
+    }
+    return result.toString();
+  }
+
+  private static void validateModifiedCallServer (TdApi.CallServer server) {
+    if (server.type.getConstructor() == TdApi.CallServerTypeTelegramReflector.CONSTRUCTOR) {
+      TdApi.CallServerTypeTelegramReflector telegramReflector = (TdApi.CallServerTypeTelegramReflector) server.type;
+      String myHex = N.toHexString(telegramReflector.peerTag);
+      String validHex = toHexString(telegramReflector.peerTag);
+      if (!myHex.equals(validHex))
+        throw new UnsupportedOperationException(myHex + " != " + validHex);
+    }
+  }
+
+  public static boolean needModifyCallServers () {
+    return isDebugOptionEnabled(
+      DebugOption.DISABLE_IPV4 |
+        DebugOption.SERVER_FILTERS_MASK
     );
   }
 
-  public static TdApi.CallServer[] filterCallServers (TdApi.CallServer[] servers) {
-    if (!needFilterCallServers()) {
+  public static TdApi.CallServer[] modifyCallServers (TdApi.CallServer[] servers) {
+    if (!needModifyCallServers()) {
       return servers;
     }
-    boolean disableIpv4 = VoIP.isDebugOptionEnabled(VoIP.DebugOption.DISABLE_IPV4);
-    boolean ignoreTurnServers = VoIP.isDebugOptionEnabled(VoIP.DebugOption.IGNORE_TURN_SERVERS);
-    boolean ignoreNonTurnServers = VoIP.isDebugOptionEnabled(VoIP.DebugOption.IGNORE_NON_TURN_SERVERS);
+    final boolean disableIpv4 = isDebugOptionEnabled(DebugOption.DISABLE_IPV4);
+    final int filterOption = debugOptions & DebugOption.SERVER_FILTERS_MASK;
+    final Filter<TdApi.CallServer> filter;
+    switch (filterOption) {
+      case DebugOption.ONLY_TELEGRAM_REFLECTOR_SERVERS:
+        filter = server -> server.type.getConstructor() == TdApi.CallServerTypeTelegramReflector.CONSTRUCTOR;
+        break;
+      case DebugOption.ONLY_WEBRTC_SERVERS:
+        filter = server -> server.type.getConstructor() == TdApi.CallServerTypeWebrtc.CONSTRUCTOR;
+        break;
+      case DebugOption.ONLY_WEBRTC_TURN_SERVERS:
+        filter = server ->
+          server.type.getConstructor() == TdApi.CallServerTypeWebrtc.CONSTRUCTOR &&
+          ((TdApi.CallServerTypeWebrtc) server.type).supportsTurn;
+        break;
+      case DebugOption.ONLY_WEBRTC_NON_TURN_SERVERS:
+        filter = server ->
+          server.type.getConstructor() == TdApi.CallServerTypeWebrtc.CONSTRUCTOR &&
+            !((TdApi.CallServerTypeWebrtc) server.type).supportsTurn;
+        break;
+      default:
+        Td.assertCallServerType_569fa9f7();
+        filter = null;
+        break;
+    }
     List<TdApi.CallServer> filteredCallServers = new ArrayList<>();
     for (TdApi.CallServer server : servers) {
-      if (ignoreTurnServers || ignoreNonTurnServers) {
-        switch (server.type.getConstructor()) {
-          case TdApi.CallServerTypeTelegramReflector.CONSTRUCTOR: {
-            TdApi.CallServerTypeTelegramReflector telegramReflector = (TdApi.CallServerTypeTelegramReflector) server.type;
-            // Nothing to check
-            break;
-          }
-          case TdApi.CallServerTypeWebrtc.CONSTRUCTOR: {
-            TdApi.CallServerTypeWebrtc webrtc = (TdApi.CallServerTypeWebrtc) server.type;
-            if (webrtc.supportsTurn && ignoreTurnServers) {
-              continue;
-            }
-            if (!webrtc.supportsTurn && ignoreNonTurnServers) {
-              continue;
-            }
-            break;
-          }
-          default: {
-            Td.assertCallServerType_569fa9f7();
-            throw Td.unsupported(server.type);
-          }
-        }
+      if (filter != null && !filter.accept(server)) {
+        continue;
       }
       if (disableIpv4) {
         if (StringUtils.isEmpty(server.ipv6Address))
           continue;
         server = new TdApi.CallServer(server.id, "", server.ipv6Address, server.port, server.type);
       }
+      validateModifiedCallServer(server);
       filteredCallServers.add(server);
     }
     if (filteredCallServers.isEmpty()) {

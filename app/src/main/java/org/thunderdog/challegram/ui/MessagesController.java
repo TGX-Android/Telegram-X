@@ -9267,7 +9267,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
                 break;
             }
           })
-          .setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter) -> {
+          .setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter, window) -> {
             switch (item.getViewType()) {
               case ListItem.TYPE_CHECKBOX_OPTION:
               case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:

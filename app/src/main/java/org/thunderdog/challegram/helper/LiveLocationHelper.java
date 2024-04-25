@@ -640,7 +640,7 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
       }
       return false;
     });
-    b.setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter) -> {
+    b.setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter, window) -> {
       TdApi.Message message = (TdApi.Message) item.getData();
       TdApi.MessageLocation messageLocation = (TdApi.MessageLocation) message.content;
       MapController.Args args = new MapController.Args(messageLocation.location.latitude, messageLocation.location.longitude, message).setChatId(message.chatId, message.messageThreadId).setNavigateBackOnStop(true);

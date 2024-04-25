@@ -117,4 +117,5 @@ public final class N {
   public native static void throwDirect (String msg);
 
   public static native String[] getTgCallsVersions ();
+  public static native String toHexString (byte[] array);
 }

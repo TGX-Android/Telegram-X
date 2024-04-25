@@ -94,6 +94,7 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.widget.GearView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
+import org.thunderdog.challegram.widget.PopupLayout;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -924,7 +925,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
       .setNeedSeparators(false)
       .setOnSettingItemClick(multiSelect ? new ViewController.OnSettingItemClick() {
         @Override
-        public void onSettingItemClick (View view, int settingsId, ListItem item, TextView doneButton, SettingsAdapter settingsAdapter) {
+        public void onSettingItemClick (View view, int settingsId, ListItem item, TextView doneButton, SettingsAdapter settingsAdapter, PopupLayout window) {
           switch (item.getViewType()) {
             case ListItem.TYPE_CHECKBOX_OPTION:
             case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:

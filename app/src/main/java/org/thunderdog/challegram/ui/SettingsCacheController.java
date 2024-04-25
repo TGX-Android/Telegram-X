@@ -646,7 +646,7 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
     ListItem[] array = new ListItem[items.size()];
     items.toArray(array);
 
-    showSettings(new SettingsWrapBuilder(id).addHeaderItem(headerItem).setRawItems(array).setIntDelegate((id1, result) -> optimizeStorage(result, entry)).setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter) -> {
+    showSettings(new SettingsWrapBuilder(id).addHeaderItem(headerItem).setRawItems(array).setIntDelegate((id1, result) -> optimizeStorage(result, entry)).setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter, window) -> {
       String size = Strings.buildSize(measureTotal(settingsAdapter.getCheckIntResults(), entry), false);
       doneButton.setText(Lang.getString(R.string.ClearX, size).toUpperCase());
     }).setSaveStr(Lang.getString(R.string.ClearX, Strings.buildSize(selectedSize, false)))

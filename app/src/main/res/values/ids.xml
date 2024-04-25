@@ -1011,8 +1011,9 @@
   <item type="id" name="btn_log_tags" />
   <item type="id" name="btn_log_android" />
 
-  <!--<item type="id" name="btn_ton" />-->
   <item type="id" name="btn_tdlib" />
+  <item type="id" name="btn_webrtc" />
+  <item type="id" name="btn_tgcalls" />
   <item type="id" name="btn_pushService" />
   <item type="id" name="btn_tdlib_verbosity" />
   <item type="id" name="btn_tdlib_resetLogSettings" />

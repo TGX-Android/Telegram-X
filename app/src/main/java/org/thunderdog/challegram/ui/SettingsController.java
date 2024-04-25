@@ -23,6 +23,7 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
 import androidx.annotation.DrawableRes;
+import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.collection.SparseArrayCompat;
@@ -81,6 +82,8 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -1053,14 +1056,40 @@ public class SettingsController extends ViewController<Void> implements
     tdlib.ui().openUrl(this, url, new TdlibUi.UrlOpenParameters().disableInstantView());
   }
 
-  private void viewSourceCode (boolean isTdlib) {
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    SourceCodeType.TELEGRAM_X,
+    SourceCodeType.TDLIB,
+    SourceCodeType.TGCALLS,
+    SourceCodeType.WEBRTC
+  })
+  private @interface SourceCodeType {
+    int TELEGRAM_X = 0, TDLIB = 1, TGCALLS = 2, WEBRTC = 3;
+  }
+
+  private void viewSourceCode (@SourceCodeType int sourceCodeType) {
     String url;
-    if (isTdlib) {
-      String tdlibCommitHash = Td.tdlibCommitHashFull();
-      url = AppBuildInfo.tdlibCommitUrl(tdlibCommitHash);
-    } else {
-      AppBuildInfo appBuildInfo = Settings.instance().getCurrentBuildInformation();
-      url = appBuildInfo.commitUrl();
+    switch (sourceCodeType) {
+      case SourceCodeType.TELEGRAM_X: {
+        AppBuildInfo appBuildInfo = Settings.instance().getCurrentBuildInformation();
+        url = appBuildInfo.commitUrl();
+        break;
+      }
+      case SourceCodeType.TDLIB: {
+        String tdlibCommitHash = Td.tdlibCommitHashFull();
+        url = AppBuildInfo.tdlibCommitUrl(tdlibCommitHash);
+        break;
+      }
+      case SourceCodeType.TGCALLS: {
+        url = BuildConfig.TGCALLS_COMMIT_URL;
+        break;
+      }
+      case SourceCodeType.WEBRTC: {
+        url = BuildConfig.WEBRTC_COMMIT_URL;
+        break;
+      }
+      default:
+        throw new IllegalArgumentException(Integer.toString(sourceCodeType));
     }
     if (!StringUtils.isEmpty(url)) {
       tdlib.ui().openUrl(this,
@@ -1107,7 +1136,7 @@ public class SettingsController extends ViewController<Void> implements
       AppBuildInfo appBuildInfo = Settings.instance().getCurrentBuildInformation();
       tdlib.ui().openUrl(this, appBuildInfo.changesUrlFrom(previousBuildInfo), new TdlibUi.UrlOpenParameters().disableInstantView());
     } else if (viewId == R.id.btn_tdlib) {
-      viewSourceCode(true);
+      viewSourceCode(SourceCodeType.TDLIB);
     } else if (viewId == R.id.btn_sourceCode) {
       AppBuildInfo appBuildInfo = Settings.instance().getCurrentBuildInformation();
       PullRequest specificPullRequest = (PullRequest) ((ListItem) v.getTag()).getData();
@@ -1122,13 +1151,21 @@ public class SettingsController extends ViewController<Void> implements
         if (appBuildInfo.getTdlibCommitFull() != null) {
           b.item(new OptionItem(R.id.btn_tdlib, Lang.getCharSequence(R.string.format_commit, "TDLib " + Td.tdlibVersion(), Td.tdlibCommitHash()), OptionColor.NORMAL, R.drawable.baseline_tdlib_24));
         }
+        b.item(new OptionItem(R.id.btn_tgcalls, Lang.getCharSequence(R.string.format_commit, "tgcalls", BuildConfig.TGCALLS_COMMIT), OptionColor.NORMAL, R.drawable.baseline_phone_in_talk_24));
+        b.item(new OptionItem(R.id.btn_webrtc, Lang.getCharSequence(R.string.format_commit, "WebRTC", BuildConfig.WEBRTC_COMMIT), OptionColor.NORMAL, R.drawable.baseline_webrtc_24));
         int i = 0;
         for (PullRequest pullRequest : appBuildInfo.getPullRequests()) {
           b.item(new OptionItem(i++, Lang.getString(R.string.format_commit, Lang.getString(R.string.PullRequestCommit, pullRequest.getId()), pullRequest.getCommit()), OptionColor.NORMAL, R.drawable.templarian_baseline_source_merge_24));
         }
         showOptions(b.build(), (view, id) -> {
-          if (id == R.id.btn_sourceCode || id == R.id.btn_tdlib) {
-            viewSourceCode(id == R.id.btn_tdlib);
+          if (id == R.id.btn_sourceCode) {
+            viewSourceCode(SourceCodeType.TELEGRAM_X);
+          } else if (id == R.id.btn_tdlib) {
+            viewSourceCode(SourceCodeType.TDLIB);
+          } else if (id == R.id.btn_webrtc) {
+            viewSourceCode(SourceCodeType.WEBRTC);
+          } else if (id == R.id.btn_tgcalls) {
+            viewSourceCode(SourceCodeType.TGCALLS);
           } else if (id >= 0 && id < appBuildInfo.getPullRequests().size()) {
             PullRequest pullRequest = appBuildInfo.getPullRequests().get(id);
             tdlib.ui().openUrl(this, pullRequest.getCommitUrl(), new TdlibUi.UrlOpenParameters().disableInstantView());

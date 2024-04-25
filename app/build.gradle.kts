@@ -145,15 +145,17 @@ android {
     buildConfigString("OPENSSL_VERSION_FULL", openSslVersionFull)
     buildConfigString("TDLIB_VERSION", tdlibVersion)
 
-    val gitVersionProvider = providers.of(GitVersionValueSource::class) {}
-    val git = gitVersionProvider.get()
+    val tgxGitVersionProvider = providers.of(GitVersionValueSource::class) {
+      parameters.module = layout.projectDirectory
+    }
+    val tgxGit = tgxGitVersionProvider.get()
 
-    buildConfigString("REMOTE_URL", git.remoteUrl)
-    buildConfigString("COMMIT_URL", git.commitUrl)
-    buildConfigString("COMMIT", git.commitHashShort)
-    buildConfigString("COMMIT_FULL", git.commitHashLong)
-    buildConfigLong("COMMIT_DATE", git.commitDate)
-    buildConfigString("SOURCES_URL", properties.getProperty("app.sources_url", git.remoteUrl))
+    buildConfigString("REMOTE_URL", tgxGit.remoteUrl)
+    buildConfigString("COMMIT_URL", tgxGit.commitUrl)
+    buildConfigString("COMMIT", tgxGit.commitHashShort)
+    buildConfigString("COMMIT_FULL", tgxGit.commitHashLong)
+    buildConfigLong("COMMIT_DATE", tgxGit.commitDate)
+    buildConfigString("SOURCES_URL", properties.getProperty("app.sources_url", tgxGit.remoteUrl))
 
     buildConfigField("long[]", "PULL_REQUEST_ID", "{${
       pullRequests.joinToString(", ") { it.id.toString() }
@@ -168,11 +170,29 @@ android {
       pullRequests.joinToString(", ") { "\"${it.commitLong}\"" }
     }}")
     buildConfigField("String[]", "PULL_REQUEST_URL", "{${
-      pullRequests.joinToString(", ") { "\"${git.remoteUrl}/pull/${it.id}/files/${it.commitLong}\"" }
+      pullRequests.joinToString(", ") { "\"${tgxGit.remoteUrl}/pull/${it.id}/files/${it.commitLong}\"" }
     }}")
     buildConfigField("String[]", "PULL_REQUEST_AUTHOR", "{${
       pullRequests.joinToString(", ") { "\"${it.author}\"" }
     }}")
+
+    // WebRTC version
+
+    val webrtcGitVersionProvider = providers.of(GitVersionValueSource::class) {
+      parameters.module = layout.projectDirectory.dir("jni/third_party/webrtc")
+    }
+    val webrtcGit = webrtcGitVersionProvider.get()
+    buildConfigString("WEBRTC_COMMIT", webrtcGit.commitHashShort)
+    buildConfigString("WEBRTC_COMMIT_URL", webrtcGit.commitUrl)
+
+    // tgcalls version
+
+    val tgcallsGitVersionProvider = providers.of(GitVersionValueSource::class) {
+      parameters.module = layout.projectDirectory.dir("jni/third_party/tgcalls")
+    }
+    val tgcallsGit = tgcallsGitVersionProvider.get()
+    buildConfigString("TGCALLS_COMMIT", tgcallsGit.commitHashShort)
+    buildConfigString("TGCALLS_COMMIT_URL", tgcallsGit.commitUrl)
 
     // Set application version
 
@@ -184,7 +204,7 @@ android {
     val then = Calendar.getInstance(timeZone)
     then.timeInMillis = versions.getOrThrow("version.creation").toLong()
     val now = Calendar.getInstance(timeZone)
-    now.timeInMillis = git.commitDate * 1000L
+    now.timeInMillis = tgxGit.commitDate * 1000L
     if (now.timeInMillis < then.timeInMillis)
       error("Invalid commit time!")
     val minorVersion = monthYears(now, then)

@@ -292,10 +292,12 @@ std::string hexString (JNIEnv *env, jbyteArray array) {
   std::string hex;
   hex.reserve(size * 2);
   for (jsize i = 0; i < size; i++) {
-    jbyte byte = arrayBytes[i];
+    jbyte b = arrayBytes[i];
 
-    hex.push_back(hexDigits[byte >> 4]);
-    hex.push_back(hexDigits[byte & 0x0f]);
+    uint8_t p1 = (b >> 4) & 0xF;
+    uint8_t p2 = b & 0xF;
+    hex.push_back(hexDigits[p1]);
+    hex.push_back(hexDigits[p2]);
   }
 
   env->ReleaseByteArrayElements(array, arrayBytes, JNI_ABORT);
@@ -413,6 +415,11 @@ jbyteArray toJavaByteArray (JNIEnv *env, const std::vector<uint8_t> &data) {
   return bytesArray;
 }
 
+JNI_FUNC(jstring, toHexString, jbyteArray jArray) {
+  std::string hex (hexString(env, jArray));
+  return jni::to_jstring(env, hex);
+}
+
 JNI_OBJECT_FUNC(jlong, voip_TgCallsController, newInstance,
          jstring jVersion,
          jobject jConfiguration,
@@ -443,6 +450,7 @@ JNI_OBJECT_FUNC(jlong, voip_TgCallsController, newInstance,
   bool useBuiltInNoiseSuppressor = configuration.getBoolean("enableNoiseSuppressor") == JNI_TRUE;
   bool useBuiltInAutomaticGainControl = configuration.getBoolean("enableAutomaticGainControl") == JNI_TRUE;
   bool enableStunMarking = configuration.getBoolean("enableStunMarking") == JNI_TRUE;
+  std::string customParameters = jni::from_jstring(env, callStateReady.getString("customParameters"));
 
   // tgcalls::EncryptionKey
   jbyteArray jEncryptionKey = callStateReady.getByteArray("encryptionKey");
@@ -550,7 +558,7 @@ JNI_OBJECT_FUNC(jlong, voip_TgCallsController, newInstance,
       }
 
       auto itr = std::find(phoneConnectionIds.begin(), phoneConnectionIds.end(), id);
-      size_t reflectorId = itr - phoneConnectionIds.begin();
+      size_t reflectorId = itr - phoneConnectionIds.begin() + 1;
       rtcServer.id = reflectorId;
       rtcServer.isTcp = serverType.getBoolean("isTcp") == JNI_TRUE;
       rtcServer.login = "reflector";
@@ -596,6 +604,7 @@ JNI_OBJECT_FUNC(jlong, voip_TgCallsController, newInstance,
       .maxApiLayer = maxApiLayer,
       .enableHighBitrateVideo = false,
       .preferredVideoCodecs = {/*cricket::kVp9CodecName*/},
+      .customParameters = customParameters
     },
     .endpoints = endpoints,
     .rtcServers = rtcServers,

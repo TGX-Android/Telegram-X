@@ -484,7 +484,7 @@ public class TdlibUi extends Handler {
           }
         }
       })
-      .setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter) -> {
+      .setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter, window) -> {
         headerItem.setString(getBlockString(chatId, senderId, settingsAdapter.getCheckIntResults().get(R.id.btn_restrictMember) != 0));
         settingsAdapter.updateValuedSettingByPosition(settingsAdapter.indexOfView(headerItem));
       })
@@ -2836,7 +2836,7 @@ public class TdlibUi extends Handler {
                       break;
                   }
                 })
-                .setOnSettingItemClick(confirm.requestWriteAccess ? (itemView, settingsId, item, doneButton, settingsAdapter) -> {
+                .setOnSettingItemClick(confirm.requestWriteAccess ? (itemView, settingsId, item, doneButton, settingsAdapter, window) -> {
                   final int itemId = item.getId();
                   if (itemId == R.id.btn_signIn) {
                     boolean needSignIn = settingsAdapter.getCheckIntResults().get(R.id.btn_signIn) == R.id.btn_signIn;
@@ -4934,7 +4934,7 @@ public class TdlibUi extends Handler {
       .setSettingProcessor((item, view, isUpdate) -> {
         view.setIconColorId(item.getId() == R.id.btn_createNewFolder ? ColorId.inlineIcon : ColorId.NONE);
       })
-      .setOnSettingItemClick((view, id, item, done, adapter) -> {
+      .setOnSettingItemClick((view, id, item, done, adapter, window) -> {
         settings[0].window.hideWindow(true);
         if (item.getId() == R.id.btn_createNewFolder) {
           TdApi.ChatFolder chatFolder = TD.newChatFolder(chatIds);

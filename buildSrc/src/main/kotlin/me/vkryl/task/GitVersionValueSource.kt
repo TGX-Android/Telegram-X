@@ -12,6 +12,9 @@
  */
 package me.vkryl.task
 
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.Property
 import org.gradle.api.provider.ValueSource
 import org.gradle.api.provider.ValueSourceParameters
 import org.gradle.process.ExecOperations
@@ -21,7 +24,11 @@ import java.nio.charset.Charset
 import java.util.*
 import javax.inject.Inject
 
-abstract class GitVersionValueSource : ValueSource<GitVersionValueSource.Details, ValueSourceParameters.None> {
+abstract class GitVersionValueSource : ValueSource<GitVersionValueSource.Details, GitVersionValueSource.Params> {
+  interface Params : ValueSourceParameters {
+    val module: DirectoryProperty
+  }
+
   data class Details(
     val commitHashShort: String,
     val commitHashLong: String,
@@ -56,6 +63,12 @@ abstract class GitVersionValueSource : ValueSource<GitVersionValueSource.Details
   abstract val execOperations: ExecOperations
 
   override fun obtain(): Details {
+    val submodule = parameters.module.get().asFile
+    val path = if (submodule.exists() && submodule.isDirectory) {
+      submodule.absolutePath
+    } else {
+      ""
+    }
     val output = ByteArrayOutputStream()
     /*execOperations.exec {
       if (System.getProperty("os.name").startsWith("Windows")) {
@@ -67,23 +80,43 @@ abstract class GitVersionValueSource : ValueSource<GitVersionValueSource.Details
     }*/
     // TODO: test Windows support
     execOperations.exec {
-      commandLine("git", "rev-parse", "--short", "HEAD")
+      if (path.isNotEmpty()) {
+        commandLine("git", "-C", path, "rev-parse", "--short", "HEAD")
+      } else {
+        commandLine("git", "rev-parse", "--short", "HEAD")
+      }
       standardOutput = output
     }
     execOperations.exec {
-      commandLine("git", "rev-parse", "HEAD")
+      if (path.isNotEmpty()) {
+        commandLine("git", "-C", path, "rev-parse", "HEAD")
+      } else {
+        commandLine("git", "rev-parse", "HEAD")
+      }
       standardOutput = output
     }
     execOperations.exec {
-      commandLine("git", "show", "-s", "--format=%ct")
+      if (path.isNotEmpty()) {
+        commandLine("git", "-C", path, "show", "-s", "--format=%ct")
+      } else {
+        commandLine("git", "show", "-s", "--format=%ct")
+      }
       standardOutput = output
     }
     execOperations.exec {
-      commandLine("git", "config", "--get", "remote.origin.url")
+      if (path.isNotEmpty()) {
+        commandLine("git", "-C", path, "config", "--get", "remote.origin.url")
+      } else {
+        commandLine("git", "config", "--get", "remote.origin.url")
+      }
       standardOutput = output
     }
     execOperations.exec {
-      commandLine("git", "log", "-1", "--pretty=format:'%an'")
+      if (path.isNotEmpty()) {
+        commandLine("git", "-C", path, "log", "-1", "--pretty=format:'%an'")
+      } else {
+        commandLine("git", "log", "-1", "--pretty=format:'%an'")
+      }
       standardOutput = output
     }
     val data = String(output.toByteArray(), Charset.defaultCharset())
