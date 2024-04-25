@@ -315,7 +315,12 @@ public class VoIP {
     if (!allowFilter || !isForceDisabled(tgVoipVersion)) {
       versions.add(tgVoipVersion);
     }
+    Set<String> restrictedTgCallsVersions = new LinkedHashSet<>() {{
+      add("11.0.0");
+    }};
     for (String tgCallsVersion : tgCallsVersions) {
+      if (restrictedTgCallsVersions.contains(tgCallsVersion))
+        continue;
       if (!allowFilter || !isForceDisabled(tgCallsVersion)) {
         versions.add(tgCallsVersion);
       }
