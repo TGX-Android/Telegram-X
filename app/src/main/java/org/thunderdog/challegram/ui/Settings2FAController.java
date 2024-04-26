@@ -177,7 +177,7 @@ public class Settings2FAController extends RecyclerViewController<Settings2FACon
       navigateTo(c);
     } else if (viewId == R.id.btn_setRecoveryEmail) {
       PasswordController c = new PasswordController(context, tdlib);
-      c.setArguments(new PasswordController.Args(PasswordController.MODE_EMAIL_CHANGE, state).setEmail(currentRecoveryEmailAddress).setOldPassword(currentAcceptedPassword));
+      c.setArguments(new PasswordController.Args(PasswordController.MODE_2FA_RECOVERY_EMAIL_CHANGE, state).setEmail(currentRecoveryEmailAddress).setOldPassword(currentAcceptedPassword));
       navigateTo(c);
     } else if (viewId == R.id.btn_abortRecoveryEmail) {
       showWarning(Lang.getString(R.string.AbortRecoveryEmailConfirm), success -> {

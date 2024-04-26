@@ -971,6 +971,7 @@
   <string name="SessionsIncompleteTitle">Incomplete Login Attempts</string>
   <string name="SessionsIncompleteInfo">The devices above have no access to your messages. The code was entered correctly, but no correct password was given.</string>
   <string name="TwoStepVerification">Two-Step Verification</string>
+  <string name="LoginEmail">Login Email</string>
   <string name="PasswordEnabled">Enabled</string>
   <string name="PasswordDisabled">Disabled</string>
   <string name="ThisDevice">This Device</string>
@@ -4774,7 +4775,7 @@
 
   <string name="RequestToJoinGroupInfo">This group accepts new members only after they are being accepted by admins.</string>
   <string name="RequestToJoinChannelInfo">This channel accepts new subscribers only after they are approved by its admins.</string>
-  <string name="ProxyLinkUnsupported">Proxy is unsupported or link is invalid.</string>
+  <string name="ProxyLinkUnsupported">Proxy link is invalid.</string>
 
   <string name="ScamMark">SCAM</string>
   <string name="FakeMark">FAKE</string>
@@ -5342,6 +5343,14 @@
 
   <string name="HideReadTime">Hide Read Time</string>
   <string name="HideReadTimeDesc">Hide the time when you read messages from people who can\'t see your last seen. If you turn this on, their read time will also be hidden from you (unless you are a Premium user).\n\nThis setting does not affect group chats.</string>
+
+  <string name="ChangeEmailPromptText">This email address will be used every time you log in to your Telegram account from a new device.</string>
+  <string name="ChangeEmailPromptButton">Change Email</string>
+  <string name="ChangeEmailInfo">You will receive Telegram login codes via email and not SMS. Please enter an email address to which you have access.</string>
+  <string name="ChangeEmailHint">Your new email</string>
+  <string name="ChangeEmailResend">Re-send Code</string>
+  <string name="ChangeEmailResendConfirm">New email was sent to %1$s.</string>
+  <string name="ChangeEmailConfirmCode">Please enter the code that we have sent to your new email %1$s.</string>
 
   <string name="ReadDate_now">Read just now</string>
   <string name="ReadDate_seconds_one">Read %1$s second ago</string>

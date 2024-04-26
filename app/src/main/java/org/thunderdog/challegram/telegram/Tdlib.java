@@ -1826,6 +1826,20 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
+  public <T extends TdApi.Object> void send (TdApi.Function<T> function, RunnableData<T> successHandler, RunnableData<TdApi.Error> errorHandler) {
+    send(function, (result, error) -> {
+      if (error != null) {
+        if (errorHandler != null) {
+          errorHandler.runWithData(error);
+        }
+      } else {
+        if (successHandler != null) {
+          successHandler.runWithData(result);
+        }
+      }
+    });
+  }
+
   public <T extends TdApi.Object> void send (TdApi.Function<T> function, ResultHandler<T> handler) {
     send(client(), function, handler);
   }

@@ -51,9 +51,10 @@ import org.thunderdog.challegram.v.CustomRecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.vkryl.core.StringUtils;
 import me.vkryl.td.Td;
 
-public class SettingsPrivacyController extends RecyclerViewController<SettingsPrivacyController.Args> implements View.OnClickListener, Client.ResultHandler, ViewController.SettingsIntDelegate, TdlibCache.UserDataChangeListener, TdlibContactManager.StatusChangeListener, PrivacySettingsListener, SessionListener, ChatListener {
+public class SettingsPrivacyController extends RecyclerViewController<SettingsPrivacyController.Args> implements View.OnClickListener, ViewController.SettingsIntDelegate, TdlibCache.UserDataChangeListener, TdlibContactManager.StatusChangeListener, PrivacySettingsListener, SessionListener, ChatListener {
   public static class Args {
     private final boolean onlyPrivacy;
 
@@ -118,6 +119,13 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
             v.setEnabled(passwordState != null);
           }
           v.setData(getPasswordState());
+        } else if (itemId == R.id.btn_loginEmail) {
+          v.setEnabledAnimated(passwordState != null && !StringUtils.isEmpty(passwordState.loginEmailAddressPattern), isUpdate);
+          if (passwordState != null) {
+            v.setData(passwordState.loginEmailAddressPattern);
+          } else {
+            v.setData(R.string.LoadingInformation);
+          }
         } else if (itemId == R.id.btn_secretLinkPreviews) {
           v.getToggler().setRadioEnabled(Settings.instance().needSecretLinkPreviews(), isUpdate);
         }
@@ -136,6 +144,10 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_passcode, R.drawable.baseline_lock_24, R.string.PasscodeTitle));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_2fa, R.drawable.mrgrigri_baseline_textbox_password_24, R.string.TwoStepVerification));
+      if (passwordState != null && !StringUtils.isEmpty(passwordState.loginEmailAddressPattern)) {
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_loginEmail, R.drawable.baseline_alternate_email_24, R.string.LoginEmail));
+      }
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
       items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.PrivacyTitle));
@@ -235,14 +247,19 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
     recyclerView.setAdapter(adapter);
 
     Log.ensureReturnType(TdApi.GetBlockedMessageSenders.class, TdApi.MessageSenders.class);
-    tdlib.client().send(new TdApi.GetBlockedMessageSenders(new TdApi.BlockListMain(), 0, 1), this);
+    tdlib.send(new TdApi.GetBlockedMessageSenders(new TdApi.BlockListMain(), 0, 1), (blockedSenders) -> runOnUiThreadOptional(() ->
+      setBlockedSenders(blockedSenders)
+    ), UI::showError);
     fetchSessions();
-    Log.ensureReturnType(TdApi.GetPasswordState.class, TdApi.PasswordState.class);
-    tdlib.client().send(new TdApi.GetPasswordState(), this);
-    Log.ensureReturnType(TdApi.GetAccountTtl.class, TdApi.AccountTtl.class);
-    tdlib.client().send(new TdApi.GetAccountTtl(), this);
-    Log.ensureReturnType(TdApi.GetConnectedWebsites.class, TdApi.ConnectedWebsites.class);
-    tdlib.client().send(new TdApi.GetConnectedWebsites(), this);
+    tdlib.send(new TdApi.GetPasswordState(), (passwordState) -> runOnUiThreadOptional(() ->
+      setPasswordState(passwordState, true)
+    ), UI::showError);
+    tdlib.send(new TdApi.GetAccountTtl(), (accountTtl) -> runOnUiThreadOptional(() ->
+      setAccountTTL(accountTtl)
+    ), UI::showError);
+    tdlib.send(new TdApi.GetConnectedWebsites(), (websites) -> runOnUiThreadOptional(() ->
+      setWebsites(websites)
+    ), UI::showError);
 
     tdlib.cache().putGlobalUserDataListener(this);
     tdlib.contacts().addStatusListener(this);
@@ -450,6 +467,23 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
           navigateTo(controller);
         }
       }
+    } else if (id == R.id.btn_loginEmail) {
+      if (passwordState != null && !StringUtils.isEmpty(passwordState.loginEmailAddressPattern)) {
+        showOptions(new Options.Builder()
+          .title(passwordState.loginEmailAddressPattern) // TODO(spoiler): replace `*` with the spoiler effect
+          .info(Lang.getMarkdownString(this, R.string.ChangeEmailPromptText))
+          .item(new OptionItem.Builder().id(R.id.btn_changeEmail).name(R.string.ChangeEmailPromptButton).icon(R.drawable.baseline_edit_24).build())
+          .cancelItem()
+          .build(), (optionView, optionId) -> {
+            if (optionId == R.id.btn_changeEmail) {
+              PasswordController controller = new PasswordController(context, tdlib);
+              controller.setArguments(new PasswordController.Args(PasswordController.MODE_LOGIN_EMAIL_CHANGE, passwordState));
+              navigateTo(controller);
+            }
+            return true;
+          }
+        );
+      }
     } else if (id == R.id.btn_accountTTL) {
       int days = accountTtl != null ? accountTtl.days : 0;
       int months = days / 30;
@@ -533,7 +567,9 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
   public void onChatBlockListChanged (long chatId, @Nullable TdApi.BlockList blockList) {
     runOnUiThread(() -> {
       if (!isDestroyed()) {
-        tdlib.client().send(new TdApi.GetBlockedMessageSenders(new TdApi.BlockListMain(), 0, 1), SettingsPrivacyController.this);
+        tdlib.send(new TdApi.GetBlockedMessageSenders(new TdApi.BlockListMain(), 0, 1), blockedSenders -> runOnUiThreadOptional(() ->
+          setBlockedSenders(blockedSenders)
+        ), null /*ignored*/);
       }
     }, 350l);
   }
@@ -621,17 +657,47 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
   private @Nullable PasswordStateLoadListener passwordListener;
   private TdApi.PasswordState passwordState;
 
-  private void setPasswordState (TdApi.PasswordState passwordState) {
+  @Override
+  public boolean needAsynchronousAnimation () {
+    return !isOnlyPrivacy() && passwordState == null;
+  }
+
+  private void setPasswordState (TdApi.PasswordState passwordState, boolean needCallback) {
     this.passwordState = passwordState;
-    adapter.updateValuedSettingById(R.id.btn_2fa);
-    if (passwordListener != null) {
+    int passwordIndex = adapter.indexOfViewById(R.id.btn_2fa);
+    if (passwordIndex != -1) {
+      adapter.updateValuedSettingByPosition(passwordIndex);
+    }
+    int loginEmailIndex = adapter.indexOfViewById(R.id.btn_loginEmail);
+    boolean hadLoginEmail = (loginEmailIndex != -1);
+    boolean hasLoginEmail = (passwordState != null && !StringUtils.isEmpty(passwordState.loginEmailAddressPattern));
+    if (hadLoginEmail != hasLoginEmail) {
+      if (hasLoginEmail) {
+        adapter.addItems(passwordIndex + 1,
+          new ListItem(ListItem.TYPE_SEPARATOR_FULL),
+          new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_loginEmail, R.drawable.baseline_alternate_email_24, R.string.LoginEmail)
+        );
+      } else {
+        adapter.removeRange(loginEmailIndex - 1, 2);
+      }
+    } else if (hasLoginEmail) {
+      adapter.updateValuedSettingByPosition(loginEmailIndex);
+    }
+    if (needCallback && passwordListener != null) {
       passwordListener.onPasswordStateLoaded(passwordState);
     }
+    executeScheduledAnimation();
+  }
+
+  public void reloadPasswordState () {
+    setPasswordState(null, false);
+    executeOnUiThreadOptional(() -> tdlib.send(new TdApi.GetPasswordState(), this::updatePasswordState, error -> executeOnUiThreadOptional(this::executeScheduledAnimation)));
   }
 
   public void updatePasswordState (TdApi.PasswordState passwordState) {
-    this.passwordState = passwordState;
-    adapter.updateValuedSettingById(R.id.btn_2fa);
+    executeOnUiThreadOptional(() ->
+      setPasswordState(passwordState, false)
+    );
   }
 
 
@@ -702,43 +768,10 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
       adapter.updateValuedSettingByLongId(privacyKey);
   }
 
-  // Callback
-
-  @Override
-  public void onResult (final TdApi.Object object) {
-    tdlib.ui().post(() -> {
-      if (isDestroyed()) {
-        return;
-      }
-      switch (object.getConstructor()) {
-        case TdApi.MessageSenders.CONSTRUCTOR: {
-          int totalCount = ((TdApi.MessageSenders) object).totalCount;
-          if (this.blockedSendersCount != totalCount) {
-            this.blockedSendersCount = totalCount;
-            adapter.updateValuedSettingById(R.id.btn_blockedSenders);
-          }
-          break;
-        }
-        case TdApi.ConnectedWebsites.CONSTRUCTOR: {
-          setWebsites((TdApi.ConnectedWebsites) object);
-          break;
-        }
-        case TdApi.PasswordState.CONSTRUCTOR: {
-          setPasswordState((TdApi.PasswordState) object);
-          break;
-        }
-        case TdApi.AccountTtl.CONSTRUCTOR: {
-          setAccountTTL((TdApi.AccountTtl) object);
-          break;
-        }
-        case TdApi.Error.CONSTRUCTOR: {
-          UI.showError(object);
-          break;
-        }
-        default: {
-          throw new UnsupportedOperationException(object.toString());
-        }
-      }
-    });
+  private void setBlockedSenders (TdApi.MessageSenders senders) {
+    if (this.blockedSendersCount != senders.totalCount) {
+      this.blockedSendersCount = senders.totalCount;
+      adapter.updateValuedSettingById(R.id.btn_blockedSenders);
+    }
   }
 }

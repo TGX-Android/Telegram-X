@@ -547,6 +547,8 @@
   <item type="id" name="btn_blockedSenders" />
   <item type="id" name="btn_sessions" />
   <item type="id" name="btn_2fa" />
+  <item type="id" name="btn_loginEmail" />
+  <item type="id" name="btn_changeEmail" />
   <item type="id" name="btn_suggestion" />
   <item type="id" name="btn_accountTTL" />
   <item type="id" name="btn_loggedWebsites" />
