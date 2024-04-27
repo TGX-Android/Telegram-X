@@ -7,6 +7,7 @@
 	path = app/jni/third_party/libyuv
 	url = https://chromium.googlesource.com/libyuv/libyuv
 	shallow = true
+	branch = stable
 [submodule "libtgvoip"]
 	path = app/jni/third_party/libtgvoip
 	url = https://github.com/TGX-Android/libtgvoip
