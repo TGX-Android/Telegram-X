@@ -528,6 +528,10 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
   }
 
   private void updateExtraToggle (PrivacySettings newPrivacySettings) {
+    if (newPrivacySettings == null) {
+      // Primary privacy information isn't yet loaded.
+      return;
+    }
     int index = adapter.indexOfViewById(R.id.btn_togglePermission);
     boolean prevHadExtraToggle = index != -1;
     boolean nowHasExtraToggle = needExtraToggle(newPrivacySettings);
