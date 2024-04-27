@@ -8750,7 +8750,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public boolean onSendSticker (View view, TGStickerObj sticker, TdApi.MessageSendOptions sendOptions) {
     if (lastJunkTime == 0l || SystemClock.uptimeMillis() - lastJunkTime >= JUNK_MINIMUM_DELAY) {
-      if (sendSticker(view, sticker.getSticker(), sticker.getFoundByEmoji(), true, Td.newSendOptions(sendOptions, false, Config.REORDER_INSTALLED_STICKER_SETS && !sticker.isRecent() && !sticker.isFavorite()))) {
+      if (sendSticker(view, sticker.getSticker(), sticker.getFoundByEmoji(), true, sendOptions)) {
         lastJunkTime = SystemClock.uptimeMillis();
         return true;
       }
@@ -9515,7 +9515,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       content = new TdApi.InputMessageText(msg, linkPreviewOptions, clearInput);
     }
 
-    final TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(initialSendOptions, obtainSilentMode());
+    final TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(initialSendOptions, obtainSilentMode(), Settings.instance().getNewSetting(Settings.SETTING_FLAG_DYNAMIC_ORDER_EMOJI_PACKS));
     List<TdApi.Function<?>> functions = (List<TdApi.Function<?>>) (List<?>) TD.sendMessageText(chatId, messageThreadId, replyTo, finalSendOptions, content, tdlib.maxMessageTextLength());
 
     if (showSlowModeRestriction(sendButton != null ? sendButton : inputView, finalSendOptions)) {
@@ -12315,7 +12315,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (showGifRestriction(view))
         return false;
       pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
-        if (sendSticker(view, sticker.getSticker(), sticker.getFoundByEmoji(), true, Td.newSendOptions(modifiedSendOptions, false, Config.REORDER_INSTALLED_STICKER_SETS))) {
+        if (sendSticker(view, sticker.getSticker(), sticker.getFoundByEmoji(), true, modifiedSendOptions)) {
           lastJunkTime = SystemClock.uptimeMillis();
           inputView.setInput("", false, true);
         }

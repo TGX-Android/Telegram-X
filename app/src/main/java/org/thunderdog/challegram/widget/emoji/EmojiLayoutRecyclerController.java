@@ -901,8 +901,12 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayoutRec
     return ignoreStickersScroll != 0;
   }
 
-  private void beforeStickerChanges () {
+  public void beforeStickerChanges () {
     ignoreStickersScroll++;
+  }
+
+  public void afterStickerChanges () {
+    ignoreStickersScroll--;
   }
 
   private void resetScrollCache () {
@@ -912,13 +916,11 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayoutRec
     if (callbacks != null) {
       callbacks.resetScrollState(true); // FIXME upd: ... fixme what?
     }
-    UI.post(() -> {
-      /*if (emojiLayout != null && contentView.getCurrentSection() == SECTION_STICKERS) {
+    /*if (emojiLayout != null && contentView.getCurrentSection() == SECTION_STICKERS) {
         emojiLayout.setCurrentStickerSectionByPosition(getStickerSetSection(), true, true);
         emojiLayout.resetScrollState(true);
       }*/
-      ignoreStickersScroll--;
-    }, 400);
+    UI.post(this::afterStickerChanges, 400);
   }
 
   public void addStickerSet (TGStickerSetInfo stickerSet, ArrayList<MediaStickersAdapter.StickerItem> items, int index) {

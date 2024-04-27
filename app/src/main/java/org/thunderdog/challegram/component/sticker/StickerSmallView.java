@@ -45,6 +45,7 @@ import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.unsorted.Settings;
 
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.FactorAnimator;
@@ -352,7 +353,12 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
         closePreview(e);
         if (clicked && callback != null && sticker != null) {
           ViewUtils.onClick(this);
-          callback.onStickerClick(this, this, sticker, false, Td.newSendOptions());
+          boolean updateOrder = false;
+          if (!sticker.isCustomEmoji()) {
+            long flag = /*sticker.isCustomEmoji() ? Settings.SETTING_FLAG_DYNAMIC_ORDER_EMOJI_PACKS :*/ Settings.SETTING_FLAG_DYNAMIC_ORDER_STICKER_PACKS;
+            updateOrder = Settings.instance().getNewSetting(flag) && !sticker.isRecent() && !sticker.isFavorite();
+          }
+          callback.onStickerClick(this, this, sticker, false, Td.newSendOptions(false, false, false, updateOrder));
         }
         return true;
       }

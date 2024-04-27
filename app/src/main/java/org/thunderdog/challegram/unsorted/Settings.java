@@ -415,6 +415,8 @@ public class Settings {
   public static final long SETTING_FLAG_LIMIT_STICKERS_FPS = 1 << 14;
   public static final long SETTING_FLAG_EXPAND_RECENT_STICKERS = 1 << 15;
   public static final long SETTING_FLAG_FOREGROUND_SERVICE_ENABLED = 1 << 16;
+  public static final long SETTING_FLAG_DYNAMIC_ORDER_STICKER_PACKS = 1 << 17;
+  public static final long SETTING_FLAG_DYNAMIC_ORDER_EMOJI_PACKS = 1 << 18;
 
   public static final long EXPERIMENT_FLAG_ALLOW_EXPERIMENTS = 1;
   public static final long EXPERIMENT_FLAG_ENABLE_FOLDERS = 1 << 1;

@@ -93,6 +93,50 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     trendingSetsController.stickerSets = new ArrayList<>();
   }
 
+  private TGStickerObj focusStickerObj;
+  private int decoratedFocusTop;
+  private int previousFocusStickerPosition = -1;
+
+  private void resetReorderFocus () {
+    if (this.focusStickerObj == null)
+      return;
+    this.focusStickerObj = null;
+    this.decoratedFocusTop = 0;
+    this.previousFocusStickerPosition = -1;
+    runOnUiThreadOptional(() -> {
+      stickersController.afterStickerChanges();
+    }, null, 200l);
+    runOnUiThreadOptional(() -> {
+      if (focusStickerObj == null) {
+        setEnableStickersAnimations(true);
+      }
+    }, null, 2000L);
+  }
+
+  public void expectReorder (TGStickerObj stickerObj) {
+    if (stickerObj == null || stickersAdapter == null)
+      return;
+    int stickerSetIndex = stickersController.indexOfStickerSetById(stickerObj.getStickerSetId());
+    if (stickerSetIndex <= 0) {
+      return;
+    }
+    int stickerPosition = stickersController.indexOfSticker(stickerObj);
+    if (stickerPosition == -1) {
+      return;
+    }
+    GridLayoutManager gridLayoutManager = (GridLayoutManager) stickersController.recyclerView.getLayoutManager();
+    View view = gridLayoutManager != null ? gridLayoutManager.findViewByPosition(stickerPosition) : null;
+    if (view == null) {
+      return;
+    }
+    int decoratedTop = view.getTop();
+    this.focusStickerObj = stickerObj;
+    this.decoratedFocusTop = decoratedTop;
+    this.previousFocusStickerPosition = stickerPosition;
+    stickersController.beforeStickerChanges();
+    setEnableStickersAnimations(false);
+  }
+
   @Override
   public int getId () {
     return R.id.controller_emojiMedia;
@@ -261,10 +305,27 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       trendingAdapter.notifyDataSetChanged();
   }
 
+  private CustomItemAnimator stickersAnimator;
+  private void setEnableStickersAnimations (boolean enableStickersAnimations) {
+    if (stickersController.recyclerView != null) {
+      if (stickersAnimator == null) {
+        stickersAnimator = new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180);
+      }
+      boolean stickerAnimationsEnabled = stickersController.recyclerView.getItemAnimator() == stickersAnimator;
+      if (enableStickersAnimations != stickerAnimationsEnabled) {
+        if (stickerAnimationsEnabled) {
+          stickersController.recyclerView.setItemAnimator(stickersAnimator);
+        } else {
+          stickersController.recyclerView.setItemAnimator(null);
+        }
+      }
+    }
+  }
+
   private void initStickers () {
     if (stickersController.recyclerView == null) {
       stickersController.getValue();
-      stickersController.recyclerView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180));
+      setEnableStickersAnimations(true);
       stickersController.recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
         @Override
         public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
@@ -1082,7 +1143,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     }
 
     // Then, move items
-    if (positions != null && !stickersController.stickerSets.isEmpty() ) {
+    if (positions != null && !stickersController.stickerSets.isEmpty()) {
       for (int j = 0; j < positions.size(); j++) {
         long setId = positions.keyAt(j);
         int newPosition = positions.valueAt(j);
@@ -1093,6 +1154,18 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
         if (currentPosition != newPosition) {
           int systemSetsCount = getSystemSetsCount();
           stickersController.moveStickerSet(currentPosition + systemSetsCount, newPosition + systemSetsCount);
+        }
+      }
+      if (focusStickerObj != null) {
+        TGStickerObj focusStickerObj = this.focusStickerObj;
+        int newIndex = stickersController.indexOfSticker(focusStickerObj);
+        if (previousFocusStickerPosition != -1 && newIndex != previousFocusStickerPosition) {
+          ((GridLayoutManager) stickersController.recyclerView.getLayoutManager()).scrollToPositionWithOffset(newIndex, decoratedFocusTop);
+          int index = stickersController.indexOfStickerSetById(focusStickerObj.getStickerSetId());
+          if (index != -1) {
+            getArguments().setCurrentStickerSectionByStickerSetIndex(index);
+          }
+          resetReorderFocus();
         }
       }
     }

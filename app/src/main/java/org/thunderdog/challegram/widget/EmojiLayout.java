@@ -599,7 +599,16 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   }
 
   public boolean sendSticker (View view, TGStickerObj sticker, TdApi.MessageSendOptions sendOptions) {
-    return listener != null && listener.onSendSticker(view, sticker, sendOptions);
+    if (listener != null && listener.onSendSticker(view, sticker, sendOptions)) {
+      if (!sticker.isCustomEmoji() && sendOptions != null && sendOptions.updateOrderOfInstalledStickerSets) {
+        ViewController<?> c = adapter.getCachedItem(1);
+        if (c != null) {
+          ((EmojiMediaListController) c).expectReorder(sticker);
+        }
+      }
+      return true;
+    }
+    return false;
   }
 
   public void onEnterCustomEmoji (TGStickerObj sticker) {
@@ -1325,6 +1334,10 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     } else if (controllerId == EmojiLayout.EMOJI_INSTALLED_CONTROLLER_ID && emojiHeaderView != null) {
       emojiHeaderView.removeStickerSection(section);
     }
+  }
+
+  public void setCurrentStickerSectionByStickerSetIndex (int stickerSetIndex) {
+    mediaSectionsView.scrollToStickerSectionBySetIndex(stickerSetIndex, true);
   }
 
   @Override
