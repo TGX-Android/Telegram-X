@@ -389,36 +389,19 @@
       </intent-filter>
 
       <!-- Telegram URLs -->
-      <intent-filter>
+      <intent-filter android:autoVerify="true">
         <action android:name="android.intent.action.VIEW" />
 
         <category android:name="android.intent.category.DEFAULT" />
         <category android:name="android.intent.category.BROWSABLE" />
 
-        <data
-          android:host="t.me"
-          android:scheme="http" />
-        <data
-          android:host="t.me"
-          android:scheme="https" />
-        <data
-          android:host="tx.me"
-          android:scheme="http" />
-        <data
-          android:host="tx.me"
-          android:scheme="https" />
-        <data
-          android:host="telegram.me"
-          android:scheme="http" />
-        <data
-          android:host="telegram.me"
-          android:scheme="https" />
-        <data
-          android:host="telegram.dog"
-          android:scheme="http" />
-        <data
-          android:host="telegram.dog"
-          android:scheme="https" />
+        <data android:scheme="http"/>
+        <data android:scheme="https"/>
+
+        <data android:host="t.me"/>
+        <data android:host="tx.me"/>
+        <data android:host="telegram.me"/>
+        <data android:host="telegram.dog"/>
       </intent-filter>
       <intent-filter
         android:icon="@mipmap/app_launcher_round"
