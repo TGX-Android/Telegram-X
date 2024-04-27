@@ -363,7 +363,7 @@ dependencies {
   implementation(project(":vkryl:android"))
   implementation(project(":vkryl:td"))
   // AndroidX: https://developer.android.com/jetpack/androidx/versions
-  implementation("androidx.activity:activity:1.8.2")
+  implementation("androidx.activity:activity:1.8.2") // 1.9.0+ requires minSdkVersion 19
   implementation("androidx.palette:palette:1.0.0")
   implementation("androidx.recyclerview:recyclerview:1.3.2")
   implementation("androidx.viewpager:viewpager:1.0.0")
