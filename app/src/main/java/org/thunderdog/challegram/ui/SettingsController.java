@@ -872,7 +872,7 @@ public class SettingsController extends ViewController<Void> implements
       if (hasBirthdate) {
         position = adapter.indexOfViewById(R.id.btn_phone);
         adapter.addItems(position + 1,
-          new ListItem(ListItem.TYPE_SEPARATOR_FULL),
+          new ListItem(ListItem.TYPE_SEPARATOR),
           newBirthdateItem()
         );
       } else {
