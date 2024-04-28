@@ -5376,7 +5376,7 @@
   <string name="ReadDate_hours_other">Read %1$s hours ago</string>
   <string name="ReadDate_today">Read at %1$s</string>
   <string name="ReadDate_yesterday">Read yesterday at %1$s</string>
-  <string name="ReadDate_weekday">Read %1$s at %2$s</string>
+  <string name="ReadDate_weekday">Read on %1$s at %2$s</string>
   <string name="ReadDate_date">Read %1$s at %2$s</string>
 
 </resources>
