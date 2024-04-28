@@ -453,6 +453,11 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jintArray data) {
         break;
       }
       info->draining = false;
+      if (!info->has_decoded_frames) {
+        loge(TAG_GIF_LOADER, "avcodec_receive_frame fatal error: no valid frames for %s: %s", info->path.c_str(), av_err2str(ret));
+        fatalError = true;
+        break;
+      }
     }
 
     if (info->eof_reached) {
@@ -480,11 +485,6 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jintArray data) {
     }
     ret = av_read_frame(info->fmt_ctx, info->packet);
     if (ret != 0) {
-      if (!info->has_decoded_frames) {
-        loge(TAG_GIF_LOADER, "av_read_frame fatal error for %s: %s", info->path.c_str(), av_err2str(ret));
-        fatalError = true;
-        break;
-      }
       if (ret == AVERROR_EOF) {
         info->eof_reached = true;
         ret = avcodec_send_packet(info->video_dec_ctx, NULL);
