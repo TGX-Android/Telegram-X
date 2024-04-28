@@ -3095,6 +3095,18 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       }
 
       in.getChars(start, end, bidiTmpChars, 0);
+
+      for (int a = start; a < end; ) {  // neutralize LTR emoji
+        final int codePoint = in.codePointAt(a);
+        final int count = Character.charCount(codePoint);
+        if (0x1F100 <= codePoint && codePoint <= 0x1FFFF) {
+          for (int b = 0; b < count; b++) {
+            bidiTmpChars[a - start + b] = ' ';
+          }
+        }
+        a += count;
+      }
+
       bidi = new Bidi(bidiTmpChars, 0, null, 0, bidiLength, Lang.rtl() ? Bidi.DIRECTION_DEFAULT_RIGHT_TO_LEFT : Bidi.DIRECTION_DEFAULT_LEFT_TO_RIGHT);
       bidiParagraphCount++;
     } else {
