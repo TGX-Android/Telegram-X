@@ -918,6 +918,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       return true;
     };
 
+    bidiProcessTextStart(in);
+
     try {
       boolean prevIsNewLine = false;
       final int totalLength = in.length();
@@ -3083,7 +3085,32 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   private int bidiIndex;
   private int bidiParagraphCount;
 
+  private void bidiProcessTextStart (String in) {
+    if (!useGlobalBidiObject()) {
+      return;
+    }
+
+    bidiStart = 0;
+    bidiLength = in.length();
+    bidiRequired = requiresBidi(in, 0, bidiLength);
+
+    if (bidiRequired) {
+      bidiTmpChars = new char[bidiLength];
+      bidiGetChars(in, 0, bidiLength, bidiTmpChars, true, true);
+
+      bidi = new Bidi(bidiTmpChars, 0, null, 0, bidiLength, Lang.rtl() ? Bidi.DIRECTION_DEFAULT_RIGHT_TO_LEFT : Bidi.DIRECTION_DEFAULT_LEFT_TO_RIGHT);
+      bidiParagraphCount++;
+      bidiTmpChars = null;
+    } else {
+      bidi = null;
+    }
+  }
+
   private void bidiProcessLineStart (String in, int start, int end) {
+    if (useGlobalBidiObject()) {
+      return;
+    }
+
     bidiStart = start;
     bidiLength = end - start;
     bidiRequired = requiresBidi(in, start, end);
@@ -3094,18 +3121,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
         bidiTmpChars = new char[size];
       }
 
-      in.getChars(start, end, bidiTmpChars, 0);
-
-      for (int a = start; a < end; ) {  // neutralize LTR emoji
-        final int codePoint = in.codePointAt(a);
-        final int count = Character.charCount(codePoint);
-        if (0x1F100 <= codePoint && codePoint <= 0x1FFFF) {
-          for (int b = 0; b < count; b++) {
-            bidiTmpChars[a - start + b] = ' ';
-          }
-        }
-        a += count;
-      }
+      bidiGetChars(in, start, end, bidiTmpChars, true, false);
 
       bidi = new Bidi(bidiTmpChars, 0, null, 0, bidiLength, Lang.rtl() ? Bidi.DIRECTION_DEFAULT_RIGHT_TO_LEFT : Bidi.DIRECTION_DEFAULT_LEFT_TO_RIGHT);
       bidiParagraphCount++;
@@ -3115,16 +3131,19 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   }
 
   private void bidiProcessLineComplete () {
+    if (useGlobalBidiObject()) {
+      return;
+    }
+
     bidi = null;
     bidiIndex++;
   }
 
   private void bidiPartsReorder () {
-    if (bidiParagraphCount == 0) {
+    final int partsCount = parts.size();
+    if (bidiParagraphCount == 0 || partsCount < 2) {
       return;
     }
-
-    final int partsCount = parts.size();
 
     // Fix order
     TextPart[] partsArray = parts.toArray(new TextPart[0]);
@@ -3203,16 +3222,41 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return -1;
   }
 
-  private static void bidiPartsReorder (TextPart[] partsArray, byte[] partsLevels, int partStart, int partEnd) {
+  private boolean useGlobalBidiObject () {
+    return BitwiseUtils.hasAllFlags(textFlags, Text.FLAG_IGNORE_NEWLINES);
+  }
+
+  private static void bidiGetChars (String in, int start, int end, char[] dst, boolean neutralizeEmoji, boolean ignoreSpaceSeparators) {
+    in.getChars(start, end, dst, 0);
+
+    for (int a = start; a < end; ) {
+      final int codePoint = in.codePointAt(a);
+      final int count = Character.charCount(codePoint);
+      if ((neutralizeEmoji && 0x1F100 <= codePoint && codePoint <= 0x1FFFF) || (ignoreSpaceSeparators && Character.getDirectionality(codePoint) == Character.DIRECTIONALITY_PARAGRAPH_SEPARATOR)) {
+        for (int b = 0; b < count; b++) {
+          dst[a - start + b] = ' ';
+        }
+      }
+
+      a += count;
+    }
+  }
+
+  private void bidiPartsReorder (TextPart[] partsArray, byte[] partsLevels, int partStart, int partEnd ) {
     if (partEnd - partStart < 2) {
       return;
     }
 
+    final boolean addSpaceBetweenLines = useGlobalBidiObject();
     int x = partsArray[partStart].getX();
     Bidi.reorderVisually(partsLevels, partStart, partsArray, partStart, partEnd - partStart);
 
     for (int index = partStart; index < partEnd; index++) {
       final TextPart part = partsArray[index];
+      if (addSpaceBetweenLines && part.getEnd() < originalText.length() && Character.getDirectionality(originalText.charAt(part.getEnd())) == Character.DIRECTIONALITY_PARAGRAPH_SEPARATOR) {
+        x += (int) part.getSource().makeSpaceSize(part.getSource().getTextPaint(null));
+      }
+
       part.setXY(x, part.getY());
       x += (int)(part.getWidth());
     }
