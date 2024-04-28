@@ -3098,7 +3098,7 @@ public class TdlibUi extends Handler {
         if (StringUtils.isEmpty(domain)) {
           return null;
         }
-        int postId = StringUtils.parseInt(uri.getQueryParameter("post"));
+        long postId = StringUtils.parseLong(uri.getQueryParameter("post"));
         if (postId != 0) {
           return tMeUrl + domain + "/" + postId;
         }
@@ -3143,8 +3143,8 @@ public class TdlibUi extends Handler {
         break;
       }
       case "privatepost": {
-        long supergroupId = StringUtils.parseInt(uri.getQueryParameter("channel"));
-        int messageId = StringUtils.parseInt(uri.getQueryParameter("msg_id"));
+        long supergroupId = StringUtils.parseLong(uri.getQueryParameter("channel"));
+        long messageId = StringUtils.parseLong(uri.getQueryParameter("msg_id"));
         if (supergroupId != 0) {
           if (messageId != 0) {
             return tMeUrl + "c/" + supergroupId + "/" + messageId;
@@ -3285,7 +3285,7 @@ public class TdlibUi extends Handler {
     String command = segments.get(0);
     String pathArg = segments.size() > 1 ? segments.get(1) : null;
 
-    int postId = StringUtils.parseInt(pathArg);
+    long postId = StringUtils.parseLong(pathArg);
 
     if (!Strings.isValidLink(command) && postId != 0) {
       return TME_URL_MESSAGE;

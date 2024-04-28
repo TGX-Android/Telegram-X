@@ -2057,7 +2057,12 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   }
 
   @NonNull
-  long[] availableUserIds (@Tdlib.Mode int instanceMode) {
+  Set<Long> availableUserIdsSet (boolean isDebug) {
+    return availableUserIdsSet(isDebug ? Tdlib.Mode.DEBUG : Tdlib.Mode.NORMAL);
+  }
+
+  @NonNull
+  Set<Long> availableUserIdsSet (@Tdlib.Mode int instanceMode) {
     SortedSet<Long> userIds = new TreeSet<>();
     for (TdlibAccount account : accounts) {
       if (!account.isUnauthorized() && account.tdlibInstanceMode() == instanceMode) {
@@ -2066,6 +2071,12 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
           userIds.add(knownUserId);
       }
     }
+    return userIds;
+  }
+
+  @NonNull
+  long[] availableUserIds (@Tdlib.Mode int instanceMode) {
+    Set<Long> userIds = availableUserIdsSet(instanceMode);
     if (userIds.isEmpty())
       return new long[0];
     long[] array = new long[userIds.size()];

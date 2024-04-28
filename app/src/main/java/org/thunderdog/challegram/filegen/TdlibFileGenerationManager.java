@@ -984,7 +984,7 @@ public final class TdlibFileGenerationManager {
     final String sourceUri = conversion.substring(0, i);
     String arg = conversion.substring(i + 1);
     int j = arg.indexOf('_');
-    final long expectedSize = StringUtils.parseInt(j != -1 ? arg.substring(0, j) : arg);
+    final long expectedSize = StringUtils.parseLong(j != -1 ? arg.substring(0, j) : arg);
 
     getContentExecutor().execute(() -> {
       boolean success = false;

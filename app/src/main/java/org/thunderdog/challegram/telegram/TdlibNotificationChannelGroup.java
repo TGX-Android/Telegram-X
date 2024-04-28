@@ -37,8 +37,8 @@ import org.thunderdog.challegram.tool.UI;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.SparseLongArray;
@@ -419,7 +419,7 @@ public class TdlibNotificationChannelGroup {
           String groupId = channel.getGroup();
           if (StringUtils.isEmpty(groupId) || !groupId.startsWith(groupPrefix))
             continue;
-          long userId = StringUtils.parseInt(groupId.substring(groupPrefix.length()));
+          long userId = StringUtils.parseLong(groupId.substring(groupPrefix.length()));
           if (userId != accountUserId)
             continue;
           String id = channel.getId();
@@ -428,7 +428,7 @@ public class TdlibNotificationChannelGroup {
             String data = id.substring(prefix.length());
             if (data.startsWith(PRIVATE_SUFFIX)) {
               int versionIndex = data.indexOf('_', PRIVATE_SUFFIX.length());
-              long version = versionIndex != -1 ? StringUtils.parseInt(data.substring(versionIndex + 1)) : 0;
+              long version = versionIndex != -1 ? StringUtils.parseLong(data.substring(versionIndex + 1)) : 0;
               long currentVersion = tdlib.notifications().getChannelVersion(tdlib.notifications().scopePrivate(), 0);
               ok = version == currentVersion;
             } else if (data.startsWith(GROUP_SUFFIX)) {
@@ -474,14 +474,14 @@ public class TdlibNotificationChannelGroup {
 
         for (int j = 0; j < 2; j++) {
           boolean isDebug = j == 1;
-          long[] userIds = context.availableUserIds(isDebug);
+          Set<Long> userIds = context.availableUserIdsSet(isDebug);
           String prefix = isDebug ? ACCOUNT_PREFIX_DEBUG : ACCOUNT_PREFIX;
           for (int i = groups.size() - 1; i >= 0; i--) {
             android.app.NotificationChannelGroup group = groups.get(i);
             String groupId = group.getId();
             if (!StringUtils.isEmpty(groupId) && groupId.startsWith(prefix)) {
-              long userId = StringUtils.parseInt(groupId.substring(prefix.length()));
-              if (userId == 0 || Arrays.binarySearch(userIds, userId) < 0) {
+              long userId = StringUtils.parseLong(groupId.substring(prefix.length()));
+              if (userId == 0 || !userIds.contains(userId)) {
                 m.deleteNotificationChannelGroup(groupId);
               }
             }
