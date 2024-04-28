@@ -2407,7 +2407,7 @@ public class TdlibUi extends Handler {
     openChat(context, chatId, new ChatOpenParameters().keepStack().highlightMessage(messageId).ensureHighlightAvailable().messageThread(messageThread).urlOpenParameters(openParameters));
   }
 
-  public void openMessage (final TdlibDelegate context, final TdApi.MessageLinkInfo messageLink, final UrlOpenParameters openParameters) {
+  public void openMessage (final TdlibDelegate context, final TdApi.MessageLinkInfo messageLink, final @Nullable UrlOpenParameters openParameters) {
     if (messageLink.message != null) {
       // TODO support for album, media timestamp, etc
       MessageId messageId = new MessageId(messageLink.message.chatId, messageLink.message.id);
@@ -2417,7 +2417,7 @@ public class TdlibUi extends Handler {
           if (error != null) {
             openMessage(context, messageLink.chatId, messageId, openParameters);
           } else {
-            ThreadInfo messageThread = ThreadInfo.openedFromMessage(context.tdlib(), messageThreadInfo, openParameters.messageId);
+            ThreadInfo messageThread = ThreadInfo.openedFromMessage(context.tdlib(), messageThreadInfo, openParameters != null ? openParameters.messageId : null);
             if (Config.SHOW_CHANNEL_POST_REPLY_INFO_IN_COMMENTS) {
               TdApi.Message message = messageThread.getOldestMessage();
               if (message != null && message.replyTo == null && message.forwardInfo != null && tdlib.isChannelAutoForward(message)) {
