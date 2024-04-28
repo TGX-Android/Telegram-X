@@ -130,6 +130,37 @@ public final class TGMessageService extends TGMessageServiceImpl {
     );
   }
 
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatBoost chatBoost) {
+    super(context, msg);
+    setTextCreator(() -> {
+      if (msg.isOutgoing) {
+        if (chatBoost.boostCount > 1) {
+          return getPlural(
+            R.string.ChatBoostedXTimes_outgoing,
+            chatBoost.boostCount
+          );
+        } else {
+          return getText(
+            R.string.ChatBoosted_outgoing
+          );
+        }
+      } else {
+        if (chatBoost.boostCount > 1) {
+          return getPlural(
+            R.string.ChatBoostedXTimes,
+            chatBoost.boostCount,
+            new SenderArgument(sender)
+          );
+        } else {
+          return getText(
+            R.string.ChatBoosted,
+            new SenderArgument(sender)
+          );
+        }
+      }
+    });
+  }
+
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatSetTheme setTheme) {
     super(context, msg);
     setTextCreator(() -> {

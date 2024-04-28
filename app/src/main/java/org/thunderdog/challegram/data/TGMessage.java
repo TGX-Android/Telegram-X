@@ -8272,6 +8272,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessagePremiumGiveawayCompleted) content);
         }
+        case TdApi.MessageChatBoost.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageChatBoost) content);
+        }
         case TdApi.MessagePremiumGiftCode.CONSTRUCTOR: {
           return new TGMessageGift(context, msg, (TdApi.MessagePremiumGiftCode) content);
         }
@@ -8289,7 +8292,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
         case TdApi.MessageUsersShared.CONSTRUCTOR:
         case TdApi.MessageChatShared.CONSTRUCTOR:
-        case TdApi.MessageChatBoost.CONSTRUCTOR:
           break;
         case TdApi.MessageUnsupported.CONSTRUCTOR:
           unsupportedStringRes = R.string.UnsupportedMessageType;

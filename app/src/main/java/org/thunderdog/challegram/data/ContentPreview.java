@@ -37,6 +37,7 @@ public class ContentPreview {
   public static final Emoji EMOJI_GAME = new Emoji("\uD83C\uDFAE", R.drawable.baseline_videogame_asset_16);
   public static final Emoji EMOJI_GROUP = new Emoji("\uD83D\uDC65", R.drawable.baseline_group_16);
   public static final Emoji EMOJI_GIFT = new Emoji("\uD83C\uDF81", R.drawable.baseline_redeem_16);
+  public static final Emoji EMOJI_BOOST = new Emoji("\u26A1", R.drawable.baseline_bolt_16);
   public static final Emoji EMOJI_THEME = new Emoji("\uD83C\uDFA8", R.drawable.baseline_palette_16);
   public static final Emoji EMOJI_GROUP_INVITE = new Emoji("\uD83D\uDC65", R.drawable.baseline_group_add_16);
   public static final Emoji EMOJI_CHANNEL = new Emoji("\uD83D\uDCE2", R.drawable.baseline_bullhorn_16); // "\uD83D\uDCE3"
@@ -583,6 +584,11 @@ public class ContentPreview {
         arg2 = giveawayCompleted.unclaimedPrizeCount;
         break;
       }
+      case TdApi.MessageChatBoost.CONSTRUCTOR: {
+        TdApi.MessageChatBoost chatBoost = (TdApi.MessageChatBoost) message.content;
+        arg1 = chatBoost.boostCount;
+        break;
+      }
 
       case TdApi.MessageCustomServiceAction.CONSTRUCTOR: {
         TdApi.MessageCustomServiceAction serviceAction = (TdApi.MessageCustomServiceAction) message.content;
@@ -651,7 +657,6 @@ public class ContentPreview {
       case TdApi.MessageUnsupported.CONSTRUCTOR:
       case TdApi.MessageUsersShared.CONSTRUCTOR:
       case TdApi.MessageChatShared.CONSTRUCTOR:
-      case TdApi.MessageChatBoost.CONSTRUCTOR:
       case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
       case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
       case TdApi.MessageForumTopicEdited.CONSTRUCTOR:
@@ -1274,6 +1279,18 @@ public class ContentPreview {
         return new ContentPreview(EMOJI_GIFT, R.string.BoostingGiveawayJustStarted);
       case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR:
         return new ContentPreview(EMOJI_GIFT, 0, Lang.plural(R.string.BoostingGiveawayServiceWinnersSelected, arg1), true);
+      case TdApi.MessageChatBoost.CONSTRUCTOR: {
+        int boostCount = arg1;
+        if (boostCount > 1) {
+          return new ContentPreview(EMOJI_BOOST, 0, Lang.plural(
+            isOutgoing ? R.string.ChatContentBoostedXTimes_outgoing : R.string.ChatContentBoostedXTimes, arg1
+          ), true);
+        } else {
+          return new ContentPreview(EMOJI_BOOST, 0, Lang.getString(
+            isOutgoing ? R.string.ChatContentBoosted_outgoing : R.string.ChatContentBoosted, arg1
+          ), true);
+        }
+      }
 
       case TdApi.MessagePremiumGiveaway.CONSTRUCTOR: {
         int winnerCount = arg1;
@@ -1333,7 +1350,6 @@ public class ContentPreview {
       case TdApi.MessagePassportDataSent.CONSTRUCTOR:
       case TdApi.MessageChatSetBackground.CONSTRUCTOR:
       case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
-      case TdApi.MessageChatBoost.CONSTRUCTOR:
         // TODO support these previews
         return new ContentPreview(EMOJI_QUIZ, R.string.UnsupportedMessage);
         

@@ -444,8 +444,12 @@
   <string name="ChatContentLiveStreamInviteMulti_outgoing_one">Invited %1$s person to the live stream</string>
   <string name="ChatContentLiveStreamInviteMulti_outgoing_other">Invited %1$s people to the live stream</string>
 
-  <string name="ChatContentGiveaway_one"></string>
-  <string name="ChatContentGiveaway_other"></string>
+  <string name="ChatContentBoostedXTimes_outgoing_one">Boosted the group %1$s time</string>
+  <string name="ChatContentBoostedXTimes_outgoing_other">Boosted the group %1$s times</string>
+  <string name="ChatContentBoostedXTimes_one">Boosted the group %1$s time</string>
+  <string name="ChatContentBoostedXTimes_other">Boosted the group %1$s times</string>
+  <string name="ChatContentBoosted">Boosted the group</string>
+  <string name="ChatContentBoosted_outgoing">Boosted the group</string>
 
   <string name="Audio">Audio</string>
   <string name="Voice">Voice</string>
@@ -5355,6 +5359,13 @@
   <string name="ChangeEmailResend">Re-send Code</string>
   <string name="ChangeEmailResendConfirm">New email was sent to %1$s.</string>
   <string name="ChangeEmailConfirmCode">Please enter the code that we have sent to your new email %1$s.</string>
+
+  <string name="ChatBoosted">%1$s boosted the group</string>
+  <string name="ChatBoosted_outgoing">You boosted the group</string>
+  <string name="ChatBoostedXTimes_one">%2$s boosted the group %1$s time</string>
+  <string name="ChatBoostedXTimes_other">%2$s boosted the group %1$s times</string>
+  <string name="ChatBoostedXTimes_outgoing_one">You boosted the group %1$s time</string>
+  <string name="ChatBoostedXTimes_outgoing_other">You boosted the group %1$s times</string>
 
   <string name="ReadDate_now">Read just now</string>
   <string name="ReadDate_seconds_one">Read %1$s second ago</string>
