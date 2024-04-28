@@ -410,7 +410,9 @@ public class SettingsBlockedController extends RecyclerViewController<TdApi.Bloc
     if (v.getId() == R.id.user) {
       TGUser user = ((UserView) v).getUser();
       if (user != null) {
-        tdlib.ui().openChat(this, user.getSenderId(), new TdlibUi.ChatOpenParameters().keepStack());
+        tdlib.ui().openChat(this, user.getSenderId(), new TdlibUi.ChatOpenParameters().keepStack()
+          .urlOpenParameters(new TdlibUi.UrlOpenParameters().tooltip(context.tooltipManager().builder(v)))
+        );
       }
     }
   }

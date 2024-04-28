@@ -1942,7 +1942,19 @@ public class TdlibUi extends Handler {
 
   public void openChat (final TdlibDelegate context, final TdApi.MessageSender senderId, @Nullable ChatOpenParameters openParameters) {
     long chatId = Td.getSenderId(senderId);
-    openChat(context, chatId, openParameters);
+    final TdApi.Function<TdApi.Chat> function;
+    switch (senderId.getConstructor()) {
+      case TdApi.MessageSenderUser.CONSTRUCTOR:
+        function = new TdApi.CreatePrivateChat(((TdApi.MessageSenderUser) senderId).userId, false);
+        break;
+      case TdApi.MessageSenderChat.CONSTRUCTOR:
+        function = new TdApi.GetChat(((TdApi.MessageSenderChat) senderId).chatId);
+        break;
+      default:
+        Td.assertMessageSender_439d4c9c();
+        throw Td.unsupported(senderId);
+    }
+    openChat(context, chatId, function, openParameters);
   }
 
   private void openChat (final TdlibDelegate context, final long chatId, final TdApi.Function<?> createRequest, final @Nullable ChatOpenParameters params) {
