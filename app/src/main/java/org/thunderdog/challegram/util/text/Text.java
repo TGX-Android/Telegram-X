@@ -3141,7 +3141,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       final TextPart part = partsArray[partIndex];
       final @BiDiEntity int bidiEntity = part.getBidiEntity();
       final boolean paragraphIsRtl = BiDiUtils.isParagraphRtl(bidiEntity);
-      final int bidiIndex = 0; // BiDiUtils.getIndex(bidiEntity);
+      final int bidiIndex = BiDiUtils.getIndex(bidiEntity);
       final int partLineIndex = part.getY(); //getLineIndex();
       if (lineIndex != partLineIndex || currentBidiIndex != bidiIndex) {
         bidiPartsReorder(partsArray, partsLevels, lastLineStartIndex, partIndex);
