@@ -52,6 +52,7 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ThemeDelegate;
+import org.thunderdog.challegram.tool.EmojiCode;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -3226,22 +3227,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return BitwiseUtils.hasAllFlags(textFlags, Text.FLAG_IGNORE_NEWLINES);
   }
 
-  private static void bidiGetChars (String in, int start, int end, char[] dst, boolean neutralizeEmoji, boolean ignoreSpaceSeparators) {
-    in.getChars(start, end, dst, 0);
-
-    for (int a = start; a < end; ) {
-      final int codePoint = in.codePointAt(a);
-      final int count = Character.charCount(codePoint);
-      if ((neutralizeEmoji && 0x1F100 <= codePoint && codePoint <= 0x1FFFF) || (ignoreSpaceSeparators && Character.getDirectionality(codePoint) == Character.DIRECTIONALITY_PARAGRAPH_SEPARATOR)) {
-        for (int b = 0; b < count; b++) {
-          dst[a - start + b] = ' ';
-        }
-      }
-
-      a += count;
-    }
-  }
-
   private void bidiPartsReorder (TextPart[] partsArray, byte[] partsLevels, int partStart, int partEnd ) {
     if (partEnd - partStart < 2) {
       return;
@@ -3253,12 +3238,37 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
     for (int index = partStart; index < partEnd; index++) {
       final TextPart part = partsArray[index];
+      parts.set(index, part);
       if (addSpaceBetweenLines && part.getEnd() < originalText.length() && Character.getDirectionality(originalText.charAt(part.getEnd())) == Character.DIRECTIONALITY_PARAGRAPH_SEPARATOR) {
         x += (int) part.getSource().makeSpaceSize(part.getSource().getTextPaint(null));
       }
 
       part.setXY(x, part.getY());
       x += (int)(part.getWidth());
+    }
+  }
+
+  private static boolean bidiIsEmoji (int codePoint) {
+    return (0x1F100 <= codePoint && codePoint <= 0x1F2FF)   // Enclosed Alphanumeric Supplement and Enclosed Ideographic Supplement blocks
+      || codePoint == 0x2139    // ℹ
+      || codePoint == 0x24C2    // Ⓜ
+      || codePoint == 0x3297    // ㊗
+      || codePoint == 0x3299;   // ㊙
+  }
+
+  private static void bidiGetChars (String in, int start, int end, char[] dst, boolean neutralizeEmoji, boolean ignoreParagraphSeparators) {
+    in.getChars(start, end, dst, 0);
+
+    for (int a = start; a < end; ) {
+      final int codePoint = in.codePointAt(a);
+      final int count = Character.charCount(codePoint);
+      if ((neutralizeEmoji && bidiIsEmoji(codePoint)) || (ignoreParagraphSeparators && Character.getDirectionality(codePoint) == Character.DIRECTIONALITY_PARAGRAPH_SEPARATOR)) {
+        for (int b = 0; b < count; b++) {
+          dst[a - start + b] = ' ';
+        }
+      }
+
+      a += count;
     }
   }
 
@@ -3283,5 +3293,23 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
     // Always create a Bidi object for legacy androids
     return true;
+  }
+
+  /* DEBUG */
+
+  public static String bidiGenerateTestMessage () {
+    StringBuilder b = new StringBuilder();
+    for (int a = 0; a < EmojiCode.DATA.length; a++) {
+      for (String emoji : EmojiCode.DATA[a]) {
+        if (Strings.getTextDirection(emoji) == Strings.DIRECTION_LTR) {
+          b.append(emoji);
+          b.append(' ');
+          b.append("ت");
+          b.append('\n');
+        }
+      }
+    }
+
+    return b.toString();
   }
 }
