@@ -6845,7 +6845,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (url.equals(this.linkPreviewOptions.url)) {
         return false;
       }
-      if (StringUtils.isEmpty(this.linkPreviewOptions.url) && url.equals(foundUrls.urls[0])) {
+      if (StringUtils.isEmpty(this.linkPreviewOptions.url) && !foundUrls.isEmpty() && url.equals(foundUrls.urls[0])) {
         return false;
       }
       this.linkPreviewOptions.url = url;
