@@ -1140,14 +1140,15 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   public TdlibNotificationChannelGroup getChannelCache () throws TdlibNotificationChannelGroup.ChannelCreationFailureException {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       long accountUserId = tdlib.myUserId(true);
+      boolean isDebug = tdlib.account().isDebug();
       TdApi.User account = myUser();
       if (accountUserId == 0) {
         if (channelGroupCache != null)
           return channelGroupCache;
         throw new IllegalStateException("Cannot retrieve accountUserId, required by channelGroup, authorizationStatus: " + tdlib.authorizationStatus());
       }
-      if (channelGroupCache == null || channelGroupCache.getAccountUserId() != accountUserId) {
-        channelGroupCache = new TdlibNotificationChannelGroup(tdlib, accountUserId, tdlib.account().isDebug(), account);
+      if (channelGroupCache == null || !channelGroupCache.compareTo(accountUserId, isDebug, getChannelsGlobalVersion())) {
+        channelGroupCache = new TdlibNotificationChannelGroup(tdlib, accountUserId, isDebug, account);
       }
       return channelGroupCache;
     }
@@ -1542,7 +1543,9 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       int channelGlobalVersion = getChannelsGlobalVersion();
-      editor.putInt(key(_CHANNEL_VERSION_GLOBAL_KEY, accountId), _channelGlobalVersion = (channelGlobalVersion == Integer.MAX_VALUE ? Integer.MIN_VALUE : ++channelGlobalVersion));
+      int newGlobalVersion = (channelGlobalVersion == Integer.MAX_VALUE ? Integer.MIN_VALUE : channelGlobalVersion + 1);
+      _channelGlobalVersion = newGlobalVersion;
+      editor.putInt(key(_CHANNEL_VERSION_GLOBAL_KEY, accountId), newGlobalVersion);
     }
 
     String customSoundKey = key(_CUSTOM_SOUND_KEY, accountId);
@@ -1579,14 +1582,16 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
 
     _repeatNotificationMinutes = null;
 
+    long selfUserId = tdlib.myUserId(true);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      long selfUserId = tdlib.myUserId();
-      TdApi.User account = tdlib.myUser();
+      TdlibAccount account = tdlib.account();
       if (selfUserId != 0) {
-        TdlibNotificationChannelGroup.deleteChannels(tdlib, selfUserId, tdlib.account().isDebug(), account, !onlyLocal);
+        TdApi.User user = tdlib.myUser();
+        TdlibNotificationChannelGroup.deleteChannels(tdlib, selfUserId, account.isDebug(), user, !onlyLocal);
       }
     }
 
+    boolean updated = false;
     if (!onlyLocal) {
       if (needUpdateDefaults(settingsForPrivateChats)) {
         if (settingsForPrivateChats != null) {
@@ -1613,15 +1618,18 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
         tdlib.client().send(new TdApi.SetScopeNotificationSettings(new TdApi.NotificationSettingsScopeChannelChats(), settingsForChannelChats), tdlib.okHandler());
       }
 
-      boolean updated;
       updated = Settings.instance().setNeedSplitNotificationCategories(true);
       updated = Settings.instance().setNeedHideSecretChats(false) || updated;
       if (Settings.instance().resetBadge()) {
         tdlib.context().resetBadge(true);
       }
-      if (updated) {
-        tdlib.context().onUpdateAllNotifications();
-      }
+    }
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      onUpdateNotificationChannels(selfUserId);
+    }
+    if (updated) {
+      tdlib.context().onUpdateAllNotifications();
     }
 
     rebuildNotification();

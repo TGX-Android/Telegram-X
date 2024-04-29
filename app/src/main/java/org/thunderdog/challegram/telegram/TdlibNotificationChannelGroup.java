@@ -91,6 +91,10 @@ public class TdlibNotificationChannelGroup {
     create(account);
   }
 
+  public boolean compareTo (long accountUserId, boolean isDebug, long globalVersion) {
+    return this.accountUserId == accountUserId && this.isDebug == isDebug && this.globalVersion == globalVersion;
+  }
+
   private static String getChannelGroupName (long userId, TdApi.User user, boolean isDebug) {
     String name = Lang.getDebugString(TD.getUserName(userId, user), isDebug);
     if (StringUtils.isEmpty(name)) {
@@ -548,9 +552,12 @@ public class TdlibNotificationChannelGroup {
       List<android.app.NotificationChannel> channels = m.getNotificationChannels();
       final String groupId = makeGroupId(accountUserId, isDebug);
       if (channels != null && !channels.isEmpty()) {
-        for (android.app.NotificationChannel channel : channels) {
-          if (StringUtils.equalsOrBothEmpty(channel.getGroup(), groupId)) {
-            m.deleteNotificationChannel(channel.getId());
+        for (int i = channels.size() - 1; i >= 0; i--) {
+          android.app.NotificationChannel channel = channels.get(i);
+          String channelGroupId = channel.getGroup();
+          String channelId = channel.getId();
+          if (StringUtils.equalsOrBothEmpty(channelGroupId, groupId)) {
+            m.deleteNotificationChannel(channelId);
           }
         }
       }
@@ -571,7 +578,6 @@ public class TdlibNotificationChannelGroup {
           tdlib.settings().trackNotificationChannelProblem(e, 0);
         }
       }
-      tdlib.notifications().onUpdateNotificationChannels(accountUserId);
     }
   }
 
