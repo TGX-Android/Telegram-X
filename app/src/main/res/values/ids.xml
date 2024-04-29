@@ -713,6 +713,7 @@
   <item type="id" name="btn_useInAppBrowser" />
   <item type="id" name="btn_switchRtl" />
   <item type="id" name="btn_debugSwitchRtl" />
+  <item type="id" name="btn_debugLtrEmoji" />
   <item type="id" name="btn_mediaWiFiLimits" />
   <item type="id" name="btn_mediaRoamingLimits" />
   <item type="id" name="btn_stopAllLiveLocations" />
