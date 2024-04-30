@@ -759,7 +759,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   // Text
 
   private void reset () {
-    bidiClear();
     entityIndex = -1;
     entityStart = entityEnd = 0;
     pressHighlight = null;
@@ -919,8 +918,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       return true;
     };
 
-    bidiProcessTextStart(in);
-
     try {
       boolean prevIsNewLine = false;
       final int totalLength = in.length();
@@ -973,7 +970,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
         addLine(currentX, getCurrentLineHeight());
       }
       currentY += getCurrentLineHeight();
-      paragraphCount++;
     } catch (LimitReachedException ignored) { }
 
     int lineCount = out.isEmpty() ? 1 : out.get(out.size() - 1).getLineIndex() + 1;
@@ -985,7 +981,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       TextPart lastPart = out.get(out.size() - 1);
       int[] lastLineSize = getLineSize(getLineCount() - 1);
       TextPart suffixPart = new TextPart(this, suffix, 0, suffix.length(), lastPart.getLineIndex(), lastPart.getParagraphIndex());
-      suffixPart.setBidiEntity(lastPart.getBidiEntity());
       suffixPart.setXY(lastLineSize[0], lastPart.getY());
       suffixPart.setWidth(suffixWidth);
       lastLineSize[0] += suffixWidth;
@@ -1012,7 +1007,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     }
 
     bidiPartsReorder();
-    bidiClear();
 
     if (BuildConfig.DEBUG) {
       int partCount = parts.size();
@@ -1085,8 +1079,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       return;
     }
 
-    bidiProcessLineStart(in, start, end);
-
     boolean first = true;
     boolean lastIsSpace = false;
     int count = 0;
@@ -1116,19 +1108,12 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       processEntities(in, start + count, end, out, emojiCallback, false);
     }
 
-    bidiProcessLineComplete();
+    if (!useGlobalBidiObject()) {
+      paragraphCount++;
+    }
   }
 
   private int processEntities (String in, int start, int end, ArrayList<TextPart> out, Emoji.Callback emojiCallback, boolean isChild) {
-    if (start != end) {
-      final int bidiRunEnd = findBidiRunEnd(start);
-      if (bidiRunEnd != -1 && bidiRunEnd < end) {
-        processEntities(in, start, bidiRunEnd, out, emojiCallback, false);
-        processEntities(in, bidiRunEnd, end, out, emojiCallback, false);
-        return -1;
-      }
-    }
-
     TextEntity entity = findEntity(start, end);
     TextColorSet theme = pickTheme(null, entity);
 
@@ -1234,7 +1219,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     part.setWidth(iconWidth);
     part.setHeight(iconHeight);
     part.setEntity(entity);
-    part.setBidiEntity(getBidiEntity(index));
     part.attachToMedia(newOrExistingMedia(TextMedia.keyForIcon(entity.tdlib, icon), index, index, (keyId, id) ->
       new TextMedia(this, entity.tdlib, keyId, id, icon)
     ));
@@ -1259,7 +1243,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     part.setXY(currentX, currentY);
     part.setWidth(emojiSize);
     part.setEntity(entity);
-    part.setBidiEntity(getBidiEntity(start));
     part.setEmoji(info);
     if (entity != null && entity.tdlib != null && entity.isCustomEmoji()) {
       part.attachToMedia(newOrExistingMedia(TextMedia.keyForEmoji(entity.getCustomEmojiId(), emojiSize), start, end, (keyId, id) ->
@@ -1716,16 +1699,13 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       lastPart = null;
     }
 
-    final @BiDiEntity int bidiEntity = getBidiEntity(start);
-
-    if (lastPart == null || lastPart.getEntity() != entity || lastPart.getBidiEntity() != bidiEntity) {
+    if (lastPart == null || lastPart.getEntity() != entity) {
       TextPart part;
 
       part = new TextPart(this, in, start, end, getLineCount(), paragraphCount);
       part.setXY(currentX, currentY);
       part.setWidth(fullWidth);
       part.setEntity(entity);
-      part.setBidiEntity(bidiEntity);
 
       lastPart = part;
 
@@ -1767,9 +1747,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       lineSizes = new ArrayList<>();
     }
     lineSizes.add(new int[] {width, height});
-    if (width == 0) {
-      paragraphCount++;
-    }
   }
 
   private boolean moveToNextLine (TextPart part) {
@@ -1845,7 +1822,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
         ellipsisPart.setXY(currentX, currentY);
         ellipsisPart.setWidth(ellipsisWidth);
         ellipsisPart.setEntity(entity);
-        ellipsisPart.setBidiEntity(getBidiEntity(start));
         out.add(ellipsisPart);
         currentX += ellipsisWidth;
       } else {
@@ -1871,7 +1847,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
             ellipsisPart.setXY(currentX, currentY);
             ellipsisPart.setWidth(ellipsisWidth);
             ellipsisPart.setEntity(lastPart.getEntity());
-            ellipsisPart.setBidiEntity(lastPart.getBidiEntity());
             out.set(out.size() - 1, ellipsisPart);
             currentX += ellipsisPart.getWidth();
 
@@ -3078,75 +3053,74 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
   /* Bidi */
 
-  private Bidi bidi;
-  private boolean bidiRequired;
-  private char[] bidiTmpChars;
-  private int bidiStart;
-  private int bidiLength;
-  private int bidiIndex;
-  private int bidiParagraphCount;
+  private void bidiPartsReorder () {
+    int maxBidiParagraphSize = 0;
+    int maxBidiParagraphPartsCount = 0;
+    boolean textRequiresBidi = false;
+    int paragraphSize = 0;
+    int paragraphStart = 0;
+    int paragraphIndex = 0;
+    boolean paragraphRequiresBidi = false;
 
-  private void bidiProcessTextStart (String in) {
-    if (!useGlobalBidiObject()) {
-      return;
-    }
-
-    bidiStart = 0;
-    bidiLength = in.length();
-    bidiRequired = requiresBidi(in, 0, bidiLength);
-
-    if (bidiRequired) {
-      bidiTmpChars = new char[bidiLength];
-      bidiGetChars(in, 0, bidiLength, bidiTmpChars, true, true);
-
-      bidi = new Bidi(bidiTmpChars, 0, null, 0, bidiLength, Lang.rtl() ? Bidi.DIRECTION_DEFAULT_RIGHT_TO_LEFT : Bidi.DIRECTION_DEFAULT_LEFT_TO_RIGHT);
-      bidiParagraphCount++;
-      bidiTmpChars = null;
-    } else {
-      bidi = null;
-    }
-  }
-
-  private void bidiProcessLineStart (String in, int start, int end) {
-    if (useGlobalBidiObject()) {
-      return;
-    }
-
-    bidiStart = start;
-    bidiLength = end - start;
-    bidiRequired = requiresBidi(in, start, end);
-
-    if (bidiRequired) {
-      if (bidiTmpChars == null || bidiTmpChars.length < bidiLength) {
-        final int size = Math.min(bidiLength * 3 / 2, in.length());
-        bidiTmpChars = new char[size];
+    final int N = parts.size();
+    for (int a = 0; a < N; a++) {
+      final TextPart textPart = parts.get(a);
+      final int currentParagraphIndex = textPart.getParagraphIndex();
+      if (currentParagraphIndex != paragraphIndex) {
+        bidiPartsMarkAsNonBidi(paragraphStart, a, paragraphRequiresBidi);
+        paragraphStart = a;
+        paragraphIndex = currentParagraphIndex;
+        paragraphRequiresBidi = false;
+        paragraphSize = 0;
       }
 
-      bidiGetChars(in, start, end, bidiTmpChars, true, false);
+      paragraphSize += textPart.getEnd() - textPart.getStart();
 
-      bidi = new Bidi(bidiTmpChars, 0, null, 0, bidiLength, Lang.rtl() ? Bidi.DIRECTION_DEFAULT_RIGHT_TO_LEFT : Bidi.DIRECTION_DEFAULT_LEFT_TO_RIGHT);
-      bidiParagraphCount++;
-    } else {
-      bidi = null;
+      if (!paragraphRequiresBidi) {
+        paragraphRequiresBidi = requiresBidi(textPart.getLine(), textPart.getStart(), textPart.getEnd());
+      }
+
+      if (paragraphRequiresBidi) {
+        maxBidiParagraphSize = Math.max(maxBidiParagraphSize, paragraphSize);
+        maxBidiParagraphPartsCount = Math.max(maxBidiParagraphPartsCount, a - paragraphStart + 1);
+        textRequiresBidi = true;
+      }
     }
-  }
+    bidiPartsMarkAsNonBidi(paragraphStart, N, paragraphRequiresBidi);
 
-  private void bidiProcessLineComplete () {
-    if (useGlobalBidiObject()) {
+    if (!textRequiresBidi) {
       return;
     }
 
-    bidi = null;
-    bidiIndex++;
-  }
+    /* Process Bidi Parts */
 
-  private void bidiPartsReorder () {
+    char[] bidiMemory = new char[maxBidiParagraphSize];
+    int[] memoryIndexes = new int[maxBidiParagraphPartsCount];
+    int createdPartsCount = 0;
+    paragraphStart = paragraphIndex = 0;
+    paragraphRequiresBidi = !BiDiUtils.isValid(parts.get(0).getBidiEntity());
+
+    for (int a = 0; a < N; a++) {
+      final TextPart textPart = parts.get(a + createdPartsCount);
+      final int currentParagraphIndex = textPart.getParagraphIndex();
+      if (currentParagraphIndex != paragraphIndex) {
+        if (paragraphRequiresBidi) {
+          final Bidi bidi = bidiPartsCreateBidi(paragraphStart + createdPartsCount, a + createdPartsCount, bidiMemory, memoryIndexes);
+          createdPartsCount += bidiPartsProcessBidi(bidi, paragraphStart + createdPartsCount, a + createdPartsCount, memoryIndexes);
+        }
+        paragraphStart = a;
+        paragraphIndex = currentParagraphIndex;
+        paragraphRequiresBidi = !BiDiUtils.isValid(textPart.getBidiEntity());
+      }
+    }
+    if (paragraphRequiresBidi) {
+      final Bidi bidi = bidiPartsCreateBidi(paragraphStart + createdPartsCount, N + createdPartsCount, bidiMemory, memoryIndexes);
+      createdPartsCount += bidiPartsProcessBidi(bidi, paragraphStart + createdPartsCount, N + createdPartsCount, memoryIndexes);
+    }
+
+
+    /* Fix parts order */
     final int partsCount = parts.size();
-    if (bidiParagraphCount == 0 || partsCount < 2) {
-      return;
-    }
-
-    // Fix order
     TextPart[] partsArray = parts.toArray(new TextPart[0]);
     byte[] partsLevels = new byte[parts.size()];
     for (int a = 0; a < partsLevels.length; a++) {
@@ -3161,8 +3135,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       final TextPart part = partsArray[partIndex];
       final @BiDiEntity int bidiEntity = part.getBidiEntity();
       final boolean paragraphIsRtl = BiDiUtils.isParagraphRtl(bidiEntity);
-      final int bidiIndex = BiDiUtils.getIndex(bidiEntity);
-      final int partLineIndex = part.getY(); //getLineIndex();
+      final int bidiIndex = part.getParagraphIndex();
+      final int partLineIndex = part.getY();
       if (lineIndex != partLineIndex || currentBidiIndex != bidiIndex) {
         bidiPartsReorder(partsArray, partsLevels, lastLineStartIndex, partIndex);
         currentBidiIndex = bidiIndex;
@@ -3180,47 +3154,91 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     }
   }
 
-  private void bidiClear () {
-    bidi = null;
-    bidiRequired = false;
-    bidiTmpChars = null;
-    bidiStart = 0;
-    bidiLength = 0;
-    bidiIndex = 0;
-    bidiParagraphCount = 0;
-  }
+  private Bidi bidiPartsCreateBidi (int partIndexStart, int partIndexEnd, char[] bidiMemory, int[] memoryIndexes) {
+    int memoryIndex = 0;
+    for (int a = partIndexStart; a < partIndexEnd; a++) {
+      final TextPart textPart = parts.get(a);
+      final int partSize = textPart.getEnd() - textPart.getStart();
 
-  private @BiDiEntity int getBidiEntity (int start) {
-    final int offset = start - bidiStart;
-    if (0 <= offset && offset < bidiLength) {
-      if (bidi != null) {
-        return BiDiUtils.create(bidi.getLevelAt(offset), bidi.getBaseLevel(), bidiIndex);
-      }
-      if (!bidiRequired) {
-        return BiDiUtils.create(0, 0, bidiIndex);
-      }
-    }
-
-    return 0;   // illegal state ?
-  }
-
-  private int findBidiRunEnd (int start) {
-    if (bidi == null) {
-      return -1;
-    }
-
-    final int runsCount = bidi.getRunCount();
-    if (runsCount > 1) {
-      for (int a = 0; a < runsCount; a++) {
-        int runEnd = bidiStart + bidi.getRunLimit(a);
-        if (start < runEnd) {
-          return runEnd;
+      memoryIndexes[a - partIndexStart] = memoryIndex;
+      if (!textPart.isStaticElement()) {
+        bidiGetChars(textPart.getLine(), textPart.getStart(), textPart.getEnd(), bidiMemory, memoryIndex, true);
+      } else {
+        for (int b = 0; b < partSize; b++) {
+          bidiMemory[memoryIndex + b] = ' ';
         }
       }
-      throw new RuntimeException("Cannot find bidi run");
+
+      memoryIndex += partSize;
     }
 
-    return -1;
+    return new Bidi(bidiMemory, 0, null, 0, memoryIndex, Lang.rtl() ? Bidi.DIRECTION_DEFAULT_RIGHT_TO_LEFT : Bidi.DIRECTION_DEFAULT_LEFT_TO_RIGHT);
+  }
+
+  private int bidiPartsProcessBidi (Bidi bidi, int partIndexStart, int partIndexEnd, int[] memoryIndexes) {
+    int createdCount = 0;
+    int bidiRunIndex = 0;
+    int bidiRunStart = bidi.getRunStart(bidiRunIndex);
+    int bidiRunEnd = bidi.getRunLimit(bidiRunIndex);
+
+    int memoryIndex = 0;
+    for (int a = partIndexStart; a < partIndexEnd; a++) {
+      final TextPart textPart = parts.get(a + createdCount);
+      final int textPartEnd = textPart.getEnd();
+      final int partSize = textPart.getEnd() - textPart.getStart();
+      final int mIndexEnd = memoryIndex + partSize;
+      int mIndexStart = memoryIndex;
+
+
+      while (bidiRunEnd <= mIndexStart) {
+        bidiRunIndex += 1;
+        bidiRunStart = bidi.getRunStart(bidiRunIndex);
+        bidiRunEnd = bidi.getRunLimit(bidiRunIndex);
+      }
+
+      textPart.setBidiEntity(BiDiUtils.create(bidi.getRunLevel(bidiRunIndex), bidi.getBaseLevel()));
+      if (bidiRunEnd < mIndexEnd) {      // Split parts
+        textPart.setEnd(textPart.getEnd() - (mIndexEnd - bidiRunEnd));
+        textPart.setWidth(U.measureText(textPart.getLine(), textPart.getStart(), textPart.getEnd(), getTextPaint(textPart.getEntity())));
+
+        TextPart lastPart = textPart;
+        while (true) {
+          mIndexStart += lastPart.getEnd() - lastPart.getStart();
+          if (mIndexStart >= mIndexEnd) {
+            break;
+          }
+
+          while (bidiRunEnd <= mIndexStart) {
+            bidiRunIndex += 1;
+            bidiRunStart = bidi.getRunStart(bidiRunIndex);
+            bidiRunEnd = bidi.getRunLimit(bidiRunIndex);
+          }
+
+          TextPart newTextPart = new TextPart(lastPart.getSource(), lastPart.getLine(), lastPart.getEnd(), textPartEnd - Math.max(mIndexEnd - bidiRunEnd, 0), lastPart.getLineIndex(), lastPart.getParagraphIndex());
+          newTextPart.setXY((int) (lastPart.getX() + lastPart.getWidth()), lastPart.getY());
+          newTextPart.setEntity(lastPart.getEntity());
+          newTextPart.setWidth(U.measureText(newTextPart.getLine(), newTextPart.getStart(), newTextPart.getEnd(), getTextPaint(newTextPart.getEntity())));
+          newTextPart.setBidiEntity(BiDiUtils.create(bidi.getRunLevel(bidiRunIndex), bidi.getBaseLevel()));
+          parts.add(a + createdCount + 1, newTextPart);
+          lastPart = newTextPart;
+          createdCount++;
+        }
+      }
+      memoryIndex += partSize;
+    }
+
+    return createdCount;
+  }
+
+  private void bidiPartsMarkAsNonBidi (int partIndexStart, int partIndexEnd, boolean paragraphRequiresBidi) {
+    if (paragraphRequiresBidi) {
+      return;
+    }
+
+    for (int a = partIndexStart; a < partIndexEnd; a++) {
+      final TextPart textPart = parts.get(a);
+      textPart.setBidiEntity(BiDiUtils.create(0, 0));
+    }
   }
 
   private boolean useGlobalBidiObject () {
@@ -3248,21 +3266,13 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     }
   }
 
-  private static boolean bidiIsEmoji (int codePoint) {
-    return (0x1F100 <= codePoint && codePoint <= 0x1F2FF)   // Enclosed Alphanumeric Supplement and Enclosed Ideographic Supplement blocks
-      || codePoint == 0x2139    // ℹ
-      || codePoint == 0x24C2    // Ⓜ
-      || codePoint == 0x3297    // ㊗
-      || codePoint == 0x3299;   // ㊙
-  }
-
-  private static void bidiGetChars (String in, int start, int end, char[] dst, boolean neutralizeEmoji, boolean ignoreParagraphSeparators) {
-    in.getChars(start, end, dst, 0);
+  private static void bidiGetChars (String in, int start, int end, char[] dst, int dstBegin, boolean ignoreParagraphSeparators) {
+    in.getChars(start, end, dst, dstBegin);
 
     for (int a = start; a < end; ) {
       final int codePoint = in.codePointAt(a);
       final int count = Character.charCount(codePoint);
-      if ((neutralizeEmoji && bidiIsEmoji(codePoint)) || (ignoreParagraphSeparators && Character.getDirectionality(codePoint) == Character.DIRECTIONALITY_PARAGRAPH_SEPARATOR)) {
+      if ((ignoreParagraphSeparators && Character.getDirectionality(codePoint) == Character.DIRECTIONALITY_PARAGRAPH_SEPARATOR)) {
         for (int b = 0; b < count; b++) {
           dst[a - start + b] = ' ';
         }
@@ -3304,7 +3314,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
         if (Strings.getTextDirection(emoji) == Strings.DIRECTION_LTR) {
           b.append(emoji);
           b.append(' ');
-          b.append("ت");
+          b.append('\u062A');
           b.append('\n');
         }
       }
