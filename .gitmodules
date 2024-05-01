@@ -16,7 +16,7 @@
 	path = app/jni/third_party/ffmpeg
 	url = https://github.com/FFmpeg/FFmpeg
 	shallow = true
-	branch = release/6.0
+	branch = release/6.1
 [submodule "lz4"]
 	path = app/jni/third_party/lz4
 	url = https://github.com/lz4/lz4
