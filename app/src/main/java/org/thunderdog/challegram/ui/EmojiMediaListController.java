@@ -313,7 +313,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       }
       boolean stickerAnimationsEnabled = stickersController.recyclerView.getItemAnimator() == stickersAnimator;
       if (enableStickersAnimations != stickerAnimationsEnabled) {
-        if (stickerAnimationsEnabled) {
+        if (enableStickersAnimations) {
           stickersController.recyclerView.setItemAnimator(stickersAnimator);
         } else {
           stickersController.recyclerView.setItemAnimator(null);
