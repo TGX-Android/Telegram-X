@@ -478,7 +478,6 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jintArray data) {
       } else {
         info->loop_count++;
       }
-      info->has_decoded_frames = false;
       info->eof_reached = false;
       hasLooped = true;
       avcodec_flush_buffers(info->video_dec_ctx);
@@ -502,7 +501,7 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jintArray data) {
     }
     ret = avcodec_send_packet(info->video_dec_ctx, info->packet);
     if (ret != 0) {
-      if (ret == AVERROR_INVALIDDATA && info->has_decoded_frames && errorCount < maxErrorCount) {
+      if (ret == AVERROR_INVALIDDATA && (info->has_decoded_frames || info->loop_count == 0) && errorCount < maxErrorCount) {
         errorCount++;
         if (errorCount == 1 && !info->had_invalid_frames) {
           logv(TAG_GIF_LOADER, "avcodec_send_packet error #%zu for %s: %s maxErrorCount: %zu size: %d pts: %lld flags: %d",
