@@ -1795,7 +1795,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return Math.max(maxPartHeight, getLineHeight());
   }
 
-  private void newLineOrEllipsis (List<TextPart> out, @NonNull String in, int start, int end, TextEntity entity) {
+  private void newLineOrEllipsis (List<TextPart> out, @NonNull String in, final int start, final int end, TextEntity entity) {
     int lineHeight = getCurrentLineHeight();
     int prevMaxPartHeight = maxPartHeight;
     addLine(currentX, lineHeight);
@@ -1810,10 +1810,14 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       textFlags |= FLAG_ELLIPSIZED;
       if (out.isEmpty())
         throw e;
+
+      final @BiDiEntity int bidiEntity = getBidiEntity(start);
+      final String defaultEllipsis = Strings.ELLIPSIS;
       TextPart lastPart = out.get(out.size() - 1);
       int currentX = getLineWidth(getLineCount() - 1);
       int lineMaxWidth = getLineMaxWidth(getLineCount() - 1, currentY);
-      String ellipsis = Strings.ELLIPSIS;
+      boolean hasEllipsizedPart = false;
+      String ellipsis = defaultEllipsis;
       if (!StringUtils.isEmpty(in) && end > start && !BitwiseUtils.hasFlag(this.textFlags, FLAG_ELLIPSIZE_NO_FILL)) {
         int ellipsisMaxWidth = lineMaxWidth - currentX;
         String ellipsized = TextUtils.ellipsize(
@@ -1822,12 +1826,12 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
           ellipsisMaxWidth,
           TextUtils.TruncateAt.END
         ).toString();
-        if (!StringUtils.isEmpty(ellipsized)) {
+        hasEllipsizedPart = !StringUtils.isEmpty(ellipsized);
+        if (hasEllipsizedPart) {
           ellipsis = ellipsized;
         }
       }
-      final String defaultEllipsis = Strings.ELLIPSIS;
-      final @BiDiEntity int bidiEntity = getBidiEntity(start);
+
       float ellipsisWidth = BiDiUtils.measureTextRun(bidiEntity, ellipsis, getTextPaint(entity));
       boolean addLine = false;
       if (currentX + ellipsisWidth <= lineMaxWidth || (addLine = (textFlags & Text.FLAG_ELLIPSIZE_NEWLINE) != 0 && getLineCount() == maxLineCount - 1)) {
@@ -1840,13 +1844,27 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
           addLine(0, getCurrentLineHeight());
           lineIndex++;
         }
-        TextPart ellipsisPart = new TextPart(this, ellipsis, 0, ellipsis.length(), lineIndex, paragraphIndex);
-        ellipsisPart.setXY(currentX, currentY);
-        ellipsisPart.setWidth(ellipsisWidth);
-        ellipsisPart.setEntity(entity);
-        ellipsisPart.setBidiEntity(bidiEntity);
-        out.add(ellipsisPart);
-        currentX += ellipsisWidth;
+
+        final float defaultEllipsisWidth = U.measureText(defaultEllipsis, getTextPaint(entity));
+        if (hasEllipsizedPart && !StringUtils.equalsOrBothEmpty(ellipsis, defaultEllipsis) && ellipsis.length() > defaultEllipsis.length()) {
+          TextPart ellipsisPart = new TextPart(this, ellipsis, 0, ellipsis.length() - defaultEllipsis.length(), lineIndex, paragraphIndex);
+          ellipsisPart.setXY(currentX, currentY);
+          ellipsisPart.setWidth(ellipsisWidth - defaultEllipsisWidth);
+          ellipsisPart.setEntity(entity);
+          ellipsisPart.setBidiEntity(bidiEntity);
+          out.add(ellipsisPart);
+          currentX += ellipsisWidth - defaultEllipsisWidth;
+        }
+
+        final int bidiParagraphLevel = BiDiUtils.isParagraphRtl(bidiEntity) ? 1 : 0;
+        final @BiDiEntity int bidiEntityForEllipsis = BiDiUtils.isValid(bidiEntity) ? BiDiUtils.create(bidiParagraphLevel, bidiParagraphLevel, BiDiUtils.getIndex(bidiEntity)) : bidiEntity;
+        TextPart defaultEllipsisPart = new TextPart(this, defaultEllipsis, 0, defaultEllipsis.length(), lineIndex, paragraphIndex);
+        defaultEllipsisPart.setXY(currentX, currentY);
+        defaultEllipsisPart.setWidth(defaultEllipsisWidth);
+        defaultEllipsisPart.setEntity(entity);
+        defaultEllipsisPart.setBidiEntity(bidiEntityForEllipsis);
+        out.add(defaultEllipsisPart);
+        currentX += defaultEllipsisWidth;
       } else {
         // Hard path: find enough place for ellipsis and place it there
         final int requiredLineIndex = lastPart.getLineIndex();
@@ -1856,6 +1874,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
         boolean done = false;
         do {
           currentX = lastPart.getX();
+          final int bidiParagraphLevel = BiDiUtils.isParagraphRtl(lastPart.getBidiEntity()) ? 1 : 0;
+          final @BiDiEntity int bidiEntityForEllipsis = BiDiUtils.isValid(lastPart.getBidiEntity()) ? BiDiUtils.create(bidiParagraphLevel, bidiParagraphLevel, BiDiUtils.getIndex(bidiEntity)) : bidiEntity;
           if (lastPart.isStaticElement()) {
             // Easy path: just replace first found media with ellipsis
 
@@ -1870,7 +1890,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
             ellipsisPart.setXY(currentX, currentY);
             ellipsisPart.setWidth(ellipsisWidth);
             ellipsisPart.setEntity(lastPart.getEntity());
-            ellipsisPart.setBidiEntity(lastPart.getBidiEntity());
+            ellipsisPart.setBidiEntity(bidiEntityForEllipsis);
             out.set(out.size() - 1, ellipsisPart);
             currentX += ellipsisPart.getWidth();
 
@@ -1889,11 +1909,20 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
               if (!ellipsis.endsWith(defaultEllipsis)) {
                 ellipsis += defaultEllipsis;
               }
-              ellipsisWidth = U.measureText(ellipsis, paint);
+              ellipsisWidth = BiDiUtils.measureTextRun(lastPart.getBidiEntity(), ellipsis, paint);
+              final float defaultEllipsisWidth2 = U.measureText(defaultEllipsis, paint);
               if (currentX + ellipsisWidth <= lineMaxWidth) {
-                lastPart.setLine(ellipsis, 0, ellipsis.length());
+                lastPart.setLine(ellipsis, 0, ellipsis.length() - defaultEllipsis.length());
                 lastPart.setWidth(ellipsisWidth);
-                currentX += ellipsisWidth;
+                currentX += ellipsisWidth - defaultEllipsisWidth2;
+
+                TextPart defaultEllipsisPart = new TextPart(this, defaultEllipsis, 0, defaultEllipsis.length(), lastPart.getLineIndex(), lastPart.getParagraphIndex());
+                defaultEllipsisPart.setXY(currentX, lastPart.getY());
+                defaultEllipsisPart.setWidth(defaultEllipsisWidth2);
+                defaultEllipsisPart.setEntity(entity);
+                defaultEllipsisPart.setBidiEntity(bidiEntityForEllipsis);
+                out.add(defaultEllipsisPart);
+                currentX += defaultEllipsisWidth2;
 
                 done = true;
                 break;
@@ -3280,7 +3309,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
         if (Strings.getTextDirection(emoji) == Strings.DIRECTION_LTR) {
           b.append(emoji);
           b.append(' ');
-          b.append("ت");
+          b.append('\u062A');
           b.append('\n');
         }
       }
