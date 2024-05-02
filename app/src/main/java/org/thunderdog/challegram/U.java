@@ -2149,7 +2149,7 @@ public class U {
       return 0;
     }
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+    if (Config.USE_TEXT_ADVANCE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Strings.requiresBidi(in, start, end)) {
       /*
       getTextRunAdvances(char[] chars, int index, int count,
             int contextIndex, int contextCount, boolean isRtl, float[] advances,
@@ -2288,8 +2288,8 @@ public class U {
     if (p == null)
       throw new IllegalArgumentException();
 
-    if (Config.USE_TEXT_ADVANCE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Strings.getTextDirection(in, start, end) != Strings.DIRECTION_RTL) {
-      return p.getRunAdvance(in, start, end, 0, in.length(), false, end);
+    if (Config.USE_TEXT_ADVANCE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Strings.requiresBidi(in, start, end)) {
+      return p.getRunAdvance(in, start, end, 0, in.length(), true, end);
     } else {
       float[] widths = pickWidths(count, true);
       p.getTextWidths(in, start, end, widths);

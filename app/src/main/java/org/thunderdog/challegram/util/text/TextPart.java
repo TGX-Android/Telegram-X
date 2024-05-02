@@ -402,7 +402,7 @@ public class TextPart {
       }
 
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && BiDiUtils.isValid(bidiEntity)) {
-        c.drawTextRun(line, start, end, start, end, x, textY, BiDiUtils.isRtl(bidiEntity), textPaint);
+        c.drawTextRun(line, start, end, 0, line.length(), x, textY, BiDiUtils.isRtl(bidiEntity), textPaint);
       } else {
         c.drawText(line, start, end, x, textY, textPaint);
       }

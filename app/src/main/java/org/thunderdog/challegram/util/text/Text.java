@@ -20,7 +20,6 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.os.Build;
 import android.os.SystemClock;
 import android.text.TextPaint;
 import android.text.TextUtils;
@@ -3077,7 +3076,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       paragraphSize += textPart.getEnd() - textPart.getStart();
 
       if (!paragraphRequiresBidi) {
-        paragraphRequiresBidi = requiresBidi(textPart.getLine(), textPart.getStart(), textPart.getEnd());
+        paragraphRequiresBidi = Strings.requiresBidi(textPart.getLine(), textPart.getStart(), textPart.getEnd());
       }
 
       if (paragraphRequiresBidi) {
@@ -3280,29 +3279,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
       a += count;
     }
-  }
-
-  private static boolean requiresBidi (String text, int start, int end) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-      // Source: android.icu.text.Bidi.requiresBidi
-      // but uses String instead of char[]
-
-      final int RTLMask = (1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT |
-        1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC |
-        1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING |
-        1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE |
-        1 << android.icu.lang.UCharacter.DIRECTIONALITY_ARABIC_NUMBER);
-
-      for (int i = start; i < end; ++i) {
-        if (((1 << android.icu.lang.UCharacter.getDirection(text.charAt(i))) & RTLMask) != 0) {
-          return true;
-        }
-      }
-      return false;
-    }
-
-    // Always create a Bidi object for legacy androids
-    return true;
   }
 
   /* DEBUG */
