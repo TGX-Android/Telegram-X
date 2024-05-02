@@ -14,6 +14,13 @@
  */
 package org.thunderdog.challegram.util.text.bidi;
 
+import android.graphics.Paint;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
+import org.thunderdog.challegram.U;
+
 import me.vkryl.core.BitwiseUtils;
 
 public class BiDiUtils {
@@ -46,5 +53,13 @@ public class BiDiUtils {
   
   public static boolean isParagraphRtl (@BiDiEntity int flags) {
     return BitwiseUtils.hasFlag(flags, IS_PARAGRAPH_RTL_FLAG);
+  }
+
+  public static float measureTextRun (@BiDiEntity int flags, @Nullable CharSequence in, @NonNull Paint p) {
+    return isValid(flags) ? U.measureTextRun(in, p, isRtl(flags)) : U.measureText(in, p);
+  }
+
+  public static float measureTextRun (@BiDiEntity int flags, @Nullable CharSequence in, int start, int end, @NonNull Paint p) {
+    return isValid(flags) ? U.measureTextRun(in, start, end, p, isRtl(flags)) : U.measureText(in, start, end, p);
   }
 }

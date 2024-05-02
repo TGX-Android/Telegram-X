@@ -20,7 +20,6 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.os.Build;
 import android.os.SystemClock;
 import android.text.TextPaint;
 import android.text.TextUtils;
@@ -1564,6 +1563,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     // TODO optimize https://fonts.google.com/specimen/Roboto+Mono
     final boolean isMonospace = false; // (entity != null && entity.isMonospace());
     final boolean isFullyMonospace = isMonospace && isMonospace(in, start, end);
+    final @BiDiEntity int bidiEntity = getBidiEntity(start);
     // final float monospaceSize = spaceSize;
 
     float fullWidth;
@@ -1584,7 +1584,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       } else if (isChild) {
         fullWidth = childWidth[0];
       } else {
-        fullWidth = U.measureText(in, start, end, paint);
+        fullWidth = BiDiUtils.measureTextRun(bidiEntity, in, start, end, paint);
       }
     }
     futureWidth = fullWidth;
@@ -1716,8 +1716,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       lastPart = null;
     }
 
-    final @BiDiEntity int bidiEntity = getBidiEntity(start);
-
     if (lastPart == null || lastPart.getEntity() != entity || lastPart.getBidiEntity() != bidiEntity) {
       TextPart part;
 
@@ -1829,7 +1827,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
         }
       }
       final String defaultEllipsis = Strings.ELLIPSIS;
-      float ellipsisWidth = U.measureText(ellipsis, getTextPaint(entity));
+      final @BiDiEntity int bidiEntity = getBidiEntity(start);
+      float ellipsisWidth = BiDiUtils.measureTextRun(bidiEntity, ellipsis, getTextPaint(entity));
       boolean addLine = false;
       if (currentX + ellipsisWidth <= lineMaxWidth || (addLine = (textFlags & Text.FLAG_ELLIPSIZE_NEWLINE) != 0 && getLineCount() == maxLineCount - 1)) {
         // Easy path: just add ellipsis
@@ -1845,7 +1844,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
         ellipsisPart.setXY(currentX, currentY);
         ellipsisPart.setWidth(ellipsisWidth);
         ellipsisPart.setEntity(entity);
-        ellipsisPart.setBidiEntity(getBidiEntity(start));
+        ellipsisPart.setBidiEntity(bidiEntity);
         out.add(ellipsisPart);
         currentX += ellipsisWidth;
       } else {
@@ -3093,7 +3092,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
     bidiStart = 0;
     bidiLength = in.length();
-    bidiRequired = requiresBidi(in, 0, bidiLength);
+    bidiRequired = Strings.requiresBidi(in, 0, bidiLength);
 
     if (bidiRequired) {
       bidiTmpChars = new char[bidiLength];
@@ -3114,7 +3113,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
     bidiStart = start;
     bidiLength = end - start;
-    bidiRequired = requiresBidi(in, start, end);
+    bidiRequired = Strings.requiresBidi(in, start, end);
 
     if (bidiRequired) {
       if (bidiTmpChars == null || bidiTmpChars.length < bidiLength) {
@@ -3270,29 +3269,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
       a += count;
     }
-  }
-
-  private static boolean requiresBidi (String text, int start, int end) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-      // Source: android.icu.text.Bidi.requiresBidi
-      // but uses String instead of char[]
-
-      final int RTLMask = (1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT |
-        1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC |
-        1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING |
-        1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE |
-        1 << android.icu.lang.UCharacter.DIRECTIONALITY_ARABIC_NUMBER);
-
-      for (int i = start; i < end; ++i) {
-        if (((1 << android.icu.lang.UCharacter.getDirection(text.charAt(i))) & RTLMask) != 0) {
-          return true;
-        }
-      }
-      return false;
-    }
-
-    // Always create a Bidi object for legacy androids
-    return true;
   }
 
   /* DEBUG */

@@ -88,6 +88,71 @@ public class Strings {
     return false;
   }
 
+  public static boolean requiresBidi (CharSequence text, int start, int end) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+      // Source: android.icu.text.Bidi.requiresBidi
+      // but uses CharSequence instead of char[]
+
+      final int RTLMask = (1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT |
+        1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC |
+        1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING |
+        1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE |
+        1 << android.icu.lang.UCharacter.DIRECTIONALITY_ARABIC_NUMBER);
+
+      for (int i = start; i < end; ++i) {
+        if (((1 << android.icu.lang.UCharacter.getDirection(text.charAt(i))) & RTLMask) != 0) {
+          return true;
+        }
+      }
+      return false;
+    } else {    // todo: test difference between UCharacter and Character
+      final int RTLMask = (1 << Character.DIRECTIONALITY_RIGHT_TO_LEFT |
+        1 << Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC |
+        1 << Character.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING |
+        1 << Character.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE |
+        1 << Character.DIRECTIONALITY_ARABIC_NUMBER);
+
+      for (int i = start; i < end; ++i) {
+        if (((1 << Character.getDirectionality(text.charAt(i))) & RTLMask) != 0) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
+
+  public static boolean requiresBidi (char[] text, int start, int end) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+      // Source: android.icu.text.Bidi.requiresBidi
+
+      final int RTLMask = (1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT |
+        1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC |
+        1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING |
+        1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE |
+        1 << android.icu.lang.UCharacter.DIRECTIONALITY_ARABIC_NUMBER);
+
+      for (int i = start; i < end; ++i) {
+        if (((1 << android.icu.lang.UCharacter.getDirection(text[i])) & RTLMask) != 0) {
+          return true;
+        }
+      }
+      return false;
+    } else {
+      final int RTLMask = (1 << Character.DIRECTIONALITY_RIGHT_TO_LEFT |
+        1 << Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC |
+        1 << Character.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING |
+        1 << Character.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE |
+        1 << Character.DIRECTIONALITY_ARABIC_NUMBER);
+
+      for (int i = start; i < end; ++i) {
+        if (((1 << Character.getDirectionality(text[i])) & RTLMask) != 0) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
+
   public interface CharacterCounter {
     boolean accept (char c);
   }
