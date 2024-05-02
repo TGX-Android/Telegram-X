@@ -2289,7 +2289,7 @@ public class U {
       throw new IllegalArgumentException();
 
     if (Config.USE_TEXT_ADVANCE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Strings.requiresBidi(in, start, end)) {
-      return p.getRunAdvance(in, start, end, 0, in.length(), true, end);
+      return p.getRunAdvance(in, start, end, 0, in.length(), false, end);
     } else {
       float[] widths = pickWidths(count, true);
       p.getTextWidths(in, start, end, widths);
