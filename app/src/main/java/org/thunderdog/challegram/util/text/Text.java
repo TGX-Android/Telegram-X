@@ -3255,7 +3255,6 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
     for (int index = partStart; index < partEnd; index++) {
       final TextPart part = partsArray[index];
-      parts.set(index, part);
       if (addSpaceBetweenLines && part.getEnd() < originalText.length() && Character.getDirectionality(originalText.charAt(part.getEnd())) == Character.DIRECTIONALITY_PARAGRAPH_SEPARATOR) {
         x += (int) part.getSource().makeSpaceSize(part.getSource().getTextPaint(null));
       }
