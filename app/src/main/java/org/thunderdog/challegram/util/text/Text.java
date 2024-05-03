@@ -1811,7 +1811,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       if (out.isEmpty())
         throw e;
 
-      final @BiDiEntity int bidiEntity = getBidiEntity(start);
+      @BiDiEntity int bidiEntity = getBidiEntity(start);
       final String defaultEllipsis = Strings.ELLIPSIS;
       TextPart lastPart = out.get(out.size() - 1);
       int currentX = getLineWidth(getLineCount() - 1);
@@ -1833,6 +1833,9 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       }
 
       float ellipsisWidth = BiDiUtils.measureTextRun(bidiEntity, ellipsis, getTextPaint(entity));
+      if (!BiDiUtils.isValid(bidiEntity)) {
+        bidiEntity = lastPart.getBidiEntity();
+      }
       boolean addLine = false;
       if (currentX + ellipsisWidth <= lineMaxWidth || (addLine = (textFlags & Text.FLAG_ELLIPSIZE_NEWLINE) != 0 && getLineCount() == maxLineCount - 1)) {
         // Easy path: just add ellipsis
@@ -1875,7 +1878,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
         do {
           currentX = lastPart.getX();
           final int bidiParagraphLevel = BiDiUtils.isParagraphRtl(lastPart.getBidiEntity()) ? 1 : 0;
-          final @BiDiEntity int bidiEntityForEllipsis = BiDiUtils.isValid(lastPart.getBidiEntity()) ? BiDiUtils.create(bidiParagraphLevel, bidiParagraphLevel, BiDiUtils.getIndex(bidiEntity)) : bidiEntity;
+          final @BiDiEntity int bidiEntityForEllipsis = BiDiUtils.create(bidiParagraphLevel, bidiParagraphLevel, BiDiUtils.getIndex(lastPart.getBidiEntity()));
           if (lastPart.isStaticElement()) {
             // Easy path: just replace first found media with ellipsis
 
@@ -1913,7 +1916,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
               final float defaultEllipsisWidth2 = U.measureText(defaultEllipsis, paint);
               if (currentX + ellipsisWidth <= lineMaxWidth) {
                 lastPart.setLine(ellipsis, 0, ellipsis.length() - defaultEllipsis.length());
-                lastPart.setWidth(ellipsisWidth);
+                lastPart.setWidth(ellipsisWidth - defaultEllipsisWidth2);
                 currentX += ellipsisWidth - defaultEllipsisWidth2;
 
                 TextPart defaultEllipsisPart = new TextPart(this, defaultEllipsis, 0, defaultEllipsis.length(), lastPart.getLineIndex(), lastPart.getParagraphIndex());
