@@ -5096,7 +5096,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean canBeReacted () {
-    return !isSponsoredMessage() && !isEventLog() && !(msg.content instanceof TdApi.MessageCall) && !Td.isEmpty(messageAvailableReactions);
+    return !isSponsoredMessage() && !isEventLog() && !(msg.content instanceof TdApi.MessageCall) && !Td.isEmpty(messageAvailableReactions) && (tdlib.hasPremium() || Td.hasNonPremiumReactions(messageAvailableReactions));
   }
 
   public boolean canBeSaved () {
