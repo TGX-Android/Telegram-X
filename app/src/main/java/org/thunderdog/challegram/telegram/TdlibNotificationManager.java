@@ -1141,14 +1141,15 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       long accountUserId = tdlib.myUserId(true);
       boolean isDebug = tdlib.account().isDebug();
+      int globalVersion = getChannelsGlobalVersion();
       TdApi.User account = myUser();
       if (accountUserId == 0) {
         if (channelGroupCache != null)
           return channelGroupCache;
         throw new IllegalStateException("Cannot retrieve accountUserId, required by channelGroup, authorizationStatus: " + tdlib.authorizationStatus());
       }
-      if (channelGroupCache == null || !channelGroupCache.compareTo(accountUserId, isDebug, getChannelsGlobalVersion())) {
-        channelGroupCache = new TdlibNotificationChannelGroup(tdlib, accountUserId, isDebug, account);
+      if (channelGroupCache == null || !channelGroupCache.compareTo(accountUserId, isDebug, globalVersion)) {
+        channelGroupCache = new TdlibNotificationChannelGroup(tdlib, accountUserId, isDebug, globalVersion, account);
       }
       return channelGroupCache;
     }

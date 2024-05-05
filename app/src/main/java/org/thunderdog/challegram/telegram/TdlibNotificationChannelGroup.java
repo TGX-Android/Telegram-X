@@ -82,11 +82,11 @@ public class TdlibNotificationChannelGroup {
     return accountUserId + "_" + globalVersion;
   }
 
-  public TdlibNotificationChannelGroup (Tdlib tdlib, long accountUserId, boolean isDebugAccount, @Nullable TdApi.User account) throws ChannelCreationFailureException {
+  public TdlibNotificationChannelGroup (Tdlib tdlib, long accountUserId, boolean isDebugAccount, int globalVersion, @Nullable TdApi.User account) throws ChannelCreationFailureException {
     this.tdlib = tdlib;
     this.accountUserId = accountUserId;
     this.isDebug = isDebugAccount;
-    this.globalVersion = tdlib.notifications().getChannelsGlobalVersion();
+    this.globalVersion = globalVersion;
     this.groupId = makeGroupId(accountUserId, isDebugAccount);
     create(account);
   }
