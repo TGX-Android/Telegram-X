@@ -36,7 +36,9 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.DeviceTokenType;
 
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.BitwiseUtils;
@@ -956,7 +958,38 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     return resultChatId;
   }
 
-  public String buildNotificationReport () {
+  public static class NotificationProblems {
+    public final int totalCount;
+    private final NotificationError[] errors;
+
+    public NotificationProblems () {
+      this(0, new NotificationError[0]);
+    }
+
+    private NotificationProblems (int totalCount, NotificationError[] errors) {
+      this.totalCount = totalCount;
+      this.errors = errors;
+    }
+
+    public boolean isEmpty () {
+      return totalCount == 0 || errors.length == 0;
+    }
+
+    public Set<String> allMessages () {
+      Set<String> errorMessages = new LinkedHashSet<>();
+      for (NotificationError error : errors) {
+        if (error.info != null) {
+          String message = error.info.getMessage();
+          if (!StringUtils.isEmpty(message)) {
+            errorMessages.add(message);
+          }
+        }
+      }
+      return errorMessages;
+    }
+  }
+
+  public @Nullable NotificationProblems notificationProblems () {
     final int totalCount = getNotificationProblemCount();
     if (totalCount == 0)
       return null;
@@ -1012,15 +1045,26 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
       return null;
     }
 
+    NotificationError[] array = new NotificationError[errors.size()];
+    for (int i = 0; i < array.length; i++) {
+      array[i] = errors.valueAt(i);
+    }
+    return new NotificationProblems(totalCount, array);
+  }
+
+  public String buildNotificationReport () {
+    NotificationProblems problems = notificationProblems();
+    if (problems == null || problems.isEmpty()) {
+      return null;
+    }
     StringBuilder b = new StringBuilder(U.getUsefulMetadata(tdlib)).append("\n")
-      .append("Total: ").append(totalCount).append("\n")
+      .append("Total: ").append(problems.totalCount).append("\n")
       .append("Now: ").append(Lang.getTimestamp(System.currentTimeMillis(), TimeUnit.MILLISECONDS));
-    for (int i = 0; i < errors.size(); i++) {
-      error = errors.valueAt(i);
+    for (NotificationError error : problems.errors) {
       if (error.info == null)
         continue;
       b.append("\n\n");
-      if (error.eventCount < totalCount) {
+      if (error.eventCount < problems.totalCount) {
         b.append("Count: ").append(error.eventCount).append("\n");
       }
       if (error.lastEventTime != 0) {
