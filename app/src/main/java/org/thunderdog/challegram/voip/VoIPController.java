@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.Td;
 
 @SuppressWarnings("JavaJniMissingFunction")
 public final class VoIPController extends VoIPInstance {
