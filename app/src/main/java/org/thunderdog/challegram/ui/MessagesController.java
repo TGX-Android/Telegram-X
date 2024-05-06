@@ -231,6 +231,7 @@ import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.Unlockable;
+import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.v.MessagesLayoutManager;
@@ -400,6 +401,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     if (BuildConfig.DEBUG) {
       items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendToast, "Show toast", R.drawable.baseline_warning_24));
+      items.add(new HapticMenuHelper.MenuItem(R.id.btn_debugLtrEmoji, "Send LTR emoji", R.drawable.baseline_warning_24));
     }
     if (canSelectSender()) {
       items.add(0, createHapticSenderItem(R.id.btn_openSendersMenu, chat.messageSenderId, false, false));
@@ -453,6 +455,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
           send(modifiedSendOptions, true);
         }
       });
+    } else if (viewId == R.id.btn_debugLtrEmoji) {
+      pickDateOrProceed(Td.newSendOptions(), (sendOptions, disableMarkdown) -> send(new TdApi.InputMessageText(new TdApi.FormattedText(Text.bidiGenerateTestMessage(), new TdApi.TextEntity[0]), null, false), false, sendOptions, null));
     }
     return true;
   }

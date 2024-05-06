@@ -88,6 +88,71 @@ public class Strings {
     return false;
   }
 
+  public static boolean requiresBidi (CharSequence text, int start, int end) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+      // Source: android.icu.text.Bidi.requiresBidi
+      // but uses CharSequence instead of char[]
+
+      final int RTLMask = (1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT |
+        1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC |
+        1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING |
+        1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE |
+        1 << android.icu.lang.UCharacter.DIRECTIONALITY_ARABIC_NUMBER);
+
+      for (int i = start; i < end; ++i) {
+        if (((1 << android.icu.lang.UCharacter.getDirection(text.charAt(i))) & RTLMask) != 0) {
+          return true;
+        }
+      }
+      return false;
+    } else {    // todo: test difference between UCharacter and Character
+      final int RTLMask = (1 << Character.DIRECTIONALITY_RIGHT_TO_LEFT |
+        1 << Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC |
+        1 << Character.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING |
+        1 << Character.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE |
+        1 << Character.DIRECTIONALITY_ARABIC_NUMBER);
+
+      for (int i = start; i < end; ++i) {
+        if (((1 << Character.getDirectionality(text.charAt(i))) & RTLMask) != 0) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
+
+  public static boolean requiresBidi (char[] text, int start, int end) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+      // Source: android.icu.text.Bidi.requiresBidi
+
+      final int RTLMask = (1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT |
+        1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC |
+        1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING |
+        1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE |
+        1 << android.icu.lang.UCharacter.DIRECTIONALITY_ARABIC_NUMBER);
+
+      for (int i = start; i < end; ++i) {
+        if (((1 << android.icu.lang.UCharacter.getDirection(text[i])) & RTLMask) != 0) {
+          return true;
+        }
+      }
+      return false;
+    } else {
+      final int RTLMask = (1 << Character.DIRECTIONALITY_RIGHT_TO_LEFT |
+        1 << Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC |
+        1 << Character.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING |
+        1 << Character.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE |
+        1 << Character.DIRECTIONALITY_ARABIC_NUMBER);
+
+      for (int i = start; i < end; ++i) {
+        if (((1 << Character.getDirectionality(text[i])) & RTLMask) != 0) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
+
   public interface CharacterCounter {
     boolean accept (char c);
   }
@@ -1075,41 +1140,6 @@ public class Strings {
     return b;
   }
 
-  private static boolean isWeakRtl (int codePoint) {
-    switch (codePoint) {
-      case 0x5d1:
-      case 0x5d8:
-      case 0x5db:
-      case 0x5dc:
-      case 0x5de:
-      case 0x5e1:
-      case 0x5ea:
-      case 0xfb31:
-      case 0xfb38:
-      case 0xfb3c:
-      case 0xfb3e:
-      case 0xfb41:
-      case 0xfb4a:
-      case 0xfe91:
-      case 0xfb8c:
-      case 0x5dd:
-      case 0xfea1:
-      case 0x623:
-      case 0x628:
-      case 0x62d:
-      case 0x6a1:
-      case 0xfeaa:
-      case 0x642:
-      case 0xfea7:
-      case 0xfea8:
-      case 0x6aa:
-      case 0x6c3:
-      case 0xfe95:
-        return true;
-    }
-    return false;
-  }
-
   public static boolean isEuropeanNumber (int codePoint) {
     return Character.getDirectionality(codePoint) == Character.DIRECTIONALITY_EUROPEAN_NUMBER;
   }
@@ -1119,11 +1149,6 @@ public class Strings {
   }
 
   public static int getCodePointDirection (int codePoint) {
-    /*switch (codePoint) {
-      case '.'
-      return DIRECTION_NEUTRAL;
-    }*/
-
     int directionality = Character.getDirectionality(codePoint);
     switch (directionality) {
       case Character.DIRECTIONALITY_LEFT_TO_RIGHT:
@@ -1134,7 +1159,7 @@ public class Strings {
       case Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC:
       case Character.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING:
       case Character.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE:
-        return isWeakRtl(codePoint) ? DIRECTION_NEUTRAL : DIRECTION_RTL;
+        return DIRECTION_RTL;
     }
     return DIRECTION_NEUTRAL;
   }
