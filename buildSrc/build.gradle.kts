@@ -49,7 +49,7 @@ configurations.all {
 
 dependencies {
   compileOnly(gradleApi())
-  implementation("com.android.tools.build:gradle:8.3.0")
+  implementation("com.android.tools.build:gradle:8.4.0")
   implementation("com.google.gms:google-services:4.4.1")
   implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}")
   implementation("com.squareup.okhttp3:okhttp:4.12.0")
