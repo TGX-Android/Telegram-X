@@ -60,7 +60,7 @@ open class CheckEmojiKeyboardTask : BaseTask() {
         conditions.add("${equalsPrefix}0x${rangeStart.toString(16)}")
         conditions.add("${equalsPrefix}0x${(rangeStart + 1).toString(16)}")
       } else if (rangeSize > 2) {
-        conditions.add("${inPrefix}in 0x${rangeStart.toString(16)}..0x${(rangeStart + rangeSize).toString(16)}")
+        conditions.add("${inPrefix}in 0x${rangeStart.toString(16)}..0x${(rangeStart + rangeSize - 1).toString(16)}")
       }
       rangeSize = 0
     }
