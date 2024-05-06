@@ -162,24 +162,52 @@ open class CheckEmojiKeyboardTask : BaseTask() {
     return duplicates
   }
 
-  enum class TextDirection (val direction: Int) {
-    NEUTRAL(0),
-    LTR(1),
-    RTL(2)
+  enum class TextDirection {
+    NEUTRAL,
+    LTR,
+    RTL
   }
-  
-  private fun isWeakRtl (codePoint: Int) = when (codePoint) {
-    0x5d1, 0x5d8, 0x5db, 0x5dc, 0x5de,
-    0x5e1, 0x5ea,
-    0xfb31, 0xfb38, 0xfb3c, 0xfb3e,
-    0xfb41, 0xfb4a,
-    0xfe91, 0xfb8c, 0x5dd, 0xfea1,
-    0x623, 0x628, 0x62d, 0x6a1,
-    0xfeaa, 0x642,
-    0xfea7, 0xfea8,
-    0x6aa, 0x6c3,
-    0xfe95 -> true
-    else -> false
+
+  private fun testWeakRtls () {
+    val weakRtls = intArrayOf(
+      0x5d1, // ב (\u5D1)
+      0x5d8, // ט (\u5D8)
+      0x5db, // כ (\u5DB)
+      0x5dc, // ל (\u5DC)
+      0x5de, // מ (\u5DE)
+      0x5e1, // ס (\u5E1)
+      0x5ea, // ת (\u5EA)
+      0xfb31, // בּ (\uFB31)
+      0xfb38, // טּ (\uFB38)
+      0xfb3c, // לּ (\uFB3C)
+      0xfb3e, // מּ (\uFB3E)
+      0xfb41, // סּ (\uFB41)
+      0xfb4a, // תּ (\uFB4A)
+      0xfe91, // ﺑ (\uFE91)
+      0xfb8c, // ﮌ (\uFB8C)
+      0x5dd, // ם (\u5DD)
+      0xfea1, // ﺡ (\uFEA1)
+      0x623, // أ (\u623)
+      0x628, // ب (\u628)
+      0x62d, // ح (\u62D)
+      0x6a1, // ڡ (\u6A1)
+      0xfeaa, // ﺪ (\uFEAA)
+      0x642, // ق (\u642)
+      0xfea7, // ﺧ (\uFEA7)
+      0xfea8, // ﺨ (\uFEA8)
+      0x6aa, // ڪ (\u6AA)
+      0x6c3, // ۃ (\u6C3)
+      0xfe95 // ﺕ (\uFE95)
+    )
+    val b = StringBuilder()
+    weakRtls.forEachIndexed { index, value ->
+      if (index != 0) {
+        b.append("\n")
+      }
+      b.append("0x${value.toString(16)} // ")
+      b.append(emojiSignature(StringBuilder().appendCodePoint(value).toString()))
+    }
+    error(b.toString())
   }
   
   private fun getTextDirection (codePoint: Int): TextDirection {
@@ -191,13 +219,7 @@ open class CheckEmojiKeyboardTask : BaseTask() {
       Character.DIRECTIONALITY_RIGHT_TO_LEFT,
       Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC,
       Character.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING,
-      Character.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE -> {
-        if (isWeakRtl(codePoint)) {
-          TextDirection.NEUTRAL
-        } else {
-          TextDirection.RTL
-        }
-      }
+      Character.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE -> TextDirection.RTL
       else -> TextDirection.NEUTRAL
     }
   }
@@ -592,5 +614,27 @@ open class CheckEmojiKeyboardTask : BaseTask() {
         )
       """.trimIndent())
     }
+
+    /*val weakRtls = intArrayOf(
+      0x5d1, 0x5d8, 0x5db, 0x5dc, 0x5de,
+      0x5e1, 0x5ea,
+      0xfb31, 0xfb38, 0xfb3c, 0xfb3e,
+      0xfb41, 0xfb4a,
+      0xfe91, 0xfb8c, 0x5dd, 0xfea1,
+      0x623, 0x628, 0x62d, 0x6a1,
+      0xfeaa, 0x642,
+      0xfea7, 0xfea8,
+      0x6aa, 0x6c3,
+      0xfe95
+    )
+    val b = StringBuilder()
+    weakRtls.forEachIndexed { index, codePoint ->
+      if (index != 0) {
+        b.append("\n")
+      }
+      b.append("=== 0x${codePoint.toString(16)} ===\n")
+      b.append(emojiSignature(StringBuilder().appendCodePoint(codePoint).toString()))
+    }
+    error(b.toString())*/
   }
 }
