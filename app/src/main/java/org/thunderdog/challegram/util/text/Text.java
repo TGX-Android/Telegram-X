@@ -51,6 +51,7 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ThemeDelegate;
+import org.thunderdog.challegram.tool.EmojiBidUtil;
 import org.thunderdog.challegram.tool.EmojiCode;
 import org.thunderdog.challegram.tool.Emojis;
 import org.thunderdog.challegram.tool.Paints;
@@ -3288,7 +3289,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
       boolean replaceWithNeutralDirectionChar = false;
       if (neutralizeEmoji) {
-        int ltrEmojiCharCount = Emojis.ltrEmojiCharCount(codePoint, count, in, a, end);
+        int ltrEmojiCharCount = EmojiBidUtil.ltrEmojiCharCount(codePoint, count, in, a, end);
         if (ltrEmojiCharCount > 0) {
           count = ltrEmojiCharCount;
           replaceWithNeutralDirectionChar = true;
