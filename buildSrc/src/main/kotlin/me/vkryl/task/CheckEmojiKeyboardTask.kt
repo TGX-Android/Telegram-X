@@ -36,6 +36,51 @@ open class CheckEmojiKeyboardTask : BaseTask() {
     return "\"${hex(text)}\" /* $text */"
   }
 
+  private fun javaWrapCodePoints(text: String): String {
+    return "intArrayOf(${text.codePoints().toArray().joinToString(", ") { "0x${it.toString(16)}" }})"
+  }
+
+  private fun ktCheckIntEquals(values: Iterable<Int>, varName: String = ""): Array<String> {
+    val conditions = mutableListOf<String>()
+
+    var rangeStart = 0
+    var rangeSize = 0
+
+    val equalsPrefix = if (varName.isEmpty()) "" else {
+      "$varName == "
+    }
+    val inPrefix = if (varName.isEmpty()) "" else {
+      "$varName "
+    }
+
+    val addRange: () -> Unit = {
+      if (rangeSize == 1) {
+        conditions.add("${equalsPrefix}0x${rangeStart.toString(16)}")
+      } else if (rangeSize == 2) {
+        conditions.add("${equalsPrefix}0x${rangeStart.toString(16)}")
+        conditions.add("${equalsPrefix}0x${(rangeStart + 1).toString(16)}")
+      } else if (rangeSize > 2) {
+        conditions.add("${inPrefix}in 0x${rangeStart.toString(16)}..0x${(rangeStart + rangeSize).toString(16)}")
+      }
+      rangeSize = 0
+    }
+
+    var prev = 0
+    values.forEachIndexed { index, value ->
+      if (index == 0 || value - prev != 1) {
+        addRange()
+        rangeStart = value
+        rangeSize++
+      } else if (value - prev == 1) {
+        rangeSize++
+      }
+      prev = value
+    }
+    addRange()
+
+    return conditions.toTypedArray()
+  }
+
   private fun emojiSignature(emoji: String?): String {
     return emoji?.let {
       "$emoji (${hex(emoji)})"
@@ -117,6 +162,59 @@ open class CheckEmojiKeyboardTask : BaseTask() {
     return duplicates
   }
 
+  enum class TextDirection (val direction: Int) {
+    NEUTRAL(0),
+    LTR(1),
+    RTL(2)
+  }
+  
+  private fun isWeakRtl (codePoint: Int) = when (codePoint) {
+    0x5d1, 0x5d8, 0x5db, 0x5dc, 0x5de,
+    0x5e1, 0x5ea,
+    0xfb31, 0xfb38, 0xfb3c, 0xfb3e,
+    0xfb41, 0xfb4a,
+    0xfe91, 0xfb8c, 0x5dd, 0xfea1,
+    0x623, 0x628, 0x62d, 0x6a1,
+    0xfeaa, 0x642,
+    0xfea7, 0xfea8,
+    0x6aa, 0x6c3,
+    0xfe95 -> true
+    else -> false
+  }
+  
+  private fun getTextDirection (codePoint: Int): TextDirection {
+    val directionality = Character.getDirectionality(codePoint)
+    return when (directionality) {
+      Character.DIRECTIONALITY_LEFT_TO_RIGHT,
+      Character.DIRECTIONALITY_LEFT_TO_RIGHT_EMBEDDING,
+      Character.DIRECTIONALITY_LEFT_TO_RIGHT_OVERRIDE -> TextDirection.LTR
+      Character.DIRECTIONALITY_RIGHT_TO_LEFT,
+      Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC,
+      Character.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING,
+      Character.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE -> {
+        if (isWeakRtl(codePoint)) {
+          TextDirection.NEUTRAL
+        } else {
+          TextDirection.RTL
+        }
+      }
+      else -> TextDirection.NEUTRAL
+    }
+  }
+
+  private fun getTextDirection (str: String): TextDirection {
+    var index = 0
+    while (index < str.length) {
+      val codePoint = str.codePointAt(index)
+      val direction = getTextDirection(codePoint)
+      if (direction != TextDirection.NEUTRAL) {
+        return direction
+      }
+      index += Character.charCount(codePoint)
+    }
+    return TextDirection.NEUTRAL
+  }
+
   @ExperimentalContracts
   @TaskAction
   fun checkEmojiKeyboard () {
@@ -175,6 +273,9 @@ open class CheckEmojiKeyboardTask : BaseTask() {
     val mixed2dEmoji = mutableSetOf<String>()
     val genderedEmoji = mutableMapOf<String, MutableList<Char>>()
 
+    val ltrEmoji = mutableSetOf<String>()
+    var maxLtrEmojiLength = 0
+
     val supportedSet = mutableSetOf<String>()
 
     var maxEmojiLength = 0
@@ -182,6 +283,17 @@ open class CheckEmojiKeyboardTask : BaseTask() {
     for (chunk in supported) {
       for (emoji in chunk) {
         maxEmojiLength = maxOf(maxEmojiLength, emoji.length)
+
+        val emojiDirection = getTextDirection(emoji)
+        when (emojiDirection) {
+          TextDirection.LTR -> {
+            ltrEmoji.add(emoji)
+            maxLtrEmojiLength = maxOf(maxLtrEmojiLength, emoji.length)
+          }
+          TextDirection.RTL -> error("Unexpected RTL emoji: ${emojiSignature(emoji)}")
+          TextDirection.NEUTRAL -> { /*do nothing*/ }
+        }
+
         val toned = findTones(emoji/*, defaultSkinTone*/)
         val originalEmoji = tone2dAliases[toned.first] ?: toned.first
         val tones = toned.second
@@ -327,6 +439,39 @@ open class CheckEmojiKeyboardTask : BaseTask() {
       error("${missingEmoji.size + incorrectOrderEmoji.size} emoji-related error(s).\n\n${errors.joinToString("\n\n")}")
     }
 
+    val singleLtrEmojiCodePoints = sortedSetOf<Int>()
+    val doubleLtrEmojiCodePoints = sortedMapOf<Int, MutableSet<Int>>()
+    val secondLtrEmojiCodePointToFirstCodePoint = sortedMapOf<Int, MutableSet<Int>>()
+    ltrEmoji.forEach { emoji ->
+      val codePointCount = emoji.codePointCount(0, emoji.length)
+      val firstCodePoint = emoji.codePointAt(0)
+      if (codePointCount == 1) {
+        if (doubleLtrEmojiCodePoints.containsKey(firstCodePoint)) {
+          error("Single ltr emoji already has double entry: ${emojiSignature(emoji)}")
+        }
+        singleLtrEmojiCodePoints.add(firstCodePoint)
+      } else if (codePointCount == 2) {
+        if (singleLtrEmojiCodePoints.contains(firstCodePoint)) {
+          error("Double ltr emoji already has single entry: ${emojiSignature(emoji)}")
+        }
+        val secondCodePoint = emoji.codePointAt(Character.charCount(firstCodePoint))
+        val list = doubleLtrEmojiCodePoints[firstCodePoint]
+        if (list != null) {
+          list.add(secondCodePoint)
+        } else {
+          doubleLtrEmojiCodePoints[firstCodePoint] = sortedSetOf(secondCodePoint)
+        }
+        val set = secondLtrEmojiCodePointToFirstCodePoint[secondCodePoint]
+        if (set != null) {
+          set.add(firstCodePoint)
+        } else {
+          secondLtrEmojiCodePointToFirstCodePoint[secondCodePoint] = sortedSetOf(firstCodePoint)
+        }
+      } else {
+        error("Unsupported long ltr emoji: ${emojiSignature(emoji)}")
+      }
+    }
+
     writeToFile("app/src/main/java/org/thunderdog/challegram/tool/Emojis.kt") { kt ->
       kt.append("""
         @file:JvmName("Emojis")
@@ -395,6 +540,45 @@ open class CheckEmojiKeyboardTask : BaseTask() {
             else -> null
           }
         }
+        
+        const val MAX_LTR_EMOJI_LENGTH = ${maxLtrEmojiLength}
+        
+        @Autogenerated private fun isKnownLtrEmoji (codePoint: Int, nextCodePoint: Int): Boolean {
+          if ((${ ktCheckIntEquals(doubleLtrEmojiCodePoints.keys, "codePoint").joinToString(" || ") }) && (${ ktCheckIntEquals(secondLtrEmojiCodePointToFirstCodePoint.keys, "nextCodePoint").joinToString(" || ") })) {
+            when (codePoint) {
+              ${doubleLtrEmojiCodePoints.entries.joinToString("\n              ") { entry -> 
+                "0x${entry.key.toString(16)} -> {" + "\n                " +
+                  "when (nextCodePoint) {\n                  " +
+                    ktCheckIntEquals(entry.value).joinToString(",\n                  ") + " -> return true\n                " +
+                  "}\n              " +
+                "}"
+              } }
+            }
+          }
+          return false
+        }
+        
+        @Autogenerated fun ltrEmojiCharCount (codePoint: Int, codePointSize: Int, str: String, start: Int, end: Int): Int {
+          when (codePoint) {
+            ${ ktCheckIntEquals(singleLtrEmojiCodePoints).joinToString(",\n            ") } -> {
+              return codePointSize
+            }
+            ${ ktCheckIntEquals(doubleLtrEmojiCodePoints.keys).joinToString(",\n          ") } -> {
+              if (start + codePointSize < end) {
+                val nextCodePoint = str.codePointAt(start + codePointSize)
+                if (isKnownLtrEmoji(codePoint, nextCodePoint)) {
+                  val nextCodePointSize = Character.charCount(nextCodePoint)
+                  return codePointSize + nextCodePointSize
+                }
+              }
+            }
+          }
+          return 0
+        }
+        
+        @Autogenerated fun ltrSet () = setOf(
+          ${ltrEmoji.sorted().joinToString(",\n          ") { javaWrap(it) }}
+        )
       """.trimIndent())
     }
   }

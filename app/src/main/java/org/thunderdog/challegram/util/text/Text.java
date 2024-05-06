@@ -52,6 +52,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.tool.EmojiCode;
+import org.thunderdog.challegram.tool.Emojis;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -3278,21 +3279,26 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     }
   }
 
-  private static boolean bidiIsEmoji (int codePoint) {
-    return (0x1F100 <= codePoint && codePoint <= 0x1F2FF)   // Enclosed Alphanumeric Supplement and Enclosed Ideographic Supplement blocks
-      || codePoint == 0x2139    // ℹ
-      || codePoint == 0x24C2    // Ⓜ
-      || codePoint == 0x3297    // ㊗
-      || codePoint == 0x3299;   // ㊙
-  }
-
   private static void bidiGetChars (String in, int start, int end, char[] dst, boolean neutralizeEmoji, boolean ignoreParagraphSeparators) {
     in.getChars(start, end, dst, 0);
 
     for (int a = start; a < end; ) {
       final int codePoint = in.codePointAt(a);
-      final int count = Character.charCount(codePoint);
-      if ((neutralizeEmoji && bidiIsEmoji(codePoint)) || (ignoreParagraphSeparators && Character.getDirectionality(codePoint) == Character.DIRECTIONALITY_PARAGRAPH_SEPARATOR)) {
+      int count = Character.charCount(codePoint);
+
+      boolean replaceWithNeutralDirectionChar = false;
+      if (neutralizeEmoji) {
+        int ltrEmojiCharCount = Emojis.ltrEmojiCharCount(codePoint, count, in, a, end);
+        if (ltrEmojiCharCount > 0) {
+          count = ltrEmojiCharCount;
+          replaceWithNeutralDirectionChar = true;
+        }
+      }
+      if (!replaceWithNeutralDirectionChar && ignoreParagraphSeparators && Character.getDirectionality(codePoint) == Character.DIRECTIONALITY_PARAGRAPH_SEPARATOR) {
+        replaceWithNeutralDirectionChar = true;
+      }
+
+      if (replaceWithNeutralDirectionChar) {
         for (int b = 0; b < count; b++) {
           dst[a - start + b] = ' ';
         }
