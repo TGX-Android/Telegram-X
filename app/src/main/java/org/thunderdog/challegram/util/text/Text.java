@@ -53,7 +53,6 @@ import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.tool.EmojiBidUtil;
 import org.thunderdog.challegram.tool.EmojiCode;
-import org.thunderdog.challegram.tool.Emojis;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
