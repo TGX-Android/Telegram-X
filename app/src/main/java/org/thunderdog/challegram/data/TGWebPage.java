@@ -983,6 +983,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   private void buildRippleButton () {
     int stringRes = 0;
     int icon = 0;
+    String text = null;
 
     if (needInstantView()) {
       stringRes = R.string.InstantView;
@@ -1006,9 +1007,13 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
         case TYPE_TELEGRAM_BOT:
           stringRes = R.string.OpenBot;
           break;
-        case TYPE_TELEGRAM_AD:
-          stringRes = parent.getSponsoredMessageButtonResId();
+        case TYPE_TELEGRAM_AD: {
+          TdApi.SponsoredMessage sponsoredMessage = parent.getSponsoredMessage();
+          if (sponsoredMessage != null) {
+            text = sponsoredMessage.buttonText;
+          }
           break;
+        }
         case TYPE_TELEGRAM_CHAT:
           stringRes = R.string.OpenChat;
           break;
@@ -1017,12 +1022,15 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
           break;
       }
     }
+    if (text == null && stringRes != 0) {
+      text = Lang.getString(stringRes);
+    }
 
-    if (stringRes != 0) {
+    if (!StringUtils.isEmpty(text)) {
       rippleButtonY = height + Screen.dp(6f);
       height = rippleButtonY + TGInlineKeyboard.getButtonHeight();
       rippleButton = new TGInlineKeyboard(parent, false);
-      rippleButton.setCustom(icon, Lang.getString(stringRes), availWidth - paddingLeft, type != TYPE_TELEGRAM_AD, this);
+      rippleButton.setCustom(icon, text, availWidth - paddingLeft, type != TYPE_TELEGRAM_AD, this);
     }
   }
 

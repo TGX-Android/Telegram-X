@@ -394,7 +394,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     this.commentButton = new TGCommentButton(this);
 
     if (isSponsoredMessage()) {
-      this.sender = new TdlibSender(tdlib, msg.chatId, sponsoredMessage.sponsor);
+      this.sender = new TdlibSender(tdlib, msg.chatId, sponsoredMessage);
     } else {
       TdApi.MessageSender sender = msg.senderId;
       if (sender == null) {
@@ -1459,18 +1459,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       return true;
     }
     if (isSponsoredMessage()) {
-      switch (sponsoredMessage.sponsor.type.getConstructor()) {
-        case TdApi.MessageSponsorTypeWebsite.CONSTRUCTOR:
-        case TdApi.MessageSponsorTypeWebApp.CONSTRUCTOR:
-        case TdApi.MessageSponsorTypePrivateChannel.CONSTRUCTOR:
-          return false;
-        case TdApi.MessageSponsorTypeBot.CONSTRUCTOR:
-        case TdApi.MessageSponsorTypePublicChannel.CONSTRUCTOR:
-          return true;
-        default:
-          Td.assertMessageSponsorType_cdabde01();
-          throw Td.unsupported(sponsoredMessage.sponsor.type);
-      }
+      return sponsoredMessage.sponsor.photo != null;
     }
     if (isThreadHeader() && messagesController().getMessageThread().areComments()) {
       return false;
@@ -4191,30 +4180,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (hasAvatar || force) {
       if (isSponsoredMessage()) {
         if (sponsoredMessage.sponsor.photo != null) {
-          receiver.requestSpecific(tdlib, sponsoredMessage.sponsor.photo, AvatarReceiver.Options.NONE);
+          receiver.requestSpecific(tdlib, TD.toChatPhotoInfo(sponsoredMessage.sponsor.photo), AvatarReceiver.Options.NONE);
+        } else if (needAvatar()) {
+          receiver.requestPlaceholder(tdlib, sender.getPlaceholderMetadata(), AvatarReceiver.Options.NONE);
         } else {
-          TdApi.MessageSponsor sponsor = sponsoredMessage.sponsor;
-          switch (sponsor.type.getConstructor()) {
-            case TdApi.MessageSponsorTypeBot.CONSTRUCTOR: {
-              TdApi.MessageSponsorTypeBot bot = (TdApi.MessageSponsorTypeBot) sponsor.type;
-              receiver.requestUser(tdlib, bot.botUserId, AvatarReceiver.Options.NONE);
-              break;
-            }
-            case TdApi.MessageSponsorTypePublicChannel.CONSTRUCTOR: {
-              TdApi.MessageSponsorTypePublicChannel publicChannel = (TdApi.MessageSponsorTypePublicChannel) sponsor.type;
-              receiver.requestChat(tdlib, publicChannel.chatId, AvatarReceiver.Options.NONE);
-              break;
-            }
-            case TdApi.MessageSponsorTypePrivateChannel.CONSTRUCTOR:
-            case TdApi.MessageSponsorTypeWebsite.CONSTRUCTOR:
-            case TdApi.MessageSponsorTypeWebApp.CONSTRUCTOR: {
-              receiver.requestPlaceholder(tdlib, sender.getPlaceholderMetadata(), AvatarReceiver.Options.NONE);
-              break;
-            }
-            default:
-              Td.assertMessageSponsorType_cdabde01();
-              throw Td.unsupported(sponsor.type);
-          }
+          receiver.clear();
         }
       } else if (forceForwardOrImportInfo()) {
         forwardInfo.requestAvatar(receiver);
@@ -9525,72 +9495,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     };
     TdlibUi.UrlOpenParameters openParameters = openParameters()
       .requireOpenPrompt();
-    TdApi.MessageSponsor sponsor = sponsoredMessage.sponsor;
-    switch (sponsor.type.getConstructor()) {
-      case TdApi.MessageSponsorTypeBot.CONSTRUCTOR: {
-        TdApi.MessageSponsorTypeBot bot = (TdApi.MessageSponsorTypeBot) sponsor.type;
-        tdlib.ui().openInternalLinkType(this, null, bot.link, openParameters, after);
-        break;
-      }
-      case TdApi.MessageSponsorTypeWebApp.CONSTRUCTOR: {
-        TdApi.MessageSponsorTypeWebApp webApp = (TdApi.MessageSponsorTypeWebApp) sponsor.type;
-        tdlib.ui().openInternalLinkType(this, null, webApp.link, openParameters, after);
-        break;
-      }
-      case TdApi.MessageSponsorTypePublicChannel.CONSTRUCTOR: {
-        TdApi.MessageSponsorTypePublicChannel publicChannel = (TdApi.MessageSponsorTypePublicChannel) sponsor.type;
-        if (publicChannel.link != null) {
-          tdlib.ui().openInternalLinkType(this, null, publicChannel.link, openParameters, after);
-        } else {
-          tdlib.ui().openChat(this, publicChannel.chatId, new TdlibUi.ChatOpenParameters().urlOpenParameters(openParameters).keepStack().after(chatId -> {
-            after.runWithBool(true);
-          }));
-        }
-        break;
-      }
-      case TdApi.MessageSponsorTypePrivateChannel.CONSTRUCTOR: {
-        TdApi.MessageSponsorTypePrivateChannel privateChannel = (TdApi.MessageSponsorTypePrivateChannel) sponsor.type;
-        tdlib.ui().openUrl(this, privateChannel.inviteLink, openParameters, after);
-        break;
-      }
-      case TdApi.MessageSponsorTypeWebsite.CONSTRUCTOR: {
-        TdApi.MessageSponsorTypeWebsite website = (TdApi.MessageSponsorTypeWebsite) sponsor.type;
-        tdlib.ui().openUrl(this, website.url, openParameters, after);
-        break;
-      }
-      default:
-        Td.assertMessageSponsorType_cdabde01();
-        throw Td.unsupported(sponsor.type);
-    }
-  }
-
-  public @StringRes int getSponsoredMessageButtonResId () {
-    if (!isSponsoredMessage()) {
-      return 0;
-    }
-    TdApi.MessageSponsor sponsor = sponsoredMessage.sponsor;
-    switch (sponsor.type.getConstructor()) {
-      case TdApi.MessageSponsorTypeBot.CONSTRUCTOR:
-        return R.string.AdOpenBot;
-      case TdApi.MessageSponsorTypePrivateChannel.CONSTRUCTOR:
-        return R.string.AdOpenChannel;
-      case TdApi.MessageSponsorTypePublicChannel.CONSTRUCTOR: {
-        TdApi.MessageSponsorTypePublicChannel publicChannel = (TdApi.MessageSponsorTypePublicChannel) sponsor.type;
-        if (publicChannel.link != null && publicChannel.link.getConstructor() == TdApi.InternalLinkTypeMessage.CONSTRUCTOR) {
-          return R.string.AdOpenPost;
-        }
-        return R.string.AdOpenChannel;
-      }
-      case TdApi.MessageSponsorTypeWebsite.CONSTRUCTOR: {
-        return R.string.AdOpenWebsite;
-      }
-      case TdApi.MessageSponsorTypeWebApp.CONSTRUCTOR: {
-        return R.string.AdOpenApp;
-      }
-      default:
-        Td.assertMessageSponsorType_cdabde01();
-        throw Td.unsupported(sponsor.type);
-    }
+    tdlib.ui().openUrl(this, sponsoredMessage.sponsor.url, openParameters, after);
   }
 
   public TdApi.SponsoredMessage getSponsoredMessage () {
@@ -9601,47 +9506,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (!isSponsoredMessage() || !Config.ALLOW_SPONSORED_MESSAGE_LINK_COPY) {
       return null;
     }
-
-    TdApi.MessageSponsor sponsor = sponsoredMessage.sponsor;
-    switch (sponsor.type.getConstructor()) {
-      case TdApi.MessageSponsorTypeBot.CONSTRUCTOR: {
-        TdApi.MessageSponsorTypeBot bot = (TdApi.MessageSponsorTypeBot) sponsor.type;
-        if (bot.link.getConstructor() == TdApi.InternalLinkTypeBotStart.CONSTRUCTOR) {
-          TdApi.InternalLinkTypeBotStart botStart = (TdApi.InternalLinkTypeBotStart) bot.link;
-          return tdlib.tMeStartUrl(botStart.botUsername, botStart.startParameter, false);
-        }
-        // Ignoring other types
-        break;
-      }
-      case TdApi.MessageSponsorTypeWebApp.CONSTRUCTOR: {
-        TdApi.MessageSponsorTypeWebApp webApp = (TdApi.MessageSponsorTypeWebApp) sponsor.type;
-        // No need in URL
-        break;
-      }
-      case TdApi.MessageSponsorTypePrivateChannel.CONSTRUCTOR: {
-        TdApi.MessageSponsorTypePrivateChannel privateChannel = (TdApi.MessageSponsorTypePrivateChannel) sponsor.type;
-        return privateChannel.inviteLink;
-      }
-      case TdApi.MessageSponsorTypePublicChannel.CONSTRUCTOR: {
-        TdApi.MessageSponsorTypePublicChannel publicChannel = (TdApi.MessageSponsorTypePublicChannel) sponsor.type;
-        if (publicChannel.link != null) {
-          if (publicChannel.link.getConstructor() == TdApi.InternalLinkTypeMessage.CONSTRUCTOR) {
-            return ((TdApi.InternalLinkTypeMessage) publicChannel.link).url;
-          }
-        } else {
-          return tdlib.tMeChatUrl(publicChannel.chatId);
-        }
-      }
-      case TdApi.MessageSponsorTypeWebsite.CONSTRUCTOR: {
-        TdApi.MessageSponsorTypeWebsite website = (TdApi.MessageSponsorTypeWebsite) sponsor.type;
-        return website.url;
-      }
-      default:
-        Td.assertMessageSponsorType_cdabde01();
-        throw Td.unsupported(sponsor.type);
-    }
-
-    return null;
+    return sponsoredMessage.sponsor.url;
   }
 
   /* * */

@@ -289,10 +289,13 @@ public class ContentPreview {
           alternativeText = name;
         break;
       }
-      case TdApi.MessagePoll.CONSTRUCTOR:
-        alternativeText = ((TdApi.MessagePoll) message.content).poll.question;
+      case TdApi.MessagePoll.CONSTRUCTOR: {
+        if (allowContent) {
+          formattedText = ((TdApi.MessagePoll) message.content).poll.question;
+        }
         arg1 = ((TdApi.MessagePoll) message.content).poll.type.getConstructor() == TdApi.PollTypeRegular.CONSTRUCTOR ? ARG_NONE : ARG_POLL_QUIZ;
         break;
+      }
       case TdApi.MessageDice.CONSTRUCTOR:
         alternativeText = ((TdApi.MessageDice) message.content).emoji;
         arg1 = ((TdApi.MessageDice) message.content).value;

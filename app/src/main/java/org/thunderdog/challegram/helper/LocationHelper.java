@@ -22,7 +22,6 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
-import android.os.Bundle;
 import android.os.Looper;
 
 import androidx.annotation.NonNull;
@@ -432,7 +431,7 @@ public class LocationHelper implements ActivityResultHandler {
       final CancellableRunnable[] timeout = new CancellableRunnable[1];
       final android.location.LocationListener listener = new android.location.LocationListener() {
         @Override
-        public void onLocationChanged (Location location) {
+        public void onLocationChanged (@NonNull Location location) {
           timeout[0].cancel();
           try {
             manager.removeUpdates(this);
@@ -445,15 +444,6 @@ public class LocationHelper implements ActivityResultHandler {
             onReceiveLocation(location);
           }
         }
-
-        @Override
-        public void onStatusChanged (String provider, int status, Bundle extras) { }
-
-        @Override
-        public void onProviderEnabled (String provider) { }
-
-        @Override
-        public void onProviderDisabled (String provider) { }
       };
       timeout[0] = new CancellableRunnable() {
         @Override

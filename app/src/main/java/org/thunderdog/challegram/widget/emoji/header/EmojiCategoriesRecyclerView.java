@@ -39,13 +39,16 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.RunnableData;
+import me.vkryl.td.Td;
 
 public class EmojiCategoriesRecyclerView extends CustomRecyclerView implements Destroyable {
   private static final int CATEGORY_WIDTH = 38;
@@ -89,7 +92,21 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView implements D
 
     controller.tdlib().send(new TdApi.GetEmojiCategories(new TdApi.EmojiCategoryTypeDefault()), (emojiCategories, error) -> {
       if (emojiCategories != null) {
-        UI.post(() -> emojiSearchTypesAdapter.requestEmojiCategories(emojiCategories.categories, receiverForPriorityLoading));
+        List<TdApi.EmojiCategory> categories = new ArrayList<>(emojiCategories.categories.length);
+        for (TdApi.EmojiCategory category : emojiCategories.categories) {
+          switch (category.source.getConstructor()) {
+            case TdApi.EmojiCategorySourceSearch.CONSTRUCTOR:
+              categories.add(category);
+              break;
+            case TdApi.EmojiCategorySourcePremium.CONSTRUCTOR:
+              continue;
+            default:
+              Td.assertEmojiCategorySource_d5234ae8();
+              throw Td.unsupported(category.source);
+          }
+        }
+        TdApi.EmojiCategory[] filtered = categories.toArray(new TdApi.EmojiCategory[0]);
+        UI.post(() -> emojiSearchTypesAdapter.requestEmojiCategories(filtered, receiverForPriorityLoading));
       }
     });
   }
@@ -321,7 +338,7 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView implements D
       int index = (int) v.getTag();
       if (index != activeIndex) {
         setActiveIndex(index);
-        onSectionClickListener.runWithData(StringUtils.join(" ", " ", Arrays.asList(categories[index].emojis)));
+        onSectionClickListener.runWithData(StringUtils.join(" ", " ", Arrays.asList(getEmojis(categories[index].source))));
       } else {
         setActiveIndex(-1);
         onSectionClickListener.runWithData(null);
@@ -330,6 +347,16 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView implements D
 
     private TdApi.EmojiCategory[] categories;
     private TGStickerObj[] categoryStickers;
+
+    private static String[] getEmojis (TdApi.EmojiCategorySource source) {
+      switch (source.getConstructor()) {
+        case TdApi.EmojiCategorySourceSearch.CONSTRUCTOR:
+          return ((TdApi.EmojiCategorySourceSearch) source).emojis;
+        case TdApi.EmojiCategorySourcePremium.CONSTRUCTOR:
+          break;
+      }
+      return new String[0];
+    }
 
     public void requestEmojiCategories (TdApi.EmojiCategory[] categories, ComplexReceiver receiverForPriorityLoading) {
       final int itemCount = getItemCount();
@@ -340,7 +367,7 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView implements D
       this.categoryStickers = new TGStickerObj[categories.length];
       for (int a = 0; a < categories.length; a++) {
         TdApi.EmojiCategory category = categories[a];
-        categoryStickers[a] = new TGStickerObj(context.tdlib(), category.icon, category.icon.fullType, category.emojis);
+        categoryStickers[a] = new TGStickerObj(context.tdlib(), category.icon, category.icon.fullType, getEmojis(category.source));
         if (categoryStickers[a].getPreviewAnimation() != null) {
           categoryStickers[a].getPreviewAnimation().setHighPriorityForDecode();
           categoryStickers[a].getPreviewAnimation().setPlayOnce(true);

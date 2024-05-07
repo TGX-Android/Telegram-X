@@ -357,7 +357,31 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       case MODE_CODE_CHANGE:
       case MODE_CODE_PHONE_CONFIRM:
       case MODE_CODE_EMAIL: {
-        editText.getEditText().setInputType(InputType.TYPE_CLASS_NUMBER);
+        TdApi.AuthenticationCodeType codeType = authenticationCodeType();
+        if (codeType == null) {
+          codeType = new TdApi.AuthenticationCodeTypeSms();
+        }
+        switch (codeType.getConstructor()) {
+          // Digit-only
+          case TdApi.AuthenticationCodeTypeTelegramMessage.CONSTRUCTOR:
+          case TdApi.AuthenticationCodeTypeSms.CONSTRUCTOR:
+          case TdApi.AuthenticationCodeTypeCall.CONSTRUCTOR:
+          case TdApi.AuthenticationCodeTypeFlashCall.CONSTRUCTOR:
+          case TdApi.AuthenticationCodeTypeMissedCall.CONSTRUCTOR:
+          case TdApi.AuthenticationCodeTypeFragment.CONSTRUCTOR:
+          case TdApi.AuthenticationCodeTypeFirebaseAndroid.CONSTRUCTOR:
+          case TdApi.AuthenticationCodeTypeFirebaseIos.CONSTRUCTOR:
+            editText.getEditText().setInputType(InputType.TYPE_CLASS_NUMBER);
+            break;
+          // Word-based
+          case TdApi.AuthenticationCodeTypeSmsWord.CONSTRUCTOR:
+          case TdApi.AuthenticationCodeTypeSmsPhrase.CONSTRUCTOR:
+            editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+            break;
+          default:
+            Td.assertAuthenticationCodeType_6b7089f4();
+            throw Td.unsupported(codeType);
+        }
         break;
       }
       default: {
@@ -733,6 +757,22 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         }
         return Strings.replaceBoldTokens(Lang.getString(resId, formattedPhone), ColorId.textLight);
       }
+      case TdApi.AuthenticationCodeTypeSmsWord.CONSTRUCTOR: {
+        TdApi.AuthenticationCodeTypeSmsWord word = (TdApi.AuthenticationCodeTypeSmsWord) type;
+        if (StringUtils.isEmpty(word.firstLetter)) {
+          return Lang.getStringBold(R.string.SentSmsWord, formattedPhone);
+        } else {
+          return Lang.getStringBold(R.string.SentSmsWordHint, formattedPhone, word.firstLetter);
+        }
+      }
+      case TdApi.AuthenticationCodeTypeSmsPhrase.CONSTRUCTOR: {
+        TdApi.AuthenticationCodeTypeSmsPhrase phrase = (TdApi.AuthenticationCodeTypeSmsPhrase) type;
+        if (StringUtils.isEmpty(phrase.firstWord)) {
+          return Lang.getStringBold(R.string.SentSmsPhrase, formattedPhone);
+        } else {
+          return Lang.getStringBold(R.string.SentSmsPhraseHint, formattedPhone, phrase.firstWord);
+        }
+      }
       case TdApi.AuthenticationCodeTypeMissedCall.CONSTRUCTOR: {
         TdApi.AuthenticationCodeTypeMissedCall missedCall = (TdApi.AuthenticationCodeTypeMissedCall) type;
         editText.setHint(Lang.pluralBold(R.string.login_LastDigits, missedCall.length));
@@ -755,10 +795,12 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         }
         return b;
       }
-      case TdApi.AuthenticationCodeTypeFirebaseIos.CONSTRUCTOR:
-        break; // Unreachable
+      case TdApi.AuthenticationCodeTypeFirebaseIos.CONSTRUCTOR: // unreachable
+      default:
+        Td.assertAuthenticationCodeType_6b7089f4();
+        break;
     }
-    throw new UnsupportedOperationException(type.toString());
+    throw Td.unsupported(type);
   }
 
   @Override
@@ -779,12 +821,17 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         setIsInputOK(Strings.isValidEmail(text));
       }
     } else if (mode == MODE_EMAIL_RECOVERY || mode == MODE_LOGIN_EMAIL_RECOVERY) {
-      setIsInputOK(Strings.getNumber(text).length() >= 6);
-    } else if ((mode == MODE_CODE || mode == MODE_CODE_CHANGE || mode == MODE_CODE_PHONE_CONFIRM || mode == MODE_CODE_EMAIL) && Strings.getNumberLength(text) >= TD.getCodeLength(authState)) {
+      setIsInputOK(Strings.getNumber(text).length() >= EMAIL_RECOVERY_CODE_LENGTH);
+    } else if ((mode == MODE_CODE || mode == MODE_CODE_CHANGE || mode == MODE_CODE_PHONE_CONFIRM || mode == MODE_CODE_EMAIL) && checkCodeLength(authState, text)) {
       proceed();
     } else if ((mode == MODE_NEW || mode == MODE_EDIT) && step == STEP_PASSWORD_HINT) {
       passwordHint = text;
     }
+  }
+
+  private static boolean checkCodeLength (TdApi.AuthorizationState state, String text) {
+    int expectedCodeLength = TD.codeLength(state, 0);
+    return expectedCodeLength > 0 && Strings.codePointCount(text) >= expectedCodeLength;
   }
 
   private boolean ignoreNextEmpty;
@@ -1663,6 +1710,8 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     }));
   }
 
+  private static final int EMAIL_RECOVERY_CODE_LENGTH = 6;
+
   private void proceed () {
     String input = editText.getText().toString();
     switch (mode) {
@@ -1684,7 +1733,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       case MODE_EMAIL_RECOVERY:
       case MODE_LOGIN_EMAIL_RECOVERY: {
         String number = Strings.getNumber(input);
-        if (number.length() >= 6) {
+        if (number.length() >= EMAIL_RECOVERY_CODE_LENGTH) {
           recover(number);
         }
         break;

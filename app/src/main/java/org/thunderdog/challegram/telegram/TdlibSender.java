@@ -36,7 +36,7 @@ public class TdlibSender {
   private final Tdlib tdlib;
   private final long inChatId;
   private final @Nullable TdApi.MessageSender sender;
-  private final TdApi.MessageSponsor sponsor;
+  private final TdApi.SponsoredMessage sponsoredMessage;
 
   private String name, nameShort;
   private TdApi.Usernames usernames;
@@ -53,7 +53,7 @@ public class TdlibSender {
     this.tdlib = tdlib;
     this.inChatId = inChatId;
     this.sender = sender;
-    this.sponsor = null;
+    this.sponsoredMessage = null;
     this.flags = setSender(sender, manager, isDemo);
   }
 
@@ -105,41 +105,16 @@ public class TdlibSender {
     return flags;
   }
 
-  public TdlibSender (Tdlib tdlib, long inChatId, TdApi.MessageSponsor sponsor) {
+  public TdlibSender (Tdlib tdlib, long inChatId, TdApi.SponsoredMessage sponsoredMessage) {
     this.tdlib = tdlib;
     this.inChatId = inChatId;
-    this.sponsor = sponsor;
-    TdApi.MessageSender sender;
-    switch (sponsor.type.getConstructor()) {
-      case TdApi.MessageSponsorTypeBot.CONSTRUCTOR:
-        TdApi.MessageSponsorTypeBot bot = (TdApi.MessageSponsorTypeBot) sponsor.type;
-        sender = new TdApi.MessageSenderUser(bot.botUserId);
-        break;
-      case TdApi.MessageSponsorTypePublicChannel.CONSTRUCTOR:
-        TdApi.MessageSponsorTypePublicChannel publicChannel = (TdApi.MessageSponsorTypePublicChannel) sponsor.type;
-        sender = new TdApi.MessageSenderChat(publicChannel.chatId);
-        break;
-      case TdApi.MessageSponsorTypePrivateChannel.CONSTRUCTOR:
-      case TdApi.MessageSponsorTypeWebsite.CONSTRUCTOR:
-      case TdApi.MessageSponsorTypeWebApp.CONSTRUCTOR:
-        sender = null;
-        break;
-      default:
-        Td.assertMessageSponsorType_cdabde01();
-        throw Td.unsupported(sponsor.type);
-    }
-    if (sender != null) {
-      this.sender = sender;
-      this.flags = setSender(sender, null, false);
-    } else {
-      this.sender = null;
-      this.flags = 0;
-      this.photo = sponsor.photo;
-      String name = tdlib.sponsorName(sponsor);
-      this.name = this.nameShort = name;
-      this.letters = TD.getLetters(this.name);
-      this.placeholderMetadata = new AvatarPlaceholder.Metadata(tdlib.accentColor(TdlibAccentColor.BuiltInId.GREEN), this.letters);
-    }
+    this.sponsoredMessage = sponsoredMessage;
+    this.sender = null;
+    this.flags = 0;
+    this.photo = TD.toChatPhotoInfo(sponsoredMessage.sponsor.photo);
+    this.name = this.nameShort = sponsoredMessage.title;
+    this.letters = TD.getLetters(this.name);
+    this.placeholderMetadata = new AvatarPlaceholder.Metadata(tdlib.accentColor(sponsoredMessage.accentColorId), this.letters);
   }
 
   public TdApi.MessageSender toSender () {

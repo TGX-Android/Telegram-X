@@ -1311,6 +1311,10 @@
   <string name="NewNumber">New Number</string>
   <string name="RegionNotFound">Country code not found</string>
   <string name="ConfirmationCode">Confirmation Code</string>
+  <string name="SentSmsWord">We\'ve sent you an SMS with a secret word to your phone %1$s.</string>
+  <string name="SentSmsWordHint">We\'ve sent you an SMS with a secret word that starts with \"%2$s\" to your phone %1$s.</string>
+  <string name="SentSmsPhrase">We\'ve sent you an SMS with a secret phrase to your phone %1$s.</string>
+  <string name="SentSmsPhraseHint">We\'ve sent you an SMS with a secret phrase that starts with \"%2$s\" to your phone %1$s.</string>
   <string name="SentSmsCode">We\'ve sent an SMS with an activation code to your phone **%1$s**.</string>
   <string name="SendingSmsCode">We are sending an SMS with an activation code to your phone **%1$s**…</string>
   <string name="SentAppCode">We\'ve sent the code to the **Telegram** app on your other device.</string>
@@ -1866,6 +1870,12 @@
   <string name="QuickReactionEnableDesc">Some groups and channels may not allow specific reactions.</string>
 
   <string name="ReactionsDisabledDesc">Allow members to react to group messages</string>
+  <string name="xReactionsLimit_one">%1$s reaction</string>
+  <string name="xReactionsLimit_other">%1$s reactions</string>
+  <string name="ReactionsLimitChannel">Maximum number of reactions</string>
+  <string name="ReactionsLimitChannelDesc">Limit the number of different reactions that can be added to a post, including already published ones.</string>
+  <string name="ReactionsLimitChat">Maximum number of reactions</string>
+  <string name="ReactionsLimitChatDesc">Limit the number of different reactions that can be added to a message, including already sent ones.</string>
   <string name="AvailableReactions">Available reactions</string>
   <string name="PremiumReactions">Premium reactions</string>
   <string name="PremiumReactionsLocked">Subscribe to **Telegram Premium** to be able to use reactions below.</string>

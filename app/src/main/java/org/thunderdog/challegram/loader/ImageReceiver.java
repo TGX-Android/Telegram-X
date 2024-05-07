@@ -46,6 +46,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 
+@SuppressWarnings("unchecked")
 public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListener, Receiver, ImageFile.CropStateChangeListener {
   private static boolean ANIMATION_ENABLED;
 
@@ -99,7 +100,6 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     }
   }
 
-  /** @noinspection unchecked*/
   @Override
   public final ImageReceiver setUpdateListener (ReceiverUpdateListener listener) {
     this.updateListener = listener;

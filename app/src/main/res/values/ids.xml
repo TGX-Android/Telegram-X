@@ -1037,6 +1037,7 @@
   <item type="id" name="reactions_enabled_classic" />
   <item type="id" name="reactions_enabled" />
   <item type="id" name="reactions_premium_locked" />
+  <item type="id" name="reactions_limit" />
 
   <item type="id" name="theme_chat" />
   <item type="id" name="theme_chat_modern" />

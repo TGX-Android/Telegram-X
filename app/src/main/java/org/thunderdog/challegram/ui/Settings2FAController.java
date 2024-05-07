@@ -156,7 +156,7 @@ public class Settings2FAController extends RecyclerViewController<Settings2FACon
   @Override
   public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v, String text) {
     if (id == R.id.login_code) {
-      if (state.recoveryEmailAddressCodeInfo != null && Strings.getNumberLength(text) >= TD.getCodeLength(state.recoveryEmailAddressCodeInfo)) {
+      if (state.recoveryEmailAddressCodeInfo != null && state.recoveryEmailAddressCodeInfo.length > 0 && Strings.getNumberLength(text) >= state.recoveryEmailAddressCodeInfo.length) {
         submitEmailRecoveryCode(v);
       } else {
         v.setInErrorState(false);
@@ -432,8 +432,7 @@ public class Settings2FAController extends RecyclerViewController<Settings2FACon
       }
     }
     String code = Strings.getNumber(codeItem.getStringValue());
-    int len = TD.getCodeLength(state.recoveryEmailAddressCodeInfo);
-    boolean ok = !StringUtils.isEmpty(code) && code.length() >= len;
+    boolean ok = !StringUtils.isEmpty(code) && (state.recoveryEmailAddressCodeInfo == null || state.recoveryEmailAddressCodeInfo.length <= 0 || code.length() >= state.recoveryEmailAddressCodeInfo.length);
     if (v != null) {
       v.setInErrorState(!ok);
     }

@@ -1540,7 +1540,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
       for (int i = size - 1; i >= 0; i--) {
         TdApi.Message msg = outputLocations.get(i);
         if (chatId == 0 || msg.chatId == chatId) {
-          tdlib.client().send(new TdApi.EditMessageLiveLocation(msg.chatId, msg.id, null, null, 0, 0), tdlib.silentHandler());
+          tdlib.client().send(new TdApi.EditMessageLiveLocation(msg.chatId, msg.id, null, null, 0, 0, 0), tdlib.silentHandler());
         }
       }
     }
@@ -1577,24 +1577,19 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     synchronized (outputLocations) {
       Log.v("Updating %d live location messages", outputLocations.size());
       for (final TdApi.Message message : outputLocations) {
-        tdlib.client().send(new TdApi.EditMessageLiveLocation(message.chatId, message.id, message.replyMarkup, location, heading, 0), object -> {
-          switch (object.getConstructor()) {
-            case TdApi.Message.CONSTRUCTOR: {
-              TdApi.Message resultMessage = (TdApi.Message) object;
-              message.editDate = resultMessage.editDate;
-              if (Td.isLocation(resultMessage.content)) {
-                TdApi.MessageLocation in = (TdApi.MessageLocation) resultMessage.content;
-                TdApi.MessageLocation out = (TdApi.MessageLocation) message.content;
-                out.expiresIn = in.livePeriod;
-                out.location.latitude = in.location.latitude;
-                out.location.longitude = in.location.longitude;
-                onLiveLocationChanged(message);
-              }
-              break;
+        tdlib.send(new TdApi.EditMessageLiveLocation(message.chatId, message.id, message.replyMarkup, location, 0, heading, 0), (resultMessage, error) -> {
+          if (error != null) {
+            Log.e("Error broadcasting location: %s", TD.toErrorString(error));
+          } else {
+            message.editDate = resultMessage.editDate;
+            if (Td.isLocation(resultMessage.content)) {
+              TdApi.MessageLocation in = (TdApi.MessageLocation) resultMessage.content;
+              TdApi.MessageLocation out = (TdApi.MessageLocation) message.content;
+              out.expiresIn = in.livePeriod;
+              out.location.latitude = in.location.latitude;
+              out.location.longitude = in.location.longitude;
+              onLiveLocationChanged(message);
             }
-            case TdApi.Error.CONSTRUCTOR:
-              Log.e("Error broadcasting location: %s", TD.toErrorString(object));
-              break;
           }
         });
       }

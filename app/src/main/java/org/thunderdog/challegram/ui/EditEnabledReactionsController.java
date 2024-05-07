@@ -43,6 +43,7 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.ReactionCheckboxSettingsView;
+import org.thunderdog.challegram.widget.SliderWrapView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,6 +53,8 @@ import java.util.Set;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.RunnableData;
+import me.vkryl.td.Td;
+import me.vkryl.td.TdConstants;
 
 public class EditEnabledReactionsController extends EditBaseController<EditEnabledReactionsController.Args> implements View.OnClickListener, StickerSmallView.StickerMovementCallback, ChatListener {
 
@@ -117,6 +120,10 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
         }
         break;
       }
+      default: {
+        Td.assertChatAvailableReactions_21c76ded();
+        throw Td.unsupported(availableReactions);
+      }
     }
   }
 
@@ -135,6 +142,33 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
     }
 
     adapter = new SettingsAdapter(this) {
+      @Override
+      protected void setSliderValues (ListItem item, SliderWrapView view) {
+        super.setSliderValues(item, view);
+        view.setShowOnlyValue(item.getId() == R.id.reactions_limit);
+      }
+
+      @Override
+      protected void onSliderValueChanged (ListItem item, SliderWrapView view, int value, int oldValue) {
+        if (item.getId() == R.id.reactions_limit) {
+          int maxReactionCount = value + 1;
+          switch (availableReactions.getConstructor()) {
+            case TdApi.ChatAvailableReactionsAll.CONSTRUCTOR: {
+              ((TdApi.ChatAvailableReactionsAll) availableReactions).maxReactionCount = maxReactionCount;
+              break;
+            }
+            case TdApi.ChatAvailableReactionsSome.CONSTRUCTOR: {
+              ((TdApi.ChatAvailableReactionsSome) availableReactions).maxReactionCount = maxReactionCount;
+              break;
+            }
+            default: {
+              Td.assertChatAvailableReactions_21c76ded();
+              throw Td.unsupported(availableReactions);
+            }
+          }
+        }
+      }
+
       @Override
       protected void setValuedSetting (ListItem item, SettingView v, boolean isUpdate) {
         v.setDrawModifier(item.getDrawModifier());
@@ -184,6 +218,10 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
                 case TdApi.ChatAvailableReactionsSome.CONSTRUCTOR: {
                   userView.setChecked(enabledReactions.contains(reactionKey), isUpdate);
                   break;
+                }
+                default: {
+                  Td.assertChatAvailableReactions_21c76ded();
+                  throw Td.unsupported(availableReactions);
                 }
               }
             }
@@ -250,7 +288,27 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
     });
   }
 
-  private ListItem toggleItem;
+  private ListItem toggleItem, limitItem;
+
+  private List<ListItem> limitItems () {
+    int currentValue = getMaxNumberOfReactionsPerPost();
+    String[] sliderItems = new String[TdConstants.MAX_NUMBER_OF_REACTIONS_PER_POST];
+    int index = sliderItems.length - 1;
+    for (int i = 0; i < sliderItems.length; i++) {
+      sliderItems[i] = Lang.plural(R.string.xReactionsLimit, i + 1);
+      if (currentValue == i + 1) {
+        index = i;
+      }
+    }
+    boolean isChannel = tdlib.isChannelChat(chat);
+    return Arrays.asList(
+      new ListItem(ListItem.TYPE_HEADER, 0, 0, isChannel ? R.string.ReactionsLimitChannel : R.string.ReactionsLimitChat),
+      new ListItem(ListItem.TYPE_SHADOW_TOP),
+      limitItem = new ListItem(ListItem.TYPE_SLIDER, R.id.reactions_limit).setSliderInfo(sliderItems, index),
+      new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
+      new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, isChannel ? R.string.ReactionsLimitChannelDesc : R.string.ReactionsLimitChatDesc), false)
+    );
+  }
 
   private void buildCells () {
     ArrayList<ListItem> items = new ArrayList<>();
@@ -258,12 +316,25 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
       items.add(toggleItem = new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.reactions_enabled, 0, R.string.ReactionsDisabled, R.id.reactions_enabled, isToggleSelected()));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, R.string.ReactionsDisabledDesc), false));
+      items.addAll(limitItems());
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     } else if (type == TYPE_QUICK_REACTION) {
       items.add(toggleItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_quick_reaction_enabled, 0, R.string.QuickReactionEnable, isToggleSelected()));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, R.string.QuickReactionEnableDesc), false));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+    }
+
+    if (type == TYPE_ENABLED_REACTIONS && availableReactions.getConstructor() == TdApi.ChatAvailableReactionsSome.CONSTRUCTOR) {
+      TdApi.ReactionType[] someReactions = ((TdApi.ChatAvailableReactionsSome) availableReactions).reactions;
+      for (TdApi.ReactionType reactionType : someReactions) {
+        if (reactionType.getConstructor() == TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR) {
+          TGReaction reaction = tdlib.getReaction(reactionType);
+          if (reaction != null) {
+            items.add(new ListItem(ListItem.TYPE_REACTION_CHECKBOX, R.id.btn_enabledReactionsCheckboxGroup, 0, reaction.key, false));
+          }
+        }
+      }
     }
 
     String[] activeEmojiReactions = tdlib.getActiveEmojiReactions();
@@ -319,7 +390,7 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
       availableReactions[index] = TD.toReactionType(enabledReaction);
       index++;
     }
-    return new TdApi.ChatAvailableReactionsSome(availableReactions);
+    return new TdApi.ChatAvailableReactionsSome(availableReactions, getMaxNumberOfReactionsPerPost());
   }
 
   private boolean isToggleSelected () {
@@ -330,6 +401,21 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
         return !quickReactions.isEmpty();
     }
     return false;
+  }
+
+  private int getMaxNumberOfReactionsPerPost () {
+    if (type == TYPE_ENABLED_REACTIONS) {
+      switch (availableReactions.getConstructor()) {
+        case TdApi.ChatAvailableReactionsAll.CONSTRUCTOR:
+          return ((TdApi.ChatAvailableReactionsAll) availableReactions).maxReactionCount;
+        case TdApi.ChatAvailableReactionsSome.CONSTRUCTOR:
+          return ((TdApi.ChatAvailableReactionsSome) availableReactions).maxReactionCount;
+        default:
+          Td.assertChatAvailableReactions_21c76ded();
+          throw Td.unsupported(availableReactions);
+      }
+    }
+    throw new IllegalStateException();
   }
 
   @Override
@@ -345,13 +431,17 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
       switch (availableReactions.getConstructor()) {
         case TdApi.ChatAvailableReactionsAll.CONSTRUCTOR: {
           // Disable all reactions
-          availableReactions = new TdApi.ChatAvailableReactionsSome(new TdApi.ReactionType[0]);
+          availableReactions = new TdApi.ChatAvailableReactionsSome(new TdApi.ReactionType[0], ((TdApi.ChatAvailableReactionsAll) availableReactions).maxReactionCount);
           break;
         }
         case TdApi.ChatAvailableReactionsSome.CONSTRUCTOR: {
           // Enable all reactions
-          availableReactions = new TdApi.ChatAvailableReactionsAll();
+          availableReactions = new TdApi.ChatAvailableReactionsAll(((TdApi.ChatAvailableReactionsSome) availableReactions).maxReactionCount);
           break;
+        }
+        default: {
+          Td.assertChatAvailableReactions_21c76ded();
+          throw Td.unsupported(availableReactions);
         }
       }
 
@@ -400,6 +490,10 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
                   enabledReactions.add(tgReaction.key);
                 }
                 break;
+              }
+              default: {
+                Td.assertChatAvailableReactions_21c76ded();
+                throw Td.unsupported(availableReactions);
               }
             }
             availableReactions = buildAvailableReactions();

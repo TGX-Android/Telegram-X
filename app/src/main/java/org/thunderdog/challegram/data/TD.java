@@ -882,18 +882,6 @@ public class TD {
     return -1;
   }
 
-  public static boolean compareContents (@NonNull TdApi.Poll a, @NonNull TdApi.Poll b) {
-    if (a.options.length != b.options.length || !StringUtils.equalsOrBothEmpty(a.question, b.question))
-      return false;
-    int index = 0;
-    for (TdApi.PollOption option : a.options) {
-      if (!StringUtils.equalsOrBothEmpty(option.text, b.options[index].text))
-        return false;
-      index++;
-    }
-    return true;
-  }
-
   public static boolean isAll (TdApi.ChatEventLogFilters filters) {
     return filters == null || (
       filters.messageEdits &&
@@ -926,6 +914,17 @@ public class TD {
 
   public static boolean isScheduled (TdApi.Message message) {
     return message != null && message.schedulingState != null;
+  }
+
+  public static TdApi.ChatPhotoInfo toChatPhotoInfo (TdApi.Photo photo) {
+    if (photo == null)
+      return null;
+    TdApi.PhotoSize smallest = findSmallest(photo, null);
+    TdApi.PhotoSize biggest = findSmallest(photo, smallest);
+    if (smallest == null) {
+      return null;
+    }
+    return new TdApi.ChatPhotoInfo(smallest.photo, biggest != null ? biggest.photo : smallest.photo, photo.minithumbnail, false, false);
   }
 
   public static TdApi.PhotoSize toThumbnailSize (TdApi.Thumbnail thumbnail) {
@@ -2197,36 +2196,28 @@ public class TD {
     return entity.length;
   }
 
-  public static int getCodeLength (TdApi.AuthorizationState state) {
+  public static int codeLength (TdApi.AuthorizationState state, int fallbackCodeLength) {
     if (state != null) {
       switch (state.getConstructor()) {
-        case TdApi.AuthorizationStateWaitCode.CONSTRUCTOR:
-          return Td.codeLength(((TdApi.AuthorizationStateWaitCode) state).codeInfo.type, TdConstants.DEFAULT_CODE_LENGTH);
-        case TdApi.AuthorizationStateWaitEmailCode.CONSTRUCTOR:
-          return getCodeLength(((TdApi.AuthorizationStateWaitEmailCode) state).codeInfo);
+        case TdApi.AuthorizationStateWaitCode.CONSTRUCTOR: {
+          TdApi.AuthorizationStateWaitCode waitCode = (TdApi.AuthorizationStateWaitCode) state;
+          return Td.codeLength(waitCode.codeInfo.type, fallbackCodeLength);
+        }
+        case TdApi.AuthorizationStateWaitEmailCode.CONSTRUCTOR: {
+          TdApi.AuthorizationStateWaitEmailCode waitEmailCode = (TdApi.AuthorizationStateWaitEmailCode) state;
+          return codeLength(waitEmailCode.codeInfo, fallbackCodeLength);
+        }
+        default: {
+          Td.assertAuthorizationState_6e5056de();
+          break;
+        }
       }
     }
-    return TdConstants.DEFAULT_CODE_LENGTH;
+    return fallbackCodeLength;
   }
 
-  public static int getCodeLength (TdApi.EmailAddressAuthenticationCodeInfo info) {
-    return info.length == 0 ? 6 : info.length;
-  }
-
-  public static int getCodeLength (TdApi.AuthenticationCodeType info) {
-    switch (info.getConstructor()) {
-      case TdApi.AuthenticationCodeTypeCall.CONSTRUCTOR:
-        return ((TdApi.AuthenticationCodeTypeCall) info).length;
-      case TdApi.AuthenticationCodeTypeSms.CONSTRUCTOR:
-        return ((TdApi.AuthenticationCodeTypeSms) info).length;
-      case TdApi.AuthenticationCodeTypeTelegramMessage.CONSTRUCTOR:
-        return ((TdApi.AuthenticationCodeTypeTelegramMessage) info).length;
-      case TdApi.AuthenticationCodeTypeMissedCall.CONSTRUCTOR:
-        return ((TdApi.AuthenticationCodeTypeMissedCall) info).length;
-      /*case TdApi.AuthenticationCodeTypeFlashCall.CONSTRUCTOR:
-        return ((TdApi.AuthenticationCodeTypeFlashCall) info).pattern;*/
-    }
-    return TdConstants.DEFAULT_CODE_LENGTH;
+  public static int codeLength (TdApi.EmailAddressAuthenticationCodeInfo info, int fallbackCodeLength) {
+    return info.length != 0 ? info.length : fallbackCodeLength;
   }
 
   public static boolean isFileEmpty (TdApi.File file) {
@@ -3421,9 +3412,9 @@ public class TD {
     return findSmallest(photo.sizes, ignoreSize);
   }
 
-  public static @Nullable TdApi.PhotoSize findSmallest (TdApi.PhotoSize[] sizes, TdApi.PhotoSize ignoreSize) {
+  public static @Nullable TdApi.PhotoSize findSmallest (TdApi.PhotoSize[] sizes, @Nullable TdApi.PhotoSize ignoreSize) {
     if (sizes.length == 1) {
-      if (ignoreSize.width == sizes[0].width && ignoreSize.height == sizes[0].height && ignoreSize.photo.id == sizes[0].photo.id) {
+      if (ignoreSize != null && ignoreSize.width == sizes[0].width && ignoreSize.height == sizes[0].height && ignoreSize.photo.id == sizes[0].photo.id) {
         return null;
       }
       return sizes[0];
@@ -3432,7 +3423,7 @@ public class TD {
     int w = 0, h = 0;
     boolean first = true;
     for (TdApi.PhotoSize size : sizes) {
-      if (size.width == ignoreSize.width && size.height == ignoreSize.height && size.photo.id == ignoreSize.photo.id) {
+      if (ignoreSize != null && size.width == ignoreSize.width && size.height == ignoreSize.height && size.photo.id == ignoreSize.photo.id) {
         continue;
       }
       if (first || size.width < w || size.height < h) {

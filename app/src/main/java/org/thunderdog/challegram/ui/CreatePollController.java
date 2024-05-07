@@ -40,6 +40,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.util.HapticMenuHelper;
@@ -620,18 +621,24 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
   private void send (TdApi.MessageSendOptions sendOptions, boolean disableMarkdown) {
     if (getDoneButton().isInProgress())
       return;
-    String question = StringUtils.trim(questionItem.getStringValue());
-    if (StringUtils.isEmpty(question) || question.length() > TdConstants.MAX_POLL_QUESTION_LENGTH) {
+    TdApi.FormattedText question = new TdApi.FormattedText(
+      StringUtils.trim(questionItem.getStringValue()),
+      new TdApi.TextEntity[0] // TODO: custom emoji support
+    );
+    if (Td.isEmpty(question) || Td.codePointCount(question) > TdConstants.MAX_POLL_QUESTION_LENGTH) {
       requestFocus(questionItem);
       return;
     }
     int correctOptionId = -1;
-    List<String> options = new ArrayList<>(TdConstants.MAX_POLL_OPTION_COUNT);
+    List<TdApi.FormattedText> options = new ArrayList<>(TdConstants.MAX_POLL_OPTION_COUNT);
     for (ListItem optionItem : this.options) {
-      String option = StringUtils.trim(optionItem.getStringValue());
-      if (StringUtils.isEmpty(option))
+      TdApi.FormattedText option = new TdApi.FormattedText(
+        StringUtils.trim(optionItem.getStringValue()),
+        new TdApi.TextEntity[0] // TODO: custom emoji support
+      );
+      if (Td.isEmpty(option))
         continue;
-      if (option.length() > TdConstants.MAX_POLL_OPTION_LENGTH) {
+      if (Td.codePointCount(option) > TdConstants.MAX_POLL_OPTION_LENGTH) {
         requestFocus(optionItem);
         return;
       }
@@ -662,7 +669,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     getDoneButton().setInProgress(true);
     hideSoftwareKeyboard();
 
-    String[] optionsArray = options.toArray(new String[0]);
+    TdApi.FormattedText[] optionsArray = options.toArray(new TdApi.FormattedText[0]);
     TdApi.InputMessagePoll poll = new TdApi.InputMessagePoll(question, optionsArray, isAnonymousVoting, isQuiz ? new TdApi.PollTypeQuiz(correctOptionId, explanation) : new TdApi.PollTypeRegular(isMultiChoiceVote), 0, 0, false);
 
     RunnableData<TdApi.Message> after = message -> {

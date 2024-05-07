@@ -990,7 +990,7 @@ public class SearchManager {
       if (isMore) {
         offset = messageList.nextOffset;
       }
-      tdlib.send(new TdApi.SearchMessages(chatList, query, offset, loadCount, null, 0, 0), new Tdlib.ResultHandler<>() {
+      tdlib.send(new TdApi.SearchMessages(chatList, false, query, offset, loadCount, null, 0, 0), new Tdlib.ResultHandler<>() {
         @Override
         public void onResult (TdApi.FoundMessages foundMessages, @Nullable TdApi.Error error) {
           if (contextId != currentContextId) {
@@ -1016,7 +1016,7 @@ public class SearchManager {
               }
             }
             if (foundMessageList.isEmpty() && !StringUtils.isEmpty(foundMessages.nextOffset)) {
-              tdlib.send(new TdApi.SearchMessages(chatList, query, foundMessages.nextOffset, loadCount, null, 0, 0), this);
+              tdlib.send(new TdApi.SearchMessages(chatList, false, query, foundMessages.nextOffset, loadCount, null, 0, 0), this);
               return;
             }
             messages = foundMessageList.toArray(new TGFoundMessage[0]);

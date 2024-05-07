@@ -50,6 +50,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 
+@SuppressWarnings("unchecked")
 public class GifReceiver implements GifWatcher, Runnable, Receiver {
   private static final int STATE_LOADED = 0x01;
 
@@ -101,7 +102,6 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public final GifReceiver setUpdateListener (ReceiverUpdateListener listener) {
     this.updateListener = listener;
     return this;

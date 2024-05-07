@@ -1227,7 +1227,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
       this.inShareProgress = true;
       adapter.updateValuedSettingById(R.id.liveLocationSelf);
       if (msg != null) {
-        tdlib.client().send(new TdApi.EditMessageLiveLocation(msg.chatId, msg.id, null, null, 0, 0), tdlib.okHandler());
+        tdlib.client().send(new TdApi.EditMessageLiveLocation(msg.chatId, msg.id, null, null, 0, 0, 0), tdlib.okHandler());
       } else {
         locationHelper.receiveLocation(REQUEST_SHARE_LIVE, null, 10000, true);
       }

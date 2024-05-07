@@ -196,7 +196,7 @@ public class PollResultsController extends RecyclerViewController<PollResultsCon
     // FillingDecoration decoration = new FillingDecoration(recyclerView, this);
     List<ListItem> items = new ArrayList<>();
 
-    items.add(new ListItem(ListItem.TYPE_TEXT_VIEW, R.id.text_title, 0, getPoll().question, false));
+    items.add(new ListItem(ListItem.TYPE_TEXT_VIEW, R.id.text_title, 0, TD.toCharSequence(getPoll().question), false));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     int optionId = 0;
@@ -205,7 +205,7 @@ public class PollResultsController extends RecyclerViewController<PollResultsCon
         optionId++;
         continue;
       }
-      items.add(new ListItem(ListItem.TYPE_TEXT_VIEW, R.id.text_subtitle, 0, option.text, false).setIntValue(optionId));
+      items.add(new ListItem(ListItem.TYPE_TEXT_VIEW, R.id.text_subtitle, 0, TD.toCharSequence(option.text), false).setIntValue(optionId));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
       items.add(newRecyclerItem(optionId));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
@@ -341,7 +341,7 @@ public class PollResultsController extends RecyclerViewController<PollResultsCon
             if (optionIndex == -1) {
               int atIndex = findInsertionIndex(optionId);
               items.addAll(atIndex, Arrays.asList(
-                new ListItem(ListItem.TYPE_HEADER, R.id.text_subtitle, 0, option.text, false).setIntValue(optionId),
+                new ListItem(ListItem.TYPE_HEADER, R.id.text_subtitle, 0, TD.toCharSequence(option.text), false).setIntValue(optionId),
                 new ListItem(ListItem.TYPE_SHADOW_TOP),
                 newRecyclerItem(optionId),
                 new ListItem(ListItem.TYPE_SHADOW_BOTTOM),

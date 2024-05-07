@@ -212,6 +212,14 @@ public class Strings {
     return true;
   }
 
+  public static int codePointCount (String cs) {
+    if (StringUtils.isEmpty(cs)) {
+      return 0;
+    } else {
+      return cs.codePointCount(0, cs.length());
+    }
+  }
+
   public static boolean isTrimmed (CharSequence full, CharSequence trimmed) {
     return full != null && trimmed != null && (full.length() > trimmed.length());
   }
