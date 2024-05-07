@@ -178,21 +178,27 @@ android {
 
     // WebRTC version
 
-    val webrtcGitVersionProvider = providers.of(GitVersionValueSource::class) {
+    val webrtcGit =providers.of(GitVersionValueSource::class) {
       parameters.module = layout.projectDirectory.dir("jni/third_party/webrtc")
-    }
-    val webrtcGit = webrtcGitVersionProvider.get()
+    }.get()
     buildConfigString("WEBRTC_COMMIT", webrtcGit.commitHashShort)
     buildConfigString("WEBRTC_COMMIT_URL", webrtcGit.commitUrl)
 
     // tgcalls version
 
-    val tgcallsGitVersionProvider = providers.of(GitVersionValueSource::class) {
+    val tgcallsGit = providers.of(GitVersionValueSource::class) {
       parameters.module = layout.projectDirectory.dir("jni/third_party/tgcalls")
-    }
-    val tgcallsGit = tgcallsGitVersionProvider.get()
+    }.get()
     buildConfigString("TGCALLS_COMMIT", tgcallsGit.commitHashShort)
     buildConfigString("TGCALLS_COMMIT_URL", tgcallsGit.commitUrl)
+
+    // FFmpeg version
+
+    val ffmpegGit = providers.of(GitVersionValueSource::class) {
+      parameters.module = layout.projectDirectory.dir("jni/third_party/ffmpeg")
+    }.get()
+    buildConfigString("FFMPEG_COMMIT", ffmpegGit.commitHashShort)
+    buildConfigString("FFMPEG_COMMIT_URL", ffmpegGit.commitUrl)
 
     // Set application version
 

@@ -1016,6 +1016,7 @@
 
   <item type="id" name="btn_tdlib" />
   <item type="id" name="btn_webrtc" />
+  <item type="id" name="btn_ffmpeg" />
   <item type="id" name="btn_tgcalls" />
   <item type="id" name="btn_pushService" />
   <item type="id" name="btn_tdlib_verbosity" />
