@@ -324,26 +324,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     return R.drawable.baseline_arrow_forward_24;
   }
 
-  @Override
-  protected View onCreateView (Context context) {
-    final FrameLayoutFix contentView = new FrameLayoutFix(context);
-    ViewSupport.setThemedBackground(contentView, ColorId.filling, this);
-
-    final int topMargin = (Screen.smallestActualSide() - HeaderView.getSize(false) - Screen.dp(175f)) / 2;
-
-    FrameLayoutFix.LayoutParams params;
-
-    params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP);
-    params.topMargin = topMargin;
-    params.leftMargin = Screen.dp(16f);
-    params.rightMargin = Screen.dp(16f);
-
-    editText = new MaterialEditTextGroup(context);
-    editText.getEditText().setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI | EditorInfo.IME_ACTION_DONE);
-    editText.addThemeListeners(this);
-    editText.setDoneListener(this);
-    editText.setEmptyListener(this);
-    editText.setTextListener(this);
+  private void updateAuthInputType () {
     switch (mode) {
       case MODE_2FA_RECOVERY_EMAIL_CHANGE:
       case MODE_LOGIN_EMAIL_CHANGE:
@@ -392,6 +373,29 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         break;
       }
     }
+  }
+
+  @Override
+  protected View onCreateView (Context context) {
+    final FrameLayoutFix contentView = new FrameLayoutFix(context);
+    ViewSupport.setThemedBackground(contentView, ColorId.filling, this);
+
+    final int topMargin = (Screen.smallestActualSide() - HeaderView.getSize(false) - Screen.dp(175f)) / 2;
+
+    FrameLayoutFix.LayoutParams params;
+
+    params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP);
+    params.topMargin = topMargin;
+    params.leftMargin = Screen.dp(16f);
+    params.rightMargin = Screen.dp(16f);
+
+    editText = new MaterialEditTextGroup(context);
+    editText.getEditText().setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI | EditorInfo.IME_ACTION_DONE);
+    editText.addThemeListeners(this);
+    editText.setDoneListener(this);
+    editText.setEmptyListener(this);
+    editText.setTextListener(this);
+    updateAuthInputType();
 
     switch (mode) {
       case MODE_EMAIL_RECOVERY:
@@ -697,7 +701,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
                 requestNextCodeType(false, true);
               } else {
                 isFirebaseSmsSent = true;
-                updateAuthState();
+                updateAuthState(false);
                 TDLib.Tag.safetyNet("Attestation finished successfully");
               }
             });
@@ -716,7 +720,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     runOnUiThreadOptional(() -> {
       this.authState = authorizationState;
       this.isFirebaseSmsSent = false;
-      updateAuthState();
+      updateAuthState(true);
     });
   }
 
@@ -1017,12 +1021,15 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     return null;
   }
 
-  private void updateAuthState () {
+  private void updateAuthState (boolean typeChanged) {
     TdApi.AuthenticationCodeType authenticationCodeType = authenticationCodeType();
     if (authenticationCodeType != null) {
       hintView.setText(getCodeHint(authenticationCodeType, formattedPhone));
       if (!hasNextCodeType()) {
         setForgetText(null);
+      }
+      if (typeChanged) {
+        updateAuthInputType();
       }
     }
     sendFirebaseSmsIfNeeded(false);
@@ -1095,7 +1102,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         case TdApi.AuthenticationCodeInfo.CONSTRUCTOR: {
           ((TdApi.AuthorizationStateWaitCode) authState).codeInfo = (TdApi.AuthenticationCodeInfo) object;
           isFirebaseSmsSent = false;
-          updateAuthState();
+          updateAuthState(true);
           sendFirebaseSmsIfNeeded(force);
           break;
         }
