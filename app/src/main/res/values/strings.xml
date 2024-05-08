@@ -3727,6 +3727,12 @@
   <string name="PrivacyVoiceVideoTitle">Voice and Video Messages</string>
   <string name="WhoCanSendVoiceVideo">Who can send me voice or video messages?</string>
   <string name="VoiceVideoPrivacyDesc">You can restrict who can send you voice or video messages with granular precision.</string>
+  <string name="PrivacyMessage">Messages</string>
+  <string name="PrivacyMessageEverybody">Everybody can message you</string>
+  <string name="PrivacyMessageContactsPremium">Only contacts and **Premium** users can message you</string>
+  <string name="PrivacyMessageTitle">Messages</string>
+  <string name="WhoCanSendMessages">Who can send me messages?</string>
+  <string name="NewChatsPrivacyDesc">You can restrict messages from users who are not in your contacts and don\'t have **Telegram&#160;Premium**.</string>
 
   <string name="EditPrivacyVoice">Send Me Voice Messages</string>
 
@@ -4838,6 +4844,7 @@
 
   <string name="PremiumRequiredSticker">Sending this sticker requires a **Telegram Premium** subscription.</string>
   <string name="PremiumRequiredVoiceVideo">This setting requires a **Telegram Premium** subscription.</string>
+  <string name="PremiumRequiredNewChats">This setting requires a **Telegram Premium** subscription.</string>
   <string name="PremiumRequired">This feature requires a **Telegram Premium** subscription.</string>
   <string name="PremiumRequiredMoveFolder">Subscribe to **Telegram Premium** to move the "%1$s" folder.</string>
   <string name="PremiumRequiredCreateFolder">You have reached the limit of **%1$d** folders. You can double the limit to **%2$d** folders by subscribing to **Telegram Premium**.</string>

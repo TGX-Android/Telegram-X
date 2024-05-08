@@ -46,7 +46,7 @@ public class PrivacySettings {
   private final long[] plusChatIds;
   private final long[] minusChatIds;
 
-  public PrivacySettings (TdApi.UserPrivacySettingRules rules, int mode, boolean plusPremium, long[] plusUserIds, long[] minusUserIds, long[] plusChatIds, long[] minusChatIds) {
+  public PrivacySettings (TdApi.UserPrivacySettingRules rules, @Mode int mode, boolean plusPremium, long[] plusUserIds, long[] minusUserIds, long[] plusChatIds, long[] minusChatIds) {
     this.rules = Arrays.asList(rules.rules);
     this.mode = mode;
     this.plusPremium = plusPremium;
@@ -894,7 +894,7 @@ public class PrivacySettings {
     return memberCount;
   }
 
-  public int getMode () {
+  public @Mode int getMode () {
     return mode;
   }
 

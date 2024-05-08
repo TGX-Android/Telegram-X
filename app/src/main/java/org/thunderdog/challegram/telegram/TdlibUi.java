@@ -6685,13 +6685,15 @@ public class TdlibUi extends Handler {
   @IntDef({
     PremiumFeature.STICKER,
     PremiumFeature.RESTRICT_VOICE_AND_VIDEO_MESSAGES,
-    PremiumFeature.CUSTOM_EMOJI
+    PremiumFeature.CUSTOM_EMOJI,
+    PremiumFeature.NEW_CHATS_PRIVACY
   })
   public @interface PremiumFeature {
     int
       STICKER = 1,
       RESTRICT_VOICE_AND_VIDEO_MESSAGES = 2,
-      CUSTOM_EMOJI = 3;
+      CUSTOM_EMOJI = 3,
+      NEW_CHATS_PRIVACY = 4;
   }
 
   @Retention(RetentionPolicy.SOURCE)
@@ -6724,6 +6726,9 @@ public class TdlibUi extends Handler {
         break;
       case PremiumFeature.CUSTOM_EMOJI:
         stringRes = R.string.MessageContainsPremiumFeatures;
+        break;
+      case PremiumFeature.NEW_CHATS_PRIVACY:
+        stringRes = R.string.PremiumRequiredNewChats;
         break;
       default:
         throw new IllegalStateException();
@@ -7244,7 +7249,7 @@ public class TdlibUi extends Handler {
       context.showOptions(b.build(), (optionItemView, id) -> {
         if (id == R.id.btn_privacySettings) {
           SettingsPrivacyKeyController c = new SettingsPrivacyKeyController(context.context(), context.tdlib());
-          c.setArguments(new TdApi.UserPrivacySettingShowBirthdate());
+          c.setArguments(new SettingsPrivacyKeyController.Args(new TdApi.UserPrivacySettingShowBirthdate()));
           context.navigateTo(c);
         } else if (id == R.id.btn_birthdate) {
           showBirthdatePicker(context, currentBirthdate);

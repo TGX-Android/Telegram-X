@@ -1713,6 +1713,13 @@ public class TdlibListeners {
     }
   }
 
+  @AnyThread
+  public void updateNewChatPrivacySettings (TdApi.NewChatPrivacySettings settings) {
+    for (PrivacySettingsListener listener : privacySettingsListeners) {
+      listener.onNewChatPrivacySettingsChanged(settings);
+    }
+  }
+
   // updateFile
 
   void updateFile (TdApi.UpdateFile update) {
