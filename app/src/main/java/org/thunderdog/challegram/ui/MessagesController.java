@@ -6103,7 +6103,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (tdlib.chatFullyBlocked(chat.id)) {
           tdlib.unblockSender(tdlib.sender(chat.id), result -> {
             if (TD.isOk(result)) {
-              tdlib.ui().post(after);
+              tdlib.ui().postDelayed(after, 200);
             } else {
               tdlib.okHandler().onResult(result);
             }
