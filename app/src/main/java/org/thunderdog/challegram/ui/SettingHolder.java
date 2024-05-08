@@ -80,6 +80,7 @@ import org.thunderdog.challegram.widget.AvatarView;
 import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.ChartLayout;
 import org.thunderdog.challegram.widget.CheckBoxView;
+import org.thunderdog.challegram.widget.CustomEmojiTextView;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.DoubleTextView;
 import org.thunderdog.challegram.widget.DoubleTextViewWithIcon;
@@ -1057,7 +1058,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         if (viewType != ListItem.TYPE_EDITTEXT_POLL_OPTION_ADD && viewType != ListItem.TYPE_EDITTEXT_POLL_OPTION)
           frameLayout.setPadding(Screen.dp(16f), paddingTop, Screen.dp(16f), Screen.dp(8f));
 
-        MaterialEditTextGroup editText = new MaterialEditTextGroup(context, needHint);
+        MaterialEditTextGroup editText = new MaterialEditTextGroup(context, tdlib, needHint);
         editText.applyRtl(Lang.rtl());
         editText.addThemeListeners(themeProvider);
         editText.setTextListener(adapter);
@@ -1283,7 +1284,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_HEADER_PADDED: {
         final boolean isRtl = Lang.rtl();
 
-        TextView textView = new NoScrollTextView(context);
+        TextView textView = new CustomEmojiTextView(context, tdlib);
         textView.setGravity(Lang.gravity(Gravity.CENTER_VERTICAL));
         int paddingTop = viewType == ListItem.TYPE_HEADER_MULTILINE ? Screen.dp(6f) : viewType == ListItem.TYPE_HEADER_PADDED ? Screen.dp(4f) : 0;
         textView.setPadding(Screen.dp(16f), paddingTop, Screen.dp(16f), viewType == ListItem.TYPE_HEADER_MULTILINE ? Screen.dp(6f) : 0);
@@ -2244,7 +2245,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
 
           int inputIndex = 0;
           for (int id : ids) {
-            editText = new MaterialEditTextGroup(context);
+            editText = new MaterialEditTextGroup(context, tdlib);
             if (id != R.id.color_default) {
               editText.getEditText().setSelectAllOnFocus(true);
             }

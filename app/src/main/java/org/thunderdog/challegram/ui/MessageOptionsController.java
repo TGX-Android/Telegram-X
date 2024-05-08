@@ -340,7 +340,7 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
       } else {
         int availWidth = recyclerView.getMeasuredWidth() - Screen.dp(16f) * 2;
         if (availWidth > 0) {
-          totalHeight += CustomTextView.measureHeight(this, options.info, 15f, availWidth) + Screen.dp(14f) + Screen.dp(6f);
+          totalHeight += CustomTextView.measureHeight(this, options.info, 0, 15f, availWidth) + Screen.dp(14f) + Screen.dp(6f);
         } else {
           totalHeight += Screen.dp(14f) + Screen.dp(6f) + Screen.dp(15f);
         }

@@ -30,7 +30,6 @@ import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Fonts;
@@ -154,9 +153,9 @@ public class Settings2FAController extends RecyclerViewController<Settings2FACon
   }
 
   @Override
-  public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v, String text) {
+  public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v) {
     if (id == R.id.login_code) {
-      if (state.recoveryEmailAddressCodeInfo != null && state.recoveryEmailAddressCodeInfo.length > 0 && Strings.getNumberLength(text) >= state.recoveryEmailAddressCodeInfo.length) {
+      if (state.recoveryEmailAddressCodeInfo != null && state.recoveryEmailAddressCodeInfo.length > 0 && Strings.getNumberLength(v.getText()) >= state.recoveryEmailAddressCodeInfo.length) {
         submitEmailRecoveryCode(v);
       } else {
         v.setInErrorState(false);

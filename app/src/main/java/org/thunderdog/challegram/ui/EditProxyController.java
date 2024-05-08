@@ -243,7 +243,7 @@ public class EditProxyController extends EditBaseController<EditProxyController.
   }
 
   @Override
-  public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v, String text) {
+  public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v) {
     if (id == R.id.edit_proxy_server ||
       id == R.id.edit_proxy_port ||
       id == R.id.edit_proxy_username ||

@@ -1588,7 +1588,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public MaterialEditTextGroup openInputAlert (CharSequence title, CharSequence placeholder, @StringRes int doneRes, @StringRes int cancelRes, @Nullable CharSequence value, @Nullable String defaultValue, InputAlertCallback callback, boolean hideKeyboard, RunnableData<ViewGroup> layoutOverride, ThemeDelegate forcedTheme) {
-    final MaterialEditTextGroup inputView = new MaterialEditTextGroup(context);
+    final MaterialEditTextGroup inputView = new MaterialEditTextGroup(context, tdlib);
     inputView.setHint(placeholder);
     inputView.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS);
     if (!StringUtils.isEmpty(value)) {
@@ -2018,7 +2018,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         switch (item.getViewType()) {
           case ListItem.TYPE_CHECKBOX_OPTION_DOUBLE_LINE: {
-            view.setData(item.getStringValue());
+            view.setData(item.getCharSequenceValue());
             break;
           }
           case ListItem.TYPE_CHECKBOX_OPTION:

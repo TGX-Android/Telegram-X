@@ -76,8 +76,8 @@ public class RequestController extends EditBaseController<RequestController.Dele
   private String currentInput;
 
   @Override
-  public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v, String text) {
-    currentInput = text;
+  public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v) {
+    currentInput = v.getText().toString();
   }
 
   @Override

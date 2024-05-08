@@ -32,15 +32,15 @@ import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.ThreadInfo;
-import org.thunderdog.challegram.emoji.EmojiFilter;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.NavigationStack;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.util.HapticMenuHelper;
@@ -360,7 +360,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
             i = i != -1 ? options.indexOf(adapter.getItem(i)) : -1;
             if (i != -1) {
               int firstVisibleOptionId = i;
-              while (i < options.size() && StringUtils.isEmpty(StringUtils.trim(options.get(i).getStringValue()))) {
+              while (i < options.size() && StringUtils.isEmpty(StringUtils.trim(options.get(i).getCharSequenceValue()))) {
                 i++;
               }
               if (i != options.size()) {
@@ -518,7 +518,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
   }
 
   @Override
-  public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v, String text) {
+  public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v) {
     checkSend();
   }
 
@@ -528,12 +528,11 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     }
   }
 
-  private List<ListItem> options = new ArrayList<>();
+  private final List<ListItem> options = new ArrayList<>();
 
   private ListItem createNewOption () {
     ListItem option = new ListItem(ListItem.TYPE_EDITTEXT_POLL_OPTION, R.id.option).setInputFilters(new InputFilter[] {
       new CodePointCountFilter(TdConstants.MAX_POLL_OPTION_LENGTH),
-      new EmojiFilter(),
       new CharacterStyleFilter(),
       new RestrictFilter(new char[] {'\n'})
     }).setOnEditorActionListener(new EditBaseController.SimpleEditorActionListener(EditorInfo.IME_ACTION_NEXT, v -> addOption()));
@@ -544,7 +543,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
   private boolean canSendPoll () {
     if (isQuiz && correctOptionItem == null)
       return false;
-    String title = StringUtils.trim(questionItem.getStringValue());
+    CharSequence title = StringUtils.trim(questionItem.getCharSequenceValue());
     if (StringUtils.isEmpty(title))
       return false;
     if (isQuiz) {
@@ -555,7 +554,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     int count = 0;
     boolean foundCorrectOption = !isQuiz;
     for (ListItem optionItem : options) {
-      String option = StringUtils.trim(optionItem.getStringValue());
+      CharSequence option = StringUtils.trim(optionItem.getCharSequenceValue());
       if (!StringUtils.isEmpty(option)) {
         if (correctOptionItem == optionItem)
           foundCorrectOption = true;
@@ -566,13 +565,13 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
   }
 
   private boolean hasUnsavedPoll () {
-    String title = StringUtils.trim(questionItem.getStringValue());
+    CharSequence title = StringUtils.trim(questionItem.getCharSequenceValue());
     if (!StringUtils.isEmpty(title))
       return true;
     if (isQuiz && !Td.isEmpty(getExplanation(false)))
       return true;
     for (ListItem optionItem : options) {
-      if (!StringUtils.isEmptyOrBlank(optionItem.getStringValue())) {
+      if (!StringUtils.isEmptyOrBlank(optionItem.getCharSequenceValue())) {
         return true;
       }
     }
@@ -608,9 +607,9 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
   }
 
   private TdApi.FormattedText getExplanation (boolean parseMarkdown) {
-    String explanationText = isQuiz ? explanationItem.getStringValue() : null;
+    CharSequence explanationText = isQuiz ? explanationItem.getCharSequenceValue() : null;
     if (!StringUtils.isEmpty(explanationText)) {
-      TdApi.FormattedText explanation = new TdApi.FormattedText(explanationText, null);
+      TdApi.FormattedText explanation = TD.toFormattedText(explanationText, false);
       if (parseMarkdown)
         Td.parseMarkdown(explanation);
       return explanation;
@@ -621,26 +620,24 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
   private void send (TdApi.MessageSendOptions sendOptions, boolean disableMarkdown) {
     if (getDoneButton().isInProgress())
       return;
-    TdApi.FormattedText question = new TdApi.FormattedText(
-      StringUtils.trim(questionItem.getStringValue()),
-      new TdApi.TextEntity[0] // TODO: custom emoji support
-    );
+    TdApi.FormattedText question = TD.toFormattedText(StringUtils.trim(questionItem.getCharSequenceValue()), false);
     if (Td.isEmpty(question) || Td.codePointCount(question) > TdConstants.MAX_POLL_QUESTION_LENGTH) {
       requestFocus(questionItem);
       return;
     }
+    boolean hasCustomEmoji = TD.hasCustomEmoji(question);
     int correctOptionId = -1;
     List<TdApi.FormattedText> options = new ArrayList<>(TdConstants.MAX_POLL_OPTION_COUNT);
     for (ListItem optionItem : this.options) {
-      TdApi.FormattedText option = new TdApi.FormattedText(
-        StringUtils.trim(optionItem.getStringValue()),
-        new TdApi.TextEntity[0] // TODO: custom emoji support
-      );
+      TdApi.FormattedText option = TD.toFormattedText(StringUtils.trim(optionItem.getCharSequenceValue()), false);
       if (Td.isEmpty(option))
         continue;
       if (Td.codePointCount(option) > TdConstants.MAX_POLL_OPTION_LENGTH) {
         requestFocus(optionItem);
         return;
+      }
+      if (!hasCustomEmoji && TD.hasCustomEmoji(option)) {
+        hasCustomEmoji = true;
       }
       if (optionItem == correctOptionItem) {
         correctOptionId = options.size();
@@ -649,6 +646,12 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     }
     if (options.size() < 2)
       return;
+
+    if (hasCustomEmoji && !tdlib.hasPremium()) {
+      tdlib.ui().showPremiumAlert(this, getDoneButton(), TdlibUi.PremiumFeature.CUSTOM_EMOJI);
+      return;
+    }
+
     Args args = getArgumentsStrict();
     final long chatId = args.chatId;
     final ThreadInfo messageThread = args.messageThread;

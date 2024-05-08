@@ -471,7 +471,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         Args args = getArgumentsStrict();
         editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT);
         editText.setEmptyHint(args.member != null && TD.isCreator(args.member.status) ? R.string.message_ownerSign : R.string.message_adminSignPlain);
-        editText.setText(item.getStringValue());
+        editText.setText(item.getCharSequenceValue());
         editText.setInputEnabled(TD.isCreator(args.myStatus) || isNewRuleSet() || canDismissAdmin());
         editText.setMaxLength(TdConstants.MAX_CUSTOM_TITLE_LENGTH);
         if (parent.getBackground() == null) {

@@ -526,7 +526,7 @@ public class EditChatFolderInviteLinkController extends EditBaseController<EditC
   }
 
   @Override
-  public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v, String text) {
+  public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v) {
     if (id == R.id.btn_inviteLinkName) {
       inviteLinkName = v.getText().toString();
       updateDoneButton();

@@ -418,7 +418,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       if (cachedHint != null && cachedHintAvailWidth == availWidth && cachedHint.equals(state.options.info)) {
         hintHeight = cachedHintHeight;
       } else {
-        hintHeight = CustomTextView.measureHeight(this, state.options.info, 15f, availWidth);
+        hintHeight = CustomTextView.measureHeight(this, state.options.info, 0, 15f, availWidth);
         cachedHint = state.options.info;
         cachedHintAvailWidth = availWidth;
         cachedHintHeight = hintHeight;

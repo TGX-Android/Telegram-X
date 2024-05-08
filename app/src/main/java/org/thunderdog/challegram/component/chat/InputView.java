@@ -44,7 +44,6 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.widget.LinearLayout;
@@ -665,26 +664,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       inlineContext.forceCheck();
       if (spanChangeListener != null) {
         spanChangeListener.onSpansChanged(this);
-      }
-    }
-  }
-
-  private static void parseEmoji (Editable editable, int start, int end) {
-    CharSequence cs = Emoji.instance().replaceEmoji(editable, start, end, null);
-    if (cs != editable && cs instanceof Spanned) {
-      Spanned emojiText = (Spanned) cs;
-      EmojiSpan[] parsedEmojis = emojiText.getSpans(0, emojiText.length(), EmojiSpan.class);
-      if (parsedEmojis != null) {
-        for (EmojiSpan parsedEmoji : parsedEmojis) {
-          int emojiStart = emojiText.getSpanStart(parsedEmoji);
-          int emojiEnd = emojiText.getSpanEnd(parsedEmoji);
-          editable.setSpan(
-            parsedEmoji,
-            start + emojiStart,
-            start + emojiEnd,
-            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-          );
-        }
       }
     }
   }
@@ -1566,119 +1545,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     }
   }
 
-  // FormattedText generation
-
-  public final TdApi.FormattedText getOutputText (boolean applyMarkdown) {
-    SpannableStringBuilder text = new SpannableStringBuilder(getText());
-    BaseInputConnection.removeComposingSpans(text);
-    TdApi.FormattedText formattedText = new TdApi.FormattedText(text.toString(), TD.toEntities(text, false));
-    if (applyMarkdown) {
-      //noinspection UnsafeOptInUsageError
-      Td.parseMarkdown(formattedText);
-    }
-    return formattedText;
-  }
-
-  public final boolean hasOnlyPremiumFeatures () {
-    return TD.hasCustomEmoji(getOutputText(false));
-  }
-
   // Android-related workarounds
-
-  @Override
-  public boolean onTextContextMenuItem (@IdRes int id) {
-    try {
-      TextSelection selection = getTextSelection();
-      if (selection == null) {
-        return super.onTextContextMenuItem(id);
-      }
-      Editable editable = getText();
-      switch (id) {
-        case android.R.id.cut: {
-          if (!selection.isEmpty()) {
-            CharSequence copyText = editable.subSequence(selection.start, selection.end);
-            editable.delete(selection.start, selection.end);
-            U.copyText(copyText);
-            setSelection(selection.start);
-            return true;
-          }
-          break;
-        }
-        case android.R.id.copy: {
-          if (!selection.isEmpty()) {
-            CharSequence copyText = editable.subSequence(selection.start, selection.end);
-            U.copyText(copyText);
-            setSelection(selection.end);
-            return true;
-          }
-          break;
-        }
-        case android.R.id.paste: {
-          CharSequence pasteText = U.getPasteText(getContext());
-          if (pasteText != null) {
-            paste(pasteText, false);
-            return true;
-          }
-          break;
-        }
-      }
-    } catch (Throwable t) {
-      Log.e("onTextContextMenuItem failed for id %s", t, Lang.getResourceEntryName(id));
-    }
-    return super.onTextContextMenuItem(id);
-  }
-
-  public void paste (TdApi.FormattedText pasteText, boolean needSelectPastedText) {
-    paste(TD.toCharSequence(pasteText), needSelectPastedText);
-  }
-
-  public void paste (CharSequence pasteText, boolean needSelectPastedText) {
-    paste(getTextSelection(), pasteText, needSelectPastedText);
-  }
-
-  private void paste (TextSelection selection, CharSequence pasteText, boolean needSelectPastedText) {
-    if (selection == null) return;
-    final int start = selection.start;
-    final int end = selection.end;
-
-    Editable editable = getText();
-    if (selection.isEmpty()) {
-      editable.insert(start, pasteText);
-    } else {
-      editable.replace(start, end, pasteText);
-    }
-    if (pasteText instanceof Spanned) {
-      // TODO: should this be a part of EmojiFilter?
-      removeCustomEmoji(editable, start, start + pasteText.length());
-    }
-    if (needSelectPastedText) {
-      setSelection(start, start + pasteText.length());
-    } else {
-      setSelection(start + pasteText.length());
-    }
-  }
-
-  private static void removeCustomEmoji (Editable editable, int start, int end) {
-    URLSpan[] urlSpans = editable.getSpans(start, end, URLSpan.class);
-    if (urlSpans != null) {
-      for (URLSpan urlSpan : urlSpans) {
-        int urlStart = editable.getSpanStart(urlSpan);
-        int urlEnd = editable.getSpanEnd(urlSpan);
-        EmojiSpan[] emojiSpans = editable.getSpans(urlStart, urlEnd, EmojiSpan.class);
-        for (EmojiSpan emojiSpan : emojiSpans) {
-          if (emojiSpan.isCustomEmoji()) {
-            int emojiStart = editable.getSpanStart(emojiSpan);
-            int emojiEnd = editable.getSpanEnd(emojiSpan);
-            editable.removeSpan(emojiSpan);
-            if (emojiSpan instanceof Destroyable) {
-              ((Destroyable) emojiSpan).performDestroy();
-            }
-            parseEmoji(editable, emojiStart, emojiEnd);
-          }
-        }
-      }
-    }
-  }
 
   @Override
   public boolean onTouchEvent (MotionEvent event) {

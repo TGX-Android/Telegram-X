@@ -498,9 +498,9 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   }
 
   @Override
-  public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v, String text) {
+  public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v) {
     if (item == input) {
-      onTitleChanged(text);
+      onTitleChanged(v.getText().toString());
     }
   }
 
@@ -856,7 +856,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
       frameLayout.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(57f)));
       ViewSupport.setThemedBackground(frameLayout, ColorId.filling, EditChatFolderController.this);
 
-      MaterialEditTextGroup editText = new MaterialEditTextGroup(parent.getContext(), false);
+      MaterialEditTextGroup editText = new MaterialEditTextGroup(parent.getContext(), tdlib, false);
       editText.setId(android.R.id.input);
       editText.applyRtl(Lang.rtl());
       editText.addThemeListeners(EditChatFolderController.this);
@@ -897,7 +897,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
       MaterialEditTextGroup editText = holder.itemView.findViewById(android.R.id.input);
       editText.applyRtl(Lang.rtl());
       editText.setEmptyHint(R.string.FolderNameHint);
-      editText.setText(item.getStringValue());
+      editText.setText(item.getCharSequenceValue());
 
       ImageView imageView = holder.itemView.findViewById(android.R.id.icon);
       int iconResource = TD.findFolderIcon(editedChatFolder.icon, R.drawable.baseline_folder_24);
@@ -961,7 +961,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
       if (oldItem.getViewType() == ListItem.TYPE_SEPARATOR) {
         return oldItem.getIntValue() == newItem.getIntValue() &&
           oldItem.getLongValue() == newItem.getLongValue() &&
-          ObjectsCompat.equals(oldItem.getStringValue(), newItem.getStringValue());
+          ObjectsCompat.equals(oldItem.getCharSequenceValue(), newItem.getCharSequenceValue());
       }
       return true;
     }

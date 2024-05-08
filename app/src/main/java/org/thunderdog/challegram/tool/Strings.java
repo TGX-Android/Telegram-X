@@ -745,12 +745,12 @@ public class Strings {
     return b.toString();
   }
 
-  public static int getNumberLength (String input) {
+  public static int getNumberLength (CharSequence input) {
     if (StringUtils.isEmpty(input))
       return 0;
     int count = 0;
     for (int i = 0; i < input.length();) {
-      int codePoint = input.codePointAt(i);
+      int codePoint = Character.codePointAt(input, i);
       int size = Character.charCount(codePoint);
       if (size == 1 && codePoint >= '0' && codePoint <= '9') {
         count++;

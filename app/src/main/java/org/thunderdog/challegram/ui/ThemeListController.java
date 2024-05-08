@@ -704,7 +704,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
             lp.rightMargin = Screen.dp(12f);
             fp.bottomMargin = Screen.dp(4f);
 
-            MaterialEditTextGroup editText = new MaterialEditTextGroup(context) {
+            MaterialEditTextGroup editText = new MaterialEditTextGroup(context, tdlib) {
               @Override
               public boolean onInterceptTouchEvent (MotionEvent ev) {
                 return true;

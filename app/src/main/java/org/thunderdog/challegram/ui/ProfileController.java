@@ -3882,7 +3882,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(chatDescriptionItem);
 
       baseAdapter.setLockFocusOn(this, false);
-      baseAdapter.setTextChangeListener((id, item, v, text) -> {
+      baseAdapter.setTextChangeListener((id, item, v) -> {
         // item.setStringValue(text);
         if (id == R.id.description) {
           // onItemsHeightProbablyChanged();

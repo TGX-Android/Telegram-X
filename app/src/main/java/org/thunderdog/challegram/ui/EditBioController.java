@@ -166,8 +166,8 @@ public class EditBioController extends EditBaseController<EditBioController.Argu
   }
 
   @Override
-  public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v, String text) {
-    currentBio = text;
+  public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v) {
+    currentBio = v.getText().toString();
   }
 
   @Override

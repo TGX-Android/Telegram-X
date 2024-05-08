@@ -303,7 +303,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
     countryWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, headerHeight, Gravity.TOP));
 
     String countryText = storedValues.get(R.id.login_country, "");
-    countryView = new MaterialEditTextGroup(context);
+    countryView = new MaterialEditTextGroup(context, tdlib);
     countryView.addThemeListeners(this);
     countryView.setUseTextChangeAnimations();
     countryView.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS | InputType.TYPE_TEXT_FLAG_CAP_WORDS | InputType.TYPE_TEXT_VARIATION_POSTAL_ADDRESS);
@@ -398,7 +398,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
 
         String codeText = storedValues.get(R.id.login_code, "");
 
-        codeView = new MaterialEditTextGroup(context);
+        codeView = new MaterialEditTextGroup(context, tdlib);
         codeView.addThemeListeners(PhoneController.this);
         codeView.setLayoutParams(params);
         codeView.getEditText().setId(R.id.login_code);
@@ -416,7 +416,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
         params.leftMargin = Screen.dp(89f);
 
         String numberText = storedValues.get(R.id.login_country, "");
-        numberView = new MaterialEditTextGroup(context);
+        numberView = new MaterialEditTextGroup(context, tdlib);
         numberView.addThemeListeners(PhoneController.this);
         numberView.getEditText().setBackspaceListener((v, editable, selectionStart, selectionEnd) -> {
           if (editable.length() == 0) {
@@ -590,7 +590,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
   private boolean ignorePhoneChanges;
 
   @Override
-  public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v, String text) {
+  public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v) {
     if (id == R.id.edit_first_name) {
       updateDoneState();
     }

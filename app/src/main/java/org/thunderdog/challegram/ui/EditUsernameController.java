@@ -306,7 +306,8 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
   }
 
   @Override
-  public void onTextChanged (int id, ListItem ite, MaterialEditTextGroup v, String username) {
+  public void onTextChanged (int id, ListItem ite, MaterialEditTextGroup v) {
+    String username = v.getText().toString();
     if (currentUsernames.editableUsername.equals(username)) {
       return;
     }

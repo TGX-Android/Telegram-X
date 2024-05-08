@@ -183,7 +183,8 @@ public class ListItem {
 
   private @Nullable DrawModifier drawModifier;
 
-  private String stringKey, stringValue;
+  private String stringKey;
+  private CharSequence stringValue;
   private @PorterDuffColorId int textColorId;
   private TdlibAccentColor accentColor;
   private int textPaddingLeft, textPaddingRight;
@@ -376,12 +377,12 @@ public class ListItem {
     return textPaddingRight;
   }
 
-  public ListItem setStringValue (String value) {
+  public ListItem setStringValue (CharSequence value) {
     this.stringValue = value;
     return this;
   }
 
-  public boolean setStringValueIfChanged (String value) {
+  public boolean setStringValueIfChanged (CharSequence value) {
     if (!StringUtils.equalsOrBothEmpty(this.stringValue, value)) {
       this.stringValue = value;
       return true;
@@ -390,6 +391,10 @@ public class ListItem {
   }
 
   public String getStringValue () {
+    return stringValue != null ? stringValue.toString() : null;
+  }
+
+  public CharSequence getCharSequenceValue () {
     return stringValue;
   }
 

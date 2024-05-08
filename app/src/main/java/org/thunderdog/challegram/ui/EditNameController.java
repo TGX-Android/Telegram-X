@@ -388,7 +388,8 @@ public class EditNameController extends EditBaseController<EditNameController.Ar
   }
 
   @Override
-  public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v, String text) {
+  public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v) {
+    String text = v.getText().toString();
     if (id == R.id.edit_first_name) {
       firstName.setStringValue(text);
       updateDoneState();

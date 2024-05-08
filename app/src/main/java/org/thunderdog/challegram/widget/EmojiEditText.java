@@ -59,7 +59,7 @@ public class EmojiEditText extends EditText implements Destroyable {
   public final void setFilters (@NonNull InputFilter[] filters) {
     if (emojiUpdater == null)
       emojiUpdater = new EmojiUpdater(this);
-    super.setFilters(EmojiTextView.newFilters(filters, emojiUpdater));
+    super.setFilters(EmojiTextView.newFilters(this, filters, emojiUpdater));
   }
 
   @Override

@@ -6684,12 +6684,14 @@ public class TdlibUi extends Handler {
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({
     PremiumFeature.STICKER,
-    PremiumFeature.RESTRICT_VOICE_AND_VIDEO_MESSAGES
+    PremiumFeature.RESTRICT_VOICE_AND_VIDEO_MESSAGES,
+    PremiumFeature.CUSTOM_EMOJI
   })
   public @interface PremiumFeature {
     int
       STICKER = 1,
-      RESTRICT_VOICE_AND_VIDEO_MESSAGES = 2;
+      RESTRICT_VOICE_AND_VIDEO_MESSAGES = 2,
+      CUSTOM_EMOJI = 3;
   }
 
   @Retention(RetentionPolicy.SOURCE)
@@ -6719,6 +6721,9 @@ public class TdlibUi extends Handler {
         break;
       case PremiumFeature.RESTRICT_VOICE_AND_VIDEO_MESSAGES:
         stringRes = R.string.PremiumRequiredVoiceVideo;
+        break;
+      case PremiumFeature.CUSTOM_EMOJI:
+        stringRes = R.string.MessageContainsPremiumFeatures;
         break;
       default:
         throw new IllegalStateException();

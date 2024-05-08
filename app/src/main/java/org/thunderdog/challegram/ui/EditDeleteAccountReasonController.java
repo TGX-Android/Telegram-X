@@ -68,7 +68,7 @@ public class EditDeleteAccountReasonController extends EditTextController<String
       }
 
       @Override
-      public boolean onDonePressed (EditTextController<?> controller, DoneButton button, String value) {
+      public boolean onDonePressed (EditTextController<?> controller, DoneButton button, CharSequence value) {
         if (isInProgress())
           return false;
         if (!StringUtils.isEmptyOrBlank(value)) {
@@ -85,7 +85,7 @@ public class EditDeleteAccountReasonController extends EditTextController<String
                 String phoneNumber = account.getPhoneNumber();
                 setDoneInProgress(true);
                 setStackLocked(true);
-                tdlib.send(new TdApi.DeleteAccount(value, getArguments()), (ok, error) -> runOnUiThreadOptional(() -> {
+                tdlib.send(new TdApi.DeleteAccount(value.toString(), getArguments()), (ok, error) -> runOnUiThreadOptional(() -> {
                   setStackLocked(false);
                   setDoneInProgress(false);
                   if (error != null) {

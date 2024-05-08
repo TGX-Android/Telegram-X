@@ -389,7 +389,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     params.leftMargin = Screen.dp(16f);
     params.rightMargin = Screen.dp(16f);
 
-    editText = new MaterialEditTextGroup(context);
+    editText = new MaterialEditTextGroup(context, tdlib);
     editText.getEditText().setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI | EditorInfo.IME_ACTION_DONE);
     editText.addThemeListeners(this);
     editText.setDoneListener(this);
