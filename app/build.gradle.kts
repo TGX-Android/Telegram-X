@@ -200,6 +200,14 @@ android {
     buildConfigString("FFMPEG_COMMIT", ffmpegGit.commitHashShort)
     buildConfigString("FFMPEG_COMMIT_URL", ffmpegGit.commitUrl)
 
+    // WebP version
+
+    val webpGit = providers.of(GitVersionValueSource::class) {
+      parameters.module = layout.projectDirectory.dir("jni/third_party/webp")
+    }.get()
+    buildConfigString("WEBP_COMMIT", webpGit.commitHashShort)
+    buildConfigString("WEBP_COMMIT_URL", webpGit.commitUrl)
+
     // Set application version
 
     val appVersionOverride = properties.getProperty("app.version", "0").toInt()
