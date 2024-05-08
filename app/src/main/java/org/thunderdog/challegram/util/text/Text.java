@@ -1643,7 +1643,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
         } else if (newEnd - currentEnd == 1 && lastCodePointWidth != -1 && lastCodePoint == codePoint) {
           charWidth = lastCodePointWidth;
         } else {
-          charWidth = U.measureText(in, currentEnd, newEnd, paint);
+          charWidth = BiDiUtils.measureTextRun(bidiEntity, in, currentEnd, newEnd, paint); //    U.measureText(in, currentEnd, newEnd, paint);
           if (newEnd - currentEnd == 1) {
             lastCodePoint = codePoint;
             lastCodePointWidth = charWidth;
