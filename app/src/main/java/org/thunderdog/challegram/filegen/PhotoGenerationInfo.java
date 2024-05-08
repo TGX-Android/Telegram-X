@@ -457,7 +457,7 @@ public class PhotoGenerationInfo extends GenerationInfo {
     PaintState paintState = file.getPaintState();
     if (paintState != null && !paintState.isEmpty()) {
       b.append(",p:");
-      b.append(paintState.toString());
+      b.append(paintState.saveAndSerializeToString());
     }
 
     if (BuildConfig.DEBUG) {
