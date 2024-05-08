@@ -2776,6 +2776,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     clearSwitchPmButton();
     clearReply();
+    canSendMessageToUser = null;
 
     resetEditState();
     forceHideToast();
@@ -2868,6 +2869,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (!inPreviewMode && !isInForceTouchMode()) {
       checkActionBar();
       checkJoinRequests(chat.pendingJoinRequests);
+      checkCanSendMessagesToUser(true);
     }
     if (inputView != null) {
       inputView.setChat(chat, messageThread, draftMessage != null ? draftMessage.inputMessageText : null, getCustomInputPlaceholder(), silentButton != null && silentButton.getIsSilent());
@@ -3165,7 +3167,22 @@ public class MessagesController extends ViewController<MessagesController.Argume
       TdApi.SecretChat secretChat = tdlib.chatToSecretChat(chat.id);
       TdApi.Supergroup supergroup = tdlib.chatToSupergroup(chat.id);
       boolean joinSupergroupToSendMessages = messageThread == null || supergroup != null && supergroup.joinToSendMessages;
-      if (secretChat != null && !TD.isSecretChatReady(secretChat)) {
+      if (canSendMessageToUser != null && canSendMessageToUser.getConstructor() != TdApi.CanSendMessageToUserResultOk.CONSTRUCTOR) {
+        switch (canSendMessageToUser.getConstructor()) {
+          case TdApi.CanSendMessageToUserResultOk.CONSTRUCTOR:
+            throw new IllegalStateException(); // unreachable
+          case TdApi.CanSendMessageToUserResultUserIsDeleted.CONSTRUCTOR:
+            showActionDeleteChatButton();
+            break;
+          case TdApi.CanSendMessageToUserResultUserRestrictsNewChats.CONSTRUCTOR: {
+            showActionButton(Lang.getMarkdownString(this, R.string.UserNewChatRetricted, Lang.boldCreator(), tdlib.chatTitleShort(chat.id)), ACTION_EMPTY, false);
+            break;
+          }
+          default:
+            Td.assertCanSendMessageToUserResult_3ce8a048();
+            throw Td.unsupported(canSendMessageToUser);
+        }
+      } else if (secretChat != null && !TD.isSecretChatReady(secretChat)) {
         showSecretChatAction(secretChat);
       } else if (tdlib.chatFullyBlocked(chat.id) && tdlib.isUserChat(chat)) {
         showActionUnblockButton();
@@ -4226,6 +4243,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (searchByUserViewWrapper != null) {
       searchByUserViewWrapper.dismiss();
     }
+    canSendMessageToUser = null;
 
     if (manager != null) {
       manager.destroy(this);
@@ -6103,7 +6121,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (tdlib.chatFullyBlocked(chat.id)) {
           tdlib.unblockSender(tdlib.sender(chat.id), result -> {
             if (TD.isOk(result)) {
-              tdlib.ui().post(after);
+              tdlib.ui().postDelayed(after, 200);
             } else {
               tdlib.okHandler().onResult(result);
             }
@@ -10596,11 +10614,47 @@ public class MessagesController extends ViewController<MessagesController.Argume
     inputView.setDraft(draftMessage != null ? draftMessage.inputMessageText : null);
   }
 
+  private TdApi.CanSendMessageToUserResult canSendMessageToUser;
+
+  @UiThread
+  private void checkCanSendMessagesToUser (boolean allowRemote) {
+    if (chat != null && TD.isPrivateChat(chat.type) && !inPreviewMode && !isInForceTouchMode()) {
+      TdApi.User user = tdlib.chatUser(chat);
+      if (user != null && user.restrictsNewChats) {
+        long userId = user.id;
+        tdlib.send(new TdApi.CanSendMessageToUser(userId, true), (localCanSendMessageToUser, error) -> {
+          if (localCanSendMessageToUser != null) {
+            processCanSendMessagesToUser(userId, localCanSendMessageToUser);
+          }
+          if (allowRemote || error != null) {
+            tdlib.send(new TdApi.CanSendMessageToUser(userId, false), (remoteCanSendMessageToUser, error1) -> {
+              if (remoteCanSendMessageToUser != null) {
+                processCanSendMessagesToUser(userId, remoteCanSendMessageToUser);
+              }
+            });
+          }
+        });
+        return;
+      }
+    }
+    processCanSendMessagesToUser(tdlib.chatUserId(chat), null);
+  }
+
+  private void processCanSendMessagesToUser (long userId, TdApi.CanSendMessageToUserResult result) {
+    executeOnUiThreadOptional(() -> {
+      if (getChatId() == ChatId.fromUserId(userId) && !Td.equalsTo(this.canSendMessageToUser, result)) {
+        this.canSendMessageToUser = result;
+        updateBottomBar(true);
+      }
+    });
+  }
+
   @Override
   public void onUserUpdated (TdApi.User user) {
     if (chat != null && user != null && headerCell != null && TD.getUserId(chat) == user.id) {
       runOnUiThreadOptional(() -> {
         headerCell.setEmojiStatus(user);
+        checkCanSendMessagesToUser(false);
       });
     }
   }

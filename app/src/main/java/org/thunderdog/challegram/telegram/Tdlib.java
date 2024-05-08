@@ -465,7 +465,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private int chatFolderMaxCount = 10, folderChosenChatMaxCount = 100;
   private int addedShareableChatFolderMaxCount = 2, chatFolderInviteLinkMaxCount = 3;
   private long chatFolderUpdatePeriod = 300; // Seconds
-  private int activeStoryCountMax = 100, weeklySentStoryCountMax = 700,monthlySentStoryCountMax = 3000;
+  private int pinnedStoryCountMax = 3, activeStoryCountMax = 100, weeklySentStoryCountMax = 700,monthlySentStoryCountMax = 3000;
   private boolean canUseTextEntitiesInStoryCaptions;
   private int storyCaptionLengthMax = 2048;
   private int storySuggestedReactionAreaCountMax = 5;
@@ -9366,6 +9366,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   @TdlibThread
   private void updateOption (ClientHolder context, TdApi.UpdateOption update) {
+    // TODO: separate all fields from Tdlib to some TdlibOptions object.
     final String name = update.name;
 
     if (Log.isEnabled(Log.TAG_TDLIB_OPTIONS)) {
@@ -9550,6 +9551,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         this.maxBioLength = Td.intValue(update.value);
         break;
 
+      case "pinned_story_count_max":
+        this.pinnedStoryCountMax = Td.intValue(update.value);
+        break;
       case "active_story_count_max":
         this.activeStoryCountMax = Td.intValue(update.value);
         break;
