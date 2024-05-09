@@ -2328,7 +2328,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
             .builder(headerCell.getTopView())
             .locate((targetView, outRect) -> outRect.left = outRect.right = Screen.dp(56f) - (int) targetView.getX())
             .controller(this)
-            .show(tdlib, Lang.getString(R.string.HideFolderInfo, title, Lang.getString(R.string.Settings), Lang.getString(R.string.ChatFolders)))
+            .show(tdlib, Lang.getString(R.string.HideFolderInfo2, title))
             .hideDelayed(3500, TimeUnit.MILLISECONDS);
         }
       } else if (id == R.id.btn_folderIncludeChats) {

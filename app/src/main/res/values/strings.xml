@@ -5098,7 +5098,7 @@
   <string name="NewFolder">New Folder</string>
   <string name="CreateNewFolder">Create New Folder</string>
   <string name="HideFolder">Hide Folder</string>
-  <string name="HideFolderInfo">To display %1$s folder again, go to %2$s > %3$s</string>
+  <string name="HideFolderInfo2">To display %1$s folder again, go to Settings&#160;&gt;&#160;Chat Folders&#160;&gt;&#160;%1$s</string>
   <string name="HideAllChats">Hide All Chats</string>
   <string name="EditFolder">Edit Folder</string>
   <string name="EditFolders">Edit Folders</string>
