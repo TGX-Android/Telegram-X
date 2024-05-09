@@ -961,11 +961,13 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
           tdlib.client().send(function, this);
           return;
         }
+        this.currentError = (TdApi.Error) object;
         if (!ignoreFailures) {
-          this.currentError = (TdApi.Error) object;
           String errorTitle = Lang.getString(R.string.Error);
           setContent((sender == null && StringUtils.isEmpty(senderName)) ? errorTitle : computeTitleText(errorTitle), TD.errorCode(object) == 404 ? new ContentPreview(null, R.string.DeletedMessage) : new ContentPreview(null, 0, TD.toErrorString(object), true), null, false);
           currentMessage = null;
+        } else {
+          setChannelTitle(TD.errorCode(object) == 404 ? Lang.getString(R.string.DeletedMessage) : TD.toErrorString(object));
         }
         break;
       }
