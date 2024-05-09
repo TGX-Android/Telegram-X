@@ -5467,7 +5467,7 @@ public class TD {
       return new TdApi.ChatFolderIcon("Private");
     }
     if (chatType == R.id.chatType_group) {
-      return new TdApi.ChatFolderIcon( "Groups");
+      return new TdApi.ChatFolderIcon("Groups");
     }
     if (chatType == R.id.chatType_channel) {
       return new TdApi.ChatFolderIcon("Channels");

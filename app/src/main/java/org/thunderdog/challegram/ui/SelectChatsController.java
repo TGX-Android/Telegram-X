@@ -14,6 +14,8 @@
  */
 package org.thunderdog.challegram.ui;
 
+import static androidx.core.content.res.ResourcesCompat.ID_NULL;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.ColorStateList;
@@ -38,16 +40,21 @@ import androidx.annotation.IdRes;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.Px;
 import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.component.user.BubbleHeaderView;
+import org.thunderdog.challegram.component.user.BubbleView;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGFoundChat;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
@@ -62,11 +69,14 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Icons;
+import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.FlowListAnimator;
 import org.thunderdog.challegram.util.text.Text;
@@ -92,11 +102,12 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
 import me.vkryl.td.Td;
 
-public class SelectChatsController extends RecyclerViewController<SelectChatsController.Arguments> implements View.OnClickListener, ChatListListener {
+public class SelectChatsController extends RecyclerViewController<SelectChatsController.Arguments> implements View.OnClickListener, ChatListListener, BubbleHeaderView.Callback {
 
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({MODE_SELECT_CHATS, MODE_FOLDER_INCLUDE_CHATS, MODE_FOLDER_EXCLUDE_CHATS})
@@ -157,11 +168,14 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     }
   }
 
+  private static final String CHAT_TYPE_PREFIX = "chatType_";
+
   private @Mode int mode;
   private @Nullable Delegate delegate;
   private SettingsAdapter adapter;
   private TdlibChatListSlice chatListSlice;
   private boolean loadingMore, chatListInitialized;
+  private @Nullable BubbleHeaderView headerCell;
 
   private final @IdRes int chatsHeaderId = ViewCompat.generateViewId();
   private final @IdRes int chatsFooterId = ViewCompat.generateViewId();
@@ -170,8 +184,12 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
   private Set<Integer> selectedChatTypes = Collections.emptySet();
   private boolean showChatTypes;
 
+  private List<BubbleView.Entry> bubbles = new ArrayList<>(0);
+
   private int secretChatCount;
   private int nonSecretChatCount;
+
+  private @Px int headerOffset;
 
   private final BoolAnimator chipGroupVisibilityAnimator = new BoolAnimator(0, (id, factor, fraction, callee) -> {
     RecyclerView recyclerView = getRecyclerView();
@@ -192,9 +210,21 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     selectedChatTypes = new TreeSet<>(args.selectedChatTypes);
     showChatTypes = args.showChatTypes;
 
+    if (hasBubbles()) {
+      bubbles = new ArrayList<>(selectedChatTypes.size() + selectedChatIds.size());
+    }
+
     secretChatCount = 0;
     nonSecretChatCount = 0;
+    if (hasBubbles()) {
+      for (int selectedChatType : selectedChatTypes) {
+        bubbles.add(chatTypeBubble(selectedChatType));
+      }
+    }
     for (long selectedChatId : selectedChatIds) {
+      if (hasBubbles()) {
+        bubbles.add(chatBubble(selectedChatId));
+      }
       if (ChatId.isSecret(selectedChatId)) {
         secretChatCount++;
       } else {
@@ -224,6 +254,34 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
   }
 
   @Override
+  public View getCustomHeaderCell () {
+    return headerCell;
+  }
+
+  @Override
+  protected boolean swipeNavigationEnabled () {
+    return headerCell == null || !headerCell.areBubblesAnimating();
+  }
+
+  @Override
+  public View getViewForApplyingOffsets () {
+    return hasBubbles() ? null : super.getViewForApplyingOffsets();
+  }
+
+  @Override
+  protected boolean useDropPlayer () {
+    return !hasBubbles();
+  }
+
+  @Override
+  public void hideSoftwareKeyboard () {
+    super.hideSoftwareKeyboard();
+    if (headerCell != null) {
+      Keyboard.hide(headerCell.getInput());
+    }
+  }
+
+  @Override
   public boolean needAsynchronousAnimation () {
     return !chatListInitialized;
   }
@@ -234,13 +292,56 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
   }
 
   @Override
+  protected int getMenuId () {
+    return ID_NULL;
+  }
+
+  @Override
+  protected View onCreateView (Context context) {
+    View view = super.onCreateView(context);
+    if (hasBubbles()) {
+      headerCell = new BubbleHeaderView(context, tdlib);
+      if (mode == MODE_FOLDER_INCLUDE_CHATS) {
+        headerCell.setHint(bindLocaleChanger(R.string.IncludeChatsHint, headerCell.getInput(), /* isHint */ true, /* isMedium */ false));
+      } else if (mode == MODE_FOLDER_EXCLUDE_CHATS) {
+        headerCell.setHint(bindLocaleChanger(R.string.ExcludeChatsHint, headerCell.getInput(), /* isHint */ true, /* isMedium */ false));
+      }
+      headerCell.setCallback(this);
+      if (!bubbles.isEmpty()) {
+        headerCell.forceBubbles(bubbles);
+        headerOffset = headerCell.getCurrentWrapHeight();
+
+        RecyclerView recyclerView = getRecyclerView();
+        recyclerView.setTranslationY(headerOffset);
+        Views.setBottomMargin(recyclerView, headerOffset);
+
+        RecyclerView chatSearchView = getChatSearchView();
+        chatSearchView.setTranslationY(headerOffset);
+        Views.setBottomMargin(chatSearchView, headerOffset);
+      }
+    }
+    return view;
+  }
+
+  @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
     Arguments arguments = getArgumentsStrict();
     adapter = new Adapter(this);
 
+    recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+      @Override
+      public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
+        if (newState != RecyclerView.SCROLL_STATE_IDLE) {
+          hideSoftwareKeyboard();
+        }
+      }
+    });
+
     ArrayList<ListItem> items = new ArrayList<>();
-    items.add(new ListItem(ListItem.TYPE_CUSTOM, R.id.input));
-    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    if (!hasBubbles()) {
+      items.add(new ListItem(ListItem.TYPE_CUSTOM, R.id.input));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    }
     if (arguments.mode == MODE_FOLDER_INCLUDE_CHATS || arguments.mode == MODE_FOLDER_EXCLUDE_CHATS) {
       items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
       if (mode == MODE_FOLDER_INCLUDE_CHATS) {
@@ -254,15 +355,25 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
       if (showChatTypes) {
         items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.ChatTypes));
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-        if (arguments.mode == MODE_FOLDER_INCLUDE_CHATS) {
-          for (int chatType : TD.CHAT_TYPES_TO_INCLUDE) {
-            items.add(chatTypeItem(chatType));
-          }
+        int[] chatTypes;
+        switch (mode) {
+          case MODE_FOLDER_INCLUDE_CHATS:
+            chatTypes = TD.CHAT_TYPES_TO_INCLUDE;
+            break;
+          case MODE_FOLDER_EXCLUDE_CHATS:
+            chatTypes = TD.CHAT_TYPES_TO_EXCLUDE;
+            break;
+          default:
+            throw new UnsupportedOperationException("mode = " + mode);
         }
-        if (arguments.mode == MODE_FOLDER_EXCLUDE_CHATS) {
-          for (int chatType : TD.CHAT_TYPES_TO_EXCLUDE) {
-            items.add(chatTypeItem(chatType));
+        boolean isFirst = true;
+        for (int chatType : chatTypes) {
+          if (isFirst) {
+            isFirst = false;
+          } else {
+            // FIXME items.add(new ListItem(ListItem.TYPE_SEPARATOR));
           }
+          items.add(chatTypeItem(chatType));
         }
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       }
@@ -291,7 +402,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
       public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
-        if (dy > 0 && !loadingMore && !inSearchMode() && chatListSlice.canLoad()) {
+        if (dy > 0 && !loadingMore && isChatSearchOpen() && chatListSlice.canLoad()) {
           int lastVisiblePosition = findLastVisiblePosition();
           if (lastVisiblePosition == adapter.getItemCount() - 1) {
             chatListSlice.loadMore(chunkSize, /* after */ null);
@@ -318,16 +429,25 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
   public void destroy () {
     super.destroy();
     chatListSlice.unsubscribeFromUpdates(this);
+    if (headerCell != null) {
+      headerCell.destroy();
+    }
   }
 
   @Override
   public void onClick (View v) {
     int id = v.getId();
     if (id == R.id.chat) {
+      if (headerCell != null && headerCell.areBubblesAnimating()) {
+        return;
+      }
       ListItem item = (ListItem) v.getTag();
       long chatId = item.getLongId();
       toggleChatSelection(chatId, v, /* removeOnly */ false);
     } else if (ArrayUtils.contains(TD.CHAT_TYPES, id)) {
+      if (headerCell != null && headerCell.areBubblesAnimating()) {
+        return;
+      }
       toggleChatTypeSelection(id, v, /* removeOnly */ false);
     }
   }
@@ -336,6 +456,8 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
   protected void onDoneClick () {
     if (inSearchMode()) {
       closeSearchMode(null);
+    } else if (isChatSearchOpen()) {
+      clearSearchInput();
     } else {
       saveChanges(this::navigateBack);
     }
@@ -343,6 +465,10 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
 
   @Override
   public boolean onBackPressed (boolean fromTop) {
+    if (hasBubbles() && isChatSearchOpen() && headerCell != null) {
+      headerCell.clearSearchInput();
+      return true;
+    }
     if (hasChanges()) {
       showUnsavedChangesPromptBeforeLeaving(null);
       return true;
@@ -351,12 +477,66 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
   }
 
   @Override
+  public void onBlur () {
+    super.onBlur();
+    if (headerCell != null) {
+      Keyboard.hide(headerCell.getInput());
+    }
+  }
+
+  @Override
   public boolean canSlideBackFrom (NavigationController navigationController, float x, float y) {
-    return !hasChanges();
+    return !hasChanges() && !isChatSearchOpen();
   }
 
   private void updateDoneButton () {
-    setDoneVisible(hasChanges(), true);
+    setDoneVisible(hasChanges() && getSearchTransformFactor() == 0f, true);
+  }
+
+  private boolean hasBubbles () {
+    return Config.CHAT_FOLDERS_REDESIGN;
+  }
+
+  private int indexOfChatBubble (long chatId) {
+    for (int index = 0; index < bubbles.size(); index++) {
+      BubbleView.Entry entry = bubbles.get(index);
+      TdApi.MessageSender sender = entry.senderId;
+      if (sender != null && Td.getSenderId(sender) == chatId) {
+        return index;
+      }
+    }
+    return -1;
+  }
+
+  private int indexOfChatTypeBubble (@IdRes int chatType) {
+    String bubbleId = chatTypeBubbleId(chatType);
+    for (int index = 0; index < bubbles.size(); index++) {
+      BubbleView.Entry bubble = bubbles.get(index);
+      if (bubbleId.equals(bubble.id)) {
+        return index;
+      }
+    }
+    return -1;
+  }
+
+  private BubbleView.Entry chatBubble (long chatId) {
+    return BubbleView.Entry.valueOf(tdlib, tdlib.sender(chatId));
+  }
+
+  private BubbleView.Entry chatTypeBubble (@IdRes int chatType) {
+    String id = chatTypeBubbleId(chatType);
+    String name = Lang.getString(TD.chatTypeName(chatType));
+    RunnableData<AvatarReceiver> avatar = avatarReceiver -> {
+      TdlibAccentColor accentColor = tdlib.accentColor(TD.chatTypeAccentColorId(chatType));
+      int iconResource = TD.chatTypeIcon24(chatType);
+      AvatarPlaceholder.Metadata placeholder = new AvatarPlaceholder.Metadata(accentColor, iconResource);
+      avatarReceiver.requestPlaceholder(tdlib, placeholder, AvatarReceiver.Options.NONE);
+    };
+    return new BubbleView.Entry(tdlib, id, /* senderId */ null, name, /* shortName */ null, avatar);
+  }
+
+  private String chatTypeBubbleId (@IdRes int chatType) {
+    return CHAT_TYPE_PREFIX + chatType;
   }
 
   private void processChats (List<TdlibChatListSlice.Entry> entries) {
@@ -489,7 +669,25 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     } else {
       adapter.updateCheckOptionByLongId(chatId, !selected);
     }
-    adapter.updateSimpleItemById(R.id.input);
+    if (hasBubbles()) {
+      if (selected) {
+        int indexToRemove = indexOfChatBubble(chatId);
+        if (indexToRemove != -1) {
+          BubbleView.Entry bubbleToRemove = bubbles.remove(indexToRemove);
+          if (headerCell != null && !removeOnly) {
+            headerCell.removeBubble(bubbleToRemove);
+          }
+        }
+      } else {
+        BubbleView.Entry bubbleToAdd = chatBubble(chatId);
+        bubbles.add(bubbleToAdd);
+        if (headerCell != null) {
+          headerCell.addBubble(bubbleToAdd);
+        }
+      }
+    } else {
+      adapter.updateSimpleItemById(R.id.input);
+    }
     return !selected;
   }
 
@@ -503,21 +701,50 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     } else {
       selectedChatTypes.add(chatType);
     }
+    updateDoneButton();
     if (view instanceof BetterChatView) {
       ((BetterChatView) view).setIsChecked(!selected, true);
     } else {
       adapter.updateCheckOptionById(chatType, !selected);
     }
-    updateDoneButton();
-    adapter.updateSimpleItemById(R.id.input);
+    if (hasBubbles()) {
+      if (selected) {
+        int indexToRemove = indexOfChatTypeBubble(chatType);
+        if (indexToRemove != -1) {
+          BubbleView.Entry bubbleToRemove = bubbles.remove(indexToRemove);
+          if (headerCell != null && !removeOnly) {
+            headerCell.removeBubble(bubbleToRemove);
+          }
+        }
+      } else {
+        BubbleView.Entry bubbleToAdd = chatTypeBubble(chatType);
+        bubbles.add(bubbleToAdd);
+        if (headerCell != null) {
+          headerCell.addBubble(bubbleToAdd);
+        }
+      }
+    } else {
+      adapter.updateSimpleItemById(R.id.input);
+    }
+  }
+
+  @Override
+  protected boolean canInteractWithFoundChat (TGFoundChat chat) {
+    return false;
   }
 
   @Override
   protected boolean onFoundChatClick (View view, TGFoundChat chat) {
-    boolean isChatSelected = toggleChatSelection(chat.getChatId(), null, /* removeOnly */ false);
+    if (headerCell != null && headerCell.areBubblesAnimating()) {
+      return true;
+    }
+    boolean isChatSelected = toggleChatSelection(chat.getChatId(), /* view */ null, /* removeOnly */ false);
+    if (headerCell != null && isChatSelected && isChatSearchOpen() && foundChatCount() == 1) {
+      headerCell.clearSearchInput();
+    }
     if (view instanceof BetterChatView) {
       ((BetterChatView) view).setIsChecked(isChatSelected, true);
-    } else {
+    } else if (inSearchMode()) {
       closeSearchMode(null);
     }
     return true;
@@ -554,6 +781,123 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
       int firstChatIndex = indexOfFistChat();
       adapter.moveItem(firstChatIndex + fromIndex, firstChatIndex + toIndex);
     });
+  }
+
+  @Override
+  public View getTranslationView () {
+    return getRecyclerView();
+  }
+
+  @Override
+  protected int getHeaderHeight () {
+    return hasBubbles() ? Size.getHeaderPortraitSize() + headerOffset : super.getHeaderHeight();
+  }
+
+  @Override
+  protected int getMaximumHeaderHeight () {
+    return hasBubbles() ? Size.getHeaderBigPortraitSize(false) : super.getMaximumHeaderHeight();
+  }
+
+  @Override
+  public void setHeaderOffset (int offset) {
+    if (headerOffset != offset) {
+      headerOffset = offset;
+      RecyclerView recyclerView = getRecyclerView();
+      if (recyclerView != null) {
+        recyclerView.setTranslationY(offset);
+      }
+      RecyclerView chatSearchView = getChatSearchView();
+      if (chatSearchView != null) {
+        chatSearchView.setTranslationY(offset);
+      }
+      int headerHeight = getHeaderHeight();
+      if (navigationController != null) {
+        navigationController.getHeaderView().setBackgroundHeight(headerHeight);
+        navigationController.getFloatingButton().updatePosition(headerHeight);
+      }
+    }
+  }
+
+  @Override
+  public void applyHeaderOffset () {
+    RecyclerView recyclerView = getRecyclerView();
+    if (recyclerView != null) {
+      Views.setBottomMargin(recyclerView, (int) recyclerView.getTranslationY());
+    }
+    RecyclerView chatSearchView = getChatSearchView();
+    if (chatSearchView != null) {
+      Views.setBottomMargin(chatSearchView, (int) chatSearchView.getTranslationY());
+    }
+  }
+
+  @Override
+  public void prepareHeaderOffset (int offset) {
+    RecyclerView recyclerView = getRecyclerView();
+    if (recyclerView != null) {
+      Views.setBottomMargin(recyclerView, offset);
+    }
+    RecyclerView chatSearchView = getChatSearchView();
+    if (chatSearchView != null) {
+      Views.setBottomMargin(chatSearchView, offset);
+    }
+  }
+
+  private String lastQuery = "";
+
+  @Override
+  public void searchUser (String query) {
+    if (query.equals(lastQuery)) {
+        return;
+    }
+
+    boolean prevHadSearch = !lastQuery.isEmpty();
+    boolean hasSearch = !query.isEmpty();
+    lastQuery = query;
+    if (prevHadSearch != hasSearch) {
+      if (hasSearch) {
+        forceOpenChatSearch(query);
+      } else {
+        forceCloseChatSearch();
+      }
+    } else if (hasSearch) {
+      forceSearchChats(query);
+    }
+  }
+
+  @Override
+  protected void applySearchTransformFactor (float factor, boolean isOpening) {
+    super.applySearchTransformFactor(factor, isOpening);
+    if (factor == 0f || factor == 1f) {
+      updateDoneButton();
+    }
+  }
+
+  @Override
+  public void onBubbleRemoved (@NonNull BubbleView.Entry entry) {
+    TdApi.MessageSender sender = entry.senderId;
+    if (sender != null) {
+      long chatId = Td.getSenderId(sender);
+      toggleChatSelection(chatId, /* view */ null, /* removeOnly */ true);
+    } else if (entry.id.startsWith(CHAT_TYPE_PREFIX)) {
+      int chatType = Integer.parseInt(entry.id.substring(CHAT_TYPE_PREFIX.length()));
+      toggleChatTypeSelection(chatType, /* view */ null, /* removeOnly */ true);
+    }
+  }
+
+  private int foundChatCount() {
+    RecyclerView chatSearchView = getChatSearchView();
+    RecyclerView.Adapter<?> adapter = chatSearchView.getAdapter();
+    if (adapter instanceof SettingsAdapter) {
+      List<ListItem> items = ((SettingsAdapter) adapter).getItems();
+      int chatCount = 0;
+      for (ListItem item : items) {
+        if (item.getViewType() == ListItem.TYPE_CHAT_BETTER) {
+          chatCount++;
+        }
+      }
+      return chatCount;
+    }
+    return 0;
   }
 
   private void modifyChat (TGFoundChat chat) {
