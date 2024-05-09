@@ -1165,7 +1165,7 @@ public class SettingsController extends ViewController<Void> implements
         b.item(new OptionItem(R.id.btn_webrtc, Lang.getCharSequence(R.string.format_commit, "WebRTC", BuildConfig.WEBRTC_COMMIT), OptionColor.NORMAL, R.drawable.baseline_webrtc_24));
         b.item(new OptionItem(R.id.btn_ffmpeg, Lang.getCharSequence(R.string.format_commit, "FFmpeg", BuildConfig.FFMPEG_COMMIT), OptionColor.NORMAL, R.drawable.baseline_ffmpeg_24));
         if (BuildConfig.WEBP_ENABLED && N.hasBuiltInWebpSupport()) {
-          b.item(new OptionItem(R.id.btn_webp, Lang.getCharSequence(R.string.format_commit, "WebP", BuildConfig.WEBP_COMMIT), OptionColor.NORMAL, R.drawable.baseline_image_24));
+          b.item(new OptionItem(R.id.btn_webp, Lang.getCharSequence(R.string.format_commit, "WebP", BuildConfig.WEBP_COMMIT), OptionColor.NORMAL, R.drawable.dotvhs_baseline_webp_24));
         }
         int i = 0;
         for (PullRequest pullRequest : appBuildInfo.getPullRequests()) {
