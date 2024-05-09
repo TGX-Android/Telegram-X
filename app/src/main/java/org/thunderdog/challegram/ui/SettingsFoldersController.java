@@ -60,6 +60,7 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.AdapterSubListUpdateCallback;
 import org.thunderdog.challegram.util.DrawModifier;
 import org.thunderdog.challegram.util.EndIconModifier;
+import org.thunderdog.challegram.util.FeatureAvailability;
 import org.thunderdog.challegram.util.ListItemDiffUtilCallback;
 import org.thunderdog.challegram.util.PremiumLockModifier;
 import org.thunderdog.challegram.util.text.Text;
@@ -377,6 +378,13 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
     } else {
       shouldUpdateRecommendedChatFolders = true;
     }
+  }
+
+  @Override
+  public void onFocus () {
+    super.onFocus();
+    // No need to show any prompts anymore.
+    Settings.instance().revokeFeatureNotifications(FeatureAvailability.Feature.CHAT_FOLDERS);
   }
 
   @Override

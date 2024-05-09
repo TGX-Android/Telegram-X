@@ -31,13 +31,14 @@ public class Config {
   public static final boolean FOREGROUND_SYNC_ALWAYS_ENABLED = true; // Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
   public static final @Dimension(unit = Dimension.DP) int COMMENTS_BUBBLE_BUTTON_MIN_WIDTH = 200;
   public static final boolean SHOW_CHANNEL_POST_REPLY_INFO_IN_COMMENTS = true;
-  public static final boolean CHAT_FOLDERS_ENABLED = true;
   public static final boolean CHAT_FOLDERS_SMART_CHAT_DELETION_ENABLED = true;
   public static final boolean CHAT_FOLDERS_HIDE_BOTTOM_BAR_ON_SCROLL = true;
   public static final boolean CHAT_FOLDERS_APPEARANCE_IS_GLOBAL = true;
   public static final boolean CHAT_FOLDERS_REDESIGN = true;
   public static final boolean RESTRICT_HIDING_MAIN_LIST = true;
   public static final boolean SEARCH_MESSAGES_ONLY_IN_SELECTED_FOLDER = BuildConfig.EXPERIMENTAL;
+
+  public static final boolean TEST_NEW_FEATURES_PROMPTS = BuildConfig.DEBUG;
 
   public static final boolean NEED_SILENT_BROADCAST = false;
 
