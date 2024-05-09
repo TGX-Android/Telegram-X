@@ -37,9 +37,9 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
 import androidx.core.os.CancellationSignal;
-import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -150,7 +150,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -169,6 +168,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
+import me.vkryl.core.collection.LongList;
 import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Future;
@@ -4953,7 +4953,7 @@ public class TdlibUi extends Handler {
           context.context().navigation().navigateTo(EditChatFolderController.newFolder(context.context(), tdlib, chatFolder));
         } else {
           int chatFolderId = item.getIntValue();
-          tdlib.addChatsToChatFolder(context, chatFolderId, chatIds);
+          addChatsToChatFolder(context, chatFolderId, chatIds);
         }
         if (after != null) {
           after.run();
@@ -4966,6 +4966,66 @@ public class TdlibUi extends Handler {
     int infoRes = hasMyInviteLinks ? R.string.DeleteFolderWithInviteLinksConfirm : R.string.RemoveFolderConfirm;
     int actionRes = hasMyInviteLinks ? R.string.Delete : R.string.Remove;
     context.showConfirm(Lang.getMarkdownString(context, infoRes), Lang.getString(actionRes), R.drawable.baseline_delete_24, ViewController.OptionColor.RED, after);
+  }
+
+  public void addChatsToChatFolder (TdlibDelegate delegate, int chatFolderId, long[] chatIds) {
+    if (chatIds.length == 0) {
+      return;
+    }
+    tdlib.send(new TdApi.GetChatFolder(chatFolderId), (chatFolder, error) -> {
+      if (error != null) {
+        UI.showError(chatFolder);
+      } else {
+        addChatsToChatFolderImpl(delegate, chatFolderId, chatFolder, chatIds);
+      }
+    });
+  }
+
+  public void addChatsToChatFolderImpl (TdlibDelegate delegate, int chatFolderId, TdApi.ChatFolder chatFolder, long[] chatIds) {
+    if (chatIds.length == 0) {
+      return;
+    }
+    LongSet pinnedChatIds = new LongSet(chatFolder.pinnedChatIds);
+    LongSet includedChatIds = new LongSet(chatFolder.includedChatIds);
+    for (long chatId : chatIds) {
+      if (pinnedChatIds.has(chatId) || includedChatIds.has(chatId)) {
+        continue;
+      }
+      includedChatIds.add(chatId);
+    }
+    if (includedChatIds.size() == chatFolder.includedChatIds.length) {
+      return;
+    }
+    int chatCount = pinnedChatIds.size() + includedChatIds.size();
+    int secretChatCount = 0;
+    for (long pinnedChatId : pinnedChatIds) {
+      if (ChatId.isSecret(pinnedChatId)) secretChatCount++;
+    }
+    for (long includedChatId : includedChatIds) {
+      if (ChatId.isSecret(includedChatId)) secretChatCount++;
+    }
+    int nonSecretChatCount = chatCount - secretChatCount;
+    long chosenChatCountMax = tdlib.chatFolderChosenChatCountMax();
+    if (secretChatCount > chosenChatCountMax || nonSecretChatCount > chosenChatCountMax) {
+      checkPremiumLimit(new TdApi.PremiumLimitTypeChatFolderChosenChatCount(), (currentLimit, premiumLimit) -> {
+        // FIXME: use tdlib.ui().showPremiumAlert()?
+        CharSequence text;
+        if (currentLimit < premiumLimit) {
+          text = Lang.getMarkdownPlural(delegate, R.string.PremiumLimitChatsInFolder, currentLimit, Lang.boldCreator(), Strings.buildCounter(premiumLimit));
+        } else {
+          text = Lang.getMarkdownPlural(delegate, R.string.LimitChatsInFolder, currentLimit, Lang.boldCreator());
+        }
+        UI.showCustomToast(text, Toast.LENGTH_LONG, 0);
+      });
+      return;
+    }
+    chatFolder.includedChatIds = includedChatIds.toArray();
+    chatFolder.excludedChatIds = ArrayUtils.removeAll(chatFolder.excludedChatIds, chatIds);
+    tdlib.send(new TdApi.EditChatFolder(chatFolderId, chatFolder), (chatFolderInfo, error) -> {
+      if (error != null) {
+        UI.showError(error);
+      }
+    });
   }
 
   public boolean processChatAction (ViewController<?> context, final TdApi.ChatList chatList, final long chatId, final @Nullable ThreadInfo messageThread, final TdApi.MessageSource source, final int actionId, @Nullable Runnable after) {
@@ -5012,11 +5072,60 @@ public class TdlibUi extends Handler {
     } else if (actionId == R.id.btn_removeChatFromFolder) {
       if (TD.isChatListFolder(chatList)) {
         int chatFolderId = ((TdApi.ChatListFolder) chatList).chatFolderId;
-        tdlib.removeChatFromChatFolder(chatFolderId, chatId);
+        removeChatFromChatFolder(chatFolderId, chatId);
       }
       return true;
     }
     return processLeaveButton(context, chatList, chatId, actionId, after);
+  }
+
+  public void removeChatFromChatFolder (int chatFolderId, long chatId) {
+    removeChatsFromChatFolder(chatFolderId, new long[] {chatId});
+  }
+
+  public void removeChatsFromChatFolder (int chatFolderId, long[] chatIds) {
+    if (chatIds.length == 0) {
+      return;
+    }
+    tdlib.send(new TdApi.GetChatFolder(chatFolderId), (chatFolder, error) -> {
+      if (error != null) {
+        UI.showError(error);
+      } else {
+        removeChatsFromChatFolderImpl(chatFolderId, chatFolder, chatIds);
+      }
+    });
+  }
+
+  private void removeChatsFromChatFolderImpl (int chatFolderId, TdApi.ChatFolder chatFolder, long[] chatIds) {
+    if (chatIds.length == 0) {
+      return;
+    }
+    LongList pinnedChatIds = new LongList(chatFolder.pinnedChatIds);
+    LongSet includedChatIds = new LongSet(chatFolder.includedChatIds);
+    LongSet excludedChatIds = new LongSet(chatFolder.excludedChatIds);
+    for (long chatId : chatIds) {
+      boolean removed = pinnedChatIds.remove(chatId) | includedChatIds.remove(chatId);
+      if (removed && Config.CHAT_FOLDERS_SMART_CHAT_DELETION_ENABLED) {
+        TdApi.Chat chat = tdlib.chat(chatId);
+        boolean isBotChat = tdlib.isBotChat(chat);
+        boolean isUserChat = tdlib.isUserChat(chat) && !isBotChat;
+        boolean isContactChat = isUserChat && tdlib.isContactChat(chat);
+        if (!chatFolder.includeContacts && isUserChat && isContactChat) continue;
+        if (!chatFolder.includeNonContacts && isUserChat && !isContactChat) continue;
+        if (!chatFolder.includeGroups && TD.isMultiChat(chat)) continue;
+        if (!chatFolder.includeChannels && tdlib.isChannelChat(chat)) continue;
+        if (!chatFolder.includeBots && isBotChat) continue;
+      }
+      excludedChatIds.add(chatId);
+    }
+    chatFolder.pinnedChatIds = pinnedChatIds.get();
+    chatFolder.includedChatIds = includedChatIds.toArray();
+    chatFolder.excludedChatIds = excludedChatIds.toArray();
+    tdlib.send(new TdApi.EditChatFolder(chatFolderId, chatFolder), (chatFolderInfo, error) -> {
+      if (error != null) {
+        UI.showError(error);
+      }
+    });
   }
 
   public final ForceTouchView.ActionListener createSimpleChatActions (final ViewController<?> context, final TdApi.ChatList chatList, final long chatId, final @Nullable ThreadInfo messageThread, final TdApi.MessageSource source, IntList ids, IntList icons, StringList strings, final boolean allowInteractions, final boolean canSelect, final boolean isSelected, @Nullable Runnable onSelect) {
@@ -6681,6 +6790,42 @@ public class TdlibUi extends Handler {
 
   // Telegram Premium
 
+  public interface PremiumLimitCallback {
+    void onPremiumLimitReached (int currentLimit, int premiumLimit);
+  }
+
+  @UiThread
+  public void checkPremiumLimit (TdApi.PremiumLimitType premiumLimitType, @NonNull PremiumLimitCallback callback) {
+    int effectiveLimit;
+    switch (premiumLimitType.getConstructor()) {
+      case TdApi.PremiumLimitTypeChatFolderCount.CONSTRUCTOR:
+        effectiveLimit = tdlib.chatFolderCount();
+        break;
+      case TdApi.PremiumLimitTypeChatFolderInviteLinkCount.CONSTRUCTOR:
+        effectiveLimit = tdlib.chatFolderInviteLinkCountMax();
+        break;
+      case TdApi.PremiumLimitTypeChatFolderChosenChatCount.CONSTRUCTOR:
+        effectiveLimit = tdlib.chatFolderChosenChatCountMax();
+        break;
+      default:
+        Td.assertPremiumLimitType_3b3ed738();
+        throw Td.unsupported(premiumLimitType);
+    }
+
+    if (tdlib.hasPremium()) {
+      callback.onPremiumLimitReached(effectiveLimit, effectiveLimit);
+      return;
+    }
+    tdlib.send(new TdApi.GetPremiumLimit(premiumLimitType), (limit, error) -> post(() -> {
+      if (limit != null && limit.defaultValue < limit.premiumValue && effectiveLimit < limit.premiumValue) {
+        callback.onPremiumLimitReached(effectiveLimit, limit.premiumValue);
+      } else {
+        // Note: some users cannot purchase Telegram Premium, for such users GetPremiumLimit returns an error
+        callback.onPremiumLimitReached(effectiveLimit, effectiveLimit);
+      }
+    }));
+  }
+
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({
     PremiumFeature.STICKER,
@@ -6733,7 +6878,7 @@ public class TdlibUi extends Handler {
       default:
         throw new IllegalStateException();
     }
-    showPremiumRequiredTooltip(context, tooltipManager, view, stringRes);
+    showPremiumRequiredTooltip(context, tooltipManager, view, Lang.getMarkdownString(context, stringRes));
     return true;
   }
 
@@ -6742,54 +6887,54 @@ public class TdlibUi extends Handler {
   }
 
   public void showLimitReachedInfo (ViewController<?> context, TooltipOverlayView tooltipManager, View view, @PremiumLimit int premiumLimit) {
+    TdApi.PremiumLimitType type;
+    int premiumPluralRes, defaultPluralRes;
     switch (premiumLimit) {
-      case PremiumLimit.SHAREABLE_FOLDER_COUNT:
-        showPremiumLimitTooltip(context, tooltipManager, view, R.string.PremiumRequiredAddShareableFolder, new TdApi.PremiumLimitTypeShareableChatFolderCount(), R.string.ShareableFoldersLimitReached, tdlib.addedShareableChatFolderCountMax());
+      case PremiumLimit.SHAREABLE_FOLDER_COUNT: {
+        type = new TdApi.PremiumLimitTypeShareableChatFolderCount();
+        premiumPluralRes = R.string.PremiumLimitAddShareableFolder;
+        defaultPluralRes = R.string.LimitAddShareableFolder;
         break;
-      case PremiumLimit.CHAT_FOLDER_COUNT:
-        showPremiumLimitTooltip(context, tooltipManager, view, R.string.PremiumRequiredCreateFolder, new TdApi.PremiumLimitTypeChatFolderCount(), R.string.ChatFolderLimitReached, tdlib.chatFolderCountMax());
-        break;
-      case PremiumLimit.CHAT_FOLDER_INVITE_LINK_COUNT:
-        showPremiumLimitTooltip(context, tooltipManager, view, R.string.PremiumRequiredCreateChatFolderInviteLink, new TdApi.PremiumLimitTypeChatFolderInviteLinkCount(), R.string.ChatFolderInviteLinksLimitReached, tdlib.chatFolderInviteLinkCountMax());
-        break;
-      default:
-        throw new IllegalStateException();
-    }
-  }
-
-  private void showPremiumLimitTooltip (ViewController<?> context, TooltipOverlayView tooltipManager, View view, @StringRes int markdownStringRes, TdApi.PremiumLimitType premiumLimitType, @StringRes int defaultMarkdownStringRes, int defaultLimit) {
-    if (tdlib.hasPremium()) {
-      // User has premium, just show info that they reached the limit.
-      showLimitReachedTooltip(context, tooltipManager, view, defaultMarkdownStringRes, defaultLimit);
-      return;
-    }
-    WeakReference<View> viewRef = new WeakReference<>(view);
-    Object viewTag = view.getTag();
-    tdlib.send(new TdApi.GetPremiumLimit(premiumLimitType), (premiumLimit, error) -> context.runOnUiThreadOptional(() -> {
-      View targetView = viewRef.get();
-      if (targetView != null && ViewCompat.isAttachedToWindow(targetView) && viewTag == targetView.getTag()) {
-        if (premiumLimit != null && premiumLimit.defaultValue < premiumLimit.premiumValue) {
-          // User can increase limit by buying Telegram Premium
-          showPremiumRequiredTooltip(context, tooltipManager, targetView, markdownStringRes, premiumLimit.defaultValue, premiumLimit.premiumValue);
-        } else {
-          // User cannot increase the limit regardless of buying premium, just show info that they reached the limit.
-          showLimitReachedTooltip(context, tooltipManager, view, defaultMarkdownStringRes, defaultLimit);
-        }
       }
-    }));
+      case PremiumLimit.CHAT_FOLDER_COUNT: {
+        type = new TdApi.PremiumLimitTypeChatFolderCount();
+        premiumPluralRes = R.string.PremiumLimitCreateFolder;
+        defaultPluralRes = R.string.LimitCreateFolder;
+        break;
+      }
+      case PremiumLimit.CHAT_FOLDER_INVITE_LINK_COUNT: {
+        type = new TdApi.PremiumLimitTypeChatFolderInviteLinkCount();
+        premiumPluralRes = R.string.PremiumLimitChatFolderInviteLink;
+        defaultPluralRes = R.string.LimitChatFolderInviteLink;
+        break;
+      }
+      default: {
+        throw new IllegalArgumentException(Integer.toString(premiumLimit));
+      }
+    }
+    showPremiumLimitTooltip(context, tooltipManager, view, premiumPluralRes, type, defaultPluralRes);
   }
 
-  private void showPremiumRequiredTooltip (ViewController<?> context, TooltipOverlayView tooltipManager, View view, @StringRes int markdownStringRes, Object... formatArgs) {
-      // TODO proper alert with sections
-    showLimitReachedTooltip(context, tooltipManager, view, markdownStringRes, formatArgs);
+  private void showPremiumLimitTooltip (ViewController<?> context, TooltipOverlayView tooltipManager, View view, @StringRes int markdownStringRes, TdApi.PremiumLimitType premiumLimitType, @StringRes int defaultMarkdownStringRes) {
+    checkPremiumLimit(premiumLimitType, (currentLimit, premiumLimit) -> {
+      if (currentLimit < premiumLimit) {
+        showLimitReachedTooltip(context, tooltipManager, view, markdownStringRes, currentLimit, Strings.buildCounter(premiumLimit));
+      } else {
+        showLimitReachedTooltip(context, tooltipManager, view, defaultMarkdownStringRes, currentLimit);
+      }
+    });
   }
 
-  private void showLimitReachedTooltip (ViewController<?> context, TooltipOverlayView tooltipManager, View view, @StringRes int markdownStringRes, Object... formatArgs) {
+  private void showLimitReachedTooltip (ViewController<?> context, TooltipOverlayView tooltipManager, View view, @StringRes int pluralRes, long num, Object... formatArgs) {
+    showPremiumRequiredTooltip(context, tooltipManager, view, Lang.getMarkdownPlural(context, pluralRes, num, Lang.boldCreator(), formatArgs));
+  }
+
+  private void showPremiumRequiredTooltip (ViewController<?> context, TooltipOverlayView tooltipManager, View view, CharSequence text) {
     tooltipManager
       .builder(view)
       .icon(R.drawable.baseline_warning_24)
       .controller(context)
-      .show(tdlib, Lang.getMarkdownString(context, markdownStringRes, formatArgs))
+      .show(tdlib, text)
       .hideDelayed();
   }
 

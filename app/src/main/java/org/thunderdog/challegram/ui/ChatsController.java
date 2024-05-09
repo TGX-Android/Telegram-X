@@ -1670,7 +1670,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       if (TD.isChatListFolder(chatList)) {
         int chatFolderId = ((TdApi.ChatListFolder) chatList).chatFolderId;
         long[] selectedChatIds = ArrayUtils.keys(selectedChats);
-        tdlib.removeChatsFromChatFolder(chatFolderId, selectedChatIds);
+        tdlib.ui().removeChatsFromChatFolder(chatFolderId, selectedChatIds);
       }
       onSelectionActionComplete();
       // break;

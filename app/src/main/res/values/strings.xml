@@ -4847,10 +4847,26 @@
   <string name="PremiumRequiredNewChats">This setting requires a **Telegram Premium** subscription.</string>
   <string name="PremiumRequired">This feature requires a **Telegram Premium** subscription.</string>
   <string name="PremiumRequiredMoveFolder">Subscribe to **Telegram Premium** to move the "%1$s" folder.</string>
-  <string name="PremiumRequiredCreateFolder">You have reached the limit of **%1$d** folders. You can double the limit to **%2$d** folders by subscribing to **Telegram Premium**.</string>
-  <string name="PremiumRequiredChatsInFolder">Sorry, you can\'t add more than **%1$d** chats to a folder. You can increase this limit to **%2$d** by subscribing to **Telegram Premium**.</string>
-  <string name="PremiumRequiredAddShareableFolder">You can only have **%1$d** shareable folders. Upgrade to **Telegram Premium** to increase this limit to **%2$d**.</string>
-  <string name="PremiumRequiredCreateChatFolderInviteLink">You reached the limit of links, either remove some or upgrade to Telegram Premium.</string>
+
+  <string name="LimitCreateFolder_one">You have reached the limit of **%1$s** folder.</string>
+  <string name="LimitCreateFolder_other">You have reached the limit of **%1$s** folders.</string>
+  <string name="PremiumLimitCreateFolder_one">You have reached the limit of %1$s folder. You can double the limit to %2$s by subscribing to **Telegram Premium**</string>
+  <string name="PremiumLimitCreateFolder_other">You have reached the limit of %1$s folders. You can double the limit to %2$s by subscribing to **Telegram Premium**</string>
+
+  <string name="LimitChatsInFolder_one">Sorry, you can\'t add more than **%1$s** chat to a folder. Please create a new one.</string>
+  <string name="LimitChatsInFolder_other">Sorry, you can\'t add more than **%1$s** chats to a folder. Please create a new one.</string>
+  <string name="PremiumLimitChatsInFolder_one">Sorry, you can\'t add more than %1$s chat to a folder. You can increase the limit to %2$s by subscribing to **Telegram Premium**.</string>
+  <string name="PremiumLimitChatsInFolder_other">Sorry, you can\'t add more than %1$s chats to a folder. You can increase the limit to %2$s by subscribing to **Telegram Premium**.</string>
+
+  <string name="LimitAddShareableFolder_one">Sorry, you can\'t have more than **%1$s** shareable folder.</string>
+  <string name="LimitAddShareableFolder_other">Sorry, you can\'t have more than **%1$s** shareable folders.</string>
+  <string name="PremiumLimitAddShareableFolder_one">You can only have %1$s shareable folder. You can increase the limit to %2$s by subscribing to **Telegram Premium**.</string>
+  <string name="PremiumLimitAddShareableFolder_other">You can only have %1$s shareable folders. You can increase the limit to %2$s by subscribing to **Telegram Premium**.</string>
+
+  <string name="LimitChatFolderInviteLink_one">Sorry, you can\'t have more than **%1$s** link to a folder.</string>
+  <string name="LimitChatFolderInviteLink_other">Sorry, you can\'t have more than **%1$s** links to a folder.</string>
+  <string name="PremiumLimitChatFolderInviteLink_one">You can only create **%1$s** link. You can increase the limit to %2$s by subscribing to **Telegram Premium**.</string>
+  <string name="PremiumLimitChatFolderInviteLink_other">You can only create **%1$s** links. You can increase the limit to %2$s by subscribing to **Telegram Premium**.</string>
 
   <string name="XRestrictedVoiceMessages">%1$s doesn\'t accept voice messages.</string>
   <string name="XRestrictedVideoMessages">%1$s doesn\'t accept video messages.</string>
@@ -5073,10 +5089,6 @@
   <string name="ChatFoldersPositionBottom">Bottom</string>
   <string name="ChatFolderChangeIcon">Change Icon</string>
   <string name="ChatFolderAddChats">Add Chats</string>
-  <string name="ChatFolderLimitReached">You have reached the limit of **%1$d** folders.</string>
-  <string name="ChatsInFolderLimitReached">Sorry, you can\'t add more than **%1$d** chats to a folder. Please create a new one.</string>
-  <string name="ChatFolderInviteLinksLimitReached">Sorry, you can\'t have more than **%1$d** links to a folder.</string>
-  <string name="ShareableFoldersLimitReached">Sorry, you can\'t have more than **%1$d** shareable folders.</string>
   <string name="FolderVisible">Folder visible</string>
   <string name="NewFolder">New Folder</string>
   <string name="CreateNewFolder">Create New Folder</string>

@@ -108,8 +108,6 @@ import me.vkryl.core.FileUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.ObjectUtils;
 import me.vkryl.core.StringUtils;
-import me.vkryl.core.collection.LongList;
-import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.collection.LongSparseIntArray;
 import me.vkryl.core.collection.LongSparseLongArray;
 import me.vkryl.core.lambda.CancellableRunnable;
@@ -11954,119 +11952,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   public @DrawableRes int chatFolderIconDrawable (TdApi.ChatFolder chatFolder, @DrawableRes int defaultIcon) {
     return TD.findFolderIcon(chatFolderIcon(chatFolder), defaultIcon);
-  }
-
-  public void addChatsToChatFolder (TdlibDelegate delegate, int chatFolderId, long[] chatIds) {
-    if (chatIds.length == 0) {
-      return;
-    }
-    send(new TdApi.GetChatFolder(chatFolderId), (chatFolder, error) -> {
-      if (error != null) {
-        UI.showError(chatFolder);
-      } else {
-        addChatsToChatFolder(delegate, chatFolderId, chatFolder, chatIds);
-      }
-    });
-  }
-
-  public void addChatsToChatFolder (TdlibDelegate delegate, int chatFolderId, TdApi.ChatFolder chatFolder, long[] chatIds) {
-    if (chatIds.length == 0) {
-      return;
-    }
-    LongSet pinnedChatIds = new LongSet(chatFolder.pinnedChatIds);
-    LongSet includedChatIds = new LongSet(chatFolder.includedChatIds);
-    for (long chatId : chatIds) {
-      if (pinnedChatIds.has(chatId) || includedChatIds.has(chatId)) {
-        continue;
-      }
-      includedChatIds.add(chatId);
-    }
-    if (includedChatIds.size() == chatFolder.includedChatIds.length) {
-      return;
-    }
-    int chatCount = pinnedChatIds.size() + includedChatIds.size();
-    int secretChatCount = 0;
-    for (long pinnedChatId : pinnedChatIds) {
-      if (ChatId.isSecret(pinnedChatId)) secretChatCount++;
-    }
-    for (long includedChatId : includedChatIds) {
-      if (ChatId.isSecret(includedChatId)) secretChatCount++;
-    }
-    int nonSecretChatCount = chatCount - secretChatCount;
-    long chosenChatCountMax = tdlib().chatFolderChosenChatCountMax();
-    if (secretChatCount > chosenChatCountMax || nonSecretChatCount > chosenChatCountMax) {
-      if (hasPremium()) {
-        CharSequence text = Lang.getMarkdownString(delegate, R.string.ChatsInFolderLimitReached, chosenChatCountMax);
-        UI.showCustomToast(text, Toast.LENGTH_LONG, 0);
-      } else {
-        send(new TdApi.GetPremiumLimit(new TdApi.PremiumLimitTypeChatFolderChosenChatCount()), (premiumLimit, error) -> {
-          CharSequence text;
-          if (error != null) {
-            text = Lang.getMarkdownString(delegate, R.string.ChatsInFolderLimitReached, chosenChatCountMax);
-          } else {
-            text = Lang.getMarkdownString(delegate, R.string.PremiumRequiredChatsInFolder, premiumLimit.defaultValue, premiumLimit.premiumValue);
-          }
-          UI.showCustomToast(text, Toast.LENGTH_LONG, 0);
-        });
-      }
-      return;
-    }
-    chatFolder.includedChatIds = includedChatIds.toArray();
-    chatFolder.excludedChatIds = ArrayUtils.removeAll(chatFolder.excludedChatIds, chatIds);
-    send(new TdApi.EditChatFolder(chatFolderId, chatFolder), (chatFolderInfo, error) -> {
-      if (error != null) {
-        UI.showError(error);
-      }
-    });
-  }
-
-  public void removeChatFromChatFolder (int chatFolderId, long chatId) {
-    removeChatsFromChatFolder(chatFolderId, new long[] {chatId});
-  }
-
-  public void removeChatsFromChatFolder (int chatFolderId, long[] chatIds) {
-    if (chatIds.length == 0) {
-      return;
-    }
-    send(new TdApi.GetChatFolder(chatFolderId), (chatFolder, error) -> {
-      if (error != null) {
-        UI.showError(error);
-      } else {
-        removeChatsFromChatFolder(chatFolderId, chatFolder, chatIds);
-      }
-    });
-  }
-
-  public void removeChatsFromChatFolder (int chatFolderId, TdApi.ChatFolder chatFolder, long[] chatIds) {
-    if (chatIds.length == 0) {
-      return;
-    }
-    LongList pinnedChatIds = new LongList(chatFolder.pinnedChatIds);
-    LongSet includedChatIds = new LongSet(chatFolder.includedChatIds);
-    LongSet excludedChatIds = new LongSet(chatFolder.excludedChatIds);
-    for (long chatId : chatIds) {
-       boolean removed = pinnedChatIds.remove(chatId) | includedChatIds.remove(chatId);
-       if (removed && Config.CHAT_FOLDERS_SMART_CHAT_DELETION_ENABLED) {
-         TdApi.Chat chat = chat(chatId);
-         boolean isBotChat = isBotChat(chat);
-         boolean isUserChat = isUserChat(chat) && !isBotChat;
-         boolean isContactChat = isUserChat && TD.isContact(chatUser(chat));
-         if (!chatFolder.includeContacts && isUserChat && isContactChat) continue;
-         if (!chatFolder.includeNonContacts && isUserChat && !isContactChat) continue;
-         if (!chatFolder.includeGroups && TD.isMultiChat(chat)) continue;
-         if (!chatFolder.includeChannels && isChannelChat(chat)) continue;
-         if (!chatFolder.includeBots && isBotChat) continue;
-       }
-       excludedChatIds.add(chatId);
-    }
-    chatFolder.pinnedChatIds = pinnedChatIds.get();
-    chatFolder.includedChatIds = includedChatIds.toArray();
-    chatFolder.excludedChatIds = excludedChatIds.toArray();
-    send(new TdApi.EditChatFolder(chatFolderId, chatFolder), (chatFolderInfo, error) -> {
-      if (error != null) {
-        UI.showError(error);
-      }
-    });
   }
 
   public void processChatFolderNewChats (int chatFolderId, long[] addedChatIds, ResultHandler<TdApi.Ok> resultHandler) {

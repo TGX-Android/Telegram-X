@@ -65,6 +65,7 @@ import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.FlowListAnimator;
@@ -463,20 +464,16 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
       long chosenChatCountMax = tdlib.chatFolderChosenChatCountMax();
       long chosenChatCount = isSecretChat ? secretChatCount : nonSecretChatCount;
       if (chosenChatCount >= chosenChatCountMax) {
-        if (tdlib.hasPremium()) {
-          CharSequence text = Lang.getMarkdownString(this, R.string.ChatsInFolderLimitReached, chosenChatCountMax);
+        tdlib.ui().checkPremiumLimit(new TdApi.PremiumLimitTypeChatFolderChosenChatCount(), (currentLimit, premiumLimit) -> executeOnUiThreadOptional(() -> {
+          // FIXME: use tdlib.ui().showPremiumAlert()?
+          CharSequence text;
+          if (currentLimit < premiumLimit) {
+            text = Lang.getMarkdownPlural(this, R.string.PremiumLimitChatsInFolder, currentLimit, Lang.boldCreator(), Strings.buildCounter(premiumLimit));
+          } else {
+            text = Lang.getMarkdownPlural(this, R.string.LimitChatsInFolder, currentLimit, Lang.boldCreator());
+          }
           UI.showCustomToast(text, Toast.LENGTH_LONG, 0);
-        } else {
-          tdlib.send(new TdApi.GetPremiumLimit(new TdApi.PremiumLimitTypeChatFolderChosenChatCount()), (premiumLimit, error) -> runOnUiThreadOptional(() -> {
-            CharSequence text;
-            if (premiumLimit != null) {
-              text = Lang.getMarkdownString(this, R.string.PremiumRequiredChatsInFolder, premiumLimit.defaultValue, premiumLimit.premiumValue);
-            } else {
-              text = Lang.getMarkdownString(this, R.string.ChatsInFolderLimitReached, chosenChatCountMax);
-            }
-            UI.showCustomToast(text, Toast.LENGTH_LONG, 0);
-          }));
-        }
+        }));
         return false;
       }
       selectedChatIds.add(chatId);
