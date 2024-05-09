@@ -292,7 +292,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<Setting
           case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR:
             return false;
         }
-        break;
+        return true;
       }
       case Mode.NEW_CHATS_PRIVACY:
         return false;
