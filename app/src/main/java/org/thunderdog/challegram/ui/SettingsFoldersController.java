@@ -541,11 +541,7 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
 
   private void showChatFolderLimitReached (View view) {
     UI.forceVibrateError(view);
-    if (tdlib.hasPremium()) {
-      showTooltip(view, Lang.getMarkdownString(this, R.string.ChatFolderLimitReached, tdlib.chatFolderCountMax()));
-    } else {
-      tdlib.ui().showPremiumLimitInfo(this, view, TdlibUi.PremiumLimit.CHAT_FOLDER_COUNT);
-    }
+    tdlib.ui().showLimitReachedInfo(this, view, TdlibUi.PremiumLimit.CHAT_FOLDER_COUNT);
   }
 
   private void showTooltip (View view, CharSequence text) {

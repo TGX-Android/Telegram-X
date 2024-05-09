@@ -1088,20 +1088,12 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
 
   private void showShareableFoldersLimitReached (View view) {
     UI.forceVibrateError(view);
-    if (tdlib.hasPremium()) {
-      showTooltip(view, R.string.ShareableFoldersLimitReached, tdlib.addedShareableChatFolderCountMax());
-    } else {
-      tdlib.ui().showPremiumLimitInfo(this, view, TdlibUi.PremiumLimit.SHAREABLE_FOLDER_COUNT);
-    }
+    tdlib.ui().showLimitReachedInfo(this, view, TdlibUi.PremiumLimit.SHAREABLE_FOLDER_COUNT);
   }
 
   private void showInviteLinksLimitReached (View view) {
     UI.forceVibrateError(view);
-    if (tdlib.hasPremium()) {
-      showTooltip(view, R.string.ChatFolderInviteLinksLimitReached, tdlib.chatFolderInviteLinkCountMax());
-    } else {
-      tdlib.ui().showPremiumLimitInfo(this, view, TdlibUi.PremiumLimit.CHAT_FOLDER_INVITE_LINK_COUNT);
-    }
+    tdlib.ui().showLimitReachedInfo(this, view, TdlibUi.PremiumLimit.CHAT_FOLDER_INVITE_LINK_COUNT);
   }
 
   private void showTooltip (View view, @StringRes int markdownStringRes, Object... formatArgs) {

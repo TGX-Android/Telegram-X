@@ -451,21 +451,13 @@ public class ChatFolderInviteLinkControllerPage extends BottomSheetViewControlle
     if (chatFolderId == NO_CHAT_FOLDER_ID) {
       if (!tdlib.canAddShareableFolder()) {
         UI.forceVibrateError(actionButton);
-        if (tdlib.hasPremium()) {
-          showTooltip(actionButton, R.string.ShareableFoldersLimitReached, tdlib.addedShareableChatFolderCountMax());
-        } else {
-          tdlib.ui().showPremiumLimitInfo(this, actionButton, TdlibUi.PremiumLimit.SHAREABLE_FOLDER_COUNT);
-        }
+        tdlib.ui().showLimitReachedInfo(this, actionButton, TdlibUi.PremiumLimit.SHAREABLE_FOLDER_COUNT);
         return;
       }
 
       if (!tdlib.canCreateChatFolder()) {
         UI.forceVibrateError(actionButton);
-        if (tdlib.hasPremium()) {
-          showTooltip(actionButton, R.string.ChatFolderLimitReached, tdlib.chatFolderCountMax());
-        } else {
-          tdlib.ui().showPremiumLimitInfo(this, actionButton, TdlibUi.PremiumLimit.CHAT_FOLDER_COUNT);
-        }
+        tdlib.ui().showLimitReachedInfo(this, actionButton, TdlibUi.PremiumLimit.CHAT_FOLDER_COUNT);
         return;
       }
     }

@@ -2298,23 +2298,13 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   private void showShareableFoldersLimitReached (View view) {
     UI.forceVibrateError(view);
     PopupLayout popupLayout = PopupLayout.parentOf(view);
-    if (tdlib.hasPremium()) {
-      CharSequence message = Lang.getMarkdownString(this, R.string.ShareableFoldersLimitReached, tdlib.addedShareableChatFolderCountMax());
-      popupLayout.tooltipManager().builder(view).show(tdlib, message).hideDelayed();
-    } else {
-      tdlib.ui().showPremiumLimitInfo(this, popupLayout.tooltipManager(), view, TdlibUi.PremiumLimit.SHAREABLE_FOLDER_COUNT);
-    }
+    tdlib.ui().showLimitReachedInfo(this, popupLayout.tooltipManager(), view, TdlibUi.PremiumLimit.SHAREABLE_FOLDER_COUNT);
   }
 
   private void showChatFolderInviteLinksLimitReached (View view) {
     UI.forceVibrateError(view);
     PopupLayout popupLayout = PopupLayout.parentOf(view);
-    if (tdlib.hasPremium()) {
-      CharSequence message = Lang.getMarkdownString(this, R.string.ChatFolderInviteLinksLimitReached, tdlib.chatFolderInviteLinkCountMax());
-      popupLayout.tooltipManager().builder(view).show(tdlib, message).hideDelayed();
-    } else {
-      tdlib.ui().showPremiumLimitInfo(this, popupLayout.tooltipManager(), view, TdlibUi.PremiumLimit.CHAT_FOLDER_INVITE_LINK_COUNT);
-    }
+    tdlib.ui().showLimitReachedInfo(this, popupLayout.tooltipManager(), view, TdlibUi.PremiumLimit.CHAT_FOLDER_INVITE_LINK_COUNT);
   }
 
   private void showChatFolderInviteLinkOptions (int chatFolderId, TdApi.ChatFolderInviteLink inviteLink) {

@@ -6737,42 +6737,55 @@ public class TdlibUi extends Handler {
     return true;
   }
 
-  public void showPremiumLimitInfo (ViewController<?> context, View view, @PremiumLimit int premiumLimit) {
-    showPremiumLimitInfo(context, context.context().tooltipManager(), view, premiumLimit);
+  public void showLimitReachedInfo (ViewController<?> context, View view, @PremiumLimit int premiumLimit) {
+    showLimitReachedInfo(context, context.context().tooltipManager(), view, premiumLimit);
   }
 
-  public void showPremiumLimitInfo (ViewController<?> context, TooltipOverlayView tooltipManager, View view, @PremiumLimit int premiumLimit) {
-    if (tdlib.hasPremium())
-      return;
+  public void showLimitReachedInfo (ViewController<?> context, TooltipOverlayView tooltipManager, View view, @PremiumLimit int premiumLimit) {
     switch (premiumLimit) {
       case PremiumLimit.SHAREABLE_FOLDER_COUNT:
-        showPremiumLimitTooltip(context, tooltipManager, view, R.string.PremiumRequiredAddShareableFolder, new TdApi.PremiumLimitTypeShareableChatFolderCount());
+        showPremiumLimitTooltip(context, tooltipManager, view, R.string.PremiumRequiredAddShareableFolder, new TdApi.PremiumLimitTypeShareableChatFolderCount(), R.string.ShareableFoldersLimitReached, tdlib.addedShareableChatFolderCountMax());
         break;
       case PremiumLimit.CHAT_FOLDER_COUNT:
-        showPremiumLimitTooltip(context, tooltipManager, view, R.string.PremiumRequiredCreateFolder, new TdApi.PremiumLimitTypeChatFolderCount());
+        showPremiumLimitTooltip(context, tooltipManager, view, R.string.PremiumRequiredCreateFolder, new TdApi.PremiumLimitTypeChatFolderCount(), R.string.ChatFolderLimitReached, tdlib.chatFolderCountMax());
         break;
       case PremiumLimit.CHAT_FOLDER_INVITE_LINK_COUNT:
-        showPremiumRequiredTooltip(context, tooltipManager, view, R.string.PremiumRequiredCreateChatFolderInviteLink);
+        showPremiumLimitTooltip(context, tooltipManager, view, R.string.PremiumRequiredCreateChatFolderInviteLink, new TdApi.PremiumLimitTypeChatFolderInviteLinkCount(), R.string.ChatFolderInviteLinksLimitReached, tdlib.chatFolderInviteLinkCountMax());
         break;
       default:
         throw new IllegalStateException();
     }
   }
 
-  private void showPremiumLimitTooltip (ViewController<?> context, TooltipOverlayView tooltipManager, View view, @StringRes int markdownStringRes, TdApi.PremiumLimitType premiumLimitType) {
+  private void showPremiumLimitTooltip (ViewController<?> context, TooltipOverlayView tooltipManager, View view, @StringRes int markdownStringRes, TdApi.PremiumLimitType premiumLimitType, @StringRes int defaultMarkdownStringRes, int defaultLimit) {
+    if (tdlib.hasPremium()) {
+      // User has premium, just show info that they reached the limit.
+      showLimitReachedTooltip(context, tooltipManager, view, defaultMarkdownStringRes, defaultLimit);
+      return;
+    }
     WeakReference<View> viewRef = new WeakReference<>(view);
     Object viewTag = view.getTag();
-    tdlib.send(new TdApi.GetPremiumLimit(premiumLimitType), (result, error) -> context.runOnUiThreadOptional(() -> {
+    tdlib.send(new TdApi.GetPremiumLimit(premiumLimitType), (premiumLimit, error) -> context.runOnUiThreadOptional(() -> {
       View targetView = viewRef.get();
-      if (targetView != null && ViewCompat.isAttachedToWindow(targetView) && viewTag == targetView.getTag() && result.defaultValue < result.premiumValue) {
-        showPremiumRequiredTooltip(context, tooltipManager, targetView, markdownStringRes, result.defaultValue, result.premiumValue);
+      if (targetView != null && ViewCompat.isAttachedToWindow(targetView) && viewTag == targetView.getTag()) {
+        if (premiumLimit != null && premiumLimit.defaultValue < premiumLimit.premiumValue) {
+          // User can increase limit by buying Telegram Premium
+          showPremiumRequiredTooltip(context, tooltipManager, targetView, markdownStringRes, premiumLimit.defaultValue, premiumLimit.premiumValue);
+        } else {
+          // User cannot increase the limit regardless of buying premium, just show info that they reached the limit.
+          showLimitReachedTooltip(context, tooltipManager, view, defaultMarkdownStringRes, defaultLimit);
+        }
       }
     }));
   }
 
   private void showPremiumRequiredTooltip (ViewController<?> context, TooltipOverlayView tooltipManager, View view, @StringRes int markdownStringRes, Object... formatArgs) {
       // TODO proper alert with sections
-      tooltipManager
+    showLimitReachedTooltip(context, tooltipManager, view, markdownStringRes, formatArgs);
+  }
+
+  private void showLimitReachedTooltip (ViewController<?> context, TooltipOverlayView tooltipManager, View view, @StringRes int markdownStringRes, Object... formatArgs) {
+    tooltipManager
       .builder(view)
       .icon(R.drawable.baseline_warning_24)
       .controller(context)
