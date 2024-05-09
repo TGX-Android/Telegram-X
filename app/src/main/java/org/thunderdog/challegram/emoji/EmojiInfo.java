@@ -16,13 +16,43 @@ package org.thunderdog.challegram.emoji;
 
 import android.graphics.Rect;
 
-public class EmojiInfo {
-  public final Rect rect;
-  public final int page1, page2;
+import org.thunderdog.challegram.tool.EmojiCode;
 
-  public EmojiInfo (Rect rect, int page1, int page2) {
-    this.rect = rect;
-    this.page1 = page1;
-    this.page2 = page2;
+public class EmojiInfo {
+  public final int section, page;
+  public final int position;
+  private final Rect rect = new Rect();
+  private int inSampleSize = -1;
+
+  public EmojiInfo (int section, int page, int position) {
+    this.section = section;
+    this.page = page;
+    this.position = position;
+  }
+
+  public Rect getRect (int inSampleSize) {
+    if (this.inSampleSize != inSampleSize) {
+      this.inSampleSize = inSampleSize;
+      int emojiOriginalSize = (int) (30 * EmojiCode.SCALE) / inSampleSize;
+
+      int row = position % EmojiCode.COLUMNS[section][page];
+      int col = position / EmojiCode.COLUMNS[section][page];
+
+      int margin = (int) (EmojiCode.MARGINS[section][page] * (EmojiCode.SCALE / inSampleSize));
+
+      int marginLeft = margin * row;
+      int marginTop = margin * col;
+
+      int left = row * emojiOriginalSize + marginLeft;
+      int top = col * emojiOriginalSize + marginTop;
+
+      rect.set(
+        left,
+        top,
+        left + emojiOriginalSize,
+        top + emojiOriginalSize
+      );
+    }
+    return rect;
   }
 }

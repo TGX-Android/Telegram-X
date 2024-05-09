@@ -15,7 +15,6 @@
 package org.thunderdog.challegram.emoji;
 
 import android.content.SharedPreferences;
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
@@ -124,9 +123,6 @@ public class Emoji {
     emojiChangeListeners.remove(listener);
   }
 
-  public final int emojiOriginalSize;
-  public final int sampleSize;
-
   private Emoji () {
     this.bitmaps = new EmojiBitmaps(Settings.instance().getEmojiPackIdentifier());
     this.emojiText = new LocalVar<>();
@@ -137,9 +133,6 @@ public class Emoji {
 
     this.defaultTone = Settings.instance().getEmojiDefaultTone();
 
-    this.sampleSize = EmojiBitmaps.calculateSampleSize();
-    this.emojiOriginalSize = (int) (30 * EmojiCode.SCALE) / sampleSize;
-
     int totalCount = EmojiData.getTotalDataCount();
     this.rects = new HashMap<>(totalCount);
     for (int sectionIndex = 0; sectionIndex < EmojiData.data.length; sectionIndex++) {
@@ -147,19 +140,7 @@ public class Emoji {
       for (int emojiIndex = 0; emojiIndex < EmojiData.data[sectionIndex].length; emojiIndex++) {
         int page = emojiIndex / count2;
         int position = emojiIndex - page * count2;
-        int row = position % EmojiCode.COLUMNS[sectionIndex][page];
-        int col = position / EmojiCode.COLUMNS[sectionIndex][page];
-
-        int margin = (int) (EmojiCode.MARGINS[sectionIndex][page] * (EmojiCode.SCALE / sampleSize));
-
-        int marginLeft = margin * row;
-        int marginTop = margin * col;
-
-        int left = row * emojiOriginalSize + marginLeft;
-        int top = col * emojiOriginalSize + marginTop;
-
-        Rect rect = new Rect(left, top, left + emojiOriginalSize, top + emojiOriginalSize);
-        rects.put(EmojiData.data[sectionIndex][emojiIndex], new EmojiInfo(rect, sectionIndex, page));
+        rects.put(EmojiData.data[sectionIndex][emojiIndex], new EmojiInfo(sectionIndex, page, position));
       }
     }
   }
@@ -1054,11 +1035,11 @@ public class Emoji {
       return false;
     if (alpha == 255)
       return draw(c, info, outRect);
-    Bitmap bitmap = bitmaps.getBitmap(info.page1, info.page2);
-    if (bitmap != null) {
+    EmojiBitmaps.Entry bitmap = bitmaps.getBitmap(info.section, info.page);
+    if (bitmap != null && bitmap.isLoaded()) {
       Paint paint = Paints.getBitmapPaint();
       paint.setAlpha(alpha);
-      c.drawBitmap(bitmap, info.rect, outRect, paint);
+      bitmap.draw(c, info, outRect, paint);
       paint.setAlpha(255);
       return true;
     } else {
@@ -1070,10 +1051,9 @@ public class Emoji {
     if (info == null) {
       return false;
     }
-    Bitmap bitmap = bitmaps.getBitmap(info.page1, info.page2);
+    EmojiBitmaps.Entry bitmap = bitmaps.getBitmap(info.section, info.page);
     if (bitmap != null) {
-      c.drawBitmap(bitmap, info.rect, outRect, Paints.getBitmapPaint());
-      return true;
+      return bitmap.draw(c, info, outRect, Paints.getBitmapPaint());
     } else {
       return false;
     }
