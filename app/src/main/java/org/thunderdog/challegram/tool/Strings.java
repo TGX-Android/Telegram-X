@@ -91,7 +91,8 @@ public class Strings {
   public static boolean requiresBidi (CharSequence text, int start, int end) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
       // Source: android.icu.text.Bidi.requiresBidi
-      // but uses CharSequence instead of char[]
+      // but uses CharSequence instead of char[],
+      // and uses code point instead of char.
 
       final int RTLMask = (1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT |
         1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC |
@@ -99,10 +100,12 @@ public class Strings {
         1 << android.icu.lang.UCharacter.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE |
         1 << android.icu.lang.UCharacter.DIRECTIONALITY_ARABIC_NUMBER);
 
-      for (int i = start; i < end; ++i) {
-        if (((1 << android.icu.lang.UCharacter.getDirection(text.charAt(i))) & RTLMask) != 0) {
+      for (int i = start; i < end; ) {
+        int codePoint = Character.codePointAt(text, i);
+        if (((1 << android.icu.lang.UCharacter.getDirection(codePoint)) & RTLMask) != 0) {
           return true;
         }
+        i += Character.charCount(codePoint);
       }
       return false;
     } else {    // todo: test difference between UCharacter and Character
@@ -112,10 +115,12 @@ public class Strings {
         1 << Character.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE |
         1 << Character.DIRECTIONALITY_ARABIC_NUMBER);
 
-      for (int i = start; i < end; ++i) {
-        if (((1 << Character.getDirectionality(text.charAt(i))) & RTLMask) != 0) {
+      for (int i = start; i < end; ) {
+        int codePoint = Character.codePointAt(text, i);
+        if (((1 << Character.getDirectionality(codePoint)) & RTLMask) != 0) {
           return true;
         }
+        i += Character.charCount(codePoint);
       }
       return false;
     }
