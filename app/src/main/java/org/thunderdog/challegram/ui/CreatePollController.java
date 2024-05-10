@@ -629,7 +629,10 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     int correctOptionId = -1;
     List<TdApi.FormattedText> options = new ArrayList<>(TdConstants.MAX_POLL_OPTION_COUNT);
     for (ListItem optionItem : this.options) {
-      TdApi.FormattedText option = TD.toFormattedText(StringUtils.trim(optionItem.getCharSequenceValue()), false);
+      CharSequence cs = StringUtils.trim(optionItem.getCharSequenceValue());
+      if (StringUtils.isEmpty(cs))
+        continue;
+      TdApi.FormattedText option = TD.toFormattedText(cs, false);
       if (Td.isEmpty(option))
         continue;
       if (Td.codePointCount(option) > TdConstants.MAX_POLL_OPTION_LENGTH) {
