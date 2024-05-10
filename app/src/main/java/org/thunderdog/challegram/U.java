@@ -120,13 +120,13 @@ import org.thunderdog.challegram.telegram.TdlibNotificationManager;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.TextController;
 import org.thunderdog.challegram.util.AppBuildInfo;
 import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.util.text.TextReplacementSpan;
+import org.thunderdog.challegram.util.text.bidi.BiDiUtils;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
 import java.io.BufferedReader;
@@ -2149,7 +2149,7 @@ public class U {
       return 0;
     }
 
-    if (Config.USE_TEXT_ADVANCE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Strings.requiresBidi(in, start, end)) {
+    if (Config.USE_TEXT_ADVANCE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !BiDiUtils.requiresBidi(in, start, end)) {
       /*
       getTextRunAdvances(char[] chars, int index, int count,
             int contextIndex, int contextCount, boolean isRtl, float[] advances,
@@ -2316,7 +2316,7 @@ public class U {
     if (p == null)
       throw new IllegalArgumentException();
 
-    if (Config.USE_TEXT_ADVANCE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Strings.requiresBidi(in, start, end)) {
+    if (Config.USE_TEXT_ADVANCE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !BiDiUtils.requiresBidi(in, start, end)) {
       return p.getRunAdvance(in, start, end, 0, in.length(), false, end);
     } else {
       float[] widths = pickWidths(count, true);
