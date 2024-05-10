@@ -85,11 +85,10 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
 
   private final MultipleViewProvider currentViews = new MultipleViewProvider();
   private final BounceAnimator isAnonymous = new BounceAnimator(currentViews);
-  private final int horizontalPadding;
+  private final int horizontalPadding = Screen.dp(72f) + Screen.dp(11f);
 
   public DoubleTextWrapper (Tdlib tdlib, TdApi.Chat chat) {
     this.tdlib = tdlib;
-    this.horizontalPadding = Screen.dp(72f) + Screen.dp(11f);
 
     this.chatId = chat.id;
     this.userId = TD.getUserId(chat);
@@ -112,7 +111,6 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
 
   public DoubleTextWrapper (Tdlib tdlib, long userId, boolean needSubtitle) {
     this.tdlib = tdlib;
-    this.horizontalPadding = Screen.dp(72f) + Screen.dp(11f);
 
     this.userId = userId;
     this.user = tdlib.cache().user(userId);
@@ -126,6 +124,12 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
     if (needSubtitle) {
       updateSubtitle();
     }
+  }
+
+  public DoubleTextWrapper (String title, CharSequence subtitle, AvatarPlaceholder.Metadata metadata) {
+    setTitle(title);
+    this.avatarPlaceholder = new AvatarPlaceholder(AVATAR_PLACEHOLDER_RADIUS, metadata, null);
+    setForcedSubtitle(subtitle);
   }
 
   public TdApi.MessageSender getSenderId () {
