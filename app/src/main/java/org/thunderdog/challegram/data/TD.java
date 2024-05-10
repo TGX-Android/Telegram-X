@@ -5414,6 +5414,10 @@ public class TD {
     R.id.chatType_archived
   };
 
+  public static boolean isChatType (@IdRes int id) {
+    return ArrayUtils.contains(TD.CHAT_TYPES, id);
+  }
+
   public static @StringRes int chatTypeName (@IdRes int chatType) {
     if (chatType == R.id.chatType_contact) return R.string.CategoryContacts;
     if (chatType == R.id.chatType_nonContact) return R.string.CategoryNonContacts;

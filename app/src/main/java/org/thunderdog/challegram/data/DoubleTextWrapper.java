@@ -89,6 +89,10 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
   private boolean forceSingleLine;
 
   public DoubleTextWrapper (Tdlib tdlib, TdApi.Chat chat) {
+    this(tdlib, chat, /* needSubtitle */ true);
+  }
+
+  public DoubleTextWrapper (Tdlib tdlib, TdApi.Chat chat, boolean needSubtitle) {
     this.tdlib = tdlib;
 
     this.chatId = chat.id;
@@ -107,7 +111,9 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
     if (chat.photo != null) {
       setPhoto(chat.photo.small);
     }
-    updateSubtitle();
+    if (needSubtitle) {
+      updateSubtitle();
+    }
   }
 
   public DoubleTextWrapper (Tdlib tdlib, long userId, boolean needSubtitle) {
@@ -334,6 +340,13 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
 
   public @Nullable TdApi.ChatMessageSender getChatMessageSender () {
     return chatMessageSender;
+  }
+
+  public void setForceSingleLine (boolean forceSingleLine) {
+    if (this.forceSingleLine != forceSingleLine) {
+      this.forceSingleLine = forceSingleLine;
+      currentViews.invalidate();
+    }
   }
 
   private CharSequence forcedSubtitle;

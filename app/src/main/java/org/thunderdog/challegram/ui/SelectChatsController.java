@@ -52,6 +52,7 @@ import org.thunderdog.challegram.component.user.BubbleView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
+import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGFoundChat;
 import org.thunderdog.challegram.loader.AvatarReceiver;
@@ -84,6 +85,8 @@ import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.AttachDelegate;
 import org.thunderdog.challegram.widget.BetterChatView;
+import org.thunderdog.challegram.widget.CheckBoxView;
+import org.thunderdog.challegram.widget.SmallChatView;
 import org.thunderdog.challegram.widget.SparseDrawableView;
 
 import java.lang.annotation.Retention;
@@ -98,7 +101,6 @@ import java.util.TreeSet;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.util.ClickHelper;
-import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
@@ -300,7 +302,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
   protected View onCreateView (Context context) {
     View view = super.onCreateView(context);
     if (hasBubbles()) {
-      headerCell = new BubbleHeaderView(context, tdlib);
+      headerCell = new BubbleHeaderView(context, tdlib, /* maxBubbleLines */ 3);
       if (mode == MODE_FOLDER_INCLUDE_CHATS) {
         headerCell.setHint(bindLocaleChanger(R.string.IncludeChatsHint, headerCell.getInput(), /* isHint */ true, /* isMedium */ false));
       } else if (mode == MODE_FOLDER_EXCLUDE_CHATS) {
@@ -328,6 +330,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     Arguments arguments = getArgumentsStrict();
     adapter = new Adapter(this);
 
+    recyclerView.addItemDecoration(new ItemDecoration());
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
       public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
@@ -443,12 +446,13 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
       }
       ListItem item = (ListItem) v.getTag();
       long chatId = item.getLongId();
-      toggleChatSelection(chatId, v, /* removeOnly */ false);
-    } else if (ArrayUtils.contains(TD.CHAT_TYPES, id)) {
+      toggleChatSelection(chatId, item, /* removeOnly */ false);
+    } else if (TD.isChatType(id)) {
       if (headerCell != null && headerCell.areBubblesAnimating()) {
         return;
       }
-      toggleChatTypeSelection(id, v, /* removeOnly */ false);
+      ListItem item = (ListItem) v.getTag();
+      toggleChatTypeSelection(id, item, /* removeOnly */ false);
     }
   }
 
@@ -543,9 +547,9 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     if (entries.isEmpty()) {
       return;
     }
-    List<TGFoundChat> chats = new ArrayList<>(entries.size());
+    List<DoubleTextWrapper> chats = new ArrayList<>(entries.size());
     for (TdlibChatListSlice.Entry entry : entries) {
-      chats.add(foundChat(entry));
+      chats.add(chatData(entry.chat));
     }
     runOnUiThreadOptional(() -> {
       loadingMore = false;
@@ -553,38 +557,42 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     });
   }
 
-  private void displayChats (List<TGFoundChat> chats) {
+  private void displayChats (List<DoubleTextWrapper> chats) {
     if (chats.isEmpty()) {
       return;
     }
-    List<ListItem> chatItems = new ArrayList<>(chats.size() * 2);
-    for (TGFoundChat chat : chats) {
+    List<ListItem> chatItems = new ArrayList<>(chats.size());
+    for (DoubleTextWrapper chat : chats) {
       chatItems.add(chatItem(chat));
     }
     adapter.addItems(indexOfLastChat() + 1, chatItems.toArray(new ListItem[0]));
   }
 
   private ListItem chatTypeItem (@IdRes int id) {
-    TdlibAccentColor accentColor = tdlib.accentColor(TD.chatTypeAccentColorId(id));
-    return new ListItem(ListItem.TYPE_CHAT_BETTER, id, TD.chatTypeIcon24(id), TD.chatTypeName(id))
-      .setAccentColor(accentColor);
+    return new ListItem(ListItem.TYPE_CHAT_SMALL, id).setData(chatTypeData(id));
   }
 
-  private ListItem chatItem (TGFoundChat foundChat) {
-    ListItem item = new ListItem(ListItem.TYPE_CHAT_BETTER, R.id.chat);
-    item.setLongId(foundChat.getChatId());
-    item.setData(foundChat);
+  private DoubleTextWrapper chatTypeData (@IdRes int id) {
+    String title = Lang.getString(TD.chatTypeName(id));
+    TdlibAccentColor accentColor = tdlib.accentColor(TD.chatTypeAccentColorId(id));
+    AvatarPlaceholder.Metadata avatar = new AvatarPlaceholder.Metadata(accentColor, TD.chatTypeIcon24(id));
+    return new DoubleTextWrapper(tdlib, title, /* subtitle */ "", avatar);
+  }
+
+  private ListItem chatItem (DoubleTextWrapper chatData) {
+    ListItem item = new ListItem(ListItem.TYPE_CHAT_SMALL, R.id.chat);
+    item.setLongId(chatData.getChatId());
+    item.setData(chatData);
     return item;
   }
 
-  private TGFoundChat foundChat (TdlibChatListSlice.Entry entry) {
-    return foundChat(entry.chatList, entry.chat);
-  }
-
-  private TGFoundChat foundChat (TdApi.ChatList chatList, TdApi.Chat chat) {
-    TGFoundChat foundChat = new TGFoundChat(tdlib, chatList, chat, true, null);
-    modifyChat(foundChat);
-    return foundChat;
+  private DoubleTextWrapper chatData (TdApi.Chat chat) {
+    String subtitle = buildFolderListSubtitle(tdlib, chat);
+    DoubleTextWrapper data = new DoubleTextWrapper(tdlib, chat, /* needSubtitle */ false);
+    data.setAdminSignVisible(false, false);
+    data.setForcedSubtitle(subtitle);
+    data.setForceSingleLine(StringUtils.isEmpty(subtitle));
+    return data;
   }
 
   private int indexOfFistChat () {
@@ -627,7 +635,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     }
   }
 
-  private boolean toggleChatSelection (long chatId, @Nullable View view, boolean removeOnly) {
+  private boolean toggleChatSelection (long chatId, @Nullable ListItem item, boolean removeOnly) {
     boolean selected = selectedChatIds.contains(chatId);
     if (!selected && removeOnly) {
       return false;
@@ -664,10 +672,13 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
       }
     }
     updateDoneButton();
-    if (view instanceof BetterChatView) {
-      ((BetterChatView) view).setIsChecked(!selected, true);
+    if (item == null) {
+      item = adapter.getItem(adapter.indexOfViewByLongId(chatId));
+    }
+    if (item != null && item.getData() instanceof DoubleTextWrapper) {
+      ((DoubleTextWrapper) item.getData()).setIsChecked(!selected, /* animated */ true);
     } else {
-      adapter.updateCheckOptionByLongId(chatId, !selected);
+      adapter.updateValuedSettingByLongId(chatId);
     }
     if (hasBubbles()) {
       if (selected) {
@@ -691,7 +702,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     return !selected;
   }
 
-  private void toggleChatTypeSelection (@IdRes int chatType, @Nullable View view, boolean removeOnly) {
+  private void toggleChatTypeSelection (@IdRes int chatType, @Nullable ListItem item, boolean removeOnly) {
     boolean selected = selectedChatTypes.contains(chatType);
     if (!selected && removeOnly) {
       return;
@@ -702,10 +713,13 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
       selectedChatTypes.add(chatType);
     }
     updateDoneButton();
-    if (view instanceof BetterChatView) {
-      ((BetterChatView) view).setIsChecked(!selected, true);
+    if (item == null) {
+      item = adapter.findItemById(chatType);
+    }
+    if (item != null && item.getData() instanceof DoubleTextWrapper) {
+      ((DoubleTextWrapper) item.getData()).setIsChecked(!selected, /* animated */ true);
     } else {
-      adapter.updateCheckOptionById(chatType, !selected);
+      adapter.updateValuedSettingById(chatType);
     }
     if (hasBubbles()) {
       if (selected) {
@@ -763,8 +777,8 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
   @Override
   public void onChatAdded (TdlibChatList chatList, TdApi.Chat chat, int atIndex, Tdlib.ChatChange changeInfo) {
     runOnUiThreadOptional(() -> {
-      TGFoundChat foundChat = foundChat(chatList.chatList(), chat);
-      adapter.addItems(indexOfFistChat() + atIndex, chatItem(foundChat));
+      DoubleTextWrapper chatData = chatData(chat);
+      adapter.addItems(indexOfFistChat() + atIndex, chatItem(chatData));
     });
   }
 
@@ -948,6 +962,44 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     void onSelectedChatsChanged (@Mode int mode, Set<Long> chatIds, Set<Integer> chatTypes);
   }
 
+  private static class ItemDecoration extends RecyclerView.ItemDecoration {
+    @Override
+    public void onDrawOver (@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+      boolean isRtl = Lang.rtl();
+      int separatorColor = Theme.separatorColor();
+      int separatorHeight = Math.max(1, Screen.dp(.5f));
+      Paint sepratorPaint = Paints.fillingPaint(separatorColor);
+      int startOffset = Screen.dp(72f);
+      int childCount = parent.getChildCount();
+      for (int i = 0; i < childCount; i++) {
+        View child = parent.getChildAt(i);
+        if (!isChatOrChatTypeItem(child)) {
+          continue;
+        }
+        int layoutPosition = parent.getChildLayoutPosition(child);
+        if (layoutPosition == RecyclerView.NO_POSITION) {
+          continue;
+        }
+        RecyclerView.ViewHolder next = parent.findViewHolderForLayoutPosition(layoutPosition + 1);
+        if (next == null || !isChatOrChatTypeItem(next.itemView)) {
+          continue;
+        }
+        int bottom = child.getBottom();
+        int top = bottom - separatorHeight;
+        if (isRtl) {
+          c.drawRect(0, top, child.getWidth() - startOffset, bottom, sepratorPaint);
+        } else {
+          c.drawRect(startOffset, top, child.getWidth(), bottom, sepratorPaint);
+        }
+      }
+    }
+
+    /** @noinspection BooleanMethodIsAlwaysInverted*/
+    private boolean isChatOrChatTypeItem (View view) {
+      return view.getId() == R.id.chat || TD.isChatType(view.getId());
+    }
+  }
+
   private class Adapter extends SettingsAdapter {
     public Adapter (ViewController<?> context) {
       super(context);
@@ -992,18 +1044,15 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     }
 
     @Override
-    protected void setChatData (ListItem item, int position, BetterChatView chatView) {
+    protected void modifyChatView (ListItem item, SmallChatView chatView, @Nullable CheckBoxView checkBox, boolean isUpdate) {
       if (item.getId() == R.id.chat) {
-        TGFoundChat foundChat = (TGFoundChat) item.getData();
-        chatView.setChat(foundChat);
-        SelectChatsController.this.modifyChatView(foundChat, chatView);
-      } else if (ArrayUtils.contains(TD.CHAT_TYPES, item.getId())) {
-        chatView.setTitle(item.getString());
-        chatView.setSubtitle(null);
-        chatView.setNoSubtitle(true);
-        chatView.setAvatar(null, new AvatarPlaceholder.Metadata(item.getAccentColor(), item.getIconResource()));
-        chatView.setIsChecked(selectedChatTypes.contains(item.getId()), false);
-        chatView.clearPreviewChat();
+        DoubleTextWrapper data = (DoubleTextWrapper) item.getData();
+        chatView.setChat(data);
+        data.setIsChecked(selectedChatIds.contains(data.getChatId()), isUpdate);
+      } else if (TD.isChatType(item.getId())) {
+        DoubleTextWrapper data = (DoubleTextWrapper) item.getData();
+        chatView.setChat(data);
+        data.setIsChecked(selectedChatTypes.contains(item.getId()), isUpdate);
       } else {
         throw new IllegalArgumentException();
       }
