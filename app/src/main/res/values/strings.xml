@@ -3731,8 +3731,9 @@
   <string name="VoiceVideoPrivacyDesc">You can restrict who can send you voice or video messages with granular precision.</string>
   <string name="PrivacyMessage">Messages</string>
   <string name="PrivacyMessageEverybody">Everybody can message you</string>
-  <string name="PrivacyMessageContactsPremium">Only contacts and **Premium** users can message you</string>
+  <string name="PrivacyMessageContactsPremium">Only contacts and **Premium** users</string>
   <string name="PrivacyMessageTitle">Messages</string>
+  <string name="PrivacyMessagePreview">New Chats</string>
   <string name="WhoCanSendMessages">Who can send me messages?</string>
   <string name="NewChatsPrivacyDesc">You can restrict messages from users who are not in your contacts and don\'t have **Telegram&#160;Premium**.</string>
 
