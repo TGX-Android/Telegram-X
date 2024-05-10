@@ -428,7 +428,11 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<Setting
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     items.add(new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_everybody, 0, R.string.Everybody, null, R.id.btn_privacyRadio, rulesType == PrivacySettings.Mode.EVERYBODY));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-    items.add(new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_contacts, 0, R.string.MyContacts, null, R.id.btn_privacyRadio, rulesType == PrivacySettings.Mode.CONTACTS));
+    if (args.mode == Mode.NEW_CHATS_PRIVACY) {
+      items.add(new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_contacts, 0, Lang.getMarkdownString(this, R.string.MyContactsAndPremium), R.id.btn_privacyRadio, rulesType == PrivacySettings.Mode.CONTACTS));
+    } else {
+      items.add(new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_contacts, 0, R.string.MyContacts, null, R.id.btn_privacyRadio, rulesType == PrivacySettings.Mode.CONTACTS));
+    }
     if (needNobodyOption() || rulesType == PrivacySettings.Mode.NOBODY) {
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_nobody, 0, R.string.Nobody, null, R.id.btn_privacyRadio, rulesType == PrivacySettings.Mode.NOBODY));

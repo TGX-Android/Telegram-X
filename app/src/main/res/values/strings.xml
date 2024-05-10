@@ -991,6 +991,7 @@
   <string name="AreYouSureSessions">Are you sure you want to terminate all other sessions?</string>
   <string name="Everybody">Everybody</string>
   <string name="MyContacts">My Contacts</string>
+  <string name="MyContactsAndPremium">My Contacts and **Premium** users</string>
   <string name="Nobody">Nobody</string>
   <string name="WhoCanAddYouToGroupsAndChannels">Who can add you to groups and channels?</string>
   <string name="WhoCanAddMeInfo">You can restrict who can add you to groups and channels with granular precision.</string>
