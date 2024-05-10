@@ -145,5 +145,5 @@ public class ChangeLogList {
   private static final int APP_RELEASE_VERSION_2023_APRIL = 1624; // Emoji 15.0, more recent stickers & more + critical TDLIb upgrade. 2 April, 2023: https://telegra.ph/Telegram-X-04-02
   private static final int APP_RELEASE_VERSION_2023_AUGUST = 1646; // Translation, Advanced Text Formatting, Emoji Status, tgcalls, reproducible TDLib & more. 3 August, 2023: https://telegra.ph/Telegram-X-08-02
   private static final int APP_RELEASE_VERSION_2023_DECEMBER = 1674; // Custom emoji, select link preview, archive settings, in-app avatar picker, group chat tools, & more. 31st December, 2023 (full roll-out in January 2024): https://telegra.ph/Telegram-X-2023-12-31
-  private static final int APP_RELEASE_VERSION_2024_MAY = Integer.MAX_VALUE; // Not yet released. Replace media messages, files captions, birthdates, dozens of changes: https://telegra.ph/Telegram-X-05-10
+  private static final int APP_RELEASE_VERSION_2024_MAY = 1717; // Replace media messages, files captions, birthdates, dozens of changes. 10 May, 2024: https://telegra.ph/Telegram-X-05-10
 }
