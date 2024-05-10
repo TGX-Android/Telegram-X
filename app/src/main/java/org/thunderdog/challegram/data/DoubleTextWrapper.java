@@ -86,6 +86,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
   private final MultipleViewProvider currentViews = new MultipleViewProvider();
   private final BounceAnimator isAnonymous = new BounceAnimator(currentViews);
   private final int horizontalPadding = Screen.dp(72f) + Screen.dp(11f);
+  private boolean forceSingleLine;
 
   public DoubleTextWrapper (Tdlib tdlib, TdApi.Chat chat) {
     this.tdlib = tdlib;
@@ -126,10 +127,16 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
     }
   }
 
-  public DoubleTextWrapper (String title, CharSequence subtitle, AvatarPlaceholder.Metadata metadata) {
+  public DoubleTextWrapper (Tdlib tdlib, String title, CharSequence subtitle, AvatarPlaceholder.Metadata metadata) {
+    this.tdlib = tdlib;
+    this.userId = 0;
     setTitle(title);
     this.avatarPlaceholder = new AvatarPlaceholder(AVATAR_PLACEHOLDER_RADIUS, metadata, null);
-    setForcedSubtitle(subtitle);
+    if (StringUtils.isEmpty(subtitle)) {
+      forceSingleLine = true;
+    } else {
+      setForcedSubtitle(subtitle);
+    }
   }
 
   public TdApi.MessageSender getSenderId () {
@@ -575,13 +582,18 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
       float y = receiver.centerY();
       Drawables.draw(c, incognitoIcon, x, y - incognitoIcon.getMinimumHeight() / 2f, PorterDuffPaint.get(ColorId.text));
     }
+
+    int titleY = Screen.dp(13f);
     int offset = 0;
     if (trimmedTitle != null) {
-      trimmedTitle.draw(c, left, Screen.dp(13f));
+      if (forceSingleLine) {
+        titleY = view.getMeasuredHeight() / 2 - trimmedTitle.getHeight() / 2;
+      }
+      trimmedTitle.draw(c, left, titleY);
       offset += trimmedTitle.getWidth();
     }
     if (emojiStatusDrawable != null) {
-      emojiStatusDrawable.draw(c, left + offset + Screen.dp(6f), Screen.dp(13f), 1f, emojiStatusReceiver);
+      emojiStatusDrawable.draw(c, left + offset + Screen.dp(6f), titleY, 1f, emojiStatusReceiver);
       offset += emojiStatusDrawable.getWidth(Screen.dp(6f));
     }
 
@@ -589,17 +601,17 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
       adminSign.draw(c, viewWidth - Screen.dp(14f) - adminSign.getWidth(), view.getMeasuredHeight() / 2 - adminSign.getHeight() / 2, memberInfo != null && TD.isCreator(memberInfo.status) ? TextColorSets.Regular.NEUTRAL : null);
     }
 
-    if (trimmedSubtitle != null) {
+    if (!forceSingleLine && trimmedSubtitle != null) {
       trimmedSubtitle.draw(c, left, Screen.dp(33f), isOnline ? TextColorSets.Regular.NEUTRAL : null);
     }
 
     if (trimmedTitle != null && chatMark != null) {
       int cmLeft = left + offset + Screen.dp(6f);
       RectF rct = Paints.getRectF();
-      rct.set(cmLeft, Screen.dp(13f), cmLeft + chatMark.getWidth() + Screen.dp(8f), Screen.dp(13f) + trimmedTitle.getLineHeight(false));
+      rct.set(cmLeft, titleY, cmLeft + chatMark.getWidth() + Screen.dp(8f), titleY + trimmedTitle.getLineHeight(false));
       c.drawRoundRect(rct, Screen.dp(2f), Screen.dp(2f), Paints.getProgressPaint(Theme.getColor(ColorId.textNegative), Screen.dp(1.5f)));
       cmLeft += Screen.dp(4f);
-      chatMark.draw(c, cmLeft, cmLeft + chatMark.getWidth(), 0, Screen.dp(13f) + ((trimmedTitle.getLineHeight(false) - chatMark.getLineHeight(false)) / 2));
+      chatMark.draw(c, cmLeft, cmLeft + chatMark.getWidth(), 0, titleY + ((trimmedTitle.getLineHeight(false) - chatMark.getLineHeight(false)) / 2));
     }
   }
 
