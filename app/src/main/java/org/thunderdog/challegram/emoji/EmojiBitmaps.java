@@ -164,11 +164,12 @@ class EmojiBitmaps {
     if (!recycled) {
       recycled = true;
       for (Entry[] bitmaps : this.bitmaps) {
-        int index = 0;
-        for (Entry bitmap : bitmaps) {
-          bitmap.performDestroy();
-          bitmaps[index] = null;
-          index++;
+        for (int i = 0; i < bitmaps.length; i++) {
+          Entry bitmap = bitmaps[i];
+          if (bitmap != null) {
+            bitmap.performDestroy();
+            bitmaps[i] = null;
+          }
         }
       }
     }
