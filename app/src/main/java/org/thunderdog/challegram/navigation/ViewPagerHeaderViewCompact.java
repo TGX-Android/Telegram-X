@@ -29,6 +29,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.Dimension;
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -37,6 +38,7 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Size;
 
 import me.vkryl.android.widget.FrameLayoutFix;
@@ -88,16 +90,17 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
     }
 
     @Override
-    public VH onCreateViewHolder (ViewGroup parent, int viewType) {
+    @NonNull
+    public VH onCreateViewHolder (@NonNull ViewGroup parent, int viewType) {
       if (topView.getParent() != null) {
-        Log.w("ViewPagerHeaderViewCompact: topView is already attached to another cel");
+        Log.w("ViewPagerHeaderViewCompact: topView is already attached to another cell");
         ((ViewGroup) topView.getParent()).removeView(topView);
       }
       return new VH(topView);
     }
 
     @Override
-    public void onBindViewHolder (VH holder, int position) { }
+    public void onBindViewHolder (@NonNull VH holder, int position) { }
 
     @Override
     public int getItemCount () {
@@ -177,6 +180,7 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
     recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? OVER_SCROLL_IF_CONTENT_SCROLLS :OVER_SCROLL_NEVER);
     recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, Lang.rtl()));
     recyclerView.setAdapter(adapter);
+    recyclerView.setHasFixedSize(true);
     addView(recyclerView);
 
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Size.getHeaderBigPortraitSize(true)));
@@ -195,11 +199,25 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
     if (view == null) {
       return;
     }
-    final int viewWidth = view.getMeasuredWidth();
+
+    final int viewWidth;
+    final ViewPagerTopView topView = getTopView();
+    if (topView.shouldWrapContent()) {
+      final float selectionFactor = totalFactor * (topView.getItemCount() - 1);
+      final int totalWidth = topView.getTotalWidth();
+      final int itemsWidth = topView.getItemsWidth(selectionFactor);
+      int widthDiff = Math.min(itemsWidth - totalWidth, 0);
+      Views.setRightMargin(topView, widthDiff);
+      viewWidth = itemsWidth;
+    } else {
+      Views.setRightMargin(topView, 0);
+      viewWidth = getMeasuredWidth();
+    }
+
     final int parentWidth = recyclerView.getMeasuredWidth();
     final int parentPaddingLeft = recyclerView.getPaddingLeft();
     final int parentPaddingRight = recyclerView.getPaddingRight();
-    if (viewWidth <= parentWidth - parentPaddingLeft - parentPaddingRight) {
+    if (parentWidth == 0 || viewWidth <= parentWidth - parentPaddingLeft - parentPaddingRight) {
       return;
     }
     if (recyclerView.isComputingLayout()) {
