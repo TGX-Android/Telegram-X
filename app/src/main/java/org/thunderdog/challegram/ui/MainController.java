@@ -434,7 +434,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   private long pendingPagerItemId = INVALID_PAGER_ITEM_ID;
   private @Nullable ChatsController pendingChatsController;
 
-  private void cancelPendingSection () {
+  private void cancelPendingFilter () {
     if (pendingChatsController != null) {
       pendingChatsController.destroy();
       pendingChatsController = null;
@@ -443,20 +443,25 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     this.pendingPagerItemId = INVALID_PAGER_ITEM_ID;
   }
 
-  private int applySection (int section, long pagerItemId, ChatsController chatsController) {
-    if (pagerItemId == INVALID_PAGER_ITEM_ID || headerCell == null || useGlobalFilter()) {
+  private int applyPendingFilter (@Filter int filter, long pagerItemId, ChatsController chatsController) {
+    if (this.pendingFilter != filter || this.pendingPagerItemId != pagerItemId || this.pendingChatsController != chatsController) {
       chatsController.destroy();
       return NO_POSITION;
     }
 
-    setSelectedFilter(pagerItemId, section);
+    this.pendingFilter = -1;
+    this.pendingPagerItemId = INVALID_PAGER_ITEM_ID;
+    this.pendingChatsController = null;
 
     int pagerItemPosition = getPagerItemPosition(pagerItemId);
     if (pagerItemPosition == NO_POSITION) {
       chatsController.destroy();
       return NO_POSITION;
     }
-    replaceSectionItem(pagerItemId, pagerItemPosition);
+    if (!useGlobalFilter()) {
+      setSelectedFilter(pagerItemId, filter);
+      replaceSectionItem(pagerItemId, pagerItemPosition);
+    }
     replaceController(pagerItemId, chatsController);
     if (getCurrentPagerItemPosition() == pagerItemPosition) {
       showComposeWrap(/* controller */ null);
@@ -523,7 +528,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     int selectedFilter = getSelectedFilter(pagerItemId);
     if ((selectedFilter == requestedFilter && (requestedFilter != FILTER_NONE || (pagerItemId == MAIN_PAGER_ITEM_ID && !menuNeedArchive))) ||
         (pagerItemId == MAIN_PAGER_ITEM_ID && menuNeedArchive && selectedFilter == FILTER_NONE && requestedFilter == FILTER_ARCHIVE)) {
-      cancelPendingSection();
+      cancelPendingFilter();
       int pagerItemPosition = getPagerItemPosition(pagerItemId);
       if (pagerItemPosition != NO_POSITION) {
         setCurrentPagerPosition(pagerItemPosition, true);
@@ -533,24 +538,24 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (this.pendingFilter == requestedFilter && this.pendingPagerItemId == pagerItemId) {
       return; // Still waiting to switch, do nothing
     }
-    cancelPendingSection();
+    cancelPendingFilter();
 
     int position = getPagerItemPosition(pagerItemId);
     if (position == NO_POSITION)
       return;
-    int section;
+    int filter;
     if (requestedFilter == FILTER_NONE) {
-      section = FILTER_NONE;
+      filter = FILTER_NONE;
       if (pagerItemId == MAIN_PAGER_ITEM_ID) {
         setNeedArchive(false);
       }
     } else if (requestedFilter == FILTER_ARCHIVE) {
-      section = FILTER_NONE;
+      filter = FILTER_NONE;
       if (pagerItemId == MAIN_PAGER_ITEM_ID) {
         setNeedArchive(selectedFilter != FILTER_NONE || !menuNeedArchive);
       }
     } else {
-      section = requestedFilter;
+      filter = requestedFilter;
     }
     TdApi.ChatList chatList;
     if (pagerItemId == MAIN_PAGER_ITEM_ID) {
@@ -558,22 +563,23 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     } else {
       chatList = pagerChatLists.get(position);
     }
-    ChatsController c = newChatsController(chatList, section);
-    this.pendingChatsController = c;
-    this.pendingFilter = section;
+    postApplyFilter(pagerItemId, chatList, filter);
+  }
+
+  private void postApplyFilter (long pagerItemId, TdApi.ChatList chatList, @Filter int filter) {
+    ChatsController chatsController = newChatsController(chatList, filter);
+    modifyNewPagerItemController(chatsController);
+
+    this.pendingFilter = filter;
     this.pendingPagerItemId = pagerItemId;
-    c.postOnAnimationExecute(() -> {
-      if (this.pendingFilter == section && this.pendingChatsController == c && this.pendingPagerItemId == pagerItemId) {
-        this.pendingFilter = -1;
-        this.pendingPagerItemId = INVALID_PAGER_ITEM_ID;
-        this.pendingChatsController = null;
-        int pagerItemPosition = applySection(section, pagerItemId, c);
-        if (pagerItemPosition != NO_POSITION) {
-          setCurrentPagerPosition(pagerItemPosition, true);
-        }
+    this.pendingChatsController = chatsController;
+
+    chatsController.postOnAnimationExecute(() -> {
+      int pagerItemPosition = applyPendingFilter(filter, pagerItemId, chatsController);
+      if (pagerItemPosition != NO_POSITION && !useGlobalFilter()) {
+        setCurrentPagerPosition(pagerItemPosition, /* animated */ true);
       }
     });
-    modifyNewPagerItemController(c);
   }
 
   private void layoutMenu (@NonNull View view) {
@@ -3137,16 +3143,23 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       return false;
     }
     globalFilter = filterToApply;
+    cancelPendingFilter();
     if (toggleHeaderView != null) {
       String title = Lang.getString(getGlobalFilterName(filterToApply));
       toggleHeaderView.setTitle(title, /* animated */ isFocused());
     }
     int itemCount = getPagerItemCount();
     List<ViewPagerTopView.Item> sections = new ArrayList<>(itemCount);
+    int currentItemPosition = getCurrentPagerItemPosition();
     for (int itemPosition = 0; itemPosition < itemCount; itemPosition++) {
       // replace item
       long itemId = getPagerItemId(itemPosition);
       sections.add(buildSectionItem(itemId, itemPosition));
+      if (currentItemPosition == itemPosition) {
+        TdApi.ChatList chatList = pagerChatLists.get(itemPosition);
+        postApplyFilter(itemId, chatList, filterToApply);
+        continue;
+      }
       // replace controller (if cached)
       ViewController<?> cachedController = getCachedControllerForPosition(itemPosition);
       if (cachedController != null) {
