@@ -6807,6 +6807,9 @@ public class TdlibUi extends Handler {
       case TdApi.PremiumLimitTypeChatFolderChosenChatCount.CONSTRUCTOR:
         effectiveLimit = tdlib.chatFolderChosenChatCountMax();
         break;
+      case TdApi.PremiumLimitTypeShareableChatFolderCount.CONSTRUCTOR:
+        effectiveLimit = tdlib.addedShareableChatFolderCountMax();
+        break;
       default:
         Td.assertPremiumLimitType_3b3ed738();
         throw Td.unsupported(premiumLimitType);
