@@ -4754,6 +4754,7 @@
   <string name="SessionLastLogin">Last Activity</string>
   <string name="SessionAccept">Accept</string>
   <string name="SessionReject">Reject</string>
+  <string name="SessionAcceptsCalls">Calls</string>
 
   <string name="SessionAccepts">What can be received on this device?</string>
   <string name="SessionSecretChats">Secret Chats</string>

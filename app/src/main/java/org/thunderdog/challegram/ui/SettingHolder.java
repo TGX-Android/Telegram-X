@@ -1561,7 +1561,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
           callsState.setLayoutParams(params);
           callsState.setCompoundDrawablesWithIntrinsicBounds(callIcon, null, null, null);
           callsState.setCompoundDrawablePadding(Screen.dp(8));
-          callsState.setText("Calls");
+          callsState.setText(Lang.getString(R.string.SessionAcceptsCalls));
           callsState.setTextColor(Theme.getColor(ColorId.textNeutral));
           callsState.setAllCaps(true);
           callsState.setGravity(Gravity.CENTER_VERTICAL);
