@@ -2329,12 +2329,15 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       } else if (id == R.id.btn_hideFolder) {
         tdlib.settings().setChatListEnabled(chatList, false);
         if (headerCell != null && !StringUtils.isEmptyOrBlank(title)) {
+          CharSequence text = TD.isChatListArchive(chatList) ?
+            Lang.getString(R.string.HideArchiveFolderInfo) :
+            Lang.getString(R.string.HideFolderInfo2, title);
           context()
             .tooltipManager()
             .builder(headerCell.getTopView())
             .locate((targetView, outRect) -> outRect.left = outRect.right = Screen.dp(56f) - (int) targetView.getX())
             .controller(this)
-            .show(tdlib, Lang.getString(R.string.HideFolderInfo2, title))
+            .show(tdlib, text)
             .hideDelayed(3500, TimeUnit.MILLISECONDS);
         }
       } else if (id == R.id.btn_folderIncludeChats) {
