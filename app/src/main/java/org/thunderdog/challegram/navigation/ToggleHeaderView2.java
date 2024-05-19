@@ -9,6 +9,7 @@ import android.view.View;
 
 import androidx.annotation.ColorInt;
 import androidx.annotation.Dimension;
+import androidx.annotation.NonNull;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
@@ -114,14 +115,14 @@ public class ToggleHeaderView2 extends View {
   }
 
   @Override
-  protected void onDraw (Canvas c) {
-    final int textTop = Screen.dp(textTopDp);
-    final int triangleTop = Screen.dp(triangleTopDp);
+  protected void onDraw (@NonNull Canvas c) {
+    final int textTop = Screen.dp(textTopDp) + Screen.dp(17);
+    final int triangleTop = Screen.dp(triangleTopDp) + Screen.dp(3);
     for (ListAnimator.Entry<TrimmedText> entry : titleR) {
       final int offset2 = (int) ((!entry.isAffectingList() ?
         ((entry.getVisibility() - 1f) * Screen.dp(18)) :
         ((1f - entry.getVisibility()) * Screen.dp(18))));
-      entry.item.draw(c, getPaddingLeft(), getPaddingTop() + textTop + Screen.dp(17) + offset2, entry.getVisibility(), Paints.getMediumTextPaint(18f, colorSet.titleColor(), false));
+      entry.item.draw(c, getPaddingLeft(), getPaddingTop() + textTop + offset2, entry.getVisibility(), Paints.getMediumTextPaint(18f, colorSet.titleColor(), false));
     }
     for (ListAnimator.Entry<TrimmedText> entry : subtitleR) {
       final int offset2 = (int) ((!entry.isAffectingList() ?
@@ -130,7 +131,7 @@ public class ToggleHeaderView2 extends View {
       entry.item.draw(c, getPaddingLeft(), getPaddingTop() + textTop + Screen.dp(19) + offset2, entry.getVisibility(), Paints.getRegularTextPaint(14f, colorSet.subtitleColor()));
     }
 
-    Drawables.draw(c, arrowDrawable, getTitleWidth() + Screen.dp(2), getPaddingTop() + triangleTop + Screen.dp(3f), PorterDuffPaint.get(colorSet.iconColorId()));
+    Drawables.draw(c, arrowDrawable, getTitleWidth() + Screen.dp(2), getPaddingTop() + triangleTop, PorterDuffPaint.get(colorSet.iconColorId()));
   }
 
 
