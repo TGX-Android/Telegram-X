@@ -47,6 +47,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.AnyThread;
+import androidx.annotation.CheckResult;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
@@ -1456,26 +1457,27 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (!isMain && !isArchive) {
       throw new UnsupportedOperationException();
     }
-    if (hasFolders && Config.CHAT_FOLDERS_REDESIGN && selectedFilter != FILTER_NONE) {
+    boolean showAsArchive = (isMain && menuNeedArchive) || isArchive;
+    if (hasFolders && Config.CHAT_FOLDERS_REDESIGN) {
       String source;
-      boolean iconOnly = chatFolderStyle == ChatFolderStyle.ICON_ONLY || (isMain && pagerItemPosition == 0 && hasIcon(chatFolderStyle));
+      boolean iconOnly = chatFolderStyle == ChatFolderStyle.ICON_ONLY || (isMain && pagerItemPosition == 0);
       if (iconOnly) {
         source = "";
+      } else if (showAsArchive) {
+        source = Lang.getString(getArchiveSectionNameRes(FILTER_NONE, chatFolderStyle));
       } else {
-        int sourceRes = isMain ? getMainSectionNameRes(FILTER_NONE, /* hasFolders */ true) : getArchiveSectionNameRes(FILTER_NONE, chatFolderStyle);
-        source = Lang.getString(sourceRes);
+        source = Lang.getString(getMainSectionNameRes(FILTER_NONE, /* hasFolders */ true));
       }
       if (upperCase) {
         source = source.toUpperCase();
       }
-      if (useGlobalFilter()) {
+      if (useGlobalFilter() || selectedFilter == FILTER_NONE) {
         return source;
       }
       return appendFilterIcon(source, selectedFilter);
     }
     String sectionName;
-    //noinspection ConstantConditions
-    if (isArchive || (isMain && menuNeedArchive && (!hasFolders || pagerItemPosition > 0))) {
+    if (showAsArchive) {
       sectionName = Lang.getString(getArchiveSectionNameRes(selectedFilter, chatFolderStyle));
     } else {
       sectionName = Lang.getString(getMainSectionNameRes(selectedFilter, hasFolders));
@@ -1535,11 +1537,12 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         }
       }
     } else {
-      sectionName = folderName;
+      sectionName = chatFolderStyle == ChatFolderStyle.ICON_ONLY ? "" : folderName;
     }
     return Emoji.instance().replaceEmoji(sectionName);
   }
 
+  @CheckResult
   private CharSequence appendFilterIcon (String source, @Filter int selectedFilter) {
     SpannableString string = new SpannableString(source + (source.isEmpty() ? "∇" : " ∇"));
     int filterIcon = getFilterVariantIcon(selectedFilter);
