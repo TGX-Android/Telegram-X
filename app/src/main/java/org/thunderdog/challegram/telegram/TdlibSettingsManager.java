@@ -1360,6 +1360,11 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
       if (chatFolderOptions() != options) {
         Settings.instance().putInt(key(CHAT_FOLDER_OPTIONS, tdlib.accountId()), options);
         _chatFolderOptions = options;
+        if (chatListPositionListeners != null) {
+          for (ChatListPositionListener chatListPositionListener : chatListPositionListeners) {
+            chatListPositionListener.onChatFolderOptionsChanged(tdlib, options);
+          }
+        }
       }
     }
   }
