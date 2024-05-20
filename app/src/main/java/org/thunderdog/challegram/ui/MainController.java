@@ -2871,25 +2871,14 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       TdlibCounter counter = tdlib.getCounter(chatList);
       updateCounter(chatList, unreadCounter, counter, /* animated */ false);
     }
-    ViewPagerTopView.Item item;
-    if (pagerItemId == MAIN_PAGER_ITEM_ID && pagerItemPosition == 0) {
-      if (selectedFilter != FILTER_NONE && selectedFilter != FILTER_ARCHIVE && !TextUtils.isEmpty(sectionName)) {
-        item = new ViewPagerTopView.Item(sectionName, iconResource, unreadCounter);
-      } else {
-        item = new ViewPagerTopView.Item(iconResource, unreadCounter);
-      }
-    } else if (chatFolderStyle == ChatFolderStyle.LABEL_AND_ICON || chatFolderStyle == ChatFolderStyle.ICON_WITH_LABEL_ON_ACTIVE ||
-      (chatFolderStyle == ChatFolderStyle.ICON_ONLY && selectedFilter != FILTER_NONE)) {
-      if (TextUtils.isEmpty(sectionName)) {
-        item = new ViewPagerTopView.Item(iconResource, unreadCounter);
-      } else {
-        item = new ViewPagerTopView.Item(sectionName, iconResource, unreadCounter);
-      }
-    } else if (chatFolderStyle == ChatFolderStyle.ICON_ONLY) {
-      item = new ViewPagerTopView.Item(iconResource, unreadCounter);
-    } else {
-      item = new ViewPagerTopView.Item(sectionName, unreadCounter);
+    boolean showIcon = hasIcon(chatFolderStyle) || (pagerItemId == MAIN_PAGER_ITEM_ID && pagerItemPosition == 0);
+    if (!showIcon) {
+      iconResource = ID_NULL;
     }
+    if (TextUtils.isEmpty(sectionName)) {
+      sectionName = null;
+    }
+    ViewPagerTopView.Item item = new ViewPagerTopView.Item(sectionName, iconResource, unreadCounter);
     item.setMinWidth(Screen.dp(56f - ViewPagerTopView.COMPACT_ITEM_PADDING * 2));
     return item;
   }
