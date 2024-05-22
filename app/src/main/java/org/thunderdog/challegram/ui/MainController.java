@@ -149,6 +149,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
+import me.vkryl.core.ObjectUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.collection.LongSparseIntArray;
@@ -162,6 +163,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   private static final long MAIN_PAGER_ITEM_ID = Long.MIN_VALUE;
   private static final long ARCHIVE_PAGER_ITEM_ID = Long.MIN_VALUE + 1;
   private static final long INVALID_PAGER_ITEM_ID = Long.MAX_VALUE;
+  private static final int NO_PENDING_FILTER = -1;
 
   public MainController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -265,10 +267,10 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
         @Override
         public boolean onSlideOffPrepare (View view, MotionEvent event, int index) {
-          if (useGlobalFilter()) {
-            return false;
+          if (hasFolders()) {
+            return !useGlobalFilter() || globalFilter == FILTER_NONE;
           }
-          return hasFolders() || getPagerItemId(index) == MAIN_PAGER_ITEM_ID;
+          return getPagerItemId(index) == MAIN_PAGER_ITEM_ID;
         }
 
         @Override
@@ -431,7 +433,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   private boolean menuNeedArchive;
   private View menuAnchor;
 
-  private int pendingFilter = -1;
+  private @PendingFilter int pendingFilter = NO_PENDING_FILTER;
   private long pendingPagerItemId = INVALID_PAGER_ITEM_ID;
   private @Nullable ChatsController pendingChatsController;
 
@@ -440,17 +442,17 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       pendingChatsController.destroy();
       pendingChatsController = null;
     }
-    this.pendingFilter = -1;
+    this.pendingFilter = NO_PENDING_FILTER;
     this.pendingPagerItemId = INVALID_PAGER_ITEM_ID;
   }
 
-  private int applyPendingFilter (@Filter int filter, long pagerItemId, ChatsController chatsController) {
+  private int applyPendingFilter (@PendingFilter int filter, long pagerItemId, ChatsController chatsController) {
     if (this.pendingFilter != filter || this.pendingPagerItemId != pagerItemId || this.pendingChatsController != chatsController) {
       chatsController.destroy();
       return NO_POSITION;
     }
 
-    this.pendingFilter = -1;
+    this.pendingFilter = NO_PENDING_FILTER;
     this.pendingPagerItemId = INVALID_PAGER_ITEM_ID;
     this.pendingChatsController = null;
 
@@ -459,7 +461,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       chatsController.destroy();
       return NO_POSITION;
     }
-    if (!useGlobalFilter()) {
+    if (!useGlobalFilter() || filter != globalFilter || filter == FILTER_NONE) {
       setSelectedFilter(pagerItemId, filter);
       replaceSectionItem(pagerItemId, pagerItemPosition);
     }
@@ -577,7 +579,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
     chatsController.postOnAnimationExecute(() -> {
       int pagerItemPosition = applyPendingFilter(filter, pagerItemId, chatsController);
-      if (pagerItemPosition != NO_POSITION && !useGlobalFilter()) {
+      if (pagerItemPosition != NO_POSITION && (!useGlobalFilter() || filter != globalFilter)) {
         setCurrentPagerPosition(pagerItemPosition, /* animated */ true);
       }
     });
@@ -1333,6 +1335,10 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   @IntDef({FILTER_NONE, FILTER_ARCHIVE, FILTER_PRIVATE, FILTER_GROUPS, FILTER_CHANNELS, FILTER_BOTS, FILTER_UNREAD})
   private @interface Filter { }
 
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({FILTER_NONE, FILTER_PRIVATE, FILTER_GROUPS, FILTER_CHANNELS, FILTER_BOTS, FILTER_UNREAD, NO_PENDING_FILTER})
+  private @interface PendingFilter { }
+
   private static final int FILTER_NONE = 0;
   private static final int FILTER_ARCHIVE = 1;
   private static final int FILTER_PRIVATE = 2;
@@ -1365,17 +1371,27 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   }
 
   private @Filter int getSelectedFilter (long pagerItemId) {
-    if (useGlobalFilter()) {
+    if (useGlobalFilter() && globalFilter != FILTER_NONE) {
       return globalFilter;
     }
     return pagerChatListFilters.get(pagerItemId, FILTER_NONE);
   }
 
   private void setSelectedFilter (long pagerItemId, @Filter int filter) {
-    if (BuildConfig.DEBUG && useGlobalFilter()) {
-      throw new IllegalStateException();
+    if (filter != FILTER_NONE) {
+      pagerChatListFilters.put(pagerItemId, filter);
+    } else {
+      pagerChatListFilters.delete(pagerItemId);
     }
-    pagerChatListFilters.put(pagerItemId, filter);
+  }
+
+  private boolean hasSelectedFilters () {
+    for (int i = 0; i < pagerChatListFilters.size(); i++) {
+      if (pagerChatListFilters.valueAt(i) != FILTER_NONE) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override
@@ -1443,9 +1459,9 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         throw new IllegalArgumentException();
     }
     if (chatFilter != null) {
-      chats.setArguments(new ChatsController.Arguments(chatFilter).setChatList(chatList).setIsBase(true));
+      chats.setArguments(new ChatsController.Arguments(chatFilter).setTag(filter).setChatList(chatList).setIsBase(true));
     } else if (chatList != null) {
-      chats.setArguments(new ChatsController.Arguments(chatList).setIsBase(true));
+      chats.setArguments(new ChatsController.Arguments(chatList).setTag(filter).setIsBase(true));
     }
     return chats;
   }
@@ -1471,7 +1487,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       if (upperCase) {
         source = source.toUpperCase();
       }
-      if (useGlobalFilter() || selectedFilter == FILTER_NONE) {
+      if (useGlobalFilter() && selectedFilter == globalFilter || selectedFilter == FILTER_NONE) {
         return source;
       }
       return appendFilterIcon(source, selectedFilter);
@@ -1523,7 +1539,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (selectedFilter != FILTER_NONE) {
       if (Config.CHAT_FOLDERS_REDESIGN) {
         String source = chatFolderStyle == ChatFolderStyle.ICON_ONLY ? "" : folderName;
-        if (useGlobalFilter()) {
+        if (useGlobalFilter() && selectedFilter == globalFilter) {
           sectionName = source;
         } else {
           sectionName = appendFilterIcon(source, selectedFilter);
@@ -3134,11 +3150,13 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   }
 
   private boolean applyGlobalFilter (@Filter int filterToApply) {
-    if (!useGlobalFilter() || globalFilter == filterToApply) {
+    if (!useGlobalFilter() || (globalFilter == filterToApply && !menuNeedArchive && !hasSelectedFilters())) {
       return false;
     }
     globalFilter = filterToApply;
+    pagerChatListFilters.clear();
     cancelPendingFilter();
+    setNeedArchive(false);
     if (toggleHeaderView != null) {
       String title = Lang.getString(getGlobalFilterName(filterToApply));
       toggleHeaderView.setTitle(title, /* animated */ isFocused());
@@ -3150,16 +3168,18 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       // replace item
       long itemId = getPagerItemId(itemPosition);
       sections.add(buildSectionItem(itemId, itemPosition));
+      ViewController<?> cachedController = getCachedControllerForPosition(itemPosition);
+      TdApi.ChatList chatList = pagerChatLists.get(itemPosition);
+      if (sameChatsController(cachedController, chatList, filterToApply)) {
+        continue;
+      }
       if (currentItemPosition == itemPosition) {
-        TdApi.ChatList chatList = pagerChatLists.get(itemPosition);
         postApplyFilter(itemId, chatList, filterToApply);
         continue;
       }
       // replace controller (if cached)
-      ViewController<?> cachedController = getCachedControllerForPosition(itemPosition);
       if (cachedController != null) {
-        TdApi.ChatList chatList = pagerChatLists.get(itemPosition);
-        ViewController<?> controller = newChatsController(chatList, globalFilter);
+        ViewController<?> controller = newChatsController(chatList, filterToApply);
         modifyNewPagerItemController(controller);
         replaceController(itemId, controller, /* notifyAdapter */ false);
       }
@@ -3185,5 +3205,13 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       default:
         throw new IllegalArgumentException("chatFolderStyle = " + chatFolderStyle);
     }
+  }
+
+  private boolean sameChatsController (@Nullable ViewController<?> controller, TdApi.ChatList chatList, @Filter int filter) {
+      if (!(controller instanceof ChatsController)) {
+          return false;
+      }
+      ChatsController c = (ChatsController) controller;
+      return Td.equalsTo(c.chatList(), chatList) && ObjectUtils.equals(filter, c.getArgumentsStrict().tag);
   }
 }
