@@ -3033,6 +3033,9 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
   private void onFoldersAppearanceChanged () {
     if (hasFolders()) {
+      if (!displayTabsAtBottom() && globalFilter != FILTER_NONE) {
+        applyGlobalFilter(FILTER_NONE);
+      }
       updatePagerSections(false);
     }
   }
@@ -3150,7 +3153,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   }
 
   private boolean applyGlobalFilter (@Filter int filterToApply) {
-    if (!useGlobalFilter() || (globalFilter == filterToApply && !menuNeedArchive && !hasSelectedFilters())) {
+    if ((!useGlobalFilter() && filterToApply != FILTER_NONE) || (globalFilter == filterToApply && !menuNeedArchive && !hasSelectedFilters())) {
       return false;
     }
     globalFilter = filterToApply;
