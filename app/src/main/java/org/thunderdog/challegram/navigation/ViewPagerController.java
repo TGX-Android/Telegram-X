@@ -507,7 +507,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
 
   public final boolean scrollToFirstPosition () {
     if (!isAtFirstPosition()) {
-      pager.setCurrentItem(adapter.reversePosition(0), true);
+      setCurrentPagerPosition(adapter.reversePosition(0), /* animated */ true);
       return true;
     }
     return false;
