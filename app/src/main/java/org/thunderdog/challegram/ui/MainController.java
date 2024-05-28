@@ -48,6 +48,7 @@ import android.widget.Toast;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.CheckResult;
+import androidx.annotation.ColorInt;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
@@ -154,6 +155,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.collection.LongSparseIntArray;
 import me.vkryl.core.lambda.CancellableRunnable;
+import me.vkryl.core.lambda.FutureBool;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
 import me.vkryl.td.Td;
@@ -1228,11 +1230,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   private boolean showFoldersSetupSuggestion () {
     if (isFocused() && hasFolders() && Settings.instance().hasPendingFeatureAddedNotification(FeatureAvailability.Feature.CHAT_FOLDERS) && !foldersAlertShown) {
       foldersAlertShown = true;
-      if (BuildConfig.DEBUG) {
-        openAlert(R.string.AppName, "Folders are here.");
-      }
-      // TODO: actually show the Folders intro pop-up.
-      // TODO: call `Settings.instance().revokeFeatureNotifications(FeatureAvailability.Feature.CHAT_FOLDERS);` after an explicit user interaction with the pop-up
+      new ChatFoldersFeatureController(context(), tdlib()).show();
       return true;
     }
     return false;
@@ -1709,7 +1707,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   private ViewPagerTopView.Item getDefaultMainItem () {
     if (defaultMainItem == null) {
       CharSequence mainItem = getMenuSectionName(MAIN_PAGER_ITEM_ID, 0, false, ChatFolderStyle.LABEL_ONLY,  /* upperCase */ true);
-      UnreadCounterColorSet unreadCounterColorSet = new UnreadCounterColorSet();
+      UnreadCounterColorSet unreadCounterColorSet = UnreadCounterColorSet.create(this);
       Counter unreadCounter = new Counter.Builder()
         .textSize(12f)
         .backgroundPadding(4f)
@@ -2903,7 +2901,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (selectedFilter != FILTER_NONE || (pagerItemId == MAIN_PAGER_ITEM_ID && menuNeedArchive)) {
       return null;
     }
-    UnreadCounterColorSet unreadCounterColorSet = new UnreadCounterColorSet();
+    UnreadCounterColorSet unreadCounterColorSet = UnreadCounterColorSet.create(this);
     Counter unreadCounter = new Counter.Builder()
       .textSize(12f)
       .backgroundPadding(4f)
@@ -2931,6 +2929,10 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   }
 
   private void updateCounter (TdApi.ChatList chatList, Counter target, TdlibCounter counter, boolean animated) {
+    updateCounter(tdlib, chatList, target, counter, animated);
+  }
+
+  public static void updateCounter (Tdlib tdlib, TdApi.ChatList chatList, Counter target, TdlibCounter counter, boolean animated) {
     int mutedCount, unmutedCount;
     int badgeFlags = tdlib.settings().getChatFolderBadgeFlags();
     boolean countMessages = BitwiseUtils.hasFlag(badgeFlags, Settings.BADGE_FLAG_MESSAGES);
@@ -2959,36 +2961,50 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     }
   }
 
-  private class UnreadCounterColorSet implements TextColorSet {
+  public static class UnreadCounterColorSet implements TextColorSet {
     private @Nullable Counter counter;
+    private final FutureBool displayTabsAtBottom;
+
+    public UnreadCounterColorSet (FutureBool displayTabsAtBottom) {
+      this.displayTabsAtBottom = displayTabsAtBottom;
+    }
+
+    private static UnreadCounterColorSet create(MainController parent) {
+      return new UnreadCounterColorSet(parent::displayTabsAtBottom);
+    }
 
     public void setCounter (@Nullable Counter counter) {
       this.counter = counter;
     }
 
+    @ColorInt
     @Override
     public int defaultTextColor () {
       return counter != null ? ColorUtils.fromToArgb(foregroundColor(), backgroundColor(), counter.getMuteFactor()) : foregroundColor();
     }
 
+    @ColorInt
     @Override
     public int backgroundColor (boolean isPressed) {
       return counter != null ? ColorUtils.alphaColor(1f - counter.getMuteFactor(), backgroundColor()) : backgroundColor();
     }
 
+    @ColorInt
     @Override
     public int outlineColor (boolean isPressed) {
       return counter != null ? backgroundColor() : Color.TRANSPARENT;
     }
 
+    @ColorInt
     private int foregroundColor () {
-      return Theme.getColor(displayTabsAtBottom() ? ColorId.headerLightBackground : ColorId.headerBackground);
+      return Theme.getColor(displayTabsAtBottom.getBoolValue() ? ColorId.headerLightBackground : ColorId.headerBackground);
     }
 
+    @ColorInt
     private int backgroundColor() {
-      return Theme.getColor(displayTabsAtBottom() ? ColorId.headerLightText : ColorId.headerText);
+      return Theme.getColor(displayTabsAtBottom.getBoolValue() ? ColorId.headerLightText : ColorId.headerText);
     }
-  };
+  }
 
   private @Nullable ChatListPositionListener chatListPositionListener;
   private @Nullable ChatListUnreadCountListener chatListUnreadCountListener;

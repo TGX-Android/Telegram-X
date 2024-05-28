@@ -245,6 +245,7 @@
   <item type="id" name="controller_sponsoredMessagesInfo" />
   <item type="id" name="controller_featureToggles" />
   <item type="id" name="controller_chatFolders" />
+  <item type="id" name="controller_chatFoldersFeature" />
   <item type="id" name="controller_editChatFolderInviteLink" />
   <item type="id" name="controller_chatFolderInviteLink" />
   <item type="id" name="controller_editChatFolders" />

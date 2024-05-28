@@ -786,6 +786,10 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     }
   }
 
+  public float getSelectionFactor () {
+    return selectionFactor;
+  }
+
   private int fromIndex = -1;
   private int toIndex = -1;
 
