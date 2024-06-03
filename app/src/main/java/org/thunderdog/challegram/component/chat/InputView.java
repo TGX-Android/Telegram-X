@@ -85,6 +85,7 @@ import org.thunderdog.challegram.emoji.PreserveCustomEmojiFilter;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.helper.FoundUrls;
 import org.thunderdog.challegram.helper.InlineSearchContext;
+import org.thunderdog.challegram.helper.editable.EditableHelper;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.navigation.LocaleChanger;
 import org.thunderdog.challegram.navigation.RtlCheckListener;
@@ -110,6 +111,7 @@ import org.thunderdog.challegram.util.FinalNewLineFilter;
 import org.thunderdog.challegram.util.TextSelection;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
+import org.thunderdog.challegram.util.text.quotes.QuoteSpan;
 import org.thunderdog.challegram.widget.InputWrapperWrapper;
 import org.thunderdog.challegram.widget.NoClipEditText;
 
@@ -294,6 +296,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
             } else if (itemId == R.id.btn_link) {
               overrideResId = R.string.TextFormatLink;
               type = null;
+            } else if (itemId == R.id.btn_quote) {
+              overrideResId = R.string.TextFormatQuote;
+              type = new TdApi.TextEntityTypeBlockQuote();
             } else {
               if (BuildConfig.DEBUG) {
                 Log.i("Menu item: %s %s", UI.getAppContext().getResources().getResourceName(item.getItemId()), item.getTitle());
@@ -399,6 +404,8 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     if (id == R.id.btn_plain) {
       clearSpans(selection.start, selection.end);
       return true;
+    } else if (id == R.id.btn_quote) {
+      type = new TdApi.TextEntityTypeBlockQuote();
     } else if (id == R.id.btn_bold) {
       type = new TdApi.TextEntityTypeBold();
     } else if (id == R.id.btn_italic) {
@@ -455,6 +462,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     Editable editable = getText();
     Object[] spans = editable.getSpans(start, end, Object.class);
     boolean updated = false;
+    boolean updateQuotes = false;
     if (spans != null) {
       for (Object existingSpan : spans) {
         if (existingSpan instanceof NoCopySpan || existingSpan instanceof EmojiSpan || isComposingSpan(editable, existingSpan) || !TD.canConvertToEntityType(existingSpan)) {
@@ -481,10 +489,11 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         int existingSpanEnd = editable.getSpanEnd(existingSpan);
         boolean reused = false;
 
-        editable.removeSpan(existingSpan);
+        EditableHelper.removeSpan(editable, existingSpan);
 
-        boolean keepSpanBeforeStart = start > existingSpanStart;
-        boolean keepSpanAfterEnd = existingSpanEnd > end;
+        final boolean isQuoteSpan = QuoteSpan.isQuoteSpan(existingSpan);
+        boolean keepSpanBeforeStart = !isQuoteSpan && start > existingSpanStart;
+        boolean keepSpanAfterEnd = !isQuoteSpan && existingSpanEnd > end;
 
         if (keepSpanBeforeStart && keepSpanAfterEnd) {
           editable.setSpan(TD.cloneSpan(existingSpan), existingSpanStart, start, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -501,10 +510,14 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
           ((Destroyable) existingSpan).performDestroy();
         }
         updated = true;
+        updateQuotes |= isQuoteSpan;
       }
     }
     setSelection(start, end);
     if (updated) {
+      if (updateQuotes) {
+        invalidateQuotes(true);
+      }
       inlineContext.forceCheck();
       if (spanChangeListener != null) {
         spanChangeListener.onSpansChanged(this);
@@ -520,6 +533,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     if (end - start <= 0 || !TD.canConvertToSpan(newType)) {
       return false;
     }
+    final boolean isQuoteSpan = newType.getConstructor() == TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR;
     Object newSpan = TD.toSpan(newType);
     Editable editable = getText();
     Object[] existingSpansArray = editable.getSpans(start, end, Object.class);
@@ -556,13 +570,18 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
           if (existingTypes.length == 1 || matchingStyleSpans) {
             if (start < existingSpanStart || end > existingSpanEnd) {
               // Medium path: extend existing span indexes if needed
-              editable.removeSpan(existingSpan);
+              EditableHelper.removeSpan(editable, existingSpan);
               editable.setSpan(
                 existingSpan,
                 Math.min(start, existingSpanStart),
                 Math.max(end, existingSpanEnd),
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
               );
+              if (isQuoteSpan) {
+                QuoteSpan.normalizeQuotes(editable);
+                invalidateQuotes(true);
+                resetFontMetricsCache();
+              }
               return true;
             }
             // Easy path: do nothing, because entire selection already has the same entity
@@ -587,6 +606,11 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     if (existingSpans == null || existingSpans.isEmpty()) {
       // Easy path: just set new span at start .. end
       editable.setSpan(newSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+      if (isQuoteSpan) {
+        QuoteSpan.normalizeQuotes(editable);
+        invalidateQuotes(true);
+        resetFontMetricsCache();
+      }
       return true;
     }
     boolean canBeNested = Td.canBeNested(newType);
@@ -608,6 +632,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
           }
           parseEmoji(editable, existingSpanStart, existingSpanEnd);
         }
+        continue;
+      }
+      if (QuoteSpan.isQuoteSpan(existingSpan)) {
         continue;
       }
       boolean moveExistingEntity = !canBeNested;
@@ -651,15 +678,45 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       }
     }
     editable.setSpan(newSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    if (isQuoteSpan) {
+      QuoteSpan.normalizeQuotes(editable);
+      invalidateQuotes(true);
+      resetFontMetricsCache();
+    }
     return true;
+  }
+
+  public int getLength () {
+    Editable text = getText();
+    return text != null ? text.length() : 0;
   }
 
   private void setSpan (int start, int end, TdApi.TextEntityType newType) {
     if (!TD.canConvertToSpan(newType)) {
       return;
     }
+    final int oldLength = getLength();
     boolean spansChanged = setSpanImpl(start, end, newType);
-    setSelection(start, end);
+    boolean lengthChanged = oldLength != getLength();
+
+    boolean selectionUpdated = false;
+    if (lengthChanged && newType.getConstructor() == TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR) {
+      final Editable text = getText();
+      if (text != null) {
+        final Object[] spans = text.getSpans(start, end, QuoteSpan.class);
+        if (spans != null && spans.length == 1) {
+          int newStart = text.getSpanStart(spans[0]);
+          int newEnd = text.getSpanEnd(spans[0]);
+          setSelection(newStart, newEnd);
+          selectionUpdated = true;
+        }
+      }
+    }
+
+    if (!selectionUpdated) {
+      setSelection(start, end);
+    }
+
     if (spansChanged) {
       inlineContext.forceCheck();
       if (spanChangeListener != null) {
@@ -1268,6 +1325,11 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       }
     }
 
+    invalidateQuotes(false);
+    for (int i = 0; i < quoteBlocks.size(); ++i) {
+      quoteBlocks.get(i).draw(c, getPaddingLeft(), getPaddingTop(), getWidth() - getPaddingLeft() - getPaddingRight());
+    }
+
     super.onDraw(c);
     drawEmojiOverlay(c);
     if (this.displaySuffix.length() > 0 && this.prefix.length() > 0 && getLineCount() == 1) {
@@ -1578,7 +1640,21 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   @Override
   protected void onAttachedToWindow() {
     super.onAttachedToWindow();
+    invalidateQuotes(false);
     doBugfix();
+  }
+
+  @Override
+  protected void onLayout (boolean changed, int left, int top, int right, int bottom) {
+    super.onLayout(changed, left, top, right, bottom);
+    invalidateQuotes(false);
+  }
+
+  @Override
+  protected void onTextChanged (CharSequence text, int start, int lengthBefore, int lengthAfter) {
+    super.onTextChanged(text, start, lengthBefore, lengthAfter);
+    invalidateQuotes(true);
+    invalidate();
   }
 
   @Override
@@ -1629,5 +1705,36 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
     coordinates[0] = (cords1[0] + cords2[0]) / 2;
     coordinates[1] = cords1[1];
+  }
+
+  private ArrayList<QuoteSpan.Block> quoteBlocks = new ArrayList<>();
+  private int lastText2Length;
+  private int quoteUpdatesTries;
+  private boolean[] quoteUpdateLayout;
+
+  public void invalidateQuotes(boolean force) {
+    int newTextLength = (getLayout() == null || getLayout().getText() == null) ? 0 : getLayout().getText().length();
+    if (force || lastText2Length != newTextLength) {
+      quoteUpdatesTries = 2;
+      lastText2Length = newTextLength;
+    }
+    if (quoteUpdatesTries > 0) {
+      if (quoteUpdateLayout == null) {
+        quoteUpdateLayout = new boolean[1];
+      }
+      quoteUpdateLayout[0] = false;
+      quoteBlocks = QuoteSpan.updateQuoteBlocks(getLayout(), quoteBlocks, quoteUpdateLayout);
+      if (quoteUpdateLayout[0]) {
+        resetFontMetricsCache();
+      }
+      quoteUpdatesTries--;
+    }
+  }
+
+  // really dirty workaround to reset fontmetrics cache (lineheightspan.chooseheight works only when text is inserted into the respected line)
+  protected void resetFontMetricsCache() {
+    float originalTextSize = getTextSize();
+    setTextSize(TypedValue.COMPLEX_UNIT_PX, originalTextSize + 1);
+    setTextSize(TypedValue.COMPLEX_UNIT_PX, originalTextSize);
   }
 }

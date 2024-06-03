@@ -410,4 +410,38 @@ public class TextPart {
   }
 
   private static final boolean DEBUG = false;
+
+  public int getQuoteEntityId () {
+    return entity != null ? entity.getQuoteId() : -1;
+  }
+
+  public static int getAdditionalLinesBefore (TextPart part) {
+    final TextEntity entity = part.getEntity();
+    if (entity == null) return 0;
+
+    final int startEntity = entity.getStart();
+    final int startPart = part.getStart();
+    int startLinesCount = 0;
+
+    while ((startPart - startLinesCount - 1) >= startEntity && part.getLine().charAt(startPart - startLinesCount - 1) == '\n') {
+      startLinesCount++;
+    }
+
+    return startLinesCount;
+  }
+
+  public static int getAdditionalLinesAfter (TextPart part) {
+    final TextEntity entity = part.getEntity();
+    if (entity == null) return 0;
+
+    final int endEntity = entity.getEnd();
+    final int endPart = part.getEnd();
+    int endLinesCount = 0;
+
+    while ((endPart + endLinesCount) < endEntity && part.getLine().charAt(endPart + endLinesCount) == '\n') {
+      endLinesCount++;
+    }
+
+    return endLinesCount;
+  }
 }

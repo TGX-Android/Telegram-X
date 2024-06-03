@@ -299,6 +299,16 @@ public class TextEntityCustom extends TextEntity {
   }
 
   @Override
+  public int getQuoteId () {
+    return -1;
+  }
+
+  @Override
+  public boolean isQuote () {
+    return false;
+  }
+
+  @Override
   public void performClick (View view, Text text, TextPart part, @Nullable Text.ClickCallback callback, boolean isFromLongPressMenu) {
     switch (linkType) {
       case LINK_TYPE_EMAIL: {

@@ -2702,6 +2702,7 @@
   <string name="TextFormatItalic">Italic</string>
   <string name="TextFormatMonospace">Monospace</string>
   <string name="TextFormatSpoiler">Spoiler</string>
+  <string name="TextFormatQuote">Quote</string>
   <string name="TextFormatStrikethrough">Strikethrough</string>
   <string name="TextFormatUnderline">Underline</string>
   <string name="TextFormatLink">Create Link</string>

@@ -3680,6 +3680,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
           strings.append(R.string.TextFormatLink);
           icons.append(R.drawable.baseline_link_24);
 
+          ids.append(R.id.btn_quote);
+          strings.append(R.string.TextFormatQuote);
+          icons.append(R.drawable.baseline_format_quote_close_24);
+
           showOptions(null, ids.get(), strings.get(), null, icons.get(), (itemView, id1) -> inputView.setSpan(id1));
         } else {
           showMore();

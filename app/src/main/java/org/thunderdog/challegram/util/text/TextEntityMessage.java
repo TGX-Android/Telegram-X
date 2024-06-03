@@ -56,7 +56,7 @@ public class TextEntityMessage extends TextEntity {
   private static final int FLAG_SPOILER = 1 << 8;
   private static final int FLAG_CUSTOM_EMOJI = 1 << 9;
 
-  private final TdApi.TextEntity clickableEntity, spoilerEntity, emojiEntity;
+  private final TdApi.TextEntity clickableEntity, spoilerEntity, emojiEntity, quoteEntity;
   private int flags;
   private ClickableSpan onClickListener;
 
@@ -115,6 +115,7 @@ public class TextEntityMessage extends TextEntity {
   private TextEntityMessage (@Nullable Tdlib tdlib, boolean needFakeBold, int offset, int end, TdApi.TextEntity entity, @Nullable List<TdApi.TextEntity> parentEntities, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(tdlib, offset, end, needFakeBold, openParameters);
     TdApi.TextEntity clickableEntity = isClickable(entity.type) ? entity : null;
+    TdApi.TextEntity quoteEntity = isQuote(entity.type) ? entity : null;
     TdApi.TextEntity spoilerEntity = Td.isSpoiler(entity.type) ? entity : null;
     TdApi.TextEntity emojiEntity = Td.isCustomEmoji(entity.type) ? entity : null;
     int flags = addFlags(entity.type);
@@ -127,6 +128,9 @@ public class TextEntityMessage extends TextEntity {
         } else if (spoilerEntity == null && Td.isSpoiler(parentEntity.type)) {
           spoilerEntity = parentEntity;
         }
+        if (quoteEntity == null && isQuote(parentEntity.type)) {
+          quoteEntity = parentEntity;
+        }
       }
     }
     this.clickableEntity = clickableEntity;
@@ -134,6 +138,7 @@ public class TextEntityMessage extends TextEntity {
       flags |= FLAG_CLICKABLE;
     }
     this.spoilerEntity = spoilerEntity;
+    this.quoteEntity = quoteEntity;
     if (spoilerEntity != null) {
       flags |= FLAG_SPOILER;
     }
@@ -144,10 +149,11 @@ public class TextEntityMessage extends TextEntity {
     this.flags = flags;
   }
 
-  private TextEntityMessage (@Nullable Tdlib tdlib, boolean needFakeBold, int offset, int end, TdApi.TextEntity clickableEntity, TdApi.TextEntity spoilerEntity, TdApi.TextEntity emojiEntity, int flags, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  private TextEntityMessage (@Nullable Tdlib tdlib, boolean needFakeBold, int offset, int end, TdApi.TextEntity clickableEntity, TdApi.TextEntity spoilerEntity, TdApi.TextEntity emojiEntity, TdApi.TextEntity quoteEntity, int flags, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(tdlib, offset, end, needFakeBold, openParameters);
     this.clickableEntity = clickableEntity;
     this.spoilerEntity = spoilerEntity;
+    this.quoteEntity = quoteEntity;
     this.emojiEntity = emojiEntity;
     this.flags = flags;
   }
@@ -173,7 +179,7 @@ public class TextEntityMessage extends TextEntity {
 
   @Override
   public TextEntity createCopy () {
-    TextEntityMessage copy = new TextEntityMessage(tdlib, needFakeBold, start, end, clickableEntity, spoilerEntity, emojiEntity, flags, openParameters);
+    TextEntityMessage copy = new TextEntityMessage(tdlib, needFakeBold, start, end, clickableEntity, spoilerEntity, emojiEntity, quoteEntity, flags, openParameters);
     if (customColorSet != null) {
       copy.setCustomColorSet(customColorSet);
     }
@@ -235,6 +241,10 @@ public class TextEntityMessage extends TextEntity {
     return 0;
   }
 
+  public static boolean isQuote (TdApi.TextEntityType type) {
+    return type.getConstructor() == TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR;
+  }
+
   public static boolean isClickable (TdApi.TextEntityType type) {
     switch (type.getConstructor()) {
       case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
@@ -250,12 +260,12 @@ public class TextEntityMessage extends TextEntity {
 
       case TdApi.TextEntityTypeCode.CONSTRUCTOR:
       case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
-      case TdApi.TextEntityTypePre.CONSTRUCTOR:
-      case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR: {
+      case TdApi.TextEntityTypePre.CONSTRUCTOR: {
+      //case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR: {
         return true;
       }
       case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR: // TODO
-
+      case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
       case TdApi.TextEntityTypeBold.CONSTRUCTOR:
       case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
       case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
@@ -303,7 +313,7 @@ public class TextEntityMessage extends TextEntity {
     switch (type.getConstructor()) {
       case TdApi.TextEntityTypePre.CONSTRUCTOR:
       case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
-      case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
+      // case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
         return true;
     }
     return false;
@@ -397,6 +407,16 @@ public class TextEntityMessage extends TextEntity {
   @Override
   public boolean hasAnchor (String anchor) {
     return false;
+  }
+
+  @Override
+  public int getQuoteId () {
+    return quoteEntity != null ? quoteEntity.offset : -1;
+  }
+
+  @Override
+  public boolean isQuote () {
+    return quoteEntity != null;
   }
 
   @Override
@@ -540,6 +560,8 @@ public class TextEntityMessage extends TextEntity {
     if (onClickListener != null) {
       return false;
     }
+
+    final TdApi.TextEntity clickableEntity = this.clickableEntity != null ? this.clickableEntity : quoteEntity;
 
     if (Td.isBotCommand(clickableEntity.type)) {
       String command = Td.substring(text.getText(), clickableEntity);
