@@ -27,7 +27,13 @@ import me.vkryl.td.Td;
 /**
  * Workaround for bug present in Samsung Keyboard version 5.6.10.40 with "Predictive text" toggle on (com.samsung.android.honeyboard/.service.HoneyBoardService)
  */
-public class PreserveCustomEmojiFilter implements InputFilter {
+public class PreserveCustomEmojiFilter<T> implements InputFilter {
+  private final Class<T> spanClass;
+
+  public PreserveCustomEmojiFilter(Class<T> spanClass) {
+    this.spanClass = spanClass;
+  }
+
   @Override
   public CharSequence filter (CharSequence sourceRaw, int start, int end, Spanned dest, int dstart, int dend) {
     if (!(sourceRaw instanceof Spanned)) {
@@ -37,12 +43,12 @@ public class PreserveCustomEmojiFilter implements InputFilter {
     final int length = source.length();
     // Entire non-empty text was replaced with the text of the same length
     if (start == 0 && dstart == 0 && end > start && dend == end && end == length && dest.length() == length) {
-      int transitionStart = dest.nextSpanTransition(dstart, dend, CustomEmojiSpanImpl.class);
+      int transitionStart = dest.nextSpanTransition(dstart, dend, spanClass);
       // Custom emoji were not present
       if (transitionStart == dend) {
         return null;
       }
-      transitionStart = source.nextSpanTransition(start, end, CustomEmojiSpanImpl.class);
+      transitionStart = source.nextSpanTransition(start, end, spanClass);
       // Custom emoji are still present
       if (transitionStart != end) {
         return null;
@@ -55,8 +61,8 @@ public class PreserveCustomEmojiFilter implements InputFilter {
         return null;
       }
 
-      CustomEmojiSpanImpl[] lostCustomEmoji = dest.getSpans(0, dest.length(), CustomEmojiSpanImpl.class);
-      for (CustomEmojiSpanImpl span : lostCustomEmoji) {
+      T[] lostCustomEmoji = dest.getSpans(0, dest.length(), spanClass);
+      for (T span : lostCustomEmoji) {
         int emojiStart = dest.getSpanStart(span);
         int emojiEnd = dest.getSpanEnd(span);
         if (emojiStart != -1 && emojiEnd != -1) {

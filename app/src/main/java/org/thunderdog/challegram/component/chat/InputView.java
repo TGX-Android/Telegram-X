@@ -75,6 +75,7 @@ import org.thunderdog.challegram.data.InlineResultHashtag;
 import org.thunderdog.challegram.data.InlineResultMention;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.ThreadInfo;
+import org.thunderdog.challegram.emoji.CustomEmojiSpanImpl;
 import org.thunderdog.challegram.emoji.CustomEmojiSurfaceProvider;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.emoji.EmojiFilter;
@@ -1575,7 +1576,8 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   public void setMaxCodePointCount (int maxCodePointCount) {
     if (maxCodePointCount > 0) {
       setFilters(new InputFilter[] {
-        new PreserveCustomEmojiFilter(),
+        new PreserveCustomEmojiFilter<>(CustomEmojiSpanImpl.class),
+        new PreserveCustomEmojiFilter<>(QuoteSpan.class),
         new ExternalEmojiFilter(),
         new CodePointCountFilter(maxCodePointCount),
         new EmojiFilter(this),
@@ -1584,7 +1586,8 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       });
     } else {
       setFilters(new InputFilter[] {
-        new PreserveCustomEmojiFilter(),
+        new PreserveCustomEmojiFilter<>(CustomEmojiSpanImpl.class),
+        new PreserveCustomEmojiFilter<>(QuoteSpan.class),
         new ExternalEmojiFilter(),
         new EmojiFilter(this),
         new CharacterStyleFilter(true),
