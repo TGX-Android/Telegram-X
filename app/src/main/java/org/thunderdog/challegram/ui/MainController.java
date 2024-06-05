@@ -1948,7 +1948,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
       if (mimeType.equals("image/gif")) {
         BitmapFactory.Options options = ImageReader.getImageSize(filePath);
-        out.add(new TdApi.InputMessageAnimation(TD.createInputFile(filePath), null, null, 0, options.outWidth, options.outHeight, messageCaption, false));
+        out.add(new TdApi.InputMessageAnimation(TD.createInputFile(filePath), null, null, 0, options.outWidth, options.outHeight, messageCaption, false, false));
         return messageCaption != null;
       }
 
@@ -1961,7 +1961,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         int height = rotation == 90 || rotation == 270 ? opts.outWidth / inSampleSize : opts.outHeight / inSampleSize;
 
         TdApi.InputFileGenerated inputFile = PhotoGenerationInfo.newFile(filePath, rotation);
-        out.add(new TdApi.InputMessagePhoto(inputFile, null, null, width, height, messageCaption, null, false));
+        out.add(new TdApi.InputMessagePhoto(inputFile, null, null, width, height, messageCaption, false, null, false));
         return messageCaption != null;
       }
 
@@ -1999,7 +1999,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
           U.closeRetriever(media);
 
-          out.add(new TdApi.InputMessageVideo(inputVideo, null, null, duration, width, height, U.canStreamVideo(inputVideo), messageCaption, null, false));
+          out.add(new TdApi.InputMessageVideo(inputVideo, null, null, duration, width, height, U.canStreamVideo(inputVideo), messageCaption, false, null, false));
           return messageCaption != null;
         }
       }
@@ -2008,7 +2008,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     TD.FileInfo info = new TD.FileInfo();
     TdApi.InputFile file = TD.createInputFile(filePath, mimeType, info);
 
-    out.add(TD.toInputMessageContent(filePath, file, info, messageCaption, false));
+    out.add(TD.toInputMessageContent(filePath, file, info, messageCaption, false, false));
     return messageCaption != null;
   }
 

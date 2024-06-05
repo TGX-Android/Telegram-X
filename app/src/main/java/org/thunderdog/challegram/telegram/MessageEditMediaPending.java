@@ -147,15 +147,15 @@ public class MessageEditMediaPending implements Tdlib.UploadFutureSimple.Callbac
   }
 
   public TdApi.MessagePhoto getMessagePhoto () {
-    return new TdApi.MessagePhoto(getPhoto(), getCaption(), hasSpoiler(), false);
+    return new TdApi.MessagePhoto(getPhoto(), getCaption(), showCaptionAboveMedia(), hasSpoiler(), false);
   }
 
   public TdApi.MessageVideo getMessageVideo () {
-    return new TdApi.MessageVideo(getVideo(), getCaption(), hasSpoiler(), false);
+    return new TdApi.MessageVideo(getVideo(), getCaption(), showCaptionAboveMedia(), hasSpoiler(), false);
   }
 
   public TdApi.MessageAnimation getMessageAnimation () {
-    return new TdApi.MessageAnimation(getAnimation(), getCaption(), hasSpoiler(), false);
+    return new TdApi.MessageAnimation(getAnimation(), getCaption(), showCaptionAboveMedia(), hasSpoiler(), false);
   }
 
   public TdApi.MessageAudio getMessageAudio () {
@@ -168,6 +168,19 @@ public class MessageEditMediaPending implements Tdlib.UploadFutureSimple.Callbac
 
   public TdApi.FormattedText getCaption () {
     return TD.textOrCaption(content);
+  }
+
+  public boolean showCaptionAboveMedia () {
+    switch (content.getConstructor()) {
+      case TdApi.InputMessagePhoto.CONSTRUCTOR:
+        return ((TdApi.InputMessagePhoto) content).showCaptionAboveMedia;
+      case TdApi.InputMessageVideo.CONSTRUCTOR:
+        return ((TdApi.InputMessageVideo) content).showCaptionAboveMedia;
+      case TdApi.InputMessageAnimation.CONSTRUCTOR:
+        return ((TdApi.InputMessageAnimation) content).showCaptionAboveMedia;
+      default:
+        return false;
+    }
   }
 
   public boolean hasSpoiler () {

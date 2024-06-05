@@ -983,6 +983,21 @@ public class Log {
     }
   }
 
+  public static String toErrorString (Throwable e) {
+
+    if (e == null) return "NULL";
+    String str = "";
+    if (e.getClass() != null && e.getClass().getSimpleName() != null) {
+      str = e.getClass().getSimpleName();
+      if (str == null) str = "";
+    }
+    if (e.getMessage() != null) {
+      if (str.length() > 0) str += ": ";
+      str += e.getMessage();
+    }
+    return str;
+  }
+
   public static String toString (Throwable t) {
     StringBuilder b = new StringBuilder();
     toStringBuilder(t, 10, b);

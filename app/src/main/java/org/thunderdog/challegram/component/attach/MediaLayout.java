@@ -1294,7 +1294,9 @@ public class MediaLayout extends FrameLayoutFix implements
         ImageGalleryFile[] result = new ImageGalleryFile[galleryFiles.size()];
         galleryFiles.toArray(result);
         Settings.instance().setNeedGroupMedia(needGroupMedia);
-        target.sendPhotosAndVideosCompressed(result, needGroupMedia, options, disableMarkdown, asFiles, allowSpoiler && needSpoiler);
+        boolean showCaptionAboveMedia = false;
+        boolean hasSpoiler = allowSpoiler && needSpoiler;
+        target.sendPhotosAndVideosCompressed(result, needGroupMedia, options, disableMarkdown, asFiles, showCaptionAboveMedia, hasSpoiler);
       }
     }
 
@@ -1607,6 +1609,14 @@ public class MediaLayout extends FrameLayoutFix implements
         themeListeners.addThemeFilterListener(hotMediaView, needSpoiler ? ColorId.iconActive : ColorId.icon);
       }
     }
+  }
+
+  public boolean showCaptionAboveMedia () {
+    return false; // TODO
+  }
+
+  public void setShowCaptionAboveMedia (boolean showCaptionAboveMedia) {
+    // TODO
   }
 
   private @Nullable TdApi.Chat getTargetChat () {

@@ -788,6 +788,8 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
           }
 
           if (testerLevel >= Tdlib.TESTER_LEVEL_DEVELOPER) {
+            items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+            items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_secret_attest, 0, "Test attest", false));
             if (tdlib.isAuthorized()) {
               items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
               items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_secret_sendAllChangeLogs, 0, "Send all change logs", false));
@@ -1391,6 +1393,12 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       });
     } else if (viewId == R.id.btn_secret_resetLocalNotificationSettings) {
       tdlib.notifications().resetNotificationSettings(true);
+    } else if (viewId == R.id.btn_secret_attest) {
+      tdlib.requestPlayIntegrity(-1, StringUtils.random("0123456789abcdef", 32), (result, isError) -> {
+        runOnUiThread(() -> {
+          openAlert(R.string.AppName, result);
+        });
+      });
     } else if (viewId == R.id.btn_secret_databaseStats) {
       String stats = Settings.instance().pmc().getProperty("leveldb.stats") + "\n\n" + "Memory usage: " + Settings.instance().pmc().getProperty("leveldb.approximate-memory-usage");
       TextController c = new TextController(context, tdlib);

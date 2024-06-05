@@ -251,7 +251,8 @@ public class TextEntityMessage extends TextEntity {
       case TdApi.TextEntityTypeCode.CONSTRUCTOR:
       case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
       case TdApi.TextEntityTypePre.CONSTRUCTOR:
-      case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR: {
+      case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
+      case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR: {
         return true;
       }
       case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR: // TODO
@@ -265,7 +266,7 @@ public class TextEntityMessage extends TextEntity {
         return false;
       }
       default:
-        Td.assertTextEntityType_91234a79();
+        Td.assertTextEntityType_56c1e709();
         throw Td.unsupported(type);
     }
   }
@@ -519,13 +520,14 @@ public class TextEntityMessage extends TextEntity {
       case TdApi.TextEntityTypePre.CONSTRUCTOR:
       case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
       case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
+      case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR:
       case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
       case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
       case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
         // Non-clickable
         break;
       default:
-        Td.assertTextEntityType_91234a79();
+        Td.assertTextEntityType_56c1e709();
         throw Td.unsupported(clickableEntity.type);
     }
   }
@@ -579,7 +581,8 @@ public class TextEntityMessage extends TextEntity {
       case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
       case TdApi.TextEntityTypeCode.CONSTRUCTOR:
       case TdApi.TextEntityTypePre.CONSTRUCTOR:
-      case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR: {
+      case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
+      case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR: {
         break;
       }
       case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR: // Unreachable because of the condition above
@@ -596,7 +599,7 @@ public class TextEntityMessage extends TextEntity {
       }
 
       default: {
-        Td.assertTextEntityType_91234a79();
+        Td.assertTextEntityType_56c1e709();
         throw Td.unsupported(clickableEntity.type);
       }
     }
@@ -643,6 +646,7 @@ public class TextEntityMessage extends TextEntity {
             message = R.string.CopiedCashtag;
             break;
           case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
+          case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR:
           case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
           case TdApi.TextEntityTypeCode.CONSTRUCTOR:
           case TdApi.TextEntityTypePre.CONSTRUCTOR: {
@@ -650,7 +654,7 @@ public class TextEntityMessage extends TextEntity {
             break;
           }
           default: {
-            Td.assertTextEntityType_91234a79();
+            Td.assertTextEntityType_56c1e709();
             message = R.string.CopiedLink;
             break;
           }
