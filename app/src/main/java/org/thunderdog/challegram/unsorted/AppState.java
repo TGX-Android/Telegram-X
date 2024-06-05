@@ -20,8 +20,6 @@ import android.os.SystemClock;
 
 import androidx.annotation.NonNull;
 
-import com.google.firebase.FirebaseApp;
-
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
