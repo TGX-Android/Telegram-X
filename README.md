@@ -108,6 +108,7 @@ In order to obtain **SHA-256** of the APK:
 
 * `$ sha256sum <path-to-apk>` on **Ubuntu**
 * `$ shasum -a 256 <path-to-apk>` on **macOS**
+* `$ certutil -hashfile <path-to-apk> SHA256` on **Windows**
 
 Once obtained, there are three ways to find out the commit for the specific checksum:
 

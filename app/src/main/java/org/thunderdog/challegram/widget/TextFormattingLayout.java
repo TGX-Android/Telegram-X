@@ -472,6 +472,7 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
       case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
         return FLAG_SPOILER;
       case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
+      case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR:
         return FLAG_BLOCK_QUOTE;
 
       // immutable
@@ -492,7 +493,7 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
 
       // unsupported
       default:
-        Td.assertTextEntityType_91234a79();
+        Td.assertTextEntityType_56c1e709();
         throw Td.unsupported(type);
     }
   }

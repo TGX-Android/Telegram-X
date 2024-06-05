@@ -22,6 +22,7 @@ import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.method.LinkMovementMethod;
+import android.util.Base64;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -644,75 +645,102 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     return contentView;
   }
 
-  private String lastSafetyNetError;
-
   private void sendFirebaseSmsIfNeeded (boolean forced) {
     TdApi.AuthenticationCodeType codeType = authenticationCodeType();
     if (codeType == null || codeType.getConstructor() != TdApi.AuthenticationCodeTypeFirebaseAndroid.CONSTRUCTOR || isFirebaseSmsSent) {
       return;
     }
     TdApi.AuthenticationCodeTypeFirebaseAndroid firebase = (TdApi.AuthenticationCodeTypeFirebaseAndroid) codeType;
+    RunnableData<String> onVerificationFailure = errorMessage -> {
+      lastVerificationError = errorMessage;
+      if (forced) {
+        TDLib.Tag.integrity(firebase.usePlayIntegrity, "Avoiding infinite loop, because verification failed twice");
+        onDeadEndReached();
+      } else {
+        TDLib.Tag.integrity(firebase.usePlayIntegrity, "Force resend code, ignoring whether codeInfo.nextCodeType is null or not");
+        requestNextCodeType(new TdApi.ResendCodeReasonVerificationFailed(errorMessage), true);
+      }
+    };
+    if (firebase.usePlayIntegrity) {
+      sendFirebaseSmsViaPlayIntegrity(firebase, onVerificationFailure);
+    } else {
+      sendFirebaseSmsViaSafetyNet(firebase, onVerificationFailure);
+    }
+  }
+
+  private void handleVerificationResult (boolean isPlay, boolean isError, String result, RunnableData<String> onVerificationFailure) {
+    if (isError) {
+      TDLib.Tag.integrity(isPlay, "Verification error: %s", result);
+      onVerificationFailure.runWithData(result);
+      return;
+    }
+    if (StringUtils.isEmpty(result)) {
+      TDLib.Tag.integrity(isPlay, "Verification successful, but empty: %s", result);
+      onVerificationFailure.runWithData(result);
+      return;
+    }
+
+    TDLib.Tag.integrity(isPlay, "Verification success: %s", result);
+    TdApi.Function<TdApi.Ok> function;
+    switch (mode) {
+      case MODE_CODE_PHONE_CONFIRM:
+      case MODE_CODE_CHANGE:
+        function = new TdApi.SendPhoneNumberFirebaseSms(result);
+        break;
+      default:
+        function = new TdApi.SendAuthenticationFirebaseSms(result);
+        break;
+    }
+    tdlib.send(function, (ok, error) -> {
+      runOnUiThreadOptional(() -> {
+        if (error != null) {
+          String errorMessage = TD.toErrorString(error);
+          TDLib.Tag.integrity(isPlay, "Verified API request failed by server, retrying once: %s", error);
+          onVerificationFailure.runWithData(errorMessage);
+        } else {
+          isFirebaseSmsSent = true;
+          updateAuthState(false);
+          TDLib.Tag.integrity(isPlay, "Verification finished successfully");
+        }
+      });
+    });
+  }
+
+  private String lastVerificationError;
+
+  private void sendFirebaseSmsViaSafetyNet (TdApi.AuthenticationCodeTypeFirebaseAndroid firebase, RunnableData<String> onVerificationError) {
     String safetyNetApiKey = tdlib.safetyNetApiKey();
     if (StringUtils.isEmpty(safetyNetApiKey)) {
       TDLib.Tag.safetyNet("Requesting next code type, because SafetyNet API_KEY is unavailable");
-      requestNextCodeType(false, false);
+      requestNextCodeType(new TdApi.ResendCodeReasonVerificationFailed("SAFETYNET_API_KEY_EMPTY"), false);
       return;
     }
     if (Config.REQUIRE_FIREBASE_SERVICES_FOR_SAFETYNET && !U.isGooglePlayServicesAvailable(context)) {
       TDLib.Tag.safetyNet("Requesting next code type, because Firebase services are unavailable");
-      requestNextCodeType(false, false);
+      requestNextCodeType(new TdApi.ResendCodeReasonVerificationFailed("GOOGLE_PLAY_SERVICES_UNAVAILABLE"), false);
       return;
     }
-    Runnable onAttestationFailure = () -> {
-      if (forced) {
-        TDLib.Tag.safetyNet("Avoiding infinite loop, because attestation failed twice");
-        onDeadEndReached();
-      } else {
-        TDLib.Tag.safetyNet("Force resend code, ignoring whether codeInfo.nextCodeType is null or not");
-        requestNextCodeType(false, true);
-      }
-    };
     //noinspection ConstantConditions
     SafetyNet.getClient(context)
       .attest(firebase.nonce, safetyNetApiKey)
       .addOnSuccessListener(attestationSuccess -> {
-        String attestationResult = attestationSuccess.getJwsResult();
-        if (StringUtils.isEmpty(attestationResult)) {
-          TDLib.Tag.safetyNet("Attestation success, but result is empty");
-          lastSafetyNetError = "EMPTY_JWS_RESULT";
-          executeOnUiThreadOptional(onAttestationFailure);
-        } else {
-          TDLib.Tag.safetyNet("Attestation success: %s", attestationResult);
-          TdApi.Function<TdApi.Ok> function;
-          switch (mode) {
-            case MODE_CODE_PHONE_CONFIRM:
-            case MODE_CODE_CHANGE:
-              function = new TdApi.SendPhoneNumberFirebaseSms(attestationResult);
-              break;
-            default:
-              function = new TdApi.SendAuthenticationFirebaseSms(attestationResult);
-              break;
-          }
-          tdlib.send(function, (ok, error) -> {
-            runOnUiThreadOptional(() -> {
-              if (error != null) {
-                lastSafetyNetError = TD.toErrorString(error);
-                TDLib.Tag.safetyNet("Attestation failed by server, retrying once: %s", TD.toErrorString(error));
-                requestNextCodeType(false, true);
-              } else {
-                isFirebaseSmsSent = true;
-                updateAuthState(false);
-                TDLib.Tag.safetyNet("Attestation finished successfully");
-              }
-            });
-          });
-        }
+        String result = attestationSuccess.getJwsResult();
+        handleVerificationResult(false, false, result, onVerificationError);
       })
       .addOnFailureListener(attestationError -> {
-        lastSafetyNetError = attestationError.getMessage();
-        TDLib.Tag.safetyNet("Attestation failed with error: %s", attestationError.getMessage());
-        executeOnUiThreadOptional(onAttestationFailure);
+        String error = attestationError.getMessage();
+        TDLib.Tag.safetyNet("Attestation failed with error: %s", error);
+        executeOnUiThreadOptional(() ->
+          onVerificationError.runWithData(error)
+        );
       });
+  }
+
+  private void sendFirebaseSmsViaPlayIntegrity (TdApi.AuthenticationCodeTypeFirebaseAndroid firebase, RunnableData<String> onAttestationFailure) {
+    String nonce = Base64.encodeToString(firebase.nonce, Base64.NO_PADDING);
+    tdlib.requestPlayIntegrity(-1, nonce, (result, isError) -> {
+      handleVerificationResult(true, isError, result, onAttestationFailure);
+    });
   }
 
   @Override
@@ -1054,7 +1082,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
                 Lang.getStringSecure(R.string.email_SmsHelp),
                 Lang.getStringSecure(R.string.email_LoginDeadEnd_subject, formattedPhone),
                 Lang.getStringSecure(R.string.email_LoginDeadEnd_text, formattedPhone, U.getUsefulMetadata(tdlib)),
-                StringUtils.isEmpty(lastSafetyNetError) ? "none" : lastSafetyNetError
+                StringUtils.isEmpty(lastVerificationError) ? "none" : lastVerificationError
               );
             }
           }, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -1065,10 +1093,12 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     setHint(message, true);
   }
 
-  private void requestNextCodeType (boolean byUser, boolean force) {
+  private void requestNextCodeType (TdApi.ResendCodeReason reason, boolean force) {
     if (inRecoveryProgress) {
       return;
     }
+
+    boolean byUser = reason.getConstructor() == TdApi.ResendCodeReasonUserRequest.CONSTRUCTOR;
 
     if (!hasNextCodeType() && !force) {
       if (!byUser) {
@@ -1087,10 +1117,10 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     switch (mode) {
       case MODE_CODE_PHONE_CONFIRM:
       case MODE_CODE_CHANGE:
-        function = new TdApi.ResendPhoneNumberCode();
+        function = new TdApi.ResendPhoneNumberCode(reason);
         break;
       default:
-        function = new TdApi.ResendAuthenticationCode();
+        function = new TdApi.ResendAuthenticationCode(reason);
         break;
     }
     tdlib.client().send(function, object -> runOnUiThreadOptional(() -> {
@@ -1850,7 +1880,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       case MODE_CODE_CHANGE:
       case MODE_CODE_PHONE_CONFIRM:
       case MODE_CODE_EMAIL: {
-        requestNextCodeType(true, false);
+        requestNextCodeType(new TdApi.ResendCodeReasonUserRequest(), false);
         break;
       }
       case MODE_CONFIRM:

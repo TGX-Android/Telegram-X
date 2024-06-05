@@ -972,6 +972,7 @@
   <item type="id" name="btn_secret_disableNetwork" />
   <item type="id" name="btn_secret_tdlibDatabaseStats" />
   <item type="id" name="btn_secret_databaseStats" />
+  <item type="id" name="btn_secret_attest" />
   <item type="id" name="btn_secret_stressTest" />
   <item type="id" name="btn_secret_tgcalls" />
   <item type="id" name="btn_secret_tgcallsOptions" />

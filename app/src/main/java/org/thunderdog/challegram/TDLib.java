@@ -92,6 +92,18 @@ public final class TDLib {
       i("[safetynet]: %s", format(format, formatArgs));
     }
 
+    public static void playIntegrity (String format, Object... formatArgs) {
+      i("[play-integrity]: %s", format(format, formatArgs));
+    }
+
+    public static void integrity (boolean isPlay, String format, Object... formatArgs) {
+      if (isPlay) {
+        playIntegrity(format, formatArgs);
+      } else {
+        safetyNet(format, formatArgs);
+      }
+    }
+
     public static void td_init (String format, Object... formatArgs) {
       logModule("td_init", format, formatArgs);
     }

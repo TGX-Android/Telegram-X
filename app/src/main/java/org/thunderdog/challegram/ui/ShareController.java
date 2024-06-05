@@ -1780,7 +1780,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     switch (mode) {
       case MODE_TELEGRAM_FILES: {
         for (MediaItem item : args.telegramFiles) {
-          TdApi.InputMessageContent content = item.createShareContent(null);
+          TdApi.InputMessageContent content = item.createShareContent();
           if (content.getConstructor() == TdApi.InputMessageVoiceNote.CONSTRUCTOR ||
             content.getConstructor() == TdApi.InputMessageVideoNote.CONSTRUCTOR) {
             return true;
@@ -1831,7 +1831,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       }
       case MODE_TELEGRAM_FILES: {
         for (MediaItem item : args.telegramFiles) {
-          CharSequence restrictionText = tdlib.getRestrictionText(chat, item.createShareContent(null));
+          CharSequence restrictionText = tdlib.getRestrictionText(chat, item.createShareContent());
           if (restrictionText != null)
             return restrictionText;
         }
@@ -1842,7 +1842,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           if (ChatId.isSecret(chatId)) {
             if (!TD.canSendToSecretChat(message.content))
               return Lang.getString(R.string.SecretChatForwardError);
-            TdApi.ForwardMessages function = new TdApi.ForwardMessages(chatId, 0, message.chatId, new long[] {message.id}, new TdApi.MessageSendOptions(false, false, false, false, null, 0, true), needHideAuthor, needRemoveCaptions);
+            TdApi.ForwardMessages function = new TdApi.ForwardMessages(chatId, 0, message.chatId, new long[] {message.id}, new TdApi.MessageSendOptions(false, false, false, false, null, 0, 0, true), needHideAuthor, needRemoveCaptions);
             TdApi.Object check = tdlib.clientExecute(function, 1000L);
             if (check instanceof TdApi.Error) {
               return TD.toErrorString(check);
@@ -3335,12 +3335,13 @@ public class ShareController extends TelegramViewController<ShareController.Args
         case MODE_TELEGRAM_FILES: {
           TdApi.FormattedText formattedCaption = StringUtils.isEmpty(args.telegramCaption) ? null : TD.newText(args.telegramCaption);
           TdApi.FormattedText messageCaption = formattedCaption != null && formattedCaption.text.codePointCount(0, formattedCaption.text.length()) <= tdlib.maxCaptionLength() ? formattedCaption : null;
+          boolean showCaptionAboveMedia = false; // TODO?
           if (formattedCaption != null && messageCaption == null) {
             functions.addAll(TD.sendMessageText(chatId, 0, null, sendOptions, new TdApi.InputMessageText(formattedCaption, null, false), tdlib.maxMessageTextLength()));
           }
           for (MediaItem item : args.telegramFiles) {
             boolean last = item == args.telegramFiles[args.telegramFiles.length - 1];
-            TdApi.InputMessageContent content = item.createShareContent(last ? messageCaption : null);
+            TdApi.InputMessageContent content = item.createShareContent(last ? messageCaption : null, last && showCaptionAboveMedia);
             if (content == null)
               return;
             functions.add(new TdApi.SendMessage(chatId, 0, null, sendOptions, null, content));

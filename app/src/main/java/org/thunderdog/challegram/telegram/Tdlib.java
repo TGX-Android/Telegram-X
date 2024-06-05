@@ -35,6 +35,13 @@ import androidx.collection.LongSparseArray;
 import androidx.collection.SparseArrayCompat;
 import androidx.core.os.CancellationSignal;
 
+import com.google.android.gms.tasks.Task;
+import com.google.android.play.core.integrity.IntegrityManager;
+import com.google.android.play.core.integrity.IntegrityManagerFactory;
+import com.google.android.play.core.integrity.IntegrityTokenRequest;
+import com.google.android.play.core.integrity.IntegrityTokenResponse;
+import com.google.firebase.FirebaseOptions;
+
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.drinkmore.Tracer;
@@ -87,7 +94,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -552,6 +558,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   private int
+    maxFactCheckLength = 1024,
     maxMessageCaptionLength = 1024,
     maxMessageTextLength = 4000,
     maxMessageReplyQuoteLength = 1024;
@@ -4607,7 +4614,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public void sendMessage (long chatId, long messageThreadId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.Animation animation) {
-    TdApi.InputMessageContent inputMessageContent = new TdApi.InputMessageAnimation(new TdApi.InputFileId(animation.animation.id), null, null, animation.duration, animation.width, animation.height, null, false);
+    TdApi.InputMessageContent inputMessageContent = new TdApi.InputMessageAnimation(new TdApi.InputFileId(animation.animation.id), null, null, animation.duration, animation.width, animation.height, null, false, false);
     sendMessage(chatId, messageThreadId, replyTo, options, inputMessageContent);
   }
 
@@ -4702,9 +4709,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
-  public void editMessageCaption (long chatId, long messageId, TdApi.FormattedText caption) {
+  public void editMessageCaption (long chatId, long messageId, TdApi.FormattedText caption, boolean showCaptionAboveMedia) {
     TD.parseEntities(caption);
-    performEdit(chatId, messageId, caption, new TdApi.EditMessageCaption(chatId, messageId, null, caption), pendingMessageCaptions);
+    performEdit(chatId, messageId, caption, new TdApi.EditMessageCaption(chatId, messageId, null, caption, showCaptionAboveMedia), pendingMessageCaptions);
   }
 
   public boolean cancelEditMessageMedia (long chatId, long messageId) {
@@ -7023,6 +7030,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return callPacketTimeoutMs;
   }
 
+  public int maxFactCheckLength () {
+    return maxFactCheckLength;
+  }
+
   public int maxCaptionLength () {
     return maxMessageCaptionLength;
   }
@@ -7647,6 +7658,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
 
     listeners.updateMessageUnreadReactions(update, counterChanged, availabilityChanged, chat, chatLists);
+  }
+
+  @TdlibThread
+  private void updateMessageFactCheck (TdApi.UpdateMessageFactCheck update) {
+    // TODO
   }
 
   @TdlibThread
@@ -9049,6 +9065,53 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     ui().sendMessage(ui().obtainMessage(MSG_ACTION_DISPATCH_TERMS_OF_SERVICE, update));
   }
 
+  public interface PlayIntegrityCallback {
+    void onPlayIntegrityResult (String result, boolean isError);
+  }
+
+  public void requestPlayIntegrity (long verificationId, String nonce, PlayIntegrityCallback callback) {
+    TDLib.Tag.playIntegrity("Received Play Integrity request verificationId=%d", verificationId);
+    RunnableData<Exception> onError = e -> {
+      TDLib.Tag.playIntegrity("failure verificationId=%d: %s", verificationId, Log.toString(e));
+      final String error = Log.toErrorString(e);
+      callback.onPlayIntegrityResult(error, true);
+    };
+    try {
+      FirebaseOptions options = FirebaseOptions.fromResource(UI.getAppContext());
+      String projectIdRaw = options != null ? options.getGcmSenderId() : "";
+      if (StringUtils.isEmpty(projectIdRaw)) {
+        onError.runWithData(new RuntimeException("PLAY_SERVICES_PROJECT_NUMBER_UNKNOWN"));
+        return;
+      }
+      long projectId = Long.parseLong(projectIdRaw);
+      IntegrityTokenRequest request = IntegrityTokenRequest.builder()
+        .setNonce(nonce)
+        .setCloudProjectNumber(projectId)
+        .build();
+      IntegrityManager integrityManager = IntegrityManagerFactory.create(UI.getAppContext());
+      Task<IntegrityTokenResponse> integrityTokenResponse = integrityManager.requestIntegrityToken(request);
+      integrityTokenResponse
+        .addOnSuccessListener(r -> {
+          final String token = r.token();
+          TDLib.Tag.playIntegrity("success verificationId=%d: %s", verificationId, token);
+          final String result = token != null ? token : "PLAYINTEGRITY_FAILED_EXCEPTION_NULL";
+          callback.onPlayIntegrityResult(result, token != null);
+        })
+        .addOnFailureListener(onError::runWithData);
+    } catch (Exception e) {
+      onError.runWithData(e);
+    }
+  }
+
+  @TdlibThread
+  private void updateApplicationVerificationRequired (TdApi.UpdateApplicationVerificationRequired update) {
+    incrementJobReferenceCount();
+    Runnable after = this::decrementJobReferenceCount;
+    requestPlayIntegrity(update.verificationId, update.nonce, (token, isError) -> {
+      send(new TdApi.SetApplicationVerificationToken(update.verificationId, isError ? null : token), typedOkHandler(after));
+    });
+  }
+
   @TdlibThread
   private void updateAutosaveSettings (TdApi.UpdateAutosaveSettings update) {
     // TODO?
@@ -9273,6 +9336,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   @TdlibThread
+  private void updateOwnedStarCount (TdApi.UpdateOwnedStarCount update) {
+    // TODO(stars)
+  }
+
+  @TdlibThread
   private void updateOption (ClientHolder context, TdApi.UpdateOption update) {
     // TODO: separate all fields from Tdlib to some TdlibOptions object.
     final String name = update.name;
@@ -9424,6 +9492,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         break;
       case "message_reply_quote_length_max":
         this.maxMessageReplyQuoteLength = Td.intValue(update.value);
+        break;
+
+      case "fact_check_length_max":
+        this.maxFactCheckLength = Td.intValue(update.value);
         break;
 
       case "forwarded_message_count_max":
@@ -9753,6 +9825,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   @TdlibThread
+  private void updateAvailableMessageEffects (TdApi.UpdateAvailableMessageEffects update) {
+    // TODO(message-effects)
+  }
+
+  @TdlibThread
   private void updateDefaultReactionType (TdApi.UpdateDefaultReactionType update) {
     synchronized (dataLock) {
       this.defaultReactionType = update.reactionType;
@@ -9943,12 +10020,20 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateActiveEmojiReactions((TdApi.UpdateActiveEmojiReactions) update);
         break;
       }
+      case TdApi.UpdateAvailableMessageEffects.CONSTRUCTOR: {
+        updateAvailableMessageEffects((TdApi.UpdateAvailableMessageEffects) update);
+        break;
+      }
       case TdApi.UpdateDefaultReactionType.CONSTRUCTOR: {
         updateDefaultReactionType((TdApi.UpdateDefaultReactionType) update);
         break;
       }
       case TdApi.UpdateMessageUnreadReactions.CONSTRUCTOR: {
         updateMessageUnreadReactions((TdApi.UpdateMessageUnreadReactions) update);
+        break;
+      }
+      case TdApi.UpdateMessageFactCheck.CONSTRUCTOR: {
+        updateMessageFactCheck((TdApi.UpdateMessageFactCheck) update);
         break;
       }
       case TdApi.UpdateChatUnreadReactionCount.CONSTRUCTOR: {
@@ -10219,6 +10304,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateOption(context, (TdApi.UpdateOption) update);
         break;
       }
+      case TdApi.UpdateOwnedStarCount.CONSTRUCTOR: {
+        updateOwnedStarCount((TdApi.UpdateOwnedStarCount) update);
+        break;
+      }
       case TdApi.UpdateSpeechRecognitionTrial.CONSTRUCTOR: {
         updateSpeechRecognitionTrial((TdApi.UpdateSpeechRecognitionTrial) update);
         break;
@@ -10303,6 +10392,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateTermsOfService((TdApi.UpdateTermsOfService) update);
         break;
       }
+      case TdApi.UpdateApplicationVerificationRequired.CONSTRUCTOR: {
+        updateApplicationVerificationRequired((TdApi.UpdateApplicationVerificationRequired) update);
+        break;
+      }
       case TdApi.UpdateAutosaveSettings.CONSTRUCTOR: {
         updateAutosaveSettings((TdApi.UpdateAutosaveSettings) update);
         break;
@@ -10374,7 +10467,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         throw Td.unsupported(update);
       }
       default: {
-        Td.assertUpdate_e5cb3327();
+        Td.assertUpdate_5645426();
         throw Td.unsupported(update);
       }
     }

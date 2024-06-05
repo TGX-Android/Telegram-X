@@ -380,6 +380,7 @@ dependencies {
   implementation("androidx.activity:activity:1.8.2") // 1.9.0+ requires minSdkVersion 19
   implementation("androidx.palette:palette:1.0.0")
   implementation("androidx.recyclerview:recyclerview:1.3.2")
+  implementation("androidx.constraintlayout:constraintlayout:2.1.4")
   implementation("androidx.viewpager:viewpager:1.0.0")
   implementation("androidx.work:work-runtime:2.9.0")
   implementation("androidx.browser:browser:1.5.0") // 1.7.0+ requires minSdkVersion 19
@@ -398,13 +399,16 @@ dependencies {
   implementation("com.google.android.gms:play-services-maps:17.0.1")
   implementation("com.google.android.gms:play-services-location:18.0.0")
   implementation("com.google.android.gms:play-services-mlkit-barcode-scanning:16.2.1")
+  implementation("com.google.android.gms:play-services-safetynet:18.0.1")
   // Firebase: https://firebase.google.com/support/release-notes/android
   implementation("com.google.firebase:firebase-messaging:22.0.0") {
     exclude(group = "com.google.firebase", module = "firebase-core")
     exclude(group = "com.google.firebase", module = "firebase-analytics")
     exclude(group = "com.google.firebase", module = "firebase-measurement-connector")
   }
-  implementation("com.google.firebase:firebase-appcheck-safetynet:16.1.2")
+  // implementation("com.google.firebase:firebase-appcheck-safetynet:16.1.2")
+  // Play Integrity: https://developer.android.com/google/play/integrity/reference/com/google/android/play/core/release-notes
+  implementation("com.google.android.play:integrity:1.3.0")
   // Play In-App Updates: https://developer.android.com/reference/com/google/android/play/core/release-notes-in_app_updates
   implementation("com.google.android.play:app-update:2.1.0")
   // AndroidX/media: https://github.com/androidx/media/blob/release/RELEASENOTES.md
