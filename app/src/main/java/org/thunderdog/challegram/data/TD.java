@@ -5423,6 +5423,10 @@ public class TD {
     R.id.chatType_archived
   };
 
+  public static boolean isChatType (@IdRes int id) {
+    return ArrayUtils.contains(TD.CHAT_TYPES, id);
+  }
+
   public static @StringRes int chatTypeName (@IdRes int chatType) {
     if (chatType == R.id.chatType_contact) return R.string.CategoryContacts;
     if (chatType == R.id.chatType_nonContact) return R.string.CategoryNonContacts;
@@ -5476,7 +5480,7 @@ public class TD {
       return new TdApi.ChatFolderIcon("Private");
     }
     if (chatType == R.id.chatType_group) {
-      return new TdApi.ChatFolderIcon( "Groups");
+      return new TdApi.ChatFolderIcon("Groups");
     }
     if (chatType == R.id.chatType_channel) {
       return new TdApi.ChatFolderIcon("Channels");

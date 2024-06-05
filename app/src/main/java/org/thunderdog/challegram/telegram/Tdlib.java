@@ -9302,6 +9302,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   @AnyThread
+  public boolean hasUnreadChats (@NonNull Iterable<TdApi.ChatList> chatLists) {
+    for (TdApi.ChatList chatList : chatLists) {
+      if (hasUnreadChats(chatList)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @AnyThread
   public boolean hasUnreadChats (@NonNull TdApi.ChatList chatList) {
     return getCounter(chatList).chatCount > 0;
   }

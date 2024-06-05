@@ -950,6 +950,7 @@
   <string name="NoVoiceMessages">No Voice messages</string>
   <string name="NoFiles">No Files</string>
   <string name="NoMusic">No Music</string>
+  <string name="NoFilter">No Filter</string>
   <string name="Other">Other</string>
   <string name="AutoplayGifs">Autoplay GIFs</string>
   <string name="QuickTranslate">Quick translate</string>
@@ -5097,7 +5098,8 @@
   <string name="NewFolder">New Folder</string>
   <string name="CreateNewFolder">Create New Folder</string>
   <string name="HideFolder">Hide Folder</string>
-  <string name="HideFolderInfo">To display %1$s folder again, go to %2$s > %3$s</string>
+  <string name="HideFolderInfo2">To display %1$s folder again, go to Settings&#160;&gt;&#160;Chat Folders&#160;&gt;&#160;%1$s</string>
+  <string name="HideArchiveFolderInfo">To display Archive folder again, go to Settings&#160;&gt;&#160;Chat Folders&#160;&gt;&#160;Archive as Folder</string>
   <string name="HideAllChats">Hide All Chats</string>
   <string name="EditFolder">Edit Folder</string>
   <string name="EditFolders">Edit Folders</string>
@@ -5113,9 +5115,11 @@
   <string name="FolderRemoveExclusionConfirmUser">Are you sure you want to remove "%1$s" from the always excluded list?</string>
   <string name="FolderRemoveExclusionConfirmType">Are you sure you want to remove "%1$s" from the always excluded list?</string>
   <string name="IncludeChats">Include Chats</string>
+  <string name="IncludeChatsHint">Include chats…</string>
   <string name="IncludeChatsInfo_one">You can select only one cloud and only one secret chat.</string>
   <string name="IncludeChatsInfo_other">You can select up to %1$s cloud chats and the same number of secret chats.</string>
   <string name="ExcludeChats">Exclude Chats</string>
+  <string name="ExcludeChatsHint">Exclude chats…</string>
   <string name="ExcludeChatsInfo_one">You can select only one cloud chat and only one secret chat</string>
   <string name="ExcludeChatsInfo_other">You can select up to %1$s cloud chats and the same number of secret chats.</string>
   <string name="FolderIncludedChats">Included Chats</string>
@@ -5136,7 +5140,7 @@
   <string name="IconOnly">Icon only</string>
   <string name="LabelOnly">Label only</string>
   <string name="LabelAndIcon">Label with icon</string>
-  <string name="IconWithLabelOnActiveFolder">[WIP] Icon with label on active folder</string>
+  <string name="IconWithLabelOnActiveFolder2">Icon with label on active folder</string>
   <string name="DisplayFoldersAtTheTop">Display folders at the top</string>
   <string name="ChatsXShowMore_one">Show %1$s more</string>
   <string name="ChatsXShowMore_other">Show %1$s more</string>
@@ -5339,6 +5343,9 @@
   <string name="ChatFolderInviteLinkNameHint">Name</string>
   <string name="ChatFolderInviteLinksInfo">Share access to some of this folder’s groups and channels with others.</string>
   <string name="ChatFolderSaveChangesBeforeCreatingANewInviteLink">Changes must be saved before creating a new link</string>
+  <string name="ChatFoldersSetupSuggestionTitle">Folders are finally here!</string>
+  <string name="ChatFoldersSetupSuggestionText">The wait is over. Chat Folders are finally here for everyone to enjoy… and customize.\n\nYou like icons? We’ve got you covered. Bottom tabs? No problem. Archive as folder, hiding tabs, marking folder as read, sharing folders, and more.</string>
+  <string name="ChatFoldersSetupSuggestionAction">Start setting up</string>
 
   <string name="xChatsToJoin_one">%1$s chat to join</string>
   <string name="xChatsToJoin_other">%1$s chats to join</string>

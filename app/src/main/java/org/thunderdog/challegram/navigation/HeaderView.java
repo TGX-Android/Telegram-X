@@ -208,7 +208,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
 
   private int currentHeaderOffset = -1;
 
-  private int getCurrentHeaderOffset () {
+  public int getCurrentHeaderOffset () {
     return currentHeaderOffset != -1 ? currentHeaderOffset : 0;
   }
 

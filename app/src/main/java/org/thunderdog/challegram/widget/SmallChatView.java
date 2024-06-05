@@ -24,6 +24,7 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
@@ -131,7 +132,15 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
 
   private void requestFile () {
     if (chat != null) {
-      avatarReceiver.requestMessageSender(tdlib, chat.getSenderId(), AvatarReceiver.Options.NONE);
+      TdApi.MessageSender sender = chat.getSenderId();
+      AvatarPlaceholder placeholder = chat.getAvatarPlaceholder();
+      if (sender != null) {
+        avatarReceiver.requestMessageSender(tdlib, sender, AvatarReceiver.Options.NONE);
+      } else if (placeholder != null) {
+        avatarReceiver.requestPlaceholder(tdlib, placeholder.metadata, AvatarReceiver.Options.NONE);
+      } else {
+        avatarReceiver.clear();
+      }
     } else {
       avatarReceiver.clear();
     }

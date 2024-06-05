@@ -874,11 +874,31 @@ public class Views {
     }
   }
 
+  public static int getLeftMargin (View view) {
+    if (view != null) {
+      ViewGroup.LayoutParams params = view.getLayoutParams();
+      if (params instanceof ViewGroup.MarginLayoutParams) {
+        return ((ViewGroup.MarginLayoutParams) params).leftMargin;
+      }
+    }
+    return 0;
+  }
+
   public static int getTopMargin (View view) {
     if (view != null) {
       ViewGroup.LayoutParams params = view.getLayoutParams();
       if (params instanceof ViewGroup.MarginLayoutParams) {
         return ((ViewGroup.MarginLayoutParams) params).topMargin;
+      }
+    }
+    return 0;
+  }
+
+  public static int getRightMargin (View view) {
+    if (view != null) {
+      ViewGroup.LayoutParams params = view.getLayoutParams();
+      if (params instanceof ViewGroup.MarginLayoutParams) {
+        return ((ViewGroup.MarginLayoutParams) params).rightMargin;
       }
     }
     return 0;

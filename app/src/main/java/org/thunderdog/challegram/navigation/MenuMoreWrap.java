@@ -113,8 +113,11 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
       Views.updateLayoutParams(this);
   }
 
+  public void init (@Nullable ThemeListenerList themeProvider) {
+    init(themeProvider, /* forceTheme */ null);
+  }
 
-  public void init (@Nullable ThemeListenerList themeProvider, ThemeDelegate forcedTheme) {
+  public void init (@Nullable ThemeListenerList themeProvider, @Nullable ThemeDelegate forcedTheme) {
     this.themeListeners = themeProvider;
     this.forcedTheme = forcedTheme;
 

@@ -3052,6 +3052,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     public TdApi.ChatList chatList;
     public boolean isBaseController;
     public boolean needMessagesSearch;
+    public @Nullable Object tag;
 
     public Arguments (ChatFilter filter) {
       this.filter = filter;
@@ -3082,6 +3083,11 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
     public Arguments setIsBase (boolean isBase) {
       this.isBaseController = isBase;
+      return this;
+    }
+
+    public Arguments setTag (@Nullable Object tag) {
+      this.tag = tag;
       return this;
     }
   }

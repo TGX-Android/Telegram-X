@@ -431,6 +431,9 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
   @Override
   public final void onPageScrollStateChanged (int state) {
     scrollState = state;
+    if (state != ViewPager.SCROLL_STATE_SETTLING && headerCell != null) {
+      headerCell.getTopView().setFromTo(-1, -1);
+    }
   }
 
   /**
@@ -476,6 +479,10 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
   }
 
   protected final void replaceController (long itemId, ViewController<?> newController) {
+    replaceController(itemId, newController, /* notifyAdapter */ true);
+  }
+
+  protected final void replaceController (long itemId, ViewController<?> newController, boolean notifyAdapter) {
     int position = getPagerItemPosition(itemId);
     if (position != NO_POSITION) {
       ViewController<?> currentController = adapter.getCachedItemByPosition(position);
@@ -486,15 +493,21 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
       newController.bindThemeListeners(this);
       adapter.cachedItems.put(position, newController);
       adapter.cachedPositions.put(itemId, position);
-      adapter.notifyDataSetChanged();
+      if (notifyAdapter) {
+        adapter.notifyDataSetChanged();
+      }
     } else {
       newController.destroy();
     }
   }
 
+  protected final void notifyPagerItemsChanged() {
+    adapter.notifyDataSetChanged();
+  }
+
   public final boolean scrollToFirstPosition () {
     if (!isAtFirstPosition()) {
-      pager.setCurrentItem(adapter.reversePosition(0), true);
+      setCurrentPagerPosition(adapter.reversePosition(0), /* animated */ true);
       return true;
     }
     return false;
