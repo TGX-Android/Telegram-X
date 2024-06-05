@@ -1,8 +1,5 @@
 package org.thunderdog.challegram.ui;
 
-import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
-import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
-
 import android.animation.Animator;
 import android.animation.ValueAnimator;
 import android.content.Context;
@@ -154,9 +151,9 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
       LinearLayout singleView = new LinearLayout(context) {{
         setOrientation(LinearLayout.VERTICAL);
         if (chatFolders.length > 0) {
-          addView(buildPreviewView(chatFolders), LayoutHelper.createLinear(MATCH_PARENT, 123, 39, 45, 39, 0));
+          addView(buildPreviewView(chatFolders), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 123, 39, 45, 39, 0));
         }
-        addView(buildContentView(), MATCH_PARENT, WRAP_CONTENT);
+        addView(buildContentView(), LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT);
       }};
       recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
       recyclerView.setItemAnimator(null);
@@ -226,7 +223,7 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
       title.setTypeface(Fonts.getRobotoMedium());
       title.setText(R.string.ChatFoldersSetupSuggestionTitle);
       TextViewCompat.setLineHeight(title, Screen.sp(21f));
-      contentView.addView(title, MATCH_PARENT, WRAP_CONTENT);
+      contentView.addView(title, LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT);
 
       TextView text = new TextView(context);
       text.setTextColor(Theme.getColor(ColorId.background_text));
@@ -236,7 +233,7 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
       text.setTypeface(Fonts.getRobotoRegular());
       text.setText(R.string.ChatFoldersSetupSuggestionText);
       TextViewCompat.setLineHeight(text, Screen.sp(17.6f));
-      contentView.addView(text, MATCH_PARENT, WRAP_CONTENT);
+      contentView.addView(text, LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT);
 
       return contentView;
     }
@@ -260,7 +257,7 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
         }
       };
       previewView.setBackground(background);
-      previewView.addView(headerView, FrameLayoutFix.newParams(MATCH_PARENT, headerHeight, Gravity.TOP, borderWidth, borderRadius, borderWidth, 0));
+      previewView.addView(headerView, FrameLayoutFix.newParams(LayoutHelper.MATCH_PARENT, headerHeight, Gravity.TOP, borderWidth, borderRadius, borderWidth, 0));
       updatePreviewBackground();
       return previewView;
     }
@@ -268,15 +265,15 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
     private View buildPreviewHeaderView (TdApi.ChatFolderInfo[] chatFolders) {
       FrameLayoutFix headerView = new FrameLayoutFix(context);
       ViewSupport.setThemedBackground(headerView, ColorId.headerBackground, this);
-      headerView.addView(buildPagerHeaderView(chatFolders), LayoutHelper.createFrame(WRAP_CONTENT, MATCH_PARENT, Gravity.CENTER_HORIZONTAL));
+      headerView.addView(buildPagerHeaderView(chatFolders), LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER_HORIZONTAL));
 
       BackHeaderButton backButton = new BackHeaderButton(context);
-      headerView.addView(backButton, FrameLayoutFix.newParams(Screen.dp(56f), MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
+      headerView.addView(backButton, FrameLayoutFix.newParams(Screen.dp(56f), LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
 
       HeaderButton searchButton = new HeaderButton(context);
       searchButton.setImageResource(R.drawable.baseline_search_24);
       searchButton.setThemeColorId(getHeaderIconColorId());
-      headerView.addView(searchButton, FrameLayoutFix.newParams(Screen.dp(56f), MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
+      headerView.addView(searchButton, FrameLayoutFix.newParams(Screen.dp(56f), LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
 
       return headerView;
     }

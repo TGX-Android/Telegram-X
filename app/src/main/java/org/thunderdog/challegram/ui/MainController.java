@@ -14,8 +14,6 @@
  */
 package org.thunderdog.challegram.ui;
 
-import static androidx.core.content.res.ResourcesCompat.ID_NULL;
-
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.ContentResolver;
@@ -57,6 +55,7 @@ import androidx.annotation.Px;
 import androidx.annotation.StringRes;
 import androidx.appcompat.widget.AppCompatTextView;
 import androidx.collection.SparseArrayCompat;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.core.util.ObjectsCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.widget.TextViewCompat;
@@ -655,9 +654,9 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         sectionView.setOnClickListener(v -> { });
         sectionView.setCompoundDrawablePadding(Screen.dp(16));
         if (Lang.rtl()) {
-          sectionView.setCompoundDrawablesWithIntrinsicBounds(filterIcon, ID_NULL, ID_NULL, ID_NULL);
+          sectionView.setCompoundDrawablesWithIntrinsicBounds(filterIcon, ResourcesCompat.ID_NULL, ResourcesCompat.ID_NULL, ResourcesCompat.ID_NULL);
         } else {
-          sectionView.setCompoundDrawablesWithIntrinsicBounds(ID_NULL, ID_NULL, filterIcon, ID_NULL);
+          sectionView.setCompoundDrawablesWithIntrinsicBounds(ResourcesCompat.ID_NULL, ResourcesCompat.ID_NULL, filterIcon, ResourcesCompat.ID_NULL);
         }
         Views.setMediumText(sectionView, Lang.getString(bindLocaleChanger(filterName, sectionView, false, true)));
         RippleSupport.setTransparentBlackSelector(sectionView);
@@ -1616,7 +1615,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     switch (filter) {
       case FILTER_NONE:
       case FILTER_ARCHIVE:
-        return ID_NULL;
+        return ResourcesCompat.ID_NULL;
       case FILTER_PRIVATE:
         return R.drawable.baseline_filter_variant_user_18;
       case FILTER_GROUPS:
@@ -2887,7 +2886,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     }
     boolean showIcon = hasIcon(chatFolderStyle) || (pagerItemId == MAIN_PAGER_ITEM_ID && pagerItemPosition == 0);
     if (!showIcon) {
-      iconResource = ID_NULL;
+      iconResource = ResourcesCompat.ID_NULL;
     }
     if (TextUtils.isEmpty(sectionName)) {
       sectionName = null;

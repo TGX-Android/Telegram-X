@@ -14,8 +14,6 @@
  */
 package org.thunderdog.challegram.ui;
 
-import static androidx.core.content.res.ResourcesCompat.ID_NULL;
-
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.ColorStateList;
@@ -41,6 +39,7 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.Px;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -295,7 +294,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
 
   @Override
   protected int getMenuId () {
-    return ID_NULL;
+    return ResourcesCompat.ID_NULL;
   }
 
   @Override
