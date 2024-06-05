@@ -1055,10 +1055,13 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     boolean isVisible = clipRight - x >= 1f;
     boolean clipText = labelFactor < 1f && isVisible;
     int fadingEdgeLength = Screen.dp(labelFadingEdgeLength);
+    final int saveCount;
     if (clipText) {
-      c.save();
+      saveCount = c.save();
       c.clipRect(x, 0, clipRight, getHeight());
       c.saveLayerAlpha(x, 0, clipRight, getHeight(), (int) (0xFF * labelFactor), Canvas.ALL_SAVE_FLAG);
+    } else {
+      saveCount = -1;
     }
     if (isVisible) {
       c.translate(x, y);
@@ -1072,8 +1075,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       labelFadingEdgeMatrix.postTranslate(clipRight, 0);
       labelFadingEdgePaint.getShader().setLocalMatrix(labelFadingEdgeMatrix);
       c.drawRect(clipRight - fadingEdgeLength, 0, clipRight, getHeight(), labelFadingEdgePaint);
-      c.restore();
-      c.restore();
+      c.restoreToCount(saveCount);
     }
   }
 
