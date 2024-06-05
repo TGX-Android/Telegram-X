@@ -9076,11 +9076,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       final String error = Log.toErrorString(e);
       callback.onPlayIntegrityResult(error, true);
     };
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+      onError.runWithData(new IllegalStateException("SDK_LEVEL_TOO_LOW: " + Build.VERSION.SDK_INT));
+      return;
+    }
     try {
       FirebaseOptions options = FirebaseOptions.fromResource(UI.getAppContext());
       String projectIdRaw = options != null ? options.getGcmSenderId() : "";
       if (StringUtils.isEmpty(projectIdRaw)) {
-        onError.runWithData(new RuntimeException("PLAY_SERVICES_PROJECT_NUMBER_UNKNOWN"));
+        onError.runWithData(new IllegalStateException("PLAY_SERVICES_PROJECT_NUMBER_UNKNOWN"));
         return;
       }
       long projectId = Long.parseLong(projectIdRaw);
