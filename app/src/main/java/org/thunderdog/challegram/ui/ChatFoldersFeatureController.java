@@ -221,7 +221,7 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
       title.setPadding(contentHorizontalPadding, contentVerticalPadding, contentHorizontalPadding, contentSpacing);
       title.setTextSize(18f);
       title.setTypeface(Fonts.getRobotoMedium());
-      title.setText(R.string.ChatFoldersSetupSuggestionTitle);
+      title.setText(Lang.getString(R.string.ChatFoldersSetupSuggestionTitle));
       TextViewCompat.setLineHeight(title, Screen.sp(21f));
       contentView.addView(title, LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT);
 
@@ -231,7 +231,7 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
       text.setPadding(contentHorizontalPadding, 0, contentHorizontalPadding, contentVerticalPadding);
       text.setTextSize(15f);
       text.setTypeface(Fonts.getRobotoRegular());
-      text.setText(R.string.ChatFoldersSetupSuggestionText);
+      text.setText(Lang.getMarkdownString(this, R.string.ChatFoldersSetupSuggestionText));
       TextViewCompat.setLineHeight(text, Screen.sp(17.6f));
       contentView.addView(text, LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT);
 
