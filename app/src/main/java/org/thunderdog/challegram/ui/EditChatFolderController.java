@@ -603,7 +603,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
     }
     if (moreCount > 0) {
       outList.add(new ListItem(ListItem.TYPE_SEPARATOR).setIntValue(R.id.btn_showAdvanced));
-      outList.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, R.drawable.baseline_direction_arrow_down_24, Lang.plural(R.string.ChatsXShowMore, moreCount)).setBoolValue(true /* included chats */));
+      outList.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, R.drawable.baseline_direction_arrow_down_24, Lang.pluralBold(R.string.ChatsXShowMore, moreCount)).setBoolValue(true /* included chats */));
     }
   }
 
@@ -627,7 +627,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
     }
     if (moreCount > 0) {
       outList.add(new ListItem(ListItem.TYPE_SEPARATOR).setIntValue(R.id.btn_showAdvanced));
-      outList.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, R.drawable.baseline_direction_arrow_down_24, Lang.plural(R.string.ChatsXShowMore, moreCount)).setBoolValue(false /* excluded chats */));
+      outList.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, R.drawable.baseline_direction_arrow_down_24, Lang.pluralBold(R.string.ChatsXShowMore, moreCount)).setBoolValue(false /* excluded chats */));
     }
   }
 
@@ -983,7 +983,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
         view.setTooltipLocationProvider(showLockIcon ? modifier : null);
       } else if (item.getId() == R.id.btn_inviteLink) {
         TdApi.ChatFolderInviteLink inviteLink = (TdApi.ChatFolderInviteLink) item.getData();
-        view.setData(Lang.plural(R.string.xChats, inviteLink.chatIds.length));
+        view.setData(Lang.pluralBold(R.string.xChats, inviteLink.chatIds.length));
       } else if (item.getId() == R.id.btn_visible) {
         boolean isEnabled = tdlib.settings().isChatFolderEnabled(chatFolderId);
         view.getToggler().setRadioEnabled(isEnabled, isUpdate);
