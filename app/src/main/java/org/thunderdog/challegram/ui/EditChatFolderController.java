@@ -227,6 +227,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   protected void onCreateView (Context context, FrameLayoutFix contentView, RecyclerView recyclerView) {
     if (Config.CHAT_FOLDERS_REDESIGN) {
       headerCell = new EditHeaderView(context, this);
+      // headerCell.setNeedExpand(false);
       headerCell.setInput(editedChatFolder.title);
       headerCell.setInputOptions(R.string.FolderNameHint, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
       headerCell.setOnPhotoClickListener(this::showIconSelector);
