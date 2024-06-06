@@ -1113,7 +1113,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   private static final boolean DEFAULT_MAIN_CHAT_LIST_ENABLED = true;
   private static final boolean DEFAULT_ARCHIVE_CHAT_LIST_ENABLED = false;
   public static final int DEFAULT_CHAT_FOLDER_OPTIONS = ChatFolderOptions.DISPLAY_AT_TOP;
-  public static final int DEFAULT_CHAT_FOLDER_STYLE = ChatFolderStyle.LABEL_AND_ICON;
+  public static final int DEFAULT_CHAT_FOLDER_STYLE = ChatFolderStyle.ICON_WITH_LABEL_ON_ACTIVE_FOLDER;
   private static final int DEFAULT_CHAT_FOLDER_BADGE_FLAGS = 0;
 
   private boolean isMainChatListEnabled () {

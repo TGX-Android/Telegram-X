@@ -321,7 +321,7 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
             case ChatFolderStyle.ICON_ONLY:
               styleRes = R.string.IconOnly;
               break;
-            case ChatFolderStyle.ICON_WITH_LABEL_ON_ACTIVE:
+            case ChatFolderStyle.ICON_WITH_LABEL_ON_ACTIVE_FOLDER:
               styleRes = R.string.IconWithLabelOnActiveFolder2;
               break;
             default:
@@ -473,7 +473,7 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
         new ListItem(ListItem.TYPE_SEPARATOR_FULL),
         new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_iconOnly, 0, R.string.IconOnly, R.id.btn_chatFolderStyle, chatFolderStyle == ChatFolderStyle.ICON_ONLY),
         new ListItem(ListItem.TYPE_SEPARATOR_FULL),
-        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_iconWithLabelOnActiveFolder, 0, R.string.IconWithLabelOnActiveFolder2, R.id.btn_chatFolderStyle, chatFolderStyle == ChatFolderStyle.ICON_WITH_LABEL_ON_ACTIVE)
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_iconWithLabelOnActiveFolder, 0, R.string.IconWithLabelOnActiveFolder2, R.id.btn_chatFolderStyle, chatFolderStyle == ChatFolderStyle.ICON_WITH_LABEL_ON_ACTIVE_FOLDER)
       };
       SettingsWrapBuilder settings = new SettingsWrapBuilder(R.id.btn_chatFolderStyle)
         .setRawItems(items)
@@ -486,7 +486,7 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
           } else if (selection == R.id.btn_labelAndIcon) {
             style = ChatFolderStyle.LABEL_AND_ICON;
           } else if (selection == R.id.btn_iconWithLabelOnActiveFolder) {
-            style = ChatFolderStyle.ICON_WITH_LABEL_ON_ACTIVE;
+            style = ChatFolderStyle.ICON_WITH_LABEL_ON_ACTIVE_FOLDER;
           } else {
             style = ChatFolderStyle.LABEL_ONLY;
           }

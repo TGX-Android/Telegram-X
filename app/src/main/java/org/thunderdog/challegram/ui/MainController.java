@@ -2675,7 +2675,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     ViewPagerHeaderViewCompact headerCellView = (ViewPagerHeaderViewCompact) headerCell.getView();
     boolean hasFolders = hasFolders();
     boolean displayTabsAtBottom = displayTabsAtBottom();
-    headerCell.getTopView().setShowLabelOnActiveOnly(hasFolders && tdlib.settings().chatFolderStyle() == ChatFolderStyle.ICON_WITH_LABEL_ON_ACTIVE);
+    headerCell.getTopView().setShowLabelOnActiveOnly(hasFolders && tdlib.settings().chatFolderStyle() == ChatFolderStyle.ICON_WITH_LABEL_ON_ACTIVE_FOLDER);
     headerCell.getTopView().setUseDarkBackground(displayTabsAtBottom);
     headerCell.getTopView().setDrawSelectionAtTop(displayTabsAtBottom);
     headerCell.getTopView().setSlideOffDirection(displayTabsAtBottom ? ViewPagerTopView.SLIDE_OFF_DIRECTION_TOP : ViewPagerTopView.SLIDE_OFF_DIRECTION_BOTTOM);
@@ -3216,7 +3216,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     switch (chatFolderStyle) {
       case ChatFolderStyle.ICON_ONLY:
       case ChatFolderStyle.LABEL_AND_ICON:
-      case ChatFolderStyle.ICON_WITH_LABEL_ON_ACTIVE:
+      case ChatFolderStyle.ICON_WITH_LABEL_ON_ACTIVE_FOLDER:
         return true;
       case ChatFolderStyle.LABEL_ONLY:
         return false;
