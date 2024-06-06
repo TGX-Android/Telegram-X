@@ -40,10 +40,9 @@ import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.MainController.UnreadCounterColorSet;
-import org.thunderdog.challegram.unsorted.Settings;
-import org.thunderdog.challegram.util.FeatureAvailability;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.PopupLayout;
@@ -197,8 +196,9 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
       button.setId(R.id.btn_done);
       button.setTextColor(Theme.getColor(ColorId.white));
       button.setOnClickListener(v -> {
-        Settings.instance().revokeFeatureNotifications(FeatureAvailability.Feature.CHAT_FOLDERS);
         parent.hidePopupWindow(true);
+        // revokeFeatureNotifications is called inside SettingsFoldersController.onFocus
+        UI.getContext(context).navigation().navigateTo(new SettingsFoldersController(context, tdlib));
       });
       addThemeTextColorListener(button, ColorId.white);
       Views.setMediumText(button, Lang.getString(R.string.ChatFoldersSetupSuggestionAction));
