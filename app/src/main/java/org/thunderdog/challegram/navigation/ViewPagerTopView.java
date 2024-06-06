@@ -83,6 +83,8 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   public static final @Dimension(unit = Dimension.DP) float DEFAULT_ITEM_SPACING = 6f;
   public static final @Dimension(unit = Dimension.DP) float COMPACT_ITEM_SPACING = 4f;
 
+  private static final boolean APPLY_HORIZONTAL_MARGIN = false; // BuildConfig.DEBUG
+
   public static class Item {
     public final CharSequence string;
     public final boolean needFakeBold;
@@ -513,6 +515,15 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       items.add(item);
     } else {
       items.add(index, item);
+      for (int i = 0; i < getChildCount(); i++) {
+        View view = getChildAt(i);
+        if (view instanceof BackgroundView) {
+          BackgroundView backgroundView = (BackgroundView) view;
+          if (backgroundView.index >= index) {
+            backgroundView.index++;
+          }
+        }
+      }
     }
 
     onUpdateItems();
@@ -714,7 +725,11 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
           BackgroundView backgroundView = (BackgroundView) child;
           int itemIndex = backgroundView.index;
           int itemX = calculateItemX(itemIndex, child.getWidth(), getWidth());
-          child.setTranslationX(itemX);
+          if (APPLY_HORIZONTAL_MARGIN) {
+            Views.setLeftMargin(child, itemX);
+          } else {
+            child.setTranslationX(itemX);
+          }
           int itemWidth = getItemWidth(itemIndex, selectionFactor) + itemPadding * 2;
           if (itemWidth != backgroundView.lastItemWidth) {
             backgroundView.invalidate();
@@ -1284,14 +1299,20 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
 
     @Override
     protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+      float translationX;
       if (topView.shouldWrapContent()) {
         int itemWidth = topView.items.get(index).getExpandedWidth() + topView.itemPadding * 2;
         super.onMeasure(MeasureSpec.makeMeasureSpec(itemWidth, MeasureSpec.EXACTLY), heightMeasureSpec);
-        setTranslationX(topView.calculateItemX(index, itemWidth, MeasureSpec.getSize(widthMeasureSpec)));
+        translationX = topView.calculateItemX(index, itemWidth, MeasureSpec.getSize(widthMeasureSpec));
       } else {
         int itemWidth = topView.calculateCommonItemWidth(MeasureSpec.getSize(widthMeasureSpec));
         super.onMeasure(MeasureSpec.makeMeasureSpec(itemWidth, MeasureSpec.EXACTLY), heightMeasureSpec);
-        setTranslationX(itemWidth * index);
+        translationX = itemWidth * index;
+      }
+      if (APPLY_HORIZONTAL_MARGIN) {
+        Views.setLeftMargin(this, (int) translationX);
+      } else {
+        setTranslationX(translationX);
       }
     }
 
