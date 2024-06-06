@@ -6581,19 +6581,19 @@ public class TdlibUi extends Handler {
 
     ids.append(R.id.btn_sendScheduled30Min);
     strings.append(Lang.plural(isSelfChat ? R.string.RemindInXMinutes : R.string.SendInXMinutes, 30));
-    icons.append(R.drawable.baseline_schedule_24);
+    icons.append(R.drawable.dotvhs_baseline_time_30m_24);
 
     ids.append(R.id.btn_sendScheduled2Hr);
     strings.append(Lang.plural(isSelfChat ? R.string.RemindInXHours : R.string.SendInXHours, 2));
-    icons.append(R.drawable.baseline_schedule_24);
+    icons.append(R.drawable.dotvhs_baseline_time_2h_24);
 
     ids.append(R.id.btn_sendScheduled8Hr);
     strings.append(Lang.plural(isSelfChat ? R.string.RemindInXHours : R.string.SendInXHours, 8));
-    icons.append(R.drawable.baseline_schedule_24);
+    icons.append(R.drawable.dotvhs_baseline_time_8h_24);
 
     ids.append(R.id.btn_sendScheduled1Yr);
     strings.append(Lang.plural(isSelfChat ? R.string.RemindInXYears : R.string.SendInXYears, 1));
-    icons.append(R.drawable.baseline_schedule_24);
+    icons.append(R.drawable.dotvhs_baseline_time_1y_24);
 
     ids.append(R.id.btn_sendScheduledCustom);
     strings.append(Lang.getString(isSelfChat ? R.string.RemindAtCustomTime : R.string.SendAtCustomTime));
