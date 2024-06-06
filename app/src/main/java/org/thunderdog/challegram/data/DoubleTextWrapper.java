@@ -263,6 +263,10 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
     }
   }
 
+  public @Nullable String getTitle () {
+    return title;
+  }
+
   public void updateSubtitle () {
     CharSequence description = needFullDescription ? TD.getMemberDescription(new TdlibContext(null, tdlib), memberInfo, false) : null;
     if (!StringUtils.isEmpty(description)) {
