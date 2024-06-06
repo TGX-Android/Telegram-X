@@ -29,6 +29,7 @@ import android.widget.EditText;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.StringRes;
 
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
@@ -224,6 +225,7 @@ public class EditHeaderView extends FrameLayoutFix implements RtlCheckListener, 
 
   @Override
   public void setScaleFactor (float scaleFactor, float fromFactor, float toScaleFactor, boolean byScroll) {
+    Log.v("setScale %f %f", scaleFactor, Size.convertExpandedFactor(scaleFactor));
     scaleFactor = Size.convertExpandedFactor(scaleFactor);
     if (this.scaleFactor != scaleFactor) {
       this.scaleFactor = scaleFactor;

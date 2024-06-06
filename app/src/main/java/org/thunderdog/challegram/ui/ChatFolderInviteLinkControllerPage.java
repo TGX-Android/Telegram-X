@@ -25,7 +25,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.StringRes;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -136,6 +135,7 @@ public class ChatFolderInviteLinkControllerPage extends BottomSheetViewControlle
     updateActionButton();
 
     SeparatorView bottomShadowView = SeparatorView.simpleSeparator(context, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1f, Gravity.BOTTOM), false);
+    addThemeInvalidateListener(bottomShadowView);
     bottomShadowView.setAlignBottom();
     wrap.addView(bottomShadowView);
 
@@ -488,19 +488,6 @@ public class ChatFolderInviteLinkControllerPage extends BottomSheetViewControlle
       UI.showToast(R.string.Done, Toast.LENGTH_SHORT);
     }));
     parent.hidePopupWindow(true);
-  }
-
-  private void showTooltip (View view, @StringRes int markdownStringRes, Object... formatArgs) {
-    showTooltip(view, Lang.getMarkdownString(this, markdownStringRes, formatArgs));
-  }
-
-  private void showTooltip (View view, CharSequence text) {
-    context()
-      .tooltipManager()
-      .builder(view)
-      .controller(this)
-      .show(tdlib, text)
-      .hideDelayed();
   }
 
   private class Adapter extends SettingsAdapter {

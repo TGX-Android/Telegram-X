@@ -683,7 +683,7 @@ abstract class TGMessageServiceImpl extends TGMessage {
   protected final class InvoiceArgument extends MessageArgument {
     public InvoiceArgument (TdApi.Message message) {
       super(message, new TdApi.FormattedText(
-        ((TdApi.MessageInvoice) message.content).title,
+        ((TdApi.MessageInvoice) message.content).productInfo.title,
         null
       ));
     }

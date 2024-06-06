@@ -601,6 +601,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       case TdApi.TextEntityTypeBold.CONSTRUCTOR:
       case TdApi.TextEntityTypeCode.CONSTRUCTOR:
       case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
+      case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR:
       case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
       case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
       case TdApi.TextEntityTypePre.CONSTRUCTOR:
@@ -612,7 +613,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
         break;
       default:
-        Td.assertTextEntityType_91234a79();
+        Td.assertTextEntityType_56c1e709();
         throw Td.unsupported(entity.type);
     }
     return false;

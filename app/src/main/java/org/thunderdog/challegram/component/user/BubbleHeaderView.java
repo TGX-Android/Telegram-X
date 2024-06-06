@@ -45,6 +45,9 @@ import java.util.List;
 import me.vkryl.android.widget.FrameLayoutFix;
 
 public class BubbleHeaderView extends FrameLayoutFix implements RtlCheckListener, StretchyHeaderView, TextWatcher, HeaderView.OffsetChangeListener {
+
+  private static final int DEFAULT_MAX_BUBBLE_LINES = 2;
+
   private final HeaderEditText editText;
   private final ScrollView scrollView;
   private final BubbleWrapView bubbleWrap;
@@ -55,6 +58,10 @@ public class BubbleHeaderView extends FrameLayoutFix implements RtlCheckListener
   private final int maxBubbleHeight;
 
   public BubbleHeaderView (Context context, @NonNull Tdlib tdlib) {
+    this(context, tdlib, DEFAULT_MAX_BUBBLE_LINES);
+  }
+
+  public BubbleHeaderView (Context context, @NonNull Tdlib tdlib, int maxBubbleLines) {
     super(context);
     this.tdlib = tdlib;
 
@@ -69,7 +76,7 @@ public class BubbleHeaderView extends FrameLayoutFix implements RtlCheckListener
 
     int bubbleHeight = Screen.dp(BubbleView.RADIUS) * 2;
     // TODO: expand maxBubbleHeight if users starts scrolling manually, and shrink back with delay once finished
-    this.maxBubbleHeight = Screen.dp(BubbleWrapView.START_Y) + Screen.dp(BubbleWrapView.SPACING) + bubbleHeight * 2;
+    this.maxBubbleHeight = Screen.dp(BubbleWrapView.START_Y) + Screen.dp(BubbleWrapView.SPACING) * (maxBubbleLines - 1) + bubbleHeight * maxBubbleLines;
     params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, maxBubbleHeight);
     if (Lang.rtl()) {
       params.rightMargin = Screen.dp(60f);

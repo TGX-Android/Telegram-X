@@ -101,7 +101,8 @@
   <item type="id" name="more_btn_addMember" />
   <item type="id" name="more_btn_editDescription" />
   <item type="id" name="more_btn_join" />
-  <item type="id" name="more_btn_archiveUnarchive" />
+  <item type="id" name="more_btn_archive" />
+  <item type="id" name="more_btn_unarchive" />
   <item type="id" name="more_btn_selectAll" />
   <item type="id" name="more_btn_markAsRead" />
   <item type="id" name="more_btn_report" />
@@ -245,6 +246,7 @@
   <item type="id" name="controller_sponsoredMessagesInfo" />
   <item type="id" name="controller_featureToggles" />
   <item type="id" name="controller_chatFolders" />
+  <item type="id" name="controller_chatFoldersFeature" />
   <item type="id" name="controller_editChatFolderInviteLink" />
   <item type="id" name="controller_chatFolderInviteLink" />
   <item type="id" name="controller_editChatFolders" />
@@ -973,6 +975,7 @@
   <item type="id" name="btn_secret_disableNetwork" />
   <item type="id" name="btn_secret_tdlibDatabaseStats" />
   <item type="id" name="btn_secret_databaseStats" />
+  <item type="id" name="btn_secret_attest" />
   <item type="id" name="btn_secret_stressTest" />
   <item type="id" name="btn_secret_tgcalls" />
   <item type="id" name="btn_secret_tgcallsOptions" />

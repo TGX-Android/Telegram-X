@@ -27,8 +27,10 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Interpolator;
 
 import androidx.annotation.Dimension;
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -37,6 +39,7 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Size;
 
 import me.vkryl.android.widget.FrameLayoutFix;
@@ -88,16 +91,17 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
     }
 
     @Override
-    public VH onCreateViewHolder (ViewGroup parent, int viewType) {
+    @NonNull
+    public VH onCreateViewHolder (@NonNull ViewGroup parent, int viewType) {
       if (topView.getParent() != null) {
-        Log.w("ViewPagerHeaderViewCompact: topView is already attached to another cel");
+        Log.w("ViewPagerHeaderViewCompact: topView is already attached to another cell");
         ((ViewGroup) topView.getParent()).removeView(topView);
       }
       return new VH(topView);
     }
 
     @Override
-    public void onBindViewHolder (VH holder, int position) { }
+    public void onBindViewHolder (@NonNull VH holder, int position) { }
 
     @Override
     public int getItemCount () {
@@ -177,6 +181,7 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
     recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? OVER_SCROLL_IF_CONTENT_SCROLLS :OVER_SCROLL_NEVER);
     recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, Lang.rtl()));
     recyclerView.setAdapter(adapter);
+    recyclerView.setHasFixedSize(true);
     addView(recyclerView);
 
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Size.getHeaderBigPortraitSize(true)));
@@ -195,11 +200,36 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
     if (view == null) {
       return;
     }
-    final int viewWidth = view.getMeasuredWidth();
+
+    final int viewWidth;
+    final float topViewTranslationX;
+    final ViewPagerTopView topView = getTopView();
+    if (topView.shouldWrapContent()) {
+      final float selectionFactor = totalFactor * (topView.getItemCount() - 1);
+      final int totalWidth = topView.getTotalWidth();
+      final int itemsWidth = topView.getItemsWidth(selectionFactor);
+      int widthDiff = Math.min(itemsWidth - totalWidth, 0);
+      topViewTranslationX = animated ? (widthDiff - Views.getRightMargin(topView)) / 2f : 0f;
+      Views.setRightMargin(topView, widthDiff);
+      viewWidth = itemsWidth;
+    } else {
+      topView.setTranslationX(topViewTranslationX = 0f);
+      Views.setRightMargin(topView, 0);
+      viewWidth = topView.getMeasuredWidth();
+    }
+
     final int parentWidth = recyclerView.getMeasuredWidth();
     final int parentPaddingLeft = recyclerView.getPaddingLeft();
     final int parentPaddingRight = recyclerView.getPaddingRight();
-    if (viewWidth <= parentWidth - parentPaddingLeft - parentPaddingRight) {
+    if (parentWidth == 0 || viewWidth <= parentWidth - parentPaddingLeft - parentPaddingRight) {
+      if (topViewTranslationX != 0f) {
+        topView.setTranslationX(topViewTranslationX);
+        topView.animate()
+          .translationX(0f)
+          .setInterpolator(QUINTIC_INTERPOLATOR)
+          .setDuration(computeScrollDuration(topViewTranslationX, parentWidth))
+          .start();
+      }
       return;
     }
     if (recyclerView.isComputingLayout()) {
@@ -215,13 +245,19 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
     }
     int viewX = -scrolledX;
 
-    if ((getParent() != null && ((View) getParent()).getMeasuredWidth() > getMeasuredWidth()) || (viewWidth - parentWidth) < lastItemWidth / 2) {
+    final Interpolator interpolator = QUINTIC_INTERPOLATOR;
+    int animationDuration = RecyclerView.UNDEFINED_DURATION;
+
+    if ((getParent() != null && ((View) getParent()).getMeasuredWidth() > getMeasuredWidth()) || (topView.getMeasuredWidth() - parentWidth) < lastItemWidth / 2) {
       int desiredViewLeft = (int) (parentPaddingLeft * (1f - totalFactor) - (viewWidth - parentWidth + parentPaddingRight) * totalFactor);
       if (viewX != desiredViewLeft) {
         recyclerView.stopScroll();
         int diff = (desiredViewLeft - viewX) * (Lang.rtl() ? 1 : -1);
         if (animated) {
-          recyclerView.smoothScrollBy(diff, 0);
+          if (topViewTranslationX != 0f) {
+            animationDuration = computeScrollDuration(diff, parentWidth);
+          }
+          recyclerView.smoothScrollBy(diff, 0, interpolator, animationDuration);
         } else {
           recyclerView.scrollBy(diff, 0);
         }
@@ -245,7 +281,10 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
           recyclerView.stopScroll();
           int offset = (viewX - newViewX) * (Lang.rtl() ? -1 : 1);
           if (animated) {
-            recyclerView.smoothScrollBy(offset, 0);
+            if (topViewTranslationX != 0f) {
+              animationDuration = computeScrollDuration(offset, parentWidth);
+            }
+            recyclerView.smoothScrollBy(offset, 0, interpolator, animationDuration);
           } else {
             recyclerView.scrollBy(offset, 0);
           }
@@ -276,6 +315,15 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
         }
       }
     }*/
+
+    if (topViewTranslationX != 0f && animationDuration > 0) {
+      topView.setTranslationX(topViewTranslationX);
+      topView.animate()
+        .translationX(0f)
+        .setDuration(animationDuration)
+        .setInterpolator(interpolator)
+        .start();
+    }
   }
 
   public boolean canScrollLeft () {
@@ -339,5 +387,15 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
     //noinspection Range
     recyclerView.setAlpha(scaleFactor <= TOP_SCALE_LIMIT ? 0f : (scaleFactor - TOP_SCALE_LIMIT) / TOP_SCALE_LIMIT);
     recyclerView.setTranslationY(Size.getHeaderSizeDifference(true) * (1f - scaleFactor));
+  }
+
+  private static final Interpolator QUINTIC_INTERPOLATOR = t -> {
+    t -= 1.0f;
+    return t * t * t * t * t + 1.0f;
+  };
+
+  private static int computeScrollDuration(float dx, int containerSize) {
+    float duration = ((Math.abs(dx) / containerSize) + 1) * 300;
+    return Math.min((int) duration, 2000);
   }
 }

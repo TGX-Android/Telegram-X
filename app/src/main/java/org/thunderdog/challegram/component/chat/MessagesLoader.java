@@ -966,7 +966,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
       TdApi.MessageContent content;
       if (photo != null)
-        content = new TdApi.MessagePhoto(photo, text, false, false);
+        content = new TdApi.MessagePhoto(photo, text, false, false, false);
       else if (sticker != null)
         content = new TdApi.MessageSticker(sticker, false);
       else if (audio != null)
@@ -1224,10 +1224,10 @@ public class MessagesLoader implements Client.ResultHandler {
       false,
       event.date, 0,
       null, null, null, null,
-      null, 0, 0,
+      null, null, 0, 0,
       null, 0, 0,
       0, 0, 0, null,
-      0,
+      0, 0,
       null,
       null,
       null

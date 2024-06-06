@@ -16,6 +16,7 @@ package org.thunderdog.challegram.util.text;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.text.style.DynamicDrawableSpan;
 
@@ -23,6 +24,7 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
@@ -46,7 +48,11 @@ public class IconSpan extends DynamicDrawableSpan implements TextReplacementSpan
 
   @Override
   public void draw (@NonNull Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {
-    drawable.setColorFilter(PorterDuffPaint.get(iconColorId).getColorFilter());
+    if (iconColorId != ColorId.NONE) {
+      drawable.setColorFilter(PorterDuffPaint.get(iconColorId).getColorFilter());
+    } else {
+      drawable.setColorFilter(paint.getColor(), PorterDuff.Mode.SRC_IN);
+    }
     super.draw(canvas, text, start, end, x, top, y, bottom, paint);
   }
 

@@ -1782,7 +1782,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         if (!file.imageGalleryFile.hasCaption()) {
           file.imageGalleryFile.setCaption(item.getCaption());
         }
-        TdApi.InputMessageContent content = TD.toContent(tdlib, file.imageGalleryFile, false, false, item.hasSpoiler(), ChatId.isSecret(item.getSourceChatId()));
+        TdApi.InputMessageContent content = TD.toContent(tdlib, file.imageGalleryFile, false, false, item.showCaptionAboveMedia(), item.hasSpoiler(), ChatId.isSecret(item.getSourceChatId()));
         UI.post(() -> {
           tdlib.editMessageMedia(item.getSourceChatId(), item.getSourceMessageId(), content, new MediaToReplacePickerManager.LocalPickedFile(file.imageGalleryFile, null));
           forceClose();
@@ -8081,7 +8081,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       imageFiles.add(stack.getCurrent().getSourceGalleryFile());
     }
 
-    if (sendDelegate.sendSelectedItems(view, imageFiles, initialSendOptions, disableMarkdown, asFiles, sendDelegate.isHideMediaEnabled())) {
+    if (sendDelegate.sendSelectedItems(view, imageFiles, initialSendOptions, disableMarkdown, asFiles, sendDelegate.showCaptionAboveMedia(), sendDelegate.isHideMediaEnabled())) {
       forceAnimationType = ANIMATION_TYPE_FADE;
       isMediaSent = true;
       setUIBlocked(true);
@@ -8535,9 +8535,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       },
       new MediaSpoilerSendDelegate() {
         @Override
-        public boolean sendSelectedItems (View view, ArrayList<ImageFile> images, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean hasSpoiler) {
+        public boolean sendSelectedItems (View view, ArrayList<ImageFile> images, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean showCaptionAboveMedia, boolean hasSpoiler) {
           ImageGalleryFile galleryFile = (ImageGalleryFile) images.get(0);
-          return onSendMedia(galleryFile, options, disableMarkdown, asFiles, hasSpoiler);
+          return onSendMedia(galleryFile, options, disableMarkdown, asFiles, showCaptionAboveMedia, hasSpoiler);
         }
 
         @Override
@@ -8546,7 +8546,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           mediaStack.getCurrent().setHasSpoiler(hideMedia);
         }
 
-        private boolean onSendMedia (ImageGalleryFile file, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean hasSpoiler) {
+        private boolean onSendMedia (ImageGalleryFile file, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean showCaptionAboveMedia, boolean hasSpoiler) {
           MessagesController m = findOutputController();
           if (m != null) {
             final MediaItem oldItem = forceEditModeOld_arguments != null && forceEditModeOld_arguments.stack != null ?
@@ -8579,7 +8579,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
               }
               return false;
             }
-            return m.sendPhotosAndVideosCompressed(new ImageGalleryFile[] {file}, false, options, disableMarkdown, asFiles, hasSpoiler);
+            return m.sendPhotosAndVideosCompressed(new ImageGalleryFile[] {file}, false, options, disableMarkdown, asFiles, showCaptionAboveMedia, hasSpoiler);
           }
           return false;
         }

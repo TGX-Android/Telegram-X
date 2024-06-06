@@ -1113,7 +1113,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   private static final boolean DEFAULT_MAIN_CHAT_LIST_ENABLED = true;
   private static final boolean DEFAULT_ARCHIVE_CHAT_LIST_ENABLED = false;
   public static final int DEFAULT_CHAT_FOLDER_OPTIONS = ChatFolderOptions.DISPLAY_AT_TOP;
-  public static final int DEFAULT_CHAT_FOLDER_STYLE = ChatFolderStyle.LABEL_AND_ICON;
+  public static final int DEFAULT_CHAT_FOLDER_STYLE = ChatFolderStyle.ICON_WITH_LABEL_ON_ACTIVE_FOLDER;
   private static final int DEFAULT_CHAT_FOLDER_BADGE_FLAGS = 0;
 
   private boolean isMainChatListEnabled () {
@@ -1360,6 +1360,11 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
       if (chatFolderOptions() != options) {
         Settings.instance().putInt(key(CHAT_FOLDER_OPTIONS, tdlib.accountId()), options);
         _chatFolderOptions = options;
+        if (chatListPositionListeners != null) {
+          for (ChatListPositionListener chatListPositionListener : chatListPositionListeners) {
+            chatListPositionListener.onChatFolderOptionsChanged(tdlib, options);
+          }
+        }
       }
     }
   }

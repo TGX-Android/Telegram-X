@@ -14,6 +14,7 @@
  */
 package org.thunderdog.challegram.theme;
 
+import android.content.res.ColorStateList;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -22,7 +23,9 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.annotation.ColorInt;
 import androidx.annotation.IntDef;
+import androidx.core.widget.TextViewCompat;
 
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.ComplexHeaderView;
@@ -48,6 +51,7 @@ public class ThemeListenerEntry {
   public static final int MODE_SPECIAL_FILTER = 7;
   public static final int MODE_DOUBLE_TEXT_COLOR = 8;
   public static final int MODE_LINK_TEXT_COLOR = 9;
+  public static final int MODE_COMPOUND_DRAWABLE_COLOR = 10;
 
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({
@@ -62,7 +66,8 @@ public class ThemeListenerEntry {
     // MODE_SELECTION,
     // MODE_FROM_TO,
     MODE_SPECIAL_FILTER,
-    MODE_DOUBLE_TEXT_COLOR
+    MODE_DOUBLE_TEXT_COLOR,
+    MODE_COMPOUND_DRAWABLE_COLOR
   })
   public @interface EntryMode {}
 
@@ -130,6 +135,7 @@ public class ThemeListenerEntry {
     return target != null && target.equals(this.target.get()) && this.mode == mode;
   }
 
+  @ColorInt
   private int getTargetColor () {
     int color = Theme.getColor(targetColor);
     if ((flags & FLAG_SUBTITLE) != 0)
@@ -177,6 +183,12 @@ public class ThemeListenerEntry {
           }
           break;
         }
+        case MODE_COMPOUND_DRAWABLE_COLOR:
+          if (hasTargetColorChanged() && target instanceof TextView) {
+            ColorStateList tint = ColorStateList.valueOf(getTargetColor());
+            TextViewCompat.setCompoundDrawableTintList((TextView) target, tint);
+          }
+          break;
         case MODE_HINT_TEXT_COLOR: {
           if (hasTargetColorChanged()) {
             if (target instanceof TextView) {

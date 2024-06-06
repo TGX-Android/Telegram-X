@@ -240,7 +240,7 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
               ids.append(R.id.btn_pinUnpinChat);
               strings.append(isPinned ? R.string.Unpin : R.string.Pin);
               icons.append(isPinned ? R.drawable.deproko_baseline_pin_undo_24 : R.drawable.deproko_baseline_pin_24);
-              if (tdlib.canArchiveChat(chat.getList(), chat.getChat())) {
+              if (tdlib.canArchiveOrUnarchiveChat(chat.getChat())) {
                 boolean isArchived = tdlib.chatArchived(chat.getId());
                 ids.append(R.id.btn_archiveUnarchiveChat);
                 strings.append(isArchived ? R.string.Unarchive : R.string.Archive);
