@@ -515,15 +515,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       items.add(item);
     } else {
       items.add(index, item);
-      for (int i = 0; i < getChildCount(); i++) {
-        View view = getChildAt(i);
-        if (view instanceof BackgroundView) {
-          BackgroundView backgroundView = (BackgroundView) view;
-          if (backgroundView.index >= index) {
-            backgroundView.index++;
-          }
-        }
-      }
+      updateFollowingBackgroundViews(index, 1);
     }
 
     onUpdateItems();
@@ -562,7 +554,12 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       throw new IllegalArgumentException(index + " is out of range 0.." + (items.size() - 1));
     }
 
+    boolean atEnd = index == items.size() - 1;
     items.remove(index);
+    if (atEnd) {
+      updateFollowingBackgroundViews(index, -1);
+    }
+
     onUpdateItems();
 
     if ((int) selectionFactor >= items.size()) {
@@ -571,6 +568,18 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
 
     removeViewAt(index);
     invalidate();
+  }
+
+  private void updateFollowingBackgroundViews (int fromIndex, int delta) {
+    for (int i = 0; i < getChildCount(); i++) {
+      View view = getChildAt(i);
+      if (view instanceof BackgroundView) {
+        BackgroundView backgroundView = (BackgroundView) view;
+        if (backgroundView.index >= fromIndex) {
+          backgroundView.index += delta;
+        }
+      }
+    }
   }
 
   private TextPaint getItemTextPaint (Item item) {
