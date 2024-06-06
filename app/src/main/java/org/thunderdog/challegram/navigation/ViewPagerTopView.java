@@ -515,7 +515,6 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       items.add(item);
     } else {
       items.add(index, item);
-      updateFollowingBackgroundViews(index, 1);
     }
 
     onUpdateItems();
@@ -538,8 +537,9 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     } else {
       item.untrimString(paint);
     }
-    addView(newBackgroundView(index), index);
-    // addView(newBackgroundView(items.size() - 1)); ???
+    // We already have backgroundView with insertion index, adding for the last one
+    // (for which there is no backgroundView yet)
+    addView(newBackgroundView(items.size() - 1));
     invalidate();
   }
 
@@ -554,11 +554,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       throw new IllegalArgumentException(index + " is out of range 0.." + (items.size() - 1));
     }
 
-    boolean atEnd = index == items.size() - 1;
     items.remove(index);
-    if (atEnd) {
-      updateFollowingBackgroundViews(index, -1);
-    }
 
     onUpdateItems();
 
@@ -566,7 +562,8 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       selectionFactor--;
     }
 
-    removeViewAt(index);
+    // Removing BackgroundView for the last item only, as other just update dimensions
+    removeViewAt(getChildCount() - 1);
     invalidate();
   }
 
