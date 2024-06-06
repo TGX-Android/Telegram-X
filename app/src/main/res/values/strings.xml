@@ -5350,6 +5350,7 @@
   <string name="ChatFoldersSetupSuggestionTitle">Folders are here!</string>
   <string name="ChatFoldersSetupSuggestionText">The wait is over. **Chat Folders** are here for everyone to enjoy… and **customize**.\n\nPrefer icons? We’ve got you covered. Bottom tabs? No problem. Filter chats inside a folder? Swipe tab to access it as well.\n\nArchive as folder, hiding tabs, marking folder as read, sharing folders, and more features are now available.</string>
   <string name="ChatFoldersSetupSuggestionAction">Start setting up</string>
+  <string name="HoldToEditChatFoldersHint">Hold to edit folders and their appearance</string>
 
   <string name="xChatsToJoin_one">%1$s chat to join</string>
   <string name="xChatsToJoin_other">%1$s chats to join</string>
