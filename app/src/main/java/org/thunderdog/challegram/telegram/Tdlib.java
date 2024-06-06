@@ -3510,28 +3510,23 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
-  public boolean canArchiveChat (TdApi.ChatList chatList, TdApi.Chat chat) {
+  public boolean canArchiveOrUnarchiveChat (TdApi.Chat chat) {
     if (chat == null)
       return false;
-    if (chatList != null) {
-      switch (chatList.getConstructor()) {
-        case TdApi.ChatListMain.CONSTRUCTOR:
-        case TdApi.ChatListArchive.CONSTRUCTOR:
-          break;
-        case TdApi.ChatListFolder.CONSTRUCTOR:
-          return false;
-      }
-    }
-    TdApi.ChatPosition[] positions = chat.positions;
-    if (positions != null) {
-      for (TdApi.ChatPosition position : positions) {
-        switch (position.list.getConstructor()) {
+    TdApi.ChatList[] chatLists = chat.chatLists;
+    if (chatLists != null) {
+      boolean canBeArchived = !isSelfChat(chat.id) && !isServiceNotificationsChat(chat.id);
+      for (TdApi.ChatList chatList : chatLists) {
+        switch (chatList.getConstructor()) {
           case TdApi.ChatListMain.CONSTRUCTOR:
-            return !isSelfChat(chat.id) && !isServiceNotificationsChat(chat.id);
+            return canBeArchived;
           case TdApi.ChatListArchive.CONSTRUCTOR:
-            return true; // Already archived
+            return true;
           case TdApi.ChatListFolder.CONSTRUCTOR:
-            break;
+            continue;
+          default:
+            Td.assertChatList_db6c93ab();
+            throw Td.unsupported(chatList);
         }
       }
     }
@@ -3539,10 +3534,27 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public boolean chatArchived (long chatId) {
-    if (chatId == 0)
-      return false;
-    TdApi.Chat chat = chat(chatId);
-    return chat != null && ChatPosition.findPosition(chat, ChatPosition.CHAT_LIST_ARCHIVE) != null;
+    return chatId != 0 && chatArchived(chat(chatId));
+  }
+
+  public boolean chatArchived (TdApi.Chat chat) {
+    TdApi.ChatList[] chatLists = chat != null ? chat.chatLists : null;
+    if (chatLists != null) {
+      for (TdApi.ChatList chatList : chatLists) {
+        switch (chatList.getConstructor()) {
+          case TdApi.ChatListMain.CONSTRUCTOR:
+            return false;
+          case TdApi.ChatListArchive.CONSTRUCTOR:
+            return true;
+          case TdApi.ChatListFolder.CONSTRUCTOR:
+            continue;
+          default:
+            Td.assertChatList_db6c93ab();
+            throw Td.unsupported(chatList);
+        }
+      }
+    }
+    return false;
   }
 
   public boolean chatNeedsMuteIcon (long chatId) {

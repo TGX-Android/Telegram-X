@@ -101,7 +101,8 @@
   <item type="id" name="more_btn_addMember" />
   <item type="id" name="more_btn_editDescription" />
   <item type="id" name="more_btn_join" />
-  <item type="id" name="more_btn_archiveUnarchive" />
+  <item type="id" name="more_btn_archive" />
+  <item type="id" name="more_btn_unarchive" />
   <item type="id" name="more_btn_selectAll" />
   <item type="id" name="more_btn_markAsRead" />
   <item type="id" name="more_btn_report" />

@@ -1268,7 +1268,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       int canClearHistory = 0;
       for (int i = 0; i < selectedChats.size(); i++) {
         TdApi.Chat chat = selectedChats.valueAt(i);
-        if (tdlib.canArchiveChat(chatList(), chat)) {
+        if (tdlib.canArchiveOrUnarchiveChat(chat)) {
           if (ChatPosition.isArchived(chat)) {
             canUnarchive++;
           } else {
@@ -1300,7 +1300,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       }
 
       if (canArchive + canUnarchive > 0) {
-        ids.append(R.id.more_btn_archiveUnarchive);
+        ids.append(canUnarchive > 0 ? R.id.more_btn_unarchive : R.id.more_btn_archive);
         strings.append(canUnarchive > 0 ? R.string.Unarchive : R.string.Archive);
         icons.append(canUnarchive > 0 ? R.drawable.baseline_unarchive_24 : R.drawable.baseline_archive_24);
       }
@@ -1674,7 +1674,9 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       }
       onSelectionActionComplete();
       // break;
-    } else if (id == R.id.more_btn_archiveUnarchive ||
+    } else if (
+      id == R.id.more_btn_archive ||
+      id == R.id.more_btn_unarchive ||
       id == R.id.more_btn_markAsRead ||
       id == R.id.more_btn_markAsUnread ||
       id == R.id.more_btn_report ||
@@ -1682,8 +1684,9 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       id == R.id.more_btn_unblock) {
       final int completeStr, count;
       int botCount = 0;
-      if (id == R.id.more_btn_archiveUnarchive) {
-        completeStr = chatList().getConstructor() == TdApi.ChatListArchive.CONSTRUCTOR ? R.string.UnarchivedXChats : R.string.ArchivedXChats;
+      if (id == R.id.more_btn_archive || id == R.id.more_btn_unarchive) {
+        boolean isUnarchive = id == R.id.more_btn_unarchive;
+        completeStr = isUnarchive ? R.string.UnarchivedXChats : R.string.ArchivedXChats;
         count = getSelectedChatCount();
       } else if (id == R.id.more_btn_markAsRead) {
         completeStr = R.string.ReadAllChatsDone;
@@ -1720,7 +1723,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
           simpleActionId = R.id.btn_markChatAsUnread;
         } else if (id == R.id.more_btn_markAsRead) {
           simpleActionId = R.id.btn_markChatAsRead;
-        } else if (id == R.id.more_btn_archiveUnarchive) {
+        } else if (id == R.id.more_btn_archive || id == R.id.more_btn_unarchive) {
           simpleActionId = R.id.btn_archiveUnarchiveChat;
         } else if (id == R.id.more_btn_report) {
           TdlibUi.reportChat(getParentOrSelf(), selectedChats.keyAt(0), null, onDone, null);
@@ -1737,8 +1740,8 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
           tdlib.ui().post(onDone);
         }
       };
-      if (id == R.id.more_btn_archiveUnarchive) {
-        boolean isUnarchive = chatList().getConstructor() == TdApi.ChatListArchive.CONSTRUCTOR;
+      if (id == R.id.more_btn_unarchive || id == R.id.more_btn_archive) {
+        boolean isUnarchive = id == R.id.more_btn_unarchive;
         showOptions(
           Lang.pluralBold(isUnarchive ? R.string.UnarchiveXChats : R.string.ArchiveXChats, selectedChats.size()),
           new int[] {R.id.btn_archiveUnarchiveChat, R.id.btn_cancel},
