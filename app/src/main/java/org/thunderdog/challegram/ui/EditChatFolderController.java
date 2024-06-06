@@ -253,7 +253,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
 
     if (Config.CHAT_FOLDERS_REDESIGN) {
       if (Config.COLLAPSE_CHAT_FOLDER_HEADER_ON_SCROLL) {
-        items.add(new ListItem(ListItem.TYPE_PADDING).setHeight(Size.getHeaderSizeDifference(false)));
+        items.add(new ListItem(ListItem.TYPE_PADDING).setHeight(Size.getHeaderSizeDifference(false)).setBoolValue(chatFolderId != NO_CHAT_FOLDER_ID));
       }
       if (chatFolderId != NO_CHAT_FOLDER_ID) {
         items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_visible, 0, R.string.FolderVisible));
