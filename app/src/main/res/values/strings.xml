@@ -3805,6 +3805,10 @@
   <string name="ContactStateMutual">%1$s and you have added each other in the contacts list.</string>
   <string name="ContactStateOutgoing">%1$s is in your contacts list.</string>
 
+  <string name="ChatTypeMutualContact">Mutual contact</string>
+  <string name="ChatTypeContact">Contact</string>
+  <string name="ChatTypeNonContact">Non-Contact</string>
+
   <string name="ContactStateMutualNoPhone">%1$s and you have each other in the contacts list, but they do not share the phone number with you.</string>
   <string name="ContactStateOutgoingNoPhone">You do not have access to %1$s\'s phone number.</string>
 
