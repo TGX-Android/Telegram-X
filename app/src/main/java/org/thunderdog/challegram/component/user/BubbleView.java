@@ -90,6 +90,19 @@ public class BubbleView implements AttachDelegate, Destroyable {
       );
     }
 
+    public static Entry valueOf (Tdlib tdlib, long chatId) {
+      final String title = tdlib.chatTitle(chatId);
+      final TdApi.User user = tdlib.chatUser(chatId);
+      final String shortName = user != null ? TD.getShorterUserNameOrNull(user.firstName, user.lastName) : null;
+      RunnableData<AvatarReceiver> loader = receiver ->
+        receiver.requestChat(tdlib, chatId, AvatarReceiver.Options.FORCE_IGNORE_FORUM);
+      final TdApi.MessageSender senderId = tdlib.sender(chatId);
+      return new Entry(
+        tdlib, "sender_" + Td.getSenderId(senderId), senderId,
+        title, shortName, loader
+      );
+    }
+
     public static Entry valueOf (Tdlib tdlib, TdApi.MessageSender senderId) {
       final String name = tdlib.senderName(senderId);
       final String shortName;

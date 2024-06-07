@@ -20,6 +20,7 @@ import android.graphics.Rect;
 import android.os.Bundle;
 import android.text.InputFilter;
 import android.text.InputType;
+import android.text.SpannableStringBuilder;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -636,31 +637,40 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
 
   private DoubleTextWrapper chatData (long chatId) {
     TdApi.Chat chat = tdlib.chatStrict(chatId);
-    CharSequence subtitle;
+    CharSequence status;
     switch (chat.type.getConstructor()) {
       case TdApi.ChatTypePrivate.CONSTRUCTOR:
       case TdApi.ChatTypeSecret.CONSTRUCTOR:
         long userId = tdlib.chatUserId(chatId);
-        String status = tdlib.status().getPrivateChatSubtitle(userId, tdlib.cache().user(userId), true, true, true);
-        String username = tdlib.chatUsername(chatId);
-        subtitle = StringUtils.isEmpty(username) ? status : username + Lang.getConcatSeparator() + status;
+        status = tdlib.status().getPrivateChatSubtitle(userId, tdlib.cache().user(userId), true, true, true);
         break;
       case TdApi.ChatTypeBasicGroup.CONSTRUCTOR:
       case TdApi.ChatTypeSupergroup.CONSTRUCTOR:
         int memberCount = tdlib.chatMemberCount(chatId);
         if (memberCount > 0) {
-          subtitle = Lang.pluralMembers(tdlib.chatMemberCount(chatId), 0, false);
+          status = Lang.pluralMembers(tdlib.chatMemberCount(chatId), 0, false);
         } else if (tdlib.isChannel(chatId)) {
-          subtitle = Lang.getString(tdlib.isPublicChat(chatId) ? R.string.Channel : R.string.ChannelPrivate);
+          status = Lang.getString(tdlib.isPublicChat(chatId) ? R.string.Channel : R.string.ChannelPrivate);
         } else {
-          subtitle = Lang.getString(tdlib.isPublicChat(chatId) ? R.string.Group : R.string.GroupPrivate);
+          status = Lang.getString(tdlib.isPublicChat(chatId) ? R.string.Group : R.string.GroupPrivate);
         }
         break;
       default:
         Td.assertChatType_e562ec7d();
         throw Td.unsupported(chat.type);
     }
-    DoubleTextWrapper data = new DoubleTextWrapper(tdlib, chat);
+    CharSequence subtitle;
+    if (tdlib.isSelfChat(chat)) {
+      subtitle = null;
+    } else {
+      String username = tdlib.chatUsername(chatId);
+      if (StringUtils.isEmpty(username)) {
+        subtitle = status;
+      } else {
+        subtitle = new SpannableStringBuilder("@").append(username).append(Lang.getConcatSeparator()).append(status);
+      }
+    }
+    DoubleTextWrapper data = new DoubleTextWrapper(tdlib, chat, true, true);
     data.setAdminSignVisible(false, false);
     data.setForcedSubtitle(subtitle);
     data.setForceSingleLine(StringUtils.isEmpty(subtitle));

@@ -135,15 +135,7 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
 
   private void requestFile () {
     if (chat != null) {
-      TdApi.MessageSender sender = chat.getSenderId();
-      AvatarPlaceholder placeholder = chat.getAvatarPlaceholder();
-      if (sender != null) {
-        avatarReceiver.requestMessageSender(tdlib, sender, AvatarReceiver.Options.NONE);
-      } else if (placeholder != null) {
-        avatarReceiver.requestPlaceholder(tdlib, placeholder.metadata, AvatarReceiver.Options.NONE);
-      } else {
-        avatarReceiver.clear();
-      }
+      chat.requestAvatar(avatarReceiver);
     } else {
       avatarReceiver.clear();
     }

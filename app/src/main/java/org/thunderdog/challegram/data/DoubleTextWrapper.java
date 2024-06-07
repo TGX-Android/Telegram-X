@@ -28,6 +28,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.Receiver;
@@ -86,13 +87,13 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
   private final MultipleViewProvider currentViews = new MultipleViewProvider();
   private final BounceAnimator isAnonymous = new BounceAnimator(currentViews);
   private final int horizontalPadding = Screen.dp(72f) + Screen.dp(11f);
-  private boolean forceSingleLine;
+  private boolean forceSingleLine, allowSavedMessages;
 
   public DoubleTextWrapper (Tdlib tdlib, TdApi.Chat chat) {
-    this(tdlib, chat, /* needSubtitle */ true);
+    this(tdlib, chat, /* needSubtitle */ true, false);
   }
 
-  public DoubleTextWrapper (Tdlib tdlib, TdApi.Chat chat, boolean needSubtitle) {
+  public DoubleTextWrapper (Tdlib tdlib, TdApi.Chat chat, boolean needSubtitle, boolean allowSavedMessages) {
     this.tdlib = tdlib;
 
     this.chatId = chat.id;
@@ -106,8 +107,13 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
       setChatMark(false, false);
     }
 
-    setTitle(chat.title);
-    this.avatarPlaceholder = tdlib.chatPlaceholder(chat, false, AVATAR_PLACEHOLDER_RADIUS, null);
+    if (allowSavedMessages || !tdlib.isUserChat(chat)) {
+      setTitle(tdlib.chatTitle(chat));
+    } else {
+      setTitle(tdlib.cache().userName(tdlib.chatUserId(chat)));
+    }
+    this.allowSavedMessages = allowSavedMessages;
+    this.avatarPlaceholder = tdlib.chatPlaceholder(chat, allowSavedMessages, AVATAR_PLACEHOLDER_RADIUS, null);
     if (chat.photo != null) {
       setPhoto(chat.photo.small);
     }
@@ -493,6 +499,20 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
     }
 
     this.trimmedTitle = StringUtils.isEmpty(title) ? null : new Text.Builder(title, availWidth, Paints.robotoStyleProvider(15), TextColorSets.Regular.NORMAL).allBold().singleLine().build();
+  }
+
+  public void requestAvatar (AvatarReceiver receiver) {
+    TdApi.MessageSender sender = getSenderId();
+    AvatarPlaceholder placeholder = getAvatarPlaceholder();
+    if (allowSavedMessages && getChatId() != 0) {
+      receiver.requestChat(tdlib, getChatId(), AvatarReceiver.Options.NONE);
+    } else if (sender != null) {
+      receiver.requestMessageSender(tdlib, sender, AvatarReceiver.Options.NONE);
+    } else if (placeholder != null) {
+      receiver.requestPlaceholder(tdlib, placeholder.metadata, AvatarReceiver.Options.NONE);
+    } else {
+      receiver.clear();
+    }
   }
 
   public void invalidateEmojiStatusReceiver (Text text, @Nullable TextMedia specificMedia) {

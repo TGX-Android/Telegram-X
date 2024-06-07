@@ -525,7 +525,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
   }
 
   private BubbleView.Entry chatBubble (long chatId) {
-    return BubbleView.Entry.valueOf(tdlib, tdlib.sender(chatId));
+    return BubbleView.Entry.valueOf(tdlib, chatId);
   }
 
   private BubbleView.Entry chatTypeBubble (@IdRes int chatType) {
@@ -589,7 +589,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
 
   private DoubleTextWrapper chatData (TdApi.Chat chat) {
     String subtitle = buildFolderListSubtitle(tdlib, chat);
-    DoubleTextWrapper data = new DoubleTextWrapper(tdlib, chat, /* needSubtitle */ false);
+    DoubleTextWrapper data = new DoubleTextWrapper(tdlib, chat, false, true);
     data.setAdminSignVisible(false, false);
     data.setForcedSubtitle(subtitle);
     data.setForceSingleLine(StringUtils.isEmpty(subtitle));
