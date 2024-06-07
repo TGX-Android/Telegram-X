@@ -193,9 +193,9 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   @Override
   @SuppressWarnings("deprecation")
   protected int getHeaderHeight () {
-    if (Config.CHAT_FOLDERS_REDESIGN && Config.COLLAPSE_CHAT_FOLDER_HEADER_ON_SCROLL && headerCell != null) {
+    if (Config.CHAT_FOLDERS_REDESIGN && Config.COLLAPSE_CHAT_FOLDER_HEADER_ON_SCROLL) {
       ComplexRecyclerView recyclerView = getRecyclerView();
-      return (int) (Size.getHeaderPortraitSize() + Size.getHeaderSizeDifference(false) * recyclerView.getScrollFactor());
+      return (int) (Size.getHeaderPortraitSize() + Size.getHeaderSizeDifference(true) * recyclerView.getScrollFactor());
     }
     return headerCell != null ? Size.getHeaderBigPortraitSize(false) : super.getHeaderHeight();
   }
@@ -203,7 +203,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   @Override
   @SuppressWarnings("deprecation")
   protected int getMaximumHeaderHeight () {
-    if (Config.CHAT_FOLDERS_REDESIGN && Config.COLLAPSE_CHAT_FOLDER_HEADER_ON_SCROLL && headerCell != null) {
+    if (Config.CHAT_FOLDERS_REDESIGN && Config.COLLAPSE_CHAT_FOLDER_HEADER_ON_SCROLL) {
       return Size.getHeaderBigPortraitSize(false);
     }
     return super.getMaximumHeaderHeight();
@@ -241,7 +241,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
       });
       setLockFocusView(headerCell.getInputView(), /* showAlways */ StringUtils.isEmpty(editedChatFolder.title));
       if (Config.COLLAPSE_CHAT_FOLDER_HEADER_ON_SCROLL) {
-        ((ComplexRecyclerView) recyclerView).setHeaderView(headerCell, this, /* needExpand */ false);
+        ((ComplexRecyclerView) recyclerView).setHeaderView(headerCell, this);
       } else {
         Views.setTopMargin(recyclerView, Size.getHeaderSizeDifference(false));
       }

@@ -297,11 +297,13 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     return ResourcesCompat.ID_NULL;
   }
 
+  private static final int MAX_BUBBLE_LINES = 3;
+
   @Override
   protected View onCreateView (Context context) {
     View view = super.onCreateView(context);
     if (hasBubbles()) {
-      headerCell = new BubbleHeaderView(context, tdlib, /* maxBubbleLines */ 3);
+      headerCell = new BubbleHeaderView(context, tdlib, MAX_BUBBLE_LINES);
       if (mode == MODE_FOLDER_INCLUDE_CHATS) {
         headerCell.setHint(bindLocaleChanger(R.string.IncludeChatsHint, headerCell.getInput(), /* isHint */ true, /* isMedium */ false));
       } else if (mode == MODE_FOLDER_EXCLUDE_CHATS) {
@@ -808,7 +810,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
 
   @Override
   protected int getMaximumHeaderHeight () {
-    return hasBubbles() ? Size.getHeaderBigPortraitSize(false) : super.getMaximumHeaderHeight();
+    return hasBubbles() ? Size.getHeaderPortraitSize() + BubbleHeaderView.maxBubbleHeight(MAX_BUBBLE_LINES) : super.getMaximumHeaderHeight();
   }
 
   @Override
