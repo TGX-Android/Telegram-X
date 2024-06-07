@@ -753,9 +753,9 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
         this.selectionLeft = selectionLeft;
         this.selectionWidth = selectionWidth;
       }
-      callListener = (fromIndex == -1 && toIndex == -1) || (fromIndex != -1 && toIndex != -1 && Math.abs(toIndex - fromIndex) == 1);
+      callListener = (fromIndex == -1 && toIndex == -1) || (fromIndex != -1 && toIndex != -1 && Math.abs(toIndex - fromIndex) == 1 && !selectionChangeListener.hasPendingUserInteraction());
     } else {
-      callListener = fromIndex != -1 && toIndex != -1 && Math.abs(toIndex - fromIndex) > 1;
+      callListener = fromIndex != -1 && toIndex != -1 && (Math.abs(toIndex - fromIndex) > 1 || selectionChangeListener.hasPendingUserInteraction());
     }
     float totalFactor = items.size() > 1 ? selectionFactor / (float) (items.size() - 1) : 0;
     if (callListener && selectionChangeListener != null && (lastCallSelectionLeft != selectionLeft || lastCallSelectionWidth != selectionWidth || lastCallSelectionFactor != totalFactor)) {
@@ -786,6 +786,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
 
   public interface SelectionChangeListener {
     void onSelectionChanged (int selectionLeft, int selectionRight, int firstItemWidth, int lastItemWidth, float totalFactor, boolean animated);
+    default boolean hasPendingUserInteraction () { return false; }
   }
 
   private SelectionChangeListener selectionChangeListener;

@@ -78,9 +78,15 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
       manager.setReverseLayout(Lang.rtl());
       if (needScroll) {
         manager.scrollToPositionWithOffset(0, scrollOffset);
+        hasUserInteraction = false;
       }
     }
     getTopView().checkRtl();
+  }
+
+  @Override
+  public boolean hasPendingUserInteraction () {
+    return hasUserInteraction;
   }
 
   private static class A extends RecyclerView.Adapter<VH> {
@@ -177,6 +183,16 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
         c.restoreToCount(saveCount);
       }
     };
+    recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+      @Override
+      public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
+        if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+          hasUserInteraction = true;
+        } else if (newState == RecyclerView.SCROLL_STATE_IDLE && resetUserInteraction) {
+          resetUserInteraction();
+        }
+      }
+    });
     recyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Size.getHeaderPortraitSize(), Gravity.TOP));
     recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? OVER_SCROLL_IF_CONTENT_SCROLLS :OVER_SCROLL_NEVER);
     recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, Lang.rtl()));
@@ -186,6 +202,13 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
 
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Size.getHeaderBigPortraitSize(true)));
   }
+
+  private void resetUserInteraction () {
+    hasUserInteraction = false;
+    resetUserInteraction = false;
+  }
+
+  private boolean hasUserInteraction, resetUserInteraction;
 
   public void setFadingEdgeLength (@Dimension(unit = Dimension.DP) float length) {
     if (fadingEdgeLength != length) {
@@ -258,8 +281,12 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
             animationDuration = computeScrollDuration(diff, parentWidth);
           }
           recyclerView.smoothScrollBy(diff, 0, interpolator, animationDuration);
+          if (hasUserInteraction) {
+            resetUserInteraction = true;
+          }
         } else {
           recyclerView.scrollBy(diff, 0);
+          resetUserInteraction();
         }
       }
     } else {
@@ -285,8 +312,12 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
               animationDuration = computeScrollDuration(offset, parentWidth);
             }
             recyclerView.smoothScrollBy(offset, 0, interpolator, animationDuration);
+            if (hasUserInteraction) {
+              resetUserInteraction = true;
+            }
           } else {
             recyclerView.scrollBy(offset, 0);
+            resetUserInteraction();
           }
         }
       }
