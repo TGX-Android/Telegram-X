@@ -49,7 +49,7 @@ public class CameraButton extends View implements FactorAnimator.Target, Runnabl
   public CameraButton (Context context) {
     super(context);
     Views.setClickable(this);
-    RippleSupport.setCircleBackground(this, 56f, 4f, ColorId.white, null);
+    RippleSupport.setCircleBackground(this, 56f, 4f, ColorId.white, true, null);
     setLayerType(LAYER_TYPE_HARDWARE, null);
 
     int padding = Screen.dp(4f);

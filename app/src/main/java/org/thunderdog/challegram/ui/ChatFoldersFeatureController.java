@@ -158,7 +158,7 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
           addView(buildPreviewView(chatFolders), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, previewHeight, Gravity.TOP, 39, previewTopMargin, 39, 0));
 
           CircleButton closeButton = new CircleButton(context);
-          closeButton.init(R.drawable.baseline_close_20, 32f, 12f, ColorId.circleButtonOverlay, ColorId.circleButtonOverlayIcon);
+          closeButton.init(R.drawable.baseline_close_20, 0, 32f, 12f, ColorId.circleButtonOverlay, ColorId.circleButtonOverlayIcon, false);
           closeButton.setOnClickListener(v -> parent.hidePopupWindow(true));
           addView(closeButton, LayoutHelper.createFrame(56f, 56f, Gravity.RIGHT | Gravity.TOP));
         } else {
