@@ -39,7 +39,7 @@ public class Config {
   public static final boolean RESTRICT_HIDING_MAIN_LIST = true;
   public static final boolean SEARCH_MESSAGES_ONLY_IN_SELECTED_FOLDER = BuildConfig.EXPERIMENTAL;
 
-  public static final boolean TEST_NEW_FEATURES_PROMPTS = BuildConfig.DEBUG;
+  public static final boolean TEST_NEW_FEATURES_PROMPTS = false;
 
   public static final boolean NEED_SILENT_BROADCAST = false;
 

@@ -872,16 +872,20 @@ public class Settings {
       pmc.removeByPrefix(KEY_TUTORIAL_PSA);
     }
     if (Config.TEST_NEW_FEATURES_PROMPTS) {
-      pmc
-        .putLong(KEY_FEATURES, 0 /*no features were available*/)
-        .remove(KEY_FEATURES_ADDED_NOTIFICATIONS)
-        .remove(KEY_FEATURES_REMOVED_NOTIFICATIONS);
+      forceRevokeAllFeaturePrompts();
     }
     trackInstalledApkVersion();
     trackChangesInAvailableFeatures();
     Log.i("Opened database in %dms", SystemClock.uptimeMillis() - ms);
     checkPendingPasscodeLocks();
     applyLogSettings(true);
+  }
+
+  public void forceRevokeAllFeaturePrompts () {
+    pmc
+      .putLong(KEY_FEATURES, 0 /*no features were available*/)
+      .remove(KEY_FEATURES_ADDED_NOTIFICATIONS)
+      .remove(KEY_FEATURES_REMOVED_NOTIFICATIONS);
   }
 
   // Schedule

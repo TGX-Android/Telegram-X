@@ -859,6 +859,8 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
             if (items.size() > initialSize)
               items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
             items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_secret_qrTest, 0, "Test QR scanner", false));
+            items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+            items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_secret_testPrompts, 0, "Show prompts on next app launch", false));
           }
         }
 
@@ -1251,6 +1253,8 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
     } else if (viewId == R.id.btn_secret_disableNetwork) {
       Settings.instance().setDisableNetwork(adapter.toggleView(v));
       TdlibManager.instance().watchDog().letsHelpDoge();
+    } else if (viewId == R.id.btn_secret_testPrompts) {
+      Settings.instance().forceRevokeAllFeaturePrompts();
     } else if (viewId == R.id.btn_secret_forceTdlibRestarts) {
       TdlibManager.instance().setForceTdlibRestarts(adapter.toggleView(v));
     } else if (viewId == R.id.btn_secret_forceTcpInCalls) {
