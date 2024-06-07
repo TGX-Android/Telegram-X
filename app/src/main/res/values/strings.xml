@@ -5154,8 +5154,6 @@
   <string name="ExperimentalSettingsUnavailable">No experiments available. Come back later.</string>
   <string name="Experiment_PeerIds">Show Peer IDs in Profiles</string>
   <string name="Experiment_PeerIdsInfo">Show API identifiers of users and chats in their profiles</string>
-  <string name="Experiment_ChatFolders">Enable Chat Folders</string>
-  <string name="Experiment_ChatFoldersInfo">Enable early access to folders. Appearance of this feature is planned to be changed in future versions of Telegram X, and it includes some unfinished work. Credit: [PR #297](https://github.com/TGX-Android/Telegram-X/pull/297) by nikita-toropov</string>
 
   <string name="PeerId">Peer ID</string>
   <string name="UserId">User ID</string>
