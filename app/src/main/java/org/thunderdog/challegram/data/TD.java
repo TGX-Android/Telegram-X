@@ -5578,6 +5578,30 @@ public class TD {
 
   public static final String[] ICON_NAMES = {"All", "Unread", "Unmuted", "Bots", "Channels", "Groups", "Private", "Custom", "Setup", "Cat", "Crown", "Favorite", "Flower", "Game", "Home", "Love", "Mask", "Party", "Sport", "Study", "Trade", "Travel", "Work", "Airplane", "Book", "Light", "Like", "Money", "Note", "Palette"};
 
+  public static @Nullable String joinChatFolderNamesToString (Tdlib tdlib, TdApi.Chat chat, int excludeChatFolderId) {
+    TdApi.ChatPosition[] chatPositions = chat.positions;
+    if (chatPositions != null && chatPositions.length > 0) {
+      StringBuilder sb = new StringBuilder();
+      for (TdApi.ChatPosition chatPosition : chatPositions) {
+        if (!TD.isChatListFolder(chatPosition.list))
+          continue;
+        TdApi.ChatListFolder chatListFolder = (TdApi.ChatListFolder) chatPosition.list;
+        if (chatListFolder.chatFolderId == excludeChatFolderId) {
+          continue;
+        }
+        TdApi.ChatFolderInfo chatFolderInfo = tdlib.chatFolderInfo(chatListFolder.chatFolderId);
+        if (chatFolderInfo == null || StringUtils.isEmptyOrBlank(chatFolderInfo.title))
+          continue;
+        if (sb.length() > 0) {
+          sb.append(Lang.getConcatSeparator());
+        }
+        sb.append(chatFolderInfo.title);
+      }
+      return sb.toString();
+    }
+    return null;
+  }
+
   public static boolean isParticipating (@Nullable TdApi.PremiumGiveawayInfo info) {
     if (info == null || info.getConstructor() != TdApi.PremiumGiveawayInfoOngoing.CONSTRUCTOR) {
       return false;

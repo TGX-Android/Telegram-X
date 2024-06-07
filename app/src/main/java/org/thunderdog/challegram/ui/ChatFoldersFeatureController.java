@@ -45,6 +45,7 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.MainController.UnreadCounterColorSet;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.v.CustomRecyclerView;
+import org.thunderdog.challegram.widget.CircleButton;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.ViewPager;
@@ -114,6 +115,7 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
   protected void setupPopupLayout (PopupLayout popupLayout) {
     super.setupPopupLayout(popupLayout);
     popupLayout.setHideKeyboard();
+    popupLayout.setTouchDownInterceptor((popup, event) -> true);
   }
 
   protected static class Page extends BottomSheetBaseRecyclerViewController<Void> {
@@ -147,12 +149,22 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
     protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
       TdApi.ChatFolderInfo[] chatFolders = tdlib.chatFolders();
 
-      LinearLayout singleView = new LinearLayout(context) {{
-        setOrientation(LinearLayout.VERTICAL);
+      FrameLayoutFix singleView = new FrameLayoutFix(context) {{
+        int contentTopMargin;
         if (chatFolders.length > 0) {
-          addView(buildPreviewView(chatFolders), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 123, 39, 45, 39, 0));
+          int previewHeight = 123;
+          int previewTopMargin = 45;
+          contentTopMargin = previewTopMargin + previewHeight;
+          addView(buildPreviewView(chatFolders), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, previewHeight, Gravity.TOP, 39, previewTopMargin, 39, 0));
+
+          CircleButton closeButton = new CircleButton(context);
+          closeButton.init(R.drawable.baseline_close_20, 32f, 12f, ColorId.circleButtonOverlay, ColorId.circleButtonOverlayIcon);
+          closeButton.setOnClickListener(v -> parent.hidePopupWindow(true));
+          addView(closeButton, LayoutHelper.createFrame(56f, 56f, Gravity.RIGHT | Gravity.TOP));
+        } else {
+          contentTopMargin = 0;
         }
-        addView(buildContentView(), LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT);
+        addView(buildContentView(), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 0, contentTopMargin, 0, 0));
       }};
       recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
       recyclerView.setItemAnimator(null);

@@ -20,6 +20,7 @@ import android.graphics.Rect;
 import android.os.Bundle;
 import android.text.InputFilter;
 import android.text.InputType;
+import android.text.SpannableStringBuilder;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -40,6 +41,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.base.SettingView;
@@ -47,8 +49,8 @@ import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
+import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.data.TGFoundChat;
 import org.thunderdog.challegram.navigation.ComplexRecyclerView;
 import org.thunderdog.challegram.navigation.EditHeaderView;
 import org.thunderdog.challegram.navigation.NavigationController;
@@ -71,7 +73,6 @@ import org.thunderdog.challegram.util.AdapterSubListUpdateCallback;
 import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.util.ListItemDiffUtilCallback;
 import org.thunderdog.challegram.util.PremiumLockModifier;
-import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 
 import java.util.ArrayList;
@@ -227,7 +228,6 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   protected void onCreateView (Context context, FrameLayoutFix contentView, RecyclerView recyclerView) {
     if (Config.CHAT_FOLDERS_REDESIGN) {
       headerCell = new EditHeaderView(context, this);
-      // headerCell.setNeedExpand(false);
       headerCell.setInput(editedChatFolder.title);
       headerCell.setInputOptions(R.string.FolderNameHint, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
       headerCell.setOnPhotoClickListener(this::showIconSelector);
@@ -632,15 +632,60 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   }
 
   private ListItem chatItem (long chatId) {
-    TGFoundChat foundChat = new TGFoundChat(tdlib, null, chatId, true);
-    foundChat.setNoUnread();
-    return new ListItem(ListItem.TYPE_CHAT_BETTER, R.id.chat).setData(foundChat).setLongId(chatId);
+    return new ListItem(ListItem.TYPE_CHAT_SMALL, R.id.chat).setData(chatData(chatId)).setLongId(chatId);
+  }
+
+  private DoubleTextWrapper chatData (long chatId) {
+    TdApi.Chat chat = tdlib.chatStrict(chatId);
+    CharSequence status;
+    switch (chat.type.getConstructor()) {
+      case TdApi.ChatTypePrivate.CONSTRUCTOR:
+      case TdApi.ChatTypeSecret.CONSTRUCTOR:
+        long userId = tdlib.chatUserId(chatId);
+        status = tdlib.status().getPrivateChatSubtitle(userId, tdlib.cache().user(userId), true, true, true);
+        break;
+      case TdApi.ChatTypeBasicGroup.CONSTRUCTOR:
+      case TdApi.ChatTypeSupergroup.CONSTRUCTOR:
+        int memberCount = tdlib.chatMemberCount(chatId);
+        if (memberCount > 0) {
+          status = Lang.pluralMembers(tdlib.chatMemberCount(chatId), 0, false);
+        } else if (tdlib.isChannel(chatId)) {
+          status = Lang.getString(tdlib.isPublicChat(chatId) ? R.string.Channel : R.string.ChannelPrivate);
+        } else {
+          status = Lang.getString(tdlib.isPublicChat(chatId) ? R.string.Group : R.string.GroupPrivate);
+        }
+        break;
+      default:
+        Td.assertChatType_e562ec7d();
+        throw Td.unsupported(chat.type);
+    }
+    CharSequence subtitle;
+    if (tdlib.isSelfChat(chat)) {
+      subtitle = null;
+    } else {
+      String username = tdlib.chatUsername(chatId);
+      if (StringUtils.isEmpty(username)) {
+        subtitle = status;
+      } else {
+        subtitle = new SpannableStringBuilder("@").append(username).append(Lang.getConcatSeparator()).append(status);
+      }
+    }
+    DoubleTextWrapper data = new DoubleTextWrapper(tdlib, chat, true, true);
+    data.setAdminSignVisible(false, false);
+    data.setForcedSubtitle(subtitle);
+    data.setForceSingleLine(StringUtils.isEmpty(subtitle));
+    return data;
   }
 
   private ListItem chatTypeItem (@IdRes int id) {
+    return new ListItem(ListItem.TYPE_CHAT_SMALL, id).setData(chatTypeData(id));
+  }
+
+  private DoubleTextWrapper chatTypeData (@IdRes int id) {
+    String title = Lang.getString(TD.chatTypeName(id));
     TdlibAccentColor accentColor = tdlib.accentColor(TD.chatTypeAccentColorId(id));
-    return new ListItem(ListItem.TYPE_CHAT_BETTER, id, TD.chatTypeIcon24(id), TD.chatTypeName(id))
-      .setAccentColor(accentColor);
+    AvatarPlaceholder.Metadata avatar = new AvatarPlaceholder.Metadata(accentColor, TD.chatTypeIcon24(id));
+    return new DoubleTextWrapper(tdlib, title, /* subtitle */ "", avatar);
   }
 
   private void loadChatFolder () {
@@ -765,10 +810,13 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   private void showRemoveConditionConfirm (int position, ListItem item) {
     boolean inclusion = item.getBoolValue();
     CharSequence title;
-    if (item.getId() == R.id.chat) {
-      title = ((TGFoundChat) item.getData()).getFullTitle();
+    if (item.getData() instanceof DoubleTextWrapper) {
+      title = ((DoubleTextWrapper) item.getData()).getTitle();
     } else {
-      title = item.getString();
+      if (BuildConfig.DEBUG) {
+        throw new IllegalArgumentException("item is neither chat nor chat type");
+      }
+      return;
     }
     @StringRes int stringRes;
     if (item.getId() == R.id.chat) {
@@ -781,7 +829,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
     } else {
       stringRes = inclusion ? R.string.FolderRemoveInclusionConfirmType : R.string.FolderRemoveExclusionConfirmType;
     }
-    CharSequence info = Lang.getStringBold(stringRes, title);
+    CharSequence info = StringUtils.isEmpty(title) ? null : Lang.getStringBold(stringRes, title);
     showConfirm(info, Lang.getString(R.string.Remove), R.drawable.baseline_delete_24, OptionColor.RED, () -> {
       int index = adapter.getItem(position) == item ? position : adapter.indexOfView(item);
       if (index != RecyclerView.NO_POSITION) {
@@ -899,21 +947,6 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   private class Adapter extends SettingsAdapter {
     public Adapter (ViewController<?> context) {
       super(context);
-    }
-
-    @Override
-    protected void setChatData (ListItem item, int position, BetterChatView chatView) {
-      if (item.getId() == R.id.chat) {
-        chatView.setNoSubtitle(false);
-        chatView.setChat((TGFoundChat) item.getData());
-        chatView.setAllowMaximizePreview(false);
-      } else {
-        chatView.setTitle(item.getString());
-        chatView.setSubtitle(null);
-        chatView.setNoSubtitle(true);
-        chatView.setAvatar(null, new AvatarPlaceholder.Metadata(item.getAccentColor(), item.getIconResource()));
-        chatView.clearPreviewChat();
-      }
     }
 
     @Override
@@ -1049,13 +1082,13 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
           return true;
         }
       }
-      return viewHolder.getItemViewType() == ListItem.TYPE_CHAT_BETTER;
+      return viewHolder.getItemViewType() == ListItem.TYPE_CHAT_SMALL;
     }
 
     @Override
     public void onRemove (RecyclerView.ViewHolder viewHolder) {
       ListItem item = (ListItem) viewHolder.itemView.getTag();
-      if (item.getViewType() == ListItem.TYPE_CHAT_BETTER) {
+      if (item.getViewType() == ListItem.TYPE_CHAT_SMALL) {
         int position = viewHolder.getAbsoluteAdapterPosition();
         showRemoveConditionConfirm(position, item);
       } else if (item.getId() == R.id.btn_inviteLink) {

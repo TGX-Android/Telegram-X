@@ -1229,7 +1229,14 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   private boolean showFoldersSetupSuggestion () {
     if (isFocused() && hasFolders() && Settings.instance().hasPendingFeatureAddedNotification(FeatureAvailability.Feature.CHAT_FOLDERS) && !foldersAlertShown) {
       foldersAlertShown = true;
-      new ChatFoldersFeatureController(context(), tdlib()).show();
+      ChatFoldersFeatureController c = new ChatFoldersFeatureController(context(), tdlib());
+      c.show();
+      c.setDismissListener(popup -> {
+        if (!isNavigationAnimating()) {
+          Settings.instance().revokeFeatureNotifications(FeatureAvailability.Feature.CHAT_FOLDERS);
+          showFolderTooltip(ChatPosition.CHAT_LIST_MAIN, Lang.getString(R.string.HoldToEditChatFoldersHint));
+        }
+      });
       return true;
     }
     return false;
