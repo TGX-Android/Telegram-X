@@ -56,6 +56,7 @@ import androidx.annotation.StringRes;
 import androidx.appcompat.widget.AppCompatTextView;
 import androidx.collection.SparseArrayCompat;
 import androidx.core.content.res.ResourcesCompat;
+import androidx.core.os.CancellationSignal;
 import androidx.core.util.ObjectsCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.widget.TextViewCompat;
@@ -1242,6 +1243,29 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     return false;
   }
 
+  private CancellationSignal suggestionsSignal;
+
+  @Override
+  protected void onFocusStateChanged () {
+    super.onFocusStateChanged();
+    if (suggestionsSignal != null) {
+      suggestionsSignal.cancel();
+      suggestionsSignal = null;
+    }
+    if (isFocused()) {
+      CancellationSignal signal = new CancellationSignal();
+      suggestionsSignal = signal;
+      tdlib.awaitConnection(() -> {
+        executeOnUiThreadOptional(() -> {
+          if (isFocused() && !signal.isCanceled()) {
+            signal.cancel();
+            showSuggestions();
+          }
+        });
+      });
+    }
+  }
+
   @Override
   public void onFocus () {
     super.onFocus();
@@ -1250,7 +1274,6 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (UI.TEST_MODE == UI.TEST_MODE_USER) {
       UI.TEST_MODE = UI.TEST_MODE_NONE;
     }
-    showSuggestions();
     checkSyncAlert();
     tdlib.checkDeadlocks(() -> runOnUiThreadOptional(() ->
       context().permissions().requestPostNotifications(granted -> {
