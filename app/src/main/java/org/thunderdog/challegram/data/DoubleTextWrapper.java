@@ -595,7 +595,6 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
         double radians = Math.toRadians(45f);
         float cx = receiver.centerX() + (float) ((double) (receiver.getWidth() / 2) * Math.sin(radians));
         float cy = receiver.centerY() + (float) ((double) (receiver.getHeight() / 2) * Math.cos(radians));
-        c.drawCircle(cx, cy, Screen.dp(11.5f), Paints.fillingPaint(Theme.fillingColor()));
         int backgroundColor = Theme.textDecentColor();
         c.drawCircle(cx, cy, Screen.dp(10f), Paints.fillingPaint(backgroundColor));
         c.save();
@@ -605,6 +604,12 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
         c.drawRect(cx - h, cy - lineSize / 2f, cx + h, cy + lineSize / 2f, Paints.fillingPaint(color));
         c.drawRect(cx - lineSize / 2f, cy - h, cx + lineSize / 2f, cy + h, Paints.fillingPaint(color));
         c.restore();
+
+        RectF rectF = Paints.getRectF();
+        int radius = Screen.dp(11f);
+        float sweepFactor = 1f;
+        rectF.set(cx - radius, cy - radius, cx + radius, cy + radius);
+        c.drawArc(rectF, Lang.rtl() ? 225f + 170f * (1f - sweepFactor) : 135f, 170f * sweepFactor, false, Paints.getOuterCheckPaint(Theme.fillingColor()));
       }
     }
     if (drawAnonymousIcon) {
