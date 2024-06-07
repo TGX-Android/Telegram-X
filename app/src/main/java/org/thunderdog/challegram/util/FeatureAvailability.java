@@ -40,7 +40,7 @@ public final class FeatureAvailability {
    */
   @Retention(RetentionPolicy.SOURCE)
   public @interface ReleaseVersionCode {
-    int CHAT_FOLDERS = Config.TEST_NEW_FEATURES_PROMPTS ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+    int CHAT_FOLDERS = 1725;
   }
 
   /**
