@@ -778,15 +778,10 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     }
   }
 
-  /*public void resendSectionChangeEvent (boolean animated) {
-    if (items != null && !items.isEmpty()) {
-      selectionChangeListener.onSelectionChanged(lastCallSelectionLeft, lastCallSelectionWidth, items.get(0).actualWidth, items.get(items.size() - 1).actualWidth, lastCallSelectionFactor, animated);
-    }
-  }*/
-
   public interface SelectionChangeListener {
     void onSelectionChanged (int selectionLeft, int selectionRight, int firstItemWidth, int lastItemWidth, float totalFactor, boolean animated);
     default boolean hasPendingUserInteraction () { return false; }
+    default void resetUserInteraction () { }
   }
 
   private SelectionChangeListener selectionChangeListener;
@@ -800,7 +795,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     if (this.selectionFactor != factor) {
       this.selectionFactor = factor;
       if (toIndex != -1 && (int) factor == toIndex && factor % 1f == 0) {
-        fromIndex = toIndex = -1;
+        fromIndex = toIndex = -1; selectionChangeListener.resetUserInteraction();
       }
 
       recalculateSelection(selectionFactor, true);
