@@ -20,7 +20,6 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 
@@ -40,7 +39,6 @@ public class ComplexRecyclerView extends CustomRecyclerView implements Runnable 
     this.target = target;
 
     this.scrollFactor = getMaxFactor();
-    Log.v("scrollFactor = %f (init)", scrollFactor);
     this.factorLocked = true;
     setHasFixedSize(true);
     setVerticalScrollBarEnabled(false);
