@@ -1586,7 +1586,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       headerCell.setInnerRightMarginStart(Screen.dp(49f));
       headerCell.setInnerMargins(Screen.dp(56f), calculateMenuWidth());
       headerCell.setAllowEmptyClick();
-      headerCell.setAllowTitleLongPress();
       headerCell.initWithController(this, false);
       headerCell.setPhotoOpenCallback(this);
 
@@ -5198,8 +5197,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private void setHeaderText () {
     if (headerCell != null && chat != null) {
+      final TdApi.Chat _chat = this.chat;
       headerCell.setUseRedHighlight(tdlib.isRedTeam(chat.id));
       headerCell.setText(tdlib.chatTitle(chat, false), makeSubtitle(false));
+      headerCell.setAllowTitleClick(() -> _chat);
       headerCell.setEmojiStatus(tdlib.chatUser(chat));
       headerCell.setExpandedSubtitle(makeSubtitle(true));
     }

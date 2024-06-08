@@ -97,6 +97,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.reference.ReferenceList;
+import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
 public class SettingsController extends ViewController<Void> implements
@@ -396,7 +397,6 @@ public class SettingsController extends ViewController<Void> implements
     this.headerCell.initWithController(this, true);
     this.headerCell.setInnerMargins(Screen.dp(56f), Screen.dp(49f));
     this.headerCell.setPhotoOpenCallback(this);
-    this.headerCell.setAllowTitleLongPress();
     this.headerCell.setOnEmojiStatusClickListener(v -> {
       EmojiStatusSelectorEmojiPage.Wrapper c = new EmojiStatusSelectorEmojiPage.Wrapper(context, tdlib, SettingsController.this, new EmojiStatusSelectorEmojiPage.AnimationsEmojiStatusSetDelegate() {
         @Override
@@ -923,9 +923,11 @@ public class SettingsController extends ViewController<Void> implements
   private void updateHeader () {
     TdApi.User user = tdlib.myUser();
     if (headerCell != null) {
+      final TdApi.Chat chat = user != null ?  tdlib.chat(ChatId.fromUserId(user.id)) : null;
       headerCell.getAvatarReceiver().requestUser(tdlib, tdlib.myUserId(), AvatarReceiver.Options.FULL_SIZE);
       headerCell.setText(user != null ? TD.getUserName(user) : Lang.getString(R.string.LoadingUser), getSubtext());
       headerCell.setEmojiStatus(user);
+      headerCell.setAllowTitleClick(() -> chat);
       headerCell.invalidate();
     }
   }

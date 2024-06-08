@@ -62,7 +62,7 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.SimpleMediaViewController;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.EmojiStatusHelper;
-import org.thunderdog.challegram.util.StringList;
+import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextEntity;
@@ -81,9 +81,9 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
-import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.core.lambda.Future;
 
 public class ComplexHeaderView extends BaseView implements RtlCheckListener, StickerPreviewView.PreviewCallback, StickerPreviewView.MenuStickerPreviewCallback, StretchyHeaderView, TextChangeDelegate, Destroyable, ColorSwitchPreparator, MediaCollectorDelegate, BaseView.CustomControllerProvider, TdlibStatusManager.HelperTarget, TGLegacyManager.EmojiLoadListener, HeaderView.OffsetChangeListener {
   private static final int FLAG_SHOW_LOCK = 1;
@@ -101,7 +101,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
   private static final int FLAG_NO_EXPAND = 1 << 18;
   private static final int FLAG_SHOW_SCAM = 1 << 19;
   private static final int FLAG_SHOW_FAKE = 1 << 20;
-  private static final int FLAG_ALLOW_TITLE_LONG_PRESS = 1 << 21;
+  private static final int FLAG_ALLOW_TITLE_CLICK = 1 << 21;
 
   protected float scaleFactor;
 
@@ -135,6 +135,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
     this.emojiStatusHelper = new EmojiStatusHelper(tdlib, this, null);
     setCustomControllerProvider(this);
     TGLegacyManager.instance().addEmojiListener(this);
+    setOnEmojiStatusClickListener(null);
   }
 
   public void setIgnoreDrawEmojiStatus (boolean ignoreDrawEmojiStatus) {
@@ -143,6 +144,14 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
   }
 
   public void setOnEmojiStatusClickListener (View.OnClickListener clickListener) {
+    if (clickListener == null) {
+      emojiStatusHelper.setClickListener(v -> {
+        if (!isCollapsed() && BitwiseUtils.hasFlag(flags, FLAG_ALLOW_TITLE_CLICK)) {
+          onTitleClick();
+        }
+      });
+      return;
+    }
     emojiStatusHelper.setClickListener(clickListener);
   }
 
@@ -1080,13 +1089,41 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
     return caught;
   }
 
-  public void setAllowTitleLongPress () {
-    this.flags = BitwiseUtils.setFlag(flags, FLAG_ALLOW_TITLE_LONG_PRESS, true);
+  private Future<ViewController.Options> titleOptionsBuilder;
+  private OptionDelegate titleOptionsDelegate;
+
+  public void setAllowTitleClick (Future<TdApi.Chat> chatRunnableData) {
+    final ViewController.Options.Builder builder = new ViewController.Options.Builder();
+
+    builder.info(Lang.boldify(title));
+    builder.item(new ViewController.OptionItem(R.id.btn_copyText, Lang.getString(R.string.CopyDisplayName), ViewController.OptionColor.NORMAL, R.drawable.baseline_content_copy_24));
+
+    final TdApi.Chat chat = chatRunnableData != null ?  chatRunnableData.getValue() : null;
+    final String username = tdlib.chatUsername(chat);
+
+    if (!StringUtils.isEmpty(username)) {
+      builder.item(new ViewController.OptionItem(R.id.btn_copyUsername, Lang.getString(R.string.CopyUsername), ViewController.OptionColor.NORMAL, R.drawable.baseline_content_copy_24));
+    }
+
+    setAllowTitleClick(builder::build, (itemView, id) -> {
+      if (id == R.id.btn_copyText) {
+        UI.copyText(title, R.string.CopiedDisplayName);
+      } else if (id == R.id.btn_copyUsername) {
+        UI.copyText('@' + username, R.string.CopiedUsername);
+      }
+      return true;
+    });
+  }
+
+  public void setAllowTitleClick (Future<ViewController.Options> titleOptionsBuilder, OptionDelegate titleOptionsDelegate) {
+    this.titleOptionsBuilder = titleOptionsBuilder;
+    this.titleOptionsDelegate = titleOptionsDelegate;
+    this.flags = BitwiseUtils.setFlag(flags, FLAG_ALLOW_TITLE_CLICK, true);
   }
 
   @Override
   public boolean needLongPress (float x, float y) {
-    return super.needLongPress(x, y) || !isCollapsed() && emojiStatusClickRect.contains(x, y);
+    return super.needLongPress(x, y) || !isCollapsed() && (emojiStatusClickRect.contains(x, y) || BitwiseUtils.hasFlag(flags, FLAG_ALLOW_TITLE_CLICK) && trimmedTitleClickRect.contains(x, y));
   }
 
   @Override
@@ -1104,7 +1141,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
       return true;
     }
 
-    if (BitwiseUtils.hasFlag(flags, FLAG_ALLOW_TITLE_LONG_PRESS) && trimmedTitleClickRect.contains(x, y)) {
+    if (BitwiseUtils.hasFlag(flags, FLAG_ALLOW_TITLE_CLICK) && trimmedTitleClickRect.contains(x, y)) {
       onTitleClick();
       return true;
     }
@@ -1132,7 +1169,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
   public boolean needClickAt (View view, float x, float y) {
     return (super.needClickAt(view, x, y) && y < calculateHeaderHeight())
       || !isCollapsed() && (
-        BitwiseUtils.hasFlag(flags, FLAG_ALLOW_TITLE_LONG_PRESS) && trimmedTitleClickRect.contains(x, y)
+        BitwiseUtils.hasFlag(flags, FLAG_ALLOW_TITLE_CLICK) && trimmedTitleClickRect.contains(x, y)
         || emojiStatusClickRect.contains(x, y)
       )
       || checkCaught(x, y, false);
@@ -1146,7 +1183,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
         return;
       }
 
-      if (BitwiseUtils.hasFlag(flags, FLAG_ALLOW_TITLE_LONG_PRESS) && trimmedTitleClickRect.contains(x, y)) {
+      if (BitwiseUtils.hasFlag(flags, FLAG_ALLOW_TITLE_CLICK) && trimmedTitleClickRect.contains(x, y)) {
         onTitleClick();
         return;
       }
@@ -1305,27 +1342,19 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
     context().openStickerMenu(this, emojiStatusPreviewObj);
   }
 
+  public String getTitle () {
+    return title;
+  }
+
   private TGStickerObj emojiStatusPreviewObj;
   private boolean ignoreNextStickerChanges;
 
   private void onTitleClick () {
-    final String copyText = title;
-    final int size = 1;
-    IntList ids = new IntList(size);
-    StringList strings = new StringList(size);
-    IntList icons = new IntList(size);
+    if (titleOptionsBuilder == null || titleOptionsDelegate == null) {
+      return;
+    }
 
-    ids.append(R.id.btn_copyText);
-    strings.append(R.string.CopyDisplayName);
-    icons.append(R.drawable.baseline_content_copy_24);
-
-    final PopupLayout layout = parent.showOptions(Lang.boldify(copyText), ids.get(), strings.get(), null, icons.get(), (itemView, id) -> {
-      if (id == R.id.btn_copyText) {
-        UI.copyText(copyText, R.string.CopiedDisplayName);
-      }
-      return true;
-    }, null);
-
+    final PopupLayout layout = parent.showOptions(titleOptionsBuilder.getValue(), titleOptionsDelegate, null);
     patchOptions(layout, emojiStatusHelper.getSticker());
   }
 
