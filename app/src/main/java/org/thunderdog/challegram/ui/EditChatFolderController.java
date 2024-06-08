@@ -275,8 +275,6 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     }
 
-    items.add(new ListItem(ListItem.TYPE_PADDING).setHeight(Size.getHeaderSizeDifference(false)));
-
     adapter = new Adapter(this);
     adapter.setItems(items, false);
     recyclerView.setAdapter(adapter);
@@ -296,7 +294,15 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   protected RecyclerView onCreateRecyclerView () {
     CustomItemAnimator itemAnimator = new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
     itemAnimator.setSupportsChangeAnimations(false);
-    ComplexRecyclerView recyclerView = new ComplexRecyclerView(context, this);
+    ComplexRecyclerView recyclerView = new ComplexRecyclerView(context, this) {
+      @Override
+      protected void onSizeChanged (int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        if ((oldh != 0 && oldw != 0) && (oldh != h || oldw != w)) {
+          runOnUiThreadOptional(this::invalidateItemDecorations);
+        }
+      }
+    };
     recyclerView.setItemAnimator(itemAnimator);
     recyclerView.setLayoutManager(new LinearLayoutManager(context, RecyclerView.VERTICAL, false));
     recyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -1261,10 +1267,42 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   private class ItemDecoration extends RecyclerView.ItemDecoration {
     @Override
     public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+      int position = parent.getChildAdapterPosition(view);
+      if (position == RecyclerView.NO_POSITION) {
+        return;
+      }
       outRect.setEmpty();
-      RecyclerView.ViewHolder viewHolder = parent.getChildViewHolder(view);
-      if (viewHolder.getItemViewType() == ListItem.TYPE_ZERO_VIEW && isDoneVisible()) {
-        outRect.bottom = Screen.dp(76);
+      int lastIndex = adapter.getItemCount() - 1;
+      boolean isLast = position == lastIndex;
+
+      if (isLast) {
+        LinearLayoutManager manager = (LinearLayoutManager) parent.getLayoutManager();
+        int recyclerHeight = recyclerView.getMeasuredHeight();
+        int emptyHeight;
+        if (manager.findFirstCompletelyVisibleItemPosition() == 0 && manager.findLastCompletelyVisibleItemPosition() == lastIndex) {
+          View lastView = manager.findViewByPosition(lastIndex);
+          int lastBottom = lastView != null ? lastView.getBottom() : recyclerHeight;
+          emptyHeight = recyclerHeight - lastBottom;
+        } else {
+          int contentHeight = 0;
+          for (int i = 0; i < adapter.getItemCount(); i++) {
+            View childView = manager.findViewByPosition(i);
+            if (childView != null) {
+              contentHeight += manager.getDecoratedMeasuredHeight(childView);
+            } else {
+              ListItem item = adapter.getItem(i);
+              try {
+                contentHeight += SettingHolder.measureHeightForType(item);
+              } catch (Throwable ignored) { }
+            }
+          }
+          emptyHeight = recyclerHeight - contentHeight;
+        }
+        int minScrollableHeight = 0;
+        if (isDoneVisible()) {
+          minScrollableHeight = Screen.dp(76f);
+        }
+        outRect.bottom = Math.max(minScrollableHeight, emptyHeight + Size.getHeaderSizeDifference(false));
       }
     }
   }
