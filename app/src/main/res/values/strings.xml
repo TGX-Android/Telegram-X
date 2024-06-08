@@ -5088,6 +5088,10 @@
   <string name="ShowXMore_one">%1$s more</string>
   <string name="ShowXMore_other">%1$s more</string>
 
+  <string name="ArchiveAppearanceTitle">Appearance</string>
+  <string name="ArchiveAppearanceToggle">Show as folder</string>
+  <string name="ArchiveAppearanceHint">Display archive as a local folder. You can change its position in [settings](tg://settings/folders).</string>
+
   <string name="ChatTypes">Chat types</string>
   <string name="ChatFolders">Chat Folders</string>
   <string name="ChatFoldersInfo">Create folders for different groups of chats and quickly switch between them.</string>
