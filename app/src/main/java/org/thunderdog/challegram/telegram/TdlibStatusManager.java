@@ -643,6 +643,10 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
   }
 
   public String getPrivateChatSubtitle (long userId, @Nullable TdApi.User user, boolean allowMyself, boolean allowDuration) {
+    return getPrivateChatSubtitle(userId, user, allowMyself, allowDuration, false);
+  }
+
+  public String getPrivateChatSubtitle (long userId, @Nullable TdApi.User user, boolean allowMyself, boolean allowDuration, boolean fallbackToContactStatus) {
     if (allowMyself && tdlib.isSelfUserId(userId)) {
       return Lang.lowercase(Lang.getString(R.string.ChatWithYourself));
     }
@@ -668,6 +672,20 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
       }
       case TdApi.UserTypeUnknown.CONSTRUCTOR: {
         return Lang.getString(R.string.unknownUser);
+      }
+      case TdApi.UserTypeRegular.CONSTRUCTOR: {
+        if (fallbackToContactStatus) {
+          return Lang.getString(
+            user.isMutualContact ? R.string.ChatTypeMutualContact :
+            user.isContact ? R.string.ChatTypeContact :
+            R.string.ChatTypeNonContact
+          );
+        }
+        break;
+      }
+      default: {
+        Td.assertUserType_233bc6f4();
+        throw Td.unsupported(user.type);
       }
     }
     return Lang.getUserStatus(tdlib, user.status, allowDuration);

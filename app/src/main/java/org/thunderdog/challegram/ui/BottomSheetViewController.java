@@ -434,7 +434,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
     popupLayout.setDismissListener(l);
   }
 
-  protected PopupLayout getPopupLayout () {
+  protected final PopupLayout getPopupLayout () {
     return popupLayout;
   }
 

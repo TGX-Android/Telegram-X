@@ -87,10 +87,6 @@ public class RippleSupport {
     }
   }
 
-  public static void setCircleBackground (View view, float size, float padding, @ColorId int colorId) {
-    setCircleBackground(view, size, padding, colorId, null);
-  }
-
   public static void changeViewColor (View view, @ColorId int fromColorId, @ColorId int toColorId, float factor) {
     if (view != null) {
       Drawable drawable = view.getBackground();
@@ -147,12 +143,14 @@ public class RippleSupport {
     return 0;
   }
 
-  public static void setCircleBackground (View view, float size, float padding, @ColorId int colorId, @Nullable ViewController<?> themeProvider) {
+  public static void setCircleBackground (View view, float size, float padding, @ColorId int colorId, boolean needShadow, @Nullable ViewController<?> themeProvider) {
     ViewUtils.setBackground(view, Theme.circleSelector(size, colorId));
     if (SimpleShapeDrawable.USE_SOFTWARE_SHADOW) {
       view.setLayerType(View.LAYER_TYPE_SOFTWARE, Views.getLayerPaint());
     }
-    Views.initCircleButton(view, size, padding);
+    if (needShadow) {
+      Views.initCircleButton(view, size, padding);
+    }
     if (themeProvider != null) {
       themeProvider.addThemeInvalidateListener(view);
     }

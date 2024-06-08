@@ -180,7 +180,8 @@ public class Settings {
   private static final int VERSION_43 = 43; // optimize recent custom emoji
   private static final int VERSION_44 = 44; // 8-bit -> 32-bit account flags
   private static final int VERSION_45 = 45; // Reset "Big emoji" setting to default
-  private static final int VERSION = VERSION_45;
+  private static final int VERSION_46 = 46; // Remove folders experimental setting
+  private static final int VERSION = VERSION_46;
 
   private static final AtomicBoolean hasInstance = new AtomicBoolean(false);
   private static volatile Settings instance;
@@ -423,8 +424,9 @@ public class Settings {
   public static final long SETTING_FLAG_DYNAMIC_ORDER_EMOJI_PACKS = 1 << 18;
 
   public static final long EXPERIMENT_FLAG_ALLOW_EXPERIMENTS = 1;
-  public static final long EXPERIMENT_FLAG_ENABLE_FOLDERS = 1 << 1;
   public static final long EXPERIMENT_FLAG_SHOW_PEER_IDS = 1 << 2;
+
+  public static final long REMOVED_EXPERIMENT_FLAG_ENABLE_FOLDERS = 1 << 1;
 
   private static final @Deprecated int DISABLED_FLAG_OTHER_NEED_RAISE_TO_SPEAK = 1 << 2;
   private static final @Deprecated int DISABLED_FLAG_OTHER_AUTODOWNLOAD_IN_BACKGROUND = 1 << 3;
@@ -870,16 +872,20 @@ public class Settings {
       pmc.removeByPrefix(KEY_TUTORIAL_PSA);
     }
     if (Config.TEST_NEW_FEATURES_PROMPTS) {
-      pmc
-        .putLong(KEY_FEATURES, 0 /*no features were available*/)
-        .remove(KEY_FEATURES_ADDED_NOTIFICATIONS)
-        .remove(KEY_FEATURES_REMOVED_NOTIFICATIONS);
+      forceRevokeAllFeaturePrompts();
     }
     trackInstalledApkVersion();
     trackChangesInAvailableFeatures();
     Log.i("Opened database in %dms", SystemClock.uptimeMillis() - ms);
     checkPendingPasscodeLocks();
     applyLogSettings(true);
+  }
+
+  public void forceRevokeAllFeaturePrompts () {
+    pmc
+      .putLong(KEY_FEATURES, 0 /*no features were available*/)
+      .remove(KEY_FEATURES_ADDED_NOTIFICATIONS)
+      .remove(KEY_FEATURES_REMOVED_NOTIFICATIONS);
   }
 
   // Schedule
@@ -1355,11 +1361,7 @@ public class Settings {
 
   private long getExperiments () {
     if (_experiments == null) {
-      long experiments = pmc.getLong(KEY_EXPERIMENTS, makeDefaultExperiments());
-      if (FeatureAvailability.Released.CHAT_FOLDERS) {
-        experiments &= ~EXPERIMENT_FLAG_ENABLE_FOLDERS;
-      }
-      _experiments = experiments;
+      _experiments = pmc.getLong(KEY_EXPERIMENTS, makeDefaultExperiments());
     }
     return _experiments;
   }
@@ -2177,6 +2179,14 @@ public class Settings {
       }
       case VERSION_45: {
         resetOtherFlag(pmc, editor, FLAG_OTHER_DISABLE_BIG_EMOJI, false);
+        break;
+      }
+      case VERSION_46: {
+        long experiments = pmc.getLong(KEY_EXPERIMENTS, makeDefaultExperiments());
+        if (BitwiseUtils.hasFlag(experiments, REMOVED_EXPERIMENT_FLAG_ENABLE_FOLDERS)) {
+          experiments &= ~REMOVED_EXPERIMENT_FLAG_ENABLE_FOLDERS;
+          editor.putLong(KEY_EXPERIMENTS, experiments);
+        }
         break;
       }
     }
@@ -7165,7 +7175,7 @@ public class Settings {
   }
 
   public boolean chatFoldersEnabled () {
-    return FeatureAvailability.Released.CHAT_FOLDERS || isExperimentEnabled(EXPERIMENT_FLAG_ENABLE_FOLDERS);
+    return FeatureAvailability.Released.CHAT_FOLDERS;
   }
 
   public boolean showPeerIds () {

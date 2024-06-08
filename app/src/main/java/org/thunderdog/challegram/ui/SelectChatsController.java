@@ -297,11 +297,13 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     return ResourcesCompat.ID_NULL;
   }
 
+  private static final int MAX_BUBBLE_LINES = 3;
+
   @Override
   protected View onCreateView (Context context) {
     View view = super.onCreateView(context);
     if (hasBubbles()) {
-      headerCell = new BubbleHeaderView(context, tdlib, /* maxBubbleLines */ 3);
+      headerCell = new BubbleHeaderView(context, tdlib, MAX_BUBBLE_LINES);
       if (mode == MODE_FOLDER_INCLUDE_CHATS) {
         headerCell.setHint(bindLocaleChanger(R.string.IncludeChatsHint, headerCell.getInput(), /* isHint */ true, /* isMedium */ false));
       } else if (mode == MODE_FOLDER_EXCLUDE_CHATS) {
@@ -523,7 +525,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
   }
 
   private BubbleView.Entry chatBubble (long chatId) {
-    return BubbleView.Entry.valueOf(tdlib, tdlib.sender(chatId));
+    return BubbleView.Entry.valueOf(tdlib, chatId);
   }
 
   private BubbleView.Entry chatTypeBubble (@IdRes int chatType) {
@@ -587,7 +589,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
 
   private DoubleTextWrapper chatData (TdApi.Chat chat) {
     String subtitle = buildFolderListSubtitle(tdlib, chat);
-    DoubleTextWrapper data = new DoubleTextWrapper(tdlib, chat, /* needSubtitle */ false);
+    DoubleTextWrapper data = new DoubleTextWrapper(tdlib, chat, false, true);
     data.setAdminSignVisible(false, false);
     data.setForcedSubtitle(subtitle);
     data.setForceSingleLine(StringUtils.isEmpty(subtitle));
@@ -808,7 +810,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
 
   @Override
   protected int getMaximumHeaderHeight () {
-    return hasBubbles() ? Size.getHeaderBigPortraitSize(false) : super.getMaximumHeaderHeight();
+    return hasBubbles() ? Size.getHeaderPortraitSize() + BubbleHeaderView.maxBubbleHeight(MAX_BUBBLE_LINES) : super.getMaximumHeaderHeight();
   }
 
   @Override
@@ -937,24 +939,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
   }
 
   private static @Nullable String buildFolderListSubtitle (Tdlib tdlib, TdApi.Chat chat) {
-    TdApi.ChatPosition[] chatPositions = chat.positions;
-    if (chatPositions != null && chatPositions.length > 0) {
-      StringBuilder sb = new StringBuilder();
-      for (TdApi.ChatPosition chatPosition : chatPositions) {
-        if (!TD.isChatListFolder(chatPosition.list))
-          continue;
-        TdApi.ChatListFolder chatListFilter = (TdApi.ChatListFolder) chatPosition.list;
-        TdApi.ChatFolderInfo chatFolderInfo = tdlib.chatFolderInfo(chatListFilter.chatFolderId);
-        if (chatFolderInfo == null || StringUtils.isEmptyOrBlank(chatFolderInfo.title))
-          continue;
-        if (sb.length() > 0) {
-          sb.append(", ");
-        }
-        sb.append(chatFolderInfo.title);
-      }
-      return sb.toString();
-    }
-    return null;
+    return TD.joinChatFolderNamesToString(tdlib, chat, 0);
   }
 
   public interface Delegate {

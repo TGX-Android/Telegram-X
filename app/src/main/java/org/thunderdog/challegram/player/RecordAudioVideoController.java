@@ -347,7 +347,7 @@ public class RecordAudioVideoController implements
       this.switchCameraButton.setIsSmall();
       this.switchCameraButtonWrap = new FrameLayoutFix(context);
       Views.setClickable(switchCameraButtonWrap);
-      RippleSupport.setCircleBackground(switchCameraButtonWrap, 33f, 3f, ColorId.filling);
+      RippleSupport.setCircleBackground(switchCameraButtonWrap, 33f, 3f, ColorId.filling, true, null);
       this.switchCameraButtonWrap.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(33f) + Screen.dp(3f) * 2, Screen.dp(33f) + Screen.dp(3f) * 2));
       this.switchCameraButtonWrap.setOnClickListener(v -> {
         if (ownedCamera != null) {

@@ -45,6 +45,7 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.MainController.UnreadCounterColorSet;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.v.CustomRecyclerView;
+import org.thunderdog.challegram.widget.CircleButton;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.ViewPager;
@@ -114,9 +115,10 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
   protected void setupPopupLayout (PopupLayout popupLayout) {
     super.setupPopupLayout(popupLayout);
     popupLayout.setHideKeyboard();
+    popupLayout.setTouchDownInterceptor((popup, event) -> true);
   }
 
-  protected static class Page extends BottomSheetBaseRecyclerViewController<Void> {
+  protected class Page extends BottomSheetBaseRecyclerViewController<Void> {
 
     private static final float PREVIEW_BORDER_WIDTH = 2f;
     private static final float PREVIEW_BORDER_RADIUS = 30f;
@@ -147,12 +149,23 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
     protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
       TdApi.ChatFolderInfo[] chatFolders = tdlib.chatFolders();
 
-      LinearLayout singleView = new LinearLayout(context) {{
-        setOrientation(LinearLayout.VERTICAL);
+      FrameLayoutFix singleView = new FrameLayoutFix(context) {{
+        int contentTopMargin;
         if (chatFolders.length > 0) {
-          addView(buildPreviewView(chatFolders), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 123, 39, 45, 39, 0));
+          int previewHeight = 123;
+          int previewTopMargin = 45;
+          contentTopMargin = previewTopMargin + previewHeight;
+          addView(buildPreviewView(chatFolders), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, previewHeight, Gravity.TOP, 39, previewTopMargin, 39, 0));
+
+          CircleButton closeButton = new CircleButton(context);
+          closeButton.init(R.drawable.baseline_close_20, 0, 32f, 12f, ColorId.circleButtonOverlay, ColorId.circleButtonOverlayIcon, false);
+          closeButton.setOnClickListener(v -> parent.hidePopupWindow(true));
+          addView(closeButton, LayoutHelper.createFrame(56f, 56f, Gravity.RIGHT | Gravity.TOP));
+          addThemeInvalidateListener(closeButton);
+        } else {
+          contentTopMargin = 0;
         }
-        addView(buildContentView(), LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT);
+        addView(buildContentView(), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 0, contentTopMargin, 0, 0));
       }};
       recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
       recyclerView.setItemAnimator(null);
@@ -161,7 +174,7 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
 
     @Override
     public boolean needsTempUpdates () {
-      return super.needsTempUpdates();
+      return super.needsTempUpdates() || getPopupLayout().isBoundWindowShowing();
     }
 
     public int getTotalHeight () {
@@ -194,15 +207,15 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
       button.setGravity(Gravity.CENTER);
       button.setAllCaps(true);
       button.setId(R.id.btn_done);
-      button.setTextColor(Theme.getColor(ColorId.white));
+      button.setTextColor(Theme.getColor(ColorId.fillingPositiveContent));
       button.setOnClickListener(v -> {
         parent.hidePopupWindow(true);
         // revokeFeatureNotifications is called inside SettingsFoldersController.onFocus
         UI.getContext(context).navigation().navigateTo(new SettingsFoldersController(context, tdlib));
       });
-      addThemeTextColorListener(button, ColorId.white);
+      addThemeTextColorListener(button, ColorId.fillingPositiveContent);
       Views.setMediumText(button, Lang.getString(R.string.ChatFoldersSetupSuggestionAction));
-      RippleSupport.setSimpleWhiteBackground(button, ColorId.playerButtonActive, this);
+      RippleSupport.setSimpleWhiteBackground(button, ColorId.fillingPositive, this);
       return button;
     }
 
@@ -221,17 +234,17 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
       title.setPadding(contentHorizontalPadding, contentVerticalPadding, contentHorizontalPadding, contentSpacing);
       title.setTextSize(18f);
       title.setTypeface(Fonts.getRobotoMedium());
-      title.setText(R.string.ChatFoldersSetupSuggestionTitle);
+      title.setText(Lang.getString(R.string.ChatFoldersSetupSuggestionTitle));
       TextViewCompat.setLineHeight(title, Screen.sp(21f));
       contentView.addView(title, LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT);
 
       TextView text = new TextView(context);
-      text.setTextColor(Theme.getColor(ColorId.background_text));
-      addThemeTextColorListener(text, ColorId.background_text);
+      text.setTextColor(Theme.getColor(ColorId.textLight));
+      addThemeTextColorListener(text, ColorId.textLight);
       text.setPadding(contentHorizontalPadding, 0, contentHorizontalPadding, contentVerticalPadding);
       text.setTextSize(15f);
       text.setTypeface(Fonts.getRobotoRegular());
-      text.setText(R.string.ChatFoldersSetupSuggestionText);
+      text.setText(Lang.getMarkdownString(this, R.string.ChatFoldersSetupSuggestionText));
       TextViewCompat.setLineHeight(text, Screen.sp(17.6f));
       contentView.addView(text, LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT);
 
@@ -383,7 +396,7 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
       fade.setColors(new int[] {Color.TRANSPARENT, Theme.getColor(getRecyclerBackground())});
     }
 
-    static LayerDrawable buildPreviewBackground (int borderRadius, int borderWidth, int headerHeight) {
+    LayerDrawable buildPreviewBackground (int borderRadius, int borderWidth, int headerHeight) {
       GradientDrawable border = new GradientDrawable();
       border.setShape(GradientDrawable.RECTANGLE);
       border.setCornerRadius(borderRadius);

@@ -31,6 +31,8 @@ import org.thunderdog.challegram.v.CustomRecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.vkryl.td.ChatPosition;
+
 public class SettingsArchiveChatListController extends RecyclerViewController<Void> implements View.OnClickListener, NotificationSettingsListener {
   public SettingsArchiveChatListController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -68,6 +70,8 @@ public class SettingsArchiveChatListController extends RecyclerViewController<Vo
           view.getToggler().setRadioEnabled(archiveChatListSettings != null && archiveChatListSettings.keepChatsFromFoldersArchived, isUpdate);
         } else if (id == R.id.btn_archiveMuteNonContacts) {
           view.getToggler().setRadioEnabled(archiveChatListSettings != null && archiveChatListSettings.archiveAndMuteNewChatsFromUnknownUsers, isUpdate);
+        } else if (id == R.id.btn_archiveAsFolder) {
+          view.getToggler().setRadioEnabled(tdlib.settings().isChatListEnabled(ChatPosition.CHAT_LIST_ARCHIVE), isUpdate);
         }
       }
     };
@@ -111,6 +115,14 @@ public class SettingsArchiveChatListController extends RecyclerViewController<Vo
         items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ArchiveNonContactsInfo));
       }
 
+      if (tdlib.hasFolders()) {
+        items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.ArchiveAppearanceTitle));
+        items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+        items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_archiveAsFolder, 0, R.string.ArchiveAppearanceToggle));
+        items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+        items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, R.string.ArchiveAppearanceHint)));
+      }
+
       adapter.setItems(items, false);
     }
   }
@@ -149,6 +161,9 @@ public class SettingsArchiveChatListController extends RecyclerViewController<Vo
           tdlib.listeners().notifyArchiveChatListSettingsChanged(archiveChatListSettings);
         }
       });
+    } else if (id == R.id.btn_archiveAsFolder) {
+      boolean value = adapter.toggleView(v);
+      tdlib.settings().setChatListEnabled(ChatPosition.CHAT_LIST_ARCHIVE, value);
     }
   }
 

@@ -28,6 +28,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.Receiver;
@@ -86,13 +87,13 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
   private final MultipleViewProvider currentViews = new MultipleViewProvider();
   private final BounceAnimator isAnonymous = new BounceAnimator(currentViews);
   private final int horizontalPadding = Screen.dp(72f) + Screen.dp(11f);
-  private boolean forceSingleLine;
+  private boolean forceSingleLine, allowSavedMessages;
 
   public DoubleTextWrapper (Tdlib tdlib, TdApi.Chat chat) {
-    this(tdlib, chat, /* needSubtitle */ true);
+    this(tdlib, chat, /* needSubtitle */ true, false);
   }
 
-  public DoubleTextWrapper (Tdlib tdlib, TdApi.Chat chat, boolean needSubtitle) {
+  public DoubleTextWrapper (Tdlib tdlib, TdApi.Chat chat, boolean needSubtitle, boolean allowSavedMessages) {
     this.tdlib = tdlib;
 
     this.chatId = chat.id;
@@ -106,8 +107,13 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
       setChatMark(false, false);
     }
 
-    setTitle(chat.title);
-    this.avatarPlaceholder = tdlib.chatPlaceholder(chat, false, AVATAR_PLACEHOLDER_RADIUS, null);
+    if (allowSavedMessages || !tdlib.isUserChat(chat)) {
+      setTitle(tdlib.chatTitle(chat));
+    } else {
+      setTitle(tdlib.cache().userName(tdlib.chatUserId(chat)));
+    }
+    this.allowSavedMessages = allowSavedMessages;
+    this.avatarPlaceholder = tdlib.chatPlaceholder(chat, allowSavedMessages, AVATAR_PLACEHOLDER_RADIUS, null);
     if (chat.photo != null) {
       setPhoto(chat.photo.small);
     }
@@ -261,6 +267,10 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
         currentViews.invalidate();
       }
     }
+  }
+
+  public @Nullable String getTitle () {
+    return title;
   }
 
   public void updateSubtitle () {
@@ -491,6 +501,20 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
     this.trimmedTitle = StringUtils.isEmpty(title) ? null : new Text.Builder(title, availWidth, Paints.robotoStyleProvider(15), TextColorSets.Regular.NORMAL).allBold().singleLine().build();
   }
 
+  public void requestAvatar (AvatarReceiver receiver) {
+    TdApi.MessageSender sender = getSenderId();
+    AvatarPlaceholder placeholder = getAvatarPlaceholder();
+    if (allowSavedMessages && getChatId() != 0) {
+      receiver.requestChat(tdlib, getChatId(), AvatarReceiver.Options.NONE);
+    } else if (sender != null) {
+      receiver.requestMessageSender(tdlib, sender, AvatarReceiver.Options.NONE);
+    } else if (placeholder != null) {
+      receiver.requestPlaceholder(tdlib, placeholder.metadata, AvatarReceiver.Options.NONE);
+    } else {
+      receiver.clear();
+    }
+  }
+
   public void invalidateEmojiStatusReceiver (Text text, @Nullable TextMedia specificMedia) {
     currentViews.performWithViews(view -> {
       if (view instanceof EmojiStatusHelper.EmojiStatusReceiverInvalidateDelegate) {
@@ -571,7 +595,6 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
         double radians = Math.toRadians(45f);
         float cx = receiver.centerX() + (float) ((double) (receiver.getWidth() / 2) * Math.sin(radians));
         float cy = receiver.centerY() + (float) ((double) (receiver.getHeight() / 2) * Math.cos(radians));
-        c.drawCircle(cx, cy, Screen.dp(11.5f), Paints.fillingPaint(Theme.fillingColor()));
         int backgroundColor = Theme.textDecentColor();
         c.drawCircle(cx, cy, Screen.dp(10f), Paints.fillingPaint(backgroundColor));
         c.save();
@@ -581,6 +604,12 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
         c.drawRect(cx - h, cy - lineSize / 2f, cx + h, cy + lineSize / 2f, Paints.fillingPaint(color));
         c.drawRect(cx - lineSize / 2f, cy - h, cx + lineSize / 2f, cy + h, Paints.fillingPaint(color));
         c.restore();
+
+        RectF rectF = Paints.getRectF();
+        int radius = Screen.dp(11f);
+        float sweepFactor = 1f;
+        rectF.set(cx - radius, cy - radius, cx + radius, cy + radius);
+        c.drawArc(rectF, Lang.rtl() ? 225f + 170f * (1f - sweepFactor) : 135f, 170f * sweepFactor, false, Paints.getOuterCheckPaint(Theme.fillingColor()));
       }
     }
     if (drawAnonymousIcon) {
