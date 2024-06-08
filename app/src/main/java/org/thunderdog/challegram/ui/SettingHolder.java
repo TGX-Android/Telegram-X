@@ -601,6 +601,9 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_PADDING: {
         PaddingView paddingView = new PaddingView(context);
         paddingView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        if (themeProvider != null) {
+          themeProvider.addThemeInvalidateListener(paddingView);
+        }
         return new SettingHolder(paddingView);
       }
       case ListItem.TYPE_SEPARATOR_FULL:
