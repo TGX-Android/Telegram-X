@@ -841,7 +841,7 @@ public class StickersListController extends ViewController<StickersListControlle
   }
 
   @Override
-  public void buildMenuStickerPreview (ArrayList<StickerPreviewView.MenuItem> menuItems, @NonNull TGStickerObj sticker, @NonNull StickerSmallView stickerSmallView) {
+  public void buildMenuStickerPreview (ArrayList<StickerPreviewView.MenuItem> menuItems, @NonNull TGStickerObj sticker) {
     final NavigationController navigation = context.navigation();
     final ViewController<?> c = navigation != null ? navigation.getCurrentStackItem() : null;
     final boolean canWriteMessages = c instanceof MessagesController && ((MessagesController) c).canWriteMessages();
@@ -861,8 +861,12 @@ public class StickersListController extends ViewController<StickersListControlle
   }
 
   @Override
-  public void onMenuStickerPreviewClick (View v, ViewController<?> context, @NonNull TGStickerObj sticker, @NonNull StickerSmallView stickerSmallView) {
+  public void onMenuStickerPreviewClick (View v, ViewController<?> context, @NonNull TGStickerObj sticker, @Nullable StickerSmallView stickerSmallView) {
     final int viewId = v.getId();
+    if (stickerSmallView == null) {
+      return;
+    }
+
     if (viewId == R.id.btn_send) {
       if (stickerSmallView.onSendSticker(v, sticker, Td.newSendOptions())) {
         stickerSmallView.closePreviewIfNeeded();

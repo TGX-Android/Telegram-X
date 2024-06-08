@@ -396,7 +396,8 @@ public class SettingsController extends ViewController<Void> implements
     this.headerCell.initWithController(this, true);
     this.headerCell.setInnerMargins(Screen.dp(56f), Screen.dp(49f));
     this.headerCell.setPhotoOpenCallback(this);
-    this.headerCell.setOnEmojiStatusClickListener((v, text, part, openParameters) -> {
+    this.headerCell.setAllowTitleLongPress();
+    this.headerCell.setOnEmojiStatusClickListener(v -> {
       EmojiStatusSelectorEmojiPage.Wrapper c = new EmojiStatusSelectorEmojiPage.Wrapper(context, tdlib, SettingsController.this, new EmojiStatusSelectorEmojiPage.AnimationsEmojiStatusSetDelegate() {
         @Override
         public void onAnimationStart () {
@@ -419,7 +420,6 @@ public class SettingsController extends ViewController<Void> implements
         }
       });
       c.show();
-      return false;
     });
     updateHeader();
 

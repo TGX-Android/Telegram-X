@@ -30,10 +30,14 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
 import org.thunderdog.challegram.component.chat.ChatHeaderView;
+import org.thunderdog.challegram.component.sticker.StickerPreviewView;
+import org.thunderdog.challegram.component.sticker.StickerSmallView;
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.AvatarReceiver;
@@ -58,10 +62,13 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.SimpleMediaViewController;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.EmojiStatusHelper;
+import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.widget.BaseView;
+
+import java.util.ArrayList;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ScrimUtil;
@@ -72,9 +79,11 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.collection.IntList;
+import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Destroyable;
 
-public class ComplexHeaderView extends BaseView implements RtlCheckListener, StretchyHeaderView, TextChangeDelegate, Destroyable, ColorSwitchPreparator, MediaCollectorDelegate, BaseView.CustomControllerProvider, TdlibStatusManager.HelperTarget, TGLegacyManager.EmojiLoadListener, HeaderView.OffsetChangeListener {
+public class ComplexHeaderView extends BaseView implements RtlCheckListener, StickerPreviewView.PreviewCallback, StickerPreviewView.MenuStickerPreviewCallback, StretchyHeaderView, TextChangeDelegate, Destroyable, ColorSwitchPreparator, MediaCollectorDelegate, BaseView.CustomControllerProvider, TdlibStatusManager.HelperTarget, TGLegacyManager.EmojiLoadListener, HeaderView.OffsetChangeListener {
   private static final int FLAG_SHOW_LOCK = 1;
   private static final int FLAG_SHOW_MUTE = 1 << 1;
   private static final int FLAG_SHOW_VERIFY = 1 << 2;
@@ -90,6 +99,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   private static final int FLAG_NO_EXPAND = 1 << 18;
   private static final int FLAG_SHOW_SCAM = 1 << 19;
   private static final int FLAG_SHOW_FAKE = 1 << 20;
+  private static final int FLAG_ALLOW_TITLE_LONG_PRESS = 1 << 21;
 
   protected float scaleFactor;
 
@@ -99,13 +109,15 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   private String title, subtitle, expandedSubtitle;
   private TextEntity[] subtitleEntities;
   private @Nullable Text trimmedTitle, trimmedTitleExpanded, trimmedSubtitle, trimmedSubtitleExpanded;
+  private RectF trimmedTitleClickRect = new RectF();
+  private RectF emojiStatusClickRect = new RectF();
 
   private float avatarAllowanceFactor, avatarCollapseFactor;
   private BoolAnimator avatarCollapseAnimator;
 
   private int flags;
 
-  // private ViewController parent;
+  private final ViewController parent;
 
   private Drawable arrowDrawable;
   private Drawable topShadow, bottomShadow;
@@ -113,7 +125,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   public ComplexHeaderView (Context context, @NonNull Tdlib tdlib, @Nullable ViewController<?> parent) {
     super(context, tdlib);
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-    // this.parent = parent;
+    this.parent = parent;
     this.status = new TdlibStatusManager.Helper(UI.getContext(context), tdlib, this, parent);
     setUseDefaultClickListener(false);
     this.receiver = new AvatarReceiver(this);
@@ -128,7 +140,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
     invalidate();
   }
 
-  public void setOnEmojiStatusClickListener (Text.ClickListener clickListener) {
+  public void setOnEmojiStatusClickListener (View.OnClickListener clickListener) {
     emojiStatusHelper.setClickListener(clickListener);
   }
 
@@ -435,11 +447,6 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
     emojiStatusHelper.invalidateEmojiStatusReceiver(trimmedTitleExpanded, null);
     buildLayout();
     invalidate();
-  }
-
-  @Override
-  public boolean onTouchEvent (MotionEvent e) {
-    return emojiStatusHelper.onTouchEvent(this, e) || super.onTouchEvent(e);
   }
 
   public void setExpandedSubtitle (CharSequence expandedSubtitleCs) {
@@ -906,9 +913,18 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
             trimmedTitle.draw(c, 0, 0, null, 1f - avatarExpandFactor);
           }
           trimmedTitleExpanded.draw(c, 0, 0, null, avatarExpandFactor);
+          trimmedTitleClickRect.set(0, 0, trimmedTitleExpanded.getWidth(), trimmedTitleExpanded.getHeight());
         } else {
           trimmedTitle.draw(c, 0, 0, null, 1f);
+          trimmedTitleClickRect.set(0, 0, trimmedTitle.getWidth(), trimmedTitle.getHeight());
         }
+
+        trimmedTitleClickRect.left *= textScaleFactor;
+        trimmedTitleClickRect.top *= textScaleFactor;
+        trimmedTitleClickRect.right *= textScaleFactor;
+        trimmedTitleClickRect.bottom *= textScaleFactor;
+        trimmedTitleClickRect.offset(baseTextLeft, baseTitleTop);
+        trimmedTitleClickRect.inset(-Screen.dp(8), -Screen.dp(8));
 
         float baseIconLeft = trimmedTitle.getWidth()
           + (showLock ? Screen.dp(16f) : 0)
@@ -955,6 +971,14 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
         } else {
           emojiStatusHelper.draw(c, statusDrawLeft, statusDrawTop, 1f, textScaleFactor);
         }
+
+        emojiStatusClickRect.set(
+          emojiStatusHelper.getLastDrawX(),
+          emojiStatusHelper.getLastDrawY(),
+          emojiStatusHelper.getLastDrawX() + emojiStatusHelper.getWidth() * textScaleFactor,
+          emojiStatusHelper.getLastDrawY() + emojiStatusHelper.getWidth() * textScaleFactor
+        );
+        emojiStatusClickRect.inset(-Screen.dp(8), -Screen.dp(8));
       }
 
       if (trimmedSubtitle != null) {
@@ -1054,13 +1078,78 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
     return caught;
   }
 
+  public void setAllowTitleLongPress () {
+    this.flags = BitwiseUtils.setFlag(flags, FLAG_ALLOW_TITLE_LONG_PRESS, true);
+  }
+
+  @Override
+  public boolean needLongPress (float x, float y) {
+    return super.needLongPress(x, y) || !isCollapsed() && emojiStatusClickRect.contains(x, y);
+  }
+
+  @Override
+  public boolean onLongPressRequestedAt (View view, float x, float y) {
+    if (!isCollapsed() && emojiStatusClickRect.contains(x, y)) {
+      TdApi.Sticker sticker = emojiStatusHelper.getSticker();
+      if (sticker == null) {
+        return false;
+      }
+
+      emojiStatusPreviewObj = new TGStickerObj(tdlib, sticker, null, sticker.fullType);
+      ignoreNextStickerChanges = false;
+      context().openStickerPreview(tdlib, this, this, emojiStatusPreviewObj, (int) emojiStatusClickRect.centerX(), (int) emojiStatusClickRect.centerY(), (int) emojiStatusClickRect.width(), Screen.currentHeight(), true);
+      scheduleButtons();
+      return true;
+    }
+
+    if (BitwiseUtils.hasFlag(flags, FLAG_ALLOW_TITLE_LONG_PRESS) && trimmedTitleClickRect.contains(x, y)) {
+      onTitleClick();
+      return true;
+    }
+
+    return super.onLongPressRequestedAt(view, x, y);
+  }
+
+  @Override
+  public void onLongPressFinish (View view, float x, float y) {
+    super.onLongPressFinish(view, x, y);
+    if (!ignoreNextStickerChanges) {
+      closePreview();
+    }
+  }
+
+  @Override
+  public void onLongPressCancelled (View view, float x, float y) {
+    super.onLongPressCancelled(view, x, y);
+    if (!ignoreNextStickerChanges) {
+      closePreview();
+    }
+  }
+
   @Override
   public boolean needClickAt (View view, float x, float y) {
-    return (super.needClickAt(view, x, y) && y < calculateHeaderHeight()) || checkCaught(x, y, false);
+    return (super.needClickAt(view, x, y) && y < calculateHeaderHeight())
+      || !isCollapsed() && (
+        BitwiseUtils.hasFlag(flags, FLAG_ALLOW_TITLE_LONG_PRESS) && trimmedTitleClickRect.contains(x, y)
+        || emojiStatusClickRect.contains(x, y)
+      )
+      || checkCaught(x, y, false);
   }
 
   @Override
   public void onClickAt (View view, float x, float y) {
+    if (!isCollapsed()) {
+      if (emojiStatusClickRect.contains(x, y)) {
+        emojiStatusHelper.performClick(view);
+        return;
+      }
+
+      if (BitwiseUtils.hasFlag(flags, FLAG_ALLOW_TITLE_LONG_PRESS) && trimmedTitleClickRect.contains(x, y)) {
+        onTitleClick();
+        return;
+      }
+    }
+
     if ((flags & FLAG_PHOTO_OPEN_DISABLED) == 0) {
       checkCaught(x, y, true);
       if ((flags & FLAG_CAUGHT) != 0) {
@@ -1180,5 +1269,105 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   @Override
   public boolean canAnimate () {
     return true;
+  }
+
+
+  private CancellableRunnable scheduledButtons;
+
+  private void cancelScheduledButtons () {
+    if (scheduledButtons != null) {
+      scheduledButtons.cancel();
+      scheduledButtons = null;
+    }
+  }
+
+  public void scheduleButtons () {
+    cancelScheduledButtons();
+    scheduledButtons = new CancellableRunnable() {
+      @Override
+      public void act () {
+        openScheduledButtons();
+      }
+    };
+    scheduledButtons.removeOnCancel(UI.getAppHandler());
+    UI.post(scheduledButtons, 1000L);
+  }
+
+  private void openScheduledButtons () {
+    UI.forceVibrate(this, false);
+    openStickerMenu();
+  }
+
+  private void openStickerMenu () {
+    ignoreNextStickerChanges = true;
+    context().openStickerMenu(this, emojiStatusPreviewObj);
+  }
+
+  private TGStickerObj emojiStatusPreviewObj;
+  private boolean ignoreNextStickerChanges;
+
+  private void onTitleClick () {
+    final String copyText = title;
+    final int size = 1;
+    IntList ids = new IntList(size);
+    StringList strings = new StringList(size);
+    IntList icons = new IntList(size);
+
+    ids.append(R.id.btn_copyText);
+    strings.append(R.string.CopyDisplayName);
+    icons.append(R.drawable.baseline_content_copy_24);
+
+    parent.showOptions(copyText, ids.get(), strings.get(), null, icons.get(), (itemView, id) -> {
+      if (id == R.id.btn_copyText) {
+        UI.copyText(copyText, R.string.CopiedDisplayName);
+      }
+      return true;
+    }, null);
+  }
+
+
+  /* Emoji Status Preview */
+
+  @Override
+  public StickerPreviewView.MenuStickerPreviewCallback getMenuStickerPreviewCallback () {
+    return ComplexHeaderView.this;
+  }
+
+  @Override
+  public int getThemedColorId () {
+    return ColorId.iconActive;
+  }
+
+  @Override
+  public void closePreviewIfNeeded () {
+    if (ignoreNextStickerChanges) {
+      ignoreNextStickerChanges = false;
+      closePreview();
+    }
+  }
+
+  private void closePreview () {
+    ignoreNextStickerChanges = false;
+    cancelScheduledButtons();
+    ((BaseActivity) getContext()).closeStickerPreview();
+  }
+
+  @Override
+  public void buildMenuStickerPreview (ArrayList<StickerPreviewView.MenuItem> menuItems, @NonNull TGStickerObj sticker) {
+    menuItems.add(new StickerPreviewView.MenuItem(
+      StickerPreviewView.MenuItem.MENU_ITEM_TEXT,
+      Lang.getString(R.string.ViewPackPreview).toUpperCase(),
+      R.id.btn_view,
+      ColorId.textNeutral
+    ));
+  }
+
+  @Override
+  public void onMenuStickerPreviewClick (View v, ViewController<?> context, @NonNull TGStickerObj sticker, @Nullable StickerSmallView stickerSmallView) {
+    final int id = v.getId();
+    if (id == R.id.btn_view) {
+      tdlib.ui().showStickerSet(context, sticker.getStickerSetId(), null);
+      closePreviewIfNeeded();
+    }
   }
 }

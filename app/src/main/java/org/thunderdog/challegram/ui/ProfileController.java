@@ -1586,6 +1586,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       headerCell.setInnerRightMarginStart(Screen.dp(49f));
       headerCell.setInnerMargins(Screen.dp(56f), calculateMenuWidth());
       headerCell.setAllowEmptyClick();
+      headerCell.setAllowTitleLongPress();
       headerCell.initWithController(this, false);
       headerCell.setPhotoOpenCallback(this);
 
