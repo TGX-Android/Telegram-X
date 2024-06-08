@@ -48,7 +48,6 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.user.BubbleHeaderView;
 import org.thunderdog.challegram.component.user.BubbleView;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
@@ -499,7 +498,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
   }
 
   private boolean hasBubbles () {
-    return Config.CHAT_FOLDERS_REDESIGN;
+    return true;
   }
 
   private int indexOfChatBubble (long chatId) {

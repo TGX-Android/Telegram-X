@@ -1394,7 +1394,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   };
 
   private boolean useGlobalFilter () {
-    return Config.CHAT_FOLDERS_REDESIGN && displayTabsAtBottom();
+    return displayTabsAtBottom();
   }
 
   private @Filter int getSelectedFilter (long pagerItemId) {
@@ -1501,7 +1501,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       throw new UnsupportedOperationException();
     }
     boolean showAsArchive = (isMain && menuNeedArchive) || isArchive;
-    if (hasFolders && Config.CHAT_FOLDERS_REDESIGN) {
+    if (hasFolders) {
       String source;
       boolean iconOnly = chatFolderStyle == ChatFolderStyle.ICON_ONLY || (isMain && pagerItemPosition == 0);
       if (iconOnly) {
@@ -1564,20 +1564,11 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     int selectedFilter = getSelectedFilter(pagerItemId);
     CharSequence sectionName;
     if (selectedFilter != FILTER_NONE) {
-      if (Config.CHAT_FOLDERS_REDESIGN) {
-        String source = chatFolderStyle == ChatFolderStyle.ICON_ONLY ? "" : folderName;
-        if (useGlobalFilter() && selectedFilter == globalFilter) {
-          sectionName = source;
-        } else {
-          sectionName = appendFilterIcon(source, selectedFilter);
-        }
+      String source = chatFolderStyle == ChatFolderStyle.ICON_ONLY ? "" : folderName;
+      if (useGlobalFilter() && selectedFilter == globalFilter) {
+        sectionName = source;
       } else {
-        String filterName = Lang.getString(getFilterName(selectedFilter));
-        if (chatFolderStyle == ChatFolderStyle.LABEL_ONLY) {
-          sectionName = Lang.getString(R.string.format_folderAndFilter, folderName, filterName);
-        } else {
-          sectionName = filterName;
-        }
+        sectionName = appendFilterIcon(source, selectedFilter);
       }
     } else {
       sectionName = chatFolderStyle == ChatFolderStyle.ICON_ONLY ? "" : folderName;
