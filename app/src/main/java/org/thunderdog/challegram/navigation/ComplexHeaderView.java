@@ -20,8 +20,8 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.text.style.ClickableSpan;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -67,6 +67,8 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.widget.BaseView;
+import org.thunderdog.challegram.widget.EmojiStatusInfoView;
+import org.thunderdog.challegram.widget.PopupLayout;
 
 import java.util.ArrayList;
 
@@ -1317,14 +1319,37 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
     strings.append(R.string.CopyDisplayName);
     icons.append(R.drawable.baseline_content_copy_24);
 
-    parent.showOptions(copyText, ids.get(), strings.get(), null, icons.get(), (itemView, id) -> {
+    final PopupLayout layout = parent.showOptions(Lang.boldify(copyText), ids.get(), strings.get(), null, icons.get(), (itemView, id) -> {
       if (id == R.id.btn_copyText) {
         UI.copyText(copyText, R.string.CopiedDisplayName);
       }
       return true;
     }, null);
+
+    patchOptions(layout, emojiStatusHelper.getSticker());
   }
 
+  private void patchOptions (PopupLayout layout, TdApi.Sticker sticker) {
+    if (sticker == null) {
+      return;
+    }
+
+    OptionsLayout optionsLayout = (OptionsLayout) layout.getChildAt(1);
+    optionsLayout.setInfo(null, null, false);
+
+    final long[] sets = new long[]{ sticker.setId };
+
+    EmojiStatusInfoView view = new EmojiStatusInfoView(context(), parent, tdlib);
+    view.update(sticker.id, sticker.setId, title, new ClickableSpan() {
+      @Override
+      public void onClick (@NonNull View widget) {
+        tdlib.ui().showStickerSets(parent, sets, true, null);
+        layout.hideWindow(true);
+      }
+    }, false);
+
+    optionsLayout.addView(view, 2);
+  }
 
   /* Emoji Status Preview */
 

@@ -5041,6 +5041,7 @@
   <string name="RemoveXStickerPacks_other">Remove %1$s sticker sets</string>
   <string name="LoadingMessageEmojiPack">Loading…</string>
   <string name="EmojiUsedFromSingle">Emoji used from %1$s pack</string>
+  <string name="EmojiStatusUsed">%1$s uses emoji from pack %2$s for their status icon.</string>
   <string name="EmojiUsedFromX">Emoji used from %1$s</string>
   <string name="xEmojiPacksEmojiSingle">* %1$s</string>
   <string name="ArchivedEmojiInfo">You can add up to %1$s emoji packs. Unused packs are archived when you add more.</string>
