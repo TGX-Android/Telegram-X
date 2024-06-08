@@ -118,7 +118,7 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
     popupLayout.setTouchDownInterceptor((popup, event) -> true);
   }
 
-  protected static class Page extends BottomSheetBaseRecyclerViewController<Void> {
+  protected class Page extends BottomSheetBaseRecyclerViewController<Void> {
 
     private static final float PREVIEW_BORDER_WIDTH = 2f;
     private static final float PREVIEW_BORDER_RADIUS = 30f;
@@ -161,6 +161,7 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
           closeButton.init(R.drawable.baseline_close_20, 0, 32f, 12f, ColorId.circleButtonOverlay, ColorId.circleButtonOverlayIcon, false);
           closeButton.setOnClickListener(v -> parent.hidePopupWindow(true));
           addView(closeButton, LayoutHelper.createFrame(56f, 56f, Gravity.RIGHT | Gravity.TOP));
+          addThemeInvalidateListener(closeButton);
         } else {
           contentTopMargin = 0;
         }
@@ -173,7 +174,7 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
 
     @Override
     public boolean needsTempUpdates () {
-      return super.needsTempUpdates();
+      return super.needsTempUpdates() || getPopupLayout().isBoundWindowShowing();
     }
 
     public int getTotalHeight () {
@@ -206,15 +207,15 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
       button.setGravity(Gravity.CENTER);
       button.setAllCaps(true);
       button.setId(R.id.btn_done);
-      button.setTextColor(Theme.getColor(ColorId.white));
+      button.setTextColor(Theme.getColor(ColorId.fillingPositiveContent));
       button.setOnClickListener(v -> {
         parent.hidePopupWindow(true);
         // revokeFeatureNotifications is called inside SettingsFoldersController.onFocus
         UI.getContext(context).navigation().navigateTo(new SettingsFoldersController(context, tdlib));
       });
-      addThemeTextColorListener(button, ColorId.white);
+      addThemeTextColorListener(button, ColorId.fillingPositiveContent);
       Views.setMediumText(button, Lang.getString(R.string.ChatFoldersSetupSuggestionAction));
-      RippleSupport.setSimpleWhiteBackground(button, ColorId.playerButtonActive, this);
+      RippleSupport.setSimpleWhiteBackground(button, ColorId.fillingPositive, this);
       return button;
     }
 
@@ -238,8 +239,8 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
       contentView.addView(title, LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT);
 
       TextView text = new TextView(context);
-      text.setTextColor(Theme.getColor(ColorId.background_text));
-      addThemeTextColorListener(text, ColorId.background_text);
+      text.setTextColor(Theme.getColor(ColorId.textLight));
+      addThemeTextColorListener(text, ColorId.textLight);
       text.setPadding(contentHorizontalPadding, 0, contentHorizontalPadding, contentVerticalPadding);
       text.setTextSize(15f);
       text.setTypeface(Fonts.getRobotoRegular());
@@ -395,7 +396,7 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
       fade.setColors(new int[] {Color.TRANSPARENT, Theme.getColor(getRecyclerBackground())});
     }
 
-    static LayerDrawable buildPreviewBackground (int borderRadius, int borderWidth, int headerHeight) {
+    LayerDrawable buildPreviewBackground (int borderRadius, int borderWidth, int headerHeight) {
       GradientDrawable border = new GradientDrawable();
       border.setShape(GradientDrawable.RECTANGLE);
       border.setCornerRadius(borderRadius);
