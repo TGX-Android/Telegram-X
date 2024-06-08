@@ -747,6 +747,15 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   }
 
   private @PorterDuffColorId int iconColorId = ColorId.NONE;
+  private float iconAlpha = 1f;
+
+  public void setIconAlpha (float alpha) {
+    if (this.iconAlpha != alpha) {
+      this.iconAlpha = alpha;
+      if (icon != null)
+        invalidate();
+    }
+  }
 
   public void setIconColorId (@PorterDuffColorId int colorId) {
     if (this.iconColorId != colorId) {
@@ -805,9 +814,22 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     }
   }
 
+  private float disabledAlpha = -1f;
+
+  public void setDisabledAlpha (float alpha) {
+    if (this.disabledAlpha != alpha) {
+      this.disabledAlpha = alpha;
+      invalidate();
+    }
+  }
+
   @Override
   public int defaultTextColor () {
-    return ColorUtils.fromToArgb(Theme.textDecentColor(), Theme.getColor(textColorId), isEnabled.getFloatValue());
+    if (disabledAlpha != -1f) {
+      return ColorUtils.alphaColor(MathUtils.fromTo(disabledAlpha, 1f, isEnabled.getFloatValue()), Theme.getColor(textColorId));
+    } else {
+      return ColorUtils.fromToArgb(Theme.textDecentColor(), Theme.getColor(textColorId), isEnabled.getFloatValue());
+    }
   }
 
   @Override
@@ -855,7 +877,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
         c.save();
         c.rotate(MathUtils.fromTo(0, 90, iconRotated.getFloatValue()), cx, cy);
       }
-      Drawables.draw(c, icon, x, y, lastIconResource == 0 ? Paints.getBitmapPaint() : iconColorId != 0 ? PorterDuffPaint.get(iconColorId) : Paints.getIconGrayPorterDuffPaint());
+      Drawables.draw(c, icon, x, y, lastIconResource == 0 ? Paints.getBitmapPaint() : iconColorId != 0 ? PorterDuffPaint.get(iconColorId, iconAlpha) : Paints.getIconGrayPorterDuffPaint());
       if (needRotateIcon) {
         c.restore();
       }

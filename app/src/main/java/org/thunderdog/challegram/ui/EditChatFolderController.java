@@ -270,7 +270,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
 
     items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.FolderIncludedChats));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_folderIncludeChats, R.drawable.baseline_add_24, R.string.FolderActionIncludeChats).setTextColorId(ColorId.inlineText));
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_folderIncludeChats, R.drawable.baseline_add_24, R.string.FolderActionIncludeChats).setTextColorId(ColorId.textNeutral));
     fillIncludedChats(editedChatFolder, items);
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM, includedChatsNextItemId));
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, R.string.FolderIncludedChatsInfo)));
@@ -278,7 +278,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
     if (!isShareable()) {
       items.add(new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.FolderExcludedChats));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_folderExcludeChats, R.drawable.baseline_add_24, R.string.FolderActionExcludeChats).setTextColorId(ColorId.inlineText));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_folderExcludeChats, R.drawable.baseline_add_24, R.string.FolderActionExcludeChats).setTextColorId(ColorId.textNeutral));
       fillExcludedChats(editedChatFolder, items);
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM, excludedChatsNextItemId));
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, R.string.FolderExcludedChatsInfo)));
@@ -288,7 +288,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
       items.add(new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.InviteLinks));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP, 0));
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_createInviteLink, R.drawable.baseline_add_link_24, R.string.CreateANewLink)
-        .setTextColorId(ColorId.inlineText)
+        .setTextColorId(ColorId.textNeutral)
         .setDrawModifier(new PremiumLockModifier()));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM, inviteLinksNextItemId));
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ChatFolderInviteLinksInfo));
@@ -1029,15 +1029,21 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
         view.setIgnoreEnabled(false);
       }
 
+      float iconAlpha = 1f;
+      float disabledAlpha = -1f;
       if (item.getId() == R.id.btn_folderIncludeChats || item.getId() == R.id.btn_folderExcludeChats) {
-        view.setIconColorId(ColorId.inlineIcon);
+        view.setIconColorId(ColorId.textNeutral);
       } else if (item.getId() == R.id.btn_createInviteLink) {
-        view.setIconColorId(canCreateInviteLink() ? ColorId.inlineIcon : ColorId.textLight);
+        boolean enabled = canCreateInviteLink();
+        view.setIconColorId(ColorId.textNeutral);
+        disabledAlpha = iconAlpha = enabled ? 1f : .45f;
       } else if (item.getId() == R.id.btn_removeFolder) {
         view.setIconColorId(ColorId.iconNegative);
       } else {
         view.setIconColorId(ColorId.NONE /* theme_color_icon */);
       }
+      view.setIconAlpha(iconAlpha);
+      view.setDisabledAlpha(disabledAlpha);
     }
   }
 

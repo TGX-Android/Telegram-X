@@ -161,7 +161,7 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP, chatFoldersPreviousItemId));
     items.addAll(chatFolderItemList);
     int newFolderIconRes = Config.CHAT_FOLDERS_REDESIGN ? R.drawable.baseline_add_24 : R.drawable.baseline_create_new_folder_24;
-    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_createNewFolder, newFolderIconRes, R.string.CreateNewFolder).setTextColorId(ColorId.inlineText));
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_createNewFolder, newFolderIconRes, R.string.CreateNewFolder).setTextColorId(ColorId.textNeutral));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     int infoRes = Config.CHAT_FOLDERS_REDESIGN ? R.string.ChatFoldersReorderTip : R.string.ChatFoldersInfo;
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, recommendedChatFoldersPreviousItemId, 0, infoRes));
@@ -266,7 +266,8 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
             throw new IllegalArgumentException();
           }
           settingView.setVisuallyEnabled(isEnabled, false);
-          settingView.setIconColorId(isEnabled ? ColorId.icon : ColorId.iconLight);
+          settingView.setIconColorId(ColorId.icon);
+          settingView.setIconAlpha(isEnabled ? 1f : .68f);
           if (!Config.CHAT_FOLDERS_REDESIGN) {
             settingView.getToggler().setRadioEnabled(isEnabled, false);
             if (Config.RESTRICT_HIDING_MAIN_LIST) {
@@ -291,11 +292,14 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
       @SuppressLint("ClickableViewAccessibility")
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
+        float iconAlpha = 1f;
+        float disabledAlpha = -1f;
         if (item.getId() == R.id.btn_createNewFolder) {
           boolean canCreateChatFolder = tdlib.canCreateChatFolder();
           view.setIgnoreEnabled(true);
           view.setVisuallyEnabled(canCreateChatFolder, isUpdate);
-          view.setIconColorId(canCreateChatFolder ? ColorId.inlineIcon : ColorId.iconLight);
+          view.setIconColorId(ColorId.textNeutral);
+          disabledAlpha = iconAlpha = canCreateChatFolder ? 1f : .45f;
           PremiumLockModifier modifier = (canCreateChatFolder || tdlib.hasPremium()) ? null : premiumLockModifier;
           view.setDrawModifier(modifier);
           view.setTooltipLocationProvider(modifier);
@@ -306,6 +310,8 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
           view.setDrawModifier(item.getDrawModifier());
           view.setTooltipLocationProvider(null);
         }
+        view.setIconAlpha(iconAlpha);
+        view.setDisabledAlpha(disabledAlpha);
         if (item.getId() == R.id.btn_chatFolderStyle) {
           int positionRes;
           if (tdlib.settings().displayFoldersAtTop()) {
@@ -342,6 +348,7 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
     adapter.setItems(items, false);
     recyclerView.addItemDecoration(new ItemDecoration());
     recyclerView.setAdapter(adapter);
+    addThemeInvalidateListener(recyclerView);
 
     tdlib.listeners().subscribeToChatFoldersUpdates(this);
     tdlib.settings().addChatListPositionListener(this);
