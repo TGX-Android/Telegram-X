@@ -573,6 +573,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   private void onTitleChanged (String text) {
     editedChatFolder.title = text;
     updateDoneButton();
+    updateFolderIcon();
   }
 
   private void fillIncludedChats (TdApi.ChatFolder chatFolder, List<ListItem> outList) {
@@ -710,6 +711,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
     updateDoneButton();
     updateIncludedChats();
     updateExcludedChats();
+    updateFolderIcon();
   }
 
   private void updateIncludedChats () {
@@ -766,7 +768,6 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
     int includedChatType = includedChatTypes[0];
     String chatTypeName = Lang.getString(TD.chatTypeName(includedChatType));
     boolean isNameChanged = false;
-    boolean isIconChanged = false;
     if (!StringUtils.equalsOrBothEmpty(editedChatFolder.title, chatTypeName)) {
       editedChatFolder.title = chatTypeName;
       isNameChanged = true;
@@ -777,18 +778,8 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
         headerCell.setInput(chatTypeName);
       }
     }
-    if (editedChatFolder.icon == null) {
-      TdApi.ChatFolderIcon chatTypeIcon = TD.chatTypeIcon(includedChatType);
-      if (chatTypeIcon != null) {
-        editedChatFolder.icon = chatTypeIcon;
-        isIconChanged = true;
-      }
-    }
-    if (input != null && (isNameChanged || isIconChanged)) {
+    if (input != null && isNameChanged) {
       adapter.updateSimpleItemById(input.getId());
-    }
-    if (headerCell != null && isIconChanged) {
-      updateFolderIcon();
     }
   }
 
@@ -861,6 +852,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
         editedChatFolder.excludeArchived = false;
       }
       updateFolderName();
+      updateFolderIcon();
       updateDoneButton();
     });
   }
@@ -934,7 +926,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
       adapter.updateSimpleItemById(input.getId());
     }
     if (headerCell != null) {
-      int iconResource = TD.findFolderIcon(editedChatFolder.icon, R.drawable.baseline_folder_24);
+      int iconResource = tdlib.chatFolderIconDrawable(editedChatFolder, R.drawable.baseline_folder_24);
       headerCell.setIcon(iconResource, ColorId.white);
     }
   }
@@ -1000,7 +992,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
       editText.setText(item.getCharSequenceValue());
 
       ImageView imageView = holder.itemView.findViewById(android.R.id.icon);
-      int iconResource = TD.findFolderIcon(editedChatFolder.icon, R.drawable.baseline_folder_24);
+      int iconResource = tdlib.chatFolderIconDrawable(editedChatFolder, R.drawable.baseline_folder_24);
       imageView.setImageDrawable(Drawables.get(imageView.getResources(), iconResource));
     }
 
@@ -1105,12 +1097,17 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   }
 
   private void showIconSelector () {
-    ChatFolderIconSelector.show(this, TD.getIconName(editedChatFolder), selectedIcon -> {
-      if (!Td.equalsTo(editedChatFolder.icon, selectedIcon)) {
-        editedChatFolder.icon = selectedIcon;
-        updateFolderIcon();
-        updateDoneButton();
+    ChatFolderIconSelector.show(this, editedChatFolder, selectedIcon -> {
+      TdApi.ChatFolderIcon newIcon = selectedIcon;
+      if (Config.CHAT_FOLDERS_UNSET_DEFAULT_ICONS) {
+        TdApi.ChatFolderIcon defaultIcon = tdlib.defaultChatFolderIcon(editedChatFolder);
+        if (Td.equalsTo(selectedIcon, defaultIcon)) {
+          newIcon = null;
+        }
       }
+      editedChatFolder.icon = newIcon;
+      updateFolderIcon();
+      updateDoneButton();
     });
   }
 

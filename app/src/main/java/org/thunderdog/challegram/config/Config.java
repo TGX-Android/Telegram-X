@@ -38,6 +38,7 @@ public class Config {
   public static final boolean COLLAPSE_CHAT_FOLDER_HEADER_ON_SCROLL = CHAT_FOLDERS_REDESIGN;
   public static final boolean RESTRICT_HIDING_MAIN_LIST = true;
   public static final boolean SEARCH_MESSAGES_ONLY_IN_SELECTED_FOLDER = BuildConfig.EXPERIMENTAL;
+  public static final boolean CHAT_FOLDERS_UNSET_DEFAULT_ICONS = false; // Until there's a fix on server
 
   public static final boolean TEST_NEW_FEATURES_PROMPTS = false;
 

@@ -2398,22 +2398,15 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
           }
         }));
       } else if (id == R.id.btn_changeFolderIcon) {
-        ChatFolderIconSelector.show(this, TD.getIconName(chatFolderInfo), selectedIcon -> {
-          tdlib.send(new TdApi.GetChatFolder(chatFolderId), (chatFolder, getError) -> {
-            if (getError != null) {
-              UI.showError(getError);
-            } else {
-              if (!Td.equalsTo(chatFolder.icon, selectedIcon)) {
-                chatFolder.icon = selectedIcon;
-                tdlib.send(new TdApi.EditChatFolder(chatFolderId, chatFolder), (info, editError) -> {
-                  if (editError != null) {
-                    UI.showError(editError);
-                  }
-                });
-              }
-            }
-          });
-        });
+        tdlib.send(new TdApi.GetChatFolder(chatFolderId), (chatFolder, error) -> runOnUiThreadOptional(() -> {
+          if (error != null) {
+            UI.showError(error);
+          } else {
+            ChatFolderIconSelector.show(this, chatFolder, selectedIcon ->
+              tdlib.setChatFolderIcon(chatFolderId, selectedIcon, Config.CHAT_FOLDERS_UNSET_DEFAULT_ICONS)
+            );
+          }
+        }));
       } else if (id == R.id.btn_shareFolder) {
         TdApi.ChatFolderInfo info = ObjectsCompat.requireNonNull(chatFolderInfo);
         if (info.hasMyInviteLinks) {
