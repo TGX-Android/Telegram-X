@@ -389,8 +389,9 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     adapter.setItems(items, false);
     recyclerView.setAdapter(adapter);
 
-    int initialChunkSize = Screen.calculateLoadingItems(Screen.dp(72f), 5) + 5;
-    int chunkSize = Screen.calculateLoadingItems(Screen.dp(72f), 25);
+    int itemHeight = SettingHolder.measureHeightForType(ListItem.TYPE_CHAT_SMALL);
+    int initialChunkSize = Screen.calculateLoadingItems(itemHeight, 5) + 5;
+    int chunkSize = Screen.calculateLoadingItems(itemHeight, 25);
     loadingMore = true;
     chatListSlice = new TdlibChatListSlice(tdlib, ChatPosition.CHAT_LIST_MAIN, null, true);
 
