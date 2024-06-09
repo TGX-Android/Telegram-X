@@ -405,10 +405,10 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
       public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
-        if (dy > 0 && !loadingMore && isChatSearchOpen() && chatListSlice.canLoad()) {
+        if (dy != 0 && !loadingMore && !isChatSearchOpen() && chatListSlice.canLoad()) {
           int lastVisiblePosition = findLastVisiblePosition();
-          if (lastVisiblePosition == adapter.getItemCount() - 1) {
-            chatListSlice.loadMore(chunkSize, /* after */ null);
+          if (lastVisiblePosition + 15 >= adapter.getItemCount() - 1) {
+            chatListSlice.loadMore(chunkSize, null);
           }
         }
       }
