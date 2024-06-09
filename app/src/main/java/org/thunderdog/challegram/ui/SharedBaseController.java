@@ -20,6 +20,7 @@ import android.util.SparseIntArray;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
@@ -283,7 +284,9 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
 
   @Override
   public abstract CharSequence getName ();
-  // public abstract @DrawableRes int getIcon ();
+
+  @DrawableRes
+  public abstract int getIcon ();
 
   public final @Nullable String getCurrentQuery () {
     return currentQuery;

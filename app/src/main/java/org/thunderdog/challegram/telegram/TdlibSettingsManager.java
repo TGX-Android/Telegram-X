@@ -1184,6 +1184,10 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     return !disabledChatFolderIds.has(chatFolderId);
   }
 
+  public void forgetChatFolder (int chatFolderId) {
+    setChatFolderEnabled(chatFolderId, true); // Reset to default
+  }
+
   public void setChatFolderEnabled (int chatFolderId, boolean isEnabled) {
     if (isChatFolderEnabled(chatFolderId) == isEnabled) {
       return;

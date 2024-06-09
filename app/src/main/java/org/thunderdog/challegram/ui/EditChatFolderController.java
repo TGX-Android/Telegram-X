@@ -42,6 +42,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.base.SettingView;
@@ -87,7 +88,7 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.Td;
 
-public class EditChatFolderController extends EditBaseController<EditChatFolderController.Arguments> implements View.OnClickListener, View.OnLongClickListener, SettingsAdapter.TextChangeListener, SelectChatsController.Delegate, ChatFoldersListener, ChatFolderListener {
+public class EditChatFolderController extends EditBaseController<EditChatFolderController.Arguments> implements View.OnClickListener, View.OnLongClickListener, SelectChatsController.Delegate, ChatFoldersListener, ChatFolderListener {
 
   private static final int NO_CHAT_FOLDER_ID = 0;
   private static final int COLLAPSED_CHAT_COUNT = 3;
@@ -152,7 +153,6 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   private boolean showAllExcludedChats;
 
   private SettingsAdapter adapter;
-  private @Nullable ListItem input;
   private @Nullable EditHeaderView headerCell;
 
   private volatile int chatFolderId;
@@ -194,20 +194,14 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   @Override
   @SuppressWarnings("deprecation")
   protected int getHeaderHeight () {
-    if (Config.CHAT_FOLDERS_REDESIGN && Config.COLLAPSE_CHAT_FOLDER_HEADER_ON_SCROLL) {
-      ComplexRecyclerView recyclerView = getRecyclerView();
-      return (int) (Size.getHeaderPortraitSize() + Size.getHeaderSizeDifference(true) * recyclerView.getScrollFactor());
-    }
-    return headerCell != null ? Size.getHeaderBigPortraitSize(false) : super.getHeaderHeight();
+    ComplexRecyclerView recyclerView = getRecyclerView();
+    return (int) (Size.getHeaderPortraitSize() + Size.getHeaderSizeDifference(true) * recyclerView.getScrollFactor());
   }
 
   @Override
   @SuppressWarnings("deprecation")
   protected int getMaximumHeaderHeight () {
-    if (Config.CHAT_FOLDERS_REDESIGN && Config.COLLAPSE_CHAT_FOLDER_HEADER_ON_SCROLL) {
-      return Size.getHeaderBigPortraitSize(false);
-    }
-    return super.getMaximumHeaderHeight();
+    return Size.getHeaderBigPortraitSize(false);
   }
 
   @Override
@@ -226,46 +220,31 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   @Override
   @SuppressWarnings("deprecation")
   protected void onCreateView (Context context, FrameLayoutFix contentView, RecyclerView recyclerView) {
-    if (Config.CHAT_FOLDERS_REDESIGN) {
-      headerCell = new EditHeaderView(context, this);
-      headerCell.setInput(editedChatFolder.title);
-      headerCell.setInputOptions(R.string.FolderNameHint, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
-      headerCell.setOnPhotoClickListener(this::showIconSelector);
-      headerCell.setImeOptions(EditorInfo.IME_ACTION_DONE);
-      headerCell.getInputView().setFilters(new InputFilter[] {
-        new CodePointCountFilter(MAX_CHAT_FOLDER_TITLE_LENGTH),
-        new CharacterStyleFilter()
-      });
-      TextViewKt.doAfterTextChanged(headerCell.getInputView(), (editable) -> {
-        onTitleChanged(editable != null ? editable.toString() : "");
-        return Unit.INSTANCE;
-      });
-      setLockFocusView(headerCell.getInputView(), /* showAlways */ StringUtils.isEmpty(editedChatFolder.title));
-      if (Config.COLLAPSE_CHAT_FOLDER_HEADER_ON_SCROLL) {
-        ((ComplexRecyclerView) recyclerView).setHeaderView(headerCell, this);
-      } else {
-        Views.setTopMargin(recyclerView, Size.getHeaderSizeDifference(false));
-      }
-      updateFolderIcon();
-    }
+    headerCell = new EditHeaderView(context, this);
+    headerCell.setInput(editedChatFolder.title);
+    headerCell.setInputOptions(R.string.FolderNameHint, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+    headerCell.setOnPhotoClickListener(this::showIconSelector);
+    headerCell.setImeOptions(EditorInfo.IME_ACTION_DONE);
+    headerCell.getInputView().setFilters(new InputFilter[] {
+      new CodePointCountFilter(MAX_CHAT_FOLDER_TITLE_LENGTH),
+      new CharacterStyleFilter()
+    });
+    TextViewKt.doAfterTextChanged(headerCell.getInputView(), (editable) -> {
+      onTitleChanged(editable != null ? editable.toString() : "");
+      return Unit.INSTANCE;
+    });
+    setLockFocusView(headerCell.getInputView(), false /*StringUtils.isEmpty(editedChatFolder.title)*/);
+    ((ComplexRecyclerView) recyclerView).setHeaderView(headerCell, this);
+    updateFolderIcon();
 
     ArrayList<ListItem> items = new ArrayList<>();
 
-    if (Config.CHAT_FOLDERS_REDESIGN) {
-      if (Config.COLLAPSE_CHAT_FOLDER_HEADER_ON_SCROLL) {
-        items.add(new ListItem(ListItem.TYPE_PADDING).setHeight(Size.getHeaderSizeDifference(false)).setBoolValue(chatFolderId != NO_CHAT_FOLDER_ID));
-      }
-      if (chatFolderId != NO_CHAT_FOLDER_ID) {
-        items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_visible, 0, R.string.FolderVisible));
-        items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-      } else {
-        items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
-      }
-    } else {
-      items.add(new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.FolderName));
-      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-      items.add(input = new ListItem(ListItem.TYPE_CUSTOM_SINGLE, R.id.input).setStringValue(editedChatFolder.title));
+    items.add(new ListItem(ListItem.TYPE_PADDING).setHeight(Size.getHeaderSizeDifference(false)).setBoolValue(chatFolderId != NO_CHAT_FOLDER_ID));
+    if (chatFolderId != NO_CHAT_FOLDER_ID) {
+      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_visible, 0, R.string.FolderVisible));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    } else {
+      items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
     }
 
     items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.FolderIncludedChats));
@@ -297,20 +276,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     }
 
-    if (Config.CHAT_FOLDERS_REDESIGN && Config.COLLAPSE_CHAT_FOLDER_HEADER_ON_SCROLL) {
-      items.add(new ListItem(ListItem.TYPE_PADDING).setHeight(Size.getHeaderSizeDifference(false)));
-    } else {
-      if (chatFolderId != NO_CHAT_FOLDER_ID) {
-        items.add(new ListItem(ListItem.TYPE_PADDING).setHeight(Screen.dp(12)));
-      }
-      items.add(new ListItem(ListItem.TYPE_ZERO_VIEW));
-    }
-
     adapter = new Adapter(this);
-    if (input != null) {
-      adapter.setLockFocusOn(this, /* showAlways */ StringUtils.isEmpty(editedChatFolder.title));
-      adapter.setTextChangeListener(this);
-    }
     adapter.setItems(items, false);
     recyclerView.setAdapter(adapter);
     RemoveHelper.attach(recyclerView, new RemoveHelperCallback());
@@ -329,31 +295,71 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   protected RecyclerView onCreateRecyclerView () {
     CustomItemAnimator itemAnimator = new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
     itemAnimator.setSupportsChangeAnimations(false);
-    ComplexRecyclerView recyclerView = new ComplexRecyclerView(context, this);
+    ComplexRecyclerView recyclerView = new ComplexRecyclerView(context, this) {
+      @Override
+      protected void onSizeChanged (int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        if ((oldh != 0 && oldw != 0) && (oldh != h || oldw != w)) {
+          updateBottomOffset();
+        }
+      }
+    };
     recyclerView.setItemAnimator(itemAnimator);
     recyclerView.setLayoutManager(new LinearLayoutManager(context, RecyclerView.VERTICAL, false));
     recyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     recyclerView.addItemDecoration(new ItemDecoration());
-    if (Config.CHAT_FOLDERS_REDESIGN && Config.COLLAPSE_CHAT_FOLDER_HEADER_ON_SCROLL) {
-      recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-        @Override
-        public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
-          if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-            LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
-            View view = layoutManager != null ? layoutManager.findViewByPosition(0) : null;
-            if (view == null) return;
-            if (view.getTop() < 0 && view.getBottom() > 0) {
-              if ((view.getTop() + view.getBottom()) / 2 > 0) {
-                recyclerView.smoothScrollBy(0, view.getTop(), AnimatorUtils.DECELERATE_INTERPOLATOR);
-              } else {
-                recyclerView.smoothScrollBy(0, view.getBottom(), AnimatorUtils.DECELERATE_INTERPOLATOR);
-              }
+    recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+      @Override
+      public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
+        if (dy == 0) {
+          updateBottomOffset();
+        }
+        postponeInvalidateItemDecorations();
+      }
+
+      @Override
+      public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
+        if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+          LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
+          View view = layoutManager != null ? layoutManager.findViewByPosition(0) : null;
+          if (view == null) return;
+          if (view.getTop() < 0 && view.getBottom() > 0) {
+            if ((view.getTop() + view.getBottom()) / 2 > 0) {
+              recyclerView.smoothScrollBy(0, view.getTop(), AnimatorUtils.DECELERATE_INTERPOLATOR);
+            } else {
+              recyclerView.smoothScrollBy(0, view.getBottom(), AnimatorUtils.DECELERATE_INTERPOLATOR);
             }
           }
         }
-      });
-    }
+      }
+    });
     return recyclerView;
+  }
+
+  private static final boolean DECORATION_LOGGING_ENABLED = false;
+
+  private void updateBottomOffset () {
+    runOnUiThreadOptional(() -> {
+      recyclerView.invalidateItemDecorations();
+      if (DECORATION_LOGGING_ENABLED) {
+        Log.v("invalidate decorations(1)");
+      }
+    }, null, 10);
+  }
+
+  private boolean lastViewVisible;
+
+  private void postponeInvalidateItemDecorations () {
+    LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
+    int lastPosition = manager.findLastVisibleItemPosition();
+    boolean lastViewVisible = lastPosition == adapter.getItemCount() - 1;
+    if (this.lastViewVisible != lastViewVisible) {
+      this.lastViewVisible = lastViewVisible;
+      recyclerView.invalidateItemDecorations();
+      if (DECORATION_LOGGING_ENABLED) {
+        Log.v("invalidate decorations(2)");
+      }
+    }
   }
 
   @Override
@@ -364,9 +370,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   @Override
   protected void onDoneVisibleChanged (boolean isVisible) {
     if (recyclerView != null) {
-      if (!Config.COLLAPSE_CHAT_FOLDER_HEADER_ON_SCROLL) {
-        recyclerView.invalidateItemDecorations();
-      }
+      recyclerView.invalidateItemDecorations();
       adapter.notifyLastItemChanged();
     }
   }
@@ -563,16 +567,10 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
     }
   }
 
-  @Override
-  public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v) {
-    if (item == input) {
-      onTitleChanged(v.getText().toString());
-    }
-  }
-
   private void onTitleChanged (String text) {
     editedChatFolder.title = text;
     updateDoneButton();
+    updateFolderIcon();
   }
 
   private void fillIncludedChats (TdApi.ChatFolder chatFolder, List<ListItem> outList) {
@@ -710,6 +708,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
     updateDoneButton();
     updateIncludedChats();
     updateExcludedChats();
+    updateFolderIcon();
   }
 
   private void updateIncludedChats () {
@@ -765,30 +764,11 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
     }
     int includedChatType = includedChatTypes[0];
     String chatTypeName = Lang.getString(TD.chatTypeName(includedChatType));
-    boolean isNameChanged = false;
-    boolean isIconChanged = false;
     if (!StringUtils.equalsOrBothEmpty(editedChatFolder.title, chatTypeName)) {
       editedChatFolder.title = chatTypeName;
-      isNameChanged = true;
-      if (input != null) {
-        input.setStringValue(chatTypeName);
-      }
       if (headerCell != null) {
         headerCell.setInput(chatTypeName);
       }
-    }
-    if (editedChatFolder.icon == null) {
-      TdApi.ChatFolderIcon chatTypeIcon = TD.chatTypeIcon(includedChatType);
-      if (chatTypeIcon != null) {
-        editedChatFolder.icon = chatTypeIcon;
-        isIconChanged = true;
-      }
-    }
-    if (input != null && (isNameChanged || isIconChanged)) {
-      adapter.updateSimpleItemById(input.getId());
-    }
-    if (headerCell != null && isIconChanged) {
-      updateFolderIcon();
     }
   }
 
@@ -861,6 +841,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
         editedChatFolder.excludeArchived = false;
       }
       updateFolderName();
+      updateFolderIcon();
       updateDoneButton();
     });
   }
@@ -930,11 +911,8 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   }
 
   private void updateFolderIcon () {
-    if (input != null) {
-      adapter.updateSimpleItemById(input.getId());
-    }
     if (headerCell != null) {
-      int iconResource = TD.findFolderIcon(editedChatFolder.icon, R.drawable.baseline_folder_24);
+      int iconResource = tdlib.chatFolderIconDrawable(editedChatFolder, R.drawable.baseline_folder_24);
       headerCell.setIcon(iconResource, ColorId.white);
     }
   }
@@ -1000,7 +978,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
       editText.setText(item.getCharSequenceValue());
 
       ImageView imageView = holder.itemView.findViewById(android.R.id.icon);
-      int iconResource = TD.findFolderIcon(editedChatFolder.icon, R.drawable.baseline_folder_24);
+      int iconResource = tdlib.chatFolderIconDrawable(editedChatFolder, R.drawable.baseline_folder_24);
       imageView.setImageDrawable(Drawables.get(imageView.getResources(), iconResource));
     }
 
@@ -1105,12 +1083,17 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   }
 
   private void showIconSelector () {
-    ChatFolderIconSelector.show(this, TD.getIconName(editedChatFolder), selectedIcon -> {
-      if (!Td.equalsTo(editedChatFolder.icon, selectedIcon)) {
-        editedChatFolder.icon = selectedIcon;
-        updateFolderIcon();
-        updateDoneButton();
+    ChatFolderIconSelector.show(this, editedChatFolder, selectedIcon -> {
+      TdApi.ChatFolderIcon newIcon = selectedIcon;
+      if (Config.CHAT_FOLDERS_UNSET_DEFAULT_ICONS) {
+        TdApi.ChatFolderIcon defaultIcon = tdlib.defaultChatFolderIcon(editedChatFolder);
+        if (Td.equalsTo(selectedIcon, defaultIcon)) {
+          newIcon = null;
+        }
       }
+      editedChatFolder.icon = newIcon;
+      updateFolderIcon();
+      updateDoneButton();
     });
   }
 
@@ -1319,10 +1302,59 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   private class ItemDecoration extends RecyclerView.ItemDecoration {
     @Override
     public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+      int position = parent.getChildAdapterPosition(view);
+      if (position == RecyclerView.NO_POSITION) {
+        return;
+      }
       outRect.setEmpty();
-      RecyclerView.ViewHolder viewHolder = parent.getChildViewHolder(view);
-      if (viewHolder.getItemViewType() == ListItem.TYPE_ZERO_VIEW && isDoneVisible()) {
-        outRect.bottom = Screen.dp(76);
+      int lastIndex = adapter.getItemCount() - 1;
+      boolean isLast = position == lastIndex;
+
+      if (isLast) {
+        LinearLayoutManager manager = (LinearLayoutManager) parent.getLayoutManager();
+        int recyclerHeight = recyclerView.getMeasuredHeight();
+        int emptyHeight;
+        if (manager.findFirstVisibleItemPosition() == 0 && manager.findLastVisibleItemPosition() == lastIndex) {
+          if (DECORATION_LOGGING_ENABLED) {
+            Log.v("fully visible");
+          }
+          View firstView = manager.findViewByPosition(0);
+          int scrolledBy = firstView != null ? -firstView.getTop() : 0;
+          View lastView = manager.findViewByPosition(lastIndex);
+          int lastBottom = lastView != null && lastView.getBottom() != 0 ? lastView.getBottom() : recyclerHeight;
+          emptyHeight = recyclerHeight - lastBottom - scrolledBy;
+        } else {
+          if (DECORATION_LOGGING_ENABLED) {
+            Log.v("partially visible");
+          }
+          int contentHeight = 0;
+          for (int i = 0; i < adapter.getItemCount(); i++) {
+            View childView = manager.findViewByPosition(i);
+            int childHeight = 0;
+            if (childView != null) {
+              childHeight = childView.getMeasuredHeight();
+            }
+            if (DECORATION_LOGGING_ENABLED) {
+              Log.v("childHeight #%d %d", i, childHeight);
+            }
+            if (childHeight == 0) {
+              ListItem item = adapter.getItem(i);
+              try {
+                childHeight = SettingHolder.measureHeightForType(item);
+              } catch (Throwable ignored) { }
+            }
+            contentHeight += childHeight;
+          }
+          emptyHeight = recyclerHeight - contentHeight;
+        }
+        int minScrollableHeight = 0;
+        if (isDoneVisible()) {
+          minScrollableHeight = Screen.dp(76f);
+        }
+        outRect.bottom = Math.max(minScrollableHeight, emptyHeight + Size.getHeaderSizeDifference(false));
+        if (DECORATION_LOGGING_ENABLED) {
+          Log.v("setBottom %d", outRect.bottom);
+        }
       }
     }
   }

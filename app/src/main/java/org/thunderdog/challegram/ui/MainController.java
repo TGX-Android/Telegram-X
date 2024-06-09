@@ -1394,7 +1394,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   };
 
   private boolean useGlobalFilter () {
-    return Config.CHAT_FOLDERS_REDESIGN && displayTabsAtBottom();
+    return displayTabsAtBottom();
   }
 
   private @Filter int getSelectedFilter (long pagerItemId) {
@@ -1501,7 +1501,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       throw new UnsupportedOperationException();
     }
     boolean showAsArchive = (isMain && menuNeedArchive) || isArchive;
-    if (hasFolders && Config.CHAT_FOLDERS_REDESIGN) {
+    if (hasFolders) {
       String source;
       boolean iconOnly = chatFolderStyle == ChatFolderStyle.ICON_ONLY || (isMain && pagerItemPosition == 0);
       if (iconOnly) {
@@ -1564,20 +1564,11 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     int selectedFilter = getSelectedFilter(pagerItemId);
     CharSequence sectionName;
     if (selectedFilter != FILTER_NONE) {
-      if (Config.CHAT_FOLDERS_REDESIGN) {
-        String source = chatFolderStyle == ChatFolderStyle.ICON_ONLY ? "" : folderName;
-        if (useGlobalFilter() && selectedFilter == globalFilter) {
-          sectionName = source;
-        } else {
-          sectionName = appendFilterIcon(source, selectedFilter);
-        }
+      String source = chatFolderStyle == ChatFolderStyle.ICON_ONLY ? "" : folderName;
+      if (useGlobalFilter() && selectedFilter == globalFilter) {
+        sectionName = source;
       } else {
-        String filterName = Lang.getString(getFilterName(selectedFilter));
-        if (chatFolderStyle == ChatFolderStyle.LABEL_ONLY) {
-          sectionName = Lang.getString(R.string.format_folderAndFilter, folderName, filterName);
-        } else {
-          sectionName = filterName;
-        }
+        sectionName = appendFilterIcon(source, selectedFilter);
       }
     } else {
       sectionName = chatFolderStyle == ChatFolderStyle.ICON_ONLY ? "" : folderName;
@@ -2398,22 +2389,15 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
           }
         }));
       } else if (id == R.id.btn_changeFolderIcon) {
-        ChatFolderIconSelector.show(this, TD.getIconName(chatFolderInfo), selectedIcon -> {
-          tdlib.send(new TdApi.GetChatFolder(chatFolderId), (chatFolder, getError) -> {
-            if (getError != null) {
-              UI.showError(getError);
-            } else {
-              if (!Td.equalsTo(chatFolder.icon, selectedIcon)) {
-                chatFolder.icon = selectedIcon;
-                tdlib.send(new TdApi.EditChatFolder(chatFolderId, chatFolder), (info, editError) -> {
-                  if (editError != null) {
-                    UI.showError(editError);
-                  }
-                });
-              }
-            }
-          });
-        });
+        tdlib.send(new TdApi.GetChatFolder(chatFolderId), (chatFolder, error) -> runOnUiThreadOptional(() -> {
+          if (error != null) {
+            UI.showError(error);
+          } else {
+            ChatFolderIconSelector.show(this, chatFolder, selectedIcon ->
+              tdlib.setChatFolderIcon(chatFolderId, selectedIcon, Config.CHAT_FOLDERS_UNSET_DEFAULT_ICONS)
+            );
+          }
+        }));
       } else if (id == R.id.btn_shareFolder) {
         TdApi.ChatFolderInfo info = ObjectsCompat.requireNonNull(chatFolderInfo);
         if (info.hasMyInviteLinks) {
@@ -2428,34 +2412,13 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
           return onCreateChatFolderInviteLinkClick(v, chatFolderId, info.isShareable, /* chatFolderInviteLinkCount */ 0L);
         }
       } else if (id == R.id.btn_removeFolder) {
-        TdApi.ChatFolderInfo info = ObjectsCompat.requireNonNull(chatFolderInfo);
-        if (info.isShareable) {
-          tdlib.send(new TdApi.GetChatFolderChatsToLeave(chatFolderId), (result, error) -> runOnUiThreadOptional(() -> {
-            if (error != null) {
-              UI.showError(error);
-            } else if (result.totalCount > 0) {
-              ChatFolderInviteLinkController controller = new ChatFolderInviteLinkController(context, tdlib);
-              controller.setArguments(ChatFolderInviteLinkController.Arguments.deleteFolder(info, result.chatIds));
-              controller.show();
-            } else {
-              showDeleteChatFolderConfirm(chatFolderId, info.hasMyInviteLinks);
-            }
-          }));
-        } else {
-          showDeleteChatFolderConfirm(chatFolderId, info.hasMyInviteLinks);
-        }
+        tdlib.ui().showDeleteChatFolderOrLeaveChats(this, chatFolderId);
       } else if (id == R.id.btn_chatFolders) {
         navigateTo(new SettingsFoldersController(context, tdlib));
       } else if (id == R.id.btn_markFolderAsRead) {
         tdlib.readAllChats(chatList, /* after */ null);
       }
       return true;
-    });
-  }
-
-  private void showDeleteChatFolderConfirm (int chatFolderId, boolean hasMyInviteLinks) {
-    tdlib.ui().showDeleteChatFolderConfirm(this, hasMyInviteLinks, () -> {
-      tdlib.send(new TdApi.DeleteChatFolder(chatFolderId, null), tdlib.typedOkHandler());
     });
   }
 

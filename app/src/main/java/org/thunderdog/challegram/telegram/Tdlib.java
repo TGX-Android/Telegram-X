@@ -8133,6 +8133,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   private int mainChatListPosition;
+  private boolean areTagsEnabled;
   private TdApi.ChatFolderInfo[] chatFolders = new TdApi.ChatFolderInfo[0];
   private final SparseArrayCompat<TdApi.ChatFolderInfo> chatFoldersById = new SparseArrayCompat<>();
 
@@ -8148,6 +8149,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         }
       }
       this.mainChatListPosition = update.mainChatListPosition;
+      this.areTagsEnabled = update.areTagsEnabled;
     }
     listeners.updateChatFolders(update);
   }
@@ -11952,16 +11954,56 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
-  @Nullable
-  public TdApi.ChatFolderIcon chatFolderIcon (TdApi.ChatFolder chatFolder) {
-    if (chatFolder.icon != null && !StringUtils.isEmpty(chatFolder.icon.name)) {
-      return chatFolder.icon;
+  public static <T extends TdApi.Object> T executeOrNull(TdApi.Function<T> query) {
+    try {
+      return Client.execute(query);
+    } catch (Client.ExecutionException e) {
+      return null;
     }
-    TdApi.ChatFolderIcon result = clientExecuteT(new TdApi.GetChatFolderDefaultIconName(chatFolder), false);
-    if (result != null && !StringUtils.isEmpty(result.name)) {
-      return result;
+  }
+
+  @Nullable
+  public TdApi.ChatFolderIcon defaultChatFolderIcon (TdApi.ChatFolder chatFolder) {
+    TdApi.ChatFolder checkChatFolder = chatFolder;
+    if (checkChatFolder.icon != null) {
+      checkChatFolder = Td.copyOf(checkChatFolder);
+      checkChatFolder.icon = null;
+    }
+    TdApi.ChatFolderIcon defaultIcon = executeOrNull(new TdApi.GetChatFolderDefaultIconName(checkChatFolder));
+    if (!Td.isEmpty(defaultIcon)) {
+      return defaultIcon;
     }
     return null;
+  }
+
+  @Nullable
+  public TdApi.ChatFolderIcon chatFolderIcon (TdApi.ChatFolder chatFolder) {
+    if (!Td.isEmpty(chatFolder.icon)) {
+      return chatFolder.icon;
+    }
+    return defaultChatFolderIcon(chatFolder);
+  }
+
+  public void setChatFolderIcon (int chatFolderId, @Nullable TdApi.ChatFolderIcon icon, boolean unsetOnDefault) {
+    send(new TdApi.GetChatFolder(chatFolderId), (chatFolder, error) -> {
+      if (chatFolder != null) {
+        TdApi.ChatFolderIcon newIcon = icon;
+        if (!Td.isEmpty(newIcon) && unsetOnDefault) {
+          TdApi.ChatFolderIcon defaultIcon = defaultChatFolderIcon(chatFolder);
+          if (Td.equalsTo(newIcon, defaultIcon)) {
+            newIcon = null;
+          }
+        }
+        if (!Td.equalsTo(chatFolder.icon, newIcon)) {
+          chatFolder.icon = newIcon;
+          send(new TdApi.EditChatFolder(chatFolderId, chatFolder), (chatFolderInfo, setIconError) -> {
+            if (setIconError != null) {
+              UI.showError(setIconError);
+            }
+          });
+        }
+      }
+    });
   }
 
   public String chatFolderIconName (TdApi.ChatFolder chatFolder) {
@@ -11976,6 +12018,39 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   public void processChatFolderNewChats (int chatFolderId, long[] addedChatIds, ResultHandler<TdApi.Ok> resultHandler) {
     send(new TdApi.ProcessChatFolderNewChats(chatFolderId, addedChatIds), resultHandler.doOnResult((result) -> {
       listeners().notifyChatFolderNewChatsChanged(chatFolderId);
+    }));
+  }
+
+  public void deleteChatFolder (int chatFolderId, long[] leaveChatIds, @Nullable Runnable after) {
+    TdApi.UpdateChatFolders update;
+    synchronized (dataLock) {
+      int foundIndex = -1;
+      for (int i = 0; i < chatFolders.length; i++) {
+        TdApi.ChatFolderInfo chatFolderInfo = chatFolders[i];
+        if (chatFolderInfo.id == chatFolderId) {
+          foundIndex = i;
+          break;
+        }
+      }
+      if (foundIndex != -1) {
+        chatFolders = ArrayUtils.removeElement(chatFolders, foundIndex, new TdApi.ChatFolderInfo[chatFolders.length - 1]);
+        if (mainChatListPosition > foundIndex) {
+          mainChatListPosition--;
+        }
+        update = new TdApi.UpdateChatFolders(chatFolders, mainChatListPosition, areTagsEnabled);
+      } else {
+        update = null;
+      }
+    }
+    if (update != null) {
+      // Send fake update without a deleting folder.
+      updateChatFolders(update);
+    }
+    send(new TdApi.DeleteChatFolder(chatFolderId, leaveChatIds), typedOkHandler(() -> {
+      settings().forgetChatFolder(chatFolderId);
+      if (after != null) {
+        after.run();
+      }
     }));
   }
 

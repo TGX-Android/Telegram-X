@@ -19,6 +19,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.GridLayoutManager;
 
@@ -65,17 +66,6 @@ public class SharedMediaController extends SharedBaseController<MediaItem> imple
     return this;
   }
 
-  /*@Override
-  public int getIcon () {
-    switch (type) {
-      case TYPE_PHOTOS_AND_VIDEOS:
-        return R.drawable.baseline_image_20;
-      case TYPE_GIFS:
-        return R.drawable.baseline_gif_20;
-    }
-    return 0;
-  }*/
-
   @Override
   public CharSequence getName () {
     switch (provideSearchFilter().getConstructor()) {
@@ -91,6 +81,24 @@ public class SharedMediaController extends SharedBaseController<MediaItem> imple
         return Lang.getString(Settings.instance().needSeparateMediaTab() ? R.string.TabVideoMessagesLong : R.string.TabVideoMessages);
     }
     return "";
+  }
+
+  @DrawableRes
+  @Override
+  public int getIcon () {
+    switch (provideSearchFilter().getConstructor()) {
+      case TdApi.SearchMessagesFilterPhotoAndVideo.CONSTRUCTOR:
+        return R.drawable.baseline_image_24;
+      case TdApi.SearchMessagesFilterVideo.CONSTRUCTOR:
+        return R.drawable.baseline_videocam_24;
+      case TdApi.SearchMessagesFilterPhoto.CONSTRUCTOR:
+        return R.drawable.baseline_camera_alt_24;
+      case TdApi.SearchMessagesFilterAnimation.CONSTRUCTOR:
+        return R.drawable.deproko_baseline_gif_24;
+      case TdApi.SearchMessagesFilterVideoNote.CONSTRUCTOR:
+        return R.drawable.deproko_baseline_msg_video_24;
+    }
+    return 0;
   }
 
   @Override

@@ -343,7 +343,9 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   private final ReplaceAnimator<TextEntry> titleText = new ReplaceAnimator<>(ignored -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
   private final ReplaceAnimator<TextEntry> contentText = new ReplaceAnimator<>(ignored -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
   private final ReplaceAnimator<MediaEntry> mediaPreview = new ReplaceAnimator<>(ignored -> {
-    buildText(true);
+    if (data != null) {
+      buildText(true);
+    }
     invalidate();
   }, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
   private final BoolAnimator showSmallMedia = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);

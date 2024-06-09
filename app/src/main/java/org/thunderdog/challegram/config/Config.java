@@ -34,10 +34,9 @@ public class Config {
   public static final boolean CHAT_FOLDERS_SMART_CHAT_DELETION_ENABLED = true;
   public static final boolean CHAT_FOLDERS_HIDE_BOTTOM_BAR_ON_SCROLL = true;
   public static final boolean CHAT_FOLDERS_APPEARANCE_IS_GLOBAL = true;
-  public static final boolean CHAT_FOLDERS_REDESIGN = true;
-  public static final boolean COLLAPSE_CHAT_FOLDER_HEADER_ON_SCROLL = CHAT_FOLDERS_REDESIGN;
   public static final boolean RESTRICT_HIDING_MAIN_LIST = true;
   public static final boolean SEARCH_MESSAGES_ONLY_IN_SELECTED_FOLDER = BuildConfig.EXPERIMENTAL;
+  public static final boolean CHAT_FOLDERS_UNSET_DEFAULT_ICONS = false; // Until there's a fix on server
 
   public static final boolean TEST_NEW_FEATURES_PROMPTS = false;
 
@@ -249,8 +248,6 @@ public class Config {
   public static final boolean PREFER_RENDER_EXTENSIONS = true;
 
   public static final boolean NEED_ONLINE = true; // !BuildConfig.DEBUG;
-
-  public static final boolean USE_ICON_TABS = false;
 
   /* TODO: Missing Android API
    * TextUtils.CHAR_SEQUENCE_CREATOR doesn't support ImageSpan (or whatever alternative),
