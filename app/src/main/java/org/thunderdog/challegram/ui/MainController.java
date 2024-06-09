@@ -2412,34 +2412,13 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
           return onCreateChatFolderInviteLinkClick(v, chatFolderId, info.isShareable, /* chatFolderInviteLinkCount */ 0L);
         }
       } else if (id == R.id.btn_removeFolder) {
-        TdApi.ChatFolderInfo info = ObjectsCompat.requireNonNull(chatFolderInfo);
-        if (info.isShareable) {
-          tdlib.send(new TdApi.GetChatFolderChatsToLeave(chatFolderId), (result, error) -> runOnUiThreadOptional(() -> {
-            if (error != null) {
-              UI.showError(error);
-            } else if (result.totalCount > 0) {
-              ChatFolderInviteLinkController controller = new ChatFolderInviteLinkController(context, tdlib);
-              controller.setArguments(ChatFolderInviteLinkController.Arguments.deleteFolder(info, result.chatIds));
-              controller.show();
-            } else {
-              showDeleteChatFolderConfirm(chatFolderId, info.hasMyInviteLinks);
-            }
-          }));
-        } else {
-          showDeleteChatFolderConfirm(chatFolderId, info.hasMyInviteLinks);
-        }
+        tdlib.ui().showDeleteChatFolderOrLeaveChats(this, chatFolderId);
       } else if (id == R.id.btn_chatFolders) {
         navigateTo(new SettingsFoldersController(context, tdlib));
       } else if (id == R.id.btn_markFolderAsRead) {
         tdlib.readAllChats(chatList, /* after */ null);
       }
       return true;
-    });
-  }
-
-  private void showDeleteChatFolderConfirm (int chatFolderId, boolean hasMyInviteLinks) {
-    tdlib.ui().showDeleteChatFolderConfirm(this, hasMyInviteLinks, () -> {
-      tdlib.deleteChatFolder(chatFolderId, null, null);
     });
   }
 

@@ -4979,6 +4979,31 @@ public class TdlibUi extends Handler {
       }));
   }
 
+  public void showDeleteChatFolderOrLeaveChats (ViewController<?> context, int chatFolderId) {
+    TdApi.ChatFolderInfo info = tdlib.chatFolderInfo(chatFolderId);
+    if (info.isShareable) {
+      tdlib.send(new TdApi.GetChatFolderChatsToLeave(chatFolderId), (result, error) -> post(() -> {
+        if (error != null) {
+          UI.showError(error);
+        } else if (result.totalCount > 0) {
+          ChatFolderInviteLinkController controller = new ChatFolderInviteLinkController(context.context(), tdlib);
+          controller.setArguments(ChatFolderInviteLinkController.Arguments.deleteFolder(info, result.chatIds));
+          controller.show();
+        } else {
+          showDeleteChatFolderConfirm(context, chatFolderId, info.hasMyInviteLinks);
+        }
+      }));
+    } else {
+      showDeleteChatFolderConfirm(context, chatFolderId, info.hasMyInviteLinks);
+    }
+  }
+
+  private void showDeleteChatFolderConfirm (ViewController<?> context, int chatFolderId, boolean hasMyInviteLinks) {
+    tdlib.ui().showDeleteChatFolderConfirm(context, hasMyInviteLinks, () -> {
+      tdlib.deleteChatFolder(chatFolderId, null, null);
+    });
+  }
+
   public void showDeleteChatFolderConfirm (ViewController<?> context, boolean hasMyInviteLinks, Runnable after) {
     // TODO(nikita-toropov) wording
     int infoRes = hasMyInviteLinks ? R.string.DeleteFolderWithInviteLinksConfirm : R.string.RemoveFolderConfirm;

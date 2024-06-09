@@ -534,29 +534,6 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
       .hideDelayed(3500, TimeUnit.MILLISECONDS);
   }
 
-  private void showChatFolderOptions (TdApi.ChatFolderInfo chatFolderInfo) {
-    Options options = new Options.Builder()
-      .info(chatFolderInfo.title)
-      .item(new OptionItem(R.id.btn_edit, Lang.getString(R.string.EditFolder), OptionColor.NORMAL, R.drawable.baseline_edit_24))
-      .item(new OptionItem(R.id.btn_delete, Lang.getString(R.string.RemoveFolder), OptionColor.RED, R.drawable.baseline_delete_24))
-      .build();
-    showOptions(options, (optionItemView, id) -> {
-      if (id == R.id.btn_edit) {
-        editChatFolder(chatFolderInfo);
-      } else if (id == R.id.btn_delete) {
-        showRemoveFolderConfirm(chatFolderInfo);
-      }
-      return true;
-    });
-  }
-
-  private void showRemoveFolderConfirm (TdApi.ChatFolderInfo info) {
-    tdlib.ui().showDeleteChatFolderConfirm(this, info.hasMyInviteLinks, () -> {
-      // TODO(nikita-toropov) leave chats suggestion
-      deleteChatFolder(info.id);
-    });
-  }
-
   private void editChatFolder (TdApi.ChatFolderInfo chatFolderInfo) {
     tdlib.send(new TdApi.GetChatFolder(chatFolderInfo.id), (chatFolder, error) -> runOnUiThreadOptional(() -> {
       if (error != null) {
@@ -943,7 +920,8 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
     @Override
     public void onRemove (RecyclerView.ViewHolder viewHolder) {
       ListItem item = (ListItem) viewHolder.itemView.getTag();
-      showRemoveFolderConfirm((TdApi.ChatFolderInfo) item.getData());
+      TdApi.ChatFolderInfo info = (TdApi.ChatFolderInfo) item.getData();
+      tdlib.ui().showDeleteChatFolderOrLeaveChats(SettingsFoldersController.this, info.id);
     }
 
     @Override
