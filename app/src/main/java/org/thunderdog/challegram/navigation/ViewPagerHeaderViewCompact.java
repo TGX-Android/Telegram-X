@@ -45,6 +45,7 @@ import org.thunderdog.challegram.unsorted.Size;
 import me.vkryl.android.animatorx.AnimatorListener;
 import me.vkryl.android.animatorx.FloatAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.MathUtils;
 
 public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerHeaderView, StretchyHeaderView, ViewPagerTopView.SelectionChangeListener {
   private static class VH extends RecyclerView.ViewHolder {
@@ -272,22 +273,21 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
       return;
     }
 
-    final int availScrollX = viewWidth - parentWidth;
-    final int scrolledX;
-    if (Lang.rtl()) {
-      scrolledX = availScrollX + view.getLeft();
-    } else {
-      scrolledX = -view.getLeft();
+    //noinspection UnnecessaryLocalVariable
+    final int maxViewLeft = parentPaddingLeft;
+    final int minViewLeft = parentWidth - viewWidth - parentPaddingRight;
+    if (minViewLeft > maxViewLeft) {
+      return;
     }
-    int viewX = -scrolledX;
+    final int viewLeft = MathUtils.clamp(view.getLeft(), minViewLeft, maxViewLeft); // TODO RTL
 
     final Interpolator interpolator = QUINTIC_INTERPOLATOR;
     int animationDuration = RecyclerView.UNDEFINED_DURATION;
 
     if ((getParent() != null && ((View) getParent()).getMeasuredWidth() > getMeasuredWidth()) || (topView.getMeasuredWidth() - parentWidth) < lastItemWidth / 2) {
-      int desiredViewLeft = (int) (parentPaddingLeft * (1f - totalFactor) - (viewWidth - parentWidth + parentPaddingRight) * totalFactor);
-      if (viewX != desiredViewLeft) {
-        int diff = (desiredViewLeft - viewX) * (Lang.rtl() ? 1 : -1);
+      int desiredViewLeft = (int) (maxViewLeft * (1f - totalFactor) + minViewLeft * totalFactor);
+      if (viewLeft != desiredViewLeft) {
+        int diff = (viewLeft - desiredViewLeft)/* * (Lang.rtl() ? -1 : 1)*/;  // TODO RTL
         if (animated) {
           if (topViewTranslationX != 0f) {
             animationDuration = computeScrollDuration(diff, parentWidth);
@@ -304,7 +304,7 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
         resetUserInteraction();
       }
     } else {
-      int visibleSelectionX = selectionLeft + viewX;
+      int visibleSelectionX = selectionLeft + viewLeft;
       int desiredSelectionX;
       if (parentPaddingLeft > 0) {
         desiredSelectionX = parentPaddingLeft;
@@ -313,13 +313,10 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
       }
 
       if (visibleSelectionX != desiredSelectionX) {
-        int newViewX = viewX + (desiredSelectionX - visibleSelectionX);
-        int minX = parentWidth - parentPaddingRight - viewWidth;
-        if (newViewX < minX) {
-          newViewX = minX;
-        }
-        if (newViewX != viewX) {
-          int offset = (viewX - newViewX) * (Lang.rtl() ? -1 : 1);
+        int newViewLeft = viewLeft + (desiredSelectionX - visibleSelectionX);
+        newViewLeft = MathUtils.clamp(newViewLeft, minViewLeft, maxViewLeft);
+        if (newViewLeft != viewLeft) {
+          int offset = (viewLeft - newViewLeft)/* * (Lang.rtl() ? -1 : 1)*/; // TODO RTL
           if (animated) {
             if (topViewTranslationX != 0f) {
               animationDuration = computeScrollDuration(offset, parentWidth);
