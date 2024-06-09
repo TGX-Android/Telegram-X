@@ -1427,21 +1427,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     TGLegacyManager.instance().addEmojiListener(this);
 
     if (needTabs()) {
-      /*headerCell = new ViewPagerHeaderViewCompact(context);
-        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) ((ViewPagerHeaderViewCompact) headerCell).getRecyclerView().getLayoutParams();
-        if (getBackButton() != BackHeaderButton.TYPE_NONE) {
-          params.leftMargin = Screen.dp(56f);
-          params.rightMargin = getMenuButtonsWidth();
-        }
-        if (useCenteredTitle()) {
-          params.width = ViewGroup.LayoutParams.WRAP_CONTENT;
-          params.gravity = Gravity.CENTER_HORIZONTAL;
-        }
-      }
-      headerCell.getTopView().setOnItemClickListener(this);
-      headerCell.getTopView().setItems(sections);*/
-
       pagerHeaderView = new ViewPagerHeaderViewCompact(context);
+      pagerHeaderView.getTopView().setShowLabelOnActiveOnly(!Settings.instance().needReduceMotion());
       addThemeInvalidateListener(pagerHeaderView.getTopView());
       fparams = (FrameLayoutFix.LayoutParams) pagerHeaderView.getRecyclerView().getLayoutParams();
       fparams.leftMargin = Screen.dp(56f);
@@ -1451,12 +1438,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
       List<SharedBaseController<?>> mediaControllers = new ArrayList<>(8);
       ProfileController.fillMediaControllers(mediaControllers, context(), tdlib());
-      String[] items = new String[mediaControllers.size() + 1];
-      items[0] = Lang.getString(R.string.TabMessages).toUpperCase();
-      int i = 1;
+      List<ViewPagerTopView.Item> items = new ArrayList<ViewPagerTopView.Item>(mediaControllers.size() + 1);
+      items.add(new ViewPagerTopView.Item(
+        Lang.getString(R.string.TabMessages).toUpperCase(),
+        R.drawable.baseline_chat_bubble_24,
+        null
+      ));
       for (SharedBaseController<?> c : mediaControllers) {
-        items[i] = c.getName().toString().toUpperCase();
-        i++;
+        items.add(new ViewPagerTopView.Item(
+          c.getName().toString().toUpperCase(),
+          c.getIcon(),
+          null
+        ));
       }
       pagerHeaderView.getTopView().setItems(items);
 

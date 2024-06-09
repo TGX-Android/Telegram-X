@@ -484,9 +484,9 @@ public class ChatFolderInviteLinkControllerPage extends BottomSheetViewControlle
       throw new IllegalStateException("mode = " + mode);
     }
     long[] leaveChatIds = selectedChatIds.toArray();
-    tdlib.send(new TdApi.DeleteChatFolder(chatFolderId, leaveChatIds), tdlib.typedOkHandler(() -> {
+    tdlib.deleteChatFolder(chatFolderId, leaveChatIds, () -> {
       UI.showToast(R.string.Done, Toast.LENGTH_SHORT);
-    }));
+    });
     parent.hidePopupWindow(true);
   }
 

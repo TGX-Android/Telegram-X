@@ -22,7 +22,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import androidx.annotation.Nullable;
-import androidx.core.util.ObjectsCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -44,8 +43,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.vkryl.android.widget.FrameLayoutFix;
-import me.vkryl.core.ObjectUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.td.Td;
 
 public class ChatFolderIconSelector {
 
@@ -57,7 +56,7 @@ public class ChatFolderIconSelector {
 
   private PopupLayout popupLayout;
 
-  public ChatFolderIconSelector (ViewController<?> owner, @Nullable String selectedIconName, Delegate delegate) {
+  public ChatFolderIconSelector (ViewController<?> owner, @Nullable String selectedIconName, boolean isDefault, Delegate delegate) {
     this.context = owner.context();
     this.delegate = delegate;
     this.selectedIconName = selectedIconName;
@@ -106,7 +105,7 @@ public class ChatFolderIconSelector {
         if (iconResource != 0) {
           imageView.setImageDrawable(Drawables.get(imageView.getResources(), iconResource));
           String iconName = item.getStringValue();
-          boolean isSelected = ObjectsCompat.equals(iconName, selectedIconName);
+          boolean isSelected = !isDefault && isSelectedIcon(iconName);
           int iconColorId = isSelected ? ColorId.iconActive : ColorId.icon;
           imageView.setColorFilter(Theme.getColor(iconColorId));
           owner.removeThemeListenerByTarget(imageView);
@@ -174,7 +173,7 @@ public class ChatFolderIconSelector {
   }
 
   private static boolean isSameIcon (@Nullable String a, @Nullable String b) {
-    return ObjectUtils.equals(a, b) || (isFolderIcon(a) && isFolderIcon(b));
+    return StringUtils.equalsOrBothEmpty(a, b) || (isFolderIcon(a) && isFolderIcon(b));
   }
 
   private static boolean isFolderIcon (@Nullable String iconName) {
@@ -189,8 +188,19 @@ public class ChatFolderIconSelector {
     default void onDismiss () {}
   }
 
-  public static ChatFolderIconSelector show (ViewController<?> owner, @Nullable String selectedIconName, Delegate delegate) {
-    ChatFolderIconSelector selector = new ChatFolderIconSelector(owner, selectedIconName, delegate);
+  public static ChatFolderIconSelector show (ViewController<?> owner, TdApi.ChatFolder chatFolder, Delegate delegate) {
+    TdApi.ChatFolderIcon icon = chatFolder.icon;
+    boolean isDefault = false;
+    if (Td.isEmpty(icon)) {
+      icon = owner.tdlib().chatFolderIcon(chatFolder);
+      isDefault = true;
+    }
+    return show(owner, icon, isDefault, delegate);
+  }
+
+  public static ChatFolderIconSelector show (ViewController<?> owner, @Nullable TdApi.ChatFolderIcon selectedIcon, boolean isDefault, Delegate delegate) {
+    String iconName = selectedIcon != null && !StringUtils.isEmpty(selectedIcon.name) ? selectedIcon.name : null;
+    ChatFolderIconSelector selector = new ChatFolderIconSelector(owner, iconName, isDefault || StringUtils.isEmpty(iconName), delegate);
     selector.show();
     return selector;
   }

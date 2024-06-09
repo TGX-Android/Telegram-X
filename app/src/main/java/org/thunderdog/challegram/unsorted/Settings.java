@@ -181,7 +181,8 @@ public class Settings {
   private static final int VERSION_44 = 44; // 8-bit -> 32-bit account flags
   private static final int VERSION_45 = 45; // Reset "Big emoji" setting to default
   private static final int VERSION_46 = 46; // Remove folders experimental setting
-  private static final int VERSION = VERSION_46;
+  private static final int VERSION_47 = 47; // Force reset released features list
+  private static final int VERSION = VERSION_47;
 
   private static final AtomicBoolean hasInstance = new AtomicBoolean(false);
   private static volatile Settings instance;
@@ -2187,6 +2188,12 @@ public class Settings {
           experiments &= ~REMOVED_EXPERIMENT_FLAG_ENABLE_FOLDERS;
           editor.putLong(KEY_EXPERIMENTS, experiments);
         }
+        break;
+      }
+      case VERSION_47: {
+        // No features were officially available before VERSION_46.
+        // Reset just once in VERSION_47 right prior to stable release.
+        editor.putLong(KEY_FEATURES, 0);
         break;
       }
     }
@@ -6953,7 +6960,7 @@ public class Settings {
     try {
       previouslyAvailableFeatures = pmc.tryGetLong(KEY_FEATURES);
     } catch (FileNotFoundException e) {
-      long previousInstallationId = currentBuildInformation != null ? currentBuildInformation.getInstallationId() : -1;
+      long previousInstallationId = currentBuildInformation != null ? currentBuildInformation.getInstallationId() - 1 : -1;
       int previouslyInstalledVersionCode = previousInstallationId != -1 ?
         AppBuildInfo.restoreVersionCode(pmc, KEY_APP_INSTALLATION_PREFIX + previousInstallationId) : 0;
       previouslyAvailableFeatures = FeatureAvailability.recoverAvailableFeaturesForAppVersionCode(previouslyInstalledVersionCode);

@@ -1664,11 +1664,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     topView.setSelectionColorId(ColorId.profileSectionActive);
     topView.setTextFromToColorId(ColorId.textLight, ColorId.profileSectionActiveContent);
     addThemeInvalidateListener(topView);
-    if (Config.USE_ICON_TABS) {
-      // topView.setItems(getPagerIcons());
-    } else {
-      topView.setItems(getPagerTitles());
-    }
+    topView.setShowLabelOnActiveOnly(!isEditing() && !Settings.instance().needReduceMotion());
+    topView.setItems(getPagerTitles());
     topCellView.getRecyclerView().setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     topView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
     topCellView.setLayoutParams(params);
@@ -2666,6 +2663,14 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     onItemsHeightProbablyChanged();
   }
 
+  private static ViewPagerTopView.Item newItem (SharedBaseController<?> c) {
+    return new ViewPagerTopView.Item(
+      c.getName().toString().toUpperCase(),
+      c.getIcon(),
+      null
+    );
+  }
+
   private void checkChannelMembers () {
     final boolean needMembers = supergroupFull != null && supergroupFull.canGetMembers;
     final SharedMembersController existingMembersController = getMembersController();
@@ -2677,11 +2682,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         controllers.add(c);
         registerController(c);
         pagerAdapter.notifyItemInserted(controllers.size() - 1);
-        if (Config.USE_ICON_TABS) {
-          // topCellView.getTopView().addItem(c.getIcon());
-        } else {
-          topCellView.getTopView().addItem(c.getName().toString().toUpperCase());
-        }
+        topCellView.getTopView().addItem(newItem(c));
       } else {
         int i = controllers.indexOf(existingMembersController);
         if (i == -1) {
@@ -5687,24 +5688,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private final ArrayList<SharedBaseController<?>> controllers = new ArrayList<>(6);
 
-  /*private int[] getPagerIcons () {
-    ArrayList<SharedBaseController> controllers = getControllers();
-    int[] icons = new int[controllers.size()];
-    int i = 0;
-    for (SharedBaseController c : controllers) {
-      icons[i++] = c.getIcon();
-    }
-    return icons;
-  }*/
-
-  private String[] getPagerTitles () {
+  private List<ViewPagerTopView.Item> getPagerTitles () {
     ArrayList<SharedBaseController<?>> controllers = getControllers();
-    String[] strings = new String[controllers.size()];
-    int i = 0;
+    List<ViewPagerTopView.Item> items = new ArrayList<>(controllers.size());
     for (SharedBaseController<?> c : controllers) {
-      strings[i++] = c.getName().toString().toUpperCase();
+      items.add(newItem(c));
     }
-    return strings;
+    return items;
   }
 
   private ArrayList<SharedBaseController<?>> getControllers () {
@@ -5824,11 +5814,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     registerController(c);
     controllers.add(c);
     pagerAdapter.notifyItemInserted(controllers.size() - 1);
-    if (Config.USE_ICON_TABS) {
-      // topCellView.getTopView().addItem(c.getIcon());
-    } else {
-      topCellView.getTopView().addItem(c.getName().toString().toUpperCase());
-    }
+    topCellView.getTopView().addItem(newItem(c));
     pagerAdapter.notifyDataSetChanged();
   }
 
@@ -5976,7 +5962,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       controllers.add(c);
       registerController(c);
       pagerAdapter.notifyItemInserted(controllers.size() - 1);
-      topCellView.getTopView().addItem(c.getName().toString().toUpperCase());
+      topCellView.getTopView().addItem(newItem(c));
     } else {
       SharedBaseController<?> c = controllers.get(visualIndex);
       if (SharedBaseController.isMediaController(c) && c.provideSearchFilter().getConstructor() == filter.getConstructor()) {
@@ -5986,7 +5972,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       controllers.add(visualIndex, c);
       registerController(c);
       pagerAdapter.notifyItemInserted(visualIndex);
-      topCellView.getTopView().addItemAtIndex(c.getName().toString().toUpperCase(), visualIndex);
+      topCellView.getTopView().addItemAtIndex(newItem(c), visualIndex);
     }
     pagerAdapter.notifyDataSetChanged();
   }

@@ -88,6 +88,17 @@ public class SharedChatsController extends SharedBaseController<DoubleTextWrappe
   }
 
   @Override
+  public int getIcon () {
+    switch (mode) {
+      case Mode.GROUPS_IN_COMMON:
+        return R.drawable.baseline_group_24;
+      case Mode.SIMILAR_CHANNELS:
+        return R.drawable.baseline_bullhorn_24;
+    }
+    throw new IllegalStateException();
+  }
+
+  @Override
   protected TdApi.Function<?> buildRequest (long chatId, long messageThreadId, String query, long offset, String secretOffset, int limit) {
     switch (mode) {
       case Mode.GROUPS_IN_COMMON:

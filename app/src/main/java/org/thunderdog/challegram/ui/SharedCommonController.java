@@ -66,42 +66,34 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
     }
   }
 
-  /*@Override
-  public int getIcon () {
-    switch (filter.getConstructor()) {
-      case TdApi.SearchMessagesFilterDocument.CONSTRUCTOR: {
-        return R.drawable.baseline_insert_drive_file_20;
-      }
-      case TdApi.SearchMessagesFilterAudio.CONSTRUCTOR: {
-        return R.drawable.baseline_music_note_20;
-      }
-      case TdApi.SearchMessagesFilterUrl.CONSTRUCTOR: {
-        return R.drawable.baseline_language_20;
-      }
-      case TdApi.SearchMessagesFilterVoiceNote.CONSTRUCTOR: {
-        return R.drawable.baseline_mic_20;
-      }
-    }
-    return 0;
-  }*/
-
   @Override
   public CharSequence getName () {
     switch (filter.getConstructor()) {
-      case TdApi.SearchMessagesFilterDocument.CONSTRUCTOR: {
+      case TdApi.SearchMessagesFilterDocument.CONSTRUCTOR:
         return Lang.getString(R.string.TabDocs);
-      }
-      case TdApi.SearchMessagesFilterAudio.CONSTRUCTOR: {
+      case TdApi.SearchMessagesFilterAudio.CONSTRUCTOR:
         return Lang.getString(R.string.TabAudio);
-      }
-      case TdApi.SearchMessagesFilterUrl.CONSTRUCTOR: {
+      case TdApi.SearchMessagesFilterUrl.CONSTRUCTOR:
         return Lang.getString(R.string.TabLinks);
-      }
-      case TdApi.SearchMessagesFilterVoiceNote.CONSTRUCTOR: {
+      case TdApi.SearchMessagesFilterVoiceNote.CONSTRUCTOR:
         return Lang.getString(R.string.TabVoiceMessages);
-      }
     }
     return "";
+  }
+
+  @Override
+  public int getIcon () {
+    switch (filter.getConstructor()) {
+      case TdApi.SearchMessagesFilterDocument.CONSTRUCTOR:
+        return R.drawable.baseline_insert_drive_file_24;
+      case TdApi.SearchMessagesFilterAudio.CONSTRUCTOR:
+        return R.drawable.baseline_music_note_24;
+      case TdApi.SearchMessagesFilterUrl.CONSTRUCTOR:
+        return R.drawable.baseline_language_24;
+      case TdApi.SearchMessagesFilterVoiceNote.CONSTRUCTOR:
+        return R.drawable.baseline_mic_24;
+    }
+    return 0;
   }
 
   @Override

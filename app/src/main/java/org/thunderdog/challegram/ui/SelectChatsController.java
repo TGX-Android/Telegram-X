@@ -48,7 +48,6 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.user.BubbleHeaderView;
 import org.thunderdog.challegram.component.user.BubbleView;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
@@ -390,8 +389,9 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     adapter.setItems(items, false);
     recyclerView.setAdapter(adapter);
 
-    int initialChunkSize = Screen.calculateLoadingItems(Screen.dp(72f), 5) + 5;
-    int chunkSize = Screen.calculateLoadingItems(Screen.dp(72f), 25);
+    int itemHeight = SettingHolder.measureHeightForType(ListItem.TYPE_CHAT_SMALL);
+    int initialChunkSize = Screen.calculateLoadingItems(itemHeight, 5) + 5;
+    int chunkSize = Screen.calculateLoadingItems(itemHeight, 25);
     loadingMore = true;
     chatListSlice = new TdlibChatListSlice(tdlib, ChatPosition.CHAT_LIST_MAIN, null, true);
 
@@ -406,10 +406,10 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
       public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
-        if (dy > 0 && !loadingMore && isChatSearchOpen() && chatListSlice.canLoad()) {
+        if (dy != 0 && !loadingMore && !isChatSearchOpen() && chatListSlice.canLoad()) {
           int lastVisiblePosition = findLastVisiblePosition();
-          if (lastVisiblePosition == adapter.getItemCount() - 1) {
-            chatListSlice.loadMore(chunkSize, /* after */ null);
+          if (lastVisiblePosition + 15 >= adapter.getItemCount() - 1) {
+            chatListSlice.loadMore(chunkSize, null);
           }
         }
       }
@@ -499,7 +499,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
   }
 
   private boolean hasBubbles () {
-    return Config.CHAT_FOLDERS_REDESIGN;
+    return true;
   }
 
   private int indexOfChatBubble (long chatId) {
