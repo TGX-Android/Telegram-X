@@ -1742,29 +1742,38 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       };
       if (id == R.id.more_btn_unarchive || id == R.id.more_btn_archive) {
         boolean isUnarchive = id == R.id.more_btn_unarchive;
-        showOptions(
-          Lang.pluralBold(isUnarchive ? R.string.UnarchiveXChats : R.string.ArchiveXChats, selectedChats.size()),
-          new int[] {R.id.btn_archiveUnarchiveChat, R.id.btn_cancel},
-          new String[] {Lang.getString(isUnarchive ? R.string.Unarchive : R.string.Archive), Lang.getString(R.string.Cancel)}, null,
-          new int[] {isUnarchive ? R.drawable.baseline_unarchive_24 : R.drawable.baseline_archive_24, R.drawable.baseline_cancel_24}, (v, optionId) -> {
-            if (optionId == R.id.btn_archiveUnarchiveChat) {
-              TdApi.ChatList chatList = isUnarchive ? new TdApi.ChatListMain() : new TdApi.ChatListArchive();
-              for (int i = 0; i < selectedChats.size(); i++) {
-                tdlib.client().send(new TdApi.AddChatToList(selectedChats.keyAt(i), chatList), result -> {
-                  switch (result.getConstructor()) {
-                    case TdApi.Ok.CONSTRUCTOR:
-                      after.run();
-                      break;
-                    case TdApi.Error.CONSTRUCTOR:
-                      UI.showError(result);
-                      break;
-                  }
-                });
-              }
-            }
-            return true;
+        int chatsCount = selectedChats.size();
+        tdlib.ui().checkNeedArchiveInFolderHint(chatList, isUnarchive, needHint -> {
+          CharSequence hint;
+          if (needHint) {
+            hint = Lang.pluralBold(isUnarchive ? R.string.UnarchiveXChatsInFolder : R.string.ArchiveXChatsInFolder, chatsCount);
+          } else {
+            hint = Lang.pluralBold(isUnarchive ? R.string.UnarchiveXChats : R.string.ArchiveXChats, chatsCount);
           }
-        );
+          showOptions(
+            hint,
+            new int[] {R.id.btn_archiveUnarchiveChat, R.id.btn_cancel},
+            new String[] {Lang.getString(isUnarchive ? R.string.Unarchive : R.string.Archive), Lang.getString(R.string.Cancel)}, null,
+            new int[] {isUnarchive ? R.drawable.baseline_unarchive_24 : R.drawable.baseline_archive_24, R.drawable.baseline_cancel_24}, (v, optionId) -> {
+              if (optionId == R.id.btn_archiveUnarchiveChat) {
+                TdApi.ChatList chatList = isUnarchive ? new TdApi.ChatListMain() : new TdApi.ChatListArchive();
+                for (int i = 0; i < selectedChats.size(); i++) {
+                  tdlib.client().send(new TdApi.AddChatToList(selectedChats.keyAt(i), chatList), result -> {
+                    switch (result.getConstructor()) {
+                      case TdApi.Ok.CONSTRUCTOR:
+                        after.run();
+                        break;
+                      case TdApi.Error.CONSTRUCTOR:
+                        UI.showError(result);
+                        break;
+                    }
+                  });
+                }
+              }
+              return true;
+            }
+          );
+        });
       } else if (id == R.id.more_btn_report) {
         long[] chatIds = ArrayUtils.keys(selectedChats);
         TdlibUi.reportChats(getParentOrSelf(), chatIds, onDone);

@@ -3821,6 +3821,15 @@
   <string name="ArchiveChat">Archive Chat</string>
   <string name="UnarchiveChat">Unarchive Chat</string>
 
+  <string name="ArchiveX_user">Archive chat with %1$s?</string>
+  <string name="ArchiveX_chat">Archive %1$s?</string>
+  <string name="ArchiveXInFolder_user">Archive chat with %1$s? It will remain in the list as current folder does not exclude archived chats.</string>
+  <string name="ArchiveXInFolder_chat">Archive %1$s? It will remain in the list as current folder does not exclude archived chats.</string>
+  <string name="UnarchiveX_user">Unarchive chat with %1$s?</string>
+  <string name="UnarchiveX_chat">Unarchive %1$s?</string>
+  <string name="UnarchiveXInFolder_user">Unarchive chat with %1$s? It will remain in the current chat folder.</string>
+  <string name="UnarchiveXInFolder_chat">Unarchive %1$s? It will remain in the current chat folder.</string>
+
   <string name="ReportLocation">Group unrelated to location?</string>
   <string name="ReportLocationTitle">Report unrelated group</string>
   <string name="ReportLocationDesc">Please let us know if this group is not related to this location:\n\n%1$s</string>
@@ -3981,6 +3990,10 @@
   <string name="ArchiveXChats_other">Archive %1$s chats</string>
   <string name="UnarchiveXChats_one">Unarchive %1$s chat</string>
   <string name="UnarchiveXChats_other">Unarchive %1$s chats</string>
+  <string name="ArchiveXChatsInFolder_one">Archive %1$s chat? It will remain in the list as current folder does not exclude archived chats.</string>
+  <string name="ArchiveXChatsInFolder_other">Archive %1$s chats? They will remain in the list as current folder does not exclude archived chats.</string>
+  <string name="UnarchiveXChatsInFolder_one">Unarchive %1$s chat? It will remain in the current chat folder.</string>
+  <string name="UnarchiveXChatsInFolder_other">Unarchive %1$s chats? They will remain the current chat folder.</string>
   <string name="ArchivedXChats_one">Archived %1$s chat</string>
   <string name="ArchivedXChats_other">Archived %1$s chats</string>
   <string name="UnarchivedXChats_one">Unarchived %1$s chat</string>
