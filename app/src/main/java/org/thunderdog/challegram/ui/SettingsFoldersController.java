@@ -293,7 +293,7 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
           int styleRes;
           switch (tdlib.settings().chatFolderStyle()) {
             case ChatFolderStyle.LABEL_AND_ICON:
-              styleRes = R.string.LabelAndIcon;
+              styleRes = R.string.LabelAndIcon2;
               break;
             case ChatFolderStyle.ICON_ONLY:
               styleRes = R.string.IconOnly;
@@ -443,13 +443,13 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
         new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_displayFoldersAtTop, 0, R.string.DisplayFoldersAtTheTop, tdlib.settings().displayFoldersAtTop()),
         new ListItem(ListItem.TYPE_SHADOW_BOTTOM).setTextColorId(ColorId.background),
         new ListItem(ListItem.TYPE_SHADOW_TOP).setTextColorId(ColorId.background),
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_iconWithLabelOnActiveFolder, 0, R.string.IconWithLabelOnActiveFolder2, R.id.btn_chatFolderStyle, chatFolderStyle == ChatFolderStyle.ICON_WITH_LABEL_ON_ACTIVE_FOLDER),
+        new ListItem(ListItem.TYPE_SEPARATOR_FULL),
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_labelAndIcon, 0, R.string.LabelAndIcon2, R.id.btn_chatFolderStyle, chatFolderStyle == ChatFolderStyle.LABEL_AND_ICON),
+        new ListItem(ListItem.TYPE_SEPARATOR_FULL),
         new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_labelOnly, 0, R.string.LabelOnly, R.id.btn_chatFolderStyle, chatFolderStyle == ChatFolderStyle.LABEL_ONLY),
         new ListItem(ListItem.TYPE_SEPARATOR_FULL),
-        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_labelAndIcon, 0, R.string.LabelAndIcon, R.id.btn_chatFolderStyle, chatFolderStyle == ChatFolderStyle.LABEL_AND_ICON),
-        new ListItem(ListItem.TYPE_SEPARATOR_FULL),
-        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_iconOnly, 0, R.string.IconOnly, R.id.btn_chatFolderStyle, chatFolderStyle == ChatFolderStyle.ICON_ONLY),
-        new ListItem(ListItem.TYPE_SEPARATOR_FULL),
-        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_iconWithLabelOnActiveFolder, 0, R.string.IconWithLabelOnActiveFolder2, R.id.btn_chatFolderStyle, chatFolderStyle == ChatFolderStyle.ICON_WITH_LABEL_ON_ACTIVE_FOLDER)
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_iconOnly, 0, R.string.IconOnly, R.id.btn_chatFolderStyle, chatFolderStyle == ChatFolderStyle.ICON_ONLY)
       };
       SettingsWrapBuilder settings = new SettingsWrapBuilder(R.id.btn_chatFolderStyle)
         .setRawItems(items)

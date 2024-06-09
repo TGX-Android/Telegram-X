@@ -5147,7 +5147,7 @@
   <string name="MainListBadge">main list</string>
   <string name="IconOnly">Icon only</string>
   <string name="LabelOnly">Label only</string>
-  <string name="LabelAndIcon">Label with icon</string>
+  <string name="LabelAndIcon2">Icon with label</string>
   <string name="IconWithLabelOnActiveFolder2">Icon with label on active folder</string>
   <string name="DisplayFoldersAtTheTop">Display folders at the top</string>
   <string name="ChatsXShowMore_one">Show %1$s more</string>
