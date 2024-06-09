@@ -386,7 +386,7 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
     recyclerView.stopScroll();
     int threshold = Screen.dp(2f);
     if (Math.abs(scrollX) >= threshold && hasUserInteraction) {
-      long duration = computeScrollDuration(scrollX, recyclerView.getMeasuredHeight());
+      long duration = computeScrollDuration(scrollX, recyclerView.getMeasuredWidth());
 
       scrollByAnimator = new FloatAnimator(duration, QUINTIC_INTERPOLATOR, 0, new AnimatorListener<>() {
         @Override
