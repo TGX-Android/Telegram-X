@@ -42,6 +42,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.base.SettingView;
@@ -232,7 +233,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
       onTitleChanged(editable != null ? editable.toString() : "");
       return Unit.INSTANCE;
     });
-    setLockFocusView(headerCell.getInputView(), /* showAlways */ StringUtils.isEmpty(editedChatFolder.title));
+    setLockFocusView(headerCell.getInputView(), false /*StringUtils.isEmpty(editedChatFolder.title)*/);
     ((ComplexRecyclerView) recyclerView).setHeaderView(headerCell, this);
     updateFolderIcon();
 
@@ -299,7 +300,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
       protected void onSizeChanged (int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
         if ((oldh != 0 && oldw != 0) && (oldh != h || oldw != w)) {
-          runOnUiThreadOptional(this::invalidateItemDecorations);
+          updateBottomOffset();
         }
       }
     };
@@ -308,6 +309,14 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
     recyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     recyclerView.addItemDecoration(new ItemDecoration());
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+      @Override
+      public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
+        if (dy == 0) {
+          updateBottomOffset();
+        }
+        postponeInvalidateItemDecorations();
+      }
+
       @Override
       public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
         if (newState == RecyclerView.SCROLL_STATE_IDLE) {
@@ -325,6 +334,32 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
       }
     });
     return recyclerView;
+  }
+
+  private static final boolean DECORATION_LOGGING_ENABLED = false;
+
+  private void updateBottomOffset () {
+    runOnUiThreadOptional(() -> {
+      recyclerView.invalidateItemDecorations();
+      if (DECORATION_LOGGING_ENABLED) {
+        Log.v("invalidate decorations(1)");
+      }
+    }, null, 10);
+  }
+
+  private boolean lastViewVisible;
+
+  private void postponeInvalidateItemDecorations () {
+    LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
+    int lastPosition = manager.findLastVisibleItemPosition();
+    boolean lastViewVisible = lastPosition == adapter.getItemCount() - 1;
+    if (this.lastViewVisible != lastViewVisible) {
+      this.lastViewVisible = lastViewVisible;
+      recyclerView.invalidateItemDecorations();
+      if (DECORATION_LOGGING_ENABLED) {
+        Log.v("invalidate decorations(2)");
+      }
+    }
   }
 
   @Override
@@ -1279,22 +1314,36 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
         LinearLayoutManager manager = (LinearLayoutManager) parent.getLayoutManager();
         int recyclerHeight = recyclerView.getMeasuredHeight();
         int emptyHeight;
-        if (manager.findFirstCompletelyVisibleItemPosition() == 0 && manager.findLastCompletelyVisibleItemPosition() == lastIndex) {
+        if (manager.findFirstVisibleItemPosition() == 0 && manager.findLastVisibleItemPosition() == lastIndex) {
+          if (DECORATION_LOGGING_ENABLED) {
+            Log.v("fully visible");
+          }
+          View firstView = manager.findViewByPosition(0);
+          int scrolledBy = firstView != null ? -firstView.getTop() : 0;
           View lastView = manager.findViewByPosition(lastIndex);
-          int lastBottom = lastView != null ? lastView.getBottom() : recyclerHeight;
-          emptyHeight = recyclerHeight - lastBottom;
+          int lastBottom = lastView != null && lastView.getBottom() != 0 ? lastView.getBottom() : recyclerHeight;
+          emptyHeight = recyclerHeight - lastBottom - scrolledBy;
         } else {
+          if (DECORATION_LOGGING_ENABLED) {
+            Log.v("partially visible");
+          }
           int contentHeight = 0;
           for (int i = 0; i < adapter.getItemCount(); i++) {
             View childView = manager.findViewByPosition(i);
+            int childHeight = 0;
             if (childView != null) {
-              contentHeight += manager.getDecoratedMeasuredHeight(childView);
-            } else {
+              childHeight = childView.getMeasuredHeight();
+            }
+            if (DECORATION_LOGGING_ENABLED) {
+              Log.v("childHeight #%d %d", i, childHeight);
+            }
+            if (childHeight == 0) {
               ListItem item = adapter.getItem(i);
               try {
-                contentHeight += SettingHolder.measureHeightForType(item);
+                childHeight = SettingHolder.measureHeightForType(item);
               } catch (Throwable ignored) { }
             }
+            contentHeight += childHeight;
           }
           emptyHeight = recyclerHeight - contentHeight;
         }
@@ -1303,6 +1352,9 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
           minScrollableHeight = Screen.dp(76f);
         }
         outRect.bottom = Math.max(minScrollableHeight, emptyHeight + Size.getHeaderSizeDifference(false));
+        if (DECORATION_LOGGING_ENABLED) {
+          Log.v("setBottom %d", outRect.bottom);
+        }
       }
     }
   }
