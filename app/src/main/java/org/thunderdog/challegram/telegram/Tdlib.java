@@ -12046,7 +12046,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       // Send fake update without a deleting folder.
       updateChatFolders(update);
     }
-    send(new TdApi.DeleteChatFolder(chatFolderId, leaveChatIds), typedOkHandler(after));
+    send(new TdApi.DeleteChatFolder(chatFolderId, leaveChatIds), typedOkHandler(() -> {
+      settings().forgetChatFolder(chatFolderId);
+      if (after != null) {
+        after.run();
+      }
+    }));
   }
 
   public void deleteChatFolderInviteLink (int chatFolderId, String inviteLink, ResultHandler<TdApi.Ok> resultHandler) {
