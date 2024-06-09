@@ -2439,7 +2439,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
   private void showDeleteChatFolderConfirm (int chatFolderId, boolean hasMyInviteLinks) {
     tdlib.ui().showDeleteChatFolderConfirm(this, hasMyInviteLinks, () -> {
-      tdlib.deleteChatFolder(chatFolderId);
+      tdlib.deleteChatFolder(chatFolderId, null, null);
     });
   }
 

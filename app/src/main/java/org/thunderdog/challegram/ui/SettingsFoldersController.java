@@ -593,14 +593,14 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
       if (position >= tdlib.mainChatListPosition()) position++;
       if (position >= archiveChatListPosition) position++;
       boolean affectsArchiveChatListPosition = position < archiveChatListPosition && archiveChatListPosition < chatFolders.length + 2;
-      tdlib.send(new TdApi.DeleteChatFolder(chatFolderId, null), tdlib.typedOkHandler(() -> {
+      tdlib.deleteChatFolder(chatFolderId, null, () -> {
         if (affectsArchiveChatListPosition && archiveChatListPosition == tdlib.settings().archiveChatListPosition()) {
           tdlib.settings().setArchiveChatListPosition(archiveChatListPosition - 1);
           if (!isDestroyed()) {
             updateChatFolders();
           }
         }
-      }));
+      });
     }
   }
 

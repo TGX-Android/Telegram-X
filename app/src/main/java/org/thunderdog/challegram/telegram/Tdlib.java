@@ -12021,7 +12021,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }));
   }
 
-  public void deleteChatFolder (int chatFolderId) {
+  public void deleteChatFolder (int chatFolderId, long[] leaveChatIds, @Nullable Runnable after) {
     TdApi.UpdateChatFolders update;
     synchronized (dataLock) {
       int foundIndex = -1;
@@ -12046,7 +12046,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       // Send fake update without a deleting folder.
       updateChatFolders(update);
     }
-    send(new TdApi.DeleteChatFolder(chatFolderId, null), typedOkHandler());
+    send(new TdApi.DeleteChatFolder(chatFolderId, leaveChatIds), typedOkHandler(after));
   }
 
   public void deleteChatFolderInviteLink (int chatFolderId, String inviteLink, ResultHandler<TdApi.Ok> resultHandler) {
