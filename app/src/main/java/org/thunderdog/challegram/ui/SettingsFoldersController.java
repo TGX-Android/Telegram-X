@@ -609,8 +609,8 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
     int lastIndex = indexOfLastChatFolder();
     if (firstIndex == RecyclerView.NO_POSITION || lastIndex == RecyclerView.NO_POSITION)
       return;
-    int mainChatListPosition = tdlib.mainChatListPosition();
-    int archiveChatListPosition = tdlib.settings().archiveChatListPosition();
+    int mainChatListPosition = -1;
+    int archiveChatListPosition = -1;
     IntList chatFoldersIds = new IntList(tdlib.chatFolderCount());
     int folderPosition = 0;
     for (int index = firstIndex; index <= lastIndex; index++) {
@@ -630,17 +630,19 @@ public class SettingsFoldersController extends RecyclerViewController<Void> impl
         folderPosition++;
       }
     }
-    if (mainChatListPosition > archiveChatListPosition) {
+    if (archiveChatListPosition != -1 && mainChatListPosition != -1 && mainChatListPosition > archiveChatListPosition) {
       mainChatListPosition--;
     }
     if (archiveChatListPosition > chatFoldersIds.size()) {
       archiveChatListPosition = Integer.MAX_VALUE;
     }
-    if (mainChatListPosition != 0 && !tdlib.hasPremium()) {
+    if (mainChatListPosition > 0 && !tdlib.hasPremium()) {
       updateChatFolders();
       return;
     }
-    tdlib.settings().setArchiveChatListPosition(archiveChatListPosition);
+    if (archiveChatListPosition != -1) {
+      tdlib.settings().setArchiveChatListPosition(archiveChatListPosition);
+    }
     if (chatFoldersIds.isEmpty()) {
       return;
     }
