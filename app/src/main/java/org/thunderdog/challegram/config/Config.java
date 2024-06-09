@@ -249,8 +249,6 @@ public class Config {
 
   public static final boolean NEED_ONLINE = true; // !BuildConfig.DEBUG;
 
-  public static final boolean USE_ICON_TABS = false;
-
   /* TODO: Missing Android API
    * TextUtils.CHAR_SEQUENCE_CREATOR doesn't support ImageSpan (or whatever alternative),
    * therefore it's impossible to display even static custom emoji in notifications

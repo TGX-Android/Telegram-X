@@ -17,6 +17,7 @@ package org.thunderdog.challegram.ui;
 import android.content.Context;
 import android.view.View;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 
@@ -53,11 +54,6 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
     super(context, tdlib);
   }
 
-  /*@Override
-  public int getIcon () {
-    return R.drawable.baseline_group_20;
-  }*/
-
   private boolean forceAdmins;
 
   public void setForceAdmins (boolean forceAdmins) {
@@ -77,6 +73,22 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
       }
     }
     return Lang.getString(forceAdmins ? R.string.TabAdmins : R.string.TabMembers);
+  }
+
+  @DrawableRes
+  @Override
+  public int getIcon () {
+    if (specificFilter != null) {
+      switch (specificFilter.getConstructor()) {
+        case TdApi.SupergroupMembersFilterAdministrators.CONSTRUCTOR:
+          return R.drawable.baseline_stars_24;
+        case TdApi.SupergroupMembersFilterBanned.CONSTRUCTOR:
+          return R.drawable.baseline_gavel_24;
+        case TdApi.SupergroupMembersFilterRestricted.CONSTRUCTOR:
+          return R.drawable.baseline_block_24;
+      }
+    }
+    return forceAdmins ? R.drawable.baseline_stars_24 : R.drawable.baseline_group_24;
   }
 
   @Override

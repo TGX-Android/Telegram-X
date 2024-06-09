@@ -499,7 +499,11 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   }
 
   public void addItem (int item) {
-    addItemAtIndex(new Item(item), -1);
+    addItem(new Item(item));
+  }
+
+  public void addItem (Item item) {
+    addItemAtIndex(item, -1);
   }
 
   public void addItemAtIndex (int item, int index) {
