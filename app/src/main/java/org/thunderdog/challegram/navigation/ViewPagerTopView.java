@@ -824,6 +824,10 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     }
   }
 
+  public void resetFromTo () {
+    setFromTo(-1, -1);
+  }
+
   public boolean setTextFromToColorId (@ColorId int fromColorId, @ColorId int toColorId) {
     return setTextFromToColorId(fromColorId, toColorId, PropertyId.NONE);
   }

@@ -1653,6 +1653,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
           hideSoftwareKeyboard();
         }
       }
+      if (pagerHeaderView != null && scrollState != ViewPager.SCROLL_STATE_SETTLING) {
+        pagerHeaderView.getTopView().resetFromTo();
+      }
     }
   }
 
