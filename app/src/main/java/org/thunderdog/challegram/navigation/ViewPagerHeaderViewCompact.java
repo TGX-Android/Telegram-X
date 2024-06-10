@@ -216,7 +216,6 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
     recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? OVER_SCROLL_IF_CONTENT_SCROLLS :OVER_SCROLL_NEVER);
     recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, Lang.rtl()));
     recyclerView.setAdapter(adapter);
-    recyclerView.setHasFixedSize(true);
     addView(recyclerView);
 
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Size.getHeaderBigPortraitSize(true)));
