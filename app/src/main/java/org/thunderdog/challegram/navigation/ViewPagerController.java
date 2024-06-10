@@ -432,7 +432,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
   public final void onPageScrollStateChanged (int state) {
     scrollState = state;
     if (state != ViewPager.SCROLL_STATE_SETTLING && headerCell != null) {
-      headerCell.getTopView().setFromTo(-1, -1);
+      headerCell.getTopView().resetFromTo();
     }
   }
 

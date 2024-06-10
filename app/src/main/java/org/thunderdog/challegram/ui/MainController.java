@@ -635,10 +635,9 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       menu.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, gravity, 0, 0, 0, marginBottom));
 
       menu.setPadding(menu.getPaddingLeft(), menu.getPaddingTop() + Screen.dp(14f), menu.getPaddingRight(), menu.getPaddingBottom() + Screen.dp(13f));
-      menu.setMinimumWidth(Screen.dp(183f));
       for (int filter : FILTERS) {
         int filterName = getFilterName(filter);
-        int filterIcon = getFilterIcon(filter);
+        int filterIcon = getFilterIcon(filter, false);
 
         TextView sectionView = new AppCompatTextView(context);
 
@@ -649,12 +648,12 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         sectionView.setLayoutParams(params);
         sectionView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
         sectionView.setGravity(Lang.gravity(Gravity.CENTER_VERTICAL));
-        sectionView.setPadding(Screen.dp(16f), Screen.dp(11.5f), Screen.dp(16f), Screen.dp(11.5f));
+        sectionView.setPadding(Screen.dp(Lang.rtl()  ? 24f : 16f), Screen.dp(11.5f), Screen.dp(Lang.rtl() ? 16f : 24f), Screen.dp(11.5f));
         sectionView.setTypeface(Fonts.getRobotoMedium());
         sectionView.setTag(R.id.btn_filter, filter);
         sectionView.setOnClickListener(v -> { });
         sectionView.setCompoundDrawablePadding(Screen.dp(16));
-        if (Lang.rtl()) {
+        if (!Lang.rtl()) {
           sectionView.setCompoundDrawablesWithIntrinsicBounds(filterIcon, ResourcesCompat.ID_NULL, ResourcesCompat.ID_NULL, ResourcesCompat.ID_NULL);
         } else {
           sectionView.setCompoundDrawablesWithIntrinsicBounds(ResourcesCompat.ID_NULL, ResourcesCompat.ID_NULL, filterIcon, ResourcesCompat.ID_NULL);
@@ -1610,10 +1609,10 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   }
 
   @DrawableRes
-  private int getFilterIcon (@Filter int filter) {
+  private int getFilterIcon (@Filter int filter, boolean isGlobal) {
     switch (filter) {
       case FILTER_NONE:
-        return R.drawable.baseline_forum_24;
+        return isGlobal ? R.drawable.baseline_forum_24 : R.drawable.baseline_filter_variant_remove_24;
       case FILTER_PRIVATE:
         return R.drawable.baseline_person_24;
       case FILTER_GROUPS:
@@ -3139,7 +3138,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         continue;
       }
       int name = getGlobalFilterName(globalFilter);
-      int icon = getFilterIcon(globalFilter);
+      int icon = getFilterIcon(globalFilter, true);
       TextView itemView = menu.addItem(View.NO_ID, Lang.getString(name), icon, null, onFilterClickListener);
       itemView.setTag(R.id.btn_filter, globalFilter);
     }
