@@ -125,11 +125,16 @@ configure_make() {
 
   make clean || echo -e "[info] running configure for the first time"
 
+  CPU_DETECT="--disable-runtime-cpu-detect"
+  if [[ $1 =~ x86.* || $1 =~ arm64-v8a ]]; then
+    CPU_DETECT="--enable-runtime-cpu-detect"
+  fi
+
   ./configure \
     --libc=${SYSROOT} \
     --prefix=${PREFIX} \
     --target=${TARGET} \
-    --enable-runtime-cpu-detect \
+    ${CPU_DETECT} \
     --as=auto \
     --disable-docs \
     --enable-pic \
