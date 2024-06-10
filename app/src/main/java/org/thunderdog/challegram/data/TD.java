@@ -5550,7 +5550,7 @@ public class TD {
       case "Work":
         return R.drawable.baseline_work_24;
       case "Airplane":
-        return R.drawable.baseline_logo_telegram_24;
+        return R.drawable.baseline_telegram_24;
       case "Book":
         return R.drawable.baseline_book_24;
       case "Light":
