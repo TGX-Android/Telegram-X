@@ -1401,4 +1401,11 @@
   <item type="id" name="btn_convertToBroadcastGroup" />
   <item type="id" name="btn_confirmConvertBroadcast" />
   <item type="id" name="btn_convertBroadcastGroup" />
+
+  <item type="id" name="btn_playback_speed_0_5" />
+  <item type="id" name="btn_playback_speed_0_7" />
+  <item type="id" name="btn_playback_speed_1_0" />
+  <item type="id" name="btn_playback_speed_1_2" />
+  <item type="id" name="btn_playback_speed_1_5" />
+  <item type="id" name="btn_playback_speed_2_0" />
 </resources>

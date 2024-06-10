@@ -5445,4 +5445,12 @@
   <string name="ReadDate_weekday">Read on %1$s at %2$s</string>
   <string name="ReadDate_date">Read %1$s at %2$s</string>
 
+  <string name="PlaybackSpeed">Speed</string>
+  <string name="PlaybackSpeed50">Very slow</string>
+  <string name="PlaybackSpeed70">Slow</string>
+  <string name="PlaybackSpeed100">Regular</string>
+  <string name="PlaybackSpeed120">Slightly faster</string>
+  <string name="PlaybackSpeed150">Faster</string>
+  <string name="PlaybackSpeed200">Doubled speed</string>
+
 </resources>
