@@ -158,12 +158,12 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
           return;
         }
         View child = getChildAt(0);
-        int leftSpan = -child.getLeft();
+        int leftSpan = -child.getLeft() + Views.getLeftMargin(child);
         float leftFadeStrength = leftSpan < length ? Math.max(0f, leftSpan / (float) length) : 1f;
         float leftLength = leftFadeStrength * length;
         boolean drawLeft = leftLength > 1f /* px */;
 
-        int rightSpan = child.getRight() - getWidth();
+        int rightSpan = child.getRight() - getWidth() + Views.getRightMargin(child);
         float rightFadeStrength = rightSpan < length ? Math.max(0f, rightSpan / (float) length) : 1f;
         float rightLength = rightFadeStrength * length;
         boolean drawRight = rightLength > 1f /* px */;
