@@ -389,6 +389,7 @@ public class RoundVideoController extends BasePlaybackController implements
     if (exoPlayer == null) {
       this.exoPlayer = U.newExoPlayer(context, true);
       setExoPlayerParameters();
+      setExoPlayerSpeed();
       this.exoPlayer.addListener(this);
       this.exoPlayer.setVolume(volume);
       if (mainTextureView instanceof SurfaceView) {
@@ -912,9 +913,7 @@ public class RoundVideoController extends BasePlaybackController implements
 
   @Override
   public void onPlaybackSpeedChanged (int newSpeed) {
-    if (exoPlayer != null) {
-      exoPlayer.setPlaybackParameters(TGPlayerController.newPlaybackParameters(false, newSpeed));
-    }
+    setExoPlayerSpeed(newSpeed);
   }
 
   @Override
@@ -1739,6 +1738,16 @@ public class RoundVideoController extends BasePlaybackController implements
   private void setExoPlayerParameters () {
     if (exoPlayer != null) {
       TdlibManager.instance().player().proximityManager().modifyExoPlayer(exoPlayer, C.AUDIO_CONTENT_TYPE_MOVIE);
+    }
+  }
+
+  private void setExoPlayerSpeed () {
+    setExoPlayerSpeed (Settings.instance().getPlaybackSpeed());
+  }
+
+  private void setExoPlayerSpeed (int speed) {
+    if (exoPlayer != null) {
+      exoPlayer.setPlaybackParameters(TGPlayerController.newPlaybackParameters(false, speed));
     }
   }
 

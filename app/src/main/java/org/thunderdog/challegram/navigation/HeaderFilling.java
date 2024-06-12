@@ -21,6 +21,7 @@ import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 import android.view.View;
@@ -52,16 +53,19 @@ import org.thunderdog.challegram.ui.CallController;
 import org.thunderdog.challegram.ui.PlaybackController;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.RateLimiter;
+import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.voip.annotation.CallState;
 import org.thunderdog.challegram.voip.gui.CallSettings;
+import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ShadowView;
 
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.core.BitwiseUtils;
@@ -73,7 +77,7 @@ import me.vkryl.td.Td;
 
 public class HeaderFilling extends Drawable implements TGLegacyAudioManager.PlayListener, FactorAnimator.Target, CallManager.CurrentCallListener, TdlibCache.CallStateChangeListener, Runnable, TGPlayerController.TrackChangeListener, TGPlayerController.TrackListener, ClickHelper.Delegate, Destroyable, TGLegacyManager.EmojiLoadListener {
   private HeaderView headerView; // Header that holds the filling
-  private @Nullable NavigationController navigationController;
+  private final @Nullable NavigationController navigationController;
 
   // Filling
 
@@ -104,6 +108,8 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
   private int ongoingSections;
 
   private Drawable hangIcon, micIcon, forwardIcon;
+  private final BoolAnimator speedIsActive;
+  private final @Nullable Counter speedCounter;
 
   private int lastBarType;
   private int textLeft;
@@ -137,14 +143,38 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
     this.micIcon = Drawables.get(parent.getResources(), R.drawable.baseline_mic_24);
     this.hangIcon = Drawables.get(parent.getResources(), R.drawable.baseline_call_end_24);
     this.forwardIcon = Drawables.get(parent.getResources(), R.drawable.baseline_fast_forward_24);
+    this.speedIsActive = new BoolAnimator(0, (a, b, c, d) -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
 
     this.textLeft = Screen.dp(72f);
 
     if (navigationController != null) {
+      this.speedCounter = new Counter.Builder()
+        .noBackground()
+        .allBold(true)
+        .drawable(Drawables.get(R.drawable.baseline_playback_speed_x_5), 1, Gravity.LEFT)
+        .textSize(13f)
+        .colorSet(this::getSpeedCounterColor)
+        .callback((a, b) -> invalidate())
+        .build();
+
       TdlibManager.instance().player().addTrackChangeListener(this);
       initCallListeners();
+      updateSpeedCounter(TdlibManager.instance().player().getSpeed(), false);
+    } else {
+      this.speedCounter = null;
     }
     TGLegacyManager.instance().addEmojiListener(this);
+  }
+
+  private void updateSpeedCounter (int speed, boolean animated) {
+    if (speedCounter != null) {
+      speedIsActive.setValue(speed != TGPlayerController.PLAY_SPEED_NORMAL, animated);
+      speedCounter.setCount(speed, false, PlaybackSpeedLayout.getSpeedText(speed), animated);
+    }
+  }
+
+  private int getSpeedCounterColor () {
+    return ColorUtils.fromToArgb(Theme.getColor(ColorId.icon), Theme.getColor(ColorId.iconActive), speedIsActive.getFloatValue());
   }
 
   @Override
@@ -477,6 +507,11 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
   }
 
   @Override
+  public void onPlaybackSpeedChanged (int newSpeed) {
+    UI.execute(() -> updateSpeedCounter(newSpeed, true));
+  }
+
+  @Override
   public void onTrackStateChanged (Tdlib tdlib, long chatId, long messageId, int fileId, int state) { }
 
   @Override
@@ -599,7 +634,7 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
       subtitle = fileName.trim();
     }
 
-    setText(StringUtils.isEmpty(title) ? null : title, StringUtils.isEmpty(subtitle) ? null : subtitle, Screen.dp(56f) * 2 + Screen.dp(24f) + Screen.dp(6f));
+    setText(StringUtils.isEmpty(title) ? null : title, StringUtils.isEmpty(subtitle) ? null : subtitle, Screen.dp(67 + (SIZE + GAP) * 3 + OFFSET));
   }
 
   private void drawOngoingAudio (Canvas c, int playerTop, float rectWidth, int playerBottom) {
@@ -614,10 +649,14 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
       c.drawRect(0, playerBottom - (Screen.dp(1f) + 1), (int) (width * seekFactor), playerBottom, Paints.fillingPaint(ColorUtils.alphaColor(dropShadowAlpha, Theme.getColor(ColorId.headerBarCallActive))));
     }
 
-    TdApi.File file = TD.getFile(playingMessage);
-    DrawAlgorithms.drawPlayPause(c, width - Screen.dp(28f), playerBottom - Size.getHeaderPlayerSize() / 2, Screen.dp(12f), playPausePath, playPauseDrawFactor, playPauseDrawFactor = playPauseFactor, file != null ? TD.getFileProgress(file) : 1f, ColorUtils.alphaColor(dropShadowAlpha, Theme.iconColor()));
+    if (speedCounter != null) {
+      speedCounter.draw(c, getRightButtonCenter(width, 2), (playerBottom + playerTop) / 2f, Gravity.CENTER, 1f);
+    }
 
-    Drawables.draw(c, forwardIcon, width - Screen.dp(52f) - forwardIcon.getMinimumWidth(), playerBottom - Size.getHeaderPlayerSize() / 2 - forwardIcon.getMinimumHeight() / 2, dropShadowAlpha == 1f ? Paints.getIconGrayPorterDuffPaint() : Paints.getPorterDuffPaint(ColorUtils.alphaColor(dropShadowAlpha, Theme.iconColor())));
+    TdApi.File file = TD.getFile(playingMessage);
+    DrawAlgorithms.drawPlayPause(c, getRightButtonCenter(width, 0), playerBottom - Size.getHeaderPlayerSize() / 2, Screen.dp(12f), playPausePath, playPauseDrawFactor, playPauseDrawFactor = playPauseFactor, file != null ? TD.getFileProgress(file) : 1f, ColorUtils.alphaColor(dropShadowAlpha, Theme.iconColor()));
+
+    Drawables.draw(c, forwardIcon, getRightButtonLeft(width, 1), playerBottom - Size.getHeaderPlayerSize() / 2 - forwardIcon.getMinimumHeight() / 2, dropShadowAlpha == 1f ? Paints.getIconGrayPorterDuffPaint() : Paints.getPorterDuffPaint(ColorUtils.alphaColor(dropShadowAlpha, Theme.iconColor())));
     drawCloseIcon(c, playerTop, width, playerBottom, false);
 
     drawOngoingText(c, playerTop, rectWidth, playerBottom, Screen.dp(67f), null, 1f, 1f);
@@ -670,7 +709,7 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
   private void trimSubtitle (int textPadding) {
     if (width != 0) {
       final int availWidth = width - textPadding - getTitleWidth();
-      this.trimmedSubtitle = !StringUtils.isEmpty(subtitle) && availWidth > 0 ? new Text.Builder(subtitle, availWidth, Paints.getTitleStyleProvider(), TextColorSets.Regular.LIGHT).singleLine().build() : null;
+      this.trimmedSubtitle = !StringUtils.isEmpty(subtitle) && availWidth > Screen.dp(16) ? new Text.Builder(subtitle, availWidth, Paints.getTitleStyleProvider(), TextColorSets.Regular.LIGHT).singleLine().build() : null;
     }
   }
 
@@ -1195,32 +1234,70 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
       return false;
     }
     if (BitwiseUtils.hasFlag(ongoingSections, SECTION_AUDIO)) {
-      int endX = width - Screen.dp(52f);
-      return x <= endX && x >= endX - Screen.dp(24f);
+      int rIndex = getRightButtonIndex(width, x);
+      return rIndex == 2;
     }
     return false;
   }
 
+  private float longPressX;
+  private boolean inLongPress;
+
   @Override
   public boolean onLongPressRequestedAt (View view, float x, float y) {
     if (needLongPress(x, y)) {
-      TdlibManager.instance().player().setPlaybackSpeed(TGPlayerController.PLAY_SPEED_2X);
+      longPressX = x;
+      showPlaybackSpeedPicker();
+      if (!inLongPress) {
+        inLongPress = true;
+        if (navigationController != null) {
+          navigationController.lockSwipeNavigation();
+        }
+      }
       return true;
     }
     return false;
   }
 
   @Override
+  public void onLongPressMove (View view, MotionEvent e, float x, float y, float startX, float startY) {
+    if (playbackSpeedLayout != null) {
+      // playbackSpeedLayout.processTouchMove(x - longPressX);
+      longPressX = x;
+    }
+  }
+
+  @Override
   public void onLongPressFinish (View view, float x, float y) {
-    TdlibManager.instance().player().setPlaybackSpeed(TGPlayerController.PLAY_SPEED_NORMAL);
+    if (inLongPress) {
+      inLongPress = false;
+      if (navigationController != null) {
+        navigationController.unlockSwipeNavigation();
+      }
+    }
+  }
+
+  @Override
+  public void onLongPressCancelled (View view, float x, float y) {
+    if (inLongPress) {
+      inLongPress = false;
+      if (navigationController != null) {
+        navigationController.unlockSwipeNavigation();
+      }
+    }
   }
 
   @Override
   public void onClickAt (View view, float x, float y) {
+    final boolean isAudio = BitwiseUtils.hasFlag(ongoingSections, SECTION_AUDIO);
+    int rIndex = getRightButtonIndex(width, x);
+
     int buttonSize = Screen.dp(52f);
-    if (x <= width && x >= width - buttonSize - Screen.dp(24f)) {
+    if (!isAudio && x <= width && x >= width - buttonSize - Screen.dp(24f)) {
       int index = x >= width - buttonSize ? 0 : (int) (width - x - buttonSize) / Screen.dp(24f) + 1;
       onRightClick(index);
+    } else if (isAudio && x <= width && rIndex <= 2) {
+      onRightClick(rIndex);
     } else if (x >= 0 && x <= buttonSize) {
       onLeftClick();
     } else {
@@ -1252,6 +1329,16 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
         }
         if (BitwiseUtils.hasFlag(ongoingSections, SECTION_AUDIO)) {
           TdlibManager.instance().player().playNextMessageInQueue();
+          return true;
+        }
+        break;
+      }
+      case 2: {
+        if (BitwiseUtils.hasFlag(ongoingSections, SECTION_CALL)) {
+          return false;
+        }
+        if (BitwiseUtils.hasFlag(ongoingSections, SECTION_AUDIO)) {
+          onPlaybackSpeedClick();
           return true;
         }
         break;
@@ -1303,5 +1390,80 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
   @Override
   public int getOpacity () {
     return PixelFormat.UNKNOWN;
+  }
+
+
+
+  private static final int SIZE = 24;
+  private static final int OFFSET = 12;
+  private static final int GAP = 8;
+
+  private static int getRightButtonIndex (int width, float x) {
+    return Math.max(0, ((int) (width - x - Screen.dp(OFFSET - GAP / 2f))) / Screen.dp(SIZE + GAP));
+  }
+
+  private static int getRightButtonLeft (int width, int index) {
+    return width - Screen.dp(OFFSET + SIZE * (index + 1) + GAP * index);
+  }
+
+  private static int getRightButtonRight (int width, int index) {
+    return getRightButtonLeft(width, index) + Screen.dp(SIZE);
+  }
+
+  private static int getRightButtonCenter (int width, int index) {
+    return getRightButtonLeft(width, index) + Screen.dp(SIZE / 2f);
+  }
+
+
+  // Playback Speed
+
+  private void onPlaybackSpeedClick () {
+    final int speed = TdlibManager.instance().player().getSpeed();
+    if (speed < 100) {
+      TdlibManager.instance().player().setPlaybackSpeed(100);
+    } else if (speed < 150) {
+      TdlibManager.instance().player().setPlaybackSpeed(150);
+    } else if (speed < 200) {
+      TdlibManager.instance().player().setPlaybackSpeed(200);
+    } else {
+      TdlibManager.instance().player().setPlaybackSpeed(100);
+    }
+  }
+
+  private PlaybackSpeedLayout playbackSpeedLayout;
+
+  private void showPlaybackSpeedPicker () {
+    final PopupLayout popupLayout = new PopupLayout(headerView.getContext());
+
+    playbackSpeedLayout = new PlaybackSpeedLayout(headerView.getContext());
+    playbackSpeedLayout.init(navigationController != null ? navigationController.getThemeListeners() : null, (speed, needApply, needClose) -> {
+      if (needApply) {
+        TdlibManager.instance().player().setPlaybackSpeed(speed);
+      }
+      if (needClose) {
+        popupLayout.hideWindow(true);
+      }
+    }, TdlibManager.instance().player().getSpeed());
+    playbackSpeedLayout.setTranslationY(HeaderView.getSize(true) - Screen.dp(16));
+    playbackSpeedLayout.setTranslationX(getRightButtonRight(0, 2) + Screen.dp(16));
+
+    popupLayout.init(true);
+    popupLayout.setNeedRootInsets();
+    popupLayout.setOverlayStatusBar(true);
+    popupLayout.setDismissListener(new PopupLayout.DismissListener() {
+      @Override
+      public void onPopupDismissPrepare (PopupLayout popup) {
+        if (playbackSpeedLayout == popup.getContentChild()) {
+          playbackSpeedLayout = null;
+        }
+      }
+
+      @Override
+      public void onPopupDismiss (PopupLayout popup) {
+
+      }
+    });
+
+    popupLayout.showMoreView(playbackSpeedLayout);
   }
 }

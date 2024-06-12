@@ -59,10 +59,10 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
   public static final int PLAY_FLAG_REPEAT_ONE = 1 << 2; // repeat current entry, until battery or user dies
   public static final int PLAY_FLAGS_DEFAULT = PLAY_FLAG_REPEAT;
 
-  public static final int PLAY_SPEED_NORMAL = 0;
-  public static final int PLAY_SPEED_2X = 1;
-  public static final int PLAY_SPEED_3X = 2;
-  public static final int PLAY_SPEED_4X = 2;
+  public static final int PLAY_SPEED_NORMAL = 100;
+  public static final int PLAY_SPEED_2X = 200;
+  public static final int PLAY_SPEED_3X = 300;
+  public static final int PLAY_SPEED_4X = 400;
 
   private int speed;
 
@@ -169,6 +169,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
     context.global().addMessageListener(this);
     this.playbackFlags = Settings.instance().getPlayerFlags();
     this.proximityManager = new ProximityManager(this, this);
+    this.speed = Settings.instance().getPlaybackSpeed();
   }
 
   public void onUpdateFile (Tdlib tdlib, TdApi.UpdateFile updateFile) {
@@ -452,33 +453,24 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
     }
     if (this.speed != speed) {
       this.speed = speed;
+      Settings.instance().setPlaybackSpeed(speed);
       synchronized (this) {
         notifyTrackListSpeedChanged(globalListeners, speed);
       }
     }
   }
 
+  public int getSpeed () {
+    return speed;
+  }
+
   public static @NonNull PlaybackParameters newPlaybackParameters (boolean isVoice, int speedValue) {
     PlaybackParameters parameters = PlaybackParameters.DEFAULT;
     if (speedValue != TGPlayerController.PLAY_SPEED_NORMAL) {
-      float speed;
+      float speed = speedValue / 100f;
       float pitch = 1f;
-      switch (speedValue) {
-        case TGPlayerController.PLAY_SPEED_2X:
-          if (isVoice) {
-            speed = 1.72f;
-            pitch = .98f;
-          } else {
-            speed = 2f;
-          }
-          break;
-        default:
-          speed = 1f;
-          break;
-      }
-      if (speed != 1f) {
-        parameters = new PlaybackParameters(speed, pitch);
-      }
+
+      parameters = new PlaybackParameters(speed, pitch);
     }
     return parameters;
   }

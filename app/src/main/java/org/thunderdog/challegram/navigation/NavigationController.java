@@ -1154,6 +1154,22 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     }
   }
 
+  private int swipeNavigationLocked = 0;
+
+  public void lockSwipeNavigation () {
+    this.swipeNavigationLocked += 1;
+  }
+
+  public void unlockSwipeNavigation () {
+    if (swipeNavigationLocked > 0) {
+      this.swipeNavigationLocked -= 1;
+    }
+  }
+
+  public boolean swipeNavigationEnabled () {
+    return swipeNavigationLocked == 0;
+  }
+
   void forceClosePreview () {
     finishTransaction(FINISH_PREVIEW_FORCE);
   }
