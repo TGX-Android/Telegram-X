@@ -33,6 +33,7 @@ import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.util.CounterPlaybackSpeedDrawableSet;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.ShadowView;
@@ -227,7 +228,8 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
       counter = new Counter.Builder()
         .noBackground()
         .allBold(true)
-        .drawable(Drawables.get(R.drawable.baseline_playback_speed_x_5), 1, Gravity.LEFT)
+        .drawable(Drawables.get(R.drawable.baseline_playback_speed_x_5), 0, Gravity.LEFT)
+        .setCustomTextPartBuilder(new CounterPlaybackSpeedDrawableSet())
         .textSize(13f)
         .textColor(ColorId.text)
         .callback(this)

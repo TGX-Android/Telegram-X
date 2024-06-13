@@ -52,6 +52,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.CallController;
 import org.thunderdog.challegram.ui.PlaybackController;
 import org.thunderdog.challegram.unsorted.Size;
+import org.thunderdog.challegram.util.CounterPlaybackSpeedDrawableSet;
 import org.thunderdog.challegram.util.RateLimiter;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.Text;
@@ -151,7 +152,8 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
       this.speedCounter = new Counter.Builder()
         .noBackground()
         .allBold(true)
-        .drawable(Drawables.get(R.drawable.baseline_playback_speed_x_5), 1, Gravity.LEFT)
+        .drawable(Drawables.get(R.drawable.baseline_playback_speed_x_5), 0, Gravity.LEFT)
+        .setCustomTextPartBuilder(new CounterPlaybackSpeedDrawableSet())
         .textSize(13f)
         .colorSet(this::getSpeedCounterColor)
         .callback((a, b) -> invalidate())

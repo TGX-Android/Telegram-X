@@ -64,6 +64,7 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.util.text.bidi.BiDiEntity;
 import org.thunderdog.challegram.util.text.bidi.BiDiUtils;
+import org.thunderdog.challegram.util.text.counter.CounterTextPart;
 
 import java.text.Bidi;
 import java.util.ArrayList;
@@ -75,7 +76,6 @@ import java.util.Map;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.BoolAnimator;
-import me.vkryl.android.animator.CounterAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.android.util.SingleViewProvider;
@@ -86,7 +86,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.Td;
 
-public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextDrawable, ListAnimator.Measurable, Destroyable {
+public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, ListAnimator.Measurable, Destroyable {
   public static final int FLAG_NO_TRIM = 1;
   public static final int FLAG_ALIGN_CENTER = 1 << 1;
   public static final int FLAG_ALL_BOLD = 1 << 2;
