@@ -261,15 +261,17 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
     if (parentWidth == 0 || viewWidth == 0 || headerWidth == 0) {
       return;
     }
-    final int parentPaddingLeft = recyclerView.getPaddingLeft();
-    final int parentPaddingRight = recyclerView.getPaddingRight();
-    final int parentMaxWidth = Math.max(headerWidth
+    final int selfWidth = getMeasuredWidth();
+    final int selfMaxWidth = Math.max(headerWidth
       - headerView.getPaddingLeft()
       - headerView.getPaddingRight()
+      - Views.getLeftMargin(this)
+      - Views.getRightMargin(this), selfWidth);
+    final int parentPaddingLeft = recyclerView.getPaddingLeft();
+    final int parentPaddingRight = recyclerView.getPaddingRight();
+    final int parentMaxWidth = Math.max(selfMaxWidth
       - getPaddingLeft()
       - getPaddingRight()
-      - Views.getLeftMargin(this)
-      - Views.getRightMargin(this)
       - Views.getLeftMargin(recyclerView)
       - Views.getRightMargin(recyclerView), parentWidth);
     if (viewWidth <= parentMaxWidth - parentPaddingLeft - parentPaddingRight) {
@@ -309,7 +311,7 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
     final Interpolator interpolator = QUINTIC_INTERPOLATOR;
     int animationDuration = RecyclerView.UNDEFINED_DURATION;
 
-    if ((headerWidth > getMeasuredWidth()) || (topView.getMeasuredWidth() - parentWidth) < lastItemWidth / 2) {
+    if ((selfWidth < selfMaxWidth) || (topView.getMaxStableWidth() - parentWidth) < lastItemWidth / 2) {
       int desiredViewLeft = (int) (maxViewLeft * (1f - totalFactor) + minViewLeft * totalFactor);
       if (viewLeft != desiredViewLeft) {
         int diff = (viewLeft - desiredViewLeft)/* * (Lang.rtl() ? -1 : 1)*/;  // TODO RTL
