@@ -3423,7 +3423,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       final TextEntity entity = part.getEntity();
       final int quoteId = entity != null ? entity.getQuoteId() : -1;
       if (quoteId != -1) {
-        part.setXY(part.getX() - Screen.dp(QuoteBackground.QUOTE_RIGHT_OFFSET), part.getY() - Screen.dp(QuoteBackground.QUOTE_VERTICAL_OFFSET + QuoteBackground.QUOTE_VERTICAL_MARGIN));
+        part.setXY(part.getX() - Screen.dp(QuoteBackground.QUOTE_RIGHT_PADDING), part.getY() - Screen.dp(QuoteBackground.QUOTE_VERTICAL_PADDING + QuoteBackground.QUOTE_VERTICAL_MARGIN));
         if (lastQuoteId != quoteId) {
           if (quote != null) {
             addQuote(quote);
@@ -3433,6 +3433,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
           quote.partStart = a;
         }
         quote.partEnd = a + 1;
+
+        if (a == parts.size() - 1) {
+          currentY -= Screen.dp(QuoteBackground.QUOTE_VERTICAL_MARGIN);
+        }
       }
     }
     if (quote != null) {
@@ -3444,15 +3448,25 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
   private static final int QUOTE_ADD_PADDING_HORIZONTAL = 1;
   private static final int QUOTE_ADD_PADDING_VERTICAL = 1 << 1;
+  private static final int QUOTE_ADD_MARGIN_TOP = 1 << 2;
+  private static final int QUOTE_ADD_MARGIN_BOTTOM = 1 << 3;
 
   private int quoteCheckAndMakeNewLines (final String in, final int start, int end, ArrayList<TextPart> out, @Nullable TextEntity entity) {
-    final TextPart prevPart = out.isEmpty() ? null : out.get(out.size() - 1);
     final boolean allowQuotes = allowQuotes();
-    final boolean isQuoteEntity = allowQuotes && (entity != null && entity.isQuote());
-    final boolean quoteNewLine = allowQuotes && (entity != null ? entity.getQuoteId() : -1) != (prevPart != null ? prevPart.getQuoteEntityId() : -1);
+    if (!allowQuotes) {
+      return 0;
+    }
 
-    if (prevPart != null && quoteNewLine) {
-      if (!isQuoteEntity) {
+    final TextPart prevPart = out.isEmpty() ? null : out.get(out.size() - 1);
+    final int prevPartQuoteId = prevPart != null ? prevPart.getQuoteEntityId() : -1;
+    final boolean prevPartIsQuote = prevPartQuoteId != -1;
+
+    final int nextPartQuoteId = entity != null ? entity.getQuoteId() : -1;
+    final boolean nextPartIsQuote = nextPartQuoteId != -1;
+
+    final boolean quoteChanged = prevPartQuoteId != nextPartQuoteId;
+    if (quoteChanged) {
+      if (prevPartIsQuote) {
         final String line = prevPart.getLine();
         final TextEntity prevEntity = prevPart.getEntity();
         if (prevEntity != null) {
@@ -3460,22 +3474,38 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
             newLineOrEllipsis(out, in, start, end, entity);
           }
         }
-      } else {
-        if (entity != null && entity.start > 0 && in.charAt(entity.start - 1) != '\n') {
+      }
+      if (prevPart != null && nextPartIsQuote && (!prevPartIsQuote || currentX != 0)) {
+        if (entity.start > 0 && in.charAt(entity.start - 1) != '\n') {
           newLineOrEllipsis(out, in, start, end, entity);
         }
       }
     }
 
-    return (isQuoteEntity ? QUOTE_ADD_PADDING_HORIZONTAL : 0) | (quoteNewLine ? QUOTE_ADD_PADDING_VERTICAL : 0);
+    if (!nextPartIsQuote) {
+      return 0;
+    }
+
+    return QUOTE_ADD_PADDING_HORIZONTAL
+      | (quoteChanged ? QUOTE_ADD_PADDING_VERTICAL | QUOTE_ADD_MARGIN_BOTTOM : 0)
+      | (quoteChanged && prevPart != null && !prevPartIsQuote ? QUOTE_ADD_MARGIN_TOP : 0);
   }
+
 
   private void quoteShiftCords (int flags) {
     if (BitwiseUtils.hasFlag(flags, QUOTE_ADD_PADDING_HORIZONTAL) && currentX == 0) {
-      currentX = Screen.dp(QuoteBackground.QUOTE_LEFT_OFFSET + QuoteBackground.QUOTE_RIGHT_OFFSET);
+      currentX = Screen.dp(QuoteBackground.QUOTE_LEFT_PADDING + QuoteBackground.QUOTE_RIGHT_PADDING);
+      int offsetDp = 0;
       if (BitwiseUtils.hasFlag(flags, QUOTE_ADD_PADDING_VERTICAL)) {
-        currentY += Screen.dp(QuoteBackground.QUOTE_VERTICAL_OFFSET * 2 + QuoteBackground.QUOTE_VERTICAL_MARGIN * 2);
+        offsetDp += QuoteBackground.QUOTE_VERTICAL_PADDING * 2;
       }
+      if (BitwiseUtils.hasFlag(flags, QUOTE_ADD_MARGIN_TOP)) {
+        offsetDp += QuoteBackground.QUOTE_VERTICAL_MARGIN;
+      }
+      if (BitwiseUtils.hasFlag(flags, QUOTE_ADD_MARGIN_BOTTOM)) {
+        offsetDp += QuoteBackground.QUOTE_VERTICAL_MARGIN;
+      }
+      currentY += Screen.dp(offsetDp);
     }
   }
 }

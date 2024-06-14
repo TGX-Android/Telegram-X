@@ -31,10 +31,10 @@ import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.ColorUtils;
 
 public class QuoteBackground implements Drawable.Callback {
-  public static final int QUOTE_LEFT_OFFSET = 11;
-  public static final int QUOTE_RIGHT_OFFSET = 24;
-  public static final int QUOTE_VERTICAL_OFFSET = 3;
-  public static final int QUOTE_VERTICAL_MARGIN = 3;
+  public static final int QUOTE_LEFT_PADDING = 11;
+  public static final int QUOTE_RIGHT_PADDING = 27;
+  public static final int QUOTE_VERTICAL_PADDING = 2;
+  public static final int QUOTE_VERTICAL_MARGIN = 8;
 
   private static Drawable quoteDrawable;
   private static final RectF tmpRect = new RectF();
@@ -61,7 +61,7 @@ public class QuoteBackground implements Drawable.Callback {
 
       ripple = new android.graphics.drawable.RippleDrawable(
         new ColorStateList(new int[][] {StateSet.WILD_CARD}, new int[] {RIPPLE_COLOR}),
-        rippleBackgroundDrawable,
+        null, // rippleBackgroundDrawable,
         new BackgroundDrawable()
       );
       ripple.setCallback(this);
@@ -74,7 +74,9 @@ public class QuoteBackground implements Drawable.Callback {
   public void calcHeightAddition () {
     final int lineHeight = parent.getLineHeight();
     this.topAddition = TextPart.getAdditionalLinesBefore(parent.getTextPart(partStart)) * lineHeight;
-    this.bottomAddition = TextPart.getAdditionalLinesAfter(parent.getTextPart(partEnd - 1)) * lineHeight;
+
+    final int count = TextPart.getAdditionalLinesAfter(parent.getTextPart(partEnd - 1));
+    this.bottomAddition = (count == 1 ? 0 : count) * lineHeight;
   }
 
   public void draw (Canvas c, int startX, int endX, int endXBottomPadding, int startY) {
@@ -98,10 +100,10 @@ public class QuoteBackground implements Drawable.Callback {
       }
     }
 
-    bounds.left -= Screen.dp(QUOTE_LEFT_OFFSET);
-    bounds.top -= Screen.dp(QUOTE_VERTICAL_OFFSET) + topAddition;
-    bounds.right += Screen.dp(QUOTE_RIGHT_OFFSET);
-    bounds.bottom += Screen.dp(QUOTE_VERTICAL_OFFSET) + bottomAddition;
+    bounds.left -= Screen.dp(QUOTE_LEFT_PADDING);
+    bounds.top -= Screen.dp(QUOTE_VERTICAL_PADDING) + topAddition;
+    bounds.right += Screen.dp(QUOTE_RIGHT_PADDING);
+    bounds.bottom += Screen.dp(QUOTE_VERTICAL_PADDING) + bottomAddition;
 
     /* * */
 
@@ -114,7 +116,7 @@ public class QuoteBackground implements Drawable.Callback {
       ripple.draw(c);
     }
 
-    Drawables.draw(c, quoteDrawable, bounds.right - Screen.dp(16), bounds.top + Screen.dp(3), PorterDuffPaint.get(colorId));
+    Drawables.draw(c, quoteDrawable, bounds.right - Screen.dp(19), bounds.top + Screen.dp(3.5f), PorterDuffPaint.get(colorId));
 
     tmpRect.set(bounds);
     tmpRect.right = bounds.left + Screen.dp(3);
