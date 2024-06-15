@@ -98,6 +98,16 @@ public final class ThemeCustom implements ThemeDelegate {
     Integer color = colors.get(colorId);
     if (color != null)
       return color;
+
+    // todo: recursion limit
+    if (colorId == ColorId.textQuote) {
+      return getColor(ColorId.textLight);
+    } else if (colorId == ColorId.bubbleIn_textQuote) {
+      return getColor(ColorId.bubbleIn_time);
+    } else if (colorId == ColorId.bubbleOut_textQuote) {
+      return getColor(ColorId.bubbleOut_time);
+    }
+
     if (parentTheme != null)
       return parentTheme.getColor(colorId);
     throw Theme.newError(colorId, "colorId");
