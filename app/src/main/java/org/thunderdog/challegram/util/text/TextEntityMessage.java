@@ -242,7 +242,8 @@ public class TextEntityMessage extends TextEntity {
   }
 
   public static boolean isQuote (TdApi.TextEntityType type) {
-    return type.getConstructor() == TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR;
+    return type.getConstructor() == TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR
+      || type.getConstructor() == TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR;
   }
 
   public static boolean isClickable (TdApi.TextEntityType type) {
@@ -313,7 +314,6 @@ public class TextEntityMessage extends TextEntity {
     switch (type.getConstructor()) {
       case TdApi.TextEntityTypePre.CONSTRUCTOR:
       case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
-      // case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
         return true;
     }
     return false;
