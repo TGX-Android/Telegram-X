@@ -645,24 +645,22 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_audioCompression, 0, R.string.CompressAudio));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
-      tdlib.getTesterLevel(testerLevel -> tdlib.ui().post(() -> {
-        if (!isDestroyed()) {
-          boolean needBatman = testerLevel >= Tdlib.TESTER_LEVEL_READER || Settings.instance().getNewSetting(Settings.SETTING_FLAG_BATMAN_POLL_TRANSITIONS);
-          int index = adapter.indexOfViewById(R.id.btn_secret_batmanTransitions);
-          boolean hasBatman = index != -1;
-          if (needBatman != hasBatman) {
-            if (needBatman) {
-              index = adapter.indexOfViewByIdReverse(R.id.btn_systemFonts);
-              if (index != -1) {
-                adapter.getItems().addAll(index, Arrays.asList(
-                  new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_batmanTransitions, 0, R.string.BatmanTransitions),
-                  new ListItem(ListItem.TYPE_SEPARATOR_FULL)
-                ));
-                adapter.notifyItemRangeInserted(index, 2);
-              }
-            } else {
-              adapter.removeRange(index, 2);
+      tdlib.getTesterLevel(testerLevel -> runOnUiThreadOptional(() -> {
+        boolean needBatman = testerLevel >= Tdlib.TesterLevel.MIN_LEVEL_FOR_BATMAN_EFFECT || Settings.instance().getNewSetting(Settings.SETTING_FLAG_BATMAN_POLL_TRANSITIONS);
+        int index = adapter.indexOfViewById(R.id.btn_secret_batmanTransitions);
+        boolean hasBatman = index != -1;
+        if (needBatman != hasBatman) {
+          if (needBatman) {
+            index = adapter.indexOfViewByIdReverse(R.id.btn_systemFonts);
+            if (index != -1) {
+              adapter.getItems().addAll(index, Arrays.asList(
+                new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_batmanTransitions, 0, R.string.BatmanTransitions),
+                new ListItem(ListItem.TYPE_SEPARATOR_FULL)
+              ));
+              adapter.notifyItemRangeInserted(index, 2);
             }
+          } else {
+            adapter.removeRange(index, 2);
           }
         }
       }));
