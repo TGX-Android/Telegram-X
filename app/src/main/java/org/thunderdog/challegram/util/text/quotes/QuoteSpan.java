@@ -223,6 +223,22 @@ public class QuoteSpan implements LeadingMarginSpan {
     }
   }
 
+  public static void normalizeQuotesWithoutMerge (Editable text) {
+    QuoteSpan.EmptySpan[] spans = text.getSpans(0, text.length(), QuoteSpan.EmptySpan.class);
+    if (spans == null || spans.length == 0) {
+      return;
+    }
+
+    for (int i = 0; i < spans.length; ++i) {
+      final QuoteSpan.EmptySpan span = spans[i];
+      final int start = text.getSpanStart(span);
+      final int end = text.getSpanEnd(span);
+
+      text.removeSpan(span);
+      setQuoteSpan(text, start, end);
+    }
+  }
+
   public static void normalizeQuotes (Editable text) {
     QuoteSpan.EmptySpan[] spans = text.getSpans(0, text.length(), QuoteSpan.EmptySpan.class);
     if (spans == null || spans.length == 0) {

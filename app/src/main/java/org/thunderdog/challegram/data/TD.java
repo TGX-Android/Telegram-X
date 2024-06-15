@@ -4578,14 +4578,6 @@ public class TD {
     int offset = 0;
     for (TdApi.TextEntity entity : text.entities) {
       final int entityOffset = entity.offset + offset;
-      final boolean isQuote = entity.type.getConstructor() == TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR;
-      if (isQuote) {
-        if (b == null)
-          b = new SpannableStringBuilder(text.text);
-        offset += QuoteSpan.setQuoteSpan(b, entityOffset, entityOffset + entity.length);
-        continue;
-      }
-
       boolean isSpoiler = Td.isSpoiler(entity.type);
       if (isSpoiler) {
         hasSpoilers = true;
@@ -4616,6 +4608,9 @@ public class TD {
       if (builder != null) {
         return builder.toString();
       }
+    }
+    if (b != null) {
+      QuoteSpan.normalizeQuotesWithoutMerge(b);
     }
     return b != null ? SpannableString.valueOf(b) : text.text;
   }
