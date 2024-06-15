@@ -25,15 +25,14 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.TreeSet;
 
-import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 
 public class QuoteSpan implements LeadingMarginSpan {
   public final QuoteStyleSpan styleSpan;
-  public boolean adaptLineHeight = true;
-  public boolean edit = true;
+
   public int start, end;
   public boolean singleLine, first, last;
+  public boolean ignoreMarginTop;
   public boolean rtl;
 
   public QuoteSpan () {
@@ -50,7 +49,7 @@ public class QuoteSpan implements LeadingMarginSpan {
 
   @Override
   public int getLeadingMargin(boolean first) {
-    return Screen.dp(adaptLineHeight ? 8 : 10);
+    return Screen.dp(QuoteBackground.QUOTE_LEFT_PADDING - 3);
   }
 
   @Override
@@ -65,30 +64,47 @@ public class QuoteSpan implements LeadingMarginSpan {
       this.span = span;
     }
 
+    int ascent, descent, top, bottom;
+
     @Override
     public void updateDrawState(TextPaint tp) {
-      if (tp != null) {
-        tp.setColor(span.getColor());
+      if (tp == null) {
+        return;
       }
+      tp.setColor(span.getColor());
+
+      final float size = tp.getTextSize();
+      tp.setTextSize(size - 1);
+      tp.setTextSize(size);
     }
 
     @Override
-    public void updateMeasureState (@NonNull TextPaint textPaint) {
+    public void updateMeasureState(@NonNull TextPaint tp) {
+      final float size = tp.getTextSize();
+      tp.setTextSize(size - 1);
+      tp.setTextSize(size);
 
+      Paint.FontMetricsInt fm = tp.getFontMetricsInt();
+      ascent = fm.ascent;
+      descent = fm.descent;
+      top = fm.top;
+      bottom = fm.bottom;
     }
 
     @Override
     public void chooseHeight(CharSequence text, int start, int end, int spanstartv, int lineHeight, Paint.FontMetricsInt fm) {
-      if (span.adaptLineHeight) {
-        final int dp = span.singleLine ? 7 : 2;
-        if (start <= span.start) {
-          fm.ascent -= Screen.dp((span.last ? 2 : 0) + dp);
-          fm.top -= Screen.dp((span.last ? 2 : 0) + dp);
-        }
-        if (end >= span.end) {
-          fm.descent += Screen.dp(dp);
-          fm.bottom += Screen.dp(dp);
-        }
+      fm.ascent = ascent;
+      fm.descent = descent;
+      fm.top = top;
+      fm.bottom = bottom;
+
+      if (start <= span.start) {
+        fm.ascent -= Screen.dp(QuoteBackground.QUOTE_VERTICAL_PADDING + (!span.first && !span.ignoreMarginTop ? QuoteBackground.QUOTE_VERTICAL_MARGIN : 0));
+        fm.top -= Screen.dp(QuoteBackground.QUOTE_VERTICAL_PADDING + (!span.first && !span.ignoreMarginTop ? QuoteBackground.QUOTE_VERTICAL_MARGIN : 0));
+      }
+      if (end >= span.end) {
+        fm.descent += Screen.dp(QuoteBackground.QUOTE_VERTICAL_PADDING + (!span.last ? QuoteBackground.QUOTE_VERTICAL_MARGIN : 0));
+        fm.bottom += Screen.dp(QuoteBackground.QUOTE_VERTICAL_PADDING + (!span.last ? QuoteBackground.QUOTE_VERTICAL_MARGIN : 0));
       }
     }
   }
@@ -118,10 +134,11 @@ public class QuoteSpan implements LeadingMarginSpan {
       blocks.clear();
     }
     QuoteSpan[] spans = spannable.getSpans(0, spannable.length(), QuoteSpan.class);
+    int lastLineEnd = -1;
     for (int i = 0; i < spans.length; ++i) {
       boolean wasLast = spans[i].last;
-      Block block = new Block(text, layout, spannable, spans[i]);
-
+      Block block = new Block(text, layout, spannable, spans[i], lastLineEnd);
+      lastLineEnd = block.lineEnd;
       if (block.span.start == block.span.end) {
         continue;
       }
@@ -129,24 +146,24 @@ public class QuoteSpan implements LeadingMarginSpan {
         spannable.setSpan(spans[i].styleSpan, block.span.start, block.span.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
       }
 
-      if (block.span.edit) {
-        if (!(block.span.start == 0 || text.charAt(block.span.start - 1) == '\n')) {
-        // if (!(block.span.start == 0 || text.charAt(block.span.start - 1) == '\n' || text.charAt(block.span.start) == '\n')) {
-          spannable.removeSpan(spans[i]);
-          spannable.removeSpan(spans[i].styleSpan);
-          continue;
-        }
-        if (!(block.span.end == text.length() || text.charAt(block.span.end) == '\n')) {
-          // new line was removed after a quote, finding a new quote end
-          int newEnd = block.span.end;
-          for (; newEnd <= text.length() && !(newEnd == text.length() || text.charAt(newEnd) == '\n'); ++newEnd);
-          spannable.removeSpan(spans[i]);
-          spannable.removeSpan(spans[i].styleSpan);
-          spannable.setSpan(spans[i], block.span.start, newEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-          spannable.setSpan(spans[i].styleSpan, block.span.start, newEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-          block = new Block(text, layout, spannable, spans[i]);
-        }
+      if (!(block.span.start == 0 || text.charAt(block.span.start - 1) == '\n')) {
+      // if (!(block.span.start == 0 || text.charAt(block.span.start - 1) == '\n' || text.charAt(block.span.start) == '\n')) {
+        spannable.removeSpan(spans[i]);
+        spannable.removeSpan(spans[i].styleSpan);
+        continue;
       }
+      if (!(block.span.end == text.length() || text.charAt(block.span.end) == '\n')) {
+        // new line was removed after a quote, finding a new quote end
+        int newEnd = block.span.end;
+        for (; newEnd <= text.length() && !(newEnd == text.length() || text.charAt(newEnd) == '\n'); ++newEnd);
+        spannable.removeSpan(spans[i]);
+        spannable.removeSpan(spans[i].styleSpan);
+        spannable.setSpan(spans[i], block.span.start, newEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        spannable.setSpan(spans[i].styleSpan, block.span.start, newEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        block = new Block(text, layout, spannable, spans[i], lastLineEnd);
+        lastLineEnd = block.lineEnd;
+      }
+
       if (blocks == null) {
         blocks = new ArrayList<>();
       }
@@ -160,36 +177,33 @@ public class QuoteSpan implements LeadingMarginSpan {
 
   public static class Block {
     private static final RectF tmpRect = new RectF();
-    private final QuoteBackground.BackgroundDrawable backgroundDrawable;
 
     public final int top, bottom, width;
     public final @NonNull QuoteSpan span;
+    public final int lineStart, lineEnd;
 
-    public Block(CharSequence text, Layout layout, Spanned spanned, @NonNull QuoteSpan span) {
-      this.backgroundDrawable = new QuoteBackground.BackgroundDrawable();
-
+    public Block(CharSequence text, Layout layout, Spanned spanned, @NonNull QuoteSpan span, int lastLineEnd) {
       this.span = span;
       span.start = spanned.getSpanStart(span);
       span.end = spanned.getSpanEnd(span);
 
-      if (span.end - 1 >= 0 && span.end < spanned.length() && spanned.charAt(span.end) != '\n' && spanned.charAt(span.end - 1) == '\n') {
+      /*if (span.end - 1 >= 0 && span.end < spanned.length() && spanned.charAt(span.end) != '\n' && spanned.charAt(span.end - 1) == '\n') {
         span.end--;
-      }
+      }*/
 
-      final int lineStart = layout.getLineForOffset(span.start);
       //final int lineStart = layout.getLineForOffset(Math.min(text.charAt(span.start) == '\n' ? span.start + 1 : span.start, span.end));
-      final int lineEnd = layout.getLineForOffset(span.end);
+      // final int lineEnd = layout.getLineForOffset(span.end);
+
+      lineStart = layout.getLineForOffset(span.start);
+      lineEnd = layout.getLineForOffset(span.end < text.length() && text.charAt(span.end) == '\n' ? span.end - 1 : span.end);
+
+      span.ignoreMarginTop = lastLineEnd != -1 && lastLineEnd + 1 == lineStart;
       span.singleLine = lineEnd - lineStart < 1;
       span.first = lineStart <= 0;
       span.last = lineEnd + 1 >= layout.getLineCount();
 
-      if (span.edit) {
-        this.top = layout.getLineTop(lineStart) + Screen.dp(3 - (span.singleLine ? 0 : 3 + (span.first ? 2 : 0)));
-        this.bottom = layout.getLineBottom(lineEnd) - Screen.dp(2 - (span.singleLine ? 0 : 3 + (span.last ? 2 : 0)));
-      } else {
-        this.top = layout.getLineTop(lineStart) + Screen.dp(3 - (span.singleLine ? 1 : 2));
-        this.bottom = layout.getLineBottom(lineEnd) - Screen.dp(2 - (span.singleLine ? 1 : 2));
-      }
+      this.top = layout.getLineTop(lineStart) + (!span.first && !span.ignoreMarginTop ? Screen.dp(QuoteBackground.QUOTE_VERTICAL_MARGIN) : 0);
+      this.bottom = layout.getLineBottom(lineEnd) - (!span.last ? Screen.dp(QuoteBackground.QUOTE_VERTICAL_MARGIN) : 0);
 
       float width = 0;
       span.rtl = false;
@@ -204,17 +218,13 @@ public class QuoteSpan implements LeadingMarginSpan {
     public void draw(Canvas canvas, float offsetX, float offsetY, int maxWidth) {
       final int color = span.getColor();
 
-      int width = span.edit ? maxWidth : (this.width + Screen.dp(32));
+      int width = maxWidth;
       if (width >= maxWidth * 0.95) {
         width = maxWidth;
       }
 
       int s = Views.save(canvas);
       canvas.translate(offsetX, offsetY);
-
-      backgroundDrawable.setBounds(Screen.dp(-1), top, width, bottom);
-      backgroundDrawable.setColor(ColorUtils.alphaColor(0.05f, color));
-      backgroundDrawable.draw(canvas);
 
       tmpRect.set(-Screen.dp(3), top, 0, bottom);
       canvas.drawRoundRect(tmpRect, Screen.dp(1.5f), Screen.dp(1.5f), Paints.fillingPaint(color));
