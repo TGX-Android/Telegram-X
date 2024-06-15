@@ -27,11 +27,13 @@ import me.vkryl.td.Td;
 /**
  * Workaround for bug present in Samsung Keyboard version 5.6.10.40 with "Predictive text" toggle on (com.samsung.android.honeyboard/.service.HoneyBoardService)
  */
-public class PreserveCustomEmojiFilter<T> implements InputFilter {
-  private final Class<T> spanClass;
+public class PreserveCustomEmojiFilter implements InputFilter {
+  public PreserveCustomEmojiFilter() {
 
-  public PreserveCustomEmojiFilter(Class<T> spanClass) {
-    this.spanClass = spanClass;
+  }
+
+  public interface RecoverableSpan {
+    
   }
 
   @Override
@@ -43,12 +45,12 @@ public class PreserveCustomEmojiFilter<T> implements InputFilter {
     final int length = source.length();
     // Entire non-empty text was replaced with the text of the same length
     if (start == 0 && dstart == 0 && end > start && dend == end && end == length && dest.length() == length) {
-      int transitionStart = dest.nextSpanTransition(dstart, dend, spanClass);
+      int transitionStart = dest.nextSpanTransition(dstart, dend, RecoverableSpan.class);
       // Custom emoji were not present
       if (transitionStart == dend) {
         return null;
       }
-      transitionStart = source.nextSpanTransition(start, end, spanClass);
+      transitionStart = source.nextSpanTransition(start, end, RecoverableSpan.class);
       // Custom emoji are still present
       if (transitionStart != end) {
         return null;
@@ -61,8 +63,8 @@ public class PreserveCustomEmojiFilter<T> implements InputFilter {
         return null;
       }
 
-      T[] lostCustomEmoji = dest.getSpans(0, dest.length(), spanClass);
-      for (T span : lostCustomEmoji) {
+      RecoverableSpan[] lostCustomEmoji = dest.getSpans(0, dest.length(), RecoverableSpan.class);
+      for (RecoverableSpan span : lostCustomEmoji) {
         int emojiStart = dest.getSpanStart(span);
         int emojiEnd = dest.getSpanEnd(span);
         if (emojiStart != -1 && emojiEnd != -1) {
@@ -74,8 +76,8 @@ public class PreserveCustomEmojiFilter<T> implements InputFilter {
       BaseInputConnection.removeComposingSpans(oldContent);
       SpannableStringBuilder newContent = new SpannableStringBuilder(newText, start, end);
       BaseInputConnection.removeComposingSpans(newContent);
-      TdApi.TextEntity[] oldEntities = TD.toEntities(oldContent, false);
-      TdApi.TextEntity[] newEntities = TD.toEntities(newContent, false);
+      TdApi.TextEntity[] oldEntities = TD.toEntities(oldContent, false, true);
+      TdApi.TextEntity[] newEntities = TD.toEntities(newContent, false, true);
       // Entities changed
       if (!Td.equalsTo(oldEntities, newEntities, true)) {
         return null;

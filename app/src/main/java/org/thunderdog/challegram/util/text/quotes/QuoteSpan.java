@@ -14,6 +14,7 @@ import android.text.style.MetricAffectingSpan;
 
 import androidx.annotation.NonNull;
 
+import org.thunderdog.challegram.emoji.PreserveCustomEmojiFilter;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
@@ -30,7 +31,7 @@ import java.util.TreeSet;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.MathUtils;
 
-public class QuoteSpan implements LeadingMarginSpan {
+public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.RecoverableSpan {
   private static final int FLAG_FIRST = 1;
   private static final int FLAG_LAST = 1 << 1;
   private static final int FLAG_DISALLOW_MARGIN_TOP = 1 << 2;

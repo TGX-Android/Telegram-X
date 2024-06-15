@@ -64,10 +64,10 @@ import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.emoji.CustomEmojiId;
 import org.thunderdog.challegram.emoji.EmojiSpan;
+import org.thunderdog.challegram.emoji.PreserveCustomEmojiFilter;
 import org.thunderdog.challegram.filegen.GenerationInfo;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.filegen.VideoGenerationInfo;
-import org.thunderdog.challegram.helper.editable.EditableHelper;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.loader.gif.GifFile;
@@ -4971,6 +4971,10 @@ public class TD {
   }
 
   public static TdApi.TextEntity[] toEntities (CharSequence cs, boolean onlyLinks) {
+    return toEntities(cs, onlyLinks, false);
+  }
+
+  public static TdApi.TextEntity[] toEntities (CharSequence cs, boolean onlyLinks, boolean onlyRecoverableSpans) {
     if (!(cs instanceof Spanned))
       return null;
     Object[] spans = ((Spanned) cs).getSpans(0, cs.length(), Object.class);
@@ -4986,6 +4990,8 @@ public class TD {
       int end = ((Spanned) cs).getSpanEnd(span);
       for (TdApi.TextEntityType type : types) {
         if (onlyLinks && !Td.isTextUrl(type))
+          continue;
+        if (onlyRecoverableSpans && !(span instanceof PreserveCustomEmojiFilter.RecoverableSpan))
           continue;
         if (entities == null)
           entities = new ArrayList<>();
