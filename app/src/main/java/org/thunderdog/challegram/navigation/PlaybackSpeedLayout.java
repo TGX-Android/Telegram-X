@@ -2,9 +2,12 @@ package org.thunderdog.challegram.navigation;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.text.Layout;
 import android.text.TextUtils;
 import android.util.SparseArray;
 import android.util.TypedValue;
@@ -205,9 +208,14 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
     private static final int MIN_SPEED = 20;
     private static final int MAX_SPEED = 300;
 
+    private static final RectF tmpRect = new RectF();
+    private static final float[] tmpRadii = new float[8];
+
     private final BoolAnimator isRed;
+    private final BoolAnimator isRound;
     private final Counter counter;
     private Listener listener;
+    private final Path path = new Path();
 
     private float value;
     private int speed;
@@ -225,13 +233,14 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
       setPadding(Screen.dp(17f), 0, Screen.dp(49f), 0);
 
       isRed = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
+      isRound = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
       counter = new Counter.Builder()
         .noBackground()
         .allBold(true)
         .drawable(Drawables.get(R.drawable.baseline_playback_speed_x_5), 0, Gravity.LEFT)
         .setCustomTextPartBuilder(new CounterPlaybackSpeedDrawableSet())
         .textSize(13f)
-        .textColor(ColorId.text)
+        .colorSet(this::getTextColor)
         .callback(this)
         .build();
     }
@@ -274,6 +283,7 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
     private void update (boolean animated) {
       this.lastUpdateTime = System.currentTimeMillis();
       this.isRed.setValue(speed < 50, animated);
+      this.isRound.setValue(speed < MAX_SPEED, animated);
       this.counter.setCount(speed, false, getSpeedText(speed), animated);
     }
 
@@ -328,12 +338,48 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
       listener.onChange(speed, false, false);
     }
 
+    private boolean inFillingMode;
+    private int getTextColor () {
+      return Theme.getColor(inFillingMode ? ColorId.fillingPositiveContent : ColorId.text);
+    }
+
     @Override
     protected void onDraw (Canvas canvas) {
-      final int color = ColorUtils.fromToArgb(Theme.getColor(ColorId.iconActive), Theme.getColor(ColorId.themeRed), isRed.getFloatValue());
-      canvas.drawRect(0, 0, getMeasuredWidth() * value, getMeasuredHeight(), Paints.fillingPaint(color));
-      super.onDraw(canvas);
+      final int color = ColorUtils.fromToArgb(Theme.getColor(ColorId.fillingPositive), Theme.getColor(ColorId.fillingNegative), isRed.getFloatValue());
+      final float position = getMeasuredWidth() * value;
+      final Layout layout = getLayout();
+      if (layout == null) {
+        return;
+      }
+
+      final float radius = Screen.dp(2) * isRound.getFloatValue();
+
+      tmpRect.set(0, 0, position, getMeasuredHeight());
+      tmpRadii[0] = tmpRadii[1] = 0;
+      tmpRadii[2] = tmpRadii[3] = radius;
+      tmpRadii[4] = tmpRadii[5] = radius;
+      tmpRadii[6] = tmpRadii[7] = 0;
+
+      path.reset();
+      path.addRoundRect(tmpRect, tmpRadii, Path.Direction.CCW);
+      path.close();
+
+      canvas.drawPath(path, Paints.fillingPaint(color));
+
+      int s = Views.save(canvas);
+      canvas.clipRect(tmpRect);
+      inFillingMode = true;
+      canvas.drawText(getText().toString(), getPaddingLeft(), (getMeasuredHeight() - layout.getHeight()) / 2f + layout.getLineBaseline(0), Paints.getTextPaint16(getTextColor()));
       counter.draw(canvas, getMeasuredWidth() - Screen.dp(24), getMeasuredHeight() / 2f, Gravity.CENTER, 1f);
+      Views.restore(canvas, s);
+
+      tmpRect.set(position, 0, getMeasuredWidth(), getMeasuredHeight());
+      s = Views.save(canvas);
+      canvas.clipRect(tmpRect);
+      inFillingMode = false;
+      canvas.drawText(getText().toString(), getPaddingLeft(), (getMeasuredHeight() - layout.getHeight()) / 2f + layout.getLineBaseline(0), Paints.getTextPaint16(getTextColor()));
+      counter.draw(canvas, getMeasuredWidth() - Screen.dp(24), getMeasuredHeight() / 2f, Gravity.CENTER, 1f);
+      Views.restore(canvas, s);
     }
   }
 
