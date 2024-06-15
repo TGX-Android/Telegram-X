@@ -21,18 +21,24 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.TreeSet;
 
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.MathUtils;
 
 public class QuoteSpan implements LeadingMarginSpan {
+  private static final int FLAG_FIRST = 1;
+  private static final int FLAG_LAST = 1 << 1;
+  private static final int FLAG_DISALLOW_MARGIN_TOP = 1 << 2;
+  private static final int FLAG_DISALLOW_MARGIN_BOTTOM = 1 << 3;
+
   public final QuoteStyleSpan styleSpan;
 
-  public int start, end;
-  public boolean singleLine, first, last;
-  public boolean ignoreMarginTop;
+  public int start, end, flags;
   public boolean rtl;
 
   public QuoteSpan () {
@@ -99,12 +105,12 @@ public class QuoteSpan implements LeadingMarginSpan {
       fm.bottom = bottom;
 
       if (start <= span.start) {
-        fm.ascent -= Screen.dp(QuoteBackground.QUOTE_VERTICAL_PADDING + (!span.first && !span.ignoreMarginTop ? QuoteBackground.QUOTE_VERTICAL_MARGIN : 0));
-        fm.top -= Screen.dp(QuoteBackground.QUOTE_VERTICAL_PADDING + (!span.first && !span.ignoreMarginTop ? QuoteBackground.QUOTE_VERTICAL_MARGIN : 0));
+        fm.ascent -= Screen.dp(QuoteBackground.QUOTE_VERTICAL_PADDING + (!BitwiseUtils.hasFlag(span.flags, FLAG_DISALLOW_MARGIN_TOP) ? QuoteBackground.QUOTE_VERTICAL_MARGIN : 0));
+        fm.top -= Screen.dp(QuoteBackground.QUOTE_VERTICAL_PADDING + (!BitwiseUtils.hasFlag(span.flags, FLAG_DISALLOW_MARGIN_TOP) ? QuoteBackground.QUOTE_VERTICAL_MARGIN : 0));
       }
       if (end >= span.end) {
-        fm.descent += Screen.dp(QuoteBackground.QUOTE_VERTICAL_PADDING + (!span.last ? QuoteBackground.QUOTE_VERTICAL_MARGIN : 0));
-        fm.bottom += Screen.dp(QuoteBackground.QUOTE_VERTICAL_PADDING + (!span.last ? QuoteBackground.QUOTE_VERTICAL_MARGIN : 0));
+        fm.descent += Screen.dp(QuoteBackground.QUOTE_VERTICAL_PADDING + (!BitwiseUtils.hasFlag(span.flags, FLAG_DISALLOW_MARGIN_BOTTOM) ? QuoteBackground.QUOTE_VERTICAL_MARGIN : 0));
+        fm.bottom += Screen.dp(QuoteBackground.QUOTE_VERTICAL_PADDING + (!BitwiseUtils.hasFlag(span.flags, FLAG_DISALLOW_MARGIN_BOTTOM) ? QuoteBackground.QUOTE_VERTICAL_MARGIN : 0));
       }
     }
   }
@@ -134,16 +140,29 @@ public class QuoteSpan implements LeadingMarginSpan {
       blocks.clear();
     }
     QuoteSpan[] spans = spannable.getSpans(0, spannable.length(), QuoteSpan.class);
+    if (spans == null || spans.length == 0) {
+      return blocks;
+    }
+
+    Arrays.sort(spans, Comparator.comparingInt(s -> s.start));
+
     int lastLineEnd = -1;
+    int lastSpanEnd = -1;
     for (int i = 0; i < spans.length; ++i) {
-      boolean wasLast = spans[i].last;
+      final int oldFlags = spans[i].flags;
       Block block = new Block(text, layout, spannable, spans[i], lastLineEnd);
-      lastLineEnd = block.lineEnd;
+
       if (block.span.start == block.span.end) {
         continue;
       }
       if (spannable.getSpanStart(spans[i].styleSpan) == -1) {
         spannable.setSpan(spans[i].styleSpan, block.span.start, block.span.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+      }
+
+      if (lastSpanEnd != -1 && block.span.start <= lastSpanEnd) {
+        spannable.removeSpan(spans[i]);
+        spannable.removeSpan(spans[i].styleSpan);
+        continue;
       }
 
       if (!(block.span.start == 0 || text.charAt(block.span.start - 1) == '\n')) {
@@ -161,16 +180,17 @@ public class QuoteSpan implements LeadingMarginSpan {
         spannable.setSpan(spans[i], block.span.start, newEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         spannable.setSpan(spans[i].styleSpan, block.span.start, newEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         block = new Block(text, layout, spannable, spans[i], lastLineEnd);
-        lastLineEnd = block.lineEnd;
       }
 
       if (blocks == null) {
         blocks = new ArrayList<>();
       }
-      if (spans[i].last != wasLast && updateLayout != null) {
+      if (spans[i].flags != oldFlags && updateLayout != null) {
         updateLayout[0] = true;
       }
       blocks.add(block);
+      lastLineEnd = block.lineEnd;
+      lastSpanEnd = block.span.end;
     }
     return blocks;
   }
@@ -195,15 +215,18 @@ public class QuoteSpan implements LeadingMarginSpan {
       // final int lineEnd = layout.getLineForOffset(span.end);
 
       lineStart = layout.getLineForOffset(span.start);
-      lineEnd = layout.getLineForOffset(span.end < text.length() && text.charAt(span.end) == '\n' ? span.end - 1 : span.end);
+      lineEnd = layout.getLineForOffset(/*span.end < text.length() && text.charAt(span.end) == '\n' ? span.end - 1 :*/ span.end);
 
-      span.ignoreMarginTop = lastLineEnd != -1 && lastLineEnd + 1 == lineStart;
-      span.singleLine = lineEnd - lineStart < 1;
-      span.first = lineStart <= 0;
-      span.last = lineEnd + 1 >= layout.getLineCount();
+      int flags = 0;
+      flags = BitwiseUtils.setFlag(flags, FLAG_FIRST, lineStart <= 0);
+      flags = BitwiseUtils.setFlag(flags, FLAG_LAST, lineEnd + 1 >= layout.getLineCount());
+      flags = BitwiseUtils.setFlag(flags, FLAG_DISALLOW_MARGIN_TOP, lastLineEnd != -1 && lastLineEnd + 1 == lineStart || BitwiseUtils.hasFlag(flags, FLAG_FIRST));
+      flags = BitwiseUtils.setFlag(flags, FLAG_DISALLOW_MARGIN_BOTTOM, BitwiseUtils.hasFlag(flags, FLAG_LAST));
 
-      this.top = layout.getLineTop(lineStart) + (!span.first && !span.ignoreMarginTop ? Screen.dp(QuoteBackground.QUOTE_VERTICAL_MARGIN) : 0);
-      this.bottom = layout.getLineBottom(lineEnd) - (!span.last ? Screen.dp(QuoteBackground.QUOTE_VERTICAL_MARGIN) : 0);
+      span.flags = flags;
+
+      this.top = layout.getLineTop(lineStart) + (!BitwiseUtils.hasFlag(flags, FLAG_DISALLOW_MARGIN_TOP) ? Screen.dp(QuoteBackground.QUOTE_VERTICAL_MARGIN) : 0);
+      this.bottom = layout.getLineBottom(lineEnd) - (!BitwiseUtils.hasFlag(flags, FLAG_DISALLOW_MARGIN_BOTTOM) ? Screen.dp(QuoteBackground.QUOTE_VERTICAL_MARGIN) : 0);
 
       float width = 0;
       span.rtl = false;
