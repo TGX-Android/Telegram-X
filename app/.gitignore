@@ -13,6 +13,7 @@
 /src/main/java/org/thunderdog/challegram/theme/ThemeId.java
 /src/main/java/org/thunderdog/challegram/theme/ColorId.java
 /src/main/java/org/thunderdog/challegram/theme/ColorIdTinted.java
+/src/main/java/org/thunderdog/challegram/theme/FallbackColorId.kt
 /src/main/java/org/thunderdog/challegram/theme/PropertyId.java
 /src/main/java/org/thunderdog/challegram/theme/PorterDuffColorId.java
 /src/main/java/org/thunderdog/challegram/tool/PorterDuffPaint.kt
