@@ -51,6 +51,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.CallController;
 import org.thunderdog.challegram.ui.PlaybackController;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.CounterPlaybackSpeedDrawableSet;
 import org.thunderdog.challegram.util.RateLimiter;
@@ -1242,19 +1243,14 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
     return false;
   }
 
-  private float longPressX;
   private boolean inLongPress;
 
   @Override
   public boolean onLongPressRequestedAt (View view, float x, float y) {
     if (needLongPress(x, y)) {
-      longPressX = x;
-      showPlaybackSpeedPicker();
       if (!inLongPress) {
         inLongPress = true;
-        if (navigationController != null) {
-          navigationController.lockSwipeNavigation();
-        }
+        showPlaybackSpeedPicker(x, y);
       }
       return true;
     }
@@ -1264,8 +1260,7 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
   @Override
   public void onLongPressMove (View view, MotionEvent e, float x, float y, float startX, float startY) {
     if (playbackSpeedLayout != null) {
-      // playbackSpeedLayout.processTouchMove(x - longPressX);
-      longPressX = x;
+      playbackSpeedLayout.processTouchEvent(MotionEvent.ACTION_MOVE, x, y, true);
     }
   }
 
@@ -1273,8 +1268,8 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
   public void onLongPressFinish (View view, float x, float y) {
     if (inLongPress) {
       inLongPress = false;
-      if (navigationController != null) {
-        navigationController.unlockSwipeNavigation();
+      if (playbackSpeedLayout != null) {
+        playbackSpeedLayout.processTouchEvent(MotionEvent.ACTION_UP, x, y, true);
       }
     }
   }
@@ -1283,8 +1278,8 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
   public void onLongPressCancelled (View view, float x, float y) {
     if (inLongPress) {
       inLongPress = false;
-      if (navigationController != null) {
-        navigationController.unlockSwipeNavigation();
+      if (playbackSpeedLayout != null) {
+        playbackSpeedLayout.processTouchEvent(MotionEvent.ACTION_CANCEL, x, y, true);
       }
     }
   }
@@ -1423,40 +1418,73 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
     final int speed = TdlibManager.instance().player().getSpeed();
     if (speed < 100) {
       TdlibManager.instance().player().setPlaybackSpeed(100);
+      showPlaybackTooltip(R.string.PlaybackSpeedHint100);
     } else if (speed < 150) {
       TdlibManager.instance().player().setPlaybackSpeed(150);
+      showPlaybackTooltip(R.string.PlaybackSpeedHint150);
     } else if (speed < 200) {
       TdlibManager.instance().player().setPlaybackSpeed(200);
+      showPlaybackTooltip(R.string.PlaybackSpeedHint200);
     } else {
       TdlibManager.instance().player().setPlaybackSpeed(100);
+      showPlaybackTooltip(R.string.PlaybackSpeedHint100);
+    }
+    UI.hapticVibrate(headerView, false);
+  }
+
+  private void showPlaybackTooltip (int res) {
+    String text = Lang.getString(res);
+    if (Settings.instance().needTutorial(Settings.TUTORIAL_PLAYBACK_SPEED_HOLD)) {
+      showPlaybackTooltip(Lang.getString(R.string.PlaybackSpeedHintTemplate, text, Lang.getString(R.string.PlaybackSpeedHintHold)));
+    } else if (Settings.instance().needTutorial(Settings.TUTORIAL_PLAYBACK_SPEED_SWIPE)) {
+      showPlaybackTooltip(Lang.getString(R.string.PlaybackSpeedHintTemplate, text, Lang.getString(R.string.PlaybackSpeedHintSwipe)));
+    } else {
+      showPlaybackTooltip(text);
     }
   }
 
+  private void showPlaybackTooltip (CharSequence text) {
+    ((BaseActivity) headerView.getContext()).tooltipManager()
+      .builder(headerView)
+      .locate((targetView, outRect) -> {
+        final int width = targetView.getMeasuredWidth();
+        outRect.set(getRightButtonLeft(width, 2), 0, getRightButtonRight(width, 2), getTopOffset() + (int) fillingBottom);
+      })
+      .maxWidth(300)
+      .show(null, text).hideDelayed(3000, TimeUnit.MILLISECONDS);
+  }
+
   private PlaybackSpeedLayout playbackSpeedLayout;
+  private PopupLayout playbackSpeedPopup;
 
-  private void showPlaybackSpeedPicker () {
-    final PopupLayout popupLayout = new PopupLayout(headerView.getContext());
+  private void showPlaybackSpeedPicker (float touchX, float touchY) {
+    Settings.instance().markTutorialAsComplete(Settings.TUTORIAL_PLAYBACK_SPEED_HOLD);
 
+    playbackSpeedPopup = new PopupLayout(headerView.getContext());
     playbackSpeedLayout = new PlaybackSpeedLayout(headerView.getContext());
     playbackSpeedLayout.init(navigationController != null ? navigationController.getThemeListeners() : null, (speed, needApply, needClose) -> {
       if (needApply) {
         TdlibManager.instance().player().setPlaybackSpeed(speed);
       }
       if (needClose) {
-        popupLayout.hideWindow(true);
+        playbackSpeedPopup.hideWindow(true);
       }
     }, TdlibManager.instance().player().getSpeed());
     playbackSpeedLayout.setTranslationY(HeaderView.getSize(true) - Screen.dp(16));
     playbackSpeedLayout.setTranslationX(getRightButtonRight(0, 2) + Screen.dp(16));
+    playbackSpeedLayout.processTouchEvent(MotionEvent.ACTION_DOWN, touchX, touchY, true);
 
-    popupLayout.init(true);
-    popupLayout.setNeedRootInsets();
-    popupLayout.setOverlayStatusBar(true);
-    popupLayout.setDismissListener(new PopupLayout.DismissListener() {
+    playbackSpeedPopup.init(true);
+    playbackSpeedPopup.setNeedRootInsets();
+    playbackSpeedPopup.setOverlayStatusBar(true);
+    playbackSpeedPopup.setDismissListener(new PopupLayout.DismissListener() {
       @Override
       public void onPopupDismissPrepare (PopupLayout popup) {
         if (playbackSpeedLayout == popup.getContentChild()) {
           playbackSpeedLayout = null;
+          if (navigationController != null) {
+            navigationController.unlockSwipeNavigation();
+          }
         }
       }
 
@@ -1466,6 +1494,9 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
       }
     });
 
-    popupLayout.showMoreView(playbackSpeedLayout);
+    playbackSpeedPopup.showMoreView(playbackSpeedLayout);
+    if (navigationController != null) {
+      navigationController.lockSwipeNavigation();
+    }
   }
 }

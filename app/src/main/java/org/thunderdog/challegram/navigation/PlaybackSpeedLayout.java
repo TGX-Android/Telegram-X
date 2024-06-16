@@ -36,6 +36,7 @@ import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CounterPlaybackSpeedDrawableSet;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.widget.NoScrollTextView;
@@ -44,18 +45,23 @@ import org.thunderdog.challegram.widget.ShadowView;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.BoolAnimator;
+import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 
 public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.OnClickListener {
+  private static final int MIN_SPEED = 20;
+  private static final int MAX_SPEED = 300;
 
   private final Slider slider;
-  private @Nullable ThemeListenerList themeListeners;
-
   private final SparseArray<Button> buttonSparseArray = new SparseArray<>();
+  private final Button[] buttons = new Button[6];
+
+  private @Nullable ThemeListenerList themeListeners;
   private Listener listener;
+
   public interface Listener {
     void onChange (int speed, boolean needApply, boolean needClose);
   }
@@ -63,7 +69,7 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
   public PlaybackSpeedLayout (Context context) {
     super(context);
 
-    slider = new Slider(getContext());
+    slider = new Slider(context);
   }
 
   public void init (ThemeListenerList themeListeners, Listener listener, int currentSpeed) {
@@ -86,9 +92,11 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
     setLayerType(LAYER_TYPE_HARDWARE, Views.getLayerPaint());
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | (Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT)));
 
-    slider.setListener(this::onSpeedChanged);
     slider.setText(Lang.getString(R.string.PlaybackSpeed));
-    slider.setValue((float) currentSpeed / Slider.MAX_SPEED, false, false);
+    slider.setOnTouchListener((View v, MotionEvent event) -> {
+      processTouchEvent(event.getAction(), event.getX(), event.getY(), false);
+      return true;
+    });
     addTextViewAndSetColors(slider);
 
     {
@@ -110,46 +118,22 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
       addView(shadowView);
     }
 
-    addItem(R.id.btn_playback_speed_0_5, R.string.PlaybackSpeed50, R.drawable.baseline_playback_speed_0_5_24, this, 50);
-    addItem(R.id.btn_playback_speed_0_7, R.string.PlaybackSpeed70, R.drawable.baseline_playback_speed_0_7_24, this, 70);
-    addItem(R.id.btn_playback_speed_1_0, R.string.PlaybackSpeed100, R.drawable.baseline_playback_speed_1_0_24, this, 100);
-    addItem(R.id.btn_playback_speed_1_2, R.string.PlaybackSpeed120, R.drawable.baseline_playback_speed_1_2_24, this, 120);
-    addItem(R.id.btn_playback_speed_1_5, R.string.PlaybackSpeed150, R.drawable.baseline_playback_speed_1_5_24, this, 150);
-    addItem(R.id.btn_playback_speed_2_0, R.string.PlaybackSpeed200, R.drawable.baseline_playback_speed_2_0_24, this, 200);
+    buttons[0] = addItem(R.id.btn_playback_speed_0_5, R.string.PlaybackSpeed50, R.drawable.baseline_playback_speed_0_5_24, this, 50);
+    buttons[1] = addItem(R.id.btn_playback_speed_0_7, R.string.PlaybackSpeed70, R.drawable.baseline_playback_speed_0_7_24, this, 70);
+    buttons[2] = addItem(R.id.btn_playback_speed_1_0, R.string.PlaybackSpeed100, R.drawable.baseline_playback_speed_1_0_24, this, 100);
+    buttons[3] = addItem(R.id.btn_playback_speed_1_2, R.string.PlaybackSpeed120, R.drawable.baseline_playback_speed_1_2_24, this, 120);
+    buttons[4] = addItem(R.id.btn_playback_speed_1_5, R.string.PlaybackSpeed150, R.drawable.baseline_playback_speed_1_5_24, this, 150);
+    buttons[5] = addItem(R.id.btn_playback_speed_2_0, R.string.PlaybackSpeed200, R.drawable.baseline_playback_speed_2_0_24, this, 200);
 
-    setButtonActive(currentSpeed, true, false);
+    setSliderValue((float) currentSpeed / MAX_SPEED, false, false);
+    slider.setCounter(currentSpeed, false);
   }
-
-  private int currentSpeed;
 
   @Override
   protected void dispatchDraw (@NonNull Canvas canvas) {
     canvas.drawRect(Screen.dp(8), Screen.dp(8 + 48), getMeasuredWidth() - Screen.dp(8), Screen.dp(8 + 48 + 12), Paints.fillingPaint(Theme.backgroundColor()));
     super.dispatchDraw(canvas);
   }
-
-  private void onSpeedChanged (int speed, boolean needApply, boolean needClose) {
-    if (currentSpeed != speed || needApply) {
-      setButtonActive(currentSpeed, false, true);
-      setButtonActive(speed, true, true);
-
-      listener.onChange(speed, needApply, needClose);
-      currentSpeed = speed;
-    }
-  }
-
-  private void setButtonActive (int speed, boolean active, boolean animated) {
-    final Button button = buttonSparseArray.get(speed);
-    if (button != null) {
-      button.setActive(active, animated);
-    }
-  }
-
-  @Override
-  public boolean onTouchEvent (MotionEvent event) {
-    return true;
-  }
-
 
   private void addTextViewAndSetColors (NoScrollTextView view) {
     view.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48)));
@@ -164,9 +148,10 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
     addView(view);
   }
 
-  private void addItem (int id, @StringRes int stringRes, int iconRes, OnClickListener listener, int speed) {
+  private Button addItem (int id, @StringRes int stringRes, int iconRes, OnClickListener listener, int speed) {
     Button menuItem = new Button(getContext());
     menuItem.setId(id);
+    menuItem.setSpeed(speed);
 
     menuItem.setText(Lang.getString(stringRes));
     menuItem.setOnClickListener(listener);
@@ -178,6 +163,7 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
     RippleSupport.setTransparentSelector(menuItem);
 
     buttonSparseArray.append(speed, menuItem);
+    return menuItem;
   }
 
   @Override
@@ -190,35 +176,186 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
     final int id = v.getId();
 
     if (id == R.id.btn_playback_speed_0_5) {
-      onSpeedChanged(50, true, true);
+      listener.onChange(50, true, true);
     } else if (id == R.id.btn_playback_speed_0_7) {
-      onSpeedChanged(70, true, true);
+      listener.onChange(70, true, true);
     } else if (id == R.id.btn_playback_speed_1_0) {
-      onSpeedChanged(100, true, true);
+      listener.onChange(100, true, true);
     } else if (id == R.id.btn_playback_speed_1_2) {
-      onSpeedChanged(120, true, true);
+      listener.onChange(120, true, true);
     } else if (id == R.id.btn_playback_speed_1_5) {
-      onSpeedChanged(150, true, true);
+      listener.onChange(150, true, true);
     } else if (id == R.id.btn_playback_speed_2_0) {
-      onSpeedChanged(200, true, true);
+      listener.onChange(200, true, true);
+    }
+  }
+
+  @Override
+  public boolean onTouchEvent (MotionEvent event) {
+    return true;
+  }
+
+  private static final int MODE_NONE = 0;
+  private static final int MODE_HORIZONTAL = 1;
+  private static final int MODE_VERTICAL = 2;
+
+  private int mode;
+  private float xStart, yStart;
+  private float xPrev, yPrev;
+
+  public void processTouchEvent (int event, float x, float y, boolean external) {
+    final float dx = x - xPrev;
+    final float dy = y - yPrev;
+    final float dxTotal = x - xStart;
+    final float dyTotal = y - yStart;
+
+    switch (event) {
+      case MotionEvent.ACTION_DOWN: {
+        mode = MODE_NONE;
+        xStart = xPrev = x;
+        yStart = yPrev = y;
+        lastIndex = -1;
+        sliderWasChanged = false;
+        break;
+      }
+
+      case MotionEvent.ACTION_MOVE: {
+        if (mode == MODE_NONE) {
+          if (Math.hypot(dx, dy) > Screen.getTouchSlop() * 1.5f) {
+            mode = Math.abs(dx) > Math.abs(dy) ? MODE_HORIZONTAL : MODE_VERTICAL;
+            xStart = xPrev = x;
+            yStart = yPrev = y;
+            UI.hapticVibrate(this, false);
+          }
+          break;
+        }
+        processMove(dx, dy, dxTotal, dyTotal, external);
+        xPrev = x;
+        yPrev = y;
+        break;
+      }
+
+      case MotionEvent.ACTION_UP: {
+        if (lastIndex != -1) {
+          processUp(external);
+          if (external) {
+            Settings.instance().markTutorialAsComplete(Settings.TUTORIAL_PLAYBACK_SPEED_SWIPE);
+          }
+        }
+        break;
+      }
+    }
+  }
+
+  private int getTouchIndex (float dyTotal) {
+    return dyTotal < Screen.dp(36) ? 0 : (MathUtils.clamp((int) (dyTotal - Screen.dp(36)) / Screen.dp(48), 0, buttons.length - 1) + 1);
+  }
+
+  private int lastIndex = -1;
+  private int currentSpeed;
+  private boolean sliderWasChanged;
+
+  private void processUp (boolean needClose) {
+    listener.onChange(currentSpeed, true, needClose);
+  }
+
+  private void processMove (float dx, float dy, float dxTotal, float dyTotal, boolean external) {
+    final int index = external ? getTouchIndex(dyTotal) : 0;
+
+    if (index == 0 && (dyTotal < 0 || sliderWasChanged || Math.abs(dxTotal) > Math.abs(dyTotal))) {
+      sliderWasChanged = true;
+      setSliderValue(value + dx / getMeasuredWidth(), true, true);
+    }
+    if (lastIndex != index) {
+      if (lastIndex != -1) {
+        UI.hapticVibrate(this, false);
+      }
+      lastIndex = index;
+      for (int a = 0; a < buttons.length; a++) {
+        buttons[a].setSelected(a == index - 1, true);
+      }
+
+      if (index > 0) {
+        setSliderValue(((float) buttons[index - 1].speed) / MAX_SPEED, false, true);
+      }
+    }
+  }
+
+
+  private float value;
+  private long lastUpdateTime;
+
+  private void setSliderValue (float v, boolean fromSliderTouch, boolean animated) {
+    final float value = MathUtils.clamp(v, (float) MIN_SPEED / MAX_SPEED, 1f);
+    if (this.value != value) {
+      this.value = value;
+      this.slider.setValue(value, !fromSliderTouch && animated);
+      final int speed = Math.round(value * MAX_SPEED / 10) * 10;
+      if (this.currentSpeed != speed) {
+        this.onSpeedChanged(speed);
+
+        if (fromSliderTouch && animated) {
+          if (updateRunnable == null) {
+            final long delay = 150L - (System.currentTimeMillis() - lastUpdateTime);
+            updateRunnable = new CancellableRunnable() {
+              @Override
+              public void act () {
+                update(true);
+                updateRunnable = null;
+              }
+            };
+            UI.post(updateRunnable, delay);
+          }
+        } else {
+          update(animated);
+        }
+      }
+      invalidate();
+    }
+  }
+
+  private void onSpeedChanged (int speed) {
+    if (currentSpeed != speed) {
+      setButtonActive(currentSpeed, false, true);
+      setButtonActive(speed, true, true);
+
+      listener.onChange(speed, false, false);
+      currentSpeed = speed;
+    }
+  }
+
+  private void setButtonActive (int speed, boolean active, boolean animated) {
+    final Button button = buttonSparseArray.get(speed);
+    if (button != null) {
+      button.setActive(active, animated);
+    }
+  }
+
+  private void update (boolean animated) {
+    this.lastUpdateTime = System.currentTimeMillis();
+    this.slider.setCounter(currentSpeed, animated);
+  }
+
+  private CancellableRunnable updateRunnable;
+
+  @Override
+  protected void onDetachedFromWindow () {
+    super.onDetachedFromWindow();
+    if (updateRunnable != null) {
+      updateRunnable.cancel();
+      updateRunnable = null;
     }
   }
 
   private static class Slider extends NoScrollTextView {
-    private static final int MIN_SPEED = 20;
-    private static final int MAX_SPEED = 300;
-
     private static final RectF tmpRect = new RectF();
     private static final float[] tmpRadii = new float[8];
 
+    private final FactorAnimator value;
     private final BoolAnimator isRed;
     private final BoolAnimator isRound;
     private final Counter counter;
-    private Listener listener;
     private final Path path = new Path();
-
-    private float value;
-    private int speed;
 
     public Slider (Context context) {
       super(context);
@@ -234,6 +371,7 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
 
       isRed = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
       isRound = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
+      value = new FactorAnimator(0, (a, b, c, d) -> this.invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
       counter = new Counter.Builder()
         .noBackground()
         .allBold(true)
@@ -245,97 +383,19 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
         .build();
     }
 
-    public void setListener (Listener listener) {
-      this.listener = listener;
-    }
-
-    private void setValue (float v, boolean fromTouch, boolean animated) {
-      final float value = MathUtils.clamp(v, (float) MIN_SPEED / MAX_SPEED, 1f);
-
-      if (this.value != value) {
-        this.value = value;
-        final int speed = Math.round(value * MAX_SPEED / 10) * 10;
-        if (this.speed != speed) {
-          this.speed = speed;
-
-          if (fromTouch && animated) {
-            if (updateRunnable == null) {
-              final long delay = 150L - (System.currentTimeMillis() - lastUpdateTime);
-              updateRunnable = new CancellableRunnable() {
-                @Override
-                public void act () {
-                  update(true);
-                  updateRunnable = null;
-                }
-              };
-              UI.post(updateRunnable, delay);
-            }
-          } else {
-            update(animated);
-          }
-        }
-        invalidate();
+    public void setValue (float v, boolean animated) {
+      if (animated) {
+        value.animateTo(v);
+      } else {
+        value.forceFactor(v);
       }
+      invalidate();
     }
 
-    private long lastUpdateTime;
-
-    private void update (boolean animated) {
-      this.lastUpdateTime = System.currentTimeMillis();
-      this.isRed.setValue(speed < 50, animated);
-      this.isRound.setValue(speed < MAX_SPEED, animated);
-      this.counter.setCount(speed, false, getSpeedText(speed), animated);
-    }
-
-    @Override
-    protected void onDetachedFromWindow () {
-      super.onDetachedFromWindow();
-      if (updateRunnable != null) {
-        updateRunnable.cancel();
-        updateRunnable = null;
-      }
-    }
-
-    private CancellableRunnable updateRunnable;
-    private boolean captured;
-    private float capturedX;
-
-    @Override
-    public boolean onTouchEvent (MotionEvent event) {
-      final float x = event.getX();
-
-      switch (event.getAction()) {
-        case MotionEvent.ACTION_DOWN: {
-            capturedX = x;
-          captured = true;
-          return true;
-        }
-        case MotionEvent.ACTION_MOVE: {
-          if (captured) {
-            processTouchMove(x - capturedX);
-            capturedX = x;
-            listener.onChange(speed, false, false);
-            return true;
-          }
-          break;
-        }
-        case MotionEvent.ACTION_CANCEL:
-        case MotionEvent.ACTION_UP: {
-          if (captured) {
-            captured = false;
-            listener.onChange(speed, true, false);
-            return true;
-          }
-          break;
-        }
-      }
-
-      return false;
-    }
-
-    public void processTouchMove (float dx) {
-      setValue(value + dx / getMeasuredWidth(), true, true);
-      listener.onChange(speed, false, false);
+    public void setCounter (int speed, boolean animated) {
+      isRed.setValue(speed < 50, animated);
+      isRound.setValue(speed < MAX_SPEED, animated);
+      counter.setCount(speed, false, getSpeedText(speed), animated);
     }
 
     private boolean inFillingMode;
@@ -346,7 +406,7 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
     @Override
     protected void onDraw (Canvas canvas) {
       final int color = ColorUtils.fromToArgb(Theme.getColor(ColorId.fillingPositive), Theme.getColor(ColorId.fillingNegative), isRed.getFloatValue());
-      final float position = getMeasuredWidth() * value;
+      final float position = getMeasuredWidth() * value.getFactor();
       final Layout layout = getLayout();
       if (layout == null) {
         return;
@@ -383,18 +443,17 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
     }
   }
 
-  public void processTouchMove (float x) {
-    slider.processTouchMove(x);
-  }
-
   private static class Button extends NoScrollTextView {
     private final BoolAnimator isActive;
+    private final BoolAnimator isSelected;
     private Drawable drawable;
+    private int speed;
 
     public Button (Context context) {
       super(context);
 
       this.isActive = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
+      this.isSelected = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
 
       setTypeface(Fonts.getRobotoRegular());
       setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
@@ -404,6 +463,14 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
       setEllipsize(TextUtils.TruncateAt.END);
 
       setPadding(Screen.dp(17f), 0, Screen.dp(49f), 0);
+    }
+
+    public void setSpeed (int speed) {
+      this.speed = speed;
+    }
+
+    public void setSelected (boolean isActive, boolean animated) {
+      this.isSelected.setValue(isActive, animated);
     }
 
     public void setActive (boolean isActive, boolean animated) {
@@ -416,8 +483,11 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
 
     @Override
     protected void onDraw (Canvas canvas) {
+      final float selected = isSelected.getFloatValue();
+      if (selected > 0) {
+        canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(ColorUtils.alphaColor(selected, Theme.RIPPLE_COLOR)));
+      }
       super.onDraw(canvas);
-
       if (isActive.isAnimating()) {
         final int color = ColorUtils.fromToArgb(Theme.getColor(ColorId.icon), Theme.getColor(ColorId.iconActive), isActive.getFloatValue());
         Drawables.draw(canvas, drawable, getMeasuredWidth() - Screen.dp(36), Screen.dp(12), Paints.getPorterDuffPaint(color));
