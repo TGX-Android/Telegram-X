@@ -539,6 +539,7 @@ public class PageBlockWrapView extends FrameLayoutFix implements ViewPager.OnPag
 
   @Override
   public void onPageScrolled (int position, float positionOffset, int positionOffsetPixels) {
+    positionOffset = ViewPager.clampPositionOffset(positionOffset);
     this.viewPagerPosition = position + positionOffset;
     ViewPagerPositionView positionView = (ViewPagerPositionView) getChildAt(1);
     if (positionView != null) {

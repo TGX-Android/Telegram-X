@@ -18,7 +18,11 @@ import android.content.Context;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 
+import androidx.annotation.CheckResult;
+
 import org.thunderdog.challegram.Log;
+
+import me.vkryl.core.MathUtils;
 
 public class ViewPager extends androidx.viewpager.widget.ViewPager {
   public ViewPager (Context context) {
@@ -74,4 +78,9 @@ public class ViewPager extends androidx.viewpager.widget.ViewPager {
     return pagingEnabled && super.onTouchEvent(ev);
   }
 
+  @CheckResult
+  public static float clampPositionOffset (float positionOffset) {
+    if (Float.isNaN(positionOffset)) return 0f;
+    return MathUtils.clamp(positionOffset);
+  }
 }
