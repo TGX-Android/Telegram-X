@@ -34,6 +34,7 @@ import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
 import androidx.collection.SparseArrayCompat;
 import androidx.core.os.CancellationSignal;
+import androidx.core.util.Pair;
 
 import com.google.android.gms.tasks.Task;
 import com.google.android.play.core.integrity.IntegrityManager;
@@ -4841,17 +4842,38 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
-  public static final int TESTER_LEVEL_NONE = 0;
-  public static final int TESTER_LEVEL_READER = 1;
-  public static final int TESTER_LEVEL_TESTER = 2;
-  public static final int TESTER_LEVEL_ADMIN = 3;
-  public static final int TESTER_LEVEL_DEVELOPER = 4;
-  public static final int TESTER_LEVEL_CREATOR = 5;
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    TesterLevel.NONE,
+    TesterLevel.READER,
+    TesterLevel.TESTER,
+    TesterLevel.TRANSLATOR,
+    TesterLevel.ADMIN,
+    TesterLevel.DEVELOPER,
+    TesterLevel.CREATOR
+  })
+  public @interface TesterLevel {
+    int
+      NONE = 0,
+      READER = 1,
+      TESTER = 2,
+      TRANSLATOR = 3,
+      ADMIN = 4,
+      DEVELOPER = 4,
+      CREATOR = 5;
 
-  public static final int TGX_CREATOR_USER_ID = 163957826;
-  public static final int TDLIB_CREATOR_USER_ID = 7736885;
+    int UNKNOWN = -1;
+
+    int
+      MIN_LEVEL_FOR_DEBUG_DC = TRANSLATOR,
+      MIN_LEVEL_FOR_BATMAN_EFFECT = READER;
+  }
+
+  public static final long TGX_CREATOR_USER_ID = 163957826;
+  public static final long TDLIB_CREATOR_USER_ID = 7736885;
 
   public static final long ADMIN_CHAT_ID = ChatId.fromSupergroupId(1112283549); // TGX Alpha and Admins
+  public static final long TRANSLATORS_CHAT_ID = ChatId.fromSupergroupId(1126790716);
   public static final long TESTER_CHAT_ID = ChatId.fromSupergroupId(1336679475); // Telegram X Android: t.me/tgandroidtests
   public static final long READER_CHAT_ID = ChatId.fromSupergroupId(1136101327); // Telegram X: t.me/tgx_android
   public static final long CLOUD_RESOURCES_CHAT_ID = ChatId.fromSupergroupId(1247387696); // Telegram X: Resources
@@ -4874,51 +4896,54 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   public void getTesterLevel (@NonNull RunnableInt callback, boolean onlyLocal) {
     if (inRecoveryMode() || isDebugInstance()) {
-      callback.runWithInt(TESTER_LEVEL_TESTER);
+      callback.runWithInt(TesterLevel.TESTER);
       return;
     }
     long myUserId = myUserId();
     if (myUserId == TGX_CREATOR_USER_ID) {
-      callback.runWithInt(TESTER_LEVEL_CREATOR);
-    } else if (myUserId == TDLIB_CREATOR_USER_ID) {
-      callback.runWithInt(TESTER_LEVEL_DEVELOPER);
-    } else if (onlyLocal) {
-      TdApi.Chat tgxAdminChat = chat(ADMIN_CHAT_ID);
-      if (tgxAdminChat != null && TD.isMember(chatStatus(ADMIN_CHAT_ID))) {
-        callback.runWithInt(TESTER_LEVEL_ADMIN);
-        return;
+      callback.runWithInt(TesterLevel.CREATOR);
+      return;
+    }
+    if (myUserId == TDLIB_CREATOR_USER_ID) {
+      callback.runWithInt(TesterLevel.DEVELOPER);
+      return;
+    }
+
+    ArrayList<Pair<Long, Integer>> pairs = new ArrayList<>() {{
+      add(new Pair<>(ADMIN_CHAT_ID, TesterLevel.ADMIN));
+      add(new Pair<>(TRANSLATORS_CHAT_ID, TesterLevel.TRANSLATOR));
+      add(new Pair<>(TESTER_CHAT_ID, TesterLevel.TESTER));
+      add(new Pair<>(READER_CHAT_ID, TesterLevel.READER));
+    }};
+
+    if (onlyLocal) {
+      for (Pair<Long, Integer> pair : pairs) {
+        TdApi.Chat chat = chat(pair.first);
+        if (chat != null && TD.isMember(chatStatus(chat.id))) {
+          callback.runWithInt(pair.second);
+          return;
+        }
       }
-      TdApi.Chat tgxTestersChat = chat(TESTER_CHAT_ID);
-      if (tgxTestersChat != null && TD.isMember(chatStatus(TESTER_CHAT_ID))) {
-        callback.runWithInt(TESTER_LEVEL_TESTER);
-        return;
-      }
-      TdApi.Chat tgxReadersChat = chat(READER_CHAT_ID);
-      if (tgxReadersChat != null && TD.isMember(chatStatus(READER_CHAT_ID))) {
-        callback.runWithInt(TESTER_LEVEL_READER);
-        return;
-      }
-      callback.runWithInt(TESTER_LEVEL_NONE);
+      callback.runWithInt(TesterLevel.NONE);
     } else {
-      chat(ADMIN_CHAT_ID, tgxAdminChat -> {
-        if (tgxAdminChat != null && TD.isMember(chatStatus(ADMIN_CHAT_ID))) {
-          callback.runWithInt(TESTER_LEVEL_ADMIN);
-        } else {
-          chat(TESTER_CHAT_ID, tgxTestersChat -> {
-            if (tgxTestersChat != null && TD.isMember(chatStatus(TESTER_CHAT_ID))) {
-              callback.runWithInt(TESTER_LEVEL_TESTER);
+      Runnable act = new Runnable() {
+        @Override
+        public void run () {
+          if (pairs.isEmpty()) {
+            callback.runWithInt(TesterLevel.NONE);
+            return;
+          }
+          Pair<Long, Integer> pair = pairs.remove(0);
+          chat(pair.first, chat -> {
+            if (chat != null && TD.isMember(chatStatus(chat.id))) {
+              callback.runWithInt(pair.second);
             } else {
-              chat(READER_CHAT_ID, tgxReadersChat -> {
-                if (tgxReadersChat != null && TD.isMember(chatStatus(READER_CHAT_ID))) {
-                  callback.runWithInt(TESTER_LEVEL_READER);
-                } else {
-                  callback.runWithInt(TESTER_LEVEL_NONE);
-                }
-              });
+              this.run();
             }
           });
         }
-      });
+      };
+      act.run();
     }
   }
 
