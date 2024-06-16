@@ -789,15 +789,11 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     final int itemId = item.getId();
     if (itemId != R.id.account) {
       if (itemId == R.id.btn_addAccount) {
-        if (Config.ALLOW_DEBUG_DC) {
-          context.currentTdlib().ui().addAccount(context, true, true);
-        } else {
-          context.currentTdlib().getTesterLevel(level -> {
-            if (level >= Tdlib.TESTER_LEVEL_ADMIN) {
-              context.currentTdlib().ui().addAccount(context, true, true);
-            }
-          });
-        }
+        context.currentTdlib().getTesterLevel(level -> {
+          if (Config.ALLOW_DEBUG_DC || level >= Tdlib.TesterLevel.MIN_LEVEL_FOR_DEBUG_DC) {
+            context.currentTdlib().ui().addAccount(context, true, true);
+          }
+        });
       }
       return false;
     }
