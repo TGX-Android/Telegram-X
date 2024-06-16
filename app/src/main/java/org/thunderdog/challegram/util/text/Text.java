@@ -62,9 +62,9 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.EmojiStatusHelper;
+import org.thunderdog.challegram.util.text.counter.CounterTextPart;
 import org.thunderdog.challegram.util.text.bidi.BiDiEntity;
 import org.thunderdog.challegram.util.text.bidi.BiDiUtils;
-import org.thunderdog.challegram.util.text.counter.CounterTextPart;
 
 import java.text.Bidi;
 import java.util.ArrayList;
