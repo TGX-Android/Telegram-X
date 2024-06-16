@@ -1223,7 +1223,7 @@ public class SettingsController extends ViewController<Void> implements
         showBuildOptions(true);
       } else {
         tdlib.getTesterLevel(testerLevel -> runOnUiThreadOptional(() ->
-          showBuildOptions(testerLevel >= Tdlib.TESTER_LEVEL_TESTER)
+          showBuildOptions(testerLevel >= Tdlib.TesterLevel.TESTER)
         ));
       }
     }
