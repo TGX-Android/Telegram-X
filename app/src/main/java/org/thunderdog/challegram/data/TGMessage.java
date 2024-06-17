@@ -1711,7 +1711,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
-  private void drawBubble (Canvas c, Paint paint, boolean stroke, int padding) {
+  protected void drawBubble (Canvas c, Paint paint, boolean stroke, int padding) {
     if (paint.getAlpha() == 0) {
       return;
     }
@@ -3831,7 +3831,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return false;
   }
 
-  private void notifyBubbleChanged () {
+  protected void notifyBubbleChanged () {
     int oldHeight = height;
     height = computeHeight();
     onBubbleHasChanged();

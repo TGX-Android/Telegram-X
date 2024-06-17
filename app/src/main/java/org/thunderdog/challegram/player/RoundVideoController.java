@@ -356,6 +356,7 @@ public class RoundVideoController extends BasePlaybackController implements
 
       mainProgressView = new RoundProgressView2(context);
       mainProgressView.setController(this);
+      mainProgressView.setIsPaused(!isPlaying);
       mainProgressView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
       mainPlayerView.addView(mainProgressView);
 
@@ -1034,7 +1035,9 @@ public class RoundVideoController extends BasePlaybackController implements
 
   private void checkVisualPlayPause (boolean animated) {
     isPlayingAnimator.setValue(isPlaying, animated);
-    mainProgressView.setIsPaused(!isPlaying);
+    if (mainProgressView != null) {
+      mainProgressView.setIsPaused(!isPlaying);
+    }
   }
 
   public float getVisualIsPlaying () {
@@ -1080,7 +1083,9 @@ public class RoundVideoController extends BasePlaybackController implements
         setMainVisibilityFactor(factor);
         break;
       case ANIMATOR_IS_PLAYING:
-        mainProgressView.invalidate();
+        if (mainProgressView != null) {
+          mainProgressView.invalidate();
+        }
         break;
     }
   }
@@ -1295,17 +1300,21 @@ public class RoundVideoController extends BasePlaybackController implements
       overlay.setTranslationY(totalY);
     }
 
+    final float scale = (msg instanceof TGMessageVideo) ? ((TGMessageVideo) msg).getPlayerScale() : 1f;
+
     totalX += msg.getContentX();
     totalY += msg.getContentY();
 
     mainPlayerView.setTranslationX(totalX);
     mainPlayerView.setTranslationY(totalY);
+    mainPlayerView.setScaleX(scale);
+    mainPlayerView.setScaleY(scale);
 
     if (abort) {
       return false;
     }
 
-    int playerSize = TGMessageVideo.getVideoSize();
+    float playerSize = TGMessageVideo.getVideoSize() * scale;
 
     int navigationWidth = navigation.getValue().getMeasuredWidth();
     int navigationHeight = navigation.getValue().getMeasuredHeight();

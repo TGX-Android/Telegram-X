@@ -26,10 +26,12 @@ import androidx.annotation.NonNull;
 
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
+import me.vkryl.core.lambda.CancellableRunnable;
 
 class RoundProgressView2 extends View implements FactorAnimator.Target {
   private final Paint strokePaint;
@@ -133,6 +135,16 @@ class RoundProgressView2 extends View implements FactorAnimator.Target {
   /* Touch */
 
   private boolean captured;
+  private long lastUpdate;
+  private CancellableRunnable scheduledUpdate;
+
+  private void updateSeek () {
+    lastUpdate = System.currentTimeMillis();
+    scheduledUpdate = null;
+    if (controller != null) {
+      controller.seekTo(MathUtils.clamp(visualProgress), false);
+    }
+  }
 
   @Override
   public boolean onTouchEvent (MotionEvent event) {
@@ -165,8 +177,21 @@ class RoundProgressView2 extends View implements FactorAnimator.Target {
           final float angle = ((float) Math.toDegrees(rad) + 360 + 90) % 360;
 
           setVisualProgress(MathUtils.clamp(angle / (360f - removeDegrees)));
-          if (controller != null) {
-            controller.seekTo(MathUtils.clamp(visualProgress), false);
+
+          if (System.currentTimeMillis() - lastUpdate > 100L) {
+            if (scheduledUpdate != null) {
+              scheduledUpdate.cancel();
+              scheduledUpdate = null;
+            }
+            updateSeek();
+          } else if (scheduledUpdate != null) {
+            scheduledUpdate = new CancellableRunnable() {
+              @Override
+              public void act () {
+                updateSeek();
+              }
+            };
+            UI.post(scheduledUpdate, 100);
           }
           return true;
         }
@@ -174,6 +199,10 @@ class RoundProgressView2 extends View implements FactorAnimator.Target {
       case MotionEvent.ACTION_UP:
       case MotionEvent.ACTION_CANCEL:
         if (captured) {
+          if (scheduledUpdate != null) {
+            scheduledUpdate.cancel();
+            scheduledUpdate = null;
+          }
           if (controller != null) {
             controller.seekTo(MathUtils.clamp(visualProgress), true);
           }
@@ -186,5 +215,14 @@ class RoundProgressView2 extends View implements FactorAnimator.Target {
     }
 
     return false;
+  }
+
+  @Override
+  protected void onDetachedFromWindow () {
+    super.onDetachedFromWindow();
+    if (scheduledUpdate != null) {
+      scheduledUpdate.cancel();
+      scheduledUpdate = null;
+    }
   }
 }
