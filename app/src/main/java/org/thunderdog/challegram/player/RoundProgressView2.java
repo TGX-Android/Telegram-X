@@ -28,13 +28,21 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 
+import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 
 class RoundProgressView2 extends View implements FactorAnimator.Target {
+  private final BoolAnimator barOpacity = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 220L, true);
+  private final BoolAnimator barOpacityReverse = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 220L, false);
+
   private final Paint strokePaint;
+
+
+
   private boolean isPaused;
 
   private RoundVideoController controller;
@@ -81,7 +89,22 @@ class RoundProgressView2 extends View implements FactorAnimator.Target {
 
   public void setVisualProgress (float progress) {
     if (this.visualProgress != progress) {
+      boolean hasBigChange = Math.abs(visualProgress - progress) > 0.5f;
       this.visualProgress = progress;
+      if (hasBigChange) {
+        if (progress > 0.5f) {
+          if (!barOpacity.isAnimating()) {
+            barOpacity.setValue(false, false);
+            barOpacity.setValue(true, true);
+          }
+        } else {
+          if (!barOpacityReverse.isAnimating()) {
+            barOpacityReverse.setValue(true, false);
+            barOpacityReverse.setValue(false, true);
+          }
+        }
+      }
+
       if ((int) (totalDistance * lastDrawProgress) != (int) (totalDistance * progress)) {
         invalidate();
       }
@@ -105,19 +128,29 @@ class RoundProgressView2 extends View implements FactorAnimator.Target {
     final float progress = !captured && controller != null ? controller.getVisualProgress() : this.visualProgress;
     final float isPaused = 1f - (controller != null ? controller.getVisualIsPlaying() : 0f);
 
-    if (progress != 0f) {
+    if (progress != 0f || captured) {
       final int padding = MathUtils.fromTo(Screen.dp(1.5f), Screen.dp(16), isPaused);
       final float strokeWidth = MathUtils.fromTo(Screen.dp(3), Screen.dp(4), isPaused);
       final int defaultColor = Paints.videoStrokePaint().getColor();
       final int color = ColorUtils.fromToArgb(defaultColor, defaultColor | 0xFF000000, isPaused);
+      final int strokeColor = ColorUtils.alphaColor(barOpacity.getFloatValue(), color);
 
       strokePaint.setStrokeWidth(strokeWidth);
-      strokePaint.setColor(color);
 
       final float angle = (360f - removeDegrees) * progress;
 
       RectF rectF = Paints.getRectF();
       rectF.set(padding, padding, viewWidth - padding, viewHeight - padding);
+
+      final float revFactor = barOpacityReverse.getFloatValue();
+      if (revFactor > 0f) {
+        final int revColor = ColorUtils.alphaColor(revFactor, defaultColor);
+        strokePaint.setColor(revColor);
+        c.drawCircle(rectF.centerX(), rectF.centerY(), rectF.width() / 2f, strokePaint);
+        // c.drawArc(rectF, angle, -90, false, strokePaint);
+      }
+
+      strokePaint.setColor(strokeColor);
       c.drawArc(rectF, -90, angle, false, strokePaint);
 
       if (isPaused > 0f) {
