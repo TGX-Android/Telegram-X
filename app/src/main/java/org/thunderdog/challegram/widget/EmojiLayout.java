@@ -30,7 +30,6 @@ import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.viewpager.widget.PagerAdapter;
-import androidx.viewpager.widget.ViewPager;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
@@ -871,7 +870,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       ignoreFirstScrollEvent = false;
       return;
     }
-    if (ignoreMovement || scrollState != org.thunderdog.challegram.widget.ViewPager.SCROLL_STATE_IDLE) {
+    if (ignoreMovement || scrollState != ViewPager.SCROLL_STATE_IDLE) {
       return;
     }
     lastHeaderVisibleY = 0;
@@ -887,7 +886,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       ignoreFirstScrollEvent = false;
       return;
     }
-    if (ignoreMovement || scrollState != org.thunderdog.challegram.widget.ViewPager.SCROLL_STATE_IDLE) {
+    if (ignoreMovement || scrollState != ViewPager.SCROLL_STATE_IDLE) {
       return;
     }
 
@@ -1064,6 +1063,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
   @Override
   public void onPageScrolled (int position, float positionOffset, int positionOffsetPixels) {
+    positionOffset = ViewPager.clampPositionOffset(positionOffset);
     setCurrentPageFactor((float) position + positionOffset);
 
     if (affectHeight) {

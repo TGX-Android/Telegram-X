@@ -234,6 +234,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     pager.addOnPageChangeListener(new androidx.viewpager.widget.ViewPager.OnPageChangeListener() {
       @Override
       public void onPageScrolled (int position, float positionOffset, int positionOffsetPixels) {
+        positionOffset = ViewPager.clampPositionOffset(positionOffset);
         boolean needUpdateAttachState = currentPosition != position || (currentPositionOffset == 0f) != (positionOffset == 0f);
         currentPosition = position;
         currentPositionOffset = positionOffset;
@@ -461,6 +462,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
 
   @Override
   public void onPageScrolled (int position, float positionOffset, int positionOffsetPixels) {
+    positionOffset = ViewPager.clampPositionOffset(positionOffset);
     if (headerCell != null) {
       headerCell.getTopView().setSelectionFactor((float) position + positionOffset);
     }

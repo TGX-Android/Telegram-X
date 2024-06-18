@@ -1652,6 +1652,7 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
 
   @Override
   public void onPageScrolled (int position, float positionOffset, int positionOffsetPixels) {
+    positionOffset = ViewPager.clampPositionOffset(positionOffset);
     lastActualPosition = position;
     lastOffset = positionOffset;
     updateTexts(false);
