@@ -196,6 +196,7 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
         videoSize = MathUtils.fromTo(videoSmallSize, videoFullSize, isFullSizeAnimator.getFloatValue());
         if (isLayoutBuilt()) {
           notifyBubbleChanged();
+          overlayViews.requestLayout();
           invalidate();
         }
         break;
