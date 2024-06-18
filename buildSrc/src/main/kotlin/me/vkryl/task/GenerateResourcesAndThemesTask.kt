@@ -715,11 +715,12 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
         @file:JvmName("FallbackColorId")
         
         package org.thunderdog.challegram.theme
-        
-        @JvmName("get") fun getFallbackColorId (@ColorId colorId: Int): Int = when (colorId) {
+        ${if (fallbackColors.isEmpty()) "\n        @Suppress(\"unused_parameter\")" else ""}
+        @JvmName("get") fun getFallbackColorId (@ColorId colorId: Int): Int = ${if (fallbackColors.isEmpty()) "ColorId.NONE" else """when (colorId) {
           ${fallbackColors.entries.joinToString("\n          ") { "ColorId.${it.key} -> ColorId.${it.value}" }}
           else -> ColorId.NONE
-        }
+        } 
+        """}
       """.trimIndent())
     }
     writeToFile("app/src/main/java/org/thunderdog/challegram/tool/PorterDuffPaint.kt") { kt ->
