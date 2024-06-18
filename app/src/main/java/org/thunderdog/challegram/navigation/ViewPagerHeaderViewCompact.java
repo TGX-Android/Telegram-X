@@ -275,7 +275,7 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
       - Views.getLeftMargin(recyclerView)
       - Views.getRightMargin(recyclerView), parentWidth);
     if (viewWidth <= parentMaxWidth - parentPaddingLeft - parentPaddingRight) {
-      if (animated && topViewMarginRightDiff != 0) {
+      if (animated && topViewMarginRightDiff != 0 && isCenteredHorizontally()) {
         float topViewTranslationX = topViewMarginRightDiff / 2f;
         topView.setTranslationX(topViewTranslationX);
         topView.animate()
@@ -440,6 +440,12 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
       recyclerView.scrollBy(scrollX, 0);
       resetUserInteraction();
     }
+  }
+
+  private boolean isCenteredHorizontally () {
+    int layoutGravity = Views.getLayoutGravity(recyclerView.getLayoutParams());
+    int horizontalGravity = layoutGravity & Gravity.HORIZONTAL_GRAVITY_MASK;
+    return horizontalGravity == Gravity.CENTER_HORIZONTAL;
   }
 
   public boolean canScrollLeft () {
