@@ -325,6 +325,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
   @Override
   public void onPageScrolled (int position, float positionOffset, int positionOffsetPixels) {
+    positionOffset = ViewPager.clampPositionOffset(positionOffset);
     if (this.checkedBasePosition != position) {
       checkedBasePosition = position;
       checkContentScrollY(position);

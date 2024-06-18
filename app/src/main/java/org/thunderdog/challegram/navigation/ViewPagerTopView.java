@@ -183,6 +183,10 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       return getWidth(/* labelFactor */ 1f);
     }
 
+    public int getCollapsedWidth () {
+      return getWidth(/* labelFactor */ 0f);
+    }
+
     public int getWidth (float labelFactor) {
       int expandedWidth = ellipsizedWidth != 0 ? ellipsizedWidth : width; // FIXME
       if (labelFactor == 1f) return expandedWidth;
@@ -424,6 +428,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   }
 
   private int totalWidth;
+  private int maxStableWidth;
 
   public void setItems (String[] stringItems) {
     List<Item> items = new ArrayList<>(stringItems.length);
@@ -589,6 +594,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
 
   private void relayout () {
     this.totalWidth = calculateTotalWidth();
+    this.maxStableWidth = calculateMaxStableWidth(totalWidth);
     this.maxItemWidth = items == null || items.isEmpty() ? 0 : (totalWidth / items.size());
     this.lastMeasuredWidth = 0; // force layout
     requestLayout();
@@ -611,6 +617,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     return getLayoutParams().width == ViewGroup.LayoutParams.WRAP_CONTENT;
   }
 
+  @CheckResult
   private int calculateTotalWidth () {
     if (items == null || items.isEmpty()) {
       return 0;
@@ -620,6 +627,23 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       sum += item.width + itemPadding * 2;
     }
     return sum;
+  }
+
+  @CheckResult
+  private int calculateMaxStableWidth (int totalWidth) {
+    if (items == null || items.isEmpty() || !showLabelOnActiveOnly) {
+      return totalWidth;
+    }
+    int sum = 0;
+    for (Item item : items) {
+      sum += item.getCollapsedWidth() + itemPadding * 2;
+    }
+    int maxStableWidth = 0;
+    for (Item item : items) {
+      int itemWidthDiff = item.getExpandedWidth() - item.getCollapsedWidth();
+      maxStableWidth = Math.max(maxStableWidth, sum + itemWidthDiff);
+    }
+    return maxStableWidth;
   }
 
   private void onUpdateItems () {
@@ -645,8 +669,11 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     if (shouldWrapContent()) {
       int totalWidth = calculateTotalWidth();
-      if (totalWidth != this.totalWidth && BuildConfig.DEBUG) {
-        throw new IllegalStateException("this.totalWidth = " + this.totalWidth + ", totalWidth = " + totalWidth);
+      if (totalWidth != this.totalWidth) {
+        if (BuildConfig.DEBUG) {
+          throw new IllegalStateException("this.totalWidth = " + this.totalWidth + ", totalWidth = " + totalWidth);
+        }
+        maxStableWidth = calculateMaxStableWidth(totalWidth);
       }
       layout(totalWidth, /* wrapContent */ true); // must be before super.onMeasure
       super.onMeasure(MeasureSpec.makeMeasureSpec(totalWidth, MeasureSpec.EXACTLY), heightMeasureSpec);
@@ -1364,7 +1391,17 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   }
 
   public int getTotalWidth () {
-    return totalWidth;
+    if (shouldWrapContent()) {
+      return totalWidth;
+    }
+    return getMeasuredWidth();
+  }
+
+  public int getMaxStableWidth () {
+    if (shouldWrapContent()) {
+      return showLabelOnActiveOnly ? maxStableWidth : totalWidth;
+    }
+    return getMeasuredWidth();
   }
 
   public int getItemsWidth (float selectionFactor) {

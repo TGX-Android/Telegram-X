@@ -1603,6 +1603,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public void onPageScrolled (int position, float positionOffset, int positionOffsetPixels) {
+    positionOffset = ViewPager.clampPositionOffset(positionOffset);
     float offset = (float) position + positionOffset;
     pagerHeaderView.getTopView().setSelectionFactor(offset);
     if (this.pagerScrollOffset != offset) {
