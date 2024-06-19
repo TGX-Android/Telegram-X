@@ -198,12 +198,37 @@ public class ThreadInfo {
   }
 
   public void setDraft (@Nullable TdApi.DraftMessage draftMessage) {
-    TdApi.InputMessageReplyToMessage replyToMessage = draftMessage != null && draftMessage.replyTo instanceof TdApi.InputMessageReplyToMessage ? ((TdApi.InputMessageReplyToMessage) draftMessage.replyTo) : null;
-    if (replyToMessage != null && Td.isEmpty(replyToMessage.quote)) {
-      for (TdApi.Message message : threadInfo.messages) {
-        if (message.chatId == replyToMessage.chatId && message.id == replyToMessage.messageId) {
-          draftMessage.replyTo = null;
+    TdApi.InputMessageReplyTo replyTo = draftMessage != null ? draftMessage.replyTo : null;
+    if (replyTo != null && replyTo.getConstructor() != TdApi.InputMessageReplyToStory.CONSTRUCTOR) {
+      long replyToChatId;
+      long replyToMessageId;
+      TdApi.InputTextQuote replyToQuote;
+      switch (replyTo.getConstructor()) {
+        case TdApi.InputMessageReplyToMessage.CONSTRUCTOR: {
+          TdApi.InputMessageReplyToMessage replyToMessage = (TdApi.InputMessageReplyToMessage) replyTo;
+          replyToChatId = threadInfo.chatId;
+          replyToMessageId = replyToMessage.messageId;
+          replyToQuote = replyToMessage.quote;
           break;
+        }
+        case TdApi.InputMessageReplyToExternalMessage.CONSTRUCTOR: {
+          TdApi.InputMessageReplyToExternalMessage replyToExternalMessage = (TdApi.InputMessageReplyToExternalMessage) replyTo;
+          replyToChatId = replyToExternalMessage.chatId;
+          replyToMessageId = replyToExternalMessage.messageId;
+          replyToQuote = replyToExternalMessage.quote;
+          break;
+        }
+        case TdApi.InputMessageReplyToStory.CONSTRUCTOR: // Unreachable
+        default:
+          Td.assertInputMessageReplyTo_acef6f3a();
+          throw Td.unsupported(replyTo);
+      }
+      if (Td.isEmpty(replyToQuote)) {
+        for (TdApi.Message message : threadInfo.messages) {
+          if (message.chatId == replyToChatId && message.id == replyToMessageId) {
+            draftMessage.replyTo = null;
+            break;
+          }
         }
       }
     }

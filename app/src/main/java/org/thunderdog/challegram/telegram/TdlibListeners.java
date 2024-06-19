@@ -1907,7 +1907,13 @@ public class TdlibListeners {
 
   void updateChatRevenueAmount (TdApi.UpdateChatRevenueAmount update) {
     for (TdlibOptionListener listener : optionListeners) {
-      listener.onChatRevenueUpdated();
+      listener.onChatRevenueUpdated(update.chatId, update.revenueAmount);
+    }
+  }
+
+  void updateStarRevenueStatus (TdApi.UpdateStarRevenueStatus update) {
+    for (TdlibOptionListener listener : optionListeners) {
+      listener.onStarRevenueStatusUpdated(update.ownerId, update.status);
     }
   }
 

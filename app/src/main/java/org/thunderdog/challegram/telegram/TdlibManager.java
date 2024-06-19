@@ -211,7 +211,18 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     if (StringUtils.isEmpty(text))
       return;
     performSyncTask(context, extras.accountId, "reply", (tdlib, onDone) -> {
-      tdlib.sendMessage(extras.chatId, extras.messageThreadId, extras.needReply ? new TdApi.InputMessageReplyToMessage(extras.forceExternalReply ? extras.chatId : 0, extras.messageIds[extras.messageIds.length - 1], null) : null, Td.newSendOptions(), new TdApi.InputMessageText(new TdApi.FormattedText(text.toString(), null), null, false), sendingMessage -> {
+      TdApi.InputMessageReplyTo replyTo;
+      if (extras.needReply) {
+        long messageId = extras.messageIds[extras.messageIds.length - 1];
+        if (extras.forceExternalReply) {
+          replyTo = new TdApi.InputMessageReplyToExternalMessage(extras.chatId, messageId, null);
+        } else {
+          replyTo = new TdApi.InputMessageReplyToMessage(messageId, null);
+        }
+      } else {
+        replyTo = null;
+      }
+      tdlib.sendMessage(extras.chatId, extras.messageThreadId, replyTo, Td.newSendOptions(), new TdApi.InputMessageText(new TdApi.FormattedText(text.toString(), null), null, false), sendingMessage -> {
         if (sendingMessage == null) {
           UI.showToast(R.string.NotificationReplyFailed, Toast.LENGTH_SHORT);
           if (onDone != null) {

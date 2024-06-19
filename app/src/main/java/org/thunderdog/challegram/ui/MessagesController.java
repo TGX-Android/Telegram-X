@@ -2850,15 +2850,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
       draftMessage = getDraftMessage();
       if (!Td.isEmpty(fillDraft)) {
         if (Td.isEmpty(draftMessage) || Td.isEmpty(((TdApi.InputMessageText) draftMessage.inputMessageText).text) /*allow dropping replyTo*/) {
-          draftMessage = new TdApi.DraftMessage(null, 0, new TdApi.InputMessageText(fillDraft, null, false));
+          draftMessage = new TdApi.DraftMessage(null, 0, new TdApi.InputMessageText(fillDraft, null, false), 0);
         } else if (!Td.equalsTo(((TdApi.InputMessageText) draftMessage.inputMessageText).text, fillDraft)) {
           promptDraftPrefillOnFocus = true;
         }
       }
-      if (draftMessage != null && draftMessage.replyTo != null && draftMessage.replyTo.getConstructor() == TdApi.InputMessageReplyToMessage.CONSTRUCTOR) {
+      TdApi.InputMessageReplyTo replyTo = draftMessage != null ? draftMessage.replyTo : null;
+      if (replyTo != null && replyTo.getConstructor() != TdApi.InputMessageReplyToStory.CONSTRUCTOR) {
         if (!ignoreDraftLoad) {
-          TdApi.InputMessageReplyToMessage replyToMessage = (TdApi.InputMessageReplyToMessage) draftMessage.replyTo;
-          forceDraftReply(replyToMessage);
+          forceDraftReply(replyTo);
         }
       }
       updateSilentButton(tdlib.isChannel(chat.id));
@@ -4100,14 +4100,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
         // TODO save local draft
       } else if (inputView != null && inputView.textChangedSinceChatOpened() && isFocused()) {
         final TdApi.FormattedText outputText = inputView.getOutputText(false);
-        final @Nullable TdApi.InputMessageReplyToMessage replyTo = getCurrentReplyId();
+        final @Nullable TdApi.InputMessageReplyTo replyTo = getCurrentReplyId();
         final long date = tdlib.currentTime(TimeUnit.SECONDS);
         final TdApi.InputMessageText inputMessageText = new TdApi.InputMessageText(
           outputText,
           findTargetContext().linkPreviewOptions,
           false
         );
-        final TdApi.DraftMessage draftMessage = new TdApi.DraftMessage(replyTo, (int) date, inputMessageText);
+        final TdApi.DraftMessage draftMessage = new TdApi.DraftMessage(replyTo, (int) date, inputMessageText, 0);
         final long outputChatId = messageThread != null ? messageThread.getChatId() : getChatId();
         final long messageThreadId = messageThread != null ? messageThread.getMessageThreadId() : 0;
         if (messageThread != null) {
@@ -6365,14 +6365,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return new MessageId(message.chatId, message.id);
     }
 
-    public TdApi.InputMessageReplyToMessage toInputMessageReply (long inChatId, long inMessageThreadId) {
-      long chatId;
+    public TdApi.InputMessageReplyTo toInputMessageReply (long inChatId, long inMessageThreadId) {
       if (inChatId != message.chatId || (message.isTopicMessage && inMessageThreadId != 0 && message.messageThreadId != inMessageThreadId)) {
-        chatId = message.chatId;
+        return new TdApi.InputMessageReplyToExternalMessage(message.chatId, message.id, quote);
       } else {
-        chatId = 0;
+        return new TdApi.InputMessageReplyToMessage(message.id, quote);
       }
-      return new TdApi.InputMessageReplyToMessage(chatId, message.id, quote);
     }
   }
 
@@ -6392,16 +6390,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private JoinRequestsView requestsView;
   private CollapseListView.Item requestsItem;
 
-  public @Nullable TdApi.InputMessageReplyToMessage getCurrentReplyId () {
+  public @Nullable TdApi.InputMessageReplyTo getCurrentReplyId () {
     if (reply != null) {
       return reply.toInputMessageReply(messageThread != null ? messageThread.getChatId() : getChatId(), getMessageThreadId());
     }
     return null;
   }
 
-  public @Nullable TdApi.InputMessageReplyToMessage obtainReplyTo () {
+  public @Nullable TdApi.InputMessageReplyTo obtainReplyTo () {
     if (reply != null) {
-      TdApi.InputMessageReplyToMessage replyTo = getCurrentReplyId();
+      TdApi.InputMessageReplyTo replyTo = getCurrentReplyId();
       closeReply(true, false);
       return replyTo;
     }
@@ -6599,24 +6597,46 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  private void forceDraftReply (final TdApi.InputMessageReplyToMessage replyTo) {
+  private void forceDraftReply (final TdApi.InputMessageReplyTo replyTo) {
     final long currentChatId = chat.id;
-    final long replyToChatId = replyTo.chatId == 0 ? currentChatId : replyTo.chatId;
+    final long replyToChatId, replyToMessageId;
+    final TdApi.InputTextQuote replyToQuote;
+    switch (replyTo.getConstructor()) {
+      case TdApi.InputMessageReplyToMessage.CONSTRUCTOR: {
+        TdApi.InputMessageReplyToMessage replyToMessage = (TdApi.InputMessageReplyToMessage) replyTo;
+        replyToChatId = currentChatId;
+        replyToMessageId = replyToMessage.messageId;
+        replyToQuote = replyToMessage.quote;
+        break;
+      }
+      case TdApi.InputMessageReplyToExternalMessage.CONSTRUCTOR: {
+        TdApi.InputMessageReplyToExternalMessage replyToExternalMessage = (TdApi.InputMessageReplyToExternalMessage) replyTo;
+        replyToChatId = replyToExternalMessage.chatId;
+        replyToMessageId = replyToExternalMessage.messageId;
+        replyToQuote = replyToExternalMessage.quote;
+        break;
+      }
+      case TdApi.InputMessageReplyToStory.CONSTRUCTOR: // Unreachable.
+        return;
+      default:
+        Td.assertInputMessageReplyTo_acef6f3a();
+        throw Td.unsupported(replyTo);
+    }
     if (replyToChatId == currentChatId) {
-      TGMessage foundMessage = manager.getAdapter().findMessageById(replyTo.messageId);
+      TGMessage foundMessage = manager.getAdapter().findMessageById(replyToMessageId);
       if (foundMessage != null) {
-        forceReply(foundMessage.getMessage(), replyTo.quote);
+        forceReply(foundMessage.getMessage(), replyToQuote);
         return;
       }
     }
-    tdlib.send(new TdApi.GetMessage(replyToChatId, replyTo.messageId), (foundReplyMessage, error) -> {
+    tdlib.send(new TdApi.GetMessage(replyToChatId, replyToMessageId), (foundReplyMessage, error) -> {
       if (foundReplyMessage != null) {
         runOnUiThreadOptional(() -> {
           if (chat != null && chat.id == currentChatId) {
             TdApi.DraftMessage draftMessage = getDraftMessage();
             TdApi.InputMessageReplyTo currentReplyTo = draftMessage != null ? draftMessage.replyTo : null;
             if (Td.equalsTo(replyTo, currentReplyTo)) {
-              forceReply(foundReplyMessage, replyTo.quote);
+              forceReply(foundReplyMessage, replyToQuote);
             }
           }
         });
@@ -10600,24 +10620,44 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (isEditingMessage()) {
       return;
     }
-    TdApi.InputMessageReplyToMessage replyToMessage =
-      draftMessage != null && draftMessage.replyTo != null && draftMessage.replyTo.getConstructor() == TdApi.InputMessageReplyToMessage.CONSTRUCTOR ?
-        (TdApi.InputMessageReplyToMessage) draftMessage.replyTo : null;
-    if (replyToMessage == null) {
+    TdApi.InputMessageReplyTo replyTo = draftMessage != null ? draftMessage.replyTo : null;
+    if (replyTo == null || replyTo.getConstructor() == TdApi.InputMessageReplyToStory.CONSTRUCTOR) {
       closeReply(false, true);
     } else {
+      long replyChatId, replyMessageId;
+      TdApi.InputTextQuote replyQuote;
+      switch (replyTo.getConstructor()) {
+        case TdApi.InputMessageReplyToMessage.CONSTRUCTOR: {
+          TdApi.InputMessageReplyToMessage replyToMessage = (TdApi.InputMessageReplyToMessage) replyTo;
+          replyChatId = getChatId();
+          replyMessageId = replyToMessage.messageId;
+          replyQuote = replyToMessage.quote;
+          break;
+        }
+        case TdApi.InputMessageReplyToExternalMessage.CONSTRUCTOR: {
+          TdApi.InputMessageReplyToExternalMessage replyToExternalMessage = (TdApi.InputMessageReplyToExternalMessage) replyTo;
+          replyChatId = replyToExternalMessage.chatId;
+          replyMessageId = replyToExternalMessage.messageId;
+          replyQuote = replyToExternalMessage.quote;
+          break;
+        }
+        case TdApi.InputMessageReplyToStory.CONSTRUCTOR: // Unreachable
+        default:
+          Td.assertInputMessageReplyTo_acef6f3a();
+          throw Td.unsupported(replyTo);
+      }
       TGMessage message;
-      if (getChatId() == replyToMessage.chatId) {
-        message = manager.getAdapter().findMessageById(replyToMessage.messageId);
+      if (getChatId() == replyChatId) {
+        message = manager.getAdapter().findMessageById(replyMessageId);
       } else {
         message = null;
       }
       if (message != null) {
-        showReply(message.getMessage(), replyToMessage.quote, false, false);
+        showReply(message.getMessage(), replyQuote, false, false);
       } else {
-        tdlib.send(new TdApi.GetMessage(replyToMessage.chatId, replyToMessage.messageId), (remoteMessage, error) -> runOnUiThreadOptional(() -> {
+        tdlib.send(new TdApi.GetMessage(replyChatId, replyMessageId), (remoteMessage, error) -> runOnUiThreadOptional(() -> {
           if (getChatId() == chatId && Td.equalsTo(getDraftMessage(), draftMessage)) {
-            showReply(remoteMessage, replyToMessage.quote, false, false);
+            showReply(remoteMessage, replyQuote, false, false);
           } else {
             closeReply(false, true);
           }
