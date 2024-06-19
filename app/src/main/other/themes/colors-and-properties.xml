@@ -85,7 +85,6 @@
     <!-- TEXT -->
 
     <item name="text" porterDuff="true" /> <!-- Text on top of filling -->
-    <item name="textQuote" porterDuff="true"/>
     <item name="textSelectionHighlight" tinted="true" />
     <item name="textLight" porterDuff="true" />
     <item name="textSecure" porterDuff="true" />
@@ -399,7 +398,6 @@
     <item name="bubbleIn_outline" />
     <item name="bubbleIn_separator" />
     <item name="bubbleIn_pressed" />
-    <item name="bubbleIn_textQuote" porterDuff="true"/>
 
     <item name="bubbleIn_fillingActive" />
     <item name="bubbleIn_fillingActiveContent" />
@@ -419,7 +417,6 @@
     <item name="bubbleOut_outline" />
     <item name="bubbleOut_separator" tinted="true" />
     <item name="bubbleOut_pressed" />
-    <item name="bubbleOut_textQuote" porterDuff="true"/>
 
     <item name="bubbleOut_chatVerticalLine" tinted="true" />
     <item name="bubbleOut_chatNeutralFillingContent" />
@@ -565,5 +562,12 @@
 
     <item name="videoSliderActive" />
     <item name="videoSliderInactive" />
+
+    <item name="blockQuoteText" porterDuff="true"/>
+    <item name="blockQuoteLine" porterDuff="true"/>
+    <item name="bubbleIn_blockQuoteText" porterDuff="true"/>
+    <item name="bubbleIn_blockQuoteLine" porterDuff="true"/>
+    <item name="bubbleOut_blockQuoteText" porterDuff="true"/>
+    <item name="bubbleOut_blockQuoteLine" porterDuff="true"/>
   </colors>
 </xml>

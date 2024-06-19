@@ -3060,7 +3060,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     TextColorSet theme = pickTheme(defaultTheme, entity);
     boolean isClickable = isClickable(entity);
     boolean isQuote = entity != null && entity.isQuote();
-    return isClickable ? theme.clickableTextColor(isPressed) : (isQuote ? Theme.getColor(theme.quoteColorId()): theme.defaultTextColor());
+    return isClickable ? theme.clickableTextColor(isPressed) : (isQuote ? Theme.getColor(theme.quoteTextColorId()): theme.defaultTextColor());
   }
 
   public long getMediaTextComplexColor () {
@@ -3075,7 +3075,12 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
   @PorterDuffColorId
   public int getQuoteTextColorId () {
-    return this.defaultTextColorSet.quoteColorId();
+    return this.defaultTextColorSet.quoteTextColorId();
+  }
+
+  @PorterDuffColorId
+  public int getQuoteLineColorId () {
+    return this.defaultTextColorSet.quoteLineColorId();
   }
 
   @ColorInt

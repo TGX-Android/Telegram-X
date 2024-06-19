@@ -66,8 +66,13 @@ public interface TextColorSet {
   }
 
   @PorterDuffColorId
-  default int quoteColorId() {
-    return ColorId.textQuote;
+  default int quoteTextColorId () {
+    return ColorId.blockQuoteText;
+  }
+
+  @PorterDuffColorId
+  default int quoteLineColorId () {
+    return ColorId.blockQuoteLine;
   }
 
   default int overlayColorId (boolean isPressed) {

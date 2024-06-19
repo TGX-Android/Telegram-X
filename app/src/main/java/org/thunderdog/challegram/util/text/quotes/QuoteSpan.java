@@ -46,14 +46,6 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
     this.styleSpan = new QuoteStyleSpan(this);
   }
 
-  public int getColor () {
-    return Theme.getColor(ColorId.textQuote);
-  }
-
-  public int getColorId () {
-    return ColorId.textQuote;
-  }
-
   @Override
   public int getLeadingMargin(boolean first) {
     return Screen.dp(QuoteBackground.QUOTE_LEFT_PADDING - 3);
@@ -78,7 +70,7 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
       if (tp == null) {
         return;
       }
-      tp.setColor(span.getColor());
+      tp.setColor(Theme.getColor(ColorId.blockQuoteText));
 
       final float size = tp.getTextSize();
       tp.setTextSize(size - 1);
@@ -240,8 +232,6 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
     }
 
     public void draw(Canvas canvas, float offsetX, float offsetY, int maxWidth) {
-      final int color = span.getColor();
-
       int width = maxWidth;
       if (width >= maxWidth * 0.95) {
         width = maxWidth;
@@ -251,7 +241,7 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
       canvas.translate(offsetX, offsetY);
 
       tmpRect.set(-Screen.dp(3), top, 0, bottom);
-      canvas.drawRoundRect(tmpRect, Screen.dp(1.5f), Screen.dp(1.5f), Paints.fillingPaint(color));
+      canvas.drawRoundRect(tmpRect, Screen.dp(1.5f), Screen.dp(1.5f), Paints.fillingPaint(Theme.getColor(ColorId.blockQuoteLine)));
 
       Views.restore(canvas, s);
     }

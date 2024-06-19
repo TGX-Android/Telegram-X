@@ -66,6 +66,6 @@ bubbleIn_fillingActive: #7D8E9826
 bubbleIn_fillingActiveContent: #FFF
 bubbleOut_fillingActive: #91AFC826
 bubbleOut_fillingActiveContent: #FFF
-bubbleIn_textQuote: #8DA1AD
-bubbleOut_textQuote: #A6C8E3
-textQuote: #A4B9C5
+blockQuoteText, blockQuoteLine: #A4B9C5
+bubbleIn_blockQuoteText, bubbleIn_blockQuoteLine: #8DA1AD
+bubbleOut_blockQuoteText, bubbleOut_blockQuoteLine: #A6C8E3

@@ -155,8 +155,13 @@ public final class TextColorSets {
     }
 
     @Override
-    default int quoteColorId() {
-      return ColorId.textQuote;
+    default int quoteTextColorId () {
+      return ColorId.blockQuoteText;
+    }
+
+    @Override
+    default int quoteLineColorId () {
+      return ColorId.blockQuoteLine;
     }
 
     Regular
@@ -285,8 +290,13 @@ public final class TextColorSets {
     }
 
     @Override
-    default int quoteColorId() {
-      return ColorId.bubbleOut_textQuote;
+    default int quoteTextColorId () {
+      return ColorId.bubbleOut_blockQuoteText;
+    }
+
+    @Override
+    default int quoteLineColorId () {
+      return ColorId.bubbleOut_blockQuoteLine;
     }
 
     BubbleOut
@@ -353,8 +363,13 @@ public final class TextColorSets {
     }
 
     @Override
-    default int quoteColorId() {
-      return ColorId.bubbleIn_textQuote;
+    default int quoteTextColorId () {
+      return ColorId.bubbleIn_blockQuoteText;
+    }
+
+    @Override
+    default int quoteLineColorId () {
+      return ColorId.bubbleIn_blockQuoteLine;
     }
 
     BubbleIn

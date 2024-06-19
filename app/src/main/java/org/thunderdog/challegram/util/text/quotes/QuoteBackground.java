@@ -107,20 +107,21 @@ public class QuoteBackground implements Drawable.Callback {
 
     /* * */
 
-    final int colorId = parent.getQuoteTextColorId();
-    final int color = Theme.getColor(colorId);
+    final int textColorId = parent.getQuoteTextColorId();
+    final int lineColorId = parent.getQuoteLineColorId();
+    final int lineColor = Theme.getColor(lineColorId);
 
     if (ripple != null) {
-      rippleBackgroundDrawable.setColor(ColorUtils.alphaColor(0.05f, color));
+      rippleBackgroundDrawable.setColor(ColorUtils.alphaColor(0.05f, lineColor));
       ripple.setBounds((int) bounds.left, (int) bounds.top, (int) bounds.right, (int) bounds.bottom);
       ripple.draw(c);
     }
 
-    Drawables.draw(c, quoteDrawable, bounds.right - Screen.dp(19), bounds.top + Screen.dp(3.5f), PorterDuffPaint.get(colorId));
+    Drawables.draw(c, quoteDrawable, bounds.right - Screen.dp(19), bounds.top + Screen.dp(3.5f), PorterDuffPaint.get(lineColorId));
 
     tmpRect.set(bounds);
     tmpRect.right = bounds.left + Screen.dp(3);
-    c.drawRoundRect(tmpRect, Screen.dp(1.5f), Screen.dp(1.5f), Paints.fillingPaint(color));
+    c.drawRoundRect(tmpRect, Screen.dp(1.5f), Screen.dp(1.5f), Paints.fillingPaint(lineColor));
   }
 
   public boolean setPressed (int x, int y) {
