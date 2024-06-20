@@ -53,7 +53,7 @@ public class EmojiStatusInfoView extends CustomTextView {
   }
 
   public void update (long firstEmojiId, long emojiPacksIds, String displayName, ClickableSpan onClickListener, boolean animated) {
-      this.displayName = displayName;
+    this.displayName = displayName;
 
     if (lastInfo == null || lastInfo.id != emojiPacksIds) {
       lastInfo = null;
@@ -74,60 +74,54 @@ public class EmojiStatusInfoView extends CustomTextView {
   }
 
   private void updateImpl (long firstEmojiId, ClickableSpan onClickListener, @Nullable TdApi.StickerSetInfo info, boolean animated) {
+    final Tdlib tdlib = parent.tdlib();
 
-
-    try {
-      final Tdlib tdlib = parent.tdlib();
-
-      final FormattedText formattedName; {
-        final String text = displayName;
-        final TextEntity[] entities = TextEntity.valueOf(tdlib, text, new TdApi.TextEntity[]{
-          new TdApi.TextEntity(0, text.length(), new TdApi.TextEntityTypeBold())
-        }, null);
-        formattedName = new FormattedText(text, entities);
-      }
-
-      final FormattedText formattedPackName; {
-        final String text = info == null ? Lang.getString(R.string.LoadingMessageEmojiPack) : info.title;
-        final TextEntity[] entities = TextEntity.valueOf(tdlib, text, new TdApi.TextEntity[]{
-          new TdApi.TextEntity(0, text.length(), new TdApi.TextEntityTypeUrl()),
-          new TdApi.TextEntity(0, text.length(), new TdApi.TextEntityTypeBold())
-        }, null);
-
-        if (entities != null && entities.length > 0) {
-          entities[0].setOnClickListener(onClickListener);
-        }
-
-        formattedPackName = new FormattedText(text, entities);
-      }
-
-      final TdApi.Sticker cover = info != null && info.covers != null && info.covers.length > 0 && info.covers[0].fullType.getConstructor() == TdApi.StickerFullTypeCustomEmoji.CONSTRUCTOR ?
-        info.covers[0] : null;
-
-      final FormattedText formattedEmoji;
-      if (info != null) {
-        final String text = cover != null ? cover.emoji : "\uD83D\uDC4D"; // 👍
-        final TextEntity[] entities = TextEntity.valueOf(tdlib, text, new TdApi.TextEntity[]{
-          new TdApi.TextEntity(0, text.length(), new TdApi.TextEntityTypeCustomEmoji(cover != null ? cover.id : firstEmojiId)),
-        }, null);
-
-        formattedEmoji = new FormattedText(text, entities);
-      } else {
-        formattedEmoji = null;
-      }
-
-      final FormattedText formattedPackText = formattedEmoji != null ?
-        FormattedText.concat(" ", " ", formattedEmoji, formattedPackName) :
-        formattedPackName;
-
-      FormattedText formattedText = FormattedText.valueOf(tdlib, null, R.string.EmojiStatusUsed,
-        formattedName,
-        formattedPackText
-      );
-
-      setText(formattedText.text, formattedText.entities, animated);
-    } catch (Throwable t) {
-      Log.e("Cannot get string", t);
+    final FormattedText formattedName; {
+      final String text = displayName;
+      final TextEntity[] entities = TextEntity.valueOf(tdlib, text, new TdApi.TextEntity[]{
+        new TdApi.TextEntity(0, text.length(), new TdApi.TextEntityTypeBold())
+      }, null);
+      formattedName = new FormattedText(text, entities);
     }
+
+    final FormattedText formattedPackName; {
+      final String text = info == null ? Lang.getString(R.string.LoadingMessageEmojiPack) : info.title;
+      final TextEntity[] entities = TextEntity.valueOf(tdlib, text, new TdApi.TextEntity[]{
+        new TdApi.TextEntity(0, text.length(), new TdApi.TextEntityTypeUrl()),
+        new TdApi.TextEntity(0, text.length(), new TdApi.TextEntityTypeBold())
+      }, null);
+
+      if (entities != null && entities.length > 0) {
+        entities[0].setOnClickListener(onClickListener);
+      }
+
+      formattedPackName = new FormattedText(text, entities);
+    }
+
+    final TdApi.Sticker cover = info != null && info.covers != null && info.covers.length > 0 && info.covers[0].fullType.getConstructor() == TdApi.StickerFullTypeCustomEmoji.CONSTRUCTOR ?
+      info.covers[0] : null;
+
+    final FormattedText formattedEmoji;
+    if (info != null) {
+      final String text = cover != null ? cover.emoji : "\uD83D\uDC4D"; // 👍
+      final TextEntity[] entities = TextEntity.valueOf(tdlib, text, new TdApi.TextEntity[]{
+        new TdApi.TextEntity(0, text.length(), new TdApi.TextEntityTypeCustomEmoji(cover != null ? cover.id : firstEmojiId)),
+      }, null);
+
+      formattedEmoji = new FormattedText(text, entities);
+    } else {
+      formattedEmoji = null;
+    }
+
+    final FormattedText formattedPackText = formattedEmoji != null ?
+      FormattedText.concat(" ", " ", formattedEmoji, formattedPackName) :
+      formattedPackName;
+
+    FormattedText formattedText = FormattedText.valueOf(tdlib, null, R.string.EmojiStatusUsed,
+      formattedName,
+      formattedPackText
+    );
+
+    setText(formattedText.text, formattedText.entities, animated);
   }
 }
