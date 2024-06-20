@@ -23,9 +23,9 @@ import android.widget.LinearLayout;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.emoji.EmojiCodes;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
@@ -100,21 +100,13 @@ public class EmojiStatusInfoView extends CustomTextView {
 
     final TdApi.Sticker cover = info != null && info.covers != null && info.covers.length > 0 && info.covers[0].fullType.getConstructor() == TdApi.StickerFullTypeCustomEmoji.CONSTRUCTOR ?
       info.covers[0] : null;
-
-    final FormattedText formattedEmoji;
-    if (info != null) {
-      final String text = cover != null ? cover.emoji : "\uD83D\uDC4D"; // 👍
-      final TextEntity[] entities = TextEntity.valueOf(tdlib, text, new TdApi.TextEntity[]{
-        new TdApi.TextEntity(0, text.length(), new TdApi.TextEntityTypeCustomEmoji(cover != null ? cover.id : firstEmojiId)),
-      }, null);
-
-      formattedEmoji = new FormattedText(text, entities);
-    } else {
-      formattedEmoji = null;
-    }
+    final FormattedText formattedEmoji = info != null ? FormattedText.customEmoji(tdlib,
+      cover != null ? cover.emoji : EmojiCodes.THUMBS_UP,
+      cover != null ? cover.id : firstEmojiId
+    ) : null;
 
     final FormattedText formattedPackText = formattedEmoji != null ?
-      FormattedText.concat(" ", " ", formattedEmoji, formattedPackName) :
+      FormattedText.concat(" ", formattedEmoji, formattedPackName) :
       formattedPackName;
 
     FormattedText formattedText = FormattedText.valueOf(tdlib, null, R.string.EmojiStatusUsed,
