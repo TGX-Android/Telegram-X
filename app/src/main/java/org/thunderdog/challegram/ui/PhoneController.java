@@ -1084,14 +1084,18 @@ public class PhoneController extends EditBaseController<Void> implements Setting
       return;
     }
     context.forceRunEmulatorChecks(detectionResult -> executeOnUiThreadOptional(() -> {
-      if (detectionResult != null && detectionResult.isEmulatorDetected()) {
-        if (emulatorPrompt != null && emulatorPrompt.isShowing()) {
-          return;
-        }
-        AlertDialog.Builder b = new AlertDialog.Builder(context, Theme.dialogTheme());
-        b.setTitle(Lang.getString(R.string.EmulatorWarningTitle));
-        b.setMessage(Lang.getMarkdownStringSecure(this, R.string.EmulatorWarning));
-        b.setPositiveButton(Lang.getString(R.string.EmulatorWarningBtnOk), (dialog, which) -> dialog.dismiss());
+      if (detectionResult == null || !detectionResult.isEmulatorDetected()) {
+        return;
+      }
+      if (emulatorPrompt != null && emulatorPrompt.isShowing()) {
+        return;
+      }
+      boolean mayBeFalsePositive = detectionResult.mayBeFalsePositive();
+      AlertDialog.Builder b = new AlertDialog.Builder(context, Theme.dialogTheme());
+      b.setTitle(Lang.getString(R.string.EmulatorWarningTitle));
+      b.setMessage(Lang.getMarkdownStringSecure(this, mayBeFalsePositive ? R.string.EmulatorWarning : R.string.EmulatorWarningStrict));
+      b.setPositiveButton(Lang.getString(R.string.EmulatorWarningBtnOk), (dialog, which) -> dialog.dismiss());
+      if (mayBeFalsePositive) {
         b.setNeutralButton(Lang.getString(R.string.EmulatorWarningBtnReport), (dialog, which) -> {
           try {
             Uri uri = Uri.parse(BuildConfig.REMOTE_URL);
@@ -1147,9 +1151,9 @@ public class PhoneController extends EditBaseController<Void> implements Setting
             UI.showToast("Unable to create report: " + Log.toString(t), Toast.LENGTH_SHORT);
           }
         });
-        b.setCancelable(false);
-        emulatorPrompt = showAlert(b);
       }
+      b.setCancelable(false);
+      emulatorPrompt = showAlert(b);
     }));
   }
 

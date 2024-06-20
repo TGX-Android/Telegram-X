@@ -6246,6 +6246,20 @@ public class Settings {
       return result != 0;
     }
 
+    @SuppressWarnings("all")
+    public boolean mayBeFalsePositive () {
+      int testId = BitwiseUtils.splitLongToSecondInt(result);
+      switch (BuildConfig.FLAVOR) {
+        case "x86":
+        case "x64":
+          return false;
+        case "arm64":
+        case "arm32":
+        default:
+          return testId == 2;
+      }
+    }
+
     public String toHumanReadableFormat () {
       return "0x" + Long.toString(result, 16);
     }

@@ -1347,7 +1347,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
   /* Preview Sticker Menu */
 
   @Override
-  public void buildMenuStickerPreview (ArrayList<StickerPreviewView.MenuItem> menuItems, @NonNull TGStickerObj sticker, @NonNull StickerSmallView stickerSmallView) {
+  public void buildMenuStickerPreview (ArrayList<StickerPreviewView.MenuItem> menuItems, @NonNull TGStickerObj sticker) {
     menuItems.add(new StickerPreviewView.MenuItem(StickerPreviewView.MenuItem.MENU_ITEM_TEXT,
       Lang.getString(R.string.SetEmojiAsStatus).toUpperCase(), R.id.btn_setEmojiStatus, ColorId.textNeutral));
 
@@ -1356,7 +1356,11 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
   }
 
   @Override
-  public void onMenuStickerPreviewClick (View v, ViewController<?> context, @NonNull TGStickerObj sticker, @NonNull StickerSmallView stickerSmallView) {
+  public void onMenuStickerPreviewClick (View v, ViewController<?> context, @NonNull TGStickerObj sticker, @Nullable StickerSmallView stickerSmallView) {
+    if (stickerSmallView == null) {
+      return;
+    }
+
     final long emojiId = sticker.getCustomEmojiId();
     final int viewId = v.getId();
     if (viewId == R.id.btn_setEmojiStatus) {

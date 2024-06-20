@@ -62,6 +62,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.emoji.Emoji;
+import org.thunderdog.challegram.emoji.EmojiCodes;
 import org.thunderdog.challegram.filegen.TdlibFileGenerationManager;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageLoader;
@@ -477,6 +478,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private int storySuggestedReactionAreaCountMax = 5;
   private int storyViewersExpirationDelay = 86400;
   private int storyStealhModeCooldownPeriod = 3600, storyStealthModeFuturePeriod = 1500, storyStealthModePastPeriod = 300;
+  private int storyLinkAreaCountMax = 3;
   private int businessIntroTitleLengthMax = 32, businessIntroMessageLengthMax = 70, businessChatLinkCountMax = 100;
   private int
     giveawayBoostCountPerPremium = 4,
@@ -489,6 +491,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private int premiumGiftBoostCount = 3, premiumUploadSpeedup = 10, premiumDownloadSpeedup = 10;
   private boolean isPremium, isPremiumAvailable;
   private boolean canWithdrawChatRevenue;
+  private int starWithdrawalCountMin = 1000;
   private @GiftPremiumOption int giftPremiumOptions;
   private boolean suggestOnlyApiStickers;
   private int maxGroupCallParticipantCount = 10000;
@@ -507,7 +510,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private String[] diceEmoji, activeEmojiReactions;
   private TdApi.ReactionType defaultReactionType;
   private final Map<String, TGReaction> cachedReactions = new HashMap<>();
-  private boolean callsEnabled = true, expectBlocking, isLocationVisible;
+  private boolean callsEnabled = true, expectBlocking, isLocationVisible, canEditFactCheck;
   private boolean canIgnoreSensitiveContentRestrictions, ignoreSensitiveContentRestrictions;
   private boolean canArchiveAndMuteNewChatsFromUnknownUsers, canSetNewChatPrivacySettings;
   private RtcServer[] rtcServers;
@@ -4241,7 +4244,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         return ((TdApi.ReactionTypeEmoji) defaultReactionType).emoji;
       }
     }
-    return "\uD83D\uDC4D"; // Thumbs up
+    return EmojiCodes.THUMBS_UP;
   }
 
   public void ensureEmojiReactionsAvailable (@Nullable RunnableBool after) {
@@ -9274,6 +9277,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     listeners.updateChatRevenueAmount(update);
   }
 
+  @TdlibThread
+  private void updateStarRevenueStatus (TdApi.UpdateStarRevenueStatus update) {
+    listeners.updateStarRevenueStatus(update);
+  }
+
   @AnyThread
   public @Nullable TdApi.ChatTheme chatTheme (String themeName) {
     synchronized (dataLock) {
@@ -9607,6 +9615,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case "story_stealth_mode_past_period":
         this.storyStealthModePastPeriod = Td.intValue(update.value);
         break;
+      case "story_link_area_count_max":
+        this.storyLinkAreaCountMax = Td.intValue(update.value);
+        break;
 
       case "business_start_page_title_length_max":
         this.businessIntroTitleLengthMax = Td.intValue(update.value);
@@ -9652,6 +9663,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         this.canWithdrawChatRevenue = Td.boolValue(update.value);
         break;
 
+      case "star_withdrawal_count_min":
+        this.starWithdrawalCountMin = Td.intValue(update.value);
+        break;
+
       // Service accounts and chats
 
       case "anti_spam_bot_user_id":
@@ -9680,6 +9695,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         break;
       case "calls_enabled":
         this.callsEnabled = Td.boolValue(update.value);
+        break;
+      case "can_edit_fact_check":
+        this.canEditFactCheck = Td.boolValue(update.value);
         break;
       case "is_location_visible":
         this.isLocationVisible = Td.boolValue(update.value);
@@ -10475,6 +10493,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateChatRevenueAmount((TdApi.UpdateChatRevenueAmount) update);
         break;
       }
+      case TdApi.UpdateStarRevenueStatus.CONSTRUCTOR: {
+        updateStarRevenueStatus((TdApi.UpdateStarRevenueStatus) update);
+        break;
+      }
 
       // File generation
       case TdApi.UpdateFileGenerationStart.CONSTRUCTOR: {
@@ -10505,12 +10527,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.UpdateBusinessConnection.CONSTRUCTOR:
       case TdApi.UpdateNewBusinessMessage.CONSTRUCTOR:
       case TdApi.UpdateBusinessMessageEdited.CONSTRUCTOR:
-      case TdApi.UpdateBusinessMessagesDeleted.CONSTRUCTOR: {
+      case TdApi.UpdateBusinessMessagesDeleted.CONSTRUCTOR:
+      case TdApi.UpdateNewBusinessCallbackQuery.CONSTRUCTOR: {
         // Must never come from TDLib. If it does, there's a bug on TDLib side.
         throw Td.unsupported(update);
       }
       default: {
-        Td.assertUpdate_5645426();
+        Td.assertUpdate_8b9cc630();
         throw Td.unsupported(update);
       }
     }
