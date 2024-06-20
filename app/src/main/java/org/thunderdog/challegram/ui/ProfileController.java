@@ -5198,6 +5198,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (headerCell != null && chat != null) {
       headerCell.setUseRedHighlight(tdlib.isRedTeam(chat.id));
       headerCell.setText(tdlib.chatTitle(chat, false), makeSubtitle(false));
+      headerCell.setAllowTitleClick(chat.id);
       headerCell.setEmojiStatus(tdlib.chatUser(chat));
       headerCell.setExpandedSubtitle(makeSubtitle(true));
     }
