@@ -221,6 +221,11 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
     return customEmoji != null && customEmoji.value != null && Td.isAnimated(customEmoji.value.format);
   }
 
+  @Nullable
+  public TdApi.Sticker getSticker () {
+    return customEmoji != null ? customEmoji.value : null;
+  }
+
   public static float getScale (TdApi.Sticker sticker, int size) {
     // animated custom emoji must be:
     // 100x100 in 120x120 for webm

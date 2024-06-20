@@ -37,6 +37,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TdApiExt;
 import org.thunderdog.challegram.data.ThreadInfo;
+import org.thunderdog.challegram.emoji.EmojiCodes;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.telegram.TdlibMessageViewer;
@@ -1004,7 +1005,7 @@ public class MessagesLoader implements Client.ResultHandler {
           msg.interactionInfo = new TdApi.MessageInteractionInfo();
           msg.interactionInfo.reactions = new TdApi.MessageReactions(
             new TdApi.MessageReaction[]{
-              new TdApi.MessageReaction(new TdApi.ReactionTypeEmoji("\uD83D\uDC4D"), 5, true, mySender, new TdApi.MessageSender[0])
+              new TdApi.MessageReaction(new TdApi.ReactionTypeEmoji(EmojiCodes.THUMBS_UP), 5, true, mySender, new TdApi.MessageSender[0])
             },
             false
           );

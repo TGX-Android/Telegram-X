@@ -55,7 +55,7 @@ public class EmojiStatusHelper implements Destroyable {
   private final View parentView;
 
   private @Nullable EmojiStatusDrawable emojiStatusDrawable;
-  private @Nullable Text.ClickListener clickListenerToSet;
+  private @Nullable View.OnClickListener clickListenerToSet;
 
   private @Nullable String sharedUsageId;
 
@@ -70,7 +70,7 @@ public class EmojiStatusHelper implements Destroyable {
     this.sharedUsageId = sharedUsageId;
   }
 
-  public void setClickListener (@Nullable Text.ClickListener clickListenerToSet) {
+  public void setClickListener (@Nullable View.OnClickListener clickListenerToSet) {
     this.clickListenerToSet = clickListenerToSet;
   }
 
@@ -121,6 +121,12 @@ public class EmojiStatusHelper implements Destroyable {
 
   public boolean onTouchEvent (View v, MotionEvent ev) {
     return emojiStatusDrawable != null && emojiStatusDrawable.onTouchEvent(v, ev);
+  }
+
+  public void performClick (View v) {
+    if (emojiStatusDrawable != null && emojiStatusDrawable.clickListener != null) {
+      emojiStatusDrawable.clickListener.onClick(v);
+    }
   }
 
   public void updateEmoji (Tdlib tdlib, @Nullable TdApi.User user, TextColorSet textColorSet, int defaultStarIconId, int textSize) {
@@ -217,6 +223,22 @@ public class EmojiStatusHelper implements Destroyable {
     }
   }
 
+  @Nullable
+  public TdApi.Sticker getSticker () {
+    if (emojiStatusDrawable == null) {
+      return null;
+    }
+
+    if (emojiStatusDrawable.sticker != null) {
+      return emojiStatusDrawable.sticker;
+    }
+
+    final Text t = emojiStatusDrawable.emojiStatus;
+    final TextMedia tm = t != null ? t.getTextMediaFromLastPart() : null;
+
+    return tm != null ? tm.getSticker() : null;
+  }
+
   public static EmojiStatusDrawable makeDrawable (String sharedUsageId, Tdlib tdlib, @Nullable TdApi.User user, TextColorSet textColorSet, Text.TextMediaListener textMediaListener) {
     return new EmojiStatusDrawable(sharedUsageId, tdlib, user, null, textColorSet, textMediaListener, R.drawable.baseline_premium_star_16, 15);
   }
@@ -225,7 +247,7 @@ public class EmojiStatusHelper implements Destroyable {
     private final @Nullable Text emojiStatus;
     private final @Nullable Drawable starDrawable;
     private final @Nullable TextColorSet textColorSet;
-    private final @Nullable Text.ClickListener clickListener;
+    private final @Nullable View.OnClickListener clickListener;
     private final boolean needDrawEmojiStatus;
     private final Text.TextMediaListener textMediaListener;
     private final int textSize;
@@ -235,9 +257,10 @@ public class EmojiStatusHelper implements Destroyable {
     private final boolean needThemedColorFilter;
     private int lastDrawX, lastDrawY;
     private float lastDrawScale = 1f;
+    private final @Nullable TdApi.Sticker sticker;
     private boolean ignoreDraw;
 
-    private EmojiStatusDrawable (@Nullable String sharedUsageId, Tdlib tdlib, @Nullable TdApi.User user, @Nullable Text.ClickListener clickListener, @Nullable TextColorSet textColorSet, Text.TextMediaListener textMediaListener, int defaultStarIconId, int textSize) {
+    private EmojiStatusDrawable (@Nullable String sharedUsageId, Tdlib tdlib, @Nullable TdApi.User user, @Nullable View.OnClickListener clickListener, @Nullable TextColorSet textColorSet, Text.TextMediaListener textMediaListener, int defaultStarIconId, int textSize) {
       this.emojiStatus = makeText(sharedUsageId, tdlib, user, clickListener, textColorSet, textMediaListener, textSize);
       this.needDrawEmojiStatus = user != null && user.isPremium;
       this.textSize = textSize;
@@ -249,9 +272,10 @@ public class EmojiStatusHelper implements Destroyable {
       this.imageReceiver = null;
       this.gifReceiver = null;
       this.needThemedColorFilter = false;
+      this.sticker = null;
     }
 
-    private EmojiStatusDrawable (View v, @Nullable String sharedUsageId, boolean isPremium, @Nullable TdApi.Sticker sticker, @Nullable Text.ClickListener clickListener, @Nullable TextColorSet textColorSet, int defaultStarIconId, int textSize) {
+    private EmojiStatusDrawable (View v, @Nullable String sharedUsageId, boolean isPremium, @Nullable TdApi.Sticker sticker, @Nullable View.OnClickListener clickListener, @Nullable TextColorSet textColorSet, int defaultStarIconId, int textSize) {
       this.emojiStatus = null;
       this.needDrawEmojiStatus = isPremium;
       this.textSize = textSize;
@@ -260,6 +284,7 @@ public class EmojiStatusHelper implements Destroyable {
       this.clickListener = clickListener;
       this.starDrawable = needDrawEmojiStatus && (sticker == null || !TD.isFileLoaded(sticker.sticker)) ? Drawables.get(defaultStarIconId) : null;
       this.needThemedColorFilter = TD.needThemedColorFilter(sticker);
+      this.sticker = sticker;
 
       if (sticker != null && TD.isFileLoaded(sticker.sticker)) {
         this.imageReceiver = new ImageReceiver(v, 0);
@@ -379,7 +404,7 @@ public class EmojiStatusHelper implements Destroyable {
         }
         case MotionEvent.ACTION_UP: {
           if (isCapture) {
-            clickListener.onClick(null, null, null, null);
+            clickListener.onClick(v);
             isCapture = false;
             return true;
           }
@@ -463,13 +488,16 @@ public class EmojiStatusHelper implements Destroyable {
 
 
 
-  private static @Nullable Text makeText (@Nullable String sharedUsageId, Tdlib tdlib, @Nullable TdApi.User user, Text.ClickListener clickListener, TextColorSet textColorSet, Text.TextMediaListener textMediaListener, int textSize) {
+  private static @Nullable Text makeText (@Nullable String sharedUsageId, Tdlib tdlib, @Nullable TdApi.User user, View.OnClickListener clickListener, TextColorSet textColorSet, Text.TextMediaListener textMediaListener, int textSize) {
     TdApi.FormattedText text = makeEmojiText(user);
     if (text == null) return null;
 
     Text result = new Text.Builder(tdlib, text, null, Screen.dp(1000), Paints.robotoStyleProvider(textSize), textColorSet, textMediaListener)
       .singleLine()
-      .onClick(clickListener)
+      .onClick(clickListener != null ? (v, a, b, c) -> {
+        clickListener.onClick(v);
+        return true;
+      }: null)
       .build();
 
     TextMedia part = result.getTextMediaFromLastPart();
