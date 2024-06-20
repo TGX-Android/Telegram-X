@@ -923,11 +923,11 @@ public class SettingsController extends ViewController<Void> implements
   private void updateHeader () {
     TdApi.User user = tdlib.myUser();
     if (headerCell != null) {
-      final TdApi.Chat chat = user != null ?  tdlib.chat(ChatId.fromUserId(user.id)) : null;
+      long chatId = user != null ? ChatId.fromUserId(user.id) : 0;
       headerCell.getAvatarReceiver().requestUser(tdlib, tdlib.myUserId(), AvatarReceiver.Options.FULL_SIZE);
       headerCell.setText(user != null ? TD.getUserName(user) : Lang.getString(R.string.LoadingUser), getSubtext());
       headerCell.setEmojiStatus(user);
-      headerCell.setAllowTitleClick(() -> chat);
+      headerCell.setAllowTitleClick(chatId);
       headerCell.invalidate();
     }
   }

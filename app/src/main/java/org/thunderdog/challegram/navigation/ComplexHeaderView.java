@@ -1092,15 +1092,13 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
   private Future<ViewController.Options> titleOptionsBuilder;
   private OptionDelegate titleOptionsDelegate;
 
-  public void setAllowTitleClick (Future<TdApi.Chat> chatRunnableData) {
+  public void setAllowTitleClick (long chatId) {
     final ViewController.Options.Builder builder = new ViewController.Options.Builder();
 
     builder.info(Lang.boldify(title));
     builder.item(new ViewController.OptionItem(R.id.btn_copyText, Lang.getString(R.string.CopyDisplayName), ViewController.OptionColor.NORMAL, R.drawable.baseline_content_copy_24));
 
-    final TdApi.Chat chat = chatRunnableData != null ?  chatRunnableData.getValue() : null;
-    final String username = tdlib.chatUsername(chat);
-
+    final String username = chatId != 0 ? tdlib.chatUsername(chatId) : null;
     if (!StringUtils.isEmpty(username)) {
       builder.item(new ViewController.OptionItem(R.id.btn_copyUsername, Lang.getString(R.string.CopyUsername), ViewController.OptionColor.NORMAL, R.drawable.baseline_content_copy_24));
     }
