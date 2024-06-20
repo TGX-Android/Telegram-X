@@ -430,6 +430,19 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     return true;
   }
 
+  public boolean setSpanLink (String link) {
+    TextSelection selection = getTextSelection();
+    if (selection == null || selection.isEmpty()) {
+      return false;
+    }
+
+    URLSpan[] existingSpans = getText().getSpans(selection.start, selection.end, URLSpan.class);
+    URLSpan existingSpan = existingSpans != null && existingSpans.length > 0 ? existingSpans[0] : null;
+    createTextUrl(existingSpan, link, selection.start, selection.end);
+
+    return true;
+  }
+
   public void removeSpan (TdApi.TextEntityType type) {
     TextSelection selection = getTextSelection();
     if (selection != null && !selection.isEmpty()) {
@@ -753,12 +766,34 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
           }
           return true;
         } else if (Strings.isValidLink(result)) {
+          clearSpans(start, end, new TdApi.TextEntityTypeTextUrl(result)); // todo: remove after fix setSpanImpl
           setSpan(start, end, new TdApi.TextEntityTypeTextUrl(result));
           return true;
         } else {
           return false;
         }
       }, false);
+    }
+  }
+
+  public void createTextUrl (URLSpan existingSpan, String result, int start, int end) {
+    if (start < 0 || end < 0 || start > getText().length() || end > getText().length()) {
+      return;
+    }
+    ViewController<?> c = controller;
+    if (c == null && inputListener instanceof ViewController<?>) {
+      c = (ViewController<?>) inputListener;
+    }
+    if (c != null) {
+      if (StringUtils.isEmpty(result)) {
+        if (existingSpan != null) {
+          getText().removeSpan(existingSpan);
+          inlineContext.forceCheck();
+        }
+      } else if (Strings.isValidLink(result)) {
+        clearSpans(start, end, new TdApi.TextEntityTypeTextUrl(result)); // todo: remove after fix setSpanImpl
+        setSpan(start, end, new TdApi.TextEntityTypeTextUrl(result));
+      }
     }
   }
 
@@ -772,6 +807,13 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   @Override
   protected void onSelectionChanged (int selStart, int selEnd) {
     super.onSelectionChanged(selStart, selEnd);
+
+    final TextSelection selection = getTextSelection();
+    if (selection != null) {
+      selStart = selection.start;
+      selEnd = selection.end;
+    }
+
     if (selectionChangeListener != null) {
       selectionChangeListener.onInputSelectionChanged(this, selStart, selEnd);
     }
