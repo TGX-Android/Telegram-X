@@ -231,6 +231,8 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
     }
   }
 
+  private static final boolean POST_SMOOTH_SCROLL_ALWAYS = false;
+
   @Override
   public void onSelectionChanged (int selectionLeft, int selectionWidth, int firstItemWidth, int lastItemWidth, float totalFactor, boolean animated) {
     View view = recyclerView.getLayoutManager().findViewByPosition(0);
@@ -289,9 +291,10 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
       return;
     }
 
+    final int parentWidthAfterLayout = Math.min(viewWidth + parentPaddingLeft + parentPaddingRight, parentMaxWidth);
     //noinspection UnnecessaryLocalVariable
     final int maxViewLeft = parentPaddingLeft;
-    final int minViewLeft = parentWidth - viewWidth - parentPaddingRight;
+    final int minViewLeft = parentWidthAfterLayout - viewWidth - parentPaddingRight;
     if (minViewLeft > maxViewLeft) {
       return;
     }
@@ -320,7 +323,7 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
             animationDuration = computeScrollDuration(diff, parentWidth);
           }
           recyclerView.stopScroll();
-          if (topViewTranslationX != 0f) {
+          if (shouldPostSmoothScroll()) {
             postSmoothScrollBy(diff, interpolator, animationDuration);
           } else {
             recyclerView.smoothScrollBy(diff, 0, interpolator, animationDuration);
@@ -354,7 +357,7 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
               animationDuration = computeScrollDuration(offset, parentWidth);
             }
             recyclerView.stopScroll();
-            if (topViewTranslationX != 0f) {
+            if (shouldPostSmoothScroll()) {
               postSmoothScrollBy(offset, interpolator, animationDuration);
             } else {
               recyclerView.smoothScrollBy(offset, 0, interpolator, animationDuration);
@@ -384,6 +387,10 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
   }
 
   private @Nullable Runnable smoothScrollStarter;
+
+  private boolean shouldPostSmoothScroll () {
+    return POST_SMOOTH_SCROLL_ALWAYS || recyclerView.isLayoutRequested() || getTopView().isLayoutRequested();
+  }
 
   private void postSmoothScrollBy (int dx, @Nullable Interpolator interpolator, int duration) {
     cancelSmoothScroll();

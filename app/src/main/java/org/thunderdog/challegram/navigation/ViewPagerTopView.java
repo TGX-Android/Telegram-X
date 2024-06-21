@@ -287,17 +287,24 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     @Nullable FactorAnimator animator;
 
     public void animateFrom (Item item, FactorAnimator.Target target) {
-      oldItem = item;
-      if (animator == null) {
-        animator = new FactorAnimator(ITEM_ANIMATOR, target, AnimatorUtils.ACCELERATE_DECELERATE_INTERPOLATOR, 180L);
+      if (item == null) {
+        return;
       }
+      clearAnimation();
+      oldItem = item;
+      animator = new FactorAnimator(ITEM_ANIMATOR, target, AnimatorUtils.ACCELERATE_DECELERATE_INTERPOLATOR, 120L);
       animator.setObjValue(this);
       animator.animateTo(1f);
     }
 
-    public void onAnimationFinished () {
+    public boolean clearAnimation () {
       oldItem = null;
-      animator = null;
+      if (animator != null) {
+        boolean cancelled = animator.cancel();
+        animator = null;
+        return cancelled;
+      }
+      return false;
     }
   }
 
@@ -387,7 +394,23 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   private boolean animateItemChanges;
 
   public void setAnimateItemChanges (boolean animateItemChanges) {
-    this.animateItemChanges = animateItemChanges;
+    if (this.animateItemChanges != animateItemChanges) {
+      this.animateItemChanges = animateItemChanges;
+      if (!animateItemChanges) {
+        clearItemAnimations();
+      }
+    }
+  }
+
+  private void clearItemAnimations () {
+    if (getItemCount() == 0) return;
+    boolean shouldRelayout = false;
+    for (Item item : items) {
+      shouldRelayout = item.clearAnimation() || shouldRelayout;
+    }
+    if (shouldRelayout) {
+      relayout();
+    }
   }
 
   private OnItemClickListener listener;
@@ -513,10 +536,14 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
           child.requestLayout();
         }
       }
-      if (oldItem != null && oldItem != item && animated && animateItemChanges) {
+      if (animated && canAnimateItemChange(oldItem, item, index)) {
         item.animateFrom(oldItem, this);
       }
     }
+  }
+
+  private boolean canAnimateItemChange (@Nullable Item oldItem, Item newItem, int index) {
+    return animateItemChanges && oldItem != null && oldItem != newItem && (!showLabelOnActiveOnly || index == selectionFactor);
   }
 
   public void setItemTranslationX (int index, int x) {
@@ -914,6 +941,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       this.fromIndex = fromIndex;
       this.toIndex = toIndex;
       if (toIndex != -1) {
+        clearItemAnimations();
         recalculateSelection(toIndex, false);
       }
     }
@@ -1487,6 +1515,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
     if (id == ITEM_ANIMATOR) {
       relayout();
+      recalculateSelection(selectionFactor, true);
       invalidate();
     }
   }
@@ -1496,7 +1525,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     if (id == ITEM_ANIMATOR) {
       Item item = (Item) callee.getObjValue();
       if (item != null) {
-        item.onAnimationFinished();
+        item.clearAnimation();
       }
     }
   }
