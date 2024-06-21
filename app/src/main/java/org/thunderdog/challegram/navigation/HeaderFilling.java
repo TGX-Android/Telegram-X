@@ -1462,10 +1462,8 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
 
     playbackSpeedPopup = new PopupLayout(headerView.getContext());
     playbackSpeedLayout = new PlaybackSpeedLayout(headerView.getContext());
-    playbackSpeedLayout.init(navigationController != null ? navigationController.getThemeListeners() : null, (speed, needApply, needClose) -> {
-      if (needApply) {
-        TdlibManager.instance().player().setPlaybackSpeed(speed);
-      }
+    playbackSpeedLayout.init(navigationController != null ? navigationController.getThemeListeners() : null, (speed, needClose) -> {
+      TdlibManager.instance().player().setPlaybackSpeed(speed);
       if (needClose) {
         playbackSpeedPopup.hideWindow(true);
       }

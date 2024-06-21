@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.Layout;
@@ -19,7 +20,6 @@ import android.widget.LinearLayout;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 
 import org.thunderdog.challegram.R;
@@ -38,170 +38,120 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CounterPlaybackSpeedDrawableSet;
+import org.thunderdog.challegram.util.ThrottlingRunnable;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.ShadowView;
 
 import me.vkryl.android.AnimatorUtils;
-import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 
-public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.OnClickListener {
+public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.OnClickListener, FactorAnimator.Target {
   private static final int MIN_SPEED = 20;
   private static final int MAX_SPEED = 300;
+  private static final int FADE_ANIMATOR_ID = 0;
+  private static final Rect tmpRect = new Rect();
 
+  private static final int BUTTONS_COUNT = 6;
+  private final Button[] buttons = new Button[BUTTONS_COUNT];
+  private final BoolAnimator fade = new BoolAnimator(FADE_ANIMATOR_ID, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 230L);
+  private final ThrottlingRunnable touchUpdateRunnable = new ThrottlingRunnable(UI.getAppHandler(), this::applySpeedAndUpdateViews, 150L);
+  private final Drawable backgroundDrawable;
   private final Slider slider;
+  private final ShadowView shadowView1;
+  private final ShadowView shadowView2;
   private final SparseArray<Button> buttonSparseArray = new SparseArray<>();
-  private final Button[] buttons = new Button[6];
 
-  private @Nullable ThemeListenerList themeListeners;
+
   private Listener listener;
+  private int currentSpeed;
+  private float value;
 
   public interface Listener {
-    void onChange (int speed, boolean needApply, boolean needClose);
+    void onChange (int speed, boolean isFinal);
   }
 
   public PlaybackSpeedLayout (Context context) {
     super(context);
 
-    slider = new Slider(context);
-  }
-
-  public void init (ThemeListenerList themeListeners, Listener listener, int currentSpeed) {
-    this.themeListeners = themeListeners;
-    this.currentSpeed = currentSpeed;
-    this.listener = listener;
-
     setMinimumWidth(Screen.dp(196f));
-    Drawable drawable;
-    drawable = ViewSupport.getDrawableFilter(getContext(), R.drawable.bg_popup_fixed, new PorterDuffColorFilter(Theme.getColor(ColorId.filling), PorterDuff.Mode.MULTIPLY));
-
-    ViewUtils.setBackground(this, drawable);
-
-    if (themeListeners != null) {
-      themeListeners.addThemeSpecialFilterListener(drawable, ColorId.filling);
-      themeListeners.addThemeInvalidateListener(this);
-    }
 
     setOrientation(VERTICAL);
     setLayerType(LAYER_TYPE_HARDWARE, Views.getLayerPaint());
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | (Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT)));
 
+    backgroundDrawable = ViewSupport.getDrawableFilter(getContext(), R.drawable.bg_popup_fixed, new PorterDuffColorFilter(Theme.getColor(ColorId.filling), PorterDuff.Mode.MULTIPLY));
+    backgroundDrawable.getPadding(tmpRect);
+    setPadding(tmpRect.left, tmpRect.top, tmpRect.right, tmpRect.bottom);
+
+    slider = new Slider(context);
     slider.setText(Lang.getString(R.string.PlaybackSpeed));
-    slider.setOnTouchListener((View v, MotionEvent event) -> {
+    slider.setOnTouchListener((v, event) -> {
       processTouchEvent(event.getAction(), event.getX(), event.getY(), false);
       return true;
     });
-    addTextViewAndSetColors(slider);
+    addItem(slider);
 
-    {
-      ShadowView shadowView = new ShadowView(getContext());
-      if (themeListeners != null) {
-        themeListeners.addThemeInvalidateListener(shadowView);
-      }
-      shadowView.setSimpleBottomTransparentShadow(false);
-      shadowView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(6f)));
-      addView(shadowView);
-    }
-    {
-      ShadowView shadowView = new ShadowView(getContext());
-      if (themeListeners != null) {
-        themeListeners.addThemeInvalidateListener(shadowView);
-      }
-      shadowView.setSimpleTopShadow(true);
-      shadowView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(6f)));
-      addView(shadowView);
-    }
+    shadowView1 = new ShadowView(getContext());
+    shadowView1.setSimpleBottomTransparentShadow(false);
+    shadowView1.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(6f)));
+    addView(shadowView1);
 
-    buttons[0] = addItem(R.id.btn_playback_speed_0_5, R.string.PlaybackSpeed50, R.drawable.baseline_playback_speed_0_5_24, this, 50);
-    buttons[1] = addItem(R.id.btn_playback_speed_0_7, R.string.PlaybackSpeed70, R.drawable.baseline_playback_speed_0_7_24, this, 70);
-    buttons[2] = addItem(R.id.btn_playback_speed_1_0, R.string.PlaybackSpeed100, R.drawable.baseline_playback_speed_1_0_24, this, 100);
-    buttons[3] = addItem(R.id.btn_playback_speed_1_2, R.string.PlaybackSpeed120, R.drawable.baseline_playback_speed_1_2_24, this, 120);
-    buttons[4] = addItem(R.id.btn_playback_speed_1_5, R.string.PlaybackSpeed150, R.drawable.baseline_playback_speed_1_5_24, this, 150);
-    buttons[5] = addItem(R.id.btn_playback_speed_2_0, R.string.PlaybackSpeed200, R.drawable.baseline_playback_speed_2_0_24, this, 200);
+    shadowView2 = new ShadowView(getContext());
+    shadowView2.setSimpleTopShadow(true);
+    shadowView2.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(6f)));
+    addView(shadowView2);
 
-    setSliderValue((float) currentSpeed / MAX_SPEED, false, false);
-    slider.setCounter(currentSpeed, false);
+    buttons[0] = addButton(R.id.btn_playback_speed_0_5, R.string.PlaybackSpeed50, R.drawable.baseline_playback_speed_0_5_24, 50);
+    buttons[1] = addButton(R.id.btn_playback_speed_0_7, R.string.PlaybackSpeed70, R.drawable.baseline_playback_speed_0_7_24, 70);
+    buttons[2] = addButton(R.id.btn_playback_speed_1_0, R.string.PlaybackSpeed100, R.drawable.baseline_playback_speed_1_0_24, 100);
+    buttons[3] = addButton(R.id.btn_playback_speed_1_2, R.string.PlaybackSpeed120, R.drawable.baseline_playback_speed_1_2_24, 120);
+    buttons[4] = addButton(R.id.btn_playback_speed_1_5, R.string.PlaybackSpeed150, R.drawable.baseline_playback_speed_1_5_24, 150);
+    buttons[5] = addButton(R.id.btn_playback_speed_2_0, R.string.PlaybackSpeed200, R.drawable.baseline_playback_speed_2_0_24, 200);
   }
 
-  @Override
-  protected void dispatchDraw (@NonNull Canvas canvas) {
-    canvas.drawRect(Screen.dp(8), Screen.dp(8 + 48), getMeasuredWidth() - Screen.dp(8), Screen.dp(8 + 48 + 12), Paints.fillingPaint(Theme.backgroundColor()));
-    super.dispatchDraw(canvas);
-  }
+  public void init (ThemeListenerList themeListeners, Listener listener, int currentSpeed) {
+    this.currentSpeed = currentSpeed;
+    this.value = valueFromSpeed(currentSpeed);
+    this.listener = listener;
 
-  private void addTextViewAndSetColors (NoScrollTextView view) {
-    view.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48)));
-    view.setTextColor(Theme.textAccentColor());
     if (themeListeners != null) {
-      themeListeners.addThemeTextAccentColorListener(view);
+      themeListeners.addThemeSpecialFilterListener(backgroundDrawable, ColorId.filling);
+      themeListeners.addThemeInvalidateListener(this);
+      themeListeners.addThemeTextAccentColorListener(slider);
+      themeListeners.addThemeInvalidateListener(shadowView1);
+      themeListeners.addThemeInvalidateListener(shadowView2);
+      for (Button button : buttons) {
+        themeListeners.addThemeTextAccentColorListener(button);
+      }
     }
 
-    view.measure(MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
-    view.setTag(view.getMeasuredWidth());
-
-    addView(view);
+    updateViews(false);
+    updateSliderBackground(false);
   }
 
-  private Button addItem (int id, @StringRes int stringRes, int iconRes, OnClickListener listener, int speed) {
-    Button menuItem = new Button(getContext());
-    menuItem.setId(id);
-    menuItem.setSpeed(speed);
 
-    menuItem.setText(Lang.getString(stringRes));
-    menuItem.setOnClickListener(listener);
-    menuItem.setDrawable(iconRes);
 
-    addTextViewAndSetColors(menuItem);
 
-    Views.setClickable(menuItem);
-    RippleSupport.setTransparentSelector(menuItem);
-
-    buttonSparseArray.append(speed, menuItem);
-    return menuItem;
-  }
-
-  @Override
-  protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-    super.onMeasure(MeasureSpec.makeMeasureSpec(getItemsWidth(), MeasureSpec.EXACTLY), heightMeasureSpec);
-  }
-
-  @Override
-  public void onClick (View v) {
-    final int id = v.getId();
-
-    if (id == R.id.btn_playback_speed_0_5) {
-      listener.onChange(50, true, true);
-    } else if (id == R.id.btn_playback_speed_0_7) {
-      listener.onChange(70, true, true);
-    } else if (id == R.id.btn_playback_speed_1_0) {
-      listener.onChange(100, true, true);
-    } else if (id == R.id.btn_playback_speed_1_2) {
-      listener.onChange(120, true, true);
-    } else if (id == R.id.btn_playback_speed_1_5) {
-      listener.onChange(150, true, true);
-    } else if (id == R.id.btn_playback_speed_2_0) {
-      listener.onChange(200, true, true);
-    }
-  }
-
-  @Override
-  public boolean onTouchEvent (MotionEvent event) {
-    return true;
-  }
+  private static final int MODE_FLAG_ALLOW_HORIZONTAL = 1;
+  private static final int MODE_FLAG_ALLOW_VERTICAL = 1 << 1;
 
   private static final int MODE_NONE = 0;
-  private static final int MODE_HORIZONTAL = 1;
-  private static final int MODE_VERTICAL = 2;
+  private static final int MODE_HORIZONTAL = MODE_FLAG_ALLOW_HORIZONTAL;
+  private static final int MODE_VERTICAL = MODE_FLAG_ALLOW_VERTICAL;
+  private static final int MODE_ALL_DIRECTIONS = MODE_FLAG_ALLOW_HORIZONTAL | MODE_FLAG_ALLOW_VERTICAL;
 
-  private int mode;
-  private float xStart, yStart;
-  private float xPrev, yPrev;
+  private int modeFlags;
+
+  private int defaultSpeed;
+  private float xStart, yStart, xPrev, yPrev, yDown;
+  private boolean hasChanges = false;
 
   public void processTouchEvent (int event, float x, float y, boolean external) {
     final float dx = x - xPrev;
@@ -211,33 +161,70 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
 
     switch (event) {
       case MotionEvent.ACTION_DOWN: {
-        mode = MODE_NONE;
-        xStart = xPrev = x;
-        yStart = yPrev = y;
-        lastIndex = -1;
-        sliderWasChanged = false;
+        modeFlags = external ? MODE_NONE : MODE_HORIZONTAL;
+        defaultSpeed = currentSpeed;
+        xPrev = xStart = x;
+        yPrev = yStart = yDown = y;
+        hasChanges = false;
         break;
       }
 
       case MotionEvent.ACTION_MOVE: {
-        if (mode == MODE_NONE) {
-          if (Math.hypot(dx, dy) > Screen.getTouchSlop() * 1.5f) {
-            mode = Math.abs(dx) > Math.abs(dy) ? MODE_HORIZONTAL : MODE_VERTICAL;
-            xStart = xPrev = x;
-            yStart = yPrev = y;
-            UI.hapticVibrate(this, false);
+        final int index = external ? getTouchIndex(y - yDown + Screen.dp(24)) : 0;
+        if (modeFlags == MODE_NONE) {
+          if (Math.hypot(dxTotal, dyTotal) > Screen.getTouchSlop() * 1.5f) {
+            final boolean horizontalMode = dyTotal < 0 || Math.abs(dxTotal) > Math.abs(dyTotal);
+            final boolean verticalMode = !horizontalMode && index > 0;
+            if (horizontalMode || verticalMode) {
+              if (!hasChanges) {
+                UI.hapticVibrate(this, true);
+              }
+              modeFlags = verticalMode ? MODE_VERTICAL : MODE_ALL_DIRECTIONS;
+              xPrev = xStart = x;
+              yPrev = yStart = y;
+            }
           }
           break;
         }
-        processMove(dx, dy, dxTotal, dyTotal, external);
+
+        final boolean speedChanged = processMove(index, dx);
+        boolean needVibrate = speedChanged && defaultSpeed == currentSpeed;
+        hasChanges |= speedChanged;
+
+        if (modeFlags == MODE_ALL_DIRECTIONS && defaultSpeed != currentSpeed /*&& speedChanged*/ && index == 0) {
+          modeFlags = MODE_HORIZONTAL;
+        }
+
+        if (modeFlags == MODE_HORIZONTAL && external && defaultSpeed == currentSpeed && speedChanged && index == 0) {
+          modeFlags = MODE_NONE;
+          xPrev = xStart = x;
+          yPrev = yStart = y;
+        }
+
+        if (modeFlags == MODE_VERTICAL && index == 0) {
+          modeFlags = MODE_ALL_DIRECTIONS;
+          needVibrate = true;
+        }
+
+        needVibrate |= BitwiseUtils.hasFlag(modeFlags, MODE_FLAG_ALLOW_VERTICAL) && index > 0 && speedChanged;
+        needVibrate |= setButtonsVisibility(/*defaultSpeed == currentSpeed ||*/ !external || modeFlags == MODE_NONE || BitwiseUtils.hasFlag(modeFlags, MODE_FLAG_ALLOW_VERTICAL));
+
+        final boolean needVibrateBySlide = needVibrateBySlide();
+        needVibrate |= needVibrateBySlide && (index == 0 || !BitwiseUtils.hasFlag(modeFlags, MODE_FLAG_ALLOW_VERTICAL));
+
+        if (needVibrate) {
+          UI.hapticVibrate(this, false);
+        }
+
         xPrev = x;
         yPrev = y;
         break;
       }
 
+      case MotionEvent.ACTION_CANCEL:
       case MotionEvent.ACTION_UP: {
-        if (lastIndex != -1) {
-          processUp(external);
+        if (hasChanges) {
+          applySpeedAndUpdateViews(currentSpeed, external);
           if (external) {
             Settings.instance().markTutorialAsComplete(Settings.TUTORIAL_PLAYBACK_SPEED_SWIPE);
           }
@@ -247,80 +234,131 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
     }
   }
 
-  private int getTouchIndex (float dyTotal) {
-    return dyTotal < Screen.dp(36) ? 0 : (MathUtils.clamp((int) (dyTotal - Screen.dp(36)) / Screen.dp(48), 0, buttons.length - 1) + 1);
-  }
 
-  private int lastIndex = -1;
-  private int currentSpeed;
-  private boolean sliderWasChanged;
+  private boolean processMove (int index, float dx) {
+    final boolean allowVertical = BitwiseUtils.hasFlag(modeFlags, MODE_FLAG_ALLOW_VERTICAL);
+    boolean changed = false;
 
-  private void processUp (boolean needClose) {
-    listener.onChange(currentSpeed, true, needClose);
-  }
-
-  private void processMove (float dx, float dy, float dxTotal, float dyTotal, boolean external) {
-    final int index = external ? getTouchIndex(dyTotal) : 0;
-
-    if (index == 0 && (dyTotal < 0 || sliderWasChanged || Math.abs(dxTotal) > Math.abs(dyTotal))) {
-      sliderWasChanged = true;
-      setSliderValue(value + dx / getMeasuredWidth(), true, true);
+    if (index == 0 || !allowVertical) {
+      changed = setSliderValue(value + dx / getMeasuredWidth(), true);
     }
-    if (lastIndex != index) {
-      if (lastIndex != -1) {
-        UI.hapticVibrate(this, false);
-      }
-      lastIndex = index;
-      for (int a = 0; a < buttons.length; a++) {
-        buttons[a].setSelected(a == index - 1, true);
-      }
 
-      if (index > 0) {
-        setSliderValue(((float) buttons[index - 1].speed) / MAX_SPEED, false, true);
-      }
+    setButtonSelected(allowVertical ? index - 1 : -1, true);
+    if (index > 0 && allowVertical) {
+      changed = setSliderValue( buttons[index - 1].speed);
     }
+
+    return changed;
   }
 
 
-  private float value;
-  private long lastUpdateTime;
 
-  private void setSliderValue (float v, boolean fromSliderTouch, boolean animated) {
+
+
+
+  /* * */
+
+  private boolean setSliderValue (int speed) {
+    if (currentSpeed != speed) {
+      return setSliderValue(valueFromSpeed(speed), false);
+    }
+    return false;
+  }
+
+  private boolean setSliderValue (float v, boolean fromSliderTouch) {
     final float value = MathUtils.clamp(v, (float) MIN_SPEED / MAX_SPEED, 1f);
     if (this.value != value) {
       this.value = value;
-      this.slider.setValue(value, !fromSliderTouch && animated);
-      final int speed = Math.round(value * MAX_SPEED / 10) * 10;
-      if (this.currentSpeed != speed) {
-        this.onSpeedChanged(speed);
+      updateSliderBackground(!fromSliderTouch);
+      final int speed = speedFromValue(value);
+      if (currentSpeed != speed) {
+        currentSpeed = speed;
+        touchUpdateRunnable.run(!fromSliderTouch);
+        return true;
+      }
+    }
 
-        if (fromSliderTouch && animated) {
-          if (updateRunnable == null) {
-            final long delay = 150L - (System.currentTimeMillis() - lastUpdateTime);
-            updateRunnable = new CancellableRunnable() {
-              @Override
-              public void act () {
-                update(true);
-                updateRunnable = null;
-              }
-            };
-            UI.post(updateRunnable, delay);
-          }
-        } else {
-          update(animated);
+    return false;
+  }
+
+
+
+  private CancellableRunnable scheduledHideButtons;
+  private long lastButtonsShowMillis;
+
+
+  private boolean setButtonsVisibility (boolean visible) {
+    final boolean hidden = !visible;
+    if (fade.getValue() != hidden) {
+
+      if (visible) {
+        lastButtonsShowMillis = System.currentTimeMillis();
+        if (scheduledHideButtons != null) {
+          scheduledHideButtons.cancel();
+          scheduledHideButtons = null;
+        }
+      } else {
+        if (scheduledHideButtons != null) {
+          return false;
+        }
+        final long delay = System.currentTimeMillis() - lastButtonsShowMillis;
+        if (delay < 300L) {
+          scheduledHideButtons = new CancellableRunnable() {
+            @Override
+            public void act () {
+              fade.setValue(false, true);
+              scheduledHideButtons = null;
+            }
+          };
+          UI.post(scheduledHideButtons, 300L - delay);
+          return false;
         }
       }
-      invalidate();
+
+      fade.setValue(hidden, true);
+      return true;
+    }
+    return false;
+  }
+
+
+  /* * */
+
+  private void applySpeedAndClose (int speed) {
+    applySpeedAndUpdateViews(speed, true);
+  }
+
+  private void applySpeedAndUpdateViews () {
+    applySpeedAndUpdateViews(currentSpeed, false);
+  }
+
+  private void applySpeedAndUpdateViews (int speed, boolean isFinal) {
+    currentSpeed = speed;
+    listener.onChange(currentSpeed, isFinal);
+    if (!isFinal) {
+      updateViews(true);
     }
   }
 
-  private void onSpeedChanged (int speed) {
-    if (currentSpeed != speed) {
-      setButtonActive(currentSpeed, false, true);
-      setButtonActive(speed, true, true);
+  private void updateViews (boolean animated) {
+    setButtonActive(currentSpeed, animated);
+    slider.setCounter(currentSpeed, animated);
+  }
 
-      listener.onChange(speed, false, false);
-      currentSpeed = speed;
+  private void updateSliderBackground (boolean animated) {
+    slider.setValue(value, animated);
+  }
+
+
+  /* * */
+
+  private int lastButtonActive;
+
+  private void setButtonActive (int speed, boolean animated) {
+    if (lastButtonActive != speed) {
+      setButtonActive(lastButtonActive, false, animated);
+      setButtonActive(speed, true, animated);
+      lastButtonActive = speed;
     }
   }
 
@@ -331,21 +369,36 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
     }
   }
 
-  private void update (boolean animated) {
-    this.lastUpdateTime = System.currentTimeMillis();
-    this.slider.setCounter(currentSpeed, animated);
-  }
+  private int lastButtonSelected;
 
-  private CancellableRunnable updateRunnable;
-
-  @Override
-  protected void onDetachedFromWindow () {
-    super.onDetachedFromWindow();
-    if (updateRunnable != null) {
-      updateRunnable.cancel();
-      updateRunnable = null;
+  private void setButtonSelected (int index, boolean animated) {
+    if (lastButtonSelected != index) {
+      setButtonSelected(lastButtonSelected, false, animated);
+      setButtonSelected(index, true, animated);
+      lastButtonSelected = index;
     }
   }
+
+  private void setButtonSelected (int index, boolean selected, boolean animated) {
+    final Button button = index >= 0 && index < buttons.length ? buttons[index] : null;
+    if (button != null) {
+      button.setSelected(selected, animated);
+    }
+  }
+
+  private int lastVibrateIndex = -1;
+
+  private boolean needVibrateBySlide () {
+    final int index = currentSpeed / 50;
+    final int oldIndex = lastVibrateIndex;
+    if (lastVibrateIndex != index) {
+      lastVibrateIndex = index;
+      return oldIndex != -1;
+    }
+    return false;
+  }
+
+  /* * */
 
   private static class Slider extends NoScrollTextView {
     private static final RectF tmpRect = new RectF();
@@ -514,6 +567,74 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
     return b.toString();
   }
 
+  private static int speedFromValue (float value) {
+    return Math.round(value * MAX_SPEED / 10) * 10;
+  }
+
+  private static float valueFromSpeed (int speed) {
+    return (float) speed / MAX_SPEED;
+  }
+
+  private static int getTouchIndex (float y) {
+    return MathUtils.clamp((int) ((y - Screen.dp(12)) / Screen.dp(48)), 0, BUTTONS_COUNT);
+  }
+
+  /* * */
+
+  @Override
+  protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+    super.onMeasure(MeasureSpec.makeMeasureSpec(getItemsWidth(), MeasureSpec.EXACTLY), heightMeasureSpec);
+  }
+
+  @Override
+  protected void dispatchDraw (@NonNull Canvas canvas) {
+    final float fadeFactor = fade.getFloatValue();
+    final boolean needClip = fadeFactor != 0f;
+
+    tmpRect.set(0, 0, getMeasuredWidth(), MathUtils.fromTo(getMeasuredHeight(), Screen.dp(48 + 8 * 2), fadeFactor));
+    backgroundDrawable.setBounds(tmpRect);
+    backgroundDrawable.draw(canvas);
+
+    int s = -1;
+    if (needClip) {
+      s = Views.save(canvas);
+      canvas.clipRect(tmpRect);
+    }
+
+    canvas.drawRect(Screen.dp(8), Screen.dp(8 + 48), getMeasuredWidth() - Screen.dp(8), Screen.dp(8 + 48 + 12),
+      Paints.fillingPaint(ColorUtils.alphaColor(1f - fadeFactor, Theme.backgroundColor())));
+
+    super.dispatchDraw(canvas);
+
+    if (needClip) {
+      Views.restore(canvas, s);
+    }
+  }
+
+  @Override
+  public void onClick (View v) {
+    final int id = v.getId();
+
+    if (id == R.id.btn_playback_speed_0_5) {
+      applySpeedAndClose(50);
+    } else if (id == R.id.btn_playback_speed_0_7) {
+      applySpeedAndClose(70);
+    } else if (id == R.id.btn_playback_speed_1_0) {
+      applySpeedAndClose(100);
+    } else if (id == R.id.btn_playback_speed_1_2) {
+      applySpeedAndClose(120);
+    } else if (id == R.id.btn_playback_speed_1_5) {
+      applySpeedAndClose(150);
+    } else if (id == R.id.btn_playback_speed_2_0) {
+      applySpeedAndClose(200);
+    }
+  }
+
+  @Override
+  public boolean onTouchEvent (MotionEvent event) {
+    return true;
+  }
+
   @Override
   public int getItemsWidth () {
     int childCount = getChildCount();
@@ -530,5 +651,55 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
   @Override
   public int getItemsHeight () {
     return Screen.dp(48 * 7 + 12);
+  }
+
+  @Override
+  protected void onDetachedFromWindow () {
+    super.onDetachedFromWindow();
+    touchUpdateRunnable.cancel();
+  }
+
+  @Override
+  public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
+    if (id == FADE_ANIMATOR_ID) {
+      final float alpha = 1f - factor;
+
+      shadowView1.setAlpha(alpha);
+      shadowView2.setAlpha(alpha);
+      for (Button button : buttons) {
+        button.setAlpha(alpha);
+      }
+
+      invalidate();
+    }
+  }
+
+  /* * */
+
+  private void addItem (NoScrollTextView view) {
+    view.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48)));
+    view.setTextColor(Theme.textAccentColor());
+    view.measure(MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+    view.setTag(view.getMeasuredWidth());
+
+    addView(view);
+  }
+
+  private Button addButton (int id, @StringRes int stringRes, int iconRes, int speed) {
+    Button menuItem = new Button(getContext());
+    menuItem.setId(id);
+    menuItem.setSpeed(speed);
+
+    menuItem.setText(Lang.getString(stringRes));
+    menuItem.setOnClickListener(this);
+    menuItem.setDrawable(iconRes);
+
+    addItem(menuItem);
+
+    Views.setClickable(menuItem);
+    RippleSupport.setTransparentSelector(menuItem);
+
+    buttonSparseArray.append(speed, menuItem);
+    return menuItem;
   }
 }
