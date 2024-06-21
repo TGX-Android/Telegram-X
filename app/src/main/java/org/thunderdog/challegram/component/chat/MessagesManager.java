@@ -37,6 +37,7 @@ import org.thunderdog.challegram.data.SponsoredMessageUtils;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageBotInfo;
+import org.thunderdog.challegram.data.TGMessageVideo;
 import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.mediaview.data.MediaStack;
@@ -49,6 +50,7 @@ import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -1510,12 +1512,28 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void onMessageHeightChanged (final long chatId, final long messageId, final int oldHeight, final int newHeight) {
+    final boolean isPlayingRoundVideo = TdlibManager.instance().player().getMessageId() == messageId;
+    if (isPlayingRoundVideo) {
+      return;
+    }
+
     final int heightDiff = oldHeight - newHeight;
     final int recyclerHeight = getRecyclerHeight();
     final View view = findMessageView(chatId, messageId);
     if (view == null) {
       return;
     }
+
+    /*if (view instanceof MessageViewGroup) {
+      TGMessage message = ((MessageViewGroup) view).getMessage();
+      if (message instanceof TGMessageVideo) {
+        if (((TGMessageVideo) message).inSizeAnimation()) {
+          // scrollCompensation(view, heightDiff);
+          return;
+        }
+      }
+    }*/
+
     final int top = view.getTop();
     final int bottom = view.getBottom();
     if (bottom > recyclerHeight) {
@@ -2682,6 +2700,12 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
     scrollMessage.buildLayout(width);
     int fullHeight = scrollMessage.getHeight();
+
+    if (scrollMessage instanceof TGMessageVideo) {
+      if (scrollMessage.getId() == TdlibManager.instance().player().getMessageId()) {
+        fullHeight += TGMessageVideo.getVideoSize() - ((TGMessageVideo) scrollMessage).getContentSize();
+      }
+    }
 
     if (fullHeight > height - offset) {
       height -= offset;

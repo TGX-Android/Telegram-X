@@ -340,6 +340,8 @@ public class RoundVideoController extends BasePlaybackController implements
       int textureSize = TGMessageVideo.getVideoSize();
       mainPlayerView = new CircleFrameLayout(context);
       mainPlayerView.setAlpha(mainVisibilityFactor);
+      mainPlayerView.setPivotX(0);
+      mainPlayerView.setPivotY(0);
       mainPlayerView.setLayoutParams(FrameLayoutFix.newParams(textureSize, textureSize));
 
       if (USE_SURFACE) {

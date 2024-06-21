@@ -68,7 +68,7 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
   private boolean notViewed;
 
   private static final int FULL_SIZE_ANIMATOR_ID = 10001;
-  private BoolAnimator isFullSizeAnimator = new BoolAnimator(FULL_SIZE_ANIMATOR_ID, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 220L);
+  private final BoolAnimator isFullSizeAnimator = new BoolAnimator(FULL_SIZE_ANIMATOR_ID, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 220L);
 
   private FileProgressComponent fileProgress;
   private ImageFile miniThumbnail, previewFile;
@@ -204,15 +204,6 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
     }
   }
 
-  @Override
-  protected void onChildFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
-    if (id == FULL_SIZE_ANIMATOR_ID) {
-      if (isFullSizeAnimator.getValue() && scheduledPlayRunnable != null) {
-        scheduledPlayRunnable.run();
-      }
-    }
-  }
-
   // File utils
 
   @Override
@@ -220,21 +211,8 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
     fileProgress.downloadAutomatically(type);
   }
 
-  private Runnable scheduledPlayRunnable;
-
   @Override
   public boolean onClick (FileProgressComponent context, View view, TdApi.File file, long messageId) {
-    if (isFullSizeAnimator.getValue() || isFullSizeAnimator.isAnimating()) {
-      playPauseMessageImpl(view, file);
-    } else {
-      scheduledPlayRunnable = () -> playPauseMessageImpl(view, file);
-      isFullSizeAnimator.setValue(true, true);
-    }
-    return true;
-  }
-
-  private void playPauseMessageImpl (View view, TdApi.File file) {
-    scheduledPlayRunnable = null;
     if (Config.ROUND_VIDEOS_PLAYBACK_SUPPORTED) {
       if (view.getParent() instanceof MessageViewGroup) {
         tdlib.context().player().playPauseMessage(tdlib, msg, manager);
@@ -243,6 +221,7 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
       U.openFile(manager.controller(), "video.mp4", new File(file.local.path), "video/mp4", 0);
       readContent();
     }
+    return true;
   }
 
   private static final int ANIMATOR_UNMUTE = 1;
@@ -308,6 +287,14 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
 
   public static int getVideoSize () {
     return Math.min(Screen.smallestSide() - Screen.dp(32), Screen.dp(640));
+  }
+
+  public int getContentSize () {
+    return videoSize;
+  }
+
+  public boolean inSizeAnimation () {
+    return isFullSizeAnimator.isAnimating();
   }
 
   public float getPlayerScale () {
@@ -377,7 +364,10 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
     if (isOutgoingBubble()) {
       return right - timePartWidth;
     } else {
-      return (left + right) / 2 + (int) ((float) ((double) (videoSize / 2) * Math.sin(Math.toRadians(45f))) + Screen.dp(6f));
+      return Math.min(
+        (left + right) / 2 + (int) ((float) ((double) (videoSize / 2) * Math.sin(Math.toRadians(45f))) + Screen.dp(6f)),
+        width - (width - videoFullSize) / 2 - timePartWidth
+      );
     }
   }
 
