@@ -5457,9 +5457,13 @@
   <string name="PlaybackSpeed150">Faster</string>
   <string name="PlaybackSpeed200">Doubled speed</string>
 
-  <string name="PlaybackSpeedHint100">Audio will play at normal speed</string>
-  <string name="PlaybackSpeedHint150">Audio will play at 1.5x speed</string>
-  <string name="PlaybackSpeedHint200">Audio will play two times faster</string>
+  <string name="PlaybackSpeedHintAudio100">Audio will play at normal speed</string>
+  <string name="PlaybackSpeedHintAudio150">Audio will play at 1.5x speed</string>
+  <string name="PlaybackSpeedHintAudio200">Audio will play two times faster</string>
+  <string name="PlaybackSpeedHintVideo100">Video will play at normal speed</string>
+  <string name="PlaybackSpeedHintVideo150">Video will play at 1.5x speed</string>
+  <string name="PlaybackSpeedHintVideo200">Video will play two times faster</string>
+
   <string name="PlaybackSpeedHintHold">Hold to access more options</string>
   <string name="PlaybackSpeedHintSwipe">Hold and swipe horizontally for precise adjustment</string>
   <string name="PlaybackSpeedHintTemplate">%1$s.\n%2$s.</string>

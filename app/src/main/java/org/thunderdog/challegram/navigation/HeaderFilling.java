@@ -1416,18 +1416,20 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
 
   private void onPlaybackSpeedClick () {
     final int speed = TdlibManager.instance().player().getSpeed();
+    final boolean isVideo = TdlibManager.instance().player().isPlayingRoundVideo();
+
     if (speed < 100) {
       TdlibManager.instance().player().setPlaybackSpeed(100);
-      showPlaybackTooltip(R.string.PlaybackSpeedHint100);
+      showPlaybackTooltip(isVideo ? R.string.PlaybackSpeedHintVideo100 : R.string.PlaybackSpeedHintAudio100);
     } else if (speed < 150) {
       TdlibManager.instance().player().setPlaybackSpeed(150);
-      showPlaybackTooltip(R.string.PlaybackSpeedHint150);
+      showPlaybackTooltip(isVideo ? R.string.PlaybackSpeedHintVideo150 : R.string.PlaybackSpeedHintAudio150);
     } else if (speed < 200) {
       TdlibManager.instance().player().setPlaybackSpeed(200);
-      showPlaybackTooltip(R.string.PlaybackSpeedHint200);
+      showPlaybackTooltip(isVideo ? R.string.PlaybackSpeedHintVideo200 : R.string.PlaybackSpeedHintAudio200);
     } else {
       TdlibManager.instance().player().setPlaybackSpeed(100);
-      showPlaybackTooltip(R.string.PlaybackSpeedHint100);
+      showPlaybackTooltip(isVideo ? R.string.PlaybackSpeedHintVideo100 : R.string.PlaybackSpeedHintAudio100);
     }
     UI.hapticVibrate(headerView, false);
   }
