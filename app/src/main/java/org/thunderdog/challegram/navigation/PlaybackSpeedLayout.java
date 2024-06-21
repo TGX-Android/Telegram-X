@@ -176,10 +176,10 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
             final boolean horizontalMode = dyTotal < 0 || Math.abs(dxTotal) > Math.abs(dyTotal);
             final boolean verticalMode = !horizontalMode && index > 0;
             if (horizontalMode || verticalMode) {
-              if (!hasChanges) {
+              modeFlags = verticalMode ? MODE_VERTICAL : MODE_ALL_DIRECTIONS;
+              if (!hasChanges || modeFlags == MODE_VERTICAL) {
                 UI.hapticVibrate(this, true);
               }
-              modeFlags = verticalMode ? MODE_VERTICAL : MODE_ALL_DIRECTIONS;
               xPrev = xStart = x;
               yPrev = yStart = y;
             }
@@ -193,12 +193,14 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
 
         if (modeFlags == MODE_ALL_DIRECTIONS && defaultSpeed != currentSpeed /*&& speedChanged*/ && index == 0) {
           modeFlags = MODE_HORIZONTAL;
+          needVibrate = true;
         }
 
-        if (modeFlags == MODE_HORIZONTAL && external && defaultSpeed == currentSpeed && speedChanged && index == 0) {
+        if (modeFlags == MODE_HORIZONTAL && external && defaultSpeed == currentSpeed && /*speedChanged &&*/ index == 0) {
           modeFlags = MODE_NONE;
           xPrev = xStart = x;
           yPrev = yStart = y;
+          needVibrate = true;
         }
 
         if (modeFlags == MODE_VERTICAL && index == 0) {
@@ -369,7 +371,7 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
     }
   }
 
-  private int lastButtonSelected;
+  private int lastButtonSelected = -1;
 
   private void setButtonSelected (int index, boolean animated) {
     if (lastButtonSelected != index) {
