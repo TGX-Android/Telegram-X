@@ -797,19 +797,19 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     if (shouldWrapContent()) {
       float remainFactor = selectionFactor - (float) ((int) selectionFactor);
       int selectionIndex = MathUtils.clamp((int) selectionFactor, 0, items.size() - 1);
-      int itemWidthWithPadding = getItemWidth(selectionIndex, selectionFactor) + itemPadding * 2;
+      int itemWidthWithPadding = getItemWidth(selectionIndex, selectionFactor);
       if (remainFactor == 0f) {
         selectionWidth = itemWidthWithPadding;
       } else {
         //noinspection UnnecessaryLocalVariable
         int fromWidth = itemWidthWithPadding;
         int nextIndex = MathUtils.clamp((int) selectionFactor + 1, 0, items.size() - 1);
-        int toWidth = getItemWidth(nextIndex, selectionFactor) + itemPadding * 2;
+        int toWidth = getItemWidth(nextIndex, selectionFactor);
         selectionWidth = MathUtils.fromTo(fromWidth, toWidth, remainFactor);
       }
       selectionLeft = 0;
       for (int i = 0; i < selectionIndex; i++) {
-        selectionLeft += getItemWidth(i, selectionFactor) + itemPadding * 2;
+        selectionLeft += getItemWidth(i, selectionFactor);
       }
       if (remainFactor != 0f) {
         selectionLeft += Math.round(itemWidthWithPadding * remainFactor);
@@ -827,11 +827,11 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
           } else {
             child.setTranslationX(itemX);
           }
-          int itemWidth = getItemWidth(itemIndex, selectionFactor) + itemPadding * 2;
+          int itemWidth = getItemWidth(itemIndex, selectionFactor);
           if (itemWidth != backgroundView.lastItemWidth) {
             backgroundView.invalidate();
           }
-          int itemExpandedWidth = items.get(itemIndex).getExpandedWidth() + itemPadding * 2;
+          int itemExpandedWidth = getItemExpandedWidth(itemIndex);
           if (itemExpandedWidth != backgroundView.getWidth()) {
             backgroundView.requestLayout();
           }
@@ -854,21 +854,25 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     }
     float totalFactor = items.size() > 1 ? selectionFactor / (float) (items.size() - 1) : 0;
     if (callListener && selectionChangeListener != null && (lastCallSelectionLeft != selectionLeft || lastCallSelectionWidth != selectionWidth || lastCallSelectionFactor != totalFactor || ((showLabelOnActiveOnly || animateItemChanges) && set))) {
-      int firstItemWidth = getItemWidth(0, selectionFactor);
-      int lastItemWidth = getItemWidth(items.size() - 1, selectionFactor);
+      int firstItemWidth = getItemExpandedWidth(0);
+      int lastItemWidth = items.size() > 1 ? getItemExpandedWidth(items.size() - 1) : firstItemWidth;
       selectionChangeListener.onSelectionChanged(lastCallSelectionLeft = selectionLeft, lastCallSelectionWidth = selectionWidth, firstItemWidth, lastItemWidth, lastCallSelectionFactor = totalFactor, !set);
     }
   }
 
   private int getItemWidth (int itemIndex, float selectionFactor) {
     float labelFactor = getLabelFactor(itemIndex, selectionFactor);
-    return items.get(itemIndex).getWidth(labelFactor);
+    return itemPadding * 2 + items.get(itemIndex).getWidth(labelFactor);
+  }
+
+  private int getItemExpandedWidth (int itemIndex) {
+    return itemPadding * 2 + items.get(itemIndex).getExpandedWidth();
   }
 
   public void updateAnchorPosition (boolean animated) {
     if (selectionChangeListener != null && getItemCount() > 0) {
-      int firstItemWidth = getItemWidth(0, selectionFactor);
-      int lastItemWidth = items.size() > 1 ? getItemWidth(items.size() - 1, selectionFactor) : firstItemWidth;
+      int firstItemWidth = getItemExpandedWidth(0);
+      int lastItemWidth = items.size() > 1 ? getItemExpandedWidth(items.size() - 1) : firstItemWidth;
       selectionChangeListener.onSelectionChanged(lastCallSelectionLeft, lastCallSelectionWidth, firstItemWidth, lastItemWidth, lastCallSelectionFactor, animated);
     }
   }
@@ -1142,7 +1146,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   public boolean getItemRect (int position, Rect outRect) {
     View child = getChildAt(position);
     if (child instanceof BackgroundView && ((BackgroundView) child).index == position) {
-      int itemWidth = getItemWidth(position, selectionFactor) + itemPadding * 2;
+      int itemWidth = getItemWidth(position, selectionFactor);
       outRect.set(0, 0, itemWidth, child.getHeight());
       float offsetX = child.getX() + (Lang.rtl() ? child.getWidth() - itemWidth : 0);
       float offsetY = child.getY();
@@ -1402,7 +1406,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
       float translationX;
       if (topView.shouldWrapContent()) {
-        int itemWidth = topView.items.get(index).getExpandedWidth() + topView.itemPadding * 2;
+        int itemWidth = topView.getItemExpandedWidth(index);
         super.onMeasure(MeasureSpec.makeMeasureSpec(itemWidth, MeasureSpec.EXACTLY), heightMeasureSpec);
         translationX = topView.calculateItemX(index, itemWidth, MeasureSpec.getSize(widthMeasureSpec));
       } else {
@@ -1421,7 +1425,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
 
     @Override
     public void draw (@NonNull Canvas canvas) {
-      int itemWidth = topView.getItemWidth(index, topView.selectionFactor) + topView.itemPadding * 2;
+      int itemWidth = topView.getItemWidth(index, topView.selectionFactor);
       lastItemWidth = itemWidth;
       if (itemWidth == getWidth()) {
         super.draw(canvas);
@@ -1446,7 +1450,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   private int calculateItemX (int itemIndex, int itemWidth, int parentWidth) {
     int left = 0;
     for (int i = 0; i < itemIndex; i++) {
-      left += getItemWidth(i, selectionFactor) + itemPadding * 2;
+      left += getItemWidth(i, selectionFactor);
     }
     if (Lang.rtl()) {
       left = parentWidth - left - itemWidth;
@@ -1474,7 +1478,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     }
     int itemsWidth = 0;
     for (int itemIndex = 0; itemIndex < items.size(); itemIndex++) {
-      itemsWidth += getItemWidth(itemIndex, selectionFactor) + itemPadding * 2;
+      itemsWidth += getItemWidth(itemIndex, selectionFactor);
     }
     return itemsWidth;
   }
