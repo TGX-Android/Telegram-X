@@ -3405,7 +3405,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   /* Quote */
 
   public boolean allowQuotes () {
-    return maxLineCount == -1;
+    return maxLineCount == -1 && !BitwiseUtils.hasFlag(textFlags, FLAG_ALIGN_CENTER);
   }
 
   private final ArrayList<QuoteBackground> quotes = new ArrayList<>();
