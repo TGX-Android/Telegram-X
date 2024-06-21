@@ -65,6 +65,14 @@ public class ThrottlingRunnable implements Runnable {
     runnable.run();
   }
 
+  public void run (boolean immediately) {
+    if (immediately) {
+      runImmediately();
+    } else {
+      runScheduled();
+    }
+  }
+
   @Override
   public final void run () {
     runScheduled();
