@@ -2571,6 +2571,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
+  public boolean isAttachedToView () {
+    return BitwiseUtils.hasFlag(flags, FLAG_ATTACHED);
+  }
+
   protected void onMessageAttachStateChange (boolean isAttached) {
     // override
   }

@@ -125,10 +125,23 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
 
   @Override
   protected void onMessageAttachStateChange (boolean isAttached) {
-    if (isAttached) {
-      tdlib.context().player().addTrackListener(tdlib, getMessage(), this);
-    } else {
-      tdlib.context().player().removeTrackListener(tdlib, getMessage(), this);
+    checkTrackListenerAttached();
+  }
+
+  private void checkTrackListenerAttached () {
+    setTrackListenerAttached(isUnmuted || isAttachedToView());
+  }
+
+  private boolean isTrackListenerAttached;
+
+  private void setTrackListenerAttached (boolean attach) {
+    if (isTrackListenerAttached != attach) {
+      isTrackListenerAttached = attach;
+      if (attach) {
+        tdlib.context().player().addTrackListener(tdlib, getMessage(), this);
+      } else {
+        tdlib.context().player().removeTrackListener(tdlib, getMessage(), this);
+      }
     }
   }
 
@@ -266,6 +279,7 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
   public void onTrackStateChanged (Tdlib tdlib, long chatId, long messageId, int fileId, int state) {
     boolean unmuted = state != TGPlayerController.STATE_NONE;
     setUnmuted(unmuted);
+    checkTrackListenerAttached();
     if (!unmuted) {
       setDuration(sourceDuration);
     }
