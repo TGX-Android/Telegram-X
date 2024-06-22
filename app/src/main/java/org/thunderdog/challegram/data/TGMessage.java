@@ -1310,9 +1310,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   protected boolean rebuildContentDimensions () {
     if ((flags & FLAG_LAYOUT_BUILT) != 0) {
-      int oldHeight = height;
       updateContentPositions(true);
       buildBubble(false);
+      int oldHeight = height;
       height = computeHeight();
       return oldHeight != height;
     } else {
@@ -1322,10 +1322,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   protected boolean rebuildContent () {
     if ((flags & FLAG_LAYOUT_BUILT) != 0) {
-      int oldHeight = height;
       updateContentPositions(true);
       buildContent(pContentMaxWidth);
       buildBubble(false);
+      int oldHeight = height;
       height = computeHeight();
       if (oldHeight != height) {
         manager.onMessageHeightChanged(getChatId(), getId(), oldHeight, height);

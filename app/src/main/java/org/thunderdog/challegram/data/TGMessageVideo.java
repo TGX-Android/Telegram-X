@@ -201,10 +201,9 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
       case FULL_SIZE_ANIMATOR_ID: {
         videoSize = MathUtils.fromTo(videoSmallSize, videoFullSize, isFullSizeAnimator.getFloatValue());
         if (isLayoutBuilt()) {
-          if (rebuildContent()) {
-            invalidateOverlay();
-            invalidate();
-          }
+          rebuildContent();
+          invalidateOverlay();
+          invalidate();
         }
         break;
       }
