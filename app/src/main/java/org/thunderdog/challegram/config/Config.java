@@ -165,6 +165,7 @@ public class Config {
 
   public static final boolean ROUND_VIDEOS_PLAYBACK_SUPPORTED = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN;
   public static final boolean ROUND_VIDEOS_RECORD_SUPPORTED = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2;
+  public static final boolean SYNC_SMOOTH_SCROLL_WITH_ROUND_VIDEO_RESIZE_ANIMATION = false;
 
   public static final boolean DEBUG_CLIPPING = false;
   public static final boolean USE_CRASHLYTICS = false;

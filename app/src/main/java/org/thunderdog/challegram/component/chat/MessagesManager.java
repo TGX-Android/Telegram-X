@@ -2709,7 +2709,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     int fullHeight = scrollMessage.getHeight();
 
     final boolean isPlayingRoundMessage = scrollMessage.getId() == TdlibManager.instance().player().getMessageId();
-    final int scrollDuration = isPlayingRoundMessage ? TGMessageVideo.RESIZE_DURATION : RecyclerView.UNDEFINED_DURATION;
+    final int scrollDuration = Config.SYNC_SMOOTH_SCROLL_WITH_ROUND_VIDEO_RESIZE_ANIMATION && isPlayingRoundMessage ?
+      TGMessageVideo.RESIZE_DURATION : RecyclerView.UNDEFINED_DURATION;
+
     if (isPlayingRoundMessage && scrollMessage instanceof TGMessageVideo) {
       fullHeight = ((TGMessageVideo) scrollMessage).getFullExpandedHeight();
     }
