@@ -26,8 +26,7 @@ import androidx.annotation.NonNull;
 
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.UI;
-import org.thunderdog.challegram.util.ThrottlingRunnable;
+import org.thunderdog.challegram.util.RateLimiter;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
@@ -167,7 +166,7 @@ class RoundProgressView2 extends View implements FactorAnimator.Target {
 
   /* Touch */
 
-  private final ThrottlingRunnable throttlingRunnable = new ThrottlingRunnable(UI.getAppHandler(), this::updateSeek, 150L);
+  private final RateLimiter updateSeekRunnable = new RateLimiter(this::updateSeek, 150L, null);
   private boolean captured;
 
   private void updateSeek () {
@@ -207,14 +206,14 @@ class RoundProgressView2 extends View implements FactorAnimator.Target {
           final float angle = ((float) Math.toDegrees(rad) + 360 + 90) % 360;
 
           setVisualProgress(MathUtils.clamp(angle / (360f - removeDegrees)));
-          throttlingRunnable.run();
+          updateSeekRunnable.run();
           return true;
         }
         break;
       case MotionEvent.ACTION_UP:
       case MotionEvent.ACTION_CANCEL:
         if (captured) {
-          throttlingRunnable.cancel();
+          updateSeekRunnable.cancelIfScheduled();
           if (controller != null) {
             controller.seekTo(MathUtils.clamp(visualProgress), true);
           }
@@ -232,6 +231,6 @@ class RoundProgressView2 extends View implements FactorAnimator.Target {
   @Override
   protected void onDetachedFromWindow () {
     super.onDetachedFromWindow();
-    throttlingRunnable.cancel();
+    updateSeekRunnable.cancelIfScheduled();
   }
 }
