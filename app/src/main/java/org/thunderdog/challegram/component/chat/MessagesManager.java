@@ -1512,7 +1512,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void onMessageHeightChanged (final long chatId, final long messageId, final int oldHeight, final int newHeight) {
-    final boolean isPlayingRoundVideo = TdlibManager.instance().player().getMessageId() == messageId;
+    final long playingRoundVideoId = TdlibManager.instance().player().getMessageId();
+    final boolean isPlayingRoundVideo = playingRoundVideoId == messageId;
     if (isPlayingRoundVideo) {
       return;
     }
@@ -1524,15 +1525,17 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       return;
     }
 
-    /*if (view instanceof MessageViewGroup) {
+    if (view instanceof MessageViewGroup) {
       TGMessage message = ((MessageViewGroup) view).getMessage();
       if (message instanceof TGMessageVideo) {
         if (((TGMessageVideo) message).inSizeAnimation()) {
-          // scrollCompensation(view, heightDiff);
+          if (messageId > playingRoundVideoId && playingRoundVideoId != 0) {
+            scrollCompensation(view, heightDiff);
+          }
           return;
         }
       }
-    }*/
+    }
 
     final int top = view.getTop();
     final int bottom = view.getBottom();
@@ -2625,12 +2628,16 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   private void scrollToPositionWithOffset (final int index, final int offset, boolean smooth) {
+    scrollToPositionWithOffset(index, offset, smooth, RecyclerView.UNDEFINED_DURATION);
+  }
+
+  private void scrollToPositionWithOffset (final int index, final int offset, boolean smooth, int smoothDuration) {
     stopScroll();
 
     if (smooth) {
       int scrollBy = calculateScrollBy(index, offset);
       if (Math.abs(scrollBy) < controller.getMessagesView().getMeasuredHeight()) {
-        controller.getMessagesView().smoothScrollBy(0, scrollBy);
+        controller.getMessagesView().smoothScrollBy(0, scrollBy, null, smoothDuration);
       } else {
         manager.scrollToPositionWithOffset(index, offset);
       }
@@ -2701,10 +2708,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     scrollMessage.buildLayout(width);
     int fullHeight = scrollMessage.getHeight();
 
-    if (scrollMessage instanceof TGMessageVideo) {
-      if (scrollMessage.getId() == TdlibManager.instance().player().getMessageId()) {
-        fullHeight += TGMessageVideo.getVideoSize() - ((TGMessageVideo) scrollMessage).getContentSize();
-      }
+    final boolean isPlayingRoundMessage = scrollMessage.getId() == TdlibManager.instance().player().getMessageId();
+    final int scrollDuration = isPlayingRoundMessage ? TGMessageVideo.RESIZE_DURATION : RecyclerView.UNDEFINED_DURATION;
+    if (isPlayingRoundMessage && scrollMessage instanceof TGMessageVideo) {
+      fullHeight = ((TGMessageVideo) scrollMessage).getFullExpandedHeight();
     }
 
     if (fullHeight > height - offset) {
@@ -2712,10 +2719,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
 
     if (highlightMode == HIGHLIGHT_MODE_UNREAD || highlightMode == HIGHLIGHT_MODE_UNREAD_NEXT || fullHeight + scrollMessage.findTopEdge() >= height) {
-      scrollToPositionWithOffset(index, height - fullHeight, smooth);
+      scrollToPositionWithOffset(index, height - fullHeight, smooth, scrollDuration);
       wasScrollByUser = false;
     } else {
-      scrollToPositionWithOffset(index, height / 2 - fullHeight / 2 + scrollMessage.findTopEdge(), smooth);
+      scrollToPositionWithOffset(index, height / 2 - fullHeight / 2 + scrollMessage.findTopEdge(), smooth, scrollDuration);
     }
 
     // manager.scrollToPositionWithOffset(index, 0);

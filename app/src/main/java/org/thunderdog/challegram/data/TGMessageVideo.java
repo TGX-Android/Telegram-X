@@ -67,8 +67,10 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
   private TdApi.VideoNote videoNote;
   private boolean notViewed;
 
+  public static final int RESIZE_DURATION = 220;
   private static final int FULL_SIZE_ANIMATOR_ID = 10001;
-  private final BoolAnimator isFullSizeAnimator = new BoolAnimator(FULL_SIZE_ANIMATOR_ID, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 220L);
+
+  private final BoolAnimator isFullSizeAnimator = new BoolAnimator(FULL_SIZE_ANIMATOR_ID, this, AnimatorUtils.DECELERATE_INTERPOLATOR, RESIZE_DURATION);
 
   private FileProgressComponent fileProgress;
   private ImageFile miniThumbnail, previewFile;
@@ -150,6 +152,10 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
     }
   }
 
+  public int getFullExpandedHeight () {
+    return height + videoFullSize - videoSize;
+  }
+
   // View
 
   private static final int ANIMATOR_VIEW = 0;
@@ -195,9 +201,10 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
       case FULL_SIZE_ANIMATOR_ID: {
         videoSize = MathUtils.fromTo(videoSmallSize, videoFullSize, isFullSizeAnimator.getFloatValue());
         if (isLayoutBuilt()) {
-          notifyBubbleChanged();
-          overlayViews.requestLayout();
-          invalidate();
+          if (rebuildContent()) {
+            invalidateOverlay();
+            invalidate();
+          }
         }
         break;
       }
@@ -287,10 +294,6 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
 
   public static int getVideoSize () {
     return Math.min(Screen.smallestSide() - Screen.dp(32), Screen.dp(640));
-  }
-
-  public int getContentSize () {
-    return videoSize;
   }
 
   public boolean inSizeAnimation () {
