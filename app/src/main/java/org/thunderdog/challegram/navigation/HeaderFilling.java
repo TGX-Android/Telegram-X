@@ -25,6 +25,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.SoundEffectConstants;
 import android.view.View;
+import android.view.ViewConfiguration;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -1216,6 +1217,9 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
 
   // Touch processing
 
+  private float touchDownX, touchDownY;
+  private float playbackOffsetY;
+
   private void performSoundFeedback () {
     if (headerView != null) {
       headerView.playSoundEffect(SoundEffectConstants.CLICK);
@@ -1228,6 +1232,8 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
 
   @Override
   public boolean needClickAt (View view, float x, float y) {
+    touchDownX = x;
+    touchDownY = y;
     return (navigationController == null || !navigationController.isAnimating()) && (showOngoingBar || showFactor != 0f) && dropShadowAlpha != 0f && hideFactor != 1f && !(y < playerTop) && !(y > playerBottom) && !(y <= fillingBottom);
   }
 
@@ -1243,15 +1249,10 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
     return false;
   }
 
-  private boolean inLongPress;
-
   @Override
   public boolean onLongPressRequestedAt (View view, float x, float y) {
-    if (needLongPress(x, y)) {
-      if (!inLongPress) {
-        inLongPress = true;
-        showPlaybackSpeedPicker(x, y);
-      }
+    if (needLongPress(x, y) && playbackSpeedLayout == null) {
+      showPlaybackSpeedPicker(x, y);
       return true;
     }
     return false;
@@ -1260,27 +1261,21 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
   @Override
   public void onLongPressMove (View view, MotionEvent e, float x, float y, float startX, float startY) {
     if (playbackSpeedLayout != null) {
-      playbackSpeedLayout.processTouchEvent(MotionEvent.ACTION_MOVE, x, y, true);
+      playbackSpeedLayout.processTouchEvent(MotionEvent.ACTION_MOVE, x, y, playbackOffsetY, true);
     }
   }
 
   @Override
   public void onLongPressFinish (View view, float x, float y) {
-    if (inLongPress) {
-      inLongPress = false;
-      if (playbackSpeedLayout != null) {
-        playbackSpeedLayout.processTouchEvent(MotionEvent.ACTION_UP, x, y, true);
-      }
+    if (playbackSpeedLayout != null) {
+      playbackSpeedLayout.processTouchEvent(MotionEvent.ACTION_UP, x, y, playbackOffsetY, true);
     }
   }
 
   @Override
   public void onLongPressCancelled (View view, float x, float y) {
-    if (inLongPress) {
-      inLongPress = false;
-      if (playbackSpeedLayout != null) {
-        playbackSpeedLayout.processTouchEvent(MotionEvent.ACTION_CANCEL, x, y, true);
-      }
+    if (playbackSpeedLayout != null) {
+      playbackSpeedLayout.processTouchEvent(MotionEvent.ACTION_CANCEL, x, y, playbackOffsetY, true);
     }
   }
 
@@ -1299,6 +1294,19 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
       onLeftClick();
     } else {
       onBarClick();
+    }
+  }
+
+  @Override
+  public void onClickTouchMove (View view, float x, float y) {
+    if (playbackSpeedLayout == null && !helper.inLongPress()){
+      final float dx = x - touchDownX;
+      final float dy = y - touchDownY;
+      if (Math.hypot(dx, dy) > ViewConfiguration.get(view.getContext()).getScaledTouchSlop() * 1.77f && dy > 0 && Math.abs(dy) > Math.abs(dx) && needLongPress(touchDownX, touchDownY)) {
+        if (onLongPressRequestedAt(view, touchDownX, touchDownY)) {
+          helper.onLongPress(view, x, y);
+        }
+      }
     }
   }
 
@@ -1460,6 +1468,8 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
   private PopupLayout playbackSpeedPopup;
 
   private void showPlaybackSpeedPicker (float touchX, float touchY) {
+    playbackOffsetY = Screen.dp(24) - (playerTop + playerBottom) / 2f + touchY;
+
     Settings.instance().markTutorialAsComplete(Settings.TUTORIAL_PLAYBACK_SPEED_HOLD);
 
     playbackSpeedPopup = new PopupLayout(headerView.getContext());
@@ -1472,7 +1482,7 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
     }, TdlibManager.instance().player().getSpeed());
     playbackSpeedLayout.setTranslationY(HeaderView.getSize(true) - Screen.dp(16));
     playbackSpeedLayout.setTranslationX(getRightButtonRight(0, 2) + Screen.dp(16));
-    playbackSpeedLayout.processTouchEvent(MotionEvent.ACTION_DOWN, touchX, touchY, true);
+    playbackSpeedLayout.processTouchEvent(MotionEvent.ACTION_DOWN, touchX, touchY, playbackOffsetY, true);
 
     playbackSpeedPopup.init(true);
     playbackSpeedPopup.setNeedRootInsets();

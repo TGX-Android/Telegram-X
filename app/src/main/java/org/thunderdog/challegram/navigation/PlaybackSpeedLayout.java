@@ -94,7 +94,7 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
     slider = new Slider(context);
     slider.setText(Lang.getString(R.string.PlaybackSpeed));
     slider.setOnTouchListener((v, event) -> {
-      processTouchEvent(event.getAction(), event.getX(), event.getY(), false);
+      processTouchEvent(event.getAction(), event.getX(), event.getY(), 0f, false);
       return true;
     });
     addItem(slider);
@@ -154,7 +154,7 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
   private float xStart, yStart, xPrev, yPrev, yDown;
   private boolean hasChanges = false;
 
-  public void processTouchEvent (int event, float x, float y, boolean external) {
+  public void processTouchEvent (int event, float x, float y, float offset, boolean external) {
     final float dx = x - xPrev;
     final float dy = y - yPrev;
     final float dxTotal = x - xStart;
@@ -171,7 +171,7 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
       }
 
       case MotionEvent.ACTION_MOVE: {
-        final int index = external ? getTouchIndex(y - yDown + Screen.dp(24)) : 0;
+        final int index = external ? getTouchIndex(y - yDown + offset) : 0;
         if (modeFlags == MODE_NONE) {
           if (Math.hypot(dxTotal, dyTotal) > Screen.getTouchSlop() * 1.5f) {
             final boolean horizontalMode = dyTotal < 0 || Math.abs(dxTotal) > Math.abs(dyTotal);
