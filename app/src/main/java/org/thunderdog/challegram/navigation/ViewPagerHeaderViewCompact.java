@@ -276,7 +276,8 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
       - getPaddingRight()
       - Views.getLeftMargin(recyclerView)
       - Views.getRightMargin(recyclerView), parentWidth);
-    if (viewWidth <= parentMaxWidth - parentPaddingLeft - parentPaddingRight) {
+    final int viewMaxNonScrollableWidth = parentMaxWidth - parentPaddingLeft - parentPaddingRight;
+    if (viewWidth <= viewMaxNonScrollableWidth) {
       if (animated && topViewMarginRightDiff != 0 && isCenteredHorizontally()) {
         float topViewTranslationX = topViewMarginRightDiff / 2f;
         topView.setTranslationX(topViewTranslationX);
@@ -302,8 +303,8 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
     final float topViewTranslationX;
     if (animated && topViewMarginRightDiff != 0) {
       int oldViewWidth = viewWidth - topViewMarginRightDiff;
-      if (oldViewWidth <= parentMaxWidth - parentPaddingLeft - parentPaddingRight) {
-        topViewTranslationX = topViewMarginRightDiff;
+      if (oldViewWidth <= viewMaxNonScrollableWidth && isCenteredHorizontally()) {
+        topViewTranslationX = (viewMaxNonScrollableWidth - oldViewWidth) / 2f;
       } else {
         topViewTranslationX = view.getLeft() - viewLeft;
       }
