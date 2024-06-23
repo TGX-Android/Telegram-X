@@ -476,6 +476,7 @@
   <string name="CopiedLink">Link has been copied to the clipboard</string>
   <string name="CopiedLinkPrivate">Link has been copied to the clipboard. It works only for members of this chat.</string>
   <string name="CopiedText">Text has been copied to the clipboard</string>
+  <string name="CopiedDisplayName">Display name has been copied to the clipboard</string>
   <string name="CopiedColor">Color and its name have been copied to the clipboard</string>
   <string name="passcode_pattern_tooshort">Pattern should be at least 4 dots long</string>
   <string name="passcode_password_tooshort">Password should be at least 1 character long</string>
@@ -581,6 +582,7 @@
   <string name="CopyCoordinates">Copy coordinates</string>
   <string name="CopiedCoordinates">Coordinates have been copied to the clipboard</string>
   <string name="CopyLink">Copy link</string>
+  <string name="CopyDisplayName">Copy display name</string>
   <string name="Search">Search</string>
   <string name="NoChats">You have no chats</string>
   <string name="NoContacts">No contacts to display</string>
@@ -5052,6 +5054,7 @@
   <string name="RemoveXStickerPacks_other">Remove %1$s sticker sets</string>
   <string name="LoadingMessageEmojiPack">Loading…</string>
   <string name="EmojiUsedFromSingle">Emoji used from %1$s pack</string>
+  <string name="EmojiStatusUsed">%1$s uses emoji from pack %2$s for their status icon.</string>
   <string name="EmojiUsedFromX">Emoji used from %1$s</string>
   <string name="xEmojiPacksEmojiSingle">* %1$s</string>
   <string name="ArchivedEmojiInfo">You can add up to %1$s emoji packs. Unused packs are archived when you add more.</string>
@@ -5334,6 +5337,7 @@
   <string name="GiveawayViewMyPrize">View my prize</string>
 
   <string name="EmulatorWarning">You are running **Telegram X** on an **emulated device**.\n\n**Note**: if you don\'t have an **existing** Telegram account, you may need a **real device** to create it.\n\nIn case you see this warning on a real device (such as phone, tablet, etc), press **report issue**.</string>
+  <string name="EmulatorWarningStrict">You are running **Telegram X** on an **emulated device**.\n\n**Note**: if you don\'t have an **existing** Telegram account, you may need a **real device** to create it.\n\nIf you have your phone connected to a PC, disconnect it and restart Telegram X.</string>
   <string name="EmulatorWarningTitle">Emulator detected</string>
   <string name="EmulatorWarningBtnReport">Report issue</string>
   <string name="EmulatorWarningBtnOk">Got it</string>

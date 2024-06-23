@@ -1938,7 +1938,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   private PopupLayout stickerPreviewWindow;
   private StickerPreviewView stickerPreview;
-  private StickerSmallView stickerPreviewControllerView;
+  private View stickerPreviewControllerView;
 
   public void openStickerPreview (Tdlib tdlib, StickerSmallView stickerView, TGStickerObj sticker, int cx, int cy, int maxWidth, int viewportHeight, boolean disableEmojis) {
     if (stickerPreview != null) {
@@ -1948,7 +1948,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     stickerPreviewControllerView = stickerView;
 
     stickerPreview = new StickerPreviewView(this);
-    stickerPreview.setControllerView(stickerPreviewControllerView);
+    stickerPreview.setControllerView(stickerView);
     stickerPreview.setSticker(tdlib, sticker, cx, cy, maxWidth, viewportHeight, disableEmojis);
 
     stickerPreviewWindow = new PopupLayout(this);
@@ -1959,7 +1959,26 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     stickerPreviewWindow.showAnimatedPopupView(stickerPreview, stickerPreview);
   }
 
-  public void openStickerMenu (StickerSmallView stickerView, TGStickerObj sticker) {
+  public void openStickerPreview (Tdlib tdlib, View viewHolder, StickerPreviewView.PreviewCallback callback, TGStickerObj sticker, int cx, int cy, int maxWidth, int viewportHeight, boolean disableEmojis) {
+    if (stickerPreview != null) {
+      return;
+    }
+
+    stickerPreviewControllerView = viewHolder;
+
+    stickerPreview = new StickerPreviewView(this);
+    stickerPreview.setPreviewCallback(viewHolder, callback);
+    stickerPreview.setSticker(tdlib, sticker, cx, cy, maxWidth, viewportHeight, disableEmojis);
+
+    stickerPreviewWindow = new PopupLayout(this);
+    stickerPreviewWindow.setBackListener(stickerPreview);
+    stickerPreviewWindow.setOverlayStatusBar(true);
+    stickerPreviewWindow.init(true);
+    stickerPreviewWindow.setNeedRootInsets();
+    stickerPreviewWindow.showAnimatedPopupView(stickerPreview, stickerPreview);
+  }
+
+  public void openStickerMenu (View stickerView, TGStickerObj sticker) {
     if (this.stickerPreview != null && stickerPreviewControllerView == stickerView) {
       stickerPreview.openMenu(sticker);
     }
@@ -1995,7 +2014,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     stickerPreviewControllerView = stickerView;
 
     stickerPreview = new StickerPreviewView(this);
-    stickerPreview.setControllerView(stickerPreviewControllerView);
+    stickerPreview.setControllerView(stickerView);
     stickerPreview.setReaction(tdlib, reaction, effectAnimation, cx, cy, maxWidth, viewportHeight, disableEmojis);
 
     stickerPreviewWindow = new PopupLayout(this);

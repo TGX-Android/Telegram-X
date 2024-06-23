@@ -85,8 +85,8 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
   private static final int REVEAL_ANIMATOR = 0;
   private static final int REPLACE_ANIMATOR = 1;
 
-  private static final long REVEAL_DURATION = 268l;
-  private static final long HIDE_DURATION = 292l;
+  private static final long REVEAL_DURATION = 268L;
+  private static final long HIDE_DURATION = 292L;
 
   private final FactorAnimator animator;
 
@@ -138,12 +138,20 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     themeListenerList.onThemeColorsChanged(areTemp);
   }
 
-  private StickerSmallView controllerView;
+  private @Nullable PreviewCallback previewCallback;
+  private @Nullable View holderView;
+  private @Nullable StickerSmallView controllerView;
   private @PorterDuffColorId int repaintingColorId = ColorId.iconActive;
+
+  public void setPreviewCallback (View holderView, PreviewCallback previewCallback) {
+    this.previewCallback = previewCallback;
+    this.holderView = holderView;
+    this.repaintingColorId =previewCallback != null ? previewCallback.getThemedColorId() : ColorId.iconActive;
+  }
 
   public void setControllerView (StickerSmallView stickerView) {
     this.controllerView = stickerView;
-    this.repaintingColorId = stickerView != null ? stickerView.getThemedColorId() : ColorId.iconActive;
+    this.setPreviewCallback(stickerView, stickerView);
   }
 
   @Override
@@ -464,12 +472,12 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     params.topMargin = getStickerCenterY() + stickerHeight / 2 + Screen.dp(32f);
     menu.setLayoutParams(params);
 
-    StickerPreviewView.MenuStickerPreviewCallback menuStickerPreviewCallback = controllerView != null ?
-      controllerView.getMenuStickerPreviewCallback() : null;
+    StickerPreviewView.MenuStickerPreviewCallback menuStickerPreviewCallback = previewCallback != null ?
+      previewCallback.getMenuStickerPreviewCallback() : null;
 
     if (menuStickerPreviewCallback != null && sticker != null) {
       ArrayList<MenuItem> menuItems = new ArrayList<>(5);
-      menuStickerPreviewCallback.buildMenuStickerPreview(menuItems, sticker, controllerView);
+      menuStickerPreviewCallback.buildMenuStickerPreview(menuItems, sticker);
 
       View.OnClickListener onClickListener = view -> menuStickerPreviewCallback.onMenuStickerPreviewClick(view, findRoot(), sticker, controllerView);
       View.OnLongClickListener onLongClickListener = view -> menuStickerPreviewCallback.onMenuStickerPreviewLongClick(view, findRoot(), sticker, controllerView);
@@ -640,7 +648,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
   }
 
   private ViewController<?> findRoot () {
-    ViewController<?> context = ViewController.findRoot(controllerView);
+    ViewController<?> context = ViewController.findRoot(holderView);
     if (context == null) {
       context = UI.getCurrentStackItem(getContext());
     }
@@ -853,8 +861,8 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
   }
 
   private void closePreviewIfNeeded () {
-    if (controllerView != null) {
-      controllerView.closePreviewIfNeeded();
+    if (previewCallback != null) {
+      previewCallback.closePreviewIfNeeded();
     }
   }
 
@@ -933,11 +941,16 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     return true;
   }
 
-
   public interface MenuStickerPreviewCallback {
-    void buildMenuStickerPreview (ArrayList<MenuItem> menuItems, @NonNull TGStickerObj sticker, @NonNull StickerSmallView stickerSmallView);
-    void onMenuStickerPreviewClick (View v, ViewController<?> context, @NonNull TGStickerObj sticker, @NonNull StickerSmallView stickerSmallView);
-    default boolean onMenuStickerPreviewLongClick (View v, ViewController<?> context, @NonNull TGStickerObj sticker, @NonNull StickerSmallView stickerSmallView) { return false; }
+    void buildMenuStickerPreview (ArrayList<MenuItem> menuItems, @NonNull TGStickerObj sticker);
+    void onMenuStickerPreviewClick (View v, ViewController<?> context, @NonNull TGStickerObj sticker, @Nullable StickerSmallView stickerSmallView);
+    default boolean onMenuStickerPreviewLongClick (View v, ViewController<?> context, @NonNull TGStickerObj sticker, @Nullable StickerSmallView stickerSmallView) { return false; }
+  }
+
+  public interface PreviewCallback {
+    StickerPreviewView.MenuStickerPreviewCallback getMenuStickerPreviewCallback ();
+    @PorterDuffColorId int getThemedColorId ();
+    void closePreviewIfNeeded ();
   }
 
   public static class MenuItem {
