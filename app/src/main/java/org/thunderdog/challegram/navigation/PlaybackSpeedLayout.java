@@ -8,6 +8,7 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.os.SystemClock;
 import android.text.Layout;
 import android.text.TextUtils;
 import android.util.SparseArray;
@@ -38,7 +39,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CounterPlaybackSpeedDrawableSet;
-import org.thunderdog.challegram.util.ThrottlingRunnable;
+import org.thunderdog.challegram.util.RateLimiter;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.ShadowView;
@@ -61,7 +62,7 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
   private static final int BUTTONS_COUNT = 6;
   private final Button[] buttons = new Button[BUTTONS_COUNT];
   private final BoolAnimator fade = new BoolAnimator(FADE_ANIMATOR_ID, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 230L);
-  private final ThrottlingRunnable touchUpdateRunnable = new ThrottlingRunnable(UI.getAppHandler(), this::applySpeedAndUpdateViews, 150L);
+  private final RateLimiter setSeekRunnable = new RateLimiter(this::applySpeedAndUpdateViews, 150L, null);
   private final Drawable backgroundDrawable;
   private final Slider slider;
   private final ShadowView shadowView1;
@@ -177,7 +178,7 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
             final boolean verticalMode = !horizontalMode && index > 0;
             if (horizontalMode || verticalMode) {
               modeFlags = verticalMode ? MODE_VERTICAL : MODE_ALL_DIRECTIONS;
-              if (!hasChanges || modeFlags == MODE_VERTICAL) {
+              if (/* !hasChanges ||*/ modeFlags == MODE_VERTICAL) {
                 UI.hapticVibrate(this, true);
               }
               xPrev = xStart = x;
@@ -189,7 +190,8 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
 
         final boolean speedChanged = processMove(index, dx);
         boolean needVibrate = speedChanged && defaultSpeed == currentSpeed;
-        hasChanges |= speedChanged;
+        boolean forceVibrate = needVibrate && !BitwiseUtils.hasFlag(modeFlags, MODE_FLAG_ALLOW_VERTICAL) || index == 0;
+        hasChanges |= speedChanged | index > 0;
 
         if (modeFlags == MODE_ALL_DIRECTIONS && defaultSpeed != currentSpeed /*&& speedChanged*/ && index == 0) {
           modeFlags = MODE_HORIZONTAL;
@@ -209,13 +211,15 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
         }
 
         needVibrate |= BitwiseUtils.hasFlag(modeFlags, MODE_FLAG_ALLOW_VERTICAL) && index > 0 && speedChanged;
-        needVibrate |= setButtonsVisibility(/*defaultSpeed == currentSpeed ||*/ !external || modeFlags == MODE_NONE || BitwiseUtils.hasFlag(modeFlags, MODE_FLAG_ALLOW_VERTICAL));
+        /*needVibrate |=*/ setButtonsVisibility(/*defaultSpeed == currentSpeed ||*/ !external || modeFlags == MODE_NONE || BitwiseUtils.hasFlag(modeFlags, MODE_FLAG_ALLOW_VERTICAL));
 
+        /*
         final boolean needVibrateBySlide = needVibrateBySlide();
         needVibrate |= needVibrateBySlide && (index == 0 || !BitwiseUtils.hasFlag(modeFlags, MODE_FLAG_ALLOW_VERTICAL));
+        */
 
         if (needVibrate) {
-          UI.hapticVibrate(this, false);
+          UI.hapticVibrate(this, forceVibrate);
         }
 
         xPrev = x;
@@ -275,7 +279,7 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
       final int speed = speedFromValue(value);
       if (currentSpeed != speed) {
         currentSpeed = speed;
-        touchUpdateRunnable.run(!fromSliderTouch);
+        setSeekRunnable.run();
         return true;
       }
     }
@@ -294,7 +298,7 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
     if (fade.getValue() != hidden) {
 
       if (visible) {
-        lastButtonsShowMillis = System.currentTimeMillis();
+        lastButtonsShowMillis = SystemClock.uptimeMillis();
         if (scheduledHideButtons != null) {
           scheduledHideButtons.cancel();
           scheduledHideButtons = null;
@@ -303,12 +307,12 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
         if (scheduledHideButtons != null) {
           return false;
         }
-        final long delay = System.currentTimeMillis() - lastButtonsShowMillis;
+        final long delay = SystemClock.uptimeMillis() - lastButtonsShowMillis;
         if (delay < 300L) {
           scheduledHideButtons = new CancellableRunnable() {
             @Override
             public void act () {
-              fade.setValue(false, true);
+              fade.setValue(true, true);
               scheduledHideButtons = null;
             }
           };
@@ -658,7 +662,11 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
   @Override
   protected void onDetachedFromWindow () {
     super.onDetachedFromWindow();
-    touchUpdateRunnable.cancel();
+    setSeekRunnable.cancelIfScheduled();
+    if (scheduledHideButtons != null) {
+      scheduledHideButtons.cancel();
+      scheduledHideButtons = null;
+    }
   }
 
   @Override
