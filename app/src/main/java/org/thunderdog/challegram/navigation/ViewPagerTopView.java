@@ -1202,6 +1202,13 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     return false;
   }
 
+  public int getItemWidth (View view) {
+    if (view.getParent() == this && view instanceof BackgroundView) {
+      return ((BackgroundView) view).lastItemWidth;
+    }
+    return view.getMeasuredWidth();
+  }
+
   private final @Dimension(unit = Dimension.DP) float labelFadingEdgeLength = 16f;
   private final Paint labelFadingEdgePaint = new Paint();
   private final Matrix labelFadingEdgeMatrix = new Matrix();
