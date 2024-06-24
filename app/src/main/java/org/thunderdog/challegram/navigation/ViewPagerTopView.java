@@ -27,6 +27,7 @@ import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
 import android.text.Layout;
+import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -63,6 +64,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.text.Counter;
+import org.thunderdog.challegram.util.text.IconSpan;
 import org.thunderdog.challegram.util.text.Text;
 
 import java.lang.annotation.Retention;
@@ -255,7 +257,8 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       this.translationX = translationX;
     }
 
-    private Layout ellipsizedStringLayout;
+    private @Nullable IconSpan[] iconSpans;
+    private @Nullable Layout ellipsizedStringLayout;
     private int ellipsizedWidth;
 
     public void trimString (int availWidth, TextPaint paint) {
@@ -267,6 +270,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
         ellipsizedStringLayout = null;
         ellipsizedWidth = width;
       }
+      iconSpans = null;
     }
 
     public void untrimString (TextPaint textPaint) {
@@ -276,15 +280,29 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
           ellipsizedStringLayout.getPaint() != textPaint ||
           ellipsizedStringLayout.getWidth() != textWidth) {
           ellipsizedStringLayout = U.createLayout(string, textWidth, textPaint);
+          if (string instanceof Spanned) {
+            iconSpans = ((Spanned) string).getSpans(0, string.length(), IconSpan.class);
+          } else {
+            iconSpans = null;
+          }
         }
       } else {
         ellipsizedStringLayout = null;
+        iconSpans = null;
       }
       ellipsizedWidth = width;
     }
 
+    boolean hasIconSpans () {
+      return iconSpans != null && iconSpans.length > 0;
+    }
+
     @Nullable Item oldItem;
     @Nullable FactorAnimator animator;
+
+    float getAnimationFactor () {
+      return animator != null ? animator.getFactor() : 1f;
+    }
 
     public void animateFrom (Item item, FactorAnimator.Target target) {
       if (item == null) {
@@ -1212,7 +1230,27 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       saveCount = -1;
     }
     if (isVisible) {
+      if (item.hasIconSpans()) {
+        //noinspection DataFlowIssue
+        for (IconSpan iconSpan : item.iconSpans) {
+          iconSpan.setAlpha(getIconSpanAlpha(item));
+          iconSpan.setScale(getIconSpanScale(item));
+        }
+      }
+      if (item.oldItem != null && item.oldItem.hasIconSpans()) {
+        //noinspection DataFlowIssue
+        for (IconSpan iconSpan : item.oldItem.iconSpans) {
+          iconSpan.setOverrideColor(color);
+          iconSpan.setAlpha(getOldIconSpanAlpha(item));
+          iconSpan.setScale(getOldIconSpanScale(item));
+        }
+      }
       c.translate(x, y);
+      Layout oldLayout = item.oldItem != null && item.oldItem.ellipsizedStringLayout != null ? item.oldItem.ellipsizedStringLayout : null;
+      if (oldLayout != null && item.oldItem.hasIconSpans()) {
+        oldLayout.getPaint().setAlpha(0x00); // draw old icon spans only
+        oldLayout.draw(c);
+      }
       layout.getPaint().setColor(color);
       layout.draw(c);
       c.translate(-x, -y);
@@ -1225,6 +1263,34 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       c.drawRect(clipRight - fadingEdgeLength, 0, clipRight, getHeight(), labelFadingEdgePaint);
       c.restoreToCount(saveCount);
     }
+  }
+
+  private float getIconSpanAlpha (Item item) {
+    return shouldAnimateIconSpanAppearance(item) ? item.getAnimationFactor() : 1f;
+  }
+
+  private float getIconSpanScale (Item item) {
+    return shouldAnimateIconSpanAppearance(item) ? getIconSpanScale(item.getAnimationFactor()) : 1f;
+  }
+
+  private float getOldIconSpanAlpha (Item item) {
+    return shouldAnimateIconSpanDisappearance(item) ? 1f - item.getAnimationFactor() : 0f;
+  }
+
+  private float getOldIconSpanScale (Item item) {
+    return shouldAnimateIconSpanDisappearance(item) ? getIconSpanScale(1f - item.getAnimationFactor()) : 1f;
+  }
+
+  private float getIconSpanScale (float animationFactor) {
+    return MathUtils.fromTo(0.55f, 1f, animationFactor);
+  }
+
+  private boolean shouldAnimateIconSpanAppearance (Item item) {
+    return animateItemChanges && item.oldItem != null && !item.oldItem.hasIconSpans();
+  }
+
+  private boolean shouldAnimateIconSpanDisappearance (Item item) {
+    return animateItemChanges && item.oldItem != null && !item.hasIconSpans();
   }
 
   @FloatRange(from = 0.0, to = 1.0)
