@@ -108,6 +108,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   private boolean isScrolling;
   private boolean wasScrollByUser;
+  private int userScrollActionsCount;
 
   public MessagesManager (final MessagesController controller) {
     this.controller = controller;
@@ -123,6 +124,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           if (Settings.instance().needHideChatKeyboardOnScroll()) {
             controller.hideAllKeyboards();
           }
+          userScrollActionsCount++;
           wasScrollByUser = true;
         }
         boolean isScrolling = newState != RecyclerView.SCROLL_STATE_IDLE;
@@ -156,6 +158,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
     this.useReactionBubblesValue = checkReactionBubbles();
     this.usedTranslateStyleMode = checkTranslateStyleMode();
+  }
+
+  public int getUserScrollActionsCount () {
+    return userScrollActionsCount;
   }
 
   public int getKnownTotalMessageCount () {
@@ -1529,9 +1535,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       TGMessage message = ((MessageViewGroup) view).getMessage();
       if (message instanceof TGMessageVideo) {
         if (((TGMessageVideo) message).inSizeAnimation()) {
-          if (messageId > playingRoundVideoId && playingRoundVideoId != 0) {
-            scrollCompensation(view, heightDiff);
-          }
+          // Ignore any resizing of video messages
           return;
         }
       }
@@ -2592,6 +2596,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   private int calculateScrollBy (int index, int offset) {
+    return calculateScrollBy(index, offset, false);
+  }
+
+  private int calculateScrollBy (int index, int offset, boolean useRoundVideoScrollFix) {
     int firstVisibleItemPosition = manager.findFirstVisibleItemPosition();
 
     long totalScrollBottom = 0;
@@ -2605,8 +2613,14 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
     int i = 0;
     int messageCount = adapter.getMessageCount();
+    final long roundVideoMessageId = useRoundVideoScrollFix ? TdlibManager.instance().player().getMessageId() : -1;
     while (i < messageCount) {
-      int messageHeight = adapter.getMessage(i).getHeight();
+      TGMessage message = adapter.getMessage(i);
+      int messageHeight = message.getHeight();
+      if (useRoundVideoScrollFix && message instanceof TGMessageVideo) {
+        messageHeight = ((TGMessageVideo) message).getVideoMessageTargetHeight(message.getId() == roundVideoMessageId);
+      }
+
       if (i < firstVisibleItemPosition) {
         totalScrollBottom += messageHeight;
       }
@@ -2628,16 +2642,16 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   private void scrollToPositionWithOffset (final int index, final int offset, boolean smooth) {
-    scrollToPositionWithOffset(index, offset, smooth, RecyclerView.UNDEFINED_DURATION);
+    scrollToPositionWithOffset(index, offset, smooth, false);
   }
 
-  private void scrollToPositionWithOffset (final int index, final int offset, boolean smooth, int smoothDuration) {
+  private void scrollToPositionWithOffset (final int index, final int offset, boolean smooth, boolean useRoundVideoScrollFix) {
     stopScroll();
 
     if (smooth) {
-      int scrollBy = calculateScrollBy(index, offset);
-      if (Math.abs(scrollBy) < controller.getMessagesView().getMeasuredHeight()) {
-        controller.getMessagesView().smoothScrollBy(0, scrollBy, null, smoothDuration);
+      int scrollBy = calculateScrollBy(index, offset, useRoundVideoScrollFix);
+      if (Math.abs(scrollBy) < controller.getMessagesView().getMeasuredHeight() * (useRoundVideoScrollFix ? 1.5f : 1f)) {
+        controller.getMessagesView().smoothScrollBy(0, scrollBy);
       } else {
         manager.scrollToPositionWithOffset(index, offset);
       }
@@ -2709,11 +2723,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     int fullHeight = scrollMessage.getHeight();
 
     final boolean isPlayingRoundMessage = scrollMessage.getId() == TdlibManager.instance().player().getMessageId();
-    final int scrollDuration = Config.SYNC_SMOOTH_SCROLL_WITH_ROUND_VIDEO_RESIZE_ANIMATION && isPlayingRoundMessage ?
-      TGMessageVideo.RESIZE_DURATION : RecyclerView.UNDEFINED_DURATION;
-
     if (isPlayingRoundMessage && scrollMessage instanceof TGMessageVideo) {
-      fullHeight = ((TGMessageVideo) scrollMessage).getFullExpandedHeight();
+      fullHeight = ((TGMessageVideo) scrollMessage).getVideoMessageTargetHeight(true);
     }
 
     if (fullHeight > height - offset) {
@@ -2721,10 +2732,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
 
     if (highlightMode == HIGHLIGHT_MODE_UNREAD || highlightMode == HIGHLIGHT_MODE_UNREAD_NEXT || fullHeight + scrollMessage.findTopEdge() >= height) {
-      scrollToPositionWithOffset(index, height - fullHeight, smooth, scrollDuration);
+      scrollToPositionWithOffset(index, height - fullHeight, smooth, isPlayingRoundMessage);
       wasScrollByUser = false;
     } else {
-      scrollToPositionWithOffset(index, height / 2 - fullHeight / 2 + scrollMessage.findTopEdge(), smooth, scrollDuration);
+      scrollToPositionWithOffset(index, height / 2 - fullHeight / 2 + scrollMessage.findTopEdge(), smooth, isPlayingRoundMessage);
     }
 
     // manager.scrollToPositionWithOffset(index, 0);

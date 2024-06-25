@@ -22,6 +22,7 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
@@ -165,8 +166,8 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
     }
   }
 
-  public int getFullExpandedHeight () {
-    return height + videoFullSize - videoSize;
+  public int getVideoMessageTargetHeight (boolean isExpanded) {
+    return height - videoSize + (isExpanded ? + videoFullSize : videoSmallSize);
   }
 
   // View
@@ -224,6 +225,19 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
     }
   }
 
+  @Override
+  protected void onChildFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
+    if (id ==  FULL_SIZE_ANIMATOR_ID && finalFactor == 1f) {
+      final MessagesController controller = manager.controller();
+      if (controller != null && controller.getChatId() == getChatId()) {
+        final RecyclerView recyclerView = controller.getMessagesView();
+        if (manager.getUserScrollActionsCount() == cachedScrollActionsCount && recyclerView != null && recyclerView.getScrollState() == RecyclerView.SCROLL_STATE_IDLE) {
+          controller.centerMessage(getChatId(), getId(), false, true);
+        }
+      }
+    }
+  }
+
   // File utils
 
   @Override
@@ -248,11 +262,13 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
   private boolean isUnmuted;
   private float unmuteFactor;
   private FactorAnimator unmuteAnimator;
+  private int cachedScrollActionsCount;
 
   private void setUnmuted (boolean unmuted) {
     if (this.isUnmuted != unmuted) {
       this.isUnmuted = unmuted;
       this.isFullSizeAnimator.setValue(unmuted, UI.inUiThread() && currentViews.hasAnyTargetToInvalidate());
+      cachedScrollActionsCount = manager.getUserScrollActionsCount();
       final float toFactor = unmuted ? 1f : 0f;
       boolean animated = currentViews.hasAnyTargetToInvalidate();
       if (animated) {

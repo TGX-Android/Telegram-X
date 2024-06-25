@@ -55,7 +55,7 @@ public class MessageOverlayView extends View {
 
       int height = msg != null ? msg.getHeight() : 0;
       if (msg instanceof TGMessageVideo) {
-        height = ((TGMessageVideo) msg).getFullExpandedHeight();
+        height = ((TGMessageVideo) msg).getVideoMessageTargetHeight(true);
       }
 
       heightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
