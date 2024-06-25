@@ -30,17 +30,14 @@ import org.thunderdog.challegram.util.RateLimiter;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
-import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 
-class RoundProgressView2 extends View implements FactorAnimator.Target {
+class RoundProgressView2 extends View {
   private final BoolAnimator barOpacity = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 220L, true);
   private final BoolAnimator barOpacityReverse = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 220L, false);
 
   private final Paint strokePaint;
-
-
 
   private boolean isPaused;
 
@@ -51,16 +48,6 @@ class RoundProgressView2 extends View implements FactorAnimator.Target {
     super(context);
 
     strokePaint = new Paint(Paints.videoStrokePaint());
-  }
-
-  @Override
-  public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
-
-  }
-
-  @Override
-  public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
-
   }
 
   public void setIsPaused (boolean isPaused) {
