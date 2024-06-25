@@ -172,7 +172,7 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
         if (modeFlags == MODE_NONE) {
           final float dxTotal = x - xStart;
           float dyTotal = y - yStart;
-          if (dyTotal < 0 && hasChanges) {
+          if (dyTotal < 0 && hasChanges && index == 0) {
             dyTotal = 0f;
           }
 
@@ -194,7 +194,7 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
           modeFlags = MODE_NONE;
           xPrev = xStart = x;
           yPrev = yStart = y;
-          setSliderValue(defaultSpeed);
+          setSliderValue(valueFromSpeed(defaultSpeed), false);
           setButtonSelected(-1, true);
           UI.hapticVibrate(this, true);
           break;
@@ -204,7 +204,7 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
         boolean needVibrate = speedChanged && defaultSpeed == currentSpeed;
         boolean forceVibrate = needVibrate && !BitwiseUtils.hasFlag(modeFlags, MODE_FLAG_ALLOW_VERTICAL) || index == 0;
         hasChanges |= speedChanged | index > 0;
-        canLeaveHorizontalMode |= speedChanged | index > 0;
+        canLeaveHorizontalMode |= speedChanged; // | index > 0;
 
         // if (modeFlags == MODE_ALL_DIRECTIONS && defaultSpeed != currentSpeed /*&& speedChanged*/ && index == 0) {
         //   modeFlags = MODE_HORIZONTAL;
@@ -216,8 +216,9 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
           needVibrate = true;
         }*/
 
-        if (modeFlags == MODE_HORIZONTAL && canLeaveHorizontalMode && external && defaultSpeed == currentSpeed && /*speedChanged &&*/ index == 0) {
+        if (modeFlags == MODE_HORIZONTAL && canLeaveHorizontalMode && external && defaultSpeed == currentSpeed) {
           modeFlags = MODE_NONE;
+          setSliderValue(valueFromSpeed(defaultSpeed), false);
           xPrev = xStart = x;
           yPrev = yStart = y;
           needVibrate = true;
