@@ -153,13 +153,10 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
   private int defaultSpeed;
   private float xStart, yStart, xPrev, yPrev, yDown;
   private boolean hasChanges = false;
+  private boolean canLeaveHorizontalMode = false;
 
   public void processTouchEvent (int event, float x, float y, float offset, boolean external) {
     final float dx = x - xPrev;
-    final float dy = y - yPrev;
-    final float dxTotal = x - xStart;
-    final float dyTotal = y - yStart;
-
     switch (event) {
       case MotionEvent.ACTION_DOWN: {
         modeFlags = external ? MODE_NONE : MODE_HORIZONTAL;
@@ -173,18 +170,33 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
       case MotionEvent.ACTION_MOVE: {
         final int index = external ? getTouchIndex(y - yDown + offset) : 0;
         if (modeFlags == MODE_NONE) {
+          final float dxTotal = x - xStart;
+          float dyTotal = y - yStart;
+          if (dyTotal < 0 && hasChanges) {
+            dyTotal = 0f;
+          }
+
           if (Math.hypot(dxTotal, dyTotal) > Screen.getTouchSlop() * 1.5f) {
             final boolean horizontalMode = dyTotal < 0 || Math.abs(dxTotal) > Math.abs(dyTotal);
             final boolean verticalMode = !horizontalMode && index > 0;
             if (horizontalMode || verticalMode) {
-              modeFlags = verticalMode ? MODE_VERTICAL : MODE_ALL_DIRECTIONS;
-              if (/* !hasChanges ||*/ modeFlags == MODE_VERTICAL) {
-                UI.hapticVibrate(this, true);
-              }
+              modeFlags = verticalMode ? MODE_VERTICAL : MODE_HORIZONTAL;
+              UI.hapticVibrate(this, verticalMode);
               xPrev = xStart = x;
               yPrev = yStart = y;
+              canLeaveHorizontalMode = false;
             }
           }
+          break;
+        }
+
+        if (modeFlags == MODE_VERTICAL && index == 0) {
+          modeFlags = MODE_NONE;
+          xPrev = xStart = x;
+          yPrev = yStart = y;
+          setSliderValue(defaultSpeed);
+          setButtonSelected(-1, true);
+          UI.hapticVibrate(this, true);
           break;
         }
 
@@ -192,21 +204,22 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
         boolean needVibrate = speedChanged && defaultSpeed == currentSpeed;
         boolean forceVibrate = needVibrate && !BitwiseUtils.hasFlag(modeFlags, MODE_FLAG_ALLOW_VERTICAL) || index == 0;
         hasChanges |= speedChanged | index > 0;
+        canLeaveHorizontalMode |= speedChanged | index > 0;
 
-        if (modeFlags == MODE_ALL_DIRECTIONS && defaultSpeed != currentSpeed /*&& speedChanged*/ && index == 0) {
-          modeFlags = MODE_HORIZONTAL;
+        // if (modeFlags == MODE_ALL_DIRECTIONS && defaultSpeed != currentSpeed /*&& speedChanged*/ && index == 0) {
+        //   modeFlags = MODE_HORIZONTAL;
+        //   needVibrate = true;
+        // }
+
+        /* if (modeFlags == MODE_ALL_DIRECTIONS && index > 0) {
+          modeFlags = MODE_VERTICAL;
           needVibrate = true;
-        }
+        }*/
 
-        if (modeFlags == MODE_HORIZONTAL && external && defaultSpeed == currentSpeed && /*speedChanged &&*/ index == 0) {
+        if (modeFlags == MODE_HORIZONTAL && canLeaveHorizontalMode && external && defaultSpeed == currentSpeed && /*speedChanged &&*/ index == 0) {
           modeFlags = MODE_NONE;
           xPrev = xStart = x;
           yPrev = yStart = y;
-          needVibrate = true;
-        }
-
-        if (modeFlags == MODE_VERTICAL && index == 0) {
-          modeFlags = MODE_ALL_DIRECTIONS;
           needVibrate = true;
         }
 

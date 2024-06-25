@@ -1458,7 +1458,7 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
       .builder(headerView)
       .locate((targetView, outRect) -> {
         final int width = targetView.getMeasuredWidth();
-        outRect.set(getRightButtonLeft(width, 2), 0, getRightButtonRight(width, 2), getTopOffset() + (int) fillingBottom);
+        outRect.set(getRightButtonLeft(width, 2), 0, getRightButtonRight(width, 2), playerBottom);
       })
       .maxWidth(300)
       .show(null, text).hideDelayed(3000, TimeUnit.MILLISECONDS);
