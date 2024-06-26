@@ -177,7 +177,7 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
           }
 
           if (Math.hypot(dxTotal, dyTotal) > Screen.getTouchSlop() * 1.5f) {
-            final boolean horizontalMode = dyTotal < 0 || Math.abs(dxTotal) > Math.abs(dyTotal);
+            final boolean horizontalMode = (dyTotal < 0f && index == 0) || Math.abs(dxTotal) > Math.abs(dyTotal);
             final boolean verticalMode = !horizontalMode && index > 0;
             if (horizontalMode || verticalMode) {
               modeFlags = verticalMode ? MODE_VERTICAL : MODE_HORIZONTAL;

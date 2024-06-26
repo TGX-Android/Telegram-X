@@ -1480,8 +1480,8 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
         playbackSpeedPopup.hideWindow(true);
       }
     }, TdlibManager.instance().player().getSpeed());
-    playbackSpeedLayout.setTranslationY(HeaderView.getSize(true) - Screen.dp(16));
-    playbackSpeedLayout.setTranslationX(getRightButtonRight(0, 2) + Screen.dp(16));
+    playbackSpeedLayout.setTranslationY((playerTop + playerBottom) / 2f - Screen.dp(24 + 8));
+    playbackSpeedLayout.setTranslationX(getRightButtonCenter(0, 2) + Screen.dp( 24 + 8));
     playbackSpeedLayout.processTouchEvent(MotionEvent.ACTION_DOWN, touchX, touchY, playbackOffsetY, true);
 
     playbackSpeedPopup.init(true);
