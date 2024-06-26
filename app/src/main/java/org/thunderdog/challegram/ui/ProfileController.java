@@ -5306,7 +5306,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   public void onPageScrollStateChanged (int state) {
-
+    if (topCellView != null && state != ViewPager.SCROLL_STATE_SETTLING) {
+      topCellView.getTopView().resetFromTo();
+    }
   }
 
   @Override
