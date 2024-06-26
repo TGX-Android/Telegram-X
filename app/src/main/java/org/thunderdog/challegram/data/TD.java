@@ -5005,7 +5005,7 @@ public class TD {
     return null;
   }
 
-  private static void fixEntities (List<TdApi.TextEntity> entities) {
+  public static void fixEntities (List<TdApi.TextEntity> entities) {
     if (entities != null && !entities.isEmpty()) {
       int lookupIndex = 0;
       do {
