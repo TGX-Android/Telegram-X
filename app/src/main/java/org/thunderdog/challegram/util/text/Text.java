@@ -268,6 +268,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   private Map<String, TextMedia> media;
   private @Nullable TextEntity[] entities;
 
+  @Nullable public TextEntity[] getEntities () {
+    return entities;
+  }
+
   private int paragraphCount;
   private int currentX, currentY;
   private int currentWidth;
@@ -2800,6 +2804,9 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
   public void setViewProvider (ViewProvider viewProvider) {
     this.viewProvider = viewProvider;
+    for (QuoteBackground quote : quotes) {
+      quote.setViewProvider(viewProvider);
+    }
   }
 
   public ViewProvider getViewProvider () {
@@ -2809,7 +2816,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   public void cancelTouch () {
     boolean canceled = false;
     if (pressedQuote != null) {
-      pressedQuote.cancelTouch();
+      pressedQuote.performCancelTouch();
       pressedQuote = null;
       canceled = true;
     }
@@ -2894,6 +2901,11 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     if (parts == null || isDestroyed()) {
       return false;
     }
+
+    if (pressedQuote != null && e.getAction() != MotionEvent.ACTION_DOWN) {
+      pressedQuote.onTouchEvent(view, e);
+    }
+
     switch (e.getAction()) {
       case MotionEvent.ACTION_DOWN: {
         touchX = (int) e.getX();
@@ -2904,8 +2916,9 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
         if (causeIndex == -1) {
 
           for (QuoteBackground quote : quotes) {
-            if (quote.setPressed(touchX, touchY)) {
+            if (quote.contains(touchX, touchY)) {
               pressedQuote = quote;
+              pressedQuote.onTouchEvent(view, e);
               if ((textFlags & FLAG_CUSTOM_LONG_PRESS) != 0) {
                 scheduleLongPress(view, callback);
               } else {
@@ -3019,6 +3032,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     if (pressedQuote != null) {
       final QuoteBackground quote = pressedQuote;
       final TextEntity entity = quote.entity;
+      pressedQuote.performLongPress(view);
       cancelTouch();
 
       return entity != null && entity.performLongPress(view, this, null, (textFlags & FLAG_CUSTOM_LONG_PRESS_NO_SHARE) == 0, callback);
@@ -3435,6 +3449,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
           }
           lastQuoteId = quoteId;
           quote = new QuoteBackground(this, entity);
+          quote.setViewProvider(viewProvider);
           quote.partStart = a;
         }
         quote.partEnd = a + 1;

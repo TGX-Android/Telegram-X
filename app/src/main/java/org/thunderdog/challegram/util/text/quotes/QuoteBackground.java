@@ -1,20 +1,13 @@
 package org.thunderdog.challegram.util.text.quotes;
 
-import static org.thunderdog.challegram.theme.Theme.RIPPLE_COLOR;
-
-import android.content.res.ColorStateList;
 import android.graphics.Canvas;
-import android.graphics.ColorFilter;
 import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.PixelFormat;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.text.TextPaint;
-import android.util.StateSet;
+import android.view.MotionEvent;
+import android.view.View;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.R;
@@ -23,14 +16,14 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.util.text.RippleDrawable;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextPart;
 
 import me.vkryl.android.util.ViewProvider;
-import me.vkryl.core.ColorUtils;
 
-public class QuoteBackground implements Drawable.Callback {
+public class QuoteBackground {
   public static final int QUOTE_LEFT_PADDING = 11;
   public static final int QUOTE_RIGHT_PADDING = 27;
   public static final int QUOTE_VERTICAL_PADDING = 2;
@@ -48,28 +41,36 @@ public class QuoteBackground implements Drawable.Callback {
   public int partEnd;
 
   public final RectF bounds = new RectF();
-  public final @Nullable Drawable ripple;
-  public final BackgroundDrawable rippleBackgroundDrawable;
+  private final RippleDrawable ripple;
 
   public QuoteBackground (Text text, TextEntity entity) {
     this.parent = text;
     this.entity = entity;
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-      rippleBackgroundDrawable = new BackgroundDrawable();
-
-
-      ripple = new android.graphics.drawable.RippleDrawable(
-        new ColorStateList(new int[][] {StateSet.WILD_CARD}, new int[] {RIPPLE_COLOR}),
-        null, // rippleBackgroundDrawable,
-        new BackgroundDrawable()
-      );
-      ripple.setCallback(this);
-    } else {
-      ripple = null;
-      rippleBackgroundDrawable = null;
-    }
+    this.ripple = new RippleDrawable();
   }
+
+  public void setViewProvider (@Nullable ViewProvider viewProvider) {
+    ripple.setViewProvider(viewProvider);
+  }
+
+  public void performLongPress (View view) {
+    ripple.performLongPress(view);
+  }
+
+  public void performCancelTouch () {
+    ripple.performCancelTouch();
+  }
+
+  public boolean contains (int x, int y) {
+    return ripple.bounds.contains(x, y);
+  }
+
+  public boolean onTouchEvent (View view, MotionEvent e) {
+    return ripple.onTouchEvent(view, e, (int) (e.getX() - ripple.bounds.left), (int) (e.getY() - ripple.bounds.top));
+  }
+
+
 
   public void calcHeightAddition () {
     final int lineHeight = parent.getLineHeight();
@@ -111,101 +112,15 @@ public class QuoteBackground implements Drawable.Callback {
     final int lineColorId = parent.getQuoteLineColorId();
     final int lineColor = Theme.getColor(lineColorId);
 
-    if (ripple != null) {
-      rippleBackgroundDrawable.setColor(ColorUtils.alphaColor(0.05f, lineColor));
-      ripple.setBounds((int) bounds.left, (int) bounds.top, (int) bounds.right, (int) bounds.bottom);
-      ripple.draw(c);
-    }
+    ripple.setBounds((int) bounds.left, (int) bounds.top, (int) bounds.right, (int) bounds.bottom);
+    ripple.setRadius(Screen.dp(1.5f), Screen.dp(8f), Screen.dp(8f), Screen.dp(1.5f));
+    ripple.setMainColorId(lineColorId, 0.25f);
+    ripple.draw(c);
 
     Drawables.draw(c, quoteDrawable, bounds.right - Screen.dp(19), bounds.top + Screen.dp(3.5f), PorterDuffPaint.get(lineColorId));
 
     tmpRect.set(bounds);
     tmpRect.right = bounds.left + Screen.dp(3);
     c.drawRoundRect(tmpRect, Screen.dp(1.5f), Screen.dp(1.5f), Paints.fillingPaint(lineColor));
-  }
-
-  public boolean setPressed (int x, int y) {
-    if (bounds.contains(x, y)) {
-      if (ripple != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-        ripple.setHotspot(x, y);
-        ripple.setState(new int[] {android.R.attr.state_pressed, android.R.attr.state_enabled});
-      }
-      return true;
-    }
-
-    return false;
-  }
-
-  public void cancelTouch () {
-    if (ripple != null) {
-      ripple.setState(new int[0]);
-    }
-  }
-
-  @Override
-  public void invalidateDrawable (@NonNull Drawable who) {
-    ViewProvider vp = parent.getViewProvider();
-    if (vp != null) {
-      vp.invalidate();
-    }
-  }
-
-  @Override
-  public void scheduleDrawable (@NonNull Drawable who, @NonNull Runnable what, long when) {
-
-  }
-
-  @Override
-  public void unscheduleDrawable (@NonNull Drawable who, @NonNull Runnable what) {
-
-  }
-
-  public static class BackgroundDrawable extends Drawable {
-    private static final RectF tmpRect = new RectF();
-    private static final float[] TEMP_RADII = new float[8];
-
-    private final Path path = new Path();
-    private int color = 0xFFFFFFFF;
-
-    @Override
-    public void draw (@NonNull Canvas canvas) {
-      canvas.drawPath(path, Paints.fillingPaint(color));
-    }
-
-    @Override
-    public void setBounds (int left, int top, int right, int bottom) {
-      super.setBounds(left, top, right, bottom);
-
-      TEMP_RADII[0] = TEMP_RADII[1] = Screen.dp(1.5f);
-      TEMP_RADII[2] = TEMP_RADII[3] = Screen.dp(8);
-      TEMP_RADII[4] = TEMP_RADII[5] = Screen.dp(8);
-      TEMP_RADII[6] = TEMP_RADII[7] = Screen.dp(1.5f);
-      tmpRect.set(getBounds());
-
-      path.reset();
-      path.addRoundRect(tmpRect, TEMP_RADII, Path.Direction.CCW);
-      path.close();
-    }
-
-    public void setColor (int color) {
-      if (this.color != color) {
-        this.color = color;
-      }
-    }
-
-    @Override
-    public void setAlpha (int alpha) {
-
-    }
-
-    @Override
-    public void setColorFilter (@Nullable ColorFilter colorFilter) {
-
-    }
-
-    @Override
-    public int getOpacity () {
-      return PixelFormat.TRANSLUCENT;
-    }
   }
 }
