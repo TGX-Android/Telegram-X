@@ -54,6 +54,7 @@ import org.thunderdog.challegram.telegram.TdlibStatusManager;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.util.DrawableProvider;
+import org.thunderdog.challegram.util.text.counter.CounterTextPart;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.widget.SimplestCheckBox;
@@ -436,7 +437,7 @@ public class DrawAlgorithms {
     drawCounter(c, cx, cy, gravity, counter, textSize, textAlpha, false, false, 0, colorSet, null, Gravity.LEFT, 0, 0, 0f, 0f, scale, null);
   }
 
-  public static void drawCounter (Canvas c, float cx, float cy, int gravity, CounterAnimator<Text> counter, float textSize, float textAlpha, boolean needBackground, boolean outlineAffectsBackgroundSize, @Px int backgroundPadding, TextColorSet colorSet, @Nullable Drawable drawable, int drawableGravity, int drawableColorId, @Px int drawableMargin, float backgroundAlpha, float drawableAlpha, float scale, @Nullable RectF outputDrawRect) {
+  public static <T extends CounterTextPart> void drawCounter (Canvas c, float cx, float cy, int gravity, CounterAnimator<T> counter, float textSize, float textAlpha, boolean needBackground, boolean outlineAffectsBackgroundSize, @Px int backgroundPadding, TextColorSet colorSet, @Nullable Drawable drawable, int drawableGravity, int drawableColorId, @Px int drawableMargin, float backgroundAlpha, float drawableAlpha, float scale, @Nullable RectF outputDrawRect) {
     scale = .6f + .4f * scale;
     final boolean needScale = scale != 1f;
 
@@ -549,7 +550,7 @@ public class DrawAlgorithms {
       }
     }
 
-    for (ListAnimator.Entry<CounterAnimator.Part<Text>> entry : counter) {
+    for (ListAnimator.Entry<CounterAnimator.Part<T>> entry : counter) {
       int textStartX = Math.round(startX + entry.getRectF().left);
       int textEndX = textStartX + entry.item.getWidth();
       int startY = Math.round(cy - entry.item.getHeight() / 2f + entry.item.getHeight() * .8f * entry.item.getVerticalPosition());

@@ -123,12 +123,12 @@ public class NavigationGestureController implements GestureDetector.OnGestureLis
   private boolean canSlideBack () {
     int stackSize = navigation.getStackSize();
     ViewController<?> c = navigation.getCurrentStackItem();
-    return stackSize > 0 && c != null && c.swipeNavigationEnabled() && !c.forceFadeMode() && !c.inSelectMode() && !c.inCustomMode() && !(stackSize == 1 && c.inSearchMode());
+    return navigation.swipeNavigationEnabled() && stackSize > 0 && c != null && c.swipeNavigationEnabled() && !c.forceFadeMode() && !c.inSelectMode() && !c.inCustomMode() && !(stackSize == 1 && c.inSearchMode());
   }
 
   private boolean canSlideBack (ViewController<?> c, float x, float y) {
     int stackSize = navigation.getStackSize();
-    return stackSize > 0 && c != null && c.swipeNavigationEnabled() && !c.forceFadeMode() && !c.inSelectMode() && !c.inCustomMode() && !(stackSize == 1 && c.inSearchMode()) && c.canSlideBackFrom(navigation, x, y);
+    return navigation.swipeNavigationEnabled() && stackSize > 0 && c != null && c.swipeNavigationEnabled() && !c.forceFadeMode() && !c.inSelectMode() && !c.inCustomMode() && !(stackSize == 1 && c.inSearchMode()) && c.canSlideBackFrom(navigation, x, y);
   }
 
   public void onCancel () {
