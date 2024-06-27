@@ -43,6 +43,7 @@ import org.thunderdog.challegram.navigation.ActivityResultHandler;
 import org.thunderdog.challegram.navigation.BackListener;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.MenuMoreWrap;
+import org.thunderdog.challegram.navigation.MenuMoreWrapAbstract;
 import org.thunderdog.challegram.navigation.OptionsLayout;
 import org.thunderdog.challegram.navigation.RootDrawable;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
@@ -524,7 +525,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
     return boundView;
   }
 
-  public void showMoreView (MenuMoreWrap menuWrap) {
+  public void showMoreView (MenuMoreWrapAbstract menuWrap) {
     if (menuWrap == null) {
       throw new IllegalArgumentException();
     }
@@ -560,7 +561,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
   }
 
   private void hideMoreWrap () {
-    MenuMoreWrap menuWrap = (MenuMoreWrap) getContentChild();
+    MenuMoreWrapAbstract menuWrap = (MenuMoreWrapAbstract) getContentChild();
 
     if (menuWrap == null) {
       return;
@@ -689,7 +690,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
             }
           };
 
-          MenuMoreWrap menuWrap = (MenuMoreWrap) getContentChild();
+          MenuMoreWrapAbstract menuWrap = (MenuMoreWrapAbstract) getContentChild();
 
           if (menuWrap == null) {
             return;
@@ -829,7 +830,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
     animator.animateTo(toFactor);
   }
 
-  private View getContentChild () {
+  public View getContentChild () {
     int count = getChildCount();
     for (int i = 0; i < count; i++) {
       View view = getChildAt(i);
