@@ -231,6 +231,8 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
     }
   }
 
+  private static final boolean POST_SMOOTH_SCROLL_ALWAYS = false;
+
   @Override
   public void onSelectionChanged (int selectionLeft, int selectionWidth, int firstItemWidth, int lastItemWidth, float totalFactor, boolean animated) {
     View view = recyclerView.getLayoutManager().findViewByPosition(0);
@@ -274,33 +276,20 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
       - getPaddingRight()
       - Views.getLeftMargin(recyclerView)
       - Views.getRightMargin(recyclerView), parentWidth);
-    if (viewWidth <= parentMaxWidth - parentPaddingLeft - parentPaddingRight) {
-      if (animated && topViewMarginRightDiff != 0) {
-        float topViewTranslationX = topViewMarginRightDiff / 2f;
-        topView.setTranslationX(topViewTranslationX);
-        topView.animate()
-          .translationX(0f)
-          .setInterpolator(QUINTIC_INTERPOLATOR)
-          .setDuration(computeScrollDuration(topViewTranslationX, viewWidth));
-      }
-      return;
-    }
-    if (recyclerView.isComputingLayout()) {
-      return;
-    }
-
+    final int parentWidthAfterLayout = Math.min(viewWidth + parentPaddingLeft + parentPaddingRight, parentMaxWidth);
     //noinspection UnnecessaryLocalVariable
     final int maxViewLeft = parentPaddingLeft;
-    final int minViewLeft = parentWidth - viewWidth - parentPaddingRight;
+    final int minViewLeft = parentWidthAfterLayout - viewWidth - parentPaddingRight;
     if (minViewLeft > maxViewLeft) {
       return;
     }
     final int viewLeft = MathUtils.clamp(view.getLeft(), minViewLeft, maxViewLeft); // TODO RTL
+    final int viewMaxNonScrollableWidth = parentMaxWidth - parentPaddingLeft - parentPaddingRight;
     final float topViewTranslationX;
     if (animated && topViewMarginRightDiff != 0) {
       int oldViewWidth = viewWidth - topViewMarginRightDiff;
-      if (oldViewWidth <= parentMaxWidth - parentPaddingLeft - parentPaddingRight) {
-        topViewTranslationX = topViewMarginRightDiff;
+      if (oldViewWidth < viewMaxNonScrollableWidth && isCenteredHorizontally()) {
+        topViewTranslationX = (Math.min(viewWidth, viewMaxNonScrollableWidth) - oldViewWidth) / 2f;
       } else {
         topViewTranslationX = view.getLeft() - viewLeft;
       }
@@ -309,6 +298,17 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
     }
 
     final Interpolator interpolator = QUINTIC_INTERPOLATOR;
+    if (viewWidth <= viewMaxNonScrollableWidth) {
+      if (animated && topViewTranslationX != 0f) {
+        int duration = computeScrollDuration(topViewTranslationX, parentWidthAfterLayout);
+        animateTopViewTranslationX(topViewTranslationX, interpolator, duration);
+      }
+      return;
+    }
+    if (recyclerView.isComputingLayout()) {
+      return;
+    }
+
     int animationDuration = RecyclerView.UNDEFINED_DURATION;
 
     if ((selfWidth < selfMaxWidth) || (topView.getMaxStableWidth() - parentWidth) < lastItemWidth / 2) {
@@ -317,10 +317,10 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
         int diff = (viewLeft - desiredViewLeft)/* * (Lang.rtl() ? -1 : 1)*/;  // TODO RTL
         if (animated) {
           if (topViewTranslationX != 0f) {
-            animationDuration = computeScrollDuration(diff, parentWidth);
+            animationDuration = computeScrollDuration(diff, parentWidthAfterLayout);
           }
           recyclerView.stopScroll();
-          if (topViewTranslationX != 0f) {
+          if (shouldPostSmoothScroll()) {
             postSmoothScrollBy(diff, interpolator, animationDuration);
           } else {
             recyclerView.smoothScrollBy(diff, 0, interpolator, animationDuration);
@@ -351,10 +351,10 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
           int offset = (viewLeft - newViewLeft)/* * (Lang.rtl() ? -1 : 1)*/; // TODO RTL
           if (animated) {
             if (topViewTranslationX != 0f) {
-              animationDuration = computeScrollDuration(offset, parentWidth);
+              animationDuration = computeScrollDuration(offset, parentWidthAfterLayout);
             }
             recyclerView.stopScroll();
-            if (topViewTranslationX != 0f) {
+            if (shouldPostSmoothScroll()) {
               postSmoothScrollBy(offset, interpolator, animationDuration);
             } else {
               recyclerView.smoothScrollBy(offset, 0, interpolator, animationDuration);
@@ -373,17 +373,29 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
     }
     if (animated && topViewTranslationX != 0f) {
       if (animationDuration == RecyclerView.UNDEFINED_DURATION) {
-        animationDuration = computeScrollDuration(topViewTranslationX, parentWidth);
+        animationDuration = computeScrollDuration(topViewTranslationX, parentWidthAfterLayout);
       }
-      topView.setTranslationX(topViewTranslationX);
-      topView.animate()
-        .translationX(0f)
-        .setDuration(animationDuration)
-        .setInterpolator(interpolator);
+      animateTopViewTranslationX(topViewTranslationX, interpolator, animationDuration);
     }
   }
 
+  private void animateTopViewTranslationX (float fromTranslationX, Interpolator interpolator, int duration) {
+    if (fromTranslationX == 0f) {
+      return;
+    }
+    View topView = getTopView();
+    topView.setTranslationX(fromTranslationX);
+    topView.animate()
+      .translationX(0f)
+      .setDuration(duration)
+      .setInterpolator(interpolator);
+  }
+
   private @Nullable Runnable smoothScrollStarter;
+
+  private boolean shouldPostSmoothScroll () {
+    return POST_SMOOTH_SCROLL_ALWAYS || recyclerView.isComputingLayout() || recyclerView.isLayoutRequested() || getTopView().isLayoutRequested();
+  }
 
   private void postSmoothScrollBy (int dx, @Nullable Interpolator interpolator, int duration) {
     cancelSmoothScroll();
@@ -440,6 +452,12 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
       recyclerView.scrollBy(scrollX, 0);
       resetUserInteraction();
     }
+  }
+
+  private boolean isCenteredHorizontally () {
+    int layoutGravity = Views.getLayoutGravity(recyclerView.getLayoutParams());
+    int horizontalGravity = layoutGravity & Gravity.HORIZONTAL_GRAVITY_MASK;
+    return horizontalGravity == Gravity.CENTER_HORIZONTAL;
   }
 
   public boolean canScrollLeft () {
