@@ -523,6 +523,10 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     }
   }
 
+  public boolean isAttached () {
+    return isAttached;
+  }
+
   private float touchX, touchY;
 
   private static void selectMessage (MessagesController m, TGMessage msg, float touchX, float touchY) {

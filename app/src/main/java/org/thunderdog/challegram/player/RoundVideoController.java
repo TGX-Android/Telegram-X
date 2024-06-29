@@ -47,7 +47,9 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.chat.MessageOverlayView;
 import org.thunderdog.challegram.component.chat.MessageViewGroup;
+import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.preview.FlingDetector;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageVideo;
@@ -816,6 +818,9 @@ public class RoundVideoController extends BasePlaybackController implements
             }
             visibilityAnimator = new FactorAnimator(ANIMATOR_MAIN_VISIBILITY, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 138l, this.mainVisibilityFactor);
           }
+
+          final long duration = (long) ((isVisible ? (1f - smoothScrollerAnimator.getFloatValue()) : smoothScrollerAnimator.getFloatValue()) * scrollDuration) + 138L;
+          visibilityAnimator.setDuration(duration);
           visibilityAnimator.animateTo(toFactor);
         } else {
           if (visibilityAnimator != null) {
@@ -915,7 +920,7 @@ public class RoundVideoController extends BasePlaybackController implements
 
   private void checkPlayState () {
     if (texturePrepared) {
-      exoPlayer.setPlayWhenReady(isPlaying && (targetView != null || !awaitingCurrentView));
+      exoPlayer.setPlayWhenReady(isPlaying && (!smoothScrollerAnimator.isAnimating() || !Config.WAIT_ANIMATIONS_BEFORE_START_VIDEO) && (targetView != null || !awaitingCurrentView));
       checkProgressTimer();
     }
   }
@@ -1067,6 +1072,8 @@ public class RoundVideoController extends BasePlaybackController implements
   private static final int ANIMATOR_PIP_VISIBILITY = 2;
   private static final int ANIMATOR_MAIN_VISIBILITY = 3;
   private static final int ANIMATOR_IS_PLAYING = 4;
+  private static final int ANIMATOR_SMOOTH_SCROLLER = 5;
+
 
   @Override
   public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
@@ -1088,18 +1095,76 @@ public class RoundVideoController extends BasePlaybackController implements
           mainProgressView.invalidate();
         }
         break;
+      case ANIMATOR_SMOOTH_SCROLLER:
+        smoothScrollImpl();
+        break;
     }
   }
 
   @Override
-  public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) { }
+  public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
+    if (id == ANIMATOR_SMOOTH_SCROLLER) {
+      scrollByTarget = 0;
+      if (!ignoreChecksPlayStateOnAnimationFinish) {
+        checkPlayState();
+      }
+    }
+  }
+
+
+
+  private final BoolAnimator smoothScrollerAnimator = new BoolAnimator(ANIMATOR_SMOOTH_SCROLLER, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 220);
+
+  private float lastFactor = 0f;
+  private int scrollByTarget;
+  private MessagesController scrolledController;
+  private long scrolledChatId;
+  private long scrollDuration;
+
+  private boolean ignoreChecksPlayStateOnAnimationFinish;
+
+  private void smoothScrollBy (MessagesController c, int dy, long duration) {
+    ignoreChecksPlayStateOnAnimationFinish = true;
+    smoothScrollerAnimator.setValue(false, false);
+    scrolledController = c;
+    scrolledChatId = c.getChatId();
+    lastFactor = 0f;
+    scrollDuration = duration;
+    smoothScrollerAnimator.setDuration(duration);
+
+    scrollByTarget = dy;
+    ignoreChecksPlayStateOnAnimationFinish = false;
+    smoothScrollerAnimator.setValue(true, true);
+  }
+
+  private void smoothScrollImpl () {
+    if (scrolledController == null || scrolledController.isDestroyed() || scrolledController.getChatId() != scrolledChatId
+      || scrolledController.getMessagesView() == null || scrollByTarget == 0) {
+
+      scrollByTarget = 0;
+      // smoothScrollerAnimator.setValue(false, false);
+      scrolledController = null;
+      return;
+    }
+
+    final float factor = smoothScrollerAnimator.getFloatValue();
+    scrolledController.getMessagesView().scrollBy(0, Math.round((factor - lastFactor) * scrollByTarget));
+    lastFactor = factor;
+  }
 
 
   // View tracker
 
+  private final MessagesManager.VideoScrollParameters outSp = new MessagesManager.VideoScrollParameters();
+  private TGMessageVideo currentAnimationTarget;
+
   private boolean awaitingCurrentView;
 
   private void findOrAwaitTargetView (boolean byUserRequest, boolean hadObject, float currentProgress) {
+    scrollByTarget = 0;
+    scrollDuration = 0;
+    lastFactor = 0f;
+
     MessageViewGroup newTarget = null;
     ViewController<?> c = context.navigation().getCurrentStackItem();
     if (object != null && c != null && c instanceof MessagesController) {
@@ -1107,7 +1172,21 @@ public class RoundVideoController extends BasePlaybackController implements
       if (foundTarget == null || foundTarget instanceof MessageViewGroup) {
         newTarget = (MessageViewGroup) foundTarget;
         if (!inPipMode || newTarget != null) {
-          if (((MessagesController) c).centerMessage(object.chatId, object.id, !byUserRequest, hadObject || !byUserRequest)) {
+          if (((MessagesController) c).calculateScrollDyForCenterVideoMessage(object.chatId, object.id, outSp)) {
+            // outSp.duration *= 5;
+            outSp.duration = outSp.duration * 3 / 4;
+            if (currentAnimationTarget != null) {
+              currentAnimationTarget.setFullSizeAnimatorDuration(outSp.duration);
+            }
+            outSp.message.setFullSizeAnimatorDuration(outSp.duration);
+            currentAnimationTarget = outSp.message;
+
+            if (outSp.canAnimateScrollPosition) {
+              smoothScrollBy((MessagesController) c, outSp.dy, outSp.duration);
+            } else {
+              ((MessagesController) c).getManager().getLayoutManager().scrollToPositionWithOffset(outSp.index, outSp.offset);
+            }
+
             awaitingCurrentView = c.isFocused();
           }
         }

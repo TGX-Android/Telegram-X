@@ -22,7 +22,6 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
@@ -68,10 +67,11 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
   private TdApi.VideoNote videoNote;
   private boolean notViewed;
 
-  public static final int RESIZE_DURATION = 220;
+  public static final int RESIZE_DEFAULT_DURATION = 300;
   private static final int FULL_SIZE_ANIMATOR_ID = 10001;
 
-  private final BoolAnimator isFullSizeAnimator = new BoolAnimator(FULL_SIZE_ANIMATOR_ID, this, AnimatorUtils.DECELERATE_INTERPOLATOR, RESIZE_DURATION);
+  private final BoolAnimator isFullSizeAnimator = new BoolAnimator(FULL_SIZE_ANIMATOR_ID, this, AnimatorUtils.DECELERATE_INTERPOLATOR, RESIZE_DEFAULT_DURATION);
+  private long fullSizeAnimatorDuration = RESIZE_DEFAULT_DURATION;
 
   private FileProgressComponent fileProgress;
   private ImageFile miniThumbnail, previewFile;
@@ -127,6 +127,9 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
   @Override
   protected void onMessageAttachStateChange (boolean isAttached) {
     checkTrackListenerAttached();
+    if (!isAttached && isFullSizeAnimator.isAnimating()) {
+      isFullSizeAnimator.setValue(isFullSizeAnimator.getValue(), false);
+    }
   }
 
   private void checkTrackListenerAttached () {
@@ -225,16 +228,14 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
     }
   }
 
+  public void setFullSizeAnimatorDuration (long fullSizeAnimatorDuration) {
+    this.fullSizeAnimatorDuration = fullSizeAnimatorDuration;
+  }
+
   @Override
   protected void onChildFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
-    if (id ==  FULL_SIZE_ANIMATOR_ID && finalFactor == 1f) {
-      final MessagesController controller = manager.controller();
-      if (controller != null && controller.getChatId() == getChatId()) {
-        final RecyclerView recyclerView = controller.getMessagesView();
-        if (manager.getUserScrollActionsCount() == cachedScrollActionsCount && recyclerView != null && recyclerView.getScrollState() == RecyclerView.SCROLL_STATE_IDLE) {
-          controller.centerMessage(getChatId(), getId(), false, true);
-        }
-      }
+    if (id ==  FULL_SIZE_ANIMATOR_ID) {
+      fullSizeAnimatorDuration = RESIZE_DEFAULT_DURATION;
     }
   }
 
@@ -262,13 +263,27 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
   private boolean isUnmuted;
   private float unmuteFactor;
   private FactorAnimator unmuteAnimator;
-  private int cachedScrollActionsCount;
+
+  private boolean hasValidAttachedView () {
+    for (View v : currentViews) {
+      if (Views.isValid(v)) {
+        if (v instanceof MessageView) {
+          if (!((MessageView) v).isAttached()) {
+            continue;
+          }
+        }
+
+        return true;
+      }
+    }
+    return false;
+  }
 
   private void setUnmuted (boolean unmuted) {
     if (this.isUnmuted != unmuted) {
       this.isUnmuted = unmuted;
-      this.isFullSizeAnimator.setValue(unmuted, UI.inUiThread() && currentViews.hasAnyTargetToInvalidate());
-      cachedScrollActionsCount = manager.getUserScrollActionsCount();
+      this.isFullSizeAnimator.setDuration(fullSizeAnimatorDuration);
+      this.isFullSizeAnimator.setValue(unmuted, UI.inUiThread() && hasValidAttachedView());
       final float toFactor = unmuted ? 1f : 0f;
       boolean animated = currentViews.hasAnyTargetToInvalidate();
       if (animated) {

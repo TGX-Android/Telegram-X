@@ -2899,6 +2899,50 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     return true;
   }
 
+
+  public static class VideoScrollParameters {
+    public boolean canAnimateScrollPosition;
+    public TGMessageVideo message;
+    public int index;
+    public int offset;
+    public int dy;
+    public int duration;
+  }
+
+  public boolean calculateScrollDyForCenterVideoMessage (final long chatId, final long messageId, VideoScrollParameters out) {
+    if (loader.getChatId() != chatId) {
+      return false;
+    }
+    final int index = adapter.indexOfMessageContainer(messageId);
+    if (index == -1) {
+      return false;
+    }
+
+    final TGMessage msg = adapter.getMessage(index);
+    if (!(msg instanceof TGMessageVideo)) {
+      return false;
+    }
+
+    final TGMessageVideo message = (TGMessageVideo) msg;
+
+    final int width = getRecyclerWidth();
+    final int height = getTargetHeight();
+
+    message.buildLayout(width);
+    final int fullHeight = message.getVideoMessageTargetHeight(true);
+    final int offset = height / 2 - fullHeight / 2 + message.findTopEdge();
+    final int scrollBy = calculateScrollBy(index, offset, true);
+
+    out.message = message;
+    out.index = index;
+    out.offset = offset;
+    out.dy = scrollBy;
+    out.canAnimateScrollPosition = Math.abs(scrollBy) < controller.getMessagesView().getMeasuredHeight() * 1.25f;
+    out.duration = (int) (300 + ((float) Math.abs(scrollBy) / height) * 300);
+
+    return true;
+  }
+
   // Unread
 
   public static final int CHATS_THRESHOLD = 1;
