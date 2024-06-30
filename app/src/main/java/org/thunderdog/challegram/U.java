@@ -112,6 +112,7 @@ import org.thunderdog.challegram.loader.ImageLoader;
 import org.thunderdog.challegram.loader.ImageReader;
 import org.thunderdog.challegram.loader.ImageStrictCache;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
+import org.thunderdog.challegram.telegram.RandomAccessDataSource;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibDataSource;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
@@ -754,6 +755,10 @@ public class U {
     } else {
       return new ProgressiveMediaSource.Factory(new TdlibDataSource.Factory()).createMediaSource(newMediaItem(TdlibDataSource.UriFactory.create(accountId, file)));
     }
+  }
+
+  public static MediaSource newMediaSource (RandomAccessFile file) {
+    return new ProgressiveMediaSource.Factory(new RandomAccessDataSource.Factory(file)).createMediaSource(newMediaItem(Uri.EMPTY));
   }
 
   public static MediaSource newMediaSource (int accountId, int fileId) {

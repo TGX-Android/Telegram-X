@@ -94,6 +94,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private static final int FLAG_LONG_PRESSED = 1 << 4;
   private static final int FLAG_DISABLE_MEASURE = 1 << 6;
   private static final int FLAG_USE_COMPLEX_RECEIVER = 1 << 7;
+  private static final int FLAG_IGNORE_PARENT_ON_MEASURE = 1 << 8;
 
   private @Nullable TGMessage msg;
 
@@ -165,6 +166,10 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   public void setCustomMeasureDisabled (boolean disabled) {
     this.flags = BitwiseUtils.setFlag(this.flags, FLAG_DISABLE_MEASURE, disabled);
+  }
+
+  public void setParentOnMeasureDisabled (boolean disabled) {
+    this.flags = BitwiseUtils.setFlag(this.flags, FLAG_IGNORE_PARENT_ON_MEASURE, disabled);
   }
 
   @Override
@@ -383,7 +388,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     if ((flags & FLAG_DISABLE_MEASURE) != 0) {
       super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     } else {
-      int width = ((View) getParent()).getMeasuredWidth();
+      int width = BitwiseUtils.hasFlag(flags, FLAG_IGNORE_PARENT_ON_MEASURE) ?
+        MeasureSpec.getSize(widthMeasureSpec) :
+        ((View) getParent()).getMeasuredWidth();
       if (msg != null) {
         msg.buildLayout(width);
       }

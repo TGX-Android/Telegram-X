@@ -69,7 +69,7 @@
 
     <item name="fillingNegative" />
     <item name="fillingPositive" tinted="true" />
-    <item name="fillingPositiveContent" />
+    <item name="fillingPositiveContent" porterDuff="true" />
 
     <item name="fillingActive" />
     <item name="fillingActiveContent" />

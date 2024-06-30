@@ -40,7 +40,6 @@ import org.thunderdog.challegram.data.TGRecord;
 import org.thunderdog.challegram.filegen.VideoGenerationInfo;
 import org.thunderdog.challegram.helper.Recorder;
 import org.thunderdog.challegram.navigation.ViewController;
-import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
@@ -103,7 +102,8 @@ public class RecordAudioVideoController implements
   private VoiceVideoButtonView voiceVideoButtonView;
   private RecordLockView lockView;
   private CameraControlButton switchCameraButton;
-  private FrameLayoutFix switchCameraButtonWrap;
+  private RecordControllerButton switchCameraButtonWrap;
+  private RecordDisposableSwitchButton disposableSwitchButton;
   private RecordDurationView durationView;
   private FrameLayoutFix inputOverlayView;
   private TextView slideHintView;
@@ -111,7 +111,7 @@ public class RecordAudioVideoController implements
   private View cornerView;
   private CircleFrameLayout videoLayout;
   private View videoPlaceholderView;
-  private RoundProgressView progressView;
+  private RoundProgressView3 progressView;
   private SendButton sendButton;
   private ImageView deleteButton;
   private HapticMenuHelper sendHelper;
@@ -166,6 +166,7 @@ public class RecordAudioVideoController implements
     this.cornerView.invalidate();
     this.switchCameraButton.invalidate();
     this.switchCameraButtonWrap.invalidate();
+    this.disposableSwitchButton.invalidate();
     this.videoTimelineView.invalidate();
     this.durationView.invalidate();
     this.lockView.invalidate();
@@ -345,10 +346,8 @@ public class RecordAudioVideoController implements
         }
       });*/
       this.switchCameraButton.setIsSmall();
-      this.switchCameraButtonWrap = new FrameLayoutFix(context);
-      Views.setClickable(switchCameraButtonWrap);
-      RippleSupport.setCircleBackground(switchCameraButtonWrap, 33f, 3f, ColorId.filling, true, null);
-      this.switchCameraButtonWrap.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(33f) + Screen.dp(3f) * 2, Screen.dp(33f) + Screen.dp(3f) * 2));
+      this.switchCameraButtonWrap = new RecordControllerButton(context);
+      this.switchCameraButtonWrap.init(null);
       this.switchCameraButtonWrap.setOnClickListener(v -> {
         if (ownedCamera != null) {
           ownedCamera.switchCamera();
@@ -356,6 +355,11 @@ public class RecordAudioVideoController implements
       });
       this.switchCameraButtonWrap.addView(switchCameraButton);
       this.rootLayout.addView(switchCameraButtonWrap);
+
+      this.disposableSwitchButton = new RecordDisposableSwitchButton(context);
+      this.disposableSwitchButton.init(null);
+      this.disposableSwitchButton.setOnClickListener(v -> disposableSwitchButton.toggleActive(true));
+      this.rootLayout.addView(disposableSwitchButton);
 
       this.lockView = new RecordLockView(context);
       Views.setSimpleStateListAnimator(lockView);
@@ -383,6 +387,17 @@ public class RecordAudioVideoController implements
         public boolean onTouchEvent (MotionEvent event) {
           return Views.isValid(this) && super.onTouchEvent(event);
         }
+
+        @Override
+        protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+          final int width = MeasureSpec.getSize(widthMeasureSpec);
+          final int height = MeasureSpec.getSize(heightMeasureSpec);
+
+          final int size = Math.min(Math.min(width - Screen.dp(80), height - Screen.dp(80)), Screen.dp(640));
+          final int sizeSpec = MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY);
+
+          super.onMeasure(sizeSpec, sizeSpec);
+        }
       };
       this.videoLayout.setOnClickListener(v -> {
         if (recordMode == RECORD_MODE_VIDEO_EDIT) {
@@ -394,16 +409,48 @@ public class RecordAudioVideoController implements
         this.videoLayout.setTranslationZ(Screen.dp(1.5f));
         this.videoLayout.setElevation(Screen.dp(1f));
       }
-      this.videoLayout.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(200f), Screen.dp(200f), Gravity.CENTER_HORIZONTAL));
+      this.videoLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER_HORIZONTAL));
       this.rootLayout.addView(videoLayout);
 
       this.videoPlaceholderView = new View(context);
       this.videoPlaceholderView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
       this.videoLayout.addView(videoPlaceholderView);
 
-      this.progressView = new RoundProgressView(context);
-      this.progressView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-      this.videoLayout.addView(progressView);
+      this.progressView = new RoundProgressView3(context) {
+        @Override
+        protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+          final int width = MeasureSpec.getSize(widthMeasureSpec);
+          final int height = MeasureSpec.getSize(heightMeasureSpec);
+
+          final int size = Math.min(Math.min(width - Screen.dp(80), height - Screen.dp(80)), Screen.dp(640)) + Screen.dp(RoundProgressView3.PADDING * 2 + 20);
+          final int sizeSpec = MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY);
+
+          super.onMeasure(sizeSpec, sizeSpec);
+        }
+      };
+      this.progressView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER_HORIZONTAL));
+      this.progressView.setDelegate(new RoundProgressView3.Delegate() {
+
+        @Override
+        public void onTrimSliderDown (RoundProgressView3 view, float start, float end, boolean isEnd) {
+          videoTimelineView.performSliderDown(isEnd);
+        }
+
+        @Override
+        public void onTrimSliderMove (RoundProgressView3 view, float start, float end, boolean isEnd) {
+          videoTimelineView.performSliderMove(isEnd ? end : start, isEnd);
+        }
+
+        @Override
+        public void onTrimSliderUp (RoundProgressView3 view, float start, float end, boolean isEnd) {
+          videoTimelineView.performSliderUp(isEnd);
+        }
+      });
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        this.progressView.setTranslationZ(Screen.dp(2f));
+        this.progressView.setElevation(Screen.dp(1.5f));
+      }
+      this.rootLayout.addView(progressView);
 
       this.deleteButton = new ImageView(context) {
         @Override
@@ -457,6 +504,15 @@ public class RecordAudioVideoController implements
         @Override
         public void onTimelineTrimChanged (VideoTimelineView v, double totalDuration, double startTimeSeconds, double endTimeSeconds) {
           videoPreviewView.setTrimRegion(totalDuration, startTimeSeconds, endTimeSeconds);
+        }
+
+        @Override
+        public void onTimelineVisualTrimChanged (VideoTimelineView v, double totalDuration, double startTimeSeconds, double endTimeSeconds) {
+          if (totalDuration == 0.0) {
+            progressView.setTrimFactors(0f, 1f);
+          } else {
+            progressView.setTrimFactors((float) (startTimeSeconds / totalDuration), (float) (endTimeSeconds / totalDuration));
+          }
         }
 
         @Override
@@ -598,7 +654,8 @@ public class RecordAudioVideoController implements
     recordBackground.setTranslationY(cy - recordBackground.getMeasuredHeight() / 2);
 
     lockView.setTranslationX(cx - lockView.getMeasuredWidth() / 2);
-    switchCameraButtonWrap.setTranslationX(cx - switchCameraButtonWrap.getMeasuredWidth() / 2);
+    switchCameraButtonWrap.setTranslationX(cx - switchCameraButtonWrap.getMeasuredWidth() / 2f);
+    disposableSwitchButton.setTranslationX(cx - disposableSwitchButton.getMeasuredWidth() / 2f);
     updateLockY();
 
     if (closeFactor * recordFactor == 1f) {
@@ -606,16 +663,48 @@ public class RecordAudioVideoController implements
     }
   }
 
+  private void updateButtons () {
+    // float editFactor = editAnimator.getValue() ? 1f : 0f;
+    float factor = recordFactor; // Math.max(recordFactor, editFactor);
+    float scale = .6f + .4f * factor;
+
+    lockView.setScaleX(scale);
+    lockView.setScaleY(scale);
+    switchCameraButtonWrap.setScaleX(scale);
+    switchCameraButtonWrap.setScaleY(scale);
+    disposableSwitchButton.setScaleX(scale);
+    disposableSwitchButton.setScaleY(scale);
+
+    recordBackground.setExpand(recordFactor);
+  }
+
   private void updateVideoY () {
-    int bottom = inputOverlayView.getTop() + overallTranslation;
-    videoLayout.setTranslationY(bottom / 2 - videoLayout.getLayoutParams().height / 2 + (bottom / 3 * (1f - Math.max(recordFactor, editFactor))));
+    float editFactor = editAnimator.getValue() ? 1f : 0f;
+    final int bottom = inputOverlayView.getTop() + overallTranslation;
+    final float y = bottom / 2f - videoLayout.getMeasuredHeight() / 2f + (bottom / 3f * (1f - Math.max(recordFactor, editFactor)));
+
+    videoLayout.setTranslationY(y);
+    progressView.setTranslationY(y - Screen.dp(RoundProgressView3.PADDING + 10));
   }
 
   private void updateLockY () {
     float cy = voiceVideoButtonView.getTop() + voiceVideoButtonView.getTranslationY() + voiceVideoButtonView.getMeasuredHeight() / 2;
-    float y = cy - lockView.getMeasuredHeight() - Screen.dp(11f) - Screen.dp(41f) + Screen.dp(24f) * releaseFactor + Screen.dp(24f) * (1f - MathUtils.clamp(recordFactor));
+    float y = cy - lockView.getMeasuredHeight() - Screen.dp(11f) - Screen.dp(41f) + Screen.dp(RecordLockView.BUTTON_EXPANDED) * releaseFactor + Screen.dp(24f) * (1f - MathUtils.clamp(recordFactor));
+    // y -= Screen.dp(12) * editFactor;
+
     lockView.setTranslationY(y);
-    switchCameraButtonWrap.setTranslationY(y - Screen.dp(16f) - switchCameraButtonWrap.getMeasuredHeight() + Screen.dp(24f) * (1f - MathUtils.clamp(recordFactor)) * (1f - releaseFactor));
+    y -= Screen.dp(55);
+    y += Screen.dp(24f) * (1f - MathUtils.clamp(recordFactor)) * (1f - releaseFactor);
+
+    switchCameraButtonWrap.setTranslationY(y);
+    if (Views.isValid(switchCameraButtonWrap)) {
+      y -= switchCameraButtonWrap.getMeasuredHeight();
+    }
+
+    disposableSwitchButton.setTranslationY(y);
+    if (Views.isValid(disposableSwitchButton)) {
+      y -= disposableSwitchButton.getMeasuredHeight();
+    }
   }
 
   private boolean isReleased;
@@ -659,9 +748,11 @@ public class RecordAudioVideoController implements
   private void resetViews () {
     setTranslations(0f, 0f);
     switchCameraButton.setCameraIconRes(!Settings.instance().startRoundWithRear());
-    progressView.setVisualProgress(0f);
+    progressView.reset();
     durationView.reset();
     lockView.setCollapseFactor(0f);
+    disposableSwitchButton.setActive(false, false);
+    disposableSwitchButton.setVisibility(canSendSelfDestructMessages() ? View.VISIBLE : View.GONE);
     recordBackground.setVolume(0f, false);
     editAnimator.setValue(false, false);
     videoPreviewView.performDestroy();
@@ -833,6 +924,8 @@ public class RecordAudioVideoController implements
     if (this.editFactor != factor) {
       this.editFactor = factor;
       updateMainAlphas();
+      updateButtons();
+      updateLockY();
     }
   }
 
@@ -1019,7 +1112,7 @@ public class RecordAudioVideoController implements
     boolean async = (closeMode == CLOSE_MODE_PREVIEW || closeMode == CLOSE_MODE_PREVIEW_SCHEDULE) && recordingVideo;
     if (async) {
       mode = RECORD_MODE_VIDEO_EDIT;
-      editAnimator.setValue(true, false);
+      editAnimator.setValue(true, true);
       if (sendButton != null) {
         sendButton.getSlowModeCounterController(tdlib).setCurrentChat(targetChatId);
       }
@@ -1133,6 +1226,8 @@ public class RecordAudioVideoController implements
   }
 
   private void updateMainAlphas () {
+    float editFactor = editAnimator.getValue() ? 1f : 0f;
+
     float range = MathUtils.clamp(recordFactor);
     float editRange = Math.max(range, editFactor);
     voiceVideoButtonView.setAlpha(range);
@@ -1144,13 +1239,16 @@ public class RecordAudioVideoController implements
     videoTopShadowView.setAlpha(videoRange);
     videoBottomShadowView.setAlpha(videoRange);
     videoLayout.setAlpha(videoRange);
-
-    progressView.setAlpha(Math.max(recordFactor, 1f - editFactor));
+    progressView.setAlpha(videoRange * Math.max(recordFactor, editFactor));
+    progressView.setEditFactor(editAnimator.getFloatValue());
 
     float videoScale = .4f + .6f * videoRange;
     videoLayout.setScaleX(videoScale);
     videoLayout.setScaleY(videoScale);
+    progressView.setScaleX(videoScale);
+    progressView.setScaleY(videoScale);
     switchCameraButtonWrap.setAlpha(recordingVideo ? range : 0);
+    disposableSwitchButton.setAlpha(range);
 
     updateMuteAlpha();
 
@@ -1162,15 +1260,7 @@ public class RecordAudioVideoController implements
       this.recordFactor = factor;
 
       updateMainAlphas();
-
-      float scale = .6f + .4f * factor;
-      lockView.setScaleX(scale);
-      lockView.setScaleY(scale);
-      switchCameraButtonWrap.setScaleX(scale);
-      switchCameraButtonWrap.setScaleY(scale);
-
-      recordBackground.setExpand(factor);
-
+      updateButtons();
       updateLockY();
       updateDuration();
       updateMiddle();
@@ -1350,12 +1440,23 @@ public class RecordAudioVideoController implements
 
   @Override
   public void onSave (final Tdlib.Generation generation, final int duration, final byte[] waveform) {
+    final var selfDestructType = obtainSelfDestructType();
     UI.post(() -> {
       if (hasValidOutputTarget()) {
-        targetController.shareItem(new TGRecord(tdlib, generation, duration, waveform));
+        targetController.shareItem(new TGRecord(tdlib, generation, duration, waveform, selfDestructType));
       }
     });
   }
+
+  private TdApi.MessageSelfDestructType obtainSelfDestructType () {
+    return canSendSelfDestructMessages() && disposableSwitchButton != null && disposableSwitchButton.isActive() ?
+      new TdApi.MessageSelfDestructTypeImmediately() : null;
+  }
+
+  private boolean canSendSelfDestructMessages () {
+    return tdlib.selfChatId() != targetChatId && ChatId.isUserChat(targetChatId);
+  }
+
 
   // Video record impl
 
@@ -1543,7 +1644,7 @@ public class RecordAudioVideoController implements
             finishFileGeneration(resultFileSize);
           } else {
             finishFileGeneration(resultFileSize);
-            sendVideoNote(new TdApi.InputMessageVideoNote(new TdApi.InputFileId(roundFile.id), null, savedRoundDurationSeconds, VIDEO_NOTE_LENGTH, null), Td.newSendOptions(), roundFile);
+            sendVideoNote(new TdApi.InputMessageVideoNote(new TdApi.InputFileId(roundFile.id), null, savedRoundDurationSeconds, VIDEO_NOTE_LENGTH, obtainSelfDestructType()), Td.newSendOptions(), roundFile);
           }
         } else {
           finishFileGeneration(-1);
@@ -1674,9 +1775,9 @@ public class RecordAudioVideoController implements
           0
         );
         TdApi.InputFileGenerated trimmedFile = new TdApi.InputFileGenerated(roundFile.local.path, conversion, 0);
-        sendVideoNote(new TdApi.InputMessageVideoNote(trimmedFile, null, (int) Math.round(endTimeSeconds - startTimeSeconds), VIDEO_NOTE_LENGTH, null), initialSendOptions, null);
+        sendVideoNote(new TdApi.InputMessageVideoNote(trimmedFile, null, (int) Math.round(endTimeSeconds - startTimeSeconds), VIDEO_NOTE_LENGTH, obtainSelfDestructType()), initialSendOptions, null);
       } else {
-        sendVideoNote(new TdApi.InputMessageVideoNote(new TdApi.InputFileId(roundFile.id), null, savedRoundDurationSeconds, VIDEO_NOTE_LENGTH, null), initialSendOptions, roundFile);
+        sendVideoNote(new TdApi.InputMessageVideoNote(new TdApi.InputFileId(roundFile.id), null, savedRoundDurationSeconds, VIDEO_NOTE_LENGTH, obtainSelfDestructType()), initialSendOptions, roundFile);
       }
     } else {
       tdlib.client().send(new TdApi.DeleteFile(roundFile.id), tdlib.silentHandler());

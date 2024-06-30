@@ -35,6 +35,9 @@ import org.thunderdog.challegram.tool.Views;
 import me.vkryl.core.ColorUtils;
 
 public class RecordLockView extends View {
+  public static final int BUTTON_SIZE = RecordControllerButton.BUTTON_SIZE;
+  public static final int BUTTON_EXPANDED = 33;
+
   public RecordLockView (Context context) {
     super(context);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -42,15 +45,22 @@ public class RecordLockView extends View {
         @Override
         @TargetApi(Build.VERSION_CODES.LOLLIPOP)
         public void getOutline (View view, android.graphics.Outline outline) {
-          outline.setRoundRect(0, 0, view.getMeasuredWidth(), (int) (view.getMeasuredHeight() - Screen.dp(33f) * collapseFactor), Screen.dp(33f) / 2);
+          outline.setRoundRect(0, 0, view.getMeasuredWidth(), (int) (view.getMeasuredHeight() - Screen.dp(BUTTON_EXPANDED) * collapseFactor), Screen.dp(BUTTON_SIZE / 2f));
         }
       });
     }
-    setLayoutParams(new ViewGroup.LayoutParams(Screen.dp(33f), Screen.dp(66f)));
+    setLayoutParams(new ViewGroup.LayoutParams(Screen.dp(BUTTON_SIZE), Screen.dp(BUTTON_SIZE + BUTTON_EXPANDED)));
   }
 
   @Override
   public boolean onTouchEvent (MotionEvent e) {
+    if (e.getAction() == MotionEvent.ACTION_DOWN) {
+      float bottom = getMeasuredHeight() - Screen.dp(BUTTON_EXPANDED) * collapseFactor;
+      if (e.getY() > bottom) {
+        return false;
+      }
+    }
+
     return Views.onTouchEvent(this, e) && super.onTouchEvent(e);
   }
 
@@ -62,7 +72,7 @@ public class RecordLockView extends View {
   }
 
   private float getCenterY () {
-    return (int) (getMeasuredHeight() - Screen.dp(33f) * collapseFactor) - Screen.dp(33f) / 2;
+    return (int) (getMeasuredHeight() - Screen.dp(BUTTON_EXPANDED) * collapseFactor) - Screen.dp(BUTTON_SIZE / 2f);
   }
 
   private float collapseFactor;
@@ -94,14 +104,14 @@ public class RecordLockView extends View {
     RectF rectF = Paints.getRectF();
     final int viewWidth = getMeasuredWidth();
     final int viewHeight = getMeasuredHeight();
-    rectF.set(0, 0, viewWidth, viewHeight - Screen.dp(33f) * collapseFactor);
-    int radius = Screen.dp(33f) / 2;
+    rectF.set(0, 0, viewWidth, viewHeight - Screen.dp(BUTTON_EXPANDED) * collapseFactor);
+    int radius = Screen.dp(BUTTON_SIZE) / 2;
     c.drawRoundRect(rectF, radius, radius, Paints.fillingPaint(fillingColor));
 
     int bottomCy = (int) rectF.bottom - radius;
 
     int cx = viewWidth / 2;
-    int cy = Screen.dp(33f) / 2;
+    int cy = Screen.dp(BUTTON_SIZE) / 2;
 
     final int grayColor = Theme.iconColor();
     final int redColor = Theme.getColor(ColorId.iconNegative);
@@ -110,7 +120,7 @@ public class RecordLockView extends View {
 
     int width = (int) (Screen.dp(6f) + Screen.dp(2f) * (1f - sendFactor));
     int height = (int) (Screen.dp(6f) + Screen.dp(1f) * (1f - sendFactor));
-    int dy = (int) (Screen.dp(33f) /3 * (1f - collapseFactor));
+    int dy = (int) (Screen.dp(BUTTON_SIZE) / 3f * (1f - collapseFactor));
     rectF.set(cx - width, cy - height + dy + totalDy, cx + width, cy + height + dy + totalDy);
     c.drawRoundRect(rectF, Screen.dp(2f), Screen.dp(2f), Paints.fillingPaint(ColorUtils.fromToArgb(grayColor, redColor, sendFactor)));
 
