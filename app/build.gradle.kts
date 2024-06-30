@@ -290,6 +290,7 @@ android {
         } else {
           "version.ndk_legacy"
         }
+        isDefault = abi == 0
         if (variant.minSdkVersion < Config.PRIMARY_SDK_VERSION) {
           proguardFile("proguard-r8-bug-android-4.x-workaround.pro")
         }
