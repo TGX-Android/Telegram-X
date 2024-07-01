@@ -375,6 +375,12 @@ public class TGMessageFile extends TGMessage {
     return null;
   }
 
+  @Nullable
+  public FileComponent findFileComponent (long messageId) {
+    CaptionedFile file = findCaptionedFile(messageId);
+    return file != null ? file.component : null;
+  }
+
   private static final int FLAG_CHANGED_LAYOUT = 1;
   private static final int FLAG_CHANGED_TEXT_RECEIVERS = 1 << 1;
   private static final int FLAG_CHANGED_CONTENT_RECEIVERS = 1 << 2;
