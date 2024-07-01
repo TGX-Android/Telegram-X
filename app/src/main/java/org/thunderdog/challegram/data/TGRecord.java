@@ -25,11 +25,9 @@ public class TGRecord {
   private final int duration;
   private byte[] waveform;
   private final TGAudio audio;
-  private final TdApi.MessageSelfDestructType selfDestructType;
 
-  public TGRecord (Tdlib tdlib, Tdlib.Generation generation, int duration, byte[] waveform, TdApi.MessageSelfDestructType selfDestructType) {
+  public TGRecord (Tdlib tdlib, Tdlib.Generation generation, int duration, byte[] waveform) {
     this.generation = generation;
-    this.selfDestructType = selfDestructType;
     this.file = new File(generation.destinationPath);
     this.duration = duration;
     this.audio = new TGAudio(tdlib, this);
@@ -72,10 +70,6 @@ public class TGRecord {
 
   public TdApi.InputFile toInputFile () {
     return new TdApi.InputFileId(generation.file.id);
-  }
-
-  public TdApi.MessageSelfDestructType getSelfDestructType () {
-    return selfDestructType;
   }
 
   public void delete () {
