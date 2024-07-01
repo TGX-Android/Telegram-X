@@ -1175,14 +1175,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
           if (playList != null) {
             newPlayListFlags = playList.playListFlags;
             clearMessagesImpl();
-            //addMessagesImpl(playList.messages);
-
-            for (TdApi.Message msg : playList.messages) {
-              if (!TD.isSelfDestructTypeImmediately(msg)) {
-                addMessageImpl(msg);
-              }
-            }
-
+            addMessagesImpl(playList.messages);
             playList.messages.clear();
             messageIndex = playList.originIndex;
           }
