@@ -1769,6 +1769,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
   public static final int PAUSE_REASON_RECORD_VIDEO = 1 << 8;
   public static final int PAUSE_REASON_PROXIMITY = 1 << 9;
   public static final int PAUSE_REASON_OPEN_WEB_VIDEO = 1 << 10;
+  public static final int PAUSE_REASON_OPEN_ONCE_MEDIA = 1 << 11;
 
   private boolean needResume;
   private int pauseReasons;

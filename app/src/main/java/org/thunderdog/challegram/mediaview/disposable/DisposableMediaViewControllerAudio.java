@@ -25,7 +25,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.td.Td;
 
-public class DisposableMediaViewControllerAudio extends DisposableMediaViewController {
+class DisposableMediaViewControllerAudio extends DisposableMediaViewController {
   public DisposableMediaViewControllerAudio(@NonNull Context context, Tdlib tdlib) {
     super(context, tdlib);
   }

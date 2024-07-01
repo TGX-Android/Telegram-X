@@ -4107,6 +4107,9 @@
   <string name="SendReminder">Set a Reminder</string>
   <string name="SaveNoMarkdown">Save without markdown</string>
 
+  <string name="MediaOnceTurnOnSound">Please, turn on the sound first.</string>
+  <string name="MediaOnceWaitFilуDownload">Wait until the file is completely downloaded.</string>
+
   <string name="SendInXMinutes_one">Send in %1$s minute</string>
   <string name="SendInXMinutes_other">Send in %1$s minutes</string>
   <string name="SendInXHours_one">Send in %1$s hour</string>

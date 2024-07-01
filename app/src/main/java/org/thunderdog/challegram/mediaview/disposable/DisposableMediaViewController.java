@@ -1,25 +1,31 @@
 package org.thunderdog.challegram.mediaview.disposable;
 
 import android.content.Context;
+import android.media.AudioManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.media3.common.C;
 import androidx.media3.common.Player;
 import androidx.media3.exoplayer.ExoPlayer;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
+import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibManager;
-import org.thunderdog.challegram.ui.MessagesController;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.widget.PopupLayout;
 
 import java.io.File;
@@ -30,8 +36,9 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
+import me.vkryl.td.Td;
 
-abstract class DisposableMediaViewController extends ViewController<DisposableMediaViewController.Args> implements
+public abstract class DisposableMediaViewController extends ViewController<DisposableMediaViewController.Args> implements
   PopupLayout.AnimatedPopupProvider, FactorAnimator.Target, Player.Listener, PopupLayout.TouchSectionProvider {
 
   public DisposableMediaViewController (@NonNull Context context, Tdlib tdlib) {
@@ -159,35 +166,25 @@ abstract class DisposableMediaViewController extends ViewController<DisposableMe
 
   /* Args */
 
-  protected MessagesController controller;
   protected TGMessage tgMessage;
   protected View anchorView;
   private RandomAccessFile contentFile;
 
-  public static class Args {
-    private final MessagesController controller;
+  protected static class Args {
     private final TGMessage message;
     private final View anchorView;
     private final RandomAccessFile contentFile;
 
-    public Args(@NonNull TGMessage message) {
+    public Args(@Nullable View view, @NonNull TGMessage message, @NonNull RandomAccessFile file) {
       this.message = message;
-      this.controller = message.messagesController();
-      this.anchorView = controller != null ? controller.getManager().findMessageView(message.getChatId(), message.getId()) : null;
-
-      final TdApi.File file = TD.getFile(message);
-      try {
-        this.contentFile = new RandomAccessFile(new File(file.local.path), "r");
-      } catch (FileNotFoundException e) {
-        throw new RuntimeException(e);
-      }
+      this.anchorView = view;
+      this.contentFile = file;
     }
   }
 
   @Override
   public void setArguments (Args args) {
     super.setArguments(args);
-    this.controller = args.controller;
     this.tgMessage = args.message;
     this.anchorView = args.anchorView;
     this.contentFile = args.contentFile;
@@ -205,6 +202,52 @@ abstract class DisposableMediaViewController extends ViewController<DisposableMe
     U.closeFile(contentFile);
   }
 
+
+  public static boolean openMediaOrShowTooltip (View view, TGMessage message, TooltipOverlayView.LocationProvider locationProvider) {
+    final BaseActivity context = message.context();
+    final Tdlib tdlib = message.tdlib();
+    final TdApi.Message msg = message.getMessage();
+    final TdApi.File file = TD.getFile(msg);
+
+    if (!TD.isFileLoaded(file)) {
+      UI.hapticVibrate(view, true);
+      context.tooltipManager().builder(view).locate(locationProvider).show(tdlib, R.string.MediaOnceWaitFilуDownload).hideDelayed();
+      return false;
+    }
+
+    if (U.getStreamVolume(AudioManager.STREAM_MUSIC) == 0) {
+      U.adjustStreamVolume(AudioManager.STREAM_MUSIC, 0, AudioManager.FLAG_SHOW_UI);
+      UI.hapticVibrate(view, true);
+      context.tooltipManager().builder(view).locate(locationProvider).show(tdlib, R.string.MediaOnceTurnOnSound).hideDelayed();
+      return false;
+    }
+
+    DisposableMediaViewController player = null;
+    if (Td.isVideoNote(msg.content)) {
+      player = new DisposableMediaViewControllerVideo(context, tdlib);
+    } else if (Td.isVoiceNote(msg.content)) {
+      player = new DisposableMediaViewControllerAudio(context, tdlib);
+    }
+
+    if (player != null) {
+      RandomAccessFile randomAccessFile;
+      try {
+        randomAccessFile = new RandomAccessFile(new File(file.local.path), "r");
+      } catch (FileNotFoundException e) {
+        UI.hapticVibrate(view, true);
+        Log.e(e);
+        return false;
+      }
+
+      TdlibManager.instance().player().pauseWithReason(TGPlayerController.PAUSE_REASON_OPEN_ONCE_MEDIA);
+
+      player.setArguments(new Args(view, message, randomAccessFile));
+      player.open();
+      return true;
+    }
+
+    return false;
+  }
 
 
 

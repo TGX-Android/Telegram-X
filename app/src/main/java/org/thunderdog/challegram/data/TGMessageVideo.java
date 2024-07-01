@@ -16,6 +16,7 @@ package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
@@ -37,7 +38,9 @@ import org.thunderdog.challegram.loader.ImageFileLocal;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
+import org.thunderdog.challegram.mediaview.disposable.DisposableMediaViewController;
 import org.thunderdog.challegram.mediaview.disposable.DisposableMediaViewControllerVideo;
+import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.player.RoundVideoController;
 import org.thunderdog.challegram.player.TGPlayerController;
@@ -222,9 +225,7 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
     if (Config.ROUND_VIDEOS_PLAYBACK_SUPPORTED) {
       if (view.getParent() instanceof MessageViewGroup) {
         if (TD.isSelfDestructTypeImmediately(getMessage())) {
-          DisposableMediaViewControllerVideo player = new DisposableMediaViewControllerVideo(context(), tdlib);
-          player.setArguments(new DisposableMediaViewControllerVideo.Args(this));
-          player.open();
+          DisposableMediaViewController.openMediaOrShowTooltip(view, this, (targetView, outRect) -> fileProgress.toRect(outRect));
         } else {
           tdlib.context().player().playPauseMessage(tdlib, msg, manager);
         }

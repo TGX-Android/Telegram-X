@@ -33,7 +33,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 
-public class DisposableMediaViewControllerVideo extends DisposableMediaViewController {
+class DisposableMediaViewControllerVideo extends DisposableMediaViewController {
   public DisposableMediaViewControllerVideo (@NonNull Context context, Tdlib tdlib) {
     super(context, tdlib);
   }

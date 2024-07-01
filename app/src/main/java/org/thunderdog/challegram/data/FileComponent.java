@@ -40,7 +40,7 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.ImageVideoThumbFile;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
-import org.thunderdog.challegram.mediaview.disposable.DisposableMediaViewControllerAudio;
+import org.thunderdog.challegram.mediaview.disposable.DisposableMediaViewController;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.TGLegacyAudioManager;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -800,12 +800,7 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
   @Override
   public boolean onPlayPauseClick (FileProgressComponent context, View view, TdApi.File file, long messageId) {
     if (TD.isSelfDestructTypeImmediately(message)) {
-      if (this.context instanceof TGMessageFile) {
-        DisposableMediaViewControllerAudio player = new DisposableMediaViewControllerAudio(this.context.context(), this.context.tdlib());
-        player.setArguments(new DisposableMediaViewControllerAudio.Args(this.context));
-        player.open();
-        return true;
-      }
+      return DisposableMediaViewController.openMediaOrShowTooltip(view, this.context, (targetView, outRect) -> progress.toRect(outRect));
     }
 
     return false;

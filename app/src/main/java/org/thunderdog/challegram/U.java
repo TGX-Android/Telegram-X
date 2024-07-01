@@ -3495,6 +3495,16 @@ public class U {
     }
   }
 
+  public static int getStreamVolume (int stream) {
+    final AudioManager audioManager = (AudioManager) UI.getContext().getSystemService(Context.AUDIO_SERVICE);
+    return audioManager.getStreamVolume(stream);
+  }
+
+  public static void adjustStreamVolume (int stream, int volume, int flags) {
+    final AudioManager audioManager = (AudioManager) UI.getContext().getSystemService(Context.AUDIO_SERVICE);
+    audioManager.adjustStreamVolume(stream, volume, flags);
+  }
+
   // ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION opened, but the permission is still not granted. Ignore until the app restarts.
 
   public static boolean canReadFile (String url) {
