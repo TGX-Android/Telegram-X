@@ -181,6 +181,7 @@ class DisposableMediaViewControllerAudio extends DisposableMediaViewController {
     if (fileProgressComponent != null) {
       // send fake play event
       fileProgressComponent.onTrackStateChanged(tdlib, msgCopy.chatId, msgCopy.id, TD.getFileId(msgCopy), TGPlayerController.STATE_PLAYING);
+      tdlib.files().unsubscribe(TD.getFileId(msgCopy), fileProgressComponent);
     }
   }
 }

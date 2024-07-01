@@ -39,8 +39,6 @@ import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.mediaview.disposable.DisposableMediaViewController;
-import org.thunderdog.challegram.mediaview.disposable.DisposableMediaViewControllerVideo;
-import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.player.RoundVideoController;
 import org.thunderdog.challegram.player.TGPlayerController;
