@@ -105,6 +105,7 @@ import org.thunderdog.challegram.widget.BaseView;
 import org.thunderdog.challegram.widget.CustomImageView;
 import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.ForceTouchView;
+import org.thunderdog.challegram.widget.KeyboardFrameLayout;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.SeparatorView;
 import org.thunderdog.challegram.widget.TextFormattingLayout;
@@ -1623,7 +1624,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
   @Override
   public int[] displayBaseViewWithAnchor (EmojiToneHelper context, View anchorView, View viewToDisplay, int viewWidth, int viewHeight, int horizontalMargin, int horizontalOffset, int verticalOffset) {
-    return EmojiToneHelper.defaultDisplay(context, anchorView, viewToDisplay, viewWidth, viewHeight, horizontalMargin, horizontalOffset, verticalOffset, contentView, bottomWrap, emojiLayout);
+    return EmojiToneHelper.defaultDisplay(context, anchorView, viewToDisplay, viewWidth, viewHeight, horizontalMargin, horizontalOffset, verticalOffset, contentView, bottomWrap, keyboardFrameLayout);
   }
 
   @Override
@@ -2623,7 +2624,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
   }
 
   private void checkCommentPosition () {
-    float y = (float) calculateMovementDistance() * (1f - expandFactor);
+    float y = (float) calculateMovementDistance() * (1f - expandFactor) - getKeyboardOffset();
     bottomWrap.setTranslationY(y);
     if (OPEN_KEYBOARD_WITH_AUTOSCROLL) {
       stubInputView.setTranslationY(y);
@@ -2735,11 +2736,11 @@ public class ShareController extends TelegramViewController<ShareController.Args
       return super.onKeyboardStateChanged(visible);
     }
     if (visible && !getKeyboardState()) {
-      closeEmojiKeyboard();
+      closeEmojiKeyboard(true);
     }
     boolean result = super.onKeyboardStateChanged(visible);
-    if (emojiLayout != null) {
-      emojiLayout.onKeyboardStateChanged(visible);
+    if (keyboardFrameLayout != null) {
+      keyboardFrameLayout.onKeyboardStateChanged(visible);
     }
     checkKeyboardVisible();
     return result;
@@ -2869,6 +2870,14 @@ public class ShareController extends TelegramViewController<ShareController.Args
     setIsExpanded(isReady);
   }
 
+  private float getKeyboardOffset () {
+    return keyboardFrameLayout != null ? keyboardFrameLayout.getLayoutTranslationOffset() : 0f;
+  }
+
+  private void onKeyboardLayoutTranslation (float translationY) {
+    checkCommentPosition();
+  }
+
   // Emoji keyboard
 
   private boolean isKeyboardReallyVisible;
@@ -2889,6 +2898,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     }
   }
 
+  private KeyboardFrameLayout keyboardFrameLayout;
   private EmojiLayout emojiLayout;
   private TextFormattingLayout textFormattingLayout;
 
@@ -2908,27 +2918,39 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
   private void openEmojiKeyboard () {
     if (!emojiShown) {
-      if (emojiLayout == null) {
-        emojiLayout = new EmojiLayout(context());
-        emojiLayout.initWithMediasEnabled(this, false, this, this, false);
-        bottomWrap.addView(emojiLayout);
-        if (inputView != null) {
-          textFormattingLayout = new TextFormattingLayout(context(), this, inputView);
-          textFormattingLayout.setDelegate(this::closeTextFormattingKeyboard);
-          textFormattingLayout.setVisibility(View.GONE);
-          emojiLayout.addView(textFormattingLayout, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        }
-        wrapView.getViewTreeObserver().addOnPreDrawListener(emojiLayout);
-      } else {
-        emojiLayout.setVisibility(View.VISIBLE);
-      }
+      if (keyboardFrameLayout == null) {
+        keyboardFrameLayout = new KeyboardFrameLayout(context());
+        keyboardFrameLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
+        keyboardFrameLayout.setParentView(bottomWrap, contentView, wrapView);
+        keyboardFrameLayout.setUpdateTranslationListener(this::onKeyboardLayoutTranslation);
 
+        textFormattingLayout = keyboardFrameLayout.contentView.textFormattingLayout;
+        textFormattingLayout.init(this, inputView, new TextFormattingLayout.Delegate() {
+          @Override
+          public void onWantsCloseTextFormattingKeyboard () {
+            closeTextFormattingKeyboard();
+          }
+
+          @Override
+          public void onWantsOpenTextFormattingKeyboard () {
+            openEmojiKeyboard();
+          }
+        });
+
+        emojiLayout = keyboardFrameLayout.contentView.emojiLayout;
+        emojiLayout.initWithMediasEnabled(this, false, this, this, false);
+        emojiLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        emojiLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        bottomWrap.addView(keyboardFrameLayout);
+      }
+      keyboardFrameLayout.setVisible(true);
       emojiState = getKeyboardState();
 
       setEmojiShown(true);
       if (emojiState) {
         emojiButton.setImageResource(R.drawable.baseline_keyboard_24);
-        emojiLayout.hideKeyboard(inputView);
+        keyboardFrameLayout.hideKeyboard(inputView);
       } else {
         emojiButton.setImageResource(R.drawable.baseline_direction_arrow_down_24);
       }
@@ -2939,8 +2961,8 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
   private void forceCloseEmojiKeyboard () {
     if (emojiShown) {
-      if (emojiLayout != null) {
-        emojiLayout.setVisibility(View.GONE);
+      if (keyboardFrameLayout != null) {
+        keyboardFrameLayout.setVisible(false);
       }
       setEmojiShown(false);
       emojiButton.setImageResource(getTargetIcon());
@@ -2950,11 +2972,15 @@ public class ShareController extends TelegramViewController<ShareController.Args
   }
 
   private void closeEmojiKeyboard () {
+    closeEmojiKeyboard(false);
+  }
+
+  private void closeEmojiKeyboard (boolean byKeyboardOpen) {
     if (emojiShown) {
-      if (emojiLayout != null) {
-        emojiLayout.setVisibility(View.GONE);
-        if (emojiState) {
-          emojiLayout.showKeyboard(inputView);
+      if (keyboardFrameLayout != null) {
+        keyboardFrameLayout.setVisible(false);
+        if (emojiState && !byKeyboardOpen) {
+          keyboardFrameLayout.showKeyboard(inputView);
         }
       }
       setEmojiShown(false);
@@ -3608,14 +3634,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
   }
 
   private void setTextFormattingLayoutVisible (boolean visible) {
-    textFormattingVisible = visible;
-    if (emojiLayout != null && textFormattingLayout != null) {
-      textFormattingLayout.setVisibility(visible ? View.VISIBLE : View.GONE);
-      emojiLayout.optimizeForDisplayTextFormattingLayout(visible);
-      if (visible) {
-        textFormattingLayout.checkButtonsActive(false);
-      }
-    }
+    textFormattingVisible = keyboardFrameLayout != null && keyboardFrameLayout.contentView.setTextFormattingLayoutVisible(visible);
   }
 
   private void closeTextFormattingKeyboard () {

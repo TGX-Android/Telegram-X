@@ -19,6 +19,7 @@ import android.os.Build;
 import android.text.Editable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.style.BackgroundColorSpan;
 import android.text.style.URLSpan;
 import android.util.AttributeSet;
 import android.util.TypedValue;
@@ -40,6 +41,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.emoji.EmojiSpan;
+import org.thunderdog.challegram.helper.editable.EditableHelper;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.UI;
@@ -95,6 +97,18 @@ public class EditText extends android.widget.EditText {
     if (selection == null) {
       selection = new TextSelection();
     }
+
+    if (fakeSelectionSpan != null) {
+      final Editable editable = getText();
+      final int s = editable.getSpanStart(fakeSelectionSpan);
+      final int e = editable.getSpanEnd(fakeSelectionSpan);
+      if (s != -1 && e != -1) {
+        selection.start = s;
+        selection.end = e;
+        return selection;
+      }
+    }
+
     if (Views.getSelection(this, selection)) {
       return selection;
     } else {
@@ -264,10 +278,19 @@ public class EditText extends android.widget.EditText {
 
   private void paste (TextSelection selection, CharSequence pasteText, boolean needSelectPastedText) {
     if (selection == null) return;
-    final int start = selection.start;
-    final int end = selection.end;
+    int start = selection.start;
+    int end = selection.end;
+
+    final Spanned spanned = (pasteText instanceof Spanned) ? (Spanned) pasteText : null;
 
     Editable editable = getText();
+
+    if (EditableHelper.startsWithQuote(spanned) && editable.length() > 0) {
+      editable.insert(end, "\n");
+      start++;
+      end++;
+    }
+
     if (selection.isEmpty()) {
       editable.insert(start, pasteText);
     } else {
@@ -354,5 +377,32 @@ public class EditText extends android.widget.EditText {
       return cs.toString();
     }
     return new SpannableStringBuilder(cs);
+  }
+
+  /* Fake Selection */
+
+  private FakeSelectionSpan fakeSelectionSpan;
+
+  public static class FakeSelectionSpan extends BackgroundColorSpan {
+    public FakeSelectionSpan (int color) {
+      super(color);
+    }
+  }
+
+  public void setFakeSelection (int start, int end) {
+    if (fakeSelectionSpan == null) {
+      fakeSelectionSpan = new FakeSelectionSpan(Theme.fillingTextSelectionColor());   // todo theme invalidate
+    }
+    final Editable editable = getText();
+    editable.removeSpan(fakeSelectionSpan);
+    editable.setSpan(fakeSelectionSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+  }
+
+  public void removeFakeSelection () {
+    final Editable editable = getText();
+    if (fakeSelectionSpan != null) {
+      editable.removeSpan(fakeSelectionSpan);
+      fakeSelectionSpan = null;
+    }
   }
 }

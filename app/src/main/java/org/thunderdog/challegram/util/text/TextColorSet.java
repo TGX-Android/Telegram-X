@@ -14,6 +14,8 @@ package org.thunderdog.challegram.util.text;
 
 import androidx.annotation.ColorInt;
 
+import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 
@@ -61,6 +63,16 @@ public interface TextColorSet {
   }
   default long backgroundId (boolean isPressed) {
     return BitwiseUtils.mergeLong(backgroundColorId(isPressed), outlineColorId(isPressed));
+  }
+
+  @PorterDuffColorId
+  default int quoteTextColorId () {
+    return ColorId.blockQuoteText;
+  }
+
+  @PorterDuffColorId
+  default int quoteLineColorId () {
+    return ColorId.blockQuoteLine;
   }
 
   default int overlayColorId (boolean isPressed) {

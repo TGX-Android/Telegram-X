@@ -562,5 +562,12 @@
 
     <item name="videoSliderActive" />
     <item name="videoSliderInactive" />
+
+    <item name="blockQuoteText" porterDuff="true"/>
+    <item name="blockQuoteLine" porterDuff="true"/>
+    <item name="bubbleIn_blockQuoteText" porterDuff="true"/>
+    <item name="bubbleIn_blockQuoteLine" porterDuff="true"/>
+    <item name="bubbleOut_blockQuoteText" porterDuff="true"/>
+    <item name="bubbleOut_blockQuoteLine" porterDuff="true"/>
   </colors>
 </xml>

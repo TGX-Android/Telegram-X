@@ -35,6 +35,7 @@ import org.thunderdog.challegram.ui.HashtagChatController;
 import org.thunderdog.challegram.ui.HashtagController;
 import org.thunderdog.challegram.util.StringList;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import me.vkryl.core.BitwiseUtils;
@@ -56,7 +57,10 @@ public class TextEntityMessage extends TextEntity {
   private static final int FLAG_SPOILER = 1 << 8;
   private static final int FLAG_CUSTOM_EMOJI = 1 << 9;
 
-  private final TdApi.TextEntity clickableEntity, spoilerEntity, emojiEntity;
+  private final TdApi.TextEntity entity;
+  private final @Nullable List<TdApi.TextEntity> parentEntities;  // todo: fix RAM overhead
+
+  private final TdApi.TextEntity clickableEntity, spoilerEntity, emojiEntity, quoteEntity;
   private int flags;
   private ClickableSpan onClickListener;
 
@@ -115,6 +119,7 @@ public class TextEntityMessage extends TextEntity {
   private TextEntityMessage (@Nullable Tdlib tdlib, boolean needFakeBold, int offset, int end, TdApi.TextEntity entity, @Nullable List<TdApi.TextEntity> parentEntities, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(tdlib, offset, end, needFakeBold, openParameters);
     TdApi.TextEntity clickableEntity = isClickable(entity.type) ? entity : null;
+    TdApi.TextEntity quoteEntity = isQuote(entity.type) ? entity : null;
     TdApi.TextEntity spoilerEntity = Td.isSpoiler(entity.type) ? entity : null;
     TdApi.TextEntity emojiEntity = Td.isCustomEmoji(entity.type) ? entity : null;
     int flags = addFlags(entity.type);
@@ -127,13 +132,21 @@ public class TextEntityMessage extends TextEntity {
         } else if (spoilerEntity == null && Td.isSpoiler(parentEntity.type)) {
           spoilerEntity = parentEntity;
         }
+        if (quoteEntity == null && isQuote(parentEntity.type)) {
+          quoteEntity = parentEntity;
+        }
       }
     }
+
+    this.entity = entity;
+    this.parentEntities = parentEntities != null && !parentEntities.isEmpty() ? new ArrayList<>(parentEntities) : null;
+
     this.clickableEntity = clickableEntity;
     if (clickableEntity != null) {
       flags |= FLAG_CLICKABLE;
     }
     this.spoilerEntity = spoilerEntity;
+    this.quoteEntity = quoteEntity;
     if (spoilerEntity != null) {
       flags |= FLAG_SPOILER;
     }
@@ -144,11 +157,14 @@ public class TextEntityMessage extends TextEntity {
     this.flags = flags;
   }
 
-  private TextEntityMessage (@Nullable Tdlib tdlib, boolean needFakeBold, int offset, int end, TdApi.TextEntity clickableEntity, TdApi.TextEntity spoilerEntity, TdApi.TextEntity emojiEntity, int flags, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  private TextEntityMessage (@Nullable Tdlib tdlib, boolean needFakeBold, int offset, int end, TdApi.TextEntity clickableEntity, TdApi.TextEntity spoilerEntity, TdApi.TextEntity emojiEntity, TdApi.TextEntity quoteEntity, TdApi.TextEntity entity, @Nullable List<TdApi.TextEntity> parentEntities, int flags, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(tdlib, offset, end, needFakeBold, openParameters);
     this.clickableEntity = clickableEntity;
     this.spoilerEntity = spoilerEntity;
+    this.quoteEntity = quoteEntity;
     this.emojiEntity = emojiEntity;
+    this.entity = entity;
+    this.parentEntities = parentEntities;
     this.flags = flags;
   }
 
@@ -173,7 +189,7 @@ public class TextEntityMessage extends TextEntity {
 
   @Override
   public TextEntity createCopy () {
-    TextEntityMessage copy = new TextEntityMessage(tdlib, needFakeBold, start, end, clickableEntity, spoilerEntity, emojiEntity, flags, openParameters);
+    TextEntityMessage copy = new TextEntityMessage(tdlib, needFakeBold, start, end, clickableEntity, spoilerEntity, emojiEntity, quoteEntity, entity, parentEntities, flags, openParameters);
     if (customColorSet != null) {
       copy.setCustomColorSet(customColorSet);
     }
@@ -235,6 +251,11 @@ public class TextEntityMessage extends TextEntity {
     return 0;
   }
 
+  public static boolean isQuote (TdApi.TextEntityType type) {
+    return type.getConstructor() == TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR
+      || type.getConstructor() == TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR;
+  }
+
   public static boolean isClickable (TdApi.TextEntityType type) {
     switch (type.getConstructor()) {
       case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
@@ -250,13 +271,12 @@ public class TextEntityMessage extends TextEntity {
 
       case TdApi.TextEntityTypeCode.CONSTRUCTOR:
       case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
-      case TdApi.TextEntityTypePre.CONSTRUCTOR:
-      case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
-      case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR: {
+      case TdApi.TextEntityTypePre.CONSTRUCTOR: {
         return true;
       }
       case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR: // TODO
-
+      case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
+      case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR:
       case TdApi.TextEntityTypeBold.CONSTRUCTOR:
       case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
       case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
@@ -304,7 +324,6 @@ public class TextEntityMessage extends TextEntity {
     switch (type.getConstructor()) {
       case TdApi.TextEntityTypePre.CONSTRUCTOR:
       case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
-      case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
         return true;
     }
     return false;
@@ -398,6 +417,16 @@ public class TextEntityMessage extends TextEntity {
   @Override
   public boolean hasAnchor (String anchor) {
     return false;
+  }
+
+  @Override
+  public int getQuoteId () {
+    return quoteEntity != null ? quoteEntity.offset : -1;
+  }
+
+  @Override
+  public boolean isQuote () {
+    return quoteEntity != null;
   }
 
   @Override
@@ -543,16 +572,39 @@ public class TextEntityMessage extends TextEntity {
       return false;
     }
 
+    final TdApi.TextEntity clickableEntity = this.clickableEntity != null ? this.clickableEntity : quoteEntity;
+
     if (Td.isBotCommand(clickableEntity.type)) {
       String command = Td.substring(text.getText(), clickableEntity);
       return clickCallback != null && clickCallback.onCommandClick(view, text, part, command, true);
     }
 
-    final String copyText;
+    final CharSequence copyText;
     if (Td.isTextUrl(clickableEntity.type)) {
       copyText = ((TdApi.TextEntityTypeTextUrl) clickableEntity.type).url;
     } else {
-      copyText = Td.substring(text.getText(), clickableEntity);
+      final TextEntity[] entities = text.getEntities();
+      final ArrayList<TdApi.TextEntity> tdEntities = new ArrayList<>();
+      if (entities != null) {
+        for (TextEntity entity : entities) {
+          if (entity instanceof TextEntityMessage) {
+            TextEntityMessage msgEntity = (TextEntityMessage) entity;
+            if (msgEntity.entity != null && !isQuote(msgEntity.entity.type)) {
+              tdEntities.add(msgEntity.entity);
+            }
+            if (msgEntity.parentEntities != null) {
+              for (TdApi.TextEntity textEntity : msgEntity.parentEntities) {
+                if (!isQuote(textEntity.type)) {
+                  tdEntities.add(textEntity);
+                }
+              }
+            }
+          }
+        }
+        TD.fixEntities(tdEntities);
+      }
+
+      copyText = TD.toCharSequence(Td.substring(new TdApi.FormattedText(text.getText(), tdEntities.toArray(new TdApi.TextEntity[0])), clickableEntity.offset, clickableEntity.offset + clickableEntity.length));
     }
 
     final boolean canShare = Td.isUrl(clickableEntity.type) || Td.isTextUrl(clickableEntity.type);
@@ -616,7 +668,7 @@ public class TextEntityMessage extends TextEntity {
       ids.append(R.id.btn_copyLink);
       strings.append(R.string.CopyLink);
       icons.append(R.drawable.baseline_link_24);
-      copyLink = tdlib.tMeUrl(copyText.substring(1));
+      copyLink = tdlib.tMeUrl(copyText.toString().substring(1));
     } else {
       copyLink = null;
     }
@@ -663,7 +715,7 @@ public class TextEntityMessage extends TextEntity {
       } else if (id == R.id.btn_shareLink) {
         if (shareState[0] == 0) {
           shareState[0] = 1;
-          TD.shareLink(new TdlibContext(context.context(), tdlib), copyText);
+          TD.shareLink(new TdlibContext(context.context(), tdlib), copyText.toString());
         }
       } else if (id == R.id.btn_openLink) {
         performClick(itemView, text, part, clickCallback, true);
@@ -673,5 +725,4 @@ public class TextEntityMessage extends TextEntity {
 
     return true;
   }
-
 }
