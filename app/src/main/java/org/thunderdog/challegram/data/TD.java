@@ -94,6 +94,8 @@ import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
+import org.thunderdog.challegram.util.text.TextEntityCustom;
+import org.thunderdog.challegram.util.text.TextEntityMessage;
 import org.thunderdog.challegram.util.text.quotes.QuoteSpan;
 
 import java.io.File;
@@ -4791,6 +4793,57 @@ public class TD {
     }
   }
 
+  public static Object[] toSpans (TextEntity entity, boolean allowInternal, boolean allowQuotes) {
+    if (entity == null) {
+      return null;
+    }
+
+    final ArrayList<Object> spans = new ArrayList<>();
+    if (entity.isBold()) {
+      spans.add(new StyleSpan(Typeface.BOLD));
+    }
+    if (entity.isItalic()) {
+      spans.add(new StyleSpan(Typeface.ITALIC));
+    }
+    if (entity.isMonospace()) {
+      spans.add(Fonts.FORCE_BUILTIN_MONO ? new TypefaceSpan(Fonts.getRobotoMono()) : new TypefaceSpan("monospace"));
+    }
+    if (entity.isStrikethrough()) {
+      spans.add(new StrikethroughSpan());
+    }
+    if (Config.SUPPORT_SYSTEM_UNDERLINE_SPAN && entity.isUnderline()) {
+      spans.add(new UnderlineSpan());
+    }
+    if (entity.getSpoiler() != null) {
+      spans.add(new BackgroundColorSpan(SPOILER_BACKGROUND_COLOR));
+    }
+    if (entity.getCustomEmojiId() != 0) {
+      spans.add(new CustomEmojiId(entity.getCustomEmojiId()));
+    }
+    if (allowQuotes && entity.isQuote()) {
+      spans.add(new QuoteSpan.EmptySpan());
+    }
+
+    if (entity instanceof TextEntityMessage) {
+      TdApi.TextEntity clickableEntity = ((TextEntityMessage) entity).getClickableEntity();
+      if (clickableEntity != null) {
+        if (clickableEntity.type.getConstructor() == TdApi.TextEntityTypeTextUrl.CONSTRUCTOR || clickableEntity.type.getConstructor() == TdApi.TextEntityTypeMentionName.CONSTRUCTOR) {
+          Object span = toSpan(clickableEntity.type, allowInternal);
+          if (span != null) {
+            spans.add(span);
+          }
+        }
+      }
+    } else if (entity instanceof TextEntityCustom) {
+      String linkUrl = ((TextEntityCustom) entity).getLinkIfUrl();
+      if (!StringUtils.isEmpty(linkUrl)) {
+        spans.add(new URLSpan(linkUrl));
+      }
+    }
+
+    return spans.toArray(new Object[0]);
+  }
+
   public static TdApi.TextEntityType[] toEntityType (Object span) {
     if (!canConvertToEntityType(span))
       return null;
@@ -5005,7 +5058,7 @@ public class TD {
     return null;
   }
 
-  public static void fixEntities (List<TdApi.TextEntity> entities) {
+  private static void fixEntities (List<TdApi.TextEntity> entities) {
     if (entities != null && !entities.isEmpty()) {
       int lookupIndex = 0;
       do {

@@ -14,6 +14,8 @@
  */
 package org.thunderdog.challegram.util.text;
 
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
 import android.text.style.ClickableSpan;
 import android.view.View;
 
@@ -35,7 +37,6 @@ import org.thunderdog.challegram.ui.HashtagChatController;
 import org.thunderdog.challegram.ui.HashtagController;
 import org.thunderdog.challegram.util.StringList;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import me.vkryl.core.BitwiseUtils;
@@ -56,9 +57,6 @@ public class TextEntityMessage extends TextEntity {
   private static final int FLAG_FULL_WIDTH = 1 << 7;
   private static final int FLAG_SPOILER = 1 << 8;
   private static final int FLAG_CUSTOM_EMOJI = 1 << 9;
-
-  private final TdApi.TextEntity entity;
-  private final @Nullable List<TdApi.TextEntity> parentEntities;  // todo: fix RAM overhead
 
   private final TdApi.TextEntity clickableEntity, spoilerEntity, emojiEntity, quoteEntity;
   private int flags;
@@ -138,9 +136,6 @@ public class TextEntityMessage extends TextEntity {
       }
     }
 
-    this.entity = entity;
-    this.parentEntities = parentEntities != null && !parentEntities.isEmpty() ? new ArrayList<>(parentEntities) : null;
-
     this.clickableEntity = clickableEntity;
     if (clickableEntity != null) {
       flags |= FLAG_CLICKABLE;
@@ -157,15 +152,17 @@ public class TextEntityMessage extends TextEntity {
     this.flags = flags;
   }
 
-  private TextEntityMessage (@Nullable Tdlib tdlib, boolean needFakeBold, int offset, int end, TdApi.TextEntity clickableEntity, TdApi.TextEntity spoilerEntity, TdApi.TextEntity emojiEntity, TdApi.TextEntity quoteEntity, TdApi.TextEntity entity, @Nullable List<TdApi.TextEntity> parentEntities, int flags, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  private TextEntityMessage (@Nullable Tdlib tdlib, boolean needFakeBold, int offset, int end, TdApi.TextEntity clickableEntity, TdApi.TextEntity spoilerEntity, TdApi.TextEntity emojiEntity, TdApi.TextEntity quoteEntity, int flags, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     super(tdlib, offset, end, needFakeBold, openParameters);
     this.clickableEntity = clickableEntity;
     this.spoilerEntity = spoilerEntity;
     this.quoteEntity = quoteEntity;
     this.emojiEntity = emojiEntity;
-    this.entity = entity;
-    this.parentEntities = parentEntities;
     this.flags = flags;
+  }
+
+  public TdApi.TextEntity getClickableEntity () {
+    return clickableEntity;
   }
 
   @Override
@@ -189,7 +186,7 @@ public class TextEntityMessage extends TextEntity {
 
   @Override
   public TextEntity createCopy () {
-    TextEntityMessage copy = new TextEntityMessage(tdlib, needFakeBold, start, end, clickableEntity, spoilerEntity, emojiEntity, quoteEntity, entity, parentEntities, flags, openParameters);
+    TextEntityMessage copy = new TextEntityMessage(tdlib, needFakeBold, start, end, clickableEntity, spoilerEntity, emojiEntity, quoteEntity, flags, openParameters);
     if (customColorSet != null) {
       copy.setCustomColorSet(customColorSet);
     }
@@ -583,28 +580,19 @@ public class TextEntityMessage extends TextEntity {
     if (Td.isTextUrl(clickableEntity.type)) {
       copyText = ((TdApi.TextEntityTypeTextUrl) clickableEntity.type).url;
     } else {
+      SpannableStringBuilder sb = new SpannableStringBuilder(text.getText());
       final TextEntity[] entities = text.getEntities();
-      final ArrayList<TdApi.TextEntity> tdEntities = new ArrayList<>();
       if (entities != null) {
         for (TextEntity entity : entities) {
-          if (entity instanceof TextEntityMessage) {
-            TextEntityMessage msgEntity = (TextEntityMessage) entity;
-            if (msgEntity.entity != null && !isQuote(msgEntity.entity.type)) {
-              tdEntities.add(msgEntity.entity);
-            }
-            if (msgEntity.parentEntities != null) {
-              for (TdApi.TextEntity textEntity : msgEntity.parentEntities) {
-                if (!isQuote(textEntity.type)) {
-                  tdEntities.add(textEntity);
-                }
-              }
+          Object[] spans = TD.toSpans(entity, true, false);
+          if (spans != null) {
+            for (Object span : spans) {
+              sb.setSpan(span, entity.getStart(), entity.getEnd(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
           }
         }
-        TD.fixEntities(tdEntities);
       }
-
-      copyText = TD.toCharSequence(Td.substring(new TdApi.FormattedText(text.getText(), tdEntities.toArray(new TdApi.TextEntity[0])), clickableEntity.offset, clickableEntity.offset + clickableEntity.length));
+      copyText = sb.subSequence(clickableEntity.offset, clickableEntity.offset + clickableEntity.length);
     }
 
     final boolean canShare = Td.isUrl(clickableEntity.type) || Td.isTextUrl(clickableEntity.type);

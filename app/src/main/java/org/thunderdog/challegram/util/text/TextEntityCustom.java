@@ -103,6 +103,10 @@ public class TextEntityCustom extends TextEntity {
     return this;
   }
 
+  public String getLinkIfUrl () {
+    return linkType == LINK_TYPE_URL ? link : null;
+  }
+
   @Override
   public TextEntity setOnClickListener (ClickableSpan span) {
     this.onClickListener = span;
