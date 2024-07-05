@@ -20,8 +20,10 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.animation.Interpolator;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
@@ -68,9 +70,10 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
   private boolean notViewed;
 
   public static final int RESIZE_DEFAULT_DURATION = 225;
+  public static final Interpolator RESIZE_INTERPOLATOR = AnimatorUtils.ACCELERATE_DECELERATE_INTERPOLATOR;  // AnimatorUtils.ACCELERATE_DECELERATE_INTERPOLATOR
   private static final int FULL_SIZE_ANIMATOR_ID = 10001;
 
-  private final BoolAnimator isFullSizeAnimator = new BoolAnimator(FULL_SIZE_ANIMATOR_ID, this, AnimatorUtils.DECELERATE_INTERPOLATOR, RESIZE_DEFAULT_DURATION);
+  private final BoolAnimator isFullSizeAnimator = new BoolAnimator(FULL_SIZE_ANIMATOR_ID, this, RESIZE_INTERPOLATOR, RESIZE_DEFAULT_DURATION);
   private long fullSizeAnimatorDuration = RESIZE_DEFAULT_DURATION;
 
   private FileProgressComponent fileProgress;
@@ -279,9 +282,34 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
     return false;
   }
 
+  private float scrollCompensationFactor;
+
+  public float getScrollCompensationFactor () {
+    return scrollCompensationFactor;
+  }
+
   private void setUnmuted (boolean unmuted) {
     if (this.isUnmuted != unmuted) {
       this.isUnmuted = unmuted;
+
+      scrollCompensationFactor = 0.5f;
+      if (!unmuted) {
+        MessagesController c = messagesController();
+        if (c != null) {
+          RecyclerView recyclerView = c.getMessagesView();
+          if (recyclerView != null) {
+            final int range = recyclerView.computeVerticalScrollRange();
+            final int offset = recyclerView.computeVerticalScrollOffset();
+            final int extent = recyclerView.computeVerticalScrollExtent();
+            if (range != extent) {
+              scrollCompensationFactor = MathUtils.clamp((offset) / (float)(range - extent));
+            } else {
+              scrollCompensationFactor = 0.5f;
+            }
+          }
+        }
+      }
+
       this.isFullSizeAnimator.setDuration(fullSizeAnimatorDuration);
       this.isFullSizeAnimator.setValue(unmuted, UI.inUiThread() && hasValidAttachedView());
       final float toFactor = unmuted ? 1f : 0f;

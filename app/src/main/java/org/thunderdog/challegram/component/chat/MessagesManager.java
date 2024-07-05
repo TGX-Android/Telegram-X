@@ -1534,8 +1534,12 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (view instanceof MessageViewGroup) {
       TGMessage message = ((MessageViewGroup) view).getMessage();
       if (message instanceof TGMessageVideo) {
-        if (((TGMessageVideo) message).inSizeAnimation()) {
-          // Ignore any resizing of video messages
+        final TGMessageVideo tgMessageVideo = (TGMessageVideo) message;
+        if (tgMessageVideo.inSizeAnimation()) {
+          final float factor = tgMessageVideo.getScrollCompensationFactor();
+          if (playingRoundVideoId == 0 && factor != 1f) {
+            scrollCompensation(view, Math.round(heightDiff * (1f - factor)));
+          }
           return;
         }
       }

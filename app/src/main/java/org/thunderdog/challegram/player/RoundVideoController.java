@@ -1113,7 +1113,7 @@ public class RoundVideoController extends BasePlaybackController implements
 
 
 
-  private final BoolAnimator smoothScrollerAnimator = new BoolAnimator(ANIMATOR_SMOOTH_SCROLLER, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 220);
+  private final BoolAnimator smoothScrollerAnimator = new BoolAnimator(ANIMATOR_SMOOTH_SCROLLER, this, TGMessageVideo.RESIZE_INTERPOLATOR, 220);
 
   private float lastFactor = 0f;
   private int scrollByTarget;
@@ -1148,7 +1148,10 @@ public class RoundVideoController extends BasePlaybackController implements
     }
 
     final float factor = smoothScrollerAnimator.getFloatValue();
-    scrolledController.getMessagesView().scrollBy(0, Math.round((factor - lastFactor) * scrollByTarget));
+    final int scroll = Math.round((factor - lastFactor) * scrollByTarget);
+    if (scroll != 0) {
+      scrolledController.getMessagesView().scrollBy(0, scroll);
+    }
     lastFactor = factor;
   }
 
