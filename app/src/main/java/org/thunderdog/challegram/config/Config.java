@@ -51,6 +51,8 @@ public class Config {
   public static final boolean MODERN_IMAGE_DECODER_ENABLED = true;
   public static final boolean FORCE_SOFTWARE_IMAGE_DECODER = true;
 
+  public static final boolean WAIT_ANIMATIONS_BEFORE_START_VIDEO = true;
+
   // Allow stretch bounce in places where the glow looks ugly
   public static final boolean HAS_NICE_OVER_SCROLL_EFFECT = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S;
 
