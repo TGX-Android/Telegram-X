@@ -67,7 +67,7 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
   private TdApi.VideoNote videoNote;
   private boolean notViewed;
 
-  public static final int RESIZE_DEFAULT_DURATION = 300;
+  public static final int RESIZE_DEFAULT_DURATION = 225;
   private static final int FULL_SIZE_ANIMATOR_ID = 10001;
 
   private final BoolAnimator isFullSizeAnimator = new BoolAnimator(FULL_SIZE_ANIMATOR_ID, this, AnimatorUtils.DECELERATE_INTERPOLATOR, RESIZE_DEFAULT_DURATION);
