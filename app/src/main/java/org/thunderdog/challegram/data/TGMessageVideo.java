@@ -133,7 +133,7 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
   }
 
   private void checkTrackListenerAttached () {
-    setTrackListenerAttached(isUnmuted || isAttachedToView());
+    setTrackListenerAttached((isUnmuted || isAttachedToView()) && !isDestroyed());
   }
 
   private boolean isTrackListenerAttached;
