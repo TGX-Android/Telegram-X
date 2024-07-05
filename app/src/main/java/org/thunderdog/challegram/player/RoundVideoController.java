@@ -1173,8 +1173,6 @@ public class RoundVideoController extends BasePlaybackController implements
         newTarget = (MessageViewGroup) foundTarget;
         if (!inPipMode || newTarget != null) {
           if (((MessagesController) c).calculateScrollDyForCenterVideoMessage(object.chatId, object.id, outSp)) {
-            // outSp.duration *= 5;
-            outSp.duration = outSp.duration * 3 / 4;
             if (currentAnimationTarget != null) {
               currentAnimationTarget.setFullSizeAnimatorDuration(outSp.duration);
             }

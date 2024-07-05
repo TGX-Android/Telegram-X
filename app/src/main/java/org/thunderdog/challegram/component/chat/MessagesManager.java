@@ -2938,7 +2938,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     out.offset = offset;
     out.dy = scrollBy;
     out.canAnimateScrollPosition = Math.abs(scrollBy) < controller.getMessagesView().getMeasuredHeight() * 1.25f;
-    out.duration = (int) (300 + ((float) Math.abs(scrollBy) / height) * 300);
+    out.duration = (int) (TGMessageVideo.RESIZE_DEFAULT_DURATION + ((float) Math.abs(scrollBy) / height) * TGMessageVideo.RESIZE_DEFAULT_DURATION);
 
     return true;
   }
