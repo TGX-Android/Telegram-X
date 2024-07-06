@@ -1368,8 +1368,22 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     }
 
     invalidateQuotes(false);
-    for (int i = 0; i < quoteBlocks.size(); ++i) {
-      quoteBlocks.get(i).draw(c, getPaddingLeft(), getPaddingTop(), getWidth() - getPaddingLeft() - getPaddingRight());
+    if (!quoteBlocks.isEmpty()) {
+      final boolean needSave = !noClippingWorks();
+      final int scrollY = getScrollY();
+      final int s;
+      if (needSave) {
+        s = Views.save(c);
+        c.clipRect(0, scrollY + getPaddingTop(), getMeasuredWidth(), scrollY + getMeasuredHeight() - getPaddingBottom());
+      } else {
+        s = -1;
+      }
+      for (int i = 0; i < quoteBlocks.size(); ++i) {
+        quoteBlocks.get(i).draw(c, getPaddingLeft(), getPaddingTop(), getWidth() - getPaddingLeft() - getPaddingRight());
+      }
+      if (needSave) {
+        Views.restore(c, s);
+      }
     }
 
     super.onDraw(c);

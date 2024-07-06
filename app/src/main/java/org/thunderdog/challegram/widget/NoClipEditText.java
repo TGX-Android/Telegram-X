@@ -37,6 +37,10 @@ public class NoClipEditText extends EmojiEditText {
     }
   }
 
+  protected boolean noClippingWorks () {
+    return mScrollYField != null;
+  }
+
   @Override
   public int getExtendedPaddingTop() {
     if (ignoreTopCount != 0) {
