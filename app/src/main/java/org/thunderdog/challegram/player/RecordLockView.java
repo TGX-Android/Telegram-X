@@ -19,27 +19,37 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
+import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.MathUtils;
 
 public class RecordLockView extends View {
   public static final int BUTTON_SIZE = RecordControllerButton.BUTTON_SIZE;
   public static final int BUTTON_EXPANDED = 33;
 
+  private final Drawable drawableVoice;
+
   public RecordLockView (Context context) {
     super(context);
+
+    drawableVoice = Drawables.get(context.getResources(), R.drawable.baseline_mic_24);
+
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       setOutlineProvider(new android.view.ViewOutlineProvider() {
         @Override
@@ -97,6 +107,27 @@ public class RecordLockView extends View {
     }
   }
 
+  private float editFactor;
+
+  public void setEditFactor (float editFactor) {
+    if (this.editFactor != editFactor) {
+      this.editFactor = editFactor;
+      invalidate();
+    }
+  }
+
+  public static final int MODE_DEFAULT = 0;
+  public static final int MODE_AUDIO = 1;
+
+  private int mode = MODE_DEFAULT;
+
+  public void setMode (int mode) {
+    this.mode = mode;
+  }
+
+
+  private static final RectF tmpRect = new RectF();
+
   @Override
   protected void onDraw (Canvas c) {
     int fillingColor = Theme.fillingColor();
@@ -119,13 +150,34 @@ public class RecordLockView extends View {
     int totalDy = (int) (Screen.dp(2f) * collapseFactor * (1f - sendFactor));
 
     int width = (int) (Screen.dp(6f) + Screen.dp(2f) * (1f - sendFactor));
-    int height = (int) (Screen.dp(6f) + Screen.dp(1f) * (1f - sendFactor));
+    int height = (int) (Screen.dp(6f) + Screen.dp(1f) * (mode == MODE_DEFAULT ? (1f - sendFactor) : 1f));
     int dy = (int) (Screen.dp(BUTTON_SIZE) / 3f * (1f - collapseFactor));
     rectF.set(cx - width, cy - height + dy + totalDy, cx + width, cy + height + dy + totalDy);
-    c.drawRoundRect(rectF, Screen.dp(2f), Screen.dp(2f), Paints.fillingPaint(ColorUtils.fromToArgb(grayColor, redColor, sendFactor)));
+
+    final float r = Screen.dp(2) * (1f - sendFactor);
+    if (mode == MODE_DEFAULT) {
+      c.drawRoundRect(rectF, Screen.dp(2f), Screen.dp(2f), Paints.fillingPaint(ColorUtils.fromToArgb(grayColor, redColor, sendFactor)));
+    } else {
+      final float pauseAlpha = 1f - editFactor;
+      final float alpha = editFactor;
+
+      if (editFactor < 1f) {
+        c.drawRoundRect(rectF, r, r, Paints.fillingPaint(ColorUtils.alphaColor(pauseAlpha, grayColor)));
+        final float w = Screen.dp(2);
+        final float h = MathUtils.fromTo(Screen.dp(2), rectF.height() / 2f + 1, sendFactor);
+        tmpRect.set(cx - w, rectF.centerY() - h, cx + w, rectF.centerY() + h);
+        c.drawRoundRect(tmpRect, r, r, Paints.fillingPaint(ColorUtils.alphaColor(pauseAlpha, fillingColor)));
+      }
+
+      if (editFactor > 0f) {
+        Drawables.drawCentered(c, drawableVoice, rectF.centerX(), rectF.centerY(), PorterDuffPaint.get(ColorId.icon, alpha));
+      }
+    }
 
     if (sendFactor < 1f) {
-      c.drawCircle(cx, rectF.centerY(), Screen.dp(2f), Paints.fillingPaint(ColorUtils.alphaColor(1f - sendFactor, fillingColor)));
+      if (mode == MODE_DEFAULT) {
+        c.drawCircle(cx, rectF.centerY(), Screen.dp(2f), Paints.fillingPaint(ColorUtils.alphaColor(1f - sendFactor, fillingColor)));
+      }
       dy /= 2;
       rectF.offset(0, -dy);
       Paint paint = Paints.strokeBigPaint(ColorUtils.alphaColor(1f - sendFactor, grayColor));

@@ -375,7 +375,10 @@ public class RecordAudioVideoController implements
       Views.setSimpleStateListAnimator(lockView);
       rootLayout.addView(lockView);
       this.lockView.setOnClickListener(v -> {
-        if (isReleased) {
+        if (recordMode == RECORD_MODE_AUDIO_EDIT) {
+          resumeRecordingImpl(RECORD_MODE_AUDIO);
+          setRecordMode(RECORD_MODE_AUDIO, true);
+        } else if (isReleased) {
           finishRecording(true);
         }
       });
@@ -688,8 +691,8 @@ public class RecordAudioVideoController implements
   }
 
   private void updateButtons () {
-    // float editFactor = editAnimator.getValue() ? 1f : 0f;
-    float factor = recordFactor; // Math.max(recordFactor, editFactor);
+    float editFactor = editAnimator.getValue() ? 1f : (recordAnimator.getValue() ? 1f : this.editFactor);
+    float factor = Math.max(recordFactor, editFactor);
     float scale = .6f + .4f * factor;
 
     lockView.setScaleX(scale);
@@ -703,7 +706,7 @@ public class RecordAudioVideoController implements
   }
 
   private void updateVideoY () {
-    float editFactor = editAnimator.getValue() ? 1f : 0f;
+    float editFactor = editAnimator.getValue() ? 1f : (recordAnimator.getValue() ? 1f : this.editFactor);
     final int bottom = inputOverlayView.getTop() + overallTranslation;
     final float y = bottom / 2f - videoLayout.getMeasuredHeight() / 2f + (bottom / 3f * (1f - Math.max(recordFactor, editFactor)));
 
@@ -714,15 +717,19 @@ public class RecordAudioVideoController implements
   private void updateLockY () {
     float cy = voiceVideoButtonView.getTop() + voiceVideoButtonView.getTranslationY() + voiceVideoButtonView.getMeasuredHeight() / 2;
     float y = cy - lockView.getMeasuredHeight() - Screen.dp(11f) - Screen.dp(41f) + Screen.dp(RecordLockView.BUTTON_EXPANDED) * releaseFactor + Screen.dp(24f) * (1f - MathUtils.clamp(recordFactor));
-    // y -= Screen.dp(12) * editFactor;
+    y -= Screen.dp(12) * editFactor;
 
     lockView.setTranslationY(y);
-    y -= Screen.dp(55);
+    y -= Screen.dp(5) + Screen.dp(50) * (recordingVideo ? lockView.getAlpha() : 1f);
     y += Screen.dp(24f) * (1f - MathUtils.clamp(recordFactor)) * (1f - releaseFactor);
 
     switchCameraButtonWrap.setTranslationY(y);
-    if (Views.isValid(switchCameraButtonWrap)) {
-      y -= switchCameraButtonWrap.getMeasuredHeight();
+    if (recordMode == RECORD_MODE_VIDEO_EDIT) {
+      y -= switchCameraButtonWrap.getMeasuredHeight() * switchCameraButtonWrap.getAlpha();
+    } else {
+      if (Views.isValid(switchCameraButtonWrap)) {
+        y -= switchCameraButtonWrap.getMeasuredHeight();
+      }
     }
 
     disposableSwitchButton.setTranslationY(y);
@@ -770,6 +777,7 @@ public class RecordAudioVideoController implements
   }
 
   private void resetViews () {
+    lastDuration = 0;
     setTranslations(0f, 0f);
     switchCameraButton.setCameraIconRes(!Settings.instance().startRoundWithRear());
     progressView.reset();
@@ -842,13 +850,17 @@ public class RecordAudioVideoController implements
   // Duration
 
   private long startTime;
+  private long lastStartDuration;
+  private long lastDuration;
 
   private void startTimers (long ms) {
     startTime = ms;
-    durationView.start(startTime);
+    lastStartDuration = SystemClock.uptimeMillis();
+    durationView.start(startTime, lastDuration);
   }
 
   private void stopTimers () {
+    lastDuration += SystemClock.uptimeMillis() - lastStartDuration;
     startTime = 0;
     durationView.stop();
   }
@@ -949,6 +961,7 @@ public class RecordAudioVideoController implements
   private void setEditFactor (float factor) {
     if (this.editFactor != factor) {
       this.editFactor = factor;
+      lockView.setEditFactor(factor);
       updateMainAlphas();
       updateButtons();
       updateMiddle();
@@ -1102,6 +1115,7 @@ public class RecordAudioVideoController implements
     if (inRaiseMode) {
       lockView.setCollapseFactor(1f);
     }
+    lockView.setMode(needVideo ? RecordLockView.MODE_DEFAULT : RecordLockView.MODE_AUDIO);
     setRecordMode(needVideo ? RECORD_MODE_VIDEO : RECORD_MODE_AUDIO, !inRaiseMode);
 
     // checkActualRecording(CLOSE_MODE_CANCEL);
@@ -1118,7 +1132,7 @@ public class RecordAudioVideoController implements
   private static final long MINIMUM_AUDIO_RECORDING_DURATION = 500l;
 
   private boolean canSendRecording () {
-    return startTime != 0 && (SystemClock.uptimeMillis() - startTime) >= (recordingVideo ? MINIMUM_VIDEO_RECORDING_DURATION : MINIMUM_AUDIO_RECORDING_DURATION);
+    return startTime != 0 && (lastDuration + SystemClock.uptimeMillis() - startTime) >= (recordingVideo ? MINIMUM_VIDEO_RECORDING_DURATION : MINIMUM_AUDIO_RECORDING_DURATION);
   }
 
   public boolean finishRecording (boolean needPreview) {
@@ -1261,13 +1275,13 @@ public class RecordAudioVideoController implements
   }
 
   private void updateMainAlphas () {
-    float editFactor = editAnimator.getValue() ? 1f : 0f;
+    float editFactor = editAnimator.getValue() ? 1f : (recordAnimator.getValue() ? 1f : this.editFactor);
 
     float range = MathUtils.clamp(recordFactor);
     float editRange = Math.max(range, editFactor);
     voiceVideoButtonView.setAlpha(range);
     inputOverlayView.setAlpha(editRange);
-    lockView.setAlpha(range);
+    lockView.setAlpha(recordingVideo ? range : editRange);
 
     float videoRange = recordingVideo ? editRange : 0f;
     videoBackgroundView.setFactor(videoRange);
@@ -1283,7 +1297,7 @@ public class RecordAudioVideoController implements
     progressView.setScaleX(videoScale);
     progressView.setScaleY(videoScale);
     switchCameraButtonWrap.setAlpha(recordingVideo ? range : 0);
-    disposableSwitchButton.setAlpha(range);
+    disposableSwitchButton.setAlpha(editRange);
 
     updateMuteAlpha();
 
@@ -1423,6 +1437,16 @@ public class RecordAudioVideoController implements
     }
   }
 
+  private void resumeRecordingImpl (int mode) {
+    currentRecording = mode;
+      if (mode == RECORD_MODE_AUDIO) {
+          editAnimator.setValue(false, true);
+          if (tdlib != null) {
+              Recorder.instance().resume(tdlib, ChatId.isSecret(targetChatId), this);
+          }
+      }
+  }
+
   private MessagesController findMessagesController () {
     ViewController<?> c = UI.getCurrentStackItem(context);
     return c instanceof MessagesController ? (MessagesController) c : null;
@@ -1434,7 +1458,7 @@ public class RecordAudioVideoController implements
       case RECORD_MODE_AUDIO:
         voiceCloseMode = closeMode;
         if (needResult) {
-          Recorder.instance().save();
+          Recorder.instance().save(closeMode == CLOSE_MODE_PREVIEW || closeMode == CLOSE_MODE_PREVIEW_SCHEDULE);
         } else {
           Recorder.instance().cancel();
         }

@@ -39,6 +39,7 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import me.vkryl.core.FileUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 
 public class Recorder implements Runnable {
@@ -104,13 +105,9 @@ public class Recorder implements Runnable {
     record(tdlib, isSecret, listener, true);
   }
 
-  public void save () {
-    save(false);
-  }
-
   public void save (boolean allowResuming) {
     setRecording(false);
-    if (SystemClock.elapsedRealtime() - recordStart < 700l) {
+    if ((allowResuming ? recordTimeCount : 0) + (SystemClock.elapsedRealtime() - recordStart) < 700l) {
       cancel();
       return;
     }
@@ -275,7 +272,8 @@ public class Recorder implements Runnable {
     if (currentGeneration != null) {
       deleteTempFiles();
       if (!removeFile && allowResuming) {
-        generatedFile = U.renameFile( new File(currentGeneration.destinationPath), "temp-record.record");
+        final File srcFile = new File(currentGeneration.destinationPath);
+        FileUtils.copy(srcFile, generatedFile = new File(srcFile.getParent(), "temp-record.record"));
         generatedFileResume = U.renameFile( new File(currentGeneration.destinationPath + ".resume"), "temp-record.resume");
       }
       tdlib.finishGeneration(currentGeneration, removeFile ? new TdApi.Error(-1, "Canceled") : null);
