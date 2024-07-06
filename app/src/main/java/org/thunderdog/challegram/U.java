@@ -1853,7 +1853,7 @@ public class U {
     return successCount == innerFiles.length && fromDir.delete();
   }
 
-  private static boolean moveFile (File fromFile, File toFile) {
+  public static boolean moveFile (File fromFile, File toFile) {
     if (fromFile.renameTo(toFile)) {
       return true;
     }
@@ -1865,6 +1865,15 @@ public class U {
       return false;
     }
     return fromFile.delete();
+  }
+
+  public static File renameFile (File file, String name) {
+    File newFile = new File(file.getParent(), name);
+    if (file.renameTo(newFile)) {
+      return newFile;
+    }
+
+    return null;
   }
 
   public static void moveUnsafePrivateMedia () {

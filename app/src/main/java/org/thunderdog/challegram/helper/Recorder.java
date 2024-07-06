@@ -25,6 +25,7 @@ import android.os.SystemClock;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.BaseThread;
 import org.thunderdog.challegram.data.TGRecord;
 import org.thunderdog.challegram.filegen.GenerationInfo;
@@ -80,6 +81,10 @@ public class Recorder implements Runnable {
   }
 
   public void record (final Tdlib tdlib, final boolean isSecret, final Listener listener) {
+    record(tdlib, isSecret, listener, false);
+  }
+
+  private void record (final Tdlib tdlib, final boolean isSecret, final Listener listener, boolean isResume) {
     setRecording(true);
     encodeThread.post(() -> recordThread.post(startRunnable = new CancellableRunnable() {
       @Override
@@ -90,27 +95,36 @@ public class Recorder implements Runnable {
             return;
           }
         }
-        startRecording(tdlib, isSecret, listener);
+        startRecording(tdlib, isSecret, listener, isResume);
       }
     }, START_DELAY), 0);
   }
 
+  public void resume (final Tdlib tdlib, final boolean isSecret, final Listener listener) {
+    record(tdlib, isSecret, listener, true);
+  }
+
   public void save () {
+    save(false);
+  }
+
+  public void save (boolean allowResuming) {
     setRecording(false);
     if (SystemClock.elapsedRealtime() - recordStart < 700l) {
       cancel();
       return;
     }
-    stopRecording(false);
+    stopRecording(false, allowResuming);
   }
 
   public void cancel () {
     setRecording(false);
-    stopRecording(true);
+    stopRecording(true, false);
   }
 
   public void delete (final TGRecord record) {
     recordThread.post(() -> record.delete(), 0);
+    deleteTempFiles();
   }
 
   // Internal
@@ -120,7 +134,7 @@ public class Recorder implements Runnable {
       tdlib.finishGeneration(currentGeneration, new TdApi.Error());
       currentGeneration = null;
     }
-    encodeThread.post(() -> cleanupRecording(true), 0);
+    encodeThread.post(() -> cleanupRecording(true, false), 0);
     UI.post(() -> listener.onFail());
   }
 
@@ -151,7 +165,7 @@ public class Recorder implements Runnable {
   private ByteBuffer fileBuffer;
   private int bufferSize;
 
-  private void startRecording (Tdlib tdlib, boolean isSecret, Recorder.Listener listener) {
+  private void startRecording (Tdlib tdlib, boolean isSecret, Recorder.Listener listener, boolean isResume) {
     this.tdlib = tdlib;
     this.listener = listener;
 
@@ -170,9 +184,20 @@ public class Recorder implements Runnable {
     }
 
     try {
-      if (N.startRecord(generation.destinationPath) == 0) {
-        dispatchError();
-        return;
+      if (isResume) {
+        U.moveFile(generatedFile, new File(currentGeneration.destinationPath));
+        U.moveFile(generatedFileResume, new File(currentGeneration.destinationPath + ".resume"));
+        generatedFile = generatedFileResume = null;
+
+        if (N.resumeRecord(currentGeneration.destinationPath, 48000) == 0) {
+          dispatchError();
+          return;
+        }
+      } else {
+        if (N.startRecord(currentGeneration.destinationPath, 48000) == 0) {
+          dispatchError();
+          return;
+        }
       }
 
       if (bufferSize == 0) {
@@ -208,9 +233,12 @@ public class Recorder implements Runnable {
 
     try {
       tryInitEnhancers();
-      recordStart = SystemClock.elapsedRealtime();
-      recordTimeCount = 0;
+      if (!isResume) {
+        recordStart = SystemClock.elapsedRealtime();
+        recordTimeCount = 0;
+      }
       removeFile = true;
+      allowResuming = false;
       recorder.startRecording();
       initMaxAmplitude();
       dispatchRecord();
@@ -227,10 +255,29 @@ public class Recorder implements Runnable {
 
   // private File fileToRemove;
 
-  private void cleanupRecording (boolean removeFile) {
-    N.stopRecord();
+  private File generatedFile;
+  private File generatedFileResume;
+
+  private void deleteTempFiles () {
+    if (generatedFile != null) {
+      generatedFile.delete();
+      generatedFile = null;
+    }
+    if (generatedFileResume != null) {
+      generatedFileResume.delete();
+      generatedFileResume = null;
+    }
+  }
+
+  private void cleanupRecording (boolean removeFile, boolean allowResuming) {
+    N.stopRecord(!removeFile && allowResuming);
     setRecording(false);
     if (currentGeneration != null) {
+      deleteTempFiles();
+      if (!removeFile && allowResuming) {
+        generatedFile = U.renameFile( new File(currentGeneration.destinationPath), "temp-record.record");
+        generatedFileResume = U.renameFile( new File(currentGeneration.destinationPath + ".resume"), "temp-record.resume");
+      }
       tdlib.finishGeneration(currentGeneration, removeFile ? new TdApi.Error(-1, "Canceled") : null);
       if (removeFile) {
         generationToRemove = currentGeneration;
@@ -270,7 +317,7 @@ public class Recorder implements Runnable {
 
     if (length <= 0) {
       buffers.add(buffer);
-      encodeThread.post(() -> cleanupRecording(removeFile), 0);
+      encodeThread.post(() -> cleanupRecording(removeFile, allowResuming), 0);
       return;
     }
 
@@ -308,8 +355,9 @@ public class Recorder implements Runnable {
   }
 
   private boolean removeFile;
+  private boolean allowResuming;
 
-  private void stopRecording (final boolean removeFile) {
+  private void stopRecording (final boolean removeFile, final boolean allowResuming) {
     encodeThread.post(() -> {
       final boolean started;
       if (startRunnable != null) {
@@ -322,6 +370,7 @@ public class Recorder implements Runnable {
       recordThread.post(() -> {
         if (started) {
           Recorder.this.removeFile = removeFile;
+          Recorder.this.allowResuming = allowResuming;
           if (recorder == null) {
             return;
           }
@@ -332,7 +381,7 @@ public class Recorder implements Runnable {
             Log.e("Cannot stop recorder", t);
           }
         } else {
-          cleanupRecording(removeFile);
+          cleanupRecording(removeFile, allowResuming);
         }
       }, 0);
     }, 0);
