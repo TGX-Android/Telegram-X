@@ -263,6 +263,11 @@ public class TextEntityCustom extends TextEntity {
   }
 
   @Override
+  public TdApi.TextEntity getQuote () {
+    return null;
+  }
+
+  @Override
   public boolean isEssential () {
     return true;
   }

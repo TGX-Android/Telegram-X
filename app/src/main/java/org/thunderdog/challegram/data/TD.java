@@ -4535,12 +4535,15 @@ public class TD {
           HtmlParser.start(output, new TdApi.TextEntityTypePreCode(language != null ? language : ""));
         } else if (tag.equalsIgnoreCase("blockquote")) {
           HtmlParser.start(output, new TdApi.TextEntityTypeBlockQuote());
+        } else if (tag.equalsIgnoreCase("details")) {
+          HtmlParser.start(output, new TdApi.TextEntityTypeExpandableBlockQuote());
         } else {
           return false;
         }
         return true;
       } else if (
         tag.equalsIgnoreCase("blockquote") ||
+        tag.equalsIgnoreCase("details") ||
         tag.equalsIgnoreCase("tg-user-mention") ||
         tag.equalsIgnoreCase("animated-emoji") ||
         tag.equalsIgnoreCase("spoiler") ||
@@ -4640,8 +4643,10 @@ public class TD {
         span = new CustomTypefaceSpan(Fonts.getRobotoItalic(), 0);
         break;
       case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
+        span = new QuoteSpan.EmptySpan(false);
+        break;
       case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR:
-        span = new QuoteSpan.EmptySpan();
+        span = new QuoteSpan.EmptySpan(true);
         break;
       case TdApi.TextEntityTypePre.CONSTRUCTOR:
       case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
@@ -4774,8 +4779,9 @@ public class TD {
       case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
         return new CustomEmojiId(((TdApi.TextEntityTypeCustomEmoji) type).customEmojiId);
       case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
+        return new QuoteSpan.EmptySpan(false);
       case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR:
-        return new QuoteSpan.EmptySpan();
+        return new QuoteSpan.EmptySpan(true);
       // auto-detected entities
       case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
       case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
@@ -4821,7 +4827,8 @@ public class TD {
       spans.add(new CustomEmojiId(entity.getCustomEmojiId()));
     }
     if (allowQuotes && entity.isQuote()) {
-      spans.add(new QuoteSpan.EmptySpan());
+      TdApi.TextEntity quote = entity.getQuote();
+      spans.add(new QuoteSpan.EmptySpan(quote.type.getConstructor() == TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR));
     }
 
     if (entity instanceof TextEntityMessage) {
@@ -4848,7 +4855,7 @@ public class TD {
     if (!canConvertToEntityType(span))
       return null;
     if (span instanceof QuoteSpan) {
-      return new TdApi.TextEntityType[] { new TdApi.TextEntityTypeBlockQuote() };
+      return new TdApi.TextEntityType[] { ((QuoteSpan) span).isExpandable() ? new TdApi.TextEntityTypeExpandableBlockQuote() : new TdApi.TextEntityTypeBlockQuote() };
     }
     if (span instanceof CustomTypefaceSpan)
       return new TdApi.TextEntityType[] {((CustomTypefaceSpan) span).getTextEntityType()};

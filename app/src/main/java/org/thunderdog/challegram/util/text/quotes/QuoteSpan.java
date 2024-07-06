@@ -56,9 +56,15 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
 
   public int start, end, flags;
   public boolean rtl;
+  private final boolean isExpandable;
 
-  public QuoteSpan () {
+  public QuoteSpan (boolean isExpandable) {
     this.styleSpan = new QuoteStyleSpan(this);
+    this.isExpandable = isExpandable;
+  }
+
+  public boolean isExpandable () {
+    return isExpandable;
   }
 
   @Override
@@ -123,7 +129,13 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
     }
   }
 
-  public static class EmptySpan { }
+  public static class EmptySpan {
+    private final boolean isExpandable;
+
+    public EmptySpan (boolean isExpandable) {
+      this.isExpandable = isExpandable;
+    }
+  }
 
   public static boolean isQuoteSpan (Object span) {
     return span instanceof QuoteSpan || span instanceof QuoteSpan.QuoteStyleSpan || span instanceof QuoteSpan.EmptySpan;
@@ -246,7 +258,7 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
       this.width = (int) Math.ceil(width);
     }
 
-    public void draw(Canvas canvas, float offsetX, float offsetY, int maxWidth) {
+    public void draw (Canvas canvas, float offsetX, float offsetY, int maxWidth) {
       int width = maxWidth;
       if (width >= maxWidth * 0.95) {
         width = maxWidth;
@@ -274,7 +286,7 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
       final int end = text.getSpanEnd(span);
 
       text.removeSpan(span);
-      setQuoteSpan(text, start, end);
+      setQuoteSpan(text, start, end, span.isExpandable);
     }
   }
 
@@ -286,6 +298,7 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
 
     final int QUOTE_START = 1;
     final int QUOTE_END = 2;
+    final int QUOTE_START_COLLAPSE = 1 << 2;
     final TreeSet<Integer> cutIndexes = new TreeSet<>();
     final HashMap<Integer, Integer> cutToType = new HashMap<>();
 
@@ -295,7 +308,7 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
       final int end = text.getSpanEnd(span);
 
       cutIndexes.add(start);
-      cutToType.put(start, (cutToType.containsKey(start) ? cutToType.get(start) : 0) | QUOTE_START);
+      cutToType.put(start, (cutToType.containsKey(start) ? cutToType.get(start) : 0) | QUOTE_START | (span.isExpandable ? QUOTE_START_COLLAPSE : 0));
       cutIndexes.add(end);
       cutToType.put(end, (cutToType.containsKey(end) ? cutToType.get(end) : 0) | QUOTE_END);
 
@@ -304,6 +317,7 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
 
     int offset = 0;
     int from = 0;
+    boolean quoteCollapse = false;
     int quoteCount = 0;
     for (Iterator<Integer> i = cutIndexes.iterator(); i.hasNext(); ) {
       int cutIndex = i.next();
@@ -317,22 +331,25 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
         int to = cutIndex;
         final boolean isQuote = quoteCount > 0;
         if (isQuote) {
-          offset += setQuoteSpan(text, from + offset, to + offset);
+          offset += setQuoteSpan(text, from + offset, to + offset, quoteCollapse);
         }
         from = cutIndex;
       }
 
       if ((type & QUOTE_END) != 0) quoteCount--;
-      if ((type & QUOTE_START) != 0) quoteCount++;
+      if ((type & QUOTE_START) != 0) {
+        quoteCount++;
+        quoteCollapse = (type & QUOTE_START_COLLAPSE) != 0;
+      }
     }
     if (from < text.length()) {
       if (quoteCount > 0) {
-        setQuoteSpan(text, from + offset, text.length());
+        setQuoteSpan(text, from + offset, text.length(), quoteCollapse);
       }
     }
   }
 
-  public static int setQuoteSpan (Editable editable, int start, int end) {
+  private static int setQuoteSpan (Editable editable, int start, int end, boolean isExpanable) {
     if (editable == null) {
       return -1;
     }
@@ -353,7 +370,7 @@ public class QuoteSpan implements LeadingMarginSpan, PreserveCustomEmojiFilter.R
       insertedAfter++;
     }
 
-    final QuoteSpan quoteSpan = new QuoteSpan();
+    final QuoteSpan quoteSpan = new QuoteSpan(isExpanable);
     final QuoteStyleSpan styleSpan = quoteSpan.styleSpan;
     quoteSpan.start = start;
     quoteSpan.end = end;

@@ -377,6 +377,11 @@ public class TextEntityMessage extends TextEntity {
   }
 
   @Override
+  public TdApi.TextEntity getQuote () {
+    return quoteEntity;
+  }
+
+  @Override
   public boolean isClickable () {
     return (flags & FLAG_CLICKABLE) != 0;
   }
