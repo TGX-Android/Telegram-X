@@ -21,6 +21,7 @@ import android.os.Build;
 import android.view.View;
 
 import org.thunderdog.challegram.data.TGMessage;
+import org.thunderdog.challegram.data.TGMessageVideo;
 
 public class MessageOverlayView extends View {
   private MessageView boundView;
@@ -51,7 +52,13 @@ public class MessageOverlayView extends View {
       if (msg != null) {
         msg.buildLayout(getMeasuredWidth());
       }
-      heightMeasureSpec = MeasureSpec.makeMeasureSpec(msg != null ? msg.getHeight() : 0, MeasureSpec.EXACTLY);
+
+      int height = msg != null ? msg.getHeight() : 0;
+      if (msg instanceof TGMessageVideo) {
+        height = ((TGMessageVideo) msg).getVideoMessageTargetHeight(true);
+      }
+
+      heightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
       setMeasuredDimension(widthMeasureSpec, heightMeasureSpec);
     }
   }

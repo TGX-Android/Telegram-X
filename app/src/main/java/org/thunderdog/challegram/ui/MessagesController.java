@@ -3013,6 +3013,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return false;
   }
 
+  public boolean calculateScrollDyForCenterVideoMessage (final long chatId, final long messageId, MessagesManager.VideoScrollParameters out) {
+    if (getChatId() == chatId && chatId != 0) {
+      return manager.calculateScrollDyForCenterVideoMessage(chatId, messageId, out);
+    }
+    return false;
+  }
+
   @Override
   protected void onFocusStateChanged () {
     checkRoundVideo();
@@ -3047,6 +3054,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }*/
       return;
     }
+
+    if (messagesView.isComputingLayout()) {
+      UI.post(() -> {
+        if (!isDestroyed()) {
+          checkRoundVideo(-1, -1, onScroll);
+        }
+      });
+      return;
+    }
+
     final RoundVideoController roundVideoController = context().getRoundVideoController();
     MessageViewGroup targetView = null;
     boolean targetChat = false;

@@ -1711,7 +1711,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
-  private void drawBubble (Canvas c, Paint paint, boolean stroke, int padding) {
+  protected void drawBubble (Canvas c, Paint paint, boolean stroke, int padding) {
     if (paint.getAlpha() == 0) {
       return;
     }
@@ -2569,6 +2569,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         manager.viewMessages(false);
       }
     }
+  }
+
+  public boolean isAttachedToView () {
+    return BitwiseUtils.hasFlag(flags, FLAG_ATTACHED);
   }
 
   protected void onMessageAttachStateChange (boolean isAttached) {
