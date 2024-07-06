@@ -98,17 +98,6 @@ public class EditText extends android.widget.EditText {
       selection = new TextSelection();
     }
 
-    if (fakeSelectionSpan != null) {
-      final Editable editable = getText();
-      final int s = editable.getSpanStart(fakeSelectionSpan);
-      final int e = editable.getSpanEnd(fakeSelectionSpan);
-      if (s != -1 && e != -1) {
-        selection.start = s;
-        selection.end = e;
-        return selection;
-      }
-    }
-
     if (Views.getSelection(this, selection)) {
       return selection;
     } else {
@@ -377,32 +366,5 @@ public class EditText extends android.widget.EditText {
       return cs.toString();
     }
     return new SpannableStringBuilder(cs);
-  }
-
-  /* Fake Selection */
-
-  private FakeSelectionSpan fakeSelectionSpan;
-
-  public static class FakeSelectionSpan extends BackgroundColorSpan {
-    public FakeSelectionSpan (int color) {
-      super(color);
-    }
-  }
-
-  public void setFakeSelection (int start, int end) {
-    if (fakeSelectionSpan == null) {
-      fakeSelectionSpan = new FakeSelectionSpan(Theme.fillingTextSelectionColor());   // todo theme invalidate
-    }
-    final Editable editable = getText();
-    editable.removeSpan(fakeSelectionSpan);
-    editable.setSpan(fakeSelectionSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-  }
-
-  public void removeFakeSelection () {
-    final Editable editable = getText();
-    if (fakeSelectionSpan != null) {
-      editable.removeSpan(fakeSelectionSpan);
-      fakeSelectionSpan = null;
-    }
   }
 }

@@ -1,3 +1,18 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 12/06/2024
+ */
+
 package org.thunderdog.challegram.helper.editable;
 
 import android.text.Editable;
@@ -6,11 +21,6 @@ import android.text.Spanned;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.util.text.quotes.QuoteSpan;
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 
 public class EditableHelper {
   public static void removeSpan (Editable editable, Object span) {
@@ -25,28 +35,4 @@ public class EditableHelper {
     QuoteSpan[] spans = spanned.getSpans(0, 0, QuoteSpan.class);
     return spans != null && spans.length > 0;
   }
-
-/*
-  @Target({ElementType.TYPE, ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.PARAMETER, ElementType.FIELD, ElementType.LOCAL_VARIABLE})
-  @Retention(RetentionPolicy.SOURCE)
-  public @interface Flags {}
-
-  public static class Utils {
-    public static @Flags int make (int insertedBefore, int insertedAfter) {
-      return ((insertedBefore & 0xFF) << 24) | ((insertedAfter & 0xFF) << 16);
-    }
-
-    public static int getInsertedBefore (@Flags int flags) {
-      return (flags >> 24) & 0xFF;
-    }
-
-    public static int getInsertedAfter (@Flags int flags) {
-      return (flags >> 16) & 0xFF;
-    }
-
-    public static int getInsertedTotal (@Flags int flags) {
-      return getInsertedAfter(flags) + getInsertedBefore(flags);
-    }
-  }
-*/
 }
