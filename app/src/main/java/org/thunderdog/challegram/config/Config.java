@@ -306,6 +306,8 @@ public class Config {
 
   public static final boolean REQUIRE_FIREBASE_SERVICES_FOR_SAFETYNET = false;
 
+  public static final boolean USE_INPUT_VIEW_CLIPPING_FIX = true;
+
   public static final int VOIP_CONNECTION_MIN_LAYER = 65;
   public static final boolean FORCE_DIRECT_TGVOIP = false;
 
