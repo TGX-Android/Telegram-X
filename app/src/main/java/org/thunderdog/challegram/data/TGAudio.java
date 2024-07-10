@@ -55,12 +55,6 @@ public class TGAudio {
     this.audio = audio;
   }
 
-  public TGAudio (Tdlib tdlib, TGRecord record) {
-    this.tdlib = tdlib;
-    this.msg = null;
-    this.voice = new TdApi.VoiceNote(record.getDuration(), null, "audio/ogg", null, TD.newFile(record.getFile()));
-  }
-
   public Tdlib tdlib () {
     return tdlib;
   }

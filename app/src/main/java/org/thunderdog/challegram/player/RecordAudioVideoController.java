@@ -1901,6 +1901,9 @@ public class RecordAudioVideoController implements
         sendAudioNote(new TdApi.InputMessageVoiceNote(record.toInputFile(), record.getDuration(), record.getWaveform(), null, obtainSelfDestructType()), initialSendOptions);
       }
     } else {
+      if (record != null) {
+        tdlib.client().send(new TdApi.DeleteFile(record.getFileId()), tdlib.silentHandler());
+      }
       voiceCloseMode = CLOSE_MODE_CANCEL;
     }
     editAnimator.setValue(false, true);

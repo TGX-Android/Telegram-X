@@ -1867,15 +1867,6 @@ public class U {
     return fromFile.delete();
   }
 
-  public static File renameFile (File file, String name) {
-    File newFile = new File(file.getParent(), name);
-    if (file.renameTo(newFile)) {
-      return newFile;
-    }
-
-    return null;
-  }
-
   public static void moveUnsafePrivateMedia () {
     File fromDirectory = getUnsecurePrivateAlbumDir();
     if (!fromDirectory.exists())

@@ -39,7 +39,6 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import me.vkryl.core.FileUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 
 public class Recorder implements Runnable {
@@ -57,7 +56,6 @@ public class Recorder implements Runnable {
 
   private static BaseThread recordThread, encodeThread;
   private Tdlib.Generation currentGeneration;
-  private Tdlib.Generation generationToRemove;
   private boolean isRecording;
   private long samplesCount;
   private short[] recordSamples = new short[1024];
@@ -120,8 +118,7 @@ public class Recorder implements Runnable {
   }
 
   public void delete (final TGRecord record) {
-    recordThread.post(() -> record.delete(), 0);
-    deleteTempFiles();
+
   }
 
   // Internal
@@ -168,6 +165,7 @@ public class Recorder implements Runnable {
 
     final String id = "voice" + GenerationInfo.randomStamp();
     Tdlib.Generation generation = tdlib.generateFile(id, new TdApi.FileTypeVoiceNote(), isSecret, 1, 5000);
+    Tdlib.Generation prevGeneration = currentGeneration;
 
     if (generation == null) {
       dispatchError();
@@ -176,15 +174,18 @@ public class Recorder implements Runnable {
 
     currentGeneration = generation;
 
-    if (generationToRemove != null && new File(generationToRemove.destinationPath).delete()) {
-      generationToRemove = null;
-    }
-
     try {
       if (isResume) {
-        U.moveFile(generatedFile, new File(currentGeneration.destinationPath));
-        U.moveFile(generatedFileResume, new File(currentGeneration.destinationPath + ".resume"));
-        generatedFile = generatedFileResume = null;
+        if (prevGeneration == null || prevGeneration.file == null || prevGeneration.file.local == null || !prevGeneration.file.local.isDownloadingCompleted || resumeFile == null) {
+          dispatchError();
+          return;
+        }
+
+        if (!U.moveFile(resumeFile, new File(currentGeneration.destinationPath + ".resume")) ||
+          !U.moveFile(new File(prevGeneration.file.local.path), new File(generation.destinationPath))) {
+          dispatchError();
+          return;
+        }
 
         if (N.resumeRecord(currentGeneration.destinationPath, 48000) == 0) {
           dispatchError();
@@ -237,7 +238,9 @@ public class Recorder implements Runnable {
       removeFile = true;
       allowResuming = false;
       recorder.startRecording();
-      initMaxAmplitude();
+      if (!isResume) {
+        initMaxAmplitude();
+      }
       dispatchRecord();
     } catch (Throwable t) {
       if (recorder != null) {
@@ -250,36 +253,21 @@ public class Recorder implements Runnable {
     }
   }
 
-  // private File fileToRemove;
-
-  private File generatedFile;
-  private File generatedFileResume;
-
-  private void deleteTempFiles () {
-    if (generatedFile != null) {
-      generatedFile.delete();
-      generatedFile = null;
-    }
-    if (generatedFileResume != null) {
-      generatedFileResume.delete();
-      generatedFileResume = null;
-    }
-  }
+  private File resumeFile;
 
   private void cleanupRecording (boolean removeFile, boolean allowResuming) {
     N.stopRecord(!removeFile && allowResuming);
     setRecording(false);
     if (currentGeneration != null) {
-      deleteTempFiles();
       if (!removeFile && allowResuming) {
-        final File srcFile = new File(currentGeneration.destinationPath);
-        FileUtils.copy(srcFile, generatedFile = new File(srcFile.getParent(), "temp-record.record"));
-        generatedFileResume = U.renameFile( new File(currentGeneration.destinationPath + ".resume"), "temp-record.resume");
+        final File resumeSrc = new File(currentGeneration.destinationPath + ".resume");
+        if (resumeFile == null) {
+          resumeFile = new File(resumeSrc.getParent(), "voice.resume");
+        }
+        U.moveFile(resumeSrc, resumeFile);
       }
       tdlib.finishGeneration(currentGeneration, removeFile ? new TdApi.Error(-1, "Canceled") : null);
-      if (removeFile) {
-        generationToRemove = currentGeneration;
-      } else if (listener != null) {
+      if (!removeFile && listener != null) {
         listener.onSave(currentGeneration, Math.round((float) recordTimeCount / 1000f), getWaveform());
       }
     }
