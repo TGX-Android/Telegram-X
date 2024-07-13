@@ -40,6 +40,12 @@ import androidx.media3.transformer.ProgressHolder;
 import androidx.media3.transformer.Transformer;
 import androidx.media3.transformer.VideoEncoderSettings;
 
+import com.googlecode.mp4parser.BasicContainer;
+import com.googlecode.mp4parser.authoring.Movie;
+import com.googlecode.mp4parser.authoring.Track;
+import com.googlecode.mp4parser.authoring.builder.DefaultMp4Builder;
+import com.googlecode.mp4parser.authoring.container.mp4.MovieCreator;
+import com.googlecode.mp4parser.authoring.tracks.AppendTrack;
 import com.otaliastudios.transcoder.Transcoder;
 import com.otaliastudios.transcoder.TranscoderListener;
 import com.otaliastudios.transcoder.common.TrackType;
@@ -71,9 +77,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -660,5 +668,48 @@ public class VideoGen {
     return info.needTrim() ?
         videoData.editMovie(destinationPath, info.needMute(), info.getRotate(), (double) info.getStartTimeUs() / 1_000_000.0, info.getEndTimeUs() == -1 ? -1 : (double) info.getEndTimeUs() / 1_000_000.0, onProgress, isCancelled) :
         videoData.editMovie(destinationPath, info.needMute(), info.getRotate(), onProgress, isCancelled);
+  }
+
+  public static void appendTwoVideos(String firstVideoPath, String secondVideoPath, String output) {
+    try {
+      Movie[] inMovies = new Movie[2];
+
+      inMovies[0] = MovieCreator.build(firstVideoPath);
+      inMovies[1] = MovieCreator.build(secondVideoPath);
+
+      List<Track> videoTracks = new LinkedList<>();
+      List<Track> audioTracks = new LinkedList<>();
+
+      for (Movie m : inMovies) {
+        for (Track t : m.getTracks()) {
+          if (t.getHandler().equals("soun")) {
+            audioTracks.add(t);
+          }
+          if (t.getHandler().equals("vide")) {
+            videoTracks.add(t);
+          }
+        }
+      }
+
+      Movie result = new Movie();
+      if (!audioTracks.isEmpty()) {
+        result.addTrack(new AppendTrack(audioTracks.toArray(new Track[audioTracks.size()])));
+      }
+      if (!videoTracks.isEmpty()) {
+        result.addTrack(new AppendTrack(videoTracks.toArray(new Track[videoTracks.size()])));
+      }
+
+      BasicContainer out = (BasicContainer) new DefaultMp4Builder().build(result);
+
+      FileChannel fc = new RandomAccessFile(output, "rw").getChannel();
+      out.writeContainer(fc);
+      fc.close();
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
+    } catch (Throwable e) {
+      e.printStackTrace();
+    }
   }
 }

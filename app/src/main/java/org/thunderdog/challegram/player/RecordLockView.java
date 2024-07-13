@@ -44,11 +44,13 @@ public class RecordLockView extends View {
   public static final int BUTTON_EXPANDED = 33;
 
   private final Drawable drawableVoice;
+  private final Drawable drawableRound;
 
   public RecordLockView (Context context) {
     super(context);
 
     drawableVoice = Drawables.get(context.getResources(), R.drawable.baseline_mic_24);
+    drawableRound = Drawables.get(context.getResources(), R.drawable.deproko_baseline_msg_video_24);
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       setOutlineProvider(new android.view.ViewOutlineProvider() {
@@ -118,6 +120,7 @@ public class RecordLockView extends View {
 
   public static final int MODE_DEFAULT = 0;
   public static final int MODE_AUDIO = 1;
+  public static final int MODE_VIDEO = 2;
 
   private int mode = MODE_DEFAULT;
 
@@ -170,7 +173,7 @@ public class RecordLockView extends View {
       }
 
       if (editFactor > 0f) {
-        Drawables.drawCentered(c, drawableVoice, rectF.centerX(), rectF.centerY(), PorterDuffPaint.get(ColorId.icon, alpha));
+        Drawables.drawCentered(c, mode == MODE_VIDEO ? drawableRound : drawableVoice, rectF.centerX(), rectF.centerY(), PorterDuffPaint.get(ColorId.icon, alpha));
       }
     }
 

@@ -34,11 +34,13 @@ import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.chat.VoiceVideoButtonView;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGRecord;
+import org.thunderdog.challegram.filegen.VideoGen;
 import org.thunderdog.challegram.filegen.VideoGenerationInfo;
 import org.thunderdog.challegram.helper.Recorder;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -68,6 +70,7 @@ import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.SimpleVideoPlayer;
 import org.thunderdog.challegram.widget.VideoTimelineView;
 
+import java.io.File;
 import java.lang.ref.Reference;
 import java.util.ArrayList;
 import java.util.List;
@@ -377,7 +380,8 @@ public class RecordAudioVideoController implements
       this.lockView.setOnClickListener(v -> {
         if (recordMode == RECORD_MODE_AUDIO_EDIT) {
           resumeRecordingImpl(RECORD_MODE_AUDIO);
-          setRecordMode(RECORD_MODE_AUDIO, true);
+        } else if (recordMode == RECORD_MODE_VIDEO_EDIT) {
+          resumeRecordingImpl(RECORD_MODE_VIDEO);
         } else if (isReleased) {
           finishRecording(true);
         }
@@ -593,7 +597,7 @@ public class RecordAudioVideoController implements
   }
 
   private float getRecordProgress () {
-    return startTime != 0 ? (float) ((double) (SystemClock.uptimeMillis() - startTime) / (double) MAX_ROUND_DURATION_MS) : 0f;
+    return startTime != 0 ? (float) ((double) (SystemClock.uptimeMillis() - startTime + lastDuration) / (double) MAX_ROUND_DURATION_MS) : 0f;
   }
 
   @Override
@@ -1051,6 +1055,8 @@ public class RecordAudioVideoController implements
       return false;
     }
 
+    this.savedRoundDurationSeconds = 0;
+    this.prevVideoPath = null;
     this.targetChatId = targetController.getChatId();
     this.targetMessageThreadId = targetController.getMessageThreadId();
     if (needVideo && !tdlib.chatSupportsRoundVideos(targetChatId)) {
@@ -1115,7 +1121,7 @@ public class RecordAudioVideoController implements
     if (inRaiseMode) {
       lockView.setCollapseFactor(1f);
     }
-    lockView.setMode(needVideo ? RecordLockView.MODE_DEFAULT : RecordLockView.MODE_AUDIO);
+    lockView.setMode(needVideo ? RecordLockView.MODE_VIDEO : RecordLockView.MODE_AUDIO);
     setRecordMode(needVideo ? RECORD_MODE_VIDEO : RECORD_MODE_AUDIO, !inRaiseMode);
 
     // checkActualRecording(CLOSE_MODE_CANCEL);
@@ -1281,7 +1287,7 @@ public class RecordAudioVideoController implements
     float editRange = Math.max(range, editFactor);
     voiceVideoButtonView.setAlpha(range);
     inputOverlayView.setAlpha(editRange);
-    lockView.setAlpha(recordingVideo ? range : editRange);
+    lockView.setAlpha(editRange);
 
     float videoRange = recordingVideo ? editRange : 0f;
     videoBackgroundView.setFactor(videoRange);
@@ -1438,13 +1444,40 @@ public class RecordAudioVideoController implements
   }
 
   private void resumeRecordingImpl (int mode) {
-    currentRecording = mode;
-      if (mode == RECORD_MODE_AUDIO) {
-          editAnimator.setValue(false, true);
-          if (tdlib != null) {
-              Recorder.instance().resume(tdlib, ChatId.isSecret(targetChatId), this);
-          }
+    editAnimator.setValue(false, true);
+    if (mode == RECORD_MODE_AUDIO) {
+      currentRecording = mode;
+      if (tdlib != null) {
+        Recorder.instance().resume(tdlib, ChatId.isSecret(targetChatId), this);
       }
+    } else if (mode == RECORD_MODE_VIDEO) {
+      if (recordingRoundVideo) {
+        cleanupVideoPending = true;
+        return;
+      }
+      ownedCamera.onCleanAfterHide();
+      ownedCamera.releaseCameraLayout();
+
+      setupCamera(false);
+      context.releaseCameraOwnership();
+      releasedTrace = Log.generateException();
+      ownedCamera = null;
+      recordMode = RECORD_MODE_NONE;
+      resetRoundState();
+      editFactor = 0f;
+
+      videoPreviewView.performDestroy();
+      videoPreviewView.setMuted(true);
+      videoPreviewView.setPlaying(true);
+      resetRoundState();
+      isCameraReady = false;
+      ownedCamera = context.takeCameraOwnership(new ViewController.CameraOpenOptions()
+        .mode(CameraController.MODE_ROUND_VIDEO)
+        .readyListener(this)
+      );
+      prepareVideoRecording();
+    }
+    setRecordMode(mode, true);
   }
 
   private MessagesController findMessagesController () {
@@ -1670,7 +1703,7 @@ public class RecordAudioVideoController implements
   @Override
   public void onVideoRecordProgress (String key, long readyBytesCount) {
     if (StringUtils.equalsOrBothEmpty(roundKey, key)) {
-      tdlib.client().send(new TdApi.SetFileGenerationProgress(roundGenerationId, 0, readyBytesCount), tdlib.silentHandler());
+      // tdlib.client().send(new TdApi.SetFileGenerationProgress(roundGenerationId, 0, readyBytesCount), tdlib.silentHandler());
     }
   }
 
@@ -1712,7 +1745,15 @@ public class RecordAudioVideoController implements
   }
 
   private void finishFileGeneration (long resultFileSize) {
-    tdlib.client().send(new TdApi.SetFileGenerationProgress(roundGenerationId, resultFileSize, resultFileSize), tdlib.silentHandler());
+    if (prevVideoPath != null) {
+      try {
+        VideoGen.appendTwoVideos(prevVideoPath, roundOutputPath, roundOutputPath + ".merge");
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+      U.moveFile(new File(roundOutputPath + ".merge"), new File(roundOutputPath));
+    }
+    //tdlib.client().send(new TdApi.SetFileGenerationProgress(roundGenerationId, resultFileSize, resultFileSize), tdlib.silentHandler());
     tdlib.client().send(new TdApi.FinishFileGeneration(roundGenerationId, null), tdlib.silentHandler());
   }
 
@@ -1724,7 +1765,7 @@ public class RecordAudioVideoController implements
       boolean success = resultFileSize > 0;
       if (awaitingRoundResult()) {
         if (success) {
-          this.savedRoundDurationSeconds = (int) resultFileDurationUnit.toSeconds(resultFileDuration);
+          this.savedRoundDurationSeconds += (int) resultFileDurationUnit.toSeconds(resultFileDuration);
           if (roundCloseMode == CLOSE_MODE_PREVIEW || roundCloseMode == CLOSE_MODE_PREVIEW_SCHEDULE) {
             awaitRoundVideo();
             finishFileGeneration(resultFileSize);
@@ -1803,6 +1844,8 @@ public class RecordAudioVideoController implements
     return roundGenerationFinished && TD.isFileLoaded(roundFile);
   }
 
+  private String prevVideoPath;
+
   private void onRoundVideoReady () {
     if (!roundFileReceived()) {
       return;
@@ -1811,6 +1854,7 @@ public class RecordAudioVideoController implements
     tdlib.files().unsubscribe(roundFile.id, this);
     videoTimelineView.setVideoPath(roundFile.local.path);
     videoPreviewView.setVideo(roundFile.local.path);
+    prevVideoPath = roundFile.local.path;
 
     if (scheduledEditClose) {
       scheduledEditClose = false;
