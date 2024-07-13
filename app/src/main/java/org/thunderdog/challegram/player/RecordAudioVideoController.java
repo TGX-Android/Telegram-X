@@ -1501,7 +1501,6 @@ public class RecordAudioVideoController implements
 
   private void deleteVoiceRecord () {
     if (voiceRecord != null && !awaitingVoiceResult()) {
-      Recorder.instance().delete(voiceRecord);
       voiceRecord = null;
     }
   }
@@ -1900,11 +1899,13 @@ public class RecordAudioVideoController implements
       } else {
         sendAudioNote(new TdApi.InputMessageVoiceNote(record.toInputFile(), record.getDuration(), record.getWaveform(), null, obtainSelfDestructType()), initialSendOptions);
       }
+      Recorder.instance().finish(false);
     } else {
       if (record != null) {
         tdlib.client().send(new TdApi.DeleteFile(record.getFileId()), tdlib.silentHandler());
       }
       voiceCloseMode = CLOSE_MODE_CANCEL;
+      Recorder.instance().finish(true);
     }
     editAnimator.setValue(false, true);
     sendButton.destroySlowModeCounterController();

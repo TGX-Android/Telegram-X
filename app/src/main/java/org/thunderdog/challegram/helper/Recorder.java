@@ -27,7 +27,6 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.BaseThread;
-import org.thunderdog.challegram.data.TGRecord;
 import org.thunderdog.challegram.filegen.GenerationInfo;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.UI;
@@ -56,7 +55,7 @@ public class Recorder implements Runnable {
 
   private static BaseThread recordThread, encodeThread;
   private Tdlib.Generation currentGeneration;
-  private boolean isRecording;
+  private boolean isRecording, isFinished;
   private long samplesCount;
   private short[] recordSamples = new short[1024];
 
@@ -76,6 +75,9 @@ public class Recorder implements Runnable {
   private void setRecording (final boolean isRecording) {
     synchronized (this) {
       this.isRecording = isRecording;
+      if (isRecording) {
+        this.isFinished = false;
+      }
     }
   }
 
@@ -117,8 +119,19 @@ public class Recorder implements Runnable {
     stopRecording(true, false);
   }
 
-  public void delete (final TGRecord record) {
+  public void finish (boolean isCanceled) {
+    synchronized (this) {
+      isFinished = true;
+    }
 
+    encodeThread.post(() -> {
+      if (recorder == null) {
+        if (currentGeneration != null) {
+          tdlib.finishGeneration(currentGeneration, isCanceled ? new TdApi.Error(-1, "Canceled") : null);
+          currentGeneration = null;
+        }
+      }
+    }, 0);
   }
 
   // Internal
@@ -164,8 +177,8 @@ public class Recorder implements Runnable {
     this.listener = listener;
 
     final String id = "voice" + GenerationInfo.randomStamp();
-    Tdlib.Generation generation = tdlib.generateFile(id, new TdApi.FileTypeVoiceNote(), isSecret, 1, 5000);
-    Tdlib.Generation prevGeneration = currentGeneration;
+    Tdlib.Generation generation = isResume ? currentGeneration :
+      tdlib.generateFile(id, new TdApi.FileTypeVoiceNote(), isSecret, 1, 5000);
 
     if (generation == null) {
       dispatchError();
@@ -176,23 +189,17 @@ public class Recorder implements Runnable {
 
     try {
       if (isResume) {
-        if (prevGeneration == null || prevGeneration.file == null || prevGeneration.file.local == null || !prevGeneration.file.local.isDownloadingCompleted || resumeFile == null) {
+        if (resumeFile == null || !U.moveFile(resumeFile, new File(generation.destinationPath + ".resume"))) {
           dispatchError();
           return;
         }
 
-        if (!U.moveFile(resumeFile, new File(currentGeneration.destinationPath + ".resume")) ||
-          !U.moveFile(new File(prevGeneration.file.local.path), new File(generation.destinationPath))) {
-          dispatchError();
-          return;
-        }
-
-        if (N.resumeRecord(currentGeneration.destinationPath, 48000) == 0) {
+        if (N.resumeRecord(generation.destinationPath, 48000) == 0) {
           dispatchError();
           return;
         }
       } else {
-        if (N.startRecord(currentGeneration.destinationPath, 48000) == 0) {
+        if (N.startRecord(generation.destinationPath, 48000) == 0) {
           dispatchError();
           return;
         }
@@ -266,10 +273,17 @@ public class Recorder implements Runnable {
         }
         U.moveFile(resumeSrc, resumeFile);
       }
-      tdlib.finishGeneration(currentGeneration, removeFile ? new TdApi.Error(-1, "Canceled") : null);
       if (!removeFile && listener != null) {
         listener.onSave(currentGeneration, Math.round((float) recordTimeCount / 1000f), getWaveform());
       }
+      if (removeFile || isFinished || !allowResuming) {
+        tdlib.finishGeneration(currentGeneration, removeFile ? new TdApi.Error(-1, "Canceled") : null);
+        currentGeneration = null;
+      }
+      /* else {
+        long size = new File(currentGeneration.destinationPath).length();
+        tdlib.client().send(new TdApi.SetFileGenerationProgress(currentGeneration.generationId, 0, size), tdlib.silentHandler());
+      }*/
     }
     if (recorder != null) {
       recorder.release();
@@ -329,6 +343,7 @@ public class Recorder implements Runnable {
       fileBuffer.put(buffer);
       if (fileBuffer.position() == fileBuffer.limit() || flush) {
         if (N.writeFrame(fileBuffer, !flush ? fileBuffer.limit() : buffer.position()) != 0) {
+          // tdlib.client().send(new TdApi.SetFileGenerationProgress(currentGeneration.generationId, 0, new File(currentGeneration.destinationPath).length()), tdlib.silentHandler());
           fileBuffer.rewind();
           recordTimeCount += fileBuffer.limit() / 3 / 2 / 16;
         }
