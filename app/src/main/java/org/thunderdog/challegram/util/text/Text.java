@@ -1806,6 +1806,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     currentY += lineHeight;
     maxPartHeight = 0;
     part.setXY(0, currentY);
+    part.setLineIndex(getLineCount(), paragraphCount);
     ensureLineCount(lineHeight, prevMaxPartHeight);
     return true;
   }
