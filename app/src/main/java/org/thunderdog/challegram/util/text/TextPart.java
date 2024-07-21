@@ -51,7 +51,7 @@ public class TextPart {
   private int height = -1;
   private @BiDiEntity int bidiEntity;
 
-  private final int lineIndex, paragraphIndex;
+  private int lineIndex, paragraphIndex;
 
   public TextPart (Text source, String line, int start, int end, int lineIndex, int paragraphIndex) {
     this.source = source;
@@ -74,6 +74,11 @@ public class TextPart {
     this.line = line;
     this.start = start;
     this.end = end;
+  }
+
+  public void setLineIndex (int lineIndex, int paragraphIndex) {
+    this.lineIndex = lineIndex;
+    this.paragraphIndex = paragraphIndex;
   }
 
   public void setXY (int x, int y) {
