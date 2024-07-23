@@ -19,7 +19,6 @@ import android.os.Build;
 import android.text.Editable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.style.BackgroundColorSpan;
 import android.text.style.URLSpan;
 import android.util.AttributeSet;
 import android.util.TypedValue;
@@ -273,7 +272,6 @@ public class EditText extends android.widget.EditText {
     final Spanned spanned = (pasteText instanceof Spanned) ? (Spanned) pasteText : null;
 
     Editable editable = getText();
-
     if (EditableHelper.startsWithQuote(spanned) && editable.length() > 0) {
       editable.insert(end, "\n");
       start++;

@@ -807,13 +807,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   @Override
   protected void onSelectionChanged (int selStart, int selEnd) {
     super.onSelectionChanged(selStart, selEnd);
-
-    final TextSelection selection = getTextSelection();
-    if (selection != null) {
-      selStart = selection.start;
-      selEnd = selection.end;
-    }
-
     if (selectionChangeListener != null) {
       selectionChangeListener.onInputSelectionChanged(this, selStart, selEnd);
     }

@@ -1030,14 +1030,10 @@
   <string name="HavingTroubleAccessing">Unable to access %1$s?</string>
   <string name="RestoreEmailTroubleText">If you can\'t restore access to your email, your remaining options are either to remember your password or to reset your account.</string>
   <string name="EnterCode">Enter code</string>
-
-  <string name="PasteUrlPlaceholder">Paste url..</string>
+  <string name="PasteUrlPlaceholder">Paste url…</string>
   <string name="MultipleUrlPlaceholder">Multiple links selected</string>
-
   <string name="PasteUrlNotValidHint">Invalid link</string>
   <string name="PasteUrlEmptyHint">Clipboard is empty</string>
-
-
   <string name="PasswordRecovery">Password Recovery</string>
   <string name="LoginPasswordText">You have enabled Two-Step Verification, so your account is protected with an additional password.</string>
   <string name="EnterPassword">Enter Password</string>
