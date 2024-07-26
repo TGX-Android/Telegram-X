@@ -206,3 +206,4 @@ wp_catsBeige: #71675066
 wp_catsGreen: #59843D66
 wp_catsOrange: #94673F66
 wp_catsPink: #B5779566
+blockQuoteText, blockQuoteLine, bubbleIn_blockQuoteText, bubbleIn_blockQuoteLine, bubbleOut_blockQuoteText, bubbleOut_blockQuoteLine: #000000
