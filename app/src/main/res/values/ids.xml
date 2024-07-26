@@ -792,6 +792,7 @@
   <item type="id" name="btn_underline" />
   <item type="id" name="btn_monospace" />
   <item type="id" name="btn_link" />
+  <item type="id" name="btn_quote" />
   <item type="id" name="btn_inlinePlayPause" />
   <item type="id" name="btn_inlineClose" />
   <item type="id" name="btn_inlineOpen" />
@@ -801,6 +802,7 @@
   <item type="id" name="btn_sourceCodeChanges" />
   <item type="id" name="btn_copyDebug" />
   <item type="id" name="btn_pasteText" />
+  <item type="id" name="btn_pasteUrl" />
   <item type="id" name="btn_copyUsername" />
   <item type="id" name="btn_editUsername" />
   <item type="id" name="btn_openLink" />

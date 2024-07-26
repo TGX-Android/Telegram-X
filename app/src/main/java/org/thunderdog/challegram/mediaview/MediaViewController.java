@@ -149,6 +149,7 @@ import org.thunderdog.challegram.widget.CheckView;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.FileProgressComponent;
+import org.thunderdog.challegram.widget.KeyboardFrameLayout;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ShadowView;
@@ -530,7 +531,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   @Override
   public int provideOffset (InlineResultsWrap v) {
-    final int offset = emojiLayout != null && emojiLayout.getVisibility() == View.VISIBLE && emojiLayout.getParent() != null ? emojiLayout.getMeasuredHeight() : 0;
+    final int offset = keyboardFrameLayout != null && keyboardFrameLayout.getVisibility() == View.VISIBLE && keyboardFrameLayout.getParent() != null ? keyboardFrameLayout.getMeasuredHeight() : 0;
     return (captionView.getMeasuredHeight() /*- Screen.dp(50f)*/) + offset;
   }
 
@@ -634,6 +635,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
   }
 
+  private KeyboardFrameLayout keyboardFrameLayout;
   private EmojiLayout emojiLayout;
   private TextFormattingLayout textFormattingLayout;
 
@@ -683,31 +685,51 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   @Override
   public void onSearchRequested (EmojiLayout layout, boolean areStickers) { }
 
+
+  private float getKeyboardOffset () {
+    return keyboardFrameLayout != null ? keyboardFrameLayout.getLayoutTranslationOffset() : 0f;
+  }
+
+  private void onKeyboardLayoutTranslation (float translationY) {
+    checkBottomWrapY();
+  }
+
+
   private void openEmojiKeyboard () {
     if (!emojiShown) {
-      if (emojiLayout == null) {
-        emojiLayout = new EmojiLayout(context());
+      if (keyboardFrameLayout == null) {
+        keyboardFrameLayout = new KeyboardFrameLayout(context());
+        keyboardFrameLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
+        keyboardFrameLayout.setParentView(bottomWrap, contentView, popupView);
+        keyboardFrameLayout.setUpdateTranslationListener(this::onKeyboardLayoutTranslation);
+        keyboardFrameLayout.useHideByDetachView();
+
+        textFormattingLayout = keyboardFrameLayout.contentView.textFormattingLayout;
+        textFormattingLayout.init(this, inputView, new TextFormattingLayout.Delegate() {
+          @Override
+          public void onWantsCloseTextFormattingKeyboard () {
+            closeTextFormattingKeyboard();
+          }
+
+          @Override
+          public void onWantsOpenTextFormattingKeyboard () {
+            openEmojiKeyboard();
+          }
+        });
+
+        emojiLayout = keyboardFrameLayout.contentView.emojiLayout;
         emojiLayout.initWithMediasEnabled(this, false, this, this, false); // FIXME shall we use dark mode?
         emojiLayout.setAllowPremiumFeatures(tdlib.isSelfChat(getOutputChatId()));
-        emojiLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
-        bottomWrap.addView(emojiLayout);
-        if (inputView != null) {
-          textFormattingLayout = new TextFormattingLayout(context(), this, inputView);
-          textFormattingLayout.setDelegate(this::closeTextFormattingKeyboard);
-          textFormattingLayout.setVisibility(View.GONE);
-          emojiLayout.addView(textFormattingLayout, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        }
-        popupView.getViewTreeObserver().addOnPreDrawListener(emojiLayout);
-      } else if (emojiLayout.getParent() == null) {
-        bottomWrap.addView(emojiLayout);
+        emojiLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        bottomWrap.addView(keyboardFrameLayout);
       }
-
+      keyboardFrameLayout.setVisible(true);
       emojiState = getKeyboardState();
 
       setEmojiShown(true);
       if (emojiState) {
         captionEmojiButton.setImageResource(R.drawable.baseline_keyboard_24);
-        emojiLayout.hideKeyboard((EditText) captionView);
+        keyboardFrameLayout.hideKeyboard((EditText) captionView);
       } else {
         captionEmojiButton.setImageResource(R.drawable.baseline_direction_arrow_down_24);
       }
@@ -715,10 +737,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void removeEmojiView () {
-    if (emojiLayout != null && emojiLayout.getParent() != null) {
-      ViewGroup parent = ((ViewGroup) emojiLayout.getParent());
-      parent.removeView(emojiLayout);
-      parent.requestLayout();
+    if (keyboardFrameLayout != null) {
+      keyboardFrameLayout.setVisible(false);
     }
   }
 
@@ -732,11 +752,15 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void closeEmojiKeyboard () {
+    closeEmojiKeyboard(false);
+  }
+
+  private void closeEmojiKeyboard (boolean byKeyboardOpen) {
     if (emojiShown) {
-      if (emojiLayout != null) {
+      if (keyboardFrameLayout != null) {
         removeEmojiView();
-        if (emojiState) {
-          emojiLayout.showKeyboard((EditText) captionView);
+        if (emojiState && !byKeyboardOpen) {
+          keyboardFrameLayout.showKeyboard((EditText) captionView);
         }
       }
       setEmojiShown(false);
@@ -748,7 +772,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   @Override
   public int[] displayBaseViewWithAnchor (EmojiToneHelper context, View anchorView, View viewToDisplay, int viewWidth, int viewHeight, int horizontalMargin, int horizontalOffset, int verticalOffset) {
-    return EmojiToneHelper.defaultDisplay(context, anchorView, viewToDisplay, viewWidth, viewHeight, horizontalMargin, horizontalOffset, verticalOffset, contentView, bottomWrap, emojiLayout);
+    return EmojiToneHelper.defaultDisplay(context, anchorView, viewToDisplay, viewWidth, viewHeight, horizontalMargin, horizontalOffset, verticalOffset, contentView, bottomWrap, keyboardFrameLayout);
   }
 
   @Override
@@ -759,7 +783,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   // Other
 
   private void checkCaptionButtonsY () {
-    final int offset = emojiLayout != null && emojiLayout.getVisibility() == View.VISIBLE && emojiLayout.getParent() != null ? emojiLayout.getMeasuredHeight() : 0;
+    final float offset = keyboardFrameLayout != null && keyboardFrameLayout.getVisibility() == View.VISIBLE && keyboardFrameLayout.getParent() != null ? keyboardFrameLayout.getMeasuredHeight() : 0;
     captionEmojiButton.setTranslationY(-offset);
     captionDoneButton.setTranslationY(-offset);
     captionWrapView.setTranslationY(-offset);
@@ -941,11 +965,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   public boolean onKeyboardStateChanged (boolean visible) {
     if (mode == MODE_GALLERY) {
       if (visible && !getKeyboardState()) {
-        closeEmojiKeyboard();
+        closeEmojiKeyboard(true);
       }
       boolean res = super.onKeyboardStateChanged(visible);
-      if (emojiLayout != null) {
-        emojiLayout.onKeyboardStateChanged(visible);
+      if (keyboardFrameLayout != null) {
+        keyboardFrameLayout.onKeyboardStateChanged(visible);
       }
       setInCaption(visible || emojiShown);
       mediaView.layoutCells();
@@ -3448,7 +3472,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private void checkBottomWrapY () {
     int thumbsDistance = (Screen.dp(THUMBS_PADDING) * 2 + Screen.dp(THUMBS_HEIGHT)) * (inForceEditMode() ? 0 : 1);
-    float offsetDistance = (float) measureBottomWrapHeight() * dismissFactor;
+    float offsetDistance = (float) measureBottomWrapHeight() * dismissFactor - getKeyboardOffset();
     // int appliedBottomPadding = -this.appliedBottomPadding;
     if (bottomWrap != null) {
       bottomWrap.setTranslationY(offsetDistance - (thumbsFactor * (float) thumbsDistance) * (1f - dismissFactor) - appliedBottomPadding);
@@ -8415,14 +8439,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void setTextFormattingLayoutVisible (boolean visible) {
-    textFormattingVisible = visible;
-    if (emojiLayout != null && textFormattingLayout != null) {
-      textFormattingLayout.setVisibility(visible ? View.VISIBLE : View.GONE);
-      emojiLayout.optimizeForDisplayTextFormattingLayout(visible);
-      if (visible) {
-        textFormattingLayout.checkButtonsActive(false);
-      }
-    }
+    textFormattingVisible = keyboardFrameLayout != null && keyboardFrameLayout.contentView.setTextFormattingLayoutVisible(visible);
   }
 
   private void closeTextFormattingKeyboard () {

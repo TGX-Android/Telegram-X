@@ -40,4 +40,9 @@
     android:icon="@drawable/baseline_link_24"
     android:menuCategory="secondary"
     android:title="@string/TextFormatLink" />
+  <item android:id="@id/btn_quote"
+    android:showAsAction="ifRoom"
+    android:icon="@drawable/baseline_format_quote_close_24"
+    android:menuCategory="secondary"
+    android:title="@string/TextFormatQuote" />
 </menu>

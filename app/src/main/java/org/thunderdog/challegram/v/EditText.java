@@ -40,6 +40,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.emoji.EmojiSpan;
+import org.thunderdog.challegram.helper.editable.EditableHelper;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.UI;
@@ -95,6 +96,7 @@ public class EditText extends android.widget.EditText {
     if (selection == null) {
       selection = new TextSelection();
     }
+
     if (Views.getSelection(this, selection)) {
       return selection;
     } else {
@@ -264,10 +266,18 @@ public class EditText extends android.widget.EditText {
 
   private void paste (TextSelection selection, CharSequence pasteText, boolean needSelectPastedText) {
     if (selection == null) return;
-    final int start = selection.start;
-    final int end = selection.end;
+    int start = selection.start;
+    int end = selection.end;
+
+    final Spanned spanned = (pasteText instanceof Spanned) ? (Spanned) pasteText : null;
 
     Editable editable = getText();
+    if (EditableHelper.startsWithQuote(spanned) && editable.length() > 0) {
+      editable.insert(end, "\n");
+      start++;
+      end++;
+    }
+
     if (selection.isEmpty()) {
       editable.insert(start, pasteText);
     } else {

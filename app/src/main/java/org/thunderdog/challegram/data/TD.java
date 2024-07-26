@@ -25,6 +25,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.text.Editable;
 import android.text.Html;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -32,7 +33,6 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.ClickableSpan;
-import android.text.style.QuoteSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.TypefaceSpan;
@@ -64,6 +64,7 @@ import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.emoji.CustomEmojiId;
 import org.thunderdog.challegram.emoji.EmojiSpan;
+import org.thunderdog.challegram.emoji.PreserveCustomEmojiFilter;
 import org.thunderdog.challegram.filegen.GenerationInfo;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.filegen.VideoGenerationInfo;
@@ -93,6 +94,9 @@ import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
+import org.thunderdog.challegram.util.text.TextEntityCustom;
+import org.thunderdog.challegram.util.text.TextEntityMessage;
+import org.thunderdog.challegram.util.text.quotes.QuoteSpan;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -4503,7 +4507,7 @@ public class TD {
         text.setSpan(span, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
       }
     };
-    return HtmlParser.fromHtml(htmlText, null, (opening, tag, output, xmlReader, attributes) -> {
+    CharSequence result = HtmlParser.fromHtml(htmlText, null, (opening, tag, output, xmlReader, attributes) -> {
       // <tg-user-mention data-user-id="ID">...</tg-user-mention>
       // <tg-pre-code data-language="LANG">...</tg-pre-code>
       // <animated-emoji data-document-id="ID">...</animated-emoji>
@@ -4529,11 +4533,17 @@ public class TD {
         } else if (tag.equalsIgnoreCase("tg-pre-code")) {
           String language = attributes.getValue("", "data-language");
           HtmlParser.start(output, new TdApi.TextEntityTypePreCode(language != null ? language : ""));
+        } else if (tag.equalsIgnoreCase("blockquote")) {
+          HtmlParser.start(output, new TdApi.TextEntityTypeBlockQuote());
+        } else if (tag.equalsIgnoreCase("details")) {
+          HtmlParser.start(output, new TdApi.TextEntityTypeExpandableBlockQuote());
         } else {
           return false;
         }
         return true;
       } else if (
+        tag.equalsIgnoreCase("blockquote") ||
+        tag.equalsIgnoreCase("details") ||
         tag.equalsIgnoreCase("tg-user-mention") ||
         tag.equalsIgnoreCase("animated-emoji") ||
         tag.equalsIgnoreCase("spoiler") ||
@@ -4547,6 +4557,11 @@ public class TD {
         return false;
       }
     });
+    if (result instanceof Editable) {
+      QuoteSpan.normalizeQuotes((Editable) result);
+    }
+
+    return result;
   }
 
   public static CharSequence toCopyText (TdApi.FormattedText text) {
@@ -4564,7 +4579,10 @@ public class TD {
       return text.text;
     SpannableStringBuilder b = null;
     boolean hasSpoilers = false;
+
+    int offset = 0;
     for (TdApi.TextEntity entity : text.entities) {
+      final int entityOffset = entity.offset + offset;
       boolean isSpoiler = Td.isSpoiler(entity.type);
       if (isSpoiler) {
         hasSpoilers = true;
@@ -4573,21 +4591,22 @@ public class TD {
       if (span != null) {
         if (b == null)
           b = new SpannableStringBuilder(text.text);
-        b.setSpan(span, entity.offset, entity.offset + entity.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        b.setSpan(span, entityOffset, entityOffset + entity.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
       }
     }
     if (!allowSpoilerContent && hasSpoilers) {
       StringBuilder builder = b != null ? null : new StringBuilder(text.text);
       for (int i = text.entities.length - 1; i >= 0; i--) {
         TdApi.TextEntity entity = text.entities[i];
+        final int entityOffset = entity.offset + offset;
         if (Td.isSpoiler(entity.type)) {
           String replacement = StringUtils.multiply(SPOILER_REPLACEMENT_CHAR, entity.length);
           if (b != null) {
-            b.delete(entity.offset, entity.offset + entity.length);
-            b.insert(entity.offset, replacement);
+            b.delete(entityOffset, entityOffset + entity.length);
+            b.insert(entityOffset, replacement);
           } else {
-            builder.delete(entity.offset, entity.offset + entity.length);
-            builder.insert(entity.offset, replacement);
+            builder.delete(entityOffset, entityOffset + entity.length);
+            builder.insert(entityOffset, replacement);
           }
         }
       }
@@ -4595,15 +4614,14 @@ public class TD {
         return builder.toString();
       }
     }
+    if (b != null) {
+      QuoteSpan.normalizeQuotesWithoutMerge(b);
+    }
     return b != null ? SpannableString.valueOf(b) : text.text;
   }
 
   public static Object toDisplaySpan (TdApi.TextEntityType type) {
     return toDisplaySpan(type, null, false);
-  }
-
-  public static Object tempToBlockQuoteSpan (boolean isExpandable, boolean isDisplay, boolean needFakeBold) {
-    return new QuoteSpan(); // TODO
   }
 
   public static Object toDisplaySpan (TdApi.TextEntityType type, @Nullable Typeface defaultTypeface, boolean needFakeBold) {
@@ -4625,10 +4643,10 @@ public class TD {
         span = new CustomTypefaceSpan(Fonts.getRobotoItalic(), 0);
         break;
       case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
-        span = tempToBlockQuoteSpan(false, true, needFakeBold);
+        span = new QuoteSpan.EmptySpan(false);
         break;
       case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR:
-        span = tempToBlockQuoteSpan(true, true, needFakeBold);
+        span = new QuoteSpan.EmptySpan(true);
         break;
       case TdApi.TextEntityTypePre.CONSTRUCTOR:
       case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
@@ -4761,9 +4779,9 @@ public class TD {
       case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
         return new CustomEmojiId(((TdApi.TextEntityTypeCustomEmoji) type).customEmojiId);
       case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
-        return tempToBlockQuoteSpan(false, false, false);
+        return new QuoteSpan.EmptySpan(false);
       case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR:
-        return tempToBlockQuoteSpan(true, false, false);
+        return new QuoteSpan.EmptySpan(true);
       // auto-detected entities
       case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
       case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
@@ -4781,9 +4799,64 @@ public class TD {
     }
   }
 
+  public static Object[] toSpans (TextEntity entity, boolean allowInternal, boolean allowQuotes) {
+    if (entity == null) {
+      return null;
+    }
+
+    final ArrayList<Object> spans = new ArrayList<>();
+    if (entity.isBold()) {
+      spans.add(new StyleSpan(Typeface.BOLD));
+    }
+    if (entity.isItalic()) {
+      spans.add(new StyleSpan(Typeface.ITALIC));
+    }
+    if (entity.isMonospace()) {
+      spans.add(Fonts.FORCE_BUILTIN_MONO ? new TypefaceSpan(Fonts.getRobotoMono()) : new TypefaceSpan("monospace"));
+    }
+    if (entity.isStrikethrough()) {
+      spans.add(new StrikethroughSpan());
+    }
+    if (Config.SUPPORT_SYSTEM_UNDERLINE_SPAN && entity.isUnderline()) {
+      spans.add(new UnderlineSpan());
+    }
+    if (entity.getSpoiler() != null) {
+      spans.add(new BackgroundColorSpan(SPOILER_BACKGROUND_COLOR));
+    }
+    if (entity.getCustomEmojiId() != 0) {
+      spans.add(new CustomEmojiId(entity.getCustomEmojiId()));
+    }
+    if (allowQuotes && entity.isQuote()) {
+      TdApi.TextEntity quote = entity.getQuote();
+      spans.add(new QuoteSpan.EmptySpan(quote.type.getConstructor() == TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR));
+    }
+
+    if (entity instanceof TextEntityMessage) {
+      TdApi.TextEntity clickableEntity = ((TextEntityMessage) entity).getClickableEntity();
+      if (clickableEntity != null) {
+        if (clickableEntity.type.getConstructor() == TdApi.TextEntityTypeTextUrl.CONSTRUCTOR || clickableEntity.type.getConstructor() == TdApi.TextEntityTypeMentionName.CONSTRUCTOR) {
+          Object span = toSpan(clickableEntity.type, allowInternal);
+          if (span != null) {
+            spans.add(span);
+          }
+        }
+      }
+    } else if (entity instanceof TextEntityCustom) {
+      String linkUrl = ((TextEntityCustom) entity).getLinkIfUrl();
+      if (!StringUtils.isEmpty(linkUrl)) {
+        spans.add(new URLSpan(linkUrl));
+      }
+    }
+
+    return spans.toArray(new Object[0]);
+  }
+
   public static TdApi.TextEntityType[] toEntityType (Object span) {
     if (!canConvertToEntityType(span))
       return null;
+    if (span instanceof QuoteSpan) {
+      return new TdApi.TextEntityType[] { ((QuoteSpan) span).isExpandable() ? new TdApi.TextEntityTypeExpandableBlockQuote() : new TdApi.TextEntityTypeBlockQuote() };
+    }
     if (span instanceof CustomTypefaceSpan)
       return new TdApi.TextEntityType[] {((CustomTypefaceSpan) span).getTextEntityType()};
     if (span instanceof URLSpan) {
@@ -4920,6 +4993,9 @@ public class TD {
   }
 
   public static boolean canConvertToEntityType (Object span) {
+    if (span instanceof QuoteSpan) {
+      return true;
+    }
     if (span instanceof CustomTypefaceSpan)
       return ((CustomTypefaceSpan) span).getTextEntityType() != null;
     if (span instanceof URLSpan)
@@ -4955,6 +5031,10 @@ public class TD {
   }
 
   public static TdApi.TextEntity[] toEntities (CharSequence cs, boolean onlyLinks) {
+    return toEntities(cs, onlyLinks, false);
+  }
+
+  public static TdApi.TextEntity[] toEntities (CharSequence cs, boolean onlyLinks, boolean onlyRecoverableSpans) {
     if (!(cs instanceof Spanned))
       return null;
     Object[] spans = ((Spanned) cs).getSpans(0, cs.length(), Object.class);
@@ -4970,6 +5050,8 @@ public class TD {
       int end = ((Spanned) cs).getSpanEnd(span);
       for (TdApi.TextEntityType type : types) {
         if (onlyLinks && !Td.isTextUrl(type))
+          continue;
+        if (onlyRecoverableSpans && !(span instanceof PreserveCustomEmojiFilter.RecoverableSpan))
           continue;
         if (entities == null)
           entities = new ArrayList<>();

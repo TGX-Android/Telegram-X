@@ -18,11 +18,19 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.view.View;
 
+import org.thunderdog.challegram.config.Config;
+
 import java.lang.reflect.Field;
+
+import me.vkryl.core.BitwiseUtils;
 
 public class NoClipEditText extends EmojiEditText {
   private static Field mScrollYField;
   private int ignoreTopCount, ignoreBottomCount, scrollY;
+
+  private static final int FLAG_IGNORE_AWAKEN_SCROLLBAR = 1 << 2;
+  private static final int FLAG_IGNORE_SCROLL_CHANGED = 1 << 3;
+  private int flags;
 
   public NoClipEditText(Context context) {
     super(context);
@@ -35,6 +43,10 @@ public class NoClipEditText extends EmojiEditText {
         mScrollYField.setAccessible(true);
       } catch (Throwable ignored) { }
     }
+  }
+
+  protected boolean noClippingWorks () {
+    return mScrollYField != null || Config.USE_INPUT_VIEW_CLIPPING_FIX;
   }
 
   @Override
@@ -56,8 +68,43 @@ public class NoClipEditText extends EmojiEditText {
   }
 
   @Override
+  protected void onScrollChanged (int horiz, int vert, int oldHoriz, int oldVert) {
+    if (BitwiseUtils.hasFlag(flags, FLAG_IGNORE_SCROLL_CHANGED)) {
+      return;
+    }
+    super.onScrollChanged(horiz, vert, oldHoriz, oldVert);
+  }
+
+  @Override
+  protected boolean awakenScrollBars () {
+    if (BitwiseUtils.hasFlag(flags, FLAG_IGNORE_AWAKEN_SCROLLBAR)) {
+      return true;
+    }
+    return super.awakenScrollBars();
+  }
+
+  @Override
   protected void onDraw(Canvas c) {
+    // Log.i("DEBUG", "draw");
     if (mScrollYField == null) {
+      if (Config.USE_INPUT_VIEW_CLIPPING_FIX) {
+        int topPadding = getExtendedPaddingTop();
+        scrollY = getScrollY();
+        flags = FLAG_IGNORE_SCROLL_CHANGED | FLAG_IGNORE_AWAKEN_SCROLLBAR;
+        setScrollY(0);
+        ignoreTopCount = 1;
+        ignoreBottomCount = 1;
+        c.save();
+        c.translate(0, topPadding);
+        try {
+          super.onDraw(c);
+        } catch (Throwable ignored) {  }
+        setScrollY(scrollY);
+        c.restore();
+        flags = 0;
+        return;
+      }
+
       super.onDraw(c);
       return;
     }

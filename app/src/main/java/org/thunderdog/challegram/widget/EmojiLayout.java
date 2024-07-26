@@ -15,12 +15,10 @@
 package org.thunderdog.challegram.widget;
 
 import android.content.Context;
-import android.os.Build;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 import android.widget.LinearLayout;
 
 import androidx.annotation.DrawableRes;
@@ -46,7 +44,6 @@ import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeId;
-import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.EmojiListController;
@@ -67,7 +64,7 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 
-public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPreDrawListener, ViewPager.OnPageChangeListener, FactorAnimator.Target, View.OnClickListener, Lang.Listener, EmojiLayoutRecyclerController.Callback {
+public class EmojiLayout extends FrameLayoutFix implements ViewPager.OnPageChangeListener, FactorAnimator.Target, View.OnClickListener, Lang.Listener, EmojiLayoutRecyclerController.Callback {
   public interface Listener {
     default void onEnterEmoji (String emoji) {}
     default void onEnterCustomEmoji (TGStickerObj sticker) {}
@@ -1135,7 +1132,11 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-    super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(forceHeight > 0 ? forceHeight : Keyboard.getSize(), MeasureSpec.EXACTLY));
+    if (forceHeight > 0) {
+      super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(forceHeight, MeasureSpec.EXACTLY));
+    } else {
+      super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }
     checkWidth(getMeasuredWidth());
   }
 
@@ -1230,58 +1231,10 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     adapter.destroyCachedItems();
   }
 
-  public void rebuildLayout () {
-    // Nothing to do?
-  }
-
   public void invalidateAll () {
     if (adapter != null) {
       adapter.invalidateCachedItems();
     }
-  }
-
-  public int getSize () {
-    return Keyboard.getSize();
-  }
-
-  private static final int STATE_NONE = 0;
-  private static final int STATE_AWAITING_SHOW = 1;
-  private static final int STATE_AWAITING_HIDE = 2;
-
-  private int keyboardState;
-
-  public void showKeyboard (android.widget.EditText input) {
-    keyboardState = STATE_AWAITING_SHOW;
-    Keyboard.show(input);
-  }
-
-  public void hideKeyboard (android.widget.EditText input) {
-    keyboardState = STATE_AWAITING_HIDE;
-    Keyboard.hide(input);
-  }
-
-  public void onKeyboardStateChanged (boolean visible) {
-    if (keyboardState == STATE_AWAITING_SHOW && visible) {
-      framesDropped = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N ? 45 : 55;
-    } else if (keyboardState == STATE_AWAITING_HIDE && !visible) {
-      keyboardState = STATE_NONE;
-    }
-  }
-
-  private int framesDropped;
-
-  @Override
-  public boolean onPreDraw () {
-    if (keyboardState == STATE_AWAITING_SHOW || keyboardState == STATE_AWAITING_HIDE) {
-      if (++framesDropped >= 60) {
-        framesDropped = 0;
-        keyboardState = STATE_NONE;
-        return true;
-      }
-      return false;
-    }
-
-    return true;
   }
 
   @Override

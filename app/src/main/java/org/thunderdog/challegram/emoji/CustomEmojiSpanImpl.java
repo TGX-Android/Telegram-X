@@ -33,7 +33,7 @@ import org.thunderdog.challegram.util.text.TextMedia;
 
 import me.vkryl.core.lambda.Destroyable;
 
-class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiManager.Watcher, Destroyable {
+public class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiManager.Watcher, PreserveCustomEmojiFilter.RecoverableSpan, Destroyable {
   private final CustomEmojiSurfaceProvider surfaceProvider;
   private final Tdlib tdlib;
   private final long customEmojiId;
