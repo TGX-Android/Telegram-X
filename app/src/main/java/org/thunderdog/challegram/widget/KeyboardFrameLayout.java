@@ -99,6 +99,10 @@ public class KeyboardFrameLayout extends FrameLayoutFix implements ViewTreeObser
     super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(getKeyboardHeight(), MeasureSpec.EXACTLY));
   }
 
+  public int getSize () {
+    return Keyboard.getSize();
+  }
+
   private static final int STATE_NONE = 0;
   private static final int STATE_AWAITING_SHOW = 1;
   private static final int STATE_AWAITING_HIDE = 2;

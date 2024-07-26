@@ -67,7 +67,6 @@ import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.util.text.counter.CounterTextPart;
 import org.thunderdog.challegram.util.text.bidi.BiDiEntity;
 import org.thunderdog.challegram.util.text.bidi.BiDiUtils;
-import org.thunderdog.challegram.util.text.counter.CounterTextPart;
 import org.thunderdog.challegram.util.text.quotes.QuoteBackground;
 
 import java.text.Bidi;
