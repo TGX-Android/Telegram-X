@@ -146,10 +146,15 @@ public abstract class CameraApi {
       }
       return;
     }
-    if (isCameraActive && cameraOpened) {
-      if (roundRecorder != null && !roundRecorder.canSwitchToNewCamera()) {
-        return;
+
+    if (roundRecorder != null) {
+      if (roundRecorder.canSwitchToNewCamera()) {
+        onNextCameraSourceRequested();
       }
+      return;
+    }
+
+    if (isCameraActive && cameraOpened) {
       onNextCameraSourceRequested();
     }
   }

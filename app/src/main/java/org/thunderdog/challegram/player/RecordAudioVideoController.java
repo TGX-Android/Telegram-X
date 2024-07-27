@@ -1302,7 +1302,7 @@ public class RecordAudioVideoController implements
     videoLayout.setScaleY(videoScale);
     progressView.setScaleX(videoScale);
     progressView.setScaleY(videoScale);
-    switchCameraButtonWrap.setAlpha(recordingVideo ? range : 0);
+    switchCameraButtonWrap.setAlpha(recordingVideo ? editRange : 0);
     disposableSwitchButton.setAlpha(editRange);
 
     updateMuteAlpha();
@@ -1455,13 +1455,9 @@ public class RecordAudioVideoController implements
         cleanupVideoPending = true;
         return;
       }
-      ownedCamera.onCleanAfterHide();
-      ownedCamera.releaseCameraLayout();
 
-      setupCamera(false);
-      context.releaseCameraOwnership();
-      releasedTrace = Log.generateException();
-      ownedCamera = null;
+      ownedCamera.getLegacyManager().setUseRoundRender(false);
+
       recordMode = RECORD_MODE_NONE;
       resetRoundState();
       editFactor = 0f;
@@ -1471,10 +1467,7 @@ public class RecordAudioVideoController implements
       videoPreviewView.setPlaying(true);
       resetRoundState();
       isCameraReady = false;
-      ownedCamera = context.takeCameraOwnership(new ViewController.CameraOpenOptions()
-        .mode(CameraController.MODE_ROUND_VIDEO)
-        .readyListener(this)
-      );
+
       prepareVideoRecording();
     }
     setRecordMode(mode, true);
