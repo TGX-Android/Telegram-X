@@ -1462,6 +1462,10 @@ public class RecordAudioVideoController implements
       resetRoundState();
       editFactor = 0f;
 
+      prevVideoHasTrim = videoPreviewView.hasTrim();
+      prevVideoTrimStart = videoPreviewView.getStartTime();
+      prevVideoTrimEnd = videoPreviewView.getEndTime();
+
       videoPreviewView.performDestroy();
       videoPreviewView.setMuted(true);
       videoPreviewView.setPlaying(true);
@@ -1740,7 +1744,7 @@ public class RecordAudioVideoController implements
   private void finishFileGeneration (long resultFileSize) {
     if (prevVideoPath != null) {
       try {
-        VideoGen.appendTwoVideos(prevVideoPath, roundOutputPath, roundOutputPath + ".merge");
+        VideoGen.appendTwoVideos(prevVideoPath, roundOutputPath, roundOutputPath + ".merge", prevVideoHasTrim, prevVideoTrimStart, prevVideoTrimEnd);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -1838,6 +1842,9 @@ public class RecordAudioVideoController implements
   }
 
   private String prevVideoPath;
+  private double prevVideoTrimStart;
+  private double prevVideoTrimEnd;
+  private boolean prevVideoHasTrim;
 
   private void onRoundVideoReady () {
     if (!roundFileReceived()) {

@@ -46,6 +46,7 @@ import com.googlecode.mp4parser.authoring.Track;
 import com.googlecode.mp4parser.authoring.builder.DefaultMp4Builder;
 import com.googlecode.mp4parser.authoring.container.mp4.MovieCreator;
 import com.googlecode.mp4parser.authoring.tracks.AppendTrack;
+import com.googlecode.mp4parser.authoring.tracks.CroppedTrack;
 import com.otaliastudios.transcoder.Transcoder;
 import com.otaliastudios.transcoder.TranscoderListener;
 import com.otaliastudios.transcoder.common.TrackType;
@@ -670,7 +671,7 @@ public class VideoGen {
         videoData.editMovie(destinationPath, info.needMute(), info.getRotate(), onProgress, isCancelled);
   }
 
-  public static void appendTwoVideos(String firstVideoPath, String secondVideoPath, String output) {
+  public static void appendTwoVideos(String firstVideoPath, String secondVideoPath, String output, boolean needTrimFirstVideo, double startTime, double endTime) {
     try {
       Movie[] inMovies = new Movie[2];
 
@@ -680,13 +681,45 @@ public class VideoGen {
       List<Track> videoTracks = new LinkedList<>();
       List<Track> audioTracks = new LinkedList<>();
 
-      for (Movie m : inMovies) {
-        for (Track t : m.getTracks()) {
-          if (t.getHandler().equals("soun")) {
-            audioTracks.add(t);
+      for (int a = 0; a < 2; a++) {
+        final Movie m = inMovies[a];
+        for (Track track : m.getTracks()) {
+          final Track outputTrack;
+          if (needTrimFirstVideo && a == 0 && startTime != -1 && endTime != -1) {
+            long currentSample = 0;
+            double currentTime = 0;
+            double lastTime = -1;
+            long startSample = -1;
+            long endSample = -1;
+            long timescale = track.getTrackMetaData().getTimescale();
+            for (long delta : track.getSampleDurations()) {
+              if (currentTime > lastTime && currentTime <= startTime) {
+                // current sample is still before the new starttime
+                startSample = currentSample;
+              }
+              if (currentTime > lastTime && currentTime <= endTime) {
+                // current sample is after the new start time and still before the new endtime
+                endSample = currentSample;
+              }
+              lastTime = currentTime;
+              currentTime += (double) delta / (double) timescale;
+              currentSample++;
+            }
+            if (startSample != -1 && endSample == -1) {
+              endSample = startSample + 1;
+            }
+            if (startSample == -1 || endSample == -1)
+              throw new IllegalArgumentException();
+            outputTrack = new CroppedTrack(track, startSample, endSample);
+          } else {
+            outputTrack =track;
           }
-          if (t.getHandler().equals("vide")) {
-            videoTracks.add(t);
+
+          if (track.getHandler().equals("soun")) {
+            audioTracks.add(outputTrack);
+          }
+          if (track.getHandler().equals("vide")) {
+            videoTracks.add(outputTrack);
           }
         }
       }
