@@ -1460,7 +1460,7 @@ public class RecordAudioVideoController implements
 
       recordMode = RECORD_MODE_NONE;
       resetRoundState();
-      editFactor = 0f;
+      // editFactor = 0f;
 
       prevVideoHasTrim = videoPreviewView.hasTrim();
       prevVideoTrimStart = videoPreviewView.getStartTime();
