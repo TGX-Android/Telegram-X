@@ -563,11 +563,11 @@
     <item name="videoSliderActive" />
     <item name="videoSliderInactive" />
 
-    <item name="blockQuoteText" porterDuff="true"/>
-    <item name="blockQuoteLine" porterDuff="true"/>
-    <item name="bubbleIn_blockQuoteText" porterDuff="true"/>
-    <item name="bubbleIn_blockQuoteLine" porterDuff="true"/>
-    <item name="bubbleOut_blockQuoteText" porterDuff="true"/>
-    <item name="bubbleOut_blockQuoteLine" porterDuff="true"/>
+    <item name="blockQuoteText" porterDuff="true" fallback="text"/>
+    <item name="blockQuoteLine" porterDuff="true" fallback="text"/>
+    <item name="bubbleIn_blockQuoteText" porterDuff="true" fallback="bubbleIn_time"/>
+    <item name="bubbleIn_blockQuoteLine" porterDuff="true" fallback="bubbleIn_time"/>
+    <item name="bubbleOut_blockQuoteText" porterDuff="true" fallback="bubbleOut_time"/>
+    <item name="bubbleOut_blockQuoteLine" porterDuff="true" fallback="bubbleOut_time"/>
   </colors>
 </xml>

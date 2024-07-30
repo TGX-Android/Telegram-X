@@ -69,3 +69,6 @@ avatarPink, avatarPink_big, namePink: #C7508B
 avatarRed, avatarRed_big, nameRed: #CC5049
 avatarViolet, avatarViolet_big: #955CDB
 avatarYellow, avatarYellow_big, nameYellow: #F9C84A
+blockQuoteText, blockQuoteLine: #A0A0A0
+bubbleIn_blockQuoteText, bubbleIn_blockQuoteLine: #A0A0A0
+bubbleOut_blockQuoteText, bubbleOut_blockQuoteLine: #A0A0A0
