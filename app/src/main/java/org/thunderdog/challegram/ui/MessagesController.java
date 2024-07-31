@@ -8040,13 +8040,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private TopBarView.Item newAddContactItem (long chatId) {
-    return new TopBarView.Item(R.id.btn_addContact, R.string.AddContact, v -> {
+    return new TopBarView.Item(R.id.btn_addContact, R.string.AddContact, R.drawable.baseline_person_add_24, v -> {
       tdlib.ui().addContact(this, tdlib.chatUser(chatId));
     });
   }
 
   private TopBarView.Item newUnarchiveItem (long chatId) {
-    return new TopBarView.Item(R.id.btn_unarchiveChat, R.string.UnarchiveUnmute, v -> {
+    return new TopBarView.Item(R.id.btn_unarchiveChat, R.string.UnarchiveUnmute, R.drawable.baseline_unarchive_24, v -> {
       tdlib.client().send(new TdApi.AddChatToList(chatId, new TdApi.ChatListMain()), tdlib.okHandler());
       TdApi.ChatNotificationSettings settings = tdlib.chatSettings(chatId);
       if (settings != null) {
@@ -8066,7 +8066,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private TopBarView.Item newReportItem (long chatId, boolean isBlock) {
-    return new TopBarView.Item(R.id.btn_reportChat, isBlock ? R.string.BlockContact : R.string.ReportSpam, v -> {
+    return new TopBarView.Item(R.id.btn_reportChat, isBlock ? R.string.BlockContact : R.string.ReportSpam, isBlock ? R.drawable.baseline_block_24 : R.drawable.baseline_report_24, v -> {
       showSettings(new SettingsWrapBuilder(R.id.btn_reportSpam)
         .setHeaderItem(new ListItem(ListItem.TYPE_INFO, 0, 0, Lang.getStringBold(R.string.ReportChatSpam, chat.title), false))
         .setRawItems(getChatUserId() != 0 ? new ListItem[] {

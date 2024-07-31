@@ -17,3 +17,4 @@ obj
 /local.properties
 
 libc++_shared.so
+signing.properties
