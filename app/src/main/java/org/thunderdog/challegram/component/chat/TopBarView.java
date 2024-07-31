@@ -59,14 +59,14 @@ public class TopBarView extends FrameLayoutFix {
     boolean isNegative;
     boolean noDismiss;
 
-    public Item(int id, int stringRes, int iconResId, View.OnClickListener onClickListener) {
+    public Item (int id, int stringRes, int iconResId, View.OnClickListener onClickListener) {
       this.id = id;
       this.stringRes = stringRes;
       this.iconResId = iconResId;
       this.onClickListener = onClickListener;
     }
 
-    public Item(int id, int stringRes, View.OnClickListener onClickListener) {
+    public Item (int id, int stringRes, View.OnClickListener onClickListener) {
       this(id, stringRes, 0, onClickListener);
     }
 
