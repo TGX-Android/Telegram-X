@@ -47,7 +47,7 @@ public class TopBarView extends FrameLayoutFix {
   private boolean canDismiss;
 
   public interface DismissListener {
-    void onDismissRequest(TopBarView barView);
+    void onDismissRequest (TopBarView barView);
   }
 
   public static class Item {
@@ -70,12 +70,12 @@ public class TopBarView extends FrameLayoutFix {
       this(id, stringRes, 0, onClickListener);
     }
 
-    public Item setIsNegative() {
+    public Item setIsNegative () {
       this.isNegative = true;
       return this;
     }
 
-    public Item setNoDismiss() {
+    public Item setNoDismiss () {
       this.noDismiss = true;
       return this;
     }
@@ -83,7 +83,7 @@ public class TopBarView extends FrameLayoutFix {
 
   private DismissListener dismissListener;
 
-  public TopBarView(@NonNull Context context) {
+  public TopBarView (@NonNull Context context) {
     super(context);
 
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(36f)));
@@ -102,7 +102,7 @@ public class TopBarView extends FrameLayoutFix {
     topDismissButton = new AppCompatImageView(context) {
       @SuppressLint("ClickableViewAccessibility")
       @Override
-      public boolean onTouchEvent(MotionEvent event) {
+      public boolean onTouchEvent (MotionEvent event) {
         return Views.isValid(this) && super.onTouchEvent(event);
       }
     };
@@ -128,13 +128,13 @@ public class TopBarView extends FrameLayoutFix {
     actionsContainer.addView(additionalTextView);
   }
 
-  public void setDismissListener(DismissListener dismissListener) {
+  public void setDismissListener (DismissListener dismissListener) {
     this.dismissListener = dismissListener;
   }
 
   private @Nullable ViewController<?> themeProvider;
 
-  public void addThemeListeners(@Nullable ViewController<?> themeProvider) {
+  public void addThemeListeners (@Nullable ViewController<?> themeProvider) {
     this.themeProvider = themeProvider;
     if (themeProvider != null) {
       themeProvider.addThemeFilterListener(topDismissButton, ColorId.icon);
@@ -142,14 +142,14 @@ public class TopBarView extends FrameLayoutFix {
     }
   }
 
-  public void setCanDismiss(boolean canDismiss) {
+  public void setCanDismiss (boolean canDismiss) {
     if (this.canDismiss != canDismiss) {
       this.canDismiss = canDismiss;
       topDismissButton.setVisibility(canDismiss ? View.VISIBLE : View.GONE);
     }
   }
 
-  public void setItems(Item... items) {
+  public void setItems (Item... items) {
     actionsList = (LinearLayout) actionsContainer.getChildAt(0);
     for (int i = 0; i < actionsList.getChildCount(); i++) {
       View view = actionsList.getChildAt(i);
