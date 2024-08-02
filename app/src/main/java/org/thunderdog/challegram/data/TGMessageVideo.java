@@ -247,6 +247,16 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
     }
   }
 
+  @Override
+  public int getForwardLineColor () {
+    return ColorUtils.alphaColor(1f - isFullSizeAnimator.getFloatValue(), super.getForwardLineColor());
+  }
+
+  @Override
+  public int getForwardAuthorNameLeft () {
+    return (int) (super.getForwardAuthorNameLeft() - Screen.dp(11f) * isFullSizeAnimator.getFloatValue());
+  }
+
   public void setFullSizeAnimatorDuration (long fullSizeAnimatorDuration) {
     this.fullSizeAnimatorDuration = fullSizeAnimatorDuration;
   }
