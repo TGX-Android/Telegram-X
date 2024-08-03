@@ -710,7 +710,8 @@ public class RecordAudioVideoController implements
   }
 
   private void updateVideoY () {
-    float editFactor = editAnimator.getValue() ? 1f : (recordAnimator.getValue() ? 1f : this.editFactor);
+    float editFactor = recordMode != RECORD_MODE_NONE && editAnimator.getFloatValue() > 0f ? 1f : this.editFactor;
+
     final int bottom = inputOverlayView.getTop() + overallTranslation;
     final float y = bottom / 2f - videoLayout.getMeasuredHeight() / 2f + (bottom / 3f * (1f - Math.max(recordFactor, editFactor)));
 
