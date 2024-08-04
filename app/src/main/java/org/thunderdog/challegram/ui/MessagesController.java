@@ -8230,7 +8230,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         case TdApi.ChatActionBarJoinRequest.CONSTRUCTOR: {
           TdApi.ChatActionBarJoinRequest joinRequest = (TdApi.ChatActionBarJoinRequest) actionBar;
-          // TODO
+          var userId = tdlib.chatUserId(getChatId());
+          var firstname = tdlib.cache().userFirstName(userId);
+          android.util.Log.d("JoinRequest", String.format("%s is an admin of %s, a channel you requested to join", firstname, joinRequest.title));
+          items.add(new TopBarView.Item(R.string.JoinRequestChannelAdminNotice));
           break;
         }
         default: {

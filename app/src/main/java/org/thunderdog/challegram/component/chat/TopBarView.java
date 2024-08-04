@@ -26,6 +26,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatImageView;
+import androidx.appcompat.widget.AppCompatTextView;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
@@ -41,7 +42,6 @@ import me.vkryl.android.widget.FrameLayoutFix;
 public class TopBarView extends FrameLayoutFix {
   private final ImageView topDismissButton;
   private final LinearLayout actionsContainer;
-  private final TextView additionalTextView;
   private LinearLayout actionsList;
 
   private boolean canDismiss;
@@ -53,21 +53,31 @@ public class TopBarView extends FrameLayoutFix {
   public static class Item {
     final int id;
     final int stringRes;
+    final int noticeRes;
     final int iconResId;
     final View.OnClickListener onClickListener;
 
     boolean isNegative;
     boolean noDismiss;
 
-    public Item (int id, int stringRes, int iconResId, View.OnClickListener onClickListener) {
+    public Item (int id, int stringRes, int noticeRes, int iconResId, View.OnClickListener onClickListener) {
       this.id = id;
       this.stringRes = stringRes;
+      this.noticeRes = noticeRes;
       this.iconResId = iconResId;
       this.onClickListener = onClickListener;
     }
 
+    public Item (int id, int stringRes, int iconResId,View.OnClickListener onClickListener) {
+      this(id, stringRes, 0, iconResId, onClickListener);
+    }
+
     public Item (int id, int stringRes, View.OnClickListener onClickListener) {
-      this(id, stringRes, 0, onClickListener);
+      this(id, stringRes, 0, 0, onClickListener);
+    }
+
+    public Item (int noticeRes) {
+      this(0, 0, noticeRes, 0, null);
     }
 
     public Item setIsNegative () {
@@ -119,13 +129,6 @@ public class TopBarView extends FrameLayoutFix {
     Views.setClickable(topDismissButton);
     topDismissButton.setVisibility(View.INVISIBLE);
     addView(topDismissButton);
-
-    additionalTextView = new TextView(context);
-    additionalTextView.setVisibility(View.GONE);
-    additionalTextView.setGravity(Gravity.CENTER);
-    additionalTextView.setTextColor(Theme.getColor(ColorId.textNeutral));
-    additionalTextView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-    actionsContainer.addView(additionalTextView);
   }
 
   public void setDismissListener (DismissListener dismissListener) {
@@ -177,26 +180,45 @@ public class TopBarView extends FrameLayoutFix {
       buttonLayout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, 2f));
       Views.setClickable(buttonLayout);
 
+      LinearLayout noticeItem = new LinearLayout(getContext());
+      noticeItem.setOrientation(LinearLayout.HORIZONTAL);
+      noticeItem.setGravity(Lang.gravity());
+      noticeItem.setBackgroundResource(R.drawable.bg_btn_header);
+      noticeItem.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, 2f));
+
       if (item.iconResId != 0) {
         ImageView iconView = new ImageView(getContext());
         iconView.setImageResource(item.iconResId);
         iconView.setColorFilter(Theme.getColor(textColorId));
-        iconView.setLayoutParams(new LinearLayout.LayoutParams(Screen.dp(24f), Screen.dp(24f))); // Increased icon size
+        iconView.setLayoutParams(new LinearLayout.LayoutParams(Screen.dp(24f), Screen.dp(24f)));
         buttonLayout.addView(iconView);
       }
 
-      TextView buttonText = Views.newTextView(getContext(), 15f, Theme.getColor(textColorId), Gravity.CENTER, Views.TEXT_FLAG_BOLD | Views.TEXT_FLAG_HORIZONTAL_PADDING); // Increased text size
-      buttonText.setId(item.id);
-      if (themeProvider != null) {
-        themeProvider.addThemeTextColorListener(buttonText, textColorId);
-      }
-      buttonText.setEllipsize(TextUtils.TruncateAt.END);
-      buttonText.setSingleLine(true);
-      buttonText.setText(Lang.getString(item.stringRes).toUpperCase());
-      buttonText.setOnClickListener(item.onClickListener);
+      if (item.stringRes != 0) {
+        TextView buttonText = Views.newTextView(getContext(), 15f, Theme.getColor(textColorId), Gravity.CENTER, Views.TEXT_FLAG_BOLD | Views.TEXT_FLAG_HORIZONTAL_PADDING);
+        buttonText.setId(item.id);
 
-      buttonLayout.addView(buttonText);
-      actionsList.addView(buttonLayout);
+        if (themeProvider != null) {
+          themeProvider.addThemeTextColorListener(buttonText, textColorId);
+        }
+
+        buttonText.setEllipsize(TextUtils.TruncateAt.END);
+        buttonText.setSingleLine(true);
+        buttonText.setText(Lang.getString(item.stringRes).toUpperCase());
+        buttonText.setOnClickListener(item.onClickListener);
+        buttonLayout.addView(buttonText);
+        actionsList.addView(buttonLayout);
+      }
+
+      if (item.noticeRes != 0) {
+        var noticeText = Views.newTextView(getContext(), 15f, Theme.getColor(ColorId.textPlaceholder), Gravity.CENTER, Views.TEXT_FLAG_HORIZONTAL_PADDING);
+        noticeText.setText(Lang.getString(item.noticeRes));
+        noticeText.setEllipsize(TextUtils.TruncateAt.END);
+        noticeText.setPadding(Screen.dp(2f), 0, Screen.dp(2f), 0);
+        noticeItem.addView(noticeText);
+        actionsList.addView(noticeItem);
+      }
+
     }
     if (items.length > 1) {
       View offsetView = new View(getContext());
@@ -204,11 +226,5 @@ public class TopBarView extends FrameLayoutFix {
       actionsList.addView(offsetView);
     }
     setCanDismiss(canDismiss);
-    additionalTextView.setVisibility(items.length == 0 && !TextUtils.isEmpty(additionalTextView.getText()) ? View.VISIBLE : View.GONE);
-  }
-
-  public void setAdditionalText(String text) {
-    additionalTextView.setText(text);
-    additionalTextView.setVisibility(TextUtils.isEmpty(text) ? View.GONE : View.VISIBLE);
   }
 }
