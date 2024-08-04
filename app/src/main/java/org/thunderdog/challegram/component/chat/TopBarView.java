@@ -26,7 +26,6 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatImageView;
-import androidx.appcompat.widget.AppCompatTextView;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
@@ -53,14 +52,14 @@ public class TopBarView extends FrameLayoutFix {
   public static class Item {
     final int id;
     final int stringRes;
-    final int noticeRes;
+    final CharSequence noticeRes;
     final int iconResId;
     final View.OnClickListener onClickListener;
 
     boolean isNegative;
     boolean noDismiss;
 
-    public Item (int id, int stringRes, int noticeRes, int iconResId, View.OnClickListener onClickListener) {
+    public Item (int id, int stringRes, CharSequence noticeRes, int iconResId, View.OnClickListener onClickListener) {
       this.id = id;
       this.stringRes = stringRes;
       this.noticeRes = noticeRes;
@@ -69,14 +68,14 @@ public class TopBarView extends FrameLayoutFix {
     }
 
     public Item (int id, int stringRes, int iconResId,View.OnClickListener onClickListener) {
-      this(id, stringRes, 0, iconResId, onClickListener);
+      this(id, stringRes, null, iconResId, onClickListener);
     }
 
     public Item (int id, int stringRes, View.OnClickListener onClickListener) {
-      this(id, stringRes, 0, 0, onClickListener);
+      this(id, stringRes, null, 0, onClickListener);
     }
 
-    public Item (int noticeRes) {
+    public Item (CharSequence noticeRes) {
       this(0, 0, noticeRes, 0, null);
     }
 
@@ -124,7 +123,7 @@ public class TopBarView extends FrameLayoutFix {
     topDismissButton.setScaleType(ImageView.ScaleType.CENTER);
     topDismissButton.setColorFilter(Theme.iconColor());
     topDismissButton.setImageResource(R.drawable.baseline_close_18);
-    topDismissButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(40f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.END | Gravity.TOP));
+    topDismissButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(40f), ViewGroup.LayoutParams.MATCH_PARENT, Lang.reverseGravity() | Gravity.CENTER_VERTICAL));
     topDismissButton.setBackgroundResource(R.drawable.bg_btn_header);
     Views.setClickable(topDismissButton);
     topDismissButton.setVisibility(View.INVISIBLE);
@@ -210,11 +209,10 @@ public class TopBarView extends FrameLayoutFix {
         actionsList.addView(buttonLayout);
       }
 
-      if (item.noticeRes != 0) {
-        var noticeText = Views.newTextView(getContext(), 15f, Theme.getColor(ColorId.textPlaceholder), Gravity.CENTER, Views.TEXT_FLAG_HORIZONTAL_PADDING);
-        noticeText.setText(Lang.getString(item.noticeRes));
-        noticeText.setEllipsize(TextUtils.TruncateAt.END);
-        noticeText.setPadding(Screen.dp(2f), 0, Screen.dp(2f), 0);
+      if (item.noticeRes != null) {
+        var noticeText = Views.newTextView(getContext(), 15f, Theme.getColor(ColorId.textPlaceholder), Lang.gravity(), Views.TEXT_FLAG_HORIZONTAL_PADDING);
+        noticeText.setText(item.noticeRes);
+
         noticeItem.addView(noticeText);
         actionsList.addView(noticeItem);
       }
