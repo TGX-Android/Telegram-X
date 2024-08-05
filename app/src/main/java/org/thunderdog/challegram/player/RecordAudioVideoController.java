@@ -1700,8 +1700,8 @@ public class RecordAudioVideoController implements
 
   @Override
   public void onVideoRecordProgress (String key, long readyBytesCount) {
-    if (StringUtils.equalsOrBothEmpty(roundKey, key)) {
-      // tdlib.client().send(new TdApi.SetFileGenerationProgress(roundGenerationId, 0, readyBytesCount), tdlib.silentHandler());
+    if (StringUtils.equalsOrBothEmpty(roundKey, key) && prevVideoPath == null) {
+      tdlib.client().send(new TdApi.SetFileGenerationProgress(roundGenerationId, 0, readyBytesCount), tdlib.silentHandler());
     }
   }
 
@@ -1744,14 +1744,18 @@ public class RecordAudioVideoController implements
 
   private void finishFileGeneration (long resultFileSize) {
     if (prevVideoPath != null) {
-      try {
-        VideoGen.appendTwoVideos(prevVideoPath, roundOutputPath, roundOutputPath + ".merge", prevVideoHasTrim, prevVideoTrimStart, prevVideoTrimEnd);
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-      U.moveFile(new File(roundOutputPath + ".merge"), new File(roundOutputPath));
+      Background.instance().post(() -> {
+        try {
+          VideoGen.appendTwoVideos(prevVideoPath, roundOutputPath, roundOutputPath + ".merge", prevVideoHasTrim, prevVideoTrimStart, prevVideoTrimEnd);
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+        U.moveFile(new File(roundOutputPath + ".merge"), new File(roundOutputPath));
+        tdlib.client().send(new TdApi.FinishFileGeneration(roundGenerationId, null), tdlib.silentHandler());
+      });
+      return;
     }
-    //tdlib.client().send(new TdApi.SetFileGenerationProgress(roundGenerationId, resultFileSize, resultFileSize), tdlib.silentHandler());
+    tdlib.client().send(new TdApi.SetFileGenerationProgress(roundGenerationId, resultFileSize, resultFileSize), tdlib.silentHandler());
     tdlib.client().send(new TdApi.FinishFileGeneration(roundGenerationId, null), tdlib.silentHandler());
   }
 
