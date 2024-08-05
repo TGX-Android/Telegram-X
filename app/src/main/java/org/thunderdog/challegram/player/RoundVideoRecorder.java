@@ -152,7 +152,7 @@ public class RoundVideoRecorder {
   private volatile boolean isSwitchingToNewCamera;
 
   public boolean canSwitchToNewCamera () {
-    return !isSwitchingToNewCamera && initied && eglSurface != null;
+    return !isSwitchingToNewCamera && initied; // && eglSurface != null;
   }
 
   public void switchToNewCamera () {

@@ -5480,6 +5480,10 @@ public class TD {
     chatFolder.excludeArchived = filter.accept(R.id.chatType_archived);
   }
 
+  public static boolean isSelfDestructTypeImmediately (TdApi.Message message) {
+    return message != null && message.selfDestructType != null && message.selfDestructType.getConstructor() == TdApi.MessageSelfDestructTypeImmediately.CONSTRUCTOR;
+  }
+
   public static final int[] CHAT_TYPES = {
     R.id.chatType_contact,
     R.id.chatType_nonContact,

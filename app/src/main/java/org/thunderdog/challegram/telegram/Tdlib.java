@@ -1908,7 +1908,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     public TdApi.File file;
     public String destinationPath;
 
-    private long generationId;
+    public long generationId;
     private boolean isPending;
 
     public Runnable onCancel;
@@ -1916,6 +1916,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   private final HashMap<String, Generation> awaitingGenerations = new HashMap<>();
   private final HashMap<Long, Generation> pendingGenerations = new HashMap<>();
+  private final HashMap<Integer, Generation> fileWaitingGenerations = new HashMap<>();
 
   public @Nullable Generation generateFile (String id, TdApi.FileType fileType, boolean isSecret, int priority, long timeoutMs) {
     final CountDownLatch latch = new CountDownLatch(2);
@@ -1964,8 +1965,32 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   public void finishGeneration (Generation generation, @Nullable TdApi.Error error) {
     synchronized (awaitingGenerations) {
       pendingGenerations.remove(generation.generationId);
+      if (error == null && generation.file != null) {
+        fileWaitingGenerations.put(generation.file.id, generation);
+        files().subscribe(generation.file.id, obtainGeneratedFilesListener());
+      }
     }
     client().send(new TdApi.FinishFileGeneration(generation.generationId, error), silentHandler());
+  }
+
+  private TdlibFilesManager.SimpleListener generatedFilesListener;
+
+  private TdlibFilesManager.SimpleListener obtainGeneratedFilesListener () {
+    if (generatedFilesListener == null) {
+      generatedFilesListener = file -> {
+        if (!StringUtils.isEmpty(file.local.path) && file.size != 0 && file.local.isDownloadingCompleted) {
+          synchronized (awaitingGenerations) {
+            Generation generation = fileWaitingGenerations.remove(file.id);
+            files().unsubscribe(file.id, generatedFilesListener);
+            if (generation != null) {
+              generation.file = file;
+            }
+          }
+        }
+      };
+    }
+
+    return generatedFilesListener;
   }
 
   public void getMessage (long chatId, long messageId, @Nullable RunnableData<TdApi.Message> callback) {
@@ -9924,6 +9949,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     synchronized (awaitingGenerations) {
       Generation generation = pendingGenerations.remove(update.generationId);
       if (generation != null) {
+        if (generation.file != null) {
+          fileWaitingGenerations.remove(generation.file.id);
+          if (generatedFilesListener != null) {
+            files().unsubscribe(generation.file.id, generatedFilesListener);
+          }
+        }
         if (generation.onCancel != null) {
           generation.onCancel.run();
         }
