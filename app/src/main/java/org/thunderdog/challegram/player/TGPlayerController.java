@@ -1837,6 +1837,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
       for (int a = 0; a < messages.size(); a++) {
         final TdApi.Message msg = messages.get(a);
         final boolean isOrigin = a == originIndex;
+        // FIXME: this should be filtered on the PlayListBuilder implementation level
         if (TD.isSelfDestructTypeImmediately(msg) && !isOrigin) {
           continue;
         }

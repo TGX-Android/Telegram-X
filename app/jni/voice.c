@@ -274,7 +274,7 @@ ogg_int32_t _packetId;
 OpusEncoder *_encoder = 0;
 uint8_t *_packet = 0;
 ogg_stream_state os;
-const char *_filePath;
+char *_filePath = NULL;
 FILE *_fileOs = 0;
 oe_enc_opt inopt;
 OpusHeader header;
@@ -322,7 +322,7 @@ void cleanupRecorder() {
     last_granulepos = 0;
     if (_filePath) {
         free(_filePath);
-        _filePath = 0;
+        _filePath = NULL;
     }
     memset(&os, 0, sizeof(ogg_stream_state));
     memset(&inopt, 0, sizeof(oe_enc_opt));
@@ -517,6 +517,7 @@ resume_data readResumeData(const char* filePath) {
     if (!resumeFile) {
         loge(TAG_VOICE, "error cannot open resume file to read: %s", _resumeFilePath);
         memset(&data, 0, sizeof(resume_data));
+        free(_resumeFilePath);
         return data;
     }
 
@@ -681,7 +682,7 @@ int writeFrame(uint8_t *framePcmBytes, unsigned int frameByteCount) {
     return 1;
 }
 
-JNIEXPORT int Java_org_thunderdog_challegram_N_startRecord(JNIEnv *env, jclass class, jstring path, jint sampleRate) {
+JNIEXPORT jint Java_org_thunderdog_challegram_N_startRecord(JNIEnv *env, jclass class, jstring path, jint sampleRate) {
     const char *pathStr = (*env)->GetStringUTFChars(env, path, 0);
 
     int32_t result = initRecorder(pathStr, sampleRate);
@@ -705,7 +706,7 @@ JNIEXPORT jint Java_org_thunderdog_challegram_N_resumeRecord(JNIEnv *env, jclass
     return result;
 }
 
-JNIEXPORT int Java_org_thunderdog_challegram_N_writeFrame(JNIEnv *env, jclass class, jobject frame, jint len) {
+JNIEXPORT jint Java_org_thunderdog_challegram_N_writeFrame(JNIEnv *env, jclass class, jobject frame, jint len) {
     jbyte *frameBytes = (*env)->GetDirectBufferAddress(env, frame);
     return writeFrame((uint8_t *) frameBytes, (size_t) len);
 }
@@ -824,11 +825,11 @@ JNIEXPORT void Java_org_thunderdog_challegram_N_readOpusFile(JNIEnv *env, jclass
     (*env)->ReleaseIntArrayElements(env, args, argsArr, 0);
 }
 
-JNIEXPORT int Java_org_thunderdog_challegram_N_seekOpusFile(JNIEnv *env, jclass class, jfloat position) {
+JNIEXPORT jint Java_org_thunderdog_challegram_N_seekOpusFile(JNIEnv *env, jclass class, jfloat position) {
     return seekPlayer(position);
 }
 
-JNIEXPORT int Java_org_thunderdog_challegram_N_openOpusFile(JNIEnv *env, jclass class, jstring path) {
+JNIEXPORT jint Java_org_thunderdog_challegram_N_openOpusFile(JNIEnv *env, jclass class, jstring path) {
     const char *pathStr = (*env)->GetStringUTFChars(env, path, 0);
 
     int result = initPlayer(pathStr);
@@ -840,7 +841,7 @@ JNIEXPORT int Java_org_thunderdog_challegram_N_openOpusFile(JNIEnv *env, jclass 
     return result;
 }
 
-JNIEXPORT int Java_org_thunderdog_challegram_N_isOpusFile(JNIEnv *env, jclass class, jstring path) {
+JNIEXPORT jint Java_org_thunderdog_challegram_N_isOpusFile(JNIEnv *env, jclass class, jstring path) {
     const char *pathStr = (*env)->GetStringUTFChars(env, path, 0);
 
     int result = 0;
