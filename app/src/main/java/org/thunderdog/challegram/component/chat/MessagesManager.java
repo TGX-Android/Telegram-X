@@ -1065,7 +1065,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   private boolean filterMedia (TdApi.Message message, int contentType) {
-    return !tdlib.messageSending(message) && contentType == message.content.getConstructor();
+    return !TD.isSelfDestructTypeImmediately(message) && !tdlib.messageSending(message) && contentType == message.content.getConstructor();
   }
 
   @Override

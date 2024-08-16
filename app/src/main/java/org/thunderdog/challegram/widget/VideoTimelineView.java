@@ -236,6 +236,7 @@ public class VideoTimelineView extends View implements Destroyable, FactorAnimat
     void onTrimStartEnd (VideoTimelineView v, boolean isStarted);
     default void onVideoLoaded (VideoTimelineView v, double totalDuration, double width, double height, int frameRate, long bitrate) { }
     void onTimelineTrimChanged (VideoTimelineView v, double totalDuration, double startTimeSeconds, double endTimeSeconds);
+    default void onTimelineVisualTrimChanged (VideoTimelineView v, double totalDuration, double startTimeSeconds, double endTimeSeconds) {}
     void onSeekTo (VideoTimelineView v, float progress);
   }
 
@@ -335,6 +336,27 @@ public class VideoTimelineView extends View implements Destroyable, FactorAnimat
         });
     }
     return null;
+  }
+
+  public void performSliderDown (boolean isEnd) {
+    setMoving(true, true);
+    setSlideMode(isEnd ? SLIDE_MODE_END : SLIDE_MODE_START);
+    showTooltip();
+  }
+
+  public void performSliderMove (float factor, boolean isEnd) {
+    final var animator = isEnd ? endFactor : startFactor;
+    if (animator.getFactor() != factor) {
+      animator.forceFactor(factor);
+      updateTooltip(isEnd);
+      invalidate();
+    }
+  }
+
+  public void performSliderUp (boolean isEnd) {
+    setSlideMode(SLIDE_MODE_NONE);
+    setMoving(false, true);
+    normalizeValues(isEnd);
   }
 
   @Override
@@ -578,6 +600,9 @@ public class VideoTimelineView extends View implements Destroyable, FactorAnimat
   public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
     updateTooltip(id == 1);
     invalidate();
+    if (delegate != null) {
+      delegate.onTimelineVisualTrimChanged(this, totalDuration, getCurrentStart(), getCurrentEnd());
+    }
   }
 
   @Override

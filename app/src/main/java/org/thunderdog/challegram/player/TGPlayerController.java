@@ -28,6 +28,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.InlineResult;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.telegram.GlobalMessageListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibManager;
@@ -1769,6 +1770,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
   public static final int PAUSE_REASON_RECORD_VIDEO = 1 << 8;
   public static final int PAUSE_REASON_PROXIMITY = 1 << 9;
   public static final int PAUSE_REASON_OPEN_WEB_VIDEO = 1 << 10;
+  public static final int PAUSE_REASON_OPEN_ONCE_MEDIA = 1 << 11;
 
   private boolean needResume;
   private int pauseReasons;
@@ -1829,8 +1831,22 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
      * @param originIndex index of message requested in {@link PlayListBuilder#buildPlayList(TdApi.Message)}
      */
     public PlayList (List<TdApi.Message> messages, int originIndex) {
-      this.messages = messages;
-      this.originIndex = originIndex;
+      this.messages = new ArrayList<>();
+
+      int newOriginIndex = -1;
+      for (int a = 0; a < messages.size(); a++) {
+        final TdApi.Message msg = messages.get(a);
+        final boolean isOrigin = a == originIndex;
+        // FIXME: this should be filtered on the PlayListBuilder implementation level
+        if (TD.isSelfDestructTypeImmediately(msg) && !isOrigin) {
+          continue;
+        }
+        if (isOrigin) {
+          newOriginIndex = this.messages.size();
+        }
+        this.messages.add(msg);
+      }
+      this.originIndex = newOriginIndex;
     }
 
     /**

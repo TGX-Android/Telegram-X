@@ -2297,6 +2297,8 @@
   <string name="UseHqRoundVideos">Record HQ Round Videos</string>
   <string name="DiscardVideoMessageTitle">Discard Video Message</string>
   <string name="DiscardVideoMessageDescription">Are you sure you want to discard your video message?</string>
+  <string name="DiscardAudioMessageTitle">Discard Audio Message</string>
+  <string name="DiscardAudioMessageDescription">Are you sure you want to discard your audio message?</string>
   <string name="Discard">Discard</string>
   <string name="MediaFeatureUnavailable">Feature is not available for this type of media</string>
   <string name="XMadeGroupHistoryHidden">%1$s made group history hidden for new members</string>
@@ -4111,6 +4113,9 @@
   <string name="SendOnceOnline">Send when online</string>
   <string name="SendReminder">Set a Reminder</string>
   <string name="SaveNoMarkdown">Save without markdown</string>
+
+  <string name="MediaOnceTurnOnSound">Please, turn on the sound first.</string>
+  <string name="MediaOnceWaitFilуDownload">Wait until the file is completely downloaded.</string>
 
   <string name="SendInXMinutes_one">Send in %1$s minute</string>
   <string name="SendInXMinutes_other">Send in %1$s minutes</string>
