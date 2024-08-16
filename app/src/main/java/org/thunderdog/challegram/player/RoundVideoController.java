@@ -318,7 +318,7 @@ public class RoundVideoController extends BasePlaybackController implements
 
   private boolean isRendered;
 
-  private static final boolean USE_SURFACE = false; // Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
+  public static final boolean USE_SURFACE = false; // Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
 
   private void preparePlayerIfNeeded () { // Prepare off-screen texture
     if (texturePrepared) {

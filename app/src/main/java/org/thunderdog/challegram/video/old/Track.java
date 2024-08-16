@@ -271,6 +271,8 @@ public class Track {
   }
 
   public void prepare() {
+    duration = 0;
+
     ArrayList<SamplePresentationTime> original = new ArrayList<>(samplePresentationTimes);
     Collections.sort(samplePresentationTimes, (o1, o2) -> {
       if (o1.presentationTime > o2.presentationTime) {
