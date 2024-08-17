@@ -1109,7 +1109,13 @@ public class RecordAudioVideoController implements
     if (sendHelper != null)
       sendHelper.detachFromView(sendButton);
     sendHelper = tdlib.ui()
-      .createSimpleHapticMenu(targetController, targetChatId, () -> editFactor == 1f, null, null, null, (sendOptions, disableMarkdown) -> sendVideo(sendOptions), null)
+      .createSimpleHapticMenu(targetController, targetChatId, () -> editFactor == 1f, null, null, null, (sendOptions, disableMarkdown) -> {
+        if (recordMode == RECORD_MODE_AUDIO_EDIT) {
+          sendAudio(sendOptions);
+        } else {
+          sendVideo(sendOptions);
+        }
+      }, null)
       .attachToView(sendButton);
     if (!inRaiseMode) {
       context.setScreenFlagEnabled(BaseActivity.SCREEN_FLAG_RECORDING, true);
