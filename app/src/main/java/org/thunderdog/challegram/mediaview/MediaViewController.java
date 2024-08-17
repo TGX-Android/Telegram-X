@@ -5179,19 +5179,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           public boolean onTouchEvent (MotionEvent event) {
             return Views.onTouchEvent(this, event) && super.onTouchEvent(event);
           }
-
-          @Override
-          public int quoteLineColorId () {
-            return ColorId.white;
-          }
-
-          @Override
-          public int quoteTextColorId () {
-            return ColorId.white;
-          }
         };
         captionView.setPadding(Screen.dp(14f), Screen.dp(14f), Screen.dp(14f), Screen.dp(14f));
-        captionView.setTextColorId(ColorId.white);
+        captionView.setTextColorId(ColorId.white, true);
         captionView.setTextSize(Screen.dp(16f));
         captionView.setTextStyleProvider(TGMessage.getTextStyleProvider());
         captionView.setLinkColorId(ColorId.caption_textLink, ColorId.caption_textLinkPressHighlight);
