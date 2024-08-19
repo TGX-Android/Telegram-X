@@ -353,11 +353,11 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
 
   public void buildLayout (int maxWidth) {
     lastMaxWidth = maxWidth;
-    if (waveform != null) {
-      waveform.layout(Math.min(Screen.dp(420f), Math.min(TGMessage.getEstimatedContentMaxWidth(), maxWidth) - Screen.dp(FileProgressComponent.DEFAULT_FILE_RADIUS) * 2 - getPreviewOffset() - (int) sizeWidth - Screen.dp(12f)));
-    }
     if (title != null || subtitle != null) {
       buildTitles(maxWidth - (getPreviewSize() + getPreviewOffset()));
+    }
+    if (waveform != null) {
+      waveform.layout(Math.min(Screen.dp(420f), Math.min(TGMessage.getEstimatedContentMaxWidth(), maxWidth) - Screen.dp(FileProgressComponent.DEFAULT_FILE_RADIUS) * 2 - getPreviewOffset() - (int) sizeWidth - Screen.dp(12f)));
     }
   }
 
