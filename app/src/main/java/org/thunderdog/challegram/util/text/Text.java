@@ -1805,7 +1805,15 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     currentX = (int) part.getWidth();
     currentY += lineHeight;
     maxPartHeight = 0;
-    part.setXY(0, currentY);
+    
+    if (part.getQuoteEntityId() != -1) {
+      final var x = Screen.dp(QuoteBackground.QUOTE_LEFT_PADDING + QuoteBackground.QUOTE_RIGHT_PADDING);
+      part.setXY(x, currentY);
+      currentX += x;
+    } else {
+      part.setXY(0, currentY);
+    }
+
     part.setLineIndex(getLineCount(), paragraphCount);
     ensureLineCount(lineHeight, prevMaxPartHeight);
     return true;
