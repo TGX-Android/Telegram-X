@@ -782,7 +782,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     liveLocationView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, liveLocationHeight));
     addThemeInvalidateListener(liveLocationView);
 
-    int actionBarHeight = Screen.dp(36f);
+    int actionBarHeight = Screen.dp(46f);
     actionView = new TopBarView(context);
     actionView.setDismissListener(barView ->
       dismissActionBar()
@@ -8020,13 +8020,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private TopBarView.Item newAddContactItem (long chatId) {
-    return new TopBarView.Item(R.id.btn_addContact, R.string.AddContact, v -> {
+    return new TopBarView.Item(R.id.btn_addContact, R.string.AddContact, true, R.drawable.baseline_person_add_24, v -> {
       tdlib.ui().addContact(this, tdlib.chatUser(chatId));
     });
   }
 
   private TopBarView.Item newUnarchiveItem (long chatId) {
-    return new TopBarView.Item(R.id.btn_unarchiveChat, R.string.UnarchiveUnmute, v -> {
+    return new TopBarView.Item(R.id.btn_unarchiveChat, R.string.UnarchiveUnmute, true, R.drawable.baseline_unarchive_24, v -> {
       tdlib.client().send(new TdApi.AddChatToList(chatId, new TdApi.ChatListMain()), tdlib.okHandler());
       TdApi.ChatNotificationSettings settings = tdlib.chatSettings(chatId);
       if (settings != null) {
@@ -8046,7 +8046,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private TopBarView.Item newReportItem (long chatId, boolean isBlock) {
-    return new TopBarView.Item(R.id.btn_reportChat, isBlock ? R.string.BlockContact : R.string.ReportSpam, v -> {
+    return new TopBarView.Item(R.id.btn_reportChat, isBlock ? R.string.BlockContact : R.string.ReportSpam, true, isBlock ? R.drawable.baseline_block_24 : R.drawable.baseline_report_24, v -> {
       showSettings(new SettingsWrapBuilder(R.id.btn_reportSpam)
         .setHeaderItem(new ListItem(ListItem.TYPE_INFO, 0, 0, Lang.getStringBold(R.string.ReportChatSpam, chat.title), false))
         .setRawItems(getChatUserId() != 0 ? new ListItem[] {
@@ -8143,6 +8143,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
         case TdApi.ChatActionBarReportSpam.CONSTRUCTOR: {
           TdApi.ChatActionBarReportSpam reportSpam = (TdApi.ChatActionBarReportSpam) actionBar;
+          /*
+           TODO: Add anti-scam notice for custom emojis
+           var customEmoji = tdlib().cache().user(tdlib.chatUserId(getChatId()));
+           android.util.Log.e("customEmoji", String.format("customEmoji: %s", customEmoji));
+           if (customEmoji != null && customEmoji.emojiStatus != null) {
+             items.add(new TopBarView.Item("Have a custom emoji", true));
+           }
+          */
           items.add(newReportItem(chatId, false));
           if (reportSpam.canUnarchive) {
             items.add(newUnarchiveItem(chatId));
@@ -8152,6 +8160,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
         case TdApi.ChatActionBarReportAddBlock.CONSTRUCTOR: {
           TdApi.ChatActionBarReportAddBlock reportAddBlock = (TdApi.ChatActionBarReportAddBlock) actionBar;
+          /*
+           TODO: Add anti-scam notice for custom emojis
+           var customEmoji = tdlib().cache().user(tdlib.chatUserId(getChatId()));
+           android.util.Log.e("customEmoji", String.format("customEmoji: %s", customEmoji));
+           if (customEmoji != null && customEmoji.emojiStatus != null) {
+             items.add(new TopBarView.Item("Have a custom emoji", true));
+           }
+          */
           items.add(newReportItem(chatId, true));
           items.add(newAddContactItem(chatId));
           if (reportAddBlock.canUnarchive) {
@@ -8210,7 +8226,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         case TdApi.ChatActionBarJoinRequest.CONSTRUCTOR: {
           TdApi.ChatActionBarJoinRequest joinRequest = (TdApi.ChatActionBarJoinRequest) actionBar;
-          // TODO
+          items.add(new TopBarView.Item(Strings.replaceBoldTokens(Lang.getString(R.string.JoinRequestChannelAdminNotice, tdlib.cache().userFirstName(tdlib.chatUserId(getChatId())), joinRequest.title)), true));
           break;
         }
         default: {

@@ -5477,4 +5477,7 @@
   <string name="PlaybackSpeedHintHold">Hold to access more options</string>
   <string name="PlaybackSpeedHintSwipe">Hold and swipe horizontally for precise adjustment</string>
   <string name="PlaybackSpeedHintTemplate">%1$s.\n%2$s.</string>
+
+  <string name="JoinRequestChannelAdminNotice">**%1$s** is an admin of **%2$s**, a channel you requested to join</string>
+  <string name="JoinRequestChatAdminNotice">**%1$s** is an admin of **%2$s**, a channel you requested to join</string>
 </resources>
