@@ -232,13 +232,14 @@ android {
 
   sourceSets.getByName("main") {
     java.srcDirs("./src/google/java") // TODO: Huawei & FOSS editions
-    java.srcDirs(
-      "./jni/third_party/webrtc/rtc_base/java/src",
-      "./jni/third_party/webrtc/modules/audio_device/android/java/src",
-      "./jni/third_party/webrtc/sdk/android/api",
-      "./jni/third_party/webrtc/sdk/android/src/java",
-      "../thirdparty/WebRTC/src/java"
-    )
+    // Disabled due to the conflict with NTgCalls implementation
+    //java.srcDirs(
+    //  "./jni/third_party/webrtc/rtc_base/java/src",
+    //  "./jni/third_party/webrtc/modules/audio_device/android/java/src",
+    //  "./jni/third_party/webrtc/sdk/android/api",
+    //  "./jni/third_party/webrtc/sdk/android/src/java",
+    //  "../thirdparty/WebRTC/src/java"
+    //)
     Config.ANDROIDX_MEDIA_EXTENSIONS.forEach { extension ->
       java.srcDirs("../thirdparty/androidx-media/libraries/${extension}/src/main/java")
     }
@@ -443,6 +444,8 @@ dependencies {
   // TODO: upgrade to "com.googlecode.mp4parser:isoparser:1.1.22" or latest
   // mp4parser: https://github.com/sannies/mp4parser/releases
   implementation("com.googlecode.mp4parser:isoparser:1.0.6")
+
+  implementation(files("libs/app-release.aar"))
 }
 
 if (!isExperimentalBuild) {

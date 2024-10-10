@@ -24,6 +24,7 @@ import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
+import org.pytgcalls.ntgcalls.NTgCalls;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.config.Config;
@@ -332,13 +333,14 @@ public class VoIP {
   }
 
   public static TdApi.CallProtocol getProtocol () {
+    var protocol = NTgCalls.getProtocol();
     return new TdApi.CallProtocol(
-      true,
-      true,
-      Config.VOIP_CONNECTION_MIN_LAYER,
-      VoIPController.getConnectionMaxLayer(),
-      getAvailableVersions(true)
-   );
+      protocol.udpP2P,
+      protocol.udpReflector,
+      protocol.minLayer,
+      protocol.maxLayer,
+      protocol.libraryVersions.toArray(new String[0])
+    );
   }
 
   private static int getNativeBufferSize (Context context) {
