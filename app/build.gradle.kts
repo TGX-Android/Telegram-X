@@ -232,13 +232,15 @@ android {
 
   sourceSets.getByName("main") {
     java.srcDirs("./src/google/java") // TODO: Huawei & FOSS editions
-    java.srcDirs(
-      "./jni/third_party/webrtc/rtc_base/java/src",
-      "./jni/third_party/webrtc/modules/audio_device/android/java/src",
-      "./jni/third_party/webrtc/sdk/android/api",
-      "./jni/third_party/webrtc/sdk/android/src/java",
-      "../thirdparty/WebRTC/src/java"
-    )
+    if (!Config.USE_NTG) {
+      java.srcDirs(
+        "./jni/third_party/webrtc/rtc_base/java/src",
+        "./jni/third_party/webrtc/modules/audio_device/android/java/src",
+        "./jni/third_party/webrtc/sdk/android/api",
+        "./jni/third_party/webrtc/sdk/android/src/java",
+        "../thirdparty/WebRTC/src/java"
+      )
+    }
     Config.ANDROIDX_MEDIA_EXTENSIONS.forEach { extension ->
       java.srcDirs("../thirdparty/androidx-media/libraries/${extension}/src/main/java")
     }
@@ -319,6 +321,7 @@ android {
     buildConfigField("int", "ORIGINAL_VERSION_CODE", versionCode.toString())
     buildConfigField("int", "ABI", abi.toString())
     buildConfigField("String", "ORIGINAL_VERSION_NAME", "\"${versionName}.${defaultConfig.versionCode}\"")
+    buildConfigField("Boolean", "USE_NTG", Config.USE_NTG.toString())
 
     outputs.map { it as ApkVariantOutputImpl }.forEach { output ->
       output.versionCodeOverride = versionCodeOverride
@@ -443,6 +446,11 @@ dependencies {
   // TODO: upgrade to "com.googlecode.mp4parser:isoparser:1.1.22" or latest
   // mp4parser: https://github.com/sannies/mp4parser/releases
   implementation("com.googlecode.mp4parser:isoparser:1.0.6")
+
+  // NTgCalls: https://github.com/pytgcalls/ntgcalls/
+  if (Config.USE_NTG) {
+    implementation(files("libs/ntgcalls-release.aar"))
+  }
 }
 
 if (!isExperimentalBuild) {

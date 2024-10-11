@@ -322,4 +322,6 @@ public class Config {
   public static final boolean ENABLE_TEXT_ANIMATIONS = false;
 
   public static final boolean COMPILE_CHECK = false /*never set to true*/;
+
+  public static final boolean USE_NTG = BuildConfig.USE_NTG;
 }

@@ -55,6 +55,7 @@ import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.player.TGPlayerController;
@@ -105,6 +106,7 @@ public class TGCallService extends Service implements
   private @Nullable TdApi.Call call;
   private @Nullable String callChannelId;
   private TdApi.User user;
+  private @Nullable CallInterface callInterface;
 
   private boolean callInitialized;
 
@@ -151,7 +153,7 @@ public class TGCallService extends Service implements
   }
 
   public long getCallDuration () {
-    return tgcalls != null ? tgcalls.getCallDuration() : VoIPInstance.DURATION_UNKNOWN;
+    return callInterface != null ? callInterface.getCallDuration() : VoIPInstance.DURATION_UNKNOWN;
   }
 
   private void setCallId (Tdlib tdlib, int callId) {
@@ -256,9 +258,8 @@ public class TGCallService extends Service implements
     AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
     this.audioGainControlEnabled = hasEarpiece() && am != null && !am.isSpeakerphoneOn() && !am.isBluetoothScoOn() && !isHeadsetPlugged;
     this.echoCancellationStrength = isHeadsetPlugged || (hasEarpiece() && am != null && !am.isSpeakerphoneOn() && !am.isBluetoothScoOn() && !isHeadsetPlugged) ? 0 : 1;
-    if (tgcalls != null) {
-      tgcalls.setAudioOutputGainControlEnabled(audioGainControlEnabled);
-      tgcalls.setEchoCancellationStrength(echoCancellationStrength);
+    if (callInterface != null) {
+      callInterface.callAudioControl(audioGainControlEnabled, echoCancellationStrength);
     }
   }
 
@@ -515,8 +516,8 @@ public class TGCallService extends Service implements
   @Override
   public void onCallSettingsChanged (int callId, CallSettings settings) {
     this.postponedCallSettings = settings;
-    if (tgcalls != null) {
-      tgcalls.setMicDisabled(settings != null && settings.isMicMuted());
+    if (callInterface != null){
+      callInterface.getMicrophoneStatus(settings);
     }
     setAudioMode(settings != null ? settings.getSpeakerMode() : CallSettings.SPEAKER_MODE_NONE);
   }
@@ -539,7 +540,7 @@ public class TGCallService extends Service implements
   }
 
   public long getConnectionId () {
-    return tgcalls != null ? tgcalls.getConnectionId() : 0;
+    return callInterface != null ? callInterface.getConnectionId() : 0;
   }
 
   private void hangUp () {
@@ -1095,8 +1096,8 @@ public class TGCallService extends Service implements
       }
     }
     this.lastNetworkType = type;
-    if (dispatchToTgCalls && tgcalls != null) {
-      tgcalls.setNetworkType(type);
+    if (callInterface != null) {
+      callInterface.setNetworkType(dispatchToTgCalls, type);
     }
   }
 
@@ -1104,11 +1105,10 @@ public class TGCallService extends Service implements
   private long prevDuration;
 
   private void updateStats () {
-    if (tgcalls == null) {
+    if (callInterface == null) {
       return;
     }
-    tgcalls.getNetworkStats(stats);
-
+    callInterface.getNetworkStats(stats);
     long newDuration = getCallDuration();
     if (newDuration == VoIPInstance.DURATION_UNKNOWN) {
       newDuration = 0;
@@ -1140,16 +1140,16 @@ public class TGCallService extends Service implements
   private CharSequence lastDebugLog;
 
   private void releaseTgCalls (@Nullable Tdlib tdlib, @Nullable TdApi.Call call) {
-    if (tgcalls != null) {
+    if (callInterface != null && tgcalls != null) {
       if (call == null) {
         call = tgcalls.getCall();
       }
       if (tdlib == null) {
         tdlib = tgcalls.tdlib();
       }
-      lastDebugLog = tgcalls.collectDebugLog();
-      tgcalls.performDestroy();
-      tgcalls = null;
+      lastDebugLog = callInterface.collectDebugLog();
+      callInterface.stop();
+      callInterface = null;
     }
     if (callListener != null && tdlib != null && call != null) {
       tdlib.listeners().unsubscribeFromCallUpdates(call.id, callListener);
@@ -1159,7 +1159,7 @@ public class TGCallService extends Service implements
   }
 
   private boolean isInitiated () {
-    return tgcalls != null;
+    return callInterface != null && callInterface.isInitiated();
   }
 
   private void checkInitiated () {
@@ -1217,34 +1217,37 @@ public class TGCallService extends Service implements
       }
     };
 
-    VoIPInstance tgcallsTemp;
-    try {
-      tgcallsTemp = VoIP.instantiateAndConnect(
-        tdlib,
-        call,
-        state,
-        stateListener,
-        forceTcp,
-        callProxy,
-        lastNetworkType,
-        audioGainControlEnabled,
-        echoCancellationStrength,
-        isMicDisabled
-      );
-    } catch (Throwable t) {
-      tgcallsTemp = null;
+    if (Config.USE_NTG) {
+      callInterface = new NTgCallsWrapper();
+    } else {
+      try {
+        callInterface = new TgCallsWrapper(
+          tdlib,
+          call,
+          state,
+          stateListener,
+          forceTcp,
+          callProxy,
+          lastNetworkType,
+          audioGainControlEnabled,
+          echoCancellationStrength,
+          isMicDisabled
+        );
+      } catch (Throwable t) {
+        callInterface = null;
+      }
     }
-    final VoIPInstance tgcalls = tgcallsTemp;
-
-    if (tgcalls != null) {
+    if (callInterface != null) {
       this.callListener = new PrivateCallListener() {
         @Override
         public void onNewCallSignalingDataArrived (int callId, byte[] data) {
-          tgcalls.handleIncomingSignalingData(data);
+          callInterface.handleIncomingSignalingData(data);
         }
       };
       tdlib.listeners().subscribeToCallUpdates(call.id, callListener);
-      this.tgcalls = tgcalls;
+      //callInterface.setSignalingDataCallback((callId, data) -> tdlib.client().send(new TdApi.SendCallSignalingData(call.id, data), tdlib.silentHandler()));
+      callInterface.createCall();
+
     } else {
       hangUp();
     }
@@ -1271,19 +1274,11 @@ public class TGCallService extends Service implements
 
   @NonNull
   public CharSequence getLibraryNameAndVersion () {
-    return tgcalls != null ?
-      tgcalls.getLibraryName() + " " + tgcalls.getLibraryVersion() :
-      "unknown";
+    return callInterface != null ? callInterface.getLibraryNameAndVersion(): "unknown";
   }
 
   @NonNull
   public CharSequence getDebugString () {
-    if (tgcalls != null) {
-      CharSequence log = tgcalls.collectDebugLog();
-      if (log != null) {
-        return log;
-      }
-    }
-    return "";
+    return callInterface != null ? callInterface.getDebugString(): "";
   }
 }

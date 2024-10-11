@@ -19,6 +19,7 @@ object Config {
   val JAVA_VERSION = org.gradle.api.JavaVersion.VERSION_11
   val ANDROIDX_MEDIA_EXTENSIONS = arrayOf("decoder_ffmpeg", "decoder_flac", "decoder_opus", "decoder_vp9")
   val SUPPORTED_ABI = arrayOf("armeabi-v7a", "arm64-v8a", "x86_64", "x86")
+  const val USE_NTG = true
 }
 
 object LibraryVersions {
