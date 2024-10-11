@@ -17,8 +17,9 @@ public interface CallInterface {
   void setNetworkType (boolean dispatchToTgCalls, int type);
   CharSequence collectDebugLog ();
   void stop ();
-
-  void setSignalingDataCallback (byte[] o);
-
   void createCall ();
+  void setSignalingDataCallback(SignalingDataCallback callback);
+  interface SignalingDataCallback {
+    void onSignalingDataReceived(long callId, byte[] data);
+  }
 }

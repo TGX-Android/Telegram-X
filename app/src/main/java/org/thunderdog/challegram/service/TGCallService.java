@@ -1218,7 +1218,7 @@ public class TGCallService extends Service implements
     };
 
     if (Config.USE_NTG) {
-      callInterface = new NTgCallsWrapper();
+      callInterface = new NTgCallsWrapper(call, state);
     } else {
       try {
         callInterface = new TgCallsWrapper(
@@ -1245,9 +1245,7 @@ public class TGCallService extends Service implements
         }
       };
       tdlib.listeners().subscribeToCallUpdates(call.id, callListener);
-      //callInterface.setSignalingDataCallback((callId, data) -> tdlib.client().send(new TdApi.SendCallSignalingData(call.id, data), tdlib.silentHandler()));
-      callInterface.createCall();
-
+      callInterface.setSignalingDataCallback((callId, data) -> tdlib.client().send(new TdApi.SendCallSignalingData(call.id, data), tdlib.silentHandler()));
     } else {
       hangUp();
     }

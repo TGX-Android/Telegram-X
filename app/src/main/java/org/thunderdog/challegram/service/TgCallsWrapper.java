@@ -99,4 +99,7 @@ public class TgCallsWrapper implements CallInterface {
   public void createCall() {
 
   }
+
+  public void setSignalingDataCallback (SignalingDataCallback callback) {
+  }
 }

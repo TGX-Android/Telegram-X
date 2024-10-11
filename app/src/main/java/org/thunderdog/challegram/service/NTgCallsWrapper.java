@@ -10,18 +10,21 @@ import org.pytgcalls.ntgcalls.media.AudioDescription;
 import org.pytgcalls.ntgcalls.media.MediaDescription;
 import org.pytgcalls.ntgcalls.media.MediaSource;
 import org.pytgcalls.ntgcalls.media.StreamMode;
+import org.pytgcalls.ntgcalls.p2p.RTCServer;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.voip.NetworkStats;
 import org.thunderdog.challegram.voip.VoIPInstance;
 import org.thunderdog.challegram.voip.gui.CallSettings;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class NTgCallsWrapper implements CallInterface {
   private static @Nullable NTgCalls call;
   private final long CALL_ID = 0;
 
-  public NTgCallsWrapper () {
+  public NTgCallsWrapper (TdApi.Call tgCall, TdApi.CallStateReady state) {
     if (call == null) {
       call = new NTgCalls();
     }
@@ -90,7 +93,7 @@ public class NTgCallsWrapper implements CallInterface {
             );
           }
         }).collect(Collectors.toList());
-      ntgcalls.connectP2P(CALL_ID, rtcServers, List.of(state.protocol.libraryVersions), state.allowP2p);
+      call.connectP2P(CALL_ID, rtcServers, List.of(state.protocol.libraryVersions), state.allowP2p);
     } catch (java.lang.Exception e) {
       throw new RuntimeException(e);
     }
@@ -180,5 +183,11 @@ public class NTgCallsWrapper implements CallInterface {
 
   public void createCall() {
 
+  }
+
+  public void setSignalingDataCallback (SignalingDataCallback callback) {
+    if (call != null) {
+      call.setSignalingDataCallback(callback::onSignalingDataReceived);
+    }
   }
 }
