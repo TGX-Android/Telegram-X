@@ -51,7 +51,7 @@ import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class StickerSmallView extends View implements FactorAnimator.Target, StickerPreviewView.PreviewCallback, Destroyable {
   public static final float PADDING = 8f;

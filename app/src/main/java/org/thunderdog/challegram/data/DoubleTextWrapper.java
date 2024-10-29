@@ -55,8 +55,8 @@ import org.thunderdog.challegram.widget.SimplestCheckBoxHelper;
 import me.vkryl.android.animator.BounceAnimator;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, TooltipOverlayView.LocationProvider {
   private final Tdlib tdlib;

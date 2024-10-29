@@ -78,8 +78,9 @@ import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.MediaType;
+import tgx.td.Td;
 
 @SuppressWarnings(value = "SpellCheckingInspection")
 public class Lang {
@@ -1077,6 +1078,7 @@ public class Lang {
     if (!StringUtils.isEmpty(text)) {
       return Lang.getString(R.string.ActionPinnedText, userName, text);
     }
+    String format = null;
     int res = R.string.ActionPinnedNoText;
     switch (message.content.getConstructor()) {
       case TdApi.MessageAnimation.CONSTRUCTOR:
@@ -1096,6 +1098,26 @@ public class Lang {
       case TdApi.MessageExpiredVideo.CONSTRUCTOR:
         res = R.string.ActionPinnedVideo;
         break;
+      case TdApi.MessagePaidMedia.CONSTRUCTOR: {
+        TdApi.MessagePaidMedia paidMedia = (TdApi.MessagePaidMedia) message.content;
+        MediaType type = MediaType.valueOf(paidMedia);
+        if (paidMedia.media.length == 1) {
+          switch (type) {
+            case PHOTOS: res = R.string.ActionPinnedPhoto; break;
+            case VIDEOS: res = R.string.ActionPinnedVideo; break;
+            case MIXED: default: throw new UnsupportedOperationException();
+          }
+        } else {
+          int pluralRes;
+          switch (type) {
+            case PHOTOS: pluralRes = R.string.ActionPinnedXPhotos; break;
+            case VIDEOS: pluralRes = R.string.ActionPinnedXVideos; break;
+            case MIXED: default: pluralRes = R.string.ActionPinnedXMedia; break;
+          }
+          format = Lang.plural(pluralRes, paidMedia.media.length);
+        }
+        break;
+      }
       case TdApi.MessageVoiceNote.CONSTRUCTOR:
       case TdApi.MessageExpiredVoiceNote.CONSTRUCTOR:
         res = R.string.ActionPinnedVoice;
@@ -1135,11 +1157,14 @@ public class Lang {
       case TdApi.MessageGameScore.CONSTRUCTOR:
       case TdApi.MessageInvoice.CONSTRUCTOR:
       case TdApi.MessageGiftedPremium.CONSTRUCTOR:
+      case TdApi.MessageGiftedStars.CONSTRUCTOR:
+      case TdApi.MessageGift.CONSTRUCTOR:
       case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
-      case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR:
-      case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR:
-      case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR:
-      case TdApi.MessagePremiumGiveaway.CONSTRUCTOR:
+      case TdApi.MessageGiveawayCreated.CONSTRUCTOR:
+      case TdApi.MessageGiveawayCompleted.CONSTRUCTOR:
+      case TdApi.MessageGiveawayWinners.CONSTRUCTOR:
+      case TdApi.MessageGiveaway.CONSTRUCTOR:
+      case TdApi.MessageGiveawayPrizeStars.CONSTRUCTOR:
       case TdApi.MessageChatBoost.CONSTRUCTOR:
       case TdApi.MessageBasicGroupChatCreate.CONSTRUCTOR:
       case TdApi.MessageCall.CONSTRUCTOR:
@@ -1160,6 +1185,7 @@ public class Lang {
       case TdApi.MessagePassportDataSent.CONSTRUCTOR:
       case TdApi.MessagePaymentSuccessful.CONSTRUCTOR:
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
+      case TdApi.MessagePaymentRefunded.CONSTRUCTOR:
       case TdApi.MessagePinMessage.CONSTRUCTOR:
       case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
       case TdApi.MessageBotWriteAccessAllowed.CONSTRUCTOR:
@@ -1182,10 +1208,12 @@ public class Lang {
       case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
         break;
       default:
-        Td.assertMessageContent_4113f183();
+        Td.assertMessageContent_91c1e338();
         throw Td.unsupported(message.content);
     }
-    String format = Lang.getString(res);
+    if (format == null) {
+      format = Lang.getString(res);
+    }
     int startIndex = format.indexOf("**");
     int endIndex = startIndex != -1 ? format.indexOf("**", startIndex + 2) : -1;
     if (startIndex != -1 && endIndex != -1) {

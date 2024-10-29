@@ -59,7 +59,7 @@ import java.util.ArrayList;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
 
-public class CreateGroupController extends ViewController<Void> implements EditHeaderView.ReadyCallback, Client.ResultHandler, Unlockable, ActivityResultHandler,
+public class CreateGroupController extends ViewController<Void> implements EditHeaderView.ReadyCallback, Unlockable, ActivityResultHandler,
   TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener {
 
   private final AvatarPickerManager avatarPickerManager;
@@ -385,7 +385,6 @@ public class CreateGroupController extends ViewController<Void> implements EditH
   private boolean isCreating;
   private ImageGalleryFile currentImageFile;
   private long[] currentMemberIds;
-  private boolean currentIsChannel;
 
   public interface Callback {
     boolean onGroupCreated (CreateGroupController context, TdApi.Chat chat);
@@ -420,28 +419,25 @@ public class CreateGroupController extends ViewController<Void> implements EditH
       currentMemberIds[i++] = member.getUserId();
     }
 
-    currentIsChannel = currentMemberIds.length > tdlib.basicGroupMaxSize();
-
-    if (currentIsChannel) {
-      tdlib.client().send(new TdApi.CreateNewSupergroupChat(title, false, false, null, null, 0, false), this);
-    } else if (groupCreationCallback != null && groupCreationCallback.forceSupergroupChat()) {
-      tdlib.client().send(new TdApi.CreateNewSupergroupChat(title, false, false, null, null, 0, false), result -> {
-        switch (result.getConstructor()) {
-          case TdApi.Chat.CONSTRUCTOR: {
-            TdApi.Chat createdGroup = (TdApi.Chat) result;
-            tdlib.client().send(new TdApi.AddChatMembers(createdGroup.id, currentMemberIds), addResult -> {
-              tdlib.okHandler().onResult(addResult);
-              CreateGroupController.this.onResult(result);
-            });
-            break;
-          }
-          case TdApi.Error.CONSTRUCTOR:
-            CreateGroupController.this.onResult(result);
-            break;
+    boolean forceSupergroup = currentMemberIds.length > tdlib.basicGroupSizeMax();
+    if (forceSupergroup || (groupCreationCallback != null && groupCreationCallback.forceSupergroupChat())) {
+      tdlib.send(new TdApi.CreateNewSupergroupChat(title, false, false, null, null, 0, false), (createdChat, error) -> {
+        if (error != null) {
+          handleError(error);
+        } else {
+          handleCreatedChat(createdChat, true);
         }
       });
     } else {
-      tdlib.client().send(new TdApi.CreateNewBasicGroupChat(currentMemberIds, title, 0), this);
+      tdlib.send(new TdApi.CreateNewBasicGroupChat(currentMemberIds, title, 0), (createdBasicGroupChat, error) -> {
+        if (error != null) {
+          handleError(error);
+        } else {
+          handleFailedToAddMembers(createdBasicGroupChat.failedToAddMembers, () -> {
+            handleCreatedChat(tdlib.chatStrict(createdBasicGroupChat.chatId), false);
+          });
+        }
+      });
     }
   }
 
@@ -451,35 +447,38 @@ public class CreateGroupController extends ViewController<Void> implements EditH
     headerCell.setInputEnabled(true);
   }
 
-  @Override
-  public void onResult (TdApi.Object object) {
-    switch (object.getConstructor()) {
-      case TdApi.Ok.CONSTRUCTOR: {
-        // OK
-        break;
-      }
-      case TdApi.Chat.CONSTRUCTOR: {
-        final long chatId = TD.getChatId(object);
-        if (currentIsChannel) {
-          tdlib.client().send(new TdApi.AddChatMembers(chatId, currentMemberIds), this);
-        }
-        if (currentImageFile != null) {
-          tdlib.client().send(new TdApi.SetChatPhoto(chatId, new TdApi.InputChatPhotoStatic(PhotoGenerationInfo.newFile(currentImageFile))), this);
-        }
-        tdlib.ui().post(() -> {
-          if (groupCreationCallback == null || !groupCreationCallback.onGroupCreated(this, (TdApi.Chat) object)) {
-            tdlib.ui().openChat(this, chatId, null);
-          }
-        });
-        UI.unlock(this);
-        break;
-      }
-      case TdApi.Error.CONSTRUCTOR: {
-        UI.showError(object);
-        UI.unlock(this);
-        break;
-      }
+  private void handleError (TdApi.Error error) {
+    UI.showError(error);
+    UI.unlock(this);
+  }
+
+  private void handleFailedToAddMembers (TdApi.FailedToAddMembers failedToAddMembers, Runnable after) {
+    if (failedToAddMembers.failedToAddMembers.length > 0) {
+      // TODO handle failedToAddMembers
     }
+    after.run();
+  }
+
+  private void handleCreatedChat (TdApi.Chat chat, boolean needAddMembers) {
+    if (needAddMembers) {
+      tdlib.send(new TdApi.AddChatMembers(chat.id, currentMemberIds), (failedToAddMembers, error) -> {
+        if (error != null) {
+          handleError(error);
+        } else {
+          handleFailedToAddMembers(failedToAddMembers, () -> handleCreatedChat(chat, false));
+        }
+      });
+      return;
+    }
+    if (currentImageFile != null) {
+      tdlib.send(new TdApi.SetChatPhoto(chat.id, new TdApi.InputChatPhotoStatic(PhotoGenerationInfo.newFile(currentImageFile))), tdlib.typedOkHandler());
+    }
+    runOnUiThreadOptional(() -> {
+      if (groupCreationCallback == null || !groupCreationCallback.onGroupCreated(this, chat)) {
+        tdlib.ui().openChat(this, chat.id, null);
+      }
+    });
+    UI.unlock(this);
   }
 
   @Override

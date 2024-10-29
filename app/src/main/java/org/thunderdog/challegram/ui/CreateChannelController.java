@@ -58,7 +58,7 @@ import org.thunderdog.challegram.widget.NoScrollTextView;
 import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.TdConstants;
+import tgx.td.TdConstants;
 
 public class CreateChannelController extends ViewController<String[]> implements EditHeaderView.ReadyCallback, ActivityResultHandler, TextView.OnEditorActionListener {
   private final AvatarPickerManager avatarPickerManager;

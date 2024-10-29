@@ -44,8 +44,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.vkryl.core.ArrayUtils;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class SettingsBlockedController extends RecyclerViewController<TdApi.BlockList> implements View.OnClickListener, Menu, TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener, SenderPickerDelegate, Client.ResultHandler, ChatListener {
   public SettingsBlockedController (Context context, Tdlib tdlib) {

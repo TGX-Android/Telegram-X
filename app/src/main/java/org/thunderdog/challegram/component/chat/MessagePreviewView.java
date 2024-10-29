@@ -72,8 +72,8 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.td.MessageId;
-import me.vkryl.td.Td;
+import tgx.td.MessageId;
+import tgx.td.Td;
 
 public class MessagePreviewView extends BaseView implements AttachDelegate, Destroyable, ChatListener, MessageListener, TdlibCache.UserDataChangeListener, TGLegacyManager.EmojiLoadListener, TdlibUi.MessageProvider, RunnableData<LinkPreview> {
   private static class TextEntry extends ListAnimator.MeasurableEntry<Text> implements Destroyable {

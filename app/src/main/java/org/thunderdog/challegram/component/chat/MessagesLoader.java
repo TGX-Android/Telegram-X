@@ -55,10 +55,10 @@ import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.MessageId;
-import me.vkryl.td.Td;
-import me.vkryl.td.TdConstants;
+import tgx.td.ChatId;
+import tgx.td.MessageId;
+import tgx.td.Td;
+import tgx.td.TdConstants;
 
 public class MessagesLoader implements Client.ResultHandler {
   private static final boolean DEBUG_HANDLER = false;
@@ -1007,6 +1007,8 @@ public class MessagesLoader implements Client.ResultHandler {
             new TdApi.MessageReaction[]{
               new TdApi.MessageReaction(new TdApi.ReactionTypeEmoji(EmojiCodes.THUMBS_UP), 5, true, mySender, new TdApi.MessageSender[0])
             },
+            false,
+            new TdApi.PaidReactor[0],
             false
           );
         }
@@ -1216,22 +1218,15 @@ public class MessagesLoader implements Client.ResultHandler {
       null,
       null,
       tdlib.isSelfSender(event.memberId),
-      false, false, false,
-      false, false, canBeSaved,
-      false, false,
-      false, false, false, false, false,
-      false, false, false,
-      isChannel, false,
-      false,
+      false, false, canBeSaved, false,
+      isChannel, false, false,
       event.date, 0,
       null, null, null, null,
       null, null, 0, 0,
       null, 0, 0,
       0, 0, 0, null,
-      0, 0,
-      null,
-      null,
-      null
+      0, 0, false,
+      null, null, null
     );
   }
 

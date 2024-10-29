@@ -33,7 +33,7 @@ import org.thunderdog.challegram.widget.EmojiLayout;
 import java.util.ArrayList;
 
 import me.vkryl.core.BitwiseUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class TGStickerSetInfo {
   private static final int FLAG_RECENT = 1;

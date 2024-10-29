@@ -41,7 +41,7 @@ import java.util.Map;
 import java.util.Set;
 
 import me.vkryl.core.util.FilteredIterator;
-import me.vkryl.td.ChatId;
+import tgx.td.ChatId;
 
 public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup> {
   private final TdlibNotificationManager context;

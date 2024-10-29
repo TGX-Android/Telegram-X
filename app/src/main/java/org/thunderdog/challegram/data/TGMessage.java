@@ -87,6 +87,7 @@ import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.telegram.TdlibEmojiManager;
 import org.thunderdog.challegram.telegram.TdlibSender;
+import org.thunderdog.challegram.telegram.TdlibThread;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.PorterDuffColorId;
@@ -138,6 +139,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.SdkVersion;
@@ -160,9 +162,11 @@ import me.vkryl.core.lambda.FutureBool;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.MessageId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.MessageId;
+import tgx.td.Td;
+import tgx.td.TdExt;
+import tgx.td.data.MessageWithProperties;
 
 public abstract class TGMessage implements InvalidateContentProvider, TdlibDelegate, FactorAnimator.Target, Comparable<TGMessage>, Counter.Callback, TGAvatars.Callback, TranslationsManager.Translatable {
   private static final int MAXIMUM_CHANNEL_MERGE_TIME_DIFF = 150;
@@ -284,7 +288,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       }
       invalidate();
     }
-  }, AnimatorUtils.DECELERATE_INTERPOLATOR, 200l);
+  }, AnimatorUtils.DECELERATE_INTERPOLATOR, 200L);
 
   private int pTimeLeft, pTimeWidth;
   private int pClockLeft, pClockTop;
@@ -315,10 +319,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   protected TGMessage (MessagesManager manager, TdApi.Message msg) {
     this(manager, msg, null);
-  }
-
-  protected TGMessage (MessagesManager manager, long inChatId, TdApi.SponsoredMessage sponsoredMessage) {
-    this(manager, SponsoredMessageUtils.sponsoredToTd(inChatId, sponsoredMessage, manager.controller().tdlib()), sponsoredMessage);
   }
 
   private TGMessage (MessagesManager manager, TdApi.Message msg, @Nullable TdApi.SponsoredMessage sponsoredMessage) {
@@ -363,8 +363,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
       @Override
       public void onLongClick (View v, TGReactions.MessageReactionEntry entry) {
-        checkAvailableReactions(() -> {
-          checkMessageFlags(() -> {
+        loadAvailableReactions(() -> {
+          loadAllMessageProperties(() -> {
             if (canGetAddedReactions()) {
               MessagesController m = messagesController();
               m.showMessageAddedReactions(TGMessage.this, entry.getReactionType());
@@ -548,7 +548,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
 
     ThreadInfo messageThread = messagesController().getMessageThread();
-    if (msg.replyTo != null && (messageThread == null || !messageThread.isRootMessage(msg.replyTo)) && !(msg.content != null && msg.content.getConstructor() == TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR)) {
+    if (msg.replyTo != null && (messageThread == null || !messageThread.isRootMessage(msg.replyTo)) && !(msg.content != null && msg.content.getConstructor() == TdApi.MessageGiveawayWinners.CONSTRUCTOR)) {
       if (msg.replyTo.getConstructor() == TdApi.MessageReplyToMessage.CONSTRUCTOR) { // TODO: support replies to stories
         loadReply();
       }
@@ -985,9 +985,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return TGCommentButton.VIEW_MODE_INLINE;
   }
 
-  public final @Nullable TdApi.Message findMessageWithThread () {
-    TdApi.Message oldestMessage = getOldestMessage();
-    return oldestMessage.canGetMessageThread ? oldestMessage : null;
+  public final @Nullable TdApi.Message findMessageWithReplyInfo () {
+    TdApi.Message message = getAnchorMessageThreadMessage();
+    TdApi.MessageInteractionInfo interactionInfo = message.interactionInfo;
+    if (interactionInfo != null && interactionInfo.replyInfo != null) {
+      return message;
+    }
+    return null;
   }
 
   protected final boolean needCommentButton () {
@@ -995,8 +999,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       return false;
     }
     if (isChannel()) {
-      TdApi.Message messageWithThread = findMessageWithThread();
-      return messageWithThread != null && TD.getReplyInfo(messageWithThread.interactionInfo) != null;
+      return findMessageWithReplyInfo() != null;
     }
     if (isRepliesChat()) {
       return FeatureToggles.SHOW_VIEW_IN_CHAT_BUTTON_IN_REPLIES && msg.forwardInfo != null && Td.hasMessageSource(msg.forwardInfo) && msg.forwardInfo.source.chatId != msg.chatId;
@@ -1009,21 +1012,25 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final void openMessageThread () {
-    TdApi.Message messageWithThread = findMessageWithThread();
-    if (messageWithThread == null)
+    TdApi.Message messageWithReplyInfo = findMessageWithReplyInfo();
+    if (messageWithReplyInfo == null)
       return;
-    MessageId highlightMessageId;
-    if (isChannel() || isChannelAutoForward()) {
-      // View X Comments
-      highlightMessageId = null;
-    } else if (isMessageThreadRoot()) {
-      // View X Replies
-      highlightMessageId = new MessageId(messageWithThread.chatId, MessageId.MIN_VALID_ID);
-    } else {
-      // View Thread
-      highlightMessageId = toMessageId();
-    }
-    openMessageThread(new TdApi.GetMessageThread(messageWithThread.chatId, messageWithThread.id), highlightMessageId);
+    getMessageProperties(messageWithReplyInfo.id, properties -> {
+      if (!properties.canGetMessageThread)
+        return;
+      MessageId highlightMessageId;
+      if (isChannel() || isChannelAutoForward()) {
+        // View X Comments
+        highlightMessageId = null;
+      } else if (isMessageThreadRoot()) {
+        // View X Replies
+        highlightMessageId = new MessageId(messageWithReplyInfo.chatId, MessageId.MIN_VALID_ID);
+      } else {
+        // View Thread
+        highlightMessageId = toMessageId();
+      }
+      openMessageThread(new TdApi.GetMessageThread(messageWithReplyInfo.chatId, messageWithReplyInfo.id), highlightMessageId);
+    });
   }
 
   public final void openMessageThread (@NonNull MessageId highlightMessageId) {
@@ -4387,6 +4394,18 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return msg;
   }
 
+  public void getMessageWithProperties (RunnableData<MessageWithProperties> act) {
+    getMessageWithProperties(getMessage(), act);
+  }
+
+  public void getMessageWithProperties (TdApi.Message message, RunnableData<MessageWithProperties> act) {
+    getMessageProperties(message.id, properties -> {
+      if (properties != null) {
+        act.runWithData(new MessageWithProperties(message, properties));
+      }
+    });
+  }
+
   @Nullable
   public TdApi.ChatEvent getEvent () {
     return event != null ? event.event : null;
@@ -4475,6 +4494,23 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return new TdApi.Message[] {msg};
   }
 
+  public MessageWithProperties[] getAllMessagesAndProperties () {
+    synchronized (this) {
+      if (combinedMessages != null && !combinedMessages.isEmpty()) {
+        MessageWithProperties[] result = new MessageWithProperties[combinedMessages.size()];
+        for (int i = 0; i < result.length; i++) {
+          TdApi.Message message = combinedMessages.get(i);
+          TdApi.MessageProperties properties = lastMessageProperties(message.id);
+          result[i] = new MessageWithProperties(message, properties);
+        }
+        return result;
+      }
+    }
+    return new MessageWithProperties[] {
+      new MessageWithProperties(msg, lastMessageProperties(msg.id))
+    };
+  }
+
   protected final ArrayList<TdApi.Message> getCombinedMessagesUnsafely () {
     return combinedMessages;
   }
@@ -4553,6 +4589,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final MessageId toMessageId () {
     return new MessageId(msg.chatId, msg.id, getOtherMessageIds(msg.id));
+  }
+
+  public final boolean isRealMessage () {
+    return msg != null && !isFakeMessage() && !isSponsoredMessage();
   }
 
   public boolean isFakeMessage () {
@@ -5014,7 +5054,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final boolean canBeDeletedForSomebody () {
-    return (msg.canBeDeletedOnlyForSelf || msg.canBeDeletedForAllUsers) && allowInteraction();
+    TdApi.MessageProperties properties = lastMessageProperties();
+    return (properties.canBeDeletedOnlyForSelf || properties.canBeDeletedForAllUsers) && allowInteraction();
   }
 
   public final boolean canBeReported () {
@@ -5022,39 +5063,38 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final boolean canViewStatistics () {
-    return msg.canGetStatistics;
+    TdApi.MessageProperties properties = lastMessageProperties();
+    return properties.canGetStatistics;
   }
 
   public final boolean canGetViewers () {
-    return msg.canGetViewers;
+    TdApi.MessageProperties properties = lastMessageProperties();
+    return properties.canGetViewers;
+  }
+
+  public final TdApi.Message getAnchorMessageThreadMessage () {
+    return getOldestMessage();
   }
 
   public final boolean canGetMessageThread () {
-    return getOldestMessage().canGetMessageThread;
+    TdApi.MessageProperties properties = lastMessageProperties(getAnchorMessageThreadMessage().id);
+    return properties.canGetMessageThread;
   }
 
   public final boolean canGetAddedReactions () {
     synchronized (this) {
       if (combinedMessages != null) {
         for (TdApi.Message message : combinedMessages) {
-          if (message.canGetAddedReactions) {
+          if (Td.canGetAddedReactions(message)) {
             return true;
           }
         }
       }
     }
 
-    return msg.canGetAddedReactions;
+    return Td.canGetAddedReactions(msg);
 
     //return !isChannel() && messageReactions.getTotalCount() > 0 && (msg.forwardInfo == null || msg.forwardInfo.origin.getConstructor() != TdApi.MessageOriginChannel.CONSTRUCTOR);
-  }
-
-  public final boolean canBeDeletedOnlyForSelf () {
-    return msg.canBeDeletedOnlyForSelf;
-  }
-
-  public final boolean canBeDeletedForEveryone () {
-    return msg.canBeDeletedForAllUsers;
   }
 
   public boolean canBeSelected () {
@@ -5066,11 +5106,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean canEditText () {
-    return msg.canBeEdited && TD.canEditText(msg.content) && allowInteraction() && messagesController().canWriteMessages();
+    TdApi.MessageProperties properties = lastMessageProperties();
+    return properties.canBeEdited && TD.canEditText(msg.content) && allowInteraction() && messagesController().canWriteMessages();
   }
 
   public boolean canBeForwarded () {
-    return msg.canBeForwarded && (msg.content.getConstructor() != TdApi.MessageLocation.CONSTRUCTOR || ((TdApi.MessageLocation) msg.content).expiresIn == 0) && !isEventLog();
+    TdApi.MessageProperties properties = lastMessageProperties();
+    return properties.canBeForwarded && (msg.content.getConstructor() != TdApi.MessageLocation.CONSTRUCTOR || ((TdApi.MessageLocation) msg.content).expiresIn == 0) && !isEventLog();
   }
 
   public boolean canBeReacted () {
@@ -5803,20 +5845,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     dst.sendingState = src.sendingState;
     dst.schedulingState = src.schedulingState;
 
-    dst.canBeDeletedOnlyForSelf = src.canBeDeletedOnlyForSelf;
-    dst.canBeDeletedForAllUsers = src.canBeDeletedForAllUsers;
-    dst.canGetMessageThread = src.canGetMessageThread;
-    dst.canBeForwarded = src.canBeForwarded;
     dst.canBeSaved = src.canBeSaved;
-    dst.canBeEdited = src.canBeEdited;
-    dst.canBeRepliedInAnotherChat = src.canBeRepliedInAnotherChat;
-    dst.canGetAddedReactions = src.canGetAddedReactions;
-    dst.canGetReadDate = src.canGetReadDate;
-    dst.canGetStatistics = src.canGetStatistics;
-    dst.canGetViewers = src.canGetViewers;
-    dst.canReportReactions = src.canReportReactions;
-    dst.canGetMediaTimestampLinks = src.canGetMediaTimestampLinks;
     dst.hasTimestampedMedia = src.hasTimestampedMedia;
+    dst.hasSensitiveContent = src.hasSensitiveContent;
 
     dst.editDate = src.editDate;
     dst.isChannelPost = src.isChannelPost;
@@ -7587,7 +7618,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private Text.ClickCallback clickCallback;
 
   @Nullable
-  protected TdApi.WebPage findLinkPreview (String link) {
+  protected TdApi.LinkPreview findLinkPreview (String link) {
     return null;
   }
 
@@ -7617,8 +7648,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       }
 
       @Override
-      public TdApi.WebPage findWebPage (String link) {
-        return findLinkPreview(link);
+      public TdApi.LinkPreview findLinkPreview (String link) {
+        return TGMessage.this.findLinkPreview(link);
       }
 
       @Override
@@ -7976,6 +8007,17 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   // Other
 
+  public static TGMessage valueOf (MessagesManager manager, long inChatId, TdApi.SponsoredMessage sponsoredMessage) {
+    TdApi.Message fakeMessage = new TdApi.Message();
+    fakeMessage.chatId = inChatId;
+    fakeMessage.id = sponsoredMessage.messageId;
+    fakeMessage.canBeSaved = true;
+    fakeMessage.content = sponsoredMessage.content;
+    fakeMessage.authorSignature = Lang.getString(sponsoredMessage.isRecommended ? R.string.RecommendedSign : R.string.SponsoredSign);
+    fakeMessage.isChannelPost = manager.controller().tdlib().isChannel(inChatId);
+    return new TGMessageText(manager, fakeMessage, sponsoredMessage);
+  }
+
   public static TGMessage valueOf (MessagesManager context, TdApi.Message msg, TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable LongSparseArray<TdApi.ChatAdministrator> chatAdmins) {
     return valueOf(context, msg, chat, messageThread, msg.senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR && chatAdmins != null ? chatAdmins.get(((TdApi.MessageSenderUser) msg.senderId).userId) : null);
   }
@@ -8061,7 +8103,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           TdApi.MessagePhoto messagePhoto = pendingMedia.getMessagePhoto();
           return new TGMessageMedia(context, msg, messagePhoto, messagePhoto.caption).setIsMediaPending();
         } else if (pendingMedia.isVideo()) {
-          TdApi.MessageVideo messageVideo = (TdApi.MessageVideo) pendingMedia.getMessageVideo();
+          TdApi.MessageVideo messageVideo = pendingMedia.getMessageVideo();
           return new TGMessageMedia(context, msg, messageVideo, messageVideo.caption).setIsMediaPending();
         } else if (pendingMedia.isAnimation()) {
           TdApi.MessageAnimation messageAnimation = pendingMedia.getMessageAnimation();
@@ -8160,6 +8202,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageGiftedPremium.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageGiftedPremium) content);
         }
+        case TdApi.MessageGiftedStars.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageGiftedStars) content);
+        }
         case TdApi.MessageChatSetTheme.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageChatSetTheme) content);
         }
@@ -8180,6 +8225,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         }
         case TdApi.MessagePaymentSuccessful.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessagePaymentSuccessful) content);
+        }
+        case TdApi.MessagePaymentRefunded.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessagePaymentRefunded) content);
         }
         case TdApi.MessageWebAppDataSent.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageWebAppDataSent) content);
@@ -8244,11 +8292,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageForumTopicIsHiddenToggled) content);
         }
-        case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR: {
-          return new TGMessageService(context, msg, (TdApi.MessagePremiumGiveawayCreated) content);
+        case TdApi.MessageGiveawayCreated.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageGiveawayCreated) content);
         }
-        case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR: {
-          return new TGMessageService(context, msg, (TdApi.MessagePremiumGiveawayCompleted) content);
+        case TdApi.MessageGiveawayCompleted.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageGiveawayCompleted) content);
         }
         case TdApi.MessageChatBoost.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageChatBoost) content);
@@ -8256,11 +8304,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessagePremiumGiftCode.CONSTRUCTOR: {
           return new TGMessageGift(context, msg, (TdApi.MessagePremiumGiftCode) content);
         }
-        case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR: {
-          return new TGMessageGiveawayWinners(context, msg, (TdApi.MessagePremiumGiveawayWinners) content);
+        case TdApi.MessageGiveawayWinners.CONSTRUCTOR: {
+          return new TGMessageGiveawayWinners(context, msg, (TdApi.MessageGiveawayWinners) content);
         }
-        case TdApi.MessagePremiumGiveaway.CONSTRUCTOR: {
-          return new TGMessageGiveaway(context, msg, (TdApi.MessagePremiumGiveaway) content);
+        case TdApi.MessageGiveaway.CONSTRUCTOR: {
+          return new TGMessageGiveaway(context, msg, (TdApi.MessageGiveaway) content);
         }
         // unsupported
         case TdApi.MessageInvoice.CONSTRUCTOR:
@@ -8270,7 +8318,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
         case TdApi.MessageUsersShared.CONSTRUCTOR:
         case TdApi.MessageChatShared.CONSTRUCTOR:
+        case TdApi.MessagePaidMedia.CONSTRUCTOR:
+        case TdApi.MessageGiveawayPrizeStars.CONSTRUCTOR:
+        case TdApi.MessageGift.CONSTRUCTOR:
           break;
+
         case TdApi.MessageUnsupported.CONSTRUCTOR:
           unsupportedStringRes = R.string.UnsupportedMessageType;
           break;
@@ -8282,7 +8334,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           break;
         }
         default: {
-          Td.assertMessageContent_4113f183();
+          Td.assertMessageContent_91c1e338();
           throw Td.unsupported(msg.content);
         }
       }
@@ -8387,10 +8439,22 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private TdApi.MessageReadDate readDate;
 
   public final void checkReadDate (RunnableBool after, long timeoutMs) {
-    if (!msg.canGetReadDate || readDate != null || (isUnread() && !noUnread())) {
+    if (readDate != null || (isUnread() && !noUnread())) {
       after.runWithBool(false);
       return;
     }
+    getMessageProperties(msg.id, properties -> {
+      if (properties.canGetReadDate) {
+        loadReadDate(after, timeoutMs);
+      } else {
+        runOnUiThreadOptional(() ->
+          after.runWithBool(false)
+        );
+      }
+    });
+  }
+
+  private void loadReadDate (RunnableBool after, long timeoutMs) {
     final AtomicBoolean callbackInvoked = new AtomicBoolean();
     if (timeoutMs > 0) {
       runOnUiThreadOptional(() -> {
@@ -8414,7 +8478,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return readDate;
   }
 
-  public final void checkAvailableReactions (Runnable after) {
+  public final void loadAvailableReactions (Runnable after) {
     tdlib.send(new TdApi.GetMessageAvailableReactions(msg.chatId, getSmallestId(), 25), (availableReactions, error) -> {
       if (error != null) {
         runOnUiThreadOptional(after);
@@ -8428,17 +8492,72 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     });
   }
 
-  public final void checkMessageFlags (Runnable r) {
-    TdApi.Message msg = getMessage(getSmallestId());
-    if (msg == null || isFakeMessage() || isSponsoredMessage()) {
-      r.run();
+  @AnyThread
+  @NonNull
+  public TdApi.MessageProperties lastMessageProperties (long messageId) {
+    TdApi.MessageProperties properties = cachedProperties != null ? cachedProperties.get(messageId) : null;
+    if (properties == null) {
+      if (tdlib.inTdlibThread()) {
+        Tracer.onTdlibHandlerError(new AssertionError("Can't access message properties here"));
+        throw new IllegalStateException();
+      }
+      properties = tdlib.getMessagePropertiesSync(getChatId(), messageId);
+      cacheMessageProperties(messageId, properties);
+    }
+    return properties;
+  }
+
+  private LongSparseArray<TdApi.MessageProperties> cachedProperties;
+
+  @TdlibThread
+  private void cacheMessageProperties (long messageId, TdApi.MessageProperties properties) {
+    if (cachedProperties == null) {
+      cachedProperties = new LongSparseArray<>();
+    }
+    cachedProperties.put(messageId, properties);
+  }
+
+  public void loadAllMessageProperties (@Nullable Runnable after) {
+    long[] messageIds = getIds();
+    AtomicInteger remaining = new AtomicInteger(messageIds.length);
+    for (long messageId : messageIds) {
+      getMessageProperties(messageId, properties -> {
+        if (remaining.decrementAndGet() <= 0 && after != null) {
+          LongSet set = new LongSet(getIds());
+          set.removeAll(messageIds);
+          if (set.isEmpty()) {
+            runOnUiThreadOptional(after);
+          } else {
+            // Covering the edge-case when album messages were added during the MessageOptions fetch
+            loadAllMessageProperties(after);
+          }
+        }
+      });
+    }
+  }
+
+  @AnyThread
+  @NonNull
+  public TdApi.MessageProperties lastMessageProperties () {
+    return lastMessageProperties(msg.id);
+  }
+
+  public final void getMessageProperties (long messageId, @Nullable RunnableData<TdApi.MessageProperties> callback) {
+    TdApi.Message msg = getMessage(messageId);
+    if (!isRealMessage()) {
+      if (callback != null) {
+        callback.runWithData(new TdApi.MessageProperties());
+      }
       return;
     }
-    // Fetch fresh info from TDLib
-    tdlib().send(new TdApi.GetMessageLocally(msg.chatId, msg.id), (localMessage, error) -> {
-      if (localMessage != null) {
-        copyFlags(localMessage, msg);
-        tdlib().ui().post(r);
+    tdlib().send(new TdApi.GetMessageProperties(msg.chatId, msg.id), (properties, error) -> {
+      if (properties != null) {
+        cacheMessageProperties(msg.id, properties);
+        runOnUiThread(() -> {
+          if (callback != null) {
+            callback.runWithData(properties);
+          }
+        });
       }
     });
   }
@@ -8457,16 +8576,22 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     Set<String> addedReactions = new HashSet<>();
     List<TdApi.AvailableReaction> reactions = new ArrayList<>();
     for (TdApi.AvailableReaction reaction : messageAvailableReactions.popularReactions) {
+      if (TdExt.isUnsupported(reaction.type))
+        continue;
       if ((!reaction.needsPremium || hasPremium) && addedReactions.add(TD.makeReactionKey(reaction.type))) {
         reactions.add(reaction);
       }
     }
     for (TdApi.AvailableReaction reaction : messageAvailableReactions.topReactions) {
+      if (TdExt.isUnsupported(reaction.type))
+        continue;
       if ((!reaction.needsPremium || hasPremium) && addedReactions.add(TD.makeReactionKey(reaction.type))) {
         reactions.add(reaction);
       }
     }
     for (TdApi.AvailableReaction reaction : messageAvailableReactions.recentReactions) {
+      if (TdExt.isUnsupported(reaction.type))
+        continue;
       if ((!reaction.needsPremium || hasPremium) && addedReactions.add(TD.makeReactionKey(reaction.type))) {
         reactions.add(reaction);
       }
@@ -8477,6 +8602,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     String[] activeEmojiReactions = tdlib.getActiveEmojiReactions();
     if (activeEmojiReactions != null && activeEmojiReactions.length > 0) {
       Collections.sort(reactions, (a, b) -> {
+        int aPriority = getPriority(a.type);
+        int bPriority = getPriority(b.type);
+        if (aPriority != bPriority) {
+          return aPriority < 0 ? -1 : 1;
+        }
         boolean aIsEmoji = a.type.getConstructor() == TdApi.ReactionTypeEmoji.CONSTRUCTOR;
         boolean bIsEmoji = b.type.getConstructor() == TdApi.ReactionTypeEmoji.CONSTRUCTOR;
         if (aIsEmoji != bIsEmoji) {
@@ -8501,6 +8631,20 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       });
     }
     return prioritizeElements(reactions.toArray(new TdApi.AvailableReaction[0]), messageReactions.getChosen());
+  }
+
+  private static int getPriority (TdApi.ReactionType type) {
+    switch (type.getConstructor()) {
+      case TdApi.ReactionTypePaid.CONSTRUCTOR:
+        return 0;
+      case TdApi.ReactionTypeEmoji.CONSTRUCTOR:
+        return 1;
+      case TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR:
+        return 2;
+      default:
+        Td.assertReactionType_43844388();
+        throw Td.unsupported(type);
+    }
   }
 
   private static TdApi.AvailableReaction[] prioritizeElements(TdApi.AvailableReaction[] inputArray, Set<String> set) {
@@ -8618,7 +8762,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     SwipeQuickAction replyButton = null;
     if (canReply) {
       replyButton = new SwipeQuickAction(replyText, iQuickReply, () -> {
-        messagesController().showReply(getNewestMessage(), null, true, true);
+        TdApi.Message message = getNewestMessage();
+        getMessageProperties(message.id, properties -> {
+          runOnUiThreadOptional(() -> {
+            messagesController().showReply(new MessageWithProperties(message, properties), null, true, true);
+          });
+        });
       }, true, false);
       rightActions.add(replyButton);
     }
@@ -9488,7 +9637,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public void trackSponsoredMessageClicked () {
     if (isSponsoredMessage()) {
-      tdlib.client().send(new TdApi.ClickChatSponsoredMessage(msg.chatId, sponsoredMessage.messageId), tdlib.silentHandler());
+      tdlib.client().send(new TdApi.ClickChatSponsoredMessage(msg.chatId, sponsoredMessage.messageId, false, false), tdlib.silentHandler());
     }
   }
 

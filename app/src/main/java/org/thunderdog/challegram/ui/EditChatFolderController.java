@@ -86,7 +86,7 @@ import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class EditChatFolderController extends EditBaseController<EditChatFolderController.Arguments> implements View.OnClickListener, View.OnLongClickListener, SelectChatsController.Delegate, ChatFoldersListener, ChatFolderListener {
 

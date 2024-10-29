@@ -50,7 +50,7 @@ import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.unit.ByteUnit;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 @SuppressWarnings(value = "SpellCheckingInspection")
 public class Strings {

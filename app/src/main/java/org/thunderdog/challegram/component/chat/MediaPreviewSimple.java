@@ -44,13 +44,13 @@ import org.thunderdog.challegram.util.DrawableProvider;
 import java.io.File;
 
 import me.vkryl.core.ColorUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class MediaPreviewSimple extends MediaPreview {
   private TdApi.Sticker sticker;
   private Path outline;
   private int outlineWidth, outlineHeight;
-  private boolean needFireIcon;
+  private IconType iconType;
 
   private ImageFile previewImage;
   private GifFile previewGif;
@@ -166,18 +166,29 @@ public class MediaPreviewSimple extends MediaPreview {
   }
 
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.Thumbnail thumbnail, TdApi.Minithumbnail minithumbnail) {
-    this(tdlib, size, cornerRadius, thumbnail, minithumbnail, false);
+    this(tdlib, size, cornerRadius, thumbnail, minithumbnail, IconType.NONE);
+  }
+
+  enum IconType {
+    NONE,
+    FIRE,
+    STAR
   }
 
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.Thumbnail thumbnail, TdApi.Minithumbnail minithumbnail, boolean needFireIcon) {
+    this(tdlib, size, cornerRadius, thumbnail, minithumbnail, needFireIcon ? IconType.FIRE : IconType.NONE);
+  }
+
+  public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.Thumbnail thumbnail, TdApi.Minithumbnail minithumbnail, IconType iconType) {
     super(size, cornerRadius);
-    this.needFireIcon = needFireIcon;
+    this.iconType = iconType;
+    boolean blurContent = iconType != IconType.NONE;
     if (minithumbnail != null) {
       this.previewImage = new ImageFileLocal(minithumbnail);
       this.previewImage.setSize(size);
       this.previewImage.setScaleType(ImageFile.CENTER_CROP);
       this.previewImage.setDecodeSquare(true);
-      if (needFireIcon) {
+      if (blurContent) {
         this.previewImage.setIsPrivate();
       }
     }
@@ -188,11 +199,11 @@ public class MediaPreviewSimple extends MediaPreview {
         this.targetImage.setScaleType(ImageFile.CENTER_CROP);
         this.targetImage.setDecodeSquare(true);
         this.targetImage.setNoBlur();
-        if (needFireIcon) {
+        if (blurContent) {
           this.targetImage.setIsPrivate();
         }
       }
-      if (!needFireIcon) {
+      if (!blurContent) {
         this.targetGif = TD.toGifFile(tdlib, thumbnail);
         if (this.targetGif != null) {
           this.targetGif.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
@@ -337,7 +348,7 @@ public class MediaPreviewSimple extends MediaPreview {
       preview.drawPlaceholderContour(c, outline);
     }
 
-    if (needFireIcon) {
+    if (iconType != IconType.NONE) {
       DrawAlgorithms.drawRoundRect(c, cornerRadius, target.getLeft(), target.getTop(), target.getRight(), target.getBottom(), Paints.fillingPaint(Theme.getColor(ColorId.spoilerMediaOverlay)));
       DrawAlgorithms.drawParticles(c, cornerRadius, target.getLeft(), target.getTop(), target.getRight(), target.getBottom(), 1f);
     }

@@ -133,8 +133,8 @@ public abstract class PreviewLayout extends FrameLayoutFix implements View.OnCli
     UI.getContext(getContext()).removeGlobalThemeListeners(themeListeners);
   }
 
-  public static boolean show (ViewController<?> parent, TdApi.WebPage webPage, boolean needConfirmation) {
-    EmbeddedService service = EmbeddedService.parse(webPage);
+  public static boolean show (ViewController<?> parent, TdApi.LinkPreview linkPreview, boolean needConfirmation) {
+    EmbeddedService service = EmbeddedService.parse(linkPreview);
     return show(parent, service, needConfirmation);
   }
 

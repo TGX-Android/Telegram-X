@@ -67,7 +67,7 @@ import me.vkryl.core.collection.IntList;
 import me.vkryl.core.collection.LongList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class StickersListController extends ViewController<StickersListController.StickerSetProvider> implements
   Menu, StickerSmallView.StickerMovementCallback, Client.ResultHandler,

@@ -10,7 +10,7 @@ import org.thunderdog.challegram.util.TranslationCounterDrawable;
 import java.util.HashMap;
 
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public final class TranslationsManager {
 

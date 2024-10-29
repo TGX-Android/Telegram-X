@@ -77,7 +77,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator.Target, PopupLayout.AnimatedPopupProvider, BackListener, Destroyable, ThemeChangeListener {
   private static final OvershootInterpolator OVERSHOOT_INTERPOLATOR = new OvershootInterpolator(1f);

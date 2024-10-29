@@ -21,7 +21,7 @@ import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.UI;
 
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class TGAudio {
   private final Tdlib tdlib;

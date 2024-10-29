@@ -42,8 +42,8 @@ import java.util.List;
 
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class SharedMembersController extends SharedBaseController<DoubleTextWrapper> implements
   TdlibCache.BasicGroupDataChangeListener,

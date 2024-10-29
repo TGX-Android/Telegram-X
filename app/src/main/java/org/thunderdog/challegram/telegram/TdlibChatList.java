@@ -30,8 +30,8 @@ import java.util.List;
 import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.td.ChatPosition;
-import me.vkryl.td.Td;
+import tgx.td.ChatPosition;
+import tgx.td.Td;
 
 public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterChangeListener {
   public static class Entry implements Comparable<Entry> {

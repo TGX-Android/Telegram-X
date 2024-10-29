@@ -50,7 +50,7 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public abstract class DisposableMediaViewController extends ViewController<DisposableMediaViewController.Args> implements
   PopupLayout.AnimatedPopupProvider, FactorAnimator.Target, Player.Listener, PopupLayout.TouchSectionProvider {

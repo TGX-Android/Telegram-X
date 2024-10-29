@@ -37,7 +37,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 
-import me.vkryl.td.ChatId;
+import tgx.td.ChatId;
 
 public class SharedChatsController extends SharedBaseController<DoubleTextWrapper> implements TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener, ChatListener {
   @IntDef({

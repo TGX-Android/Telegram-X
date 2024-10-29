@@ -156,10 +156,10 @@ import me.vkryl.core.collection.IntList;
 import me.vkryl.core.collection.LongSparseIntArray;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.FutureBool;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.ChatPosition;
-import me.vkryl.td.Td;
-import me.vkryl.td.TdConstants;
+import tgx.td.ChatId;
+import tgx.td.ChatPosition;
+import tgx.td.Td;
+import tgx.td.TdConstants;
 
 public class MainController extends ViewPagerController<Void> implements Menu, MoreDelegate, OverlayButtonWrap.Callback, TdlibOptionListener, AppUpdater.Listener, ChatFoldersListener, GlobalCountersListener, Settings.ChatFolderSettingsListener {
   private static final long MAIN_PAGER_ITEM_ID = Long.MIN_VALUE;

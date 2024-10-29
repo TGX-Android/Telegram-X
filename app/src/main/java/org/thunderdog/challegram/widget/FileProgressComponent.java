@@ -70,7 +70,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class FileProgressComponent implements TdlibFilesManager.FileListener, FactorAnimator.Target, TGPlayerController.TrackListener, Destroyable {
   public static final float DEFAULT_RADIUS = 28f;

@@ -33,7 +33,7 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class SetSenderControllerPage extends BottomSheetViewController.BottomSheetBaseRecyclerViewController<SetSenderController.Args> implements
         BottomSheetViewController.BottomSheetBaseControllerPage, Menu {

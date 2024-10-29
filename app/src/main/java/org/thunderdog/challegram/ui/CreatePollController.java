@@ -57,8 +57,8 @@ import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.android.text.RestrictFilter;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.td.Td;
-import me.vkryl.td.TdConstants;
+import tgx.td.Td;
+import tgx.td.TdConstants;
 
 public class CreatePollController extends RecyclerViewController<CreatePollController.Args> implements View.OnClickListener, SettingsAdapter.TextChangeListener {
   public static class Args {

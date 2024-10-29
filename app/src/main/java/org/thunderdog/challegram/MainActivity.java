@@ -109,7 +109,7 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.td.MessageId;
+import tgx.td.MessageId;
 
 @SuppressWarnings(value = "SpellCheckingInspection")
 public class MainActivity extends BaseActivity implements GlobalAccountListener, GlobalCountersListener, GlobalResolvableProblemListener {

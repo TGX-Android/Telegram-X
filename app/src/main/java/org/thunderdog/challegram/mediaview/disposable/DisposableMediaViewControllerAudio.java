@@ -37,7 +37,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 class DisposableMediaViewControllerAudio extends DisposableMediaViewController {
   public DisposableMediaViewControllerAudio(@NonNull Context context, Tdlib tdlib) {

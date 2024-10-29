@@ -16,10 +16,7 @@ package org.thunderdog.challegram.unsorted;
 
 import org.thunderdog.challegram.tool.Screen;
 
-import me.vkryl.core.MathUtils;
-
 @SuppressWarnings(value = "SpellCheckingInspection")
-@Deprecated
 public class Size {
   //Raw sizes
 

@@ -73,9 +73,9 @@ import me.vkryl.android.util.SingleViewProvider;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.MessageId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.MessageId;
+import tgx.td.Td;
 
 public class BetterChatView extends BaseView implements Destroyable, RemoveHelper.RemoveDelegate, ChatListener, TdlibCache.UserDataChangeListener, TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener, NotificationSettingsListener, TdlibCache.UserStatusChangeListener, DrawableProvider, TooltipOverlayView.LocationProvider, TdlibUi.MessageProvider {
   private static final int FLAG_FAKE_TITLE = 1;

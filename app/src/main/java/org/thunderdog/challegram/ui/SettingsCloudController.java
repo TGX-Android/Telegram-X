@@ -45,7 +45,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public abstract class SettingsCloudController<T extends Settings.CloudSetting> extends RecyclerViewController<SettingsCloudController.Args<T>> implements View.OnClickListener, FileUpdateListener, TdlibFilesManager.FileListener {
   private final long tutorialFlag;

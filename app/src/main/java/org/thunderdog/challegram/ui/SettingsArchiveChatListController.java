@@ -31,7 +31,7 @@ import org.thunderdog.challegram.v.CustomRecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
-import me.vkryl.td.ChatPosition;
+import tgx.td.ChatPosition;
 
 public class SettingsArchiveChatListController extends RecyclerViewController<Void> implements View.OnClickListener, NotificationSettingsListener {
   public SettingsArchiveChatListController (Context context, Tdlib tdlib) {

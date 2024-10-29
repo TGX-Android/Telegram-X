@@ -25,8 +25,8 @@ import java.util.List;
 
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.collection.LongList;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class PrivacySettings {
 

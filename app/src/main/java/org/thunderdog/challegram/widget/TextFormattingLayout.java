@@ -69,7 +69,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class TextFormattingLayout extends FrameLayout implements TranslationsManager.Translatable {
   private static final int MIN_PADDING_BETWEEN_BUTTONS = 4;

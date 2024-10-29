@@ -28,7 +28,7 @@ import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.android.util.SingleViewProvider;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.MathUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public final class TGAvatars implements FactorAnimator.Target {
   private static final @Dimension(unit = Dimension.DP) float DEFAULT_AVATAR_RADIUS = 10f;

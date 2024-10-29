@@ -56,7 +56,7 @@ import java.util.List;
 
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.LongList;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class SettingsPrivacyKeyController extends RecyclerViewController<SettingsPrivacyKeyController.Args> implements View.OnClickListener, UserPickerMultiDelegate, PrivacySettingsListener, ActivityResultHandler,
   TdlibCache.UserDataChangeListener {
@@ -359,7 +359,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<Setting
             hintItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.btn_description, 0, rulesType == PrivacySettings.Mode.EVERYBODY ? R.string.WhoCanFindByPhoneInfoEveryone : R.string.WhoCanFindByPhoneInfoContacts);
             TdApi.User user = tdlib.myUser();
             if (user != null) {
-              internalLinkType = new TdApi.InternalLinkTypeUserPhoneNumber(user.phoneNumber, "");
+              internalLinkType = new TdApi.InternalLinkTypeUserPhoneNumber(user.phoneNumber, "", true);
             }
             break;
           }

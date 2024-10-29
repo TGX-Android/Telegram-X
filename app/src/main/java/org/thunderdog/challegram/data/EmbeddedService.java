@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import me.vkryl.core.StringUtils;
+import tgx.td.Td;
 
 public class EmbeddedService {
   public static final int TYPE_UNKNOWN = 0;
@@ -142,19 +143,19 @@ public class EmbeddedService {
     return TYPE_UNKNOWN;
   }
 
-  public static EmbeddedService parse (TdApi.WebPage webPage) {
-    EmbeddedService service = parse(webPage.url, webPage.embedWidth, webPage.embedHeight, webPage.photo, webPage.embedUrl, true);
+  public static EmbeddedService parse (TdApi.LinkPreview linkPreview) {
+    EmbeddedService service = parse(linkPreview.url, linkPreview.type, true);
     if (service != null)
       return service;
-    if ("iframe".equals(webPage.embedType) && !StringUtils.isEmpty(webPage.embedUrl)) {
+    /*if ("iframe".equals(linkPreview.embedType) && !StringUtils.isEmpty(linkPreview.embedUrl)) {
       if ((
-           ("gif".equals(webPage.type) && webPage.animation != null) ||
-           ("video".equals(webPage.type) && webPage.photo != null && webPage.animation == null) ||
-           ("photo".equals(webPage.type) && webPage.photo != null && webPage.animation == null)
-          ) && webPage.video == null && webPage.videoNote == null && webPage.document == null && webPage.audio == null) {
-        return new EmbeddedService(resolveTypeForHost(StringUtils.domainOf(webPage.url)), webPage.url, webPage.embedWidth, webPage.embedHeight, webPage.photo, webPage.embedUrl, webPage.embedType);
+           ("gif".equals(linkPreview.type) && linkPreview.animation != null) ||
+           ("video".equals(linkPreview.type) && linkPreview.photo != null && linkPreview.animation == null) ||
+           ("photo".equals(linkPreview.type) && linkPreview.photo != null && linkPreview.animation == null)
+          ) && linkPreview.video == null && linkPreview.videoNote == null && linkPreview.document == null && linkPreview.audio == null) {
+        return new EmbeddedService(resolveTypeForHost(StringUtils.domainOf(linkPreview.url)), linkPreview.url, linkPreview.embedWidth, linkPreview.embedHeight, linkPreview.photo, linkPreview.embedUrl, linkPreview.embedType);
       }
-    }
+    }*/
     // if ("type".equals(webPage.type) && webpage)
     return null;
   }
@@ -176,6 +177,27 @@ public class EmbeddedService {
       b.appendQueryParameter("start", time);
     }
     return b.build().toString();
+  }
+
+  private static EmbeddedService parse (String url, TdApi.LinkPreviewType type, boolean allowAutoplay) {
+    switch (type.getConstructor()) {
+      case TdApi.LinkPreviewTypeEmbeddedAnimationPlayer.CONSTRUCTOR: {
+        TdApi.LinkPreviewTypeEmbeddedAnimationPlayer animationPlayer = (TdApi.LinkPreviewTypeEmbeddedAnimationPlayer) type;
+        return parse(url, animationPlayer.width, animationPlayer.height, animationPlayer.thumbnail, animationPlayer.url, allowAutoplay);
+      }
+      case TdApi.LinkPreviewTypeEmbeddedAudioPlayer.CONSTRUCTOR: {
+        TdApi.LinkPreviewTypeEmbeddedAudioPlayer audioPlayer = (TdApi.LinkPreviewTypeEmbeddedAudioPlayer) type;
+        return parse(url, audioPlayer.width, audioPlayer.height, audioPlayer.thumbnail, audioPlayer.url, allowAutoplay);
+      }
+      case TdApi.LinkPreviewTypeEmbeddedVideoPlayer.CONSTRUCTOR: {
+        TdApi.LinkPreviewTypeEmbeddedVideoPlayer videoPlayer = (TdApi.LinkPreviewTypeEmbeddedVideoPlayer) type;
+        return parse(url, videoPlayer.width, videoPlayer.height, videoPlayer.thumbnail, videoPlayer.url, allowAutoplay);
+      }
+      default:
+        Td.assertLinkPreviewType_eb86a63d();
+        break;
+    }
+    return null;
   }
 
   private static EmbeddedService parse (String webPageUrl, int width, int height, TdApi.Photo thumbnail, @Nullable String embedUrl, boolean allowAutoplay) {

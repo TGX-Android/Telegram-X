@@ -42,8 +42,8 @@ import java.util.Set;
 
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.SparseLongArray;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 @TargetApi(Build.VERSION_CODES.O)
 public class TdlibNotificationChannelGroup {

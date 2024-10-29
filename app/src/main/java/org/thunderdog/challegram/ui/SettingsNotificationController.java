@@ -96,8 +96,8 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class SettingsNotificationController extends RecyclerViewController<SettingsNotificationController.Args> implements
   View.OnClickListener, View.OnLongClickListener,

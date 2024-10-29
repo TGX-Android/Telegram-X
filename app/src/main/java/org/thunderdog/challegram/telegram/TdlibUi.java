@@ -39,6 +39,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
+import androidx.collection.SparseArrayCompat;
 import androidx.core.os.CancellationSignal;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -178,11 +179,13 @@ import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableLong;
 import me.vkryl.core.unit.ByteUnit;
 import me.vkryl.core.util.ConditionalExecutor;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.ChatPosition;
-import me.vkryl.td.MessageId;
-import me.vkryl.td.Td;
-import me.vkryl.td.TdConstants;
+import tgx.td.ChatId;
+import tgx.td.ChatPosition;
+import tgx.td.MessageId;
+import tgx.td.Td;
+import tgx.td.TdConstants;
+import tgx.td.TdExt;
+import tgx.td.data.MessageWithProperties;
 
 public class TdlibUi extends Handler {
   private final Tdlib tdlib;
@@ -290,12 +293,12 @@ public class TdlibUi extends Handler {
 
   // Unsorted UI-related common stuff
 
-  private static boolean deleteSuperGroupMessages (final ViewController<?> context, final TdApi.Message[] deletingMessages, final @Nullable Runnable after) {
+  private static boolean deleteSuperGroupMessages (final ViewController<?> context, final MessageWithProperties[] deletingMessages, final @Nullable Runnable after) {
     final Tdlib tdlib = context.tdlib();
     if (deletingMessages == null || deletingMessages.length == 0) {
       return false;
     }
-    final long chatId = TD.getChatId(deletingMessages);
+    final long chatId = TdExt.findUniqueChatId(deletingMessages);
     if (chatId == 0 || !context.tdlib().isSupergroup(chatId)) {
       // Chat is not supergroup
       return false;
@@ -305,16 +308,16 @@ public class TdlibUi extends Handler {
       // User is not a creator or admin with canDeleteMessages right
       return false;
     }
-    final TdApi.MessageSender senderId = TD.getSender(deletingMessages);
+    final TdApi.MessageSender senderId = TdExt.findUniqueSenderId(deletingMessages);
     if (senderId == null || context.tdlib().isSelfSender(senderId)) {
       // No need in "delete all" for outgoing messages
       return false;
     }
-    for (TdApi.Message deletingMessage : deletingMessages) {
+    for (MessageWithProperties deletingMessage : deletingMessages) {
       // No need in "delete all" for outgoing messages
       // or some of the passed messages can't be deleted at all
-      if (deletingMessage.isOutgoing ||
-        !(deletingMessage.canBeDeletedForAllUsers || deletingMessage.canBeDeletedOnlyForSelf)
+      if (deletingMessage.message.isOutgoing ||
+        !(deletingMessage.properties.canBeDeletedForAllUsers || deletingMessage.properties.canBeDeletedOnlyForSelf)
       ) {
         return false;
       }
@@ -335,29 +338,21 @@ public class TdlibUi extends Handler {
           boolean reportSpam = result.get(R.id.btn_reportSpam) != 0;
           boolean deleteAll = result.get(R.id.btn_deleteAll) != 0;
 
-          final long[] messageIds = TD.getMessageIds(deletingMessages).valueAt(0);
+          final long[] messageIds = TdExt.toMessageIdsMap(deletingMessages).valueAt(0);
 
           if (banUser) {
-            tdlib.client().send(new TdApi.GetChatMember(chatId, deletingMessages[0].senderId), object -> {
-              switch (object.getConstructor()) {
-                case TdApi.ChatMember.CONSTRUCTOR: {
-                  final TdApi.ChatMember member = (TdApi.ChatMember) object;
-                  tdlib.ui().post(() -> {
-                    if (!context.isDestroyed()) {
-                      TdApi.ChatMemberStatus myStatus = tdlib.chatStatus(chatId);
-                      if (myStatus != null) {
-                        EditRightsController editController = new EditRightsController(context.context(), context.tdlib());
-                        editController.setArguments(new EditRightsController.Args(chatId, senderId, true, myStatus, member));
-                        context.navigateTo(editController);
-                      }
-                    }
-                  });
-                  break;
-                }
-                case TdApi.Error.CONSTRUCTOR: {
-                  UI.showError(object);
-                  break;
-                }
+            tdlib.send(new TdApi.GetChatMember(chatId, senderId), (member, error) -> {
+              if (error != null) {
+                UI.showError(error);
+              } else {
+                context.runOnUiThreadOptional(() -> {
+                  TdApi.ChatMemberStatus myStatus = tdlib.chatStatus(chatId);
+                  if (myStatus != null) {
+                    EditRightsController editController = new EditRightsController(context.context(), context.tdlib());
+                    editController.setArguments(new EditRightsController.Args(chatId, senderId, true, myStatus, member));
+                    context.navigateTo(editController);
+                  }
+                });
               }
             });
           }
@@ -378,7 +373,7 @@ public class TdlibUi extends Handler {
         }
       }).setSaveStr(R.string.Delete).setSaveColorId(ColorId.textNegative));
     if (wrap != null) {
-      tdlib.client().send(new TdApi.GetChatMember(deletingMessages[0].chatId, deletingMessages[0].senderId), result -> {
+      tdlib.client().send(new TdApi.GetChatMember(chatId, senderId), result -> {
         if (result.getConstructor() == TdApi.ChatMember.CONSTRUCTOR) {
           TdApi.ChatMember member = (TdApi.ChatMember) result;
           tdlib.ui().post(() -> {
@@ -493,12 +488,12 @@ public class TdlibUi extends Handler {
       }).setSaveStr(R.string.RemoveMember).setSaveColorId(ColorId.textNegative));
   }
 
-  private static boolean deleteWithRevoke (final ViewController<?> context, final TdApi.Message[] deletingMessages, final @Nullable Runnable after) {
+  private static boolean deleteWithRevoke (final ViewController<?> context, final MessageWithProperties[] deletingMessages, final @Nullable Runnable after) {
     if (deletingMessages == null || deletingMessages.length == 0)
       return false;
 
     final Tdlib tdlib = context.tdlib();
-    final long singleChatId = TD.getChatId(deletingMessages);
+    final long singleChatId = TdExt.findUniqueChatId(deletingMessages);
     if (tdlib.isSelfChat(singleChatId)) {
       return false;
     }
@@ -507,13 +502,13 @@ public class TdlibUi extends Handler {
     int optionalCount = 0;
     int outgoingMessageCount = 0;
     int noRevokeCount = 0;
-    for (TdApi.Message message : deletingMessages) {
-      if (message.canBeDeletedForAllUsers && message.canBeDeletedOnlyForSelf) {
+    for (MessageWithProperties message : deletingMessages) {
+      if (message.properties.canBeDeletedForAllUsers && message.properties.canBeDeletedOnlyForSelf) {
         optionalCount++;
-        if (message.isOutgoing)
+        if (message.message.isOutgoing)
           outgoingMessageCount++;
       }
-      if (!message.canBeDeletedForAllUsers && message.canBeDeletedOnlyForSelf) {
+      if (!message.properties.canBeDeletedForAllUsers && message.properties.canBeDeletedOnlyForSelf) {
         noRevokeCount++;
       }
     }
@@ -555,11 +550,11 @@ public class TdlibUi extends Handler {
             TdApi.Message[] noRevokeMessages = new TdApi.Message[noRevokeCountFinal];
             int revokeIndex = 0;
             int noRevokeIndex = 0;
-            for (TdApi.Message message : deletingMessages) {
-              if (message.canBeDeletedForAllUsers) {
-                revokeMessages[revokeIndex++] = message;
+            for (MessageWithProperties message : deletingMessages) {
+              if (message.properties.canBeDeletedForAllUsers) {
+                revokeMessages[revokeIndex++] = message.message;
               } else {
-                noRevokeMessages[noRevokeIndex++] = message;
+                noRevokeMessages[noRevokeIndex++] = message.message;
               }
             }
             LongSparseArray<long[]> messageIds = TD.getMessageIds(revokeMessages);
@@ -571,7 +566,7 @@ public class TdlibUi extends Handler {
               tdlib.deleteMessages(messageIds.keyAt(i), messageIds.valueAt(i), false);
             }
           } else {
-            final LongSparseArray<long[]> messageIds = TD.getMessageIds(deletingMessages);
+            final LongSparseArray<long[]> messageIds = TdExt.toMessageIdsMap(deletingMessages);
             for (int i = 0; i < messageIds.size(); i++) {
               tdlib.deleteMessages(messageIds.keyAt(i), messageIds.valueAt(i), revoke);
             }
@@ -584,11 +579,19 @@ public class TdlibUi extends Handler {
     return true;
   }
 
-  public static void showDeleteOptions (ViewController<?> context, TdApi.Message message) {
-    showDeleteOptions(context, new TdApi.Message[] {message}, null);
+  public void showDeleteOptions (ViewController<?> context, TdApi.Message message) {
+    tdlib.getMessageProperties(message, properties -> {
+      context.runOnUiThreadOptional(() -> {
+        showDeleteOptions(context, new MessageWithProperties(message, properties));
+      });
+    });
   }
 
-  public static void showDeleteOptions (final ViewController<?> context, final TdApi.Message[] messages, final @Nullable Runnable after) {
+  public static void showDeleteOptions (ViewController<?> context, MessageWithProperties message) {
+    showDeleteOptions(context, new MessageWithProperties[] {message}, null);
+  }
+
+  public static void showDeleteOptions (final ViewController<?> context, final MessageWithProperties[] messages, final @Nullable Runnable after) {
     if (context != null && messages != null && messages.length > 0) {
       if (deleteSuperGroupMessages(context, messages, after)) {
         return;
@@ -598,11 +601,11 @@ public class TdlibUi extends Handler {
       }
 
       final Tdlib tdlib = context.tdlib();
-      final long chatId = TD.getChatId(messages);
+      final long chatId = TdExt.findUniqueChatId(messages);
 
       boolean allScheduled = true;
-      for (TdApi.Message msg : messages) {
-        if (!TD.isScheduled(msg)) {
+      for (MessageWithProperties msg : messages) {
+        if (!TD.isScheduled(msg.message)) {
           allScheduled = false;
           break;
         }
@@ -617,8 +620,8 @@ public class TdlibUi extends Handler {
                   (tdlib.isSelfChat(chatId) ? R.string.DeleteXMessages : R.string.DeleteXForMe), messages.length);
 
       if (!allScheduled) {
-        for (TdApi.Message msg : messages) {
-          if (!msg.canBeDeletedOnlyForSelf) {
+        for (MessageWithProperties msg : messages) {
+          if (!msg.properties.canBeDeletedOnlyForSelf) {
             if (ChatId.isUserChat(chatId)) {
               deleteActionMsg = Lang.getString(R.string.DeleteForMeAndX, tdlib.cache().userFirstName(tdlib.chatUserId(chatId)));
             } else {
@@ -636,7 +639,7 @@ public class TdlibUi extends Handler {
         new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24},
         (itemView, id) -> {
           if (id == R.id.menu_btn_delete) {
-            LongSparseArray<long[]> messageIds = TD.getMessageIds(messages);
+            LongSparseArray<long[]> messageIds = TdExt.toMessageIdsMap(messages);
             for (int i = 0; i < messageIds.size(); i++) {
               tdlib.deleteMessages(messageIds.keyAt(i), messageIds.valueAt(i), false);
             }
@@ -1652,7 +1655,7 @@ public class TdlibUi extends Handler {
 
   public void showStickerSet (TdlibDelegate context, String name, @Nullable UrlOpenParameters openParameters) {
     // TODO progress
-    tdlib.client().send(new TdApi.SearchStickerSet(name), newStickerSetHandler(context, openParameters));
+    tdlib.client().send(new TdApi.SearchStickerSet(name, false), newStickerSetHandler(context, openParameters));
   }
 
   public void showStickerSet (TdlibDelegate context, long setId, @Nullable UrlOpenParameters openParameters) {
@@ -2607,7 +2610,7 @@ public class TdlibUi extends Handler {
   public static class UrlOpenParameters implements TGMessage.MessageIdChangeListener {
     public int instantViewMode = INSTANT_VIEW_UNSPECIFIED;
     public int embedViewMode = EMBED_VIEW_UNSPECIFIED;
-    public TdApi.WebPage sourceWebPage;
+    public TdApi.LinkPreview sourceLinkPreview;
 
     public MessageId messageId;
     public String refererUrl, instantViewFallbackUrl, originalUrl;
@@ -2633,7 +2636,7 @@ public class TdlibUi extends Handler {
         this.displayUrl = options.displayUrl;
         this.parentController = options.parentController;
         this.originalUrl = options.originalUrl;
-        this.sourceWebPage = options.sourceWebPage;
+        this.sourceLinkPreview = options.sourceLinkPreview;
         if (options.sourceMessage != null) {
           sourceMessage(options.sourceMessage);
         }
@@ -2744,8 +2747,8 @@ public class TdlibUi extends Handler {
       return embedViewMode(TdlibUi.EMBED_VIEW_DISABLED);
     }
 
-    public UrlOpenParameters sourceWebView (TdApi.WebPage webPage) {
-      this.sourceWebPage = webPage;
+    public UrlOpenParameters sourceLinkPreview (TdApi.LinkPreview linkPreview) {
+      this.sourceLinkPreview = linkPreview;
       return this;
     }
 
@@ -2962,10 +2965,10 @@ public class TdlibUi extends Handler {
     }
 
     if (embedViewMode == EMBED_VIEW_ENABLED && context instanceof ViewController<?>) {
-      TdApi.WebPage webPage = options != null ? options.sourceWebPage : null;
+      TdApi.LinkPreview linkPreview = options != null ? options.sourceLinkPreview : null;
       if (
-        (webPage != null && PreviewLayout.show((ViewController<?>) context, webPage, isFromSecretChat)) ||
-        (webPage == null && PreviewLayout.show((ViewController<?>) context, url, isFromSecretChat))
+        (linkPreview != null && PreviewLayout.show((ViewController<?>) context, linkPreview, isFromSecretChat)) ||
+        (linkPreview == null && PreviewLayout.show((ViewController<?>) context, url, isFromSecretChat))
       ) {
         if (after != null) {
           after.runWithBool(true);
@@ -2975,16 +2978,16 @@ public class TdlibUi extends Handler {
     }
 
     final AtomicBoolean signal = new AtomicBoolean();
-    final AtomicReference<TdApi.WebPage> foundWebPage = new AtomicReference<>();
+    final AtomicReference<TdApi.LinkPreview> foundWebPage = new AtomicReference<>();
     CancellableRunnable[] runnable = new CancellableRunnable[1];
 
-    tdlib.send(new TdApi.GetWebPagePreview(new TdApi.FormattedText(url, null), null), (webPage, error) -> {
+    tdlib.send(new TdApi.GetLinkPreview(new TdApi.FormattedText(url, null), null), (linkPreview, error) -> {
       if (error != null) {
         post(runnable[0]);
         return;
       }
-      foundWebPage.set(webPage);
-      if (instantViewMode == INSTANT_VIEW_DISABLED || !TD.hasInstantView(webPage.instantViewVersion) || TD.shouldInlineIv(webPage)) {
+      foundWebPage.set(linkPreview);
+      if (instantViewMode == INSTANT_VIEW_DISABLED || !TD.hasInstantView(linkPreview.instantViewVersion)) {
         post(runnable[0]);
         return;
       }
@@ -3003,7 +3006,7 @@ public class TdlibUi extends Handler {
 
             InstantViewController controller = new InstantViewController(context.context(), context.tdlib());
             try {
-              controller.setArguments(new InstantViewController.Args(webPage, instantView, Uri.parse(url).getEncodedFragment()));
+              controller.setArguments(new InstantViewController.Args(linkPreview, instantView, Uri.parse(url).getEncodedFragment()));
               controller.show();
               if (after != null) {
                 after.runWithBool(true);
@@ -3036,8 +3039,8 @@ public class TdlibUi extends Handler {
             }
           }
           if (embedViewMode == EMBED_VIEW_ENABLED) {
-            TdApi.WebPage webPage = foundWebPage.get();
-            if (context instanceof ViewController<?> && webPage != null && PreviewLayout.show((ViewController<?>) context, webPage, isFromSecretChat)) {
+            TdApi.LinkPreview linkPreview = foundWebPage.get();
+            if (context instanceof ViewController<?> && linkPreview != null && PreviewLayout.show((ViewController<?>) context, linkPreview, isFromSecretChat)) {
               if (after != null) {
                 after.runWithBool(true);
               }
@@ -3595,12 +3598,13 @@ public class TdlibUi extends Handler {
 
       case TdApi.InternalLinkTypeAttachmentMenuBot.CONSTRUCTOR:
       case TdApi.InternalLinkTypeWebApp.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeSideMenuBot.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeMainWebApp.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypeInvoice.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypePremiumFeatures.CONSTRUCTOR:
       case TdApi.InternalLinkTypeRestorePurchases.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeBuyStars.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatBoost.CONSTRUCTOR:
       case TdApi.InternalLinkTypePremiumGift.CONSTRUCTOR:
 
@@ -3732,7 +3736,7 @@ public class TdlibUi extends Handler {
         return; // async
       }
       default: {
-        Td.assertInternalLinkType_b56aa77b();
+        Td.assertInternalLinkType_ff0c4471();
         throw Td.unsupported(linkType);
       }
     }
@@ -6226,37 +6230,21 @@ public class TdlibUi extends Handler {
     }
   }
 
-  public static void reportChats (ViewController<?> context, long[] chatIds, Runnable after) {
-    Tdlib tdlib = context.tdlib();
-
-    IntList ids = new IntList(REPORT_REASON_COUNT);
-    StringList strings = new StringList(REPORT_REASON_COUNT);
-    fillReportReasons(ids, strings);
-
-    CharSequence title = Lang.pluralBold(R.string.ReportXChats, chatIds.length);
-    context.showOptions(title, ids.get(), strings.get(), /*colors.get()*/ null, null, (itemView, id) -> {
-      toReportReasons(context, id, title, new TdApi.ReportChat(), false, request -> {
-        AtomicInteger remaining = new AtomicInteger(chatIds.length);
-        for (long chatId : chatIds) {
-          tdlib.client().send(new TdApi.ReportChat(chatId, null, request.reason, request.text), object -> {
-            switch (object.getConstructor()) {
-              case TdApi.Ok.CONSTRUCTOR:
-                if (remaining.decrementAndGet() == 0) {
-                  UI.showToast(Lang.plural(R.string.ReportedXChats, chatIds.length), Toast.LENGTH_SHORT);
-                  if (after != null) {
-                    tdlib.ui().post(after);
-                  }
-                }
-                break;
-              case TdApi.Error.CONSTRUCTOR:
-                UI.showError(object);
-                break;
-            }
-          });
+  public static void reportChats (ViewController<?> context, long[] chatIds, Runnable after, @Nullable ThemeDelegate forcedTheme) {
+    AtomicInteger remaining = new AtomicInteger(chatIds.length);
+    Runnable act = new Runnable() {
+      @Override
+      public void run () {
+        int index = chatIds.length - remaining.getAndDecrement();
+        if (index < chatIds.length) {
+          long chatId = chatIds[index];
+          reportChat(context, chatId, null, forcedTheme, this, chatIds.length == 1);
+        } else if (after != null) {
+          after.run();
         }
-      });
-      return true;
-    }, null);
+      }
+    };
+    act.run();
   }
 
   private static final int REPORT_REASON_COUNT = 7;
@@ -6325,9 +6313,6 @@ public class TdlibUi extends Handler {
       throw new IllegalArgumentException(Lang.getResourceEntryName(reportReasonId));
     }
     switch (request.getConstructor()) {
-      case TdApi.ReportChat.CONSTRUCTOR:
-        ((TdApi.ReportChat) request).reason = reason;
-        break;
       case TdApi.ReportChatPhoto.CONSTRUCTOR:
         ((TdApi.ReportChatPhoto) request).reason = reason;
         break;
@@ -6354,9 +6339,6 @@ public class TdlibUi extends Handler {
             return;
           }
           switch (request.getConstructor()) {
-            case TdApi.ReportChat.CONSTRUCTOR:
-              ((TdApi.ReportChat) request).text = input;
-              break;
             case TdApi.ReportChatPhoto.CONSTRUCTOR:
               ((TdApi.ReportChatPhoto) request).text = input;
               break;
@@ -6399,7 +6381,7 @@ public class TdlibUi extends Handler {
     }, forcedTheme);
   }
 
-  public static void reportChat (ViewController<?> context, long chatId, @Nullable TdApi.Message[] messages, Runnable after, ThemeDelegate forcedTheme) {
+  public static void reportChat (ViewController<?> context, long chatId, @Nullable TdApi.Message[] messages, @Nullable ThemeDelegate forcedTheme, @Nullable Runnable after, boolean needConfirmation) {
     Tdlib tdlib = context.tdlib();
     final long[] messageIds;
     final CharSequence title;
@@ -6418,41 +6400,134 @@ public class TdlibUi extends Handler {
         }
       }
       if (singleSender) {
-        if (senderId != 0) {
-          title = Lang.getStringBold(ChatId.isUserChat(senderId) ? (messages.length == 1 ? R.string.ReportMessageUser : R.string.ReportMessagesUser) : (messages.length == 1 ? R.string.ReportMessage : R.string.ReportMessages), tdlib.chatTitle(senderId));
+        int confirmResId, resId;
+        if (ChatId.isUserChat(senderId)) {
+          confirmResId = messages.length == 1 ? R.string.QReportMessageUser : R.string.QReportMessagesUser;
+          resId = messages.length == 1 ? R.string.ReportMessageUser : R.string.ReportMessagesUser;
         } else {
-          title = Lang.getStringBold(messages.length == 1 ? R.string.ReportMessage : R.string.ReportMessages, tdlib.chatTitle(messages[0].chatId));
+          confirmResId = messages.length == 1 ? R.string.QReportMessage : R.string.QReportMessages;
+          resId = messages.length == 1 ? R.string.ReportMessage : R.string.ReportMessages;
         }
+        String name = tdlib.chatTitle(senderId);
+        title = Lang.getStringBold(needConfirmation ? confirmResId : resId, name);
       } else {
-        title = Lang.plural(R.string.ReportXMessages, messages.length, Lang.boldCreator());
+        title = Lang.plural(needConfirmation ? R.string.QReportXMessages : R.string.ReportXMessages, messages.length, Lang.boldCreator());
       }
     } else {
       messageIds = null;
-      title = Lang.getStringBold(R.string.ReportChat, tdlib.chatTitle(chatId));
+      String chatTitle = tdlib.chatTitle(chatId);
+      title = Lang.getStringBold(needConfirmation ? R.string.QReportChat : R.string.ReportChat, chatTitle);
     }
 
-    IntList ids = new IntList(REPORT_REASON_COUNT);
-    StringList strings = new StringList(REPORT_REASON_COUNT);
-    fillReportReasons(ids, strings);
-
-    context.showOptions(title, ids.get(), strings.get(), /*colors.get()*/ null, null, (itemView, id) -> {
-      toReportReasons(context, id, title, new TdApi.ReportChat(chatId, messageIds, null, null), false, request -> {
-        if (after != null) {
-          after.run();
-        }
-        tdlib.client().send(request, object -> {
-          switch (object.getConstructor()) {
-            case TdApi.Ok.CONSTRUCTOR:
-              UI.showToast(R.string.ReportChatSent, Toast.LENGTH_SHORT);
-              break;
-            case TdApi.Error.CONSTRUCTOR:
-              UI.showError(object);
-              break;
+    if (needConfirmation) {
+      context.showOptions(title,
+        new int[] {
+          R.id.btn_reportChat,
+          R.id.btn_cancel
+        }, new String[] {
+          Lang.getString(R.string.ConfirmReportBtn),
+          Lang.getString(R.string.Cancel)
+        }, new int[] {
+          ViewController.OptionColor.RED,
+          ViewController.OptionColor.NORMAL
+        },
+        new int[] {
+          R.drawable.baseline_warning_24,
+          R.drawable.baseline_cancel_24
+        }, (optionItemView, id) -> {
+          if (id == R.id.btn_reportChat) {
+            reportChat(context, chatId, messages, forcedTheme, after, false);
           }
-        });
-      });
-      return true;
-    }, forcedTheme);
+          return true;
+        }
+      );
+      return;
+    }
+
+    AtomicReference<String> reportText = new AtomicReference<>();
+
+    //TODO(?): catch popup dismissal and call `after.run();`
+    tdlib.send(new TdApi.ReportChat(chatId, null, messageIds, null), new Tdlib.ResultHandler<TdApi.ReportChatResult>() {
+      @Override
+      public void onResult (TdApi.ReportChatResult result, @Nullable TdApi.Error error) {
+        if (error != null) {
+          UI.showError(error);
+          context.runOnUiThreadOptional(after);
+          return;
+        }
+        switch (result.getConstructor()) {
+          case TdApi.ReportChatResultOk.CONSTRUCTOR: {
+            context.runOnUiThreadOptional(() -> {
+              UI.showToast(R.string.ReportChatSent, Toast.LENGTH_SHORT);
+              if (after != null) {
+                after.run();
+              }
+            });
+            break;
+          }
+          case TdApi.ReportChatResultOptionRequired.CONSTRUCTOR: {
+            context.runOnUiThreadOptional(() -> {
+              TdApi.ReportChatResultOptionRequired optionRequired = (TdApi.ReportChatResultOptionRequired) result;
+              SparseArrayCompat<byte[]> idToOptionId = new SparseArrayCompat<>(optionRequired.options.length);
+
+              ViewController.Options.Builder b = new ViewController.Options.Builder();
+              if (StringUtils.isEmpty(optionRequired.title)) {
+                b.info(title);
+              } else {
+                b.info(optionRequired.title);
+              }
+              int index = 0;
+              for (TdApi.ReportOption option : optionRequired.options) {
+                int id = ++index;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                  id = View.generateViewId();
+                }
+                b.item(new ViewController.OptionItem(id, option.text, ViewController.OptionColor.NORMAL, 0));
+                idToOptionId.put(id, option.id);
+              }
+              PopupLayout popup = context.showOptions(b.build(), (optionItemView, id) -> {
+                byte[] optionId = idToOptionId.get(id);
+                if (optionId != null) {
+                  tdlib.send(new TdApi.ReportChat(chatId, optionId, messageIds, reportText.get()), this);
+                  return true;
+                }
+                return false;
+              }, forcedTheme);
+              if (popup != null) {
+                popup.setDisableCancelOnTouchDown(true);
+              }
+            });
+            break;
+          }
+          case TdApi.ReportChatResultTextRequired.CONSTRUCTOR: {
+            context.runOnUiThreadOptional(() -> {
+              TdApi.ReportChatResultTextRequired textRequired = (TdApi.ReportChatResultTextRequired) result;
+              CharSequence placeholder = Lang.getMarkdownString(context, textRequired.isOptional ? R.string.ReportChatReasonOptional : R.string.ReportChatReasonRequired);
+              context.openInputAlert(title, placeholder, R.string.ReportChatAlertBtn, R.string.Cancel, null, null, (inputView, userInput) -> {
+                String text = StringUtils.trim(userInput);
+                if (StringUtils.isEmpty(text) && !textRequired.isOptional) {
+                  return false;
+                } else {
+                  reportText.set(text);
+                  tdlib.send(new TdApi.ReportChat(chatId, textRequired.optionId, messageIds, text), this);
+                  return true;
+                }
+              }, textRequired.isOptional, null, forcedTheme);
+            });
+            break;
+          }
+          case TdApi.ReportChatResultMessagesRequired.CONSTRUCTOR: {
+            UI.showToast(R.string.ReportChatMessagesRequired, Toast.LENGTH_SHORT);
+            context.runOnUiThreadOptional(after);
+            break;
+          }
+          default: {
+            Td.assertReportChatResult_63f241a6();
+            throw Td.unsupported(result);
+          }
+        }
+      }
+    });
   }
 
   public interface EraseCallback {

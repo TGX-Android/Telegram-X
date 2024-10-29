@@ -734,6 +734,7 @@
   <string name="XVideoSaved_one">%1$s video saved to Gallery</string>
   <string name="XVideoSaved_other">%1$s videos saved to Gallery</string>
   <string name="ChannelSignMessages">Sign Messages</string>
+  <string name="ChannelShowAuthors">Show Authors\' Profiles</string>
   <string name="ApproveNewMembers">Approve New Members</string>
   <string name="ApproveNewMembersInfo">Turn this on if you want new members to join only after they are approved by an admin.</string>
   <string name="RestrictSaving">Restrict Saving Content</string>
@@ -1289,7 +1290,11 @@
   <string name="ActionPinnedFile">%1$s pinned a **file**</string>
   <string name="ActionPinnedMusic">%1$s pinned an **audio file**</string>
   <string name="ActionPinnedPhoto">%1$s pinned a **photo**</string>
+  <string name="ActionPinnedPaidMedia">%1$s pinned a **paid content**</string>
   <string name="ActionPinnedVideo">%1$s pinned a **video**</string>
+  <string name="ActionPinnedXPhotos">%1$s pinned a **photo**</string>
+  <string name="ActionPinnedXVideos">%1$s pinned a **video**</string>
+  <string name="ActionPinnedXMedia">%1$s pinned a **video**</string>
   <string name="ActionPinnedRound">%1$s pinned a **video message**</string>
   <string name="ActionPinnedVoice">%1$s pinned a **voice message**</string>
   <string name="ActionPinnedStory">%1$s pinned a **story**</string>
@@ -1725,6 +1730,7 @@
   <string name="BioDescription">Any details such as age, occupation or city.\nExample: 23 y.o. designer from San Francisco.</string>
   <string name="AttachPhotoExpired">Expired photo</string>
   <string name="AttachVideoExpired">Expired video</string>
+  <string name="PaidMedia">Paid content</string>
   <string name="AttachVoiceNoteExpired">Expired voice message</string>
   <string name="AttachVideoNoteExpired">Expired video message</string>
   <string name="SendByEnter">Send with Enter</string>
@@ -1764,6 +1770,10 @@
   <string name="ReportChatSpam">Are you sure you want to report %1$s for spam?</string>
   <string name="Report">Report</string>
   <string name="ReportChat">Report %1$s</string>
+  <string name="QReportChat">Report %1$s?</string>
+  <string name="ReportChatAlertBtn">Report</string>
+  <string name="ReportChatReasonOptional">Description</string>
+  <string name="ReportChatReasonRequired">Description (required)</string>
   <string name="ReportChatPhoto">Report %1$s\'s photo?</string>
   <string name="Spam">Spam</string>
   <string name="Fake">Fake</string>
@@ -1771,6 +1781,7 @@
   <string name="ChildAbuse">Child Abuse</string>
   <string name="Pornography">Pornography</string>
   <string name="ReportChatSent">Report sent</string>
+  <string name="ReportChatMessagesRequired">Select messages to include in your report.</string>
   <string name="CopiedMessages">Messages have been copied to the clipboard</string>
   <string name="ForwardedFromX">Forwarded from %1$s</string>
   <string name="InReplyToX">In reply to %1$s</string>
@@ -2058,6 +2069,8 @@
   <string name="EventLogPreviousGroupDescription">Previous description</string>
   <string name="EventLogToggledInvitesOn">%1$s enabled group invites</string>
   <string name="EventLogToggledInvitesOff">%1$s disabled group invites</string>
+  <string name="EventLogToggledShowSenderOn">%1$s enabled sender visibility</string>
+  <string name="EventLogToggledShowSenderOff">%1$s disabled sender visibility</string>
   <string name="EventLogToggledSignaturesOn">%1$s enabled signatures</string>
   <string name="EventLogToggledSignaturesOff">%1$s disabled signatures</string>
   <string name="EventLogToggledProtectionOn">%1$s enabled content protection</string>
@@ -2322,6 +2335,11 @@
   <string name="Beginning">Beginning</string>
   <string name="PaymentSuccessfullyPaid">You successfully transferred %1$s to %2$s for %3$s</string>
   <string name="PaymentSuccessfullyPaidNoItem">You successfully transferred %1$s to %2$s</string>
+  <string name="PaymentRefunded">%1$s refunded %2$s</string>
+  <string name="YouReceivedXStars_one">You received %1$s star for %2$s</string>
+  <string name="YouReceivedXStars_other">You received %1$s stars for %2$s</string>
+  <string name="ReceivedXStars_one">%3$s received %1$s star for %2$s</string>
+  <string name="ReceivedXStars_other">%3$s received %1$s stars for %2$s</string>
   <string name="OpenMessage">View Message</string>
   <string name="SavedMessages">Saved Messages</string>
   <string name="Saved">Saved</string>
@@ -2566,6 +2584,15 @@
   <string name="ReportMessages">Report %1$s\'s messages</string>
   <string name="ReportXMessages_one">Report %1$s message</string>
   <string name="ReportXMessages_other">Report %1$s messages</string>
+
+  <string name="QReportMessageUser">Are you sure you want to report message from %1$s?</string>
+  <string name="QReportMessagesUser">Are you sure you want to report messages from %1$s</string>
+  <string name="QReportMessage">Are you sure you want to report %1$s\'s message?</string>
+  <string name="QReportMessages">Are you sure you want to report %1$s\'s messages?</string>
+  <string name="QReportXMessages_one">Are you sure you want to report %1$s message?</string>
+  <string name="QReportXMessages_other">Are you sure you want to report %1$s messages?</string>
+  <string name="ConfirmReportBtn">Report</string>
+
   <string name="SuggestStickers">Sticker suggestions by emoji</string>
   <string name="SuggestStickersAll">Installed + recommended</string>
   <string name="SuggestStickersInstalled">Only installed</string>
@@ -3839,10 +3866,6 @@
   <string name="UnarchiveXInFolder_user">Unarchive chat with %1$s? It will remain in the current chat folder.</string>
   <string name="UnarchiveXInFolder_chat">Unarchive %1$s? It will remain in the current chat folder.</string>
 
-  <string name="ReportLocation">Group unrelated to location?</string>
-  <string name="ReportLocationTitle">Report unrelated group</string>
-  <string name="ReportLocationDesc">Please let us know if this group is not related to this location:\n\n%1$s</string>
-  <string name="ReportLocationAction">Report</string>
   <string name="SharePhoneNumber">Share Phone Number</string>
   <string name="SharePhoneNumberAction">Share My Phone Number</string>
   <string name="PhoneNumber">Phone Number</string>
@@ -5273,6 +5296,8 @@
   <string name="xGiveawayPrizePremium_other">%1$s **Telegram Premium** subscriptions %2$s.</string>
   <string name="xGiveawayPrizePremiumMonths_one">for %1$s month</string>
   <string name="xGiveawayPrizePremiumMonths_other">for %1$s months</string>
+  <string name="xGiveawayPrizeStar_one">%1$s **Telegram Star**.</string>
+  <string name="xGiveawayPrizeStar_other">%1$s **Telegram Stars**.</string>
   <string name="xGiveawayPrizeReceivedInfo_one">Your prize is a **Telegram Premium** subscription for **%1$s** month.</string>
   <string name="xGiveawayPrizeReceivedInfo_other">Your prize is a **Telegram Premium** subscription for **%1$s** months.</string>
 
@@ -5325,6 +5350,8 @@
 
   <string name="GiveawayInfoOngoingPart1_one">This giveaway is sponsored by the admins of %2$s, who acquired %1$s Telegram Premium subscription for %3$s months for its followers.</string>
   <string name="GiveawayInfoOngoingPart1_other">This giveaway is sponsored by the admins of %2$s, who acquired %1$s Telegram Premium subscriptions for %3$s months for its followers.</string>
+  <string name="GiveawayInfoOngoingPart1Stars_one">This giveaway is sponsored by the admins of %2$s, who acquired %1$s Telegram Star for its followers.</string>
+  <string name="GiveawayInfoOngoingPart1Stars_other">This giveaway is sponsored by the admins of %2$s, who acquired %1$s Telegram Stars for its followers.</string>
   <string name="GiveawayInfoOngoingPart2_one">On %2$s, Telegram will automatically select %1$s random user that joined %3$s.</string>
   <string name="GiveawayInfoOngoingPart2_other">On %2$s, Telegram will automatically select %1$s random users that joined %3$s.</string>
 
@@ -5338,6 +5365,8 @@
 
   <string name="GiveawayInfoEndedPart1_one">This giveaway was sponsored by the admins of %2$s, who acquired %1$s Telegram Premium subscription for %3$s months for its followers.</string>
   <string name="GiveawayInfoEndedPart1_other">This giveaway was sponsored by the admins of %2$s, who acquired %1$s Telegram Premium subscriptions for %3$s months for its followers.</string>
+  <string name="GiveawayInfoEndedPart1Stars_one">This giveaway was sponsored by the admins of %2$s, who acquired %1$s Telegram Star for its followers.</string>
+  <string name="GiveawayInfoEndedPart1Stars_other">This giveaway was sponsored by the admins of %2$s, who acquired %1$s Telegram Stars for its followers.</string>
   <string name="GiveawayInfoEndedPart2_one">On %2$s, Telegram automatically selected %1$s random user that joined %3$s.</string>
   <string name="GiveawayInfoEndedPart2_other">On %2$s, Telegram automatically selected %1$s random users that joined %3$s.</string>
   <string name="GiveawayInfoEndedPart3_one">%1$s of the winners already used their gift link.</string>
@@ -5458,6 +5487,11 @@
   <string name="ReadDate_yesterday">Read yesterday at %1$s</string>
   <string name="ReadDate_weekday">Read on %1$s at %2$s</string>
   <string name="ReadDate_date">Read %1$s at %2$s</string>
+
+  <string name="RenewedSubscriptionUntilX">%1$s renewed subscription until %2$s</string>
+  <string name="RenewedSubscription">%1$s renewed subscription</string>
+  <string name="WonXStars_one">You won %1$s star in a giveaway</string>
+  <string name="WonXStars_other">You won %1$s stars in a giveaway</string>
 
   <string name="PlaybackSpeed">Speed</string>
   <string name="PlaybackSpeed50">Very slow</string>

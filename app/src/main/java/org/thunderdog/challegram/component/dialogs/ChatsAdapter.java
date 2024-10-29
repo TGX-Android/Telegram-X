@@ -41,7 +41,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import me.vkryl.core.ArrayUtils;
-import me.vkryl.td.ChatPosition;
+import tgx.td.ChatPosition;
 
 public class ChatsAdapter extends RecyclerView.Adapter<ChatsViewHolder> {
 

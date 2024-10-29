@@ -10,7 +10,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-package me.vkryl.task
+package tgx.gradle.task
 
 import Telegram
 import com.beust.klaxon.Json
@@ -26,6 +26,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.contracts.ExperimentalContracts
 import kotlin.system.measureTimeMillis
+import tgx.gradle.fatal
 
 open class FetchLanguagesTask : BaseTask() {
   data class Languages (
@@ -160,7 +161,7 @@ open class FetchLanguagesTask : BaseTask() {
     languageCodes.sortWith { a, b -> (b == defaultLanguageCode).compareTo(a == defaultLanguageCode) }
 
     if (languageCodes[0] != defaultLanguageCode) {
-      error("Default language not found: $languageCodes")
+      fatal("Default language not found: $languageCodes")
     }
 
     logger.lifecycle("Fetched languages list")
@@ -224,7 +225,7 @@ open class FetchLanguagesTask : BaseTask() {
 
             if (!isDefault) {
               val outputFolders = knownOutputFolders[languageCode] ?: when {
-                languageCode.contains('-') -> error("Unsupported language code: $languageCode")
+                languageCode.contains('-') -> fatal("Unsupported language code: $languageCode")
                 else -> arrayOf(languageCode)
               }
 

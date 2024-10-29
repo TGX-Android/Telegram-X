@@ -29,7 +29,6 @@ import android.widget.EditText;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.StringRes;
 
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
@@ -50,7 +49,7 @@ import me.vkryl.android.ViewUtils;
 import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.td.TdConstants;
+import tgx.td.TdConstants;
 
 public class EditHeaderView extends FrameLayoutFix implements RtlCheckListener, Destroyable, StretchyHeaderView, TextWatcher, HeaderView.OffsetChangeListener {
   private final ViewController<?> parent;

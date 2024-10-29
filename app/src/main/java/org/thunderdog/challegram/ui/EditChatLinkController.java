@@ -42,7 +42,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.RunnableLong;
-import me.vkryl.td.TdConstants;
+import tgx.td.TdConstants;
 
 public class EditChatLinkController extends EditBaseController<EditChatLinkController.Args> implements View.OnClickListener, SettingsAdapter.TextChangeListener {
   private static final int[] EXPIRE_DATE_PRESETS = new int[]{3600, 3600 * 24, 3600 * 24 * 7};

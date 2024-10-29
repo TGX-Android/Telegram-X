@@ -147,9 +147,9 @@ import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.FutureBool;
 import me.vkryl.core.lambda.RunnableLong;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
-import me.vkryl.td.TdConstants;
+import tgx.td.ChatId;
+import tgx.td.Td;
+import tgx.td.TdConstants;
 
 public class ProfileController extends ViewController<ProfileController.Args> implements
   Menu,
@@ -1023,7 +1023,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, RecyclerView parent, @NonNull RecyclerView.State state) {
       RecyclerView.ViewHolder holder = parent.getChildViewHolder(view);
       if (holder != null) {
-        final int position = holder.getAdapterPosition();
+        final int position = holder.getBindingAdapterPosition();
         final int itemCount = parent.getAdapter().getItemCount();
 
         int top = 0;
@@ -1053,7 +1053,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     @Override
     public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, RecyclerView parent, @NonNull RecyclerView.State state) {
       RecyclerView.ViewHolder holder = parent.getChildViewHolder(view);
-      if (holder != null && holder.getAdapterPosition() == baseAdapter.getItems().size() - 1) {
+      if (holder != null && holder.getBindingAdapterPosition() == baseAdapter.getItems().size() - 1) {
 
         final int parentHeight = parent.getMeasuredHeight();
         final int originalBottom = parentHeight - getPagerTopViewHeight() - getShadowBottomHeight();
@@ -1930,7 +1930,13 @@ public class ProfileController extends ViewController<ProfileController.Args> im
               break;
             }
           }
-        } else if (itemId == R.id.btn_toggleSignatures || itemId == R.id.btn_toggleProtection || itemId == R.id.btn_toggleJoinByRequest || itemId == R.id.btn_toggleAggressiveAntiSpam || itemId == R.id.btn_toggleHideMembers) {
+        } else if (
+          itemId == R.id.btn_toggleSignatures ||
+          itemId == R.id.btn_toggleShowAuthors ||
+          itemId == R.id.btn_toggleProtection ||
+          itemId == R.id.btn_toggleJoinByRequest ||
+          itemId == R.id.btn_toggleAggressiveAntiSpam ||
+          itemId == R.id.btn_toggleHideMembers) {
           view.getToggler().setRadioEnabled(item.isSelected(), isUpdate);
         }
         if (item.getViewType() == ListItem.TYPE_RADIO_SETTING) {
@@ -3265,7 +3271,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             new ListItem(ListItem.TYPE_SHADOW_TOP),
             new ListItem(ListItem.TYPE_SETTING, R.id.btn_convertToBroadcastGroup, 0, R.string.ConvertToBroadcastGroup),
             new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
-            new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.pluralBold(R.string.ConvertToBroadcastGroupDesc, tdlib.supergroupMaxSize()))
+            new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.pluralBold(R.string.ConvertToBroadcastGroupDesc, tdlib.supergroupSizeMax()))
           );
         }
       } else {
@@ -3318,6 +3324,30 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (tdlib.canToggleSignMessages(chat)) {
       boolean newValue = baseAdapter.toggleView(v);
       toggleSignMessagesItem.setSelected(newValue);
+      if (newValue) {
+        int insertIndex = baseAdapter.indexOfView(toggleSignMessagesItem);
+        if (insertIndex != -1) {
+          baseAdapter.addItems(insertIndex + 1,
+            new ListItem(ListItem.TYPE_SEPARATOR_FULL),
+            toggleShowAuthorsItem
+          );
+        }
+      } else {
+        int deleteIndex = baseAdapter.indexOfView(toggleShowAuthorsItem);
+        if (deleteIndex != -1) {
+          baseAdapter.removeRange(deleteIndex - 1, 2);
+        }
+      }
+      // TODO hint
+      onItemsHeightProbablyChanged();
+      checkDoneButton();
+    }
+  }
+
+  private void toggleChannelShowAuthors (View v) {
+    if (tdlib.canToggleSignMessages(chat)) {
+      boolean newValue = baseAdapter.toggleView(v);
+      toggleShowAuthorsItem.setSelected(newValue);
       checkDoneButton();
     }
   }
@@ -3732,7 +3762,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     if (hasSignMessagesChanges) {
-      changes.add(new TdApi.ToggleSupergroupSignMessages(ChatId.toSupergroupId(chat.id), toggleSignMessagesItem.isSelected()));
+      boolean signMessages = toggleSignMessagesItem.isSelected();
+      boolean showAuthors = signMessages && toggleShowAuthorsItem.isSelected();
+      changes.add(new TdApi.ToggleSupergroupSignMessages(ChatId.toSupergroupId(chat.id), signMessages, showAuthors));
     }
 
     if (changes.isEmpty()) {
@@ -3838,7 +3870,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private ListItem slowModeItem, slowModeDescItem;
   private ListItem aggressiveAntiSpamItem, hideMembersItem,
-    toggleJoinByRequestItem, toggleHasProtectionItem, toggleSignMessagesItem;
+    toggleJoinByRequestItem, toggleHasProtectionItem, toggleSignMessagesItem, toggleShowAuthorsItem;
   private ListItem ttlItem, ttlDescItem;
 
   private void buildEditCells () {
@@ -3942,6 +3974,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (tdlib.canToggleSignMessages(chat)) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
       items.add(toggleSignMessagesItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleSignatures, 0, R.string.ChannelSignMessages, supergroup.signMessages));
+      toggleShowAuthorsItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleShowAuthors, 0, R.string.ChannelShowAuthors, supergroup.showMessageSender);
+      if (supergroup.signMessages) {
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        items.add(toggleShowAuthorsItem);
+      }
       added = true;
     }
     if (tdlib.canToggleContentProtection(chat.id) || (myStatus != null && TD.isAdmin(myStatus))) {
@@ -4024,7 +4061,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_convertToBroadcastGroup, 0, R.string.ConvertToBroadcastGroup));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.pluralBold(R.string.ConvertToBroadcastGroupDesc, tdlib.supergroupMaxSize())));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.pluralBold(R.string.ConvertToBroadcastGroupDesc, tdlib.supergroupSizeMax())));
     }
 
     if ((supergroupFull != null && supergroupFull.canHideMembers) || (groupFull != null && groupFull.canHideMembers && tdlib.canUpgradeChat(chat.id))) {
@@ -4310,8 +4347,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         if (supergroupFull == null) {
           return;
         }
-        if (supergroupFull.memberCount >= tdlib.supergroupMaxSize()) {
-          context.tooltipManager().builder(view).show(this, tdlib, R.drawable.baseline_error_24, Lang.pluralBold(R.string.ParticipantXLimitReached, tdlib.supergroupMaxSize()));
+        if (supergroupFull.memberCount >= tdlib.supergroupSizeMax()) {
+          context.tooltipManager().builder(view).show(this, tdlib, R.drawable.baseline_error_24, Lang.pluralBold(R.string.ParticipantXLimitReached, tdlib.supergroupSizeMax()));
           return;
         }
       }

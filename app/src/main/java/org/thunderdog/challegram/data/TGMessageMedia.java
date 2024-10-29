@@ -51,7 +51,7 @@ import java.util.ArrayList;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class TGMessageMedia extends TGMessage {
   // private MediaWrapper mediaWrapper;

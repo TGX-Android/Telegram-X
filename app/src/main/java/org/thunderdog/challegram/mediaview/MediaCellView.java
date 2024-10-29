@@ -80,7 +80,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class MediaCellView extends ViewGroup implements
   MediaCellViewDetector.Callback,

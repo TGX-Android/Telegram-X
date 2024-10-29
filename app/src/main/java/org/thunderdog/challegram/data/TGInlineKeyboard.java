@@ -72,7 +72,7 @@ import me.vkryl.core.CurrencyUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class TGInlineKeyboard {
   private static final float CURRENCY_TEXT_SIZE_DP = 10f;

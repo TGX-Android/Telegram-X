@@ -61,7 +61,7 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.MathUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class AudioController extends BasePlaybackController implements TGAudio.PlayListener, TGPlayerController.TrackListChangeListener, FactorAnimator.Target {
   private final TdlibManager context;
