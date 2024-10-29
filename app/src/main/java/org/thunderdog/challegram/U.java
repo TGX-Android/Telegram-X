@@ -493,6 +493,16 @@ public class U {
         case TdlibNotificationManager.ID_ONGOING_CALL_NOTIFICATION:
         case TdlibNotificationManager.ID_INCOMING_CALL_NOTIFICATION:
           knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL;
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (UI.getAppContext().checkSelfPermission(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+              knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA;
+            }
+            if (UI.getAppContext().checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+              knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
+            }
+          }
+          knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION;
+          knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK;
           break;
         case TdlibNotificationManager.ID_PENDING_TASK:
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
