@@ -707,8 +707,7 @@ public class TGCallService extends Service implements
   private static final @DrawableRes int CALL_ICON_RES = R.drawable.baseline_phone_24_white;
 
   private void showNotification () {
-    boolean needNotification = call != null && (call.isOutgoing || call.state.getConstructor() == TdApi.CallStateExchangingKeys.CONSTRUCTOR || call.state.getConstructor() == TdApi.CallStateReady.CONSTRUCTOR) && !TD.isFinished(call) && UI.getUiState() != UI.State.RESUMED;
-
+    boolean needNotification = call != null && (call.isOutgoing || call.state.getConstructor() == TdApi.CallStateExchangingKeys.CONSTRUCTOR || call.state.getConstructor() == TdApi.CallStateReady.CONSTRUCTOR) && !TD.isFinished(call);
     if (needNotification == (ongoingCallNotification != null)) {
       return;
     }
