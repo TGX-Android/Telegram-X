@@ -72,7 +72,9 @@ public class NLoader implements ReLinker.Logger {
         loadLibraryImpl(reLinker, "sslx", BuildConfig.OPENSSL_VERSION_FULL);
         loadLibraryImpl(reLinker, "tdjni", BuildConfig.TDLIB_VERSION);
         loadLibraryImpl(reLinker, "leveldbjni", BuildConfig.LEVELDB_VERSION);
-        loadLibraryImpl(reLinker, "tgcallsjni", BuildConfig.JNI_VERSION /*TODO: separate variable?*/);
+        if (!BuildConfig.USE_NTGCALLS) {
+          loadLibraryImpl(reLinker, "tgcallsjni", BuildConfig.JNI_VERSION /*TODO: separate variable?*/);
+        }
         loadLibraryImpl(reLinker, "tgxjni", BuildConfig.JNI_VERSION);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
           OpusLibrary.setLibraries(C.CRYPTO_TYPE_UNSUPPORTED);
@@ -87,7 +89,7 @@ public class NLoader implements ReLinker.Logger {
               VpxLibrary.getVersion(),
               FfmpegLibrary.getVersion(),
               VoIPController.getVersion(),
-              TextUtils.join("+", N.getTgCallsVersions())
+              TextUtils.join("+", N.getTgCallsLibVersions())
             ));
             VideoCodecInfo[] softwareVideoCodecs = new SoftwareVideoEncoderFactory().getSupportedCodecs();
           }

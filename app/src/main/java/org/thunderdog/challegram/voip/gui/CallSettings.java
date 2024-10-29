@@ -21,6 +21,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.service.TGCallService;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.pytgcalls.ntgcallsx.VoIPFloatingLayout;
 
 public class CallSettings {
   public static final int SPEAKER_MODE_NONE = 0;
@@ -32,7 +33,11 @@ public class CallSettings {
   private final int callId;
 
   private boolean micMuted;
+  private boolean screenSharing;
+  private boolean cameraSharing;
+  private boolean cameraFrontFacing = true;
   private int speakerMode;
+  private int localCameraState = VoIPFloatingLayout.STATE_GONE, remoteCameraState = VoIPFloatingLayout.STATE_GONE;
 
   public CallSettings (Tdlib tdlib, int callId) {
     this.tdlib = tdlib;
@@ -54,6 +59,36 @@ public class CallSettings {
     return micMuted;
   }
 
+  public int getLocalCameraState () {
+    return localCameraState;
+  }
+
+  public int getRemoteCameraState () {
+    return remoteCameraState;
+  }
+
+  public void setCameraSharing (boolean cameraSharing) {
+    if (this.cameraSharing != cameraSharing) {
+      this.cameraSharing = cameraSharing;
+      tdlib.cache().onUpdateCallSettings(callId, this);
+    }
+  }
+
+  public boolean isCameraSharing () {
+    return cameraSharing;
+  }
+
+  public void setCameraFrontFacing (boolean cameraFrontFacing) {
+    if (this.cameraFrontFacing != cameraFrontFacing) {
+      this.cameraFrontFacing = cameraFrontFacing;
+      tdlib.cache().onUpdateCallSettings(callId, this);
+    }
+  }
+
+  public boolean isCameraFrontFacing () {
+    return cameraFrontFacing;
+  }
+
   private boolean isCallActive () {
     TdApi.Call call = tdlib.cache().getCall(callId);
     return call != null && !TD.isFinished(call);
@@ -64,6 +99,35 @@ public class CallSettings {
       this.speakerMode = mode;
       tdlib.cache().onUpdateCallSettings(callId, this);
     }
+  }
+
+  public void setLocalCameraState (int state) {
+    if (localCameraState != state) {
+      localCameraState = state;
+      tdlib.cache().onUpdateCallSettings(callId, this);
+    }
+  }
+
+  public void setRemoteCameraState (int state) {
+    if (remoteCameraState != state) {
+      remoteCameraState = state;
+      tdlib.cache().onUpdateCallSettings(callId, this);
+    }
+  }
+
+  public int getAvailableLocalCameraState () {
+    return remoteCameraState == VoIPFloatingLayout.STATE_FULLSCREEN ? VoIPFloatingLayout.STATE_FLOATING : VoIPFloatingLayout.STATE_FULLSCREEN;
+  }
+
+  public void setScreenSharing (boolean screenSharing) {
+    if (this.screenSharing != screenSharing) {
+      this.screenSharing = screenSharing;
+      tdlib.cache().onUpdateCallSettings(callId, this);
+    }
+  }
+
+  public boolean isScreenSharing () {
+    return screenSharing;
   }
 
   public int getSpeakerMode () {

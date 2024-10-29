@@ -27,6 +27,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
+import android.graphics.Point;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -43,7 +44,9 @@ import android.os.Vibrator;
 import android.telephony.TelephonyManager;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
+import android.view.Display;
 import android.view.KeyEvent;
+import android.view.WindowManager;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
@@ -51,14 +54,20 @@ import androidx.annotation.Nullable;
 import androidx.core.app.NotificationManagerCompat;
 
 import org.drinkless.tdlib.TdApi;
+import org.pytgcalls.ntgcalls.FrameCallback;
 import org.pytgcalls.ntgcalls.NTgCalls;
+import org.pytgcalls.ntgcalls.RemoteSourceChangeCallback;
 import org.pytgcalls.ntgcalls.exceptions.ConnectionException;
 import org.pytgcalls.ntgcalls.exceptions.ConnectionNotFoundException;
 import org.pytgcalls.ntgcalls.media.AudioDescription;
 import org.pytgcalls.ntgcalls.media.MediaDescription;
 import org.pytgcalls.ntgcalls.media.MediaSource;
 import org.pytgcalls.ntgcalls.media.StreamMode;
+import org.pytgcalls.ntgcalls.media.VideoDescription;
 import org.pytgcalls.ntgcalls.p2p.RTCServer;
+import org.pytgcalls.ntgcallsx.CallInterface;
+import org.pytgcalls.ntgcallsx.NTgCallsInterface;
+import org.pytgcalls.ntgcallsx.TgCallsInterface;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -79,6 +88,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.UI;
+import org.pytgcalls.ntgcallsx.VoIPFloatingLayout;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.SoundPoolMap;
 import org.thunderdog.challegram.voip.ConnectionStateListener;
@@ -91,6 +101,7 @@ import org.thunderdog.challegram.voip.annotation.CallState;
 import org.thunderdog.challegram.voip.gui.CallSettings;
 import org.thunderdog.challegram.voip.gui.VoIPFeedbackActivity;
 
+import java.io.FileNotFoundException;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -161,11 +172,7 @@ public class TGCallService extends Service implements
   }
 
   public long getCallDuration () {
-    try {
-      return ntgcalls != null ? ntgcalls.time(CALL_ID, StreamMode.PLAYBACK) * 1000 : VoIPInstance.DURATION_UNKNOWN;
-    } catch (ConnectionNotFoundException e) {
-      return VoIPInstance.DURATION_UNKNOWN;
-    }
+    return tgcalls != null ? tgcalls.getCallDuration() : VoIPInstance.DURATION_UNKNOWN;
   }
 
   private void setCallId (Tdlib tdlib, int callId) {
@@ -189,13 +196,24 @@ public class TGCallService extends Service implements
   }
 
   private SoundPoolMap soundPoolMap;
-  private @Nullable NTgCalls ntgcalls;
-  private static final long CALL_ID = 0;
+  private @Nullable CallInterface tgcalls;
   private @Nullable PrivateCallListener callListener;
   private PowerManager.WakeLock cpuWakelock;
   private BluetoothAdapter btAdapter;
 
   private boolean isProximityNear, isHeadsetPlugged;
+
+  public void setFrameCallback(FrameCallback callback) {
+    if (tgcalls != null) {
+      tgcalls.setFrameCallback(callback);
+    }
+  }
+
+  public void setRemoteSourceChangeCallback(RemoteSourceChangeCallback callback) {
+    if (tgcalls != null) {
+      tgcalls.setRemoteSourceChangeCallback(callback);
+    }
+  }
 
   private final BroadcastReceiver receiver = new BroadcastReceiver() {
     @Override
@@ -272,10 +290,10 @@ public class TGCallService extends Service implements
     this.audioGainControlEnabled = hasEarpiece() && am != null && !am.isSpeakerphoneOn() && !am.isBluetoothScoOn() && !isHeadsetPlugged;
     this.echoCancellationStrength = isHeadsetPlugged || (hasEarpiece() && am != null && !am.isSpeakerphoneOn() && !am.isBluetoothScoOn() && !isHeadsetPlugged) ? 0 : 1;
 
-    //if (tgcalls != null) {
-    //  tgcalls.setAudioOutputGainControlEnabled(audioGainControlEnabled);
-    //  tgcalls.setEchoCancellationStrength(echoCancellationStrength);
-    //}
+    if (tgcalls != null) {
+      tgcalls.setAudioOutputGainControlEnabled(audioGainControlEnabled);
+      tgcalls.setEchoCancellationStrength(echoCancellationStrength);
+    }
   }
 
   public boolean compareCall (Tdlib tdlib, int callId) {
@@ -527,20 +545,24 @@ public class TGCallService extends Service implements
   }
 
   private CallSettings postponedCallSettings;
+  boolean lastCameraStatus;
+  boolean lastCameraFrontFacing;
+  boolean lastScreenSharing;
 
   @Override
   public void onCallSettingsChanged (int callId, CallSettings settings) {
     this.postponedCallSettings = settings;
-    try {
-      if (ntgcalls != null) {
-        if (settings != null && settings.isMicMuted()) {
-          ntgcalls.mute(CALL_ID);
-        } else {
-          ntgcalls.unmute(CALL_ID);
-        }
+    if (tgcalls != null && settings != null) {
+      tgcalls.setMicDisabled(settings.isMicMuted());
+      if (settings.isCameraSharing() != lastCameraStatus || settings.isCameraFrontFacing() != lastCameraFrontFacing) {
+        lastCameraStatus = settings.isCameraSharing();
+        lastCameraFrontFacing = settings.isCameraFrontFacing();
+        tgcalls.setCameraEnabled(lastCameraStatus, lastCameraFrontFacing);
       }
-    } catch (ConnectionNotFoundException e) {
-      Log.e(Log.TAG_VOIP, "Error setting call settings", e);
+      if (lastScreenSharing != settings.isScreenSharing()) {
+        lastScreenSharing = settings.isScreenSharing();
+        tgcalls.setScreenShareEnabled(lastScreenSharing);
+      }
     }
     setAudioMode(settings != null ? settings.getSpeakerMode() : CallSettings.SPEAKER_MODE_NONE);
   }
@@ -563,7 +585,7 @@ public class TGCallService extends Service implements
   }
 
   public long getConnectionId () {
-    return 0;
+    return tgcalls != null ? tgcalls.getConnectionId() : 0;
   }
 
   private void hangUp () {
@@ -1119,12 +1141,19 @@ public class TGCallService extends Service implements
       }
     }
     this.lastNetworkType = type;
+    if (dispatchToTgCalls && tgcalls != null) {
+      tgcalls.setNetworkType(type);
+    }
   }
 
   private NetworkStats stats = new NetworkStats(), prevStats = new NetworkStats();
   private long prevDuration;
 
   private void updateStats () {
+    if (tgcalls == null) {
+      return;
+    }
+    tgcalls.getNetworkStats(stats);
     long newDuration = getCallDuration();
     if (newDuration == VoIPInstance.DURATION_UNKNOWN) {
       newDuration = 0;
@@ -1156,11 +1185,15 @@ public class TGCallService extends Service implements
   private CharSequence lastDebugLog;
 
   private void releaseTgCalls (@Nullable Tdlib tdlib, @Nullable TdApi.Call call) {
-    if (ntgcalls != null && !ntgcalls.calls().isEmpty()) {
-      try {
-        ntgcalls.stop(CALL_ID);
-      } catch (ConnectionNotFoundException e) {
-        Log.e(Log.TAG_VOIP, "Error releasing tg calls", e);
+    if (tgcalls != null) {
+      if (call == null) {
+        call = tgcalls.getCall();
+      }
+      if (tdlib == null) {
+        tdlib = tgcalls.tdlib();
+        lastDebugLog = tgcalls.collectDebugLog();
+        tgcalls.performDestroy();
+        tgcalls = null;
       }
     }
     if (callListener != null && tdlib != null && call != null) {
@@ -1171,7 +1204,7 @@ public class TGCallService extends Service implements
   }
 
   private boolean isInitiated () {
-    return ntgcalls != null && ntgcalls.calls().containsKey(CALL_ID);
+    return tgcalls != null && tgcalls.isInitiated();
   }
 
   private void checkInitiated () {
@@ -1213,7 +1246,7 @@ public class TGCallService extends Service implements
         if (newState == CallState.ESTABLISHED) {
           tdlib.dispatchCallStateChanged(call.id, newState);
         } else if (newState == CallState.FAILED) {
-          long connectionId = context.getConnectionId();
+          long connectionId = context != null ? context.getConnectionId() : 0;
           tdlib.context().calls().hangUp(tdlib, call.id, true, connectionId);
         }
       }
@@ -1228,89 +1261,32 @@ public class TGCallService extends Service implements
         tdlib.client().send(new TdApi.SendCallSignalingData(call.id, data), tdlib.silentHandler());
       }
     };
-    if (ntgcalls == null) {
-      ntgcalls = new NTgCalls();
-      this.callListener = new PrivateCallListener() {
-        @Override
-        public void onNewCallSignalingDataArrived (int callId, byte[] data) {
-          try {
-            ntgcalls.sendSignalingData(CALL_ID, data);
-          } catch (ConnectionException e) {
-            Log.e(Log.TAG_VOIP, "Error sending signaling data", e);
-          }
-        }
-      };
-      tdlib.listeners().subscribeToCallUpdates(call.id, callListener);
-      ntgcalls.setSignalingDataCallback((callId, data) -> {
-        tdlib.client().send(new TdApi.SendCallSignalingData(call.id, data), tdlib.silentHandler());
-      });
-    }
     try {
-      ntgcalls.createP2PCall(
-        CALL_ID,
-        new MediaDescription(
-          new AudioDescription(
-            MediaSource.DEVICE,
-            NTgCalls.getMediaDevices().audio.get(0).metadata,
-            96000,
-            16,
-            2
-          ),
-          null,
-          null,
-          null
-        )
-      );
-      ntgcalls.setStreamSources(
-        CALL_ID,
-        StreamMode.PLAYBACK,
-        new MediaDescription(
-          new AudioDescription(
-            MediaSource.DEVICE,
-            NTgCalls.getMediaDevices().audio.get(1).metadata,
-            96000,
-            16,
-            2
-          ),
-          null,
-          null,
-          null
-        )
-      );
-      ntgcalls.skipExchange(CALL_ID, state.encryptionKey, call.isOutgoing);
-      var rtcServers = Arrays.stream(state.servers)
-        .map(server -> {
-          if (server.type instanceof TdApi.CallServerTypeWebrtc) {
-            var webrtc = (TdApi.CallServerTypeWebrtc) server.type;
-            return new RTCServer(
-              server.id,
-              server.ipAddress,
-              server.ipv6Address,
-              server.port,
-              webrtc.username,
-              webrtc.password,
-              webrtc.supportsTurn,
-              webrtc.supportsStun,
-              false,
-              null
-            );
-          } else {
-            var reflector = (TdApi.CallServerTypeTelegramReflector) server.type;
-            return new RTCServer(
-              server.id,
-              server.ipAddress,
-              server.ipv6Address,
-              server.port,
-              null,
-              null,
-              true,
-              false,
-              reflector.isTcp,
-              reflector.peerTag
-            );
+      if (tgcalls == null) {
+        if (BuildConfig.USE_NTGCALLS) {
+          tgcalls = new NTgCallsInterface(tdlib, call, state, stateListener);
+        } else {
+          tgcalls = new TgCallsInterface(
+            tdlib,
+            call,
+            state,
+            stateListener,
+            forceTcp,
+            callProxy,
+            lastNetworkType,
+            audioGainControlEnabled,
+            echoCancellationStrength,
+            isMicDisabled
+          );
+        }
+        this.callListener = new PrivateCallListener() {
+          @Override
+          public void onNewCallSignalingDataArrived (int callId, byte[] data) {
+            if (tgcalls != null) tgcalls.handleIncomingSignalingData(data);
           }
-        }).collect(Collectors.toList());
-      ntgcalls.connectP2P(CALL_ID, rtcServers, List.of(state.protocol.libraryVersions), state.allowP2p);
+        };
+        tdlib.listeners().subscribeToCallUpdates(call.id, callListener);
+      }
     } catch (Throwable e) {
       Log.e(Log.TAG_VOIP, "Error creating call", e);
       hangUp();
@@ -1327,6 +1303,10 @@ public class TGCallService extends Service implements
     return reference != null ? reference.get() : null;
   }
 
+  public boolean isVideoSupported () {
+    return tgcalls != null && tgcalls.isVideoSupported();
+  }
+
   private boolean logViewed;
 
   public static void markLogViewed () {
@@ -1338,11 +1318,19 @@ public class TGCallService extends Service implements
 
   @NonNull
   public CharSequence getLibraryNameAndVersion () {
-    return "ntgcalls";
+    return tgcalls != null ?
+      tgcalls.getLibraryName() + " " + tgcalls.getLibraryVersion() :
+      "unknown";
   }
 
   @NonNull
   public CharSequence getDebugString () {
+    if (tgcalls != null) {
+      CharSequence log = tgcalls.collectDebugLog();
+      if (log != null) {
+        return log;
+      }
+    }
     return "";
   }
 }

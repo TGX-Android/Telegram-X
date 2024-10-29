@@ -25,6 +25,7 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.pytgcalls.ntgcalls.NTgCalls;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.config.Config;
@@ -310,7 +311,7 @@ public class VoIP {
 
   public static String[] getAvailableVersions (boolean allowFilter) {
     String tgVoipVersion = VoIPController.getVersion();
-    String[] tgCallsVersions = N.getTgCallsVersions();
+    String[] tgCallsVersions = N.getTgCallsLibVersions();
 
     Set<String> versions = new LinkedHashSet<>();
     if (!allowFilter || !isForceDisabled(tgVoipVersion)) {
@@ -356,8 +357,10 @@ public class VoIP {
 
   public static void initialize (Context context) {
     ContextUtils.initialize(context);
-    int bufferSize = getNativeBufferSize(context);
-    VoIPController.setNativeBufferSize(bufferSize);
+    if (!BuildConfig.USE_NTGCALLS) {
+      int bufferSize = getNativeBufferSize(context);
+      VoIPController.setNativeBufferSize(bufferSize);
+    }
   }
 
   public static VoIPInstance instantiateAndConnect (
@@ -373,7 +376,7 @@ public class VoIP {
     boolean isMicDisabled
   ) throws IllegalArgumentException {
     final String libtgvoipVersion = VoIPController.getVersion();
-    final String[] tgCallsVersions = N.getTgCallsVersions();
+    final String[] tgCallsVersions = N.getTgCallsLibVersions();
 
     final VoIPLogs.Pair logFiles = VoIPLogs.getNewFile(true);
     tdlib.storeCallLogInformation(call, logFiles);

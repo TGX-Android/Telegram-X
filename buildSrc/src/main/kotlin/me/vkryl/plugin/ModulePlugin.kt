@@ -71,11 +71,13 @@ open class ModulePlugin : Plugin<Project> {
     val amazonAppStoreUrl = properties.getProperty("app.amazon_download_url", null)
     val isExampleBuild = appId.startsWith("com.example.") || appId.startsWith("org.example.")
     val isExperimentalBuild = isExampleBuild || keystore == null || properties.getProperty("app.experimental", "false") == "true"
+    val useNTgCalls = properties.getProperty("app.ntgcalls", "false") == "true"
     val dontObfuscate = isExampleBuild || properties.getProperty("app.dontobfuscate", "false") == "true"
     val forceOptimize = properties.getProperty("app.forceoptimize") == "true"
 
     project.extra.set("experimental", isExperimentalBuild)
     project.extra.set("app_name", appName)
+    project.extra.set("use_ntgcalls", useNTgCalls)
 
     val versions = loadProperties("version.properties")
 
