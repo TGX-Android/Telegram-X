@@ -57,9 +57,9 @@ import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
-import me.vkryl.td.TdConstants;
+import tgx.td.ChatId;
+import tgx.td.Td;
+import tgx.td.TdConstants;
 
 public class EditRightsController extends EditBaseController<EditRightsController.Args> implements View.OnClickListener, TdlibCache.BasicGroupDataChangeListener {
   public static final int MODE_ADMIN_PROMOTION = 1;
@@ -1426,7 +1426,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       case RightId.EMBED_LINKS: {
         setCanViewMessages(canViewMessages || newValue);
         targetRestrict.permissions.canSendBasicMessages = targetRestrict.permissions.canSendBasicMessages || newValue;
-        targetRestrict.permissions.canAddWebPagePreviews = newValue;
+        targetRestrict.permissions.canAddLinkPreviews = newValue;
         break;
       }
       case RightId.CHANGE_CHAT_INFO: {
@@ -1498,7 +1498,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     if (getArgumentsStrict().mode == MODE_CHAT_PERMISSIONS || getArgumentsStrict().mode == MODE_RESTRICTION) {
       targetRestrict.isMember = canViewMessages;
       targetRestrict.permissions.canSendBasicMessages = getValueForId(RightId.SEND_BASIC_MESSAGES);
-      targetRestrict.permissions.canAddWebPagePreviews = getValueForId(RightId.EMBED_LINKS);
+      targetRestrict.permissions.canAddLinkPreviews = getValueForId(RightId.EMBED_LINKS);
       targetRestrict.permissions.canSendAudios = getValueForId(RightId.SEND_AUDIO);
       targetRestrict.permissions.canSendDocuments = getValueForId(RightId.SEND_DOCS);
       targetRestrict.permissions.canSendPhotos = getValueForId(RightId.SEND_PHOTOS);
@@ -1568,7 +1568,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           return canViewMessages && targetRestrict.permissions.canSendBasicMessages;
         }
       case RightId.EMBED_LINKS:
-        return canViewMessages && targetRestrict.permissions.canSendBasicMessages && targetRestrict.permissions.canAddWebPagePreviews;
+        return canViewMessages && targetRestrict.permissions.canSendBasicMessages && targetRestrict.permissions.canAddLinkPreviews;
       case RightId.SEND_AUDIO:
         return canViewMessages && targetRestrict.permissions.canSendAudios;
       case RightId.SEND_DOCS:

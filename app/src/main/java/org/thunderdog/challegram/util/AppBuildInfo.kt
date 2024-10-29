@@ -14,9 +14,9 @@ package org.thunderdog.challegram.util
 
 import me.vkryl.core.limit
 import me.vkryl.leveldb.LevelDB
-import me.vkryl.td.tdlibCommitHashFull
-import me.vkryl.td.tdlibVersion
 import org.thunderdog.challegram.BuildConfig
+import tgx.td.tdlibCommitHashFull
+import tgx.td.tdlibVersion
 import kotlin.math.max
 
 data class AppBuildInfo(

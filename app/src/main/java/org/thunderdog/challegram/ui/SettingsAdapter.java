@@ -764,7 +764,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
             }
             if (!ok) {
               SettingHolder holder = (SettingHolder) parentView.getChildViewHolder(view);
-              int actualPosition = holder != null ? holder.getAdapterPosition() : -1;
+              int actualPosition = holder != null ? holder.getBindingAdapterPosition() : -1;
               if (actualPosition != RecyclerView.NO_POSITION) {
                 onBindViewHolder(holder, actualPosition);
               } else {

@@ -10,7 +10,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-package me.vkryl.task
+package tgx.gradle.task
 
 import java.io.File
 import java.io.FileOutputStream
@@ -18,6 +18,7 @@ import java.io.Writer
 import java.nio.channels.FileChannel
 import java.nio.file.StandardOpenOption
 import java.util.*
+import tgx.gradle.fatal
 
 fun isWindowsHost(): Boolean {
   return System.getProperty("os.name").startsWith("Windows")
@@ -40,19 +41,19 @@ fun writeToFile(path: String, block: (Writer) -> Unit) {
 fun writeToFile(file: File, mkdirs: Boolean = true, block: (Writer) -> Unit) {
   if (file.parentFile == null) {
     if (mkdirs) {
-      error("Invalid file path: ${file.absolutePath}")
+      fatal("Invalid file path: ${file.absolutePath}")
     }
   } else if (!file.parentFile.exists()) {
     if (mkdirs) {
       if (!file.parentFile.mkdirs())
-        error("Could not create folder: ${file.parentFile.absolutePath}")
+        fatal("Could not create folder: ${file.parentFile.absolutePath}")
     } else {
-      error("Folder does not exist: ${file.parentFile.absolutePath}")
+      fatal("Folder does not exist: ${file.parentFile.absolutePath}")
     }
   }
 
   if (file.exists() && !file.isFile) {
-    error("Not a file: ${file.absolutePath}")
+    fatal("Not a file: ${file.absolutePath}")
   }
   val outFile = File(file.parentFile, "${file.name}.temp")
   FileOutputStream(outFile).use { stream ->

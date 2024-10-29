@@ -40,7 +40,7 @@ import java.util.ArrayList;
 
 import me.vkryl.core.collection.LongSparseIntArray;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class PageBlockTable extends PageBlock implements Destroyable {
   private static final int MARGIN_BOTTOM = 6;

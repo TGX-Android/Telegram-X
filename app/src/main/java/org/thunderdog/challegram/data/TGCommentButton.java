@@ -61,8 +61,8 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
-import me.vkryl.td.MessageId;
-import me.vkryl.td.Td;
+import tgx.td.MessageId;
+import tgx.td.Td;
 
 public final class TGCommentButton implements FactorAnimator.Target, TextColorSet, FormattedCounterAnimator.Callback<Text>, ClickHelper.Delegate {
   @Retention(RetentionPolicy.SOURCE)
@@ -654,9 +654,9 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
         fallbackMessageId = null;
       }
     } else {
-      TdApi.Message messageWithThread = context.findMessageWithThread();
-      if (messageWithThread != null) {
-        messageId = new MessageId(messageWithThread.chatId, messageWithThread.id);
+      TdApi.Message messageWithReplyInfo = context.findMessageWithReplyInfo();
+      if (messageWithReplyInfo != null) {
+        messageId = new MessageId(messageWithReplyInfo.chatId, messageWithReplyInfo.id);
         fallbackMessageId = null;
       } else {
         return;

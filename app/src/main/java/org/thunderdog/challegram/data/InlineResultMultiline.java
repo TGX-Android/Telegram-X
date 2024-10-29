@@ -33,7 +33,6 @@ import org.thunderdog.challegram.telegram.TdlibAccentColor;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextEntity;
@@ -44,14 +43,15 @@ import java.net.URLDecoder;
 
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
+import tgx.td.TdExt;
 
 public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult> implements Text.ClickCallback {
   private String title, description;
   private TdApi.TextEntity[] descriptionEntities;
   private boolean isEmail;
   private String url;
-  private TdApi.WebPage webPage;
+  private TdApi.LinkPreview linkPreview;
 
   private final AvatarPlaceholder avatarPlaceholder;
 
@@ -91,15 +91,15 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
     setMessage(message);
 
     TdApi.FormattedText text = Td.textOrCaption(message.content);
-    TdApi.WebPage webPage = Td.isText(message.content) ? ((TdApi.MessageText) message.content).webPage : null;
+    TdApi.LinkPreview linkPreview = Td.isText(message.content) ? ((TdApi.MessageText) message.content).linkPreview : null;
 
-    if (webPage != null) {
-      this.title = Strings.any(webPage.title, webPage.document != null ? webPage.document.fileName : null, webPage.audio != null ? webPage.audio.title : null, webPage.siteName);
-      this.description = webPage.description.text;
-      this.descriptionEntities = webPage.description.entities;
-      this.webPage = webPage;
-      String urlInText = Td.findUrl(text, webPage.url, true);
-      this.url = !StringUtils.isEmpty(urlInText) ? urlInText : webPage.url;
+    if (linkPreview != null) {
+      this.title = TdExt.getContentTitle(linkPreview);
+      this.description = linkPreview.description.text;
+      this.descriptionEntities = linkPreview.description.entities;
+      this.linkPreview = linkPreview;
+      String urlInText = Td.findUrl(text, linkPreview.url, true);
+      this.url = !StringUtils.isEmpty(urlInText) ? urlInText : linkPreview.url;
     } else if (text != null) {
       TdApi.TextEntity effectiveEntity = null;
       main: for (TdApi.TextEntity entity : text.entities) {
@@ -256,7 +256,7 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
       urlWrap = new TextWrapper(displayUrl, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL)
         .setEntities(TextEntity.valueOf(tdlib, displayUrl, new TdApi.TextEntity[] { new TdApi.TextEntity(0, displayUrl.length(), isEmail ? new TdApi.TextEntityTypeEmailAddress() : new TdApi.TextEntityTypeUrl() )}, null), null);
       urlWrap.setMaxLines(2);
-      if (webPage != null) {
+      if (linkPreview != null) {
         urlWrap.setClickCallback(this);
       }
       urlWrap.setViewProvider(currentViews);
@@ -275,9 +275,9 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
   }
 
   @Override
-  public TdApi.WebPage findWebPage (String link) {
-    if (TGWebPage.isPreviewOf(webPage.url, link)) {
-      return webPage;
+  public TdApi.LinkPreview findLinkPreview (String link) {
+    if (TGWebPage.isPreviewOf(linkPreview.url, link)) {
+      return linkPreview;
     }
     return null;
   }

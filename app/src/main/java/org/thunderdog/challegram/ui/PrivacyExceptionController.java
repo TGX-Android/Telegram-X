@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.collection.LongList;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class PrivacyExceptionController extends RecyclerViewController<PrivacyExceptionController.Args> implements PrivacySettingsListener, View.OnClickListener, TdlibCache.UserDataChangeListener, ChatListener {
   public static class Args {

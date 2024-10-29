@@ -57,7 +57,7 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.FutureBool;
-import me.vkryl.td.ChatPosition;
+import tgx.td.ChatPosition;
 
 public class ChatFoldersFeatureController extends SinglePageBottomSheetViewController<ChatFoldersFeatureController.Page, Void> {
 

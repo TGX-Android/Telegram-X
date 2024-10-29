@@ -78,8 +78,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import me.leolin.shortcutbadger.ShortcutBadger;
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, FileUpdateListener {
   private static final boolean USE_GROUPS = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;

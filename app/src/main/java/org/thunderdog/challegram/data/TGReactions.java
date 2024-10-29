@@ -40,7 +40,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +52,8 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.td.Td;
+import tgx.td.Td;
+import tgx.td.TdExt;
 
 public class TGReactions implements Destroyable, ReactionLoadListener {
   private final Tdlib tdlib;
@@ -99,10 +99,26 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     }
   }
 
+  public static @Nullable TdApi.MessageReactions filterUnsupported (@Nullable TdApi.MessageReactions reactions) {
+    if (reactions != null) {
+      List<TdApi.MessageReaction> supportedReactions = new ArrayList<>(reactions.reactions.length);
+      for (TdApi.MessageReaction reaction : reactions.reactions) {
+        if (TdExt.isUnsupported(reaction.type))
+          continue;
+        supportedReactions.add(reaction);
+      }
+      if (supportedReactions.size() < reactions.reactions.length) {
+        TdApi.MessageReaction[] array = supportedReactions.toArray(new TdApi.MessageReaction[0]);
+        return new TdApi.MessageReactions(array, reactions.areTags, reactions.paidReactors, reactions.canGetAddedReactions);
+      }
+    }
+    return reactions;
+  }
+
   public void setReactions (@Nullable TdApi.MessageReactions reactions) {
     this.reactionsListEntry.clear();
     this.tdReactionsMap.clear();
-    this.reactions = reactions;
+    this.reactions = filterUnsupported(reactions);
     this.chosenReactions.clear();
     this.totalCount = 0;
 
@@ -153,7 +169,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
       }
     }
 
-    if (nonEmptyReactions != null) {
+    if (nonEmptyReactions != null && !nonEmptyReactions.isEmpty()) {
       return combineReactions(nonEmptyReactions.toArray(new TdApi.MessageReactions[0]));
     }
 
@@ -173,85 +189,28 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
   }
 
   private static @NonNull CombineResult combineReactions (@NonNull TdApi.MessageReactions[] allReactions) {
-    int totalCount = 0;
-    Set<String> chosenReactions = new LinkedHashSet<>();
-    TdApi.MessageReactions result;
-
-    if (allReactions.length == 1) {
-      result = allReactions[0];
-      for (TdApi.MessageReaction reaction : result.reactions) {
+    if (allReactions.length == 0)
+      throw new IllegalArgumentException();
+    for (TdApi.MessageReactions _reactions : allReactions) {
+      TdApi.MessageReactions reactions = filterUnsupported(_reactions);
+      int totalCount = 0;
+      Set<String> chosenReactions = null;
+      for (TdApi.MessageReaction reaction : reactions.reactions) {
         totalCount += reaction.totalCount;
         if (reaction.isChosen) {
+          if (chosenReactions == null) {
+            chosenReactions = new LinkedHashSet<>();
+          }
           chosenReactions.add(TD.makeReactionKey(reaction.type));
         }
       }
-      return new CombineResult(
-        result,
-        totalCount,
-        chosenReactions.toArray(new String[0])
-      );
-    } else {
-      Map<String, TdApi.MessageReaction> map = new LinkedHashMap<>();
-      for (TdApi.MessageReactions reactions : allReactions) {
-        for (TdApi.MessageReaction reaction : reactions.reactions) {
-          final String reactionKey = TD.makeReactionKey(reaction.type);
-
-          TdApi.MessageReaction combinedReaction = map.get(reactionKey);
-          if (combinedReaction == null) {
-            combinedReaction = new TdApi.MessageReaction(
-              reaction.type,
-              0,
-              false,
-              null,
-              new TdApi.MessageSender[0]
-            );
-            map.put(reactionKey, combinedReaction);
-          }
-
-          combinedReaction.totalCount += reaction.totalCount;
-          combinedReaction.recentSenderIds = concatSenders(combinedReaction.recentSenderIds, reaction.recentSenderIds);
-          if (reaction.isChosen) {
-            combinedReaction.isChosen = true;
-            chosenReactions.add(reactionKey);
-          }
-          totalCount += reaction.totalCount;
-        }
-      }
-      result = new TdApi.MessageReactions(
-        map.values().toArray(new TdApi.MessageReaction[0]),
-        allReactions[0].areTags
-      );
-      Arrays.sort(result.reactions, (a, b) -> Integer.compare(b.totalCount, a.totalCount));
-    }
-
-    return new CombineResult(
-      result,
-      totalCount,
-      chosenReactions.toArray(new String[0])
-    );
-  }
-
-  private static TdApi.MessageSender[] concatSenders (TdApi.MessageSender[] a, TdApi.MessageSender[] b) {
-    if (a == null || a.length == 0) {
-      return b;
-    }
-    if (b == null || b.length == 0) {
-      return a;
-    }
-    List<TdApi.MessageSender> result = new ArrayList<>(a.length + b.length);
-    Set<Long> existingSenderIds = new LinkedHashSet<>();
-    for (TdApi.MessageSender sender : a) {
-      long senderId = Td.getSenderId(sender);
-      existingSenderIds.add(senderId);
-    }
-    Collections.addAll(result, a);
-    for (TdApi.MessageSender sender : b) {
-      long senderId = Td.getSenderId(sender);
-      if (!existingSenderIds.contains(senderId)) {
-        result.add(sender);
+      if (totalCount > 0) {
+        String[] chosenReactionsArray = chosenReactions != null ? chosenReactions.toArray(new String[0]) : new String[0];
+        return new CombineResult(reactions, totalCount, chosenReactionsArray);
       }
     }
-    return result.toArray(new TdApi.MessageSender[0]);
+
+    return new CombineResult(allReactions[0], 0, new String[0]);
   }
 
   public void setReactions (ArrayList<TdApi.Message> combinedMessages) {

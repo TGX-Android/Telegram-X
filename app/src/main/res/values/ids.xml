@@ -332,7 +332,6 @@
 
   <item type="id" name="btn_pinUnpinChat" />
   <item type="id" name="btn_unpinAll" />
-  <item type="id" name="btn_reportLocation" />
   <item type="id" name="btn_archiveUnarchiveChat" />
   <item type="id" name="btn_pinChat" />
   <item type="id" name="btn_unpinChat" />
@@ -420,6 +419,7 @@
   <item type="id" name="btn_addContact" />
   <item type="id" name="btn_inviteLink" />
   <item type="id" name="btn_toggleSignatures" />
+  <item type="id" name="btn_toggleShowAuthors" />
   <item type="id" name="btn_toggleJoinByRequest" />
   <item type="id" name="btn_toggleProtection" />
   <item type="id" name="btn_togglePermission" />

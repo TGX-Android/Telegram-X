@@ -796,6 +796,7 @@ public class UI {
 
   // todo: move to other place?
 
+  @SuppressWarnings("deprecation")
   private static String toLanguageCode (InputMethodSubtype ims) {
     if (ims != null) {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {

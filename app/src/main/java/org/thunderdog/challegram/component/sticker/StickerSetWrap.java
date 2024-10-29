@@ -74,7 +74,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.collection.LongList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableBool;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 @SuppressLint("ViewConstructor")
 public class StickerSetWrap extends FrameLayoutFix implements StickersListController.StickerSetProvider, MediaStickersAdapter.OffsetProvider, View.OnClickListener, FactorAnimator.Target, PopupLayout.PopupHeightProvider, StickersListener {

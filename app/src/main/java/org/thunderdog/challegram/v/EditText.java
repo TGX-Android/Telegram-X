@@ -48,7 +48,7 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.TextSelection;
 
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class EditText extends android.widget.EditText {
   private boolean ignoreCustomStuff;

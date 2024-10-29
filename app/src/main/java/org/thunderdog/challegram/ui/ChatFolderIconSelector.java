@@ -44,7 +44,7 @@ import java.util.List;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class ChatFolderIconSelector {
 

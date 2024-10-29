@@ -136,9 +136,9 @@ import me.vkryl.core.collection.LongList;
 import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.RunnableBool;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.ChatPosition;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.ChatPosition;
+import tgx.td.Td;
 
 public class ShareController extends TelegramViewController<ShareController.Args> implements
   FactorAnimator.Target, Runnable, PopupLayout.PopupHeightProvider,
@@ -699,6 +699,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     context.startActivity(Intent.createChooser(shareIntent, title));
   }
 
+  @SuppressWarnings("WrongConstant")
   private void exportContent () {
     if (isSent)
       return;
@@ -782,6 +783,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
               textRes = R.string.ShareTextPlain;
               break;
             default:
+              Td.assertMessageContent_91c1e338();
               title1Res = R.string.ShareTitleMedia;
               title2Res = R.string.ShareTitleMediaX;
               textRes = R.string.ShareTextMedia;
@@ -3028,7 +3030,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     //noinspection SwitchIntDef
     switch (message.content.getConstructor()) {
       case TdApi.MessageText.CONSTRUCTOR: {
-        return TD.getMimeType(((TdApi.MessageText) message.content).webPage);
+        return TD.getMimeType(((TdApi.MessageText) message.content).linkPreview);
       }
       case TdApi.MessagePhoto.CONSTRUCTOR: {
         TdApi.MessagePhoto media = (TdApi.MessagePhoto) message.content;
@@ -3287,7 +3289,8 @@ public class ShareController extends TelegramViewController<ShareController.Args
           long singleSourceChatId = 0, singleSourceMediaGroupId = 0, contentfulMediaMessageId = 0;
           for (int index = 0; index < args.messages.length; index++) {
             TdApi.Message message = args.messages[index];
-            if (!message.canBeRepliedInAnotherChat) {
+            TdApi.MessageProperties properties = tdlib.getMessagePropertiesSync(message);
+            if (!properties.canBeRepliedInAnotherChat) {
               messageReplyIncluded = false;
               break;
             }

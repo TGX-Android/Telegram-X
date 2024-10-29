@@ -54,9 +54,9 @@ import org.thunderdog.challegram.telegram.TdlibStatusManager;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.util.DrawableProvider;
-import org.thunderdog.challegram.util.text.counter.CounterTextPart;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
+import org.thunderdog.challegram.util.text.counter.CounterTextPart;
 import org.thunderdog.challegram.widget.SimplestCheckBox;
 
 import java.util.Arrays;

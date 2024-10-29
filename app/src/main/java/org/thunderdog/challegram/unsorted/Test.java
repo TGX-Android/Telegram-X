@@ -39,7 +39,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.util.Blob;
 import me.vkryl.leveldb.LevelDB;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class Test {
   private static void testFormat (String format, Object... args) {

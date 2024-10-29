@@ -32,7 +32,7 @@ import me.vkryl.android.animator.ReplaceAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class MessageSenderButton extends FrameLayout implements ReplaceAnimator.Callback, FactorAnimator.Target, HapticMenuHelper.OnItemMenuListener {
   private static final float ATTACH_BUTTONS_WIDTH = 47f;

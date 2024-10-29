@@ -53,8 +53,8 @@ import java.util.Set;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.td.Td;
-import me.vkryl.td.TdConstants;
+import tgx.td.Td;
+import tgx.td.TdConstants;
 
 public class EditEnabledReactionsController extends EditBaseController<EditEnabledReactionsController.Args> implements View.OnClickListener, StickerSmallView.StickerMovementCallback, ChatListener {
 

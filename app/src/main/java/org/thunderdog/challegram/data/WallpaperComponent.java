@@ -47,7 +47,7 @@ import org.thunderdog.challegram.widget.FileProgressComponent;
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.ColorUtils;
-import me.vkryl.td.TdConstants;
+import tgx.td.TdConstants;
 
 public class WallpaperComponent extends BaseComponent implements ClickHelper.Delegate {
   private final TGMessage context;
@@ -70,17 +70,18 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
 
   private final FileProgressComponent progress;
 
-  public WallpaperComponent (@NonNull TGMessage context, @NonNull TdApi.WebPage webPage, @NonNull String wallpaperUrl) {
+  public WallpaperComponent (@NonNull TGMessage context, @NonNull TdApi.LinkPreview linkPreview, @NonNull String wallpaperUrl) {
     this.context = context;
-    this.fullUrl = webPage.url;
+    this.fullUrl = linkPreview.url;
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
       this.placeholderPath = new Path();
     }
 
-    updateBackground(webPage.document);
+    TdApi.LinkPreviewTypeBackground linkPreviewBackground = (TdApi.LinkPreviewTypeBackground) linkPreview.type;
+    updateBackground(linkPreviewBackground.document);
 
-    this.progress = new FileProgressComponent(context.context(), context.tdlib(), TdlibFilesManager.DOWNLOAD_FLAG_FILE, webPage.document != null && TGMimeType.isImageMimeType(webPage.document.mimeType), context.getChatId(), context.getId());
+    this.progress = new FileProgressComponent(context.context(), context.tdlib(), TdlibFilesManager.DOWNLOAD_FLAG_FILE, linkPreviewBackground.document != null && TGMimeType.isImageMimeType(linkPreviewBackground.document.mimeType), context.getChatId(), context.getId());
     this.progress.setBackgroundColorProvider(context);
     this.progress.setSimpleListener(new FileProgressComponent.SimpleListener() {
       @Override
@@ -101,7 +102,7 @@ public class WallpaperComponent extends BaseComponent implements ClickHelper.Del
       }
     });
     this.progress.setBackgroundColor(0x44000000);
-    this.progress.setFile(webPage.document != null ? webPage.document.document : null, context.getMessage());
+    this.progress.setFile(linkPreviewBackground.document != null ? linkPreviewBackground.document.document : null, context.getMessage());
     if (viewProvider != null) {
       this.progress.setViewProvider(viewProvider);
     }

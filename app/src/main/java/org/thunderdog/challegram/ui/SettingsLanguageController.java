@@ -54,7 +54,7 @@ import me.vkryl.android.text.AcceptFilter;
 import me.vkryl.android.text.RestrictFilter;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class SettingsLanguageController extends RecyclerViewController<Void> implements View.OnClickListener, LanguageController.Delegate, View.OnLongClickListener {
   public SettingsLanguageController (Context context, Tdlib tdlib) {

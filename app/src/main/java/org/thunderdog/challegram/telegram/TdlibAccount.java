@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   public static final int NO_ID = -1;

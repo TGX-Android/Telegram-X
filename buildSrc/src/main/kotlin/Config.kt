@@ -13,6 +13,8 @@
 
 // File with static configuration, that is meant to be adjusted only once
 
+import tgx.gradle.fatal
+
 object Config {
   const val PRIMARY_SDK_VERSION = 21
   const val MIN_SDK_VERSION = 16
@@ -25,18 +27,18 @@ object LibraryVersions {
   const val MULTIDEX = "2.0.1"
   const val DESUGAR = "2.0.4"
   const val ANDROIDX_CORE = "1.12.0" // 1.13.0+ requires minSdk 19+
-  const val ANNOTATIONS = "1.7.1"
+  const val ANNOTATIONS = "1.9.0"
   const val ANDROIDX_MEDIA = "1.3.1"
-  const val ANDROIDX_CAMERA = "1.3.3"
+  const val ANDROIDX_CAMERA = "1.3.4"
 }
 
 class AbiVariant (val flavor: String, vararg val filters: String = arrayOf(), val displayName: String = filters[0]) {
   init {
     if (filters.isEmpty())
-      error("Empty filters passed")
+      fatal("Empty filters passed")
     for (filter in filters) {
       if (!Config.SUPPORTED_ABI.contains(filter))
-        error("Unsupported abi filter: $filter")
+        fatal("Unsupported abi filter: $filter")
     }
   }
 

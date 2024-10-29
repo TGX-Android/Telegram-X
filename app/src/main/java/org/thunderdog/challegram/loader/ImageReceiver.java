@@ -107,6 +107,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public void invalidate () {
     if (view != null) {
       /*if (drawRegion.isEmpty()) {
@@ -1147,6 +1148,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     return false;
   }
 
+  @SuppressWarnings("deprecation")
   public Paint getBitmapPaint () {
     float alpha = (float) metadataPaint.getAlpha() / 255f;
     if (porterDuffColorIsId && porterDuffColor == ColorId.NONE) {

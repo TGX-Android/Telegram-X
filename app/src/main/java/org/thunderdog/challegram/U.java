@@ -179,12 +179,12 @@ import me.vkryl.core.collection.LongList;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.util.LocalVar;
-import me.vkryl.td.Td;
 import okio.BufferedSink;
 import okio.BufferedSource;
 import okio.Okio;
 import okio.Sink;
 import okio.Source;
+import tgx.td.Td;
 
 @SuppressWarnings ("JniMissingFunction")
 public class U {

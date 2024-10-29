@@ -44,15 +44,15 @@ import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextEntityCustom;
 
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.MessageId;
-import me.vkryl.td.Td;
+import tgx.td.MessageId;
+import tgx.td.Td;
 
 public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements TGInlineKeyboard.ClickListener {
   private final static int BLOCK_MARGIN = 18;
 
-  private final TdApi.MessagePremiumGiveawayWinners giveawayWinners;
+  private final TdApi.MessageGiveawayWinners giveawayWinners;
 
-  public TGMessageGiveawayWinners (MessagesManager manager, TdApi.Message msg, @NonNull TdApi.MessagePremiumGiveawayWinners giveawayWinners) {
+  public TGMessageGiveawayWinners (MessagesManager manager, TdApi.Message msg, @NonNull TdApi.MessageGiveawayWinners giveawayWinners) {
     super(manager, msg);
     this.giveawayWinners = giveawayWinners;
   }
@@ -164,17 +164,17 @@ public class TGMessageGiveawayWinners extends TGMessageGiveawayBase implements T
   }
 
   @Override public void onClick (View view, TGInlineKeyboard keyboard, TGInlineKeyboard.Button button) {
-    loadPremiumGiveawayInfo();
+    loadGiveawayInfo();
   }
 
-  @Override protected void onPremiumGiveawayInfoLoaded (TdApi.PremiumGiveawayInfo result, @Nullable TdApi.Error error) {
-    super.onPremiumGiveawayInfoLoaded(result, error);
+  @Override protected void onGiveawayInfoLoaded (TdApi.GiveawayInfo result, @Nullable TdApi.Error error) {
+    super.onGiveawayInfoLoaded(result, error);
     if (error != null) {
       UI.showError(error);
       return;
     }
     if (!isDestroyed()) {
-      showPremiumGiveawayInfoPopup(giveawayWinners.winnerCount, giveawayWinners.monthCount, giveawayWinners.boostedChatId, giveawayWinners.additionalChatCount, null, giveawayWinners.actualWinnersSelectionDate, giveawayWinners.prizeDescription);
+      showGiveawayInfoPopup(giveawayWinners.winnerCount, giveawayWinners.prize, giveawayWinners.boostedChatId, giveawayWinners.additionalChatCount, null, giveawayWinners.actualWinnersSelectionDate, giveawayWinners.prizeDescription);
     }
   }
 

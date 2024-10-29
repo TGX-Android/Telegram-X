@@ -58,8 +58,8 @@ import org.thunderdog.challegram.widget.RadioView;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.TdConstants;
+import tgx.td.ChatId;
+import tgx.td.TdConstants;
 
 public class CreateChannelLinkController extends ViewController<CreateChannelLinkController.Args> implements View.OnClickListener, Unlockable {
   public static class Args {

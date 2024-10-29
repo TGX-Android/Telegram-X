@@ -511,8 +511,8 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
 
       @Override
       public boolean onMove (RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
-        int fromPosition = viewHolder.getAdapterPosition();
-        int toPosition = target.getAdapterPosition();
+        int fromPosition = viewHolder.getBindingAdapterPosition();
+        int toPosition = target.getBindingAdapterPosition();
 
         int fromIndex = cellIndexToProxyIndex(fromPosition);
         int toIndex = cellIndexToProxyIndex(toPosition);

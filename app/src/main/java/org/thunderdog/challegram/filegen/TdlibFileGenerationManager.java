@@ -79,7 +79,6 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.unit.ByteUnit;
-import me.vkryl.td.Td;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.OkHttpClient;
@@ -91,6 +90,7 @@ import okio.BufferedSource;
 import okio.Okio;
 import okio.Sink;
 import okio.Source;
+import tgx.td.Td;
 
 public final class TdlibFileGenerationManager {
   private OkHttpClient getClient () {

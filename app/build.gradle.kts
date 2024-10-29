@@ -1,7 +1,8 @@
 @file:Suppress("UnstableApiUsage")
 
 import com.android.build.gradle.internal.api.ApkVariantOutputImpl
-import me.vkryl.task.*
+import tgx.gradle.*
+import tgx.gradle.task.*
 import java.util.*
 
 plugins {
@@ -107,7 +108,7 @@ android {
           val patch = ((version shr 4) and 0xff).toInt()
           val status = (version and 0xf).toInt()
           if (status != 0xf) {
-            error("Using non-stable OpenSSL version: $rawVersion (status = ${status.toString(16)})")
+            fatal("Using non-stable OpenSSL version: $rawVersion (status = ${status.toString(16)})")
           }
           openSslVersion = "${major}.${minor}"
           openSslVersionFull = "${major}.${minor}.${fix}${('a'.code - 1 + patch).toChar()}"
@@ -116,7 +117,7 @@ android {
       }
     }
     if (openSslVersion.isEmpty()) {
-      error("OpenSSL not found!")
+      fatal("OpenSSL not found!")
     }
 
     var tdlibVersion = ""
@@ -134,7 +135,7 @@ android {
       }
     }
     if (tdlibVersion.isEmpty()) {
-      error("TDLib not found!")
+      fatal("TDLib not found!")
     }
 
     val pullRequests: List<PullRequest> = properties.getProperty("pr.ids", "").split(',').filter { it.matches(Regex("^[0-9]+$")) }.map {
@@ -220,7 +221,7 @@ android {
     val now = Calendar.getInstance(timeZone)
     now.timeInMillis = tgxGit.commitDate * 1000L
     if (now.timeInMillis < then.timeInMillis)
-      error("Invalid commit time!")
+      fatal("Invalid commit time!")
     val minorVersion = monthYears(now, then)
 
     versionCode = appVersion
@@ -308,9 +309,9 @@ android {
   }
 
   applicationVariants.configureEach {
-    val abi = (productFlavors[0].versionCode ?: error("null")) - 1
-    val abiVariant = Abi.VARIANTS[abi] ?: error("null")
-    val versionCode = defaultConfig.versionCode ?: error("null")
+    val abi = (productFlavors[0].versionCode ?: fatal("null")) - 1
+    val abiVariant = Abi.VARIANTS[abi] ?: fatal("null")
+    val versionCode = defaultConfig.versionCode ?: fatal("null")
 
     val versionCodeOverride = versionCode * 1000 + abi * 10
     val versionNameOverride = "${versionName}.${defaultConfig.versionCode}${if (extra.has("app_version_suffix")) extra["app_version_suffix"] else ""}-${abiVariant.displayName}${if (extra.has("app_name_suffix")) "-" + extra["app_name_suffix"] else ""}${if (buildType.isDebuggable) "-debug" else ""}"
@@ -384,10 +385,10 @@ dependencies {
   implementation("androidx.recyclerview:recyclerview:1.3.2")
   implementation("androidx.constraintlayout:constraintlayout:2.1.4")
   implementation("androidx.viewpager:viewpager:1.0.0")
-  implementation("androidx.work:work-runtime:2.9.0")
+  implementation("androidx.work:work-runtime:2.9.1")
   implementation("androidx.browser:browser:1.5.0") // 1.7.0+ requires minSdkVersion 19
   implementation("androidx.exifinterface:exifinterface:1.3.7")
-  implementation("androidx.collection:collection:1.4.0")
+  implementation("androidx.collection:collection:1.4.4")
   implementation("androidx.interpolator:interpolator:1.0.0")
   implementation("androidx.gridlayout:gridlayout:1.0.0")
   // CameraX: https://developer.android.com/jetpack/androidx/releases/camera
@@ -410,7 +411,7 @@ dependencies {
   }
   // implementation("com.google.firebase:firebase-appcheck-safetynet:16.1.2")
   // Play Integrity: https://developer.android.com/google/play/integrity/reference/com/google/android/play/core/release-notes
-  implementation("com.google.android.play:integrity:1.3.0")
+  implementation("com.google.android.play:integrity:1.3.0") // 1.4.0+ requires minSdkVersion 21
   // Play In-App Updates: https://developer.android.com/reference/com/google/android/play/core/release-notes-in_app_updates
   implementation("com.google.android.play:app-update:2.1.0")
   // AndroidX/media: https://github.com/androidx/media/blob/release/RELEASENOTES.md

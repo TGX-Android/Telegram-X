@@ -48,7 +48,7 @@ import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class EmojiCategoriesRecyclerView extends CustomRecyclerView implements Destroyable {
   private static final int CATEGORY_WIDTH = 38;

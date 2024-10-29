@@ -66,9 +66,9 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.MessageId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.MessageId;
+import tgx.td.Td;
 
 public class LiveLocationHelper implements LiveLocationManager.Listener, FactorAnimator.Target, BaseView.ActionListProvider, ForceTouchView.ActionListener, MessageListener, Handler.Callback, ClickHelper.Delegate {
   private static final int ANIMATOR_SUBTEXT = 0;

@@ -59,7 +59,7 @@ import java.util.List;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class CallListController extends RecyclerViewController<Void> implements
   View.OnClickListener,
@@ -676,25 +676,27 @@ public class CallListController extends RecyclerViewController<Void> implements
           if (call != null) {
             String firstName = tdlib.senderName(new TdApi.MessageSenderUser(call.getUserId()), true);
             CharSequence text = Lang.getStringBold(R.string.QDeleteCallFromRecent);
-            if (call.canBeDeletedForAllUsers()) {
-              showSettings(
-                new SettingsWrapBuilder(R.id.btn_delete).setHeaderItem(new ListItem(ListItem.TYPE_INFO, R.id.text_title, 0, text, false)).setRawItems(
-                  new ListItem[] {
-                    new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_deleteAll, 0, Lang.getStringBold(R.string.DeleteForUser, firstName), false)
-                  }).setIntDelegate((id, result) -> {
+            tdlib.checkMessageProperties(call.getMessages(), properties -> properties.canBeDeletedForAllUsers, canBeDeletedForAllUsers -> runOnUiThreadOptional(() -> {
+              if (canBeDeletedForAllUsers) {
+                showSettings(
+                  new SettingsWrapBuilder(R.id.btn_delete).setHeaderItem(new ListItem(ListItem.TYPE_INFO, R.id.text_title, 0, text, false)).setRawItems(
+                    new ListItem[] {
+                      new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_deleteAll, 0, Lang.getStringBold(R.string.DeleteForUser, firstName), false)
+                    }).setIntDelegate((id, result) -> {
+                    if (id == R.id.btn_delete) {
+                      tdlib.deleteMessages(chatId, call.getMessageIds(), result.get(R.id.btn_deleteAll) != 0);
+                    }
+                  }).setSaveStr(R.string.Delete).setSaveColorId(ColorId.textNegative)
+                );
+              } else {
+                showOptions(null, new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.DeleteEntry), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_sweep_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
                   if (id == R.id.btn_delete) {
-                    tdlib.deleteMessages(chatId, call.getMessageIds(), result.get(R.id.btn_deleteAll) != 0);
+                    tdlib.deleteMessages(chatId, call.getMessageIds(), false);
                   }
-                }).setSaveStr(R.string.Delete).setSaveColorId(ColorId.textNegative)
-              );
-            } else {
-              showOptions(null, new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.DeleteEntry), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_sweep_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-                if (id == R.id.btn_delete) {
-                  tdlib.deleteMessages(chatId, call.getMessageIds(), false);
-                }
-                return true;
-              });
-            }
+                  return true;
+                });
+              }
+            }));
           } else if (chat != null) {
             removeTopChat(chat);
           }

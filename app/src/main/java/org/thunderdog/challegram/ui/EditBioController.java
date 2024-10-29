@@ -42,7 +42,7 @@ import java.util.List;
 import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.android.text.RestrictFilter;
 import me.vkryl.android.widget.FrameLayoutFix;
-import me.vkryl.td.TdConstants;
+import tgx.td.TdConstants;
 
 public class EditBioController extends EditBaseController<EditBioController.Arguments> implements SettingsAdapter.TextChangeListener {
   public static class Arguments {

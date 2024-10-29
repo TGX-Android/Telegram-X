@@ -245,7 +245,7 @@ public class PlaybackController extends ViewController<Void> implements Menu, Mo
         if (isTrackListLess()) {
           return 0;
         }
-        int position = viewHolder.getAdapterPosition();
+        int position = viewHolder.getBindingAdapterPosition();
         int headerItemCount = 1;
         if (position == -1 || position < headerItemCount || viewHolder.getItemViewType() != ListItem.TYPE_CUSTOM_INLINE) {
           return 0;
@@ -288,8 +288,8 @@ public class PlaybackController extends ViewController<Void> implements Menu, Mo
 
       @Override
       public boolean onMove (RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
-        int fromPosition = viewHolder.getAdapterPosition();
-        int toPosition = target.getAdapterPosition();
+        int fromPosition = viewHolder.getBindingAdapterPosition();
+        int toPosition = target.getBindingAdapterPosition();
 
         int headerItemCount = 1;
         int trackCount = getTrackCount();
@@ -1293,7 +1293,7 @@ public class PlaybackController extends ViewController<Void> implements Menu, Mo
     public void getItemOffsets (Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
       RecyclerView.ViewHolder holder = parent.getChildViewHolder(view);
       ListItem item = (ListItem) view.getTag();
-      if ((holder != null && holder.getAdapterPosition() == 0) || (item != null && item.getViewType() == ListItem.TYPE_ZERO_VIEW)) {
+      if ((holder != null && holder.getBindingAdapterPosition() == 0) || (item != null && item.getViewType() == ListItem.TYPE_ZERO_VIEW)) {
         outRect.top = context.getAvailableOverlayHeight(parent.getMeasuredWidth(), parent.getMeasuredHeight());
       } else {
         outRect.top = 0;

@@ -29,7 +29,7 @@ import org.thunderdog.challegram.tool.UI;
 
 import java.util.concurrent.TimeUnit;
 
-import me.vkryl.td.ChatId;
+import tgx.td.ChatId;
 
 public class TdlibNotificationExtras {
   private static long[] getLongOrIntArray (Bundle bundle, String key) {

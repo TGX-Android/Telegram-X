@@ -34,7 +34,7 @@ import org.thunderdog.challegram.tool.Screen;
 
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class CustomTypefaceSpan extends MetricAffectingSpan implements TdlibEntitySpan {
   private static final int FLAG_FAKE_BOLD = 1;

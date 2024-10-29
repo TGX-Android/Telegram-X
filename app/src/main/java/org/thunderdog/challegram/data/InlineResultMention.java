@@ -31,7 +31,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class InlineResultMention extends InlineResult<UserContext> {
   private static final float TEXT_SIZE_DP = 14f;

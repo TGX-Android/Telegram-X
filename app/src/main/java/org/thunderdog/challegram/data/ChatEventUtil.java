@@ -24,6 +24,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.emoji.EmojiCodes;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.util.text.Text;
@@ -39,7 +40,7 @@ import java.util.concurrent.TimeUnit;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 /**
  * Steps to support any new ChatEventAction constructor:
@@ -91,6 +92,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
       case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
       case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
+      case TdApi.ChatEventShowMessageSenderToggled.CONSTRUCTOR:
       case TdApi.ChatEventHasProtectedContentToggled.CONSTRUCTOR:
       case TdApi.ChatEventIsAllHistoryAvailableToggled.CONSTRUCTOR:
       case TdApi.ChatEventStickerSetChanged.CONSTRUCTOR:
@@ -114,6 +116,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventForumTopicPinned.CONSTRUCTOR:
       case TdApi.ChatEventForumTopicToggleIsClosed.CONSTRUCTOR:
       case TdApi.ChatEventForumTopicToggleIsHidden.CONSTRUCTOR:
+      case TdApi.ChatEventMemberSubscriptionExtended.CONSTRUCTOR:
         return ActionMessageMode.ONLY_SERVICE;
       // only full (native)
       case TdApi.ChatEventMessageAutoDeleteTimeChanged.CONSTRUCTOR:
@@ -131,7 +134,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
         return ActionMessageMode.ONLY_FULL;
       default: {
-        Td.assertChatEventAction_c4c039bc();
+        Td.assertChatEventAction_b387a44d();
         throw Td.unsupported(action);
       }
     }
@@ -170,6 +173,8 @@ public class ChatEventUtil {
         return new TGMessageService(context, msg, (TdApi.ChatEventInvitesToggled) action);
       case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
         return new TGMessageService(context, msg, (TdApi.ChatEventSignMessagesToggled) action);
+      case TdApi.ChatEventShowMessageSenderToggled.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventShowMessageSenderToggled) action);
       case TdApi.ChatEventHasProtectedContentToggled.CONSTRUCTOR:
         return new TGMessageService(context, msg, (TdApi.ChatEventHasProtectedContentToggled) action);
       case TdApi.ChatEventIsAllHistoryAvailableToggled.CONSTRUCTOR:
@@ -216,6 +221,8 @@ public class ChatEventUtil {
         return new TGMessageService(context, msg, (TdApi.ChatEventForumTopicToggleIsClosed) action);
       case TdApi.ChatEventForumTopicToggleIsHidden.CONSTRUCTOR:
         return new TGMessageService(context, msg, (TdApi.ChatEventForumTopicToggleIsHidden) action);
+      case TdApi.ChatEventMemberSubscriptionExtended.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventMemberSubscriptionExtended) action);
       // only full (native)
       case TdApi.ChatEventMessageAutoDeleteTimeChanged.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
@@ -232,7 +239,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
         throw new IllegalArgumentException(action.toString());
       default: {
-        Td.assertChatEventAction_c4c039bc();
+        Td.assertChatEventAction_b387a44d();
         throw Td.unsupported(action);
       }
     }
@@ -620,7 +627,7 @@ public class ChatEventUtil {
           appendRight(b, R.string.EventLogRestrictedSendVideoNotes, oldBan != null ? oldBan.permissions.canSendVideoNotes : oldCanReadMessages, newBan != null ? newBan.permissions.canSendVideoNotes : newCanReadMessages, false);
           appendRight(b, R.string.EventLogRestrictedSendStickers, oldBan != null ? oldBan.permissions.canSendOtherMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendOtherMessages : newCanReadMessages, false);
           appendRight(b, R.string.EventLogRestrictedSendPolls, oldBan != null ? oldBan.permissions.canSendOtherMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendOtherMessages : newCanReadMessages, false);
-          appendRight(b, R.string.EventLogRestrictedSendEmbed, oldBan != null ? oldBan.permissions.canAddWebPagePreviews : oldCanReadMessages, newBan != null ? newBan.permissions.canAddWebPagePreviews : newCanReadMessages, false);
+          appendRight(b, R.string.EventLogRestrictedSendEmbed, oldBan != null ? oldBan.permissions.canAddLinkPreviews : oldCanReadMessages, newBan != null ? newBan.permissions.canAddLinkPreviews : newCanReadMessages, false);
           appendRight(b, R.string.EventLogRestrictedAddUsers, oldBan != null ? oldBan.permissions.canInviteUsers : oldCanReadMessages, newBan != null ? newBan.permissions.canInviteUsers : newCanReadMessages, false);
           appendRight(b, R.string.EventLogRestrictedPinMessages, oldBan != null ? oldBan.permissions.canPinMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canPinMessages : newCanReadMessages, false);
           appendRight(b, R.string.EventLogRestrictedChangeInfo, oldBan != null ? oldBan.permissions.canChangeInfo : oldCanReadMessages, newBan != null ? newBan.permissions.canChangeInfo : newCanReadMessages, false);
@@ -642,6 +649,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
       case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
       case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
+      case TdApi.ChatEventShowMessageSenderToggled.CONSTRUCTOR:
       case TdApi.ChatEventHasProtectedContentToggled.CONSTRUCTOR:
       case TdApi.ChatEventIsAllHistoryAvailableToggled.CONSTRUCTOR:
       case TdApi.ChatEventStickerSetChanged.CONSTRUCTOR:
@@ -665,9 +673,10 @@ public class ChatEventUtil {
       case TdApi.ChatEventForumTopicPinned.CONSTRUCTOR:
       case TdApi.ChatEventForumTopicToggleIsClosed.CONSTRUCTOR:
       case TdApi.ChatEventForumTopicToggleIsHidden.CONSTRUCTOR:
+      case TdApi.ChatEventMemberSubscriptionExtended.CONSTRUCTOR:
         throw new IllegalArgumentException(action.toString());
       default: {
-        Td.assertChatEventAction_c4c039bc();
+        Td.assertChatEventAction_b387a44d();
         throw Td.unsupported(action);
       }
     }
@@ -771,7 +780,7 @@ public class ChatEventUtil {
         appendRight(b, R.string.EventLogPermissionSendVideoNotes, permissions.oldPermissions.canSendVideoNotes, permissions.newPermissions.canSendVideoNotes, true);
         appendRight(b, R.string.EventLogPermissionSendStickers, permissions.oldPermissions.canSendOtherMessages, permissions.newPermissions.canSendOtherMessages, true);
         appendRight(b, R.string.EventLogPermissionSendPolls, permissions.oldPermissions.canSendPolls, permissions.newPermissions.canSendPolls, true);
-        appendRight(b, R.string.EventLogPermissionSendEmbed, permissions.oldPermissions.canAddWebPagePreviews, permissions.newPermissions.canAddWebPagePreviews, true);
+        appendRight(b, R.string.EventLogPermissionSendEmbed, permissions.oldPermissions.canAddLinkPreviews, permissions.newPermissions.canAddLinkPreviews, true);
         appendRight(b, R.string.EventLogPermissionAddUsers, permissions.oldPermissions.canInviteUsers, permissions.newPermissions.canInviteUsers, true);
         appendRight(b, R.string.EventLogPermissionPinMessages, permissions.oldPermissions.canPinMessages, permissions.newPermissions.canPinMessages, true);
         appendRight(b, R.string.EventLogPermissionChangeInfo, permissions.oldPermissions.canChangeInfo, permissions.newPermissions.canChangeInfo, true);
@@ -828,6 +837,9 @@ public class ChatEventUtil {
               case TdApi.ReactionTypeEmoji.CONSTRUCTOR:
                 text.append(((TdApi.ReactionTypeEmoji) reactionType).emoji);
                 break;
+              case TdApi.ReactionTypePaid.CONSTRUCTOR:
+                text.append(EmojiCodes.STAR);
+                break;
               case TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR: {
                 long customEmojiId = ((TdApi.ReactionTypeCustomEmoji) reactionType).customEmojiId;
                 String emoji = "⁉️";
@@ -835,6 +847,10 @@ public class ChatEventUtil {
                 text.append(emoji);
                 entities.add(new TdApi.TextEntity(offset, emoji.length(), new TdApi.TextEntityTypeCustomEmoji(customEmojiId)));
                 break;
+              }
+              default: {
+                Td.assertReactionType_43844388();
+                throw Td.unsupported(reactionType);
               }
             }
             first = false;
@@ -961,6 +977,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
       case TdApi.ChatEventPollStopped.CONSTRUCTOR:
       case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
+      case TdApi.ChatEventShowMessageSenderToggled.CONSTRUCTOR:
       case TdApi.ChatEventSlowModeDelayChanged.CONSTRUCTOR:
       case TdApi.ChatEventStickerSetChanged.CONSTRUCTOR:
       case TdApi.ChatEventCustomEmojiStickerSetChanged.CONSTRUCTOR:
@@ -977,11 +994,12 @@ public class ChatEventUtil {
       case TdApi.ChatEventForumTopicPinned.CONSTRUCTOR:
       case TdApi.ChatEventForumTopicToggleIsHidden.CONSTRUCTOR:
       case TdApi.ChatEventForumTopicToggleIsClosed.CONSTRUCTOR:
+      case TdApi.ChatEventMemberSubscriptionExtended.CONSTRUCTOR:
         throw new IllegalArgumentException(event.action.toString());
 
       // Unsupported
       default: {
-        Td.assertChatEventAction_c4c039bc();
+        Td.assertChatEventAction_b387a44d();
         throw Td.unsupported(event.action);
       }
     }

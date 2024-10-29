@@ -27,6 +27,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import tgx.td.Td;
+
 public final class TDLib {
   private static String format (String format, Object... formatArgs) {
     if (formatArgs != null && formatArgs.length > 0) {
@@ -96,11 +98,17 @@ public final class TDLib {
       i("[play-integrity]: %s", format(format, formatArgs));
     }
 
-    public static void integrity (boolean isPlay, String format, Object... formatArgs) {
-      if (isPlay) {
-        playIntegrity(format, formatArgs);
-      } else {
-        safetyNet(format, formatArgs);
+    public static void integrity (TdApi.FirebaseDeviceVerificationParameters parameters, String format, Object... formatArgs) {
+      switch (parameters.getConstructor()) {
+        case TdApi.FirebaseDeviceVerificationParametersSafetyNet.CONSTRUCTOR:
+          safetyNet(format, formatArgs);
+          break;
+        case TdApi.FirebaseDeviceVerificationParametersPlayIntegrity.CONSTRUCTOR:
+          playIntegrity(format, formatArgs);
+          break;
+        default:
+          Td.assertFirebaseDeviceVerificationParameters_21a9fc9c();
+          throw Td.unsupported(parameters);
       }
     }
 

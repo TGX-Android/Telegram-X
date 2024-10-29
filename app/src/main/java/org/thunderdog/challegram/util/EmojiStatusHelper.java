@@ -47,7 +47,7 @@ import org.thunderdog.challegram.util.text.TextMedia;
 
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class EmojiStatusHelper implements Destroyable {
   private final @Nullable Tdlib tdlib;

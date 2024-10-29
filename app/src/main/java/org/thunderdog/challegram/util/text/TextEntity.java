@@ -106,9 +106,9 @@ public abstract class TextEntity {
     if (callback.forceInstantView(url)) {
       parameters.forceInstantView();
     }
-    TdApi.WebPage webPage = callback.findWebPage(url);
+    TdApi.LinkPreview webPage = callback.findLinkPreview(url);
     if (webPage != null) {
-      parameters.sourceWebView(webPage);
+      parameters.sourceLinkPreview(webPage);
     }
     return parameters;
   }

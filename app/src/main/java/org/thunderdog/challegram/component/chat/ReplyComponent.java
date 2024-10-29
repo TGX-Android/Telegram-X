@@ -63,7 +63,7 @@ import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class ReplyComponent implements Client.ResultHandler, Destroyable {
   private static final int FLAG_ALLOW_TOUCH_EVENTS = 1 << 1;
@@ -803,20 +803,154 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
         break;
       }
       case TdApi.MessageText.CONSTRUCTOR: {
-        TdApi.WebPage webPage = ((TdApi.MessageText) content).webPage;
-        if (webPage != null) {
-          if (webPage.photo != null) {
-            photoSize = MediaWrapper.pickDisplaySize(tdlib, webPage.photo.sizes, chatId);
-            miniThumbnail = webPage.photo.minithumbnail;
-          } else if (webPage.document != null && webPage.document.thumbnail != null) {
-            thumbnail = webPage.document.thumbnail;
-            miniThumbnail = webPage.document.minithumbnail;
-          } else if (webPage.sticker != null && webPage.sticker.thumbnail != null) {
-            thumbnail = webPage.sticker.thumbnail;
-            contour = Td.buildOutline(webPage.sticker, isMessageComponent() ? mHeight : height);
-          } else if (webPage.animation != null && webPage.animation.thumbnail != null) {
-            thumbnail = webPage.animation.thumbnail;
-            miniThumbnail = webPage.animation.minithumbnail;
+        TdApi.LinkPreview linkPreview = ((TdApi.MessageText) content).linkPreview;
+        if (linkPreview != null) {
+          switch (linkPreview.type.getConstructor()) {
+            case TdApi.LinkPreviewTypeSticker.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeSticker sticker = (TdApi.LinkPreviewTypeSticker) linkPreview.type;
+              thumbnail = sticker.sticker.thumbnail;
+              contour = Td.buildOutline(sticker.sticker, isMessageComponent() ? mHeight : height);
+              break;
+            }
+            case TdApi.LinkPreviewTypeStickerSet.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeStickerSet stickerSet = (TdApi.LinkPreviewTypeStickerSet) linkPreview.type;
+              if (stickerSet.stickers.length > 0) {
+                TdApi.Sticker sticker = stickerSet.stickers[0];
+                thumbnail = sticker.thumbnail;
+                contour = Td.buildOutline(sticker, isMessageComponent() ? mHeight : height);
+              }
+              break;
+            }
+            case TdApi.LinkPreviewTypeAnimation.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeAnimation animation = (TdApi.LinkPreviewTypeAnimation) linkPreview.type;
+              thumbnail = animation.animation.thumbnail;
+              miniThumbnail = animation.animation.minithumbnail;
+              break;
+            }
+            case TdApi.LinkPreviewTypeDocument.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeDocument document = (TdApi.LinkPreviewTypeDocument) linkPreview.type;
+              thumbnail = document.document.thumbnail;
+              miniThumbnail = document.document.minithumbnail;
+              break;
+            }
+            case TdApi.LinkPreviewTypePhoto.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypePhoto photo = (TdApi.LinkPreviewTypePhoto) linkPreview.type;
+              photoSize = MediaWrapper.pickDisplaySize(tdlib, photo.photo.sizes, chatId);
+              miniThumbnail = photo.photo.minithumbnail;
+              break;
+            }
+            case TdApi.LinkPreviewTypeArticle.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeArticle article = (TdApi.LinkPreviewTypeArticle) linkPreview.type;
+              if (article.photo != null) {
+                photoSize = MediaWrapper.pickDisplaySize(tdlib, article.photo.sizes, chatId);
+                miniThumbnail = article.photo.minithumbnail;
+              }
+              break;
+            }
+            case TdApi.LinkPreviewTypeVideo.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeVideo video = (TdApi.LinkPreviewTypeVideo) linkPreview.type;
+              if (video.video != null) {
+                thumbnail = video.video.thumbnail;
+                miniThumbnail = video.video.minithumbnail;
+              }
+              break;
+            }
+            case TdApi.LinkPreviewTypeEmbeddedAnimationPlayer.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeEmbeddedAnimationPlayer animationPlayer = (TdApi.LinkPreviewTypeEmbeddedAnimationPlayer) linkPreview.type;
+              if (animationPlayer.thumbnail != null) {
+                photoSize = MediaWrapper.pickDisplaySize(tdlib, animationPlayer.thumbnail.sizes, chatId);
+                miniThumbnail = animationPlayer.thumbnail.minithumbnail;
+              }
+              break;
+            }
+            case TdApi.LinkPreviewTypeEmbeddedVideoPlayer.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeEmbeddedVideoPlayer videoPlayer = (TdApi.LinkPreviewTypeEmbeddedVideoPlayer) linkPreview.type;
+              if (videoPlayer.thumbnail != null) {
+                photoSize = MediaWrapper.pickDisplaySize(tdlib, videoPlayer.thumbnail.sizes, chatId);
+                miniThumbnail = videoPlayer.thumbnail.minithumbnail;
+              }
+              break;
+            }
+            case TdApi.LinkPreviewTypeVideoNote.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeVideoNote videoNote = (TdApi.LinkPreviewTypeVideoNote) linkPreview.type;
+              thumbnail = videoNote.videoNote.thumbnail;
+              miniThumbnail = videoNote.videoNote.minithumbnail;
+              previewCircle = true;
+              break;
+            }
+            case TdApi.LinkPreviewTypeAlbum.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeAlbum album = (TdApi.LinkPreviewTypeAlbum) linkPreview.type;
+              if (album.media.length > 0) {
+                TdApi.LinkPreviewAlbumMedia albumMedia = album.media[0];
+                switch (albumMedia.getConstructor()) {
+                  case TdApi.LinkPreviewAlbumMediaPhoto.CONSTRUCTOR: {
+                    TdApi.LinkPreviewAlbumMediaPhoto photo = (TdApi.LinkPreviewAlbumMediaPhoto) albumMedia;
+                    photoSize = MediaWrapper.pickDisplaySize(tdlib, photo.photo.sizes, chatId);
+                    miniThumbnail = photo.photo.minithumbnail;
+                    break;
+                  }
+                  case TdApi.LinkPreviewAlbumMediaVideo.CONSTRUCTOR: {
+                    TdApi.LinkPreviewAlbumMediaVideo video = (TdApi.LinkPreviewAlbumMediaVideo) albumMedia;
+                    miniThumbnail = video.video.minithumbnail;
+                    thumbnail = video.video.thumbnail;
+                    break;
+                  }
+                  default: {
+                    Td.assertLinkPreviewAlbumMedia_8c33c943();
+                    throw Td.unsupported(albumMedia);
+                  }
+                }
+              }
+              break;
+            }
+            case TdApi.LinkPreviewTypeChat.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeChat chat = (TdApi.LinkPreviewTypeChat) linkPreview.type;
+              if (chat.photo != null) {
+                photoSize = MediaWrapper.pickDisplaySize(tdlib, chat.photo.sizes, chatId);
+                TdApi.PhotoSize smallest = Td.findSmallest(chat.photo.sizes);
+                if (smallest != null && smallest != photoSize) {
+                  thumbnail = TD.toThumbnail(photoSize);
+                }
+                miniThumbnail = chat.photo.minithumbnail;
+                previewCircle = true;
+              }
+              break;
+            }
+            case TdApi.LinkPreviewTypeUser.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeUser user = (TdApi.LinkPreviewTypeUser) linkPreview.type;
+              if (user.photo != null) {
+                photoSize = MediaWrapper.pickDisplaySize(tdlib, user.photo.sizes, chatId);
+                TdApi.PhotoSize smallest = Td.findSmallest(user.photo.sizes);
+                if (smallest != null && smallest != photoSize) {
+                  thumbnail = TD.toThumbnail(photoSize);
+                }
+                miniThumbnail = user.photo.minithumbnail;
+                previewCircle = true;
+              }
+              break;
+            }
+            case TdApi.LinkPreviewTypeVideoChat.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeVoiceNote.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeApp.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeAudio.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeBackground.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeChannelBoost.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeEmbeddedAudioPlayer.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeInvoice.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeMessage.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypePremiumGiftCode.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeShareableChatFolder.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeStory.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeSupergroupBoost.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeTheme.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeUnsupported.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeWebApp.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeExternalAudio.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeExternalVideo.CONSTRUCTOR:
+              break;
+            default:
+              Td.assertLinkPreviewType_eb86a63d();
+              throw Td.unsupported(linkPreview.type);
           }
         }
         break;

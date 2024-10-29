@@ -83,8 +83,8 @@ import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class MessageView extends SparseDrawableView implements Destroyable, DrawableProvider, MessagesManager.MessageProvider {
   private static final int FLAG_USE_COMMON_RECEIVER = 1;
@@ -695,7 +695,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
               icons.append(isQuiz ? R.drawable.baseline_help_24 : R.drawable.baseline_poll_24);
               strings.append(R.string.RetractVote);
             }
-            if (msg.getMessage().canBeEdited) {
+            if (msg.lastMessageProperties().canBeEdited) {
               ids.append(R.id.btn_messagePollStop);
               icons.append(isQuiz ? R.drawable.baseline_help_24 : R.drawable.baseline_poll_24);
               strings.append(isQuiz ? R.string.StopQuiz : R.string.StopPoll);
@@ -919,7 +919,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
       List<TD.DownloadedFile> downloadedFiles = TD.getDownloadedFiles(allMessages);
       if (downloadedFiles.isEmpty() && singleMessage.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR && msg instanceof TGMessageText) {
-        TGWebPage webPage = ((TGMessageText) msg).getParsedWebPage();
+        TGWebPage webPage = ((TGMessageText) msg).getParsedLinkPreview();
         if (webPage != null) {
           TD.DownloadedFile downloadedFile = TD.getDownloadedFile(webPage);
           if (downloadedFile != null) {
@@ -1482,7 +1482,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     }
     if (touchX > MessagesController.getSlideBackBound()) {
       msg.checkTranslatableText(() -> {
-        msg.checkAvailableReactions(() -> {
+        msg.loadAvailableReactions(() -> {
           if ((msg.getRightQuickReactions().size() > 0 && diffX < 0) || (msg.getLeftQuickReactions().size() > 0 && diffX > 0)) {
             m.startSwipe(findTargetView());
           }

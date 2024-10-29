@@ -26,6 +26,7 @@ import org.thunderdog.challegram.tool.Strings;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.DateUtils;
@@ -61,22 +62,8 @@ public class CallItem {
     return messageIds;
   }
 
-  public boolean canBeDeletedForAllUsers () {
-    for (TdApi.Message message : messages) {
-      if (!message.canBeDeletedForAllUsers)
-        return false;
-    }
-    return true;
-  }
-
-  public int getRevokeCount () {
-    int count = 0;
-    for (TdApi.Message message : messages) {
-      if (message.canBeDeletedForAllUsers) {
-        count++;
-      }
-    }
-    return count;
+  public List<TdApi.Message> getMessages () {
+    return messages;
   }
 
   public String getTime () {

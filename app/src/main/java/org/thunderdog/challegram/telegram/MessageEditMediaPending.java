@@ -23,7 +23,8 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.tool.UI;
 
 import me.vkryl.core.BitwiseUtils;
-import me.vkryl.td.ChatId;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class MessageEditMediaPending implements Tdlib.UploadFutureSimple.Callback {
   public final long chatId, messageId;
@@ -151,7 +152,7 @@ public class MessageEditMediaPending implements Tdlib.UploadFutureSimple.Callbac
   }
 
   public TdApi.MessageVideo getMessageVideo () {
-    return new TdApi.MessageVideo(getVideo(), getCaption(), showCaptionAboveMedia(), hasSpoiler(), false);
+    return new TdApi.MessageVideo(getVideo(), new TdApi.AlternativeVideo[0], getCaption(), showCaptionAboveMedia(), hasSpoiler(), false);
   }
 
   public TdApi.MessageAnimation getMessageAnimation () {
@@ -167,20 +168,11 @@ public class MessageEditMediaPending implements Tdlib.UploadFutureSimple.Callbac
   }
 
   public TdApi.FormattedText getCaption () {
-    return TD.textOrCaption(content);
+    return Td.textOrCaption(content);
   }
 
   public boolean showCaptionAboveMedia () {
-    switch (content.getConstructor()) {
-      case TdApi.InputMessagePhoto.CONSTRUCTOR:
-        return ((TdApi.InputMessagePhoto) content).showCaptionAboveMedia;
-      case TdApi.InputMessageVideo.CONSTRUCTOR:
-        return ((TdApi.InputMessageVideo) content).showCaptionAboveMedia;
-      case TdApi.InputMessageAnimation.CONSTRUCTOR:
-        return ((TdApi.InputMessageAnimation) content).showCaptionAboveMedia;
-      default:
-        return false;
-    }
+    return Td.showCaptionAboveMedia(content);
   }
 
   public boolean hasSpoiler () {

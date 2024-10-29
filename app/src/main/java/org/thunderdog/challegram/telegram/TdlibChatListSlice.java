@@ -26,7 +26,7 @@ import java.util.List;
 import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.Future;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.td.ChatPosition;
+import tgx.td.ChatPosition;
 
 public class TdlibChatListSlice {
   private final Tdlib tdlib;

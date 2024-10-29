@@ -111,7 +111,7 @@ import java.util.stream.Collectors;
 
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableBool;
-import me.vkryl.td.ChatId;
+import tgx.td.ChatId;
 
 public class TGCallService extends Service implements
   TdlibCache.CallStateChangeListener,

@@ -17,7 +17,6 @@ package org.thunderdog.challegram.util;
 import androidx.annotation.LongDef;
 
 import org.thunderdog.challegram.BuildConfig;
-import org.thunderdog.challegram.config.Config;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

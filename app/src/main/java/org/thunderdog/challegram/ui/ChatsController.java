@@ -129,9 +129,9 @@ import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableInt;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.ChatPosition;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.ChatPosition;
+import tgx.td.Td;
 
 public class ChatsController extends TelegramViewController<ChatsController.Arguments> implements Menu,
   View.OnClickListener, View.OnLongClickListener, ChatsRecyclerView.LoadMoreCallback,
@@ -1726,7 +1726,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         } else if (id == R.id.more_btn_archive || id == R.id.more_btn_unarchive) {
           simpleActionId = R.id.btn_archiveUnarchiveChat;
         } else if (id == R.id.more_btn_report) {
-          TdlibUi.reportChat(getParentOrSelf(), selectedChats.keyAt(0), null, onDone, null);
+          TdlibUi.reportChat(getParentOrSelf(), selectedChats.keyAt(0), null, null, onDone, true);
           return;
         }
         if (simpleActionId != 0) {
@@ -1776,7 +1776,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         });
       } else if (id == R.id.more_btn_report) {
         long[] chatIds = ArrayUtils.keys(selectedChats);
-        TdlibUi.reportChats(getParentOrSelf(), chatIds, onDone);
+        TdlibUi.reportChats(getParentOrSelf(), chatIds, onDone, null);
       } else if (id == R.id.more_btn_block || id == R.id.more_btn_unblock) {
         boolean isUnblock = id == R.id.more_btn_unblock;
         if (isUnblock) {

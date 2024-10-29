@@ -10,41 +10,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-import com.android.build.api.dsl.ApplicationBaseFlavor
-import com.android.build.api.dsl.VariantDimension
+package tgx.gradle
+
+import org.gradle.api.tasks.StopExecutionException
 import java.io.File
 import java.util.*
 
-fun ApplicationBaseFlavor.buildConfigInt (name: String, value: Int) =
-  this.buildConfigField("int", name, value.toString())
-fun ApplicationBaseFlavor.buildConfigLong (name: String, value: Long) =
-  this.buildConfigField("long", name, value.toString())
-fun ApplicationBaseFlavor.buildConfigBool (name: String, value: Boolean) =
-  this.buildConfigField("boolean", name, value.toString())
-fun ApplicationBaseFlavor.buildConfigString (name: String, value: String?) =
-  this.buildConfigField("String", name, if (value != null) {
-    "\"$value\""
-  } else {
-    "null"
-  })
-fun VariantDimension.buildConfigInt (name: String, value: Int) =
-  this.buildConfigField("int", name, value.toString())
-fun VariantDimension.buildConfigLong (name: String, value: Long) =
-  this.buildConfigField("long", name, value.toString())
-fun VariantDimension.buildConfigString (name: String, value: String?) =
-  this.buildConfigField("String", name, if (value != null) {
-    "\"$value\""
-  } else {
-    "null"
-  })
-
+fun fatal(message: String): Nothing =
+  throw StopExecutionException(message)
 
 fun loadProperties (path: String = "local.properties"): Properties {
   val file = File(path)
   if (!file.canRead())
-    error("Cannot read ${file.absolutePath}")
+    fatal("Cannot read ${file.absolutePath}")
   if (file.isDirectory)
-    error("Is a directory: ${file.absolutePath}")
+    fatal("Is a directory: ${file.absolutePath}")
   val properties = Properties()
   file.bufferedReader().use {
     properties.load(it)
@@ -72,7 +52,7 @@ fun Properties.getIntOrThrow (key: String): Int {
   return try {
     value.toInt()
   } catch (e: NumberFormatException) {
-    error("$key is set, but not a number")
+    fatal("$key is set, but not a number")
   }
 }
 
@@ -81,7 +61,7 @@ fun Properties.getLongOrThrow (key: String): Long {
   return try {
     value.toLong()
   } catch (e: NumberFormatException) {
-    error("$key is set, but not a number")
+    fatal("$key is set, but not a number")
   }
 }
 
@@ -89,22 +69,7 @@ fun Properties.getOrThrow (key: String): String {
   return this[key]?.let {
     val res = it.toString()
     if (res.isEmpty())
-      error("$key is set, but empty")
+      fatal("$key is set, but empty")
     res
-  } ?: error("$key is not set, available: ${keys.joinToString(", ")}")
-}
-
-class Keystore (configPath: String) {
-  val file: File
-  val password: String
-  val keyAlias: String
-  val keyPassword: String
-
-  init {
-    val config = loadProperties(configPath)
-    this.file = File(config.getOrThrow("keystore.file"))
-    this.password = config.getOrThrow("keystore.password")
-    this.keyAlias = config.getOrThrow("key.alias")
-    this.keyPassword = config.getOrThrow("key.password")
-  }
+  } ?: fatal("$key is not set, available: ${keys.joinToString(", ")}")
 }

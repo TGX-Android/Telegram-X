@@ -10,19 +10,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-package me.vkryl.plugin
+package tgx.gradle.plugin
 
 import Config
-import Keystore
 import LibraryVersions
-import buildConfigString
 import com.android.build.gradle.AppExtension
 import com.android.build.gradle.BaseExtension
 import com.android.build.gradle.LibraryExtension
 import com.android.build.gradle.ProguardFiles
 import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
-import getOrThrow
-import loadProperties
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.compile.JavaCompile
@@ -30,7 +26,23 @@ import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.extra
 import org.gradle.kotlin.dsl.get
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import tgx.gradle.*
 import java.io.File
+
+class Keystore (configPath: String) {
+  val file: File
+  val password: String
+  val keyAlias: String
+  val keyPassword: String
+
+  init {
+    val config = loadProperties(configPath)
+    this.file = File(config.getOrThrow("keystore.file"))
+    this.password = config.getOrThrow("keystore.password")
+    this.keyAlias = config.getOrThrow("key.alias")
+    this.keyPassword = config.getOrThrow("key.password")
+  }
+}
 
 open class ModulePlugin : Plugin<Project> {
   override fun apply(project: Project) {
@@ -135,7 +147,7 @@ open class ModulePlugin : Plugin<Project> {
 
           is AppExtension -> {
             if (properties.getProperty("telegram.api_id", "").isEmpty() || properties.getProperty("telegram.api_hash").isEmpty()) {
-              error("""
+              fatal("""
                 Telegram API credentials missing.
                 
                 Set them in your local.properties file:
@@ -185,7 +197,6 @@ open class ModulePlugin : Plugin<Project> {
                   isMinifyEnabled = false
 
                   ndk.debugSymbolLevel = "full"
-                  ndk.jobs = Runtime.getRuntime().availableProcessors()
 
                   if (forceOptimize) {
                     proguardFiles(
@@ -202,7 +213,6 @@ open class ModulePlugin : Plugin<Project> {
                   isShrinkResources = !dontObfuscate
 
                   ndk.debugSymbolLevel = "full"
-                  ndk.jobs = Runtime.getRuntime().availableProcessors()
 
                   proguardFiles(
                     getDefaultProguardFile(ProguardFiles.ProguardFile.OPTIMIZE.fileName),

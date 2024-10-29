@@ -49,7 +49,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import me.vkryl.android.AnimatorUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class PollResultsController extends RecyclerViewController<PollResultsController.Args> implements PollListener, UserListManager.ChangeListener, View.OnClickListener {
   public static class Args {

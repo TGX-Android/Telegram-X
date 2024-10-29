@@ -29,7 +29,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Views;
 
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class ComplexMediaItemCustomEmoji implements ComplexMediaItem {
   public final TdApi.Sticker sticker;

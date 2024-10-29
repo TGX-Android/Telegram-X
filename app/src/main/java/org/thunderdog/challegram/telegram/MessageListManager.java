@@ -28,7 +28,7 @@ import java.util.List;
 
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableInt;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public final class MessageListManager extends ListManager<TdApi.Message> implements MessageListener, Comparator<TdApi.Message> {
   public interface ChangeListener extends ListManager.ListChangeListener<TdApi.Message> { }
