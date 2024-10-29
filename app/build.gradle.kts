@@ -37,6 +37,7 @@ val checkEmojiKeyboard by tasks.registering(CheckEmojiKeyboardTask::class) {
 }
 
 val isExperimentalBuild = extra["experimental"] as Boolean? ?: false
+val useNTgCalls = extra["use_ntgcalls"] as Boolean? ?: true
 val properties = extra["properties"] as Properties
 val projectName = extra["app_name"] as String
 val versions = extra["versions"] as Properties
@@ -83,6 +84,8 @@ android {
     buildConfigString("LANGUAGE_PACK", Telegram.LANGUAGE_PACK)
 
     buildConfigString("THEME_FILE_EXTENSION", App.THEME_EXTENSION)
+
+    buildConfigField("boolean", "USE_NTGCALLS", useNTgCalls.toString())
 
     // Library versions in BuildConfig.java
 
@@ -233,14 +236,15 @@ android {
 
   sourceSets.getByName("main") {
     java.srcDirs("./src/google/java") // TODO: Huawei & FOSS editions
-    // Disabled due to the conflict with NTgCalls implementation
-    //java.srcDirs(
-    //  "./jni/third_party/webrtc/rtc_base/java/src",
-    //  "./jni/third_party/webrtc/modules/audio_device/android/java/src",
-    //  "./jni/third_party/webrtc/sdk/android/api",
-    //  "./jni/third_party/webrtc/sdk/android/src/java",
-    //  "../thirdparty/WebRTC/src/java"
-    //)
+    if (!useNTgCalls) {
+      java.srcDirs(
+        "./jni/third_party/webrtc/rtc_base/java/src",
+        "./jni/third_party/webrtc/modules/audio_device/android/java/src",
+        "./jni/third_party/webrtc/sdk/android/api",
+        "./jni/third_party/webrtc/sdk/android/src/java",
+        "../thirdparty/WebRTC/src/java"
+      )
+    }
     Config.ANDROIDX_MEDIA_EXTENSIONS.forEach { extension ->
       java.srcDirs("../thirdparty/androidx-media/libraries/${extension}/src/main/java")
     }
