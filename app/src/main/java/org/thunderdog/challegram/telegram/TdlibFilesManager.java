@@ -56,7 +56,7 @@ import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceIntMap;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.unit.ByteUnit;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class TdlibFilesManager implements GlobalConnectionListener {
   public static final int STATE_PAUSED = 0;

@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class ChangeLogList {
   public static final class Release {
@@ -53,7 +53,7 @@ public class ChangeLogList {
 
   private static void makeUpdateText (Release release, List<TdApi.Function<?>> functions, List<TdApi.InputMessageContent> messages, boolean isLast) {
     TdApi.FormattedText text = makeUpdateText(String.format(Locale.US, "%d.%d.%d.%d", release.primary, release.major, release.minor, release.buildNo), release.changeLogUrl);
-    functions.add(new TdApi.GetWebPagePreview(text, new TdApi.LinkPreviewOptions(false, release.changeLogUrl, false, false, false)));
+    functions.add(new TdApi.GetLinkPreview(text, new TdApi.LinkPreviewOptions(false, release.changeLogUrl, false, false, false)));
     functions.add(new TdApi.GetWebPageInstantView(release.changeLogUrl, false));
     messages.add(new TdApi.InputMessageText(text, null, false));
   }

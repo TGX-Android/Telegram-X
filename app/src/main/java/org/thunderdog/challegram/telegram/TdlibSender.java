@@ -23,8 +23,8 @@ import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.util.text.Letters;
 
 import me.vkryl.core.BitwiseUtils;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class TdlibSender {
   private static final int FLAG_BOT = 1;

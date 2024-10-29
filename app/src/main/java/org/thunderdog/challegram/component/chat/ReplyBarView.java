@@ -47,7 +47,8 @@ import me.vkryl.android.ViewUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.td.Td;
+import tgx.td.Td;
+import tgx.td.data.MessageWithProperties;
 
 public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener, Destroyable {
   protected final Tdlib tdlib;
@@ -65,11 +66,15 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
       if (id == R.id.btn_close) {
         callback.onDismissReplyBar(this);
       } else if (id == R.id.btn_replace) {
-        callback.onMessageMediaReplaceRequested(this, displayedMessage);
+        callback.onMessageMediaReplaceRequested(this, getMessage());
       } else if (id == R.id.btn_edit) {
-        callback.onMessageMediaEditRequested(this, displayedMessage);
+        callback.onMessageMediaEditRequested(this, getMessage());
       }
     }
+  }
+
+  private TdApi.Message getMessage () {
+    return displayedMessage != null ? displayedMessage.message : null;
   }
 
   ImageView closeView;
@@ -289,33 +294,35 @@ public class ReplyBarView extends FrameLayoutFix implements View.OnClickListener
     setMessageInputContext(context);
   }
 
-  private TdApi.Message displayedMessage;
+  private MessageWithProperties displayedMessage;
 
-  public void setReplyTo (TdApi.Message msg, @Nullable TdApi.InputTextQuote quote) {
-    pinnedMessagesBar.setMessage(tdlib, displayedMessage = msg, quote);
+  public void setReplyTo (MessageWithProperties msg, @Nullable TdApi.InputTextQuote quote) {
+    displayedMessage = msg;
+    pinnedMessagesBar.setMessage(tdlib, msg != null ? msg.message : null, quote);
     setLinkPreviewToggleVisible(false);
     setMediaEditToggleVisible(false, false);
     setMessageInputContext(null);
   }
 
-  public void setEditingMessage (TdApi.Message msg, @Nullable MediaToReplacePickerManager.LocalPickedFile localPickedFile) {
+  public void setEditingMessage (MessageWithProperties msg, @Nullable MediaToReplacePickerManager.LocalPickedFile localPickedFile) {
     final boolean hasReplacedImage = localPickedFile != null && localPickedFile.imageGalleryFile != null;
 
     final boolean canReplace = localPickedFile != null || tdlib.canEditMedia(msg, false);
     final boolean canEdit = canReplace && (localPickedFile == null && tdlib.canEditMedia(msg, true) || hasReplacedImage);
 
-    if (msg.mediaAlbumId != 0) {
-      final boolean usePhotoIcon = Td.isPhoto(msg.content) || hasReplacedImage
-        || (msg.content != null && msg.content.getConstructor() == TdApi.MessageVideo.CONSTRUCTOR);
+    if (msg.message.mediaAlbumId != 0) {
+      final boolean usePhotoIcon = Td.isPhoto(msg.message.content) || hasReplacedImage
+        || (msg.message.content != null && msg.message.content.getConstructor() == TdApi.MessageVideo.CONSTRUCTOR);
 
       replaceMediaView.setImageResource(usePhotoIcon ? R.drawable.dot_baseline_image_replace_24 : R.drawable.dot_baseline_file_replace_24);
     } else {
       replaceMediaView.setImageResource(R.drawable.dot_baseline_file_media_replace_24);
     }
 
-    pinnedMessagesBar.setMessage(tdlib, displayedMessage = msg, null, localPickedFile);
+    displayedMessage = msg;
+    pinnedMessagesBar.setMessage(tdlib, msg.message, null, localPickedFile);
     setLinkPreviewToggleVisible(false);
-    setMediaEditToggleVisible(canReplace, canEdit && TD.isFileLoaded(msg));
+    setMediaEditToggleVisible(canReplace, canEdit && TD.isFileLoaded(msg.message));
     setMessageInputContext(null);
   }
 

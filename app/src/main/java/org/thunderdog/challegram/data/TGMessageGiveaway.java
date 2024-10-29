@@ -42,16 +42,16 @@ import org.thunderdog.challegram.util.text.Counter;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInlineKeyboard.ClickListener {
   private final static int BLOCK_MARGIN = 18;
 
-  private final TdApi.MessagePremiumGiveaway premiumGiveaway;
+  private final TdApi.MessageGiveaway giveaway;
 
-  public TGMessageGiveaway (MessagesManager manager, TdApi.Message msg, @NonNull TdApi.MessagePremiumGiveaway premiumGiveaway) {
+  public TGMessageGiveaway (MessagesManager manager, TdApi.Message msg, @NonNull TdApi.MessageGiveaway giveaway) {
     super(manager, msg);
-    this.premiumGiveaway = premiumGiveaway;
+    this.giveaway = giveaway;
   }
 
   private final RectF outlineCounterRect = new RectF();
@@ -70,33 +70,50 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
 
     content.add(Lang.boldify(Lang.getString(R.string.GiveawayPrizes)), getTextColorSet(), currentViews);
     content.padding(Screen.dp(6));
-    if (!StringUtils.isEmpty(premiumGiveaway.parameters.prizeDescription)) {
-      content.add(Lang.getCharSequence(R.string.GiveawayPrizesAdditional, Lang.boldify(Integer.toString(premiumGiveaway.winnerCount)), premiumGiveaway.parameters.prizeDescription), getTextColorSet(), currentViews);
+    if (!StringUtils.isEmpty(giveaway.parameters.prizeDescription)) {
+      content.add(Lang.getCharSequence(R.string.GiveawayPrizesAdditional, Lang.boldify(Integer.toString(giveaway.winnerCount)), giveaway.parameters.prizeDescription), getTextColorSet(), currentViews);
       content.padding(Screen.dp(6));
       content.add(Lang.getString(R.string.GiveawayPrizesWith), () -> Theme.getColor(ColorId.textLight), currentViews);
       content.padding(Screen.dp(6));
     }
-    CharSequence text = Lang.plural(
-      R.string.xGiveawayPrizePremium,
-      premiumGiveaway.winnerCount,
-      (target, argStart, argEnd, argIndex, needFakeBold) -> argIndex == 0 ? Lang.newBoldSpan(needFakeBold) : null,
-      Lang.pluralBold(
-        R.string.xGiveawayPrizePremiumMonths, premiumGiveaway.monthCount
-      )
-    );
-    text = Strings.replaceBoldTokens(text);
+    CharSequence text;
+
+    switch (giveaway.prize.getConstructor()) {
+      case TdApi.GiveawayPrizePremium.CONSTRUCTOR: {
+        TdApi.GiveawayPrizePremium premium = (TdApi.GiveawayPrizePremium) giveaway.prize;
+        text = Lang.plural(
+          R.string.xGiveawayPrizePremium,
+          giveaway.winnerCount,
+          (target, argStart, argEnd, argIndex, needFakeBold) -> argIndex == 0 ? Lang.newBoldSpan(needFakeBold) : null,
+          Lang.pluralBold(
+            R.string.xGiveawayPrizePremiumMonths, premium.monthCount
+          )
+        );
+        text = Strings.replaceBoldTokens(text);
+        break;
+      }
+      case TdApi.GiveawayPrizeStars.CONSTRUCTOR: {
+        TdApi.GiveawayPrizeStars stars = (TdApi.GiveawayPrizeStars) giveaway.prize;
+        text = Lang.pluralBold(R.string.xGiveawayPrizeStar, stars.starCount);
+        break;
+      }
+      default: {
+        Td.assertGiveawayPrize_28ff2954();
+        throw Td.unsupported(giveaway.prize);
+      }
+    }
     content.add(text, getTextColorSet(), currentViews);
 
     content.padding(Screen.dp(BLOCK_MARGIN));
     content.add(Lang.boldify(Lang.getString(R.string.GiveawayParticipants)), getTextColorSet(), currentViews);
     content.padding(Screen.dp(6));
-    content.add(Lang.getString(premiumGiveaway.parameters.onlyNewMembers ? R.string.GiveawayParticipantsNew : R.string.GiveawayParticipantsAll), getTextColorSet(), currentViews);
+    content.add(Lang.getString(giveaway.parameters.onlyNewMembers ? R.string.GiveawayParticipantsNew : R.string.GiveawayParticipantsAll), getTextColorSet(), currentViews);
     content.padding(Screen.dp(6));
-    content.add(new ContentBubbles(this, maxWidth - Screen.dp(CONTENT_PADDING_DP * 2 + 60)).setOnClickListener(this::onBubbleClick).addChatId(premiumGiveaway.parameters.boostedChatId).addChatIds(premiumGiveaway.parameters.additionalChatIds));
+    content.add(new ContentBubbles(this, maxWidth - Screen.dp(CONTENT_PADDING_DP * 2 + 60)).setOnClickListener(this::onBubbleClick).addChatId(giveaway.parameters.boostedChatId).addChatIds(giveaway.parameters.additionalChatIds));
 
-    if (premiumGiveaway.parameters.countryCodes.length > 0) {
+    if (giveaway.parameters.countryCodes.length > 0) {
       StringBuilder sb = new StringBuilder();
-      for (String countryCode : premiumGiveaway.parameters.countryCodes) {
+      for (String countryCode : giveaway.parameters.countryCodes) {
         if (sb.length() > 0) {
           sb.append(Lang.getConcatSeparator());
         }
@@ -115,24 +132,24 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
     content.padding(Screen.dp(BLOCK_MARGIN));
     content.add(Lang.boldify(Lang.getString(R.string.GiveawayWinnersSelectionDateHeader)), getTextColorSet(), currentViews);
     content.padding(Screen.dp(6));
-    content.add(Lang.getString(R.string.GiveawayWinnersSelectionDate, Lang.dateYearFull(premiumGiveaway.parameters.winnersSelectionDate, TimeUnit.SECONDS), Lang.time(premiumGiveaway.parameters.winnersSelectionDate, TimeUnit.SECONDS)), getTextColorSet(), currentViews);
+    content.add(Lang.getString(R.string.GiveawayWinnersSelectionDate, Lang.dateYearFull(giveaway.parameters.winnersSelectionDate, TimeUnit.SECONDS), Lang.time(giveaway.parameters.winnersSelectionDate, TimeUnit.SECONDS)), getTextColorSet(), currentViews);
 
     /* * */
 
     participantsCounter = new Counter.Builder().allBold(true).textSize(11).noBackground().textColor(ColorId.badgeText).build();
-    participantsCounter.setCount(premiumGiveaway.winnerCount, false, "x" + premiumGiveaway.winnerCount, false);
+    participantsCounter.setCount(giveaway.winnerCount, false, "x" + giveaway.winnerCount, false);
     backgroundCounterRect.set(maxWidth / 2f - participantsCounter.getWidth() / 2f - Screen.dp(8), participantsCounterY - Screen.dp(23 / 2f), maxWidth / 2f + participantsCounter.getWidth() / 2f + Screen.dp(8), participantsCounterY + Screen.dp(23 / 2f));
     outlineCounterRect.set(backgroundCounterRect);
     outlineCounterRect.inset(-Screen.dp(3), -Screen.dp(3));
 
     invalidateGiveawayReceiver();
-    UI.execute(this::loadPremiumGiveawayInfo);
+    UI.execute(this::loadGiveawayInfo);
     return content.getHeight();
   }
 
   @Override
   protected void onBuildButton (int maxWidth) {
-    final boolean isParticipating = TD.isParticipating(premiumGiveawayInfo);
+    final boolean isParticipating = TD.isParticipating(giveawayInfo);
     rippleButton.setCustom(isParticipating ? R.drawable.baseline_check_18 : 0, Lang.getString(isParticipating ? R.string.GiveawayParticipating : R.string.GiveawayLearnMore), maxWidth, false, this);
     rippleButton.firstButton().setCustomIconReverse(true);
     rippleButton.firstButton().setCustomColorId(isParticipating ? ColorId.iconPositive : ColorId.NONE);
@@ -165,12 +182,12 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
   private boolean byClick;
 
   @Override public void onClick (View view, TGInlineKeyboard keyboard, TGInlineKeyboard.Button button) {
-    loadPremiumGiveawayInfo();
+    loadGiveawayInfo();
     byClick = true;
   }
 
-  @Override protected void onPremiumGiveawayInfoLoaded (TdApi.PremiumGiveawayInfo result, @Nullable TdApi.Error error) {
-    super.onPremiumGiveawayInfoLoaded(result, error);
+  @Override protected void onGiveawayInfoLoaded (TdApi.GiveawayInfo result, @Nullable TdApi.Error error) {
+    super.onGiveawayInfoLoaded(result, error);
     this.onBuildButton(getContentWidth());
 
     if (byClick && error != null) {
@@ -178,7 +195,7 @@ public class TGMessageGiveaway extends TGMessageGiveawayBase implements TGInline
       return;
     }
     if (byClick && !isDestroyed()) {
-      showPremiumGiveawayInfoPopup(premiumGiveaway.winnerCount, premiumGiveaway.monthCount, premiumGiveaway.parameters.boostedChatId, premiumGiveaway.parameters.additionalChatIds.length, premiumGiveaway.parameters.additionalChatIds, premiumGiveaway.parameters.winnersSelectionDate, premiumGiveaway.parameters.prizeDescription);
+      showGiveawayInfoPopup(giveaway.winnerCount, giveaway.prize, giveaway.parameters.boostedChatId, giveaway.parameters.additionalChatIds.length, giveaway.parameters.additionalChatIds, giveaway.parameters.winnersSelectionDate, giveaway.parameters.prizeDescription);
     }
     byClick = false;
   }

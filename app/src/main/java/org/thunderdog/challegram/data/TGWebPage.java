@@ -25,6 +25,8 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
+import org.drinkmore.Tracer;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
@@ -63,7 +65,7 @@ import me.vkryl.android.util.ClickHelper;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWrapper.OnClickListener, TGInlineKeyboard.ClickListener, Client.ResultHandler, Destroyable {
   private static final int MAX_TITLE_LINES = 4;
@@ -111,8 +113,6 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   private int flags;
 
   private boolean isImageBig;
-  // private boolean fakeName;
-  // private boolean nameRtl;
 
   /*
   * article, photo, audio, video, document, profile, app
@@ -121,13 +121,10 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   private int type;
   private int availWidth, height;
 
-  // private String trimmedName;
-  // private int trimmedNameWidth;
-
   private final long chatId;
   private long messageId;
   private final TGMessageText parent;
-  private final TdApi.WebPage webPage;
+  private final TdApi.LinkPreview linkPreview;
   private final String url;
   private final TdApi.LinkPreviewOptions linkPreviewOptions;
 
@@ -138,8 +135,9 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   private @Nullable String instantText;
   private @Nullable ArrayList<MediaItem> instantItems;
   private int instantPosition;
+  private final boolean isAdvertisement;
 
-  public TGWebPage (@NonNull TGMessageText parent, TdApi.WebPage webPage, String url, @Nullable TdApi.LinkPreviewOptions linkPreviewOptions) {
+  public TGWebPage (@NonNull TGMessageText parent, TdApi.LinkPreview linkPreview, String url, @Nullable TdApi.LinkPreviewOptions linkPreviewOptions) {
     if (paddingLeft == 0) {
       initSizes();
     }
@@ -149,10 +147,11 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     this.viewProvider = parent.currentViews;
     this.linkPreviewOptions = linkPreviewOptions;
     this.parent = parent;
-    this.webPage = webPage;
+    this.linkPreview = linkPreview;
     this.url = url;
     this.chatId = parent.getChatId();
     this.messageId = parent.getId();
+    this.isAdvertisement = parent.isSponsoredMessage();
   }
 
   public int getType () {
@@ -166,100 +165,112 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     int maxWidth = width - paddingLeft;
     height = 0;
 
-    if (this.type == 0) {
-      final String type = webPage.type;
-      switch (type) {
-        case "video": {
+    if (isAdvertisement) {
+      this.type = TYPE_TELEGRAM_AD;
+    } else if (this.type == 0) {
+      final TdApi.LinkPreviewType type = linkPreview.type;
+
+      switch (type.getConstructor()) {
+        case TdApi.LinkPreviewTypeVideo.CONSTRUCTOR: {
           this.type = TYPE_VIDEO;
           break;
         }
-        case "article": {
-          if (webPage.video != null) {
-            this.type = TYPE_VIDEO;
+        case TdApi.LinkPreviewTypeApp.CONSTRUCTOR: {
+          this.type = TYPE_APP;
+          break;
+        }
+        case TdApi.LinkPreviewTypeArticle.CONSTRUCTOR: {
+          this.type = TYPE_ARTICLE;
+          break;
+        }
+        case TdApi.LinkPreviewTypeEmbeddedVideoPlayer.CONSTRUCTOR: {
+          TdApi.LinkPreviewTypeEmbeddedVideoPlayer videoPlayer = (TdApi.LinkPreviewTypeEmbeddedVideoPlayer) type;
+          if (videoPlayer.thumbnail != null) {
+            this.type = TYPE_PHOTO;
           } else {
             this.type = TYPE_ARTICLE;
           }
           break;
         }
-        case "gif": {
-          if (webPage.animation != null) {
-            this.type = TYPE_GIF;
-          } else {
-            Log.w("WebPage, received null %s", webPage.type);
-          }
+        case TdApi.LinkPreviewTypeAnimation.CONSTRUCTOR: {
+          this.type = TYPE_GIF;
           break;
         }
-        case "photo": {
-          if (webPage.photo != null) {
+        case TdApi.LinkPreviewTypePhoto.CONSTRUCTOR: {
+          this.type = TYPE_PHOTO;
+          break;
+        }
+        case TdApi.LinkPreviewTypeSticker.CONSTRUCTOR: {
+          TdApi.LinkPreviewTypeSticker sticker = (TdApi.LinkPreviewTypeSticker) type;
+          if (Math.max(sticker.sticker.width, sticker.sticker.height) <= STICKER_SIZE_LIMIT) {
+            this.type = TYPE_STICKER;
+          } else {
             this.type = TYPE_PHOTO;
-          } else {
-            Log.w("WebPage, received null %s", webPage.type);
           }
           break;
         }
-        case "app": {
-          this.type = TYPE_APP;
+        case TdApi.LinkPreviewTypeVoiceNote.CONSTRUCTOR:
+        case TdApi.LinkPreviewTypeDocument.CONSTRUCTOR:
+        case TdApi.LinkPreviewTypeAudio.CONSTRUCTOR: {
+          this.type = TYPE_DOCUMENT;
           break;
         }
-        case "sticker":
-        case "voice":
-        case "audio":
-        case "document": {
-          if (webPage.video != null) {
-            this.type = TYPE_VIDEO;
-          } else if (webPage.sticker != null) {
-            this.type = Math.max(webPage.sticker.width, webPage.sticker.height) <= STICKER_SIZE_LIMIT ? TYPE_STICKER : TYPE_PHOTO;
-          } else if (webPage.animation != null) {
-            this.type = TYPE_GIF;
-          } else if (webPage.voiceNote != null || webPage.audio != null || webPage.document != null) {
-            this.type = TYPE_DOCUMENT;
-          } else {
-            Log.w("WebPage, received null for %s", webPage.type);
-          }
-          break;
-        }
-        case "telegram_channel": {
-          this.type = TYPE_TELEGRAM_CHANNEL;
-          break;
-        }
-        case "telegram_megagroup": {
-          this.type = TYPE_TELEGRAM_MEGAGROUP;
-          break;
-        }
-        case "telegram_chat": {
+
+        case TdApi.LinkPreviewTypeChat.CONSTRUCTOR: {
           this.type = TYPE_TELEGRAM_CHAT;
           break;
         }
-        case "telegram_bot": {
-          this.type = TYPE_TELEGRAM_BOT;
+        case TdApi.LinkPreviewTypeUser.CONSTRUCTOR: {
+          TdApi.LinkPreviewTypeUser user = (TdApi.LinkPreviewTypeUser) type;
+          if (user.isBot) {
+            this.type = TYPE_TELEGRAM_BOT;
+          } else {
+            this.type = TYPE_TELEGRAM_USER;
+          }
           break;
         }
-        case "telegram_user": {
-          this.type = TYPE_TELEGRAM_USER;
-          break;
-        }
-        case "telegram_message": {
+        case TdApi.LinkPreviewTypeMessage.CONSTRUCTOR: {
           this.type = TYPE_TELEGRAM_MESSAGE;
           break;
         }
-        case "telegram_album": {
+        case TdApi.LinkPreviewTypeAlbum.CONSTRUCTOR: {
           this.type = TYPE_TELEGRAM_ALBUM;
           break;
         }
-        case "telegram_theme": {
-          this.type = TYPE_TELEGRAM_THEME;
-          break;
-        }
-        case "telegram_background": {
+        case TdApi.LinkPreviewTypeBackground.CONSTRUCTOR: {
           this.type = TYPE_TELEGRAM_BACKGROUND;
           break;
         }
-        case SponsoredMessageUtils.TELEGRAM_AD_TYPE: {
-          this.type = TYPE_TELEGRAM_AD;
+        case TdApi.LinkPreviewTypeTheme.CONSTRUCTOR: {
+          this.type = TYPE_TELEGRAM_THEME;
           break;
         }
+
+        case TdApi.LinkPreviewTypeEmbeddedAnimationPlayer.CONSTRUCTOR:
+        case TdApi.LinkPreviewTypeEmbeddedAudioPlayer.CONSTRUCTOR:
+        case TdApi.LinkPreviewTypeStickerSet.CONSTRUCTOR:
+
+        case TdApi.LinkPreviewTypeExternalAudio.CONSTRUCTOR:
+        case TdApi.LinkPreviewTypeExternalVideo.CONSTRUCTOR:
+        
+        case TdApi.LinkPreviewTypeChannelBoost.CONSTRUCTOR:
+        case TdApi.LinkPreviewTypeInvoice.CONSTRUCTOR:
+        case TdApi.LinkPreviewTypePremiumGiftCode.CONSTRUCTOR:
+        case TdApi.LinkPreviewTypeShareableChatFolder.CONSTRUCTOR:
+        case TdApi.LinkPreviewTypeStory.CONSTRUCTOR:
+        case TdApi.LinkPreviewTypeSupergroupBoost.CONSTRUCTOR:
+        case TdApi.LinkPreviewTypeVideoChat.CONSTRUCTOR:
+        case TdApi.LinkPreviewTypeVideoNote.CONSTRUCTOR:
+        case TdApi.LinkPreviewTypeWebApp.CONSTRUCTOR:
+        case TdApi.LinkPreviewTypeUnsupported.CONSTRUCTOR:
+          break;
+
         default: {
-          Log.w("Unsupported WebPage content, type: %s", webPage.type);
+          Td.assertLinkPreviewType_eb86a63d();
+          if (BuildConfig.DEBUG) {
+            Tracer.onTdlibHandlerError(new UnsupportedOperationException(type.toString()));
+          }
+          Log.w("Unsupported WebPage content, type: %s", type);
           break;
         }
       }
@@ -270,22 +281,24 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     }
 
     if (hasHeader()) {
-      buildHeader(webPage, maxWidth);
+      buildHeader(linkPreview, maxWidth);
     }
 
-    if (webPage.showLargeMedia || mediaWrapper == null) {
-      if (webPage.duration != 0) {
-        setDuration(Strings.buildDuration(webPage.duration));
-      } else if (webPage.sticker != null && Math.max(webPage.sticker.width, webPage.sticker.height) > STICKER_SIZE_LIMIT) {
-        setDuration(Strings.buildSize(webPage.sticker.sticker.size));
+    if (linkPreview.showLargeMedia || mediaWrapper == null) {
+      int duration = Td.getDuration(linkPreview.type);
+      if (duration != 0) {
+        setDuration(Strings.buildDuration(duration));
+      } else if (this.type == TYPE_STICKER) {
+        TdApi.Sticker sticker = ((TdApi.LinkPreviewTypeSticker) linkPreview.type).sticker;
+        setDuration(Strings.buildSize(sticker.sticker.size));
       }
-      if (needInstantPreview(webPage)) {
-        if (webPage.animation != null) {
-          buildGif(webPage, maxWidth);
-        } else if (webPage.video != null) {
-          buildVideo(webPage, maxWidth);
+      if (needInstantPreview(linkPreview)) {
+        if (Td.getAnimation(linkPreview.type) != null) {
+          buildGif(linkPreview, maxWidth);
+        } else if (Td.getVideo(linkPreview.type) != null) {
+          buildVideo(linkPreview, maxWidth);
         } else {
-          buildPhoto(webPage, maxWidth);
+          buildPhoto(linkPreview, maxWidth);
         }
       } else {
         switch (this.type) {
@@ -293,33 +306,34 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
             break;
           }
           case TYPE_VIDEO: {
-            buildVideo(webPage, maxWidth);
+            buildVideo(linkPreview, maxWidth);
             break;
           }
           case TYPE_GIF: {
-            buildGif(webPage, maxWidth);
+            buildGif(linkPreview, maxWidth);
             break;
           }
           case TYPE_PHOTO: {
-            buildPhoto(webPage, maxWidth);
+            buildPhoto(linkPreview, maxWidth);
             break;
           }
           default: {
             if (type == TYPE_TELEGRAM_BACKGROUND) {
+              TdApi.LinkPreviewTypeBackground background = (TdApi.LinkPreviewTypeBackground) linkPreview.type;
               String[] partedUrl = url.split("/bg/");
               if (partedUrl.length == 2) {
-                this.component = new WallpaperComponent(parent, webPage, partedUrl[1]);
-              } else if (webPage.document != null) {
-                this.component = new FileComponent(parent, parent.getMessage(), webPage.document);
+                this.component = new WallpaperComponent(parent, linkPreview, partedUrl[1]);
+              } else if (background.document != null) {
+                this.component = new FileComponent(parent, parent.getMessage(), background.document);
               } else {
                 this.component = null;
               }
-            } else if (webPage.audio != null) {
-              this.component = new FileComponent(parent, parent.getMessage(), webPage.audio, null, null);
-            } else if (webPage.voiceNote != null) {
-              this.component = new FileComponent(parent, parent.getMessage(), webPage.voiceNote, null, null);
-            } else if (webPage.document != null) {
-              this.component = new FileComponent(parent, parent.getMessage(), webPage.document);
+            } else if (Td.getAudio(linkPreview.type) != null) {
+              this.component = new FileComponent(parent, parent.getMessage(), Td.getAudio(linkPreview.type), null, null);
+            } else if (Td.getVoiceNote(linkPreview.type) != null) {
+              this.component = new FileComponent(parent, parent.getMessage(), Td.getVoiceNote(linkPreview.type), null, null);
+            } else if (Td.getDocument(linkPreview.type) != null) {
+              this.component = new FileComponent(parent, parent.getMessage(), Td.getDocument(linkPreview.type));
             } else {
               this.component = null;
             }
@@ -331,12 +345,12 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
               }
               this.componentY = height;
               this.height += component.getHeight();
-            } else if (webPage.video != null) {
-              buildVideo(webPage, maxWidth);
-            } else if (webPage.animation != null) {
-              buildGif(webPage, maxWidth);
-            } else if (webPage.photo != null || webPage.sticker != null) {
-              buildPhoto(webPage, maxWidth);
+            } else if (Td.getVideo(linkPreview.type) != null) {
+              buildVideo(linkPreview, maxWidth);
+            } else if (Td.getAnimation(linkPreview.type) != null) {
+              buildGif(linkPreview, maxWidth);
+            } else if (Td.getSticker(linkPreview.type) != null || Td.hasPhoto(linkPreview.type)) {
+              buildPhoto(linkPreview, maxWidth);
             }
             break;
           }
@@ -488,13 +502,15 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     return mediaWrapper;
   }
 
-  private static boolean needInstantPreview (TdApi.WebPage webPage) {
-    if (webPage != null && TD.hasInstantView(webPage)) {
-      if (webPage.photo != null && !TD.isPhotoEmpty(webPage.photo)) {
-        TdApi.PhotoSize size = Td.findBiggest(webPage.photo);
+  private static boolean needInstantPreview (TdApi.LinkPreview linkPreview) {
+    if (TD.hasInstantView(linkPreview)) {
+      TdApi.Photo photo = Td.getPhoto(linkPreview.type);
+      if (photo != null && !TD.isPhotoEmpty(photo)) {
+        TdApi.PhotoSize size = Td.findBiggest(photo);
         return size != null && Math.max(size.width, size.height) >= 400;
       }
-      return webPage.video != null && Math.max(webPage.video.width, webPage.video.height) >= 400;
+      TdApi.Video video = Td.getVideo(linkPreview.type);
+      return video != null && Math.max(video.width, video.height) >= 400;
     }
     return false;
   }
@@ -518,18 +534,22 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   private Text siteName, title, description;
 
   private boolean setSmallMedia () {
-    if (webPage.sticker != null && (Math.max(webPage.sticker.width, webPage.sticker.height) <= STICKER_SIZE_LIMIT || Td.isAnimated(webPage.sticker.format))) {
+    TdApi.Sticker sticker = Td.getSticker(linkPreview.type);
+    if (sticker != null && (Math.max(sticker.width, sticker.height) <= STICKER_SIZE_LIMIT || Td.isAnimated(sticker.format))) {
       // simple animated sticker
       return false; // TODO
-    } else if (webPage.sticker != null) {
-      setSmallMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), TD.convertToPhoto(webPage.sticker), chatId, messageId, parent, false));
+    } else if (sticker != null) {
+      setSmallMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), TD.convertToPhoto(sticker), chatId, messageId, parent, false));
       return true;
-    } else if (webPage.video != null) {
-      setSmallMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), webPage.video, chatId, messageId, parent, false));
+    } else if (Td.getVideo(linkPreview.type) != null) {
+      setSmallMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), Td.getVideo(linkPreview.type), chatId, messageId, parent, false));
       return true;
-    } else if (webPage.photo != null) {
-      setSmallMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), webPage.photo, chatId, messageId, parent, false, false, EmbeddedService.parse(webPage)));
-      return true;
+    } else {
+      TdApi.Photo photo = Td.getPhoto(linkPreview.type);
+      if (photo != null) {
+        setSmallMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), photo, chatId, messageId, parent, false, false, EmbeddedService.parse(linkPreview)));
+        return true;
+      }
     }
     return false;
   }
@@ -547,7 +567,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
 
   @Override
   public boolean onClick (View view, MediaWrapper wrapper) {
-    if ((isSmallPhotoType(type) && !isImageBig && webPage.photo != null) || instantItems != null) {
+    if ((isSmallPhotoType(type) && !isImageBig && Td.hasPhoto(linkPreview.type)) || instantItems != null) {
       mediaWrapper.fileProgress.downloadIfNeeded();
       MediaViewController.openFromMessage(parent);
       return true;
@@ -600,8 +620,8 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
           MediaViewController.openFromMessage(parent);
           break;
         }
-        if (!PreviewLayout.show(parent.controller(), webPage, parent.isSecretChat())) {
-          if (mediaWrapper != null && webPage.photo != null) {
+        if (!PreviewLayout.show(parent.controller(), linkPreview, parent.isSecretChat())) {
+          if (mediaWrapper != null && Td.hasPhoto(linkPreview.type)) {
             MediaViewController.openFromMessage(parent);
           } else {
             parent.tdlib().ui().openUrl(parent.controller(), url, new TdlibUi.UrlOpenParameters(rippleButton.firstButton().openParameters(view)).disableEmbedView());
@@ -613,8 +633,8 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     return true;
   }
 
-  public TdApi.WebPage getWebPage () {
-    return webPage;
+  public TdApi.LinkPreview getLinkPreview () {
+    return linkPreview;
   }
 
   public @Nullable TdApi.LinkPreviewOptions getLinkPreviewOptions () {
@@ -622,7 +642,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   }
 
   public boolean isPreviewOf (String url) {
-    return isPreviewOf(webPage.url, url);
+    return isPreviewOf(linkPreview.url, url);
   }
 
   public static boolean isPreviewOf (String webPageUrl, String url) {
@@ -672,10 +692,10 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
 
   private static final float TEXT_PADDING = 4f, TEXT_PADDING_START = 2f;
 
-  private void buildHeader (TdApi.WebPage webPage, int maxWidth) {
+  private void buildHeader (TdApi.LinkPreview linkPreview, int maxWidth) {
     final int textMaxWidth;
     int minHeight = 0;
-    if (!webPage.showLargeMedia && setSmallMedia()) {
+    if (!linkPreview.showLargeMedia && setSmallMedia()) {
       textMaxWidth = maxWidth - imageMarginLeft - imageSize;
       imageX = availWidth - imageSize;
       imageY = imageOffset;
@@ -688,7 +708,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     boolean needLineWidthProvider = mediaWrapper != null && !isImageBig;
     int textHeight = 0;
 
-    if (!StringUtils.isEmpty(webPage.siteName) || isTgWallpaper()) {
+    if (!StringUtils.isEmpty(linkPreview.siteName) || isTgWallpaper()) {
       textHeight += Screen.dp(TEXT_PADDING_START);
 
       final int textHeightFinal = textHeight;
@@ -701,7 +721,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
         }
       } : null;
 
-      String actualSiteName = isTgWallpaper() ? Lang.getString(R.string.ChatBackground) : webPage.siteName;
+      String actualSiteName = isTgWallpaper() ? Lang.getString(R.string.ChatBackground) : linkPreview.siteName;
 
       siteName = new Text.Builder(actualSiteName, maxWidth, TGMessage.getTextStyleProvider(), parent.getChatAuthorColorSet())
         .maxLineCount(2)
@@ -717,7 +737,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       siteName = null;
     }
 
-    if (!StringUtils.isEmpty(webPage.title) && !isTgWallpaper()) {
+    if (!StringUtils.isEmpty(linkPreview.title) && !isTgWallpaper()) {
       if (textHeight > 0)
         textHeight += Screen.dp(TEXT_PADDING);
 
@@ -731,12 +751,12 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
         }
       } : null;
 
-      title = new Text.Builder(webPage.title, maxWidth, TGMessage.getTextStyleProvider(), parent.getTextColorSet())
-        .maxLineCount(TD.hasInstantView(webPage) ? -1 : MAX_TITLE_LINES).lineWidthProvider(provider)
+      title = new Text.Builder(linkPreview.title, maxWidth, TGMessage.getTextStyleProvider(), parent.getTextColorSet())
+        .maxLineCount(TD.hasInstantView(linkPreview) ? -1 : MAX_TITLE_LINES).lineWidthProvider(provider)
         .textFlags(Text.FLAG_ALL_BOLD | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0))
         .viewProvider(viewProvider)
         .clipTextArea()
-        .highlight(parent.getHighlightedText(Highlight.Pool.KEY_SITE_TITLE, webPage.title))
+        .highlight(parent.getHighlightedText(Highlight.Pool.KEY_SITE_TITLE, linkPreview.title))
         .build();
       textHeight += title.getHeight();
     } else {
@@ -745,7 +765,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     if (description != null) {
       description.performDestroy();
     }
-    if (!Td.isEmpty(webPage.description)) {
+    if (!Td.isEmpty(linkPreview.description)) {
       if (textHeight > 0)
         textHeight += Screen.dp(TEXT_PADDING);
 
@@ -759,13 +779,13 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
         }
       } : null;
 
-      description = new Text.Builder(webPage.description.text, maxWidth, TGMessage.getTextStyleProvider(), parent.getTextColorSet())
+      description = new Text.Builder(linkPreview.description.text, maxWidth, TGMessage.getTextStyleProvider(), parent.getTextColorSet())
         .maxLineCount(MAX_DESCRIPTION_LINES)
         .lineWidthProvider(provider)
         .viewProvider(viewProvider)
         .textFlags(Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0)
-        .entities(TextEntity.valueOf(parent.tdlib, webPage.description, parent.openParameters()), parent::invalidateTextMediaReceiver)
-        .highlight(parent.getHighlightedText(Highlight.Pool.KEY_SITE_TEXT, webPage.description.text))
+        .entities(TextEntity.valueOf(parent.tdlib, linkPreview.description, parent.openParameters()), parent::invalidateTextMediaReceiver)
+        .highlight(parent.getHighlightedText(Highlight.Pool.KEY_SITE_TEXT, linkPreview.description.text))
         .build();
       textHeight += description.getHeight();
     } else {
@@ -847,24 +867,25 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     int maxHeight = parent.getSmallestMaxContentHeight();
     int contentWidth, contentHeight;
 
-    if (webPage.sticker != null && (Math.max(webPage.sticker.width, webPage.sticker.height) <= STICKER_SIZE_LIMIT || Td.isAnimated(webPage.sticker.format))) {
+    TdApi.Sticker sticker = Td.getSticker(linkPreview.type);
+    if (sticker != null && (Math.max(sticker.width, sticker.height) <= STICKER_SIZE_LIMIT || Td.isAnimated(sticker.format))) {
       float max = Screen.dp(TGMessageSticker.MAX_STICKER_SIZE);
-      float ratio = Math.min(max / (float) webPage.sticker.width, max / (float) webPage.sticker.height);
+      float ratio = Math.min(max / (float) sticker.width, max / (float) sticker.height);
 
-      contentWidth = (int) (webPage.sticker.width * ratio);
-      contentHeight = (int) (webPage.sticker.height * ratio);
+      contentWidth = (int) (sticker.width * ratio);
+      contentHeight = (int) (sticker.height * ratio);
 
-      if (Td.isAnimated(webPage.sticker.format)) {
-        this.simpleGifFile = new GifFile(parent.tdlib(), webPage.sticker);
+      if (Td.isAnimated(sticker.format)) {
+        this.simpleGifFile = new GifFile(parent.tdlib(), sticker);
         this.simpleGifFile.setScaleType(ImageFile.FIT_CENTER);
       } else {
-        this.simpleImageFile = new ImageFile(parent.tdlib(), webPage.sticker.sticker);
+        this.simpleImageFile = new ImageFile(parent.tdlib(), sticker.sticker);
         this.simpleImageFile.setScaleType(ImageFile.FIT_CENTER);
         this.simpleImageFile.setWebp();
         this.simpleImageFile.setSize(Math.max(contentWidth, contentHeight));
       }
 
-      this.simplePreview = TD.toImageFile(parent.tdlib(), webPage.sticker.thumbnail);
+      this.simplePreview = TD.toImageFile(parent.tdlib(), sticker.thumbnail);
       if (simplePreview != null) {
         this.simplePreview.setScaleType(ImageFile.FIT_CENTER);
         this.simplePreview.setWebp();
@@ -875,12 +896,12 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
 
       height += contentHeight;
     } else {
-      if (webPage.sticker != null) {
-        setMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), TD.convertToPhoto(webPage.sticker), chatId, messageId, parent, false));
-      } else if (webPage.video != null) {
-        setMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), webPage.video, chatId, messageId, parent, false));
-      } else if (webPage.photo != null) {
-        setMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), webPage.photo, chatId, messageId, parent, false, false, EmbeddedService.parse(webPage)));
+      if (sticker != null) {
+        setMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), TD.convertToPhoto(sticker), chatId, messageId, parent, false));
+      } else if (Td.getVideo(linkPreview.type) != null) {
+        setMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), Td.getVideo(linkPreview.type), chatId, messageId, parent, false));
+      } else if (Td.hasPhoto(linkPreview.type)) {
+        setMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), Td.getPhoto(linkPreview.type), chatId, messageId, parent, false, false, EmbeddedService.parse(linkPreview)));
       } else {
         throw new NullPointerException();
       }
@@ -919,11 +940,11 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   }
 
   private boolean hasHeader () {
-    return !StringUtils.isEmpty(webPage.siteName) || !StringUtils.isEmpty(webPage.title) || !Td.isEmpty(webPage.description) || isTgWallpaper();
+    return !StringUtils.isEmpty(linkPreview.siteName) || !StringUtils.isEmpty(linkPreview.title) || !Td.isEmpty(linkPreview.description) || isTgWallpaper();
   }
 
-  private void buildVideo (final TdApi.WebPage webPage, int maxWidth) {
-    if (webPage.video != null || webPage.photo != null) {
+  private void buildVideo (final TdApi.LinkPreview linkPreview, int maxWidth) {
+    if (Td.getVideo(linkPreview.type) != null || Td.hasPhoto(linkPreview.type)) {
       if (hasHeader()) {
         setBigPhoto(maxWidth, contentPadding, contentPadding + lineAdd);
       } else {
@@ -942,10 +963,10 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     }
   }
 
-  private void buildGif (TdApi.WebPage webPage, int maxWidth) {
-    TdApi.Animation gif = webPage.animation;
+  private void buildGif (TdApi.LinkPreview linkPreview, int maxWidth) {
+    TdApi.Animation gif = Td.getAnimation(linkPreview.type);
 
-    setMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), gif, chatId, messageId, parent, false, false, false, EmbeddedService.parse(webPage)));
+    setMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), gif, chatId, messageId, parent, false, false, false, EmbeddedService.parse(linkPreview)));
     mediaWrapper.setOnClickListener(this);
     mediaWrapper.setViewProvider(viewProvider);
     int maxHeight = parent.getSmallestMaxContentHeight();
@@ -969,7 +990,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     height += imageHeight + bottomY;
   }
 
-  private void buildPhoto (TdApi.WebPage webPage, int maxWidth) {
+  private void buildPhoto (TdApi.LinkPreview linkPreview, int maxWidth) {
     if (hasHeader()) {
       setBigPhoto(maxWidth, contentPadding, contentPadding + lineAdd);
     } else {
@@ -1039,8 +1060,8 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     if (needInstantView()) {
       button.makeActive();
       button.showProgressDelayed();
-      String anchor = parent.findUriFragment(webPage);
-      parent.tdlib().send(new TdApi.GetWebPageInstantView(url, false), getInstantViewCallback(view, button, webPage, anchor));
+      String anchor = parent.findUriFragment(linkPreview);
+      parent.tdlib().send(new TdApi.GetWebPageInstantView(url, false), getInstantViewCallback(view, button, linkPreview, anchor));
     } else {
       open(view, false);
     }
@@ -1128,11 +1149,11 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   }
 
   public boolean needInstantView () {
-    return type != TYPE_TELEGRAM_AD && TD.hasInstantView(webPage) && !needsSpecialProcessing();
+    return type != TYPE_TELEGRAM_AD && TD.hasInstantView(linkPreview) && !needsSpecialProcessing();
   }
 
   protected boolean needsSpecialProcessing () {
-    return type != TYPE_TELEGRAM_AD && (type == TYPE_TELEGRAM_ALBUM || TD.shouldInlineIv(webPage.displayUrl)); //  && !Strings.isEmpty(webPage.author)
+    return linkPreview.type.getConstructor() == TdApi.LinkPreviewTypeAlbum.CONSTRUCTOR;
   }
 
   protected boolean isTgWallpaper() {
@@ -1148,7 +1169,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     public boolean needClickAt (View view, float x, float y) {
       Receiver receiver = needGif() ? ((MessageView) view).getGifReceiver() : ((MessageView) view).getPreviewReceiver();
       if (receiver != null && receiver.isInsideContent(x, y, 0, 0)) {
-        if ((simpleGifFile != null || simpleImageFile != null) && webPage.sticker != null && webPage.sticker.setId != 0) {
+        if ((simpleGifFile != null || simpleImageFile != null) && Td.getSticker(linkPreview.type) != null && Td.getSticker(linkPreview.type).setId != 0) {
           return true;
         }
       }
@@ -1157,8 +1178,9 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
 
     @Override
     public void onClickAt (View view, float x, float y) {
-      if (webPage.sticker != null && webPage.sticker.setId != 0) {
-        parent.tdlib().ui().showStickerSet(parent.controller(), webPage.sticker.setId, null);
+      TdApi.Sticker sticker = Td.getSticker(linkPreview.type);
+      if (sticker != null && sticker.setId != 0) {
+        parent.tdlib().ui().showStickerSet(parent.controller(), sticker.setId, null);
       }
     }
   });
@@ -1321,7 +1343,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     parent.tdlib().ui().post(runnable);
   }
 
-  private Tdlib.ResultHandler<TdApi.WebPageInstantView> getInstantViewCallback (final View view, final TGInlineKeyboard.Button button, final TdApi.WebPage instantViewSource, final String anchor) {
+  private Tdlib.ResultHandler<TdApi.WebPageInstantView> getInstantViewCallback (final View view, final TGInlineKeyboard.Button button, final TdApi.LinkPreview instantViewSource, final String anchor) {
     final int currentContextId = button.getContextId();
     final boolean[] signal = new boolean[1];
     return new Tdlib.ResultHandler<>() {

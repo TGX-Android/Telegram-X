@@ -42,7 +42,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class BubbleView implements AttachDelegate, Destroyable {
   private static final int FLAG_HIDING = 0x01;

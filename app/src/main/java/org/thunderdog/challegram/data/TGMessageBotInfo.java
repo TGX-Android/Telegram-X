@@ -35,7 +35,7 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
-import me.vkryl.td.ChatId;
+import tgx.td.ChatId;
 
 public class TGMessageBotInfo extends TGMessage {
   private TextWrapper titleWrapper;

@@ -41,7 +41,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.td.ChatId;
+import tgx.td.ChatId;
 
 public class LiveLocationManager implements LocationHelper.LocationChangeListener, UI.StateListener, ReferenceList.FullnessListener {
   private static class UiHandler extends Handler {

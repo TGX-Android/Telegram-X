@@ -78,7 +78,7 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
 public class RoundVideoController extends BasePlaybackController implements

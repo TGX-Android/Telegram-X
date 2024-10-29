@@ -42,8 +42,8 @@ import java.util.List;
 
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.td.Td;
-import me.vkryl.td.TdConstants;
+import tgx.td.Td;
+import tgx.td.TdConstants;
 
 public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
   private final Text source;

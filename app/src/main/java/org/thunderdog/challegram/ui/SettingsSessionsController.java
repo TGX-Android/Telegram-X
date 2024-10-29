@@ -55,7 +55,7 @@ import me.vkryl.core.DateUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.RunnableInt;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class SettingsSessionsController extends RecyclerViewController<Void> implements View.OnClickListener, OptionDelegate, CameraController.QrCodeListener, SessionListener {
   public SettingsSessionsController (Context context, Tdlib tdlib) {

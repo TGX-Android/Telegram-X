@@ -41,8 +41,8 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceMap;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class TdlibStatusManager implements CleanupStartupDelegate {
   public static final int CHANGE_FLAG_TEXT = 1; // update text

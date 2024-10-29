@@ -27,7 +27,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import me.vkryl.core.lambda.CancellableRunnable;
-import me.vkryl.td.MessageId;
+import tgx.td.MessageId;
 
 public class MessagesSearchManager {
   public static final int SEARCH_DIRECTION_TOP = 0;

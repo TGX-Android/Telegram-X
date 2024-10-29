@@ -85,8 +85,8 @@ import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.util.FilteredIterator;
-import me.vkryl.td.JSON;
-import me.vkryl.td.Td;
+import tgx.td.JSON;
+import tgx.td.Td;
 
 public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   // Util

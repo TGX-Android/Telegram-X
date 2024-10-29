@@ -51,7 +51,7 @@ import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.core.collection.IntList;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class SharedMediaController extends SharedBaseController<MediaItem> implements ClickHelper.Delegate, ForceTouchView.ActionListener {
   public SharedMediaController (Context context, Tdlib tdlib) {
@@ -481,7 +481,9 @@ public class SharedMediaController extends SharedBaseController<MediaItem> imple
       IntList icons = new IntList(3);
       StringList strings = new StringList(3);
 
-      if (message.canBeDeletedOnlyForSelf || message.canBeDeletedForAllUsers) {
+      TdApi.MessageProperties properties = tdlib.getMessagePropertiesSync(message);
+
+      if (properties.canBeDeletedOnlyForSelf || properties.canBeDeletedForAllUsers) {
         ids.append(R.id.btn_messageDelete);
         icons.append(R.drawable.baseline_delete_24);
         strings.append(R.string.Delete);
@@ -493,7 +495,7 @@ public class SharedMediaController extends SharedBaseController<MediaItem> imple
         strings.append(R.string.Select);
       }
 
-      if (message.canBeForwarded) {
+      if (properties.canBeForwarded) {
         ids.append(R.id.btn_messageShare);
         icons.append(R.drawable.baseline_forward_24);
         strings.append(R.string.Share);

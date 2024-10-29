@@ -69,8 +69,8 @@ import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class MediaItem implements MessageSourceProvider, InvalidateContentProvider {
   public static final int TYPE_PHOTO = 0;
@@ -943,7 +943,8 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
             }
           }
           default: {
-            Td.assertChatEventAction_c4c039bc();
+            Td.assertChatEventAction_b387a44d();
+            break;
           }
         }
         break;
@@ -971,16 +972,20 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
         return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.senderId, msg.date, (TdApi.MessageVideoNote) msg.content).setMessage(msg);
       }
       case TdApi.MessageText.CONSTRUCTOR: {
-        TdApi.WebPage webPage = ((TdApi.MessageText) msg.content).webPage;
-        if (webPage != null) {
-          if (webPage.sticker != null) {
-            return new MediaItem(context, tdlib, msg.chatId, msg.id, TD.convertToPhoto(webPage.sticker), true, false).setSourceMessage(msg);
-          } else if (webPage.video != null) {
-            return new MediaItem(context, tdlib, webPage.video, new TdApi.FormattedText("", null), true).setSourceMessage(msg);
-          } else if (webPage.animation != null) {
-            return new MediaItem(context, tdlib, webPage.animation, null).setSourceMessage(msg);
-          } else if (webPage.photo != null) {
-            return new MediaItem(context, tdlib, msg.chatId, msg.id, webPage.photo).setSourceMessage(msg);
+        TdApi.LinkPreview linkPreview = ((TdApi.MessageText) msg.content).linkPreview;
+        if (linkPreview != null) {
+          if (Td.getSticker(linkPreview.type) != null) {
+            TdApi.Sticker sticker = Td.getSticker(linkPreview.type);
+            return new MediaItem(context, tdlib, msg.chatId, msg.id, TD.convertToPhoto(sticker), true, false).setSourceMessage(msg);
+          } else if (Td.getVideo(linkPreview.type) != null) {
+            return new MediaItem(context, tdlib, Td.getVideo(linkPreview.type), new TdApi.FormattedText("", null), true).setSourceMessage(msg);
+          } else if (Td.getAnimation(linkPreview.type) != null) {
+            return new MediaItem(context, tdlib, Td.getAnimation(linkPreview.type), null).setSourceMessage(msg);
+          } else {
+            TdApi.Photo photo = Td.getPhoto(linkPreview.type);
+            if (photo != null) {
+              return new MediaItem(context, tdlib, msg.chatId, msg.id, photo).setSourceMessage(msg);
+            }
           }
         }
         break;
@@ -1662,9 +1667,14 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     return false;
   }
 
+  private TdApi.MessageProperties lastProperties;
+
   public boolean canBeShared () {
-    if (msg != null)
-      return msg.canBeForwarded;
+    if (msg != null) {
+      TdApi.MessageProperties properties = lastProperties != null ? lastProperties : tdlib.getMessagePropertiesSync(msg);
+      lastProperties = properties;
+      return properties.canBeForwarded;
+    }
     return getShareFile() != null;
   }
 

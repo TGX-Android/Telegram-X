@@ -22,7 +22,7 @@ import android.view.inputmethod.BaseInputConnection;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.data.TD;
 
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 /**
  * Workaround for bug present in Samsung Keyboard version 5.6.10.40 with "Predictive text" toggle on (com.samsung.android.honeyboard/.service.HoneyBoardService)

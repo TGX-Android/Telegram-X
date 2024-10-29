@@ -54,7 +54,7 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class EmojiLayoutRecyclerController extends ViewController<EmojiLayoutRecyclerController.Callback> implements
   StickerSmallView.StickerMovementCallback,

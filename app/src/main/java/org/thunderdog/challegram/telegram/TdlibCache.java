@@ -54,7 +54,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.AppInstallationUtil;
-import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.LongSparseIntArray;
 import me.vkryl.core.collection.LongSparseLongArray;
@@ -64,8 +63,8 @@ import me.vkryl.core.reference.ReferenceIntMap;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceLongMap;
 import me.vkryl.core.reference.ReferenceMap;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupStartupDelegate, UI.StateListener {
   public interface UserDataChangeListener {
@@ -152,17 +151,6 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
 
   private final LongSparseIntArray pendingStatusRefresh = new LongSparseIntArray();
   private final Handler onlineHandler;
-
-  private final Client.ResultHandler locationListHandler = object -> {
-    switch (object.getConstructor()) {
-      case TdApi.Messages.CONSTRUCTOR:
-        replaceOutputLocationList(((TdApi.Messages) object).messages);
-        break;
-      case TdApi.Error.CONSTRUCTOR:
-        Log.i("Unable to load active live locations: %s", TD.toErrorString(object));
-        break;
-    }
-  };
 
   private final Object dataLock = new Object();
 
@@ -323,14 +311,8 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   // === PUBLIC ===
 
   @Override
-  public void onPerformStartup (boolean isAfterRestart) {
-    tdlib.client().send(new TdApi.GetActiveLiveLocationMessages(), locationListHandler);
-  }
-
-  @Override
   public void onPerformUserCleanup () {
     onlineHandler.removeCallbacksAndMessages(null);
-    tdlib.client().send(new TdApi.GetActiveLiveLocationMessages(), locationListHandler);
   }
 
   @Override
@@ -1405,67 +1387,16 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
 
   // Locations
 
-  void onScheduledRemove (TdApi.Message outputLocation) {
-    synchronized (outputLocations) {
-      int i = outputLocations.indexOf(outputLocation);
-      if (i != -1) {
-        outputLocations.remove(i);
-        notifyOutputLocationsChanged(-1);
-      }
-    }
-  }
-
-  void addOutputLocationMessage (TdApi.Message message) {
-    if (message.sendingState != null || !message.canBeEdited || !message.isOutgoing || !Td.isLocation(message.content)) {
-      return;
-    }
-    TdApi.MessageLocation location = (TdApi.MessageLocation) message.content;
-    if (location.livePeriod == 0 || location.expiresIn == 0) {
-      return;
-    }
-    synchronized (outputLocations) {
-      this.outputLocations.add(message);
-      notifyOutputLocationsChanged(1);
-      tdlib.scheduleLocationRemoval(message);
-    }
-  }
-
-  void deleteOutputMessages (long chatId, long[] messageIds) {
-    synchronized (outputLocations) {
-      if (this.outputLocations.isEmpty()) {
-        return;
-      }
-      int removedCount = 0;
-      for (int i = outputLocations.size() - 1; i >= 0; i--) {
-        TdApi.Message message = outputLocations.get(i);
-        if (message.chatId == chatId && ArrayUtils.indexOf(messageIds, message.id) != -1) {
-          tdlib.cancelLocationRemoval(message);
-          outputLocations.remove(i);
-          removedCount++;
-        }
-      }
-      if (removedCount > 0) {
-        notifyOutputLocationsChanged(removedCount);
-      }
-    }
-  }
-
-  private void replaceOutputLocationList (TdApi.Message[] messages) {
+  void replaceOutputLocationList (TdApi.Message[] messages) {
     synchronized (outputLocations) {
       if (outputLocations.isEmpty() && (messages == null || messages.length == 0)) {
         return;
-      }
-      for (TdApi.Message message : outputLocations) {
-        tdlib.cancelLocationRemoval(message);
       }
       int oldSize = outputLocations.size();
       outputLocations.clear();
       if (messages != null) {
         Collections.addAll(outputLocations, messages);
         notifyOutputLocationsChanged(messages.length - oldSize);
-        for (TdApi.Message message : outputLocations) {
-          tdlib.scheduleLocationRemoval(message);
-        }
       } else {
         notifyOutputLocationsChanged(-oldSize);
       }
@@ -1498,12 +1429,9 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
       TdApi.Message message = outputLocations.get(foundIndex);
       message.content = location;
       boolean removed = location.expiresIn == 0;
-      tdlib.cancelLocationRemoval(message);
       if (removed) {
         outputLocations.remove(foundIndex);
         notifyOutputLocationsChanged(-1);
-      } else {
-        tdlib.scheduleLocationRemoval(message);
       }
     }
   }

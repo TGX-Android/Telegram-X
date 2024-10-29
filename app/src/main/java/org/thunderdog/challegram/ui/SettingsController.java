@@ -97,8 +97,8 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class SettingsController extends ViewController<Void> implements
   View.OnClickListener, ComplexHeaderView.Callback,
@@ -536,7 +536,7 @@ public class SettingsController extends ViewController<Void> implements
               view.setText(obtainWrapper(Lang.getString(R.string.ReminderSetBirthdateText), action.getConstructor()));
               break;
             default:
-              Td.assertSuggestedAction_96dcb962();
+              Td.assertSuggestedAction_5c4efa90();
               throw Td.unsupported(action);
           }
         } else if (itemId == R.id.btn_birthdate) {
@@ -856,7 +856,7 @@ public class SettingsController extends ViewController<Void> implements
         item = new ListItem(ListItem.TYPE_INFO_MULTILINE, R.id.btn_suggestion, R.drawable.baseline_cake_variant_24, R.string.ReminderSetBirthdate);
         break;
       default:
-        Td.assertSuggestedAction_96dcb962();
+        Td.assertSuggestedAction_5c4efa90();
         throw Td.unsupported(action);
     }
     item
@@ -1282,7 +1282,7 @@ public class SettingsController extends ViewController<Void> implements
         return;
       }
       default: {
-        Td.assertSuggestedAction_96dcb962();
+        Td.assertSuggestedAction_5c4efa90();
         throw Td.unsupported(suggestedAction);
       }
     }

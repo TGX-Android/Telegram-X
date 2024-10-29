@@ -10,12 +10,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
- * File created on 21/12/2019
+ * File created on 05/08/2024
  */
-package org.thunderdog.challegram.telegram;
+package tgx.td.data
 
-import org.drinkless.tdlib.TdApi;
+import org.drinkless.tdlib.TdApi.Message
+import org.drinkless.tdlib.TdApi.MessageProperties
 
-public interface ChatsNearbyListener {
-  void onUsersNearbyUpdated (TdApi.ChatNearby[] usersNearby);
-}
+data class MessageWithProperties(
+  @JvmField val message: Message,
+  @JvmField val properties: MessageProperties
+)

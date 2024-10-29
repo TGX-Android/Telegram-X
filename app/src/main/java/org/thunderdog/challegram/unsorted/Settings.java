@@ -119,9 +119,9 @@ import me.vkryl.core.unit.ByteUnit;
 import me.vkryl.core.util.Blob;
 import me.vkryl.core.util.BlobEntry;
 import me.vkryl.leveldb.LevelDB;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.MessageId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.MessageId;
+import tgx.td.Td;
 
 /**
  * All app-related settings.

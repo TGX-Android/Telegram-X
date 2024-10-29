@@ -70,7 +70,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.collection.LongList;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class EmojiStatusListController extends ViewController<EmojiLayout> implements
   StickerSmallView.StickerMovementCallback, StickerPreviewView.MenuStickerPreviewCallback,

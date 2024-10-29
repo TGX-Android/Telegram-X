@@ -40,8 +40,8 @@ import org.thunderdog.challegram.widget.FileProgressComponent;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class TGMessageCall extends TGMessage {
   private final TdApi.MessageCall callRaw;

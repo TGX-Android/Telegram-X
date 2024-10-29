@@ -63,7 +63,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class MenuMoreWrap extends MenuMoreWrapAbstract implements Animated {
   public static final int ITEM_HEIGHT = 48;

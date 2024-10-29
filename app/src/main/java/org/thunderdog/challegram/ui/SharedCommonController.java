@@ -35,8 +35,8 @@ import org.thunderdog.challegram.v.MediaRecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
-import me.vkryl.td.MessageId;
-import me.vkryl.td.Td;
+import tgx.td.MessageId;
+import tgx.td.Td;
 
 public class SharedCommonController extends SharedBaseController<InlineResult<?>> implements View.OnClickListener, TGPlayerController.TrackChangeListener, TGPlayerController.PlayListBuilder {
   public SharedCommonController (Context context, Tdlib tdlib) {
@@ -298,9 +298,8 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
         share.setArguments(new ShareController.Args(c.getMessage()).setAllowCopyLink(true));
         share.show();
       } else if (id == R.id.btn_delete) {
-        tdlib.ui().showDeleteOptions(alternateParent, new TdApi.Message[] {c.getMessage()}, () -> {
-          // setInMediaSelectMode(false);
-        });
+        TdApi.Message message = c.getMessage();
+        tdlib.ui().showDeleteOptions(alternateParent, message);
       }
       return true;
     });

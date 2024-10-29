@@ -63,7 +63,7 @@ import java.util.ArrayList;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickListener, MediaCollectorDelegate, MediaViewDelegate {
   public static final float MEDIA_MARGIN = 16f, MEDIA_POST_MARGIN = 8f;

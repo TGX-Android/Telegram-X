@@ -64,8 +64,8 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.DateUtils;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class PageBlockRichText extends PageBlock {
   public static final float TEXT_HORIZONTAL_OFFSET = 16f;

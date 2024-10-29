@@ -10,9 +10,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-package me.vkryl.task
+package tgx.gradle.task
 
 import com.beust.klaxon.Klaxon
+import tgx.gradle.fatal
 import org.gradle.api.tasks.TaskAction
 import java.io.File
 import java.util.*
@@ -142,7 +143,7 @@ open class CheckEmojiKeyboardTask : BaseTask() {
         b.append(c)
       }
       result = emoji.replace(Regex("(?<=\\uD83C)"), "ELLO world")
-      error(emojiSignature(result))
+      fatal(emojiSignature(result))
     }*/
     return Pair<String, List<Char>?>(result, tones)
   }
@@ -208,12 +209,12 @@ open class CheckEmojiKeyboardTask : BaseTask() {
     val supported = try {
       Klaxon().parseArray<List<String>>(supportedArray)!!
     } catch (e: Throwable) {
-      error("Unable to parse supportedArray: ${e.message}\n${supportedArray}")
+      fatal("Unable to parse supportedArray: ${e.message}\n${supportedArray}")
     }
     val displaying = try {
       Klaxon().parseArray<List<String>>(displayingArray)!!
     } catch (e: Throwable) {
-      error("Unable to parse displayingArray: ${e.message}\n${displayingArray}")
+      fatal("Unable to parse displayingArray: ${e.message}\n${displayingArray}")
     }
 
     val modifierEmoji = setOf(
@@ -266,14 +267,14 @@ open class CheckEmojiKeyboardTask : BaseTask() {
         val tones = toned.second
         if (tones.isNullOrEmpty()) {
           if (!supportedSet.add(emoji))
-            error("Duplicate supported emoji: ${emojiSignature(emoji)}")
+            fatal("Duplicate supported emoji: ${emojiSignature(emoji)}")
           continue
         }
 
         // Tone
 
         if (!supportedTonedEmoji.add(emoji))
-          error("Duplicate supported emoji (toned): ${emojiSignature(emoji)}")
+          fatal("Duplicate supported emoji (toned): ${emojiSignature(emoji)}")
 
         when (tones.size) {
           1 -> {
@@ -312,7 +313,7 @@ open class CheckEmojiKeyboardTask : BaseTask() {
             }
           }
           else -> {
-            error("Too many tones for one emoji: ${emojiSignature(emoji)}")
+            fatal("Too many tones for one emoji: ${emojiSignature(emoji)}")
           }
         }
       }
@@ -320,18 +321,18 @@ open class CheckEmojiKeyboardTask : BaseTask() {
 
     tonedEmoji1d.forEach {
       if (it.value.size != 5) {
-        error("Missing ${5 - it.value.size} tones for 1d-emoji: ${emojiSignature(it.key)})")
+        fatal("Missing ${5 - it.value.size} tones for 1d-emoji: ${emojiSignature(it.key)})")
       }
       if (!supportedSet.contains(it.key)) {
-        error("Unsupported base 1d-emoji: ${emojiSignature(it.key)}")
+        fatal("Unsupported base 1d-emoji: ${emojiSignature(it.key)}")
       }
     }
     tonedEmoji2d.forEach {
       if (it.value.size != 5 * 5) {
-        error("Missing ${(5 * 5) - it.value.size} tones for 2d-emoji: ${emojiSignature(it.key)}")
+        fatal("Missing ${(5 * 5) - it.value.size} tones for 2d-emoji: ${emojiSignature(it.key)}")
       }
       if (!supportedSet.contains(it.key)) {
-        error("Unsupported base 2d-emoji: ${emojiSignature(it.key)}")
+        fatal("Unsupported base 2d-emoji: ${emojiSignature(it.key)}")
       }
     }
 
@@ -340,7 +341,7 @@ open class CheckEmojiKeyboardTask : BaseTask() {
     displaying.forEachIndexed { index, emojis ->
       for (emoji in emojis) {
         if (!supportedSet.contains(emoji)) {
-          error("Unknown displayed emoji: ${emojiSignature(emoji)})")
+          fatal("Unknown displayed emoji: ${emojiSignature(emoji)})")
         }
       }
       val addingEmoji = if (emojis.isEmpty()) {
@@ -350,7 +351,7 @@ open class CheckEmojiKeyboardTask : BaseTask() {
       }
       for (emoji in addingEmoji) {
         if (!displayingSet.add(emoji)) {
-          error("Duplicate displaying emoji: ${emojiSignature(emoji)}")
+          fatal("Duplicate displaying emoji: ${emojiSignature(emoji)}")
         }
         val gender = findGender(emoji)
         if (gender != null) {
@@ -403,7 +404,7 @@ open class CheckEmojiKeyboardTask : BaseTask() {
     }
 
     if (errors.isNotEmpty()) {
-      error("${missingEmoji.size + incorrectOrderEmoji.size} emoji-related error(s).\n\n${errors.joinToString("\n\n")}")
+      fatal("${missingEmoji.size + incorrectOrderEmoji.size} emoji-related fatal(s).\n\n${errors.joinToString("\n\n")}")
     }
 
     writeToFile("app/src/main/java/org/thunderdog/challegram/tool/Emojis.kt") { kt ->
@@ -515,12 +516,12 @@ open class CheckEmojiKeyboardTask : BaseTask() {
                 if (isLegacy) {
                   continue
                 }
-                error("Unsupported long ltr emoji: ${emojiSignature(emoji)}")
+                fatal("Unsupported long ltr emoji: ${emojiSignature(emoji)}")
               }
               ltrEmoji.add(emoji)
               maxLtrEmojiLength = maxOf(maxLtrEmojiLength, emoji.length)
             }
-            TextDirection.RTL -> error("Unexpected RTL emoji: ${emojiSignature(emoji)}")
+            TextDirection.RTL -> fatal("Unexpected RTL emoji: ${emojiSignature(emoji)}")
             TextDirection.NEUTRAL -> { /*do nothing*/ }
           }
         }
@@ -534,12 +535,12 @@ open class CheckEmojiKeyboardTask : BaseTask() {
         val firstCodePoint = emoji.codePointAt(0)
         if (codePointCount == 1) {
           if (doubleLtrEmojiCodePoints.containsKey(firstCodePoint)) {
-            error("Single ltr emoji already has double entry: ${emojiSignature(emoji)}")
+            fatal("Single ltr emoji already has double entry: ${emojiSignature(emoji)}")
           }
           singleLtrEmojiCodePoints.add(firstCodePoint)
         } else if (codePointCount == 2) {
           if (singleLtrEmojiCodePoints.contains(firstCodePoint)) {
-            error("Double ltr emoji already has single entry: ${emojiSignature(emoji)}")
+            fatal("Double ltr emoji already has single entry: ${emojiSignature(emoji)}")
           }
           val secondCodePoint = emoji.codePointAt(Character.charCount(firstCodePoint))
           val list = doubleLtrEmojiCodePoints[firstCodePoint]
@@ -555,7 +556,7 @@ open class CheckEmojiKeyboardTask : BaseTask() {
             secondLtrEmojiCodePointToFirstCodePoint[secondCodePoint] = sortedSetOf(firstCodePoint)
           }
         } else {
-          error("Unsupported long ltr emoji: ${emojiSignature(emoji)}")
+          fatal("Unsupported long ltr emoji: ${emojiSignature(emoji)}")
         }
       }
       writeToFile("app/src/main/java/org/thunderdog/challegram/tool/EmojiBidi${legacySuffix}.kt") { kt ->

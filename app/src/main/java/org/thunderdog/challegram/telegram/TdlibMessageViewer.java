@@ -43,8 +43,8 @@ import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.FutureBool;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class TdlibMessageViewer {
   private static final long TRACK_MESSAGE_TIMEOUT_MS = 1000;

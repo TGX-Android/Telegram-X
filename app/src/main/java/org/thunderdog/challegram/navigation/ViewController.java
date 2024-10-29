@@ -151,8 +151,8 @@ import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableInt;
 import me.vkryl.core.lambda.RunnableLong;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 // TODO separate Telegram-related stuff to TelegramViewController<T>. This will allow reusing navigation logic in other projects
 
@@ -1878,6 +1878,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     showSettings(new SettingsWrapBuilder(id).setRawItems(rawItems).setIntDelegate(delegate).setAllowResize(allowResize));
   }
 
+  @SuppressWarnings("deprecation")
   public final @Nullable SettingsWrap showSettings (final SettingsWrapBuilder b) {
     if (isStackLocked()) {
       Log.i("Ignoring showSettings because stack is locked");
@@ -2819,6 +2820,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         public void setColorFilter (@Nullable ColorFilter colorFilter) { }
 
         @Override
+        @SuppressWarnings("deprecation")
         public int getOpacity () {
           return PixelFormat.UNKNOWN;
         }

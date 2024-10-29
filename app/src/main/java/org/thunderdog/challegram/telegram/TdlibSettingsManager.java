@@ -48,8 +48,8 @@ import me.vkryl.core.collection.LongSparseLongArray;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.util.Blob;
 import me.vkryl.leveldb.LevelDB;
-import me.vkryl.td.ChatPosition;
-import me.vkryl.td.Td;
+import tgx.td.ChatPosition;
+import tgx.td.Td;
 
 public class TdlibSettingsManager implements CleanupStartupDelegate {
   private final Tdlib tdlib;

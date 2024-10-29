@@ -64,9 +64,9 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.EmojiStatusHelper;
-import org.thunderdog.challegram.util.text.counter.CounterTextPart;
 import org.thunderdog.challegram.util.text.bidi.BiDiEntity;
 import org.thunderdog.challegram.util.text.bidi.BiDiUtils;
+import org.thunderdog.challegram.util.text.counter.CounterTextPart;
 import org.thunderdog.challegram.util.text.quotes.QuoteBackground;
 
 import java.text.Bidi;
@@ -87,7 +87,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, ListAnimator.Measurable, Destroyable {
   public static final int FLAG_NO_TRIM = 1;
@@ -2696,7 +2696,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     @Nullable
     default ThemeDelegate getForcedTheme (View view, Text text) { return null; }
     default boolean forceInstantView (String link) { return false; }
-    default TdApi.WebPage findWebPage (String link) { return null; }
+    default TdApi.LinkPreview findLinkPreview (String link) { return null; }
     default boolean onCommandClick (View view, Text text, TextPart part, String command, boolean isLongPress) { return false; }
     default boolean onUsernameClick (String username) { return false; }
     default boolean onUserClick (long userId) { return false; }

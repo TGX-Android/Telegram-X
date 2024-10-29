@@ -33,7 +33,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.util.Blob;
 import me.vkryl.leveldb.LevelDB;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class DisplayInformation {
   private static final long FLAG_PREMIUM = 1;

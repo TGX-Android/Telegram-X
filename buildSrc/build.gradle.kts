@@ -2,17 +2,17 @@ plugins {
   `kotlin-dsl`
 }
 
-val kotlinVersion = "1.9.23"
+val kotlinVersion = "1.9.25"
 
 gradlePlugin {
   plugins {
     register("module-plugin") {
       id = "module-plugin"
-      implementationClass = "me.vkryl.plugin.ModulePlugin"
+      implementationClass = "tgx.gradle.plugin.ModulePlugin"
     }
     register("cmake-plugin") {
       id = "cmake-plugin"
-      implementationClass = "me.vkryl.plugin.CMakePlugin"
+      implementationClass = "tgx.gradle.plugin.CMakePlugin"
     }
   }
 }
@@ -40,7 +40,7 @@ configurations.all {
           this.useVersion(kotlinVersion)
         }
         else -> if (requested.version != kotlinVersion) {
-          error("Incompatible package: ${requested.group}:${requested.name}:${requested.version}, ${target.group}:${target.name}:${target.version}")
+          throw StopExecutionException("Incompatible package: ${requested.group}:${requested.name}:${requested.version}, ${target.group}:${target.name}:${target.version}")
         }
       }
     }
@@ -49,8 +49,8 @@ configurations.all {
 
 dependencies {
   compileOnly(gradleApi())
-  implementation("com.android.tools.build:gradle:8.4.0")
-  implementation("com.google.gms:google-services:4.4.1")
+  implementation("com.android.tools.build:gradle:8.5.1")
+  implementation("com.google.gms:google-services:4.4.2")
   implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}")
   implementation("com.squareup.okhttp3:okhttp:4.12.0")
   implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")

@@ -12,7 +12,7 @@
  *
  * File created on 19/06/2022, 02:06.
  */
-package me.vkryl.task
+package tgx.gradle.task
 
 import com.beust.klaxon.JsonObject
 import com.beust.klaxon.Parser

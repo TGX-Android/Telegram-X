@@ -10,13 +10,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-package me.vkryl.plugin
+package tgx.gradle.task
 
-import org.gradle.api.Plugin
-import org.gradle.api.Project
+import org.gradle.api.tasks.TaskAction
 
-open class StubPlugin : Plugin<Project> {
-  override fun apply(project: Project) {
-    TODO("Stub!")
+open class GeneratePhoneFormatTask : BaseTask() {
+  @TaskAction
+  fun generatePhoneFormat () {
+    // TODO generate org.thunderdog.challegram.tool.TGPhoneFormat based on phoneformat_masks.txt
   }
 }

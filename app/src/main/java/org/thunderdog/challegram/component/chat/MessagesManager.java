@@ -33,7 +33,6 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.SponsoredMessageUtils;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageBotInfo;
@@ -82,9 +81,9 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.MessageId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.MessageId;
+import tgx.td.Td;
 
 public class MessagesManager implements Client.ResultHandler, MessagesSearchManager.Delegate,
   MessageListener, MessageEditListener, MessageThreadListener, Comparator<TGMessage>, TGPlayerController.PlayListBuilder, BaseActivity.PasscodeListener, TdlibCache.ChatMemberStatusChangeListener, TdlibSettingsManager.DismissMessageListener {
@@ -1378,7 +1377,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           if (lastMessage == null) return;
           controller.sponsoredMessageLoaded = true;
           boolean isFirstItemVisible = manager.findFirstCompletelyVisibleItemPosition() == 0;
-          adapter.addMessage(SponsoredMessageUtils.sponsoredToTgx(this, loader.getChatId(), sponsoredMessages.messages[0]), false, false);
+          // TODO multi-ad support
+          adapter.addMessage(TGMessage.valueOf(this, loader.getChatId(), sponsoredMessages.messages[0]), false, false);
           if (isFirstItemVisible && !isScrolling && !controller.canWriteMessages()) {
             manager.scrollToPositionWithOffset(1, Screen.dp(48f));
           }

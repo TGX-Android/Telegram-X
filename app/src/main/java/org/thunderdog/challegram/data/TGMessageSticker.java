@@ -59,8 +59,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.collection.IntSet;
 import me.vkryl.core.collection.LongSet;
-import me.vkryl.td.Td;
-import me.vkryl.td.TdConstants;
+import tgx.td.Td;
+import tgx.td.TdConstants;
 
 public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener, TdlibEmojiManager.Watcher {
   private @Nullable TdApi.DiceStickers sticker;

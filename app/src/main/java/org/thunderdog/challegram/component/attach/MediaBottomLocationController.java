@@ -67,7 +67,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
-import me.vkryl.td.ChatId;
+import tgx.td.ChatId;
 
 public class MediaBottomLocationController extends MediaBottomBaseController<Void> implements View.OnClickListener, MediaLocationMapView.Callback, MediaLocationFinder.Callback, ActivityResultHandler, Menu, FactorAnimator.Target {
   public MediaBottomLocationController (MediaLayout context) {

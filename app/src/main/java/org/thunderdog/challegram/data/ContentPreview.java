@@ -21,8 +21,9 @@ import java.util.concurrent.TimeUnit;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.CurrencyUtils;
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.MediaType;
+import tgx.td.Td;
 
 public class ContentPreview {
   public static final Emoji
@@ -37,6 +38,7 @@ public class ContentPreview {
   public static final Emoji EMOJI_GAME = new Emoji("\uD83C\uDFAE", R.drawable.baseline_videogame_asset_16);
   public static final Emoji EMOJI_GROUP = new Emoji("\uD83D\uDC65", R.drawable.baseline_group_16);
   public static final Emoji EMOJI_GIFT = new Emoji("\uD83C\uDF81", R.drawable.baseline_redeem_16);
+  public static final Emoji EMOJI_STARS = new Emoji("\u2B50", R.drawable.baseline_premium_star_16);
   public static final Emoji EMOJI_BOOST = new Emoji("\u26A1", R.drawable.baseline_bolt_16);
   public static final Emoji EMOJI_THEME = new Emoji("\uD83C\uDFA8", R.drawable.baseline_palette_16);
   public static final Emoji EMOJI_GROUP_INVITE = new Emoji("\uD83D\uDC65", R.drawable.baseline_group_add_16);
@@ -46,6 +48,9 @@ public class ContentPreview {
   public static final Emoji EMOJI_CONTACT = new Emoji("\uD83D\uDC64", R.drawable.baseline_person_16);
   public static final Emoji EMOJI_POLL = new Emoji("\uD83D\uDCCA", R.drawable.baseline_poll_16);
   public static final Emoji EMOJI_QUIZ = new Emoji("\u2753", R.drawable.baseline_help_16);
+  public static final Emoji EMOJI_PAID_PHOTO = new Emoji("\u2B50", R.drawable.baseline_premium_star_16); // ⭐
+  public static final Emoji EMOJI_PAID_VIDEO = new Emoji("\u2B50", R.drawable.baseline_premium_star_16);
+  public static final Emoji EMOJI_PAID_MEDIA = new Emoji("\u2B50", R.drawable.baseline_premium_star_16);
   public static final Emoji EMOJI_VOICE = new Emoji("\uD83C\uDFA4", R.drawable.baseline_mic_16);
   public static final Emoji EMOJI_GIF = new Emoji("\uD83D\uDC7E", R.drawable.deproko_baseline_gif_filled_16);
   public static final Emoji EMOJI_LOCATION = new Emoji("\uD83D\uDCCC", R.drawable.baseline_gps_fixed_16);
@@ -543,6 +548,28 @@ public class ContentPreview {
         TdApi.FormattedText formatted = TD.toFormattedText(text, false);
         return new ContentPreview(EMOJI_GIFT, 0, formatted, true);
       }
+      case TdApi.MessageGiftedStars.CONSTRUCTOR: {
+        // TODO: R.string.ChatContent*
+        TdApi.MessageGiftedStars giftedStars = (TdApi.MessageGiftedStars) message.content;
+        String amount = CurrencyUtils.buildAmount(giftedStars.currency, giftedStars.amount);
+        CharSequence text;
+        if (giftedStars.receiverUserId == 0 || tdlib.isSelfUserId(giftedStars.receiverUserId)) {
+          text = Lang.pluralBold(
+            R.string.YouReceivedXStars,
+            giftedStars.starCount,
+            amount
+          );
+        } else {
+          text = Lang.pluralBold(
+            R.string.ReceivedXStars,
+            giftedStars.starCount,
+            amount,
+            tdlib.senderName(new TdApi.MessageSenderUser(giftedStars.receiverUserId))
+          );
+        }
+        TdApi.FormattedText formatted = TD.toFormattedText(text, false);
+        return new ContentPreview(EMOJI_STARS, 0, formatted, true);
+      }
       case TdApi.MessagePremiumGiftCode.CONSTRUCTOR: {
         // TODO: R.string.ChatContent*
         TdApi.MessagePremiumGiftCode giftedPremium = (TdApi.MessagePremiumGiftCode) message.content;
@@ -555,34 +582,39 @@ public class ContentPreview {
         TdApi.FormattedText formatted = TD.toFormattedText(text, false);
         return new ContentPreview(EMOJI_GIFT, 0, formatted, true);
       }
-      case TdApi.MessagePremiumGiveaway.CONSTRUCTOR: {
-        TdApi.MessagePremiumGiveaway premiumGiveaway = (TdApi.MessagePremiumGiveaway) message.content;
+      case TdApi.MessageGiveaway.CONSTRUCTOR: {
+        TdApi.MessageGiveaway giveaway = (TdApi.MessageGiveaway) message.content;
         String text;
-        if (premiumGiveaway.winnerCount > 0) {
+        if (giveaway.winnerCount > 0) {
           text = Lang.getString(R.string.format_giveawayInfo,
             Lang.getString(R.string.Giveaway),
-            Lang.plural(R.string.xFutureWinnersOn, premiumGiveaway.winnerCount, Lang.getDate(premiumGiveaway.parameters.winnersSelectionDate, TimeUnit.SECONDS))
+            Lang.plural(R.string.xFutureWinnersOn, giveaway.winnerCount, Lang.getDate(giveaway.parameters.winnersSelectionDate, TimeUnit.SECONDS))
           );
         } else {
           text = Lang.getString(R.string.Giveaway);
         }
         return new ContentPreview(EMOJI_GIFT, 0, text, true);
       }
-      case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR: {
-        TdApi.MessagePremiumGiveawayWinners premiumGiveaway = (TdApi.MessagePremiumGiveawayWinners) message.content;
+      case TdApi.MessageGiveawayWinners.CONSTRUCTOR: {
+        TdApi.MessageGiveawayWinners giveaway = (TdApi.MessageGiveawayWinners) message.content;
         String text;
-        if (premiumGiveaway.winnerCount > 0) {
+        if (giveaway.winnerCount > 0) {
           text = Lang.getString(R.string.format_giveawayInfo,
             Lang.getString(R.string.Giveaway),
-            Lang.plural(R.string.xPastWinnersOn, premiumGiveaway.winnerCount, Lang.getDate(premiumGiveaway.actualWinnersSelectionDate, TimeUnit.SECONDS))
+            Lang.plural(R.string.xPastWinnersOn, giveaway.winnerCount, Lang.getDate(giveaway.actualWinnersSelectionDate, TimeUnit.SECONDS))
           );
         } else {
           text = Lang.getString(R.string.Giveaway);
         }
         return new ContentPreview(EMOJI_GIFT, 0, text, true);
       }
-      case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR: {
-        TdApi.MessagePremiumGiveawayCompleted giveawayCompleted = (TdApi.MessagePremiumGiveawayCompleted) message.content;
+      case TdApi.MessageGiveawayPrizeStars.CONSTRUCTOR: {
+        TdApi.MessageGiveawayPrizeStars giveaway = (TdApi.MessageGiveawayPrizeStars) message.content;
+        String text = Lang.plural(R.string.WonXStars, giveaway.starCount);
+        return new ContentPreview(EMOJI_STARS, 0, text, true);
+      }
+      case TdApi.MessageGiveawayCompleted.CONSTRUCTOR: {
+        TdApi.MessageGiveawayCompleted giveawayCompleted = (TdApi.MessageGiveawayCompleted) message.content;
         arg1 = giveawayCompleted.winnerCount;
         arg2 = giveawayCompleted.unclaimedPrizeCount;
         break;
@@ -590,6 +622,13 @@ public class ContentPreview {
       case TdApi.MessageChatBoost.CONSTRUCTOR: {
         TdApi.MessageChatBoost chatBoost = (TdApi.MessageChatBoost) message.content;
         arg1 = chatBoost.boostCount;
+        break;
+      }
+
+      case TdApi.MessagePaidMedia.CONSTRUCTOR: {
+        TdApi.MessagePaidMedia paidMedia = (TdApi.MessagePaidMedia) message.content;
+        arg1 = MediaType.valueOf(paidMedia).ordinal();
+        arg2 = paidMedia.media.length;
         break;
       }
 
@@ -634,7 +673,13 @@ public class ContentPreview {
       }
       case TdApi.MessagePaymentSuccessful.CONSTRUCTOR: {
         TdApi.MessagePaymentSuccessful successful = (TdApi.MessagePaymentSuccessful) message.content;
+        // TODO: recurring payment strings
         return new ContentPreview(EMOJI_INVOICE, 0, Lang.getString(R.string.PaymentSuccessfullyPaidNoItem, CurrencyUtils.buildAmount(successful.currency, successful.totalAmount), tdlib.chatTitle(message.chatId)), true);
+      }
+      case TdApi.MessagePaymentRefunded.CONSTRUCTOR: {
+        TdApi.MessagePaymentRefunded refunded = (TdApi.MessagePaymentRefunded) message.content;
+        String amount = CurrencyUtils.buildAmount(refunded.currency, refunded.totalAmount);
+        return new ContentPreview(EMOJI_INVOICE, 0, Lang.getString(R.string.PaymentRefunded, tdlib.senderName(refunded.ownerId), amount), true);
       }
 
       // Handled by getSimpleContentPreview
@@ -654,7 +699,8 @@ public class ContentPreview {
       case TdApi.MessageChatJoinByLink.CONSTRUCTOR:
       case TdApi.MessageChatChangePhoto.CONSTRUCTOR:
       case TdApi.MessageChatDeletePhoto.CONSTRUCTOR:
-      case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR:
+      case TdApi.MessageGiveawayCreated.CONSTRUCTOR:
+      case TdApi.MessageGift.CONSTRUCTOR:
 
       // Handled by getSimpleContentPreview, but unsupported
       case TdApi.MessageUnsupported.CONSTRUCTOR:
@@ -674,7 +720,7 @@ public class ContentPreview {
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_4113f183();
+        Td.assertMessageContent_91c1e338();
         throw Td.unsupported(message.content);
     }
     Refresher refresher = null;
@@ -783,11 +829,11 @@ public class ContentPreview {
     return getNotificationPinned(res, type, tdlib, chatId, sender, argument, senderName, argumentTranslatable, 0, 0);
   }
 
-  private static ContentPreview getNotificationPinned(int res, int type, Tdlib tdlib, long chatId, TdApi.MessageSender sender, String senderName, String argument, int arg1, int arg2) {
+  private static ContentPreview getNotificationPinned(int res, int type, Tdlib tdlib, long chatId, TdApi.MessageSender sender, String senderName, String argument, long arg1, long arg2) {
     return getNotificationPinned(res, type, tdlib, chatId, sender, argument, senderName, false, arg1, arg2);
   }
 
-  private static ContentPreview getNotificationPinned (int res, int type, Tdlib tdlib, long chatId, TdApi.MessageSender sender, String senderName, String argument, boolean argumentTranslatable, int arg1, int arg2) {
+  private static ContentPreview getNotificationPinned (int res, int type, Tdlib tdlib, long chatId, TdApi.MessageSender sender, String senderName, String argument, boolean argumentTranslatable, long arg1, long arg2) {
     String text;
     if (StringUtils.isEmpty(argument)) {
       try {
@@ -1059,21 +1105,58 @@ public class ContentPreview {
 
       case TdApi.PushMessageContentPremiumGiftCode.CONSTRUCTOR:
         return getNotificationPreview(TdApi.MessagePremiumGiftCode.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, ((TdApi.PushMessageContentPremiumGiftCode) push.content).monthCount, 0);
-      case TdApi.PushMessageContentPremiumGiveaway.CONSTRUCTOR: {
-        TdApi.PushMessageContentPremiumGiveaway giveaway = (TdApi.PushMessageContentPremiumGiveaway) push.content;
-        if (giveaway.isPinned) {
-          return getNotificationPinned(R.string.ActionPinnedGiveaway, TdApi.MessagePremiumGiveaway.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, giveaway.winnerCount, giveaway.monthCount);
+      case TdApi.PushMessageContentGift.CONSTRUCTOR: {
+        TdApi.PushMessageContentGift gift = (TdApi.PushMessageContentGift) push.content;
+        return getNotificationPreview(TdApi.MessageGift.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, gift.starCount, 0);
+      }
+      case TdApi.PushMessageContentGiveaway.CONSTRUCTOR: {
+        TdApi.PushMessageContentGiveaway giveaway = (TdApi.PushMessageContentGiveaway) push.content;
+        if (giveaway.prize == null) {
+          if (giveaway.isPinned) {
+            return getNotificationPinned(R.string.ActionPinnedGiveaway, TdApi.MessageGiveaway.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, giveaway.winnerCount, 0);
+          } else {
+            return getNotificationPreview(TdApi.MessageGiveaway.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, giveaway.winnerCount, 0);
+          }
+        }
+        switch (giveaway.prize.getConstructor()) {
+          case TdApi.GiveawayPrizePremium.CONSTRUCTOR: {
+            TdApi.GiveawayPrizePremium premium = (TdApi.GiveawayPrizePremium) giveaway.prize;
+            if (giveaway.isPinned) {
+              return getNotificationPinned(R.string.ActionPinnedGiveaway, TdApi.MessageGiveaway.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, giveaway.winnerCount, premium.monthCount);
+            } else {
+              return getNotificationPreview(TdApi.MessageGiveaway.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, giveaway.winnerCount, premium.monthCount);
+            }
+          }
+          case TdApi.GiveawayPrizeStars.CONSTRUCTOR: {
+            TdApi.GiveawayPrizeStars stars = (TdApi.GiveawayPrizeStars) giveaway.prize;
+            if (giveaway.isPinned) {
+              return getNotificationPinned(R.string.ActionPinnedGiveaway, TdApi.MessageGiveaway.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, giveaway.winnerCount, -stars.starCount);
+            } else {
+              return getNotificationPreview(TdApi.MessageGiveaway.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, giveaway.winnerCount, -stars.starCount);
+            }
+          }
+          default: {
+            Td.assertGiveawayPrize_28ff2954();
+            throw Td.unsupported(giveaway.prize);
+          }
+        }
+      }
+      case TdApi.PushMessageContentPaidMedia.CONSTRUCTOR: {
+        TdApi.PushMessageContentPaidMedia paidMedia = (TdApi.PushMessageContentPaidMedia) push.content;
+        // TODO(server & TDLib): caption, media type
+        if (paidMedia.isPinned) {
+          return getNotificationPinned(R.string.ActionPinnedPaidMedia, TdApi.MessagePaidMedia.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
         } else {
-          return getNotificationPreview(TdApi.MessagePremiumGiveaway.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, giveaway.winnerCount, giveaway.monthCount);
+          return getNotificationPreview(TdApi.MessagePaidMedia.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
         }
       }
       default:
-        Td.assertPushMessageContent_b17e0a62();
+        Td.assertPushMessageContent_c163df58();
         throw Td.unsupported(push.content);
     }
   }
 
-  private static ContentPreview getNotificationPreview (@TdApi.MessageContent.Constructors int type, Tdlib tdlib, long chatId, TdApi.MessageSender sender, String senderName, String argument, boolean argumentTranslatable, int arg1, int arg2) {
+  private static ContentPreview getNotificationPreview (@TdApi.MessageContent.Constructors int type, Tdlib tdlib, long chatId, TdApi.MessageSender sender, String senderName, String argument, boolean argumentTranslatable, long arg1, long arg2) {
     return getSimpleContentPreview(type, tdlib, chatId, sender, senderName, tdlib.isSelfSender(sender), false, new TdApi.FormattedText(argument, null), argumentTranslatable, arg1, arg2);
   }
 
@@ -1085,7 +1168,7 @@ public class ContentPreview {
     return getSimpleContentPreview(type, tdlib, chatId, sender, senderName, tdlib.isSelfSender(sender), false, new TdApi.FormattedText(argument, null), false, 0, 0);
   }
 
-  private static ContentPreview getNotificationPreview (@TdApi.MessageContent.Constructors int type, Tdlib tdlib, long chatId, TdApi.MessageSender sender, String senderName, String argument, int arg1, int arg2) {
+  private static ContentPreview getNotificationPreview (@TdApi.MessageContent.Constructors int type, Tdlib tdlib, long chatId, TdApi.MessageSender sender, String senderName, String argument, long arg1, long arg2) {
     return getSimpleContentPreview(type, tdlib, chatId, sender, senderName, tdlib.isSelfSender(sender), false, new TdApi.FormattedText(argument, null), false, arg1, arg2);
   }
 
@@ -1093,7 +1176,7 @@ public class ContentPreview {
     return StringUtils.isEmpty(senderName) ? tdlib.senderName(sender, true) : senderName;
   }
 
-  private static @NonNull ContentPreview getSimpleContentPreview (@TdApi.MessageContent.Constructors int type, Tdlib tdlib, long chatId, TdApi.MessageSender sender, String senderName, boolean isOutgoing, boolean isChatsList, TdApi.FormattedText formattedArgument, boolean argumentTranslatable, int arg1, int arg2) {
+  private static @NonNull ContentPreview getSimpleContentPreview (@TdApi.MessageContent.Constructors int type, Tdlib tdlib, long chatId, TdApi.MessageSender sender, String senderName, boolean isOutgoing, boolean isChatsList, TdApi.FormattedText formattedArgument, boolean argumentTranslatable, long arg1, long arg2) {
     switch (type) {
       case TdApi.MessageText.CONSTRUCTOR:
         return new ContentPreview(arg1 == ARG_TRUE ? EMOJI_LINK : null, R.string.YouHaveNewMessage, formattedArgument, argumentTranslatable);
@@ -1229,24 +1312,25 @@ public class ContentPreview {
       }
       case TdApi.MessageDice.CONSTRUCTOR: {
         String diceEmoji = !Td.isEmpty(formattedArgument) && tdlib.isDiceEmoji(formattedArgument.text) ? formattedArgument.text : EMOJI_DICE.textRepresentation;
+        int value = (int) arg1;
         if (EMOJI_DART.textRepresentation.equals(diceEmoji)) {
-          return new ContentPreview(EMOJI_DART, getDartRes(arg1));
+          return new ContentPreview(EMOJI_DART, getDartRes(value));
         }
         if (EMOJI_DICE.textRepresentation.equals(diceEmoji)) {
-          if (arg1 >= 1 && arg1 <= 6) {
-            switch (arg1) {
+          if (value >= 1 && value <= 6) {
+            switch (value) {
               case 1:
-                return new ContentPreview(EMOJI_DICE_1, 0, Lang.plural(R.string.ChatContentDiceRolled, arg1), true);
+                return new ContentPreview(EMOJI_DICE_1, 0, Lang.plural(R.string.ChatContentDiceRolled, value), true);
               case 2:
-                return new ContentPreview(EMOJI_DICE_2, 0, Lang.plural(R.string.ChatContentDiceRolled, arg1), true);
+                return new ContentPreview(EMOJI_DICE_2, 0, Lang.plural(R.string.ChatContentDiceRolled, value), true);
               case 3:
-                return new ContentPreview(EMOJI_DICE_3, 0, Lang.plural(R.string.ChatContentDiceRolled, arg1), true);
+                return new ContentPreview(EMOJI_DICE_3, 0, Lang.plural(R.string.ChatContentDiceRolled, value), true);
               case 4:
-                return new ContentPreview(EMOJI_DICE_4, 0, Lang.plural(R.string.ChatContentDiceRolled, arg1), true);
+                return new ContentPreview(EMOJI_DICE_4, 0, Lang.plural(R.string.ChatContentDiceRolled, value), true);
               case 5:
-                return new ContentPreview(EMOJI_DICE_5, 0, Lang.plural(R.string.ChatContentDiceRolled, arg1), true);
+                return new ContentPreview(EMOJI_DICE_5, 0, Lang.plural(R.string.ChatContentDiceRolled, value), true);
               case 6:
-                return new ContentPreview(EMOJI_DICE_6, 0, Lang.plural(R.string.ChatContentDiceRolled, arg1), true);
+                return new ContentPreview(EMOJI_DICE_6, 0, Lang.plural(R.string.ChatContentDiceRolled, value), true);
             }
           }
           return new ContentPreview(EMOJI_DICE, R.string.ChatContentDice);
@@ -1261,15 +1345,35 @@ public class ContentPreview {
         return new ContentPreview(EMOJI_SECRET_VOICE_NOTE, R.string.AttachVoiceNoteExpired);
       case TdApi.MessageExpiredVideoNote.CONSTRUCTOR:
         return new ContentPreview(EMOJI_SECRET_VIDEO_NOTE, R.string.AttachVideoNoteExpired);
+      case TdApi.MessagePaidMedia.CONSTRUCTOR: {
+        if (arg1 /*mediaType.ordinal()*/ == 0) {
+          return new ContentPreview(EMOJI_PAID_MEDIA, R.string.PaidMedia, formattedArgument);
+        } else {
+          MediaType mediaType = MediaType.valueOf((int) arg1);
+          if (arg2 /*count*/ == 1 || !Td.isEmpty(formattedArgument)) {
+            switch (mediaType) {
+              case PHOTOS: return new ContentPreview(EMOJI_PAID_PHOTO, R.string.Photo, formattedArgument);
+              case VIDEOS: return new ContentPreview(EMOJI_PAID_VIDEO, R.string.Video, formattedArgument);
+              case MIXED: default: return new ContentPreview(EMOJI_PAID_MEDIA, R.string.PaidMedia, formattedArgument);
+            }
+          } else {
+            switch (mediaType) {
+              case PHOTOS: return new ContentPreview(EMOJI_PAID_PHOTO, 0, Lang.plural(R.string.xPhotos, arg2), true);
+              case VIDEOS: return new ContentPreview(EMOJI_PAID_VIDEO, 0, Lang.plural(R.string.xVideos, arg2), true);
+              case MIXED: default: return new ContentPreview(EMOJI_PAID_MEDIA, 0, Lang.plural(R.string.xMedia, arg2), true);
+            }
+          }
+        }
+      }
       case TdApi.MessageCall.CONSTRUCTOR:
-        switch (arg1) {
+        switch ((int) arg1) {
           case ARG_CALL_DECLINED:
             return new ContentPreview(EMOJI_CALL_DECLINED, isOutgoing ? R.string.OutgoingCall : R.string.CallMessageIncomingDeclined);
           case ARG_CALL_MISSED:
             return new ContentPreview(EMOJI_CALL_MISSED, isOutgoing ? R.string.CallMessageOutgoingMissed : R.string.MissedCall);
           default:
             if (arg1 > 0) {
-              return new ContentPreview(EMOJI_CALL, 0, Lang.getString(R.string.ChatContentCallWithDuration, Lang.getString(isOutgoing ? R.string.OutgoingCall : R.string.IncomingCall), Lang.getDurationFull(arg1)), true);
+              return new ContentPreview(EMOJI_CALL, 0, Lang.getString(R.string.ChatContentCallWithDuration, Lang.getString(isOutgoing ? R.string.OutgoingCall : R.string.IncomingCall), Lang.getDurationFull((int) arg1)), true);
             } else {
               return new ContentPreview(EMOJI_CALL, isOutgoing ? R.string.OutgoingCall : R.string.IncomingCall);
             }
@@ -1278,12 +1382,12 @@ public class ContentPreview {
       case TdApi.MessageChatUpgradeTo.CONSTRUCTOR:
         return new ContentPreview(EMOJI_GROUP, R.string.GroupUpgraded);
 
-      case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR:
+      case TdApi.MessageGiveawayCreated.CONSTRUCTOR:
         return new ContentPreview(EMOJI_GIFT, R.string.BoostingGiveawayJustStarted);
-      case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR:
+      case TdApi.MessageGiveawayCompleted.CONSTRUCTOR:
         return new ContentPreview(EMOJI_GIFT, 0, Lang.plural(R.string.BoostingGiveawayServiceWinnersSelected, arg1), true);
       case TdApi.MessageChatBoost.CONSTRUCTOR: {
-        int boostCount = arg1;
+        int boostCount = (int) arg1;
         if (boostCount > 1) {
           return new ContentPreview(EMOJI_BOOST, 0, Lang.plural(
             isOutgoing ? R.string.ChatContentBoostedXTimes_outgoing : R.string.ChatContentBoostedXTimes, arg1
@@ -1295,9 +1399,9 @@ public class ContentPreview {
         }
       }
 
-      case TdApi.MessagePremiumGiveaway.CONSTRUCTOR: {
-        int winnerCount = arg1;
-        int monthCount = arg2;
+      case TdApi.MessageGiveaway.CONSTRUCTOR: {
+        int winnerCount = (int) arg1;
+        // int monthCount = arg2;
         String text;
         if (winnerCount > 0) {
           text = Lang.getString(R.string.format_giveawayInfo,
@@ -1309,9 +1413,9 @@ public class ContentPreview {
         }
         return new ContentPreview(EMOJI_GIFT, 0, text, true);
       }
-      case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR: {
-        int winnerCount = arg1;
-        int monthCount = arg2;
+      case TdApi.MessageGiveawayWinners.CONSTRUCTOR: {
+        int winnerCount = (int) arg1;
+        // int monthCount = arg2;
         String text;
         if (winnerCount > 0) {
           text = Lang.getString(R.string.format_giveawayInfo,
@@ -1327,6 +1431,7 @@ public class ContentPreview {
 
       // Must be supported by the caller and never passed to this method.
       case TdApi.MessageGiftedPremium.CONSTRUCTOR:
+      case TdApi.MessageGiftedStars.CONSTRUCTOR:
       case TdApi.MessageGameScore.CONSTRUCTOR:
       case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR:
       case TdApi.MessageChatAddMembers.CONSTRUCTOR:
@@ -1340,6 +1445,7 @@ public class ContentPreview {
       case TdApi.MessageVideoChatScheduled.CONSTRUCTOR:
       case TdApi.MessagePinMessage.CONSTRUCTOR:
       case TdApi.MessagePaymentSuccessful.CONSTRUCTOR:
+      case TdApi.MessagePaymentRefunded.CONSTRUCTOR:
         throw new IllegalArgumentException(Integer.toString(type));
         
       case TdApi.MessageStory.CONSTRUCTOR:
@@ -1353,6 +1459,8 @@ public class ContentPreview {
       case TdApi.MessagePassportDataSent.CONSTRUCTOR:
       case TdApi.MessageChatSetBackground.CONSTRUCTOR:
       case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
+      case TdApi.MessageGiveawayPrizeStars.CONSTRUCTOR:
+      case TdApi.MessageGift.CONSTRUCTOR:
         // TODO support these previews
         return new ContentPreview(EMOJI_QUIZ, R.string.UnsupportedMessage);
         
@@ -1364,7 +1472,7 @@ public class ContentPreview {
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_4113f183();
+        Td.assertMessageContent_91c1e338();
         throw new UnsupportedOperationException(Integer.toString(type));
     }
   }

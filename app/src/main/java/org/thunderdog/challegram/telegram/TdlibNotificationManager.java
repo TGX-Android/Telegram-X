@@ -69,7 +69,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.FileUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.leveldb.LevelDB;
-import me.vkryl.td.ChatId;
+import tgx.td.ChatId;
 
 public class TdlibNotificationManager implements UI.StateListener, Passcode.LockListener, CleanupStartupDelegate {
   public static final int ID_MUSIC = Integer.MAX_VALUE;

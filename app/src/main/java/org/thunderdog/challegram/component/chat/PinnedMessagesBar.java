@@ -61,7 +61,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.td.MessageId;
+import tgx.td.MessageId;
 
 public class PinnedMessagesBar extends ViewGroup implements Destroyable, MessageListManager.ChangeListener, View.OnClickListener {
   private CustomRecyclerView recyclerView;
@@ -462,7 +462,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
       public void onViewAttachedToWindow (SettingHolder holder) {
         super.onViewAttachedToWindow(holder);
         if (holder.itemView instanceof MessagePreviewView) {
-          int position = holder.getAdapterPosition();
+          int position = holder.getBindingAdapterPosition();
           updateContentInset((MessagePreviewView) holder.itemView, position);
         }
       }

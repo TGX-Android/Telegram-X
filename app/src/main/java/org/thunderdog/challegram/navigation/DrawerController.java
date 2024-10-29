@@ -91,7 +91,7 @@ import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
-import me.vkryl.td.ChatId;
+import tgx.td.ChatId;
 
 public class DrawerController extends ViewController<Void> implements View.OnClickListener, Settings.ProxyChangeListener, GlobalAccountListener, GlobalCountersListener, BaseView.CustomControllerProvider, BaseView.ActionListProvider, View.OnLongClickListener, TdlibSettingsManager.NotificationProblemListener, TdlibOptionListener, SessionListener, GlobalTokenStateListener {
   private int currentWidth, shadowWidth;
@@ -344,7 +344,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
         if (!showingAccounts) {
           return 0;
         }
-        int position = viewHolder.getAdapterPosition();
+        int position = viewHolder.getBindingAdapterPosition();
         int accountsNum = TdlibManager.instance().getActiveAccounts().size();
         if (accountsNum <= 1) {
           return 0;
@@ -377,8 +377,8 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
           return false;
         }
 
-        int fromPosition = viewHolder.getAdapterPosition();
-        int toPosition = target.getAdapterPosition();
+        int fromPosition = viewHolder.getBindingAdapterPosition();
+        int toPosition = target.getBindingAdapterPosition();
 
         int accountsNum = TdlibManager.instance().getActiveAccounts().size();
 

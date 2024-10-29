@@ -30,7 +30,7 @@ import java.util.Collections;
 
 import me.vkryl.core.collection.LongList;
 import me.vkryl.core.collection.SparseLongArray;
-import me.vkryl.td.ChatId;
+import tgx.td.ChatId;
 
 public class TGStorageStats {
   public static final int FILE_TYPE_PHOTOS = 0;

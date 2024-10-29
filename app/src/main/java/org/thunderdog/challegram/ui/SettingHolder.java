@@ -1226,7 +1226,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
           @Override
           public void getItemOffsets (Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
             RecyclerView.ViewHolder holder = parent.getChildViewHolder(view);
-            if (holder == null || holder.getAdapterPosition() != 0) {
+            if (holder == null || holder.getBindingAdapterPosition() != 0) {
               outRect.left = 0;
               return;
             }

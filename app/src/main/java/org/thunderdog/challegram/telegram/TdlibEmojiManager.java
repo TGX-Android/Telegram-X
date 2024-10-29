@@ -22,8 +22,8 @@ import org.drinkless.tdlib.TdApi;
 import java.util.Collection;
 
 import me.vkryl.core.collection.LongSet;
-import me.vkryl.td.Td;
-import me.vkryl.td.TdConstants;
+import tgx.td.Td;
+import tgx.td.TdConstants;
 
 public final class TdlibEmojiManager extends TdlibDataManager<Long, TdApi.Sticker, TdlibEmojiManager.Entry> {
   public static class Entry extends AbstractEntry<Long, TdApi.Sticker> {
