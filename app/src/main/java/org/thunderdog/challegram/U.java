@@ -474,7 +474,11 @@ public class U {
     return b.toString();
   }
 
-  public static void startForeground (Service service, int notificationId, Notification notification) {
+  public static void startForeground(Service service, int notificationId, Notification notification) {
+    startForeground(service, notificationId, notification, false);
+  }
+
+  public static void startForeground (Service service, int notificationId, Notification notification, boolean allowedMediaProjection) {
     if (notification == null)
       throw new IllegalArgumentException();
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -501,7 +505,9 @@ public class U {
               knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
             }
           }
-          knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION;
+          if (allowedMediaProjection) {
+            knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION;
+          }
           knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK;
           break;
         case TdlibNotificationManager.ID_PENDING_TASK:

@@ -561,6 +561,10 @@ public class TGCallService extends Service implements
       }
       if (lastScreenSharing != settings.isScreenSharing()) {
         lastScreenSharing = settings.isScreenSharing();
+        cleanupChannels((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE));
+        U.stopForeground(this, true, TdlibNotificationManager.ID_ONGOING_CALL_NOTIFICATION);
+        ongoingCallNotification = null;
+        showNotification();
         tgcalls.setScreenShareEnabled(lastScreenSharing);
       }
     }
@@ -774,7 +778,7 @@ public class TGCallService extends Service implements
     } else {
       ongoingCallNotification = builder.getNotification();
     }
-    U.startForeground(this, TdlibNotificationManager.ID_ONGOING_CALL_NOTIFICATION, ongoingCallNotification);
+    U.startForeground(this, TdlibNotificationManager.ID_ONGOING_CALL_NOTIFICATION, ongoingCallNotification, lastScreenSharing);
   }
 
   // Sound
