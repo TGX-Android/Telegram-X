@@ -1157,6 +1157,7 @@ public class TGCallService extends Service implements
       return;
     }
     tgcalls.getNetworkStats(stats);
+
     long newDuration = getCallDuration();
     if (newDuration == VoIPInstance.DURATION_UNKNOWN) {
       newDuration = 0;
@@ -1194,10 +1195,10 @@ public class TGCallService extends Service implements
       }
       if (tdlib == null) {
         tdlib = tgcalls.tdlib();
-        lastDebugLog = tgcalls.collectDebugLog();
-        tgcalls.performDestroy();
-        tgcalls = null;
       }
+      lastDebugLog = tgcalls.collectDebugLog();
+      tgcalls.performDestroy();
+      tgcalls = null;
     }
     if (callListener != null && tdlib != null && call != null) {
       tdlib.listeners().unsubscribeFromCallUpdates(call.id, callListener);
