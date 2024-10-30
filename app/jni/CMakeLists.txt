@@ -15,8 +15,6 @@ set(TGX_ROOT_DIR "${CMAKE_HOME_DIRECTORY}/../..")
 set(TDLIB_DIR "${TGX_ROOT_DIR}/tdlib")
 set(UTILS_DIR "${THIRDPARTY_DIR}/jni-utils")
 
-set(ENABLE_TG_CALLS yes)
-
 # Using webp only if building for 32-bit platform
 #if (${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "x86")
 #  set(USE_WEBP yes)

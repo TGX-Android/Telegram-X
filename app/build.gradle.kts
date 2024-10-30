@@ -308,6 +308,8 @@ android {
         ndk.abiFilters.addAll(variant.filters)
         externalNativeBuild.ndkBuild.abiFilters(*variant.filters)
         externalNativeBuild.cmake.abiFilters(*variant.filters)
+
+        externalNativeBuild.cmake.arguments.add("-DENABLE_TG_CALLS=" + (if (useNTgCalls) "no" else "yes"))
       }
     }
   }
