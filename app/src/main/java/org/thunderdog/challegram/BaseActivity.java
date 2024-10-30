@@ -2465,7 +2465,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   // public static final int REQUEST_WRITE_STORAGE = 0x05;
   public static final int REQUEST_FINE_LOCATION = 0x06;
   public static final int REQUEST_CUSTOM = 0x07;
-  public static final int REQUEST_USE_MIC_CALL = 0x08;
+  public static final int REQUEST_PERMISSION_CALL = 0x08;
   public static final int REQUEST_CUSTOM_NEW = 0x09;
 
   public void requestCameraPermission () {
@@ -2486,12 +2486,19 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
   }*/
 
-  private ActivityPermissionResult requestMicPermissionCallback;
+  private ActivityPermissionResult requestPermissionCallback;
 
-  public void requestMicPermissionForCall (@Nullable ActivityPermissionResult after) {
+  public void requestPermissionForCall (@Nullable ActivityPermissionResult after) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      this.requestMicPermissionCallback = after;
-      requestPermissions(new String[] {Manifest.permission.RECORD_AUDIO}, REQUEST_USE_MIC_CALL);
+      this.requestPermissionCallback = after;
+      ArrayList<String> permissions = new ArrayList<>();
+      if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+        permissions.add(Manifest.permission.CAMERA);
+      }
+      if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+        permissions.add(Manifest.permission.RECORD_AUDIO);
+      }
+      requestPermissions(permissions.toArray(new String[0]), REQUEST_PERMISSION_CALL);
     }
   }
 
@@ -2585,16 +2592,16 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
     switch (requestCode) {
       case REQUEST_CUSTOM_NEW:
-      case REQUEST_USE_MIC_CALL: {
+      case REQUEST_PERMISSION_CALL: {
         ActivityPermissionResult callback =
           requestCode == REQUEST_CUSTOM_NEW ?
             requestCustomPermissionCallback :
-            requestMicPermissionCallback;
+            requestPermissionCallback;
         if (callback != null) {
           if (requestCode == REQUEST_CUSTOM_NEW) {
             requestCustomPermissionCallback = null;
           } else {
-            requestMicPermissionCallback = null;
+            requestPermissionCallback = null;
           }
           int grantCount = 0;
           for (int grantResult : grantResults) {
