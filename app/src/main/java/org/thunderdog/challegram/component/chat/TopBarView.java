@@ -12,6 +12,7 @@
  */
 package org.thunderdog.challegram.component.chat;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -24,6 +25,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.AppCompatImageView;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
@@ -38,7 +40,8 @@ import me.vkryl.android.widget.FrameLayoutFix;
 
 public class TopBarView extends FrameLayoutFix {
   private final ImageView topDismissButton;
-  private final LinearLayout actionsList;
+  private final LinearLayout actionsContainer;
+  private LinearLayout actionsList;
 
   private boolean canDismiss;
 
@@ -49,15 +52,41 @@ public class TopBarView extends FrameLayoutFix {
   public static class Item {
     final int id;
     final int stringRes;
+    final CharSequence noticeRes;
+    final int iconResId;
     final View.OnClickListener onClickListener;
+    final boolean showDismissRight;
 
     boolean isNegative;
     boolean noDismiss;
 
-    public Item (int id, int stringRes, View.OnClickListener onClickListener) {
+    public Item (int id, int stringRes, CharSequence noticeRes, int iconResId, boolean showDismissRight, View.OnClickListener onClickListener) {
       this.id = id;
       this.stringRes = stringRes;
+      this.noticeRes = noticeRes;
+      this.iconResId = iconResId;
+      this.showDismissRight = showDismissRight;
       this.onClickListener = onClickListener;
+    }
+
+    public Item (int id, int stringRes, boolean showDismissRight, int iconResId,View.OnClickListener onClickListener) {
+      this(id, stringRes, null, iconResId, showDismissRight, onClickListener);
+    }
+
+    public Item (int id, int stringRes, boolean showDismissRight, View.OnClickListener onClickListener) {
+      this(id, stringRes, null, 0, showDismissRight, onClickListener);
+    }
+
+    public Item (int id, int stringRes, View.OnClickListener onClickListener) {
+      this(id, stringRes, null, 0, false, onClickListener);
+    }
+
+    public Item (CharSequence noticeRes, boolean showDismissRight) {
+      this(0, 0, noticeRes, 0, showDismissRight, null);
+    }
+
+    public Item (CharSequence noticeRes) {
+      this(0, 0, noticeRes, 0, false, null);
     }
 
     public Item setIsNegative () {
@@ -79,12 +108,18 @@ public class TopBarView extends FrameLayoutFix {
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(36f)));
     ViewSupport.setThemedBackground(this, ColorId.filling, null);
 
+    actionsContainer = new LinearLayout(context);
+    actionsContainer.setOrientation(LinearLayout.VERTICAL);
+    actionsContainer.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(40f), Lang.gravity() | Gravity.TOP));
+    addView(actionsContainer);
+
     actionsList = new LinearLayout(context);
     actionsList.setOrientation(LinearLayout.HORIZONTAL);
     actionsList.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Lang.gravity() | Gravity.TOP));
-    addView(actionsList);
+    actionsContainer.addView(actionsList);
 
-    topDismissButton = new ImageView(context) {
+    topDismissButton = new AppCompatImageView(context) {
+      @SuppressLint("ClickableViewAccessibility")
       @Override
       public boolean onTouchEvent (MotionEvent event) {
         return Views.isValid(this) && super.onTouchEvent(event);
@@ -98,7 +133,6 @@ public class TopBarView extends FrameLayoutFix {
     topDismissButton.setScaleType(ImageView.ScaleType.CENTER);
     topDismissButton.setColorFilter(Theme.iconColor());
     topDismissButton.setImageResource(R.drawable.baseline_close_18);
-    topDismissButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(40f), ViewGroup.LayoutParams.MATCH_PARENT, Lang.gravity() | Gravity.TOP));
     topDismissButton.setBackgroundResource(R.drawable.bg_btn_header);
     Views.setClickable(topDismissButton);
     topDismissButton.setVisibility(View.INVISIBLE);
@@ -127,6 +161,7 @@ public class TopBarView extends FrameLayoutFix {
   }
 
   public void setItems (Item... items) {
+    actionsList = (LinearLayout) actionsContainer.getChildAt(0);
     for (int i = 0; i < actionsList.getChildCount(); i++) {
       View view = actionsList.getChildAt(i);
       if (view != null && themeProvider != null) {
@@ -145,19 +180,59 @@ public class TopBarView extends FrameLayoutFix {
         canDismiss = true;
       }
       int textColorId = item.isNegative ? ColorId.textNegative : ColorId.textNeutral;
-      TextView button = Views.newTextView(getContext(), 15f, Theme.getColor(textColorId), Gravity.CENTER, Views.TEXT_FLAG_BOLD | Views.TEXT_FLAG_HORIZONTAL_PADDING);
-      button.setId(item.id);
-      if (themeProvider != null) {
-        themeProvider.addThemeTextColorListener(button, textColorId);
+
+      LinearLayout buttonLayout = new LinearLayout(getContext());
+      buttonLayout.setOrientation(LinearLayout.HORIZONTAL);
+      buttonLayout.setGravity(Gravity.CENTER);
+      buttonLayout.setBackgroundResource(R.drawable.bg_btn_header);
+      buttonLayout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, 2f));
+      Views.setClickable(buttonLayout);
+
+      topDismissButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(40f), ViewGroup.LayoutParams.MATCH_PARENT, (item.showDismissRight ? (Gravity.END | Gravity.CENTER_VERTICAL) : (Lang.gravity() | Gravity.TOP))));
+
+      LinearLayout noticeItem = new LinearLayout(getContext());
+      noticeItem.setOrientation(LinearLayout.HORIZONTAL);
+      noticeItem.setGravity(Lang.gravity());
+      noticeItem.setBackgroundResource(R.drawable.bg_btn_header);
+      noticeItem.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, 2f));
+      /* Rudimentary debugging
+       android.util.Log.d("TopBarView", String.format("Width: %d, Height: %d", ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
+       android.util.Log.d("TopBarView", String.format("Width: %d, Height: %d", noticeItem.getWidth(), noticeItem.getHeight()));
+      */
+
+      if (item.iconResId != 0) {
+        ImageView iconView = new ImageView(getContext());
+        iconView.setImageResource(item.iconResId);
+        iconView.setColorFilter(Theme.getColor(textColorId));
+        iconView.setLayoutParams(new LinearLayout.LayoutParams(Screen.dp(24f), Screen.dp(24f)));
+        buttonLayout.addView(iconView);
       }
-      button.setEllipsize(TextUtils.TruncateAt.END);
-      button.setSingleLine(true);
-      button.setBackgroundResource(R.drawable.bg_btn_header);
-      button.setOnClickListener(item.onClickListener);
-      Views.setMediumText(button, Lang.getString(item.stringRes).toUpperCase());
-      Views.setClickable(button);
-      button.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, 2f));
-      actionsList.addView(button);
+
+      if (item.stringRes != 0) {
+        TextView buttonText = Views.newTextView(getContext(), 15f, Theme.getColor(textColorId), Gravity.CENTER, Views.TEXT_FLAG_BOLD | Views.TEXT_FLAG_HORIZONTAL_PADDING);
+        buttonText.setId(item.id);
+
+        if (themeProvider != null) {
+          themeProvider.addThemeTextColorListener(buttonText, textColorId);
+        }
+
+        buttonText.setEllipsize(TextUtils.TruncateAt.END);
+        buttonText.setSingleLine(true);
+        buttonText.setText(Lang.getString(item.stringRes).toUpperCase());
+        buttonText.setOnClickListener(item.onClickListener);
+        buttonLayout.addView(buttonText);
+        actionsList.addView(buttonLayout);
+      }
+
+      if (item.noticeRes != null) {
+        var noticeText = Views.newTextView(getContext(), 15f, Theme.getColor(ColorId.textPlaceholder), ViewGroup.MEASURED_HEIGHT_STATE_SHIFT, Views.TEXT_FLAG_HORIZONTAL_PADDING);
+        noticeText.setText(item.noticeRes);
+        setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(50f)));
+
+        noticeItem.addView(noticeText);
+        actionsList.addView(noticeItem);
+      }
+
     }
     if (items.length > 1) {
       View offsetView = new View(getContext());
