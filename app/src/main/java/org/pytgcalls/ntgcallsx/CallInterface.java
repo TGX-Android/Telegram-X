@@ -1,8 +1,8 @@
 package org.pytgcalls.ntgcallsx;
 
 import org.drinkless.tdlib.TdApi;
-import org.pytgcalls.ntgcalls.FrameCallback;
-import org.pytgcalls.ntgcalls.RemoteSourceChangeCallback;
+import io.github.pytgcalls.FrameCallback;
+import io.github.pytgcalls.RemoteSourceChangeCallback;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.voip.NetworkStats;
 import org.thunderdog.challegram.voip.annotation.CallNetworkType;

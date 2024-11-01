@@ -19,7 +19,7 @@ import android.graphics.BitmapFactory;
 
 import androidx.annotation.Keep;
 
-import org.pytgcalls.ntgcalls.NTgCalls;
+import io.github.pytgcalls.NTgCalls;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.unsorted.NLoader;
 

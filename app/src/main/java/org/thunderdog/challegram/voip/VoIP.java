@@ -24,7 +24,7 @@ import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
-import org.pytgcalls.ntgcalls.NTgCalls;
+import io.github.pytgcalls.NTgCalls;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;

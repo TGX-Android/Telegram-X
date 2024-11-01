@@ -89,8 +89,8 @@
 -keep class org.webrtc.** { *; }
 -keepclassmembers class org.webrtc.** { *; }
 
--keep class org.pytgcalls.ntgcalls.** { *; }
--keepclassmembers class org.pytgcalls.ntgcalls.** { *; }
+-keep class io.github.pytgcalls.** { *; }
+-keepclassmembers class io.github.pytgcalls.** { *; }
 
 # Other
 

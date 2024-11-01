@@ -49,10 +49,10 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
-import org.pytgcalls.ntgcalls.AndroidUtils;
-import org.pytgcalls.ntgcalls.devices.JavaVideoCapturerModule;
-import org.pytgcalls.ntgcalls.media.SourceState;
-import org.pytgcalls.ntgcalls.media.StreamDevice;
+import io.github.pytgcalls.AndroidUtils;
+import io.github.pytgcalls.devices.JavaVideoCapturerModule;
+import io.github.pytgcalls.media.SourceState;
+import io.github.pytgcalls.media.StreamDevice;
 import org.pytgcalls.ntgcallsx.VoIPFloatingLayout;
 import org.pytgcalls.ntgcallsx.VoIPTextureView;
 import org.thunderdog.challegram.BaseActivity;
