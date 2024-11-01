@@ -712,6 +712,7 @@ public class TGCallService extends Service implements
 
   private void showNotification () {
     boolean needNotification = call != null && (call.isOutgoing || call.state.getConstructor() == TdApi.CallStateExchangingKeys.CONSTRUCTOR || call.state.getConstructor() == TdApi.CallStateReady.CONSTRUCTOR) && !TD.isFinished(call);
+
     if (needNotification == (ongoingCallNotification != null)) {
       return;
     }
