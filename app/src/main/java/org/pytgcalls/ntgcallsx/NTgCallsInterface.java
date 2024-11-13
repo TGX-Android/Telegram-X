@@ -58,9 +58,8 @@ public class NTgCallsInterface implements CallInterface {
     });
     micDescription = new AudioDescription(
       MediaSource.DEVICE,
-      NTgCalls.getMediaDevices().audio.get(0).metadata,
+      NTgCalls.getMediaDevices().microphone.get(0).metadata,
       48000,
-      16,
       2
     );
     ntgcalls.createP2PCall(
@@ -78,9 +77,8 @@ public class NTgCallsInterface implements CallInterface {
       new MediaDescription(
         new AudioDescription(
           MediaSource.DEVICE,
-          NTgCalls.getMediaDevices().audio.get(1).metadata,
+          NTgCalls.getMediaDevices().microphone.get(0).metadata,
           48000,
-          16,
           2
         ),
         null,
@@ -190,7 +188,7 @@ public class NTgCallsInterface implements CallInterface {
   public void setCameraEnabled (boolean enabled, boolean front) {
     try {
       if (enabled) {
-        String cameraId = NTgCalls.getMediaDevices().video.get(front ? 1 : 0).metadata;
+        String cameraId = NTgCalls.getMediaDevices().camera.get(front ? 1 : 0).metadata;
         ntgcalls.setStreamSources(
           CALL_ID,
           StreamMode.CAPTURE,
