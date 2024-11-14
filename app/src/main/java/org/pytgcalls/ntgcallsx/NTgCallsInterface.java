@@ -77,7 +77,7 @@ public class NTgCallsInterface implements CallInterface {
       new MediaDescription(
         new AudioDescription(
           MediaSource.DEVICE,
-          NTgCalls.getMediaDevices().microphone.get(0).metadata,
+          NTgCalls.getMediaDevices().speaker.get(0).metadata,
           48000,
           2
         ),
