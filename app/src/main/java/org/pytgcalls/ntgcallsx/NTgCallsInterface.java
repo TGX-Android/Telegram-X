@@ -21,6 +21,8 @@ import io.github.pytgcalls.media.MediaSource;
 import io.github.pytgcalls.media.StreamMode;
 import io.github.pytgcalls.media.VideoDescription;
 import io.github.pytgcalls.p2p.RTCServer;
+
+import org.pytgcalls.ntgcalls.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.UI;
@@ -315,7 +317,7 @@ public class NTgCallsInterface implements CallInterface {
 
   @Override
   public String getLibraryVersion () {
-    return "1.0.0";
+    return BuildConfig.VERSION_NAME;
   }
 
   private static Point getScreenCaptureSize() {
