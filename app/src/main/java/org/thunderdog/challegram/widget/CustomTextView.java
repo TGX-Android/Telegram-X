@@ -59,9 +59,7 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
   @ColorId
   private int colorId = ColorId.text,
               clickableColorId = ColorId.textLink,
-              clickableHighlightColorId = ColorId.textLinkPressHighlight,
-              quoteTextColorId = ColorId.blockQuoteText,
-              quoteLineColorId = ColorId.blockQuoteLine;
+              clickableHighlightColorId = ColorId.textLinkPressHighlight;
   @Nullable
   private ThemeDelegate forcedTheme;
   private final Text.ClickCallback clickCallback = new Text.ClickCallback() {
@@ -170,16 +168,6 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
   }
 
   @Override
-  public int quoteTextColorId () {
-    return quoteTextColorId;
-  }
-
-  @Override
-  public int quoteLineColorId () {
-    return quoteLineColorId;
-  }
-
-  @Override
   public void checkRtl () {
     invalidate();
   }
@@ -201,23 +189,8 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
   }
 
   public void setTextColorId (@ColorId int colorId) {
-    setTextColorId(colorId, false);
-  }
-
-  public void setTextColorId (@ColorId int colorId, boolean includeQuotes) {
     if (this.colorId != colorId) {
       this.colorId = colorId;
-      invalidate();
-    }
-    if (includeQuotes) {
-      setQuoteColorId(colorId, colorId);
-    }
-  }
-
-  public void setQuoteColorId (int textColorId, int lineColorId) {
-    if (quoteTextColorId != textColorId || quoteLineColorId != lineColorId) {
-      quoteTextColorId = textColorId;
-      quoteLineColorId = lineColorId;
       invalidate();
     }
   }
