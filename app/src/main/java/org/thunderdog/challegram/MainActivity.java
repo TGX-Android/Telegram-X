@@ -527,11 +527,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
         break;
       case Tdlib.Status.UNAUTHORIZED:
         int nextAccountId = tdlib.context().findNextAccountId(tdlib.id());
-        if (nextAccountId == TdlibAccount.NO_ID) {
-          initUnauthorizedController();
-        } else {
-          tdlib.context().changePreferredAccountId(nextAccountId, TdlibManager.SWITCH_REASON_NAVIGATION);
-        }
+        nextAccountId == TdlibAccount.NO_ID ? initUnauthorizedController() : tdlib.context().changePreferredAccountId(nextAccountId, TdlibManager.SWITCH_REASON_NAVIGATION);
         break;
       case Tdlib.Status.READY:
         initAuthorizedController();
