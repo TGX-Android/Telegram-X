@@ -1616,8 +1616,16 @@ public class TD {
         everybodyExceptRes = R.string.PrivacyVoiceVideoEverybodyExcept;
         everybodyRes = R.string.PrivacyVoiceVideoEverybody;
         break;
+      case TdApi.UserPrivacySettingAutosaveGifts.CONSTRUCTOR:
+        nobodyExceptRes = R.string.PrivacyGiftsNobodyExcept;
+        nobodyRes = R.string.PrivacyGiftsNobody;
+        contactsExceptRes = R.string.PrivacyGiftsContactsExcept;
+        contactsRes = R.string.PrivacyGiftsContacts;
+        everybodyExceptRes = R.string.PrivacyGiftsEverybodyExcept;
+        everybodyRes = R.string.PrivacyGiftsEverybody;
+        break;
       default:
-        Td.assertUserPrivacySetting_39dfff4d();
+        Td.assertUserPrivacySetting_99ac9ff();
         throw new UnsupportedOperationException(Integer.toString(privacyKey));
     }
 

@@ -1845,7 +1845,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           if (ChatId.isSecret(chatId)) {
             if (!TD.canSendToSecretChat(message.content))
               return Lang.getString(R.string.SecretChatForwardError);
-            TdApi.ForwardMessages function = new TdApi.ForwardMessages(chatId, 0, message.chatId, new long[] {message.id}, new TdApi.MessageSendOptions(false, false, false, false, null, 0, 0, true), needHideAuthor, needRemoveCaptions);
+            TdApi.ForwardMessages function = new TdApi.ForwardMessages(chatId, 0, message.chatId, new long[] {message.id}, new TdApi.MessageSendOptions(false, false, false, false, false, null, 0, 0, true), needHideAuthor, needRemoveCaptions);
             TdApi.Object check = tdlib.clientExecute(function, 1000L);
             if (check instanceof TdApi.Error) {
               return TD.toErrorString(check);

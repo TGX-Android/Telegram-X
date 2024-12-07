@@ -133,8 +133,10 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<Setting
         return R.drawable.baseline_swap_horiz_24;
       case TdApi.UserPrivacySettingAllowPrivateVoiceAndVideoNoteMessages.CONSTRUCTOR:
         return R.drawable.baseline_mic_24;
+      case TdApi.UserPrivacySettingAutosaveGifts.CONSTRUCTOR:
+        return R.drawable.baseline_gift_outline_24;
       default:
-        Td.assertUserPrivacySetting_39dfff4d();
+        Td.assertUserPrivacySetting_99ac9ff();
         throw Td.unsupported(privacySetting);
     }
   }
@@ -163,8 +165,10 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<Setting
         return isException ? R.string.EditPrivacyPhoto : R.string.PrivacyPhotoTitle;
       case TdApi.UserPrivacySettingAllowPrivateVoiceAndVideoNoteMessages.CONSTRUCTOR:
         return isException ? R.string.EditPrivacyVoice : R.string.PrivacyVoiceVideoTitle;
+      case TdApi.UserPrivacySettingAutosaveGifts.CONSTRUCTOR:
+        return isException ? R.string.EditPrivacyGifts : R.string.PrivacyGiftsTitle;
       default:
-        Td.assertUserPrivacySetting_39dfff4d();
+        Td.assertUserPrivacySetting_99ac9ff();
         throw Td.unsupported(privacyKey);
     }
   }
@@ -387,8 +391,13 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<Setting
             hintItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.btn_description, 0, R.string.VoiceVideoPrivacyDesc);
             break;
           }
+          case TdApi.UserPrivacySettingAutosaveGifts.CONSTRUCTOR: {
+            headerItem = new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.WhoCanDisplayGifts);
+            hintItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.btn_description, 0, R.string.GiftsPrivacyDesc);
+            break;
+          }
           default: {
-            Td.assertUserPrivacySetting_39dfff4d();
+            Td.assertUserPrivacySetting_99ac9ff();
             throw Td.unsupported(args.userPrivacySetting);
           }
         }
@@ -579,6 +588,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<Setting
     switch (args.userPrivacySetting.getConstructor()) {
       case TdApi.UserPrivacySettingShowProfilePhoto.CONSTRUCTOR:
       case TdApi.UserPrivacySettingShowBirthdate.CONSTRUCTOR:
+      case TdApi.UserPrivacySettingAutosaveGifts.CONSTRUCTOR:
         return true;
       case TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR:
         return privacyRules.getMode() != PrivacySettings.Mode.EVERYBODY || privacyRules.getMinusUserIdCount() > 0;
@@ -628,6 +638,23 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<Setting
           new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
           new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, R.string.AllowPremiumInviteDesc))
         );
+      }
+      case TdApi.UserPrivacySettingAutosaveGifts.CONSTRUCTOR: {
+        if (currentRules().getMode() != PrivacySettings.Mode.EVERYBODY) {
+          return Arrays.asList(
+            new ListItem(ListItem.TYPE_SHADOW_TOP),
+            new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_togglePermission, 0, Lang.getMarkdownString(this, R.string.AllowBotsAndMiniApps)),
+            new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
+            new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, R.string.AllowBotsAndMiniAppsDesc))
+          );
+        } else {
+          return Arrays.asList(
+            new ListItem(ListItem.TYPE_SHADOW_TOP),
+            new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_togglePermission, 0, Lang.getMarkdownString(this, R.string.RestrictBotsAndMiniApps)),
+            new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
+            new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, R.string.RestrictBotsAndMiniAppsDesc))
+          );
+        }
       }
       default:
         throw new IllegalStateException();
@@ -733,8 +760,12 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<Setting
               view.getToggler().setRadioEnabled(currentRules().needPlusPremium(), isUpdate);
               break;
             }
+            case TdApi.UserPrivacySettingAutosaveGifts.CONSTRUCTOR: {
+              view.getToggler().setRadioEnabled(currentRules().needPlusOrMinusBots(), isUpdate);
+              break;
+            }
             default: {
-              Td.assertUserPrivacySetting_39dfff4d();
+              Td.assertUserPrivacySetting_99ac9ff();
               throw Td.unsupported(args.userPrivacySetting);
             }
           }
@@ -932,20 +963,22 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<Setting
           return;
         }
         int prevMode = currentRules().getMode();
-        boolean plusPremium;
+        boolean plusPremium, plusOrMinusBots;
         switch (args.mode) {
           case Mode.USER_PRIVACY_SETTING: {
             plusPremium = args.userPrivacySetting.getConstructor() == TdApi.UserPrivacySettingAllowChatInvites.CONSTRUCTOR && desiredMode == PrivacySettings.Mode.CONTACTS;
+            plusOrMinusBots = args.userPrivacySetting.getConstructor() == TdApi.UserPrivacySettingAutosaveGifts.CONSTRUCTOR && desiredMode != PrivacySettings.Mode.EVERYBODY && !(prevMode != PrivacySettings.Mode.EVERYBODY && !currentRules().needPlusOrMinusBots());
             break;
           }
           case Mode.NEW_CHATS_PRIVACY: {
             plusPremium = desiredMode == PrivacySettings.Mode.CONTACTS;
+            plusOrMinusBots = false;
             break;
           }
           default:
             throw new UnsupportedOperationException();
         }
-        changedPrivacyRules = PrivacySettings.valueOf(currentRules().toggleGlobal(desiredMode, plusPremium));
+        changedPrivacyRules = PrivacySettings.valueOf(currentRules().toggleGlobal(desiredMode, plusPremium, plusOrMinusBots));
         updateRulesState(changedPrivacyRules);
       }
     } else if (viewId == R.id.btn_togglePermission) {
@@ -972,6 +1005,13 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<Setting
           boolean plusPremium = adapter.toggleView(v);
           PrivacySettings rules = currentRules();
           changedPrivacyRules = PrivacySettings.valueOf(rules.togglePlusPremium(plusPremium));
+          updateRulesState(changedPrivacyRules);
+          break;
+        }
+        case TdApi.UserPrivacySettingAutosaveGifts.CONSTRUCTOR: {
+          boolean plusOrMinusBots = adapter.toggleView(v);
+          PrivacySettings rules = currentRules();
+          changedPrivacyRules = PrivacySettings.valueOf(rules.togglePlusOrMinusBots(plusOrMinusBots));
           updateRulesState(changedPrivacyRules);
           break;
         }

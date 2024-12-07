@@ -442,6 +442,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private final TdlibCache cache;
   private final TdlibEmojiManager emoji;
   private final TdlibEmojiReactionsManager reactions;
+  private final TdlibOutlineManager outline;
   private final TdlibSingleton<TdApi.Stickers> genericReactionEffects;
   private final TdlibListeners listeners;
   private final TdlibFilesManager filesManager;
@@ -551,6 +552,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     this.reactions = new TdlibEmojiReactionsManager(this);
     if (needMeasure) {
       Log.v("INITIALIZATION: Tdlib.reaction -> %dms", SystemClock.uptimeMillis() - ms);
+      ms = SystemClock.uptimeMillis();
+    }
+    this.outline = new TdlibOutlineManager(this);
+    if (needMeasure) {
+      Log.v("INITIALIZATION: Tdlib.stickerOutline -> %dms", SystemClock.uptimeMillis() - ms);
       ms = SystemClock.uptimeMillis();
     }
     this.genericReactionEffects = new TdlibSingleton<>(this, () -> new TdApi.GetCustomEmojiReactionAnimations());
@@ -1125,7 +1131,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public void destroy () {
-    client().send(new TdApi.Destroy(), okHandler());
+    send(new TdApi.Destroy(), typedOkHandler());
   }
 
   public boolean isCurrent () {
@@ -2288,6 +2294,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   public TdlibEmojiReactionsManager reactions () {
     return reactions;
+  }
+
+  public TdlibOutlineManager outline () {
+    return outline;
   }
 
   public TdlibSingleton<TdApi.Stickers> genericAnimationEffects () {
@@ -7418,6 +7428,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     addRemoveSendingMessage(update.message.chatId, update.oldMessageId, false);
   }
 
+  private void updateVideoPublished (TdApi.UpdateVideoPublished update) {
+    // TODO?
+  }
+
   private void updateMessageSendFailed (TdApi.UpdateMessageSendFailed update) {
     UI.showError(update.error);
     synchronized (dataLock) {
@@ -9484,6 +9498,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateMessageSendSucceeded((TdApi.UpdateMessageSendSucceeded) update);
         break;
       }
+      case TdApi.UpdateVideoPublished.CONSTRUCTOR: {
+        updateVideoPublished((TdApi.UpdateVideoPublished) update);
+        break;
+      }
       case TdApi.UpdateMessageSendFailed.CONSTRUCTOR: {
         updateMessageSendFailed((TdApi.UpdateMessageSendFailed) update);
         break;
@@ -10055,7 +10073,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         throw Td.unsupported(update);
       }
       default: {
-        Td.assertUpdate_f949f333();
+        Td.assertUpdate_d711b225();
         throw Td.unsupported(update);
       }
     }

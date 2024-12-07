@@ -422,7 +422,7 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
     if (entry.probablyHasArtwork()) {
       ImageFile art = new ImageFileLocal(entry.getArtwork().toString());
       art.setIsContentUri();
-      setMediaPreview(new MediaPreviewSimple(Screen.dp(50f), Screen.dp(50f) / 2, art));
+      setMediaPreview(new MediaPreviewSimple(tdlib, Screen.dp(50f), Screen.dp(50f) / 2, art));
     } else {
       setMediaPreview(null);
     }

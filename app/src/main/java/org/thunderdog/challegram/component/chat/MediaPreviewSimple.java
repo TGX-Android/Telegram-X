@@ -13,8 +13,9 @@
 package org.thunderdog.challegram.component.chat;
 
 import android.graphics.Canvas;
-import android.graphics.Path;
 import android.view.View;
+
+import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.U;
@@ -42,14 +43,17 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.DrawableProvider;
 
 import java.io.File;
+import java.math.BigDecimal;
 
 import me.vkryl.core.ColorUtils;
 import tgx.td.Td;
+import tgx.td.data.StickerOutline;
 
 public class MediaPreviewSimple extends MediaPreview {
-  private TdApi.Sticker sticker;
-  private Path outline;
-  private int outlineWidth, outlineHeight;
+  private final Tdlib tdlib;
+  @Nullable
+  private StickerOutline outline;
+
   private IconType iconType;
 
   private ImageFile previewImage;
@@ -62,6 +66,7 @@ public class MediaPreviewSimple extends MediaPreview {
 
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.ProfilePhoto profilePhoto) {
     super(size, cornerRadius);
+    this.tdlib = tdlib;
     if (profilePhoto.minithumbnail != null) {
       this.previewImage = new ImageFileLocal(profilePhoto.minithumbnail);
       this.previewImage.setSize(size);
@@ -79,6 +84,7 @@ public class MediaPreviewSimple extends MediaPreview {
 
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.ChatPhoto chatPhoto) {
     super(size, cornerRadius);
+    this.tdlib = tdlib;
     if (chatPhoto.minithumbnail != null) {
       this.previewImage = new ImageFileLocal(chatPhoto.minithumbnail);
       this.previewImage.setSize(size);
@@ -96,6 +102,7 @@ public class MediaPreviewSimple extends MediaPreview {
 
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.ChatPhotoInfo chatPhotoInfo) {
     super(size, cornerRadius);
+    this.tdlib = tdlib;
     if (chatPhotoInfo.minithumbnail != null) {
       this.previewImage = new ImageFileLocal(chatPhotoInfo.minithumbnail);
       this.previewImage.setSize(size);
@@ -117,6 +124,7 @@ public class MediaPreviewSimple extends MediaPreview {
 
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.Location location, TdApi.Thumbnail thumbnail) {
     super(size, cornerRadius);
+    this.tdlib = tdlib;
     if (thumbnail != null) {
       this.previewImage = TD.toImageFile(tdlib, thumbnail);
       if (this.previewImage != null) {
@@ -181,6 +189,7 @@ public class MediaPreviewSimple extends MediaPreview {
 
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.Thumbnail thumbnail, TdApi.Minithumbnail minithumbnail, IconType iconType) {
     super(size, cornerRadius);
+    this.tdlib = tdlib;
     this.iconType = iconType;
     boolean blurContent = iconType != IconType.NONE;
     if (minithumbnail != null) {
@@ -217,6 +226,7 @@ public class MediaPreviewSimple extends MediaPreview {
 
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, File file, String mimeType) {
     super(size, cornerRadius);
+    this.tdlib = tdlib;
     if (TGMimeType.isImageMimeType(mimeType)) {
       this.targetImage = FileComponent.createFullPreview(new ImageFileLocal(file.getPath()), mimeType);
       this.targetImage.setProbablyRotated();
@@ -231,8 +241,9 @@ public class MediaPreviewSimple extends MediaPreview {
 
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.Sticker sticker) {
     super(size, cornerRadius);
-    this.sticker = sticker;
-    this.outline = Td.buildOutline(sticker, outlineWidth = size, outlineHeight = size);
+    this.tdlib = tdlib;
+    this.outline = new StickerOutline(sticker);
+    this.outline.setDisplaySize(size);
     if (sticker.thumbnail != null) {
       this.previewImage = TD.toImageFile(tdlib, sticker.thumbnail);
       if (this.previewImage != null) {
@@ -260,8 +271,9 @@ public class MediaPreviewSimple extends MediaPreview {
     }
   }
 
-  public MediaPreviewSimple (int size, int cornerRadius, ImageFile remoteFile) {
+  public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, ImageFile remoteFile) {
     super(size, cornerRadius);
+    this.tdlib = tdlib;
     this.drawColoredFileBackground = true;
     this.targetImage = remoteFile;
     this.targetImage.setSize(size);
@@ -283,6 +295,10 @@ public class MediaPreviewSimple extends MediaPreview {
       imageReceiver.getImageReceiver().prepareToBeCropped();
     }
     imageReceiver.requestFile(previewImage, targetImage);
+
+    if (outline != null && needPlaceholder(receiver)) {
+      outline.requestOutline(tdlib, receiver);
+    }
   }
 
   private Receiver getTargetReceiver (ComplexReceiver receiver) {
@@ -319,14 +335,13 @@ public class MediaPreviewSimple extends MediaPreview {
       target.setPaintAlpha(alpha);
     }
 
-    if (outline != null && (outlineWidth != preview.getWidth() || outlineHeight != preview.getHeight())) {
-      outline = Td.buildOutline(sticker, outlineWidth = preview.getWidth(), outlineHeight = preview.getHeight());
-    }
-
     if (target.needPlaceholder()) {
       if (preview.needPlaceholder()) {
         if (outline != null) {
-          preview.drawPlaceholderContour(c, outline, alpha);
+          outline.setDisplayDimensions(preview.getWidth(), preview.getHeight());
+        }
+        if (outline != null && outline.hasPath()) {
+          preview.drawPlaceholderContour(c, outline.getPath(), alpha);
         } else {
           preview.drawPlaceholder(c);
         }
@@ -344,8 +359,8 @@ public class MediaPreviewSimple extends MediaPreview {
       target.drawPlaceholderRounded(c, cornerRadius, ColorUtils.alphaColor(target.getAlpha() * alpha, 0x44000000));
     }
 
-    if (Config.DEBUG_STICKER_OUTLINES) {
-      preview.drawPlaceholderContour(c, outline);
+    if (Config.DEBUG_STICKER_OUTLINES && outline != null && outline.hasPath()) {
+      preview.drawPlaceholderContour(c, outline.getPath());
     }
 
     if (iconType != IconType.NONE) {

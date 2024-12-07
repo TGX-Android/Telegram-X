@@ -206,7 +206,7 @@ public class TGStickerObj {
   }
 
   public Path getContour (int targetWidth, int targetHeight) {
-    return sticker != null ? Td.buildOutline(sticker, targetWidth, targetHeight) : null;
+    return null;
   }
 
   public ImageFile getImage () {

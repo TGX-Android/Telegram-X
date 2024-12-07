@@ -321,6 +321,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     this(manager, msg, null);
   }
 
+  protected TGMessage (MessagesManager manager, TdApi.SponsoredMessage sponsoredMessage, long inChatId) {
+    this(manager, toFakeMessage(manager, inChatId, sponsoredMessage), sponsoredMessage);
+  }
+
   private TGMessage (MessagesManager manager, TdApi.Message msg, @Nullable TdApi.SponsoredMessage sponsoredMessage) {
     if (!initialized) {
       synchronized (TGMessage.class) {
@@ -8007,7 +8011,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   // Other
 
-  public static TGMessage valueOf (MessagesManager manager, long inChatId, TdApi.SponsoredMessage sponsoredMessage) {
+  public static TdApi.Message toFakeMessage (MessagesManager manager, long inChatId, TdApi.SponsoredMessage sponsoredMessage) {
     TdApi.Message fakeMessage = new TdApi.Message();
     fakeMessage.chatId = inChatId;
     fakeMessage.id = sponsoredMessage.messageId;
@@ -8015,7 +8019,19 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     fakeMessage.content = sponsoredMessage.content;
     fakeMessage.authorSignature = Lang.getString(sponsoredMessage.isRecommended ? R.string.RecommendedSign : R.string.SponsoredSign);
     fakeMessage.isChannelPost = manager.controller().tdlib().isChannel(inChatId);
-    return new TGMessageText(manager, fakeMessage, sponsoredMessage);
+    return fakeMessage;
+  }
+
+  public static TGMessage valueOf (MessagesManager manager, long inChatId, TdApi.SponsoredMessage sponsoredMessage) {
+    switch (sponsoredMessage.content.getConstructor()) {
+      case TdApi.MessageText.CONSTRUCTOR:
+        return new TGMessageText(manager, sponsoredMessage, inChatId);
+      case TdApi.MessageAnimation.CONSTRUCTOR:
+      case TdApi.MessagePhoto.CONSTRUCTOR:
+      case TdApi.MessageVideo.CONSTRUCTOR:
+        return new TGMessageMedia(manager, sponsoredMessage, inChatId);
+    }
+    throw new UnsupportedOperationException(sponsoredMessage.content.toString());
   }
 
   public static TGMessage valueOf (MessagesManager context, TdApi.Message msg, TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable LongSparseArray<TdApi.ChatAdministrator> chatAdmins) {

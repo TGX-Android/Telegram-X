@@ -3607,6 +3607,7 @@ public class TdlibUi extends Handler {
       case TdApi.InternalLinkTypeBuyStars.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatBoost.CONSTRUCTOR:
       case TdApi.InternalLinkTypePremiumGift.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeChatAffiliateProgram.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypePassportDataRequest.CONSTRUCTOR: {
         showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
@@ -3736,7 +3737,7 @@ public class TdlibUi extends Handler {
         return; // async
       }
       default: {
-        Td.assertInternalLinkType_ff0c4471();
+        Td.assertInternalLinkType_3c3b4a9();
         throw Td.unsupported(linkType);
       }
     }
@@ -7143,7 +7144,8 @@ public class TdlibUi extends Handler {
         setStickers(object, StickersType.INSTALLED)
       );
       if (isComplexQuery) {
-        tdlib.send(new TdApi.SearchEmojis(query, U.getInputLanguages()), (keywords, error) -> {
+        String[] inputLanguageCodes = U.getInputLanguages();
+        tdlib.send(new TdApi.SearchEmojis(query, inputLanguageCodes), (keywords, error) -> {
           if (keywords != null && keywords.emojiKeywords.length > 0) {
             String[] emojis = Td.findUniqueEmojis(keywords.emojiKeywords);
             String emojisQuery = TextUtils.join(" ", emojis);
@@ -7152,7 +7154,7 @@ public class TdlibUi extends Handler {
               setStickers(object, StickersType.INSTALLED_EXTRA)
             );
             if (needRecommended) {
-              tdlib.client().send(new TdApi.SearchStickers(stickerType, emojisQuery, limit * 3), object ->
+              tdlib.client().send(new TdApi.SearchStickers(stickerType, emojisQuery, query, inputLanguageCodes, 0, limit * 3), object ->
                 setStickers(object, StickersType.RECOMMENDED)
               );
             }
@@ -7166,7 +7168,7 @@ public class TdlibUi extends Handler {
       } else {
         if (needRecommended) {
           // Request 2x more than limit for the case all of the stickers returned by GetStickers
-          tdlib.client().send(new TdApi.SearchStickers(stickerType, query, limit * 2), object ->
+          tdlib.client().send(new TdApi.SearchStickers(stickerType, query, null, U.getInputLanguages(), 0, limit * 2), object ->
             setStickers(object, StickersType.RECOMMENDED)
           );
         }

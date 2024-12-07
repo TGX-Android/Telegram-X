@@ -3764,8 +3764,22 @@
   <string name="PrivacyVoiceVideoExceptionOff">Disallowed</string>
   <string name="PrivacyVoiceVideoExceptionContacts">Only contacts</string>
   <string name="PrivacyVoiceVideoTitle">Voice and Video Messages</string>
+
+  <string name="PrivacyGiftsNobody">Nobody can display gifts without approval</string>
+  <string name="PrivacyGiftsNobodyExcept">Nobody (%1$s) can display gifts without approval</string>
+  <string name="PrivacyGiftsContacts">Only contacts can display gifts without approval</string>
+  <string name="PrivacyGiftsContactsExcept">Only contacts (%1$s) can display gifts without approval</string>
+  <string name="PrivacyGiftsEverybody">Everybody can display gifts without approval</string>
+  <string name="PrivacyGiftsEverybodyExcept">Everybody (%1$s) can display gifts without approval</string>
+  <string name="PrivacyGiftsTitle">Auto-accept Gifts</string>
+  <string name="PrivacyGiftsExceptionContacts">Only contacts</string>
+  <string name="PrivacyGiftsExceptionOn">All</string>
+  <string name="PrivacyGiftsExceptionOff">Only approved</string>
+
   <string name="WhoCanSendVoiceVideo">Who can send me voice or video messages?</string>
   <string name="VoiceVideoPrivacyDesc">You can restrict who can send you voice or video messages with granular precision.</string>
+  <string name="WhoCanDisplayGifts">Who can display gifts on my profile?</string>
+  <string name="GiftsPrivacyDesc">Choose whether gifts from specific senders need your approval before they\'re visible to others on your profile.</string>
   <string name="PrivacyMessage">Messages</string>
   <string name="PrivacyMessageEverybody">Everybody can message you</string>
   <string name="PrivacyMessageContactsPremium">Only contacts and **Premium** users</string>
@@ -3775,6 +3789,7 @@
   <string name="NewChatsPrivacyDesc">You can restrict messages from users who are not in your contacts and don\'t have **Telegram&#160;Premium**.</string>
 
   <string name="EditPrivacyVoice">Send Me Voice Messages</string>
+  <string name="EditPrivacyGifts">Display Gifts without approval</string>
 
   <string name="WhoCanForwardLink">Who can add a link to my account when forwarding my messages?</string>
   <string name="WhoCanForwardLinkInfo">You can restrict who can include a link to your account when forwarding your messages to other chats.</string>
@@ -4324,6 +4339,7 @@
   <string name="PrivacyDefault">Default</string>
   <string name="PrivacyDefaultChat">Default for %1$s</string>
   <string name="PrivacyDefaultContacts">Default for contacts</string>
+  <string name="PrivacyDefaultBots">Default for bots and mini apps</string>
   <string name="PrivacyDefaultPremium">Default for **Telegram Premium** users</string>
   <string name="PrivacyDefaultXChats_one">Default for %1$s chat</string>
   <string name="PrivacyDefaultXChats_other">Default for %1$s chats</string>
@@ -5457,6 +5473,11 @@
 
   <string name="AllowPremiumInvite">**Telegram Premium** subscribers</string>
   <string name="AllowPremiumInviteDesc">Always allow users with **Telegram Premium** subscription to add you to groups and channels.</string>
+
+  <string name="AllowBotsAndMiniApps">Allow Bots and Mini Apps</string>
+  <string name="AllowBotsAndMiniAppsDesc">Automatically accept gifts from bots and mini apps.</string>
+  <string name="RestrictBotsAndMiniApps">Restrict Bots and Mini Apps</string>
+  <string name="RestrictBotsAndMiniAppsDesc">Require approval when receiving gifts from bots and mini apps.</string>
 
   <string name="HideReadTime">Hide Read Time</string>
   <string name="HideReadTimeDesc">Hide the time when you read messages from people who can\'t see your last seen. If you turn this on, their read time will also be hidden from you (unless you are a Premium user).\n\nThis setting does not affect group chats.</string>

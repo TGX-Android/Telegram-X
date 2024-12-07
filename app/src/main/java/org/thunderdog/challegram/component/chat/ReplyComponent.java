@@ -770,7 +770,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       case TdApi.MessageSticker.CONSTRUCTOR: {
         TdApi.Sticker sticker = ((TdApi.MessageSticker) content).sticker;
         thumbnail = sticker.thumbnail != null ? sticker.thumbnail : TD.toThumbnail(sticker);
-        contour = Td.buildOutline(sticker, isMessageComponent() ? mHeight : height);
+        // FIXME contour = Td.buildOutline(sticker, isMessageComponent() ? mHeight : height);
         break;
       }
       case TdApi.MessageVideo.CONSTRUCTOR: {
@@ -809,7 +809,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
             case TdApi.LinkPreviewTypeSticker.CONSTRUCTOR: {
               TdApi.LinkPreviewTypeSticker sticker = (TdApi.LinkPreviewTypeSticker) linkPreview.type;
               thumbnail = sticker.sticker.thumbnail;
-              contour = Td.buildOutline(sticker.sticker, isMessageComponent() ? mHeight : height);
+              // FIXME contour = Td.buildOutline(sticker.sticker, isMessageComponent() ? mHeight : height);
               break;
             }
             case TdApi.LinkPreviewTypeStickerSet.CONSTRUCTOR: {
@@ -817,7 +817,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
               if (stickerSet.stickers.length > 0) {
                 TdApi.Sticker sticker = stickerSet.stickers[0];
                 thumbnail = sticker.thumbnail;
-                contour = Td.buildOutline(sticker, isMessageComponent() ? mHeight : height);
+                // FIXME contour = Td.buildOutline(sticker, isMessageComponent() ? mHeight : height);
               }
               break;
             }

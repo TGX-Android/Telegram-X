@@ -835,13 +835,13 @@ public class RoundVideoRecorder {
     private WeakReference<VideoRecorder> mWeakEncoder;
 
     public EncoderHandler(VideoRecorder encoder) {
+      super(Looper.myLooper());
       mWeakEncoder = new WeakReference<>(encoder);
     }
 
     @Override
     public void handleMessage(Message inputMessage) {
       int what = inputMessage.what;
-      Object obj = inputMessage.obj;
 
       VideoRecorder encoder = mWeakEncoder.get();
       if (encoder == null) {
