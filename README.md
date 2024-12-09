@@ -1,12 +1,12 @@
-# [Telegram X](https://play.google.com/store/apps/details?id=org.thunderdog.challegram) — a slick experimental Telegram client based on [TDLib](https://core.telegram.org/tdlib).
+# [Telegram X](https://play.google.com/store/apps/details?id=org.thunderdog.challegram) — A Slick Experimental Telegram Client Based on [TDLib](https://core.telegram.org/tdlib).
 
 ![Telegram X](/images/feature.png)
 
 This is the complete source code and the build instructions for the official alternative Android client for the Telegram messenger, based on the [Telegram API](https://core.telegram.org/api) and the [MTProto](https://core.telegram.org/mtproto) secure protocol via [TDLib](https://github.com/TGX-Android/tdlib).
 
-* [**Telegram X** on Google Play](http://play.google.com/store/apps/details?id=org.thunderdog.challegram) ([subscribe to beta](https://play.google.com/apps/testing/org.thunderdog.challegram))
+* [**Telegram X** on Google Play](http://play.google.com/store/apps/details?id=org.thunderdog.challegram) ([Subscribe to Beta Version](https://play.google.com/apps/testing/org.thunderdog.challegram))
 * [APKs and Build Info](https://t.me/tgx_log)
-* [Bot to verify APK hash](https://t.me/tgx_bot)
+* [Bot to verify APK Hash](https://t.me/tgx_bot)
 
 <details>
 <summary>Other sources</summary>
@@ -20,11 +20,11 @@ This is the complete source code and the build instructions for the official alt
 
 ### Prerequisites
 
-* At least **5,34GB** of free disk space: **487,10MB** for source codes and around **4,85GB** for files generated after building all variants
+* At least **5.34GB** of free disk space: **487.10MB** for source codes and around **4.85GB** for files generated after building all variants
 * **4GB** of RAM
-* **macOS** or **Linux**-based operating system. **Windows** platform is supported by using [MSYS](https://www.msys2.org/) (e.g., [Git Bash](https://gitforwindows.org/)).
+* **MacOS** or **Linux**-based operating system. **Windows** platform is supported by using [MSYS](https://www.msys2.org/) (e.g., [Git Bash](https://gitforwindows.org/)).
 
-#### macOS
+#### MacOS
 
 * [Homebrew](https://brew.sh)
 * git with LFS, wget and sed: `$ brew install git git-lfs wget gsed && git lfs install`
@@ -32,7 +32,7 @@ This is the complete source code and the build instructions for the official alt
 #### Ubuntu
 
 * git with LFS: `# apt install git git-lfs`
-* Run `$ git lfs install` for the current user, if you didn't have `git-lfs` previously installed
+* Run `$ git lfs install` for the Current User, if you didn't have `git-lfs` previously installed.
 
 #### Windows
 
@@ -76,7 +76,7 @@ telegram.api_hash=YOUR_TELEGRAM_API_HASH</pre>
 5. Run `$ scripts/./setup.sh` — this will download required Android SDK packages and build native dependencies that aren't part of project's [CMakeLists.txt](/app/jni/CMakeLists.txt)
 6. Open and build project via [Android Studio](https://developer.android.com/studio) or by using one of `./gradlew assemble` commands in terminal
 
-After submitting a pull request and its initial review, special build including your contribution will be published in [@tgx_prs](https://t.me/tgx_prs) channel, where it can be tested by the community. In case any issues or bugs found, you may push more commits to an existing PR that address them and request to publish a newer build by using comments section of pull request or in [@tgx_dev](https://t.me/tgx_dev) chat.
+After submitting a pull request and its initial review, special build including your contribution will be published in [@tgx_prs](https://t.me/tgx_prs) channel, where it can be Tested by the Community. In case any Issues or bugs found, you may push more commits to an existing PR that address them and request to publish a newer build by using comments section of pull request or in [@tgx_dev](https://t.me/tgx_dev) chat.
 
 ## Reproducing public builds
 
