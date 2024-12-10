@@ -157,6 +157,7 @@ import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceUtils;
 import nl.dionsegijn.konfetti.xml.KonfettiView;
 
+@SuppressWarnings("deprecation")
 public abstract class BaseActivity extends ComponentActivity implements View.OnTouchListener, FactorAnimator.Target, Keyboard.OnStateChangeListener, ThemeChangeListener, SensorEventListener, TGPlayerController.TrackChangeListener, TGLegacyManager.EmojiLoadListener, Lang.Listener, Handler.Callback {
   public static final long POPUP_SHOW_SLOW_DURATION = 240l;
 
@@ -1314,6 +1315,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public void onBackPressed () {
     if (isPasscodeShowing) {
       super.onBackPressed();
@@ -1322,6 +1324,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
   }
 
+  @SuppressWarnings("deprecation")
   public void onBackPressed (boolean fromTop) {
     if (isProgressShowing) {
       if (progressListener != null) {

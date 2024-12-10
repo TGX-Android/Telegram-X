@@ -18,6 +18,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
 import android.text.TextPaint;
@@ -109,7 +110,7 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
     this.onBackground = onBackground;
     this.callback = callback;
     this.icon = Drawables.get(context.getResources(), R.drawable.baseline_location_on_18);
-    this.handler = chatId != 0 ? new Handler(this) : null;
+    this.handler = chatId != 0 ? new Handler(Looper.getMainLooper(), this) : null;
     this.clickHelper = chatId != 0 ? new ClickHelper(this) : null;
   }
 

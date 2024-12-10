@@ -22,6 +22,7 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -59,24 +60,13 @@ import me.vkryl.core.lambda.Destroyable;
 
 public class VideoTimelineView extends View implements Destroyable, FactorAnimator.Target {
   private final ArrayList<Frame> frames = new ArrayList<>();
-  private static class VideoHandler extends Handler {
-    private final VideoTimelineView context;
 
-    public VideoHandler (VideoTimelineView context) {
-      this.context = context;
+  private final Handler handler = new Handler(Looper.getMainLooper(), msg -> {
+    if (msg.what == 0) {
+      addFrame(msg.arg1, (Frame) msg.obj);
     }
-
-    @Override
-    public void handleMessage (Message msg) {
-      switch (msg.what) {
-        case 0:
-          context.addFrame(msg.arg1, (Frame) msg.obj);
-          break;
-      }
-    }
-  }
-
-  private final VideoHandler handler = new VideoHandler(this);
+    return false;
+  });
   private final Rect srcRect = new Rect();
 
   public VideoTimelineView (Context context) {

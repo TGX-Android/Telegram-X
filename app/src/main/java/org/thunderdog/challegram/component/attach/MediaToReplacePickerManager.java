@@ -240,7 +240,7 @@ public class MediaToReplacePickerManager extends MediaLayoutManager {
     @Nullable
     public MediaPreview buildMediaPreview (Tdlib tdlib, int size, int cornerRadius) {
       if (imageGalleryFile != null) {
-        return new MediaPreviewSimple(size, 0, imageGalleryFile);
+        return new MediaPreviewSimple(tdlib, size, 0, imageGalleryFile);
       } else if (inlineResult instanceof InlineResultCommon) {
         final TdApi.File file = ((InlineResultCommon) inlineResult).getTrackFile();
         final String path = TD.getFilePath(file);

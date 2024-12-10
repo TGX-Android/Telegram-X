@@ -516,7 +516,6 @@ public class DisplayInformation {
         loadedSticker.emoji,
         loadedSticker.format,
         loadedSticker.fullType,
-        loadedSticker.outline,
         loadedSticker.thumbnail != null && TD.isFileLoaded(loadedSticker.thumbnail.file) ? loadedSticker.thumbnail : null,
         TD.isFileLoaded(loadedSticker.sticker) ? loadedSticker.sticker : null
       );
@@ -870,7 +869,6 @@ public class DisplayInformation {
         // Custom emoji mismatch
         return null;
       }
-      TdApi.ClosedVectorPath[] outline = deserializeOutline(blob);
       return new TdApi.Sticker(
         id,
         setId,
@@ -878,7 +876,6 @@ public class DisplayInformation {
         emoji,
         format,
         fullType,
-        outline,
         // stored separately
         null,
         null
@@ -914,8 +911,7 @@ public class DisplayInformation {
           4 /*width*/ + 4 /*height*/ +
           Blob.sizeOf(sticker.emoji, true) +
           sizeOfFormat(sticker.format) /*format*/ +
-          sizeOfFullType(sticker.fullType) /*fullType*/ +
-          sizeOfOutline(sticker.outline) /*outline*/
+          sizeOfFullType(sticker.fullType) /*fullType*/
       );
       metadata.writeByte((byte) CACHE_VERSION);
       metadata.writeLong(sticker.id);
@@ -925,7 +921,6 @@ public class DisplayInformation {
       metadata.writeString(sticker.emoji);
       writeFormat(metadata, sticker.format);
       writeFullType(metadata, sticker.fullType);
-      writeOutline(metadata, sticker.outline);
       return metadata.toByteArray();
     }
 
