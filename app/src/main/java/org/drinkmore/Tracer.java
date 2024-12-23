@@ -206,4 +206,14 @@ public class Tracer {
     // Just throws AssertionError from NDK
     N.throwDirect(message);
   }
+
+  // New method to handle fatal errors from the NDK
+  public static void onFatalErrorFromNDK(String message, int cause) {
+    onFatalError(new AssertionError(message), cause);
+  }
+
+  // New method to throw an AssertionError directly from the NDK
+  public static void throwDirectFromNDK(String message) {
+    throw new AssertionError(message);
+  }
 }

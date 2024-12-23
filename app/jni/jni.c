@@ -19,6 +19,7 @@
 #include <time.h>
 
 #include "utils.h"
+#include "bridge.h" // Include the header file for onFatalError
 
 #ifndef NO_WEBP
 #include "image.h"
@@ -47,6 +48,9 @@ jint JNI_OnLoad (JavaVM *vm, void *reserved) {
   /*if (gifvideoOnJNILoad(vm, env) == -1) {
       return -1;
   }*/
+
+  // Call the onFatalError function
+  onFatalError(env, "JNI_OnLoad fatal error", 0);
 
   return JNI_VERSION_1_6;
 }
