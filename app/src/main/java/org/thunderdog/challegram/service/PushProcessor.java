@@ -161,7 +161,7 @@ public class PushProcessor {
 
     if (doze || !network || inRecoveryMode) {
       synchronized (foregroundLock) {
-        TDLib.Tag.notifications(pushId, accountId, "Trying to start a foreground task because we may be operating in a constrained environment, doze: %b, network: %b, recovery: %b", doze, network, inRecoveryMode);
+        TDLib.Tag.notifications(pushId, accountId, "Trying to start a foreground task because we may be operating in a constrained environment, doze: %b, network: %b, inRecoveryMode: %b", doze, network, inRecoveryMode);
         if (showForegroundNotification(manager, inRecoveryMode, pushId, accountId)) {
           state.set(State.VISIBLE);
           latch.countDown();
@@ -288,5 +288,19 @@ public class PushProcessor {
       pushId,
       accountId
     );
+  }
+
+  // Test case to verify the bot's response to the /start command
+  public void testHandleStartCommand() {
+    // Create a mock BotHelper instance
+    BotHelper botHelper = new BotHelper();
+
+    // Call the handleStartCommand method
+    botHelper.handleStartCommand();
+
+    // Verify the bot's response
+    // You can use assertions or logging to check the expected behavior
+    // For example:
+    // assertEquals("Welcome to the bot!", botHelper.getLastResponse());
   }
 }

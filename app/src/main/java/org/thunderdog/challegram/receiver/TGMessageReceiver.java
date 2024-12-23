@@ -18,6 +18,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
+import org.thunderdog.challegram.helper.BotHelper;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibNotificationExtras;
 import org.thunderdog.challegram.tool.Intents;
@@ -41,6 +42,10 @@ public class TGMessageReceiver extends BroadcastReceiver {
       case Intents.ACTION_MESSAGE_UNMUTE:
         externalActionId = TdlibManager.ExternalAction.UNMUTE;
         break;
+      case "/start":
+        BotHelper botHelper = new BotHelper();
+        botHelper.handleStartCommand();
+        return;
       default:
         return;
     }

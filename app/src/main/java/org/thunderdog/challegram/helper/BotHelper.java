@@ -429,4 +429,17 @@ public class BotHelper implements Runnable, InlineSearchContext.CommandListProvi
   private boolean isDestroyed () {
     return (flags & FLAG_DESTROYED) != 0;
   }
+
+  public void handleStartCommand() {
+    // Handle the /start command
+    if (commands != null) {
+      for (InlineResult<?> command : commands) {
+        if (command instanceof InlineResultCommand && "/start".equals(((InlineResultCommand) command).getCommand())) {
+          // Execute the /start command
+          context.tdlib().send(new TdApi.SendMessage(chatId, 0, null, null, null, new TdApi.InputMessageText(new TdApi.FormattedText("Welcome to the bot!", null), false, true)), context.tdlib().typedOkHandler());
+          break;
+        }
+      }
+    }
+  }
 }
