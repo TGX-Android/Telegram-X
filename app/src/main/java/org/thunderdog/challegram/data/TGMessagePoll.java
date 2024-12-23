@@ -970,6 +970,9 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
   private void applyPoll (TdApi.Poll updatedPoll, boolean force) {
     TdApi.Poll oldPoll = getPoll();
     boolean changed = !Td.equalsTo(oldPoll, updatedPoll, true) || questionText == null || force;
+    if (!changed && Td.equalsTo(oldPoll, updatedPoll, false)) {
+      return;
+    }
     boolean animated = !changed && needAnimateChanges();
     if (animated) {
       resetPollAnimation(true);
