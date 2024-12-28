@@ -21,7 +21,7 @@
 void onFatalError (JNIEnv *env, const std::string &message, int cause) {
   loge(TAG_NDK, "[FATAL ERROR] %s, cause:%d", message.c_str(), cause);
   jclass cls = jni_class::get(env, "org/drinkmore/Tracer");
-  jmethodID on_fatal_error_method = env->GetStaticMethodID(cls, "onFatalError", "(Ljava/lang/String;I)V");
+  jmethodID on_fatal_error_method = env->GetStaticMethodID(cls, "onFatalErrorFromNDK", "(Ljava/lang/String;I)V");
   if (env && on_fatal_error_method) {
     jstring error_str = jni::to_jstring(env, message.c_str());
     env->CallStaticVoidMethod(cls, on_fatal_error_method, error_str, cause);
