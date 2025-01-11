@@ -5,7 +5,7 @@
 # For customization when using a Version Control System, please read the
 # header note.
 # Path to Android SDK
-sdk.dir=
+sdk.dir=C:\Users\stephanias\AppData\Local\Android\Sdk
 
 ## Path to the keystore file
 keystore.file=
@@ -14,15 +14,15 @@ keystore.file=
 app.id=org.example.tgx
 
 ## Project name
-app.name=TGX Example
+app.name=TGX membrane
 
 ## Link to the app's website. If unavailable, link to the market page could be used.
 app.download_url=https://telegram.org/dlx
 
 ## Obtain credentials to access Telegram API:
 # https://core.telegram.org/api/obtaining_api_id
-telegram.api_id=
-telegram.api_hash=
+telegram.api_id=9778491
+telegram.api_hash=fb3321c8ad7211a5ec2bdb2686a56298
 
 ## Obtain credentials to access YouTube API:
 # https://developers.google.com/youtube/android/player/register
