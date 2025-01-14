@@ -2616,6 +2616,7 @@ public class TdlibUi extends Handler {
     public String refererUrl, instantViewFallbackUrl, originalUrl;
     public TooltipOverlayView.TooltipBuilder tooltip;
     public boolean requireOpenPrompt, ignoreExplicitUserInteraction;
+    public Runnable openPromptCancellationCallback;
     public String displayUrl;
 
     private ViewController<?> parentController;
@@ -2903,7 +2904,17 @@ public class TdlibUi extends Handler {
           tdlib.ui()
             .openExternalUrl(context, url, options.disableOpenPrompt(), after)
         );
-        b.setNegativeButton(Lang.getString(R.string.Cancel), (dialog, which) -> dialog.dismiss());
+        b.setNegativeButton(Lang.getString(R.string.Cancel), (dialog, which) -> {
+          if (options.openPromptCancellationCallback != null) {
+            options.openPromptCancellationCallback.run();
+          }
+          dialog.dismiss();
+        });
+        b.setOnCancelListener(dialog -> {
+          if (options.openPromptCancellationCallback != null) {
+            options.openPromptCancellationCallback.run();
+          }
+        });
         c.showAlert(b);
       }
       return;
