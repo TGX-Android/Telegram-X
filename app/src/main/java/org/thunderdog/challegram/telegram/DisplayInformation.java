@@ -480,7 +480,7 @@ public class DisplayInformation {
 
     public static EmojiStatusCache restore (String prefix, @NonNull TdApi.User user, @Nullable TdApi.Sticker remoteEmojiStatus, boolean isUpdate) {
       TdApi.EmojiStatus emojiStatus = user.emojiStatus;
-      long remoteEmojiStatusId = remoteEmojiStatus != null ? remoteEmojiStatus.id : emojiStatus != null ? emojiStatus.customEmojiId : 0;
+      long remoteEmojiStatusId = remoteEmojiStatus != null ? remoteEmojiStatus.id : Td.customEmojiId(emojiStatus);
       if (remoteEmojiStatusId == 0) {
         // Drop emoji status cache, as user doesn't have custom status anymore
         return null;

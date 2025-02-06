@@ -10088,7 +10088,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   @TdlibThread
   void downloadMyUser (@Nullable TdApi.User user) {
     TdApi.EmojiStatus emojiStatus = user != null && user.isPremium ? user.emojiStatus : null;
-    long newEmojiStatusId = emojiStatus != null ? emojiStatus.customEmojiId : 0;
+    long newEmojiStatusId = Td.customEmojiId(emojiStatus);
     TdlibEmojiManager.Entry emojiEntry = newEmojiStatusId != 0 ? emoji().find(newEmojiStatusId) : null;
     TdlibAccentColor accentColor = cache().userAccentColor(user);
     TdApi.Sticker emojiStatusSticker = emojiEntry != null && !emojiEntry.isNotFound() ? emojiEntry.value : null;
@@ -10146,7 +10146,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   @TdlibThread
   private void downloadMyUserEmojiStatus (@Nullable TdApi.User user) {
     TdApi.EmojiStatus emojiStatus = user != null && user.isPremium ? user.emojiStatus : null;
-    long newEmojiStatusId = emojiStatus != null ? emojiStatus.customEmojiId : 0;
+    long newEmojiStatusId = Td.customEmojiId(emojiStatus);
     if (newEmojiStatusId == myEmojiStatusId)
       return;
     myEmojiStatusId = newEmojiStatusId;

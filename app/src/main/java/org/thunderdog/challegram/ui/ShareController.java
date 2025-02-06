@@ -3362,7 +3362,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           break;
         }
         case MODE_GAME: {
-          functions.add(new TdApi.SendMessage(chatId, 0, null, sendOptions, null, new TdApi.InputMessageForwarded(args.botMessage.chatId, args.botMessage.id, args.withUserScore, null)));
+          functions.add(new TdApi.SendMessage(chatId, 0, null, sendOptions, null, new TdApi.InputMessageForwarded(args.botMessage.chatId, args.botMessage.id, args.withUserScore, false, 0, null)));
           break;
         }
         case MODE_FILES  : {

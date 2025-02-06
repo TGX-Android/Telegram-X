@@ -2191,7 +2191,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
           U.closeRetriever(media);
 
-          out.add(new TdApi.InputMessageVideo(inputVideo, null, null, duration, width, height, U.canStreamVideo(inputVideo), messageCaption, false, null, false));
+          out.add(new TdApi.InputMessageVideo(inputVideo, null, null, 0, null, duration, width, height, U.canStreamVideo(inputVideo), messageCaption, false, null, false));
           return messageCaption != null;
         }
       }

@@ -1901,8 +1901,8 @@ public final class TGMessageService extends TGMessageServiceImpl {
       if (emojiStatusChanged.oldEmojiStatus == null || emojiStatusChanged.newEmojiStatus == null) {
         boolean isUnset = emojiStatusChanged.newEmojiStatus == null;
         long backgroundCustomEmojiId = isUnset ?
-          (emojiStatusChanged.oldEmojiStatus != null ? emojiStatusChanged.oldEmojiStatus.customEmojiId : 0) :
-          emojiStatusChanged.newEmojiStatus.customEmojiId;
+          Td.customEmojiId(emojiStatusChanged.oldEmojiStatus) :
+          Td.customEmojiId(emojiStatusChanged.newEmojiStatus);
         if (msg.isOutgoing) {
           return getText(
             (isUnset ? R.string.EventLogEmojiStatusUnsetYou : R.string.EventLogEmojiStatusSetYou),
@@ -1916,8 +1916,8 @@ public final class TGMessageService extends TGMessageServiceImpl {
           );
         }
       } else {
-        long oldBackgroundCustomEmojiId = emojiStatusChanged.oldEmojiStatus.customEmojiId;
-        long newBackgroundCustomEmojiId = emojiStatusChanged.newEmojiStatus.customEmojiId;
+        long oldBackgroundCustomEmojiId = Td.customEmojiId(emojiStatusChanged.oldEmojiStatus);
+        long newBackgroundCustomEmojiId = Td.customEmojiId(emojiStatusChanged.newEmojiStatus);
         if (msg.isOutgoing) {
           return getText(
             R.string.EventLogEmojiStatusChangedYou,

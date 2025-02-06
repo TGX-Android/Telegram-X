@@ -1198,11 +1198,11 @@ public class TD {
                 if (allowAnimation && durationMs < TimeUnit.SECONDS.toMillis(30) && info.knownSize < ByteUnit.MB.toBytes(10) && numTracks == 1) {
                   return new TdApi.InputMessageAnimation(inputFile, null, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), width, height, caption, showCaptionAboveMedia, hasSpoiler);
                 } else if (allowVideo && durationMs > 0) {
-                  return new TdApi.InputMessageVideo(inputFile, null, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), width, height, U.canStreamVideo(inputFile), caption, showCaptionAboveMedia, null, hasSpoiler);
+                  return new TdApi.InputMessageVideo(inputFile, null, null, 0, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), width, height, U.canStreamVideo(inputFile), caption, showCaptionAboveMedia, null, hasSpoiler);
                 }
               }
               if (width > 0 && height > 0 && allowVideo) {
-                return new TdApi.InputMessageVideo(inputFile, null, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), width, height, U.canStreamVideo(inputFile), caption, showCaptionAboveMedia, null, hasSpoiler);
+                return new TdApi.InputMessageVideo(inputFile, null, null, 0, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), width, height, U.canStreamVideo(inputFile), caption, showCaptionAboveMedia, null, hasSpoiler);
               }
             }
           } catch (Throwable t) {
@@ -1224,7 +1224,7 @@ public class TD {
                 if (allowAnimation && durationMs < TimeUnit.SECONDS.toMillis(30) && info.knownSize < ByteUnit.MB.toBytes(10) && !metadata.hasAudio) {
                   return new TdApi.InputMessageAnimation(inputFile, null, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), videoWidth, videoHeight, caption, showCaptionAboveMedia, hasSpoiler);
                 } else if (allowVideo && durationMs > 0) {
-                  return new TdApi.InputMessageVideo(inputFile, null, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), videoWidth, videoHeight, U.canStreamVideo(inputFile), caption, showCaptionAboveMedia, null, hasSpoiler);
+                  return new TdApi.InputMessageVideo(inputFile, null, null, 0, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), videoWidth, videoHeight, U.canStreamVideo(inputFile), caption, showCaptionAboveMedia, null, hasSpoiler);
                 }
               }
             }
@@ -5892,7 +5892,7 @@ public class TD {
       } else /*if (sendAsAnimation && file.getSelfDestructType() == null && (files.length == 1 || !needGroupMedia)) {
         content = tdlib.filegen().createThumbnail(new TdApi.InputMessageAnimation(inputVideo, null, null, file.getVideoDuration(true), width, height, caption, hasSpoiler), isSecretChat);
       } else*/ {
-        content = tdlib.filegen().createThumbnail(new TdApi.InputMessageVideo(inputVideo, null, null, file.getVideoDuration(true), width, height, U.canStreamVideo(inputVideo), caption, showCaptionAboveMedia, file.getSelfDestructType(), hasSpoiler), isSecretChat);
+        content = tdlib.filegen().createThumbnail(new TdApi.InputMessageVideo(inputVideo, null, null, 0, null, file.getVideoDuration(true), width, height, U.canStreamVideo(inputVideo), caption, showCaptionAboveMedia, file.getSelfDestructType(), hasSpoiler), isSecretChat);
       }
     } else {
       int[] size = new int[2];
