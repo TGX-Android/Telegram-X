@@ -531,7 +531,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     if (msg.viaBotUserId != 0) {
       TdApi.User viaBot = tdlib.cache().user(msg.viaBotUserId);
-      if (viaBot != null) {
+      if (viaBot != null && Td.hasUsername(viaBot)) {
         this.viaBotUsername = "@" + Td.primaryUsername(viaBot);
       } else {
         this.viaBotUsername = null;
@@ -3247,6 +3247,17 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (maxWidth <= 0)
       return null;
     boolean hasBot = viaBotUserId != 0;
+    TdApi.User viaBot = viaBotUserId != 0 ? tdlib.cache().user(viaBotUserId) : null;
+    String viaBotUsername = "";
+    if (hasBot) {
+      if (Td.hasUsername(viaBot)) {
+        viaBotUsername = "@" + Td.primaryUsername(viaBot);
+      } else if (TD.isUserDeleted(viaBot)) {
+        viaBotUsername = Lang.getString(R.string.DeactivatedBot);
+      } else {
+        viaBotUsername = TD.getUserName(viaBot);
+      }
+    }
     int textRes = isPsa ? (hasBot ? R.string.PsaFromXViaBot : R.string.PsaFromX) : (hasBot ? hideName ? R.string.message_viaBot : R.string.message_nameViaBot : 0);
     CharSequence text;
     boolean allActive = textRes == R.string.PsaFromXViaBot || textRes == R.string.PsaFromX, allBold = false;
@@ -3260,12 +3271,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       allActive = true;
       allBold = available;
     } else if (textRes == R.string.PsaFromXViaBot || textRes == R.string.message_nameViaBot) { // author via bot
-      text = Lang.getString(textRes, (target, argStart, argEnd, argIndex, needFakeBold) -> new TextEntityCustom(controller(), tdlib, target.toString(), argStart, argEnd, TextEntityCustom.FLAG_CLICKABLE | (argIndex == 1 || available ? TextEntityCustom.FLAG_BOLD : 0), openParameters()).setTag(argIndex == 1 ? viaBotUserId : null), authorName, "@" + tdlib.cache().userUsername(viaBotUserId));
+      text = Lang.getString(textRes, (target, argStart, argEnd, argIndex, needFakeBold) -> new TextEntityCustom(controller(), tdlib, target.toString(), argStart, argEnd, TextEntityCustom.FLAG_CLICKABLE | (argIndex == 1 || available ? TextEntityCustom.FLAG_BOLD : 0), openParameters()).setTag(argIndex == 1 ? viaBotUserId : null), authorName, viaBotUsername);
     } else if (textRes == R.string.PsaFromX) { // author
       text = Lang.getString(textRes, (target, argStart, argEnd, argIndex, needFakeBold) -> Lang.newBoldSpan(needFakeBold), authorName);
       allActive = true;
     } else { // via bot
-      text = Lang.getString(textRes, (target, argStart, argEnd, argIndex, needFakeBold) -> new TextEntityCustom(controller(), tdlib, target.toString(), argStart, argEnd, TextEntityCustom.FLAG_CLICKABLE | TextEntityCustom.FLAG_BOLD, openParameters()).setTag(viaBotUserId), "@" + tdlib.cache().userUsername(viaBotUserId));
+      text = Lang.getString(textRes, (target, argStart, argEnd, argIndex, needFakeBold) -> new TextEntityCustom(controller(), tdlib, target.toString(), argStart, argEnd, TextEntityCustom.FLAG_CLICKABLE | TextEntityCustom.FLAG_BOLD, openParameters()).setTag(viaBotUserId), viaBotUsername);
     }
     TextColorSet colorTheme;
     if (isPsa) {
