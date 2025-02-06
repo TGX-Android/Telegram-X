@@ -8608,26 +8608,27 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final TdApi.AvailableReaction[] getMessageAvailableReactions () {
-    if (messageAvailableReactions == null)
-      return null;
     boolean hasPremium = tdlib.hasPremium();
+    TdApi.AvailableReactions availableReactions = messageAvailableReactions;
+    if (availableReactions == null)
+      return null;
     Set<String> addedReactions = new HashSet<>();
     List<TdApi.AvailableReaction> reactions = new ArrayList<>();
-    for (TdApi.AvailableReaction reaction : messageAvailableReactions.popularReactions) {
+    for (TdApi.AvailableReaction reaction : availableReactions.popularReactions) {
       if (TdExt.isUnsupported(reaction.type))
         continue;
       if ((!reaction.needsPremium || hasPremium) && addedReactions.add(TD.makeReactionKey(reaction.type))) {
         reactions.add(reaction);
       }
     }
-    for (TdApi.AvailableReaction reaction : messageAvailableReactions.topReactions) {
+    for (TdApi.AvailableReaction reaction : availableReactions.topReactions) {
       if (TdExt.isUnsupported(reaction.type))
         continue;
       if ((!reaction.needsPremium || hasPremium) && addedReactions.add(TD.makeReactionKey(reaction.type))) {
         reactions.add(reaction);
       }
     }
-    for (TdApi.AvailableReaction reaction : messageAvailableReactions.recentReactions) {
+    for (TdApi.AvailableReaction reaction : availableReactions.recentReactions) {
       if (TdExt.isUnsupported(reaction.type))
         continue;
       if ((!reaction.needsPremium || hasPremium) && addedReactions.add(TD.makeReactionKey(reaction.type))) {
@@ -8650,18 +8651,22 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         if (aIsEmoji != bIsEmoji) {
           return aIsEmoji ? -1 : 1;
         }
-        if (!aIsEmoji) {
-          return 0;
+        if (aIsEmoji) {
+          String aEmoji = ((TdApi.ReactionTypeEmoji) a.type).emoji;
+          String bEmoji = ((TdApi.ReactionTypeEmoji) b.type).emoji;
+          int aIndex = ArrayUtils.indexOf(activeEmojiReactions, aEmoji);
+          int bIndex = ArrayUtils.indexOf(activeEmojiReactions, bEmoji);
+          boolean aAvailable = aIndex != -1;
+          boolean bAvailable = bIndex != -1;
+          if (aAvailable != bAvailable) {
+            return aAvailable ? -1 : 1;
+          }
+          if (aIndex != bIndex) {
+            return aIndex < bIndex ? -1 : 1;
+          }
         }
-        String aEmoji = ((TdApi.ReactionTypeEmoji) a.type).emoji;
-        String bEmoji = ((TdApi.ReactionTypeEmoji) b.type).emoji;
-        int aIndex = ArrayUtils.indexOf(activeEmojiReactions, aEmoji);
-        int bIndex = ArrayUtils.indexOf(activeEmojiReactions, bEmoji);
-        boolean aAvailable = aIndex != -1;
-        boolean bAvailable = bIndex != -1;
-        if (aAvailable != bAvailable) {
-          return aAvailable ? -1 : 1;
-        }
+        int aIndex = reactions.indexOf(a);
+        int bIndex = reactions.indexOf(b);
         if (aIndex != bIndex) {
           return aIndex < bIndex ? -1 : 1;
         }
