@@ -58,10 +58,10 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
     return null;
   }
 
-  public static MediaPreview valueOf (Tdlib tdlib, TdApi.Photo photo, int size, int cornerRadius, boolean hasSpoiler) {
+  public static MediaPreview valueOf (Tdlib tdlib, TdApi.Photo photo, int size, int cornerRadius, boolean needFireIcon) {
     TdApi.PhotoSize thumbnail = Td.findSmallest(photo);
     if (thumbnail != null || photo.minithumbnail != null) {
-      return new MediaPreviewSimple(tdlib, size, cornerRadius, TD.toThumbnail(thumbnail), photo.minithumbnail, hasSpoiler);
+      return new MediaPreviewSimple(tdlib, size, cornerRadius, TD.toThumbnail(thumbnail), photo.minithumbnail, needFireIcon);
     }
     return null;
   }
@@ -297,7 +297,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       }
       case TdApi.MessagePhoto.CONSTRUCTOR: {
         TdApi.MessagePhoto messagePhoto = (TdApi.MessagePhoto) message.content;
-        return valueOf(tdlib, messagePhoto.photo, size, cornerRadius, false);
+        return valueOf(tdlib, messagePhoto.photo, size, cornerRadius, messagePhoto.isSecret || messagePhoto.hasSpoiler);
       }
       case TdApi.MessagePaidMedia.CONSTRUCTOR: {
         TdApi.MessagePaidMedia paidMedia = (TdApi.MessagePaidMedia) message.content;
