@@ -568,7 +568,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
 
   @Override
   public boolean onClick (View view, MediaWrapper wrapper) {
-    if ((isSmallPhotoType(type) && !isImageBig && Td.hasPhoto(linkPreview.type)) || instantItems != null) {
+    if ((isSmallPhotoType(type) && !isImageBig && Td.hasPhoto(linkPreview.type)) || instantItems != null || type == TYPE_VIDEO) {
       mediaWrapper.fileProgress.downloadIfNeeded();
       MediaViewController.openFromMessage(parent);
       return true;
