@@ -92,8 +92,8 @@ public class TdlibSender {
 
         flags = BitwiseUtils.setFlag(flags, FLAG_BOT, TD.isBot(user));
         flags = BitwiseUtils.setFlag(flags, FLAG_SERVICE_ACCOUNT, tdlib.isServiceNotificationsChat(ChatId.fromUserId(userId)));
-        flags = BitwiseUtils.setFlag(flags, FLAG_SCAM, user != null && user.isScam);
-        flags = BitwiseUtils.setFlag(flags, FLAG_FAKE, user != null && user.isFake);
+        flags = BitwiseUtils.setFlag(flags, FLAG_SCAM, Td.isScam(user));
+        flags = BitwiseUtils.setFlag(flags, FLAG_FAKE, Td.isFake(user));
 
         break;
       }

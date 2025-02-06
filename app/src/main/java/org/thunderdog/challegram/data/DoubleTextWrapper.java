@@ -128,7 +128,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
     this.userId = userId;
     this.user = tdlib.cache().user(userId);
 
-    setChatMark(this.user != null && this.user.isScam, this.user != null && this.user.isFake);
+    setChatMark(Td.isScam(this.user), Td.isFake(this.user));
     setTitle(TD.getUserName(user));
     this.avatarPlaceholder = tdlib.cache().userPlaceholder(user, false, AVATAR_PLACEHOLDER_RADIUS, null);
     if (user != null && user.profilePhoto != null) {

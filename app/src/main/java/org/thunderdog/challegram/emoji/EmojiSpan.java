@@ -32,6 +32,9 @@ public interface EmojiSpan extends TextReplacementSpan {
   default boolean belongsToSurface (CustomEmojiSurfaceProvider customEmojiSurfaceProvider) {
     return false;
   }
+  default boolean forceDisableAnimations () {
+    return false;
+  }
   default void requestCustomEmoji (ComplexReceiver receiver, int mediaKey) {
     receiver.clearReceivers(mediaKey);
   }

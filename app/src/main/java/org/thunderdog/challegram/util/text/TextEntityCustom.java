@@ -209,6 +209,11 @@ public class TextEntityCustom extends TextEntity {
   }
 
   @Override
+  public boolean forceDisableAnimations () {
+    return false;
+  }
+
+  @Override
   public boolean hasMedia () {
     return isIcon();
   }

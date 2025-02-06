@@ -446,7 +446,7 @@ debugCall id:long debug:string = Ok;
       return;
     }
     context.context().closeAllMedia(false);
-    context.tdlib().send(new TdApi.CreateCall(userId, VoIP.getProtocol(), false), (callId, error) -> {
+    context.tdlib().send(new TdApi.CreateCall(userId, VoIP.getProtocol(), false, 0), (callId, error) -> {
       if (error != null) {
         Log.e(Log.TAG_VOIP, "Failed to create call: %s", TD.toErrorString(error));
         UI.showError(error);

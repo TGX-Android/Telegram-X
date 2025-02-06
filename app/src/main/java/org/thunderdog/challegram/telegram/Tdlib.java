@@ -4105,10 +4105,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.ChatTypePrivate.CONSTRUCTOR:
       case TdApi.ChatTypeSecret.CONSTRUCTOR:
         TdApi.User user = chatUser(chat);
-        return user != null && user.isVerified;
+        return Td.isVerified(user);
       case TdApi.ChatTypeSupergroup.CONSTRUCTOR:
         TdApi.Supergroup supergroup = cache().supergroup(ChatId.toSupergroupId(chat.id));
-        return supergroup != null && supergroup.isVerified;
+        return Td.isVerified(supergroup);
+      case TdApi.ChatTypeBasicGroup.CONSTRUCTOR:
+        break;
     }
     return false;
   }
@@ -4121,10 +4123,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.ChatTypePrivate.CONSTRUCTOR:
       case TdApi.ChatTypeSecret.CONSTRUCTOR:
         TdApi.User user = chatUser(chat);
-        return user != null && user.isScam;
+        return Td.isScam(user);
       case TdApi.ChatTypeSupergroup.CONSTRUCTOR:
         TdApi.Supergroup supergroup = cache().supergroup(ChatId.toSupergroupId(chat.id));
-        return supergroup != null && supergroup.isScam;
+        return Td.isScam(supergroup);
+      case TdApi.ChatTypeBasicGroup.CONSTRUCTOR:
+        break;
     }
     return false;
   }
@@ -4137,10 +4141,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.ChatTypePrivate.CONSTRUCTOR:
       case TdApi.ChatTypeSecret.CONSTRUCTOR:
         TdApi.User user = chatUser(chat);
-        return user != null && user.isFake;
+        return Td.isFake(user);
       case TdApi.ChatTypeSupergroup.CONSTRUCTOR:
         TdApi.Supergroup supergroup = cache().supergroup(ChatId.toSupergroupId(chat.id));
-        return supergroup != null && supergroup.isFake;
+        return Td.isFake(supergroup);
     }
     return false;
   }
@@ -4708,7 +4712,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.MessageAnimation.CONSTRUCTOR:
         return !photoVideoOnly;
       default:
-        Td.assertMessageContent_91c1e338();
+        Td.assertMessageContent_640c68ad();
         break;
     }
 
@@ -4792,7 +4796,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
           return Td.textOrCaption(messageText);
       }
-      Td.assertMessageContent_91c1e338();
+      Td.assertMessageContent_640c68ad();
       throw Td.unsupported(messageText);
     }
     MessageEditMediaPending pendingEditMedia = getPendingMessageMedia(chatId, messageId);
@@ -11040,6 +11044,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageGiftedPremium.CONSTRUCTOR:
         case TdApi.MessageGiftedStars.CONSTRUCTOR:
         case TdApi.MessageGift.CONSTRUCTOR:
+        case TdApi.MessageUpgradedGift.CONSTRUCTOR:
+        case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
         case TdApi.MessageChatBoost.CONSTRUCTOR:
         case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
         case TdApi.MessageGiveawayCreated.CONSTRUCTOR:
@@ -11065,7 +11071,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           // assuming we want to check RightId.SEND_BASIC_MESSAGES
           return getBasicMessageRestrictionText(chat);
         default:
-          Td.assertMessageContent_91c1e338();
+          Td.assertMessageContent_640c68ad();
           throw Td.unsupported(message.content);
       }
     }
@@ -11475,7 +11481,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         return true;
       }
       default: {
-        Td.assertSuggestedAction_5c4efa90();
+        Td.assertSuggestedAction_5f4bf3f7();
         break;
       }
     }
@@ -11568,7 +11574,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.SuggestedActionSetBirthdate.CONSTRUCTOR:
           return ResolvableProblem.SET_BIRTHDATE;
         default:
-          Td.assertSuggestedAction_5c4efa90();
+          Td.assertSuggestedAction_5f4bf3f7();
           throw Td.unsupported(singleAction);
       }
     }

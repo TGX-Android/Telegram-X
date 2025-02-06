@@ -1278,9 +1278,9 @@ public class ForceTouchView extends FrameLayoutFix implements
   }
 
   private void setHeaderUser (TdApi.User user) {
-    headerView.setShowVerify(user.isVerified);
-    headerView.setShowScam(user.isScam);
-    headerView.setShowFake(user.isFake);
+    headerView.setShowVerify(Td.isVerified(user));
+    headerView.setShowScam(Td.isScam(user));
+    headerView.setShowFake(Td.isFake(user));
     headerView.setEmojiStatus(user);
     headerView.setText(TD.getUserName(user), tdlib.status().getPrivateChatSubtitle(user.id, user, false));
     setChatAvatar();

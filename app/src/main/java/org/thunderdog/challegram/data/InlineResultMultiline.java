@@ -62,7 +62,7 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
 
     this.title = article.title;
     this.description = article.description;
-    this.url = article.hideUrl || article.url.isEmpty() ? null : article.url; // ? null : article.url;
+    this.url = StringUtils.isEmpty(article.url) ? null : article.url; // ? null : article.url;
 
     TdlibAccentColor accentColor = tdlib.accentColorForString(article.url.isEmpty() ? article.id : article.url);
     avatarPlaceholder = new AvatarPlaceholder(AVATAR_PLACEHOLDER_RADIUS, new AvatarPlaceholder.Metadata(accentColor, TD.getLetters(title)), null);

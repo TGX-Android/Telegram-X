@@ -701,6 +701,7 @@ public class ContentPreview {
       case TdApi.MessageChatDeletePhoto.CONSTRUCTOR:
       case TdApi.MessageGiveawayCreated.CONSTRUCTOR:
       case TdApi.MessageGift.CONSTRUCTOR:
+      case TdApi.MessageUpgradedGift.CONSTRUCTOR:
 
       // Handled by getSimpleContentPreview, but unsupported
       case TdApi.MessageUnsupported.CONSTRUCTOR:
@@ -720,7 +721,7 @@ public class ContentPreview {
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_91c1e338();
+        Td.assertMessageContent_640c68ad();
         throw Td.unsupported(message.content);
     }
     Refresher refresher = null;
@@ -1109,6 +1110,10 @@ public class ContentPreview {
         TdApi.PushMessageContentGift gift = (TdApi.PushMessageContentGift) push.content;
         return getNotificationPreview(TdApi.MessageGift.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, gift.starCount, 0);
       }
+      case TdApi.PushMessageContentUpgradedGift.CONSTRUCTOR: {
+        TdApi.PushMessageContentUpgradedGift upgradedGift = (TdApi.PushMessageContentUpgradedGift) push.content;
+        return getNotificationPreview(TdApi.MessageUpgradedGift.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, upgradedGift.isUpgrade ? ARG_TRUE : ARG_NONE, 0);
+      }
       case TdApi.PushMessageContentGiveaway.CONSTRUCTOR: {
         TdApi.PushMessageContentGiveaway giveaway = (TdApi.PushMessageContentGiveaway) push.content;
         if (giveaway.prize == null) {
@@ -1151,7 +1156,7 @@ public class ContentPreview {
         }
       }
       default:
-        Td.assertPushMessageContent_c163df58();
+        Td.assertPushMessageContent_7e58be7d();
         throw Td.unsupported(push.content);
     }
   }
@@ -1461,6 +1466,7 @@ public class ContentPreview {
       case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
       case TdApi.MessageGiveawayPrizeStars.CONSTRUCTOR:
       case TdApi.MessageGift.CONSTRUCTOR:
+      case TdApi.MessageUpgradedGift.CONSTRUCTOR:
         // TODO support these previews
         return new ContentPreview(EMOJI_QUIZ, R.string.UnsupportedMessage);
         
@@ -1472,7 +1478,7 @@ public class ContentPreview {
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_91c1e338();
+        Td.assertMessageContent_640c68ad();
         throw new UnsupportedOperationException(Integer.toString(type));
     }
   }

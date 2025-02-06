@@ -44,7 +44,8 @@ public class DisplayInformation {
     if (user.isPremium) {
       flags |= FLAG_PREMIUM;
     }
-    if (user.isVerified) {
+    TdApi.VerificationStatus verificationStatus = user.verificationStatus;
+    if (verificationStatus != null && verificationStatus.isVerified) {
       flags |= FLAG_VERIFIED;
     }
     return flags;

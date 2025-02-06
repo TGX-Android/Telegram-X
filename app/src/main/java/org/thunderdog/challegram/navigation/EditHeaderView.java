@@ -189,7 +189,7 @@ public class EditHeaderView extends FrameLayoutFix implements RtlCheckListener, 
     return input;
   }
 
-  public void setInput (String text) {
+  public void setInput (CharSequence text) {
     if (text != null) {
       flags |= FLAG_IGNORE_READY;
       input.setText(text);

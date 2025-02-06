@@ -23,13 +23,15 @@ import android.text.style.CharacterStyle;
 
 public final class CustomEmojiId extends CharacterStyle implements EmojiSpan, Parcelable {
   public final long customEmojiId;
+  public final boolean disableAnimations;
 
-  public CustomEmojiId (long customEmojiId) {
+  public CustomEmojiId (long customEmojiId, boolean disableAnimations) {
     this.customEmojiId = customEmojiId;
+    this.disableAnimations = disableAnimations;
   }
 
   public CustomEmojiId (Parcel source) {
-    this(source.readLong());
+    this(source.readLong(), (int) source.readByte() == 1);
   }
 
   // EmojiSpan
@@ -37,6 +39,11 @@ public final class CustomEmojiId extends CharacterStyle implements EmojiSpan, Pa
   @Override
   public long getCustomEmojiId () {
     return customEmojiId;
+  }
+
+  @Override
+  public boolean forceDisableAnimations () {
+    return disableAnimations;
   }
 
   @Override

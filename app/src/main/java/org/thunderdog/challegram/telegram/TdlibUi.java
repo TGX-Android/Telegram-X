@@ -4965,7 +4965,7 @@ public class TdlibUi extends Handler {
     TdApi.ChatFolderInfo[] chatFolders = tdlib.chatFolders();
     List<ListItem> items = new ArrayList<>(chatFolders.length + 1);
     for (TdApi.ChatFolderInfo chatFolderInfo : chatFolders) {
-      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.chatFolder, TD.findFolderIcon(chatFolderInfo.icon, R.drawable.baseline_folder_24), chatFolderInfo.title).setIntValue(chatFolderInfo.id));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.chatFolder, TD.findFolderIcon(chatFolderInfo.icon, R.drawable.baseline_folder_24), TD.toCharSequence(chatFolderInfo.name)).setIntValue(chatFolderInfo.id));
     }
     if (tdlib.canCreateChatFolder()) {
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_createNewFolder, R.drawable.baseline_create_new_folder_24, R.string.CreateNewFolder).setTextColorId(ColorId.textNeutral));

@@ -1560,11 +1560,11 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     return selectedFilter == FILTER_NONE ? R.string.CategoryArchive : getFilterName(selectedFilter);
   }
 
-  private CharSequence getFolderSectionName (long pagerItemId, String folderName, @ChatFolderStyle int chatFolderStyle) {
+  private CharSequence getFolderSectionName (long pagerItemId, CharSequence folderName, @ChatFolderStyle int chatFolderStyle) {
     int selectedFilter = getSelectedFilter(pagerItemId);
     CharSequence sectionName;
     if (selectedFilter != FILTER_NONE) {
-      String source = chatFolderStyle == ChatFolderStyle.ICON_ONLY ? "" : folderName;
+      CharSequence source = chatFolderStyle == ChatFolderStyle.ICON_ONLY ? "" : folderName;
       if (useGlobalFilter() && selectedFilter == globalFilter) {
         sectionName = source;
       } else {
@@ -1577,8 +1577,8 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   }
 
   @CheckResult
-  private CharSequence appendFilterIcon (String source, @Filter int selectedFilter) {
-    SpannableString string = new SpannableString(source + (source.isEmpty() ? "∇" : " ∇"));
+  private CharSequence appendFilterIcon (CharSequence source, @Filter int selectedFilter) {
+    SpannableString string = new SpannableString(source + (StringUtils.isEmpty(source) ? "∇" : " ∇"));
     int filterIcon = getFilterVariantIcon(selectedFilter);
     string.setSpan(new IconSpan(filterIcon, ColorId.NONE), string.length() - 1, string.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
     return string;
@@ -2306,7 +2306,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     boolean isArchive = TD.isChatListArchive(chatList);
     int chatFolderId = isFolder ? ((TdApi.ChatListFolder) chatList).chatFolderId : 0;
     TdApi.ChatFolderInfo chatFolderInfo;
-    String title;
+    CharSequence title;
     if (isMain) {
       title = Lang.getString(R.string.CategoryMain);
       chatFolderInfo = null;
@@ -2315,7 +2315,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       chatFolderInfo = null;
     } else if (isFolder) {
       chatFolderInfo = tdlib.chatFolderInfo(chatFolderId);
-      title = chatFolderInfo != null ? chatFolderInfo.title : null;
+      title = chatFolderInfo != null ? TD.toCharSequence(chatFolderInfo.name) : null;
     } else {
       title = null;
       chatFolderInfo = null;
@@ -2866,7 +2866,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   }
 
   private ViewPagerTopView.Item buildSectionItem (long pagerItemId, int pagerItemPosition, TdApi.ChatList chatList, TdApi.ChatFolderInfo chatFolderInfo, @ChatFolderStyle int chatFolderStyle) {
-    CharSequence sectionName = getFolderSectionName(pagerItemId, chatFolderInfo.title, chatFolderStyle);
+    CharSequence sectionName = getFolderSectionName(pagerItemId, TD.toCharSequence(chatFolderInfo.name), chatFolderStyle);
     int iconResource = TD.findFolderIcon(chatFolderInfo.icon, R.drawable.baseline_folder_24);
     return buildSectionItem(pagerItemId, pagerItemPosition, chatList, sectionName, iconResource, chatFolderStyle);
   }

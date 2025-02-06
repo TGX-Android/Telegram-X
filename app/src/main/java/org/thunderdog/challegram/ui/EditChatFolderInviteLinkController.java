@@ -66,7 +66,7 @@ public class EditChatFolderInviteLinkController extends EditBaseController<EditC
     private final int chatFolderId;
     private final long[] chatIds;
     private final long[] shareableChatIds;
-    private final String chatFolderName;
+    private final TdApi.ChatFolderName chatFolderName;
     private final @Nullable TdApi.ChatFolderInviteLink inviteLink;
 
     public Arguments (int chatFolderId, TdApi.ChatFolder chatFolder) {
@@ -79,7 +79,7 @@ public class EditChatFolderInviteLinkController extends EditBaseController<EditC
 
     public Arguments (int chatFolderId, TdApi.ChatFolder chatFolder, long[] shareableChatIds, @Nullable TdApi.ChatFolderInviteLink inviteLink) {
       this.chatFolderId = chatFolderId;
-      this.chatFolderName = chatFolder.title;
+      this.chatFolderName = chatFolder.name;
       this.chatIds = U.concat(chatFolder.pinnedChatIds, chatFolder.includedChatIds);
       this.shareableChatIds = shareableChatIds;
       this.inviteLink = inviteLink;
@@ -122,7 +122,7 @@ public class EditChatFolderInviteLinkController extends EditBaseController<EditC
   public void setArguments (Arguments args) {
     super.setArguments(args);
     this.chatFolderId = args.chatFolderId;
-    this.chatFolderName = args.chatFolderName;
+    this.chatFolderName = args.chatFolderName.text.text;
     if (args.shareableChatIds.length > 0) {
       this.chatIds = U.concat(args.shareableChatIds, ArrayUtils.removeAll(args.chatIds, args.shareableChatIds));
     } else {

@@ -783,7 +783,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
               textRes = R.string.ShareTextPlain;
               break;
             default:
-              Td.assertMessageContent_91c1e338();
+              Td.assertMessageContent_640c68ad();
               title1Res = R.string.ShareTitleMedia;
               title2Res = R.string.ShareTitleMediaX;
               textRes = R.string.ShareTextMedia;
@@ -2401,7 +2401,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     chatsByChatList.put(TD.makeChatListKey(chatList), chats);
   }
 
-  private void displayChatList (String title, TdApi.ChatList chatList) {
+  private void displayChatList (CharSequence title, TdApi.ChatList chatList) {
     if (isDisplayingChatList(chatList))
       return;
     headerCell.setTitle(StringUtils.isEmptyOrBlank(title) ? getName() : title);
@@ -3565,10 +3565,10 @@ public class ShareController extends TelegramViewController<ShareController.Args
       PopupLayout popupLayout = PopupLayout.parentOf(v);
       popupLayout.hideWindow(true);
       TdApi.ChatFolderInfo chatFolderInfo = (TdApi.ChatFolderInfo) v.getTag();
-      displayChatList(chatFolderInfo.title, new TdApi.ChatListFolder(chatFolderInfo.id));
+      displayChatList(TD.toCharSequence(chatFolderInfo.name), new TdApi.ChatListFolder(chatFolderInfo.id));
     };
     for (TdApi.ChatFolderInfo chatFolderInfo : tdlib.chatFolders()) {
-      View itemView = menu.addItem(View.NO_ID, chatFolderInfo.title, TD.findFolderIcon(chatFolderInfo.icon, R.drawable.baseline_folder_24), /* icon */ null, onItemClickListener);
+      View itemView = menu.addItem(View.NO_ID, TD.toCharSequence(chatFolderInfo.name), TD.findFolderIcon(chatFolderInfo.icon, R.drawable.baseline_folder_24), /* icon */ null, onItemClickListener);
       itemView.setTag(chatFolderInfo);
     }
     menu.setAnchorMode(MenuMoreWrap.ANCHOR_MODE_HEADER);

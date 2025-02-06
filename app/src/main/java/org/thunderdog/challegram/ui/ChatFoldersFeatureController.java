@@ -25,6 +25,7 @@ import org.thunderdog.challegram.FillingDrawable;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.charts.LayoutHelper;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.HeaderButton;
@@ -354,7 +355,7 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
     }
 
     private ViewPagerTopView.Item buildSectionItem (TdApi.ChatFolderInfo chatFolder) {
-      CharSequence label = Emoji.instance().replaceEmoji(chatFolder.title);
+      CharSequence label = TD.toCharSequence(chatFolder.name);
       return new ViewPagerTopView.Item(label, buildUnreadCounter(new TdApi.ChatListFolder(chatFolder.id)));
     }
 

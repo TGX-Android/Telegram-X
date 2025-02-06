@@ -34,6 +34,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.charts.LayoutHelper;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -69,7 +70,7 @@ public class ChatFolderInviteLinkControllerPage extends BottomSheetViewControlle
 
   private @ChatFolderInviteLinkController.Mode int mode = ChatFolderInviteLinkController.MODE_INVITE_LINK;
   private int chatFolderId = NO_CHAT_FOLDER_ID;
-  private String chatFolderTitle;
+  private TdApi.ChatFolderName chatFolderName;
   private long[] selectableChatIds = ArrayUtils.EMPTY_LONGS;
   private @Nullable String inviteLinkUrl;
   private @Nullable TdApi.ChatFolderInviteLinkInfo inviteLinkInfo;
@@ -86,7 +87,7 @@ public class ChatFolderInviteLinkControllerPage extends BottomSheetViewControlle
     super.setArguments(args);
     mode = args.mode;
     chatFolderId = args.chatFolderId;
-    chatFolderTitle = args.chatFolderTitle;
+    chatFolderName = args.chatFolderName;
     inviteLinkUrl = args.inviteLinkUrl;
     inviteLinkInfo = args.inviteLinkInfo;
     selectableChatIds = args.selectableChatIds;
@@ -317,7 +318,7 @@ public class ChatFolderInviteLinkControllerPage extends BottomSheetViewControlle
 
   @Override
   public CharSequence getName () {
-    return chatFolderTitle;
+    return TD.toCharSequence(chatFolderName);
   }
 
   @Override
@@ -521,7 +522,7 @@ public class ChatFolderInviteLinkControllerPage extends BottomSheetViewControlle
     @Override
     protected void setHeaderCheckBoxState (ListItem item, CheckBoxView checkBox, boolean isUpdate) {
       if (item.getId() == R.id.btn_check) {
-        checkBox.setChecked(selectedChatIds.size() > 0, isUpdate);
+        checkBox.setChecked(!selectedChatIds.isEmpty(), isUpdate);
         checkBox.setDisabled(selectableChatIds.length == 0, isUpdate);
         checkBox.setPartially(selectedChatIds.size() < selectableChatIds.length, isUpdate);
       } else {

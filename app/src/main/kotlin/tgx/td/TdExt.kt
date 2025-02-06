@@ -44,10 +44,20 @@ enum class MediaType {
     fun valueOf (paidMedia: MessagePaidMedia): MediaType {
       var photoCount = 0
       var videoCount = 0
+      var unknownCount = 0
       for (media in paidMedia.media) {
         when (media.constructor) {
           PaidMediaPhoto.CONSTRUCTOR -> photoCount++
           PaidMediaVideo.CONSTRUCTOR -> videoCount++
+          PaidMediaPreview.CONSTRUCTOR -> {
+            require(media is PaidMediaPreview)
+            if (media.duration > 0) {
+              videoCount++
+            } else {
+              unknownCount++
+            }
+          }
+          PaidMediaUnsupported.CONSTRUCTOR -> unknownCount++
           else -> {
             assertPaidMedia_a2956719()
             throw unsupported(media)
@@ -55,9 +65,10 @@ enum class MediaType {
         }
       }
       return when {
+        unknownCount > 0 -> MIXED
         photoCount > 0 && videoCount == 0 -> PHOTOS
         videoCount > 0 && photoCount == 0 -> VIDEOS
-        else -> VIDEOS
+        else -> MIXED
       }
     }
   }

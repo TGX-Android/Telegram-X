@@ -135,6 +135,7 @@ public abstract class TextEntity {
   public abstract boolean isFullWidth ();
   public abstract boolean isCustomEmoji ();
   public abstract long getCustomEmojiId ();
+  public abstract boolean forceDisableAnimations ();
   public abstract TextEntity createCopy ();
   public abstract boolean isQuote ();
   public abstract  TdApi.TextEntity getQuote ();

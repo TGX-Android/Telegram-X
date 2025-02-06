@@ -564,6 +564,11 @@ public class TextEntityMessage extends TextEntity {
   }
 
   @Override
+  public boolean forceDisableAnimations () {
+    return false;
+  }
+
+  @Override
   public boolean performLongPress (final View view, final Text text, final TextPart part, boolean allowShare, final Text.ClickCallback clickCallback) {
     final ViewController<?> context = findRoot(view);
     if (context == null) {
@@ -589,7 +594,7 @@ public class TextEntityMessage extends TextEntity {
       final TextEntity[] entities = text.getEntities();
       if (entities != null) {
         for (TextEntity entity : entities) {
-          Object[] spans = TD.toSpans(entity, true, false);
+          Object[] spans = TD.toSpans(entity, TD.TextEntityOption.ALLOW_INTERNAL | BitwiseUtils.optional(TD.TextEntityOption.DISABLE_ANIMATIONS, forceDisableAnimations()), false);
           if (spans != null) {
             for (Object span : spans) {
               sb.setSpan(span, entity.getStart(), entity.getEnd(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);

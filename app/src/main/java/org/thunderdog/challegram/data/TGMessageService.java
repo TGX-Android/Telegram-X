@@ -455,10 +455,12 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageChatBoost.CONSTRUCTOR:
             case TdApi.MessageGiveawayPrizeStars.CONSTRUCTOR:
             case TdApi.MessageGift.CONSTRUCTOR:
+            case TdApi.MessageUpgradedGift.CONSTRUCTOR:
+            case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              Td.assertMessageContent_91c1e338();
+              Td.assertMessageContent_640c68ad();
               throw Td.unsupported(message.content);
           }
           if (format == null) {

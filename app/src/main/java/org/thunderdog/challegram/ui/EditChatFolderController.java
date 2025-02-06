@@ -98,7 +98,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
 
   public static class Arguments {
     private final int chatFolderId;
-    private final String chatFolderName;
+    private final TdApi.ChatFolderName chatFolderName;
     private final @Nullable TdApi.ChatFolder chatFolder;
 
     public static Arguments newFolder () {
@@ -110,18 +110,18 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
     }
 
     public Arguments (TdApi.ChatFolderInfo chatFolderInfo) {
-      this(chatFolderInfo.id, chatFolderInfo.title);
+      this(chatFolderInfo.id, chatFolderInfo.name);
     }
 
     public Arguments (int chatFolderId, @Nullable TdApi.ChatFolder chatFolder) {
-      this(chatFolderId, chatFolder != null ? chatFolder.title : "", chatFolder);
+      this(chatFolderId, chatFolder != null ? chatFolder.name : new TdApi.ChatFolderName(new TdApi.FormattedText("", new TdApi.TextEntity[0]), true), chatFolder);
     }
 
-    public Arguments (int chatFolderId, String chatFolderName) {
+    public Arguments (int chatFolderId, TdApi.ChatFolderName chatFolderName) {
       this(chatFolderId, chatFolderName, null);
     }
 
-    private Arguments (int chatFolderId, String chatFolderName, @Nullable TdApi.ChatFolder chatFolder) {
+    private Arguments (int chatFolderId, TdApi.ChatFolderName chatFolderName, @Nullable TdApi.ChatFolder chatFolder) {
       this.chatFolder = chatFolder;
       this.chatFolderId = chatFolderId;
       this.chatFolderName = chatFolderName;
@@ -183,7 +183,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   @Override
   public CharSequence getName () {
     Arguments arguments = getArgumentsStrict();
-    return chatFolderId != NO_CHAT_FOLDER_ID ? arguments.chatFolderName : Lang.getString(R.string.NewFolder);
+    return chatFolderId != NO_CHAT_FOLDER_ID ? TD.toCharSequence(arguments.chatFolderName) : Lang.getString(R.string.NewFolder);
   }
 
   @Override
@@ -221,7 +221,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   @SuppressWarnings("deprecation")
   protected void onCreateView (Context context, FrameLayoutFix contentView, RecyclerView recyclerView) {
     headerCell = new EditHeaderView(context, this);
-    headerCell.setInput(editedChatFolder.title);
+    headerCell.setInput(TD.toCharSequence(editedChatFolder.name));
     headerCell.setInputOptions(R.string.FolderNameHint, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
     headerCell.setOnPhotoClickListener(this::showIconSelector);
     headerCell.setImeOptions(EditorInfo.IME_ACTION_DONE);
@@ -230,7 +230,9 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
       new CharacterStyleFilter()
     });
     TextViewKt.doAfterTextChanged(headerCell.getInputView(), (editable) -> {
-      onTitleChanged(editable != null ? editable.toString() : "");
+      TdApi.FormattedText formattedText = TD.toFormattedText(editable, false);
+      TdApi.ChatFolderName newName = new TdApi.ChatFolderName(formattedText, editedChatFolder.name.animateCustomEmoji);
+      onTitleChanged(newName);
       return Unit.INSTANCE;
     });
     setLockFocusView(headerCell.getInputView(), false /*StringUtils.isEmpty(editedChatFolder.title)*/);
@@ -424,7 +426,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
     super.saveInstanceState(outState, keyPrefix);
     Arguments arguments = getArgumentsStrict();
     outState.putInt(keyPrefix + "_chatFolderId", arguments.chatFolderId);
-    outState.putString(keyPrefix + "_chatFolderName", arguments.chatFolderName);
+    Td.put(outState, keyPrefix + "_chatFolderName", arguments.chatFolderName);
     TD.saveChatFolder(outState, keyPrefix + "_originChatFolder", originChatFolder);
     TD.saveChatFolder(outState, keyPrefix + "_editedChatFolder", editedChatFolder);
     outState.putBoolean(keyPrefix + "_showAllIncludedChats", showAllIncludedChats);
@@ -436,7 +438,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   public boolean restoreInstanceState (Bundle in, String keyPrefix) {
     super.restoreInstanceState(in, keyPrefix);
     int chatFolderId = in.getInt(keyPrefix + "_chatFolderId", NO_CHAT_FOLDER_ID);
-    String chatFolderName = in.getString(keyPrefix + "_chatFolderName");
+    TdApi.ChatFolderName chatFolderName = Td.restoreChatFolderName(in, keyPrefix + "_chatFolderName");
     TdApi.ChatFolder originChatFolder = TD.restoreChatFolder(in, keyPrefix + "_originChatFolder");
     TdApi.ChatFolder editedChatFolder = TD.restoreChatFolder(in, keyPrefix + "_editedChatFolder");
     if (chatFolderName != null && editedChatFolder != null) {
@@ -488,7 +490,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
             UI.showError(error);
           } else if (result.totalCount > 0) {
             ChatFolderInviteLinkController controller = new ChatFolderInviteLinkController(context, tdlib);
-            controller.setArguments(ChatFolderInviteLinkController.Arguments.deleteFolder(chatFolderId, originChatFolder.title, result.chatIds));
+            controller.setArguments(ChatFolderInviteLinkController.Arguments.deleteFolder(chatFolderId, originChatFolder.name, result.chatIds));
             controller.show();
           } else {
             showRemoveFolderConfirm();
@@ -567,8 +569,8 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
     }
   }
 
-  private void onTitleChanged (String text) {
-    editedChatFolder.title = text;
+  private void onTitleChanged (TdApi.ChatFolderName text) {
+    editedChatFolder.name = text;
     updateDoneButton();
     updateFolderIcon();
   }
@@ -752,7 +754,7 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   }
 
   private void updateFolderName () {
-    if (!StringUtils.isEmpty(editedChatFolder.title)) {
+    if (!Td.isEmpty(editedChatFolder.name)) {
       return;
     }
     if (editedChatFolder.pinnedChatIds.length > 0 || editedChatFolder.includedChatIds.length > 0) {
@@ -763,11 +765,14 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
       return;
     }
     int includedChatType = includedChatTypes[0];
-    String chatTypeName = Lang.getString(TD.chatTypeName(includedChatType));
-    if (!StringUtils.equalsOrBothEmpty(editedChatFolder.title, chatTypeName)) {
-      editedChatFolder.title = chatTypeName;
+    TdApi.ChatFolderName chatTypeName = new TdApi.ChatFolderName(
+      new TdApi.FormattedText(Lang.getString(TD.chatTypeName(includedChatType)), new TdApi.TextEntity[0]),
+      true
+    );
+    if (!Td.equalsTo(editedChatFolder.name, chatTypeName)) {
+      editedChatFolder.name = chatTypeName;
       if (headerCell != null) {
-        headerCell.setInput(chatTypeName);
+        headerCell.setInput(TD.toCharSequence(chatTypeName));
       }
     }
   }
@@ -859,11 +864,11 @@ public class EditChatFolderController extends EditBaseController<EditChatFolderC
   }
 
   private boolean canSaveChanges () {
-    String title = editedChatFolder.title.trim();
-    if (StringUtils.isEmpty(title)) {
+    TdApi.FormattedText newName = Td.trim(editedChatFolder.name.text);
+    if (Td.isEmpty(newName)) {
       return false;
     }
-    int codePointCount = Character.codePointCount(title, 0, title.length());
+    int codePointCount = Character.codePointCount(newName.text, 0, newName.text.length());
     if (codePointCount > MAX_CHAT_FOLDER_TITLE_LENGTH) {
       return false;
     }
