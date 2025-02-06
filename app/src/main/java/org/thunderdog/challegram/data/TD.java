@@ -648,6 +648,11 @@ public class TD {
     return Td.toThumbnail(photoSize);
   }
 
+  public static TdApi.Thumbnail toProfilePhotoThumbnail (TdApi.File file, boolean isBig) {
+    int size = isBig ? 640 : 160;
+    return new TdApi.Thumbnail(new TdApi.ThumbnailFormatJpeg(), size, size, file);
+  }
+
   public static boolean canRetractVote (TdApi.Poll poll) {
     switch (poll.type.getConstructor()) {
       case TdApi.PollTypeRegular.CONSTRUCTOR: {

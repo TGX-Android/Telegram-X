@@ -54,7 +54,7 @@ public class MediaPreviewSimple extends MediaPreview {
   @Nullable
   private StickerOutline outline;
 
-  private IconType iconType;
+  private final IconType iconType;
 
   private ImageFile previewImage;
   private GifFile previewGif;
@@ -65,57 +65,17 @@ public class MediaPreviewSimple extends MediaPreview {
   private boolean drawColoredFileBackground;
 
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.ProfilePhoto profilePhoto) {
-    super(size, cornerRadius);
-    this.tdlib = tdlib;
-    if (profilePhoto.minithumbnail != null) {
-      this.previewImage = new ImageFileLocal(profilePhoto.minithumbnail);
-      this.previewImage.setSize(size);
-      this.previewImage.setScaleType(ImageFile.CENTER_CROP);
-      this.previewImage.setDecodeSquare(true);
-    }
-    if (profilePhoto.small != null) {
-      this.targetImage = new ImageFile(tdlib, profilePhoto.small, null);
-      this.targetImage.setSize(size);
-      this.targetImage.setScaleType(ImageFile.CENTER_CROP);
-      this.targetImage.setDecodeSquare(true);
-      this.targetImage.setNoBlur();
-    }
+    this(tdlib, size, cornerRadius, TD.toProfilePhotoThumbnail(profilePhoto.small, false), profilePhoto.minithumbnail);
   }
 
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.ChatPhoto chatPhoto) {
-    super(size, cornerRadius);
-    this.tdlib = tdlib;
-    if (chatPhoto.minithumbnail != null) {
-      this.previewImage = new ImageFileLocal(chatPhoto.minithumbnail);
-      this.previewImage.setSize(size);
-      this.previewImage.setScaleType(ImageFile.CENTER_CROP);
-      this.previewImage.setDecodeSquare(true);
-    }
-    if (chatPhoto.sizes.length > 0) {
-      this.targetImage = new ImageFile(tdlib, chatPhoto.sizes[0].photo);
-      this.targetImage.setSize(size);
-      this.targetImage.setScaleType(ImageFile.CENTER_CROP);
-      this.targetImage.setDecodeSquare(true);
-    }
+    this(tdlib, size, cornerRadius, chatPhoto.sizes.length > 0 ? TD.toThumbnail(chatPhoto.sizes[0]) : null, chatPhoto.minithumbnail, false);
     // TODO handle animation?
   }
 
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.ChatPhotoInfo chatPhotoInfo) {
-    super(size, cornerRadius);
-    this.tdlib = tdlib;
-    if (chatPhotoInfo.minithumbnail != null) {
-      this.previewImage = new ImageFileLocal(chatPhotoInfo.minithumbnail);
-      this.previewImage.setSize(size);
-      this.previewImage.setScaleType(ImageFile.CENTER_CROP);
-      this.previewImage.setDecodeSquare(true);
-    }
-    if (chatPhotoInfo.small != null) {
-      this.targetImage = new ImageFile(tdlib, chatPhotoInfo.small, null);
-      this.targetImage.setSize(size);
-      this.targetImage.setScaleType(ImageFile.CENTER_CROP);
-      this.targetImage.setDecodeSquare(true);
-      this.targetImage.setNoBlur();
-    }
+    this(tdlib, size, cornerRadius, TD.toProfilePhotoThumbnail(chatPhotoInfo.small, false), chatPhotoInfo.minithumbnail);
+    // TODO handle animation?
   }
 
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.Venue venue, TdApi.Thumbnail thumbnail) {
@@ -125,6 +85,7 @@ public class MediaPreviewSimple extends MediaPreview {
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.Location location, TdApi.Thumbnail thumbnail) {
     super(size, cornerRadius);
     this.tdlib = tdlib;
+    this.iconType = IconType.NONE;
     if (thumbnail != null) {
       this.previewImage = TD.toImageFile(tdlib, thumbnail);
       if (this.previewImage != null) {
@@ -177,7 +138,7 @@ public class MediaPreviewSimple extends MediaPreview {
     this(tdlib, size, cornerRadius, thumbnail, minithumbnail, IconType.NONE);
   }
 
-  enum IconType {
+  protected enum IconType {
     NONE,
     FIRE,
     STAR
@@ -187,7 +148,7 @@ public class MediaPreviewSimple extends MediaPreview {
     this(tdlib, size, cornerRadius, thumbnail, minithumbnail, needFireIcon ? IconType.FIRE : IconType.NONE);
   }
 
-  public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.Thumbnail thumbnail, TdApi.Minithumbnail minithumbnail, IconType iconType) {
+  protected MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.Thumbnail thumbnail, TdApi.Minithumbnail minithumbnail, IconType iconType) {
     super(size, cornerRadius);
     this.tdlib = tdlib;
     this.iconType = iconType;
@@ -227,6 +188,7 @@ public class MediaPreviewSimple extends MediaPreview {
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, File file, String mimeType) {
     super(size, cornerRadius);
     this.tdlib = tdlib;
+    this.iconType = IconType.NONE;
     if (TGMimeType.isImageMimeType(mimeType)) {
       this.targetImage = FileComponent.createFullPreview(new ImageFileLocal(file.getPath()), mimeType);
       this.targetImage.setProbablyRotated();
@@ -242,6 +204,7 @@ public class MediaPreviewSimple extends MediaPreview {
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.Sticker sticker) {
     super(size, cornerRadius);
     this.tdlib = tdlib;
+    this.iconType = IconType.NONE;
     this.outline = new StickerOutline(sticker);
     this.outline.setDisplaySize(size);
     if (sticker.thumbnail != null) {
@@ -274,6 +237,7 @@ public class MediaPreviewSimple extends MediaPreview {
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, ImageFile remoteFile) {
     super(size, cornerRadius);
     this.tdlib = tdlib;
+    this.iconType = IconType.NONE;
     this.drawColoredFileBackground = true;
     this.targetImage = remoteFile;
     this.targetImage.setSize(size);
