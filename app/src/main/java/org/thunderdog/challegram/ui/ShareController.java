@@ -115,6 +115,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -136,6 +137,7 @@ import me.vkryl.core.collection.LongList;
 import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.RunnableBool;
+import me.vkryl.core.lambda.RunnableData;
 import tgx.td.ChatId;
 import tgx.td.ChatPosition;
 import tgx.td.Td;
@@ -366,6 +368,8 @@ public class ShareController extends TelegramViewController<ShareController.Args
   protected int getBackButton () {
     return BackHeaderButton.TYPE_CLOSE;
   }
+
+  private TdApi.MessageProperties[] messageProperties;
 
   @Override
   public void setArguments (Args args) {
@@ -1411,11 +1415,30 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
     checkCommentPosition();
 
+    // Load message properties
+
+    reloadMessageProperties(null);
+
     // Load chats
 
     initializeChatList(displayingChatList);
 
     return wrapView;
+  }
+
+  private void reloadMessageProperties (@Nullable RunnableData<TdApi.MessageProperties[]> after) {
+    if (mode == MODE_MESSAGES) {
+      TdApi.Message[] messages = getArgumentsStrict().messages;
+      List<TdApi.Message> list = Arrays.asList(messages);
+      tdlib.getMessageProperties(list, properties -> {
+        runOnUiThreadOptional(() -> {
+          messageProperties = properties;
+          if (after != null) {
+            after.runWithData(properties);
+          }
+        });
+      });
+    }
   }
 
   private void initializeChatList (TdApi.ChatList chatList) {
@@ -1841,9 +1864,12 @@ public class ShareController extends TelegramViewController<ShareController.Args
         break;
       }
       case MODE_MESSAGES: {
+        int index = 0;
         for (TdApi.Message message : args.messages) {
+          TdApi.MessageProperties properties = messageProperties[index];
+          index++;
           if (ChatId.isSecret(chatId)) {
-            if (!TD.canSendToSecretChat(message.content))
+            if (!properties.canBeCopiedToSecretChat)
               return Lang.getString(R.string.SecretChatForwardError);
             TdApi.ForwardMessages function = new TdApi.ForwardMessages(chatId, 0, message.chatId, new long[] {message.id}, new TdApi.MessageSendOptions(false, false, false, false, false, null, 0, 0, true), needHideAuthor, needRemoveCaptions);
             TdApi.Object check = tdlib.clientExecute(function, 1000L);
@@ -1944,7 +1970,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           return false;
         }
       }
-      if (showErrorMessage(view, chatId, false)) {
+      if ((mode == MODE_MESSAGES && messageProperties == null) || showErrorMessage(view, chatId, false)) {
         result = false;
       }
     }
@@ -3242,7 +3268,16 @@ public class ShareController extends TelegramViewController<ShareController.Args
   private boolean needHideAuthor, needRemoveCaptions, forceSendWithoutSound;
 
   private void sendMessages (boolean forceGoToChat, boolean isSingleTap, @Nullable TdApi.MessageSendOptions finalSendOptions) {
+    sendMessages(forceGoToChat, isSingleTap, finalSendOptions, true);
+  }
+
+  private void sendMessages (boolean forceGoToChat, boolean isSingleTap, @Nullable TdApi.MessageSendOptions finalSendOptions, boolean reloadProperties) {
     if (selectedChats.size() == 0 || isSent) {
+      return;
+    }
+
+    if (mode == MODE_MESSAGES && reloadProperties) {
+      reloadMessageProperties(ignored -> sendMessages(forceGoToChat, isSingleTap, finalSendOptions, false));
       return;
     }
 
@@ -3289,7 +3324,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           long singleSourceChatId = 0, singleSourceMediaGroupId = 0, contentfulMediaMessageId = 0;
           for (int index = 0; index < args.messages.length; index++) {
             TdApi.Message message = args.messages[index];
-            TdApi.MessageProperties properties = tdlib.getMessagePropertiesSync(message);
+            TdApi.MessageProperties properties = messageProperties[index];
             if (!properties.canBeRepliedInAnotherChat) {
               messageReplyIncluded = false;
               break;
