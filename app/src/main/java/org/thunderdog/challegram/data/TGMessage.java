@@ -8641,38 +8641,42 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     List<TdApi.AvailableReaction> sortedReactions = new ArrayList<>(reactions);
     Set<String> activeEmojiReactions = tdlib.getActiveEmojiReactions();
     if (activeEmojiReactions != null && !activeEmojiReactions.isEmpty()) {
-      Collections.sort(sortedReactions, (a, b) -> {
-        int aPriority = getPriority(a.type);
-        int bPriority = getPriority(b.type);
-        if (aPriority != bPriority) {
-          return aPriority < 0 ? -1 : 1;
-        }
-        boolean aIsEmoji = a.type.getConstructor() == TdApi.ReactionTypeEmoji.CONSTRUCTOR;
-        boolean bIsEmoji = b.type.getConstructor() == TdApi.ReactionTypeEmoji.CONSTRUCTOR;
-        if (aIsEmoji != bIsEmoji) {
-          return aIsEmoji ? -1 : 1;
-        }
-        if (aIsEmoji) {
-          String aEmoji = ((TdApi.ReactionTypeEmoji) a.type).emoji;
-          String bEmoji = ((TdApi.ReactionTypeEmoji) b.type).emoji;
-          int aIndex = ArrayUtils.indexOf(activeEmojiReactions, aEmoji);
-          int bIndex = ArrayUtils.indexOf(activeEmojiReactions, bEmoji);
-          boolean aAvailable = aIndex != -1;
-          boolean bAvailable = bIndex != -1;
-          if (aAvailable != bAvailable) {
-            return aAvailable ? -1 : 1;
+      try {
+        Collections.sort(sortedReactions, (a, b) -> {
+          int aPriority = getPriority(a.type);
+          int bPriority = getPriority(b.type);
+          if (aPriority != bPriority) {
+            return aPriority < 0 ? -1 : 1;
           }
+          boolean aIsEmoji = a.type.getConstructor() == TdApi.ReactionTypeEmoji.CONSTRUCTOR;
+          boolean bIsEmoji = b.type.getConstructor() == TdApi.ReactionTypeEmoji.CONSTRUCTOR;
+          if (aIsEmoji != bIsEmoji) {
+            return aIsEmoji ? -1 : 1;
+          }
+          if (aIsEmoji) {
+            String aEmoji = ((TdApi.ReactionTypeEmoji) a.type).emoji;
+            String bEmoji = ((TdApi.ReactionTypeEmoji) b.type).emoji;
+            int aIndex = ArrayUtils.indexOf(activeEmojiReactions, aEmoji);
+            int bIndex = ArrayUtils.indexOf(activeEmojiReactions, bEmoji);
+            boolean aAvailable = aIndex != -1;
+            boolean bAvailable = bIndex != -1;
+            if (aAvailable != bAvailable) {
+              return aAvailable ? -1 : 1;
+            }
+            if (aIndex != bIndex) {
+              return aIndex < bIndex ? -1 : 1;
+            }
+          }
+          int aIndex = reactions.indexOf(a);
+          int bIndex = reactions.indexOf(b);
           if (aIndex != bIndex) {
             return aIndex < bIndex ? -1 : 1;
           }
-        }
-        int aIndex = reactions.indexOf(a);
-        int bIndex = reactions.indexOf(b);
-        if (aIndex != bIndex) {
-          return aIndex < bIndex ? -1 : 1;
-        }
-        return 0;
-      });
+          return 0;
+        });
+      } catch (Throwable t) {
+        throw new RuntimeException(TextUtils.join(", ", reactions), t);
+      }
     }
     return prioritizeElements(sortedReactions.toArray(new TdApi.AvailableReaction[0]), messageReactions.getChosen());
   }
