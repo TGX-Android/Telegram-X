@@ -95,6 +95,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -461,7 +462,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private final LongSparseLongArray accessibleChatTimers = new LongSparseLongArray();
 
   private TdlibOptions options = new TdlibOptions();
-  private String[] diceEmoji, activeEmojiReactions;
+  private String[] diceEmoji;
+  private Set<String> activeEmojiReactions;
   private TdApi.ReactionType defaultReactionType;
   private final Map<String, TGReaction> cachedReactions = new HashMap<>();
 
@@ -4229,37 +4231,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return null;
   }
 
-  /*public ArrayList<TGReaction> getNotPremiumReactions () {
-    synchronized (dataLock) {
-      return notPremiumReactions;
-    }
-  }
-
-  public ArrayList<TGReaction> getOnlyPremiumReactions () {
-    synchronized (dataLock) {
-      return onlyPremiumReactions;
-    }
-  }
-
-  public int getTotalActiveReactionsCount () {
-    synchronized (dataLock) {
-      return notPremiumReactions.size() + onlyPremiumReactions.size();
-    }
-  }*/
-
   public boolean isActiveEmojiReaction (String emoji) {
     if (StringUtils.isEmpty(emoji)) {
       return false;
     }
     synchronized (dataLock) {
-      if (activeEmojiReactions != null) {
-        return ArrayUtils.contains(activeEmojiReactions, emoji);
-      }
+      return activeEmojiReactions != null && activeEmojiReactions.contains(emoji);
     }
-    return false;
   }
 
-  public String[] getActiveEmojiReactions () {
+  public Set<String> getActiveEmojiReactions () {
     synchronized (dataLock) {
       return activeEmojiReactions;
     }
@@ -4332,15 +4313,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     };
     switch (reactions.getConstructor()) {
       case TdApi.ChatAvailableReactionsAll.CONSTRUCTOR: {
-        String[] activeEmojiReactions = getActiveEmojiReactions();
-        if (activeEmojiReactions == null || activeEmojiReactions.length == 0) {
+        Set<String> activeEmojiReactions = getActiveEmojiReactions();
+        if (activeEmojiReactions == null || activeEmojiReactions.isEmpty()) {
           if (after != null) {
             after.runWithBool(false);
           }
           return;
         }
         int requestedCount = 0;
-        remaining.set(activeEmojiReactions.length);
+        remaining.set(activeEmojiReactions.size());
         for (String activeEmojiReaction : activeEmojiReactions) {
           TdlibEmojiReactionsManager.Entry entry = reactions().findOrPostponeRequest(activeEmojiReaction, emojiReactionWatcher, true);
           if (entry != null) {
@@ -9406,7 +9387,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   @TdlibThread
   private void updateActiveEmojiReactions (TdApi.UpdateActiveEmojiReactions update) {
     synchronized (dataLock) {
-      this.activeEmojiReactions = update.emojis;
+      Set<String> activeEmojiReactions = new LinkedHashSet<>();
+      Collections.addAll(activeEmojiReactions, update.emojis);
+      this.activeEmojiReactions = activeEmojiReactions;
     }
   }
 

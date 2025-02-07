@@ -8638,9 +8638,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (reactions.isEmpty()) {
       return null;
     }
-    String[] activeEmojiReactions = tdlib.getActiveEmojiReactions();
-    if (activeEmojiReactions != null && activeEmojiReactions.length > 0) {
-      Collections.sort(reactions, (a, b) -> {
+    List<TdApi.AvailableReaction> sortedReactions = new ArrayList<>(reactions);
+    Set<String> activeEmojiReactions = tdlib.getActiveEmojiReactions();
+    if (activeEmojiReactions != null && !activeEmojiReactions.isEmpty()) {
+      Collections.sort(sortedReactions, (a, b) -> {
         int aPriority = getPriority(a.type);
         int bPriority = getPriority(b.type);
         if (aPriority != bPriority) {
@@ -8673,7 +8674,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         return 0;
       });
     }
-    return prioritizeElements(reactions.toArray(new TdApi.AvailableReaction[0]), messageReactions.getChosen());
+    return prioritizeElements(sortedReactions.toArray(new TdApi.AvailableReaction[0]), messageReactions.getChosen());
   }
 
   private static int getPriority (TdApi.ReactionType type) {
