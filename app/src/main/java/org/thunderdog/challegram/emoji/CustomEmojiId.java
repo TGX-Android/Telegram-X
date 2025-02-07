@@ -56,14 +56,12 @@ public final class CustomEmojiId extends CharacterStyle implements EmojiSpan, Pa
     throw new UnsupportedOperationException();
   }
 
-  @Override
-  public int getRawSize (Paint paint) {
-    throw new UnsupportedOperationException();
-  }
+  private final EmojiSize size = new EmojiSize();
 
   @Override
-  public boolean needRefresh () {
-    return false;
+  public int getRawSize (Paint paint) {
+    size.initialize(paint, null, true);
+    return size.getSize();
   }
 
   // CharacterStyle
