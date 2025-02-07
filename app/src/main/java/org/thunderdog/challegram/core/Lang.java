@@ -1105,7 +1105,7 @@ public class Lang {
           switch (type) {
             case PHOTOS: res = R.string.ActionPinnedPhoto; break;
             case VIDEOS: res = R.string.ActionPinnedVideo; break;
-            case MIXED: default: throw new UnsupportedOperationException();
+            case MIXED: default: res = R.string.ActionPinnedMedia; break;
           }
         } else {
           int pluralRes;
