@@ -1539,7 +1539,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   private boolean useBubbleTime () {
-    return !headerDisabled() && (!useForward() || (isOutgoing() || (flags & FLAG_HEADER_ENABLED) != 0)) && (msg.content.getConstructor() != TdApi.MessageCall.CONSTRUCTOR);
+    return !headerDisabled() && (!useForward() || (isOutgoing() || (flags & FLAG_HEADER_ENABLED) != 0)) && !(this instanceof TGMessageCall);
+  }
+
+  protected boolean centerReactions () {
+    return this instanceof TGMessageService;
   }
 
   private static Bitmap cornerTopLeftBig, cornerTopLeftSmall;
@@ -2259,14 +2263,20 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         if (commentButton.isVisible() && commentButton.isInline()) {
           top -= commentButton.getAnimatedHeight(-Screen.dp(2), commentButton.getVisibility());
         }
-        drawReactionsWithBubbles(c, view, xContentLeft, top - Screen.dp(9));
+        int left = centerReactions() ? (int) (view.getMeasuredWidth() / 2f - messageReactions.getAnimatedWidth() / 2f) : xContentLeft;
+        drawReactionsWithBubbles(c, view, left, top - Screen.dp(9));
       } else {
         if (useMediaBubbleReactions()) {
           drawReactionsWithBubbles(c, view, (int) bubblePathRect.left, top - Screen.dp(6));
         } else if (useStickerBubbleReactions()) {
-          int left = isOutgoingBubble() ? (useBubble() ? getContentX() : getActualRightContentEdge() - getContentWidth()) : (useBubble() && useCircleBubble() ? (int) bubblePathRect.left : getContentX());
-          if (isOutgoingBubble() && messageReactions.getAnimatedWidth() > getContentWidth()) {
-            left = (int) (getActualRightContentEdge() - messageReactions.getAnimatedWidth());
+          int left;
+          if (centerReactions()) {
+            left = (int) (view.getMeasuredWidth() / 2f - messageReactions.getAnimatedWidth() / 2f);
+          } else {
+            left = isOutgoingBubble() ? (useBubble() ? getContentX() : getActualRightContentEdge() - getContentWidth()) : (useBubble() && useCircleBubble() ? (int) bubblePathRect.left : getContentX());
+            if (isOutgoingBubble() && messageReactions.getAnimatedWidth() > getContentWidth()) {
+              left = (int) (getActualRightContentEdge() - messageReactions.getAnimatedWidth());
+            }
           }
           if (commentButton.isVisible() && commentButton.isBubble()) {
             top -= commentButton.getAnimatedHeight(Screen.dp(5), commentButton.getVisibility());
@@ -5128,7 +5138,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean canBeReacted () {
-    return !isSponsoredMessage() && !isEventLog() && !(msg.content instanceof TdApi.MessageCall) && !Td.isEmpty(messageAvailableReactions) && (tdlib.hasPremium() || Td.hasNonPremiumReactions(messageAvailableReactions));
+    return !isSponsoredMessage() && !isEventLog() && !Td.isEmpty(messageAvailableReactions) && (tdlib.hasPremium() || Td.hasNonPremiumReactions(messageAvailableReactions));
   }
 
   public boolean canBeSaved () {
@@ -8469,7 +8479,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final boolean useReactionBubbles () {
-    return manager().useReactionBubbles();
+    return manager().useReactionBubbles() || forceReactionBubbles();
+  }
+
+  protected final boolean forceReactionBubbles () {
+    return (this instanceof TGMessageService) || (this instanceof TGMessageCall);
   }
 
   //
