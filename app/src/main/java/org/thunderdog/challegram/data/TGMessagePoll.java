@@ -432,7 +432,9 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       setTexts();
       setButton(false);
     }
-    questionText.prepare(maxWidth);
+    if (questionText != null) {
+      questionText.prepare(maxWidth);
+    }
     int optionWidth = maxWidth - Screen.dp(34f);
     for (OptionEntry option : this.options) {
       option.text.prepare(optionWidth);
