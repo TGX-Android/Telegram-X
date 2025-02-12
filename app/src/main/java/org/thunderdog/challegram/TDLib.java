@@ -102,7 +102,7 @@ public final class TDLib {
     }
 
     public static void recaptcha (String format, Object... formatArgs) {
-      i("[recaptcha]: %s", format(format, formatArgs));
+      internal("recaptcha", format, formatArgs);
     }
 
     public static void integrity (TdApi.FirebaseDeviceVerificationParameters parameters, String format, Object... formatArgs) {
