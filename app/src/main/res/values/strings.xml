@@ -1290,15 +1290,19 @@
   <string name="ActionPinnedFile">%1$s pinned a **file**</string>
   <string name="ActionPinnedMusic">%1$s pinned an **audio file**</string>
   <string name="ActionPinnedPhoto">%1$s pinned a **photo**</string>
-  <string name="ActionPinnedPaidMedia">%1$s pinned a **paid content**</string>
+
+  <string name="ActionPinnedPaidContent">%1$s pinned a **paid content**</string>
+  <string name="ActionPinnedPaidPost">%1$s pinned a **paid post**</string>
+  <string name="ActionPinnedPaidPhoto">%1$s pinned a **paid photo**</string>
+  <string name="ActionPinnedPaidVideo">%1$s pinned a **paid video**</string>
+  <string name="ActionPinnedXPaidPhotos_one">%2$s pinned **%1$s paid photo**</string>
+  <string name="ActionPinnedXPaidPhotos_other">%2$s pinned **%1$s paid photos**</string>
+  <string name="ActionPinnedXPaidVideos_one">%2$s pinned **%1$s paid video**</string>
+  <string name="ActionPinnedXPaidVideos_other">%2$s pinned **%1$s paid videos**</string>
+  <string name="ActionPinnedXPaidMedia_one">%2$s pinned **%1$s paid media**</string>
+  <string name="ActionPinnedXPaidMedia_other">%2$s pinned **%1$s paid medias**</string>
+
   <string name="ActionPinnedVideo">%1$s pinned a **video**</string>
-  <string name="ActionPinnedMedia">%1$s pinned a **media**</string>
-  <string name="ActionPinnedXPhotos_one">%2$s pinned **%1$s photo**</string>
-  <string name="ActionPinnedXPhotos_other">%2$s pinned **%1$s photos**</string>
-  <string name="ActionPinnedXVideos_one">%2$s pinned **%1$s video**</string>
-  <string name="ActionPinnedXVideos_other">%2$s pinned **%1$s videos**</string>
-  <string name="ActionPinnedXMedia_one">%2$s pinned **%1$s media**</string>
-  <string name="ActionPinnedXMedia_other">%2$s pinned **%1$s medias**</string>
   <string name="ActionPinnedRound">%1$s pinned a **video message**</string>
   <string name="ActionPinnedVoice">%1$s pinned a **voice message**</string>
   <string name="ActionPinnedStory">%1$s pinned a **story**</string>

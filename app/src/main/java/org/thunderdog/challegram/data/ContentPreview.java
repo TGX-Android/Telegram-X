@@ -1150,7 +1150,8 @@ public class ContentPreview {
         TdApi.PushMessageContentPaidMedia paidMedia = (TdApi.PushMessageContentPaidMedia) push.content;
         // TODO(server & TDLib): caption, media type
         if (paidMedia.isPinned) {
-          return getNotificationPinned(R.string.ActionPinnedPaidMedia, TdApi.MessagePaidMedia.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
+          @StringRes int resId = tdlib.isChannel(chatId) ? R.string.ActionPinnedPaidPost : R.string.ActionPinnedPaidContent;
+          return getNotificationPinned(resId, TdApi.MessagePaidMedia.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
         } else {
           return getNotificationPreview(TdApi.MessagePaidMedia.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
         }

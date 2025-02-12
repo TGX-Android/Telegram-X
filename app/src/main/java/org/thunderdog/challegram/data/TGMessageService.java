@@ -384,16 +384,18 @@ public final class TGMessageService extends TGMessageServiceImpl {
               MediaType type = MediaType.valueOf(paidMedia);
               if (paidMedia.media.length == 1) {
                 switch (type) {
-                  case PHOTOS: staticResId = R.string.ActionPinnedPhoto; break;
-                  case VIDEOS: staticResId = R.string.ActionPinnedVideo; break;
-                  case MIXED: default: throw new UnsupportedOperationException();
+                  case PHOTOS: staticResId = R.string.ActionPinnedPaidPhoto; break;
+                  case VIDEOS: staticResId = R.string.ActionPinnedPaidVideo; break;
+                  case MIXED: staticResId = isChannel() ? R.string.ActionPinnedPaidPost : R.string.ActionPinnedPaidContent; break;
+                  default: throw new UnsupportedOperationException();
                 }
               } else {
                 int pluralRes;
                 switch (type) {
-                  case PHOTOS: pluralRes = R.string.ActionPinnedXPhotos; break;
-                  case VIDEOS: pluralRes = R.string.ActionPinnedXVideos; break;
-                  case MIXED: default: pluralRes = R.string.ActionPinnedXMedia; break;
+                  case PHOTOS: pluralRes = R.string.ActionPinnedXPaidPhotos; break;
+                  case VIDEOS: pluralRes = R.string.ActionPinnedXPaidVideos; break;
+                  case MIXED: pluralRes = R.string.ActionPinnedXPaidMedia; break;
+                  default: throw new UnsupportedOperationException();
                 }
                 format = Lang.plural(pluralRes, paidMedia.media.length);
                 staticResId = 0;
