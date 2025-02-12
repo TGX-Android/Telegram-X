@@ -411,6 +411,8 @@ dependencies {
   // implementation("com.google.firebase:firebase-appcheck-safetynet:16.1.2")
   // Play Integrity: https://developer.android.com/google/play/integrity/reference/com/google/android/play/core/release-notes
   implementation("com.google.android.play:integrity:1.3.0") // 1.4.0+ requires minSdkVersion 21
+  // ReCaptcha: https://cloud.google.com/recaptcha/docs/release-notes
+  implementation("com.google.android.recaptcha:recaptcha:18.4.0") // 18.5.0+ requires minSdkVersion 21
   // Play In-App Updates: https://developer.android.com/reference/com/google/android/play/core/release-notes-in_app_updates
   implementation("com.google.android.play:app-update:2.1.0")
   // AndroidX/media: https://github.com/androidx/media/blob/release/RELEASENOTES.md

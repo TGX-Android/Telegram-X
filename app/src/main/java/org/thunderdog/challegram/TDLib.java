@@ -90,12 +90,19 @@ public final class TDLib {
   }
 
   public static final class Tag {
+    private static void internal (String tag, String format, Object[] formatArgs) {
+      i("[%s]: %s", tag, format(format, formatArgs));
+    }
     public static void safetyNet (String format, Object... formatArgs) {
-      i("[safetynet]: %s", format(format, formatArgs));
+      internal("safetynet", format, formatArgs);
     }
 
     public static void playIntegrity (String format, Object... formatArgs) {
-      i("[play-integrity]: %s", format(format, formatArgs));
+      internal("play-integrity", format, formatArgs);
+    }
+
+    public static void recaptcha (String format, Object... formatArgs) {
+      i("[recaptcha]: %s", format(format, formatArgs));
     }
 
     public static void integrity (TdApi.FirebaseDeviceVerificationParameters parameters, String format, Object... formatArgs) {

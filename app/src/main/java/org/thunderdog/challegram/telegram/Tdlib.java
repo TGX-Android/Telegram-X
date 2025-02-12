@@ -41,6 +41,8 @@ import com.google.android.play.core.integrity.IntegrityManager;
 import com.google.android.play.core.integrity.IntegrityManagerFactory;
 import com.google.android.play.core.integrity.IntegrityTokenRequest;
 import com.google.android.play.core.integrity.IntegrityTokenResponse;
+import com.google.android.recaptcha.RecaptchaAction;
+import com.google.android.recaptcha.RecaptchaTasksClient;
 import com.google.firebase.FirebaseOptions;
 
 import org.drinkless.tdlib.Client;
@@ -127,6 +129,7 @@ import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableInt;
 import me.vkryl.core.lambda.RunnableLong;
 import me.vkryl.core.util.ConditionalExecutor;
+import tgx.app.RecaptchaProviderRegistry;
 import tgx.td.ChatId;
 import tgx.td.ChatPosition;
 import tgx.td.JSON;
@@ -465,6 +468,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private String[] diceEmoji;
   private Set<String> activeEmojiReactions;
   private TdApi.ReactionType defaultReactionType;
+  private TdApi.PaidReactionType defaultPaidReactionType;
   private final Map<String, TGReaction> cachedReactions = new HashMap<>();
 
   private int storyStealthModeActiveUntilDate, storyStealthModeCooldownUntilDate;
@@ -4254,6 +4258,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       }
     }
     return EmojiCodes.THUMBS_UP;
+  }
+
+  @Nullable
+  public TdApi.PaidReactionType defaultPaidReaction () {
+    synchronized (dataLock) {
+      return defaultPaidReactionType;
+    }
   }
 
   public void ensureEmojiReactionsAvailable (@Nullable RunnableBool after) {
@@ -8929,16 +8940,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     ui().sendMessage(ui().obtainMessage(MSG_ACTION_DISPATCH_TERMS_OF_SERVICE, update));
   }
 
-  public interface PlayIntegrityCallback {
-    void onPlayIntegrityResult (String result, boolean isError);
+  public interface IntegrityCallback {
+    void onIntegrityResult (String result, boolean isError);
   }
 
-  public void requestPlayIntegrity (long verificationId, String nonce, PlayIntegrityCallback callback) {
+  public void requestPlayIntegrity (long verificationId, String nonce, IntegrityCallback callback) {
     TDLib.Tag.playIntegrity("Received Play Integrity request verificationId=%d", verificationId);
     RunnableData<Exception> onError = e -> {
       TDLib.Tag.playIntegrity("failure verificationId=%d: %s", verificationId, Log.toString(e));
       final String error = Log.toErrorString(e);
-      callback.onPlayIntegrityResult(error, true);
+      callback.onIntegrityResult(error, true);
     };
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
       onError.runWithData(new IllegalStateException("SDK_LEVEL_TOO_LOW: " + Build.VERSION.SDK_INT));
@@ -8963,7 +8974,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           final String token = r.token();
           TDLib.Tag.playIntegrity("success verificationId=%d: %s", verificationId, token);
           final String result = token != null ? token : "PLAYINTEGRITY_FAILED_EXCEPTION_NULL";
-          callback.onPlayIntegrityResult(result, token != null);
+          callback.onIntegrityResult(result, token != null);
         })
         .addOnFailureListener(onError::runWithData);
     } catch (Exception e) {
@@ -8971,11 +8982,44 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
+  public void requestRecaptcha (long verificationId, String action, String recaptchaKeyId, IntegrityCallback callback) {
+    TDLib.Tag.recaptcha("Received ReCaptcha request verificationId=%d action=%s", verificationId, action);
+    RunnableData<Exception> onError = e -> {
+      final String error = Log.toErrorString(e);
+      callback.onIntegrityResult(error, true);
+    };
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+      onError.runWithData(new IllegalStateException("SDK_LEVEL_TOO_LOW: " + Build.VERSION.SDK_INT));
+      return;
+    }
+    RunnableData<RecaptchaTasksClient> actor = client -> {
+      client.executeTask(RecaptchaAction.custom(action))
+        .addOnSuccessListener(token -> {
+          TDLib.Tag.recaptcha("success verificationId=%d", verificationId);
+          callback.onIntegrityResult(token, false);
+        })
+        .addOnFailureListener(error -> {
+          TDLib.Tag.recaptcha("failure verificationId=%d: %s", verificationId, Log.toString(error));
+          onError.runWithData(error);
+        });
+    };
+    RecaptchaProviderRegistry.INSTANCE.execute(recaptchaKeyId, actor, onError);
+  }
+
   @TdlibThread
   private void updateApplicationVerificationRequired (TdApi.UpdateApplicationVerificationRequired update) {
     incrementJobReferenceCount();
     Runnable after = this::decrementJobReferenceCount;
     requestPlayIntegrity(update.verificationId, update.nonce, (token, isError) -> {
+      send(new TdApi.SetApplicationVerificationToken(update.verificationId, isError ? null : token), typedOkHandler(after));
+    });
+  }
+
+  @TdlibThread
+  private void updateApplicationRecaptchaVerificationRequired (TdApi.UpdateApplicationRecaptchaVerificationRequired update) {
+    incrementJobReferenceCount();
+    Runnable after = this::decrementJobReferenceCount;
+    requestRecaptcha(update.verificationId, update.action, update.recaptchaKeyId, (token, isError) -> {
       send(new TdApi.SetApplicationVerificationToken(update.verificationId, isError ? null : token), typedOkHandler(after));
     });
   }
@@ -9405,6 +9449,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
+  @TdlibThread
+  private void updateDefaultPaidReactionType (TdApi.UpdateDefaultPaidReactionType update) {
+    synchronized (dataLock) {
+      this.defaultPaidReactionType = update.type;
+    }
+  }
+
   private void updateStickerSet (TdApi.StickerSet stickerSet) {
     animatedTgxEmoji.update(this, stickerSet);
     animatedDiceExplicit.update(this, stickerSet);
@@ -9617,6 +9668,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       }
       case TdApi.UpdateDefaultReactionType.CONSTRUCTOR: {
         updateDefaultReactionType((TdApi.UpdateDefaultReactionType) update);
+        break;
+      }
+      case TdApi.UpdateDefaultPaidReactionType.CONSTRUCTOR: {
+        updateDefaultPaidReactionType((TdApi.UpdateDefaultPaidReactionType) update);
         break;
       }
       case TdApi.UpdateMessageUnreadReactions.CONSTRUCTOR: {
@@ -9983,6 +10038,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateApplicationVerificationRequired((TdApi.UpdateApplicationVerificationRequired) update);
         break;
       }
+      case TdApi.UpdateApplicationRecaptchaVerificationRequired.CONSTRUCTOR: {
+        updateApplicationRecaptchaVerificationRequired((TdApi.UpdateApplicationRecaptchaVerificationRequired) update);
+        break;
+      }
       case TdApi.UpdateAutosaveSettings.CONSTRUCTOR: {
         updateAutosaveSettings((TdApi.UpdateAutosaveSettings) update);
         break;
@@ -10060,7 +10119,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         throw Td.unsupported(update);
       }
       default: {
-        Td.assertUpdate_d711b225();
+        Td.assertUpdate_52ecb43();
         throw Td.unsupported(update);
       }
     }
