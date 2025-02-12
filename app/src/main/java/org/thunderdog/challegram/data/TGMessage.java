@@ -9557,6 +9557,15 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return mTranslationsManager.getCurrentTranslatedLanguage() != null || translatedCounterForceShow;
   }
 
+  public final boolean canCopyText () {
+    if (this instanceof TGMessageMedia) {
+      long messageId = ((TGMessageMedia) this).getCaptionMessageId();
+      TdApi.Message message = messageId != 0 ? getMessage(messageId) : null;
+      return TD.canCopyText(message);
+    }
+    return TD.canCopyText(getNewestMessage());
+  }
+
   public boolean isTranslatable () {
     return !Td.isEmpty(textToTranslate) && (flags & FLAG_UNSUPPORTED) == 0 && !Settings.instance().isNotTranslatableLanguage(textToTranslateOriginalLanguage);
   }
