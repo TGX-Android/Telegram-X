@@ -74,22 +74,61 @@ public final class TGMessageService extends TGMessageServiceImpl {
     super(context, msg);
     String amount = CurrencyUtils.buildAmount(giftedPremium.currency, giftedPremium.amount);
     setTextCreator(() -> {
-      if (msg.isOutgoing) {
+      if (giftedPremium.receiverUserId != 0) {
+        if (msg.chatId == ChatId.fromUserId(giftedPremium.receiverUserId)) {
+          return getPlural(
+            R.string.YouGiftedPremium,
+            giftedPremium.monthCount,
+            new BoldArgument(amount)
+          );
+        } else {
+          return getPlural(
+            R.string.YouGiftedPremiumTo,
+            giftedPremium.monthCount,
+            new BoldArgument(amount),
+            new SenderArgument(new TdlibSender(tdlib, msg.chatId, new TdApi.MessageSenderUser(giftedPremium.receiverUserId)))
+          );
+        }
+      } else if (giftedPremium.gifterUserId != 0) {
         return getPlural(
-          R.string.YouGiftedPremium,
+          R.string.GiftedPremium,
           giftedPremium.monthCount,
+          new SenderArgument(new TdlibSender(tdlib, msg.chatId, new TdApi.MessageSenderUser(giftedPremium.gifterUserId)), isUserChat()),
           new BoldArgument(amount)
         );
       } else {
         return getPlural(
-          R.string.GiftedPremium,
+          R.string.AnonymousGiftedPremium,
           giftedPremium.monthCount,
-          new SenderArgument(sender, isUserChat()),
           new BoldArgument(amount)
         );
       }
     });
-    // TODO design for giftedPremium.sticker
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessagePremiumGiftCode premiumGiftCode) {
+    super(context, msg);
+    setTextCreator(() -> {
+      if (msg.isOutgoing) {
+        return getPlural(
+          R.string.YouGiftedPremiumCode,
+          premiumGiftCode.monthCount
+        );
+      } else if (premiumGiftCode.creatorId != null) {
+        return getPlural(
+          R.string.GiftedPremiumCode,
+          premiumGiftCode.monthCount,
+          new SenderArgument(new TdlibSender(tdlib, msg.chatId, premiumGiftCode.creatorId), isUserChat())
+        );
+      } else {
+        return getPlural(
+          R.string.AnonymousGiftedPremiumCode,
+          premiumGiftCode.monthCount
+        );
+      }
+    });
+    // TODO design for premiumGiftCode.sticker
+    // TODO show details of the gift code
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageGiftedStars giftedStars) {
@@ -112,26 +151,6 @@ public final class TGMessageService extends TGMessageServiceImpl {
       }
     });
     // TODO design for giftedStars.sticker
-  }
-
-  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessagePremiumGiftCode premiumGiftCode) {
-    super(context, msg);
-    setTextCreator(() -> {
-      if (msg.isOutgoing) {
-        return getPlural(
-          R.string.YouGiftedPremiumCode,
-          premiumGiftCode.monthCount
-        );
-      } else {
-        return getPlural(
-          R.string.GiftedPremiumCode,
-          premiumGiftCode.monthCount,
-          new SenderArgument(new TdlibSender(tdlib, msg.chatId, premiumGiftCode.creatorId), isUserChat())
-        );
-      }
-    });
-    // TODO design for premiumGiftCode.sticker
-    // TODO show details of the gift code
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageGiveawayCreated giveawayCreated) {

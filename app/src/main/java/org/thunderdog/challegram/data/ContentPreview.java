@@ -540,10 +540,31 @@ public class ContentPreview {
         // TODO: R.string.ChatContent*
         TdApi.MessageGiftedPremium giftedPremium = (TdApi.MessageGiftedPremium) message.content;
         CharSequence text;
-        if (message.isOutgoing) {
-          text = Lang.pluralBold(R.string.YouGiftedPremium, giftedPremium.monthCount, CurrencyUtils.buildAmount(giftedPremium.currency, giftedPremium.amount));
+        String amount = CurrencyUtils.buildAmount(giftedPremium.currency, giftedPremium.amount);
+        if (giftedPremium.receiverUserId != 0) {
+          if (message.chatId == ChatId.fromUserId(giftedPremium.receiverUserId)) {
+            text = Lang.pluralBold(R.string.YouGiftedPremium, giftedPremium.monthCount, amount);
+          } else {
+            text = Lang.pluralBold(R.string.YouGiftedPremiumTo, giftedPremium.monthCount, amount, tdlib.senderName(new TdApi.MessageSenderUser(giftedPremium.receiverUserId)));
+          }
+        } else if (giftedPremium.gifterUserId != 0) {
+          text = Lang.pluralBold(R.string.GiftedPremium, giftedPremium.monthCount, tdlib.senderName(new TdApi.MessageSenderUser(giftedPremium.gifterUserId), true), amount);
         } else {
-          text = Lang.pluralBold(R.string.GiftedPremium, giftedPremium.monthCount, tdlib.senderName(message.senderId, true), CurrencyUtils.buildAmount(giftedPremium.currency, giftedPremium.amount));
+          text = Lang.pluralBold(R.string.AnonymousGiftedPremium, giftedPremium.monthCount, amount);
+        }
+        TdApi.FormattedText formatted = TD.toFormattedText(text, false);
+        return new ContentPreview(EMOJI_GIFT, 0, formatted, true);
+      }
+      case TdApi.MessagePremiumGiftCode.CONSTRUCTOR: {
+        // TODO: R.string.ChatContent*
+        TdApi.MessagePremiumGiftCode giftedPremium = (TdApi.MessagePremiumGiftCode) message.content;
+        CharSequence text;
+        if (message.isOutgoing) {
+          text = Lang.pluralBold(R.string.YouGiftedPremiumCode, giftedPremium.monthCount);
+        } else if (giftedPremium.creatorId != null) {
+          text = Lang.pluralBold(R.string.GiftedPremiumCode, giftedPremium.monthCount, tdlib.senderName(giftedPremium.creatorId, true));
+        } else {
+          text = Lang.pluralBold(R.string.AnonymousGiftedPremiumCode, giftedPremium.monthCount);
         }
         TdApi.FormattedText formatted = TD.toFormattedText(text, false);
         return new ContentPreview(EMOJI_GIFT, 0, formatted, true);
@@ -569,18 +590,6 @@ public class ContentPreview {
         }
         TdApi.FormattedText formatted = TD.toFormattedText(text, false);
         return new ContentPreview(EMOJI_STARS, 0, formatted, true);
-      }
-      case TdApi.MessagePremiumGiftCode.CONSTRUCTOR: {
-        // TODO: R.string.ChatContent*
-        TdApi.MessagePremiumGiftCode giftedPremium = (TdApi.MessagePremiumGiftCode) message.content;
-        CharSequence text;
-        if (message.isOutgoing) {
-          text = Lang.pluralBold(R.string.YouGiftedPremiumCode, giftedPremium.monthCount);
-        } else {
-          text = Lang.pluralBold(R.string.GiftedPremiumCode, giftedPremium.monthCount, tdlib.senderName(giftedPremium.creatorId, true));
-        }
-        TdApi.FormattedText formatted = TD.toFormattedText(text, false);
-        return new ContentPreview(EMOJI_GIFT, 0, formatted, true);
       }
       case TdApi.MessageGiveaway.CONSTRUCTOR: {
         TdApi.MessageGiveaway giveaway = (TdApi.MessageGiveaway) message.content;
