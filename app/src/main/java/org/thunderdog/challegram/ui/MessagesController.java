@@ -8914,6 +8914,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (attachedFiles != null && attachedFiles.getParent() != null) {
       attachedFiles.updatePosition(true);
     }
+    if (messagesView != null) {
+      messagesView.invalidate();
+    }
   }
 
   private final int[] cursorCoordinates = new int[2], symbolUnderCursorPosition = new int[2];
