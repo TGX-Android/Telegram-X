@@ -671,78 +671,71 @@ public class VideoGen {
         videoData.editMovie(destinationPath, info.needMute(), info.getRotate(), onProgress, isCancelled);
   }
 
-  public static void appendTwoVideos(String firstVideoPath, String secondVideoPath, String output, boolean needTrimFirstVideo, double startTime, double endTime) {
-    try {
-      Movie[] inMovies = new Movie[2];
+  public static void appendTwoVideos(String firstVideoPath, String secondVideoPath, String output, boolean needTrimFirstVideo, double startTime, double endTime) throws IOException {
+    Movie[] inMovies = new Movie[2];
 
-      inMovies[0] = MovieCreator.build(firstVideoPath);
-      inMovies[1] = MovieCreator.build(secondVideoPath);
+    inMovies[0] = MovieCreator.build(firstVideoPath);
+    inMovies[1] = MovieCreator.build(secondVideoPath);
 
-      List<Track> videoTracks = new LinkedList<>();
-      List<Track> audioTracks = new LinkedList<>();
+    List<Track> videoTracks = new LinkedList<>();
+    List<Track> audioTracks = new LinkedList<>();
 
-      for (int a = 0; a < 2; a++) {
-        final Movie m = inMovies[a];
-        for (Track track : m.getTracks()) {
-          final Track outputTrack;
-          if (needTrimFirstVideo && a == 0 && startTime != -1 && endTime != -1) {
-            long currentSample = 0;
-            double currentTime = 0;
-            double lastTime = -1;
-            long startSample = -1;
-            long endSample = -1;
-            long timescale = track.getTrackMetaData().getTimescale();
-            for (long delta : track.getSampleDurations()) {
-              if (currentTime > lastTime && currentTime <= startTime) {
-                // current sample is still before the new starttime
-                startSample = currentSample;
-              }
-              if (currentTime > lastTime && currentTime <= endTime) {
-                // current sample is after the new start time and still before the new endtime
-                endSample = currentSample;
-              }
-              lastTime = currentTime;
-              currentTime += (double) delta / (double) timescale;
-              currentSample++;
+    for (int a = 0; a < 2; a++) {
+      final Movie m = inMovies[a];
+      for (Track track : m.getTracks()) {
+        final Track outputTrack;
+        if (needTrimFirstVideo && a == 0 && startTime != -1 && endTime != -1) {
+          long currentSample = 0;
+          double currentTime = 0;
+          double lastTime = -1;
+          long startSample = -1;
+          long endSample = -1;
+          long timescale = track.getTrackMetaData().getTimescale();
+          for (long delta : track.getSampleDurations()) {
+            if (currentTime > lastTime && currentTime <= startTime) {
+              // current sample is still before the new starttime
+              startSample = currentSample;
             }
-            if (startSample != -1 && endSample == -1) {
-              endSample = startSample + 1;
+            if (currentTime > lastTime && currentTime <= endTime) {
+              // current sample is after the new start time and still before the new endtime
+              endSample = currentSample;
             }
-            if (startSample == -1 || endSample == -1)
-              throw new IllegalArgumentException();
-            outputTrack = new CroppedTrack(track, startSample, endSample);
-          } else {
-            outputTrack =track;
+            lastTime = currentTime;
+            currentTime += (double) delta / (double) timescale;
+            currentSample++;
           }
+          if (startSample != -1 && endSample == -1) {
+            endSample = startSample + 1;
+          }
+          if (startSample == -1 || endSample == -1)
+            throw new IllegalArgumentException();
+          outputTrack = new CroppedTrack(track, startSample, endSample);
+        } else {
+          outputTrack =track;
+        }
 
-          if (track.getHandler().equals("soun")) {
-            audioTracks.add(outputTrack);
-          }
-          if (track.getHandler().equals("vide")) {
-            videoTracks.add(outputTrack);
-          }
+        if (track.getHandler().equals("soun")) {
+          audioTracks.add(outputTrack);
+        }
+        if (track.getHandler().equals("vide")) {
+          videoTracks.add(outputTrack);
         }
       }
+    }
 
-      Movie result = new Movie();
-      if (!audioTracks.isEmpty()) {
-        result.addTrack(new AppendTrack(audioTracks.toArray(new Track[audioTracks.size()])));
+    Movie result = new Movie();
+    if (!audioTracks.isEmpty()) {
+      result.addTrack(new AppendTrack(audioTracks.toArray(new Track[audioTracks.size()])));
+    }
+    if (!videoTracks.isEmpty()) {
+      result.addTrack(new AppendTrack(videoTracks.toArray(new Track[videoTracks.size()])));
+    }
+
+    BasicContainer out = (BasicContainer) new DefaultMp4Builder().build(result);
+    try (RandomAccessFile f = new RandomAccessFile(output, "rw")) {
+      try (FileChannel fc = f.getChannel()) {
+        out.writeContainer(fc);
       }
-      if (!videoTracks.isEmpty()) {
-        result.addTrack(new AppendTrack(videoTracks.toArray(new Track[videoTracks.size()])));
-      }
-
-      BasicContainer out = (BasicContainer) new DefaultMp4Builder().build(result);
-
-      FileChannel fc = new RandomAccessFile(output, "rw").getChannel();
-      out.writeContainer(fc);
-      fc.close();
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
-      e.printStackTrace();
-    } catch (Throwable e) {
-      e.printStackTrace();
     }
   }
 }
