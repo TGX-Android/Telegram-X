@@ -28,6 +28,7 @@ import android.widget.Toast;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
@@ -1609,6 +1610,7 @@ public class RecordAudioVideoController implements
   private void setRoundGeneration (long generationId, String outputPath) {
     this.roundGenerationId = generationId;
     this.roundOutputPath = outputPath;
+    Log.v("roundOutputPath = %s", Log.generateException(), outputPath);
     checkActualRecording(CLOSE_MODE_CANCEL);
   }
 
@@ -1642,6 +1644,7 @@ public class RecordAudioVideoController implements
       tdlib.files().unsubscribe(roundFile.id, this);
       roundFile = null;
     }
+    Log.v("roundOutputPath -> null", Log.generateException());
     roundOutputPath = null;
     roundGenerationId = 0;
     roundKey = null;
@@ -1748,21 +1751,23 @@ public class RecordAudioVideoController implements
     deleteVoiceRecord();
   }
 
-  private void finishFileGeneration (long resultFileSize) {
+  private void finishFileGeneration (long resultFileSize, @Nullable Runnable after) {
     if (prevVideoPath != null) {
       Background.instance().post(() -> {
+        if (StringUtils.isEmpty(prevVideoPath) || StringUtils.isEmpty(roundOutputPath))
+          throw new IllegalStateException();
         try {
           VideoGen.appendTwoVideos(prevVideoPath, roundOutputPath, roundOutputPath + ".merge", prevVideoHasTrim, prevVideoTrimStart, prevVideoTrimEnd);
         } catch (Exception e) {
           throw new RuntimeException(e);
         }
         U.moveFile(new File(roundOutputPath + ".merge"), new File(roundOutputPath));
-        tdlib.client().send(new TdApi.FinishFileGeneration(roundGenerationId, null), tdlib.silentHandler());
+        tdlib.client().send(new TdApi.FinishFileGeneration(roundGenerationId, null), tdlib.silentHandler(after));
       });
       return;
     }
     tdlib.client().send(new TdApi.SetFileGenerationProgress(roundGenerationId, resultFileSize, resultFileSize), tdlib.silentHandler());
-    tdlib.client().send(new TdApi.FinishFileGeneration(roundGenerationId, null), tdlib.silentHandler());
+    tdlib.client().send(new TdApi.FinishFileGeneration(roundGenerationId, null), tdlib.silentHandler(after));
   }
 
   private static final int VIDEO_NOTE_LENGTH = 360;
@@ -1776,14 +1781,14 @@ public class RecordAudioVideoController implements
           this.savedRoundDurationSeconds += (int) resultFileDurationUnit.toSeconds(resultFileDuration);
           if (roundCloseMode == CLOSE_MODE_PREVIEW || roundCloseMode == CLOSE_MODE_PREVIEW_SCHEDULE) {
             awaitRoundVideo();
-            finishFileGeneration(resultFileSize);
+            finishFileGeneration(resultFileSize, null);
           } else {
-            finishFileGeneration(resultFileSize);
-            sendVideoNote(new TdApi.InputMessageVideoNote(new TdApi.InputFileId(roundFile.id), null, savedRoundDurationSeconds, VIDEO_NOTE_LENGTH, obtainSelfDestructType()), Td.newSendOptions(), roundFile);
+            finishFileGeneration(resultFileSize, () ->
+              sendVideoNote(new TdApi.InputMessageVideoNote(new TdApi.InputFileId(roundFile.id), null, savedRoundDurationSeconds, VIDEO_NOTE_LENGTH, obtainSelfDestructType()), Td.newSendOptions(), roundFile)
+            );
           }
         } else {
-          finishFileGeneration(-1);
-          cancelAwaitRoundRecord();
+          finishFileGeneration(-1, this::cancelAwaitRoundRecord);
         }
       } else if (!success) {
         stopRecording(CLOSE_MODE_CANCEL, false);
