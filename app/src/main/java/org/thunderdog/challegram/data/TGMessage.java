@@ -5081,7 +5081,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final boolean canBeReported () {
-    return !isSelfChat() && msg.sendingState == null && !msg.isOutgoing && tdlib.canReportChatSpam(msg.chatId) && !isEventLog();
+    if (isSponsoredMessage()) {
+      return sponsoredMessage.canBeReported;
+    } else {
+      return !isSelfChat() && msg.sendingState == null && !msg.isOutgoing && tdlib.canReportChatSpam(msg.chatId) && !isEventLog();
+    }
   }
 
   public final boolean canViewStatistics () {

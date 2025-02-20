@@ -5551,4 +5551,13 @@
   <string name="PlaybackSpeedHintTemplate">%1$s.\n%2$s.</string>
 
   <string name="DeactivatedBot">deactivated bot</string>
+
+  <string name="ReportAd">Report Ad</string>
+  <string name="ReportAdSubtitle">What\'s wrong with this ad?</string>
+  <string name="ReportAdPolicy">Learn more about our [Ad Policies and Guidelines](https://ads.telegram.org/guidelines).</string>
+  <string name="ReportAdOk">Add will be reviewed by moderators.</string>
+  <string name="ReportAdFail">There was an error while reporting this ad.</string>
+  <string name="ReportAdHidden">You will no longer see any ads.</string>
+  <string name="ReportAdPremiumRequired">**Telegram Premium** subscription is required to hide ads.</string>
+
 </resources>
