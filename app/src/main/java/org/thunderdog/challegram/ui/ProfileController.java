@@ -3624,7 +3624,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       hasHideMembersChanges() ||
       hasContentProtectionChanges() ||
       hasJoinByRequestChanges() ||
-      hasSignMessagesChanges();
+      hasSignMessagesChanges() ||
+      hasShowAuthorsChanges();
   }
 
   private boolean hasSlowModeChanges () {
@@ -3655,6 +3656,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   private boolean hasSignMessagesChanges () {
     boolean originalValue = supergroup != null && supergroup.signMessages;
     return toggleSignMessagesItem != null && originalValue != toggleSignMessagesItem.isSelected();
+  }
+
+  private boolean hasShowAuthorsChanges () {
+    boolean originalValue = supergroup != null && supergroup.showMessageSender;
+    return toggleShowAuthorsItem != null && originalValue != toggleShowAuthorsItem.isSelected();
   }
 
   private boolean hasTtlChanges () {
@@ -3704,8 +3710,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     boolean hasContentProtectionChanges = hasContentProtectionChanges();
     boolean hasJoinByRequestChanges = hasJoinByRequestChanges();
     boolean hasSignMessagesChanges = hasSignMessagesChanges();
+    boolean hasShowAuthorsChanges = hasShowAuthorsChanges();
 
-    if (!force && (hasSlowModeChanges || hasAggressiveAntiSpamChanges || hasHideMembersChanges || hasJoinByRequestChanges || hasSignMessagesChanges) && ChatId.isBasicGroup(chat.id)) {
+    if (!force && (hasSlowModeChanges || hasAggressiveAntiSpamChanges || hasHideMembersChanges || hasJoinByRequestChanges || hasSignMessagesChanges || hasShowAuthorsChanges) && ChatId.isBasicGroup(chat.id)) {
       showConfirm(Lang.getMarkdownString(this, R.string.UpgradeChatPrompt), Lang.getString(R.string.Proceed), () -> applyChatChanges(true));
       return;
     }
@@ -3761,7 +3768,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       changes.add(new TdApi.ToggleSupergroupHasHiddenMembers(ChatId.toSupergroupId(chat.id), hideMembersItem.isSelected()));
     }
 
-    if (hasSignMessagesChanges) {
+    if (hasSignMessagesChanges || hasShowAuthorsChanges) {
       boolean signMessages = toggleSignMessagesItem.isSelected();
       boolean showAuthors = signMessages && toggleShowAuthorsItem.isSelected();
       changes.add(new TdApi.ToggleSupergroupSignMessages(ChatId.toSupergroupId(chat.id), signMessages, showAuthors));
@@ -4876,6 +4883,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       editLinkedChat();
     } else if (viewId == R.id.btn_toggleSignatures) {
       toggleChannelSignatures(v);
+    } else if (viewId == R.id.btn_toggleShowAuthors) {
+      toggleChannelShowAuthors(v);
     } else if (viewId == R.id.btn_toggleAggressiveAntiSpam) {
       toggleAggressiveAntiSpam(v);
     } else if (viewId == R.id.btn_toggleHideMembers) {
