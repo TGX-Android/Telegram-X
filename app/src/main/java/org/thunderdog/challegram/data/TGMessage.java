@@ -1017,9 +1017,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final void openMessageThread () {
     TdApi.Message messageWithReplyInfo = findMessageWithReplyInfo();
-    if (messageWithReplyInfo == null)
-      return;
-    getMessageProperties(messageWithReplyInfo.id, properties -> {
+    TdApi.Message targetMessage = messageWithReplyInfo != null ? messageWithReplyInfo : getNewestMessage();
+    getMessageProperties(targetMessage.id, properties -> {
       if (!properties.canGetMessageThread)
         return;
       MessageId highlightMessageId;
@@ -1028,12 +1027,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         highlightMessageId = null;
       } else if (isMessageThreadRoot()) {
         // View X Replies
-        highlightMessageId = new MessageId(messageWithReplyInfo.chatId, MessageId.MIN_VALID_ID);
+        highlightMessageId = new MessageId(targetMessage.chatId, MessageId.MIN_VALID_ID);
       } else {
         // View Thread
         highlightMessageId = toMessageId();
       }
-      openMessageThread(new TdApi.GetMessageThread(messageWithReplyInfo.chatId, messageWithReplyInfo.id), highlightMessageId);
+      openMessageThread(new TdApi.GetMessageThread(targetMessage.chatId, targetMessage.id), highlightMessageId);
     });
   }
 
