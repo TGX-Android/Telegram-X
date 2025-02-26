@@ -174,6 +174,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     private float selectionFactor;
     private SimplestCheckBox checkBox;
     private TdApi.FormattedText textSource;
+    @Nullable
     private TextWrapper text;
     private ProgressComponent progress;
     private BoolAnimator isSelected;
@@ -372,6 +373,9 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     int optionId = 0;
     for (TdApi.PollOption option : options) {
       TdApi.FormattedText optionToSet = (translatedTexts != null ? Td.trim(translatedTexts[optionId + 1]) : option.text);
+      if (optionToSet == null) {
+        optionToSet = Td.emptyFormattedText();
+      }
       if (!Td.equalsTo(this.options[optionId].textSource, optionToSet)) {
         this.options[optionId].textSource = optionToSet;
         this.options[optionId].text = new TextWrapper(tdlib, optionToSet, getTextStyleProvider(), getTextColorSet(), openParameters(), (wrapper, text, specificMedia) -> TGMessagePoll.this.invalidateTextMediaReceiver(text, specificMedia))
@@ -437,7 +441,9 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     }
     int optionWidth = maxWidth - Screen.dp(34f);
     for (OptionEntry option : this.options) {
-      option.text.prepare(optionWidth);
+      if (option.text != null) {
+        option.text.prepare(optionWidth);
+      }
     }
   }
 
@@ -684,8 +690,10 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
         c.drawRect(startX - (useBubbles() ? getBubbleContentPadding() : 0), startY, rightX, startY + optionHeight, Paints.fillingPaint(Theme.getColor(getPressColorId())));
       }
 
-      int optionTextY = startY + Math.max(Screen.dp(8f), Screen.dp(46f) / 2 - option.text.getLineHeight() / 2);
-      option.text.draw(c, startX + Screen.dp(34f), startX + maxWidth, 0, optionTextY, null, alpha, view.getTextMediaReceiver());
+      int optionTextY = startY + Math.max(Screen.dp(8f), Screen.dp(46f) / 2 - (option.text != null ? option.text.getLineHeight() / 2 : 0));
+      if (option.text != null) {
+        option.text.draw(c, startX + Screen.dp(34f), startX + maxWidth, 0, optionTextY, null, alpha, view.getTextMediaReceiver());
+      }
 
       float progress = getResultProgress(optionId);
       float stateVisibility = visibility >= .5f ? 0f : 1f - visibility / .5f;
@@ -1487,7 +1495,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
               int startY = getQuestionTitleHeight();
               startY += Screen.dp(18f);
               for (OptionEntry options : options) {
-                startY += Math.max(Screen.dp(46f), options.text.getHeight()) + Screen.separatorSize();
+                startY += Math.max(Screen.dp(46f), options.text != null ? options.text.getHeight() : 0) + Screen.separatorSize();
               }
               outRect.set(0, startY, getContentWidth(), getContentHeight());
             }, R.string.ErrorScheduled);
@@ -1559,7 +1567,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
             int optionHeight = getOptionHeight(option.text);
             if (selectedOptionId == optionId) {
               startY += Screen.dp(15f);
-              outRect.set(Screen.dp(34f), startY, Screen.dp(34f) + option.text.getLineWidth(0), startY + option.text.getLineHeight());
+              outRect.set(Screen.dp(34f), startY, Screen.dp(34f) + (option.text != null ? option.text.getLineWidth(0) : 0), startY + (option.text != null ? option.text.getLineHeight() : 0));
               return;
             }
             startY += optionHeight;
@@ -1576,8 +1584,17 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     }
   }
 
-  private int getOptionHeight (TextWrapper text) {
-    return Math.max(Screen.dp(46f), Math.max(Screen.dp(8f), (Screen.dp(46f) / 2 - text.getLineHeight() / 2)) + text.getHeight() + Screen.dp(12f)) + Screen.separatorSize();
+  private int getOptionHeight (@Nullable TextWrapper text) {
+    if (text == null) {
+      return Screen.dp(46f);
+    }
+    return Math.max(
+      Screen.dp(46f),
+      Math.max(
+        Screen.dp(8f),
+        (Screen.dp(46f) / 2 - text.getLineHeight() / 2)
+      ) + text.getHeight() + Screen.dp(12f)
+    ) + Screen.separatorSize();
   }
 
   private void chooseOption (final View view, final int optionId) {
