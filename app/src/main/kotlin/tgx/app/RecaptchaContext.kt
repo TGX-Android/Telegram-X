@@ -9,7 +9,7 @@ private typealias Callback = (RecaptchaTasksClient?, Exception?) -> Unit
 
 class RecaptchaContext @JvmOverloads constructor(
   val application: Application,
-  val recaptchaKeyId: String = BuildConfig.RECAPTCHA_KEY_ID
+  val recaptchaKeyId: String? = BuildConfig.RECAPTCHA_KEY_ID
 ) {
   private var initializationStarted: Boolean = false
   private var client: RecaptchaTasksClient? = null
@@ -23,15 +23,20 @@ class RecaptchaContext @JvmOverloads constructor(
     if (initializationStarted)
       return
     initializationStarted = true
-    Recaptcha.getTasksClient(application, recaptchaKeyId)
-      .addOnSuccessListener {
-        client = it
-        executeScheduledTasks()
-      }
-      .addOnFailureListener {
-        fatalError = it
-        executeScheduledTasks()
-      }
+    recaptchaKeyId.takeIf { !it.isNullOrEmpty() }?.let { key ->
+      Recaptcha.getTasksClient(application, key)
+        .addOnSuccessListener {
+          client = it
+          executeScheduledTasks()
+        }
+        .addOnFailureListener {
+          fatalError = it
+          executeScheduledTasks()
+        }
+    } ?: {
+      fatalError = IllegalStateException("ReCaptcha unavailable")
+      executeScheduledTasks()
+    }
   }
 
   fun withClient(callback: Callback) {
