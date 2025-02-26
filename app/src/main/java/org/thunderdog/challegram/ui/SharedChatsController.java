@@ -27,6 +27,7 @@ import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.v.MediaRecyclerView;
 import org.thunderdog.challegram.widget.CheckBoxView;
@@ -200,7 +201,7 @@ public class SharedChatsController extends SharedBaseController<DoubleTextWrappe
           break;
         case Mode.SIMILAR_CHANNELS:
           tdlib.send(new TdApi.OpenChatSimilarChat(getChatId(), chatId), tdlib.typedOkHandler());
-          tdlib.ui().openChat(this, chatId, null);
+          tdlib.ui().openChat(this, chatId, new TdlibUi.ChatOpenParameters().keepStack());
           break;
         default:
           throw new IllegalStateException();
