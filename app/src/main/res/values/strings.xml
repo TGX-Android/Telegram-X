@@ -1372,6 +1372,9 @@
   <string name="SimilarChannels">Similar Channels</string>
   <string name="xSimilarChannels_one">%1$s similar channel</string>
   <string name="xSimilarChannels_other">%1$s similar channels</string>
+  <string name="SimilarBots">Similar Bots</string>
+  <string name="xSimilarBots_one">%1$s similar bot</string>
+  <string name="xSimilarBots_other">%1$s similar bots</string>
   <string name="xMoreWithPremium_one">%1$s more with **Telegram Premium**</string>
   <string name="xMoreWithPremium_other">%1$s more with **Telegram Premium**</string>
   <string name="format_xChatsAndMoreWithPremium">%1$s, %2$s</string>
@@ -2813,6 +2816,7 @@
   <string name="TabAudio">Audio</string>
   <string name="TabSharedGroups">Groups</string>
   <string name="TabSimilarChannels">Similar</string>
+  <string name="TabSimilarBots">Similar</string>
   <string name="TabAdmins">Admins</string>
   <string name="TabBlacklist">Blocked</string>
   <string name="TabRestricted">Restricted</string>
@@ -5559,5 +5563,8 @@
   <string name="ReportAdFail">There was an error while reporting this ad.</string>
   <string name="ReportAdHidden">You will no longer see any ads.</string>
   <string name="ReportAdPremiumRequired">**Telegram Premium** subscription is required to hide ads.</string>
+
+  <string name="xBotUsers_one">%1$s monthly user</string>
+  <string name="xBotUsers_other">%1$s monthly users</string>
 
 </resources>

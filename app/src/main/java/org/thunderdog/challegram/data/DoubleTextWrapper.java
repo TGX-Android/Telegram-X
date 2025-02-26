@@ -22,6 +22,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
@@ -52,8 +53,12 @@ import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.widget.SimplestCheckBoxHelper;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
 import me.vkryl.android.animator.BounceAnimator;
 import me.vkryl.android.util.MultipleViewProvider;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import tgx.td.ChatId;
 import tgx.td.Td;
@@ -123,10 +128,29 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
   }
 
   public DoubleTextWrapper (Tdlib tdlib, long userId, boolean needSubtitle) {
+    this(tdlib, userId, needSubtitle, 0);
+  }
+
+  @SubtitleOption
+  private int subtitleOptions = SubtitleOption.NONE;
+
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef(value = {
+    SubtitleOption.NONE,
+    SubtitleOption.SHOW_ACCESS_TO_MESSAGE_PRIVACY
+  }, flag = true)
+  public @interface SubtitleOption {
+    int
+      NONE = 0,
+      SHOW_ACCESS_TO_MESSAGE_PRIVACY = 1;
+  }
+
+  public DoubleTextWrapper (Tdlib tdlib, long userId, boolean needSubtitle, @SubtitleOption int subtitleOptions) {
     this.tdlib = tdlib;
 
     this.userId = userId;
     this.user = tdlib.cache().user(userId);
+    this.subtitleOptions = subtitleOptions;
 
     setChatMark(Td.isScam(this.user), Td.isFake(this.user));
     setTitle(TD.getUserName(user));
@@ -163,7 +187,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
     DoubleTextWrapper item;
     switch (member.memberId.getConstructor()) {
       case TdApi.MessageSenderUser.CONSTRUCTOR: {
-        item = new DoubleTextWrapper(tdlib, ((TdApi.MessageSenderUser) member.memberId).userId, !needFullDescription);
+        item = new DoubleTextWrapper(tdlib, ((TdApi.MessageSenderUser) member.memberId).userId, !needFullDescription, DoubleTextWrapper.SubtitleOption.SHOW_ACCESS_TO_MESSAGE_PRIVACY);
         break;
       }
       case TdApi.MessageSenderChat.CONSTRUCTOR: {
@@ -282,10 +306,10 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
     if (userId != 0) {
       TdApi.User user = tdlib.cache().user(userId);
       boolean isOnline = TD.isOnline(user);
-      String newSubtitle;
+      CharSequence newSubtitle;
       if (isOnline) {
         newSubtitle = Lang.getString(R.string.status_Online);
-      } else if (user != null && user.type.getConstructor() == TdApi.UserTypeBot.CONSTRUCTOR) {
+      } else if (user != null && user.type.getConstructor() == TdApi.UserTypeBot.CONSTRUCTOR && BitwiseUtils.hasFlag(subtitleOptions, SubtitleOption.SHOW_ACCESS_TO_MESSAGE_PRIVACY)) {
         boolean hasAccess = ((TdApi.UserTypeBot) user.type).canReadAllGroupMessages;
         newSubtitle = Lang.getString(hasAccess ? R.string.BotStatusRead : R.string.BotStatusCantRead);
       } else {

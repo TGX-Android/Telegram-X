@@ -2534,12 +2534,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
   }
 
-  private SharedChatsController getCommonChatsController () {
+  private SharedChatsController getCommonChatsController (@SharedChatsController.Mode int mode) {
     ArrayList<SharedBaseController<?>> controllers = getControllers();
     final int count = controllers.size();
     for (int i = count - 1; i >= 0; i--) {
       SharedBaseController<?> c = controllers.get(i);
-      if (c instanceof SharedChatsController) {
+      if (c instanceof SharedChatsController && ((SharedChatsController) c).getMode() == mode) {
         return (SharedChatsController) c;
       }
     }
@@ -2566,7 +2566,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       return;
     }
     final boolean needGroups = userFull != null && userFull.groupInCommonCount > 0;
-    final SharedChatsController existingGroupsController = getCommonChatsController();
+    final SharedChatsController existingGroupsController = getCommonChatsController(SharedChatsController.Mode.GROUPS_IN_COMMON);
     boolean hasGroups = existingGroupsController != null;
     if (needGroups != hasGroups) {
       if (needGroups) {
@@ -5816,7 +5816,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             } else {
               fillMediaControllers(controllers, context, tdlib);
             }
-            getSimilarChatsCount(true);
+            getSimilarChatsCount(false, true);
+            getSimilarChatsCount(true, true);
           } else {
             controllers.add(new SharedRestrictionController(context, tdlib).setRestrictionReason(restrictionReason));
           }
@@ -5826,7 +5827,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             case Mode.SECRET:
               TdApi.UserFullInfo userFull = tdlib.cache().userFull(user.id);
               if (userFull != null && userFull.groupInCommonCount > 0) {
-                controllers.add(new SharedChatsController(context, tdlib));
+                SharedChatsController c = new SharedChatsController(context, tdlib);
+                c.setMode(SharedChatsController.Mode.GROUPS_IN_COMMON);
+                controllers.add(c);
               }
               break;
             case Mode.CHANNEL:
@@ -5880,18 +5883,23 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     pagerAdapter.notifyDataSetChanged();
   }
 
-  private int similarChatCount;
+  private int similarChatCount, similarBotsCount;
 
-  private void setSimilarChatCount (int count) {
+  private void setSimilarChatCount (boolean similarBots, int count) {
     boolean needSimilarChats = count > 0;
-    final SharedChatsController existingChatsController = getCommonChatsController();
+    @SharedChatsController.Mode int targetMode = similarBots ? SharedChatsController.Mode.SIMILAR_BOTS : SharedChatsController.Mode.SIMILAR_CHANNELS;
+    final SharedChatsController existingChatsController = getCommonChatsController(targetMode);
     boolean hasSimilarChats = existingChatsController != null;
-    this.similarChatCount = count;
+    if (similarBots) {
+      this.similarBotsCount = count;
+    } else {
+      this.similarChatCount = count;
+    }
 
     if (needSimilarChats != hasSimilarChats) {
       if (needSimilarChats) {
         SharedChatsController c = new SharedChatsController(context, tdlib);
-        c.setMode(SharedChatsController.Mode.SIMILAR_CHANNELS);
+        c.setMode(targetMode);
         c.setTotalCountWithPremium(count);
         addControllerTab(c);
       } else {
@@ -5900,23 +5908,29 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
   }
 
-  private void getSimilarChatsCount (boolean returnLocal) {
-    if (!isChannel() || isEditing()) {
+  private void getSimilarChatsCount (boolean similarBots, boolean returnLocal) {
+    if (isEditing()) {
       return;
     }
-    tdlib.send(new TdApi.GetChatSimilarChatCount(getChatId(), returnLocal), (similarChatCount, error) -> {
+    if (similarBots ? (mode != Mode.USER && mode != Mode.SECRET) : !isChannel()) {
+      return;
+    }
+    TdApi.Function<TdApi.Count> function = similarBots ?
+      new TdApi.GetBotSimilarBotCount(tdlib.chatUserId(getChatId()), returnLocal) :
+      new TdApi.GetChatSimilarChatCount(getChatId(), returnLocal);
+    tdlib.send(function, (similarChatCount, error) -> {
       int count;
       if (error != null) {
-        Log.e("TDLib error getChatSimilarChatCount chatId:%d, returnLocal:%b: %s", getChatId(), returnLocal, TD.toErrorString(error));
+        Log.e("TDLib error getChatSimilarChatCount chatId:%d, bots:%b returnLocal:%b: %s", getChatId(), similarBots, returnLocal, TD.toErrorString(error));
         count = -1;
       } else {
         count = similarChatCount.count;
       }
-      runOnUiThreadOptional(() -> {
-        setSimilarChatCount(count);
-      });
+      runOnUiThreadOptional(() ->
+        setSimilarChatCount(similarBots, count)
+      );
       if (returnLocal && count == -1) {
-        getSimilarChatsCount(false);
+        getSimilarChatsCount(similarBots, false);
       }
     });
   }
@@ -6294,6 +6308,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             }
             case SharedChatsController.Mode.SIMILAR_CHANNELS: {
               return Lang.pluralBold(R.string.xSimilarChannels, similarChatCount);
+            }
+            case SharedChatsController.Mode.SIMILAR_BOTS: {
+              return Lang.pluralBold(R.string.xSimilarBots, similarBotsCount);
             }
             default:
               throw new IllegalStateException();

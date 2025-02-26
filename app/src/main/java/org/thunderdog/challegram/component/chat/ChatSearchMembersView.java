@@ -474,7 +474,7 @@ public class ChatSearchMembersView extends FrameLayout implements TdlibCache.Bas
         return DoubleTextWrapper.valueOf(tdlib, (TdApi.ChatMember) object, false, true);
       }
       case TdApi.User.CONSTRUCTOR: {
-        return new DoubleTextWrapper(tdlib, ((TdApi.User) object).id, true);
+        return new DoubleTextWrapper(tdlib, ((TdApi.User) object).id, true, DoubleTextWrapper.SubtitleOption.SHOW_ACCESS_TO_MESSAGE_PRIVACY);
       }
     }
     return null;
