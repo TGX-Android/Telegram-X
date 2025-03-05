@@ -84,6 +84,7 @@ import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.util.RateLimiter;
 import org.thunderdog.challegram.util.text.TextColorSetOverride;
 import org.thunderdog.challegram.util.text.TextColorSets;
+import org.thunderdog.challegram.voip.annotation.CallState;
 import org.thunderdog.challegram.voip.gui.CallSettings;
 import org.thunderdog.challegram.widget.AvatarView;
 import org.thunderdog.challegram.widget.EmojiTextView;
@@ -1285,6 +1286,73 @@ public class CallController extends ViewController<CallController.Arguments> imp
   public void onCallStateChanged (final int callId, final int newState) {
     if (!isDestroyed()) {
       updateCallState();
+      if (newState == CallState.ESTABLISHED) {
+        AndroidUtils.runOnUIThread(() -> {
+          TGCallService service = TGCallService.currentInstance();
+          if (service != null) {
+            if (service.isVideoSupported()) {
+              videoButtonContainer.setVisibility(View.VISIBLE);
+            }
+            otherOptionsContainer.setVisibility(View.VISIBLE);
+            messageButtonContainer.setVisibility(View.GONE);
+            if (callSettings == null) {
+              callSettings = new CallSettings(tdlib, call.id);
+            }
+            service.setRemoteSourceChangeCallback((chatId, remoteSource) -> AndroidUtils.runOnUIThread(() -> {
+              if (remoteSource.device == StreamDevice.CAMERA || remoteSource.device == StreamDevice.SCREEN) {
+                var currentUserActive = callSettings.getLocalCameraState() != VoIPFloatingLayout.STATE_GONE;
+                if (remoteSource.state == SourceState.ACTIVE) {
+                  callSettings.setRemoteCameraState(VoIPFloatingLayout.STATE_FULLSCREEN);
+                  callingUserTextureView.setVisibility(View.VISIBLE);
+                  callingUserTextureView.renderer.init(JavaVideoCapturerModule.getSharedEGLContext(), null);
+                  callingUserMiniTextureRenderer.init(JavaVideoCapturerModule.getSharedEGLContext(), null);
+                  if (currentUserActive) callSettings.setLocalCameraState(VoIPFloatingLayout.STATE_FLOATING);
+                } else if (remoteSource.state == SourceState.INACTIVE) {
+                  callSettings.setRemoteCameraState(VoIPFloatingLayout.STATE_GONE);
+                  callingUserTextureView.setVisibility(View.GONE);
+                  callingUserTextureView.stopCapturing();
+                  callingUserMiniTextureRenderer.release();
+                  if (currentUserActive) callSettings.setLocalCameraState(VoIPFloatingLayout.STATE_FULLSCREEN);
+                }
+                if (currentUserActive) showFloatingLayout(true);
+                showMiniFloatingLayout(true);
+              }
+            }));
+            service.setFrameCallback((chatId, streamMode, streamDevice, frameList) -> {
+              var isVideo = streamDevice == StreamDevice.CAMERA || streamDevice == StreamDevice.SCREEN;
+              if (isVideo) {
+                var rawFrame = frameList.get(0);
+                int ySize = rawFrame.frameData.width * rawFrame.frameData.height;
+                int uvSize = ySize / 4;
+                var i420Buffer = JavaI420Buffer.allocate(rawFrame.frameData.width, rawFrame.frameData.height);
+                i420Buffer.getDataY().put(rawFrame.data, 0, ySize).flip();
+                i420Buffer.getDataU().put(rawFrame.data, ySize, uvSize).flip();
+                i420Buffer.getDataV().put(rawFrame.data, ySize + uvSize, uvSize).flip();
+                VideoFrame frame = new VideoFrame(i420Buffer, rawFrame.frameData.rotation, System.nanoTime());
+
+                switch (streamMode) {
+                  case CAPTURE:
+                    if (callSettings.getLocalCameraState() != VoIPFloatingLayout.STATE_GONE) {
+                      currentUserTextureView.onFrame(frame);
+                    }
+                    break;
+                  case PLAYBACK:
+                    switch (callSettings.getRemoteCameraState()) {
+                      case VoIPFloatingLayout.STATE_FULLSCREEN:
+                        callingUserTextureView.onFrame(frame);
+                        break;
+                      case VoIPFloatingLayout.STATE_FLOATING:
+                        callingUserMiniTextureRenderer.onFrame(frame);
+                        break;
+                    }
+                    break;
+                }
+                i420Buffer.release();
+              }
+            });
+          }
+        });
+      }
     }
   }
 
@@ -1358,67 +1426,6 @@ public class CallController extends ViewController<CallController.Arguments> imp
     }
     stateView.setText(str.toUpperCase());
     setButtonsVisible(!TD.isFinished(call) && !(call.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR && !call.isOutgoing), isFocused());
-    if (call.state.getConstructor() == TdApi.CallStateReady.CONSTRUCTOR && !TD.isFinished(call)) {
-      AndroidUtils.runOnUIThread(() -> {
-        TGCallService service = TGCallService.currentInstance();
-        if (service != null) {
-          if (callSettings == null) {
-            callSettings = new CallSettings(tdlib, call.id);
-          }
-          service.setRemoteSourceChangeCallback((chatId, remoteSource) -> AndroidUtils.runOnUIThread(() -> {
-            if (remoteSource.device == StreamDevice.CAMERA || remoteSource.device == StreamDevice.SCREEN) {
-              var currentUserActive = callSettings.getLocalCameraState() != VoIPFloatingLayout.STATE_GONE;
-              if (remoteSource.state == SourceState.ACTIVE) {
-                callSettings.setRemoteCameraState(VoIPFloatingLayout.STATE_FULLSCREEN);
-                callingUserTextureView.setVisibility(View.VISIBLE);
-                callingUserTextureView.renderer.init(JavaVideoCapturerModule.getSharedEGLContext(), null);
-                callingUserMiniTextureRenderer.init(JavaVideoCapturerModule.getSharedEGLContext(), null);
-                if (currentUserActive) callSettings.setLocalCameraState(VoIPFloatingLayout.STATE_FLOATING);
-              } else if (remoteSource.state == SourceState.INACTIVE) {
-                callSettings.setRemoteCameraState(VoIPFloatingLayout.STATE_GONE);
-                callingUserTextureView.setVisibility(View.GONE);
-                callingUserTextureView.stopCapturing();
-                callingUserMiniTextureRenderer.release();
-                if (currentUserActive) callSettings.setLocalCameraState(VoIPFloatingLayout.STATE_FULLSCREEN);
-              }
-              if (currentUserActive) showFloatingLayout(true);
-              showMiniFloatingLayout(true);
-            }
-          }));
-          service.setFrameCallback((chatId, userId, streamMode, streamDevice, bytes, frameData) -> {
-            var isVideo = streamDevice == StreamDevice.CAMERA || streamDevice == StreamDevice.SCREEN;
-            if (isVideo) {
-              int ySize = frameData.width * frameData.height;
-              int uvSize = ySize / 4;
-              var i420Buffer = JavaI420Buffer.allocate(frameData.width, frameData.height);
-              i420Buffer.getDataY().put(bytes, 0, ySize).flip();
-              i420Buffer.getDataU().put(bytes, ySize, uvSize).flip();
-              i420Buffer.getDataV().put(bytes, ySize + uvSize, uvSize).flip();
-              VideoFrame frame = new VideoFrame(i420Buffer, frameData.rotation, System.nanoTime());
-
-              switch (streamMode) {
-                case CAPTURE:
-                  if (callSettings.getLocalCameraState() != VoIPFloatingLayout.STATE_GONE) {
-                    currentUserTextureView.onFrame(frame);
-                  }
-                  break;
-                case PLAYBACK:
-                  switch (callSettings.getRemoteCameraState()) {
-                    case VoIPFloatingLayout.STATE_FULLSCREEN:
-                      callingUserTextureView.onFrame(frame);
-                      break;
-                    case VoIPFloatingLayout.STATE_FLOATING:
-                      callingUserMiniTextureRenderer.onFrame(frame);
-                      break;
-                  }
-                  break;
-              }
-              i420Buffer.release();
-            }
-          });
-        }
-      });
-    }
     updateEmoji();
     updateFlashing();
     updateCallStrength();
@@ -1455,12 +1462,6 @@ public class CallController extends ViewController<CallController.Arguments> imp
   private void updateEmoji () {
     boolean emojiVisible = (call.state.getConstructor() == TdApi.CallStateReady.CONSTRUCTOR);
     if (emojiVisible && StringUtils.isEmpty(emojiViewSmall.getText())) {
-      TGCallService service = TGCallService.currentInstance();
-      if (service != null && service.isVideoSupported()) {
-        videoButtonContainer.setVisibility(View.VISIBLE);
-      }
-      otherOptionsContainer.setVisibility(View.VISIBLE);
-      messageButtonContainer.setVisibility(View.GONE);
       TdApi.CallStateReady ready = (TdApi.CallStateReady) call.state;
 
       StringBuilder b = new StringBuilder();
