@@ -200,7 +200,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
         outline.reset();
       }
       if (sticker != null) {
-        outline = Td.buildOutline(sticker, width, height, outline);
+        // FIXME outline = Td.buildOutline(sticker, width, height, outline);
         if (staticFile != null) {
           staticFile.setSize(Math.max(width, height));
         }

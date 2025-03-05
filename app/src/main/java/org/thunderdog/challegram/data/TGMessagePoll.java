@@ -174,6 +174,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     private float selectionFactor;
     private SimplestCheckBox checkBox;
     private TdApi.FormattedText textSource;
+    @Nullable
     private TextWrapper text;
     private ProgressComponent progress;
     private BoolAnimator isSelected;
@@ -232,7 +233,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
   private final ReplaceAnimator<Button> button;
 
   private TdApi.FormattedText questionTextSource;
-  private TextWrapper questionText;
+  private @Nullable TextWrapper questionText;
 
   // Animation
 
@@ -372,6 +373,9 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     int optionId = 0;
     for (TdApi.PollOption option : options) {
       TdApi.FormattedText optionToSet = (translatedTexts != null ? Td.trim(translatedTexts[optionId + 1]) : option.text);
+      if (optionToSet == null) {
+        optionToSet = Td.emptyFormattedText();
+      }
       if (!Td.equalsTo(this.options[optionId].textSource, optionToSet)) {
         this.options[optionId].textSource = optionToSet;
         this.options[optionId].text = new TextWrapper(tdlib, optionToSet, getTextStyleProvider(), getTextColorSet(), openParameters(), (wrapper, text, specificMedia) -> TGMessagePoll.this.invalidateTextMediaReceiver(text, specificMedia))
@@ -432,16 +436,20 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       setTexts();
       setButton(false);
     }
-    questionText.prepare(maxWidth);
+    if (questionText != null) {
+      questionText.prepare(maxWidth);
+    }
     int optionWidth = maxWidth - Screen.dp(34f);
     for (OptionEntry option : this.options) {
-      option.text.prepare(optionWidth);
+      if (option.text != null) {
+        option.text.prepare(optionWidth);
+      }
     }
   }
 
   @Override
   protected int getContentHeight () {
-    int height = (questionText != null ? questionText.getHeight() : 0) + Screen.dp(5f);
+    int height = getQuestionTitleHeight();
     height += Screen.dp(18f); // poll status
     if (options != null) {
       for (OptionEntry option : options) {
@@ -492,7 +500,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     drawContent(view, c, startX, startY, maxWidth);
 
     // First, draw question
-    startY += questionText.getHeight() + Screen.dp(5f);
+    startY += getQuestionTitleHeight();
     // Second, draw status
     startY += Screen.dp(18f);
 
@@ -519,9 +527,13 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     return getContentX() + Screen.dp(12f);
   }
 
+  private int getQuestionTitleHeight () {
+    return questionText != null ? questionText.getHeight() + Screen.dp(5f) : 0;
+  }
+
   private int getConfettiCenterY (int optionId) {
     int startY = getContentY();
-    startY += questionText.getHeight() + Screen.dp(5f);
+    startY += getQuestionTitleHeight();
     startY += Screen.dp(18f);
     int currentOptionId = 0;
     for (OptionEntry option : options) {
@@ -574,8 +586,10 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     int textOffset = Screen.dp(12f);
 
     // First, draw question
-    questionText.draw(c, startX, startX + maxWidth, 0, startY, null, alpha, view.getTextMediaReceiver());
-    startY += questionText.getHeight() + Screen.dp(5f);
+    if (questionText != null) {
+      questionText.draw(c, startX, startX + maxWidth, 0, startY, null, alpha, view.getTextMediaReceiver());
+      startY += getQuestionTitleHeight();
+    }
 
     // Second, draw status
     pollStatusText.draw(c, startX, startY);
@@ -676,8 +690,10 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
         c.drawRect(startX - (useBubbles() ? getBubbleContentPadding() : 0), startY, rightX, startY + optionHeight, Paints.fillingPaint(Theme.getColor(getPressColorId())));
       }
 
-      int optionTextY = startY + Math.max(Screen.dp(8f), Screen.dp(46f) / 2 - option.text.getLineHeight() / 2);
-      option.text.draw(c, startX + Screen.dp(34f), startX + maxWidth, 0, optionTextY, null, alpha, view.getTextMediaReceiver());
+      int optionTextY = startY + Math.max(Screen.dp(8f), Screen.dp(46f) / 2 - (option.text != null ? option.text.getLineHeight() / 2 : 0));
+      if (option.text != null) {
+        option.text.draw(c, startX + Screen.dp(34f), startX + maxWidth, 0, optionTextY, null, alpha, view.getTextMediaReceiver());
+      }
 
       float progress = getResultProgress(optionId);
       float stateVisibility = visibility >= .5f ? 0f : 1f - visibility / .5f;
@@ -969,7 +985,10 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
 
   private void applyPoll (TdApi.Poll updatedPoll, boolean force) {
     TdApi.Poll oldPoll = getPoll();
-    boolean changed = !Td.equalsTo(oldPoll, updatedPoll, true) || questionText == null || force;
+    boolean changed = !Td.equalsTo(oldPoll, updatedPoll, true) || force;
+    if (!changed && Td.equalsTo(oldPoll, updatedPoll, false)) {
+      return;
+    }
     boolean animated = !changed && needAnimateChanges();
     if (animated) {
       resetPollAnimation(true);
@@ -1384,7 +1403,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       return false;
     }
 
-    int startY = questionText.getHeight() + Screen.dp(5f);
+    int startY = getQuestionTitleHeight();
     if (explanationDrawable != null && getHintVisibility() > 0f) {
       float cx = maxWidth - explanationDrawable.getMinimumWidth() / 2f - Screen.dp(2f);
       float cy = startY + pollStatusText.getHeight() / 2f;
@@ -1455,7 +1474,11 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
         explanationPopup.removeListener(this);
       }
       explanationPopup = buildContentHint(view, (targetView, outRect) -> {
-        outRect.set(0, 0, questionText.getWidth(), questionText.getHeight());
+        if (questionText != null) {
+          outRect.set(0, 0, questionText.getWidth(), questionText.getHeight());
+        } else {
+          outRect.setEmpty();
+        }
       }, true).icon(R.drawable.baseline_info_24).needBlink(true).chatTextSize(-2f).interceptTouchEvents(true).handleBackPress(true).show(tdlib, formattedText).addListener(this);
     }
   }
@@ -1469,10 +1492,10 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
         if (button.singleton() != null) {
           if (isScheduled()) {
             showContentHint(view, (targetView, outRect) -> {
-              int startY = questionText.getHeight() + Screen.dp(5f);
+              int startY = getQuestionTitleHeight();
               startY += Screen.dp(18f);
               for (OptionEntry options : options) {
-                startY += Math.max(Screen.dp(46f), options.text.getHeight()) + Screen.separatorSize();
+                startY += Math.max(Screen.dp(46f), options.text != null ? options.text.getHeight() : 0) + Screen.separatorSize();
               }
               outRect.set(0, startY, getContentWidth(), getContentHeight());
             }, R.string.ErrorScheduled);
@@ -1517,7 +1540,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       } else if (isScheduled()) {
         final int selectedOptionId = clickOptionId;
         showContentHint(view, (targetView, outRect) -> {
-          int startY = questionText.getHeight() + Screen.dp(5f);
+          int startY = getQuestionTitleHeight();
           startY += Screen.dp(18f);
           int optionId = 0;
           for (OptionEntry option : options) {
@@ -1537,14 +1560,14 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       } else if (!canVote(true)) {
         final int selectedOptionId = clickOptionId;
         showContentHint(view, (targetView, outRect) -> {
-          int startY = questionText.getHeight() + Screen.dp(5f);
+          int startY = getQuestionTitleHeight();
           startY += Screen.dp(18f);
           int optionId = 0;
           for (OptionEntry option : options) {
             int optionHeight = getOptionHeight(option.text);
             if (selectedOptionId == optionId) {
               startY += Screen.dp(15f);
-              outRect.set(Screen.dp(34f), startY, Screen.dp(34f) + option.text.getLineWidth(0), startY + option.text.getLineHeight());
+              outRect.set(Screen.dp(34f), startY, Screen.dp(34f) + (option.text != null ? option.text.getLineWidth(0) : 0), startY + (option.text != null ? option.text.getLineHeight() : 0));
               return;
             }
             startY += optionHeight;
@@ -1561,8 +1584,17 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     }
   }
 
-  private int getOptionHeight (TextWrapper text) {
-    return Math.max(Screen.dp(46f), Math.max(Screen.dp(8f), (Screen.dp(46f) / 2 - text.getLineHeight() / 2)) + text.getHeight() + Screen.dp(12f)) + Screen.separatorSize();
+  private int getOptionHeight (@Nullable TextWrapper text) {
+    if (text == null) {
+      return Screen.dp(46f);
+    }
+    return Math.max(
+      Screen.dp(46f),
+      Math.max(
+        Screen.dp(8f),
+        (Screen.dp(46f) / 2 - text.getLineHeight() / 2)
+      ) + text.getHeight() + Screen.dp(12f)
+    ) + Screen.separatorSize();
   }
 
   private void chooseOption (final View view, final int optionId) {
@@ -1604,7 +1636,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
 
   private TooltipOverlayView.LocationProvider makeVoteButtonLocationProvider (boolean needOffset) {
     return (targetView, outRect) -> {
-      int startY = questionText.getHeight() + Screen.dp(28f);
+      int startY = getQuestionTitleHeight() + Screen.dp(23f);
       for (OptionEntry option : options) {
         int optionHeight = getOptionHeight(option.text);
         startY += optionHeight;
@@ -1618,7 +1650,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
 
   private TooltipOverlayView.LocationProvider makeButtonLocationProvider (int selectedOptionId, boolean needOffset) {
     return (targetView, outRect) -> {
-      int startY = questionText.getHeight() + Screen.dp(5f);
+      int startY = getQuestionTitleHeight();
       int optionId = 0;
       for (OptionEntry option : options) {
         int optionHeight = getOptionHeight(option.text);

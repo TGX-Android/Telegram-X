@@ -26,10 +26,11 @@ import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
+import me.vkryl.android.util.InvalidateDelegate;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.RunnableData;
 
-public class ComplexReceiver implements Destroyable {
+public class ComplexReceiver implements Destroyable, InvalidateDelegate {
   public interface KeyFilter {
     boolean filterKey (@ReceiverType int receiverType, Receiver receiver, long key);
   }
@@ -295,5 +296,10 @@ public class ComplexReceiver implements Destroyable {
   @Override
   public void performDestroy () {
     clear();
+  }
+
+  @Override
+  public void invalidate () {
+    view.invalidate();
   }
 }

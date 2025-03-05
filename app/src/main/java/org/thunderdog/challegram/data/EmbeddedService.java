@@ -194,7 +194,7 @@ public class EmbeddedService {
         return parse(url, videoPlayer.width, videoPlayer.height, videoPlayer.thumbnail, videoPlayer.url, allowAutoplay);
       }
       default:
-        Td.assertLinkPreviewType_eb86a63d();
+        Td.assertLinkPreviewType_e4d80559();
         break;
     }
     return null;

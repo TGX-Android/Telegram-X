@@ -1076,11 +1076,11 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
         return counter.getColor(counter.getMuteFactor(), ColorId.fillingPositiveContent, ColorId.fillingActiveContent);
       } else if (message.useStickerBubbleReactions() || message.useMediaBubbleReactions()) {
         return ColorUtils.fromToArgb(
-          Theme.getColor(message.isOutgoing() ? ColorId.bubbleOut_fillingPositiveContent_overlay : ColorId.bubbleIn_fillingPositiveContent_overlay),
+          Theme.getColor(message.isOutgoingBubble() ? ColorId.bubbleOut_fillingPositiveContent_overlay : ColorId.bubbleIn_fillingPositiveContent_overlay),
           message.getBubbleDateTextColor(),
           counter.getMuteFactor()
         );
-      } else if (message.isOutgoing()) {
+      } else if (message.isOutgoingBubble()) {
         return counter.getColor(counter.getMuteFactor(), ColorId.bubbleOut_fillingPositiveContent, ColorId.bubbleOut_fillingActiveContent);
       } else {
         return counter.getColor(counter.getMuteFactor(), ColorId.bubbleIn_fillingPositiveContent, ColorId.bubbleIn_fillingActiveContent);
@@ -1093,11 +1093,11 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
         return counter.getColor(counter.getMuteFactor(), ColorId.fillingPositive, ColorId.fillingActive);
       } else if (message.useStickerBubbleReactions() || message.useMediaBubbleReactions()) {
         return ColorUtils.fromToArgb(
-          Theme.getColor(message.isOutgoing() ? ColorId.bubbleOut_fillingPositive_overlay : ColorId.bubbleIn_fillingPositive_overlay),
+          Theme.getColor(message.isOutgoingBubble() ? ColorId.bubbleOut_fillingPositive_overlay : ColorId.bubbleIn_fillingPositive_overlay),
           message.getBubbleDateBackgroundColor(),
           counter.getMuteFactor()
         );
-      } else if (message.isOutgoing()) {
+      } else if (message.isOutgoingBubble()) {
         return counter.getColor(counter.getMuteFactor(), ColorId.bubbleOut_fillingPositive, ColorId.bubbleOut_fillingActive);
       } else {
         return counter.getColor(counter.getMuteFactor(), ColorId.bubbleIn_fillingPositive, ColorId.bubbleIn_fillingActive);

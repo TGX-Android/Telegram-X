@@ -523,6 +523,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     sweep = sweepStart + sweepDiff * sweepFactor;
   }
 
+  @SuppressWarnings("deprecation")
   private void invalidateProgress () {
     if (view != null) {
       view.invalidate((int) progressRect.left - progressOffset, (int) progressRect.top - progressOffset, (int) progressRect.right + progressOffset, (int) progressRect.bottom + progressOffset);
@@ -532,6 +533,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     }
   }
 
+  @SuppressWarnings("deprecation")
   @Override
   public void invalidate () {
     if (view != null) {
@@ -785,6 +787,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     } : null;
   }
 
+  @SuppressWarnings("deprecation")
   public void draw (Canvas c) {
     if (file == null) {
       return;

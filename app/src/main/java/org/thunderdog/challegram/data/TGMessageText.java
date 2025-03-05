@@ -116,8 +116,8 @@ public class TGMessageText extends TGMessage {
     }
   }
 
-  public TGMessageText (MessagesManager context, TdApi.Message fakeMessage, TdApi.SponsoredMessage sponsoredMessage) {
-    super(context, fakeMessage);
+  public TGMessageText (MessagesManager context, TdApi.SponsoredMessage sponsoredMessage, long inChatId) {
+    super(context, sponsoredMessage, inChatId);
     this.currentMessageText = (TdApi.MessageText) sponsoredMessage.content;
     setText(currentMessageText.text, false);
     // TODO button

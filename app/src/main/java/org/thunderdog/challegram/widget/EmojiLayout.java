@@ -591,7 +591,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewPager.OnPageChang
   }
 
   public boolean setEmojiStatus (View view, TGStickerObj sticker, long expirationDate) {
-    return listener != null && listener.onSetEmojiStatus(view, sticker, new TdApi.EmojiStatus(sticker.getCustomEmojiId(), (int) expirationDate));
+    return listener != null && listener.onSetEmojiStatus(view, sticker, new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(sticker.getCustomEmojiId()), (int) expirationDate));
   }
 
   public boolean sendSticker (View view, TGStickerObj sticker, TdApi.MessageSendOptions sendOptions) {

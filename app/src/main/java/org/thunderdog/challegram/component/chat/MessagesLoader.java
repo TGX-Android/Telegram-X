@@ -928,7 +928,6 @@ public class MessagesLoader implements Client.ResultHandler {
           height,
           null,
           new TdApi.StickerFormatWebp(), new TdApi.StickerFullTypeRegular(),
-          null,
           new TdApi.Thumbnail(new TdApi.ThumbnailFormatWebp(), width, height, thumbFile),
           file
         );

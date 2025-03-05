@@ -43,6 +43,7 @@ import org.thunderdog.challegram.unsorted.Settings;
 
 import tgx.td.Td;
 
+@SuppressWarnings("deprecation")
 public class ProximityManager implements Settings.RaiseToSpeakListener, SensorEventListener, UI.StateListener {
   public interface Delegate {
     void onUpdateAttributes ();

@@ -91,6 +91,36 @@ public class TGMessageMedia extends TGMessage {
     init(mediaWrapper, caption);
   }
 
+  protected TGMessageMedia (MessagesManager context, TdApi.SponsoredMessage sponsoredMessage, long inChatId) {
+    super(context, sponsoredMessage, inChatId);
+    MediaWrapper mediaWrapper;
+    TdApi.FormattedText caption;
+    switch (sponsoredMessage.content.getConstructor()) {
+      case TdApi.MessagePhoto.CONSTRUCTOR: {
+        TdApi.MessagePhoto photo = (TdApi.MessagePhoto) sponsoredMessage.content;
+        mediaWrapper = new MediaWrapper(context(), tdlib, photo, msg.chatId, msg.id, this, false);
+        caption = photo.caption;
+        break;
+      }
+      case TdApi.MessageVideo.CONSTRUCTOR: {
+        TdApi.MessageVideo video = (TdApi.MessageVideo) sponsoredMessage.content;
+        mediaWrapper = new MediaWrapper(context(), tdlib, video, msg.chatId, msg.id, this, true);
+        caption = video.caption;
+        break;
+      }
+      case TdApi.MessageAnimation.CONSTRUCTOR: {
+        TdApi.MessageAnimation animation = (TdApi.MessageAnimation) sponsoredMessage.content;
+        mediaWrapper = new MediaWrapper(context(), tdlib, animation, msg.chatId, msg.id, this, false);
+        caption = animation.caption;
+        break;
+      }
+      default:
+        throw new UnsupportedOperationException(sponsoredMessage.content.toString());
+    }
+    mediaWrapper.setViewProvider(currentViews);
+    init(mediaWrapper, caption);
+  }
+
   private MediaWrapper createMediaWrapper (TdApi.Message message) {
     return createMediaWrapper(message.chatId, message.id, message.content);
   }

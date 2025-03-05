@@ -327,6 +327,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     prevHeight = currentHeight;
   }
 
+  @SuppressWarnings("deprecation")
   private void scrollCompensation (int heightDiff) {
     ScrollJumpCompensator listener = new ScrollJumpCompensator(recyclerView, messageTextView, heightDiff);
     listener.add();

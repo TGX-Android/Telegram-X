@@ -388,13 +388,13 @@ dependencies {
   // AndroidX: https://developer.android.com/jetpack/androidx/versions
   implementation("androidx.activity:activity:1.8.2") // 1.9.0+ requires minSdkVersion 19
   implementation("androidx.palette:palette:1.0.0")
-  implementation("androidx.recyclerview:recyclerview:1.3.2")
-  implementation("androidx.constraintlayout:constraintlayout:2.1.4")
-  implementation("androidx.viewpager:viewpager:1.0.0")
+  implementation("androidx.recyclerview:recyclerview:1.3.2") // 1.4.0+ requires minSdkVersion 21
+  implementation("androidx.constraintlayout:constraintlayout:2.1.4") // 2.2.0+ requires minSdkVersion 21
+  implementation("androidx.viewpager:viewpager:1.0.0") // 1.1.0+ requires minSdkVersion 21
   implementation("androidx.work:work-runtime:2.9.1")
   implementation("androidx.browser:browser:1.5.0") // 1.7.0+ requires minSdkVersion 19
   implementation("androidx.exifinterface:exifinterface:1.3.7")
-  implementation("androidx.collection:collection:1.4.4")
+  implementation("androidx.collection:collection:1.4.5")
   implementation("androidx.interpolator:interpolator:1.0.0")
   implementation("androidx.gridlayout:gridlayout:1.0.0")
   // CameraX: https://developer.android.com/jetpack/androidx/releases/camera
@@ -418,6 +418,8 @@ dependencies {
   // implementation("com.google.firebase:firebase-appcheck-safetynet:16.1.2")
   // Play Integrity: https://developer.android.com/google/play/integrity/reference/com/google/android/play/core/release-notes
   implementation("com.google.android.play:integrity:1.3.0") // 1.4.0+ requires minSdkVersion 21
+  // ReCaptcha: https://cloud.google.com/recaptcha/docs/release-notes
+  implementation("com.google.android.recaptcha:recaptcha:18.4.0") // 18.5.0+ requires minSdkVersion 21
   // Play In-App Updates: https://developer.android.com/reference/com/google/android/play/core/release-notes-in_app_updates
   implementation("com.google.android.play:app-update:2.1.0")
   // AndroidX/media: https://github.com/androidx/media/blob/release/RELEASENOTES.md
@@ -428,7 +430,7 @@ dependencies {
   // 17.x version requires minSdk 19 or higher
   implementation("com.google.mlkit:language-id:16.1.1")
   // The Checker Framework: https://checkerframework.org/CHANGELOG.md
-  compileOnly("org.checkerframework:checker-qual:3.42.0")
+  compileOnly("org.checkerframework:checker-qual:3.49.0")
   // OkHttp: https://github.com/square/okhttp/blob/master/CHANGELOG.md
   implementation("com.squareup.okhttp3:okhttp:4.12.0")
   // ShortcutBadger: https://github.com/leolin310148/ShortcutBadger

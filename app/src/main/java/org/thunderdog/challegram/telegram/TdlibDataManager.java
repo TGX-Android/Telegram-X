@@ -47,6 +47,10 @@ abstract class TdlibDataManager<Key, Value extends TdApi.Object, Result extends 
       if (error == null && value == null)
         throw new IllegalStateException();
     }
+
+    public boolean isNotFound () {
+      return error != null || value == null;
+    }
   }
 
   protected interface Watcher<Key, Value extends TdApi.Object, Result extends TdlibDataManager.AbstractEntry<Key, Value>> {

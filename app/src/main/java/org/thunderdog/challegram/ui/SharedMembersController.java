@@ -206,7 +206,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
         return DoubleTextWrapper.valueOf(tdlib, (TdApi.ChatMember) object, needFullMemberDescription(), needAdminSign());
       }
       case TdApi.User.CONSTRUCTOR: {
-        return new DoubleTextWrapper(tdlib, ((TdApi.User) object).id, true);
+        return new DoubleTextWrapper(tdlib, ((TdApi.User) object).id, true, DoubleTextWrapper.SubtitleOption.SHOW_ACCESS_TO_MESSAGE_PRIVACY);
       }
     }
     return null;

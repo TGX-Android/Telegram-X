@@ -71,6 +71,11 @@ open class ModulePlugin : Plugin<Project> {
     } else {
       null
     }
+    val recaptchaKeyId = if (keystore != null) {
+      properties.getProperty("recaptcha.key_id", "")
+    } else {
+      null
+    }
     fun getOrSample (key: String): String {
       return properties.getProperty(key, null) ?: sampleProperties.getOrThrow(key)
     }
@@ -169,6 +174,7 @@ open class ModulePlugin : Plugin<Project> {
               buildConfigString("PROJECT_NAME", appName)
 
               buildConfigString("SAFETYNET_API_KEY", safetyNetToken)
+              buildConfigString("RECAPTCHA_KEY_ID", recaptchaKeyId)
 
               buildConfigString("DOWNLOAD_URL", appDownloadUrl)
               buildConfigString("GOOGLE_PLAY_URL", googlePlayUrl)

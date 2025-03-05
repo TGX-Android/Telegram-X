@@ -649,6 +649,13 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       ids.append(R.id.btn_messageSponsorInfo);
       strings.append(R.string.SponsoredInfoMenu);
       icons.append(R.drawable.baseline_info_24);
+
+      if (msg.canBeReported()) {
+        ids.append(R.id.btn_messageReport);
+        strings.append(R.string.ReportAd);
+        icons.append(R.drawable.baseline_report_24);
+      }
+
       return null;
     }
 
@@ -873,8 +880,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       icons.append(R.drawable.baseline_link_24);
     }
 
-    if (!isMore && msg.canBeSaved() && TD.canCopyText(newestMessage)) {
-
+    if (!isMore && msg.canBeSaved() && msg.canCopyText()) {
       if (msg.isTranslated()) {
         ids.append(R.id.btn_copyTranslation);
         strings.append(R.string.TranslationCopy);

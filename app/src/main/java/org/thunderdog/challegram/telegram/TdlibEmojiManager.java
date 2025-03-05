@@ -34,10 +34,6 @@ public final class TdlibEmojiManager extends TdlibDataManager<Long, TdApi.Sticke
       this.customEmojiId = key;
     }
 
-    public boolean isNotFound () {
-      return error != null || value == null;
-    }
-
     public boolean isAnimated () {
       return value != null && Td.isAnimated(value.format);
     }
@@ -72,20 +68,14 @@ public final class TdlibEmojiManager extends TdlibDataManager<Long, TdApi.Sticke
       return;
     }
     for (long[] customEmojiIds : customEmojiIdsChunks) {
-      tdlib.client().send(new TdApi.GetCustomEmojiStickers(customEmojiIds), result -> {
+      tdlib.send(new TdApi.GetCustomEmojiStickers(customEmojiIds), (stickers, error) -> {
         if (isCancelled(contextId)) {
           return;
         }
-        switch (result.getConstructor()) {
-          case TdApi.Stickers.CONSTRUCTOR: {
-            TdApi.Stickers stickers = (TdApi.Stickers) result;
-            processStickers(contextId, customEmojiIds, stickers.stickers);
-            break;
-          }
-          case TdApi.Error.CONSTRUCTOR: {
-            processError(contextId, customEmojiIds, (TdApi.Error) result);
-            break;
-          }
+        if (error != null) {
+          processError(contextId, customEmojiIds, error);
+        } else {
+          processStickers(contextId, customEmojiIds, stickers.stickers);
         }
       });
     }

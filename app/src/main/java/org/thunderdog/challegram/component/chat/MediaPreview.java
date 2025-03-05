@@ -58,10 +58,10 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
     return null;
   }
 
-  public static MediaPreview valueOf (Tdlib tdlib, TdApi.Photo photo, int size, int cornerRadius, boolean hasSpoiler) {
+  public static MediaPreview valueOf (Tdlib tdlib, TdApi.Photo photo, int size, int cornerRadius, boolean needFireIcon) {
     TdApi.PhotoSize thumbnail = Td.findSmallest(photo);
     if (thumbnail != null || photo.minithumbnail != null) {
-      return new MediaPreviewSimple(tdlib, size, cornerRadius, TD.toThumbnail(thumbnail), photo.minithumbnail, hasSpoiler);
+      return new MediaPreviewSimple(tdlib, size, cornerRadius, TD.toThumbnail(thumbnail), photo.minithumbnail, needFireIcon);
     }
     return null;
   }
@@ -194,6 +194,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.LinkPreviewTypeSupergroupBoost.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeTheme.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeUnsupported.CONSTRUCTOR:
+      case TdApi.LinkPreviewTypeUpgradedGift.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeUser.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeVideoChat.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeWebApp.CONSTRUCTOR:
@@ -205,7 +206,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       }
 
       default:
-        Td.assertLinkPreviewType_eb86a63d();
+        Td.assertLinkPreviewType_e4d80559();
         throw Td.unsupported(linkPreview.type);
     }
     return false;
@@ -279,6 +280,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
             case TdApi.LinkPreviewTypeSupergroupBoost.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeTheme.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeUnsupported.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeUpgradedGift.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeUser.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeVideoChat.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeWebApp.CONSTRUCTOR:
@@ -289,7 +291,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
               break;
             }
             default:
-              Td.assertLinkPreviewType_eb86a63d();
+              Td.assertLinkPreviewType_e4d80559();
               throw Td.unsupported(linkPreview.type);
           }
         }
@@ -297,7 +299,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       }
       case TdApi.MessagePhoto.CONSTRUCTOR: {
         TdApi.MessagePhoto messagePhoto = (TdApi.MessagePhoto) message.content;
-        return valueOf(tdlib, messagePhoto.photo, size, cornerRadius, false);
+        return valueOf(tdlib, messagePhoto.photo, size, cornerRadius, messagePhoto.isSecret || messagePhoto.hasSpoiler);
       }
       case TdApi.MessagePaidMedia.CONSTRUCTOR: {
         TdApi.MessagePaidMedia paidMedia = (TdApi.MessagePaidMedia) message.content;
@@ -456,6 +458,8 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.MessageGiveawayWinners.CONSTRUCTOR:
       case TdApi.MessageGiveawayPrizeStars.CONSTRUCTOR:
       case TdApi.MessageGift.CONSTRUCTOR:
+      case TdApi.MessageUpgradedGift.CONSTRUCTOR:
+      case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
       case TdApi.MessageContactRegistered.CONSTRUCTOR:
       case TdApi.MessageUsersShared.CONSTRUCTOR:
       case TdApi.MessageChatShared.CONSTRUCTOR:
@@ -470,7 +474,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
         break;
       }
       default: {
-        Td.assertMessageContent_91c1e338();
+        Td.assertMessageContent_640c68ad();
         throw Td.unsupported(message.content);
       }
     }

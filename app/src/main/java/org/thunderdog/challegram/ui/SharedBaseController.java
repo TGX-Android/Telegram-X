@@ -61,6 +61,7 @@ import org.thunderdog.challegram.widget.SmallChatView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -1139,9 +1140,15 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
 
   public void shareMessages () {
     TdApi.Chat chat = tdlib.chat(chatId);
-    if (chat != null && selectedMessages != null && selectedMessages.size() > 0) {
+    if (chat != null && selectedMessages != null && !selectedMessages.isEmpty()) {
       ShareController c = new ShareController(context, tdlib);
-      TdApi.Message[] messages = selectedMessages.values().toArray(new TdApi.Message[0]);
+      Collection<MessageWithProperties> messagesWithProperties = selectedMessages.values();
+      TdApi.Message[] messages = new TdApi.Message[messagesWithProperties.size()];
+      int index = 0;
+      for (MessageWithProperties message : messagesWithProperties) {
+        messages[index] = message.message;
+        index++;
+      }
       Arrays.sort(messages, (a, b) -> Long.compare(a.id, b.id));
       c.setArguments(new ShareController.Args(messages).setAfter(() -> {
         if (parent != null) {

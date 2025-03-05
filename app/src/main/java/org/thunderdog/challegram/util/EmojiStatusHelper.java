@@ -511,7 +511,7 @@ public class EmojiStatusHelper implements Destroyable {
   private static @Nullable TdApi.FormattedText makeEmojiText (@Nullable TdApi.User user) {
     if (user == null || user.emojiStatus == null) return null;
 
-    long emojiStatusId = user.emojiStatus.customEmojiId;
+    long emojiStatusId = Td.customEmojiId(user.emojiStatus);
     TdApi.TextEntity emoji = new TdApi.TextEntity(0, 1, new TdApi.TextEntityTypeCustomEmoji(emojiStatusId));
     return new TdApi.FormattedText(EMOJI, new TdApi.TextEntity[] {emoji});
   }

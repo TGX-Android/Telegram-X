@@ -156,7 +156,10 @@ import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceUtils;
 import nl.dionsegijn.konfetti.xml.KonfettiView;
+import tgx.app.RecaptchaContext;
+import tgx.app.RecaptchaProviderRegistry;
 
+@SuppressWarnings("deprecation")
 public abstract class BaseActivity extends ComponentActivity implements View.OnTouchListener, FactorAnimator.Target, Keyboard.OnStateChangeListener, ThemeChangeListener, SensorEventListener, TGPlayerController.TrackChangeListener, TGLegacyManager.EmojiLoadListener, Lang.Listener, Handler.Callback {
   public static final long POPUP_SHOW_SLOW_DURATION = 240l;
 
@@ -172,6 +175,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   protected @Nullable DrawerController drawer;
   protected OverlayView overlayView;
   protected Invalidator invalidator;
+  protected RecaptchaContext recaptcha;
 
   private final ReferenceList<ActivityListener> activityListeners = new ReferenceList<>();
 
@@ -341,7 +345,15 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       }
       onTdlibChanged();
       runEmulatorChecks();
+      if (tdlib.isUnauthorized()) {
+        // Pre-initialize recaptcha to possibly save some initialization time.
+        recaptcha.initialize();
+      }
     }
+  }
+
+  public final RecaptchaContext recaptche () {
+    return recaptcha;
   }
 
   private boolean ranEmulatorChecks, emulatorChecksFinished;
@@ -453,6 +465,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
     AppState.initApplication();
     AppState.ensureReady();
+
+    recaptcha = new RecaptchaContext(getApplication());
+    RecaptchaProviderRegistry.INSTANCE.addProvider(recaptcha);
 
     appUpdater = new AppUpdater(this);
     roundVideoController = new RoundVideoController(this);
@@ -1314,6 +1329,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public void onBackPressed () {
     if (isPasscodeShowing) {
       super.onBackPressed();
@@ -1322,6 +1338,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
   }
 
+  @SuppressWarnings("deprecation")
   public void onBackPressed (boolean fromTop) {
     if (isProgressShowing) {
       if (progressListener != null) {

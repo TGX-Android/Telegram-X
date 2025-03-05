@@ -145,7 +145,7 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
     if (sticker == null)
       return;
 
-    this.outline = Td.buildOutline(sticker, width, height);
+    // FIXME this.outline = Td.buildOutline(sticker, width, height);
 
     thumbnail = TD.toImageFile(tdlib, sticker.thumbnail);
     if (thumbnail != null) {

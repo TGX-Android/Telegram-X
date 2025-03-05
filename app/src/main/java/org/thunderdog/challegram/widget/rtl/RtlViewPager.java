@@ -325,6 +325,7 @@ public class RtlViewPager extends ViewPager implements RtlCheckListener {
       this.isRTL = isRTL;
     }
 
+    @SuppressWarnings("deprecation")
     SavedState(Parcel in, ClassLoader loader) {
       if (loader == null) {
         loader = getClass().getClassLoader();

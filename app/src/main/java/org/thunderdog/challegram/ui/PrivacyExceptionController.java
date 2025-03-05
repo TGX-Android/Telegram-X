@@ -223,15 +223,16 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
           TdApi.User user = !isMultiChat ? tdlib.cache().user(userId) : null;
           boolean isPremium = user != null && user.isPremium;
           boolean isContact = user != null && user.isContact;
+          boolean isBot = TD.isBot(user);
           TdApi.UserPrivacySettingRule matchingRule = isMultiChat ?
             privacy.firstMatchingRuleForChat(chatId) :
-            privacy.firstMatchingRuleForUser(userId, isPremium, isContact, groupsInCommon != null ? groupsInCommon.get() : null);
+            privacy.firstMatchingRuleForUser(userId, isPremium, isContact, isBot, groupsInCommon != null ? groupsInCommon.get() : null);
           view.setEnabledAnimated(true, isUpdate);
           boolean isActive = PrivacySettings.isAllow(matchingRule);
           view.getToggler().setRadioEnabled(isActive, isUpdate);
-          if (PrivacySettings.isGeneral(matchingRule, true, !isMultiChat)) {
+          if (PrivacySettings.isGeneral(matchingRule, true, true, !isMultiChat)) {
             view.setDataColorId(0);
-            TdApi.UserPrivacySettingRule ancestorRule = privacy.findTopRule(isPremium, isContact);
+            TdApi.UserPrivacySettingRule ancestorRule = privacy.findTopRule(isPremium, isContact, isBot);
             if (PrivacySettings.isAllow(ancestorRule) == PrivacySettings.isAllow(matchingRule)) {
               matchingRule = ancestorRule;
             }
@@ -246,7 +247,7 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
                   chatIds = ArrayUtils.intersect(((TdApi.UserPrivacySettingRuleRestrictChatMembers) matchingRule).chatIds, groupsInCommon != null ? groupsInCommon.get() : null);
                   break;
                 default:
-                  Td.assertUserPrivacySettingRule_c58ead3c();
+                  Td.assertUserPrivacySettingRule_58b21786();
                   break;
               }
             }
@@ -256,7 +257,7 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
               } else {
                 view.setData(Lang.pluralBold(R.string.PrivacyDefaultXChats, chatIds.length));
               }
-            } else if (isMultiChat && !PrivacySettings.isAllow(matchingRule) && PrivacySettings.isAllow(privacy.firstMatchingRuleForChat(chatId, true, true))) {
+            } else if (isMultiChat && !PrivacySettings.isAllow(matchingRule) && PrivacySettings.isAllow(privacy.firstMatchingRuleForChat(chatId, true, true, false))) {
               switch (setting.getConstructor()) {
                 case TdApi.UserPrivacySettingShowPhoneNumber.CONSTRUCTOR:
                   view.setData(R.string.PrivacyShowNumberExceptionContacts);
@@ -303,10 +304,13 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
                 case TdApi.UserPrivacySettingAllowPrivateVoiceAndVideoNoteMessages.CONSTRUCTOR:
                   view.setData(R.string.PrivacyVoiceVideoExceptionContacts);
                   break;
+                case TdApi.UserPrivacySettingAutosaveGifts.CONSTRUCTOR:
+                  view.setData(R.string.PrivacyGiftsExceptionContacts);
+                  break;
                 case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR:
                   throw new IllegalStateException();
                 default: {
-                  Td.assertUserPrivacySetting_39dfff4d();
+                  Td.assertUserPrivacySetting_99ac9ff();
                   throw Td.unsupported(setting);
                 }
               }
@@ -317,11 +321,15 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
                 case TdApi.UserPrivacySettingRuleRestrictContacts.CONSTRUCTOR:
                   view.setData(R.string.PrivacyDefaultContacts);
                   break;
+                case TdApi.UserPrivacySettingRuleAllowBots.CONSTRUCTOR:
+                case TdApi.UserPrivacySettingRuleRestrictBots.CONSTRUCTOR:
+                  view.setData(R.string.PrivacyDefaultBots);
+                  break;
                 case TdApi.UserPrivacySettingRuleAllowPremiumUsers.CONSTRUCTOR:
                   view.setData(Lang.getMarkdownString(PrivacyExceptionController.this, R.string.PrivacyDefaultPremium));
                   break;
                 default:
-                  Td.assertUserPrivacySettingRule_c58ead3c();
+                  Td.assertUserPrivacySettingRule_58b21786();
                   view.setData(R.string.PrivacyDefault);
                   break;
               }
@@ -361,10 +369,13 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
               case TdApi.UserPrivacySettingAllowPrivateVoiceAndVideoNoteMessages.CONSTRUCTOR:
                 view.setData(isActive ? R.string.PrivacyVoiceVideoExceptionOn : R.string.PrivacyVoiceVideoExceptionOff);
                 break;
+              case TdApi.UserPrivacySettingAutosaveGifts.CONSTRUCTOR:
+                view.setData(isActive ? R.string.PrivacyGiftsExceptionOn : R.string.PrivacyGiftsExceptionOff);
+                break;
               case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR:
                 throw new IllegalStateException();
               default: {
-                Td.assertUserPrivacySetting_39dfff4d();
+                Td.assertUserPrivacySettingRule_58b21786();
                 throw Td.unsupported(setting);
               }
             }
@@ -390,18 +401,19 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
           TdApi.User user = !isMultiChat ? tdlib.cache().user(userId) : null;
           boolean isPremium = user != null && user.isPremium;
           boolean isContact = user != null && user.isContact;
+          boolean isBot = TD.isBot(user);
           TdApi.UserPrivacySettingRule matchingRule = isMultiChat ?
             privacy.firstMatchingRuleForChat(chatId) :
-            privacy.firstMatchingRuleForUser(userId, isPremium, isContact, groupsInCommon != null ? groupsInCommon.get() : null
+            privacy.firstMatchingRuleForUser(userId, isPremium, isContact, isBot, groupsInCommon != null ? groupsInCommon.get() : null
           );
           boolean isActive = PrivacySettings.isAllow(matchingRule);
           view.getToggler().setRadioEnabled(isActive || defaultIsActive, isUpdate);
           if (defaultIsActive) {
             view.setDataColorId(0);
             view.setData(R.string.PrivacyReadDateDefaultAll);
-          } else if (PrivacySettings.isGeneral(matchingRule, true, !isMultiChat)) {
+          } else if (PrivacySettings.isGeneral(matchingRule, true, true, !isMultiChat)) {
             view.setDataColorId(0);
-            TdApi.UserPrivacySettingRule ancestorRule = privacy.findTopRule(isPremium, isContact);
+            TdApi.UserPrivacySettingRule ancestorRule = privacy.findTopRule(isPremium, isContact, isBot);
             if (PrivacySettings.isAllow(ancestorRule) == PrivacySettings.isAllow(matchingRule)) {
               matchingRule = ancestorRule;
             }
@@ -416,7 +428,7 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
                   chatIds = ArrayUtils.intersect(((TdApi.UserPrivacySettingRuleRestrictChatMembers) matchingRule).chatIds, groupsInCommon != null ? groupsInCommon.get() : null);
                   break;
                 default:
-                  Td.assertUserPrivacySettingRule_c58ead3c();
+                  Td.assertUserPrivacySettingRule_58b21786();
                   break;
               }
             }
@@ -432,18 +444,22 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
                 case TdApi.UserPrivacySettingRuleRestrictContacts.CONSTRUCTOR:
                   view.setData(R.string.PrivacyDefaultContacts);
                   break;
+                case TdApi.UserPrivacySettingRuleAllowBots.CONSTRUCTOR:
+                case TdApi.UserPrivacySettingRuleRestrictBots.CONSTRUCTOR:
+                  view.setData(R.string.PrivacyDefaultBots);
+                  break;
                 case TdApi.UserPrivacySettingRuleAllowPremiumUsers.CONSTRUCTOR:
                   view.setData(Lang.getMarkdownString(PrivacyExceptionController.this, R.string.PrivacyDefaultPremium));
                   break;
                 default:
-                  Td.assertUserPrivacySettingRule_c58ead3c();
+                  Td.assertUserPrivacySettingRule_58b21786();
                   view.setData(R.string.PrivacyDefault);
                   break;
               }
             } else {
               view.setData(R.string.PrivacyDefault);
             }
-          } else if (isMultiChat && !PrivacySettings.isAllow(matchingRule) && PrivacySettings.isAllow(privacy.firstMatchingRuleForChat(chatId, true, true))) {
+          } else if (isMultiChat && !PrivacySettings.isAllow(matchingRule) && PrivacySettings.isAllow(privacy.firstMatchingRuleForChat(chatId, true, true, false))) {
             @PrivacySettings.ResolvedMatch int match = privacy.resolveMatchingAllowRulesForChat(chatId);
             switch (match) {
               case PrivacySettings.ResolvedMatch.CONTACTS:
@@ -583,10 +599,12 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
         TdApi.User user = tdlib.cache().user(userId);
         boolean isPremium = user != null && user.isPremium;
         boolean isContact = user != null && user.isContact;
+        boolean isBot = TD.isBot(user);
         rules = privacy.toggleUser(
           userId,
           isPremium,
           isContact,
+          isBot,
           groupsInCommon != null ? groupsInCommon.get() : null,
           value
         );
@@ -625,9 +643,10 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
         TdApi.User user = !isMultiChat ? tdlib.cache().user(userId) : null;
         boolean isPremium = user != null && user.isPremium;
         boolean isContact = user != null && user.isContact;
+        boolean isBot = TD.isBot(user);
         TdApi.UserPrivacySettingRule matchingRule = isMultiChat ?
           privacy.firstMatchingRuleForChat(chatId) :
-          privacy.firstMatchingRuleForUser(userId, isPremium, isContact, groupsInCommon != null ? groupsInCommon.get() : null
+          privacy.firstMatchingRuleForUser(userId, isPremium, isContact, isBot, groupsInCommon != null ? groupsInCommon.get() : null
         );
 
         CharSequence hint;
