@@ -1116,14 +1116,23 @@
   <string name="YouGiftedPremium_one">You gifted %1$s month of Telegram Premium for %2$s</string>
   <string name="YouGiftedPremium_other">You gifted %1$s months Telegram Premium for %2$s</string>
 
+  <string name="YouGiftedPremiumTo_one">You gifted %3$s %1$s month of Telegram Premium for %2$s</string>
+  <string name="YouGiftedPremiumTo_other">You gifted %3$s %1$s months Telegram Premium for %2$s</string>
+
   <string name="GiftedPremium_one">%2$s gifted you %1$s month of Telegram Premium for %3$s</string>
   <string name="GiftedPremium_other">%2$s gifted you %1$s months Telegram Premium for %3$s</string>
+
+  <string name="AnonymousGiftedPremium_one">Someone gifted you %1$s month of Telegram Premium for %2$s</string>
+  <string name="AnonymousGiftedPremium_other">Someone gifted you %1$s months Telegram Premium for %2$s</string>
 
   <string name="YouGiftedPremiumCode_one">You sent Gift Code for %1$s month of Telegram Premium</string>
   <string name="YouGiftedPremiumCode_other">You sent Gift Code for %1$s months of Telegram Premium</string>
 
   <string name="GiftedPremiumCode_one">%2$s sent you a Gift Code for %1$s month of Telegram Premium</string>
   <string name="GiftedPremiumCode_other">%2$s sent you a Gift Code for %1$s months Telegram Premium</string>
+
+  <string name="AnonymousGiftedPremiumCode_one">Someone sent you a Gift Code for %1$s month of Telegram Premium</string>
+  <string name="AnonymousGiftedPremiumCode_other">Someone sent you a Gift Code for %1$s months Telegram Premium</string>
 
   <string name="BotDataSent">Data from the \"%1$s\" button was transferred to the bot</string>
 
@@ -1290,11 +1299,19 @@
   <string name="ActionPinnedFile">%1$s pinned a **file**</string>
   <string name="ActionPinnedMusic">%1$s pinned an **audio file**</string>
   <string name="ActionPinnedPhoto">%1$s pinned a **photo**</string>
-  <string name="ActionPinnedPaidMedia">%1$s pinned a **paid content**</string>
+
+  <string name="ActionPinnedPaidContent">%1$s pinned a **paid content**</string>
+  <string name="ActionPinnedPaidPost">%1$s pinned a **paid post**</string>
+  <string name="ActionPinnedPaidPhoto">%1$s pinned a **paid photo**</string>
+  <string name="ActionPinnedPaidVideo">%1$s pinned a **paid video**</string>
+  <string name="ActionPinnedXPaidPhotos_one">%2$s pinned **%1$s paid photo**</string>
+  <string name="ActionPinnedXPaidPhotos_other">%2$s pinned **%1$s paid photos**</string>
+  <string name="ActionPinnedXPaidVideos_one">%2$s pinned **%1$s paid video**</string>
+  <string name="ActionPinnedXPaidVideos_other">%2$s pinned **%1$s paid videos**</string>
+  <string name="ActionPinnedXPaidMedia_one">%2$s pinned **%1$s paid media**</string>
+  <string name="ActionPinnedXPaidMedia_other">%2$s pinned **%1$s paid medias**</string>
+
   <string name="ActionPinnedVideo">%1$s pinned a **video**</string>
-  <string name="ActionPinnedXPhotos">%1$s pinned a **photo**</string>
-  <string name="ActionPinnedXVideos">%1$s pinned a **video**</string>
-  <string name="ActionPinnedXMedia">%1$s pinned a **video**</string>
   <string name="ActionPinnedRound">%1$s pinned a **video message**</string>
   <string name="ActionPinnedVoice">%1$s pinned a **voice message**</string>
   <string name="ActionPinnedStory">%1$s pinned a **story**</string>
@@ -1355,6 +1372,9 @@
   <string name="SimilarChannels">Similar Channels</string>
   <string name="xSimilarChannels_one">%1$s similar channel</string>
   <string name="xSimilarChannels_other">%1$s similar channels</string>
+  <string name="SimilarBots">Similar Bots</string>
+  <string name="xSimilarBots_one">%1$s similar bot</string>
+  <string name="xSimilarBots_other">%1$s similar bots</string>
   <string name="xMoreWithPremium_one">%1$s more with **Telegram Premium**</string>
   <string name="xMoreWithPremium_other">%1$s more with **Telegram Premium**</string>
   <string name="format_xChatsAndMoreWithPremium">%1$s, %2$s</string>
@@ -2796,6 +2816,7 @@
   <string name="TabAudio">Audio</string>
   <string name="TabSharedGroups">Groups</string>
   <string name="TabSimilarChannels">Similar</string>
+  <string name="TabSimilarBots">Similar</string>
   <string name="TabAdmins">Admins</string>
   <string name="TabBlacklist">Blocked</string>
   <string name="TabRestricted">Restricted</string>
@@ -5535,4 +5556,17 @@
 
   <string name="JoinRequestChannelAdminNotice">**%1$s** is an admin of **%2$s**, a channel you requested to join</string>
   <string name="JoinRequestChatAdminNotice">**%1$s** is an admin of **%2$s**, a channel you requested to join</string>
+
+  <string name="DeactivatedBot">deactivated bot</string>
+
+  <string name="ReportAd">Report Ad</string>
+  <string name="ReportAdSubtitle">What\'s wrong with this ad?</string>
+  <string name="ReportAdPolicy">Learn more about our [Ad Policies and Guidelines](https://ads.telegram.org/guidelines).</string>
+  <string name="ReportAdOk">Add will be reviewed by moderators.</string>
+  <string name="ReportAdFail">There was an error while reporting this ad.</string>
+  <string name="ReportAdHidden">You will no longer see any ads.</string>
+  <string name="ReportAdPremiumRequired">**Telegram Premium** subscription is required to hide ads.</string>
+
+  <string name="xBotUsers_one">%1$s monthly user</string>
+  <string name="xBotUsers_other">%1$s monthly users</string>
 </resources>

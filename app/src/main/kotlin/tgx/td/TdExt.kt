@@ -44,10 +44,20 @@ enum class MediaType {
     fun valueOf (paidMedia: MessagePaidMedia): MediaType {
       var photoCount = 0
       var videoCount = 0
+      var unknownCount = 0
       for (media in paidMedia.media) {
         when (media.constructor) {
           PaidMediaPhoto.CONSTRUCTOR -> photoCount++
           PaidMediaVideo.CONSTRUCTOR -> videoCount++
+          PaidMediaPreview.CONSTRUCTOR -> {
+            require(media is PaidMediaPreview)
+            if (media.duration > 0) {
+              videoCount++
+            } else {
+              unknownCount++
+            }
+          }
+          PaidMediaUnsupported.CONSTRUCTOR -> unknownCount++
           else -> {
             assertPaidMedia_a2956719()
             throw unsupported(media)
@@ -55,9 +65,10 @@ enum class MediaType {
         }
       }
       return when {
+        unknownCount > 0 -> MIXED
         photoCount > 0 && videoCount == 0 -> PHOTOS
         videoCount > 0 && photoCount == 0 -> VIDEOS
-        else -> VIDEOS
+        else -> MIXED
       }
     }
   }
@@ -124,6 +135,7 @@ fun LinkPreview?.getRepresentationTitle (): String {
       LinkPreviewTypeSupergroupBoost.CONSTRUCTOR,
       LinkPreviewTypeTheme.CONSTRUCTOR,
       LinkPreviewTypeUnsupported.CONSTRUCTOR,
+      LinkPreviewTypeUpgradedGift.CONSTRUCTOR,
       LinkPreviewTypeUser.CONSTRUCTOR,
       LinkPreviewTypeVideoChat.CONSTRUCTOR,
       LinkPreviewTypeVideoNote.CONSTRUCTOR,
@@ -134,7 +146,7 @@ fun LinkPreview?.getRepresentationTitle (): String {
         null
       }
       else -> {
-        assertLinkPreviewType_eb86a63d()
+        assertLinkPreviewType_e4d80559()
         throw unsupported(it)
       }
     }
@@ -156,7 +168,7 @@ fun LinkPreview?.getContentTitle (): String {
             it.audio?.title
           }
           else -> {
-            assertLinkPreviewType_eb86a63d()
+            assertLinkPreviewType_e4d80559()
             null
           }
         }
@@ -258,9 +270,10 @@ fun LinkPreviewType?.getMediaFile (): File? {
     LinkPreviewTypeTheme.CONSTRUCTOR,
     LinkPreviewTypeVideoChat.CONSTRUCTOR,
     LinkPreviewTypeWebApp.CONSTRUCTOR,
+    LinkPreviewTypeUpgradedGift.CONSTRUCTOR,
     LinkPreviewTypeUnsupported.CONSTRUCTOR -> null
     else -> {
-      assertLinkPreviewType_eb86a63d()
+      assertLinkPreviewType_e4d80559()
       throw unsupported(this)
     }
   }

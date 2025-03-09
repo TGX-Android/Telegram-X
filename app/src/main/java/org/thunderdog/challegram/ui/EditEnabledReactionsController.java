@@ -337,7 +337,7 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
       }
     }
 
-    String[] activeEmojiReactions = tdlib.getActiveEmojiReactions();
+    Set<String> activeEmojiReactions = tdlib.getActiveEmojiReactions();
     if (activeEmojiReactions != null) {
       for (String activeEmojiReaction : activeEmojiReactions) {
         TGReaction reaction = tdlib.getReaction(new TdApi.ReactionTypeEmoji(activeEmojiReaction));

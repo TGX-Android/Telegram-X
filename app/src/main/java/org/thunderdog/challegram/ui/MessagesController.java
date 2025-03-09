@@ -289,6 +289,7 @@ import tgx.td.MessageId;
 import tgx.td.Td;
 import tgx.td.TdConstants;
 import tgx.td.data.MessageWithProperties;
+import tgx.td.ui.TdUi;
 
 public class MessagesController extends ViewController<MessagesController.Arguments> implements
   Menu, Unlockable, View.OnClickListener,
@@ -2192,134 +2193,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void reportChat (@Nullable MessageWithProperties[] messages, final @Nullable Runnable after) {
-    /*final long[] messageIds;
-    final String title;
-    if (messages != null && messages.length > 0) {
-      messageIds = new long[messages.length];
-
-      boolean singleSender = true;
-      int senderUserId = messages[0].senderUserId;
-
-      int i = 0;
-      for (TdApi.Message message : messages) {
-        messageIds[i++] = message.id;
-        if (singleSender && message.senderUserId != senderUserId) {
-          singleSender = false;
-          senderUserId = 0;
-        }
-      }
-      if (singleSender) {
-        if (senderUserId != 0) {
-          title = Lang.getString(messages.length == 1 ? R.string.ReportMessageUser : R.string.ReportMessagesUser, tdlib.cache().userName(senderUserId));
-        } else {
-          title = Lang.getString(messages.length == 1 ? R.string.ReportMessage : R.string.ReportMessages, tdlib.chatTitle(messages[0].chatId));
-        }
-      } else {
-        title = Lang.plural(R.string.ReportXMessages, messages.length);
-      }
-    } else {
-      messageIds = null;
-      title = Lang.getString(R.string.ReportChat, chat.title);
-    }
-    int reportCount = 6;
-    IntList ids = new IntList(reportCount);
-    IntList colors = new IntList(reportCount);
-    StringList strings = new StringList(reportCount);
-
-    ids.append(R.id.btn_reportChatSpam);
-    colors.append(OPTION_COLOR_NORMAL);
-    strings.append(R.string.Spam);
-
-    ids.append(R.id.btn_reportChatViolence);
-    colors.append(OPTION_COLOR_NORMAL);
-    strings.append(R.string.Violence);
-
-    ids.append(R.id.btn_reportChatPornography);
-    colors.append(OPTION_COLOR_NORMAL);
-    strings.append(R.string.Pornography);
-
-    ids.append(R.id.btn_reportChatChildAbuse);
-    colors.append(OPTION_COLOR_RED);
-    strings.append(R.string.ChildAbuse);
-
-    ids.append(R.id.btn_reportChatCopyright);
-    colors.append(OPTION_COLOR_NORMAL);
-    strings.append(R.string.Copyright);
-
-    ids.append(R.id.btn_reportChatOther);
-    colors.append(OPTION_COLOR_NORMAL);
-    strings.append(R.string.Other);
-
-    showOptions(title, ids.get(), strings.get(), colors.get(), null, id -> {
-      final TdApi.ChatReportReason reason;
-      switch (id) {
-        case R.id.btn_reportChatSpam:
-          reason = new TdApi.ChatReportReasonSpam();
-          break;
-        case R.id.btn_reportChatViolence:
-          reason = new TdApi.ChatReportReasonViolence();
-          break;
-        case R.id.btn_reportChatPornography:
-          reason = new TdApi.ChatReportReasonPornography();
-          break;
-        case R.id.btn_reportChatCopyright:
-          reason = new TdApi.ChatReportReasonCopyright();
-          break;
-        case R.id.btn_reportChatChildAbuse:
-          reason = new TdApi.ChatReportReasonCustom("child abuse");
-          break;
-        case R.id.btn_reportChatOther:
-          reason = new TdApi.ChatReportReasonCustom();
-          RequestController c = new RequestController(context, tdlib);
-          final long chatId = getChatId();
-          c.setArguments(new RequestController.Delegate() {
-            @Override
-            public String getName () {
-              return title;
-            }
-
-            @Override
-            public int getPlaceholder () {
-              return R.string.ReportReasonDescription;
-            }
-
-            @Override
-            public void performRequest (String input, final RunnableBool callback) {
-              ((TdApi.ChatReportReasonCustom) reason).text = input;
-              if (after != null) {
-                after.run();
-              }
-              tdlib.client().send(new TdApi.ReportChat(chatId, reason, messageIds), object -> {
-                boolean ok = object.getConstructor() == TdApi.Ok.CONSTRUCTOR;
-                if (ok) {
-                  UI.showToast(R.string.ReportChatSent, Toast.LENGTH_SHORT);
-                } else {
-                  UI.showError(object);
-                }
-                callback.run(ok);
-              });
-            }
-          });
-          navigateTo(c);
-          return true;
-        default:
-          return false;
-      }
-      if (after != null) {
-        after.run();
-      }
-      tdlib.client().send(new TdApi.ReportChat(chat.id, reason, null), object -> {
-        switch (object.getConstructor()) {
-          case TdApi.Ok.CONSTRUCTOR:
-            UI.showToast(R.string.ReportChatSent, Toast.LENGTH_SHORT);
-            break;
-          case TdApi.Error.CONSTRUCTOR:
-            UI.showError(object);
-            break;
-        }
-      });
-      return true;
-    });*/
     TdApi.Message[] array;
     if (messages != null) {
       array = new TdApi.Message[messages.length];
@@ -2330,6 +2203,23 @@ public class MessagesController extends ViewController<MessagesController.Argume
       array = null;
     }
     TdlibUi.reportChat(this, getChatId(), array, null, after, true);
+  }
+
+  private void reportSponsoredMessage (TdApi.SponsoredMessage sponsoredMessage, byte[] optionId) {
+    tdlib.send(new TdApi.ReportChatSponsoredMessage(getChatId(), sponsoredMessage.messageId, optionId), (result, error) -> runOnUiThreadOptional(() -> {
+      if (error != null) {
+        UI.showError(error);
+        return;
+      }
+      switch (result.getConstructor()) {
+        case TdApi.ReportChatSponsoredMessageResultOk.CONSTRUCTOR:
+          break;
+        case TdApi.ReportChatSponsoredMessageResultFailed.CONSTRUCTOR:
+        case TdApi.ReportChatSponsoredMessageResultOptionRequired.CONSTRUCTOR:
+        case TdApi.ReportChatSponsoredMessageResultAdsHidden.CONSTRUCTOR:
+        case TdApi.ReportChatSponsoredMessageResultPremiumRequired.CONSTRUCTOR:
+      }
+    }));
   }
 
   public static final int PREVIEW_MODE_NONE = 0;
@@ -5648,7 +5538,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
         return true;
       } else if (id == R.id.btn_messageReport) {
         cancelSheduledKeyboardOpeningAndHideAllKeyboards();
-        reportChat(selectedMessage.getAllMessagesAndProperties(), null);
+        if (selectedMessage.isSponsoredMessage()) {
+          TdUi.reportChatSponsoredMessage(this, tdlib, getChatId(), selectedMessage.getSponsoredMessage());
+        } else {
+          reportChat(selectedMessage.getAllMessagesAndProperties(), null);
+        }
         return true;
       } else if (id == R.id.btn_messageSelect) {
         selectAllMessages(selectedMessage, -1, -1);
@@ -6879,7 +6773,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           return !Td.equalsTo(oldText, newText);
         }
         default: {
-          Td.assertMessageContent_91c1e338();
+          Td.assertMessageContent_640c68ad();
           break;
         }
       }
@@ -7293,7 +7187,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         break;
       }
       default: {
-        Td.assertMessageContent_91c1e338();
+        Td.assertMessageContent_640c68ad();
         throw Td.unsupported(editContext.message.content);
       }
     }
@@ -8930,6 +8824,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (attachedFiles != null && attachedFiles.getParent() != null) {
       attachedFiles.updatePosition(true);
     }
+    if (messagesView != null) {
+      messagesView.invalidate();
+    }
   }
 
   private final int[] cursorCoordinates = new int[2], symbolUnderCursorPosition = new int[2];
@@ -10174,7 +10071,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           } else if (sendAsAnimation && file.getSelfDestructType() == null && (files.length == 1 || !needGroupMedia)) {
             content = tdlib.filegen().createThumbnail(new TdApi.InputMessageAnimation(inputVideo, null, null, file.getVideoDuration(true), width, height, caption, showCaptionAboveMedia, hasSpoiler), isSecretChat);
           } else {
-            content = tdlib.filegen().createThumbnail(new TdApi.InputMessageVideo(inputVideo, null, null, file.getVideoDuration(true), width, height, U.canStreamVideo(inputVideo), caption, showCaptionAboveMedia, file.getSelfDestructType(), hasSpoiler), isSecretChat);
+            content = tdlib.filegen().createThumbnail(new TdApi.InputMessageVideo(inputVideo, null, null, 0, null, file.getVideoDuration(true), width, height, U.canStreamVideo(inputVideo), caption, showCaptionAboveMedia, file.getSelfDestructType(), hasSpoiler), isSecretChat);
           }
         } else {
           int[] size = new int[2];

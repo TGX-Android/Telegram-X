@@ -935,7 +935,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
         LongList recentEmojiList = new LongList(200);
         LongList trendingEmojiList = new LongList(200);
         getCustomEmojiStatusList(new TdApi.GetThemedEmojiStatuses(), trendingEmojiList, () ->
-          getCustomEmojiStatusList(new TdApi.GetRecentEmojiStatuses(), recentEmojiList, () ->
+          getEmojiStatusList(new TdApi.GetRecentEmojiStatuses(), recentEmojiList, () ->
             getCustomEmojiStatusList(new TdApi.GetDefaultEmojiStatuses(), trendingEmojiList, () ->
               getCustomEmojiStickers(trendingEmojiList.get(), trendingStickersHandler(() ->
                 getCustomEmojiStickers(recentEmojiList.get(), serviceStickersHandler(null))))))
@@ -963,13 +963,38 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
     }
   }
 
-  private void getCustomEmojiStatusList (TdApi.Function<TdApi.EmojiStatuses> req, LongList longList, Runnable onReceive) {
+  private void getEmojiStatusList (TdApi.Function<TdApi.EmojiStatuses> req, LongList longList, Runnable onReceive) {
     tdlib.client().send(req, object2 -> {
       switch (object2.getConstructor()) {
         case TdApi.EmojiStatuses.CONSTRUCTOR: {
-          long[] customEmojiIds = ((TdApi.EmojiStatuses) object2).customEmojiIds;
+          TdApi.EmojiStatus[] emojiStatuses = ((TdApi.EmojiStatuses) object2).emojiStatuses;
+          for (TdApi.EmojiStatus emojiStatus : emojiStatuses) {
+            if (longList.size() >= MAX_EMOJI_STATUS_COUNT) break;
+            if (emojiStatus.type.getConstructor() == TdApi.EmojiStatusTypeCustomEmoji.CONSTRUCTOR) {
+              // TODO upgradedGift
+              longList.append(Td.customEmojiId(emojiStatus));
+            }
+          }
+          onReceive.run();
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          UI.showError(object2);
+          break;
+        }
+      }
+    });
+  }
+
+  private static final int MAX_EMOJI_STATUS_COUNT = 1000;
+
+  private void getCustomEmojiStatusList (TdApi.Function<TdApi.EmojiStatusCustomEmojis> req, LongList longList, Runnable onReceive) {
+    tdlib.client().send(req, object2 -> {
+      switch (object2.getConstructor()) {
+        case TdApi.EmojiStatusCustomEmojis.CONSTRUCTOR: {
+          long[] customEmojiIds = ((TdApi.EmojiStatusCustomEmojis) object2).customEmojiIds;
           for (long customEmojiId : customEmojiIds) {
-            if (longList.size() >= 200) break;
+            if (longList.size() >= MAX_EMOJI_STATUS_COUNT) break;
             longList.append(customEmojiId);
           }
           onReceive.run();
@@ -1364,7 +1389,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
     final long emojiId = sticker.getCustomEmojiId();
     final int viewId = v.getId();
     if (viewId == R.id.btn_setEmojiStatus) {
-      tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(emojiId, 0)), tdlib.okHandler());
+      tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), 0)), tdlib.okHandler());
       stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, 0);
       stickerSmallView.closePreviewIfNeeded();
     } else if (viewId == R.id.btn_setEmojiStatusTimed) {
@@ -1404,7 +1429,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
             context.showDateTimePicker(tdlib, Lang.getString(titleRes), todayRes, tomorrowRes, futureRes, millis -> {
               long expirationDate = millis / 1000L;
               stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, expirationDate);
-              tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(emojiId, (int) expirationDate)), tdlib.okHandler());
+              tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), (int) expirationDate)), tdlib.okHandler());
               stickerSmallView.closePreviewIfNeeded();
             }, null);
             return true;
@@ -1424,7 +1449,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
           }
           long expirationDate = System.currentTimeMillis() / 1000L + duration;
           stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, expirationDate);
-          tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(emojiId, (int) expirationDate)), tdlib.okHandler());
+          tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), (int) expirationDate)), tdlib.okHandler());
           stickerSmallView.closePreviewIfNeeded();
           return true;
         });

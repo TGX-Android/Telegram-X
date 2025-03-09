@@ -83,8 +83,8 @@ public class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiMana
     if (this.customEmoji == customEmoji)
       return;
     this.customEmoji = customEmoji;
-    if (mSize != -1) {
-      prepareCustomEmoji(mSize);
+    if (size.isInitialized()) {
+      prepareCustomEmoji(size.getSize());
       surfaceProvider.onInvalidateSpan(this, customEmoji != null && customEmoji.isNotFound());
     }
   }
@@ -107,7 +107,7 @@ public class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiMana
     drawRect.set(left, top, right, bottom);
     prepareCustomEmoji(emojiSize);
     if (customEmoji != null && customEmoji.isNotFound()) {
-      super.drawEmoji(c, drawRect.centerX(), drawRect.centerY(), mSize);
+      super.drawEmoji(c, drawRect.centerX(), drawRect.centerY(), size.getSize());
     }
   }
 
@@ -148,8 +148,8 @@ public class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiMana
     if (drawRect.left == drawRect.right || drawRect.top == drawRect.bottom) {
       return; // force invalidate()?
     }
-    if (customEmojiSize != mSize && mSize > 0) {
-      prepareCustomEmoji(mSize);
+    if (customEmojiSize != size.getSize() && size.getSize() > 0) {
+      prepareCustomEmoji(size.getSize());
     }
     int paddingLeft = view.getPaddingLeft();
     int paddingTop = view.getPaddingTop();

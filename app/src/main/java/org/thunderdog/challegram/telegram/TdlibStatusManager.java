@@ -627,11 +627,11 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
     throw new IllegalArgumentException(chat.type.toString());
   }
 
-  public String getPrivateChatSubtitle (long userId) {
+  public CharSequence getPrivateChatSubtitle (long userId) {
     return getPrivateChatSubtitle(userId, tdlib.cache().user(userId), true, true);
   }
 
-  public String getPrivateChatSubtitle (long userId, @Nullable TdApi.User user, boolean allowMyself) {
+  public CharSequence getPrivateChatSubtitle (long userId, @Nullable TdApi.User user, boolean allowMyself) {
     return getPrivateChatSubtitle(userId, user, allowMyself, true);
   }
 
@@ -642,11 +642,11 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
     return user != null && user.type.getConstructor() == TdApi.UserTypeRegular.CONSTRUCTOR && user.status.getConstructor() == TdApi.UserStatusOnline.CONSTRUCTOR;
   }
 
-  public String getPrivateChatSubtitle (long userId, @Nullable TdApi.User user, boolean allowMyself, boolean allowDuration) {
+  public CharSequence getPrivateChatSubtitle (long userId, @Nullable TdApi.User user, boolean allowMyself, boolean allowDuration) {
     return getPrivateChatSubtitle(userId, user, allowMyself, allowDuration, false);
   }
 
-  public String getPrivateChatSubtitle (long userId, @Nullable TdApi.User user, boolean allowMyself, boolean allowDuration, boolean fallbackToContactStatus) {
+  public CharSequence getPrivateChatSubtitle (long userId, @Nullable TdApi.User user, boolean allowMyself, boolean allowDuration, boolean fallbackToContactStatus) {
     if (allowMyself && tdlib.isSelfUserId(userId)) {
       return Lang.lowercase(Lang.getString(R.string.ChatWithYourself));
     }
@@ -665,6 +665,10 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
     }
     switch (user.type.getConstructor()) {
       case TdApi.UserTypeBot.CONSTRUCTOR: {
+        TdApi.UserTypeBot bot = (TdApi.UserTypeBot) user.type;
+        if (bot.activeUserCount > 0) {
+          return Lang.pluralBold(R.string.xBotUsers, bot.activeUserCount);
+        }
         return Lang.getString(R.string.Bot);
       }
       case TdApi.UserTypeDeleted.CONSTRUCTOR: {

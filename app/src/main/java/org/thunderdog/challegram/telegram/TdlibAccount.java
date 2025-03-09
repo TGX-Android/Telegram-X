@@ -603,8 +603,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   public long getEmojiStatusCustomEmojiId () {
     TdApi.User user = getUser();
     if (user != null) {
-      TdApi.EmojiStatus emojiStatus = user.emojiStatus;
-      return emojiStatus != null ? emojiStatus.customEmojiId : 0;
+      return Td.customEmojiId(user.emojiStatus);
     }
     DisplayInformation info = getDisplayInformation();
     return info != null ? info.getEmojiStatusCustomEmojiId() : 0;
@@ -617,7 +616,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
       if (emojiStatus == null) {
         return null;
       }
-      TdlibEmojiManager.Entry entry = allowTdlib() ? tdlib().emoji().find(emojiStatus.customEmojiId) : null;
+      TdlibEmojiManager.Entry entry = allowTdlib() ? tdlib().emoji().find(Td.customEmojiId(emojiStatus)) : null;
       if (entry != null) {
         return entry.isNotFound() ? null : entry.value;
       }

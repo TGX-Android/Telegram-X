@@ -188,11 +188,6 @@ abstract class TGMessageServiceImpl extends TGMessage {
   }
 
   @Override
-  public boolean canBeReacted () {
-    return false;
-  }
-
-  @Override
   public boolean canSwipe () {
     return false;
   }
@@ -314,6 +309,9 @@ abstract class TGMessageServiceImpl extends TGMessage {
 
   @Override
   public boolean onTouchEvent (MessageView view, MotionEvent e) {
+    if (super.onTouchEvent(view, e)) {
+      return true;
+    }
     boolean res = displayText != null && displayText.onTouchEvent(view, e);
     return helper.onTouchEvent(view, e) || res;
   }

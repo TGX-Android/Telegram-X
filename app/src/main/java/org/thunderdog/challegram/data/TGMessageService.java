@@ -74,22 +74,61 @@ public final class TGMessageService extends TGMessageServiceImpl {
     super(context, msg);
     String amount = CurrencyUtils.buildAmount(giftedPremium.currency, giftedPremium.amount);
     setTextCreator(() -> {
-      if (msg.isOutgoing) {
+      if (giftedPremium.receiverUserId != 0) {
+        if (msg.chatId == ChatId.fromUserId(giftedPremium.receiverUserId)) {
+          return getPlural(
+            R.string.YouGiftedPremium,
+            giftedPremium.monthCount,
+            new BoldArgument(amount)
+          );
+        } else {
+          return getPlural(
+            R.string.YouGiftedPremiumTo,
+            giftedPremium.monthCount,
+            new BoldArgument(amount),
+            new SenderArgument(new TdlibSender(tdlib, msg.chatId, new TdApi.MessageSenderUser(giftedPremium.receiverUserId)))
+          );
+        }
+      } else if (giftedPremium.gifterUserId != 0) {
         return getPlural(
-          R.string.YouGiftedPremium,
+          R.string.GiftedPremium,
           giftedPremium.monthCount,
+          new SenderArgument(new TdlibSender(tdlib, msg.chatId, new TdApi.MessageSenderUser(giftedPremium.gifterUserId)), isUserChat()),
           new BoldArgument(amount)
         );
       } else {
         return getPlural(
-          R.string.GiftedPremium,
+          R.string.AnonymousGiftedPremium,
           giftedPremium.monthCount,
-          new SenderArgument(sender, isUserChat()),
           new BoldArgument(amount)
         );
       }
     });
-    // TODO design for giftedPremium.sticker
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessagePremiumGiftCode premiumGiftCode) {
+    super(context, msg);
+    setTextCreator(() -> {
+      if (msg.isOutgoing) {
+        return getPlural(
+          R.string.YouGiftedPremiumCode,
+          premiumGiftCode.monthCount
+        );
+      } else if (premiumGiftCode.creatorId != null) {
+        return getPlural(
+          R.string.GiftedPremiumCode,
+          premiumGiftCode.monthCount,
+          new SenderArgument(new TdlibSender(tdlib, msg.chatId, premiumGiftCode.creatorId), isUserChat())
+        );
+      } else {
+        return getPlural(
+          R.string.AnonymousGiftedPremiumCode,
+          premiumGiftCode.monthCount
+        );
+      }
+    });
+    // TODO design for premiumGiftCode.sticker
+    // TODO show details of the gift code
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageGiftedStars giftedStars) {
@@ -112,26 +151,6 @@ public final class TGMessageService extends TGMessageServiceImpl {
       }
     });
     // TODO design for giftedStars.sticker
-  }
-
-  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessagePremiumGiftCode premiumGiftCode) {
-    super(context, msg);
-    setTextCreator(() -> {
-      if (msg.isOutgoing) {
-        return getPlural(
-          R.string.YouGiftedPremiumCode,
-          premiumGiftCode.monthCount
-        );
-      } else {
-        return getPlural(
-          R.string.GiftedPremiumCode,
-          premiumGiftCode.monthCount,
-          new SenderArgument(new TdlibSender(tdlib, msg.chatId, premiumGiftCode.creatorId), isUserChat())
-        );
-      }
-    });
-    // TODO design for premiumGiftCode.sticker
-    // TODO show details of the gift code
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageGiveawayCreated giveawayCreated) {
@@ -384,16 +403,18 @@ public final class TGMessageService extends TGMessageServiceImpl {
               MediaType type = MediaType.valueOf(paidMedia);
               if (paidMedia.media.length == 1) {
                 switch (type) {
-                  case PHOTOS: staticResId = R.string.ActionPinnedPhoto; break;
-                  case VIDEOS: staticResId = R.string.ActionPinnedVideo; break;
-                  case MIXED: default: throw new UnsupportedOperationException();
+                  case PHOTOS: staticResId = R.string.ActionPinnedPaidPhoto; break;
+                  case VIDEOS: staticResId = R.string.ActionPinnedPaidVideo; break;
+                  case MIXED: staticResId = isChannel() ? R.string.ActionPinnedPaidPost : R.string.ActionPinnedPaidContent; break;
+                  default: throw new UnsupportedOperationException();
                 }
               } else {
                 int pluralRes;
                 switch (type) {
-                  case PHOTOS: pluralRes = R.string.ActionPinnedXPhotos; break;
-                  case VIDEOS: pluralRes = R.string.ActionPinnedXVideos; break;
-                  case MIXED: default: pluralRes = R.string.ActionPinnedXMedia; break;
+                  case PHOTOS: pluralRes = R.string.ActionPinnedXPaidPhotos; break;
+                  case VIDEOS: pluralRes = R.string.ActionPinnedXPaidVideos; break;
+                  case MIXED: pluralRes = R.string.ActionPinnedXPaidMedia; break;
+                  default: throw new UnsupportedOperationException();
                 }
                 format = Lang.plural(pluralRes, paidMedia.media.length);
                 staticResId = 0;
@@ -455,10 +476,12 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageChatBoost.CONSTRUCTOR:
             case TdApi.MessageGiveawayPrizeStars.CONSTRUCTOR:
             case TdApi.MessageGift.CONSTRUCTOR:
+            case TdApi.MessageUpgradedGift.CONSTRUCTOR:
+            case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              Td.assertMessageContent_91c1e338();
+              Td.assertMessageContent_640c68ad();
               throw Td.unsupported(message.content);
           }
           if (format == null) {
@@ -1899,8 +1922,8 @@ public final class TGMessageService extends TGMessageServiceImpl {
       if (emojiStatusChanged.oldEmojiStatus == null || emojiStatusChanged.newEmojiStatus == null) {
         boolean isUnset = emojiStatusChanged.newEmojiStatus == null;
         long backgroundCustomEmojiId = isUnset ?
-          (emojiStatusChanged.oldEmojiStatus != null ? emojiStatusChanged.oldEmojiStatus.customEmojiId : 0) :
-          emojiStatusChanged.newEmojiStatus.customEmojiId;
+          Td.customEmojiId(emojiStatusChanged.oldEmojiStatus) :
+          Td.customEmojiId(emojiStatusChanged.newEmojiStatus);
         if (msg.isOutgoing) {
           return getText(
             (isUnset ? R.string.EventLogEmojiStatusUnsetYou : R.string.EventLogEmojiStatusSetYou),
@@ -1914,8 +1937,8 @@ public final class TGMessageService extends TGMessageServiceImpl {
           );
         }
       } else {
-        long oldBackgroundCustomEmojiId = emojiStatusChanged.oldEmojiStatus.customEmojiId;
-        long newBackgroundCustomEmojiId = emojiStatusChanged.newEmojiStatus.customEmojiId;
+        long oldBackgroundCustomEmojiId = Td.customEmojiId(emojiStatusChanged.oldEmojiStatus);
+        long newBackgroundCustomEmojiId = Td.customEmojiId(emojiStatusChanged.newEmojiStatus);
         if (msg.isOutgoing) {
           return getText(
             R.string.EventLogEmojiStatusChangedYou,

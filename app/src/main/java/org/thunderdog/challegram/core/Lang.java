@@ -1103,16 +1103,18 @@ public class Lang {
         MediaType type = MediaType.valueOf(paidMedia);
         if (paidMedia.media.length == 1) {
           switch (type) {
-            case PHOTOS: res = R.string.ActionPinnedPhoto; break;
-            case VIDEOS: res = R.string.ActionPinnedVideo; break;
-            case MIXED: default: throw new UnsupportedOperationException();
+            case PHOTOS: res = R.string.ActionPinnedPaidPhoto; break;
+            case VIDEOS: res = R.string.ActionPinnedPaidVideo; break;
+            case MIXED: res = message != null && message.isChannelPost ? R.string.ActionPinnedPaidPost : R.string.ActionPinnedPaidContent; break;
+            default: throw new UnsupportedOperationException();
           }
         } else {
           int pluralRes;
           switch (type) {
-            case PHOTOS: pluralRes = R.string.ActionPinnedXPhotos; break;
-            case VIDEOS: pluralRes = R.string.ActionPinnedXVideos; break;
-            case MIXED: default: pluralRes = R.string.ActionPinnedXMedia; break;
+            case PHOTOS: pluralRes = R.string.ActionPinnedXPaidPhotos; break;
+            case VIDEOS: pluralRes = R.string.ActionPinnedXPaidVideos; break;
+            case MIXED: pluralRes = R.string.ActionPinnedXPaidMedia; break;
+            default: throw new UnsupportedOperationException();
           }
           format = Lang.plural(pluralRes, paidMedia.media.length);
         }
@@ -1159,6 +1161,8 @@ public class Lang {
       case TdApi.MessageGiftedPremium.CONSTRUCTOR:
       case TdApi.MessageGiftedStars.CONSTRUCTOR:
       case TdApi.MessageGift.CONSTRUCTOR:
+      case TdApi.MessageUpgradedGift.CONSTRUCTOR:
+      case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
       case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
       case TdApi.MessageGiveawayCreated.CONSTRUCTOR:
       case TdApi.MessageGiveawayCompleted.CONSTRUCTOR:
@@ -1208,7 +1212,7 @@ public class Lang {
       case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
         break;
       default:
-        Td.assertMessageContent_91c1e338();
+        Td.assertMessageContent_640c68ad();
         throw Td.unsupported(message.content);
     }
     if (format == null) {

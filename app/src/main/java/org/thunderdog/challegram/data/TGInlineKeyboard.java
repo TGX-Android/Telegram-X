@@ -616,7 +616,6 @@ public class TGInlineKeyboard {
 
       if (type != null) {
         int iconColor = Theme.inlineIconColor(isOutBubble);
-        //noinspection SwitchIntDef
         switch (type.getConstructor()) {
           case TdApi.InlineKeyboardButtonTypeSwitchInline.CONSTRUCTOR:
           case TdApi.InlineKeyboardButtonTypeCallbackWithPassword.CONSTRUCTOR:
@@ -670,6 +669,13 @@ public class TGInlineKeyboard {
           case TdApi.InlineKeyboardButtonTypeCallbackGame.CONSTRUCTOR: {
             drawProgress(c, useBubbleMode, textColorFactor);
             break;
+          }
+          case TdApi.InlineKeyboardButtonTypeCopyText.CONSTRUCTOR:
+          case TdApi.InlineKeyboardButtonTypeWebApp.CONSTRUCTOR:
+            break;
+          default: {
+            Td.assertInlineKeyboardButtonType_4c981aa8();
+            throw Td.unsupported(type);
           }
         }
       } else {
@@ -816,7 +822,9 @@ public class TGInlineKeyboard {
         flags &= ~FLAG_CAUGHT;
         if (!isActive()) {
           cancelSelection();
-          if (type != null) {
+          if (parent.isSponsoredMessage()) {
+            return false;
+          } else if (type != null) {
             switch (type.getConstructor()) {
               case TdApi.InlineKeyboardButtonTypeUrl.CONSTRUCTOR: {
                 ViewController<?> c = parent.context().navigation().getCurrentStackItem();
@@ -836,6 +844,19 @@ public class TGInlineKeyboard {
                   return true;
                 }
                 break;
+              case TdApi.InlineKeyboardButtonTypeBuy.CONSTRUCTOR:
+              case TdApi.InlineKeyboardButtonTypeCallback.CONSTRUCTOR:
+              case TdApi.InlineKeyboardButtonTypeCallbackGame.CONSTRUCTOR:
+              case TdApi.InlineKeyboardButtonTypeCallbackWithPassword.CONSTRUCTOR:
+              case TdApi.InlineKeyboardButtonTypeCopyText.CONSTRUCTOR:
+              case TdApi.InlineKeyboardButtonTypeSwitchInline.CONSTRUCTOR:
+              case TdApi.InlineKeyboardButtonTypeUser.CONSTRUCTOR:
+              case TdApi.InlineKeyboardButtonTypeWebApp.CONSTRUCTOR:
+                break;
+              default: {
+                Td.assertInlineKeyboardButtonType_4c981aa8();
+                throw Td.unsupported(type);
+              }
             }
           } else if (isCustom && clickListener != null) {
             return clickListener.onLongClick(view, context, this);
@@ -1068,11 +1089,21 @@ public class TGInlineKeyboard {
 
       final int currentContextId = this.contextId;
 
+      if (parent.isSponsoredMessage()) {
+        makeActive();
+        showProgressDelayed();
+        parent.openSponsoredMessage(() ->
+          parent.executeOnUiThreadOptional(this::makeInactive)
+        );
+        return;
+      }
+
       switch (type.getConstructor()) {
-        case TdApi.InlineKeyboardButtonTypeBuy.CONSTRUCTOR: {
+        case TdApi.InlineKeyboardButtonTypeBuy.CONSTRUCTOR:
+        case TdApi.InlineKeyboardButtonTypeCopyText.CONSTRUCTOR:
+        case TdApi.InlineKeyboardButtonTypeWebApp.CONSTRUCTOR:
           // TODO
           break;
-        }
 
         case TdApi.InlineKeyboardButtonTypeCallbackWithPassword.CONSTRUCTOR: {
           final TdApi.InlineKeyboardButtonTypeCallbackWithPassword callbackWithPassword = (TdApi.InlineKeyboardButtonTypeCallbackWithPassword) type;
@@ -1207,14 +1238,18 @@ public class TGInlineKeyboard {
           showProgressDelayed();
 
           TdApi.InlineKeyboardButtonTypeLoginUrl button = (TdApi.InlineKeyboardButtonTypeLoginUrl) type;
-          context.context.tdlib().client().send(new TdApi.GetLoginUrlInfo(context.context.getChatId(), context.messageId, button.id), getLoginCallback(currentContextId, view, button, needVerify));
+          context.context.tdlib().send(new TdApi.GetLoginUrlInfo(context.context.getChatId(), context.messageId, button.id), getLoginCallback(currentContextId, view, button, needVerify));
           break;
+        }
+        default: {
+          Td.assertInlineKeyboardButtonType_4c981aa8();
+          throw Td.unsupported(type);
         }
       }
     }
 
-    private Client.ResultHandler getLoginCallback (final int currentContextId, final View view, final TdApi.InlineKeyboardButtonTypeLoginUrl button, final boolean needVerify) {
-      return object -> UI.post(() -> {
+    private Tdlib.ResultHandler<TdApi.LoginUrlInfo> getLoginCallback (final int currentContextId, final View view, final TdApi.InlineKeyboardButtonTypeLoginUrl button, final boolean needVerify) {
+      return (loginUrlInfo, error) -> UI.post(() -> {
         if (currentContextId == contextId) {
           makeInactive();
         }
@@ -1228,9 +1263,15 @@ public class TGInlineKeyboard {
           return;
         }
 
-        switch (object.getConstructor()) {
+        if (error != null) {
+          UI.showError(error);
+          openUrl(currentContextId, view, button.url, needVerify);
+          return;
+        }
+
+        switch (loginUrlInfo.getConstructor()) {
           case TdApi.LoginUrlInfoOpen.CONSTRUCTOR: {
-            TdApi.LoginUrlInfoOpen open = (TdApi.LoginUrlInfoOpen) object;
+            TdApi.LoginUrlInfoOpen open = (TdApi.LoginUrlInfoOpen) loginUrlInfo;
             context.context.tdlib().ui()
               .openUrl(context.context.controller(), open.url, openParameters(currentContextId, view)
               .disableInstantView()
@@ -1238,7 +1279,7 @@ public class TGInlineKeyboard {
             break;
           }
           case TdApi.LoginUrlInfoRequestConfirmation.CONSTRUCTOR:
-            TdApi.LoginUrlInfoRequestConfirmation confirm = (TdApi.LoginUrlInfoRequestConfirmation) object;
+            TdApi.LoginUrlInfoRequestConfirmation confirm = (TdApi.LoginUrlInfoRequestConfirmation) loginUrlInfo;
             List<ListItem> items = new ArrayList<>();
             items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION_MULTILINE,
               R.id.btn_signIn, 0,
@@ -1268,7 +1309,7 @@ public class TGInlineKeyboard {
                 if (needSignIn) {
                   makeActive();
                   showProgressDelayed();
-                  context.context.tdlib().client().send(new TdApi.GetLoginUrl(parent.getChatId(), context.messageId, button.id, needWriteAccess), getLoginUrlCallback(currentContextId, view, button, needVerify));
+                  context.context.tdlib().send(new TdApi.GetLoginUrl(parent.getChatId(), context.messageId, button.id, needWriteAccess), getLoginUrlCallback(currentContextId, view, button, needVerify));
                 } else {
                   openUrl(currentContextId, view, button.url, false);
                 }
@@ -1304,17 +1345,16 @@ public class TGInlineKeyboard {
               .setRawItems(items)
             );
             break;
-          case TdApi.Error.CONSTRUCTOR: {
-            UI.showError(object);
-            openUrl(currentContextId, view, button.url, needVerify);
-            break;
+          default: {
+            Td.assertLoginUrlInfo_7af29c11();
+            throw Td.unsupported(loginUrlInfo);
           }
         }
       });
     }
 
-    private Client.ResultHandler getLoginUrlCallback (final int currentContextId, final View view, final TdApi.InlineKeyboardButtonTypeLoginUrl button, final boolean needVerify) {
-      return object -> UI.post(() -> {
+    private Tdlib.ResultHandler<TdApi.HttpUrl> getLoginUrlCallback (final int currentContextId, final View view, final TdApi.InlineKeyboardButtonTypeLoginUrl button, final boolean needVerify) {
+      return (httpUrl, error) -> UI.post(() -> {
         // TODO unify this piece of code into the one
         if (currentContextId == contextId) {
           makeInactive();
@@ -1329,17 +1369,11 @@ public class TGInlineKeyboard {
           return;
         }
 
-        switch (object.getConstructor()) {
-          case TdApi.HttpUrl.CONSTRUCTOR: {
-            String url = ((TdApi.HttpUrl) object).url;
-            context.context.tdlib().ui().openUrl(context.context.controller(), url, openParameters(currentContextId, view).disableInstantView());
-            break;
-          }
-          case TdApi.Error.CONSTRUCTOR: {
-            UI.showError(object);
-            openUrl(currentContextId, view, button.url, needVerify);
-            break;
-          }
+        if (error != null) {
+          UI.showError(error);
+          openUrl(currentContextId, view, button.url, needVerify);
+        } else {
+          context.context.tdlib().ui().openUrl(context.context.controller(), httpUrl.url, openParameters(currentContextId, view).disableInstantView());
         }
       });
     }

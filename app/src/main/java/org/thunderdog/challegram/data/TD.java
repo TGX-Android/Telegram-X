@@ -44,6 +44,7 @@ import android.widget.Toast;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.IdRes;
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RawRes;
@@ -99,6 +100,8 @@ import org.thunderdog.challegram.util.text.TextEntityMessage;
 import org.thunderdog.challegram.util.text.quotes.QuoteSpan;
 
 import java.io.File;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -114,6 +117,7 @@ import me.vkryl.android.html.HtmlParser;
 import me.vkryl.android.html.HtmlTag;
 import me.vkryl.android.text.AcceptFilter;
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.FileUtils;
 import me.vkryl.core.ObjectUtils;
@@ -644,6 +648,11 @@ public class TD {
     return Td.toThumbnail(photoSize);
   }
 
+  public static TdApi.Thumbnail toProfilePhotoThumbnail (TdApi.File file, boolean isBig) {
+    int size = isBig ? 640 : 160;
+    return new TdApi.Thumbnail(new TdApi.ThumbnailFormatJpeg(), size, size, file);
+  }
+
   public static boolean canRetractVote (TdApi.Poll poll) {
     switch (poll.type.getConstructor()) {
       case TdApi.PollTypeRegular.CONSTRUCTOR: {
@@ -1056,94 +1065,6 @@ public class TD {
     return TimeUnit.SECONDS.toDays(muteForSeconds) / 365 > 0;
   }
 
-  public static boolean canSendToSecretChat (TdApi.MessageContent content) {
-    //noinspection SwitchIntDef
-    switch (content.getConstructor()) {
-      case TdApi.MessagePoll.CONSTRUCTOR:
-      case TdApi.MessageGame.CONSTRUCTOR:
-      case TdApi.MessageStory.CONSTRUCTOR:
-      case TdApi.MessageInvoice.CONSTRUCTOR:
-      case TdApi.MessageDice.CONSTRUCTOR:
-      case TdApi.MessageGiveaway.CONSTRUCTOR:
-      case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
-      case TdApi.MessageGiveawayCreated.CONSTRUCTOR:
-      case TdApi.MessageGiveawayCompleted.CONSTRUCTOR:
-      case TdApi.MessageGiveawayWinners.CONSTRUCTOR:
-      case TdApi.MessageGiftedStars.CONSTRUCTOR:
-      case TdApi.MessageGift.CONSTRUCTOR:
-      case TdApi.MessagePaidMedia.CONSTRUCTOR: {
-        return false;
-      }
-      case TdApi.MessageText.CONSTRUCTOR:
-      case TdApi.MessageAnimation.CONSTRUCTOR:
-      case TdApi.MessageAudio.CONSTRUCTOR:
-      case TdApi.MessageDocument.CONSTRUCTOR:
-      case TdApi.MessagePhoto.CONSTRUCTOR:
-      case TdApi.MessageSticker.CONSTRUCTOR:
-      case TdApi.MessageVideo.CONSTRUCTOR:
-      case TdApi.MessageVideoNote.CONSTRUCTOR:
-      case TdApi.MessageVoiceNote.CONSTRUCTOR:
-      case TdApi.MessageExpiredPhoto.CONSTRUCTOR:
-      case TdApi.MessageExpiredVideo.CONSTRUCTOR:
-      case TdApi.MessageExpiredVideoNote.CONSTRUCTOR:
-      case TdApi.MessageExpiredVoiceNote.CONSTRUCTOR:
-      case TdApi.MessageLocation.CONSTRUCTOR:
-      case TdApi.MessageVenue.CONSTRUCTOR:
-      case TdApi.MessageContact.CONSTRUCTOR:
-      case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
-      case TdApi.MessageCall.CONSTRUCTOR:
-      case TdApi.MessageVideoChatScheduled.CONSTRUCTOR:
-      case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
-      case TdApi.MessageVideoChatEnded.CONSTRUCTOR:
-      case TdApi.MessageInviteVideoChatParticipants.CONSTRUCTOR:
-      case TdApi.MessageBasicGroupChatCreate.CONSTRUCTOR:
-      case TdApi.MessageSupergroupChatCreate.CONSTRUCTOR:
-      case TdApi.MessageChatChangeTitle.CONSTRUCTOR:
-      case TdApi.MessageChatChangePhoto.CONSTRUCTOR:
-      case TdApi.MessageChatDeletePhoto.CONSTRUCTOR:
-      case TdApi.MessageChatAddMembers.CONSTRUCTOR:
-      case TdApi.MessageChatJoinByLink.CONSTRUCTOR:
-      case TdApi.MessageChatJoinByRequest.CONSTRUCTOR:
-      case TdApi.MessageChatDeleteMember.CONSTRUCTOR:
-      case TdApi.MessageChatUpgradeTo.CONSTRUCTOR:
-      case TdApi.MessageChatUpgradeFrom.CONSTRUCTOR:
-      case TdApi.MessagePinMessage.CONSTRUCTOR:
-      case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
-      case TdApi.MessageChatSetBackground.CONSTRUCTOR:
-      case TdApi.MessageChatSetTheme.CONSTRUCTOR:
-      case TdApi.MessageChatSetMessageAutoDeleteTime.CONSTRUCTOR:
-      case TdApi.MessageChatBoost.CONSTRUCTOR:
-      case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
-      case TdApi.MessageForumTopicEdited.CONSTRUCTOR:
-      case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
-      case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
-      case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
-      case TdApi.MessageCustomServiceAction.CONSTRUCTOR:
-      case TdApi.MessageGameScore.CONSTRUCTOR:
-      case TdApi.MessagePaymentSuccessful.CONSTRUCTOR:
-      case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
-      case TdApi.MessagePaymentRefunded.CONSTRUCTOR:
-      case TdApi.MessageGiftedPremium.CONSTRUCTOR:
-      case TdApi.MessageGiveawayPrizeStars.CONSTRUCTOR:
-      case TdApi.MessageContactRegistered.CONSTRUCTOR:
-      case TdApi.MessageUsersShared.CONSTRUCTOR:
-      case TdApi.MessageChatShared.CONSTRUCTOR:
-      case TdApi.MessageBotWriteAccessAllowed.CONSTRUCTOR:
-      case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
-      case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
-      case TdApi.MessagePassportDataSent.CONSTRUCTOR:
-      case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
-      case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR:
-      case TdApi.MessageUnsupported.CONSTRUCTOR: {
-        return true;
-      }
-      default: {
-        Td.assertMessageContent_91c1e338();
-        throw Td.unsupported(content);
-      }
-    }
-  }
-
   public static int getViewCount (TdApi.MessageInteractionInfo interactionInfo) {
     return interactionInfo != null ? interactionInfo.viewCount : 0;
   }
@@ -1277,11 +1198,11 @@ public class TD {
                 if (allowAnimation && durationMs < TimeUnit.SECONDS.toMillis(30) && info.knownSize < ByteUnit.MB.toBytes(10) && numTracks == 1) {
                   return new TdApi.InputMessageAnimation(inputFile, null, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), width, height, caption, showCaptionAboveMedia, hasSpoiler);
                 } else if (allowVideo && durationMs > 0) {
-                  return new TdApi.InputMessageVideo(inputFile, null, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), width, height, U.canStreamVideo(inputFile), caption, showCaptionAboveMedia, null, hasSpoiler);
+                  return new TdApi.InputMessageVideo(inputFile, null, null, 0, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), width, height, U.canStreamVideo(inputFile), caption, showCaptionAboveMedia, null, hasSpoiler);
                 }
               }
               if (width > 0 && height > 0 && allowVideo) {
-                return new TdApi.InputMessageVideo(inputFile, null, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), width, height, U.canStreamVideo(inputFile), caption, showCaptionAboveMedia, null, hasSpoiler);
+                return new TdApi.InputMessageVideo(inputFile, null, null, 0, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), width, height, U.canStreamVideo(inputFile), caption, showCaptionAboveMedia, null, hasSpoiler);
               }
             }
           } catch (Throwable t) {
@@ -1303,7 +1224,7 @@ public class TD {
                 if (allowAnimation && durationMs < TimeUnit.SECONDS.toMillis(30) && info.knownSize < ByteUnit.MB.toBytes(10) && !metadata.hasAudio) {
                   return new TdApi.InputMessageAnimation(inputFile, null, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), videoWidth, videoHeight, caption, showCaptionAboveMedia, hasSpoiler);
                 } else if (allowVideo && durationMs > 0) {
-                  return new TdApi.InputMessageVideo(inputFile, null, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), videoWidth, videoHeight, U.canStreamVideo(inputFile), caption, showCaptionAboveMedia, null, hasSpoiler);
+                  return new TdApi.InputMessageVideo(inputFile, null, null, 0, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), videoWidth, videoHeight, U.canStreamVideo(inputFile), caption, showCaptionAboveMedia, null, hasSpoiler);
                 }
               }
             }
@@ -2193,10 +2114,9 @@ public class TD {
       0, 0,
       null,
       false, false, false,
+      null, false, false,
+      "", false, false,
       false, false,
-      false, null, false, false,
-      false, false,
-      false, true,
       new TdApi.UserTypeRegular(),
       null,
       false
@@ -3648,7 +3568,7 @@ public class TD {
 
   public static String getTextFromMessageSpoilerless (TdApi.MessageContent content) {
     TdApi.FormattedText formattedText = Td.textOrCaption(content);
-    return formattedText != null ? TD.toCharSequence(formattedText, false, false).toString() : null;
+    return formattedText != null ? TD.toCharSequence(formattedText, TextEntityOption.NONE, false).toString() : null;
   }
 
   public static @Nullable TdApi.File getFile (TdApi.LinkPreview linkPreview) {
@@ -4424,7 +4344,7 @@ public class TD {
       Log.w("getMarkdownText: %s", TD.toErrorString(error.error));
       return text.text;
     }
-    return toCharSequence(formattedText, true, true);
+    return toCharSequence(formattedText, TextEntityOption.ALLOW_INTERNAL, true);
   }
 
   private static HtmlTag toHtmlTag (TdApi.TextEntityType entityType) {
@@ -4581,11 +4501,15 @@ public class TD {
     return toCharSequence(text);
   }
 
-  public static CharSequence toCharSequence (TdApi.FormattedText text) {
-    return toCharSequence(text, true, true);
+  public static CharSequence toCharSequence (TdApi.ChatFolderName name) {
+    return toCharSequence(name.text, TextEntityOption.ALLOW_INTERNAL | BitwiseUtils.optional(TextEntityOption.DISABLE_ANIMATIONS, !name.animateCustomEmoji), true);
   }
 
-  public static CharSequence toCharSequence (TdApi.FormattedText text, boolean allowInternal, boolean allowSpoilerContent) {
+  public static CharSequence toCharSequence (TdApi.FormattedText text) {
+    return toCharSequence(text, TextEntityOption.ALLOW_INTERNAL, true);
+  }
+
+  public static CharSequence toCharSequence (TdApi.FormattedText text, @TextEntityOption int options, boolean allowSpoilerContent) {
     if (text == null)
       return null;
     if (text.entities == null || text.entities.length == 0)
@@ -4600,7 +4524,7 @@ public class TD {
       if (isSpoiler) {
         hasSpoilers = true;
       }
-      Object span = isSpoiler && !allowSpoilerContent ? null : toSpan(entity.type, allowInternal);
+      Object span = isSpoiler && !allowSpoilerContent ? null : toSpan(entity.type, options);
       if (span != null) {
         if (b == null)
           b = new SpannableStringBuilder(text.text);
@@ -4720,7 +4644,7 @@ public class TD {
   }
 
   public static Object toSpan (TdApi.TextEntityType type) {
-    return toSpan(type, true);
+    return toSpan(type, TextEntityOption.ALLOW_INTERNAL);
   }
 
   private static final String SPOILER_REPLACEMENT_CHAR = "▒";
@@ -4762,7 +4686,22 @@ public class TD {
     }
   }
 
-  public static Object toSpan (TdApi.TextEntityType type, boolean allowInternal) {
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef(value = {
+    TextEntityOption.NONE,
+    TextEntityOption.ALLOW_INTERNAL,
+    TextEntityOption.DISABLE_ANIMATIONS
+  }, flag = true)
+  public @interface TextEntityOption {
+    int NONE = 0;
+    int
+      ALLOW_INTERNAL = 1,
+      DISABLE_ANIMATIONS = 1 << 1;
+  }
+
+  public static Object toSpan (TdApi.TextEntityType type, @TextEntityOption int options) {
+    boolean allowInternal = BitwiseUtils.hasFlag(options, TextEntityOption.ALLOW_INTERNAL);
+    boolean forceDisableAnimations = BitwiseUtils.hasFlag(options, TextEntityOption.DISABLE_ANIMATIONS);
     if (type == null)
       return null;
     switch (type.getConstructor()) {
@@ -4790,7 +4729,7 @@ public class TD {
         }
         return null;
       case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
-        return new CustomEmojiId(((TdApi.TextEntityTypeCustomEmoji) type).customEmojiId);
+        return new CustomEmojiId(((TdApi.TextEntityTypeCustomEmoji) type).customEmojiId, forceDisableAnimations);
       case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
         return new QuoteSpan.EmptySpan(false);
       case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR:
@@ -4812,7 +4751,7 @@ public class TD {
     }
   }
 
-  public static Object[] toSpans (TextEntity entity, boolean allowInternal, boolean allowQuotes) {
+  public static Object[] toSpans (TextEntity entity, @TextEntityOption int options, boolean allowQuotes) {
     if (entity == null) {
       return null;
     }
@@ -4837,7 +4776,7 @@ public class TD {
       spans.add(new BackgroundColorSpan(SPOILER_BACKGROUND_COLOR));
     }
     if (entity.getCustomEmojiId() != 0) {
-      spans.add(new CustomEmojiId(entity.getCustomEmojiId()));
+      spans.add(new CustomEmojiId(entity.getCustomEmojiId(), entity.forceDisableAnimations()));
     }
     if (allowQuotes && entity.isQuote()) {
       TdApi.TextEntity quote = entity.getQuote();
@@ -4848,7 +4787,7 @@ public class TD {
       TdApi.TextEntity clickableEntity = ((TextEntityMessage) entity).getClickableEntity();
       if (clickableEntity != null) {
         if (clickableEntity.type.getConstructor() == TdApi.TextEntityTypeTextUrl.CONSTRUCTOR || clickableEntity.type.getConstructor() == TdApi.TextEntityTypeMentionName.CONSTRUCTOR) {
-          Object span = toSpan(clickableEntity.type, allowInternal);
+          Object span = toSpan(clickableEntity.type, options);
           if (span != null) {
             spans.add(span);
           }
@@ -5264,7 +5203,7 @@ public class TD {
       case TdApi.MessagePaidMedia.CONSTRUCTOR:
         return true;
       default:
-        Td.assertMessageContent_91c1e338();
+        Td.assertMessageContent_640c68ad();
         break;
     }
     return false;
@@ -5311,7 +5250,7 @@ public class TD {
     if (chatFolder == null) {
       return;
     }
-    bundle.putString(prefix + "_title", chatFolder.title);
+    saveChatFolderName(bundle, prefix + "_name", chatFolder.name);
     if (chatFolder.icon != null) {
       bundle.putString(prefix + "_iconName", chatFolder.icon.name);
     }
@@ -5322,12 +5261,23 @@ public class TD {
     bundle.putIntArray(prefix + "_excludedChatTypes", excludedChatTypes(chatFolder));
   }
 
+  public static void saveChatFolderName (Bundle bundle, String prefix, TdApi.ChatFolderName folderName) {
+    Td.put(bundle, prefix + "_text", folderName.text);
+    bundle.putBoolean(prefix + "_animateCustomEmoji", folderName.animateCustomEmoji);
+  }
+
+  public static TdApi.ChatFolderName restoreChatFolderName (Bundle bundle, String prefix) {
+    TdApi.FormattedText text = Td.restoreFormattedText(bundle, prefix + "_text");
+    boolean animateCustomEmoji = bundle.getBoolean(prefix + "_animateCustomEmoji");
+    return new TdApi.ChatFolderName(text, animateCustomEmoji);
+  }
+
   public static @Nullable TdApi.ChatFolder restoreChatFolder (Bundle bundle, String prefix) {
-    String title = bundle.getString(prefix + "_title");
-    if (title == null) {
+    TdApi.ChatFolderName name = restoreChatFolderName(bundle, prefix + "_name");
+    if (name == null) {
       return null;
     }
-    TdApi.ChatFolder chatFolder = newChatFolder(title);
+    TdApi.ChatFolder chatFolder = newChatFolder(name);
     String iconName = bundle.getString(prefix + "_iconName", null);
     if (iconName != null) {
       chatFolder.icon = new TdApi.ChatFolderIcon(iconName);
@@ -5344,7 +5294,7 @@ public class TD {
 
   public static TdApi.ChatFolder newChatFolder () {
     return new TdApi.ChatFolder(
-      "",
+      new TdApi.ChatFolderName(new TdApi.FormattedText("", new TdApi.TextEntity[0]), false),
       null,
       -1,
       false,
@@ -5362,9 +5312,9 @@ public class TD {
     );
   }
 
-  public static TdApi.ChatFolder newChatFolder (String title) {
+  public static TdApi.ChatFolder newChatFolder (TdApi.ChatFolderName name) {
     TdApi.ChatFolder chatFolder = newChatFolder();
-    chatFolder.title = title;
+    chatFolder.name = name;
     return chatFolder;
   }
 
@@ -5408,7 +5358,7 @@ public class TD {
     if (lhs == rhs) {
       return true;
     }
-    if (!ObjectUtils.equals(lhs.title, rhs.title)) return false;
+    if (!Td.equalsTo(lhs.name, rhs.name)) return false;
     String a = lhs.icon != null ? lhs.icon.name : null;
     String b = rhs.icon != null ? rhs.icon.name : null;
     return ObjectUtils.equals(a, b) &&
@@ -5690,12 +5640,12 @@ public class TD {
           continue;
         }
         TdApi.ChatFolderInfo chatFolderInfo = tdlib.chatFolderInfo(chatListFolder.chatFolderId);
-        if (chatFolderInfo == null || StringUtils.isEmptyOrBlank(chatFolderInfo.title))
+        if (chatFolderInfo == null || Td.isEmpty(chatFolderInfo.name))
           continue;
         if (sb.length() > 0) {
           sb.append(Lang.getConcatSeparator());
         }
-        sb.append(chatFolderInfo.title);
+        sb.append(chatFolderInfo.name.text.text); // TODO: support custom emoji
       }
       return sb.toString();
     }
@@ -5942,7 +5892,7 @@ public class TD {
       } else /*if (sendAsAnimation && file.getSelfDestructType() == null && (files.length == 1 || !needGroupMedia)) {
         content = tdlib.filegen().createThumbnail(new TdApi.InputMessageAnimation(inputVideo, null, null, file.getVideoDuration(true), width, height, caption, hasSpoiler), isSecretChat);
       } else*/ {
-        content = tdlib.filegen().createThumbnail(new TdApi.InputMessageVideo(inputVideo, null, null, file.getVideoDuration(true), width, height, U.canStreamVideo(inputVideo), caption, showCaptionAboveMedia, file.getSelfDestructType(), hasSpoiler), isSecretChat);
+        content = tdlib.filegen().createThumbnail(new TdApi.InputMessageVideo(inputVideo, null, null, 0, null, file.getVideoDuration(true), width, height, U.canStreamVideo(inputVideo), caption, showCaptionAboveMedia, file.getSelfDestructType(), hasSpoiler), isSecretChat);
       }
     } else {
       int[] size = new int[2];

@@ -1272,6 +1272,15 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
       TdConstructor("TextEntity"),
 
       TdConstructor("OptionValue"),
+
+      TdConstructor("ChatFolderName", isExperimental = true),
+
+      TdConstructor("UpgradedGift", isExperimental = true),
+      TdConstructor("UpgradedGiftModel"),
+      TdConstructor("UpgradedGiftSymbol"),
+      TdConstructor("UpgradedGiftBackdrop"),
+      TdConstructor("UpgradedGiftBackdropColors"),
+      TdConstructor("UpgradedGiftOriginalDetails", isExperimental = true),
     ).sortedWith(compareBy<TdConstructor> {
       tdTypesMap.containsKey(it.name)
     }.thenBy {

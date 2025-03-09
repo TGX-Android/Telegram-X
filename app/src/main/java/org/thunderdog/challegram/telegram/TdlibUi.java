@@ -2616,6 +2616,7 @@ public class TdlibUi extends Handler {
     public String refererUrl, instantViewFallbackUrl, originalUrl;
     public TooltipOverlayView.TooltipBuilder tooltip;
     public boolean requireOpenPrompt, ignoreExplicitUserInteraction;
+    public Runnable openPromptCancellationCallback;
     public String displayUrl;
 
     private ViewController<?> parentController;
@@ -2903,7 +2904,17 @@ public class TdlibUi extends Handler {
           tdlib.ui()
             .openExternalUrl(context, url, options.disableOpenPrompt(), after)
         );
-        b.setNegativeButton(Lang.getString(R.string.Cancel), (dialog, which) -> dialog.dismiss());
+        b.setNegativeButton(Lang.getString(R.string.Cancel), (dialog, which) -> {
+          if (options.openPromptCancellationCallback != null) {
+            options.openPromptCancellationCallback.run();
+          }
+          dialog.dismiss();
+        });
+        b.setOnCancelListener(dialog -> {
+          if (options.openPromptCancellationCallback != null) {
+            options.openPromptCancellationCallback.run();
+          }
+        });
         c.showAlert(b);
       }
       return;
@@ -3608,6 +3619,7 @@ public class TdlibUi extends Handler {
       case TdApi.InternalLinkTypeChatBoost.CONSTRUCTOR:
       case TdApi.InternalLinkTypePremiumGift.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatAffiliateProgram.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeUpgradedGift.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypePassportDataRequest.CONSTRUCTOR: {
         showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
@@ -3737,7 +3749,7 @@ public class TdlibUi extends Handler {
         return; // async
       }
       default: {
-        Td.assertInternalLinkType_3c3b4a9();
+        Td.assertInternalLinkType_5626dbbe();
         throw Td.unsupported(linkType);
       }
     }
@@ -4954,7 +4966,7 @@ public class TdlibUi extends Handler {
     TdApi.ChatFolderInfo[] chatFolders = tdlib.chatFolders();
     List<ListItem> items = new ArrayList<>(chatFolders.length + 1);
     for (TdApi.ChatFolderInfo chatFolderInfo : chatFolders) {
-      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.chatFolder, TD.findFolderIcon(chatFolderInfo.icon, R.drawable.baseline_folder_24), chatFolderInfo.title).setIntValue(chatFolderInfo.id));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.chatFolder, TD.findFolderIcon(chatFolderInfo.icon, R.drawable.baseline_folder_24), TD.toCharSequence(chatFolderInfo.name)).setIntValue(chatFolderInfo.id));
     }
     if (tdlib.canCreateChatFolder()) {
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_createNewFolder, R.drawable.baseline_create_new_folder_24, R.string.CreateNewFolder).setTextColorId(ColorId.textNeutral));

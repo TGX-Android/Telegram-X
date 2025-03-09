@@ -262,11 +262,12 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
         case TdApi.LinkPreviewTypeVideoChat.CONSTRUCTOR:
         case TdApi.LinkPreviewTypeVideoNote.CONSTRUCTOR:
         case TdApi.LinkPreviewTypeWebApp.CONSTRUCTOR:
+        case TdApi.LinkPreviewTypeUpgradedGift.CONSTRUCTOR:
         case TdApi.LinkPreviewTypeUnsupported.CONSTRUCTOR:
           break;
 
         default: {
-          Td.assertLinkPreviewType_eb86a63d();
+          Td.assertLinkPreviewType_e4d80559();
           if (BuildConfig.DEBUG) {
             Tracer.onTdlibHandlerError(new UnsupportedOperationException(type.toString()));
           }
@@ -567,7 +568,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
 
   @Override
   public boolean onClick (View view, MediaWrapper wrapper) {
-    if ((isSmallPhotoType(type) && !isImageBig && Td.hasPhoto(linkPreview.type)) || instantItems != null) {
+    if ((isSmallPhotoType(type) && !isImageBig && Td.hasPhoto(linkPreview.type)) || instantItems != null || type == TYPE_VIDEO) {
       mediaWrapper.fileProgress.downloadIfNeeded();
       MediaViewController.openFromMessage(parent);
       return true;
