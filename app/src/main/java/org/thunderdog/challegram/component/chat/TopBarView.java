@@ -69,7 +69,7 @@ public class TopBarView extends FrameLayoutFix {
       this.onClickListener = onClickListener;
     }
 
-    public Item (int id, int stringRes, boolean showDismissRight, int iconResId,View.OnClickListener onClickListener) {
+    public Item (int id, int stringRes, boolean showDismissRight, int iconResId, View.OnClickListener onClickListener) {
       this(id, stringRes, null, iconResId, showDismissRight, onClickListener);
     }
 
