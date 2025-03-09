@@ -105,17 +105,17 @@ public class TopBarView extends FrameLayoutFix {
   public TopBarView (@NonNull Context context) {
     super(context);
 
-    setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(40f)));
+    setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     ViewSupport.setThemedBackground(this, ColorId.filling, null);
 
     actionsContainer = new LinearLayout(context);
     actionsContainer.setOrientation(LinearLayout.VERTICAL);
-    actionsContainer.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Lang.gravity() | Gravity.TOP));
+    actionsContainer.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Lang.gravity() | Gravity.TOP));
     addView(actionsContainer);
 
     actionsList = new LinearLayout(context);
     actionsList.setOrientation(LinearLayout.HORIZONTAL);
-    actionsList.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Lang.gravity() | Gravity.TOP));
+    actionsList.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Lang.gravity() | Gravity.TOP));
     actionsContainer.addView(actionsList);
 
     topDismissButton = new AppCompatImageView(context) {
@@ -192,9 +192,10 @@ public class TopBarView extends FrameLayoutFix {
 
       LinearLayout noticeItem = new LinearLayout(getContext());
       noticeItem.setOrientation(LinearLayout.HORIZONTAL);
-      noticeItem.setGravity(Lang.gravity());
-      noticeItem.setBackgroundResource(R.drawable.bg_btn_header);
-      noticeItem.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, 2f));
+      noticeItem.setGravity(Gravity.CENTER);
+      noticeItem.setBackgroundColor(0x00000000);
+      noticeItem.setPadding(0, 0, 0, 0);
+      noticeItem.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 2f));
 
       if (item.iconResId != 0) {
         ImageView iconView = new ImageView(getContext());
@@ -227,9 +228,11 @@ public class TopBarView extends FrameLayoutFix {
       if (item.noticeRes != null) {
         var noticeText = Views.newTextView(getContext(), 15f, Theme.getColor(ColorId.textPlaceholder), ViewGroup.MEASURED_HEIGHT_STATE_SHIFT, Views.TEXT_FLAG_HORIZONTAL_PADDING);
         noticeText.setText(item.noticeRes);
-        noticeText.setPadding(Screen.dp(8), 0, Screen.dp(8), 0);
-        setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(50f)));
-
+        noticeText.setGravity(Gravity.START);
+        noticeText.setPadding(Screen.dp(32), Screen.dp(8), Screen.dp(32), Screen.dp(8));
+        noticeText.setSingleLine(false);
+        noticeText.setEllipsize(null);
+        setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         noticeItem.addView(noticeText);
         actionsList.addView(noticeItem);
       }
