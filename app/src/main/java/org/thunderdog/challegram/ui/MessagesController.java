@@ -8149,7 +8149,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         case TdApi.ChatActionBarJoinRequest.CONSTRUCTOR: {
           TdApi.ChatActionBarJoinRequest joinRequest = (TdApi.ChatActionBarJoinRequest) actionBar;
-          items.add(new TopBarView.Item(Strings.replaceBoldTokens(Lang.getString(R.string.JoinRequestChannelAdminNotice, tdlib.cache().userFirstName(tdlib.chatUserId(getChatId())), joinRequest.title)), true));
+          int noticeResId = joinRequest.isChannel ? R.string.JoinRequestChannelAdminNotice : R.string.JoinRequestGroupAdminNotice;
+          items.add(new TopBarView.Item(Strings.replaceBoldTokens(Lang.getString(noticeResId, tdlib.cache().userFirstName(tdlib.chatUserId(getChatId())), joinRequest.title)), true));
           break;
         }
         default: {

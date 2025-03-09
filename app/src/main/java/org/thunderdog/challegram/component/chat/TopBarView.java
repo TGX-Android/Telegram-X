@@ -229,7 +229,7 @@ public class TopBarView extends FrameLayoutFix {
         var noticeText = Views.newTextView(getContext(), 15f, Theme.getColor(ColorId.textPlaceholder), ViewGroup.MEASURED_HEIGHT_STATE_SHIFT, Views.TEXT_FLAG_HORIZONTAL_PADDING);
         noticeText.setText(item.noticeRes);
         noticeText.setGravity(Gravity.START);
-        noticeText.setPadding(Screen.dp(32), Screen.dp(8), Screen.dp(32), Screen.dp(8));
+        noticeText.setPadding(Screen.dp(16), Screen.dp(8), Screen.dp(26), Screen.dp(8));
         noticeText.setSingleLine(false);
         noticeText.setEllipsize(null);
         setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
