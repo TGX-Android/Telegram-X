@@ -873,7 +873,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       pinnedMessagesItem,
       requestsItem = new CollapseListView.ViewItem(requestsView, requestsViewHeight),
       liveLocationItem = new CollapseListView.ViewItem(liveLocationView, liveLocationHeight),
-      actionItem = new CollapseListView.ViewItem(actionView, actionBarHeight),
+      actionItem = new CollapseListView.ViewItem(actionView, ViewGroup.LayoutParams.WRAP_CONTENT),
       toastAlertItem
     }, this);
 
