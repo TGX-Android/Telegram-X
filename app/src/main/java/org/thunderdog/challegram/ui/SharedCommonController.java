@@ -35,8 +35,8 @@ import org.thunderdog.challegram.v.MediaRecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
-import me.vkryl.td.MessageId;
-import me.vkryl.td.Td;
+import tgx.td.MessageId;
+import tgx.td.Td;
 
 public class SharedCommonController extends SharedBaseController<InlineResult<?>> implements View.OnClickListener, TGPlayerController.TrackChangeListener, TGPlayerController.PlayListBuilder {
   public SharedCommonController (Context context, Tdlib tdlib) {
@@ -66,42 +66,34 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
     }
   }
 
-  /*@Override
-  public int getIcon () {
-    switch (filter.getConstructor()) {
-      case TdApi.SearchMessagesFilterDocument.CONSTRUCTOR: {
-        return R.drawable.baseline_insert_drive_file_20;
-      }
-      case TdApi.SearchMessagesFilterAudio.CONSTRUCTOR: {
-        return R.drawable.baseline_music_note_20;
-      }
-      case TdApi.SearchMessagesFilterUrl.CONSTRUCTOR: {
-        return R.drawable.baseline_language_20;
-      }
-      case TdApi.SearchMessagesFilterVoiceNote.CONSTRUCTOR: {
-        return R.drawable.baseline_mic_20;
-      }
-    }
-    return 0;
-  }*/
-
   @Override
   public CharSequence getName () {
     switch (filter.getConstructor()) {
-      case TdApi.SearchMessagesFilterDocument.CONSTRUCTOR: {
+      case TdApi.SearchMessagesFilterDocument.CONSTRUCTOR:
         return Lang.getString(R.string.TabDocs);
-      }
-      case TdApi.SearchMessagesFilterAudio.CONSTRUCTOR: {
+      case TdApi.SearchMessagesFilterAudio.CONSTRUCTOR:
         return Lang.getString(R.string.TabAudio);
-      }
-      case TdApi.SearchMessagesFilterUrl.CONSTRUCTOR: {
+      case TdApi.SearchMessagesFilterUrl.CONSTRUCTOR:
         return Lang.getString(R.string.TabLinks);
-      }
-      case TdApi.SearchMessagesFilterVoiceNote.CONSTRUCTOR: {
+      case TdApi.SearchMessagesFilterVoiceNote.CONSTRUCTOR:
         return Lang.getString(R.string.TabVoiceMessages);
-      }
     }
     return "";
+  }
+
+  @Override
+  public int getIcon () {
+    switch (filter.getConstructor()) {
+      case TdApi.SearchMessagesFilterDocument.CONSTRUCTOR:
+        return R.drawable.baseline_insert_drive_file_24;
+      case TdApi.SearchMessagesFilterAudio.CONSTRUCTOR:
+        return R.drawable.baseline_music_note_24;
+      case TdApi.SearchMessagesFilterUrl.CONSTRUCTOR:
+        return R.drawable.baseline_language_24;
+      case TdApi.SearchMessagesFilterVoiceNote.CONSTRUCTOR:
+        return R.drawable.baseline_mic_24;
+    }
+    return 0;
   }
 
   @Override
@@ -297,7 +289,7 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
   protected boolean onLongClick (View v, ListItem item) {
     final InlineResult<?> c = (InlineResult<?>) item.getData();
 
-    alternateParent.showOptions(null, new int[]{R.id.btn_showInChat, R.id.btn_share, R.id.btn_delete}, new String[]{Lang.getString(R.string.ShowInChat), Lang.getString(R.string.Share), Lang.getString(R.string.Delete)}, new int[]{OPTION_COLOR_NORMAL, OPTION_COLOR_NORMAL, OPTION_COLOR_RED}, new int[] {R.drawable.baseline_visibility_24, R.drawable.baseline_forward_24, R.drawable.baseline_delete_24}, (itemView, id) -> {
+    alternateParent.showOptions(null, new int[]{R.id.btn_showInChat, R.id.btn_share, R.id.btn_delete}, new String[]{Lang.getString(R.string.ShowInChat), Lang.getString(R.string.Share), Lang.getString(R.string.Delete)}, new int[]{OptionColor.NORMAL, OptionColor.NORMAL, OptionColor.RED}, new int[] {R.drawable.baseline_visibility_24, R.drawable.baseline_forward_24, R.drawable.baseline_delete_24}, (itemView, id) -> {
       if (id == R.id.btn_showInChat) {
         alternateParent.closeSearchModeByBackPress(false);
         tdlib.ui().openMessage(SharedCommonController.this, c.getMessage(), new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
@@ -306,9 +298,8 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
         share.setArguments(new ShareController.Args(c.getMessage()).setAllowCopyLink(true));
         share.show();
       } else if (id == R.id.btn_delete) {
-        tdlib.ui().showDeleteOptions(alternateParent, new TdApi.Message[] {c.getMessage()}, () -> {
-          // setInMediaSelectMode(false);
-        });
+        TdApi.Message message = c.getMessage();
+        tdlib.ui().showDeleteOptions(alternateParent, message);
       }
       return true;
     });

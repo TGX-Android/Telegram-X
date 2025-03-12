@@ -22,6 +22,8 @@ import org.drinkless.tdlib.TdApi;
 public interface ChatListener extends ForumTopicInfoListener {
   default void onChatTopMessageChanged (long chatId, @Nullable TdApi.Message topMessage) { }
   default void onChatPositionChanged (long chatId, TdApi.ChatPosition position, boolean orderChanged, boolean sourceChanged, boolean pinStateChanged) { }
+  default void onChatAddedToList (long chatId, TdApi.ChatList chatList) { }
+  default void onChatRemovedFromList (long chatId, TdApi.ChatList chatList) { }
   default void onChatPermissionsChanged (long chatId, TdApi.ChatPermissions permissions) { }
   default void onChatTitleChanged (long chatId, String title) { }
   default void onChatThemeChanged (long chatId, String themeName) { }
@@ -34,6 +36,7 @@ public interface ChatListener extends ForumTopicInfoListener {
 
   default void onChatBackgroundCustomEmojiChanged (long chatId, long customEmojiId) { }
   default void onChatActionBarChanged (long chatId, TdApi.ChatActionBar actionBar) { }
+  default void onChatBusinessBotManageBarChanged (long chatId, @Nullable TdApi.BusinessBotManageBar botManageBar) { }
   default void onChatPhotoChanged (long chatId, @Nullable TdApi.ChatPhotoInfo photo) { }
   default void onChatReadInbox (long chatId, long lastReadInboxMessageId, int unreadCount, boolean availabilityChanged) { }
   default void onChatHasScheduledMessagesChanged (long chatId, boolean hasScheduledMessages) { }

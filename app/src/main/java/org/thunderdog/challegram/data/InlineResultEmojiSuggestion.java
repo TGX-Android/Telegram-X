@@ -47,7 +47,7 @@ public class InlineResultEmojiSuggestion extends InlineResult<N.Suggestion> {
   public InlineResultEmojiSuggestion (BaseActivity context, Tdlib tdlib, N.Suggestion suggestion, @Nullable String query) {
     super(context, tdlib, TYPE_EMOJI_SUGGESTION, null, suggestion);
     this.emoji = Emoji.instance().replaceEmoji(suggestion.emoji);
-    this.text = Strings.highlightWords(suggestion.label, query, 1, SPECIAL_SPLITTERS);
+    this.text = Strings.highlightWords(suggestion.label, query, suggestion.label.startsWith(":") ? 1 : 0, SPECIAL_SPLITTERS);
     this.textWidth = U.measureText(suggestion.label, Paints.getTextPaint15());
   }
 

@@ -33,7 +33,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.util.Blob;
 import me.vkryl.leveldb.LevelDB;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class DisplayInformation {
   private static final long FLAG_PREMIUM = 1;
@@ -44,7 +44,8 @@ public class DisplayInformation {
     if (user.isPremium) {
       flags |= FLAG_PREMIUM;
     }
-    if (user.isVerified) {
+    TdApi.VerificationStatus verificationStatus = user.verificationStatus;
+    if (verificationStatus != null && verificationStatus.isVerified) {
       flags |= FLAG_VERIFIED;
     }
     return flags;
@@ -250,7 +251,7 @@ public class DisplayInformation {
       editor.putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_ACCENT_BUILT_IN_ACCENT_COLOR_ID, accentColor.builtInAccentColorId);
       editor.putIntArray(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_LIGHT_THEME_COLORS, accentColor.lightThemeColors);
       editor.putIntArray(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_DARK_THEME_COLORS, accentColor.darkThemeColors);
-      editor.putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_MIN_CHAT_BOOST_LEVEL, accentColor.minChatBoostLevel);
+      editor.putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_MIN_CHAT_BOOST_LEVEL, accentColor.minChannelChatBoostLevel);
     } else {
       editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_ACCENT_BUILT_IN_ACCENT_COLOR_ID);
       editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_LIGHT_THEME_COLORS);
@@ -363,7 +364,7 @@ public class DisplayInformation {
               info.accentColor.darkThemeColors = entry.asIntArray();
               break;
             case Settings.KEY_ACCOUNT_INFO_SUFFIX_MIN_CHAT_BOOST_LEVEL:
-              info.accentColor.minChatBoostLevel = entry.asInt();
+              info.accentColor.minChannelChatBoostLevel = entry.asInt();
               break;
           }
           break;
@@ -479,7 +480,7 @@ public class DisplayInformation {
 
     public static EmojiStatusCache restore (String prefix, @NonNull TdApi.User user, @Nullable TdApi.Sticker remoteEmojiStatus, boolean isUpdate) {
       TdApi.EmojiStatus emojiStatus = user.emojiStatus;
-      long remoteEmojiStatusId = remoteEmojiStatus != null ? remoteEmojiStatus.id : emojiStatus != null ? emojiStatus.customEmojiId : 0;
+      long remoteEmojiStatusId = remoteEmojiStatus != null ? remoteEmojiStatus.id : Td.customEmojiId(emojiStatus);
       if (remoteEmojiStatusId == 0) {
         // Drop emoji status cache, as user doesn't have custom status anymore
         return null;
@@ -516,7 +517,6 @@ public class DisplayInformation {
         loadedSticker.emoji,
         loadedSticker.format,
         loadedSticker.fullType,
-        loadedSticker.outline,
         loadedSticker.thumbnail != null && TD.isFileLoaded(loadedSticker.thumbnail.file) ? loadedSticker.thumbnail : null,
         TD.isFileLoaded(loadedSticker.sticker) ? loadedSticker.sticker : null
       );
@@ -870,7 +870,6 @@ public class DisplayInformation {
         // Custom emoji mismatch
         return null;
       }
-      TdApi.ClosedVectorPath[] outline = deserializeOutline(blob);
       return new TdApi.Sticker(
         id,
         setId,
@@ -878,7 +877,6 @@ public class DisplayInformation {
         emoji,
         format,
         fullType,
-        outline,
         // stored separately
         null,
         null
@@ -914,8 +912,7 @@ public class DisplayInformation {
           4 /*width*/ + 4 /*height*/ +
           Blob.sizeOf(sticker.emoji, true) +
           sizeOfFormat(sticker.format) /*format*/ +
-          sizeOfFullType(sticker.fullType) /*fullType*/ +
-          sizeOfOutline(sticker.outline) /*outline*/
+          sizeOfFullType(sticker.fullType) /*fullType*/
       );
       metadata.writeByte((byte) CACHE_VERSION);
       metadata.writeLong(sticker.id);
@@ -925,7 +922,6 @@ public class DisplayInformation {
       metadata.writeString(sticker.emoji);
       writeFormat(metadata, sticker.format);
       writeFullType(metadata, sticker.fullType);
-      writeOutline(metadata, sticker.outline);
       return metadata.toByteArray();
     }
 

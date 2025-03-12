@@ -23,7 +23,6 @@ import androidx.collection.ArraySet;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
-import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.telegram.Tdlib;
 
 import java.util.ArrayList;
@@ -32,7 +31,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class GifBridge {
   private static GifBridge instance;
@@ -55,7 +54,6 @@ public class GifBridge {
   private final GifThread[] lottieThreads;
 
   private GifBridge () {
-    N.gifInit();
     thread = new GifBridgeThread();
     // TODO: rework to executors
     threads = new GifThread[THREAD_POOL_SIZE];

@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.MathUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class ImageGalleryFile extends ImageFile implements Comparable<ImageGalleryFile> {
   private static int CURRENT_ID = ImageFile.GALLERY_START_ID;
@@ -136,7 +136,12 @@ public class ImageGalleryFile extends ImageFile implements Comparable<ImageGalle
   }
 
   public boolean hasTrim () {
-    return startTimeUs != -1 && endTimeUs != -1 && totalDurationUs != -1;
+    return startTimeUs != -1 && totalDurationUs != -1;
+  }
+
+  public boolean hasCrop () {
+    CropState cropState = getCropState();
+    return cropState != null && !cropState.isEmpty();
   }
 
   public boolean setVideoInformation (long totalDurationUs, double width, double height, int frameRate, long bitrate) {
@@ -269,6 +274,10 @@ public class ImageGalleryFile extends ImageFile implements Comparable<ImageGalle
     return !Td.equalsTo(markdown, noMarkdown, true);
   }
 
+  public boolean hasCaption () {
+    return !Td.isEmpty(caption);
+  }
+
   public TdApi.FormattedText getCaption (boolean obtain, boolean parseMarkdown) {
     if (obtain) {
       if (Td.isEmpty(caption)) {
@@ -291,7 +300,17 @@ public class ImageGalleryFile extends ImageFile implements Comparable<ImageGalle
   }
 
   public long getVideoDuration (boolean trimmed, TimeUnit unit) {
-    return trimmed && hasTrim() ? unit.convert(endTimeUs - startTimeUs, TimeUnit.MICROSECONDS) : unit.convert(duration, TimeUnit.MILLISECONDS);
+    if (trimmed && hasTrim()) {
+      if (endTimeUs == -1) {
+        return unit.convert(
+          TimeUnit.MILLISECONDS.toMicros(duration) - startTimeUs,
+          TimeUnit.MICROSECONDS
+        );
+      } else {
+        return unit.convert(endTimeUs - startTimeUs, TimeUnit.MICROSECONDS);
+      }
+    }
+    return unit.convert(duration, TimeUnit.MILLISECONDS);
   }
 
   public long getGalleryId () {

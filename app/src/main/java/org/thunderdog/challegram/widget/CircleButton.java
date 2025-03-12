@@ -135,12 +135,16 @@ public class CircleButton extends View implements FactorAnimator.Target, Reactio
   }
 
   public void init (@DrawableRes int icon, int offsetLeft, float size, float padding, @ColorId int backgroundColorId, @ColorId int iconColorId) {
+    init(icon, offsetLeft, size, padding, backgroundColorId, iconColorId, true);
+  }
+
+  public void init (@DrawableRes int icon, int offsetLeft, float size, float padding, @ColorId int backgroundColorId, @ColorId int iconColorId, boolean needShadow) {
     this.icon = Drawables.get(icon);
     this.offsetLeft = offsetLeft;
     this.backgroundColorId = backgroundColorId;
     this.iconColorIsId = true;
     this.iconColor = iconColorId;
-    RippleSupport.setCircleBackground(this, size, padding, backgroundColorId);
+    RippleSupport.setCircleBackground(this, size, padding, backgroundColorId, needShadow, null);
   }
 
   public void setCrossColorId (@ColorId int backgroundColorId, @ColorId int iconColorId) {

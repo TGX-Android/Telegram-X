@@ -42,6 +42,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageCache;
 import org.thunderdog.challegram.loader.ImageFilteredFile;
 import org.thunderdog.challegram.loader.ImageReader;
+import org.thunderdog.challegram.mediaview.crop.CropState;
 import org.thunderdog.challegram.mediaview.paint.PaintState;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.PropertyId;
@@ -78,7 +79,6 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.unit.ByteUnit;
-import me.vkryl.td.Td;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.OkHttpClient;
@@ -90,6 +90,7 @@ import okio.BufferedSource;
 import okio.Okio;
 import okio.Sink;
 import okio.Source;
+import tgx.td.Td;
 
 public final class TdlibFileGenerationManager {
   private OkHttpClient getClient () {
@@ -983,7 +984,7 @@ public final class TdlibFileGenerationManager {
     final String sourceUri = conversion.substring(0, i);
     String arg = conversion.substring(i + 1);
     int j = arg.indexOf('_');
-    final long expectedSize = StringUtils.parseInt(j != -1 ? arg.substring(0, j) : arg);
+    final long expectedSize = StringUtils.parseLong(j != -1 ? arg.substring(0, j) : arg);
 
     getContentExecutor().execute(() -> {
       boolean success = false;
@@ -1253,9 +1254,29 @@ public final class TdlibFileGenerationManager {
       bitmap = ImageReader.resizeBitmap(bitmap, resolution, resolution, false, true, true);
     }
 
-    int rotate = info.getRotate();
+    int rotate = info.getFullRotate();
     if (rotate != 0) {
       bitmap = rotateBitmap(bitmap, rotate);
+    }
+    CropState cropState = info.getCropState();
+    if (cropState != null && (cropState.needMirror() || !cropState.isRegionEmpty())) {
+      int left = (int) Math.round(cropState.getLeft() * (double) bitmap.getWidth());
+      int top = (int) Math.round(cropState.getTop() * (double) bitmap.getHeight());
+      int right = (int) Math.round(cropState.getRight() * (double) bitmap.getWidth());
+      int bottom = (int) Math.round(cropState.getBottom() * (double) bitmap.getHeight());
+      Bitmap cropped;
+      if (cropState.needMirror()) {
+        Matrix matrix = new Matrix();
+        matrix.preScale(
+          cropState.needMirrorHorizontally() ? -1.0f : 1.0f,
+          cropState.needMirrorVertically() ? -1.0f : 1.0f
+        );
+        cropped = Bitmap.createBitmap(bitmap, left, top, right - left, bottom - top, matrix, false);
+      } else {
+        cropped = Bitmap.createBitmap(bitmap, left, top, right - left, bottom - top);
+      }
+      bitmap.recycle();
+      bitmap = cropped;
     }
 
     // bitmap = rotateBitmap(bitmap, outputRotation);
@@ -1291,7 +1312,7 @@ public final class TdlibFileGenerationManager {
       bitmap = ImageReader.resizeBitmap(bitmap, resolution, resolution, false, true, true);
     }
 
-    int rotate = info.getRotate();
+    int rotate = info.getFullRotate();
     if (rotate != 0) {
       bitmap = rotateBitmap(bitmap, rotate);
     }

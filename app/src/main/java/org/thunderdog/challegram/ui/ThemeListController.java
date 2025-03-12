@@ -122,7 +122,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableInt;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class ThemeListController extends RecyclerViewController<ThemeListController.Args> implements Menu, View.OnClickListener, ClipboardManager.OnPrimaryClipChangedListener, View.OnLongClickListener {
   public static class Args {
@@ -704,7 +704,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
             lp.rightMargin = Screen.dp(12f);
             fp.bottomMargin = Screen.dp(4f);
 
-            MaterialEditTextGroup editText = new MaterialEditTextGroup(context) {
+            MaterialEditTextGroup editText = new MaterialEditTextGroup(context, tdlib) {
               @Override
               public boolean onInterceptTouchEvent (MotionEvent ev) {
                 return true;
@@ -2798,7 +2798,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
         Lang.plural(R.string.ColorClearDone, state.getVersionCount(false)),
         Lang.getString(R.string.Cancel)
       }, new int[]{
-        OPTION_COLOR_RED, OPTION_COLOR_NORMAL
+        OptionColor.RED, OptionColor.NORMAL
       }, new int[]{
         R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24
       }, (itemView, optionId) -> {
@@ -2818,7 +2818,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
         Lang.getString(R.string.ColorRemoveDone),
         Lang.getString(R.string.Cancel)
       }, new int[] {
-        OPTION_COLOR_RED, OPTION_COLOR_NORMAL
+        OptionColor.RED, OptionColor.NORMAL
       }, new int[] {
         R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24
       }, (itemView, optionId) -> {

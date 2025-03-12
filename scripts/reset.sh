@@ -43,5 +43,5 @@ git clean -f -d
 git reset --hard
 popd > /dev/null
 
-echo "Resetting ExoPlayer..."
-(test -d "$THIRDPARTY_LIBRARIES/exoplayer" && rm -rf "$THIRDPARTY_LIBRARIES/exoplayer") || true
+echo "Resetting androidx-media..."
+(test -d "$THIRDPARTY_LIBRARIES/androidx-media" && rm -rf "$THIRDPARTY_LIBRARIES/androidx-media") || true

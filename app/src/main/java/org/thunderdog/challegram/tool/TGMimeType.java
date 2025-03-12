@@ -19,7 +19,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.TdConstants;
+import tgx.td.TdConstants;
 
 @SuppressWarnings("SpellCheckingInspection")
 public class TGMimeType {

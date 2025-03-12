@@ -36,7 +36,9 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.DeviceTokenType;
 
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.BitwiseUtils;
@@ -46,8 +48,8 @@ import me.vkryl.core.collection.LongSparseLongArray;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.util.Blob;
 import me.vkryl.leveldb.LevelDB;
-import me.vkryl.td.ChatPosition;
-import me.vkryl.td.Td;
+import tgx.td.ChatPosition;
+import tgx.td.Td;
 
 public class TdlibSettingsManager implements CleanupStartupDelegate {
   private final Tdlib tdlib;
@@ -956,7 +958,38 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     return resultChatId;
   }
 
-  public String buildNotificationReport () {
+  public static class NotificationProblems {
+    public final int totalCount;
+    private final NotificationError[] errors;
+
+    public NotificationProblems () {
+      this(0, new NotificationError[0]);
+    }
+
+    private NotificationProblems (int totalCount, NotificationError[] errors) {
+      this.totalCount = totalCount;
+      this.errors = errors;
+    }
+
+    public boolean isEmpty () {
+      return totalCount == 0 || errors.length == 0;
+    }
+
+    public Set<String> allMessages () {
+      Set<String> errorMessages = new LinkedHashSet<>();
+      for (NotificationError error : errors) {
+        if (error.info != null) {
+          String message = error.info.getMessage();
+          if (!StringUtils.isEmpty(message)) {
+            errorMessages.add(message);
+          }
+        }
+      }
+      return errorMessages;
+    }
+  }
+
+  public @Nullable NotificationProblems notificationProblems () {
     final int totalCount = getNotificationProblemCount();
     if (totalCount == 0)
       return null;
@@ -1012,15 +1045,26 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
       return null;
     }
 
+    NotificationError[] array = new NotificationError[errors.size()];
+    for (int i = 0; i < array.length; i++) {
+      array[i] = errors.valueAt(i);
+    }
+    return new NotificationProblems(totalCount, array);
+  }
+
+  public String buildNotificationReport () {
+    NotificationProblems problems = notificationProblems();
+    if (problems == null || problems.isEmpty()) {
+      return null;
+    }
     StringBuilder b = new StringBuilder(U.getUsefulMetadata(tdlib)).append("\n")
-      .append("Total: ").append(totalCount).append("\n")
+      .append("Total: ").append(problems.totalCount).append("\n")
       .append("Now: ").append(Lang.getTimestamp(System.currentTimeMillis(), TimeUnit.MILLISECONDS));
-    for (int i = 0; i < errors.size(); i++) {
-      error = errors.valueAt(i);
+    for (NotificationError error : problems.errors) {
       if (error.info == null)
         continue;
       b.append("\n\n");
-      if (error.eventCount < totalCount) {
+      if (error.eventCount < problems.totalCount) {
         b.append("Count: ").append(error.eventCount).append("\n");
       }
       if (error.lastEventTime != 0) {
@@ -1069,10 +1113,13 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   private static final boolean DEFAULT_MAIN_CHAT_LIST_ENABLED = true;
   private static final boolean DEFAULT_ARCHIVE_CHAT_LIST_ENABLED = false;
   public static final int DEFAULT_CHAT_FOLDER_OPTIONS = ChatFolderOptions.DISPLAY_AT_TOP;
-  public static final int DEFAULT_CHAT_FOLDER_STYLE = ChatFolderStyle.LABEL_AND_ICON;
+  public static final int DEFAULT_CHAT_FOLDER_STYLE = ChatFolderStyle.ICON_WITH_LABEL_ON_ACTIVE_FOLDER;
   private static final int DEFAULT_CHAT_FOLDER_BADGE_FLAGS = 0;
 
   private boolean isMainChatListEnabled () {
+    if (Config.RESTRICT_HIDING_MAIN_LIST) {
+      return true;
+    }
     if (_mainChatListEnabled == null) {
       _mainChatListEnabled = Settings.instance().getBoolean(key(MAIN_CHAT_LIST_ENABLED, tdlib.accountId()), DEFAULT_MAIN_CHAT_LIST_ENABLED);
     }
@@ -1080,6 +1127,9 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   }
 
   private void setMainChatListEnabled (boolean isMainChatListEnabled) {
+    if (Config.RESTRICT_HIDING_MAIN_LIST && !isMainChatListEnabled) {
+      return;
+    }
     if (isMainChatListEnabled() != isMainChatListEnabled) {
       _mainChatListEnabled = isMainChatListEnabled;
       Settings.instance().putBoolean(key(MAIN_CHAT_LIST_ENABLED, tdlib.accountId()), isMainChatListEnabled);
@@ -1134,6 +1184,33 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     return !disabledChatFolderIds.has(chatFolderId);
   }
 
+  public void forgetChatFolder (int chatFolderId) {
+    setChatFolderEnabled(chatFolderId, true); // Reset to default
+  }
+
+  public void setChatFolderEnabled (int chatFolderId, boolean isEnabled) {
+    if (isChatFolderEnabled(chatFolderId) == isEnabled) {
+      return;
+    }
+    IntSet disabledChatFolderIds = disabledChatFolderIds();
+    if (isEnabled) {
+      disabledChatFolderIds.remove(chatFolderId);
+    } else {
+      disabledChatFolderIds.add(chatFolderId);
+    }
+    if (disabledChatFolderIds.isEmpty()) {
+      Settings.instance().remove(key(DISABLED_CHAT_FILTER_IDS, tdlib.accountId()));
+    } else {
+      Settings.instance().putIntArray(key(DISABLED_CHAT_FILTER_IDS, tdlib.accountId()), disabledChatFolderIds.toArray());
+    }
+    if (chatListPositionListeners != null) {
+      TdApi.ChatListFolder chatList = new TdApi.ChatListFolder(chatFolderId);
+      for (ChatListPositionListener chatListPositionListener : chatListPositionListeners) {
+        chatListPositionListener.onChatListStateChanged(tdlib, chatList, isEnabled);
+      }
+    }
+  }
+
   public boolean isChatListEnabled (TdApi.ChatList chatList) {
     switch (chatList.getConstructor()) {
       case TdApi.ChatListMain.CONSTRUCTOR: {
@@ -1171,27 +1248,12 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
       }
       case TdApi.ChatListFolder.CONSTRUCTOR: {
         int chatFolderId = ((TdApi.ChatListFolder) chatList).chatFolderId;
-        IntSet disabledChatFolderIds = disabledChatFolderIds();
-        if (isEnabled) {
-          disabledChatFolderIds.remove(chatFolderId);
-        } else {
-          disabledChatFolderIds.add(chatFolderId);
-        }
-        if (disabledChatFolderIds.isEmpty()) {
-          Settings.instance().remove(key(DISABLED_CHAT_FILTER_IDS, tdlib.accountId()));
-        } else {
-          Settings.instance().putIntArray(key(DISABLED_CHAT_FILTER_IDS, tdlib.accountId()), disabledChatFolderIds.toArray());
-        }
+        setChatFolderEnabled(chatFolderId, isEnabled);
         break;
       }
       default: {
         Td.assertChatList_db6c93ab();
         throw Td.unsupported(chatList);
-      }
-    }
-    if (chatListPositionListeners != null) {
-      for (ChatListPositionListener chatListPositionListener : chatListPositionListeners) {
-        chatListPositionListener.onChatListStateChanged(tdlib, chatList, isEnabled);
       }
     }
   }
@@ -1302,6 +1364,11 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
       if (chatFolderOptions() != options) {
         Settings.instance().putInt(key(CHAT_FOLDER_OPTIONS, tdlib.accountId()), options);
         _chatFolderOptions = options;
+        if (chatListPositionListeners != null) {
+          for (ChatListPositionListener chatListPositionListener : chatListPositionListeners) {
+            chatListPositionListener.onChatFolderOptionsChanged(tdlib, options);
+          }
+        }
       }
     }
   }

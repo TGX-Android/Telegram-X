@@ -152,7 +152,7 @@ public class RoundVideoRecorder {
   private volatile boolean isSwitchingToNewCamera;
 
   public boolean canSwitchToNewCamera () {
-    return !isSwitchingToNewCamera && initied && eglSurface != null;
+    return !isSwitchingToNewCamera && initied; // && eglSurface != null;
   }
 
   public void switchToNewCamera () {
@@ -747,7 +747,7 @@ public class RoundVideoRecorder {
     }
   }
 
-  private boolean doCapture () {
+  public boolean isCapturing () {
     return isCapturing || finishCapture || recording;
   }
 
@@ -764,7 +764,7 @@ public class RoundVideoRecorder {
     }
     cameraSurface.updateTexImage();
 
-    if (doCapture()) {
+    if (isCapturing()) {
       if (!recording) {
         int resolution;
         int bitrate;
@@ -835,13 +835,13 @@ public class RoundVideoRecorder {
     private WeakReference<VideoRecorder> mWeakEncoder;
 
     public EncoderHandler(VideoRecorder encoder) {
+      super(Looper.myLooper());
       mWeakEncoder = new WeakReference<>(encoder);
     }
 
     @Override
     public void handleMessage(Message inputMessage) {
       int what = inputMessage.what;
-      Object obj = inputMessage.obj;
 
       VideoRecorder encoder = mWeakEncoder.get();
       if (encoder == null) {

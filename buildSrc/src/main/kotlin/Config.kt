@@ -13,28 +13,32 @@
 
 // File with static configuration, that is meant to be adjusted only once
 
+import tgx.gradle.fatal
+
 object Config {
   const val PRIMARY_SDK_VERSION = 21
   const val MIN_SDK_VERSION = 16
   val JAVA_VERSION = org.gradle.api.JavaVersion.VERSION_11
-  val EXOPLAYER_EXTENSIONS = arrayOf("ffmpeg", "flac", "opus", "vp9")
-  val SUPPORTED_ABI = arrayOf("armeabi-v7a", "arm64-v8a"/*, "x86"*/, "x86_64")
+  val ANDROIDX_MEDIA_EXTENSIONS = arrayOf("decoder_ffmpeg", "decoder_flac", "decoder_opus", "decoder_vp9")
+  val SUPPORTED_ABI = arrayOf("armeabi-v7a", "arm64-v8a", "x86_64", "x86")
 }
 
 object LibraryVersions {
   const val MULTIDEX = "2.0.1"
-  const val DESUGAR = "1.1.5"
-  const val ANDROIDX_CORE = "1.7.0"
-  const val ANNOTATIONS = "1.3.0"
+  const val DESUGAR = "2.0.4"
+  const val ANDROIDX_CORE = "1.12.0" // 1.13.0+ requires minSdk 19+
+  const val ANNOTATIONS = "1.9.0"
+  const val ANDROIDX_MEDIA = "1.3.1"
+  const val ANDROIDX_CAMERA = "1.3.4"
 }
 
-class AbiVariant (val flavor: String, vararg val filters: String = arrayOf(), val displayName: String = filters[0], val sideLoadOnly: Boolean = false) {
+class AbiVariant (val flavor: String, vararg val filters: String = arrayOf(), val displayName: String = filters[0]) {
   init {
     if (filters.isEmpty())
-      error("Empty filters passed")
+      fatal("Empty filters passed")
     for (filter in filters) {
       if (!Config.SUPPORTED_ABI.contains(filter))
-        error("Unsupported abi filter: $filter")
+        fatal("Unsupported abi filter: $filter")
     }
   }
 
@@ -56,18 +60,19 @@ class AbiVariant (val flavor: String, vararg val filters: String = arrayOf(), va
     }
 }
 
+@Suppress("MemberVisibilityCanBePrivate")
 object Abi {
   const val UNIVERSAL = 0
   const val ARMEABI_V7A = 1
   const val ARM64_V8A = 2
-  // const val X86 = 3
+  const val X86 = 3
   const val X64 = 4
 
   val VARIANTS = mapOf(
-    Pair(UNIVERSAL, AbiVariant("universal", displayName = "universal", filters = arrayOf("arm64-v8a", "x86_64"))),
+    Pair(UNIVERSAL, AbiVariant("universal", displayName = "universal", filters = arrayOf("arm64-v8a", "armeabi-v7a"))),
     Pair(ARMEABI_V7A, AbiVariant("arm32", "armeabi-v7a")),
     Pair(ARM64_V8A, AbiVariant("arm64", "arm64-v8a")),
-    // Pair(X86, AbiVariant("x86", "x86")),
+    Pair(X86, AbiVariant("x86", "x86")),
     Pair(X64, AbiVariant("x64", "x86_64", displayName = "x64"))
   )
 }

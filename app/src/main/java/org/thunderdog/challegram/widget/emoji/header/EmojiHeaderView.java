@@ -118,8 +118,15 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
     setSelectedObjectByPosition(1, false);
   }
 
-  private final boolean allowMedia;
+  private boolean allowMedia;
   private boolean mediaMustBeVisibility = false;
+
+  public void setAllowMedia (boolean allowMedia) {
+    if (this.allowMedia != allowMedia) {
+      this.allowMedia = allowMedia;
+      checkAllowMedia();
+    }
+  }
 
   private void checkAllowMedia () {
     goToMediaPageSection.setVisibility(allowMedia && mediaMustBeVisibility ? VISIBLE : GONE);

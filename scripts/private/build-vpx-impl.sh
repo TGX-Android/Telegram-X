@@ -60,7 +60,8 @@ configure_abi() {
       ANDROID_API=16
       TARGET="armv7-android-gcc --enable-neon --disable-neon-asm"
       NDK_ABIARCH="armv7a-linux-androideabi"
-      CFLAGS="${CFLAGS_} -Os -march=armv7-a -marm -mfloat-abi=softfp -mfpu=neon -mthumb -D__thumb__"
+      CPUFEATURES_DIR="$ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_VERSION/sources/android/cpufeatures"
+      CFLAGS="${CFLAGS_} -Os -march=armv7-a -marm -mfloat-abi=softfp -mfpu=neon -mthumb -D__thumb__ -I${CPUFEATURES_DIR}"
       LDFLAGS="${LDFLAGS_}"
       ASFLAGS=""
       CPU=armv7-a
@@ -125,7 +126,7 @@ configure_make() {
   make clean || echo -e "[info] running configure for the first time"
 
   CPU_DETECT="--disable-runtime-cpu-detect"
-  if [[ $1 =~ x86.* ]]; then
+  if [[ $1 =~ x86.* || $1 =~ arm64-v8a ]]; then
     CPU_DETECT="--enable-runtime-cpu-detect"
   fi
 
@@ -154,7 +155,7 @@ configure_make() {
   make -j"$CPU_COUNT" install
 }
 
-for ABI in x86 armeabi-v7a x86_64 arm64-v8a ; do
+for ABI in armeabi-v7a arm64-v8a x86 x86_64 ; do
   configure_make "$ABI"
   echo -e "${STYLE_INFO}- libvpx build ended for ${ABI}${STYLE_END}"
 done

@@ -80,7 +80,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public abstract class MapController<V extends View, T> extends ViewController<MapController.Args> implements View.OnClickListener, LocationHelper.LocationChangeListener, MoreDelegate, FactorAnimator.Target, Client.ResultHandler, MessageListener, Comparator<MapController.LocationPoint<T>>, LiveLocationManager.Listener, ListUpdateCallback {
   protected static final int MODE_DROPPED_PIN = 0;
@@ -1227,7 +1227,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
       this.inShareProgress = true;
       adapter.updateValuedSettingById(R.id.liveLocationSelf);
       if (msg != null) {
-        tdlib.client().send(new TdApi.EditMessageLiveLocation(msg.chatId, msg.id, null, null, 0, 0), tdlib.okHandler());
+        tdlib.client().send(new TdApi.EditMessageLiveLocation(msg.chatId, msg.id, null, null, 0, 0, 0), tdlib.okHandler());
       } else {
         locationHelper.receiveLocation(REQUEST_SHARE_LIVE, null, 10000, true);
       }

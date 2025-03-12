@@ -14,7 +14,10 @@
  */
 package org.thunderdog.challegram.ui;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.net.Uri;
+import android.os.Build;
 import android.text.InputFilter;
 import android.text.InputType;
 import android.text.Spannable;
@@ -36,7 +39,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.BuildConfig;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
@@ -61,6 +67,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.NoUnderlineClickableSpan;
+import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
@@ -71,8 +78,9 @@ import java.util.Comparator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.RunnableBool;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class PhoneController extends EditBaseController<Void> implements SettingsAdapter.TextChangeListener, MaterialEditTextGroup.FocusListener, MaterialEditTextGroup.TextChangeListener, View.OnClickListener, Menu {
 
@@ -295,7 +303,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
     countryWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, headerHeight, Gravity.TOP));
 
     String countryText = storedValues.get(R.id.login_country, "");
-    countryView = new MaterialEditTextGroup(context);
+    countryView = new MaterialEditTextGroup(context, tdlib);
     countryView.addThemeListeners(this);
     countryView.setUseTextChangeAnimations();
     countryView.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS | InputType.TYPE_TEXT_FLAG_CAP_WORDS | InputType.TYPE_TEXT_VARIATION_POSTAL_ADDRESS);
@@ -390,7 +398,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
 
         String codeText = storedValues.get(R.id.login_code, "");
 
-        codeView = new MaterialEditTextGroup(context);
+        codeView = new MaterialEditTextGroup(context, tdlib);
         codeView.addThemeListeners(PhoneController.this);
         codeView.setLayoutParams(params);
         codeView.getEditText().setId(R.id.login_code);
@@ -408,7 +416,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
         params.leftMargin = Screen.dp(89f);
 
         String numberText = storedValues.get(R.id.login_country, "");
-        numberView = new MaterialEditTextGroup(context);
+        numberView = new MaterialEditTextGroup(context, tdlib);
         numberView.addThemeListeners(PhoneController.this);
         numberView.getEditText().setBackspaceListener((v, editable, selectionStart, selectionEnd) -> {
           if (editable.length() == 0) {
@@ -582,7 +590,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
   private boolean ignorePhoneChanges;
 
   @Override
-  public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v, String text) {
+  public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v) {
     if (id == R.id.edit_first_name) {
       updateDoneState();
     }
@@ -886,7 +894,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
         function = new TdApi.ImportContacts(new TdApi.Contact[] {new TdApi.Contact(phone, getFirstName(), getLastName(), null, 0)});
         break;
       case MODE_CHANGE_NUMBER:
-        function = new TdApi.ChangePhoneNumber(phone, tdlib.phoneNumberAuthenticationSettings(context));
+        function = new TdApi.SendPhoneNumberCode(phone, tdlib.phoneNumberAuthenticationSettings(context), new TdApi.PhoneNumberCodeTypeChange());
         break;
       case MODE_LOGIN:
         function = new TdApi.SetAuthenticationPhoneNumber(phone, tdlib.phoneNumberAuthenticationSettings(context));
@@ -1031,7 +1039,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
     } else {
       msg = Lang.getStringBold(R.string.SuggestInvitingUser, getFirstName());
     }
-    showOptions(msg, new int[] {R.id.btn_invite, R.id.btn_cancel}, new String[] {Lang.getString(R.string.Invite), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_BLUE, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_person_add_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+    showOptions(msg, new int[] {R.id.btn_invite, R.id.btn_cancel}, new String[] {Lang.getString(R.string.Invite), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.BLUE, OptionColor.NORMAL}, new int[] {R.drawable.baseline_person_add_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_invite) {
         tdlib.cache().getInviteText(text -> {
           Intents.sendSms(getPhoneNumber(), text.text);
@@ -1069,9 +1077,96 @@ public class PhoneController extends EditBaseController<Void> implements Setting
     }
   }
 
+  private AlertDialog emulatorPrompt;
+
+  private void showEmulatorPrompt () {
+    if (mode != MODE_LOGIN) {
+      return;
+    }
+    context.forceRunEmulatorChecks(detectionResult -> executeOnUiThreadOptional(() -> {
+      if (detectionResult == null || !detectionResult.isEmulatorDetected()) {
+        return;
+      }
+      if (emulatorPrompt != null && emulatorPrompt.isShowing()) {
+        return;
+      }
+      boolean mayBeFalsePositive = detectionResult.mayBeFalsePositive();
+      AlertDialog.Builder b = new AlertDialog.Builder(context, Theme.dialogTheme());
+      b.setTitle(Lang.getString(R.string.EmulatorWarningTitle));
+      b.setMessage(Lang.getMarkdownStringSecure(this, mayBeFalsePositive ? R.string.EmulatorWarning : R.string.EmulatorWarningStrict));
+      b.setPositiveButton(Lang.getString(R.string.EmulatorWarningBtnOk), (dialog, which) -> dialog.dismiss());
+      if (mayBeFalsePositive) {
+        b.setNeutralButton(Lang.getString(R.string.EmulatorWarningBtnReport), (dialog, which) -> {
+          try {
+            Uri uri = Uri.parse(BuildConfig.REMOTE_URL);
+            String title = Lang.getString(R.string.EmulatorDetectorReport_title, Build.BRAND, Build.MODEL);
+            String metadata = U.getUsefulMetadata(tdlib);
+            String body = Lang.getString(R.string.EmulatorDetectorReport_text,
+              Build.BRAND,
+              Build.MODEL,
+              Build.PRODUCT,
+              Build.DEVICE,
+              Build.HARDWARE,
+              metadata,
+              detectionResult.toHumanReadableFormat()
+            );
+            Uri reportUri = uri
+              .buildUpon()
+              .appendEncodedPath("issues/new")
+              .appendQueryParameter("title", title)
+              .appendQueryParameter("body", body)
+              .build();
+
+            IntList ids = new IntList(3);
+            StringList strings = new StringList(3);
+            IntList icons = new IntList(3);
+            ids.append(R.id.btn_openIn);
+            strings.append(R.string.EmulatorWarningReportBtn);
+            icons.append(R.drawable.baseline_github_24);
+
+            ids.append(R.id.btn_copyLink);
+            strings.append(R.string.CopyLink);
+            icons.append(R.drawable.baseline_link_24);
+
+            if (tdlib.context().hasActiveAccounts()) {
+              ids.append(R.id.btn_share);
+              strings.append(R.string.Share);
+              icons.append(R.drawable.baseline_forward_24);
+            }
+            showOptions(Lang.getMarkdownStringSecure(this, R.string.EmulatorWarningReport), ids.get(), strings.get(), null, icons.get(), (optionItemView, id) -> {
+              if (id == R.id.btn_openIn) {
+                Intents.openUriInBrowser(reportUri);
+              } else if (id == R.id.btn_copyLink) {
+                UI.copyText(reportUri.toString(), R.string.CopiedLink);
+              } else if (id == R.id.btn_share) {
+                String text = reportUri.toString();
+                ShareController c = new ShareController(context, context.currentTdlib());
+                c.setArguments(new ShareController.Args(text).setExport(text));
+                c.show();
+              }
+              return true;
+            });
+          } catch (Throwable t) {
+            Log.e(t);
+            UI.showToast("Unable to create report: " + Log.toString(t), Toast.LENGTH_SHORT);
+          }
+        });
+      }
+      b.setCancelable(false);
+      emulatorPrompt = showAlert(b);
+    }));
+  }
+
+  @Override
+  public void onActivityResume () {
+    super.onActivityResume();
+    showEmulatorPrompt();
+  }
+
   @Override
   public void onFocus () {
     super.onFocus();
+    showEmulatorPrompt();
     if (oneShot) {
       return;
     }

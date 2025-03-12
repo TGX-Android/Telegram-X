@@ -45,7 +45,6 @@ import org.thunderdog.challegram.core.Media;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
-import org.thunderdog.challegram.mediaview.AvatarPickerMode;
 import org.thunderdog.challegram.mediaview.MediaSelectDelegate;
 import org.thunderdog.challegram.mediaview.MediaSendDelegate;
 import org.thunderdog.challegram.mediaview.MediaViewController;
@@ -74,8 +73,8 @@ import java.util.List;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.CancellableRunnable;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class MediaBottomGalleryController extends MediaBottomBaseController<MediaBottomGalleryController.Arguments> implements Media.GalleryCallback, MediaGalleryAdapter.Callback, Menu, View.OnClickListener, MediaBottomGalleryBucketAdapter.Callback, MediaViewDelegate, MediaSelectDelegate, MediaSendDelegate {
   public static class Arguments {
@@ -97,6 +96,9 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
 
   @Override
   protected int getMenuId () {
+    if (mediaLayout.isDisallowGallerySystemPicker()) {
+      return 0;
+    }
     return R.id.menu_more;
   }
 
@@ -211,7 +213,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
     decoration = new GridSpacingItemDecoration(spanCount, Screen.dp(4f), true, true, true);
     GridLayoutManager manager = new RtlGridLayoutManager(context(), spanCount);
 
-    int options = inAvatarPickerMode() ? MediaGalleryAdapter.OPTION_NEVER_SELECTABLE :
+    int options = inSingleMediaMode() ? MediaGalleryAdapter.OPTION_NEVER_SELECTABLE :
       MediaGalleryAdapter.OPTION_SELECTABLE | MediaGalleryAdapter.OPTION_ALWAYS_SELECTABLE;
     /*if (U.deviceHasAnyCamera(context)) {
       options |= MediaGalleryAdapter.OPTION_CAMERA_AVAILABLE;
@@ -243,6 +245,11 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
 
   @Override
   public boolean allowSpoiler () {
+    return !ChatId.isSecret(getOutputChatId());
+  }
+
+  @Override
+  public boolean allowShowCaptionAboveMedia () {
     return !ChatId.isSecret(getOutputChatId());
   }
 
@@ -539,7 +546,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   }
 
   @Override
-  public boolean sendSelectedItems (View view, ArrayList<ImageFile> images, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean hasSpoiler) {
+  public boolean sendSelectedItems (View view, ArrayList<ImageFile> images, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean showCaptionAboveMedia, boolean hasSpoiler) {
     // TODO delete other
     return mediaLayout.sendPhotosOrVideos(view, images, false, options, disableMarkdown, asFiles, true);
   }
@@ -560,6 +567,16 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   }
 
   @Override
+  public boolean showCaptionAboveMedia () {
+    return mediaLayout.showCaptionAboveMedia();
+  }
+
+  @Override
+  public void onShowCaptionAboveMediaStateChanged (boolean showCaptionAboveMedia) {
+    mediaLayout.setShowCaptionAboveMedia(showCaptionAboveMedia);
+  }
+
+  @Override
   protected void onCancelMultiSelection () {
     adapter.clearSelectedImages((GridLayoutManager) getLayoutManager());
   }
@@ -574,10 +591,11 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
       Log.i("stack.set complete for %d files in %dms", stack.getCurrentSize(), SystemClock.elapsedRealtime() - time);
 
       MediaViewController controller = new MediaViewController(context, tdlib);
-      controller.setArguments(
+      controller.setArguments(mediaLayout.prepareMediaViewArguments(
         MediaViewController.Args.fromGallery(this, this, this, this, stack, mediaLayout.areScheduledOnly())
           .setReceiverChatId(mediaLayout.getTargetChatId()).setAvatarPickerMode(mediaLayout.getAvatarPickerMode())
-      );
+          .setFlag(MediaViewController.Args.FLAG_DISALLOW_MULTI_SELECTION_MEDIA, mediaLayout.inSingleMediaMode())
+      ));
       controller.open();
 
       return true;
@@ -586,8 +604,8 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
     return false;
   }
 
-  private boolean inAvatarPickerMode () {
-    return mediaLayout.getAvatarPickerMode() != AvatarPickerMode.NONE;
+  private boolean inSingleMediaMode () {
+    return mediaLayout.inSingleMediaMode();
   }
 
   @Override

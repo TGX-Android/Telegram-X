@@ -22,7 +22,6 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
-import android.os.Bundle;
 import android.os.Looper;
 
 import androidx.annotation.NonNull;
@@ -142,7 +141,8 @@ public class LocationHelper implements ActivityResultHandler {
     // TODO
   }
 
-  private GoogleApiClient client;
+  @SuppressWarnings("deprecation")
+  private GoogleApiClient client; // TODO: rework to GoogleApi
 
   public static final int ERROR_CODE_NONE = 0;
   public static final int ERROR_CODE_PERMISSION = -1;
@@ -168,6 +168,7 @@ public class LocationHelper implements ActivityResultHandler {
     return PackageManager.PERMISSION_GRANTED;
   }
 
+  @SuppressWarnings("deprecation")
   private void receiveLocationInternal (final BaseActivity activity, final boolean allowResolution, final boolean onlyCheck, final boolean skipAlert) {
     final boolean[] sendStatus = new boolean[1];
     lastSignal = sendStatus;
@@ -204,6 +205,7 @@ public class LocationHelper implements ActivityResultHandler {
 
     try {
       if (client == null) {
+        // TODO rework to GoogleApi
         GoogleApiClient.Builder b = new GoogleApiClient.Builder(context);
         b.addApi(LocationServices.API);
         client = b.build();
@@ -429,7 +431,7 @@ public class LocationHelper implements ActivityResultHandler {
       final CancellableRunnable[] timeout = new CancellableRunnable[1];
       final android.location.LocationListener listener = new android.location.LocationListener() {
         @Override
-        public void onLocationChanged (Location location) {
+        public void onLocationChanged (@NonNull Location location) {
           timeout[0].cancel();
           try {
             manager.removeUpdates(this);
@@ -442,15 +444,6 @@ public class LocationHelper implements ActivityResultHandler {
             onReceiveLocation(location);
           }
         }
-
-        @Override
-        public void onStatusChanged (String provider, int status, Bundle extras) { }
-
-        @Override
-        public void onProviderEnabled (String provider) { }
-
-        @Override
-        public void onProviderDisabled (String provider) { }
       };
       timeout[0] = new CancellableRunnable() {
         @Override

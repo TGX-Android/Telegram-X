@@ -18,15 +18,14 @@ import androidx.annotation.IntDef;
 import androidx.annotation.Keep;
 import androidx.annotation.Nullable;
 
-import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
-import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.Crash;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -75,7 +74,6 @@ public class Tracer {
     Cause.DATABASE_ERROR,
     Cause.TDLIB_HANDLER_ERROR,
     Cause.TDLIB_LAUNCH_ERROR,
-    Cause.NOTIFICATION_ERROR,
     Cause.UI_ERROR,
     Cause.OTHER_ERROR,
     Cause.TDLIB_LOST_PROMISE_ERROR,
@@ -90,7 +88,6 @@ public class Tracer {
       DATABASE_ERROR = 2,
       TDLIB_HANDLER_ERROR = 3,
       TDLIB_LAUNCH_ERROR = 4,
-      NOTIFICATION_ERROR = 5,
       UI_ERROR = 6,
       OTHER_ERROR = 7,
       TDLIB_LOST_PROMISE_ERROR = 8,
@@ -111,7 +108,6 @@ public class Tracer {
       case Cause.TDLIB_LOST_PROMISE_ERROR:
         throw new ClientException.TdlibLostPromiseError(error.getMessage());
       case Cause.LAUNCH_ERROR:
-      case Cause.NOTIFICATION_ERROR:
       case Cause.UI_ERROR:
       case Cause.OTHER_ERROR:
       case Cause.TEST_DIRECT:
@@ -169,10 +165,6 @@ public class Tracer {
 
   public static void onTdlibLostPromiseError (String message) {
     onFatalError(new AssertionError(message), Cause.TDLIB_LOST_PROMISE_ERROR);
-  }
-
-  public static void onNotificationError (Throwable throwable) {
-    onFatalError(throwable, Cause.NOTIFICATION_ERROR);
   }
 
   public static void onUiError (Throwable throwable) {

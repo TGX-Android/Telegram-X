@@ -87,6 +87,7 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
     recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
     recyclerView.setLayoutManager(manager);
     recyclerView.setAdapter(adapter);
+    recyclerView.setItemAnimator(null);
   }
 
   @Override
@@ -133,7 +134,10 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
         RippleSupport.setTransparentSelector(text);
         return new OptionHolder(text);
       } else if (viewType == OptionsAdapter.TYPE_EMOJI_PACK_INFO) {
-        EmojiPacksInfoView textView= new EmojiPacksInfoView(context, parent, parent.tdlib());
+        EmojiPacksInfoView textView = new EmojiPacksInfoView(context, parent, parent.tdlib());
+        return new OptionHolder(textView);
+      } else if (viewType == OptionsAdapter.TYPE_SUBTITLE) {
+        EmojiTextView textView = OptionsLayout.genSubtitle(context);
         return new OptionHolder(textView);
       } else {
         CustomTextView textView = new CustomTextView(context, parent.tdlib());
@@ -148,7 +152,7 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
   private static class OptionsAdapter extends RecyclerView.Adapter<OptionHolder> {
     private final Context context;
     private final View.OnClickListener onClickListener;
-    private final Options options;
+    private Options options;
     private final Tdlib tdlib;
     private final MessageOptionsController parent;
     @Nullable
@@ -156,12 +160,42 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
     private final long[] emojiPackIds;
     private final long emojiPackFirstEmoji;
 
-    private final int textInfoPosition;
-    private final int emojiInfoPosition;
+    private int textInfoPosition, emojiInfoPosition, subtitlePosition;
+
+    public void updateSubtitle (Options options) {
+      this.options = options;
+      int prevSubtitlePosition = this.subtitlePosition;
+      boolean hadSubtitle = prevSubtitlePosition >= 0;
+      boolean hasSubtitle = options.subtitle != null;
+      if (hadSubtitle != hasSubtitle) {
+        if (hadSubtitle) {
+          subtitlePosition = -1;
+          if (textInfoPosition >= 0) {
+            textInfoPosition--;
+          }
+          if (emojiInfoPosition >= 0) {
+            emojiInfoPosition--;
+          }
+          notifyItemRemoved(prevSubtitlePosition);
+        } else {
+          subtitlePosition = 0;
+          if (textInfoPosition >= 0) {
+            textInfoPosition++;
+          }
+          if (emojiInfoPosition >= 0) {
+            emojiInfoPosition++;
+          }
+          notifyItemInserted(subtitlePosition);
+        }
+      } else if (hasSubtitle) {
+        notifyItemChanged(subtitlePosition);
+      }
+    }
 
     public static final int TYPE_OPTION = 0;
     public static final int TYPE_INFO = 1;
     public static final int TYPE_EMOJI_PACK_INFO = 2;
+    public static final int TYPE_SUBTITLE = 3;
 
     OptionsAdapter (Context context, MessageOptionsController parent, Options options, long emojiPackFirstEmoji, long[] emojiPackIds, View.OnClickListener onClickListener, @Nullable ThemeListenerList themeProvider) {
       this.parent = parent;
@@ -173,8 +207,9 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
       this.emojiPackIds = emojiPackIds;
       this.emojiPackFirstEmoji = emojiPackFirstEmoji;
 
-      this.emojiInfoPosition = emojiPackIds.length > 0 ? 0 : -1;
-      this.textInfoPosition = StringUtils.isEmpty(options.info) ? -1 : (emojiInfoPosition + 1);
+      this.subtitlePosition = options.subtitle != null ? 0 : -1;
+      this.emojiInfoPosition = emojiPackIds.length > 0 ? (subtitlePosition + 1) : -1;
+      this.textInfoPosition = StringUtils.isEmpty(options.info) ? -1 : (Math.max(emojiInfoPosition, subtitlePosition) + 1);
     }
 
     @NonNull
@@ -186,62 +221,74 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
     @Override
     public void onBindViewHolder (@NonNull OptionHolder holder, int position) {
       int type = getItemViewType(position);
-
-      if (type == TYPE_OPTION) {
-        if (!StringUtils.isEmpty(options.info)) {
-          position -= 1;
-        }
-        if (emojiInfoPosition > -1) {
-          position -= 1;
-        }
-
-        OptionItem item = options.items[position];
-        TextView textView = ((TextView) holder.itemView);
-        textView.setId(item.id);
-        final int colorId = OptionsLayout.getOptionColorId(item.color);
-        textView.setTextColor(Theme.getColor(colorId));
-        if (themeProvider != null)
-          themeProvider.addThemeColorListener(textView, colorId);
-        if (item.icon != 0) {
-          Drawable drawable = Drawables.get(context.getResources(), item.icon);
-          if (drawable != null) {
-            final int drawableColorId = item.color == ViewController.OPTION_COLOR_NORMAL ? ColorId.icon : colorId;
-            drawable.setColorFilter(Paints.getColorFilter(Theme.getColor(drawableColorId)));
-            if (themeProvider != null) {
-              themeProvider.addThemeFilterListener(drawable, drawableColorId);
-            }
-            if (Lang.rtl()) {
-              textView.setCompoundDrawablesWithIntrinsicBounds(null, null, drawable, null);
-            } else {
-              textView.setCompoundDrawablesWithIntrinsicBounds(drawable, null, null, null);
-            }
+      switch (type) {
+        case TYPE_OPTION: {
+          if (subtitlePosition >= 0) {
+            position--;
           }
-        } else {
-          textView.setCompoundDrawablesWithIntrinsicBounds(null, null, null, null);
-        }
-        textView.setText(item.name);
-      }
-
-      if (type == TYPE_INFO) {
-        CustomTextView textView = ((CustomTextView) holder.itemView);
-        String str = options.info.toString();
-        TextEntity[] parsed = TD.collectAllEntities(parent, tdlib, options.info, false, null);
-        textView.setTextSize(15f);
-        textView.setTextColorId(ColorId.textLight);
-        textView.setText(str, parsed, false);
-      }
-
-      if (type == TYPE_EMOJI_PACK_INFO) {
-        EmojiPacksInfoView textView = ((EmojiPacksInfoView) holder.itemView);
-        textView.setId(R.id.btn_emojiPackInfoButton);
-        textView.setTextSize(15f);
-        textView.setTextColorId(ColorId.textLight);
-        textView.update(emojiPackFirstEmoji, emojiPackIds, new ClickableSpan() {
-          @Override
-          public void onClick (@NonNull View widget) {
-            parent.listener.onClick(textView);
+          if (emojiInfoPosition >= 0) {
+            position--;
           }
-        }, false);
+          if (textInfoPosition >= 0) {
+            position--;
+          }
+          OptionItem item = options.items[position];
+          TextView textView = ((TextView) holder.itemView);
+          textView.setId(item.id);
+          final int textColorId = OptionsLayout.getOptionColorId(item.textColor);
+          textView.setTextColor(Theme.getColor(textColorId));
+          if (themeProvider != null)
+            themeProvider.addThemeColorListener(textView, textColorId);
+          if (item.icon != 0) {
+            Drawable drawable = Drawables.get(context.getResources(), item.icon);
+            if (drawable != null) {
+              final int drawableColorId = item.iconColor == OptionColor.NORMAL ? ColorId.icon : item.iconColor;
+              drawable.setColorFilter(Paints.getColorFilter(Theme.getColor(drawableColorId)));
+              if (themeProvider != null) {
+                themeProvider.addThemeFilterListener(drawable, drawableColorId);
+              }
+              if (Lang.rtl()) {
+                textView.setCompoundDrawablesWithIntrinsicBounds(null, null, drawable, null);
+              } else {
+                textView.setCompoundDrawablesWithIntrinsicBounds(drawable, null, null, null);
+              }
+            }
+          } else {
+            textView.setCompoundDrawablesWithIntrinsicBounds(null, null, null, null);
+          }
+          textView.setText(item.name);
+          break;
+        }
+        case TYPE_INFO: {
+          CustomTextView textView = ((CustomTextView) holder.itemView);
+          String str = options.info.toString();
+          TextEntity[] parsed = TD.collectAllEntities(parent, tdlib, options.info, false, null);
+          textView.setTextSize(15f);
+          textView.setTextColorId(ColorId.textLight);
+          textView.setText(str, parsed, false);
+          break;
+        }
+        case TYPE_EMOJI_PACK_INFO: {
+          EmojiPacksInfoView textView = ((EmojiPacksInfoView) holder.itemView);
+          textView.setId(R.id.btn_emojiPackInfoButton);
+          textView.setTextSize(15f);
+          textView.setTextColorId(ColorId.textLight);
+          textView.update(emojiPackFirstEmoji, emojiPackIds, new ClickableSpan() {
+            @Override
+            public void onClick (@NonNull View widget) {
+              parent.listener.onClick(textView);
+            }
+          }, false);
+          break;
+        }
+        case TYPE_SUBTITLE: {
+          OptionItem item = options.subtitle;
+          OptionsLayout.updateSubtitle((EmojiTextView) holder.itemView, item.name, item.icon, item.textColor, item.iconColor, null, parent);
+          break;
+        }
+        default: {
+          throw new IllegalStateException(Integer.toString(type));
+        }
       }
     }
 
@@ -253,21 +300,38 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
       if (position == emojiInfoPosition) {
         return TYPE_EMOJI_PACK_INFO;
       }
-
+      if (position == subtitlePosition) {
+        return TYPE_SUBTITLE;
+      }
       return TYPE_OPTION;
     }
 
     @Override
     public int getItemCount () {
-      return options.items.length + (textInfoPosition > -1 ? 1 : 0) + (emojiInfoPosition > -1 ? 1 : 0);
+      int itemCount = options.items.length;
+      if (textInfoPosition >= 0) {
+        itemCount++;
+      }
+      if (emojiInfoPosition >= 0) {
+        itemCount++;
+      }
+      if (subtitlePosition >= 0) {
+        itemCount++;
+      }
+      return itemCount;
     }
+  }
+
+  public void updateSubtitle (Options options) {
+    this.options = options;
+    adapter.updateSubtitle(options);
   }
 
   @Override
   public int getItemsHeight (RecyclerView recyclerView) {
     int totalHeight = (options.items.length + 2) * Screen.dp(54);
-    if (!StringUtils.isEmpty(options.info)) {
-      View view = recyclerView.getLayoutManager().findViewByPosition(0);
+    if (adapter.textInfoPosition >= 0) {
+      View view = recyclerView.getLayoutManager().findViewByPosition(adapter.textInfoPosition);
       int hintHeight =
         view instanceof CustomTextView && ((CustomTextView) view).checkMeasuredWidth(recyclerView.getMeasuredWidth()) ?
           view.getMeasuredHeight() : 0;
@@ -276,14 +340,19 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
       } else {
         int availWidth = recyclerView.getMeasuredWidth() - Screen.dp(16f) * 2;
         if (availWidth > 0) {
-          totalHeight += CustomTextView.measureHeight(this, options.info, 15f, availWidth) + Screen.dp(14f) + Screen.dp(6f);
+          totalHeight += CustomTextView.measureHeight(this, options.info, 0, 15f, availWidth) + Screen.dp(14f) + Screen.dp(6f);
         } else {
           totalHeight += Screen.dp(14f) + Screen.dp(6f) + Screen.dp(15f);
         }
       }
     }
-    if (emojiPackIds.length > 0) {
+    if (adapter.emojiInfoPosition >= 0) {
       totalHeight += Screen.dp(40);
+    }
+    if (adapter.subtitlePosition >= 0) {
+      View view = recyclerView.getLayoutManager().findViewByPosition(adapter.subtitlePosition);
+      int height = view != null ? view.getMeasuredHeight() : 0;
+      totalHeight += height != 0 ? height : Screen.dp(40f);
     }
     return totalHeight;
   }

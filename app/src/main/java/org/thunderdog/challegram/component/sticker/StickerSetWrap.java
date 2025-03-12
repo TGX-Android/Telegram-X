@@ -74,7 +74,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.collection.LongList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableBool;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 @SuppressLint("ViewConstructor")
 public class StickerSetWrap extends FrameLayoutFix implements StickersListController.StickerSetProvider, MediaStickersAdapter.OffsetProvider, View.OnClickListener, FactorAnimator.Target, PopupLayout.PopupHeightProvider, StickersListener {
@@ -559,14 +559,7 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
   }
 
   public void initWithSet (TdApi.StickerSet set) {
-    TdApi.StickerSetInfo info = new TdApi.StickerSetInfo(
-      set.id, set.title, set.name,
-      set.thumbnail, set.thumbnailOutline,
-      set.isInstalled, set.isArchived, set.isOfficial,
-      set.stickerFormat, set.stickerType, set.needsRepainting, set.isAllowedAsChatEmojiStatus,
-      false, set.stickers.length,
-      null
-    );
+    TdApi.StickerSetInfo info = Td.toStickerSetInfo(set);
     this.stickerSets.put(set.id, new TGStickerSetInfo(tdlib, info));
     updateButton(false);
     stickersController.setStickerSetInfo(info);

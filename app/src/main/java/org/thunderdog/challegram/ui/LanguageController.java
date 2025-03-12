@@ -97,7 +97,7 @@ public class LanguageController extends RecyclerViewController<LanguageControlle
   public void destroy () {
     super.destroy();
     if (hadChanges) {
-      tdlib.client().send(new TdApi.SetAlarm(), ignored -> tdlib.sendFakeUpdate(new TdApi.UpdateLanguagePackStrings(BuildConfig.LANGUAGE_PACK, langPack.languageInfo.id, null), false));
+      tdlib.client().send(new TdApi.SetAlarm(), ignored -> tdlib.sendFakeUpdate(new TdApi.UpdateLanguagePackStrings(BuildConfig.LANGUAGE_PACK, langPack.languageInfo.id, null)));
       hadChanges = false;
     }
   }
@@ -126,7 +126,7 @@ public class LanguageController extends RecyclerViewController<LanguageControlle
     } else if (Lang.packId().equals(langPack.languageInfo.id)) {
       tdlib.sendFakeUpdate(new TdApi.UpdateLanguagePackStrings(BuildConfig.LANGUAGE_PACK, langPack.languageInfo.id, new TdApi.LanguagePackString[] {
         string.translated ? string.string : new TdApi.LanguagePackString(string.getKey(), Lang.STRING_DELETED())
-      }), false);
+      }));
     }
     // TODO move from old language_code to the new one, when it changes
     // TODO update language list when language_name or language_nameInEnglish updates

@@ -69,8 +69,8 @@ import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class MediaItem implements MessageSourceProvider, InvalidateContentProvider {
   public static final int TYPE_PHOTO = 0;
@@ -111,7 +111,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
   private ImageFile targetImage;
   private GifFile targetGif;
 
-  private boolean hasSpoiler;
+  private boolean showCaptionAboveMedia, hasSpoiler;
 
   public static MediaItem copyOf (MediaItem item) {
     return copyOf(item, true);
@@ -128,17 +128,17 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
         copy.sourceDate = item.sourceDate;
         copy.caption = item.caption;
         copy.msg = item.msg;
-        copy.setHasSpoiler(item.hasSpoiler);
+        copy.copyOptions(item);
         return copy;
       }
       case TYPE_GIF: {
         MediaItem copy = new MediaItem(item.context, item.tdlib, item.sourceChatId, item.sourceMessageId, item.sourceSender, item.sourceDate, item.sourceAnimation, item.caption).setMessage(item.msg);
-        copy.setHasSpoiler(item.hasSpoiler);
+        copy.copyOptions(item);
         return copy;
       }
       case TYPE_VIDEO: {
         MediaItem copy = new MediaItem(item.context, item.tdlib, item.sourceChatId, item.sourceMessageId, item.sourceSender, item.sourceDate, item.sourceVideo, item.caption, allowIcon).setMessage(item.msg);
-        copy.setHasSpoiler(item.hasSpoiler);
+        copy.copyOptions(item);
         return copy;
       }
       case TYPE_USER_PROFILE: {
@@ -350,6 +350,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     this.sourceSender = sourceSender;
     this.sourceDate = sourceDate;
     this.caption = photo.caption;
+    setShowCaptionAboveMedia(photo.showCaptionAboveMedia);
     setHasSpoiler(photo.hasSpoiler);
   }
 
@@ -362,6 +363,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
 
   private MediaItem (BaseActivity context, Tdlib tdlib, long sourceChatId, long sourceMessageId, TdApi.MessageSender sourceSender, int sourceDate, TdApi.MessageAnimation animation) {
     this(context, tdlib, sourceChatId, sourceMessageId, sourceSender, sourceDate, animation.animation, animation.caption);
+    setShowCaptionAboveMedia(animation.showCaptionAboveMedia);
     setHasSpoiler(animation.hasSpoiler);
   }
 
@@ -551,6 +553,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
 
   private MediaItem (BaseActivity context, Tdlib tdlib, long sourceChatId, long sourceMessageId, TdApi.MessageSender sourceSender, int sourceDate, TdApi.MessageVideo video, boolean allowIcon) {
     this(context, tdlib, sourceChatId, sourceMessageId, sourceSender, sourceDate, video.video, video.caption, allowIcon);
+    setShowCaptionAboveMedia(video.showCaptionAboveMedia);
     setHasSpoiler(video.hasSpoiler);
   }
 
@@ -940,7 +943,8 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
             }
           }
           default: {
-            Td.assertChatEventAction_57377883();
+            Td.assertChatEventAction_b387a44d();
+            break;
           }
         }
         break;
@@ -968,16 +972,20 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
         return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.senderId, msg.date, (TdApi.MessageVideoNote) msg.content).setMessage(msg);
       }
       case TdApi.MessageText.CONSTRUCTOR: {
-        TdApi.WebPage webPage = ((TdApi.MessageText) msg.content).webPage;
-        if (webPage != null) {
-          if (webPage.sticker != null) {
-            return new MediaItem(context, tdlib, msg.chatId, msg.id, TD.convertToPhoto(webPage.sticker), true, false).setSourceMessage(msg);
-          } else if (webPage.video != null) {
-            return new MediaItem(context, tdlib, webPage.video, new TdApi.FormattedText("", null), true).setSourceMessage(msg);
-          } else if (webPage.animation != null) {
-            return new MediaItem(context, tdlib, webPage.animation, null).setSourceMessage(msg);
-          } else if (webPage.photo != null) {
-            return new MediaItem(context, tdlib, msg.chatId, msg.id, webPage.photo).setSourceMessage(msg);
+        TdApi.LinkPreview linkPreview = ((TdApi.MessageText) msg.content).linkPreview;
+        if (linkPreview != null) {
+          if (Td.getSticker(linkPreview.type) != null) {
+            TdApi.Sticker sticker = Td.getSticker(linkPreview.type);
+            return new MediaItem(context, tdlib, msg.chatId, msg.id, TD.convertToPhoto(sticker), true, false).setSourceMessage(msg);
+          } else if (Td.getVideo(linkPreview.type) != null) {
+            return new MediaItem(context, tdlib, Td.getVideo(linkPreview.type), new TdApi.FormattedText("", null), true).setSourceMessage(msg);
+          } else if (Td.getAnimation(linkPreview.type) != null) {
+            return new MediaItem(context, tdlib, Td.getAnimation(linkPreview.type), null).setSourceMessage(msg);
+          } else {
+            TdApi.Photo photo = Td.getPhoto(linkPreview.type);
+            if (photo != null) {
+              return new MediaItem(context, tdlib, msg.chatId, msg.id, photo).setSourceMessage(msg);
+            }
           }
         }
         break;
@@ -986,16 +994,22 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     return null;
   }
 
+  // TODO: rework entirely the rendering the legacy mess
+
   public boolean isRotated () {
     return isGalleryType(type) && U.isRotated(sourceGalleryFile.getRotation());
   }
 
+  public boolean isVideoRenderRotated (boolean allowCrop) {
+    return isVideo() && isGalleryType(type) && U.isRotated(sourceGalleryFile.getRotation() + (allowCrop && sourceGalleryFile.getCropState() != null ? sourceGalleryFile.getCropState().getRotateBy() : 0));
+  }
+
   public boolean isPostRotated () {
-    return isGalleryType(type) && U.isRotated(getPostRotation());
+    return isGalleryType(type) && U.isRotated(getPostRotate());
   }
 
   public boolean isFinallyRotated () {
-    return isGalleryType(type) && U.isRotated(sourceGalleryFile.getRotation() + getPostRotation());
+    return isGalleryType(type) && U.isRotated(sourceGalleryFile.getRotation() + getPostRotate());
   }
 
   public int getFileId () {
@@ -1083,7 +1097,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
   }
 
   public FiltersState getFiltersState () {
-    return sourceGalleryFile.getFiltersState();
+    return sourceGalleryFile != null ? sourceGalleryFile.getFiltersState() : null;
   }
 
   /*Crop*/
@@ -1102,6 +1116,21 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     }
     if (previewImageFile != null) {
       previewImageFile.setCropState(state);
+    }
+    if (miniThumbnail != null) {
+      miniThumbnail.setCropState(state);
+    }
+    if (blurredPreviewImageFile != null) {
+      blurredPreviewImageFile.setCropState(state);
+    }
+    if (thumbImageMiniThumb != null) {
+      thumbImageMiniThumb.setCropState(state);
+    }
+    if (thumbImageFile != null) {
+      thumbImageFile.setCropState(state);
+    }
+    if (thumbImageFileNoScale != null) {
+      thumbImageFileNoScale.setCropState(state);
     }
   }
 
@@ -1135,8 +1164,8 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
 
   /*Video rotation*/
 
-  public float getPostRotation () {
-    return sourceGalleryFile != null ? sourceGalleryFile.getPostRotate() : 0f;
+  public int getPostRotate () {
+    return sourceGalleryFile != null ? sourceGalleryFile.getPostRotate() : 0;
   }
 
   public int postRotateBy90Degrees () {
@@ -1180,8 +1209,9 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
   public long getTrimEndUs () {
     if (needTrim()) {
       return sourceGalleryFile.getEndTimeUs();
+    } else {
+      return -1;
     }
-    return -1;
   }
 
   public long getTotalDurationUs () {
@@ -1288,6 +1318,10 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
 
   public boolean canSeekVideo () {
     return isVideo() && (Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE || getFileProgress().isDownloaded());
+  }
+
+  public boolean isVideoOrGif () {
+    return isVideo() || isGif();
   }
 
   public boolean isVideo () {
@@ -1633,9 +1667,14 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     return false;
   }
 
+  private TdApi.MessageProperties lastProperties;
+
   public boolean canBeShared () {
-    if (msg != null)
-      return msg.canBeForwarded;
+    if (msg != null) {
+      TdApi.MessageProperties properties = lastProperties != null ? lastProperties : tdlib.getMessagePropertiesSync(msg);
+      lastProperties = properties;
+      return properties.canBeForwarded;
+    }
     return getShareFile() != null;
   }
 
@@ -1671,10 +1710,16 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     return null;
   }
 
-  public TdApi.InputMessageContent createShareContent (TdApi.FormattedText caption) {
+  public TdApi.InputMessageContent createShareContent () {
+    return createShareContent(null, false);
+  }
+
+  public TdApi.InputMessageContent createShareContent (TdApi.FormattedText caption, boolean showCaptionAboveMedia) {
     TdApi.InputFile file;
     if (type == TYPE_CHAT_PROFILE || type == TYPE_USER_PROFILE || (sourceChatId != 0 && ChatId.isSecret(sourceChatId))) {
       file = TD.createFileCopy(targetFile);
+    } else if (type == TYPE_GALLERY_PHOTO) {
+      file = PhotoGenerationInfo.newFile(sourceGalleryFile);
     } else {
       file = new TdApi.InputFileId(targetFile.id);
     }
@@ -1684,16 +1729,17 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
         if (isAnimatedAvatar()) {
           TdApi.AnimatedChatPhoto targetFile = chatPhoto.animation != null ? chatPhoto.animation : chatPhoto.smallAnimation;
           if (targetFile != null) {
-            return new TdApi.InputMessageAnimation(file, null, null, 3, targetFile.length, targetFile.length, null, false);
+            return new TdApi.InputMessageAnimation(file, null, null, 3, targetFile.length, targetFile.length, caption, showCaptionAboveMedia, false);
           }
         }
-        return new TdApi.InputMessagePhoto(file, null, null, 640, 640, caption, null, false);
+        return new TdApi.InputMessagePhoto(file, null, null, 640, 640, caption, showCaptionAboveMedia, null, false);
       case TYPE_PHOTO:
-        return new TdApi.InputMessagePhoto(file, null, null, width, height, caption, null, false);
+      case TYPE_GALLERY_PHOTO:
+        return new TdApi.InputMessagePhoto(file, null, null, width, height, caption, showCaptionAboveMedia, null, type == TYPE_GALLERY_PHOTO && hasSpoiler);
       case TYPE_VIDEO:
-        return new TdApi.InputMessageVideo(file, null, null, sourceVideo.duration, sourceVideo.width, sourceVideo.height, sourceVideo.supportsStreaming, caption, null, false);
+        return new TdApi.InputMessageVideo(file, null, null, 0, null, sourceVideo.duration, sourceVideo.width, sourceVideo.height, sourceVideo.supportsStreaming, caption, showCaptionAboveMedia, null, false);
       case TYPE_GIF:
-        return new TdApi.InputMessageAnimation(file, null, null, sourceAnimation.duration, sourceAnimation.width, sourceAnimation.height, caption, false);
+        return new TdApi.InputMessageAnimation(file, null, null, sourceAnimation.duration, sourceAnimation.width, sourceAnimation.height, caption, showCaptionAboveMedia, false);
     }
     return null;
   }
@@ -1731,21 +1777,19 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
 
   // Image-related stuff
 
-  public boolean setDimensions (int width, int height) {
-    boolean rotated;
-    if (sourceGalleryFile != null) {
-      rotated = U.isRotated(sourceGalleryFile.getRotation());
-    } else if (targetImage instanceof ImageVideoThumbFile) {
-      rotated = U.isRotated(((ImageVideoThumbFile) targetImage).getVideoRotation());
-    } else {
-      rotated = false;
-    }
+  public boolean setDimensions (int width, int height, int unappliedRotationDegrees) {
+    boolean rotated = U.isRotated(unappliedRotationDegrees);
     if (rotated) {
       int temp = width;
       width = height;
       height = temp;
     }
     if (this.width != width || this.height != height) {
+      Log.i("videoSizeChanged: %dx%d -> %dx%d (rotation: %d)",
+        this.width, this.height,
+        width, height,
+        unappliedRotationDegrees
+      );
       this.width = width;
       this.height = height;
       // TODO
@@ -1755,8 +1799,16 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
   }
 
   public int getWidth () {
-    if (sourceGalleryFile != null && sourceGalleryFile.getCropState() != null) {
-      CropState cropState = sourceGalleryFile.getCropState();
+    return getWidth(true);
+  }
+
+  public int getHeight () {
+    return getHeight(true);
+  }
+
+  public int getWidth (boolean allowCrop) {
+    CropState cropState = getCropState();
+    if (allowCrop && cropState != null) {
       if (U.isRotated(cropState.getRotateBy())) {
         return (int) (height * cropState.getRegionWidth());
       } else {
@@ -1766,9 +1818,9 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     return width;
   }
 
-  public int getHeight () {
-    if (sourceGalleryFile != null && sourceGalleryFile.getCropState() != null) {
-      CropState cropState = sourceGalleryFile.getCropState();
+  public int getHeight (boolean allowCrop) {
+    CropState cropState = getCropState();
+    if (allowCrop && cropState != null) {
       if (U.isRotated(cropState.getRotateBy())) {
         return (int) (width * cropState.getRegionWidth());
       } else {
@@ -1791,5 +1843,18 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
 
   public boolean hasSpoiler () {
     return hasSpoiler;
+  }
+
+  public void setShowCaptionAboveMedia (boolean showCaptionAboveMedia) {
+    this.showCaptionAboveMedia = showCaptionAboveMedia;
+  }
+
+  public boolean showCaptionAboveMedia () {
+    return showCaptionAboveMedia;
+  }
+
+  private void copyOptions (MediaItem from) {
+    setShowCaptionAboveMedia(from.showCaptionAboveMedia);
+    setHasSpoiler(from.hasSpoiler);
   }
 }

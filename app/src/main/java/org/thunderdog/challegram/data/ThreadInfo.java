@@ -24,11 +24,15 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 
-import me.vkryl.core.BitwiseUtils;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.ObjectUtils;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.td.MessageId;
-import me.vkryl.td.Td;
+import tgx.td.MessageId;
+import tgx.td.Td;
 
 public class ThreadInfo {
   public static final ThreadInfo INVALID = new ThreadInfo(null, new TdApi.MessageThreadInfo(), 0, false);
@@ -62,7 +66,7 @@ public class ThreadInfo {
     boolean areComments = tdlib.isChannelAutoForward(oldestMessage);
     if (contextChatId == 0 && areComments && oldestMessage != null && chatId != oldestMessage.chatId) {
       //noinspection ConstantConditions
-      contextChatId = oldestMessage.forwardInfo.fromChatId;
+      contextChatId = oldestMessage.forwardInfo.source.chatId;
     }
     return new ThreadInfo(tdlib, threadInfo, contextChatId, areComments);
   }
@@ -198,12 +202,37 @@ public class ThreadInfo {
   }
 
   public void setDraft (@Nullable TdApi.DraftMessage draftMessage) {
-    TdApi.InputMessageReplyToMessage replyToMessage = draftMessage != null && draftMessage.replyTo instanceof TdApi.InputMessageReplyToMessage ? ((TdApi.InputMessageReplyToMessage) draftMessage.replyTo) : null;
-    if (replyToMessage != null && Td.isEmpty(replyToMessage.quote)) {
-      for (TdApi.Message message : threadInfo.messages) {
-        if (message.chatId == replyToMessage.chatId && message.id == replyToMessage.messageId) {
-          draftMessage.replyTo = null;
+    TdApi.InputMessageReplyTo replyTo = draftMessage != null ? draftMessage.replyTo : null;
+    if (replyTo != null && replyTo.getConstructor() != TdApi.InputMessageReplyToStory.CONSTRUCTOR) {
+      long replyToChatId;
+      long replyToMessageId;
+      TdApi.InputTextQuote replyToQuote;
+      switch (replyTo.getConstructor()) {
+        case TdApi.InputMessageReplyToMessage.CONSTRUCTOR: {
+          TdApi.InputMessageReplyToMessage replyToMessage = (TdApi.InputMessageReplyToMessage) replyTo;
+          replyToChatId = threadInfo.chatId;
+          replyToMessageId = replyToMessage.messageId;
+          replyToQuote = replyToMessage.quote;
           break;
+        }
+        case TdApi.InputMessageReplyToExternalMessage.CONSTRUCTOR: {
+          TdApi.InputMessageReplyToExternalMessage replyToExternalMessage = (TdApi.InputMessageReplyToExternalMessage) replyTo;
+          replyToChatId = replyToExternalMessage.chatId;
+          replyToMessageId = replyToExternalMessage.messageId;
+          replyToQuote = replyToExternalMessage.quote;
+          break;
+        }
+        case TdApi.InputMessageReplyToStory.CONSTRUCTOR: // Unreachable
+        default:
+          Td.assertInputMessageReplyTo_acef6f3a();
+          throw Td.unsupported(replyTo);
+      }
+      if (Td.isEmpty(replyToQuote)) {
+        for (TdApi.Message message : threadInfo.messages) {
+          if (message.chatId == replyToChatId && message.id == replyToMessageId) {
+            draftMessage.replyTo = null;
+            break;
+          }
         }
       }
     }
@@ -283,11 +312,15 @@ public class ThreadInfo {
 
   // Updates
 
+  private boolean isRootMessage (long messageId) {
+    return messageId == threadInfo.messages[threadInfo.messages.length - 1].id;
+  }
+
   public void updateMessageInteractionInfo (long messageId, @Nullable TdApi.MessageInteractionInfo interactionInfo) {
     TdApi.Message message = getMessage(messageId);
     if (message != null) {
       message.interactionInfo = interactionInfo;
-      if (message.canGetMessageThread) {
+      if (isRootMessage(messageId)) {
         updateReplyInfo(TD.getReplyInfo(interactionInfo));
       }
     }
@@ -337,52 +370,28 @@ public class ThreadInfo {
   }
 
   public void updateMessagesDeleted (long[] messageIds, int removedCount, int removedUnreadCount) {
-    int deletedMessageCount;
+    int deletedMessageCount = 0;
     int messageCount = threadInfo.messages.length;
     if (messageCount > 0) {
-      if (messageCount > 32) {
-        throw new UnsupportedOperationException();
-      }
-      int deleted = 0;
-      long oldestMessageId = getOldestMessageId();
-      long newestMessageId = getNewestMessageId();
-      for (long messageId : messageIds) {
-        if (messageId < oldestMessageId || messageId > newestMessageId) {
-          continue;
-        }
-        for (int index = 0; index < messageCount; index++) {
-          TdApi.Message message = threadInfo.messages[index];
-          if (message.id == messageId) {
-            deleted = BitwiseUtils.setFlag(deleted, 1 << index, true);
+      List<TdApi.Message> messageList = new ArrayList<>();
+      Collections.addAll(messageList, threadInfo.messages);
+      boolean isMessageThreadDeleted = ArrayUtils.contains(messageIds, threadInfo.messageThreadId);
+      for (int i = messageList.size() - 1; i >= 0; i--) {
+        TdApi.Message message = messageList.get(i);
+        if (ArrayUtils.contains(messageIds, message.id)) {
+          if (isRootMessage(message.id)) {
+            isMessageThreadDeleted = true;
           }
+          messageList.remove(i);
+          deletedMessageCount++;
         }
       }
-      deletedMessageCount = Integer.bitCount(deleted);
-      if (deletedMessageCount > 0) {
-        boolean isMessageThreadDeleted = false;
-        TdApi.Message[] newMessages = new TdApi.Message[messageCount - deletedMessageCount];
-        if (newMessages.length > 0) {
-          int newIndex = 0;
-          for (int index = 0; index < messageCount; index++) {
-            TdApi.Message message = threadInfo.messages[index];
-            if (!BitwiseUtils.hasFlag(deleted, 1 << index)) {
-              newMessages[newIndex++] = message;
-            } else if (message.canGetMessageThread) {
-              isMessageThreadDeleted = true;
-            }
-          }
-        } else {
-          isMessageThreadDeleted = true;
-        }
-        threadInfo.messages = newMessages;
-        if (isMessageThreadDeleted) {
-          notifyMessageThreadDeleted();
-          updateReplyInfo(null);
-          return;
-        }
+      threadInfo.messages = messageList.toArray(new TdApi.Message[0]);
+      if (messageList.isEmpty() || isMessageThreadDeleted) {
+        notifyMessageThreadDeleted();
+        updateReplyInfo(null);
+        return;
       }
-    } else {
-      deletedMessageCount = 0;
     }
     int removedReplyCount = removedCount - deletedMessageCount;
     if (removedReplyCount > 0 && getReplyCount() > 0) {

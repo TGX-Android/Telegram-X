@@ -38,6 +38,7 @@ import android.view.ViewParent;
 import android.view.animation.Interpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -52,7 +53,6 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.DiffMatchPatch;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewTranslator;
 import org.thunderdog.challegram.theme.ColorId;
@@ -835,6 +835,16 @@ public class Views {
     return false;
   }
 
+  public static void setLayoutHeight (View view, int height) {
+    if (view != null) {
+      ViewGroup.LayoutParams params = view.getLayoutParams();
+      if (params != null && params.height != height) {
+        params.height = height;
+        view.setLayoutParams(params);
+      }
+    }
+  }
+
   public static void setTopMargin (View view, int margin) {
     if (view != null) {
       ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
@@ -865,11 +875,41 @@ public class Views {
     }
   }
 
+  public static void setLeftMargin (View view, int margin) {
+    if (view != null) {
+      ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
+      if (params.leftMargin != margin) {
+        params.leftMargin = margin;
+        view.setLayoutParams(params);
+      }
+    }
+  }
+
+  public static int getLeftMargin (View view) {
+    if (view != null) {
+      ViewGroup.LayoutParams params = view.getLayoutParams();
+      if (params instanceof ViewGroup.MarginLayoutParams) {
+        return ((ViewGroup.MarginLayoutParams) params).leftMargin;
+      }
+    }
+    return 0;
+  }
+
   public static int getTopMargin (View view) {
     if (view != null) {
       ViewGroup.LayoutParams params = view.getLayoutParams();
       if (params instanceof ViewGroup.MarginLayoutParams) {
         return ((ViewGroup.MarginLayoutParams) params).topMargin;
+      }
+    }
+    return 0;
+  }
+
+  public static int getRightMargin (View view) {
+    if (view != null) {
+      ViewGroup.LayoutParams params = view.getLayoutParams();
+      if (params instanceof ViewGroup.MarginLayoutParams) {
+        return ((ViewGroup.MarginLayoutParams) params).rightMargin;
       }
     }
     return 0;
@@ -999,5 +1039,17 @@ public class Views {
     }
 
     return -1;
+  }
+
+  public static int getLayoutGravity (@Nullable ViewGroup.LayoutParams params) {
+    if (params instanceof FrameLayout.LayoutParams) {
+      int gravity = ((FrameLayout.LayoutParams) params).gravity;
+      return gravity < 0 ? Gravity.TOP | Gravity.START : gravity;
+    }
+    if (params instanceof LinearLayout.LayoutParams) {
+      int gravity = ((LinearLayout.LayoutParams) params).gravity;
+      return gravity < 0 ? Gravity.NO_GRAVITY : gravity;
+    }
+    return Gravity.NO_GRAVITY;
   }
 }

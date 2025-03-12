@@ -20,9 +20,12 @@ import android.graphics.Rect;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.loader.AvatarReceiver;
@@ -38,7 +41,7 @@ import org.thunderdog.challegram.util.text.TextMedia;
 import me.vkryl.android.util.InvalidateContentProvider;
 import me.vkryl.core.lambda.Destroyable;
 
-public class SmallChatView extends BaseView implements AttachDelegate, TooltipOverlayView.LocationProvider, InvalidateContentProvider, Destroyable, EmojiStatusHelper.EmojiStatusReceiverInvalidateDelegate {
+public class SmallChatView extends BaseView implements AttachDelegate, TooltipOverlayView.LocationProvider, InvalidateContentProvider, Destroyable, EmojiStatusHelper.EmojiStatusReceiverInvalidateDelegate, RemoveHelper.RemoveDelegate {
   private final AvatarReceiver avatarReceiver;
   private final EmojiStatusHelper emojiStatusHelper;
 
@@ -131,7 +134,7 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
 
   private void requestFile () {
     if (chat != null) {
-      avatarReceiver.requestMessageSender(tdlib, chat.getSenderId(), AvatarReceiver.Options.NONE);
+      chat.requestAvatar(avatarReceiver);
     } else {
       avatarReceiver.clear();
     }
@@ -154,9 +157,13 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
   }
 
   @Override
-  protected void onDraw (Canvas c) {
+  protected void onDraw (@NonNull Canvas c) {
     if (chat == null) {
       return;
+    }
+
+    if (removeHelper != null) {
+      removeHelper.save(c);
     }
 
     layoutReceiver();
@@ -185,6 +192,11 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
       c.drawRect(x1, y1 - lineSize, x1 + w2, y1, Paints.fillingPaint(Theme.radioCheckColor()));
       c.restore();
     }
+
+    if (removeHelper != null) {
+      removeHelper.restore(c);
+      removeHelper.draw(c);
+    }
   }
 
   private boolean checkboxVisible = false;
@@ -206,5 +218,25 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
     if (emojiStatusHelper != null && chat != null) {
       chat.requestEmojiStatusReceiver(emojiStatusHelper.emojiStatusReceiver);
     }
+  }
+
+  // Remove delegate
+
+  private @Nullable RemoveHelper removeHelper;
+
+  @Override
+  public void setRemoveDx (float dx) {
+    if (removeHelper == null) {
+      removeHelper = new RemoveHelper(this, R.drawable.baseline_delete_24);
+    }
+    removeHelper.setDx(dx);
+  }
+
+  @Override
+  public void onRemoveSwipe () {
+    if (removeHelper == null) {
+      removeHelper = new RemoveHelper(this, R.drawable.baseline_delete_24);
+    }
+    removeHelper.onSwipe();
   }
 }

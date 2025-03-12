@@ -98,6 +98,13 @@ public final class ThemeCustom implements ThemeDelegate {
     Integer color = colors.get(colorId);
     if (color != null)
       return color;
+    @ColorId int fallbackColorId = FallbackColorId.get(colorId);
+    while (fallbackColorId != ColorId.NONE) {
+      color = colors.get(fallbackColorId);
+      if (color != null)
+        return color;
+      fallbackColorId = FallbackColorId.get(fallbackColorId);
+    }
     if (parentTheme != null)
       return parentTheme.getColor(colorId);
     throw Theme.newError(colorId, "colorId");

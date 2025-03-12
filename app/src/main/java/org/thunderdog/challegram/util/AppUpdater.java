@@ -52,10 +52,11 @@ import java.io.File;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
+import me.vkryl.android.AppInstallationUtil;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListener, ConnectionListener {
   public interface Listener {
@@ -120,7 +121,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
     this.context = context;
     this.listeners = new ReferenceList<>();
     AppUpdateManager appUpdateManager = null;
-    if (AppInstallationUtil.allowInAppGooglePlayUpdates()) {
+    if (AppInstallationUtil.allowInAppGooglePlayUpdates(context)) {
       try {
         appUpdateManager = AppUpdateManagerFactory.create(context);
       } catch (Throwable t) {
@@ -183,7 +184,23 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
     // TODO: add server config to force
     return googlePlayUpdateManager == null ||
       forceTelegramChannelFlow ||
-      (googlePlayFlowError && AppInstallationUtil.isAppSideLoaded());
+      (googlePlayFlowError && AppInstallationUtil.isAppSideLoaded(UI.getAppContext()));
+  }
+
+  public static AppInstallationUtil.PublicMarketUrls publicMarketUrls () {
+    return new AppInstallationUtil.PublicMarketUrls(
+      BuildConfig.DOWNLOAD_URL,
+      BuildConfig.GOOGLE_PLAY_URL,
+      BuildConfig.GALAXY_STORE_URL,
+      BuildConfig.HUAWEI_APPGALLERY_URL,
+      BuildConfig.AMAZON_APPSTORE_URL
+    );
+  }
+
+  public static AppInstallationUtil.DownloadUrl getDownloadUrl (@Nullable String serverSuggestedDownloadUrl) {
+    @AppInstallationUtil.InstallerId int installerId = AppInstallationUtil.getInstallerId(UI.getAppContext());
+    AppInstallationUtil.PublicMarketUrls publicMarketUrls = publicMarketUrls();
+    return publicMarketUrls.toDownloadUrl(installerId, serverSuggestedDownloadUrl);
   }
 
   private void setState (@State int state) {
@@ -219,7 +236,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
           }
           case UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS:
           case UpdateAvailability.UPDATE_NOT_AVAILABLE: {
-            if (AppInstallationUtil.isAppSideLoaded()) {
+            if (AppInstallationUtil.isAppSideLoaded(UI.getAppContext())) {
               onGooglePlayFlowError();
             } else {
               onUpdateUnavailable();
@@ -308,7 +325,7 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
       onUpdateUnavailable();
       return;
     }
-    if (!AppInstallationUtil.allowInAppTelegramUpdates() && !tdlib.hasUrgentInAppUpdate()) {
+    if (BuildConfig.EXPERIMENTAL || (!AppInstallationUtil.allowInAppTelegramUpdates(UI.getAppContext()) && !tdlib.hasUrgentInAppUpdate())) {
       onUpdateUnavailable();
       return;
     }
@@ -352,10 +369,10 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
               (target, argStart, argEnd, argIndex, needFakeBold) -> argIndex != 1 ? Lang.boldCreator().onCreateSpan(target, argStart, argEnd, argIndex, needFakeBold) : null,
               Strings.buildSize(bytesToDownload), displayVersion
             ))
-            .item(new ViewController.OptionItem(R.id.btn_update, Lang.getString(R.string.DownloadUpdate), ViewController.OPTION_COLOR_BLUE, R.drawable.baseline_system_update_24));
+            .item(new ViewController.OptionItem(R.id.btn_update, Lang.getString(R.string.DownloadUpdate), ViewController.OptionColor.BLUE, R.drawable.baseline_system_update_24));
           final String changesUrl = commit != null && !BuildConfig.COMMIT.equals(commit) ? BuildConfig.REMOTE_URL + "/compare/" + BuildConfig.COMMIT + "..." + commit : null;
           if (changesUrl != null) {
-            b.item(new ViewController.OptionItem(R.id.btn_sourceCode, Lang.getString(R.string.UpdateSourceChanges), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_code_24));
+            b.item(new ViewController.OptionItem(R.id.btn_sourceCode, Lang.getString(R.string.UpdateSourceChanges), ViewController.OptionColor.NORMAL, R.drawable.baseline_code_24));
           }
           b.cancelItem();
           c.showOptions(b.build(), (optionItemView, id) -> {

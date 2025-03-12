@@ -28,7 +28,7 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextPart;
 
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.MessageId;
+import tgx.td.MessageId;
 
 public class TGSourceChat extends TGSource implements Runnable {
   private final long chatId;

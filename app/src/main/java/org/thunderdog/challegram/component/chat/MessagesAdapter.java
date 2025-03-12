@@ -38,7 +38,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import me.vkryl.td.MessageId;
+import tgx.td.MessageId;
 
 public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
   private static final int INITIAL_CAPACITY = 15;

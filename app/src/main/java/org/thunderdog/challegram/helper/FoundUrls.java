@@ -107,7 +107,7 @@ public final class FoundUrls {
     String specificUrl =
       messageText.linkPreviewOptions != null && !messageText.linkPreviewOptions.isDisabled && !StringUtils.isEmpty(messageText.linkPreviewOptions.url) ?
         messageText.linkPreviewOptions.url :
-        messageText.webPage != null ? messageText.webPage.url :
+        messageText.linkPreview != null ? messageText.linkPreview.url :
           null;
     if (!StringUtils.isEmpty(specificUrl)) {
       // Make sure there is existing url

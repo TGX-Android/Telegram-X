@@ -21,7 +21,6 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MediaPreview;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.data.TGWebPage;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.util.RateLimiter;
@@ -33,13 +32,14 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.td.Td;
+import tgx.td.Td;
+import tgx.td.TdExt;
 
 public class LinkPreview implements Destroyable {
   public final Tdlib tdlib;
   public final String url;
 
-  public TdApi.WebPage webPage;
+  public TdApi.LinkPreview linkPreview;
   public TdApi.Error error;
 
   private final TdApi.Message fakeMessage;
@@ -71,14 +71,14 @@ public class LinkPreview implements Destroyable {
 
     if (existingMessage != null && Td.isText(existingMessage.content)) {
       TdApi.MessageText existingText = (TdApi.MessageText) existingMessage.content;
-      if (existingText.webPage != null) {
+      if (existingText.linkPreview != null) {
         TdApi.LinkPreviewOptions existingOptions = existingText.linkPreviewOptions;
         boolean isCurrentWebPage =
           (existingText.linkPreviewOptions != null && !StringUtils.isEmpty(existingText.linkPreviewOptions.url) && FoundUrls.compareUrls(existingText.linkPreviewOptions.url, url)) ||
-          (FoundUrls.compareUrls(existingText.webPage.url, url));
+          (FoundUrls.compareUrls(existingText.linkPreview.url, url));
         if (isCurrentWebPage) {
-          this.webPage = existingText.webPage;
-          updateMessageText(messageText, this.webPage);
+          this.linkPreview = existingText.linkPreview;
+          updateMessageText(messageText, this.linkPreview);
           this.needLoadWebPagePreview = false;
           this.forceSmallMedia = existingOptions != null && existingOptions.forceSmallMedia;
           this.forceLargeMedia = existingOptions != null && existingOptions.forceLargeMedia;
@@ -96,12 +96,12 @@ public class LinkPreview implements Destroyable {
     this.staticLoadCallbacks.remove(loadCallback);
   }
 
-  private static void updateMessageText (TdApi.MessageText messageText, TdApi.WebPage webPage) {
-    messageText.webPage = webPage;
-    if (!Td.isEmpty(webPage.description)) {
-      messageText.text = webPage.description;
-    } else if (!StringUtils.isEmpty(webPage.siteName) && !StringUtils.isEmpty(webPage.title)) {
-      messageText.text = new TdApi.FormattedText(webPage.title, null);
+  private static void updateMessageText (TdApi.MessageText messageText, TdApi.LinkPreview linkPreview) {
+    messageText.linkPreview = linkPreview;
+    if (!Td.isEmpty(linkPreview.description)) {
+      messageText.text = linkPreview.description;
+    } else if (!StringUtils.isEmpty(linkPreview.siteName) && !StringUtils.isEmpty(linkPreview.title)) {
+      messageText.text = new TdApi.FormattedText(linkPreview.title, null);
     }
   }
 
@@ -123,10 +123,10 @@ public class LinkPreview implements Destroyable {
 
   private void loadLinkPreview () {
     needLoadWebPagePreview = false;
-    tdlib.send(new TdApi.GetWebPagePreview(new TdApi.FormattedText(url, null), null), (webPage, error) -> {
+    tdlib.send(new TdApi.GetLinkPreview(new TdApi.FormattedText(url, null), null), (webPage, error) -> {
       tdlib.ui().post(() -> {
         if (webPage != null) {
-          this.webPage = webPage;
+          this.linkPreview = webPage;
           updateMessageText((TdApi.MessageText) fakeMessage.content, webPage);
         } else {
           this.error = error;
@@ -141,11 +141,11 @@ public class LinkPreview implements Destroyable {
   }
 
   public boolean isLoading () {
-    return error == null && webPage == null;
+    return error == null && linkPreview == null;
   }
 
   public boolean hasMedia () {
-    return webPage != null && MediaPreview.hasMedia(webPage);
+    return linkPreview != null && MediaPreview.hasMedia(linkPreview);
   }
 
   public boolean forceSmallMedia () {
@@ -158,7 +158,7 @@ public class LinkPreview implements Destroyable {
 
   public boolean toggleLargeMedia () {
     boolean showLargeMedia = getOutputShowLargeMedia();
-    if (hasMedia() && webPage.hasLargeMedia) {
+    if (hasMedia() && linkPreview.hasLargeMedia) {
       forceLargeMedia = !showLargeMedia;
       forceSmallMedia = showLargeMedia;
       return getOutputShowLargeMedia() != showLargeMedia;
@@ -168,7 +168,7 @@ public class LinkPreview implements Destroyable {
 
   public boolean getOutputShowLargeMedia () {
     if (hasMedia()) {
-      if (webPage.hasLargeMedia) {
+      if (linkPreview.hasLargeMedia) {
         if (forceLargeMedia) {
           return true;
         }
@@ -176,7 +176,7 @@ public class LinkPreview implements Destroyable {
           return false;
         }
       }
-      return webPage.showLargeMedia;
+      return linkPreview.showLargeMedia;
     }
     return false;
   }
@@ -192,26 +192,11 @@ public class LinkPreview implements Destroyable {
       return Lang.getString(R.string.NoLinkInfo);
     }
 
-    String title = Td.isEmpty(webPage.description) ? Strings.any(webPage.siteName, webPage.title) : Strings.any(webPage.title, webPage.siteName);
+    String title = Td.isEmpty(linkPreview.description) ? Strings.any(linkPreview.siteName, linkPreview.title) : Strings.any(linkPreview.title, linkPreview.siteName);
     if (!StringUtils.isEmpty(title)) {
       return title;
     }
-    if (webPage.photo != null || (webPage.sticker != null && Math.max(webPage.sticker.width, webPage.sticker.height) > TGWebPage.STICKER_SIZE_LIMIT)) {
-      return Lang.getString(R.string.Photo);
-    } else if (webPage.video != null) {
-      return Lang.getString(R.string.Video);
-    } else if (webPage.document != null || webPage.voiceNote != null) {
-      title = webPage.document != null ? webPage.document.fileName : Lang.getString(R.string.Audio);
-      if (StringUtils.isEmpty(title)) {
-        title = Lang.getString(R.string.File);
-      }
-      return title;
-    } else if (webPage.audio != null) {
-      return TD.getTitle(webPage.audio) + " – " + TD.getSubtitle(webPage.audio);
-    } else if (webPage.sticker != null) {
-      return Lang.getString(R.string.Sticker);
-    }
-    return Lang.getString(R.string.LinkPreview);
+    return TdExt.getRepresentationTitle(linkPreview);
   }
 
   private void notifyLinkPreviewLoaded () {

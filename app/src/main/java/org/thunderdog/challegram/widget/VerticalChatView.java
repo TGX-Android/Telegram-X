@@ -54,7 +54,7 @@ import org.thunderdog.challegram.util.text.TextColorSet;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class VerticalChatView extends BaseView implements Destroyable, ChatListener, TdlibCache.UserDataChangeListener, NotificationSettingsListener, AttachDelegate, SimplestCheckBoxHelper.Listener, TextColorSet, TooltipOverlayView.LocationProvider {
   private static final int SENDER_RADIUS = 10;
@@ -78,7 +78,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
   public void setIsChecked (boolean isChecked, boolean animated) {
     if (isChecked != (checkBoxHelper != null && checkBoxHelper.isChecked())) {
       if (checkBoxHelper == null) {
-        checkBoxHelper = new SimplestCheckBoxHelper(this, avatarReceiver);
+        checkBoxHelper = new SimplestCheckBoxHelper(this);
       }
       checkBoxHelper.setIsChecked(isChecked, animated);
     }

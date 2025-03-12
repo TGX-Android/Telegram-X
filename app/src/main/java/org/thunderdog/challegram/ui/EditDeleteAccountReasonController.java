@@ -68,7 +68,7 @@ public class EditDeleteAccountReasonController extends EditTextController<String
       }
 
       @Override
-      public boolean onDonePressed (EditTextController<?> controller, DoneButton button, String value) {
+      public boolean onDonePressed (EditTextController<?> controller, DoneButton button, CharSequence value) {
         if (isInProgress())
           return false;
         if (!StringUtils.isEmptyOrBlank(value)) {
@@ -76,7 +76,7 @@ public class EditDeleteAccountReasonController extends EditTextController<String
             Lang.getMarkdownString(controller, R.string.DeleteAccountConfirmFinal),
             new int[] {R.id.btn_deleteAccount, R.id.btn_cancel},
             new String[] {Lang.getString(R.string.DeleteAccountConfirmFinalBtn), Lang.getString(R.string.Cancel)},
-            new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL},
+            new int[] {OptionColor.RED, OptionColor.NORMAL},
             new int[] {R.drawable.baseline_delete_alert_24, R.drawable.baseline_cancel_24},
             (optionItemView, id) -> {
               if (id == R.id.btn_deleteAccount) {
@@ -85,7 +85,7 @@ public class EditDeleteAccountReasonController extends EditTextController<String
                 String phoneNumber = account.getPhoneNumber();
                 setDoneInProgress(true);
                 setStackLocked(true);
-                tdlib.send(new TdApi.DeleteAccount(value, getArguments()), (ok, error) -> runOnUiThreadOptional(() -> {
+                tdlib.send(new TdApi.DeleteAccount(value.toString(), getArguments()), (ok, error) -> runOnUiThreadOptional(() -> {
                   setStackLocked(false);
                   setDoneInProgress(false);
                   if (error != null) {

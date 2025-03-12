@@ -147,7 +147,7 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
   }
 
   private int getBarHeightIfAvailable () {
-    return mediaLayout.inSpecificMode() ? 0 : MediaBottomBar.getBarHeight();
+    return mediaLayout.inSpecificMode() && mediaLayout.getMode() != MediaLayout.MODE_CUSTOM_ADAPTER ? 0 : MediaBottomBar.getBarHeight();
   }
 
   private void resetStartHeights (boolean initial) {

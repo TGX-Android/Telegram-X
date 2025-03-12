@@ -44,7 +44,6 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.widget.LinearLayout;
@@ -86,6 +85,7 @@ import org.thunderdog.challegram.emoji.PreserveCustomEmojiFilter;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.helper.FoundUrls;
 import org.thunderdog.challegram.helper.InlineSearchContext;
+import org.thunderdog.challegram.helper.editable.EditableHelper;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.navigation.LocaleChanger;
 import org.thunderdog.challegram.navigation.RtlCheckListener;
@@ -111,6 +111,7 @@ import org.thunderdog.challegram.util.FinalNewLineFilter;
 import org.thunderdog.challegram.util.TextSelection;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
+import org.thunderdog.challegram.util.text.quotes.QuoteSpan;
 import org.thunderdog.challegram.widget.InputWrapperWrapper;
 import org.thunderdog.challegram.widget.NoClipEditText;
 
@@ -128,8 +129,8 @@ import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class InputView extends NoClipEditText implements InlineSearchContext.Callback, InlineResultsWrap.PickListener, RtlCheckListener, FinalNewLineFilter.Callback, CustomEmojiSurfaceProvider, Destroyable {
   public static final boolean USE_ANDROID_SELECTION_FIX = true;
@@ -295,6 +296,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
             } else if (itemId == R.id.btn_link) {
               overrideResId = R.string.TextFormatLink;
               type = null;
+            } else if (itemId == R.id.btn_quote) {
+              overrideResId = R.string.TextFormatQuote;
+              type = new TdApi.TextEntityTypeBlockQuote();
             } else {
               if (BuildConfig.DEBUG) {
                 Log.i("Menu item: %s %s", UI.getAppContext().getResources().getResourceName(item.getItemId()), item.getTitle());
@@ -400,6 +404,8 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     if (id == R.id.btn_plain) {
       clearSpans(selection.start, selection.end);
       return true;
+    } else if (id == R.id.btn_quote) {
+      type = new TdApi.TextEntityTypeBlockQuote();
     } else if (id == R.id.btn_bold) {
       type = new TdApi.TextEntityTypeBold();
     } else if (id == R.id.btn_italic) {
@@ -421,6 +427,19 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       return false;
     }
     setSpan(selection.start, selection.end, type);
+    return true;
+  }
+
+  public boolean setSpanLink (String link) {
+    TextSelection selection = getTextSelection();
+    if (selection == null || selection.isEmpty()) {
+      return false;
+    }
+
+    URLSpan[] existingSpans = getText().getSpans(selection.start, selection.end, URLSpan.class);
+    URLSpan existingSpan = existingSpans != null && existingSpans.length > 0 ? existingSpans[0] : null;
+    createTextUrl(existingSpan, link, selection.start, selection.end);
+
     return true;
   }
 
@@ -456,6 +475,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     Editable editable = getText();
     Object[] spans = editable.getSpans(start, end, Object.class);
     boolean updated = false;
+    boolean updateQuotes = false;
     if (spans != null) {
       for (Object existingSpan : spans) {
         if (existingSpan instanceof NoCopySpan || existingSpan instanceof EmojiSpan || isComposingSpan(editable, existingSpan) || !TD.canConvertToEntityType(existingSpan)) {
@@ -482,10 +502,11 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         int existingSpanEnd = editable.getSpanEnd(existingSpan);
         boolean reused = false;
 
-        editable.removeSpan(existingSpan);
+        EditableHelper.removeSpan(editable, existingSpan);
 
-        boolean keepSpanBeforeStart = start > existingSpanStart;
-        boolean keepSpanAfterEnd = existingSpanEnd > end;
+        final boolean isQuoteSpan = QuoteSpan.isQuoteSpan(existingSpan);
+        boolean keepSpanBeforeStart = !isQuoteSpan && start > existingSpanStart;
+        boolean keepSpanAfterEnd = !isQuoteSpan && existingSpanEnd > end;
 
         if (keepSpanBeforeStart && keepSpanAfterEnd) {
           editable.setSpan(TD.cloneSpan(existingSpan), existingSpanStart, start, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -502,10 +523,14 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
           ((Destroyable) existingSpan).performDestroy();
         }
         updated = true;
+        updateQuotes |= isQuoteSpan;
       }
     }
     setSelection(start, end);
     if (updated) {
+      if (updateQuotes) {
+        invalidateQuotes(true);
+      }
       inlineContext.forceCheck();
       if (spanChangeListener != null) {
         spanChangeListener.onSpansChanged(this);
@@ -521,6 +546,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     if (end - start <= 0 || !TD.canConvertToSpan(newType)) {
       return false;
     }
+    final boolean isQuoteSpan = newType.getConstructor() == TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR;
     Object newSpan = TD.toSpan(newType);
     Editable editable = getText();
     Object[] existingSpansArray = editable.getSpans(start, end, Object.class);
@@ -557,13 +583,18 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
           if (existingTypes.length == 1 || matchingStyleSpans) {
             if (start < existingSpanStart || end > existingSpanEnd) {
               // Medium path: extend existing span indexes if needed
-              editable.removeSpan(existingSpan);
+              EditableHelper.removeSpan(editable, existingSpan);
               editable.setSpan(
                 existingSpan,
                 Math.min(start, existingSpanStart),
                 Math.max(end, existingSpanEnd),
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
               );
+              if (isQuoteSpan) {
+                QuoteSpan.normalizeQuotes(editable);
+                invalidateQuotes(true);
+                resetFontMetricsCache();
+              }
               return true;
             }
             // Easy path: do nothing, because entire selection already has the same entity
@@ -588,6 +619,11 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     if (existingSpans == null || existingSpans.isEmpty()) {
       // Easy path: just set new span at start .. end
       editable.setSpan(newSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+      if (isQuoteSpan) {
+        QuoteSpan.normalizeQuotes(editable);
+        invalidateQuotes(true);
+        resetFontMetricsCache();
+      }
       return true;
     }
     boolean canBeNested = Td.canBeNested(newType);
@@ -609,6 +645,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
           }
           parseEmoji(editable, existingSpanStart, existingSpanEnd);
         }
+        continue;
+      }
+      if (QuoteSpan.isQuoteSpan(existingSpan)) {
         continue;
       }
       boolean moveExistingEntity = !canBeNested;
@@ -652,39 +691,49 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       }
     }
     editable.setSpan(newSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    if (isQuoteSpan) {
+      QuoteSpan.normalizeQuotes(editable);
+      invalidateQuotes(true);
+      resetFontMetricsCache();
+    }
     return true;
+  }
+
+  public int getLength () {
+    Editable text = getText();
+    return text != null ? text.length() : 0;
   }
 
   private void setSpan (int start, int end, TdApi.TextEntityType newType) {
     if (!TD.canConvertToSpan(newType)) {
       return;
     }
+    final int oldLength = getLength();
     boolean spansChanged = setSpanImpl(start, end, newType);
-    setSelection(start, end);
+    boolean lengthChanged = oldLength != getLength();
+
+    boolean selectionUpdated = false;
+    if (lengthChanged && newType.getConstructor() == TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR) {
+      final Editable text = getText();
+      if (text != null) {
+        final Object[] spans = text.getSpans(start, end, QuoteSpan.class);
+        if (spans != null && spans.length == 1) {
+          int newStart = text.getSpanStart(spans[0]);
+          int newEnd = text.getSpanEnd(spans[0]);
+          setSelection(newStart, newEnd);
+          selectionUpdated = true;
+        }
+      }
+    }
+
+    if (!selectionUpdated) {
+      setSelection(start, end);
+    }
+
     if (spansChanged) {
       inlineContext.forceCheck();
       if (spanChangeListener != null) {
         spanChangeListener.onSpansChanged(this);
-      }
-    }
-  }
-
-  private static void parseEmoji (Editable editable, int start, int end) {
-    CharSequence cs = Emoji.instance().replaceEmoji(editable, start, end, null);
-    if (cs != editable && cs instanceof Spanned) {
-      Spanned emojiText = (Spanned) cs;
-      EmojiSpan[] parsedEmojis = emojiText.getSpans(0, emojiText.length(), EmojiSpan.class);
-      if (parsedEmojis != null) {
-        for (EmojiSpan parsedEmoji : parsedEmojis) {
-          int emojiStart = emojiText.getSpanStart(parsedEmoji);
-          int emojiEnd = emojiText.getSpanEnd(parsedEmoji);
-          editable.setSpan(
-            parsedEmoji,
-            start + emojiStart,
-            start + emojiEnd,
-            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-          );
-        }
       }
     }
   }
@@ -717,12 +766,34 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
           }
           return true;
         } else if (Strings.isValidLink(result)) {
+          clearSpans(start, end, new TdApi.TextEntityTypeTextUrl(result)); // todo: remove after fix setSpanImpl
           setSpan(start, end, new TdApi.TextEntityTypeTextUrl(result));
           return true;
         } else {
           return false;
         }
       }, false);
+    }
+  }
+
+  public void createTextUrl (URLSpan existingSpan, String result, int start, int end) {
+    if (start < 0 || end < 0 || start > getText().length() || end > getText().length()) {
+      return;
+    }
+    ViewController<?> c = controller;
+    if (c == null && inputListener instanceof ViewController<?>) {
+      c = (ViewController<?>) inputListener;
+    }
+    if (c != null) {
+      if (StringUtils.isEmpty(result)) {
+        if (existingSpan != null) {
+          getText().removeSpan(existingSpan);
+          inlineContext.forceCheck();
+        }
+      } else if (Strings.isValidLink(result)) {
+        clearSpans(start, end, new TdApi.TextEntityTypeTextUrl(result)); // todo: remove after fix setSpanImpl
+        setSpan(start, end, new TdApi.TextEntityTypeTextUrl(result));
+      }
     }
   }
 
@@ -1120,10 +1191,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   private boolean textChangedSinceChatOpened;
 
-  public void setChat (TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable String customInputField, boolean isSilent) {
+  public void setChat (TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable TdApi.InputMessageContent forceDraft, @Nullable String customInputField, boolean isSilent) {
     textChangedSinceChatOpened = false;
     updateMessageHint(chat, messageThread, customInputField, isSilent);
-    setDraft(!tdlib.canSendBasicMessage(chat) ? null :
+    setDraft(forceDraft != null ? forceDraft : !tdlib.canSendBasicMessage(chat) ? null :
       messageThread != null ? messageThread.getDraftContent() :
       chat.draftMessage != null ? chat.draftMessage.inputMessageText : null
     );
@@ -1286,6 +1357,25 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       }
       if (placeholderIcon != null) {
         Drawables.draw(c, placeholderIcon, getPaddingLeft(), (getMeasuredHeight() - placeholderIcon.getMinimumHeight()) / 2f, PorterDuffPaint.get(ColorId.iconLight) /*Paints.getPorterDuffPaint(ColorId.textPlaceholder)*/);
+      }
+    }
+
+    invalidateQuotes(false);
+    if (!quoteBlocks.isEmpty()) {
+      final boolean needSave = !noClippingWorks();
+      final int scrollY = getScrollY();
+      final int s;
+      if (needSave) {
+        s = Views.save(c);
+        c.clipRect(0, scrollY + getPaddingTop(), getMeasuredWidth(), scrollY + getMeasuredHeight() - getPaddingBottom());
+      } else {
+        s = -1;
+      }
+      for (int i = 0; i < quoteBlocks.size(); ++i) {
+        quoteBlocks.get(i).draw(c, getPaddingLeft(), getPaddingTop(), getWidth() - getPaddingLeft() - getPaddingRight());
+      }
+      if (needSave) {
+        Views.restore(c, s);
       }
     }
 
@@ -1480,13 +1570,13 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
           final boolean isSecretChat = ChatId.isSecret(chatId);
           if (mediaType == MediaType.GIF && isAnimatedGif) {
             TdApi.InputFileGenerated generated = TD.newGeneratedFile(null, path, 0, timestamp);
-            content = tdlib.filegen().createThumbnail(new TdApi.InputMessageAnimation(generated, null, null, 0, imageWidth, imageHeight, null, false), isSecretChat);
+            content = tdlib.filegen().createThumbnail(new TdApi.InputMessageAnimation(generated, null, null, 0, imageWidth, imageHeight, null, false, false), isSecretChat);
           } else if ((mediaType != MediaType.JPEG && (mediaType == MediaType.WEBP || path.contains("sticker") || Math.max(imageWidth, imageHeight) <= 512))) {
             TdApi.InputFileGenerated generated = PhotoGenerationInfo.newFile(path, 0, timestamp, true, 512);
             content = tdlib.filegen().createThumbnail(new TdApi.InputMessageSticker(generated, null, imageWidth, imageHeight, null), isSecretChat);
           } else {
             TdApi.InputFileGenerated generated = PhotoGenerationInfo.newFile(path, 0, timestamp, false, 0);
-            content = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(generated, null, null, imageWidth, imageHeight, null, null, false), isSecretChat);
+            content = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(generated, null, null, imageWidth, imageHeight, null, false, null, false), isSecretChat);
           }
 
           UI.post(() -> {
@@ -1566,119 +1656,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     }
   }
 
-  // FormattedText generation
-
-  public final TdApi.FormattedText getOutputText (boolean applyMarkdown) {
-    SpannableStringBuilder text = new SpannableStringBuilder(getText());
-    BaseInputConnection.removeComposingSpans(text);
-    TdApi.FormattedText formattedText = new TdApi.FormattedText(text.toString(), TD.toEntities(text, false));
-    if (applyMarkdown) {
-      //noinspection UnsafeOptInUsageError
-      Td.parseMarkdown(formattedText);
-    }
-    return formattedText;
-  }
-
-  public final boolean hasOnlyPremiumFeatures () {
-    return TD.hasCustomEmoji(getOutputText(false));
-  }
-
   // Android-related workarounds
-
-  @Override
-  public boolean onTextContextMenuItem (@IdRes int id) {
-    try {
-      TextSelection selection = getTextSelection();
-      if (selection == null) {
-        return super.onTextContextMenuItem(id);
-      }
-      Editable editable = getText();
-      switch (id) {
-        case android.R.id.cut: {
-          if (!selection.isEmpty()) {
-            CharSequence copyText = editable.subSequence(selection.start, selection.end);
-            editable.delete(selection.start, selection.end);
-            U.copyText(copyText);
-            setSelection(selection.start);
-            return true;
-          }
-          break;
-        }
-        case android.R.id.copy: {
-          if (!selection.isEmpty()) {
-            CharSequence copyText = editable.subSequence(selection.start, selection.end);
-            U.copyText(copyText);
-            setSelection(selection.end);
-            return true;
-          }
-          break;
-        }
-        case android.R.id.paste: {
-          CharSequence pasteText = U.getPasteText(getContext());
-          if (pasteText != null) {
-            paste(pasteText, false);
-            return true;
-          }
-          break;
-        }
-      }
-    } catch (Throwable t) {
-      Log.e("onTextContextMenuItem failed for id %s", t, Lang.getResourceEntryName(id));
-    }
-    return super.onTextContextMenuItem(id);
-  }
-
-  public void paste (TdApi.FormattedText pasteText, boolean needSelectPastedText) {
-    paste(TD.toCharSequence(pasteText), needSelectPastedText);
-  }
-
-  public void paste (CharSequence pasteText, boolean needSelectPastedText) {
-    paste(getTextSelection(), pasteText, needSelectPastedText);
-  }
-
-  private void paste (TextSelection selection, CharSequence pasteText, boolean needSelectPastedText) {
-    if (selection == null) return;
-    final int start = selection.start;
-    final int end = selection.end;
-
-    Editable editable = getText();
-    if (selection.isEmpty()) {
-      editable.insert(start, pasteText);
-    } else {
-      editable.replace(start, end, pasteText);
-    }
-    if (pasteText instanceof Spanned) {
-      // TODO: should this be a part of EmojiFilter?
-      removeCustomEmoji(editable, start, start + pasteText.length());
-    }
-    if (needSelectPastedText) {
-      setSelection(start, start + pasteText.length());
-    } else {
-      setSelection(start + pasteText.length());
-    }
-  }
-
-  private static void removeCustomEmoji (Editable editable, int start, int end) {
-    URLSpan[] urlSpans = editable.getSpans(start, end, URLSpan.class);
-    if (urlSpans != null) {
-      for (URLSpan urlSpan : urlSpans) {
-        int urlStart = editable.getSpanStart(urlSpan);
-        int urlEnd = editable.getSpanEnd(urlSpan);
-        EmojiSpan[] emojiSpans = editable.getSpans(urlStart, urlEnd, EmojiSpan.class);
-        for (EmojiSpan emojiSpan : emojiSpans) {
-          if (emojiSpan.isCustomEmoji()) {
-            int emojiStart = editable.getSpanStart(emojiSpan);
-            int emojiEnd = editable.getSpanEnd(emojiSpan);
-            editable.removeSpan(emojiSpan);
-            if (emojiSpan instanceof Destroyable) {
-              ((Destroyable) emojiSpan).performDestroy();
-            }
-            parseEmoji(editable, emojiStart, emojiEnd);
-          }
-        }
-      }
-    }
-  }
 
   @Override
   public boolean onTouchEvent (MotionEvent event) {
@@ -1711,7 +1689,21 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   @Override
   protected void onAttachedToWindow() {
     super.onAttachedToWindow();
+    invalidateQuotes(false);
     doBugfix();
+  }
+
+  @Override
+  protected void onLayout (boolean changed, int left, int top, int right, int bottom) {
+    super.onLayout(changed, left, top, right, bottom);
+    invalidateQuotes(false);
+  }
+
+  @Override
+  protected void onTextChanged (CharSequence text, int start, int lengthBefore, int lengthAfter) {
+    super.onTextChanged(text, start, lengthBefore, lengthAfter);
+    invalidateQuotes(true);
+    invalidate();
   }
 
   @Override
@@ -1762,5 +1754,36 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
     coordinates[0] = (cords1[0] + cords2[0]) / 2;
     coordinates[1] = cords1[1];
+  }
+
+  private ArrayList<QuoteSpan.Block> quoteBlocks = new ArrayList<>();
+  private int lastText2Length;
+  private int quoteUpdatesTries;
+  private boolean[] quoteUpdateLayout;
+
+  public void invalidateQuotes(boolean force) {
+    int newTextLength = (getLayout() == null || getLayout().getText() == null) ? 0 : getLayout().getText().length();
+    if (force || lastText2Length != newTextLength) {
+      quoteUpdatesTries = 2;
+      lastText2Length = newTextLength;
+    }
+    if (quoteUpdatesTries > 0) {
+      if (quoteUpdateLayout == null) {
+        quoteUpdateLayout = new boolean[1];
+      }
+      quoteUpdateLayout[0] = false;
+      quoteBlocks = QuoteSpan.updateQuoteBlocks(getLayout(), quoteBlocks, quoteUpdateLayout);
+      if (quoteUpdateLayout[0]) {
+        resetFontMetricsCache();
+      }
+      quoteUpdatesTries--;
+    }
+  }
+
+  // really dirty workaround to reset fontmetrics cache (lineheightspan.chooseheight works only when text is inserted into the respected line)
+  protected void resetFontMetricsCache() {
+    float originalTextSize = getTextSize();
+    setTextSize(TypedValue.COMPLEX_UNIT_PX, originalTextSize + 1);
+    setTextSize(TypedValue.COMPLEX_UNIT_PX, originalTextSize);
   }
 }

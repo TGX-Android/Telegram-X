@@ -58,7 +58,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.camera.CameraController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Test;
-import org.thunderdog.challegram.util.AppInstallationUtil;
+import org.thunderdog.challegram.util.AppUpdater;
 import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
@@ -81,8 +81,8 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.unit.ByteUnit;
-import me.vkryl.td.ChatPosition;
-import me.vkryl.td.Td;
+import tgx.td.ChatPosition;
+import tgx.td.Td;
 
 public class SettingsBugController extends RecyclerViewController<SettingsBugController.Args> implements
   View.OnClickListener,
@@ -114,7 +114,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
   public static class Args {
     public final @Section int section;
     public final Crash crash;
-    private int testerLevel = Tdlib.TESTER_LEVEL_NONE;
+    private int testerLevel = Tdlib.TesterLevel.NONE;
     private boolean mainCrash;
 
     public Args (@Section int section) {
@@ -147,7 +147,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
   }
 
   private @Section int section = Section.MAIN;
-  private int testerLevel = Tdlib.TESTER_LEVEL_NONE;
+  private int testerLevel = Tdlib.TesterLevel.NONE;
   private Crash crash;
   private boolean isMainCrash;
 
@@ -155,7 +155,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
   public void setArguments (Args args) {
     super.setArguments(args);
     this.section = args != null ? args.section : Section.MAIN;
-    this.testerLevel = args != null ? args.testerLevel : Tdlib.TESTER_LEVEL_NONE;
+    this.testerLevel = args != null ? args.testerLevel : Tdlib.TesterLevel.NONE;
     this.crash = args != null ? args.crash : null;
     this.isMainCrash = args != null && args.mainCrash;
   }
@@ -208,7 +208,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
   public boolean restoreInstanceState (Bundle in, String keyPrefix) {
     super.restoreInstanceState(in, keyPrefix);
     int section = in.getInt(keyPrefix + "section", Section.MAIN);
-    int testerLevel = in.getInt(keyPrefix + "level", Tdlib.TESTER_LEVEL_NONE);
+    int testerLevel = in.getInt(keyPrefix + "level", Tdlib.TesterLevel.NONE);
     if (section != Section.EXPERIMENTS) {
       return false;
     }
@@ -395,7 +395,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       default:
         return null;
     }
-    return Lang.getMarkdownStringSecure(this, resId, getDiskAvailableInfo(), AppInstallationUtil.getDownloadUrl(null).url);
+    return Lang.getMarkdownStringSecure(this, resId, getDiskAvailableInfo(), AppUpdater.getDownloadUrl(null).url);
   }
 
   @Override
@@ -735,18 +735,17 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         break;
       }
       case Section.EXPERIMENTS: {
-        if (!items.isEmpty()) {
-          items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-        }
-        items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_experiment, 0, R.string.Experiment_ChatFolders).setLongValue(Settings.EXPERIMENT_FLAG_ENABLE_FOLDERS));
-        items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-        items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownStringSecure(this, R.string.Experiment_ChatFoldersInfo)));
-
-        if (testerLevel >= Tdlib.TESTER_LEVEL_TESTER || Settings.instance().isExperimentEnabled(Settings.EXPERIMENT_FLAG_SHOW_PEER_IDS)) {
-          items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+        if (testerLevel >= Tdlib.TesterLevel.TESTER || Settings.instance().isExperimentEnabled(Settings.EXPERIMENT_FLAG_SHOW_PEER_IDS)) {
+          if (!items.isEmpty()) {
+            items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+          }
           items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_experiment, 0, R.string.Experiment_PeerIds).setLongValue(Settings.EXPERIMENT_FLAG_SHOW_PEER_IDS));
           items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
           items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.Experiment_PeerIdsInfo));
+        }
+
+        if (items.isEmpty()) {
+          items.add(new ListItem(ListItem.TYPE_EMPTY, 0, 0, R.string.ExperimentalSettingsUnavailable));
         }
 
         break;
@@ -768,24 +767,26 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_secret_databaseStats, 0, "Other internal statistics", false));
 
-          if (testerLevel >= Tdlib.TESTER_LEVEL_ADMIN) {
+          if (testerLevel >= Tdlib.TesterLevel.ADMIN) {
             items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
             items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_secret_stressTest, 0, "Stress test TDLib restarts", false));
           }
-          if (testerLevel >= Tdlib.TESTER_LEVEL_ADMIN || Settings.instance().forceTdlibRestart()) {
+          if (testerLevel >= Tdlib.TesterLevel.ADMIN || Settings.instance().forceTdlibRestart()) {
             if (items.size() > initialSize)
               items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
             items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_forceTdlibRestarts, 0, "Force TDLib restarts", Settings.instance().forceTdlibRestart()));
           }
 
-          if (testerLevel >= Tdlib.TESTER_LEVEL_DEVELOPER) {
+          if (testerLevel >= Tdlib.TesterLevel.DEVELOPER) {
+            items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+            items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_secret_attest, 0, "Test attest", false));
             if (tdlib.isAuthorized()) {
               items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
               items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_secret_sendAllChangeLogs, 0, "Send all change logs", false));
             }
           }
 
-          if (testerLevel >= Tdlib.TESTER_LEVEL_CREATOR) {
+          if (testerLevel >= Tdlib.TesterLevel.CREATOR) {
             items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
             items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_secret_copyLanguageCodes, 0, "Copy language codes list", false));
           }
@@ -800,7 +801,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_secret_dropSavedScrollPositions, 0, "Drop saved scroll positions", false));
 
-        if (testerLevel >= Tdlib.TESTER_LEVEL_CREATOR || Settings.instance().dontReadMessages()) {
+        if (testerLevel >= Tdlib.TesterLevel.CREATOR || Settings.instance().dontReadMessages()) {
           if (items.size() > initialSize)
             items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_dontReadMessages, 0, "Don't read messages", false));
@@ -822,41 +823,43 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
           items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_secret_dropHidden, 0, "Drop hidden notification identifiers", false));
         }
 
-        if (testerLevel >= Tdlib.TESTER_LEVEL_READER || Settings.instance().needHidePhoneNumber()) {
+        if (testerLevel >= Tdlib.TesterLevel.READER || Settings.instance().needHidePhoneNumber()) {
           if (items.size() > initialSize)
             items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_replacePhoneNumber, 0, "Hide phone number in drawer", Settings.instance().needHidePhoneNumber()));
         }
-        if (testerLevel >= Tdlib.TESTER_LEVEL_READER || Settings.instance().forceTcpInCalls()) {
+        if (testerLevel >= Tdlib.TesterLevel.READER || Settings.instance().forceTcpInCalls()) {
           if (items.size() > initialSize)
             items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_forceTcpInCalls, 0, "Force TCP in calls", Settings.instance().forceTcpInCalls()));
         }
-        if (testerLevel >= Tdlib.TESTER_LEVEL_ADMIN || Settings.instance().forceDisableNetwork()) {
+        if (testerLevel >= Tdlib.TesterLevel.ADMIN || Settings.instance().forceDisableNetwork()) {
           if (items.size() > initialSize)
             items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_disableNetwork, 0, "Force disable network", Settings.instance().forceDisableNetwork()));
         }
         if (Config.QR_AVAILABLE) {
-          if (testerLevel >= Tdlib.TESTER_LEVEL_ADMIN || Settings.instance().needDisableQrProcessing()) {
+          if (testerLevel >= Tdlib.TesterLevel.ADMIN || Settings.instance().needDisableQrProcessing()) {
             if (items.size() > initialSize)
               items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
             items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_disableQrProcess, 0, "Disable QR processing", Settings.instance().needDisableQrProcessing()));
           }
-          if (testerLevel >= Tdlib.TESTER_LEVEL_ADMIN || Settings.instance().needForceZxingQrProcessing()) {
+          if (testerLevel >= Tdlib.TesterLevel.ADMIN || Settings.instance().needForceZxingQrProcessing()) {
             if (items.size() > initialSize)
               items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
             items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_forceQrZxing, 0, "Force ZXing in QR scanner", Settings.instance().needForceZxingQrProcessing()));
           }
-          if (testerLevel >= Tdlib.TESTER_LEVEL_ADMIN || Settings.instance().needShowQrRegions()) {
+          if (testerLevel >= Tdlib.TesterLevel.ADMIN || Settings.instance().needShowQrRegions()) {
             if (items.size() > initialSize)
               items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
             items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_debugQrRegions, 0, "Show QR scanner UI regions", Settings.instance().needForceZxingQrProcessing()));
           }
-          if (testerLevel >= Tdlib.TESTER_LEVEL_TESTER) {
+          if (testerLevel >= Tdlib.TesterLevel.TESTER) {
             if (items.size() > initialSize)
               items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
             items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_secret_qrTest, 0, "Test QR scanner", false));
+            items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+            items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_secret_testPrompts, 0, "Show prompts on next app launch", false));
           }
         }
 
@@ -871,7 +874,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, "Tests (crash when failed)", false));
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
         items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_test_database, 0, "Test database", false));
-        if (testerLevel >= Tdlib.TESTER_LEVEL_ADMIN) {
+        if (testerLevel >= Tdlib.TesterLevel.ADMIN) {
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_test_recovery, 0, "Crash & enter recovery (uncaught exception)", false).setData(new Crash.Builder("Test error", Thread.currentThread(), Log.generateException())));
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -922,7 +925,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_tdlib_viewLogsOld, 0, TdlibManager.getLogFile(true).getName(), false));
         Settings.TdlibLogSettings settings = Settings.instance().getLogSettings();
-        if (testerLevel >= Tdlib.TESTER_LEVEL_DEVELOPER || settings.needAndroidLog()) {
+        if (testerLevel >= Tdlib.TesterLevel.DEVELOPER || settings.needAndroidLog()) {
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_tdlib_androidLogs, 0, R.string.DebugLogcatOnly, false));
         }
@@ -979,12 +982,12 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
                   }
                   if (i == -1)
                     return;
-                  if (level > Tdlib.TESTER_LEVEL_NONE) {
+                  if (level > Tdlib.TesterLevel.NONE) {
                     adapter.getItems().add(i + 1, new ListItem(ListItem.TYPE_SEPARATOR_FULL));
                     adapter.getItems().add(i + 2, new ListItem(ListItem.TYPE_SETTING, R.id.btn_testingUtils, 0, R.string.TestMode, false));
                     adapter.notifyItemRangeInserted(i + 1, 2);
                     i += 2;
-                    if (level == Tdlib.TESTER_LEVEL_READER) {
+                    if (level <= Tdlib.TesterLevel.READER) {
                       adapter.addItem(i + 2, new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Strings.buildMarkdown(this, "To unlock more Testing Utilities you have to be a member of @tgandroidtests.", null), false));
                     }
                   } else {
@@ -1183,15 +1186,30 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         builder.addHeaderItem("Disabling all tgcalls versions enables libtgvoip " + VoIPController.getVersion() + " without tgcalls wrapper.");
       } else {
         int index = 0;
-        items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, viewId, 0, "Acoustic Echo Cancellation", !VoIP.needDisableAcousticEchoCancellation()).setIntValue(index++));
-        items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, viewId, 0, "Noise Suppression", !VoIP.needDisableNoiseSuppressor()).setIntValue(index++));
-        items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, viewId, 0, "Automatic Gain Control", !VoIP.needDisableAutomaticGainControl()).setIntValue(index++));
+        int[] options = VoIP.getAllDebugOptions();
+        for (@VoIP.DebugOption int option : options) {
+          items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, viewId, 0, VoIP.getDebugOptionName(option), VoIP.isDebugOptionEnabled(option))
+            .setIntValue(option)
+          );
+        }
       }
 
       builder.setRawItems(items);
       builder.setDisableToggles(true);
-      builder.setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter) -> {
+      builder.setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter, window) -> {
         if (item.getViewType() == ListItem.TYPE_CHECKBOX_OPTION && item.getId() == viewId) {
+          if (viewId == R.id.btn_secret_tgcallsOptions && !item.isSelected()) {
+            //noinspection WrongConstant
+            @VoIP.DebugOption int option = item.getIntValue();
+            if ((VoIP.DebugOption.SERVER_FILTERS_MASK & option) != 0) {
+              for (ListItem otherItem : settingsAdapter.getItems()) {
+                if (otherItem != item && otherItem.getId() == viewId && otherItem.isSelected() && ((VoIP.DebugOption.SERVER_FILTERS_MASK & otherItem.getIntValue()) != 0)) {
+                  window.showErrorTooltip(this, view, "You can enable only one server filter at a time");
+                  return;
+                }
+              }
+            }
+          }
           final boolean isSelect = settingsAdapter.toggleView(view);
           item.setSelected(isSelect);
         }
@@ -1208,11 +1226,8 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
               String version = item.getStringValue();
               VoIP.setForceDisableVersion(version, !isEnabled);
             } else if (viewId == R.id.btn_secret_tgcallsOptions) {
-              switch (item.getIntValue()) {
-                case 0: VoIP.setForceDisableAcousticEchoCancellation(!isEnabled); break;
-                case 1: VoIP.setForceDisableNoiseSuppressor(!isEnabled); break;
-                case 2: VoIP.setForceDisableAutomaticGainControl(!isEnabled); break;
-              }
+              //noinspection WrongConstant
+              VoIP.setDebugOptionEnabled(item.getIntValue(), isEnabled);
             }
           }
         }
@@ -1237,6 +1252,8 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
     } else if (viewId == R.id.btn_secret_disableNetwork) {
       Settings.instance().setDisableNetwork(adapter.toggleView(v));
       TdlibManager.instance().watchDog().letsHelpDoge();
+    } else if (viewId == R.id.btn_secret_testPrompts) {
+      Settings.instance().forceRevokeAllFeaturePrompts();
     } else if (viewId == R.id.btn_secret_forceTdlibRestarts) {
       TdlibManager.instance().setForceTdlibRestarts(adapter.toggleView(v));
     } else if (viewId == R.id.btn_secret_forceTcpInCalls) {
@@ -1370,6 +1387,12 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       });
     } else if (viewId == R.id.btn_secret_resetLocalNotificationSettings) {
       tdlib.notifications().resetNotificationSettings(true);
+    } else if (viewId == R.id.btn_secret_attest) {
+      tdlib.requestPlayIntegrity(-1, StringUtils.random("0123456789abcdef", 32), (result, isError) -> {
+        runOnUiThread(() -> {
+          openAlert(R.string.AppName, result);
+        });
+      });
     } else if (viewId == R.id.btn_secret_databaseStats) {
       String stats = Settings.instance().pmc().getProperty("leveldb.stats") + "\n\n" + "Memory usage: " + Settings.instance().pmc().getProperty("leveldb.approximate-memory-usage");
       TextController c = new TextController(context, tdlib);
@@ -1478,7 +1501,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       }
     })
       .setAllowResize(false);
-    b.setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter) -> {
+    b.setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter, window) -> {
       //noinspection ResourceType
       if (item.getId() == 7 && wrap[0] != null && wrap[0].window != null && !wrap[0].window.isWindowHidden()) {
         wrap[0].window.hideWindow(true);
@@ -1525,22 +1548,22 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
 
     ids.append(R.id.btn_tdlib_viewLogs);
     icons.append(R.drawable.baseline_visibility_24);
-    colors.append(OPTION_COLOR_NORMAL);
+    colors.append(OptionColor.NORMAL);
     strings.append(R.string.Open);
 
     ids.append(R.id.btn_tdlib_shareLogs);
     icons.append(tdlib == null || tdlib.context().inRecoveryMode() ? R.drawable.baseline_share_24 : R.drawable.baseline_forward_24);
-    colors.append(OPTION_COLOR_NORMAL);
+    colors.append(OptionColor.NORMAL);
     strings.append(R.string.Share);
 
     ids.append(R.id.btn_saveFile);
     icons.append(R.drawable.baseline_file_download_24);
-    colors.append(OPTION_COLOR_NORMAL);
+    colors.append(OptionColor.NORMAL);
     strings.append(R.string.SaveToDownloads);
 
     ids.append(R.id.btn_tdlib_clearLogs);
     icons.append(R.drawable.baseline_delete_24);
-    colors.append(OPTION_COLOR_RED);
+    colors.append(OptionColor.RED);
     strings.append(R.string.Delete);
 
     showOptions(tdlibLogFile.getName() + " (" + Strings.buildSize(logSize[i]) + ")", ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
@@ -1572,7 +1595,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
           setLogFiles(Log.getLogFiles());
         }
         if (logFiles != null && !logFiles.isEmpty()) {
-          showOptions("Clear " + Strings.buildSize(logFiles.totalSize) + "?", new int[] {R.id.btn_deleteAll, R.id.btn_cancel}, new String[] {"Delete all logs", "Cancel"}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+          showOptions("Clear " + Strings.buildSize(logFiles.totalSize) + "?", new int[] {R.id.btn_deleteAll, R.id.btn_cancel}, new String[] {"Delete all logs", "Cancel"}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
             if (id == R.id.btn_deleteAll) {
               deleteAllFiles();
             }

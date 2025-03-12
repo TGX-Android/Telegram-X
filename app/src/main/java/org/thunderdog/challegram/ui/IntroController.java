@@ -1137,7 +1137,7 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
     ids.append(R.id.btn_log_files);
     icons.append(R.drawable.baseline_bug_report_24);
     strings.append("Log Settings");
-    if (Config.ALLOW_DEBUG_DC) {
+    if (Config.ALLOW_DEBUG_DC || getTdlib().account().isDebug()) {
       ids.append(R.id.btn_tdlib_debugDatacenter);
       icons.append(R.drawable.baseline_build_24);
       strings.append("Proceed in " + (getTdlib().account().isDebug() ? "production" : "debug") + " Telegram environment");
@@ -1652,6 +1652,7 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
 
   @Override
   public void onPageScrolled (int position, float positionOffset, int positionOffsetPixels) {
+    positionOffset = ViewPager.clampPositionOffset(positionOffset);
     lastActualPosition = position;
     lastOffset = positionOffset;
     updateTexts(false);

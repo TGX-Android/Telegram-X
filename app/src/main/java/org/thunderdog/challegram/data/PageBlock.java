@@ -47,7 +47,7 @@ import java.util.ArrayList;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.android.widget.FrameLayoutFix;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public abstract class PageBlock {
   protected final ViewController<?> context;
@@ -240,6 +240,10 @@ public abstract class PageBlock {
       e.offsetLocation(0, deltaY);
     }
     return handleTouchEvent(view, e);
+  }
+
+  public int getCustomWidth () {
+    return -1;
   }
 
   protected abstract boolean handleTouchEvent (View view, MotionEvent e);
@@ -606,7 +610,7 @@ public abstract class PageBlock {
         if (!Td.isEmpty(tableRaw.caption)) {
           context.process(new PageBlockRichText(parent, tableRaw, openParameters), out);
         }
-        context.process(new PageBlockTable(parent, tableRaw, context.isRtl, openParameters), out);
+        context.process(new PageBlockTable(parent, tableRaw, openParameters), out);
         break;
       }
 

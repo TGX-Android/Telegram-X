@@ -245,7 +245,7 @@ public class PlaybackController extends ViewController<Void> implements Menu, Mo
         if (isTrackListLess()) {
           return 0;
         }
-        int position = viewHolder.getAdapterPosition();
+        int position = viewHolder.getBindingAdapterPosition();
         int headerItemCount = 1;
         if (position == -1 || position < headerItemCount || viewHolder.getItemViewType() != ListItem.TYPE_CUSTOM_INLINE) {
           return 0;
@@ -288,8 +288,8 @@ public class PlaybackController extends ViewController<Void> implements Menu, Mo
 
       @Override
       public boolean onMove (RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
-        int fromPosition = viewHolder.getAdapterPosition();
-        int toPosition = target.getAdapterPosition();
+        int fromPosition = viewHolder.getBindingAdapterPosition();
+        int toPosition = target.getBindingAdapterPosition();
 
         int headerItemCount = 1;
         int trackCount = getTrackCount();
@@ -930,7 +930,7 @@ public class PlaybackController extends ViewController<Void> implements Menu, Mo
 
   private void removeTrack (final InlineResultCommon common) {
     if (currentItem != null) {
-      showOptions(Lang.getStringBold(R.string.PlayListRemoveTrack, common.getTrackTitle() + " – " + common.getTrackSubtitle()), new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getString(R.string.PlayListRemove), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+      showOptions(Lang.getStringBold(R.string.PlayListRemoveTrack, common.getTrackTitle() + " – " + common.getTrackSubtitle()), new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getString(R.string.PlayListRemove), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
         if (id == R.id.btn_delete) {
           tdlib.context().player().removeTrack(common.getMessage(), true);
         }
@@ -1293,7 +1293,7 @@ public class PlaybackController extends ViewController<Void> implements Menu, Mo
     public void getItemOffsets (Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
       RecyclerView.ViewHolder holder = parent.getChildViewHolder(view);
       ListItem item = (ListItem) view.getTag();
-      if ((holder != null && holder.getAdapterPosition() == 0) || (item != null && item.getViewType() == ListItem.TYPE_ZERO_VIEW)) {
+      if ((holder != null && holder.getBindingAdapterPosition() == 0) || (item != null && item.getViewType() == ListItem.TYPE_ZERO_VIEW)) {
         outRect.top = context.getAvailableOverlayHeight(parent.getMeasuredWidth(), parent.getMeasuredHeight());
       } else {
         outRect.top = 0;

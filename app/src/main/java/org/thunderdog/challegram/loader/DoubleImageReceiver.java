@@ -19,6 +19,7 @@ import android.view.View;
 
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 
+@SuppressWarnings("unchecked")
 public class DoubleImageReceiver implements Receiver {
   private final boolean isAnimated;
   private final ImageReceiver preview;
@@ -38,7 +39,6 @@ public class DoubleImageReceiver implements Receiver {
     }
   }
 
-  /** @noinspection unchecked*/
   @Override
   public final DoubleImageReceiver setUpdateListener (ReceiverUpdateListener listener) {
     preview.setUpdateListener(listener);

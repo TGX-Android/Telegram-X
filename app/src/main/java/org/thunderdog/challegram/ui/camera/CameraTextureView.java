@@ -64,7 +64,7 @@ public class CameraTextureView extends TextureView {
 
     if (!ignoreAspectRatio && ratioWidth > 0 && ratioHeight > 0) {
       int width, height;
-      if (viewWidth < viewHeight * ratioWidth / ratioHeight) {
+      if (viewWidth < viewHeight * ((float) ratioWidth / (float) ratioHeight)) {
         width = viewWidth;
         height = (int) ((float) viewWidth * ((float) ratioHeight / (float) ratioWidth));
       } else {
@@ -73,7 +73,7 @@ public class CameraTextureView extends TextureView {
       }
 
       float ratio = Math.max((float) viewWidth / (float) width, (float) viewHeight / (float) height);
-      if (ratio > 1f) {
+      if (ratio != 1f) {
         width *= ratio;
         height *= ratio;
       }

@@ -2,7 +2,7 @@
 	path = app/jni/third_party/webp
 	url = https://github.com/webmproject/libwebp
 	shallow = true
-	branch = 1.2.2
+	branch = 1.4.0
 [submodule "libyuv"]
 	path = app/jni/third_party/libyuv
 	url = https://chromium.googlesource.com/libyuv/libyuv
@@ -16,16 +16,16 @@
 	path = app/jni/third_party/ffmpeg
 	url = https://github.com/FFmpeg/FFmpeg
 	shallow = true
-	branch = release/4.4
+	branch = release/6.1
 [submodule "lz4"]
 	path = app/jni/third_party/lz4
 	url = https://github.com/lz4/lz4
 	shallow = true
-[submodule "ExoPlayer"]
-	path = thirdparty/ExoPlayer
-	url = https://github.com/google/ExoPlayer
+[submodule "androidx-media"]
+	path = thirdparty/androidx-media
+	url = https://github.com/androidx/media
 	shallow = true
-	branch = release-v2
+	branch = release
 [submodule "flac"]
 	path = app/jni/third_party/flac
 	url = https://github.com/xiph/flac
@@ -93,6 +93,7 @@
 	path = app/jni/third_party/openh264
 	url = https://github.com/cisco/openh264
 	shallow = true
+	branch = v2.4.1
 [submodule "abseil"]
 	path = app/jni/third_party/abseil-cpp
 	url = https://github.com/abseil/abseil-cpp
@@ -100,16 +101,6 @@
 [submodule "webrtc"]
 	path = app/jni/third_party/webrtc
 	url = https://github.com/TGX-Android/webrtc
-	shallow = true
-	branch = main
-[submodule "webrtc_rnnoise"]
-	path = app/jni/third_party/webrtc_deps/third_party/rnnoise
-	url = https://github.com/TGX-Android/rnnoise
-	shallow = true
-	branch = main
-[submodule "pffft"]
-	path = app/jni/third_party/pffft
-	url = https://github.com/TGX-Android/pffft
 	shallow = true
 	branch = main
 [submodule "tgcalls"]
@@ -131,4 +122,10 @@
 	path = app/jni/third_party/rnnoise
 	url = https://github.com/xiph/rnnoise
 	shallow = true
-	branch = main
+	branch = master
+[submodule "rtc_base"]
+	path = app/jni/third_party/webrtc_deps/base
+	url = https://chromium.googlesource.com/chromium/src/base
+[submodule "rtc_third_party"]
+	path = app/jni/third_party/webrtc_deps/third_party
+	url = https://chromium.googlesource.com/chromium/src/third_party

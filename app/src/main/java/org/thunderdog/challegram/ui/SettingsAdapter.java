@@ -63,8 +63,8 @@ import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
@@ -73,6 +73,7 @@ import org.thunderdog.challegram.util.FloatListener;
 import org.thunderdog.challegram.util.HeightChangeListener;
 import org.thunderdog.challegram.util.SelectableItemDelegate;
 import org.thunderdog.challegram.v.CustomRecyclerView;
+import org.thunderdog.challegram.v.EditText;
 import org.thunderdog.challegram.widget.AvatarView;
 import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.ChartLayout;
@@ -140,7 +141,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
   private @Nullable SliderWrapView.RealTimeChangeListener sliderChangeListener;
 
   public interface TextChangeListener {
-    void onTextChanged (int id, ListItem item, MaterialEditTextGroup v, String text);
+    void onTextChanged (int id, ListItem item, MaterialEditTextGroup v);
   }
 
   public SettingsAdapter (ViewController<?> context) {
@@ -276,8 +277,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
   }
 
   @Override
-  public void onTextChanged (MaterialEditTextGroup v, CharSequence charSequence) {
-    String text = charSequence.toString();
+  public void onTextChanged (MaterialEditTextGroup v, CharSequence cs) {
     int id = ((ViewGroup) v.getParent()).getId();
     //
     ListItem item = v.getParent() != null && ((ViewGroup) v.getParent()).getTag() instanceof ListItem ? (ListItem) ((ViewGroup) v.getParent()).getTag() : null;
@@ -289,14 +289,15 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     }
     boolean changed = true;
     if (item != null) {
-      if (!StringUtils.equalsOrBothEmpty(item.getStringValue(), text)) {
-        item.setStringValue(text);
+      CharSequence value = EditText.nonModifiableCopy(cs);
+      if (!StringUtils.equalsOrBothEmpty(item.getCharSequenceValue(), value)) {
+        item.setStringValue(value);
       } else {
         changed = false;
       }
     }
     if (changed && textChangeListener != null) {
-      textChangeListener.onTextChanged(id, item, v, text);
+      textChangeListener.onTextChanged(id, item, v);
     }
   }
 
@@ -337,6 +338,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
 
   protected void setHeaderText (ListItem item, TextView view, boolean isUpdate) {
     Views.setMediumText(view, item.getString());
+  }
+
+  protected void setHeaderCheckBoxState (ListItem item, CheckBoxView checkBox, boolean isUpdate) {
+    checkBox.setChecked(item.isSelected(), isUpdate);
   }
 
   protected void setPlace (ListItem item, int position, MediaLocationPlaceView view, boolean isUpdate) {
@@ -592,7 +597,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     }
   }
 
-  public void updateLockEditTextById (int id, @Nullable String text) {
+  public void updateLockEditTextById (int id, @Nullable CharSequence text) {
     int index = indexOfViewById(id);
     if (index != -1) {
       for (RecyclerView parentView : parentViews) {
@@ -692,6 +697,8 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         View view = parentView.getLayoutManager().findViewByPosition(position);
         if (view != null && view.getId() == item.getId()) {
           if (view instanceof SettingView) {
+            ((SettingView) view).setIcon(item.getIconResource());
+            ((SettingView) view).setName(item.getString());
             setValuedSetting(item, (SettingView) view, true);
           } else {
             boolean ok = false;
@@ -700,6 +707,26 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
                 if (ok = view instanceof ReactionCheckboxSettingsView) {
                   setReaction(item, position, ((ReactionCheckboxSettingsView) view), true);
                 }
+                break;
+              }
+
+              case ListItem.TYPE_HEADER_WITH_TEXT_BUTTON: {
+                TextView textView = view.findViewById(android.R.id.text1);
+                setHeaderText(item, textView, /* isUpdate */ true);
+
+                int buttonIndex = (((ViewGroup) view).indexOfChild(textView) + 1) % 2;
+                ScalableTextView textButton = (ScalableTextView) ((ViewGroup) view).getChildAt(buttonIndex);
+                setButtonText(item, textButton, /* isUpdate */ true);
+                break;
+              }
+
+              case ListItem.TYPE_HEADER_WITH_CHECKBOX: {
+                ok = true;
+                TextView textView = (TextView) ((ViewGroup) view).getChildAt(0);
+                setHeaderText(item, textView, /* isUpdate */ true);
+
+                CheckBoxView checkBox = (CheckBoxView) ((ViewGroup) view).getChildAt(1);
+                setHeaderCheckBoxState(item, checkBox, /* isUpdate */ true);
                 break;
               }
 
@@ -737,7 +764,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
             }
             if (!ok) {
               SettingHolder holder = (SettingHolder) parentView.getChildViewHolder(view);
-              int actualPosition = holder != null ? holder.getAdapterPosition() : -1;
+              int actualPosition = holder != null ? holder.getBindingAdapterPosition() : -1;
               if (actualPosition != RecyclerView.NO_POSITION) {
                 onBindViewHolder(holder, actualPosition);
               } else {
@@ -1269,7 +1296,9 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         case ListItem.TYPE_SHADOW_BOTTOM:
         case ListItem.TYPE_HEADER:
         case ListItem.TYPE_HEADER_PADDED:
-        case ListItem.TYPE_HEADER_WITH_ACTION: {
+        case ListItem.TYPE_HEADER_WITH_ACTION:
+        case ListItem.TYPE_HEADER_WITH_TEXT_BUTTON:
+        case ListItem.TYPE_HEADER_WITH_CHECKBOX: {
           return true;
         }
       }
@@ -1464,8 +1493,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       case ListItem.TYPE_EDITTEXT_NO_PADDING_REUSABLE:
       case ListItem.TYPE_EDITTEXT_COUNTERED:
       case ListItem.TYPE_EDITTEXT_CHANNEL_DESCRIPTION:
-      case ListItem.TYPE_EDITTEXT_WITH_PHOTO:
-      case ListItem.TYPE_EDITTEXT_WITH_PHOTO_SMALLER: {
+      case ListItem.TYPE_EDITTEXT_WITH_PHOTO: {
         MaterialEditTextGroup editText = (MaterialEditTextGroup) ((ViewGroup) holder.itemView).getChildAt(0);
         editText.applyRtl(Lang.rtl());
         editText.setHint(item.getString());
@@ -1770,6 +1798,32 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         Views.setGravity((FrameLayout.LayoutParams) imageView.getLayoutParams(), Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT);
         break;
       }
+      case ListItem.TYPE_HEADER_WITH_TEXT_BUTTON: {
+        TextView textView = holder.itemView.findViewById(android.R.id.text1);
+        textView.setTextColor(Theme.getColor(item.getTextColorId(ColorId.background_textLight)));
+        textView.setGravity(Lang.gravity(Gravity.CENTER_VERTICAL));
+        setHeaderText(item, textView, false);
+
+        int buttonIndex = (((ViewGroup) holder.itemView).indexOfChild(textView) + 1) % 2;
+        ScalableTextView textButton = (ScalableTextView) ((ViewGroup) holder.itemView).getChildAt(buttonIndex);
+        textButton.setId(item.getId());
+        textButton.setTag(item);
+        setButtonText(item, textButton, false);
+        break;
+      }
+      case ListItem.TYPE_HEADER_WITH_CHECKBOX: {
+        TextView textView = (TextView) ((ViewGroup) holder.itemView).getChildAt(0);
+        textView.setGravity(Lang.gravity(Gravity.CENTER_VERTICAL));
+        textView.setTextColor(Theme.getColor(item.getTextColorId(ColorId.background_textLight)));
+        setHeaderText(item, textView, false);
+
+        CheckBoxView checkBox = (CheckBoxView) ((ViewGroup) holder.itemView).getChildAt(1);
+        checkBox.setId(item.getId());
+
+        setHeaderCheckBoxState(item, checkBox, false);
+        Views.setGravity(checkBox, Lang.reverseGravity(Gravity.CENTER_VERTICAL));
+        break;
+      }
       case ListItem.TYPE_COUNTRY: {
         ViewGroup group = (ViewGroup) holder.itemView;
         ((TextView) group.getChildAt(0)).setText(item.getString());
@@ -1781,10 +1835,11 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       case ListItem.TYPE_DESCRIPTION_CENTERED: {
         TextView textView = (TextView) holder.itemView;
         textView.setTextColor(Theme.getColor(item.getTextColorId(viewType == ListItem.TYPE_DESCRIPTION_CENTERED ? ColorId.textLight : ColorId.background_textLight)));
-        int padding = Screen.dp(16f) + item.getTextPaddingLeft();
+        int paddingLeft = Screen.dp(16f) + item.getTextPaddingLeft();
+        int paddingRight = Screen.dp(16f) + item.getTextPaddingRight();
         textView.setText(item.getString());
-        if (holder.itemView.getPaddingLeft() != padding) {
-          holder.itemView.setPadding(padding, holder.itemView.getPaddingTop(), holder.itemView.getPaddingRight(), holder.itemView.getPaddingBottom());
+        if (holder.itemView.getPaddingLeft() != paddingLeft || holder.itemView.getPaddingRight() != paddingRight) {
+          holder.itemView.setPadding(paddingLeft, holder.itemView.getPaddingTop(), paddingRight, holder.itemView.getPaddingBottom());
         }
         if (viewType != ListItem.TYPE_DESCRIPTION_CENTERED) {
           textView.setGravity(Lang.gravity(Gravity.CENTER_VERTICAL));
@@ -1988,6 +2043,13 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     } else {
       items.remove(index);
       notifyItemRemoved(index);
+    }
+  }
+
+  public void removeItem (ListItem item) {
+    int index = indexOfView(item);
+    if (index != -1) {
+      removeItem(index);
     }
   }
 
@@ -2221,6 +2283,13 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     }
   }
 
+  public void notifyLastItemChanged () {
+    int itemCount = getItemCount();
+    if (itemCount > 0) {
+      notifyItemChanged(itemCount - 1);
+    }
+  }
+
   public void notifyItemsChanged (@NonNull Filter<ListItem> filter) {
     notifyItemsChangedImpl(item -> filter.accept(item) ? wouldUpdateItem(item) : CellFilterImpl.REJECTED);
   }
@@ -2286,7 +2355,6 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       case ListItem.TYPE_EDITTEXT_COUNTERED:
       case ListItem.TYPE_EDITTEXT_CHANNEL_DESCRIPTION:
       case ListItem.TYPE_EDITTEXT_WITH_PHOTO:
-      case ListItem.TYPE_EDITTEXT_WITH_PHOTO_SMALLER:
         return CellFilterImpl.ABORTED;
     }
     if (item.hasStringResources())

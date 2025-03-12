@@ -30,6 +30,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.attach.AvatarPickerManager;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
@@ -44,7 +45,6 @@ import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
-import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
@@ -59,15 +59,15 @@ import java.util.ArrayList;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
 
-public class CreateGroupController extends ViewController<Void> implements EditHeaderView.ReadyCallback, Client.ResultHandler, Unlockable, ActivityResultHandler,
+public class CreateGroupController extends ViewController<Void> implements EditHeaderView.ReadyCallback, Unlockable, ActivityResultHandler,
   TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener {
 
-  private final TdlibUi.AvatarPickerManager avatarPickerManager;
+  private final AvatarPickerManager avatarPickerManager;
   private ArrayList<TGUser> members;
 
   public CreateGroupController (Context context, Tdlib tdlib) {
     super(context, tdlib);
-    avatarPickerManager = new TdlibUi.AvatarPickerManager(this);
+    avatarPickerManager = new AvatarPickerManager(this);
   }
 
   public void setMembers (ArrayList<TGUser> members) {
@@ -340,7 +340,7 @@ public class CreateGroupController extends ViewController<Void> implements EditH
 
   private void onUserClick (TGUser user) {
     pickedUser = user;
-    showOptions(null, new int[] {R.id.btn_deleteMember, R.id.btn_cancel}, new String[] {Lang.getString(R.string.GroupDontAdd), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, this::onOptionItemPressed);
+    showOptions(null, new int[] {R.id.btn_deleteMember, R.id.btn_cancel}, new String[] {Lang.getString(R.string.GroupDontAdd), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, this::onOptionItemPressed);
   }
 
   public boolean onOptionItemPressed (View optionItemView, int id) {
@@ -367,7 +367,7 @@ public class CreateGroupController extends ViewController<Void> implements EditH
 
   @Override
   public void onActivityResult (int requestCode, int resultCode, Intent data) {
-    avatarPickerManager.handleActivityResult(requestCode, resultCode, data, TdlibUi.AvatarPickerManager.MODE_NON_CREATED, null, headerCell);
+    avatarPickerManager.handleActivityResult(requestCode, resultCode, data, AvatarPickerManager.MODE_NON_CREATED, null, headerCell);
   }
 
   @Override
@@ -385,7 +385,6 @@ public class CreateGroupController extends ViewController<Void> implements EditH
   private boolean isCreating;
   private ImageGalleryFile currentImageFile;
   private long[] currentMemberIds;
-  private boolean currentIsChannel;
 
   public interface Callback {
     boolean onGroupCreated (CreateGroupController context, TdApi.Chat chat);
@@ -420,28 +419,25 @@ public class CreateGroupController extends ViewController<Void> implements EditH
       currentMemberIds[i++] = member.getUserId();
     }
 
-    currentIsChannel = currentMemberIds.length > tdlib.basicGroupMaxSize();
-
-    if (currentIsChannel) {
-      tdlib.client().send(new TdApi.CreateNewSupergroupChat(title, false, false, null, null, 0, false), this);
-    } else if (groupCreationCallback != null && groupCreationCallback.forceSupergroupChat()) {
-      tdlib.client().send(new TdApi.CreateNewSupergroupChat(title, false, false, null, null, 0, false), result -> {
-        switch (result.getConstructor()) {
-          case TdApi.Chat.CONSTRUCTOR: {
-            TdApi.Chat createdGroup = (TdApi.Chat) result;
-            tdlib.client().send(new TdApi.AddChatMembers(createdGroup.id, currentMemberIds), addResult -> {
-              tdlib.okHandler().onResult(addResult);
-              CreateGroupController.this.onResult(result);
-            });
-            break;
-          }
-          case TdApi.Error.CONSTRUCTOR:
-            CreateGroupController.this.onResult(result);
-            break;
+    boolean forceSupergroup = currentMemberIds.length > tdlib.basicGroupSizeMax();
+    if (forceSupergroup || (groupCreationCallback != null && groupCreationCallback.forceSupergroupChat())) {
+      tdlib.send(new TdApi.CreateNewSupergroupChat(title, false, false, null, null, 0, false), (createdChat, error) -> {
+        if (error != null) {
+          handleError(error);
+        } else {
+          handleCreatedChat(createdChat, true);
         }
       });
     } else {
-      tdlib.client().send(new TdApi.CreateNewBasicGroupChat(currentMemberIds, title, 0), this);
+      tdlib.send(new TdApi.CreateNewBasicGroupChat(currentMemberIds, title, 0), (createdBasicGroupChat, error) -> {
+        if (error != null) {
+          handleError(error);
+        } else {
+          handleFailedToAddMembers(createdBasicGroupChat.failedToAddMembers, () -> {
+            handleCreatedChat(tdlib.chatStrict(createdBasicGroupChat.chatId), false);
+          });
+        }
+      });
     }
   }
 
@@ -451,35 +447,38 @@ public class CreateGroupController extends ViewController<Void> implements EditH
     headerCell.setInputEnabled(true);
   }
 
-  @Override
-  public void onResult (TdApi.Object object) {
-    switch (object.getConstructor()) {
-      case TdApi.Ok.CONSTRUCTOR: {
-        // OK
-        break;
-      }
-      case TdApi.Chat.CONSTRUCTOR: {
-        final long chatId = TD.getChatId(object);
-        if (currentIsChannel) {
-          tdlib.client().send(new TdApi.AddChatMembers(chatId, currentMemberIds), this);
-        }
-        if (currentImageFile != null) {
-          tdlib.client().send(new TdApi.SetChatPhoto(chatId, new TdApi.InputChatPhotoStatic(PhotoGenerationInfo.newFile(currentImageFile))), this);
-        }
-        tdlib.ui().post(() -> {
-          if (groupCreationCallback == null || !groupCreationCallback.onGroupCreated(this, (TdApi.Chat) object)) {
-            tdlib.ui().openChat(this, chatId, null);
-          }
-        });
-        UI.unlock(this);
-        break;
-      }
-      case TdApi.Error.CONSTRUCTOR: {
-        UI.showError(object);
-        UI.unlock(this);
-        break;
-      }
+  private void handleError (TdApi.Error error) {
+    UI.showError(error);
+    UI.unlock(this);
+  }
+
+  private void handleFailedToAddMembers (TdApi.FailedToAddMembers failedToAddMembers, Runnable after) {
+    if (failedToAddMembers.failedToAddMembers.length > 0) {
+      // TODO handle failedToAddMembers
     }
+    after.run();
+  }
+
+  private void handleCreatedChat (TdApi.Chat chat, boolean needAddMembers) {
+    if (needAddMembers) {
+      tdlib.send(new TdApi.AddChatMembers(chat.id, currentMemberIds), (failedToAddMembers, error) -> {
+        if (error != null) {
+          handleError(error);
+        } else {
+          handleFailedToAddMembers(failedToAddMembers, () -> handleCreatedChat(chat, false));
+        }
+      });
+      return;
+    }
+    if (currentImageFile != null) {
+      tdlib.send(new TdApi.SetChatPhoto(chat.id, new TdApi.InputChatPhotoStatic(PhotoGenerationInfo.newFile(currentImageFile))), tdlib.typedOkHandler());
+    }
+    runOnUiThreadOptional(() -> {
+      if (groupCreationCallback == null || !groupCreationCallback.onGroupCreated(this, chat)) {
+        tdlib.ui().openChat(this, chat.id, null);
+      }
+    });
+    UI.unlock(this);
   }
 
   @Override

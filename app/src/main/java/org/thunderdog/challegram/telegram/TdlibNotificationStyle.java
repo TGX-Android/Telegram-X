@@ -78,11 +78,11 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import me.leolin.shortcutbadger.ShortcutBadger;
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, FileUpdateListener {
-  private static final boolean USE_GROUPS = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH;
+  private static final boolean USE_GROUPS = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
 
   static final long MEDIA_LOAD_TIMEOUT = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P ? 15000 : 7500;
   static final long SUMMARY_MEDIA_LOAD_TIMEOUT = 100;
@@ -240,6 +240,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
 
   private static final long CHAT_MAX_DELAY = 200;
 
+  @SuppressWarnings("deprecation")
   protected final int displayChildNotification (NotificationManagerCompat manager, Context context, @NonNull TdlibNotificationHelper helper, int badgeCount, boolean allowPreview, @NonNull TdlibNotificationGroup group, TdlibNotificationSettings settings, int notificationId, boolean isSummary, boolean isRebuild) {
     if (!allowPreview || group.isEmpty()) {
       manager.cancel(notificationId);
@@ -337,31 +338,28 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     final long[] allUserIds = group.isMention() ? group.getAllUserIds() : null;
     final boolean[] hasCustomText = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ? new boolean[1] : null;
 
-    NotificationCompat.CarExtender.UnreadConversation.Builder conversationBuilder = new NotificationCompat.CarExtender.UnreadConversation.Builder(visualChatTitle != null ? visualChatTitle.toString() : null).setLatestTimestamp(TimeUnit.SECONDS.toMillis(lastNotification.getDate()));
-
     Intent msgHeardIntent = new Intent();
     styleIntent(Intents.ACTION_MESSAGE_HEARD, msgHeardIntent, tdlib, group, needReplyToMessage, allMessageIds, allUserIds);
 
-    PendingIntent msgHeardPendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), notificationId, msgHeardIntent, Intents.mutabilityFlags(true));
-    conversationBuilder.setReadPendingIntent(msgHeardPendingIntent);
+    NotificationCompat.Action replyAction = null, muteAction = null, unmuteAction = null, readAction = null;
 
-    NotificationCompat.Action replyAction = null, muteAction = null, readAction = null;
+    // Hack to avoid duplicate notification for summary notification on Android Auto
+    boolean hideOnAndroidAuto = !isSummary;
 
     if (needReply) {
       // reply
-      Intent msgReplyIntent = new Intent();
-      styleIntent(Intents.ACTION_MESSAGE_REPLY, msgReplyIntent, tdlib, group, needReplyToMessage, allMessageIds, allUserIds);
-      PendingIntent msgReplyPendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), notificationId, msgReplyIntent, Intents.mutabilityFlags(true));
-      RemoteInput remoteInputAuto = new RemoteInput.Builder(TGBaseReplyReceiver.EXTRA_VOICE_REPLY).setLabel(Lang.getString(R.string.Reply)).build();
-      conversationBuilder.setReplyAction(msgReplyPendingIntent, remoteInputAuto);
-
       Intent replyIntent = new Intent(UI.getAppContext(), TGWearReplyReceiver.class);
       Intents.secureIntent(replyIntent, true);
       TdlibNotificationExtras.put(replyIntent, tdlib, group, needReplyToMessage, allMessageIds, allUserIds);
       PendingIntent replyPendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), notificationId, replyIntent, Intents.mutabilityFlags(true));
       RemoteInput remoteInput = new RemoteInput.Builder(TGBaseReplyReceiver.EXTRA_VOICE_REPLY).setLabel(Lang.getString(R.string.Reply)).build();
       String replyToString = Lang.getString(R.string.Reply);
-      replyAction = new NotificationCompat.Action.Builder(R.drawable.baseline_reply_24_white, replyToString, replyPendingIntent).setAllowGeneratedReplies(true).addRemoteInput(remoteInput).setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY).build();
+      replyAction = new NotificationCompat.Action.Builder(R.drawable.baseline_reply_24_white, replyToString, replyPendingIntent)
+        .setAllowGeneratedReplies(true)
+        .addRemoteInput(remoteInput)
+        .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY)
+        .setShowsUserInterface(hideOnAndroidAuto)
+        .build();
     }
 
     if (needPreview) {
@@ -370,36 +368,57 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       styleIntent(Intents.ACTION_MESSAGE_READ, intent, tdlib, group, needReplyToMessage, allMessageIds, allUserIds);
       try {
         PendingIntent pendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), notificationId, intent, Intents.mutabilityFlags(true));
-        readAction = new NotificationCompat.Action.Builder(R.drawable.baseline_done_all_24_white, Lang.getString(R.string.ActionRead), pendingIntent).setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_MARK_AS_READ).build();
+        readAction = new NotificationCompat.Action.Builder(R.drawable.baseline_done_all_24_white, Lang.getString(R.string.ActionRead), pendingIntent)
+          .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_MARK_AS_READ)
+          .setShowsUserInterface(hideOnAndroidAuto)
+          .build();
       } catch (Throwable t) {
         Log.e("Unable to add read intent", t);
       }
     }
 
     if (true) {
-      // mute for 1h
-      Intent intent = new Intent(UI.getAppContext(), TGMessageReceiver.class);
-      styleIntent(Intents.ACTION_MESSAGE_MUTE, intent, tdlib, group, needReplyToMessage, allMessageIds, allUserIds);
-      try {
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), notificationId, intent, Intents.mutabilityFlags(true));
-        String text;
-        if (group.isMention()) {
-          long singleSenderId = group.singleSenderId();
-          if (singleSenderId != 0) {
-            String firstName = tdlib.chatTitleShort(singleSenderId);
-            // text = Lang.plural(R.string.ActionMutePersonHours, 1, firstName);
-            text = Lang.getString(R.string.ActionMutePerson, firstName);
-          } else {
-            // text = Lang.plural(R.string.ActionMuteAll, 1);
-            text = Lang.getString(R.string.ActionMuteEveryone);
-          }
+      String muteText, unmuteText;
+      if (group.isMention()) {
+        long singleSenderId = group.singleSenderId();
+        if (singleSenderId != 0) {
+          String firstName = tdlib.chatTitleShort(singleSenderId);
+          muteText = Lang.getString(R.string.ActionMutePerson, firstName);
+          unmuteText = Lang.getString(R.string.ActionUnmutePerson, firstName);
         } else {
-          // text = Lang.plural(R.string.ActionMuteHours, 1);
-          text = Lang.getString(R.string.ActionMute);
+          muteText = Lang.getString(R.string.ActionMuteEveryone);
+          unmuteText = Lang.getString(R.string.ActionUnmuteEveryone);
         }
-        muteAction = new NotificationCompat.Action.Builder(R.drawable.baseline_volume_off_24_white, text, pendingIntent).setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_MUTE).build();
+      } else {
+        muteText = Lang.getString(R.string.ActionMute);
+        unmuteText = Lang.getString(R.string.ActionUnmute);
+      }
+
+      // mute for 1h
+      Intent muteIntent = new Intent(UI.getAppContext(), TGMessageReceiver.class);
+      styleIntent(Intents.ACTION_MESSAGE_MUTE, muteIntent, tdlib, group, needReplyToMessage, allMessageIds, allUserIds);
+      try {
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), notificationId, muteIntent, Intents.mutabilityFlags(true));
+        muteAction = new NotificationCompat.Action.Builder(R.drawable.baseline_volume_off_24_white, muteText, pendingIntent)
+          .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_MUTE)
+          .setShowsUserInterface(hideOnAndroidAuto)
+          .build();
       } catch (Throwable t) {
-        Log.e("Unable to add read intent", t);
+        Log.e("Unable to create mute intent", t);
+      }
+
+      // Unmute
+      Intent unmuteIntent = new Intent(UI.getAppContext(), TGMessageReceiver.class);
+      styleIntent(Intents.ACTION_MESSAGE_UNMUTE, unmuteIntent, tdlib, group, needReplyToMessage, allMessageIds, allUserIds);
+
+      try {
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(UI.getAppContext(), notificationId, unmuteIntent, Intents.mutabilityFlags(true));
+        unmuteAction = new NotificationCompat.Action.Builder(R.drawable.baseline_volume_up_24_white, unmuteText, pendingIntent)
+          .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_UNMUTE)
+          .setShowsUserInterface(hideOnAndroidAuto)
+          .build();
+      } catch (Throwable t) {
+        Log.e("Unable to create unmute intent", t);
       }
     }
 
@@ -447,7 +466,6 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
           messageText = Lang.getString(R.string.YouHaveNewMessage);
         }
         textBuilder.append(messageText);
-        conversationBuilder.addMessage(messageText != null ? messageText.toString() : null);
         addMessage(messagingStyle, messageText, person, chat, notification, isSummary ? SUMMARY_MEDIA_LOAD_TIMEOUT : MEDIA_LOAD_TIMEOUT, isRebuild, !onlyScheduled && notification.isScheduled(), !onlySilent && notification.isVisuallySilent(), onlyPinned);
       } else {
         final CharSequence messageText;
@@ -476,7 +494,6 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
           messageText = Lang.plural(R.string.xNewMessages, mergedList.size());
         }
         textBuilder.append(messageText);
-        conversationBuilder.addMessage(messageText != null ? messageText.toString() : null);
         addMessage(messagingStyle, messageText, person, tdlib, chat, mergedList, isSummary ? SUMMARY_MEDIA_LOAD_TIMEOUT : MEDIA_LOAD_TIMEOUT, isRebuild, !onlyScheduled && isScheduled, !onlySilent && isVisuallySilent);
       }
     }
@@ -565,8 +582,6 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
 
     final PendingIntent contentIntent = TdlibNotificationUtils.newIntent(tdlib.id(), tdlib.settings().getLocalChatId(chatId), group.findTargetMessageId());
 
-    NotificationCompat.CarExtender carExtender = new NotificationCompat.CarExtender().setUnreadConversation(conversationBuilder.build());
-
     boolean needGroupLogic = true; // !isSummary || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && settings == null);
 
     NotificationCompat.Builder builder;
@@ -585,8 +600,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
         Log.i(Log.TAG_FCM, "displaying notification with behavior:%d", behavior);
       }
     } else {
-      //noinspection deprecation
-      builder = new NotificationCompat.Builder(UI.getAppContext()/*, notificationChannel*/);
+      builder = new NotificationCompat.Builder(UI.getAppContext());
     }
 
     builder
@@ -620,14 +634,20 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     }
 
     if (!Passcode.instance().isLocked()) {
-      /*if (muteAction != null)
-        builder.addAction(muteAction);*/
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        if (muteAction != null)
+          builder.addInvisibleAction(muteAction);
+        if (unmuteAction != null)
+          builder.addInvisibleAction(unmuteAction);
+      }
       if (replyAction != null)
         builder.addAction(replyAction);
       if (readAction != null)
         builder.addAction(readAction);
     }
-    try { builder.extend(carExtender); } catch (Throwable t) { Log.w(t); }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      builder.extend(new NotificationCompat.CarExtender());
+    }
 
     styleNotification(tdlib, builder, chatId, chat, allowPreview);
 
@@ -766,7 +786,8 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       manager.cancel(notificationId);
       return;
     }
-    if (allowPreview) {
+    if (USE_GROUPS && allowPreview) {
+      // Display single child notification as primary notification, as there's no need in a group
       TdlibNotificationGroup singleGroup = null;
       for (TdlibNotification notification : notifications) {
         if (singleGroup == null) {
@@ -980,14 +1001,16 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     style.addMessage(new NotificationCompat.MessagingStyle.Message(Lang.getSilentNotificationTitle(messageText, false, tdlib.isSelfChat(chat), tdlib.isMultiChat(chat), tdlib.isChannelChat(chat), isExclusivelyScheduled, isExclusivelySilent), TimeUnit.SECONDS.toMillis(notification.getDate()), person));
   }
 
+  @SuppressWarnings("deprecation")
   public static NotificationCompat.MessagingStyle newMessagingStyle (TdlibNotificationManager context, TdApi.Chat chat, int messageCount, boolean areMentions, boolean arePinned, boolean areOnlyScheduled, boolean areOnlySilent, boolean allowDownload) {
     Tdlib tdlib = context.tdlib();
     TdApi.User user = context.myUser();
     NotificationCompat.MessagingStyle style;
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && user != null) {
-      style = new NotificationCompat.MessagingStyle(buildPerson(context, tdlib.isSelfChat(chat), tdlib.isMultiChat(chat), tdlib.isChannelChat(chat), user, null, false, false, allowDownload));
+      Person person = buildPerson(context, tdlib.isSelfChat(chat), tdlib.isMultiChat(chat), tdlib.isChannelChat(chat), user, null, false, false, allowDownload);
+      style = new NotificationCompat.MessagingStyle(person);
     } else {
-      //noinspection deprecation
+      // Person person = new Person.Builder().setName("\u200B" /*zero-width space*/).build();
       style = new NotificationCompat.MessagingStyle("");
     }
 

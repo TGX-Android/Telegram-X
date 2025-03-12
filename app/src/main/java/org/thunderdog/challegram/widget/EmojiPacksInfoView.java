@@ -34,7 +34,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.text.FormattedText;
 import org.thunderdog.challegram.util.text.TextEntity;
 
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 @SuppressLint("ViewConstructor")
 public class EmojiPacksInfoView extends CustomTextView {
@@ -87,7 +87,7 @@ public class EmojiPacksInfoView extends CustomTextView {
         info != null ? info.title : Lang.getString(R.string.LoadingMessageEmojiPack)
       );
     } else {
-      link = Lang.plural(R.string.xEmojiPacks, emojiPacksCount);;
+      link = Lang.plural(R.string.xEmojiPacks, emojiPacksCount);
     }
     String text = Lang.getString(isSingle ? R.string.EmojiUsedFromSingle : R.string.EmojiUsedFromX, link);
 
@@ -105,7 +105,7 @@ public class EmojiPacksInfoView extends CustomTextView {
         formattedTextRaw = new TdApi.FormattedText(text, emojiStart >= linkStart ? new TdApi.TextEntity[]{
           new TdApi.TextEntity(linkStart, link.length(), new TdApi.TextEntityTypeUrl()),
           new TdApi.TextEntity(emojiStart, 1, new TdApi.TextEntityTypeCustomEmoji(firstEmojiId))
-        }: new TdApi.TextEntity[]{
+        } : new TdApi.TextEntity[]{
           new TdApi.TextEntity(emojiStart, 1, new TdApi.TextEntityTypeCustomEmoji(firstEmojiId)),
           new TdApi.TextEntity(linkStart, link.length(), new TdApi.TextEntityTypeUrl())
         });

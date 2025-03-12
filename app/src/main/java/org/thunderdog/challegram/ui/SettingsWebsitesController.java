@@ -276,7 +276,7 @@ public class SettingsWebsitesController extends RecyclerViewController<SettingsP
   public void onClick (View v) {
     final int viewId = v.getId();
     if (viewId == R.id.btn_terminateAllSessions) {
-      showOptions(Lang.getString(R.string.DisconnectAllWebsitesHint), new int[] {R.id.btn_terminateAllSessions, R.id.btn_cancel}, new String[] {Lang.getString(R.string.TerminateAllWebSessions), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+      showOptions(Lang.getString(R.string.DisconnectAllWebsitesHint), new int[] {R.id.btn_terminateAllSessions, R.id.btn_cancel}, new String[] {Lang.getString(R.string.TerminateAllWebSessions), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
         if (id == R.id.btn_terminateAllSessions) {
           disconnectAllWebsites();
         }
@@ -285,7 +285,7 @@ public class SettingsWebsitesController extends RecyclerViewController<SettingsP
     } else if (viewId == R.id.btn_session) {
       ListItem item = (ListItem) v.getTag();
       final TdApi.ConnectedWebsite website = (TdApi.ConnectedWebsite) item.getData();
-      showOptions(website.domainName, new int[] {R.id.btn_terminateSession, R.id.btn_openChat}, new String[] {Lang.getString(R.string.DisconnectWebsiteAction), Lang.getString(R.string.OpenChat)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_chat_bubble_24}, (itemView, id) -> {
+      showOptions(website.domainName, new int[] {R.id.btn_terminateSession, R.id.btn_openChat}, new String[] {Lang.getString(R.string.DisconnectWebsiteAction), Lang.getString(R.string.OpenChat)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_chat_bubble_24}, (itemView, id) -> {
         if (id == R.id.btn_openChat) {
           tdlib.ui().openPrivateChat(this, website.botUserId, new TdlibUi.ChatOpenParameters().keepStack());
         } else if (id == R.id.btn_terminateSession) {

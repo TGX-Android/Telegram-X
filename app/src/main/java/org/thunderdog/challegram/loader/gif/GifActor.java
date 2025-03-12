@@ -52,7 +52,7 @@ import me.vkryl.android.ViewUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 @SuppressWarnings ("JniMissingFunction")
 public class GifActor implements GifState.Callback, TGPlayerController.TrackChangeListener {
@@ -597,8 +597,10 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
         }
       } else {
         int ret = N.getVideoFrame(nativePtr, free.bitmap, metadata);
-        free.no = metadata[3];
-        success = true;
+        if (ret != 0) {
+          free.no = metadata[3];
+          success = true;
+        }
         if (ret == 2) {
           if (isPlayOnce) {
             file.setLooped(true);

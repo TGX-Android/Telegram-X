@@ -56,7 +56,7 @@ public class TGMessageInvoice extends TGMessage {
 
   public TGMessageInvoice (MessagesManager context, TdApi.Message msg, TdApi.MessageInvoice invoice) {
     super(context, msg);
-    setPhoto(invoice.photo);
+    // setPhoto(invoice.photo);
   }
 
   @Override

@@ -14,12 +14,12 @@ package org.thunderdog.challegram.telegram;
 
 import android.net.Uri;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.upstream.BaseDataSource;
-import com.google.android.exoplayer2.upstream.DataSource;
-import com.google.android.exoplayer2.upstream.DataSpec;
+import androidx.media3.common.C;
+import androidx.media3.datasource.BaseDataSource;
+import androidx.media3.datasource.DataSource;
+import androidx.media3.datasource.DataSpec;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.U;
@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public final class TdlibDataSource extends BaseDataSource {
   private static final String SCHEME = "tg";
@@ -85,6 +85,7 @@ public final class TdlibDataSource extends BaseDataSource {
 
   public static final class Factory implements DataSource.Factory {
     @Override
+    @NonNull
     public DataSource createDataSource () {
       return new TdlibDataSource();
     }
@@ -181,15 +182,21 @@ public final class TdlibDataSource extends BaseDataSource {
     }
   }
 
-  private static int getAvailableSize (TdApi.File file, long offset, int length) {
+  private long getAvailableSize (TdApi.File file, long offset, int length) {
     long available;
-    if (file.local.isDownloadingCompleted)
+    if (file.local.isDownloadingCompleted) {
       available = file.local.downloadedSize - offset;
-    else if (offset >= file.local.downloadOffset && offset < file.local.downloadOffset + file.local.downloadedPrefixSize)
+    } else if (offset >= file.local.downloadOffset && offset < file.local.downloadOffset + file.local.downloadedPrefixSize) {
       available = file.local.downloadedPrefixSize - (offset - file.local.downloadOffset);
-    else
-      return 0;
-    return (int) Math.max(0, Math.min(length, available));
+    } else {
+      TdApi.FileDownloadedPrefixSize downloadedPrefixSize = tdlib.clientExecuteT(new TdApi.GetFileDownloadedPrefixSize(file.id, offset), 1000L, false);
+      if (downloadedPrefixSize != null) {
+        available = downloadedPrefixSize.size;
+      } else {
+        return 0;
+      }
+    }
+    return Math.max(0, Math.min(length, available));
   }
 
   private final TdApi.File localFile = new TdApi.File(0, 0, 0, new TdApi.LocalFile(), new TdApi.RemoteFile());
@@ -216,7 +223,7 @@ public final class TdlibDataSource extends BaseDataSource {
   }
 
   @Override
-  public int read (byte[] buffer, int bufferOffset, int readLength) throws TdlibDataSourceException {
+  public int read (@NonNull byte[] buffer, int bufferOffset, int readLength) throws TdlibDataSourceException {
     if (readLength == 0) {
       return 0;
     }
@@ -254,7 +261,7 @@ public final class TdlibDataSource extends BaseDataSource {
             acquireReference(file, offset);
           }
         }
-        int available = getAvailableSize(file, offset, readLength);
+        long available = getAvailableSize(file, offset, readLength);
         if (available == 0) {
           latch.await();
           continue;
@@ -270,7 +277,7 @@ public final class TdlibDataSource extends BaseDataSource {
           if (opened && offset > 0) {
             openFile.seek(offset);
           }
-          int readCount = openFile.read(buffer, bufferOffset, available);
+          int readCount = openFile.read(buffer, bufferOffset, available > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) available);
           bytesTransferred(readCount);
           bytesRead += readCount;
           return readCount;

@@ -72,9 +72,10 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.ChatPosition;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.ChatPosition;
+import tgx.td.Td;
+import tgx.td.TdExt;
 
 public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.RefreshCallback, Counter.Callback, ReactionLoadListener, Destroyable, TdlibUi.MessageProvider {
   private static final int FLAG_HAS_PREFIX = 1;
@@ -1610,11 +1611,13 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
       chat.lastMessage.interactionInfo.reactions : null, animated);
   }
 
-  private boolean setReactions (TdApi.MessageReaction[] reactions, boolean animated) {
+  private boolean setReactions (@Nullable TdApi.MessageReactions reactions, boolean animated) {
     this.reactionsListEntry.clear();
 
-    if (reactions != null && !isDestroyed) {
-      for (TdApi.MessageReaction reaction : reactions) {
+    if (!Td.isEmpty(reactions) && !isDestroyed) {
+      for (TdApi.MessageReaction reaction : reactions.reactions) {
+        if (TdExt.isUnsupported(reaction.type))
+          continue;
         String reactionKey = TD.makeReactionKey(reaction.type);
 
         TGReaction reactionObj = tdlib.getReaction(reaction.type);

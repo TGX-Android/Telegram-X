@@ -85,8 +85,8 @@ import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.util.FilteredIterator;
-import me.vkryl.td.JSON;
-import me.vkryl.td.Td;
+import tgx.td.JSON;
+import tgx.td.Td;
 
 public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   // Util
@@ -134,10 +134,21 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     }
   }
 
-  public static final int EXTERNAL_ACTION_MARK_AS_HIDDEN = 0;
-  public static final int EXTERNAL_ACTION_MARK_ALL_AS_HIDDEN = 1;
-  public static final int EXTERNAL_ACTION_MARK_AS_READ = 2;
-  public static final int EXTERNAL_ACTION_MUTE = 3;
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    ExternalAction.MARK_AS_HIDDEN,
+    ExternalAction.MARK_ALL_AS_HIDDEN,
+    ExternalAction.MARK_AS_READ,
+    ExternalAction.MUTE,
+    ExternalAction.UNMUTE
+  })
+  public @interface ExternalAction {
+    int MARK_AS_HIDDEN = 0,
+      MARK_ALL_AS_HIDDEN = 1,
+      MARK_AS_READ = 2,
+      MUTE = 3,
+      UNMUTE = 4;
+  }
 
   private interface NotificationTask {
     void onPerformTask (Tdlib tdlib, Runnable onDone);
@@ -174,17 +185,20 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     performSyncTask(context, extras.accountId, "external:" + action, (tdlib, onDone) -> {
       tdlib.incrementNotificationReferenceCount();
       switch (action) {
-        case EXTERNAL_ACTION_MARK_AS_HIDDEN:
+        case ExternalAction.MARK_AS_HIDDEN:
           tdlib.notifications().onHide(extras);
           break;
-        case EXTERNAL_ACTION_MARK_ALL_AS_HIDDEN:
+        case ExternalAction.MARK_ALL_AS_HIDDEN:
           tdlib.notifications().onHideAll(extras.category);
           break;
-        case EXTERNAL_ACTION_MARK_AS_READ:
+        case ExternalAction.MARK_AS_READ:
           extras.read(tdlib);
           break;
-        case EXTERNAL_ACTION_MUTE:
+        case ExternalAction.MUTE:
           extras.mute(tdlib);
+          break;
+        case ExternalAction.UNMUTE:
+          extras.unmute(tdlib);
           break;
       }
       tdlib.notifications().releaseTdlibReference(onDone);
@@ -197,7 +211,18 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     if (StringUtils.isEmpty(text))
       return;
     performSyncTask(context, extras.accountId, "reply", (tdlib, onDone) -> {
-      tdlib.sendMessage(extras.chatId, extras.messageThreadId, extras.needReply ? new TdApi.InputMessageReplyToMessage(extras.forceExternalReply ? extras.chatId : 0, extras.messageIds[extras.messageIds.length - 1], null) : null, Td.newSendOptions(), new TdApi.InputMessageText(new TdApi.FormattedText(text.toString(), null), null, false), sendingMessage -> {
+      TdApi.InputMessageReplyTo replyTo;
+      if (extras.needReply) {
+        long messageId = extras.messageIds[extras.messageIds.length - 1];
+        if (extras.forceExternalReply) {
+          replyTo = new TdApi.InputMessageReplyToExternalMessage(extras.chatId, messageId, null);
+        } else {
+          replyTo = new TdApi.InputMessageReplyToMessage(messageId, null);
+        }
+      } else {
+        replyTo = null;
+      }
+      tdlib.sendMessage(extras.chatId, extras.messageThreadId, replyTo, Td.newSendOptions(), new TdApi.InputMessageText(new TdApi.FormattedText(text.toString(), null), null, false), sendingMessage -> {
         if (sendingMessage == null) {
           UI.showToast(R.string.NotificationReplyFailed, Toast.LENGTH_SHORT);
           if (onDone != null) {
@@ -2043,7 +2068,12 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   }
 
   @NonNull
-  long[] availableUserIds (@Tdlib.Mode int instanceMode) {
+  Set<Long> availableUserIdsSet (boolean isDebug) {
+    return availableUserIdsSet(isDebug ? Tdlib.Mode.DEBUG : Tdlib.Mode.NORMAL);
+  }
+
+  @NonNull
+  Set<Long> availableUserIdsSet (@Tdlib.Mode int instanceMode) {
     SortedSet<Long> userIds = new TreeSet<>();
     for (TdlibAccount account : accounts) {
       if (!account.isUnauthorized() && account.tdlibInstanceMode() == instanceMode) {
@@ -2052,6 +2082,12 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
           userIds.add(knownUserId);
       }
     }
+    return userIds;
+  }
+
+  @NonNull
+  long[] availableUserIds (@Tdlib.Mode int instanceMode) {
+    Set<Long> userIds = availableUserIdsSet(instanceMode);
     if (userIds.isEmpty())
       return new long[0];
     long[] array = new long[userIds.size()];

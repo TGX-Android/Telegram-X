@@ -46,7 +46,6 @@ import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.widget.ReactionsSelectorRecyclerView;
 
 import me.vkryl.android.widget.FrameLayoutFix;
-import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 
 @SuppressLint("ViewConstructor")

@@ -69,6 +69,11 @@ public class SharedRestrictionController extends SharedBaseController<InlineResu
   }
 
   @Override
+  public int getIcon () {
+    return R.drawable.baseline_image_24;
+  }
+
+  @Override
   protected InlineResult<?> parseObject (TdApi.Object object) {
     return null;
   }

@@ -20,7 +20,6 @@ import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringDef;
 
-import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
@@ -39,8 +38,8 @@ import java.util.concurrent.TimeUnit;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.leveldb.LevelDB;
-import me.vkryl.td.JSON;
-import me.vkryl.td.Td;
+import tgx.td.JSON;
+import tgx.td.Td;
 
 public class Crash {
   @Retention(RetentionPolicy.SOURCE)

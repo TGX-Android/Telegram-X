@@ -14,6 +14,7 @@
  */
 package org.thunderdog.challegram.service;
 
+import android.annotation.TargetApi;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
@@ -57,20 +58,29 @@ public class ForegroundService extends Service {
   private CharSequence activeTitle;
   private CharSequence activeText;
   private String activeChannelId;
-  private int    activeIconRes;
-
-  @Override
-  public void onCreate () { }
+  private int activeIconRes;
 
   @Override
   public int onStartCommand (Intent intent, int flags, int startId) {
     synchronized (ForegroundService.class) {
-      if      (intent != null && ACTION_START.equals(intent.getAction())) handleStart(intent);
-      else if (intent != null && ACTION_STOP.equals(intent.getAction()))  handleStop(intent);
-      else                                                                throw new IllegalStateException("Action needs to be START or STOP.");
+      String action = intent != null ? intent.getAction() : null;
+      TDLib.Tag.notifications("ForegroundService: handling %s, startId=%d", action, startId);
+      if (ACTION_START.equals(action)) {
+        handleStart(intent);
+      } else if (ACTION_STOP.equals(action)) {
+        handleStop(intent);
+      } else {
+        throw new IllegalStateException("Action needs to be START or STOP.");
+      }
 
       return START_NOT_STICKY;
     }
+  }
+
+  @Override
+  @TargetApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+  public void onTimeout (int startId) {
+    TDLib.Tag.notifications("onTimeout(%d) received for service", startId);
   }
 
   private static class TaskInfo {

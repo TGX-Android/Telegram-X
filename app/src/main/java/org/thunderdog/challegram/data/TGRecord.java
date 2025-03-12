@@ -17,20 +17,14 @@ package org.thunderdog.challegram.data;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.telegram.Tdlib;
 
-import java.io.File;
-
 public class TGRecord {
   private final Tdlib.Generation generation;
-  private File file;
   private final int duration;
   private byte[] waveform;
-  private final TGAudio audio;
 
   public TGRecord (Tdlib tdlib, Tdlib.Generation generation, int duration, byte[] waveform) {
     this.generation = generation;
-    this.file = new File(generation.destinationPath);
     this.duration = duration;
-    this.audio = new TGAudio(tdlib, this);
     this.waveform = waveform;
   }
 
@@ -43,21 +37,16 @@ public class TGRecord {
     return duration;
   }
 
-  public File getFile () {
-    return file;
-  }
-
   public String getPath () {
-    return file.getPath();
-  }
+    if (generation.file.local != null && generation.file.local.isDownloadingCompleted) {
+      return generation.file.local.path;
+    }
 
-  public TGAudio getAudio () {
-    return audio;
+    return generation.destinationPath;
   }
 
   public void setWaveform (byte[] waveform) {
     this.waveform = waveform;
-    this.audio.setWaveform(waveform);
   }
 
   public byte[] getWaveform () {
@@ -70,11 +59,5 @@ public class TGRecord {
 
   public TdApi.InputFile toInputFile () {
     return new TdApi.InputFileId(generation.file.id);
-  }
-
-  public void delete () {
-    if (file != null && file.delete()) {
-      file = null;
-    }
   }
 }

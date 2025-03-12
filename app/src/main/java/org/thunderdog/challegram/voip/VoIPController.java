@@ -97,9 +97,9 @@ public final class VoIPController extends VoIPInstance {
       configuration.packetTimeoutMs,
       configuration.connectTimeoutMs,
       configuration.dataSavingOption,
-      configuration.enableAcousticEchoCanceler || (!isSystemAcousticEchoCancelerAvailable() && !VoIP.needDisableAcousticEchoCancellation()),
-      configuration.enableNoiseSuppressor || (!isSystemNoiseSuppressorAvailable() && !VoIP.needDisableNoiseSuppressor()),
-      configuration.enableAutomaticGainControl && !VoIP.needDisableAutomaticGainControl(),
+      (configuration.enableAcousticEchoCanceler || !isSystemAcousticEchoCancelerAvailable()) && !VoIP.isDebugOptionEnabled(VoIP.DebugOption.DISABLE_ACOUSTIC_ECHO_CANCELLATION),
+      (configuration.enableNoiseSuppressor || !isSystemNoiseSuppressorAvailable()) && !VoIP.isDebugOptionEnabled(VoIP.DebugOption.DISABLE_NOISE_SUPPRESSOR),
+      (configuration.enableAutomaticGainControl) && !VoIP.isDebugOptionEnabled(VoIP.DebugOption.DISABLE_AUTOMATIC_GAIN_CONTROL),
       configuration.logFilePath,
       null,
       false

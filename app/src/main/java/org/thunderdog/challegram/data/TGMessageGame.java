@@ -38,7 +38,7 @@ import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class TGMessageGame extends TGMessage implements MediaWrapper.OnClickListener {
   private final TdApi.Game game;

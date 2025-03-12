@@ -27,7 +27,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import me.vkryl.core.lambda.CancellableRunnable;
-import me.vkryl.td.MessageId;
+import tgx.td.MessageId;
 
 public class MessagesSearchManager {
   public static final int SEARCH_DIRECTION_TOP = 0;
@@ -177,7 +177,7 @@ public class MessagesSearchManager {
       searchManagerMiddleware.search(query, fromSender, handler);
     } else {
       final int offset = direction == SEARCH_DIRECTION_TOP ? 0 : ( direction == SEARCH_DIRECTION_BOTTOM ? -19 : -10);
-      TdApi.SearchChatMessages function = new TdApi.SearchChatMessages(chatId, input, fromSender, fromMessageId, offset, SEARCH_LOAD_LIMIT, filter, messageThreadId);
+      TdApi.SearchChatMessages function = new TdApi.SearchChatMessages(chatId, input, fromSender, fromMessageId, offset, SEARCH_LOAD_LIMIT, filter, messageThreadId, 0);
       searchManagerMiddleware.search(function, handler);
     }
   }

@@ -26,12 +26,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.PopupWindow;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
@@ -40,8 +43,10 @@ import org.thunderdog.challegram.navigation.ActivityResultHandler;
 import org.thunderdog.challegram.navigation.BackListener;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.MenuMoreWrap;
+import org.thunderdog.challegram.navigation.MenuMoreWrapAbstract;
 import org.thunderdog.challegram.navigation.OptionsLayout;
 import org.thunderdog.challegram.navigation.RootDrawable;
+import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Keyboard;
@@ -264,6 +269,16 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
     }
   }
 
+  public boolean dismissOtherPopUps = true;
+
+  public void setDismissOtherPopUps (boolean dismissOtherPopUps) {
+    this.dismissOtherPopUps = dismissOtherPopUps;
+  }
+
+  public boolean needDismissOtherPopUps () {
+    return dismissOtherPopUps;
+  }
+
   private static boolean patchPopupWindow (View container, boolean needFullScreen, boolean disallowScreenshots) {
     WindowManager.LayoutParams p = (WindowManager.LayoutParams) container.getLayoutParams();
     int newFlags = p.flags;
@@ -412,8 +427,15 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
     }
   }
 
+  private boolean isDestroyed;
+
+  public boolean isDestroyed () {
+    return isDestroyed;
+  }
+
   @Override
   public void performDestroy () {
+    isDestroyed = true;
     for (int i = getChildCount() - 1; i >= 0; i--) {
       View view = getChildAt(i);
       if (view instanceof Destroyable) {
@@ -503,7 +525,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
     return boundView;
   }
 
-  public void showMoreView (MenuMoreWrap menuWrap) {
+  public void showMoreView (MenuMoreWrapAbstract menuWrap) {
     if (menuWrap == null) {
       throw new IllegalArgumentException();
     }
@@ -539,7 +561,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
   }
 
   private void hideMoreWrap () {
-    MenuMoreWrap menuWrap = (MenuMoreWrap) getContentChild();
+    MenuMoreWrapAbstract menuWrap = (MenuMoreWrapAbstract) getContentChild();
 
     if (menuWrap == null) {
       return;
@@ -668,7 +690,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
             }
           };
 
-          MenuMoreWrap menuWrap = (MenuMoreWrap) getContentChild();
+          MenuMoreWrapAbstract menuWrap = (MenuMoreWrapAbstract) getContentChild();
 
           if (menuWrap == null) {
             return;
@@ -808,7 +830,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
     animator.animateTo(toFactor);
   }
 
-  private View getContentChild () {
+  public View getContentChild () {
     int count = getChildCount();
     for (int i = 0; i < count; i++) {
       View view = getChildAt(i);
@@ -909,6 +931,43 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
 
   public void addStatusBar () {
     useStatusBar = true;
+  }
+
+  private @Nullable TooltipOverlayView tooltipOverlayView;
+
+  public TooltipOverlayView tooltipManager () {
+    if (tooltipOverlayView == null) {
+      tooltipOverlayView = new TooltipOverlayView(getContext());
+      tooltipOverlayView.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+      tooltipOverlayView.setAvailabilityListener((overlayView, hasChildren) -> {
+        if (hasChildren) {
+          if (tooltipOverlayView.getParent() != null)
+            return;
+          addView(tooltipOverlayView);
+        } else {
+          removeView(tooltipOverlayView);
+        }
+      });
+    }
+    return tooltipOverlayView;
+  }
+
+  public final TooltipOverlayView.TooltipInfo showErrorTooltip (ViewController<?> context, View view, CharSequence text) {
+    return showTooltip(context, view, R.drawable.baseline_error_24, text);
+  }
+
+  public final TooltipOverlayView.TooltipInfo showWarningTooltip (ViewController<?> context, View view, CharSequence text) {
+    return showTooltip(context, view, R.drawable.baseline_warning_24, text);
+  }
+
+  public final TooltipOverlayView.TooltipInfo showInfoTooltip (ViewController<?> context, View view, CharSequence text) {
+    return showTooltip(context, view, R.drawable.baseline_info_24, text);
+  }
+
+  public final TooltipOverlayView.TooltipInfo showTooltip (ViewController<?> context, View view, @DrawableRes int icon, CharSequence text) {
+    return tooltipManager()
+      .builder(view)
+      .show(context, null, icon, text);
   }
 
   public static PopupLayout parentOf (View view) {

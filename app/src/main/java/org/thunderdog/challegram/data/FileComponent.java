@@ -40,6 +40,7 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.ImageVideoThumbFile;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
+import org.thunderdog.challegram.mediaview.disposable.DisposableMediaViewController;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.TGLegacyAudioManager;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -125,7 +126,11 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
     }
     this.needFakeTitle = Text.needFakeBold(title);
     initSubtitle();
-    if (doc.thumbnail == null && context.isSending() && TGMimeType.isImageMimeType(U.resolveMimeType(doc.document.local.path))) {
+    this.hasPreview = false;
+    this.preview = null;
+    this.miniThumbnail = null;
+    this.fullPreview = null;
+    if (doc.thumbnail == null && /*context.isSending() &&*/ TGMimeType.isImageMimeType(U.resolveMimeType(doc.document.local.path))) {
       hasPreview = true;
 
       preview = new ImageFileLocal(doc.document.local.path);
@@ -187,6 +192,9 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
     this.needFakeTitle = Text.needFakeBold(title);
     initSubtitle();
 
+    this.preview = null;
+    this.miniThumbnail = null;
+    this.fullPreview = null;
     this.hasPreview = audio.albumCoverThumbnail != null && (Config.ALLOW_BOT_COVERS || context.getMessage().viaBotUserId == 0); // preventing shit covers from @music and other bots
     if (hasPreview) {
       if (audio.albumCoverMinithumbnail != null) {
@@ -250,7 +258,11 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
       this.progress.setViewProvider(viewProvider);
     }
 
-    if (context.getChatId() == 0) { // Preview mode
+    if (TD.isSelfDestructTypeImmediately(message)) {
+      this.progress.setDownloadedIconRes(R.drawable.baseline_hot_once_24);
+      this.progress.setIgnorePlayPauseClicks(true);
+      this.progress.setNoCloud();
+    } else if (context.getChatId() == 0) { // Preview mode
       this.progress.setCurrentState(TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED, false);
       this.progress.setDownloadedIconRes(R.drawable.baseline_pause_24);
     }
@@ -331,13 +343,21 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
     return progress;
   }
 
+  public void rebuildLayout () {
+    if (lastMaxWidth != 0) {
+      int width = lastMaxWidth;
+      lastMaxWidth = 0;
+      buildLayout(width);
+    }
+  }
+
   public void buildLayout (int maxWidth) {
     lastMaxWidth = maxWidth;
-    if (waveform != null) {
-      waveform.layout(Math.min(Screen.dp(420f), Math.min(TGMessage.getEstimatedContentMaxWidth(), maxWidth) - Screen.dp(FileProgressComponent.DEFAULT_FILE_RADIUS) * 2 - getPreviewOffset() - (int) sizeWidth - Screen.dp(12f)));
-    }
     if (title != null || subtitle != null) {
       buildTitles(maxWidth - (getPreviewSize() + getPreviewOffset()));
+    }
+    if (waveform != null) {
+      waveform.layout(Math.min(Screen.dp(420f), Math.min(TGMessage.getEstimatedContentMaxWidth(), maxWidth) - Screen.dp(FileProgressComponent.DEFAULT_FILE_RADIUS) * 2 - getPreviewOffset() - (int) sizeWidth - Screen.dp(12f)));
     }
   }
 
@@ -732,7 +752,7 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
       }
       int waveformLeft = startX + Screen.dp(FileProgressComponent.DEFAULT_FILE_RADIUS) * 2 + getPreviewOffset();
       int cy = startY + Screen.dp(FileProgressComponent.DEFAULT_FILE_RADIUS);
-      waveform.draw(c, seek, waveformLeft, cy);
+      waveform.draw(c, seek, waveformLeft, cy, isPlaying && TD.isSelfDestructTypeImmediately(message));
       boolean align = context.isOutgoingBubble();
       if (unreadFactor != 0f) {
         int cx = startX + Screen.dp(FileProgressComponent.DEFAULT_FILE_RADIUS);
@@ -775,6 +795,15 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
         UI.openFile(this.context.controller(), StringUtils.isEmpty(doc.fileName) ? null : doc.fileName, new File(doc.document.local.path), doc.mimeType, TD.getViewCount(this.context.getMessage().interactionInfo)));
       this.context.readContent();
     }
+  }
+
+  @Override
+  public boolean onPlayPauseClick (FileProgressComponent context, View view, TdApi.File file, long messageId) {
+    if (TD.isSelfDestructTypeImmediately(message)) {
+      return DisposableMediaViewController.openMediaOrShowTooltip(view, this.context, (targetView, outRect) -> progress.toRect(outRect));
+    }
+
+    return false;
   }
 
   @Override

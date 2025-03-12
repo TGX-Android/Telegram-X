@@ -21,7 +21,6 @@ import android.widget.LinearLayout;
 
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.mediaview.data.FiltersState;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;

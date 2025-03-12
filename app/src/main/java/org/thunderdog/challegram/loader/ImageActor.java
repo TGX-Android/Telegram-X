@@ -17,19 +17,17 @@ package org.thunderdog.challegram.loader;
 import android.graphics.Bitmap;
 import android.os.CancellationSignal;
 
+import androidx.media3.extractor.metadata.id3.ApicFrame;
 import androidx.palette.graphics.Palette;
-
-import com.google.android.exoplayer2.metadata.id3.ApicFrame;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.config.Config;
-import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.player.AudioController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibManager;
 
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class ImageActor implements ImageReader.Listener, AudioController.ApicListener {
   private ImageFile file;

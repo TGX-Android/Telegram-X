@@ -14,11 +14,15 @@
  */
 package org.thunderdog.challegram.widget;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Path;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.style.URLSpan;
+import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -29,12 +33,12 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
-import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.charts.LayoutHelper;
 import org.thunderdog.challegram.component.chat.InputView;
 import org.thunderdog.challegram.core.Lang;
@@ -48,6 +52,7 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.TranslationControllerV2;
@@ -64,13 +69,13 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
-@SuppressLint("ViewConstructor")
 public class TextFormattingLayout extends FrameLayout implements TranslationsManager.Translatable {
   private static final int MIN_PADDING_BETWEEN_BUTTONS = 4;
   private static final int MAX_BUTTON_SIZE = 40;
-  private static final int PADDING = 15;
+  private static final int PADDING_HORIZONTAL = 15;
+  private static final int PADDING_VERTICAL = 20;
 
   public static final int FLAG_BOLD = 1;
   public static final int FLAG_ITALIC = 1 << 1;
@@ -82,31 +87,18 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
   private static final int FLAG_BLOCK_QUOTE = 1 << 7;
   private static final int FLAG_CLEAR = 1 << 30;
 
-  private static final int[] buttonIds = new int[]{
-    R.id.btn_bold, R.id.btn_italic, R.id.btn_monospace, R.id.btn_underline,
-    R.id.btn_strikethrough, R.id.btn_link, R.id.btn_spoiler,
-    android.R.id.cut, android.R.id.copy, android.R.id.paste, R.id.btn_translate
-  };
+  private KeyboardFrameLayout keyboardView;
+  private ViewController<?> parent;
+  private InputView inputView;
+  private TranslationsManager translationsManager;
 
-  private static final int[] buttonIcons = new int[]{
-    R.drawable.baseline_format_bold_24, R.drawable.baseline_format_italic_24,
-    R.drawable.baseline_code_24, R.drawable.baseline_format_underlined_24,
-    R.drawable.baseline_strikethrough_s_24, R.drawable.baseline_link_24,
-    R.drawable.baseline_eye_off_24, R.drawable.baseline_content_cut_24,
-    R.drawable.baseline_content_copy_24, R.drawable.baseline_content_paste_24,
-    R.drawable.baseline_translate_24
-  };
-
-  private final @NonNull ViewController<?> parent;
-  private final TextView editHeader;
-  private final TextView translateHeader;
-  private final TextView clearButton;
-  private final Button[] buttons;
   private final LangSelector langSelector;
-  private final InputView inputView;
-  private final BoolAnimator clearButtonIsEnabled;
+  private final LinkInput linkInput;
+  private LinkButton linkButton;
 
-  private final TranslationsManager translationsManager;
+  private final SparseArray<Button> buttons = new SparseArray<>();
+  private final Params lp = new Params();
+
   private final TranslationCounterDrawable translationCounterDrawable;
   private final ClickHelper clickHelper = new ClickHelper(new ClickHelper.Delegate() {
     @Override
@@ -136,58 +128,69 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
 
   public interface Delegate {
     void onWantsCloseTextFormattingKeyboard ();
+    default void onWantsOpenTextFormattingKeyboard () {}
   }
 
-  public TextFormattingLayout (@NonNull Context context, @NonNull ViewController<?> parent, InputView inputView) {
+  public TextFormattingLayout (@NonNull Context context) {
     super(context);
-    this.parent = parent;
-    this.inputView = inputView;
+    setPadding(Screen.dp(PADDING_HORIZONTAL), Screen.dp(PADDING_VERTICAL), Screen.dp(PADDING_HORIZONTAL), 0);
 
-    ViewSupport.setThemedBackground(this, ColorId.background, parent);
-    setPadding(Screen.dp(PADDING), 0, Screen.dp(PADDING), 0);
+    translationCounterDrawable = new TranslationCounterDrawable(Drawables.get(R.drawable.baseline_translate_24));
+    translationCounterDrawable.setColors(ColorId.icon, ColorId.background ,ColorId.iconActive);
+    translationCounterDrawable.setInvalidateCallback(() -> buttons.get(R.id.btn_translate).invalidate());
 
-    addView(createHeader(context, parent, Lang.getString(R.string.TextFormatting)));
-    addView(editHeader = createHeader(context, parent, Lang.getString(R.string.TextFormattingTools)));
-    addView(translateHeader = createHeader(context, parent, Lang.getString(R.string.TextFormattingTranslate)));
+    linkInput = new LinkInput(context);
+    linkInput.setId(R.id.input);
+    linkInput.setEnabled(false);
+    linkInput.setClickable(false);
+    addView(linkInput);
 
-    clearButton = createHeader(context, parent, Lang.getString(R.string.Clear));
-    clearButton.setOnClickListener(this::onButtonClick);
-    clearButton.setTypeface(Fonts.getRobotoRegular());
-    clearButton.setId(R.id.btn_plain);
-    addView(clearButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT));
-
-    clearButtonIsEnabled = new BoolAnimator(0, (id, factor, fraction, callee) -> clearButton.setAlpha(factor),
-      AnimatorUtils.DECELERATE_INTERPOLATOR, 200L, true);
-
-    buttons = new Button[buttonIds.length];
-    for (int a = 0; a < buttonIds.length; a++) {
-      Button button = new Button(context);
-      button.setId(buttonIds[a]);
-      button.setDrawable(buttonIcons[a]);
-      button.setBackground(a < 7, parent);
-      button.setOnClickListener(this::onButtonClick);
-      addView(buttons[a] = button);
-    }
-
-    langSelector = new LangSelector(context, parent);
+    langSelector = new LangSelector(context);
     langSelector.setOnClickListener(this::onClickLanguageSelector);
     addView(langSelector);
 
-    CircleButton circleButton = new CircleButton(getContext());
-    circleButton.setId(R.id.btn_circleBackspace);
-    circleButton.init(R.drawable.baseline_backspace_24, -Screen.dp(1.5f), 46f, 4f, ColorId.circleButtonOverlay, ColorId.circleButtonOverlayIcon);
-    circleButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(54), Screen.dp(54), Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 0, Screen.dp(12f)));
-    circleButton.setOnClickListener(this::onButtonClick);
-    parent.addThemeInvalidateListener(circleButton);
-    addView(circleButton);
+    for (int a = 0; a < buttonsData.size(); a++) {
+      final ButtonData buttonData = buttonsData.valueAt(a);
+      final Button button;
+      if (buttonData.id == R.id.btn_link) {
+        linkButton = new LinkButton(context);
+        button = linkButton;
+      } else {
+        button = new Button(context);
+      }
+
+      button.setId(buttonData.id);
+      button.setDrawable(buttonData.icon);
+      button.setOnClickListener(this::onButtonClick);
+      buttons.append(buttonData.id, button);
+      addView(button);
+
+      if (buttonData.id == R.id.btn_translate) {
+        button.setDrawable(translationCounterDrawable);
+        button.setNeedDrawWithoutRepainting(true);
+      }
+    }
+  }
+
+  void setKeyboardView (KeyboardFrameLayout keyboardView) {
+    this.keyboardView = keyboardView;
+  }
+
+  public void init (ViewController<?> parent, InputView inputView, Delegate delegate) {
+    this.parent = parent;
+    this.delegate = delegate;
+    this.inputView = inputView;
+
+    linkInput.init(parent);
+    langSelector.init(parent);
+    ViewSupport.setThemedBackground(this, ColorId.background, parent);
+
+    for (int a = 0; a < buttonsData.size(); a++) {
+      final ButtonData buttonData = buttonsData.valueAt(a);
+      buttons.get(buttonData.id).setBackground(buttonData.needBackground, parent);
+    }
 
     translationsManager = new TranslationsManager(parent.tdlib(), this, this::setTranslatedStatus, this::setTranslationResult, this::setTranslationError);
-    translationCounterDrawable = new TranslationCounterDrawable(Drawables.get(R.drawable.baseline_translate_24));
-    translationCounterDrawable.setColors(ColorId.icon, ColorId.background ,ColorId.iconActive);
-    translationCounterDrawable.setInvalidateCallback(() -> buttons[10].invalidate());
-    buttons[10].setDrawable(translationCounterDrawable);
-    buttons[10].setNeedDrawWithoutRepainting(true);
-
     setLanguageToTranslate(Settings.instance().getDefaultLanguageForTranslateDraft());
   }
 
@@ -201,26 +204,59 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
 
   public void onInputViewSpansChanged () {
     stopTranslationIfNeeded();
+    checkButtonsActive(true);
   }
 
   public void onInputViewTouchEvent (MotionEvent event) {
     clickHelper.onTouchEvent(inputView, event);
   }
 
-  public void setDelegate (Delegate delegate) {
-    this.delegate = delegate;
-  }
-
   public void checkButtonsActive (boolean animated) {
     final boolean isEmpty = isSelectionEmpty();
-    final int flags = checkSpans();
 
-    for (int a = 0; a < 11; a++) {
-      if (a < 7) buttons[a].setIsActive(BitwiseUtils.hasFlag(flags, 1 << a), animated);
-      if (a != 9) buttons[a].setIsEnabled(!isEmpty, animated);
+    final TextSelection selection = inputView.getTextSelection();
+    final Editable text = inputView.getText();
+    final TdApi.FormattedText outputText = inputView.getOutputText(false);
+
+    final int flags = (selection == null || selection.isEmpty()) ? 0 :
+      checkSpans(outputText, selection.start, selection.end);
+
+    final URLSpan[] existingSpans = selection != null ?
+      text.getSpans(selection.start, selection.end, URLSpan.class) : null;
+    final int linksCount = existingSpans != null ? existingSpans.length : 0;
+
+    for (int a = 0; a < buttonsData.size(); a++) {
+      final ButtonData data = buttonsData.valueAt(a);
+      final Button button = buttons.get(data.id);
+      if (data.id == R.id.btn_plain) {
+        button.setIsEnabled(BitwiseUtils.hasFlag(flags, data.flag), animated);
+        continue;
+      }
+
+      if (data.id == R.id.btn_circleBackspace) {
+        button.setIsEnabled(selection != null && (!selection.isEmpty() || selection.start > 0), animated);
+        continue;
+      }
+
+      if (data.id == R.id.btn_link) {
+        button.setIsActive(existingSpans != null && existingSpans.length > 0, animated);
+        linkButton.setIsMultiple(existingSpans != null && existingSpans.length > 1, animated);
+        linkInput.textView.setText(linksCount == 1 ? existingSpans[0].getURL() : null);
+        linkInput.textView.setHint(linksCount > 1 ? R.string.MultipleUrlPlaceholder : R.string.PasteUrlPlaceholder);
+        linkInput.textView.setTypeface(linksCount > 1 ? Fonts.getRobotoItalic() : Fonts.getRobotoRegular());
+        continue;
+      }
+
+      if (data.flag != 0) {
+        button.setIsActive(BitwiseUtils.hasFlag(flags, data.flag), animated);
+      }
+
+      if (data.id != android.R.id.paste) {
+        button.setIsEnabled(!isEmpty, animated);
+      }
     }
+    linkInput.setIsEnabled(!isEmpty, animated);
     langSelector.setIsEnabled(!isEmpty, animated);
-    clearButtonIsEnabled.setValue(BitwiseUtils.hasFlag(flags, FLAG_CLEAR), animated);
   }
 
   private void stopTranslationIfNeeded () {
@@ -238,38 +274,15 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     final int width = MeasureSpec.getSize(widthMeasureSpec);
+    final int height = MeasureSpec.getSize(heightMeasureSpec);
+    lp.init(width, height);
+    lp.apply(langSelector, 0, 2, 6);
+    lp.apply(linkInput, 0, 1, 6);
 
-    final int button_size_px = Math.min((width - Screen.dp(PADDING * 2 + MIN_PADDING_BETWEEN_BUTTONS * 6)) / 7, Screen.dp(MAX_BUTTON_SIZE));
-    final float padding = Math.max(Screen.dp(MIN_PADDING_BETWEEN_BUTTONS), (width - Screen.dp(PADDING * 2) - 7 * button_size_px) / 6f);
-
-    ViewGroup.MarginLayoutParams params;
-
-    params = (ViewGroup.MarginLayoutParams) editHeader.getLayoutParams();
-    params.topMargin = Screen.dp(46) + button_size_px;
-
-    params = (ViewGroup.MarginLayoutParams) translateHeader.getLayoutParams();
-    params.leftMargin = (int) ((padding + button_size_px) * 3);
-    params.topMargin = Screen.dp(46) + button_size_px;
-
-    params = (ViewGroup.MarginLayoutParams) langSelector.getLayoutParams();
-    params.topMargin = Screen.dp(92) + button_size_px;
-    params.leftMargin = (int) ((padding + button_size_px) * 3);
-    params.height = button_size_px;
-    params.width = (int) (button_size_px * 3 + padding * 2);
-
-    for (int a = 0; a < buttonIds.length; a++) {
-      params = (ViewGroup.MarginLayoutParams) buttons[a].getLayoutParams();
-      params.width = params.height = button_size_px;
-      if (a < 7) {
-        params.leftMargin = (int) ((padding + button_size_px) * a);
-        params.topMargin = Screen.dp(46);
-      } else if (a < 10) {
-        params.leftMargin = (int) ((padding + button_size_px) * (a - 7));
-        params.topMargin = Screen.dp(92) + button_size_px;
-      } else {
-        params.leftMargin = (int) ((padding + button_size_px) * 6);
-        params.topMargin = Screen.dp(92) + button_size_px;
-      }
+    for (int a = 0; a < buttonsData.size(); a++) {
+      final ButtonData buttonData = buttonsData.valueAt(a);
+      final Button button = buttons.get(buttonData.id);
+      lp.apply(button, buttonData.left, buttonData.top);
     }
 
     super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -283,7 +296,21 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
   private void onButtonClick (View v) {
     int id = v.getId();
 
-    if (id == R.id.btn_circleBackspace) {
+    if (id == R.id.btn_pasteUrl) {
+      final CharSequence text = U.getPasteText(v.getContext());
+      if (text != null) {
+        final boolean isValid = Strings.isValidLink(text.toString());
+        if (isValid) {
+          inputView.setSpanLink(text.toString());
+        } else {
+          parent.context().tooltipManager().builder(v).show(parent.tdlib(), R.string.PasteUrlNotValidHint).hideDelayed();
+          UI.hapticVibrate(v, false);
+        }
+      } else {
+        parent.context().tooltipManager().builder(v).show(parent.tdlib(), R.string.PasteUrlEmptyHint).hideDelayed();
+        UI.hapticVibrate(v, false);
+      }
+    } else if (id == R.id.btn_circleBackspace) {
       inputView.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL));
     } else if (id == R.id.btn_translate) {
       startTranslate();
@@ -298,7 +325,7 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     if (id == R.id.btn_plain) {
       inputView.setSpan(id);
     } else {
-      int flag = getTypeFlagFromButtonId(id);
+      int flag = buttonsData.get(id).flag;
       if (flag == -1) return;
 
       int flags = checkSpans();
@@ -434,25 +461,6 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     return flags;
   }
 
-  private static int getTypeFlagFromButtonId (@IdRes int id) {
-    if (id == R.id.btn_bold) {
-      return FLAG_BOLD;
-    } else if (id == R.id.btn_italic) {
-      return FLAG_ITALIC;
-    } else if (id == R.id.btn_monospace) {
-      return FLAG_MONOSPACE;
-    } else if (id == R.id.btn_underline) {
-      return  FLAG_UNDERLINE;
-    } else if (id == R.id.btn_strikethrough) {
-      return FLAG_STRIKETHROUGH;
-    } else if (id == R.id.btn_link) {
-      return FLAG_LINK;
-    } else if (id == R.id.btn_spoiler) {
-      return FLAG_SPOILER;
-    }
-    return -1;
-  }
-
   private static int getTypeFlagFromEntityType (TdApi.TextEntityType type) {
     switch (type.getConstructor()) {
       case TdApi.TextEntityTypeBold.CONSTRUCTOR:
@@ -472,6 +480,7 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
       case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
         return FLAG_SPOILER;
       case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
+      case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR:
         return FLAG_BLOCK_QUOTE;
 
       // immutable
@@ -492,7 +501,7 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
 
       // unsupported
       default:
-        Td.assertTextEntityType_91234a79();
+        Td.assertTextEntityType_56c1e709();
         throw Td.unsupported(type);
     }
   }
@@ -518,25 +527,11 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     return null;
   }
 
-  private static TextView createHeader (Context context, ViewController<?> parent, String text) {
-    TextView textView = new NoScrollTextView(context);
-    textView.setPadding(Screen.dp(6), Screen.dp(20), Screen.dp(6), Screen.dp(8));
-    textView.setSingleLine(true);
-    textView.setEllipsize(TextUtils.TruncateAt.END);
-    textView.setTextColor(Theme.textAccent2Color());
-    textView.setTypeface(Fonts.getRobotoMedium());
-    textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
-    textView.setLayoutParams(FrameLayoutFix.newParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
-    textView.setText(text);
-    parent.addThemeTextColorListener(textView, ColorId.background_text);
-    return textView;
-  }
-
   private static class Button extends FrameLayout implements FactorAnimator.Target {
     private final BoolAnimator isActive;
     private final BoolAnimator isEnabled;
     private boolean needDrawWithoutRepainting;
-    private Drawable drawable;
+    protected Drawable drawable;
 
     public Button (Context context) {
       super(context);
@@ -554,11 +549,6 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
       } else {
         RippleSupport.setTransparentSelector(this, 6f, themeProvider);
       }
-    }
-
-    @Override
-    protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-      super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
 
     public void setNeedDrawWithoutRepainting (boolean needDrawWithoutRepainting) {
@@ -585,9 +575,14 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     @Override
     protected void dispatchDraw (Canvas canvas) {
       super.dispatchDraw(canvas);
+      drawDrawable(canvas, getMeasuredWidth() / 2f, getMeasuredHeight() / 2f, 1f);
+    }
+
+    protected void drawDrawable (Canvas canvas, float cx, float cy, float alpha) {
       if (drawable != null) {
         int color = ColorUtils.fromToArgb(Theme.iconColor(), Theme.getColor(ColorId.iconActive), isActive.getFloatValue());
-        Drawables.drawCentered(canvas, drawable, getMeasuredWidth() / 2f, getMeasuredHeight() / 2f, needDrawWithoutRepainting ? null : Paints.getPorterDuffPaint(color));
+        color = ColorUtils.alphaColor(alpha, color);
+        Drawables.drawCentered(canvas, drawable, cx, cy, needDrawWithoutRepainting ? null : Paints.getPorterDuffPaint(color));
       }
     }
 
@@ -598,12 +593,55 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     }
   }
 
-  @SuppressLint("AppCompatCustomView")
+  private static class LinkButton extends Button {
+    private static final RectF tmpRect = new RectF();
+    private final BoolAnimator isMultiple = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 200L);
+    private final Path path = new Path();
+
+    public LinkButton (Context context) {
+      super(context);
+    }
+
+    public void setIsMultiple (boolean active, boolean animated) {
+      isMultiple.setValue(active, animated);
+    }
+
+    @Override
+    protected void dispatchDraw (Canvas canvas) {
+      final float factor = isMultiple.getFloatValue();
+      if (factor == 0f) {
+        super.dispatchDraw(canvas);
+        return;
+      }
+
+      final int s = Views.save(canvas);
+      final float offset = -Screen.dp(2f) * factor;
+      final float cx = getMeasuredWidth() / 2f;
+      final float cy = getMeasuredHeight() / 2f;
+
+      canvas.translate(0, offset);
+      super.dispatchDraw(canvas);
+
+      path.reset();
+      tmpRect.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
+      path.addRect(tmpRect, Path.Direction.CW);
+      tmpRect.set(cx - Screen.dp(11), cy - Screen.dp(5), cx + Screen.dp(11), cy + Screen.dp(7));
+      path.addRoundRect(tmpRect, Screen.dp(6), Screen.dp(6), Path.Direction.CCW);
+      path.close();
+
+      canvas.clipPath(path);
+
+      drawDrawable(canvas, cx, cy + Screen.dp(4), factor);
+
+      Views.restore(canvas, s);
+    }
+  }
+
   private static class LangSelector extends Button {
     private final Drawable arrowDrawable;
     private final TextView textView;
 
-    public LangSelector (Context context, ViewController<?> parent) {
+    public LangSelector (Context context) {
       super(context);
 
       arrowDrawable = Drawables.get(R.drawable.baseline_keyboard_arrow_down_20);
@@ -616,10 +654,14 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
       textView.setEllipsize(TextUtils.TruncateAt.END);
       textView.setTypeface(Fonts.getRobotoRegular());
       textView.setSingleLine(true);
-      parent.addThemeTextColorListener(textView, ColorId.text);
+
       addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
       Views.setClickable(this);
+    }
+
+    public void init (ViewController<?> parent) {
+      parent.addThemeTextColorListener(textView, ColorId.text);
       setBackground(true, parent);
     }
 
@@ -632,5 +674,123 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
       super.dispatchDraw(canvas);
       Drawables.draw(canvas, arrowDrawable, getMeasuredWidth() - Screen.dp(26), Screen.dp(10), Paints.getPorterDuffPaint(Theme.iconColor()));
     }
+  }
+
+  private static class LinkInput extends Button {
+    public final TextView textView;
+
+    public LinkInput (Context context) {
+      super(context);
+
+      textView = new TextView(context);
+      textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14f);
+      textView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+      textView.setPadding(Screen.dp(12), 0, Screen.dp(12), 0);
+      textView.setHint(R.string.PasteUrlPlaceholder);
+      textView.setTextColor(Theme.getColor(ColorId.text));
+      textView.setHintTextColor(Theme.textPlaceholderColor());
+      textView.setTypeface(Fonts.getRobotoRegular());
+      textView.setSingleLine(true);
+
+      addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.NO_GRAVITY, 0, 0, 40, 0));
+    }
+
+    public void init (ViewController<?> parent) {
+      parent.addThemeTextColorListener(textView, ColorId.text);
+      parent.addThemeHintTextColorListener(textView, ColorId.textPlaceholder);
+      setBackground(true, parent);
+    }
+  }
+
+  private static class Params {
+    private int buttonSizePx = 0;
+    private float paddingHorizontal = 0f;
+    private float paddingVertical = 0f;
+
+    public void init(int width, int height) {
+      final int sizeW = (width - Screen.dp(PADDING_HORIZONTAL * 2 + MIN_PADDING_BETWEEN_BUTTONS * 6)) / 7;
+      final int sizeH = (height - Screen.dp(PADDING_VERTICAL * 2 + MIN_PADDING_BETWEEN_BUTTONS * 3)) / 4;
+
+      buttonSizePx = Math.min(Math.min(sizeW, sizeH), Screen.dp(MAX_BUTTON_SIZE));
+      paddingHorizontal = Math.max(Screen.dp(MIN_PADDING_BETWEEN_BUTTONS), (width - Screen.dp(PADDING_HORIZONTAL * 2) - 7 * buttonSizePx) / 6f);
+      paddingVertical = Screen.dp(12);
+    }
+
+    public void apply(View v, int left, int top) {
+      apply(v, left, top, 1);
+    }
+
+    public void apply(View v, int left, int top, int width) {
+      final ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+      params.width = getWidth(width);
+      params.height = buttonSizePx;
+      params.leftMargin = getLeft(left);
+      params.topMargin = getTop(top);
+    }
+
+    private int getWidth(int count) {
+      return (int) (buttonSizePx * count + paddingHorizontal * (count - 1));
+    }
+
+    private int getLeft(int index) {
+      return (int) ((paddingHorizontal + buttonSizePx) * index);
+    }
+
+    private int getRight(int index) {
+      return (int) ((paddingHorizontal + buttonSizePx) * index + buttonSizePx);
+    }
+
+    private int getTop(int index) {
+      return (int) ((paddingVertical + buttonSizePx) * index);
+    }
+  }
+
+  private static class ButtonData {
+    public final int id;
+    public final int icon;
+    public final boolean needBackground;
+
+    public final int flag;
+    public final int top;
+    public final int left;
+
+    public ButtonData (int id, int icon, boolean needBackground, int flag, int left, int top) {
+      this.id = id;
+      this.icon = icon;
+      this.needBackground = needBackground;
+      this.flag = flag;
+      this.left = left;
+      this.top = top;
+    }
+  }
+
+
+
+  /* * */
+
+  private static final SparseArray<ButtonData> buttonsData = new SparseArray<>();
+
+  private static void addButton(ButtonData button) {
+    buttonsData.append(button.id, button);
+  }
+
+  static {
+    addButton(new ButtonData(R.id.btn_bold, R.drawable.baseline_format_bold_24, true, FLAG_BOLD, 0, 0));
+    addButton(new ButtonData(R.id.btn_italic, R.drawable.baseline_format_italic_24, true, FLAG_ITALIC, 1, 0));
+    addButton(new ButtonData(R.id.btn_monospace, R.drawable.baseline_code_24, true, FLAG_MONOSPACE, 2, 0));
+    addButton(new ButtonData(R.id.btn_underline, R.drawable.baseline_format_underlined_24, true, FLAG_UNDERLINE, 3, 0));
+    addButton(new ButtonData(R.id.btn_strikethrough, R.drawable.baseline_strikethrough_s_24, true, FLAG_STRIKETHROUGH, 4, 0));
+    addButton(new ButtonData(R.id.btn_quote, R.drawable.baseline_format_quote_close_18, true, FLAG_BLOCK_QUOTE, 5, 0));
+    addButton(new ButtonData(R.id.btn_spoiler, R.drawable.baseline_eye_off_24, true, FLAG_SPOILER, 6,0));
+
+    addButton(new ButtonData(R.id.btn_pasteUrl, R.drawable.baseline_content_paste_24, false, 0, 5, 1));
+    addButton(new ButtonData(R.id.btn_link, R.drawable.baseline_link_24, false, FLAG_LINK, 6, 1));
+    addButton(new ButtonData(R.id.btn_translate, R.drawable.baseline_translate_24, false, 0, 6, 2));
+
+    addButton(new ButtonData(R.id.btn_plain, R.drawable.dot_baseline_clear_formatting_24, false, FLAG_CLEAR, 0,3));
+    addButton(new ButtonData(android.R.id.cut, R.drawable.baseline_content_cut_24, false, 0, 2, 3));
+    addButton(new ButtonData(android.R.id.copy, R.drawable.baseline_content_copy_24, false, 0, 3, 3));
+    addButton(new ButtonData(android.R.id.paste, R.drawable.baseline_content_paste_24, false, 0, 4, 3));
+    addButton(new ButtonData(R.id.btn_circleBackspace, R.drawable.baseline_backspace_24, false, 0, 6, 3));
   }
 }

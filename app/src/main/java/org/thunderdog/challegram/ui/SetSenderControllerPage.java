@@ -33,7 +33,7 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class SetSenderControllerPage extends BottomSheetViewController.BottomSheetBaseRecyclerViewController<SetSenderController.Args> implements
         BottomSheetViewController.BottomSheetBaseControllerPage, Menu {
@@ -207,14 +207,14 @@ public class SetSenderControllerPage extends BottomSheetViewController.BottomShe
           DoubleTextWrapper d = new DoubleTextWrapper(tdlib, Td.getSenderUserId(sender.sender), true);
           d.setChatMessageSender(sender);
           d.setForcedSubtitle(Lang.getString(R.string.YourAccount));
-          d.setDrawFakeCheckbox(Td.getSenderId(currentSender) == Td.getSenderId(sender.sender));
+          d.setIsChecked(Td.getSenderId(currentSender) == Td.getSenderId(sender.sender), /* animated */ false);
           return d;
         } else {
           TdApi.Chat chat = tdlib.chat(Td.getSenderId(sender.sender));
           if (chat != null) {
             DoubleTextWrapper d = new DoubleTextWrapper(tdlib, chat);
             d.setChatMessageSender(sender);
-            d.setDrawFakeCheckbox(Td.getSenderId(currentSender) == Td.getSenderId(sender.sender));
+            d.setIsChecked(Td.getSenderId(currentSender) == Td.getSenderId(sender.sender), /* animated */ false);
             if (Td.getSenderId(sender.sender) == this.chat.id) {
               d.setForcedSubtitle(Lang.getString(R.string.AnonymousAdmin));
             } else {

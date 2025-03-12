@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.ArrayUtils;
-import me.vkryl.td.ChatId;
+import tgx.td.ChatId;
 
 public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMembersController.Args> implements View.OnClickListener, Client.ResultHandler, TdlibCache.UserDataChangeListener {
   private ArrayList<TGUser> senders;
@@ -156,7 +156,7 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
 
     recyclerView.setAdapter(adapter);
 
-    tdlib.client().send(new TdApi.GetChatInviteLinkMembers(getArgumentsStrict().chatId, getArgumentsStrict().inviteLink, null, 20), result -> {
+    tdlib.client().send(new TdApi.GetChatInviteLinkMembers(getArgumentsStrict().chatId, getArgumentsStrict().inviteLink, false, null, 20), result -> {
       if (result.getConstructor() == TdApi.ChatInviteLinkMembers.CONSTRUCTOR) {
         TdApi.ChatInviteLinkMembers senders = (TdApi.ChatInviteLinkMembers) result;
         ArrayList<TGUser> list = new ArrayList<>(senders.members.length);
@@ -306,6 +306,6 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
     }
 
     isLoadingMore = true;
-    tdlib.client().send(new TdApi.GetChatInviteLinkMembers(getArgumentsStrict().chatId, getArgumentsStrict().inviteLink, sendersTdlib.get(sendersTdlib.size() - 1), 50), this);
+    tdlib.client().send(new TdApi.GetChatInviteLinkMembers(getArgumentsStrict().chatId, getArgumentsStrict().inviteLink, false, sendersTdlib.get(sendersTdlib.size() - 1), 50), this);
   }
 }

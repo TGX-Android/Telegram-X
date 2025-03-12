@@ -22,7 +22,6 @@ import android.graphics.RectF;
 import android.view.View;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.StringRes;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;

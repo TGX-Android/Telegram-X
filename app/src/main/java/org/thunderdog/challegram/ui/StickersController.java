@@ -52,7 +52,7 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.LongList;
 import me.vkryl.core.collection.LongSparseIntArray;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class StickersController extends RecyclerViewController<StickersController.Args> implements View.OnClickListener, StickersListener {
   public static final int MODE_STICKERS = 0;
@@ -146,8 +146,8 @@ public class StickersController extends RecyclerViewController<StickersControlle
 
         @Override
         public boolean onMove (@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
-          int fromPosition = viewHolder.getAdapterPosition();
-          int toPosition = target.getAdapterPosition();
+          int fromPosition = viewHolder.getBindingAdapterPosition();
+          int toPosition = target.getBindingAdapterPosition();
 
           int fromIndex = adapterForAdapter.getIndexFromPosition(fromPosition);
           int toIndex = adapterForAdapter.getIndexFromPosition(toPosition);

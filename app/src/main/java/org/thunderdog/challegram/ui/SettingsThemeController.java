@@ -55,7 +55,6 @@ import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
-import org.thunderdog.challegram.util.AppInstallationUtil;
 import org.thunderdog.challegram.util.AppUpdater;
 import org.thunderdog.challegram.util.DrawableModifier;
 import org.thunderdog.challegram.util.Permissions;
@@ -72,6 +71,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.TimeZone;
 
+import me.vkryl.android.AppInstallationUtil;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.MathUtils;
@@ -529,7 +529,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       }*/
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
-      if (AppInstallationUtil.isAppSideLoaded()) {
+      if (AppInstallationUtil.isAppSideLoaded(UI.getAppContext())) {
         items.addAll(Arrays.asList(
           new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.InAppUpdates),
           new ListItem(ListItem.TYPE_SHADOW_TOP),
@@ -553,7 +553,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.Chats));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
 
-      boolean sideLoaded = AppInstallationUtil.isAppSideLoaded();
+      boolean sideLoaded = AppInstallationUtil.isAppSideLoaded(UI.getAppContext());
       if (tdlib.canIgnoreSensitiveContentRestriction() && (sideLoaded || tdlib.ignoreSensitiveContentRestrictions())) {
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_restrictSensitiveContent, 0, R.string.DisplaySensitiveContent));
@@ -645,24 +645,22 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_audioCompression, 0, R.string.CompressAudio));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
-      tdlib.getTesterLevel(testerLevel -> tdlib.ui().post(() -> {
-        if (!isDestroyed()) {
-          boolean needBatman = testerLevel >= Tdlib.TESTER_LEVEL_READER || Settings.instance().getNewSetting(Settings.SETTING_FLAG_BATMAN_POLL_TRANSITIONS);
-          int index = adapter.indexOfViewById(R.id.btn_secret_batmanTransitions);
-          boolean hasBatman = index != -1;
-          if (needBatman != hasBatman) {
-            if (needBatman) {
-              index = adapter.indexOfViewByIdReverse(R.id.btn_systemFonts);
-              if (index != -1) {
-                adapter.getItems().addAll(index, Arrays.asList(
-                  new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_batmanTransitions, 0, R.string.BatmanTransitions),
-                  new ListItem(ListItem.TYPE_SEPARATOR_FULL)
-                ));
-                adapter.notifyItemRangeInserted(index, 2);
-              }
-            } else {
-              adapter.removeRange(index, 2);
+      tdlib.getTesterLevel(testerLevel -> runOnUiThreadOptional(() -> {
+        boolean needBatman = testerLevel >= Tdlib.TesterLevel.MIN_LEVEL_FOR_BATMAN_EFFECT || Settings.instance().getNewSetting(Settings.SETTING_FLAG_BATMAN_POLL_TRANSITIONS);
+        int index = adapter.indexOfViewById(R.id.btn_secret_batmanTransitions);
+        boolean hasBatman = index != -1;
+        if (needBatman != hasBatman) {
+          if (needBatman) {
+            index = adapter.indexOfViewByIdReverse(R.id.btn_systemFonts);
+            if (index != -1) {
+              adapter.getItems().addAll(index, Arrays.asList(
+                new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_secret_batmanTransitions, 0, R.string.BatmanTransitions),
+                new ListItem(ListItem.TYPE_SEPARATOR_FULL)
+              ));
+              adapter.notifyItemRangeInserted(index, 2);
             }
+          } else {
+            adapter.removeRange(index, 2);
           }
         }
       }));
@@ -1403,18 +1401,18 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         ids.append(R.id.btn_edit);
         icons.append(R.drawable.baseline_edit_24);
         strings.append(R.string.ThemeEdit);
-        colors.append(OPTION_COLOR_NORMAL);
+        colors.append(OptionColor.NORMAL);
 
         ids.append(R.id.btn_share);
         icons.append(R.drawable.baseline_forward_24);
         strings.append(Settings.instance().canEditAuthor(customThemeId) ? R.string.ThemeExport : R.string.Share);
-        colors.append(OPTION_COLOR_NORMAL);
+        colors.append(OptionColor.NORMAL);
 
         if (!isCurrent) {
           ids.append(R.id.btn_new);
           icons.append(R.drawable.baseline_content_copy_24);
           strings.append(R.string.ThemeCopy);
-          colors.append(OPTION_COLOR_NORMAL);
+          colors.append(OptionColor.NORMAL);
         }
       } else {
         info = Lang.getStringBold(R.string.ThemeCreateInfo, item.getString());
@@ -1422,30 +1420,30 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         ids.append(R.id.btn_new);
         icons.append(R.drawable.baseline_edit_24);
         strings.append(R.string.ThemeCreate);
-        colors.append(OPTION_COLOR_NORMAL);
+        colors.append(OptionColor.NORMAL);
 
         ids.append(R.id.btn_share);
         icons.append(R.drawable.baseline_forward_24);
         strings.append(R.string.Share);
-        colors.append(OPTION_COLOR_NORMAL);
+        colors.append(OptionColor.NORMAL);
       }
 
       ids.append(R.id.btn_delete);
       icons.append(R.drawable.baseline_delete_forever_24);
       strings.append(R.string.ThemeRemove);
-      colors.append(OPTION_COLOR_RED);
+      colors.append(OptionColor.RED);
     } else {
       info = Lang.getStringBold(R.string.ThemeCreateInfo, item.getString());
       ids.append(R.id.btn_new);
       icons.append(R.drawable.baseline_create_24);
       strings.append(R.string.ThemeCreate);
-      colors.append(OPTION_COLOR_NORMAL);
+      colors.append(OptionColor.NORMAL);
 
       if (BuildConfig.DEBUG) {
         ids.append(R.id.btn_share);
         icons.append(R.drawable.baseline_forward_24);
         strings.append(R.string.Share);
-        colors.append(OPTION_COLOR_NORMAL);
+        colors.append(OptionColor.NORMAL);
       }
     }
 

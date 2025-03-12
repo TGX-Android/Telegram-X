@@ -33,7 +33,7 @@ import org.thunderdog.challegram.widget.EmojiLayout;
 import java.util.ArrayList;
 
 import me.vkryl.core.BitwiseUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class TGStickerSetInfo {
   private static final int FLAG_RECENT = 1;
@@ -89,7 +89,7 @@ public class TGStickerSetInfo {
     this.tdlib = tdlib;
     this.info = info;
     if (info.thumbnail != null) {
-      this.previewOutline = info.thumbnailOutline;
+      this.previewOutline = info.thumbnailOutline != null ? info.thumbnailOutline.paths : null;
       this.previewWidth = info.thumbnail.width;
       this.previewHeight = info.thumbnail.height;
       final int gifType;
@@ -121,7 +121,7 @@ public class TGStickerSetInfo {
         this.previewAnimation = null;
       }
     } else if (info.covers != null && info.covers.length > 0) {
-      this.previewOutline = info.covers[0].outline;
+      this.previewOutline = null;
       this.previewWidth = info.covers[0].width;
       this.previewHeight = info.covers[0].height;
       this.needThemedColorFilter = TD.needThemedColorFilter(info.covers[0]);
@@ -426,8 +426,8 @@ public class TGStickerSetInfo {
     return previewAnimation;
   }
 
-  public boolean isAnimated () {
-    return info != null && Td.isAnimated(info.stickerFormat);
+  public boolean isPreviewAnimated () {
+    return previewAnimation != null;
   }
 
   public int getSize () {

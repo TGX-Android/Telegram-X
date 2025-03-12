@@ -72,7 +72,7 @@ import me.vkryl.core.CurrencyUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class TGInlineKeyboard {
   private static final float CURRENCY_TEXT_SIZE_DP = 10f;
@@ -432,6 +432,8 @@ public class TGInlineKeyboard {
     private boolean needFakeBold;
 
     private @DrawableRes int customIconRes;
+    private boolean customIconReverse;
+    private @ColorId int customColorId;
     private boolean isCustom;
     private String currencyChar;
     private float currencyCharWidth;
@@ -500,6 +502,14 @@ public class TGInlineKeyboard {
       }
     }
 
+    public void setCustomIconReverse (boolean customIconReverse) {
+      this.customIconReverse = customIconReverse;
+    }
+
+    public void setCustomColorId (int customColorId) {
+      this.customColorId = customColorId;
+    }
+
     private int row = -1, column = -1;
 
     private boolean useWhiteMode () {
@@ -537,7 +547,7 @@ public class TGInlineKeyboard {
 
       final boolean useBubbleMode = useWhiteMode();
       // float darkFactor = Theme.getDarkFactor();
-      int inlineOutlineColor = Theme.inlineOutlineColor(isOutBubble);
+      int inlineOutlineColor = customColorId != ColorId.NONE ? Theme.getColor(customColorId) : Theme.inlineOutlineColor(isOutBubble);
       int fillingColor = 0;
 
       if (useBubbleMode) {
@@ -581,7 +591,7 @@ public class TGInlineKeyboard {
 
       //noinspection ConstantConditions
       final float textColorFactor = ALLOW_INVERSE ? (selectionFactor * activeFactor * (1f - fadeFactor)) : ALLOW_ALWAYS_ACTIVE ? selectionFactor * (1f - fadeFactor) : 0f;
-      final int textColor = useBubbleMode ? context.context.getBubbleButtonTextColor() : ColorUtils.fromToArgb(Theme.inlineTextColor(isOutBubble), Theme.inlineTextActiveColor(), textColorFactor);
+      final int textColor = useBubbleMode ? context.context.getBubbleButtonTextColor() : ColorUtils.fromToArgb(customColorId != ColorId.NONE ? Theme.getColor(customColorId) :Theme.inlineTextColor(isOutBubble), Theme.inlineTextActiveColor(), textColorFactor);
 
       int textX = cx + getButtonPadding();
       if (customIconRes != 0) {
@@ -591,7 +601,7 @@ public class TGInlineKeyboard {
         int totalWidth = iconWidth + contentWidth;
         int offset = Screen.dp(4f);
         int iconX;
-        if (Lang.rtl()) {
+        if (Lang.rtl() ^ customIconReverse) {
           iconX = cx + buttonWidth / 2 + totalWidth / 2 + offset - iconWidth;
           textX -= iconWidth / 4 * 3 + offset - iconWidth;
         } else {
@@ -606,7 +616,6 @@ public class TGInlineKeyboard {
 
       if (type != null) {
         int iconColor = Theme.inlineIconColor(isOutBubble);
-        //noinspection SwitchIntDef
         switch (type.getConstructor()) {
           case TdApi.InlineKeyboardButtonTypeSwitchInline.CONSTRUCTOR:
           case TdApi.InlineKeyboardButtonTypeCallbackWithPassword.CONSTRUCTOR:
@@ -661,15 +670,23 @@ public class TGInlineKeyboard {
             drawProgress(c, useBubbleMode, textColorFactor);
             break;
           }
+          case TdApi.InlineKeyboardButtonTypeCopyText.CONSTRUCTOR:
+          case TdApi.InlineKeyboardButtonTypeWebApp.CONSTRUCTOR:
+            break;
+          default: {
+            Td.assertInlineKeyboardButtonType_4c981aa8();
+            throw Td.unsupported(type);
+          }
         }
       } else {
+        drawProgress(c, useBubbleMode, textColorFactor);
         // TODO
       }
     }
 
     private void drawProgress (Canvas c, boolean useBubbleMode, float textColorFactor) {
       if (progress != null) {
-        final int color = useBubbleMode ?  context.context.getBubbleButtonTextColor() : ColorUtils.fromToArgb(Theme.inlineIconColor(context.context != null && context.context.isOutgoingBubble()), Theme.inlineTextActiveColor(), textColorFactor);
+        final int color = useBubbleMode ?  context.context.getBubbleButtonTextColor() : ColorUtils.fromToArgb(customColorId != ColorId.NONE ? Theme.getColor(customColorId) :Theme.inlineIconColor(context.context != null && context.context.isOutgoingBubble()), Theme.inlineTextActiveColor(), textColorFactor);
         final int progressColor = ColorUtils.color((int) ((float) Color.alpha(color) * progressFactor), color);
         progress.forceColor(progressColor);
         progress.draw(c);
@@ -805,7 +822,9 @@ public class TGInlineKeyboard {
         flags &= ~FLAG_CAUGHT;
         if (!isActive()) {
           cancelSelection();
-          if (type != null) {
+          if (parent.isSponsoredMessage()) {
+            return false;
+          } else if (type != null) {
             switch (type.getConstructor()) {
               case TdApi.InlineKeyboardButtonTypeUrl.CONSTRUCTOR: {
                 ViewController<?> c = parent.context().navigation().getCurrentStackItem();
@@ -825,6 +844,19 @@ public class TGInlineKeyboard {
                   return true;
                 }
                 break;
+              case TdApi.InlineKeyboardButtonTypeBuy.CONSTRUCTOR:
+              case TdApi.InlineKeyboardButtonTypeCallback.CONSTRUCTOR:
+              case TdApi.InlineKeyboardButtonTypeCallbackGame.CONSTRUCTOR:
+              case TdApi.InlineKeyboardButtonTypeCallbackWithPassword.CONSTRUCTOR:
+              case TdApi.InlineKeyboardButtonTypeCopyText.CONSTRUCTOR:
+              case TdApi.InlineKeyboardButtonTypeSwitchInline.CONSTRUCTOR:
+              case TdApi.InlineKeyboardButtonTypeUser.CONSTRUCTOR:
+              case TdApi.InlineKeyboardButtonTypeWebApp.CONSTRUCTOR:
+                break;
+              default: {
+                Td.assertInlineKeyboardButtonType_4c981aa8();
+                throw Td.unsupported(type);
+              }
             }
           } else if (isCustom && clickListener != null) {
             return clickListener.onLongClick(view, context, this);
@@ -1057,11 +1089,21 @@ public class TGInlineKeyboard {
 
       final int currentContextId = this.contextId;
 
+      if (parent.isSponsoredMessage()) {
+        makeActive();
+        showProgressDelayed();
+        parent.openSponsoredMessage(() ->
+          parent.executeOnUiThreadOptional(this::makeInactive)
+        );
+        return;
+      }
+
       switch (type.getConstructor()) {
-        case TdApi.InlineKeyboardButtonTypeBuy.CONSTRUCTOR: {
+        case TdApi.InlineKeyboardButtonTypeBuy.CONSTRUCTOR:
+        case TdApi.InlineKeyboardButtonTypeCopyText.CONSTRUCTOR:
+        case TdApi.InlineKeyboardButtonTypeWebApp.CONSTRUCTOR:
           // TODO
           break;
-        }
 
         case TdApi.InlineKeyboardButtonTypeCallbackWithPassword.CONSTRUCTOR: {
           final TdApi.InlineKeyboardButtonTypeCallbackWithPassword callbackWithPassword = (TdApi.InlineKeyboardButtonTypeCallbackWithPassword) type;
@@ -1196,14 +1238,18 @@ public class TGInlineKeyboard {
           showProgressDelayed();
 
           TdApi.InlineKeyboardButtonTypeLoginUrl button = (TdApi.InlineKeyboardButtonTypeLoginUrl) type;
-          context.context.tdlib().client().send(new TdApi.GetLoginUrlInfo(context.context.getChatId(), context.messageId, button.id), getLoginCallback(currentContextId, view, button, needVerify));
+          context.context.tdlib().send(new TdApi.GetLoginUrlInfo(context.context.getChatId(), context.messageId, button.id), getLoginCallback(currentContextId, view, button, needVerify));
           break;
+        }
+        default: {
+          Td.assertInlineKeyboardButtonType_4c981aa8();
+          throw Td.unsupported(type);
         }
       }
     }
 
-    private Client.ResultHandler getLoginCallback (final int currentContextId, final View view, final TdApi.InlineKeyboardButtonTypeLoginUrl button, final boolean needVerify) {
-      return object -> UI.post(() -> {
+    private Tdlib.ResultHandler<TdApi.LoginUrlInfo> getLoginCallback (final int currentContextId, final View view, final TdApi.InlineKeyboardButtonTypeLoginUrl button, final boolean needVerify) {
+      return (loginUrlInfo, error) -> UI.post(() -> {
         if (currentContextId == contextId) {
           makeInactive();
         }
@@ -1217,9 +1263,15 @@ public class TGInlineKeyboard {
           return;
         }
 
-        switch (object.getConstructor()) {
+        if (error != null) {
+          UI.showError(error);
+          openUrl(currentContextId, view, button.url, needVerify);
+          return;
+        }
+
+        switch (loginUrlInfo.getConstructor()) {
           case TdApi.LoginUrlInfoOpen.CONSTRUCTOR: {
-            TdApi.LoginUrlInfoOpen open = (TdApi.LoginUrlInfoOpen) object;
+            TdApi.LoginUrlInfoOpen open = (TdApi.LoginUrlInfoOpen) loginUrlInfo;
             context.context.tdlib().ui()
               .openUrl(context.context.controller(), open.url, openParameters(currentContextId, view)
               .disableInstantView()
@@ -1227,7 +1279,7 @@ public class TGInlineKeyboard {
             break;
           }
           case TdApi.LoginUrlInfoRequestConfirmation.CONSTRUCTOR:
-            TdApi.LoginUrlInfoRequestConfirmation confirm = (TdApi.LoginUrlInfoRequestConfirmation) object;
+            TdApi.LoginUrlInfoRequestConfirmation confirm = (TdApi.LoginUrlInfoRequestConfirmation) loginUrlInfo;
             List<ListItem> items = new ArrayList<>();
             items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION_MULTILINE,
               R.id.btn_signIn, 0,
@@ -1257,7 +1309,7 @@ public class TGInlineKeyboard {
                 if (needSignIn) {
                   makeActive();
                   showProgressDelayed();
-                  context.context.tdlib().client().send(new TdApi.GetLoginUrl(parent.getChatId(), context.messageId, button.id, needWriteAccess), getLoginUrlCallback(currentContextId, view, button, needVerify));
+                  context.context.tdlib().send(new TdApi.GetLoginUrl(parent.getChatId(), context.messageId, button.id, needWriteAccess), getLoginUrlCallback(currentContextId, view, button, needVerify));
                 } else {
                   openUrl(currentContextId, view, button.url, false);
                 }
@@ -1271,7 +1323,7 @@ public class TGInlineKeyboard {
                       break;
                   }
                 })
-              .setOnSettingItemClick(confirm.requestWriteAccess ? (itemView, settingsId, item, doneButton, settingsAdapter) -> {
+              .setOnSettingItemClick(confirm.requestWriteAccess ? (itemView, settingsId, item, doneButton, settingsAdapter, window) -> {
                 final int itemId = item.getId();
                 if (itemId == R.id.btn_signIn) {
                   boolean needSignIn = settingsAdapter.getCheckIntResults().get(R.id.btn_signIn) == R.id.btn_signIn;
@@ -1293,17 +1345,16 @@ public class TGInlineKeyboard {
               .setRawItems(items)
             );
             break;
-          case TdApi.Error.CONSTRUCTOR: {
-            UI.showError(object);
-            openUrl(currentContextId, view, button.url, needVerify);
-            break;
+          default: {
+            Td.assertLoginUrlInfo_7af29c11();
+            throw Td.unsupported(loginUrlInfo);
           }
         }
       });
     }
 
-    private Client.ResultHandler getLoginUrlCallback (final int currentContextId, final View view, final TdApi.InlineKeyboardButtonTypeLoginUrl button, final boolean needVerify) {
-      return object -> UI.post(() -> {
+    private Tdlib.ResultHandler<TdApi.HttpUrl> getLoginUrlCallback (final int currentContextId, final View view, final TdApi.InlineKeyboardButtonTypeLoginUrl button, final boolean needVerify) {
+      return (httpUrl, error) -> UI.post(() -> {
         // TODO unify this piece of code into the one
         if (currentContextId == contextId) {
           makeInactive();
@@ -1318,17 +1369,11 @@ public class TGInlineKeyboard {
           return;
         }
 
-        switch (object.getConstructor()) {
-          case TdApi.HttpUrl.CONSTRUCTOR: {
-            String url = ((TdApi.HttpUrl) object).url;
-            context.context.tdlib().ui().openUrl(context.context.controller(), url, openParameters(currentContextId, view).disableInstantView());
-            break;
-          }
-          case TdApi.Error.CONSTRUCTOR: {
-            UI.showError(object);
-            openUrl(currentContextId, view, button.url, needVerify);
-            break;
-          }
+        if (error != null) {
+          UI.showError(error);
+          openUrl(currentContextId, view, button.url, needVerify);
+        } else {
+          context.context.tdlib().ui().openUrl(context.context.controller(), httpUrl.url, openParameters(currentContextId, view).disableInstantView());
         }
       });
     }

@@ -818,7 +818,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
         showOptions(null, new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {
           Lang.getString(R.string.ClearRecentReactionsAction),
           Lang.getString(R.string.Cancel)
-        }, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_auto_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        }, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_auto_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
           if (id == R.id.btn_done) {
             TGStickerSetInfo info = reactionsController.getStickerSetBySectionIndex(1);
             if (info != null) {
@@ -835,9 +835,9 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
   }
 
   private void removeStickerSet (final TGStickerSetInfo info) {
-    showOptions(null, new int[] {R.id.btn_copyLink, R.id.btn_archive, R.id.more_btn_delete}, new String[] {Lang.getString(R.string.CopyLink), Lang.getString(R.string.ArchivePack), Lang.getString(R.string.DeletePack)}, new int[] {ViewController.OPTION_COLOR_NORMAL, ViewController.OPTION_COLOR_NORMAL, ViewController.OPTION_COLOR_RED}, new int[] {R.drawable.baseline_link_24, R.drawable.baseline_archive_24, R.drawable.baseline_delete_24}, (itemView, id) -> {
+    showOptions(null, new int[] {R.id.btn_copyLink, R.id.btn_archive, R.id.more_btn_delete}, new String[] {Lang.getString(R.string.CopyLink), Lang.getString(R.string.ArchivePack), Lang.getString(R.string.DeletePack)}, new int[] {OptionColor.NORMAL, OptionColor.NORMAL, OptionColor.RED}, new int[] {R.drawable.baseline_link_24, R.drawable.baseline_archive_24, R.drawable.baseline_delete_24}, (itemView, id) -> {
       if (id == R.id.more_btn_delete) {
-        showOptions(Lang.getStringBold(R.string.RemoveEmojiSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.RemoveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
+        showOptions(Lang.getStringBold(R.string.RemoveEmojiSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.RemoveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
           if (resultId == R.id.btn_delete) {
             reactionsController.removeStickerSet(info);
             tdlib().client().send(new TdApi.ChangeStickerSet(info.getId(), false, false), tdlib().okHandler());
@@ -845,7 +845,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
           return true;
         });
       } else if (id == R.id.btn_archive) {
-        showOptions(Lang.getStringBold(R.string.ArchiveEmojiSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ArchiveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_archive_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
+        showOptions(Lang.getStringBold(R.string.ArchiveEmojiSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ArchiveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_archive_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
           if (resultId == R.id.btn_delete) {
             reactionsController.removeStickerSet(info);
             tdlib().client().send(new TdApi.ChangeStickerSet(info.getId(), false, true), tdlib().okHandler());

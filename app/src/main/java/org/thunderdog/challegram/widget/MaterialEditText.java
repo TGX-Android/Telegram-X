@@ -21,6 +21,7 @@ import android.text.method.PasswordTransformationMethod;
 import android.view.KeyEvent;
 
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
@@ -32,7 +33,8 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
 
-public class MaterialEditText extends EmojiEditText implements FactorAnimator.Target, Destroyable {
+@SuppressWarnings("ViewConstructor")
+public class MaterialEditText extends CustomEmojiEditText implements FactorAnimator.Target, Destroyable {
   // private static final ColorChanger goodChanger = new ColorChanger(0, 0xff18A81F);
   // private static final ColorChanger errorChanger = new ColorChanger(0xff63BAF7, 0xffED5454);
   // private static final ColorChanger globalChanger = new ColorChanger(0xffe6e6e6, 0xff63baf7);
@@ -54,8 +56,8 @@ public class MaterialEditText extends EmojiEditText implements FactorAnimator.Ta
 
   private EnterKeyListener enterKeyListener;
 
-  public MaterialEditText (Context context) {
-    super(context);
+  public MaterialEditText (Context context, Tdlib tdlib) {
+    super(context, tdlib);
     setBackgroundResource(R.drawable.transparent);
     setPadding(Screen.dp(1.5f), 0, Screen.dp(1.5f), 0);
     setSingleLine(true);

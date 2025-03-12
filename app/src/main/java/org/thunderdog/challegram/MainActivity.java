@@ -33,7 +33,6 @@ import androidx.collection.SparseArrayCompat;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.config.Config;
-import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.helper.LiveLocationHelper;
@@ -44,6 +43,7 @@ import org.thunderdog.challegram.navigation.SettingsWrap;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.sync.TemporaryNotification;
 import org.thunderdog.challegram.telegram.AccountSwitchReason;
 import org.thunderdog.challegram.telegram.GlobalAccountListener;
 import org.thunderdog.challegram.telegram.GlobalCountersListener;
@@ -67,6 +67,7 @@ import org.thunderdog.challegram.ui.CallController;
 import org.thunderdog.challegram.ui.CreateChannelController;
 import org.thunderdog.challegram.ui.CreateGroupController;
 import org.thunderdog.challegram.ui.EditChatFolderController;
+import org.thunderdog.challegram.ui.EditChatFolderInviteLinkController;
 import org.thunderdog.challegram.ui.EditNameController;
 import org.thunderdog.challegram.ui.IntroController;
 import org.thunderdog.challegram.ui.ListItem;
@@ -93,6 +94,7 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.widget.GearView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
+import org.thunderdog.challegram.widget.PopupLayout;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -101,14 +103,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import me.vkryl.android.AnimatorUtils;
-import me.vkryl.android.DeviceUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.td.MessageId;
+import tgx.td.MessageId;
 
 @SuppressWarnings(value = "SpellCheckingInspection")
 public class MainActivity extends BaseActivity implements GlobalAccountListener, GlobalCountersListener, GlobalResolvableProblemListener {
@@ -252,7 +253,13 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     @Tdlib.ResolvableProblem int problemType = tdlib.findResolvableProblem();
     BackHeaderButton backButton = navigation.getHeaderView().getBackButton();
     if (problemType != Tdlib.ResolvableProblem.NONE) {
-      backButton.setMenuBadge(ColorId.headerBadgeFailed, animated);
+      @ColorId int colorId;
+      if (problemType == Tdlib.ResolvableProblem.SET_BIRTHDATE) {
+        colorId = ColorId.headerBadge;
+      } else {
+        colorId = ColorId.headerBadgeFailed;
+      }
+      backButton.setMenuBadge(colorId, animated);
     } else {
       TdlibBadgeCounter counter = TdlibManager.instance().getTotalUnreadBadgeCounter(tdlib.accountId());
       if (counter.getCount() > 0) {
@@ -574,7 +581,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
       case TdApi.AuthorizationStateWaitRegistration.CONSTRUCTOR: {
         TdApi.AuthorizationStateWaitRegistration state = (TdApi.AuthorizationStateWaitRegistration) authState;
         EditNameController c = new EditNameController(this, tdlib);
-        c.setArguments(new EditNameController.Args(EditNameController.MODE_SIGNUP, state, tdlib.authPhoneNumberFormatted()));
+        c.setArguments(new EditNameController.Args(EditNameController.Mode.SIGNUP, state, tdlib.authPhoneNumberFormatted()));
         return c;
       }
       case TdApi.AuthorizationStateWaitPassword.CONSTRUCTOR: {
@@ -666,12 +673,6 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     MainController c = new MainController(this, account.tdlib());
     c.getValue();
     navigation.insertController(c, 0);
-  }
-
-  @Override
-  public void onPause () {
-    super.onPause();
-    Log.i("MainActivity.onPause");
   }
 
   @Override
@@ -924,7 +925,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
       .setNeedSeparators(false)
       .setOnSettingItemClick(multiSelect ? new ViewController.OnSettingItemClick() {
         @Override
-        public void onSettingItemClick (View view, int settingsId, ListItem item, TextView doneButton, SettingsAdapter settingsAdapter) {
+        public void onSettingItemClick (View view, int settingsId, ListItem item, TextView doneButton, SettingsAdapter settingsAdapter, PopupLayout window) {
           switch (item.getViewType()) {
             case ListItem.TYPE_CHECKBOX_OPTION:
             case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
@@ -1247,6 +1248,8 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
       restore = new SettingsFoldersController(context, tdlib);
     } else if (id == R.id.controller_editChatFolders) {
       restore = new EditChatFolderController(context, tdlib);
+    } else if (id == R.id.controller_editChatFolderInviteLink) {
+      restore = new EditChatFolderInviteLinkController(context, tdlib);
     } else if (id == R.id.controller_bug_killer) {
       restore = new SettingsBugController(context, tdlib);
     } else {
@@ -1437,7 +1440,27 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     }
   }
 
-  private boolean madeEmulatorChecks;
+  @Override
+  public void onPause () {
+    super.onPause();
+    Log.i("MainActivity.onPause");
+    /*if (BuildConfig.DEBUG && Settings.instance().getNewSetting(Settings.SETTING_FLAG_FOREGROUND_SERVICE_ENABLED)) {
+      tdlib.ui().postDelayed(() -> {
+        ForegroundService.startForegroundTask(this,
+          Lang.getString(R.string.RetrievingMessages), Lang.getString(R.string.RetrievingText, tdlib.account().getLongName()),
+          U.getOtherNotificationChannel(),
+          0,
+          -1,
+          tdlib.accountId()
+        );
+        tdlib.sync(-1, () -> {
+          runOnUiThread(() -> {
+            ForegroundService.stopForegroundTask(this, -1, tdlib.accountId());
+          });
+        }, true, true);
+      }, 2000);
+    }*/
+  }
 
   @Override
   public void onResume () {
@@ -1448,15 +1471,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     tdlib.context().global().notifyResolvableProblemAvailabilityMightHaveChanged();
     tdlib.context().dateManager().checkCurrentDate();
     UI.startNotificationService();
-    if (!madeEmulatorChecks && !Settings.instance().isEmulator()) {
-      madeEmulatorChecks = true;
-      Background.instance().post(() -> {
-        boolean isEmulator = DeviceUtils.detectEmulator(MainActivity.this);
-        if (isEmulator) {
-          Settings.instance().markAsEmulator();
-        }
-      });
-    }
+    TemporaryNotification.hide(this);
   }
 
   @Override

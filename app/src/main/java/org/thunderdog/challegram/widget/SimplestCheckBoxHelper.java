@@ -16,14 +16,16 @@ package org.thunderdog.challegram.widget;
 
 import android.view.View;
 
-import org.thunderdog.challegram.loader.Receiver;
+import androidx.annotation.Nullable;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
+import me.vkryl.android.util.SingleViewProvider;
+import me.vkryl.android.util.ViewProvider;
 
 public class SimplestCheckBoxHelper implements FactorAnimator.Target {
-  private final View target;
-  private final Receiver receiver;
+  private final ViewProvider viewProvider;
+  private final @Nullable Listener listener;
 
   private float factor;
   private FactorAnimator animator;
@@ -33,9 +35,17 @@ public class SimplestCheckBoxHelper implements FactorAnimator.Target {
     void onCheckFactorChanged (float factor);
   }
 
-  public SimplestCheckBoxHelper (View target, Receiver receiver) {
-    this.target = target;
-    this.receiver = receiver;
+  public SimplestCheckBoxHelper (View target) {
+    this(new SingleViewProvider(target), target instanceof Listener ? (Listener) target : null);
+  }
+
+  public SimplestCheckBoxHelper (ViewProvider viewProvider) {
+    this(viewProvider, null);
+  }
+
+  public SimplestCheckBoxHelper (ViewProvider viewProvider, @Nullable Listener listener) {
+    this.viewProvider = viewProvider;
+    this.listener = listener;
   }
 
   public boolean isChecked () {
@@ -67,9 +77,9 @@ public class SimplestCheckBoxHelper implements FactorAnimator.Target {
   private void setCheckFactor (float factor) {
     if (this.factor != factor) {
       this.factor = factor;
-      target.invalidate();
-      if (target instanceof Listener) {
-        ((Listener) target).onCheckFactorChanged(factor);
+      viewProvider.invalidate();
+      if (listener != null) {
+        listener.onCheckFactorChanged(factor);
       }
     }
   }
@@ -77,10 +87,5 @@ public class SimplestCheckBoxHelper implements FactorAnimator.Target {
   @Override
   public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
     setCheckFactor(factor);
-  }
-
-  @Override
-  public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
-
   }
 }

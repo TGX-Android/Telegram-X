@@ -20,8 +20,7 @@ import android.os.Message;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
-import com.google.android.exoplayer2.PlaybackParameters;
+import androidx.media3.common.PlaybackParameters;
 
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
@@ -45,8 +44,8 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceMap;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class TGPlayerController implements GlobalMessageListener, ProximityManager.Delegate {
   private static final int STATE_SEEK = -1; // This is used when dispatching seek progress
@@ -60,10 +59,10 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
   public static final int PLAY_FLAG_REPEAT_ONE = 1 << 2; // repeat current entry, until battery or user dies
   public static final int PLAY_FLAGS_DEFAULT = PLAY_FLAG_REPEAT;
 
-  public static final int PLAY_SPEED_NORMAL = 0;
-  public static final int PLAY_SPEED_2X = 1;
-  public static final int PLAY_SPEED_3X = 2;
-  public static final int PLAY_SPEED_4X = 2;
+  public static final int PLAY_SPEED_NORMAL = 100;
+  public static final int PLAY_SPEED_2X = 200;
+  public static final int PLAY_SPEED_3X = 300;
+  public static final int PLAY_SPEED_4X = 400;
 
   private int speed;
 
@@ -155,6 +154,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
 
   private long playlistChatId;
   private long playlistMessageThreadId;
+  private TdApi.SavedMessagesTopic savedMessagesTopic;
   private long playlistMaxMessageId, playlistMinMessageId;
   private String playlistSearchQuery;
   private TdApi.GetInlineQueryResults playlistInlineQuery;
@@ -169,6 +169,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
     context.global().addMessageListener(this);
     this.playbackFlags = Settings.instance().getPlayerFlags();
     this.proximityManager = new ProximityManager(this, this);
+    this.speed = Settings.instance().getPlaybackSpeed();
   }
 
   public void onUpdateFile (Tdlib tdlib, TdApi.UpdateFile updateFile) {
@@ -452,33 +453,24 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
     }
     if (this.speed != speed) {
       this.speed = speed;
+      Settings.instance().setPlaybackSpeed(speed);
       synchronized (this) {
         notifyTrackListSpeedChanged(globalListeners, speed);
       }
     }
   }
 
+  public int getSpeed () {
+    return speed;
+  }
+
   public static @NonNull PlaybackParameters newPlaybackParameters (boolean isVoice, int speedValue) {
     PlaybackParameters parameters = PlaybackParameters.DEFAULT;
     if (speedValue != TGPlayerController.PLAY_SPEED_NORMAL) {
-      float speed;
-      float pitch = 1f;
-      switch (speedValue) {
-        case TGPlayerController.PLAY_SPEED_2X:
-          if (isVoice) {
-            speed = 1.72f;
-            pitch = .98f;
-          } else {
-            speed = 2f;
-          }
-          break;
-        default:
-          speed = 1f;
-          break;
-      }
-      if (speed != 1f) {
-        parameters = new PlaybackParameters(speed, pitch);
-      }
+      final float speed = speedValue / 100f;
+      final float pitch = speedValue > 100 ? 0.98f : 1f;
+
+      parameters = new PlaybackParameters(speed, pitch);
     }
     return parameters;
   }
@@ -1522,7 +1514,8 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
         chatId, playlistSearchQuery, null,
         playlistSearchNextFromMessageId != 0 ? Math.min(minMessageId, playlistSearchNextFromMessageId) : minMessageId,
         0, 100, filter,
-        playlistMessageThreadId
+        playlistMessageThreadId,
+        0
       ) : null;
       requestNew = allowNewer ? playlistInlineQuery != null ? makeNextInlineQuery() : new TdApi.SearchChatMessages(
         chatId,
@@ -1530,7 +1523,8 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
         maxMessageId,
         -99, 100,
         filter,
-        playlistMessageThreadId
+        playlistMessageThreadId,
+        0
       ) : null;
     }
 
@@ -1684,6 +1678,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
   private static final int ACTION_REDUCE_VOLUME = 9;
   private static final int ACTION_SET_SPEED = 10;
 
+  @SuppressWarnings("unchecked")
   private void processMessage (Message msg) {
     switch (msg.what) {
       case ACTION_DELETE_MESSAGES: {
@@ -1724,7 +1719,6 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
         break;
       }
       case ACTION_ADD_MESSAGES: {
-        //noinspection unchecked
         addMessages(msg.arg1, (List<TdApi.Message>) msg.obj, msg.arg2 == 1);
         break;
       }
@@ -1775,6 +1769,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
   public static final int PAUSE_REASON_RECORD_VIDEO = 1 << 8;
   public static final int PAUSE_REASON_PROXIMITY = 1 << 9;
   public static final int PAUSE_REASON_OPEN_WEB_VIDEO = 1 << 10;
+  public static final int PAUSE_REASON_OPEN_ONCE_MEDIA = 1 << 11;
 
   private boolean needResume;
   private int pauseReasons;
@@ -1835,8 +1830,22 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
      * @param originIndex index of message requested in {@link PlayListBuilder#buildPlayList(TdApi.Message)}
      */
     public PlayList (List<TdApi.Message> messages, int originIndex) {
-      this.messages = messages;
-      this.originIndex = originIndex;
+      this.messages = new ArrayList<>();
+
+      int newOriginIndex = -1;
+      for (int a = 0; a < messages.size(); a++) {
+        final TdApi.Message msg = messages.get(a);
+        final boolean isOrigin = a == originIndex;
+        // FIXME: this should be filtered on the PlayListBuilder implementation level
+        if (TD.isSelfDestructTypeImmediately(msg) && !isOrigin) {
+          continue;
+        }
+        if (isOrigin) {
+          newOriginIndex = this.messages.size();
+        }
+        this.messages.add(msg);
+      }
+      this.originIndex = newOriginIndex;
     }
 
     /**
@@ -1894,7 +1903,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
     }
 
     /**
-     * Message thread identifier to be passed in {@link org.drinkless.tdlib.telegram.TdApi.SearchChatMessages} query
+     * Message thread identifier to be passed in {@link org.drinkless.tdlib.TdApi.SearchChatMessages} query
      */
     public PlayList setMessageThreadId (long messageThreadId) {
       this.messageThreadId = messageThreadId;

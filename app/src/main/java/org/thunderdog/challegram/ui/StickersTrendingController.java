@@ -49,7 +49,6 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.lambda.CancellableRunnable;
-import me.vkryl.core.lambda.RunnableData;
 
 public class StickersTrendingController extends ViewController<Void> implements StickerSmallView.StickerMovementCallback, Client.ResultHandler, TGStickerObj.DataProvider, StickersListener, TGStickerSetInfo.ViewCallback {
   private final boolean isEmoji;

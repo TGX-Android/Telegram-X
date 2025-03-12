@@ -571,6 +571,16 @@ public class CameraController extends ViewController<Void> implements CameraDele
     }
   }
 
+  @Override
+  public void displayHint (String hint) {
+    if (!UI.inUiThread()) {
+      handler.sendMessage(Message.obtain(handler, ACTION_DISPLAY_HINT, hint));
+      return;
+    }
+
+    context().tooltipManager().builder(button).controller(this).show(tdlib, hint).hideDelayed();
+  }
+
   private int availableCameraCount = -1;
 
   @AnyThread
@@ -1256,7 +1266,6 @@ public class CameraController extends ViewController<Void> implements CameraDele
       }
 
       int prevOrientation = context().getCurrentOrientation();
-      context().lockOrientation(requestedOrientation);
       checkDisplayRotation();
       return (prevOrientation == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT) != (requestedOrientation == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
     }
@@ -1276,7 +1285,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
   public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
     switch (id) {
       case ANIMATOR_ROTATION:
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR2) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR2 && finalFactor % 90.0f == 0.0f) {
           applyFakeRotation();
         }
         break;
@@ -1459,11 +1468,11 @@ public class CameraController extends ViewController<Void> implements CameraDele
     return m != null && m.isSecretChat();
   }
 
-  private boolean onSendMedia (ImageGalleryFile file, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean hasSpoiler) {
+  private boolean onSendMedia (ImageGalleryFile file, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean showCaptionAboveMedia, boolean hasSpoiler) {
     MessagesController m = findOutputController();
     if (m != null) {
       context.forceCloseCamera();
-      return m.sendPhotosAndVideosCompressed(new ImageGalleryFile[] {file}, false, options, disableMarkdown, asFiles, hasSpoiler);
+      return m.sendPhotosAndVideosCompressed(new ImageGalleryFile[] {file}, false, options, disableMarkdown, asFiles, showCaptionAboveMedia, hasSpoiler);
     }
     return false;
   }
@@ -1534,9 +1543,9 @@ public class CameraController extends ViewController<Void> implements CameraDele
         }
       }, sendDelegate != null ? sendDelegate : new MediaSpoilerSendDelegate() {
         @Override
-        public boolean sendSelectedItems (View view, ArrayList<ImageFile> images, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean hasSpoiler) {
+        public boolean sendSelectedItems (View view, ArrayList<ImageFile> images, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean showCaptionAboveMedia, boolean hasSpoiler) {
           ImageGalleryFile galleryFile = (ImageGalleryFile) images.get(0);
-          return onSendMedia(galleryFile, options, disableMarkdown, asFiles, hasSpoiler);
+          return onSendMedia(galleryFile, options, disableMarkdown, asFiles, showCaptionAboveMedia, hasSpoiler);
         }
       }, stack, m != null && m.areScheduledOnly()).setAvatarPickerMode(avatarPickerMode);
       if (m != null) {
@@ -1824,6 +1833,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
   private static final int ACTION_ZOOM_CHANGED = 9;
   private static final int ACTION_PERFORM_SUCCESS_HINT = 10;
   private static final int ACTION_UPDATE_DURATION = 11;
+  private static final int ACTION_DISPLAY_HINT = 12;
 
   private static class CameraUiHandler extends Handler {
     private final CameraController context;
@@ -1838,6 +1848,10 @@ public class CameraController extends ViewController<Void> implements CameraDele
       switch (msg.what) {
         case ACTION_DISPATCH_ERROR: {
           context.displayFatalErrorMessage((String) msg.obj);
+          break;
+        }
+        case ACTION_DISPLAY_HINT: {
+          context.displayHint((String) msg.obj);
           break;
         }
         case ACTION_CHANGE_CAMERA_COUNT: {

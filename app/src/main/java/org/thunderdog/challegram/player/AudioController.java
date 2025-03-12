@@ -26,19 +26,18 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
-
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.ExoPlayer;
-import com.google.android.exoplayer2.IllegalSeekPositionException;
-import com.google.android.exoplayer2.PlaybackException;
-import com.google.android.exoplayer2.PlaybackParameters;
-import com.google.android.exoplayer2.Player;
-import com.google.android.exoplayer2.Timeline;
-import com.google.android.exoplayer2.Tracks;
-import com.google.android.exoplayer2.metadata.Metadata;
-import com.google.android.exoplayer2.metadata.id3.ApicFrame;
-import com.google.android.exoplayer2.source.MediaSource;
-import com.google.android.exoplayer2.source.TrackGroup;
+import androidx.media3.common.C;
+import androidx.media3.common.IllegalSeekPositionException;
+import androidx.media3.common.Metadata;
+import androidx.media3.common.PlaybackException;
+import androidx.media3.common.PlaybackParameters;
+import androidx.media3.common.Player;
+import androidx.media3.common.Timeline;
+import androidx.media3.common.TrackGroup;
+import androidx.media3.common.Tracks;
+import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.source.MediaSource;
+import androidx.media3.extractor.metadata.id3.ApicFrame;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
@@ -62,7 +61,7 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.MathUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class AudioController extends BasePlaybackController implements TGAudio.PlayListener, TGPlayerController.TrackListChangeListener, FactorAnimator.Target {
   private final TdlibManager context;
@@ -369,6 +368,7 @@ public class AudioController extends BasePlaybackController implements TGAudio.P
     ExoPlayer exoPlayer = this.exoPlayer = U.newExoPlayer(UI.getAppContext(), true);
     exoPlayer.addListener(this);
     setExoPlayerParameters();
+    setExoPlayerSpeed();
     exoPlayer.setVolume(volume);
     switch (TGPlayerController.getPlayRepeatFlag(playFlags)) {
       case TGPlayerController.PLAY_FLAG_REPEAT:
@@ -562,9 +562,7 @@ public class AudioController extends BasePlaybackController implements TGAudio.P
 
   @Override
   public void onPlaybackSpeedChanged (int newSpeed) {
-    if (playbackMode == PLAYBACK_MODE_EXOPLAYER_LIST && exoPlayer != null) {
-      exoPlayer.setPlaybackParameters(TGPlayerController.newPlaybackParameters(isPlayingVoice(), newSpeed));
-    }
+    setExoPlayerSpeed(newSpeed);
   }
 
   @Override
@@ -1072,6 +1070,16 @@ public class AudioController extends BasePlaybackController implements TGAudio.P
   private void setExoPlayerParameters () {
     if (exoPlayer != null) {
       context.player().proximityManager().modifyExoPlayer(exoPlayer, C.AUDIO_CONTENT_TYPE_MUSIC);
+    }
+  }
+
+  private void setExoPlayerSpeed () {
+    setExoPlayerSpeed (Settings.instance().getPlaybackSpeed());
+  }
+
+  private void setExoPlayerSpeed (int speed) {
+    if (exoPlayer != null) {
+      exoPlayer.setPlaybackParameters(TGPlayerController.newPlaybackParameters(false, speed));
     }
   }
 

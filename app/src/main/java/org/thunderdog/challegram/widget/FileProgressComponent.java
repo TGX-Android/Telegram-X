@@ -70,7 +70,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class FileProgressComponent implements TdlibFilesManager.FileListener, FactorAnimator.Target, TGPlayerController.TrackListener, Destroyable {
   public static final float DEFAULT_RADIUS = 28f;
@@ -108,6 +108,9 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   public static final @DrawableRes int PLAY_ICON = R.drawable.baseline_play_arrow_36_white;
 
   public interface SimpleListener {
+    default boolean onPlayPauseClick (FileProgressComponent context, View view, TdApi.File file, long messageId) {
+      return false;
+    }
     default boolean onClick (FileProgressComponent context, View view, TdApi.File file, long messageId) {
       return false;
     }
@@ -138,6 +141,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   private boolean isLocal;
 
   private boolean ignoreLoaderClicks;
+  private boolean ignorePlayPauseClicks;
   private boolean noCloud;
 
   private final Rect vsDownloadRect = new Rect();
@@ -187,6 +191,10 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
 
   public void setIgnoreLoaderClicks (boolean ignoreLoaderClicks) {
     this.ignoreLoaderClicks = ignoreLoaderClicks;
+  }
+
+  public void setIgnorePlayPauseClicks (boolean ignorePlayPauseClicks) {
+    this.ignorePlayPauseClicks = ignorePlayPauseClicks;
   }
 
   public void setVideoStreaming (boolean isVideoStreaming) {
@@ -297,10 +305,6 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     return file != null ? file.remote.isUploadingActive ? file.remote.uploadedSize : file.local.downloadedSize : 0;
   }
 
-  public boolean isInGenerationProgress () {
-    return file != null && currentProgress == 0f && useGenerationProgress && file.local.isDownloadingActive;
-  }
-
   public boolean isProcessing () {
     return file != null && !file.local.isDownloadingCompleted && !file.remote.isUploadingCompleted && file.remote.uploadedSize == 0;
   }
@@ -390,6 +394,11 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     this.mimeType = mimeType;
   }
 
+  @Nullable
+  public String getMimeType () {
+    return mimeType;
+  }
+
   public void setFile (@Nullable TdApi.File file) {
     setFile(file, null);
   }
@@ -403,7 +412,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     this.file = file;
     if (file != null && file.local != null) {
       this.isDownloaded = file.local.isDownloadingCompleted;
-      this.useGenerationProgress = !file.local.isDownloadingCompleted && !file.remote.isUploadingCompleted && message != null && !Td.isPhoto(message.content);
+      this.useGenerationProgress = NEED_GENERATION_PROGRESS && !file.local.isDownloadingCompleted && !file.remote.isUploadingCompleted && message != null && !Td.isPhoto(message.content);
     } else {
       this.isDownloaded = this.useGenerationProgress = false;
     }
@@ -542,6 +551,10 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   public boolean openFile (ViewController<?> c, Runnable defaultOpen) {
     if (file != null && fileType == TdlibFilesManager.DOWNLOAD_FLAG_FILE) {
       if (c != null && c.tdlib() == tdlib) {
+        if (isLocal) {
+          runOnUiThreadOptional(c, defaultOpen);
+          return true;
+        }
         tdlib.files().downloadFile(file, TdlibFilesManager.DEFAULT_DOWNLOAD_PRIORITY, 0, 0, result -> {
           switch (result.getConstructor()) {
             case TdApi.File.CONSTRUCTOR: {
@@ -765,7 +778,13 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
         TGDownloadManager.instance().downloadFile(file);
       }*/
       if (file.remote.isUploadingCompleted || file.id == -1) {
-        TdlibManager.instance().player().playPauseMessage(tdlib, playPauseFile, playListBuilder);
+        if (ignorePlayPauseClicks) {
+          if (listener != null) {
+            listener.onPlayPauseClick(this, view, file, messageId);
+          }
+        } else {
+          TdlibManager.instance().player().playPauseMessage(tdlib, playPauseFile, playListBuilder);
+        }
       }
       return true;
     }
@@ -779,6 +798,9 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
       }
       case TdlibFilesManager.STATE_IN_PROGRESS: {
         if (file != null) {
+          if (tdlib.cancelEditMessageMedia(chatId, messageId)) {
+            return true;
+          }
           if (file.remote.isUploadingActive || isSendingMessage) {
             tdlib.deleteMessagesIfOk(chatId, new long[] {messageId}, true);
           } else {
@@ -1600,6 +1622,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     /*setCurrentView(null);*/
   }
 
+  private static final boolean NEED_GENERATION_PROGRESS = false;
   private static final float GENERATION_PROGRESS_PART = .35f;
 
   private float getVisualProgress (float progress) {

@@ -60,7 +60,8 @@ public class RecordDurationView extends View {
 
   // Public interrupts
 
-  public void start (long startTimeMs) {
+  public void start (long startTimeMs, long additionalDuration) {
+    this.additionalDuration = additionalDuration;
     if (animator == null) {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
         final android.animation.TimeAnimator animator;
@@ -69,7 +70,7 @@ public class RecordDurationView extends View {
           elapsedDeltaTime += deltaTime;
           if (elapsedDeltaTime >= 15) {
             elapsedDeltaTime = 0;
-            if (processMillis(totalTime)) {
+            if (processMillis(totalTime + this.additionalDuration)) {
               invalidate();
               if (timerCallback != null) {
                 timerCallback.onTimerTick();
@@ -87,7 +88,7 @@ public class RecordDurationView extends View {
           long totalTime = SystemClock.uptimeMillis() - animationStart;
           if (elapsedDeltaTime == 0l || totalTime - elapsedDeltaTime >= 15l) {
             elapsedDeltaTime = totalTime;
-            if (processMillis(totalTime)) {
+            if (processMillis(totalTime + this.additionalDuration)) {
               invalidate();
               if (timerCallback != null) {
                 timerCallback.onTimerTick();
@@ -159,6 +160,7 @@ public class RecordDurationView extends View {
   }
 
   private static final float SWITCH_FACTOR = .125f;
+  private long additionalDuration;
 
   private boolean processMillis (long timeTotal) {
     int updated = 0;

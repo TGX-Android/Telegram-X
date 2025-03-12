@@ -16,12 +16,17 @@ package org.thunderdog.challegram.loader;
 
 import android.graphics.Bitmap;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 
 public class ImageHandler extends Handler {
   private static final int INVALIDATE = 0;
   private static final int ANIMATE = 1;
   private static final int DISPLAY = 2;
+
+  public ImageHandler () {
+    super(Looper.getMainLooper());
+  }
 
   public void invalidate (ImageReceiver image) {
     sendMessage(Message.obtain(this, INVALIDATE, image));

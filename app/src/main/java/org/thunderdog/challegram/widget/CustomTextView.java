@@ -45,7 +45,6 @@ import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextColorSetThemed;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextEntity;
-import org.thunderdog.challegram.util.text.TextEntityCustom;
 import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
 
@@ -60,7 +59,9 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
   @ColorId
   private int colorId = ColorId.text,
               clickableColorId = ColorId.textLink,
-              clickableHighlightColorId = ColorId.textLinkPressHighlight;
+              clickableHighlightColorId = ColorId.textLinkPressHighlight,
+              quoteTextColorId = ColorId.blockQuoteText,
+              quoteLineColorId = ColorId.blockQuoteLine;
   @Nullable
   private ThemeDelegate forcedTheme;
   private final Text.ClickCallback clickCallback = new Text.ClickCallback() {
@@ -72,6 +73,7 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
   };
   private int linkFlags = Text.ENTITY_FLAGS_NONE;
   private int maxLineCount = -1;
+  private int extraTextFlags = 0;
 
   private final RefreshRateLimiter refreshRateLimiter = new RefreshRateLimiter(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
 
@@ -168,6 +170,16 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
   }
 
   @Override
+  public int quoteTextColorId () {
+    return quoteTextColorId;
+  }
+
+  @Override
+  public int quoteLineColorId () {
+    return quoteLineColorId;
+  }
+
+  @Override
   public void checkRtl () {
     invalidate();
   }
@@ -189,8 +201,23 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
   }
 
   public void setTextColorId (@ColorId int colorId) {
+    setTextColorId(colorId, false);
+  }
+
+  public void setTextColorId (@ColorId int colorId, boolean includeQuotes) {
     if (this.colorId != colorId) {
       this.colorId = colorId;
+      invalidate();
+    }
+    if (includeQuotes) {
+      setQuoteColorId(colorId, colorId);
+    }
+  }
+
+  public void setQuoteColorId (int textColorId, int lineColorId) {
+    if (quoteTextColorId != textColorId || quoteLineColorId != lineColorId) {
+      quoteTextColorId = textColorId;
+      quoteLineColorId = lineColorId;
       invalidate();
     }
   }
@@ -214,17 +241,24 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
   }
 
   public void setBoldText (CharSequence sequence, TextEntity[] entities, boolean animated) {
-    // TODO support nested entities
-    setText(sequence, new TextEntity[] {new TextEntityCustom(null, tdlib, sequence.toString(), 0, sequence.length(), TextEntityCustom.FLAG_BOLD, null)}, animated);
+    if (entities == null) {
+      entities = TextEntity.toEntities(sequence);
+    }
+    setText(sequence, entities, Text.FLAG_ALL_BOLD, animated);
   }
 
   public void setText (CharSequence sequence, TextEntity[] entities, boolean animated) {
+    setText(sequence, entities, 0, animated);
+  }
+
+  public void setText (CharSequence sequence, TextEntity[] entities, int extraTextFlags, boolean animated) {
     String text = sequence != null ? sequence.toString() : null;
     if (sequence instanceof Spannable && (entities == null || entities.length == 0)) {
       entities = TD.collectAllEntities(null, tdlib, sequence, false, null);
     }
-    if (!ObjectsCompat.equals(rawText, text)) {
+    if (!ObjectsCompat.equals(rawText, text) || this.extraTextFlags != extraTextFlags) {
       this.rawText = text;
+      this.extraTextFlags = extraTextFlags;
       this.entities = entities;
       cancelAsyncLayout();
       if (lastMeasuredWidth > 0) {
@@ -252,7 +286,7 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
 
   private long asyncContextId;
 
-  private static Text createText (final View view, final String text, final int textWidth, final TextStyleProvider provider, final int maxLineCount, final TextEntity[] entities, TextColorSet colorSet, Text.TextMediaListener textMediaListener) {
+  private static Text createText (final View view, final String text, final int textWidth, final TextStyleProvider provider, final int maxLineCount, final TextEntity[] entities, final int extraTextFlags, TextColorSet colorSet, Text.TextMediaListener textMediaListener) {
     return new Text.Builder(text, textWidth, provider, colorSet)
       .entities(entities, textMediaListener)
       .view(view)
@@ -261,13 +295,14 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
         Text.FLAG_CUSTOM_LONG_PRESS |
         Text.FLAG_CUSTOM_LONG_PRESS_NO_SHARE |
         Text.FLAG_TRIM_END |
-        (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0)
+        (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0) |
+        extraTextFlags
       )
       .maxLineCount(maxLineCount)
       .build();
   }
 
-  public static int measureHeight (ViewController<?> controller, CharSequence text, float textSize, int width) {
+  public static int measureHeight (ViewController<?> controller, CharSequence text, int extraTextFlags, float textSize, int width) {
     TextEntity[] entities = TD.collectAllEntities(controller, controller.tdlib(), text, false, null);
     Text measuredText = CustomTextView.createText(
       null,
@@ -275,13 +310,14 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
       Paints.robotoStyleProvider(textSize),
       -1,
       entities,
+      extraTextFlags,
       TextColorSets.WHITE,
       (parsedText, specificMedia) -> { }
     );
     return measuredText.getHeight();
   }
 
-  private void dispatchAsyncText (final String text, final int textWidth, final boolean animated, final TextStyleProvider provider, final int maxLineCount, final int linkFlags, final TextEntity[] entities) {
+  private void dispatchAsyncText (final String text, final int textWidth, final boolean animated, final TextStyleProvider provider, final int maxLineCount, final int extraTextFlags, final int linkFlags, final TextEntity[] entities) {
     final long contextId = asyncContextId;
     Background.instance().post(() -> {
       final Text newText = createText(
@@ -289,6 +325,7 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
         text, textWidth, provider,
         maxLineCount,
         Text.makeEntities(text, linkFlags, entities, tdlib, null),
+        extraTextFlags,
         this,
         this
       );
@@ -354,7 +391,7 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
         cancelAsyncLayout();
 
         if (async) {
-          dispatchAsyncText(rawText, textWidth, animated, textStyleProvider, maxLineCount, linkFlags, entities);
+          dispatchAsyncText(rawText, textWidth, animated, textStyleProvider, maxLineCount, extraTextFlags, linkFlags, entities);
         } else {
           final TextEntity[] newEntities = Text.makeEntities(rawText, linkFlags, entities, tdlib, null);
           final Text newText = createText(
@@ -362,6 +399,7 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
             rawText, textWidth, textStyleProvider,
             maxLineCount,
             newEntities,
+            extraTextFlags,
             this,
             this
           );

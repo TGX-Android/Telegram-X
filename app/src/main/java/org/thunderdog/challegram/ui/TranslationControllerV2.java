@@ -327,6 +327,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     prevHeight = currentHeight;
   }
 
+  @SuppressWarnings("deprecation")
   private void scrollCompensation (int heightDiff) {
     ScrollJumpCompensator listener = new ScrollJumpCompensator(recyclerView, messageTextView, heightDiff);
     listener.add();
@@ -515,7 +516,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
       ids.append(R.id.btn_copyTranslation);
       strings.append(R.string.TranslationCopy);
       icons.append(R.drawable.baseline_content_copy_24);
-      colors.append(OPTION_COLOR_NORMAL);
+      colors.append(OptionColor.NORMAL);
     }
 
     if (ids.isEmpty()) return;
@@ -684,7 +685,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     protected void onDraw (Canvas canvas) {
       float alpha = translationCounterDrawable.getLoadingTextAlpha();
       for (ListAnimator.Entry<TextWrapper> entry : text) {
-        entry.item.draw(canvas, Screen.dp(18), Screen.dp(6), null, alpha * entry.getVisibility(), textMediaReceiver);
+        entry.item.draw(canvas, Screen.dp(18), getMeasuredWidth() - Screen.dp(18), 0, Screen.dp(6), null, alpha * entry.getVisibility(), textMediaReceiver);
       }
       invalidate();
     }

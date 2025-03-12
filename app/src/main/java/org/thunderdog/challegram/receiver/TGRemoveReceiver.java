@@ -25,6 +25,6 @@ public class TGRemoveReceiver extends BroadcastReceiver {
   @Override
   public void onReceive (Context context, Intent intent) {
     TdlibNotificationExtras extras = TdlibNotificationExtras.parse(intent.getExtras());
-    TdlibManager.performExternalAction(context, TdlibManager.EXTERNAL_ACTION_MARK_AS_HIDDEN, extras);
+    TdlibManager.performExternalAction(context, TdlibManager.ExternalAction.MARK_AS_HIDDEN, extras);
   }
 }

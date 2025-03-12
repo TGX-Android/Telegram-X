@@ -1,9 +1,5 @@
 package org.thunderdog.challegram.util.text;
 
-import static me.vkryl.android.animator.CounterAnimator.Part.POSITION_BOTTOM;
-import static me.vkryl.android.animator.CounterAnimator.Part.POSITION_NORMAL;
-import static me.vkryl.android.animator.CounterAnimator.Part.POSITION_UP;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
@@ -145,23 +141,23 @@ public class FormattedCounterAnimator<T extends TextDrawable> extends CounterAni
   protected void onPartAdded (@NonNull Part<T> part, long oldCount, long newCount, boolean isReturned) {
     if (callback.shouldAnimatePartVerticalPosition(part, oldCount, newCount)) {
       if (oldCount < newCount) {
-        part.setVerticalPositionFrom(POSITION_UP);
+        part.setVerticalPositionFrom(CounterAnimator.Part.POSITION_UP);
       } else if (oldCount > newCount) {
-        part.setVerticalPositionFrom(POSITION_BOTTOM);
+        part.setVerticalPositionFrom(CounterAnimator.Part.POSITION_BOTTOM);
       }
     }
-    part.setVerticalPositionTo(POSITION_NORMAL);
+    part.setVerticalPositionTo(CounterAnimator.Part.POSITION_NORMAL);
   }
 
   protected void onPartRemoved (@NonNull Part<T> part, long oldCount, long newCount) {
     if (callback.shouldAnimatePartVerticalPosition(part, oldCount, newCount)) {
       if (oldCount < newCount) {
-        part.setVerticalPositionTo(POSITION_BOTTOM);
+        part.setVerticalPositionTo(CounterAnimator.Part.POSITION_BOTTOM);
       } else if (oldCount > newCount) {
-        part.setVerticalPositionTo(POSITION_UP);
+        part.setVerticalPositionTo(CounterAnimator.Part.POSITION_UP);
       }
     } else {
-      part.setVerticalPositionTo(POSITION_NORMAL);
+      part.setVerticalPositionTo(CounterAnimator.Part.POSITION_NORMAL);
     }
   }
 }

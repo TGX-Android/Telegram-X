@@ -18,13 +18,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
-import org.thunderdog.challegram.Log;
 
 import java.util.Collection;
 
 import me.vkryl.core.collection.LongSet;
-import me.vkryl.td.Td;
-import me.vkryl.td.TdConstants;
+import tgx.td.Td;
+import tgx.td.TdConstants;
 
 public final class TdlibEmojiManager extends TdlibDataManager<Long, TdApi.Sticker, TdlibEmojiManager.Entry> {
   public static class Entry extends AbstractEntry<Long, TdApi.Sticker> {
@@ -33,10 +32,6 @@ public final class TdlibEmojiManager extends TdlibDataManager<Long, TdApi.Sticke
     public Entry (@NonNull Long key, @Nullable TdApi.Sticker value, @Nullable TdApi.Error error) {
       super(key, value, error);
       this.customEmojiId = key;
-    }
-
-    public boolean isNotFound () {
-      return error != null || value == null;
     }
 
     public boolean isAnimated () {
@@ -73,20 +68,14 @@ public final class TdlibEmojiManager extends TdlibDataManager<Long, TdApi.Sticke
       return;
     }
     for (long[] customEmojiIds : customEmojiIdsChunks) {
-      tdlib.client().send(new TdApi.GetCustomEmojiStickers(customEmojiIds), result -> {
+      tdlib.send(new TdApi.GetCustomEmojiStickers(customEmojiIds), (stickers, error) -> {
         if (isCancelled(contextId)) {
           return;
         }
-        switch (result.getConstructor()) {
-          case TdApi.Stickers.CONSTRUCTOR: {
-            TdApi.Stickers stickers = (TdApi.Stickers) result;
-            processStickers(contextId, customEmojiIds, stickers.stickers);
-            break;
-          }
-          case TdApi.Error.CONSTRUCTOR: {
-            processError(contextId, customEmojiIds, (TdApi.Error) result);
-            break;
-          }
+        if (error != null) {
+          processError(contextId, customEmojiIds, error);
+        } else {
+          processStickers(contextId, customEmojiIds, stickers.stickers);
         }
       });
     }

@@ -14,9 +14,9 @@ package org.thunderdog.challegram.util
 
 import me.vkryl.core.limit
 import me.vkryl.leveldb.LevelDB
-import me.vkryl.td.tdlibCommitHashFull
-import me.vkryl.td.tdlibVersion
 import org.thunderdog.challegram.BuildConfig
+import tgx.td.tdlibCommitHashFull
+import tgx.td.tdlibVersion
 import kotlin.math.max
 
 data class AppBuildInfo(
@@ -138,6 +138,10 @@ data class AppBuildInfo(
   }
   
   companion object {
+    @JvmStatic fun restoreVersionCode (pmc: LevelDB, keyPrefix: String): Int {
+      return pmc.getInt("${keyPrefix}_code", 0)
+    }
+
     @JvmStatic fun restoreFrom (pmc: LevelDB, installationId: Long, keyPrefix: String): AppBuildInfo {
       val prIds = pmc.getLongArray("${keyPrefix}_prs") ?: longArrayOf()
       val pullRequests = if (prIds.isNotEmpty()) {
@@ -149,7 +153,7 @@ data class AppBuildInfo(
       }
       return AppBuildInfo(
         installationId,
-        pmc.getInt("${keyPrefix}_code", 0),
+        restoreVersionCode(pmc, keyPrefix),
         pmc.getString("${keyPrefix}_name", "")!!,
         pmc.getString("${keyPrefix}_flavor", "")!!,
         pmc.getLong("${keyPrefix}_started", 0),

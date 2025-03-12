@@ -16,6 +16,7 @@ package org.thunderdog.challegram.filegen;
 
 import androidx.annotation.Nullable;
 
+import org.thunderdog.challegram.mediaview.crop.CropState;
 import org.thunderdog.challegram.unsorted.Settings;
 
 public class ThumbGenerationInfo extends GenerationInfo implements AbstractVideoGenerationInfo {
@@ -23,6 +24,7 @@ public class ThumbGenerationInfo extends GenerationInfo implements AbstractVideo
 
   private int rotate;
   private long startTime;
+  private @Nullable CropState cropState;
 
   public ThumbGenerationInfo (long generationId, String originalPath, String destinationPath, int type, String originalConversion) {
     super(generationId, originalPath, destinationPath, originalConversion, false);
@@ -35,6 +37,26 @@ public class ThumbGenerationInfo extends GenerationInfo implements AbstractVideo
 
   public int getRotate () {
     return rotate;
+  }
+
+  public int getFullRotate () {
+    if (hasCrop()) {
+      int rotate = (this.rotate + cropState.getRotateBy()) % 360;
+      if (rotate < 0) {
+        rotate += 360;
+      }
+      return rotate;
+    }
+    return this.rotate;
+  }
+
+  public boolean hasCrop () {
+    return cropState != null && !cropState.isEmpty();
+  }
+
+  @Nullable
+  public CropState getCropState () {
+    return cropState;
   }
 
   public long getStartTime () {
@@ -50,8 +72,9 @@ public class ThumbGenerationInfo extends GenerationInfo implements AbstractVideo
   }
 
   @Override
-  public void setVideoGenerationInfo (int sourceFileId, boolean needMute, Settings.VideoLimit videoLimit, int rotate, long startTime, long endTime, boolean noTranscoding) {
+  public void setVideoGenerationInfo (int sourceFileId, boolean needMute, Settings.VideoLimit videoLimit, int rotate, long startTime, long endTime, boolean noTranscoding, @Nullable CropState cropState) {
     this.rotate = rotate;
+    this.cropState = cropState;
     this.startTime = startTime;
   }
 }

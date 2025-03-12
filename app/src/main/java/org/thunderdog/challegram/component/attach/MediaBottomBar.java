@@ -191,7 +191,7 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
 
     int totalWidth;
     if (itemWidth > maxItemWidth) {
-      this.itemStartX = (maxItemWidth * items.length - barWidth) / 2;
+      this.itemStartX = (barWidth - maxItemWidth * items.length) / 2;
       totalWidth = maxItemWidth * items.length;
       itemWidth = maxItemWidth;
     } else {

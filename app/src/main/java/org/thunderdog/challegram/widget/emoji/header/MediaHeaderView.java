@@ -69,6 +69,11 @@ public class MediaHeaderView extends RecyclerView {
     return mediaAdapter.hasRecents;
   }
 
+  public void scrollToStickerSectionBySetIndex (int stickerSetIndex, boolean animated) {
+    int i = mediaAdapter.headerItems.size() - mediaAdapter.getAddItemCount(false) + stickerSetIndex;
+    scrollToSelectedObj(mediaAdapter.getObject(i), animated);
+  }
+
   public void setCurrentStickerSectionByPosition (int i, boolean isStickerSection, boolean animated) {
     if (mediaAdapter.hasRecents && mediaAdapter.hasFavorite && isStickerSection && i >= 1) {
       i--;
@@ -116,50 +121,54 @@ public class MediaHeaderView extends RecyclerView {
     mediaAdapter.setStickerSets(stickers);
   }
 
-  private void setCurrentStickerSection (Object obj, boolean animated) {
-    if (mediaAdapter.setSelectedObject(obj, animated, getLayoutManager())) {
-      int section = mediaAdapter.indexOfObject(obj);
-      int first = ((LinearLayoutManager) getLayoutManager()).findFirstVisibleItemPosition();
-      int last = ((LinearLayoutManager) getLayoutManager()).findLastVisibleItemPosition();
-      int itemWidth = Screen.dp(44);
-      float sectionsCount = (float) Screen.currentWidth() / itemWidth;
+  private void scrollToSelectedObj (Object obj, boolean animated) {
+    int section = mediaAdapter.indexOfObject(obj);
+    int first = ((LinearLayoutManager) getLayoutManager()).findFirstVisibleItemPosition();
+    int last = ((LinearLayoutManager) getLayoutManager()).findLastVisibleItemPosition();
+    int itemWidth = Screen.dp(44);
+    float sectionsCount = (float) Screen.currentWidth() / itemWidth;
 
-      if (first != -1) {
-        int scrollX = first * itemWidth;
-        View v = getLayoutManager().findViewByPosition(first);
-        if (v != null) {
-          scrollX += -v.getLeft();
+    if (first != -1) {
+      int scrollX = first * itemWidth;
+      View v = getLayoutManager().findViewByPosition(first);
+      if (v != null) {
+        scrollX += -v.getLeft();
+      }
+
+      if (section - OFFSET < first) {
+        int desiredScrollX = section * itemWidth - itemWidth / 2 - itemWidth;
+        int scrollLimit = scrollX + getPaddingLeft();
+        int scrollValue = Math.max(desiredScrollX - scrollX, -scrollLimit);
+        if (scrollValue < 0) {
+          if (animated && emojiLayout.getHeaderHideFactor() != 1f) {
+            smoothScrollBy(scrollValue, 0);
+          } else {
+            scrollBy(scrollValue, 0);
+          }
         }
-
-        if (section - OFFSET < first) {
-          int desiredScrollX = section * itemWidth - itemWidth / 2 - itemWidth;
-          int scrollLimit = scrollX + getPaddingLeft();
-          int scrollValue = Math.max(desiredScrollX - scrollX, -scrollLimit);
-          if (scrollValue < 0) {
-            if (animated && emojiLayout.getHeaderHideFactor() != 1f) {
-              smoothScrollBy(scrollValue, 0);
-            } else {
-              scrollBy(scrollValue, 0);
-            }
+      } else if (section + OFFSET > last) {
+        int desiredScrollX = (int) Math.max(0, (section - sectionsCount) * itemWidth + itemWidth * OFFSET + (emojiLayout.isAnimatedEmojiOnly() ? -itemWidth : itemWidth / 2));
+        int scrollValue = desiredScrollX - scrollX;
+        if (last != -1 && last == mediaAdapter.getItemCount() - 1) {
+          View vr = getLayoutManager().findViewByPosition(last);
+          if (vr != null) {
+            scrollValue = Math.min(scrollValue, vr.getRight() + getPaddingRight() - getMeasuredWidth());
           }
-        } else if (section + OFFSET > last) {
-          int desiredScrollX = (int) Math.max(0, (section - sectionsCount) * itemWidth + itemWidth * OFFSET + (emojiLayout.isAnimatedEmojiOnly() ? -itemWidth : itemWidth / 2));
-          int scrollValue = desiredScrollX - scrollX;
-          if (last != -1 && last == mediaAdapter.getItemCount() - 1) {
-            View vr = getLayoutManager().findViewByPosition(last);
-            if (vr != null) {
-              scrollValue = Math.min(scrollValue, vr.getRight() + getPaddingRight() - getMeasuredWidth());
-            }
-          }
-          if (scrollValue > 0) {
-            if (animated && emojiLayout.getHeaderHideFactor() != 1f) {
-              smoothScrollBy(scrollValue, 0);
-            } else {
-              scrollBy(scrollValue, 0);
-            }
+        }
+        if (scrollValue > 0) {
+          if (animated && emojiLayout.getHeaderHideFactor() != 1f) {
+            smoothScrollBy(scrollValue, 0);
+          } else {
+            scrollBy(scrollValue, 0);
           }
         }
       }
+    }
+  }
+
+  private void setCurrentStickerSection (Object obj, boolean animated) {
+    if (mediaAdapter.setSelectedObject(obj, animated, getLayoutManager())) {
+      scrollToSelectedObj(obj, animated);
     }
   }
 

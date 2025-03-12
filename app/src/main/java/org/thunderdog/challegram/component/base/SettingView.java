@@ -91,6 +91,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   public static final int TYPE_SETTING_INACTIVE = 0x04;
   public static final int TYPE_INFO_MULTILINE = 0x05;
   public static final int TYPE_INFO_COMPACT = 0x07;
+  public static final int TYPE_INFO_SUPERCOMPACT = 0x08;
 
   private static final int FLAG_CENTER_ICON = 1 << 3;
   private static final int FLAG_DATA_SUBTITLE = 1 << 5;
@@ -170,7 +171,8 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
         break;
       }
       case TYPE_SETTING:
-      case TYPE_SETTING_INACTIVE: {
+      case TYPE_SETTING_INACTIVE:
+      case TYPE_INFO_SUPERCOMPACT: {
         setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(55f)));
         break;
       }
@@ -340,8 +342,8 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     this.overlay = overlay;
   }
 
-  public void setCenterIcon () {
-    flags |= FLAG_CENTER_ICON;
+  public void setCenterIcon (boolean centerIcon) {
+    flags = BitwiseUtils.setFlag(flags, FLAG_CENTER_ICON, centerIcon);
   }
 
   private int lastIconResource;
@@ -590,7 +592,10 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
 
     availWidth -= emojiStatusHelper.getWidth(Screen.dp(6));
 
-    if (type == TYPE_INFO_COMPACT) {
+    if (type == TYPE_INFO_SUPERCOMPACT) {
+      boolean hasName = !StringUtils.isEmpty(swapDataAndName ? itemData : itemName);
+      pTop = Screen.dp((hasName ? 10f : 21f) + 13f);
+    } else if (type == TYPE_INFO_COMPACT) {
       pTop = Screen.dp(15f + 13f);
     } else {
       pTop = Screen.dp(21f + 13f);
@@ -604,7 +609,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
       displayItemName = itemName;
     }
 
-    if (type == TYPE_INFO || type == TYPE_INFO_COMPACT || type == TYPE_INFO_MULTILINE) {
+    if (type == TYPE_INFO || type == TYPE_INFO_COMPACT || type == TYPE_INFO_SUPERCOMPACT || type == TYPE_INFO_MULTILINE) {
       pDataLeft = pLeft;
       pDataTop = pTop;
       pTop = pTop + Screen.dp(20f);
@@ -742,6 +747,15 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   }
 
   private @PorterDuffColorId int iconColorId = ColorId.NONE;
+  private float iconAlpha = 1f;
+
+  public void setIconAlpha (float alpha) {
+    if (this.iconAlpha != alpha) {
+      this.iconAlpha = alpha;
+      if (icon != null)
+        invalidate();
+    }
+  }
 
   public void setIconColorId (@PorterDuffColorId int colorId) {
     if (this.iconColorId != colorId) {
@@ -766,9 +780,19 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     counter.setCount(unreadCount, muted, animated);
   }
 
+  private @Nullable TooltipOverlayView.LocationProvider tooltipLocationProvider;
+
+  public void setTooltipLocationProvider (@Nullable TooltipOverlayView.LocationProvider tooltipLocationProvider) {
+    this.tooltipLocationProvider = tooltipLocationProvider;
+  }
+
   @Override
   public void getTargetBounds (View targetView, Rect outRect) {
-    if (type == TYPE_INFO || type == TYPE_INFO_COMPACT || (type == TYPE_INFO_MULTILINE && text == null)) {
+    if (tooltipLocationProvider != null) {
+      tooltipLocationProvider.getTargetBounds(targetView, outRect);
+      return;
+    }
+    if (type == TYPE_INFO || type == TYPE_INFO_COMPACT || type == TYPE_INFO_SUPERCOMPACT || (type == TYPE_INFO_MULTILINE && text == null)) {
       if (itemData != null) {
         int dataTop = (int) (pDataTop - Screen.dp(13f));
         Paint.FontMetricsInt fm = Paints.getTextPaint16().getFontMetricsInt();
@@ -790,9 +814,22 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     }
   }
 
+  private float disabledAlpha = -1f;
+
+  public void setDisabledAlpha (float alpha) {
+    if (this.disabledAlpha != alpha) {
+      this.disabledAlpha = alpha;
+      invalidate();
+    }
+  }
+
   @Override
   public int defaultTextColor () {
-    return ColorUtils.fromToArgb(Theme.textDecentColor(), Theme.getColor(textColorId), isEnabled.getFloatValue());
+    if (disabledAlpha != -1f) {
+      return ColorUtils.alphaColor(MathUtils.fromTo(disabledAlpha, 1f, isEnabled.getFloatValue()), Theme.getColor(textColorId));
+    } else {
+      return ColorUtils.fromToArgb(Theme.textDecentColor(), Theme.getColor(textColorId), isEnabled.getFloatValue());
+    }
   }
 
   @Override
@@ -840,7 +877,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
         c.save();
         c.rotate(MathUtils.fromTo(0, 90, iconRotated.getFloatValue()), cx, cy);
       }
-      Drawables.draw(c, icon, x, y, lastIconResource == 0 ? Paints.getBitmapPaint() : iconColorId != 0 ? PorterDuffPaint.get(iconColorId) : Paints.getIconGrayPorterDuffPaint());
+      Drawables.draw(c, icon, x, y, lastIconResource == 0 ? Paints.getBitmapPaint() : iconColorId != 0 ? PorterDuffPaint.get(iconColorId, iconAlpha) : Paints.getIconGrayPorterDuffPaint());
       if (needRotateIcon) {
         c.restore();
       }
@@ -864,7 +901,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
 
     final int dataColor = defaultTextColor();
 
-    if (type == TYPE_INFO || type == TYPE_INFO_COMPACT || (type == TYPE_INFO_MULTILINE && text == null)) {
+    if (type == TYPE_INFO || type == TYPE_INFO_COMPACT || type == TYPE_INFO_SUPERCOMPACT || (type == TYPE_INFO_MULTILINE && text == null)) {
       if (displayItemName != null) {
         int subtitleColor = Theme.getColor(dataColorId != 0 ? dataColorId : ColorId.textLight);
         if ((flags & FLAG_DATA_SUBTITLE) != 0) {
@@ -882,7 +919,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
           subtitleColor = ColorUtils.alphaColor(Theme.getSubtitleAlpha(), subtitleColor);
         }
         float top = (int) pDataTop - Screen.dp(13f) + text.getHeight() + Screen.dp(17f);
-        drawText(c, displayItemName, displayItemNameLayout, pLeft, (int) pDataTop - Screen.dp(13f) + text.getHeight() + Screen.dp(17f), (int) (top - Screen.dp(12f)), Paints.getRegularTextPaint(13f, subtitleColor), rtl, width, displayItemNameWidth, displayItemNameText, subtitleColorSet, emojiStatusHelper);
+        drawText(c, displayItemName, displayItemNameLayout, pLeft, (int) pDataTop - Screen.dp(13f) + text.getHeight() + Screen.dp(15f), (int) (top - Screen.dp(12f)), Paints.getRegularTextPaint(13f, subtitleColor), rtl, width, displayItemNameWidth, displayItemNameText, subtitleColorSet, emojiStatusHelper);
       }
       if (text != null) {
         if (rtl) {

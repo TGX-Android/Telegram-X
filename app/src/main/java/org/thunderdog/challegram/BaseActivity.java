@@ -40,6 +40,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.view.Display;
@@ -59,6 +60,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.ComponentActivity;
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
@@ -136,20 +138,28 @@ import org.thunderdog.challegram.widget.StickersSuggestionsLayout;
 
 import java.lang.ref.Reference;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.DeviceUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
+import me.vkryl.core.lambda.FutureBool;
 import me.vkryl.core.lambda.FutureInt;
 import me.vkryl.core.lambda.RunnableBool;
+import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceUtils;
 import nl.dionsegijn.konfetti.xml.KonfettiView;
+import tgx.app.RecaptchaContext;
+import tgx.app.RecaptchaProviderRegistry;
 
+@SuppressWarnings("deprecation")
 public abstract class BaseActivity extends ComponentActivity implements View.OnTouchListener, FactorAnimator.Target, Keyboard.OnStateChangeListener, ThemeChangeListener, SensorEventListener, TGPlayerController.TrackChangeListener, TGLegacyManager.EmojiLoadListener, Lang.Listener, Handler.Callback {
   public static final long POPUP_SHOW_SLOW_DURATION = 240l;
 
@@ -165,6 +175,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   protected @Nullable DrawerController drawer;
   protected OverlayView overlayView;
   protected Invalidator invalidator;
+  protected RecaptchaContext recaptcha;
 
   private final ReferenceList<ActivityListener> activityListeners = new ReferenceList<>();
 
@@ -194,7 +205,18 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     return gestureController;
   }
 
-  public int getSettingsErrorIcon () {
+  public static class ClickBait {
+    public final int iconRes;
+    public final boolean isError;
+
+    public ClickBait (@DrawableRes int iconRes, boolean isError) {
+      this.iconRes = iconRes;
+      this.isError = isError;
+    }
+  }
+
+  @Nullable
+  public ClickBait getSettingsClickBait () {
     // It's located here for future display inside header menu button
     if (hasTdlib()) {
       Tdlib tdlib = currentTdlib();
@@ -203,16 +225,18 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         case Tdlib.ResolvableProblem.NONE:
           break;
         case Tdlib.ResolvableProblem.MIXED:
-          return Tdlib.CHAT_FAILED;
+          return new ClickBait(0, true);
         case Tdlib.ResolvableProblem.NOTIFICATIONS:
-          return R.drawable.baseline_notification_important_14;
+          return new ClickBait(R.drawable.baseline_notification_important_14, true);
         case Tdlib.ResolvableProblem.CHECK_PASSWORD:
-          return R.drawable.baseline_gpp_maybe_14;
+          return new ClickBait(R.drawable.baseline_gpp_maybe_14, true);
         case Tdlib.ResolvableProblem.CHECK_PHONE_NUMBER:
-          return R.drawable.baseline_sim_card_alert_14;
+          return new ClickBait(R.drawable.baseline_sim_card_alert_14, true);
+        case Tdlib.ResolvableProblem.SET_BIRTHDATE:
+          return new ClickBait(R.drawable.baseline_cake_variant_14, false);
       }
     }
-    return 0;
+    return null;
   }
 
   public boolean isAnimating (boolean intercept) {
@@ -320,7 +344,106 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         drawer.onCurrentTdlibChanged(tdlib);
       }
       onTdlibChanged();
+      runEmulatorChecks();
+      if (tdlib.isUnauthorized()) {
+        // Pre-initialize recaptcha to possibly save some initialization time.
+        recaptcha.initialize();
+      }
     }
+  }
+
+  public final RecaptchaContext recaptche () {
+    return recaptcha;
+  }
+
+  private boolean ranEmulatorChecks, emulatorChecksFinished;
+  private final List<RunnableData<Settings.EmulatorDetectionResult>> emulatorCheckFinishCallbacks = new ArrayList<>();
+
+  public void runEmulatorChecks () {
+    runEmulatorChecksImpl(false, null);
+  }
+
+  public void forceRunEmulatorChecks (@Nullable RunnableData<Settings.EmulatorDetectionResult> after) {
+    runEmulatorChecksImpl(true, after);
+  }
+
+  private void addEmulatorChecksCallback (@Nullable RunnableData<Settings.EmulatorDetectionResult> after) {
+    if (after == null) {
+      return;
+    }
+    boolean postponed;
+    synchronized (emulatorCheckFinishCallbacks) {
+      postponed = !emulatorChecksFinished;
+      if (postponed) {
+        emulatorCheckFinishCallbacks.add(after);
+      }
+    }
+    if (!postponed) {
+      after.runWithData(Settings.instance().getLastEmulatorDetectionResult());
+    }
+  }
+
+  private void runEmulatorChecksImpl (boolean force, @Nullable RunnableData<Settings.EmulatorDetectionResult> after) {
+    if (ranEmulatorChecks) {
+      addEmulatorChecksCallback(after);
+      return;
+    }
+
+    long installationId = Settings.instance().installationId();
+    if (!force) {
+      Settings.EmulatorDetectionResult previousResult = Settings.instance().getLastEmulatorDetectionResult();
+      List<FutureBool> conditions = Arrays.asList(
+        // every app launch without authorization
+        () -> !tdlib.context().hasActiveAccounts() || tdlib.isUnauthorized(),
+        () -> {
+          if (previousResult != null) {
+            if (previousResult.isEmulatorDetected()) {
+              return false;
+            }
+            long elapsed = System.currentTimeMillis() - previousResult.time;
+            // every 3 days or after every update
+            return installationId != previousResult.installationId || elapsed >= TimeUnit.DAYS.toMillis(3);
+          }
+          return true;
+        }
+      );
+      boolean hasAnyReason = false;
+      for (FutureBool condition : conditions) {
+        if (condition.getBoolValue()) {
+          hasAnyReason = true;
+          break;
+        }
+      }
+      if (!hasAnyReason) {
+        if (after != null) {
+          after.runWithData(previousResult);
+        }
+        return;
+      }
+    }
+
+    ranEmulatorChecks = true;
+    addEmulatorChecksCallback(after);
+
+    // Impl
+    new Thread(() -> {
+      long ms = SystemClock.uptimeMillis();
+      long detectionResult = DeviceUtils.detectEmulator(BaseActivity.this, BuildConfig.EXPERIMENTAL);
+      long elapsed = SystemClock.uptimeMillis() - ms;
+      Log.v("Ran emulator detections in %dms", elapsed);
+      Settings.EmulatorDetectionResult result = Settings.instance().trackEmulatorDetectionResult(installationId, elapsed, detectionResult);
+      tdlib.context().setIsEmulator(result.isEmulatorDetected());
+      UI.post(() -> {
+        emulatorChecksFinished = true;
+        if (activityState != UI.State.DESTROYED) {
+          for (int i = emulatorCheckFinishCallbacks.size() - 1; i >= 0; i--) {
+            RunnableData<Settings.EmulatorDetectionResult> act = emulatorCheckFinishCallbacks.remove(i);
+            act.runWithData(result);
+          }
+        }
+        emulatorCheckFinishCallbacks.clear();
+      });
+    }, "EmulatorDetector").start();
   }
 
   protected void onTdlibChanged () {
@@ -342,6 +465,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
     AppState.initApplication();
     AppState.ensureReady();
+
+    recaptcha = new RecaptchaContext(getApplication());
+    RecaptchaProviderRegistry.INSTANCE.addProvider(recaptcha);
 
     appUpdater = new AppUpdater(this);
     roundVideoController = new RoundVideoController(this);
@@ -1030,6 +1156,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       }
     }*/
     appUpdater.checkForUpdates();
+    runEmulatorChecks();
   }
 
   protected void setOnline (boolean isOnline) {
@@ -1062,6 +1189,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       Tracer.onUiError(t);
       throw t;
     }
+    setOrientationLockFlags(0);
     if (navigation != null) {
       navigation.destroy();
     }
@@ -1201,6 +1329,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public void onBackPressed () {
     if (isPasscodeShowing) {
       super.onBackPressed();
@@ -1209,6 +1338,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
   }
 
+  @SuppressWarnings("deprecation")
   public void onBackPressed (boolean fromTop) {
     if (isProgressShowing) {
       if (progressListener != null) {
@@ -1315,17 +1445,6 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     return currentOrientation;
   }
 
-  public void lockOrientation (int newOrientation) {
-    if (currentOrientation != newOrientation) {
-      currentOrientation = newOrientation;
-      if (mIsOrientationBlocked) {
-        requestAndroidOrientation(newOrientation);
-      } else {
-        setIsOrientationBlocked(true);
-      }
-    }
-  }
-
   private void setIsOrientationBlocked (boolean blocked) {
     if (mIsOrientationBlocked == blocked || mIsOrientationRequested)
       return;
@@ -1333,21 +1452,24 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     mIsOrientationBlocked = blocked;
 
     if (blocked) {
-      int rotation = getWindowManager().getDefaultDisplay().getRotation();
-
-      if (currentOrientation == Configuration.ORIENTATION_LANDSCAPE &&
-        (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_90)) {
-        requestAndroidOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-      } else if (currentOrientation == Configuration.ORIENTATION_PORTRAIT &&
-        (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_90)) {
-        requestAndroidOrientationPortrait();
-      } else if (currentOrientation == Configuration.ORIENTATION_LANDSCAPE &&
-        (rotation == Surface.ROTATION_180 || rotation == Surface.ROTATION_270)) {
-        requestAndroidOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+        requestAndroidOrientation(ActivityInfo.SCREEN_ORIENTATION_LOCKED);
       } else {
-        if (currentOrientation == Configuration.ORIENTATION_PORTRAIT &&
-          (rotation == Surface.ROTATION_180 || rotation == Surface.ROTATION_270)) {
+        int rotation = getWindowManager().getDefaultDisplay().getRotation();
+        if (currentOrientation == Configuration.ORIENTATION_LANDSCAPE &&
+          (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_90)) {
+          requestAndroidOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        } else if (currentOrientation == Configuration.ORIENTATION_PORTRAIT &&
+          (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_90)) {
           requestAndroidOrientationPortrait();
+        } else if (currentOrientation == Configuration.ORIENTATION_LANDSCAPE &&
+          (rotation == Surface.ROTATION_180 || rotation == Surface.ROTATION_270)) {
+          requestAndroidOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+        } else {
+          if (currentOrientation == Configuration.ORIENTATION_PORTRAIT &&
+            (rotation == Surface.ROTATION_180 || rotation == Surface.ROTATION_270)) {
+            requestAndroidOrientationPortrait();
+          }
         }
       }
     } else {
@@ -1833,7 +1955,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   private PopupLayout stickerPreviewWindow;
   private StickerPreviewView stickerPreview;
-  private StickerSmallView stickerPreviewControllerView;
+  private View stickerPreviewControllerView;
 
   public void openStickerPreview (Tdlib tdlib, StickerSmallView stickerView, TGStickerObj sticker, int cx, int cy, int maxWidth, int viewportHeight, boolean disableEmojis) {
     if (stickerPreview != null) {
@@ -1843,7 +1965,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     stickerPreviewControllerView = stickerView;
 
     stickerPreview = new StickerPreviewView(this);
-    stickerPreview.setControllerView(stickerPreviewControllerView);
+    stickerPreview.setControllerView(stickerView);
     stickerPreview.setSticker(tdlib, sticker, cx, cy, maxWidth, viewportHeight, disableEmojis);
 
     stickerPreviewWindow = new PopupLayout(this);
@@ -1854,7 +1976,26 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     stickerPreviewWindow.showAnimatedPopupView(stickerPreview, stickerPreview);
   }
 
-  public void openStickerMenu (StickerSmallView stickerView, TGStickerObj sticker) {
+  public void openStickerPreview (Tdlib tdlib, View viewHolder, StickerPreviewView.PreviewCallback callback, TGStickerObj sticker, int cx, int cy, int maxWidth, int viewportHeight, boolean disableEmojis) {
+    if (stickerPreview != null) {
+      return;
+    }
+
+    stickerPreviewControllerView = viewHolder;
+
+    stickerPreview = new StickerPreviewView(this);
+    stickerPreview.setPreviewCallback(viewHolder, callback);
+    stickerPreview.setSticker(tdlib, sticker, cx, cy, maxWidth, viewportHeight, disableEmojis);
+
+    stickerPreviewWindow = new PopupLayout(this);
+    stickerPreviewWindow.setBackListener(stickerPreview);
+    stickerPreviewWindow.setOverlayStatusBar(true);
+    stickerPreviewWindow.init(true);
+    stickerPreviewWindow.setNeedRootInsets();
+    stickerPreviewWindow.showAnimatedPopupView(stickerPreview, stickerPreview);
+  }
+
+  public void openStickerMenu (View stickerView, TGStickerObj sticker) {
     if (this.stickerPreview != null && stickerPreviewControllerView == stickerView) {
       stickerPreview.openMenu(sticker);
     }
@@ -1890,7 +2031,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     stickerPreviewControllerView = stickerView;
 
     stickerPreview = new StickerPreviewView(this);
-    stickerPreview.setControllerView(stickerPreviewControllerView);
+    stickerPreview.setControllerView(stickerView);
     stickerPreview.setReaction(tdlib, reaction, effectAnimation, cx, cy, maxWidth, viewportHeight, disableEmojis);
 
     stickerPreviewWindow = new PopupLayout(this);
@@ -2181,7 +2322,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         return;
       }
     }
-    hideContextualPopups(false);
+    if (window.needDismissOtherPopUps()) {
+      hideContextualPopups(false);
+    }
     windows.add(window);
     checkDisallowScreenshots();
     window.showBoundWindow(rootView);
@@ -2816,36 +2959,47 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
   }
 
-  private boolean cameraOrientationBlocked;
-  private int savedAnimation;
+  private int savedRotationAnimation = -1;
 
-  private void checkCameraOrientationBlocked () {
-    boolean isBlocked = ((cameraFactor < 1f && isCameraOpen) || (cameraFactor != 0f && cameraFactor != 1f) || isCameraDragging || (cameraFactor == 1f && camera != null && camera.supportsCustomRotations())) && !(camera != null && camera.hasOpenEditor());
-    if (cameraOrientationBlocked != isBlocked) {
-      cameraOrientationBlocked = isBlocked;
-      setIsOrientationBlocked(isBlocked);
-    }
+  private void requestWindowRotationAnimation (int requestedAnimation) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-      boolean needCrossFadeAnimation = cameraFactor == 1f;
-      int desiredRotation;
       Window window = getWindow();
       WindowManager.LayoutParams attrs = window.getAttributes();
-      if (needCrossFadeAnimation) {
-        if (attrs.rotationAnimation != WindowManager.LayoutParams.ROTATION_ANIMATION_JUMPCUT) {
-          savedAnimation = attrs.rotationAnimation;
-        }
-        desiredRotation = WindowManager.LayoutParams.ROTATION_ANIMATION_JUMPCUT;
+      int pendingRotationAnimation;
+      if (requestedAnimation == -1) {
+        pendingRotationAnimation = savedRotationAnimation;
+        savedRotationAnimation = -1;
       } else {
-        desiredRotation = savedAnimation;
+        pendingRotationAnimation = requestedAnimation;
+        if (savedRotationAnimation == -1) {
+          savedRotationAnimation = attrs.rotationAnimation;
+        }
       }
-      if (attrs.rotationAnimation != desiredRotation) {
-        attrs.rotationAnimation = desiredRotation;
+      if (pendingRotationAnimation != -1 && attrs.rotationAnimation != pendingRotationAnimation) {
+        attrs.rotationAnimation = pendingRotationAnimation;
         window.setAttributes(attrs);
       }
     }
-    /*if (isBlocked && camera != null && !camera.supportsCustomRotations()) {
-      lockOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-    }*/
+  }
+
+  private void checkCameraOrientationBlocked () {
+    boolean isBlocked = ((cameraFactor < 1f && isCameraOpen) || (cameraFactor != 0f && cameraFactor != 1f) || isCameraDragging || (cameraFactor == 1f && camera != null && camera.supportsCustomRotations())) && !(camera != null && camera.hasOpenEditor());
+    setOrientationLockFlagEnabled(ORIENTATION_FLAG_CAMERA, isBlocked);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+      boolean needCrossFadeAnimation = cameraFactor == 1f;
+      int rotationAnimation;
+      if (needCrossFadeAnimation) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && false) {
+          // looks bad on AOSP (Pixel Fold), and exactly like JUMPCUT on Samsung devices
+          rotationAnimation = WindowManager.LayoutParams.ROTATION_ANIMATION_SEAMLESS;
+        } else {
+          rotationAnimation = WindowManager.LayoutParams.ROTATION_ANIMATION_JUMPCUT;
+        }
+      } else {
+        rotationAnimation = -1;
+      }
+      requestWindowRotationAnimation(rotationAnimation);
+    }
   }
 
   private void setCameraOpen (ViewController.CameraOpenOptions options, boolean isOpen, boolean byDrag) {
@@ -3147,6 +3301,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
   }
 
+  @SuppressWarnings("deprecation")
   private void updateNavigationBarColor () {
     if (Config.USE_CUSTOM_NAVIGATION_COLOR) {
       int color;
@@ -3181,6 +3336,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         if (Theme.needLightStatusBar()) {
           visibility |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
         }
+        // TODO: rework to WindowInsetsControlle
         getWindow().getDecorView().setSystemUiVisibility(visibility);
       }
     }
@@ -3446,16 +3602,21 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   public static final int ORIENTATION_FLAG_RECORDING = 1 << 5;
   public static final int ORIENTATION_FLAG_CROP = 1 << 6;
   public static final int ORIENTATION_FLAG_PROXIMITY = 1 << 7;
+  public static final int ORIENTATION_FLAG_CAMERA = 1 << 8;
 
   private int orientationFlags;
 
-  public void setOrientationLockFlagEnabled (int flag, boolean enabled) {
+  private void setOrientationLockFlags (int flags) {
     boolean oldLocked = this.orientationFlags != 0;
-    this.orientationFlags = BitwiseUtils.setFlag(this.orientationFlags, flag, enabled);
+    this.orientationFlags = flags;
     boolean newLocked =  this.orientationFlags != 0;
     if (oldLocked != newLocked) {
       setIsOrientationBlocked(newLocked);
     }
+  }
+
+  public void setOrientationLockFlagEnabled (int flag, boolean enabled) {
+    setOrientationLockFlags(BitwiseUtils.setFlag(this.orientationFlags, flag, enabled));
   }
 
   // Language

@@ -66,7 +66,6 @@ public final class N {
   public static native void onSurfaceChanged (int a_width_px, int a_height_px, float a_scale_factor, int a1);
 
   // gif.c
-  public static native void gifInit ();
   public static native long createDecoder (String path, int[] metadata, double startMediaTimestamp);
   public static native long createLottieDecoder (String path, String jsonData, double[] metadata, int fitzpatrickType);
   public static native void getLottieSize (long ptr, int[] size);
@@ -82,9 +81,22 @@ public final class N {
 
   // TODO remove rendering, because it is no longer used
   // audio.c
-  public static native int startRecord (String path);
+  public static int startRecord (String path) {
+    return startRecord(path, 48000);
+  }
+
+  public static int resumeRecord (String path) {
+    return resumeRecord(path, 48000);
+  }
+
+  public static void stopRecord () {
+    stopRecord(false);
+  }
+
+  public static native int startRecord (String path, int sampleRate);
+  public static native int resumeRecord (String path, int sampleRate);
   public static native int writeFrame (ByteBuffer frame, int len);
-  public static native void stopRecord ();
+  public static native void stopRecord (boolean allowResuming);
   public static native int openOpusFile (String path);
   public static native int seekOpusFile (float position);
   public static native int isOpusFile (String path);
@@ -118,4 +130,5 @@ public final class N {
   public native static void throwDirect (String msg);
 
   public static native String[] getTgCallsVersions ();
+  public static native String toHexString (byte[] array);
 }

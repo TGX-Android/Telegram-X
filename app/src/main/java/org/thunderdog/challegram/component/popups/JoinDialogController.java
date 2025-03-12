@@ -44,7 +44,7 @@ import org.thunderdog.challegram.widget.VerticalChatView;
 import java.util.ArrayList;
 
 import me.vkryl.android.widget.FrameLayoutFix;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class JoinDialogController extends MediaBottomBaseController<Void> implements View.OnClickListener {
   private final int DESCRIPTION_PADDING = Screen.dp(16f);

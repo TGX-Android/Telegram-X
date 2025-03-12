@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.ui;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
@@ -24,6 +23,7 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
 import androidx.annotation.DrawableRes;
+import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.collection.SparseArrayCompat;
@@ -32,8 +32,10 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
+import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.component.attach.AvatarPickerManager;
 import org.thunderdog.challegram.component.attach.MediaLayout;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.config.Config;
@@ -63,6 +65,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibNotificationManager;
+import org.thunderdog.challegram.telegram.TdlibOptionListener;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -72,7 +75,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.AppBuildInfo;
-import org.thunderdog.challegram.util.AppInstallationUtil;
+import org.thunderdog.challegram.util.AppUpdater;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.PullRequest;
 import org.thunderdog.challegram.util.StringList;
@@ -80,10 +83,13 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import me.vkryl.android.AppInstallationUtil;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.ColorUtils;
@@ -91,22 +97,24 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class SettingsController extends ViewController<Void> implements
   View.OnClickListener, ComplexHeaderView.Callback,
   Menu, MoreDelegate, OptionDelegate,
   TdlibCache.MyUserDataChangeListener, ConnectionListener, StickersListener, MediaLayout.MediaGalleryCallback,
-  ActivityResultHandler, View.OnLongClickListener, SessionListener, GlobalTokenStateListener {
+  ActivityResultHandler, View.OnLongClickListener, SessionListener, GlobalTokenStateListener, TdlibCache.UserDataChangeListener,
+  TdlibOptionListener {
 
-  private final TdlibUi.AvatarPickerManager avatarPickerManager;
+  private final AvatarPickerManager avatarPickerManager;
   private ComplexHeaderView headerCell;
   private ComplexRecyclerView contentView;
   private SettingsAdapter adapter;
 
   public SettingsController (Context context, Tdlib tdlib) {
     super(context, tdlib);
-    avatarPickerManager = new TdlibUi.AvatarPickerManager(this);
+    avatarPickerManager = new AvatarPickerManager(this);
   }
 
   @Override
@@ -196,7 +204,7 @@ public class SettingsController extends ViewController<Void> implements
   @Override
   protected void onFloatingButtonPressed () {
     EditNameController editNameController = new EditNameController(context, tdlib);
-    editNameController.setMode(EditNameController.MODE_RENAME_SELF);
+    editNameController.setMode(EditNameController.Mode.RENAME_SELF);
     navigateTo(editNameController);
   }
 
@@ -255,7 +263,7 @@ public class SettingsController extends ViewController<Void> implements
 
   @Override
   public void onActivityResult (int requestCode, int resultCode, Intent data) {
-    avatarPickerManager.handleActivityResult(requestCode, resultCode, data, TdlibUi.AvatarPickerManager.MODE_PROFILE, null, null);
+    avatarPickerManager.handleActivityResult(requestCode, resultCode, data, AvatarPickerManager.MODE_PROFILE, null, null);
   }
 
   private boolean hasNotificationError;
@@ -389,7 +397,7 @@ public class SettingsController extends ViewController<Void> implements
     this.headerCell.initWithController(this, true);
     this.headerCell.setInnerMargins(Screen.dp(56f), Screen.dp(49f));
     this.headerCell.setPhotoOpenCallback(this);
-    this.headerCell.setOnEmojiStatusClickListener((v, text, part, openParameters) -> {
+    this.headerCell.setOnEmojiStatusClickListener(v -> {
       EmojiStatusSelectorEmojiPage.Wrapper c = new EmojiStatusSelectorEmojiPage.Wrapper(context, tdlib, SettingsController.this, new EmojiStatusSelectorEmojiPage.AnimationsEmojiStatusSetDelegate() {
         @Override
         public void onAnimationStart () {
@@ -412,7 +420,6 @@ public class SettingsController extends ViewController<Void> implements
         }
       });
       c.show();
-      return false;
     });
     updateHeader();
 
@@ -516,17 +523,38 @@ public class SettingsController extends ViewController<Void> implements
               view.setData(notificationErrorDescriptionRes);
             }
           }
-        } else if (itemId == R.id.btn_changePhoneNumber) {
-          view.setText(obtainWrapper(Lang.getStringBold(R.string.ReminderCheckPhoneNumberText, originalPhoneNumber != null ? myPhone : Strings.ELLIPSIS), ID_RATIONALE_PHONE_NUMBER));
-        } else if (itemId == R.id.btn_2fa) {
-          view.setText(obtainWrapper(Lang.getString(R.string.ReminderCheckTfaPasswordText), ID_RATIONALE_PASSWORD));
+        } else if (itemId == R.id.btn_suggestion) {
+          TdApi.SuggestedAction action = (TdApi.SuggestedAction) item.getData();
+          switch (action.getConstructor()) {
+            case TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR:
+              view.setText(obtainWrapper(Lang.getStringBold(R.string.ReminderCheckPhoneNumberText, originalPhoneNumber != null ? myPhone : Strings.ELLIPSIS), action.getConstructor()));
+              break;
+            case TdApi.SuggestedActionCheckPassword.CONSTRUCTOR:
+              view.setText(obtainWrapper(Lang.getString(R.string.ReminderCheckTfaPasswordText), action.getConstructor()));
+              break;
+            case TdApi.SuggestedActionSetBirthdate.CONSTRUCTOR:
+              view.setText(obtainWrapper(Lang.getString(R.string.ReminderSetBirthdateText), action.getConstructor()));
+              break;
+            default:
+              Td.assertSuggestedAction_5f4bf3f7();
+              throw Td.unsupported(action);
+          }
+        } else if (itemId == R.id.btn_birthdate) {
+          if (userFull == null) {
+            view.setData(R.string.LoadingInformation);
+          } else if (userFull.birthdate == null) {
+            view.setData(R.string.SetBirthdate);
+          } else {
+            view.setData(Lang.getBirthdate(userFull.birthdate, true, true));
+          }
         } else if (itemId == R.id.btn_username) {
           if (myUsernames == null) {
             view.setData(R.string.LoadingUsername);
           } else if (StringUtils.isEmpty(myUsernames.editableUsername)) {
             view.setData(R.string.SetUpUsername);
           } else {
-            view.setData("@" + myUsernames.editableUsername); // TODO multi-username support
+            int collectibleCount = Td.secondaryUsernamesCount(myUsernames);
+            view.setData("@" + myUsernames.editableUsername + (collectibleCount != 0 ? " + " + Lang.pluralBold(R.string.xOtherUsernames, collectibleCount) : "")); // TODO multi-username support
           }
         } else if (itemId == R.id.btn_peer_id) {
           view.setData(Strings.buildCounter(tdlib.myUserId(true)));
@@ -544,7 +572,7 @@ public class SettingsController extends ViewController<Void> implements
               text = about;
             }
           }
-          view.setText(obtainWrapper(text, ID_BIO));
+          view.setText(obtainWrapper(text, TdApi.SetBio.CONSTRUCTOR));
         }
       }
     };
@@ -561,6 +589,10 @@ public class SettingsController extends ViewController<Void> implements
     items.add(new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_username, R.drawable.baseline_alternate_email_24, R.string.Username).setContentStrings(R.string.LoadingUsername, R.string.SetUpUsername));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_phone, R.drawable.baseline_phone_24, R.string.Phone));
+    if (userFull != null && userFull.birthdate != null) {
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+      items.add(newBirthdateItem());
+    }
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_INFO_MULTILINE, R.id.btn_bio, R.drawable.baseline_info_24, R.string.UserBio).setContentStrings(R.string.LoadingInformation, R.string.BioNone));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
@@ -572,16 +604,7 @@ public class SettingsController extends ViewController<Void> implements
         continue;
       }
       items.add(new ListItem(addedActionItems == 0 ? ListItem.TYPE_SHADOW_TOP : ListItem.TYPE_SEPARATOR));
-      switch (action.getConstructor()) {
-        case TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR: {
-          items.add(new ListItem(ListItem.TYPE_INFO_MULTILINE, R.id.btn_changePhoneNumber, R.drawable.baseline_sim_card_alert_24, R.string.ReminderCheckPhoneNumber));
-          break;
-        }
-        case TdApi.SuggestedActionCheckPassword.CONSTRUCTOR: {
-          items.add(new ListItem(ListItem.TYPE_INFO_MULTILINE, R.id.btn_2fa, R.drawable.baseline_gpp_maybe_24, R.string.ReminderCheckTfaPassword));
-          break;
-        }
-      }
+      items.add(newSuggestionItem(action));
       addedActionItems++;
     }
     if (addedActionItems > 0) {
@@ -607,7 +630,7 @@ public class SettingsController extends ViewController<Void> implements
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_tweakSettings, R.drawable.baseline_extension_24, R.string.TweakSettings));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     if (Settings.instance().chatFoldersEnabled()) {
-      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_chatFolders, R.drawable.baseline_folder_24, R.string.ChatFolders));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_chatFolders, R.drawable.baseline_folder_copy_24, R.string.ChatFolders));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     }
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_languageSettings, R.drawable.baseline_language_24, R.string.Language));
@@ -622,7 +645,7 @@ public class SettingsController extends ViewController<Void> implements
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    AppInstallationUtil.DownloadUrl downloadUrl = AppInstallationUtil.getDownloadUrl(null);
+    AppInstallationUtil.DownloadUrl downloadUrl = AppUpdater.getDownloadUrl(null);
     @DrawableRes int downloadIconRes;
     @StringRes int downloadStringRes = R.string.CheckForUpdates;
     if (tdlib.hasUrgentInAppUpdate() && tdlib.isProduction()) {
@@ -630,7 +653,8 @@ public class SettingsController extends ViewController<Void> implements
       downloadUrl = new AppInstallationUtil.DownloadUrl(downloadUrl.installerId, tdlib.tMeUrl(BuildConfig.TELEGRAM_UPDATES_CHANNEL));
     } else {
       switch (downloadUrl.installerId) {
-        case AppInstallationUtil.InstallerId.UNKNOWN: {
+        case AppInstallationUtil.InstallerId.UNKNOWN:
+        case AppInstallationUtil.InstallerId.MEMU_EMULATOR: {
           if (!StringUtils.isEmpty(BuildConfig.GOOGLE_PLAY_URL)) {
             downloadUrl = new AppInstallationUtil.DownloadUrl(AppInstallationUtil.InstallerId.GOOGLE_PLAY, BuildConfig.GOOGLE_PLAY_URL);
             downloadIconRes = R.drawable.baseline_google_play_24;
@@ -697,8 +721,10 @@ public class SettingsController extends ViewController<Void> implements
     this.contentView.setAdapter(adapter);
 
     tdlib.cache().addMyUserListener(this);
+    setMyUserId(tdlib.myUserId());
     tdlib.listeners().subscribeToConnectivityUpdates(this);
     tdlib.listeners().subscribeToSessionUpdates(this);
+    tdlib.listeners().addOptionsListener(this);
     TGLegacyManager.instance().addEmojiListener(adapter);
     TdlibManager.instance().global().addTokenStateListener(this);
 
@@ -781,9 +807,6 @@ public class SettingsController extends ViewController<Void> implements
     }
   }
 
-  private static final int ID_BIO = R.id.btn_bio;
-  private static final int ID_RATIONALE_PASSWORD = R.id.btn_2fa;
-  private static final int ID_RATIONALE_PHONE_NUMBER = R.id.btn_changePhoneNumber;
   private final SparseArrayCompat<TextWrapper> textWrappers = new SparseArrayCompat<>();
   private final SparseArrayCompat<TdApi.FormattedText> currentTexts = new SparseArrayCompat<>();
 
@@ -803,15 +826,62 @@ public class SettingsController extends ViewController<Void> implements
     return textWrapper;
   }
 
+  private @Nullable TdApi.UserFullInfo userFull;
+
   private void processUserFull (final TdApi.UserFullInfo userFull) {
     if (userFull == null) {
       return;
     }
-    tdlib.uiExecute(() -> {
-      if (!isDestroyed()) {
-        setBio(userFull.bio);
-      }
+    executeOnUiThreadOptional(() -> {
+      this.userFull = userFull;
+      checkBirthdate();
+      setBio(userFull.bio);
     });
+  }
+
+  private static ListItem newBirthdateItem () {
+    return new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_birthdate, R.drawable.baseline_cake_variant_24, R.string.Birthdate).setContentStrings(R.string.LoadingInformation, R.string.SetBirthdate);
+  }
+
+  private static ListItem newSuggestionItem (TdApi.SuggestedAction action) {
+    ListItem item;
+    switch (action.getConstructor()) {
+      case TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR:
+        item = new ListItem(ListItem.TYPE_INFO_MULTILINE, R.id.btn_suggestion, R.drawable.baseline_sim_card_alert_24, R.string.ReminderCheckPhoneNumber);
+        break;
+      case TdApi.SuggestedActionCheckPassword.CONSTRUCTOR:
+        item = new ListItem(ListItem.TYPE_INFO_MULTILINE, R.id.btn_suggestion, R.drawable.baseline_gpp_maybe_24, R.string.ReminderCheckTfaPassword);
+        break;
+      case TdApi.SuggestedActionSetBirthdate.CONSTRUCTOR:
+        item = new ListItem(ListItem.TYPE_INFO_MULTILINE, R.id.btn_suggestion, R.drawable.baseline_cake_variant_24, R.string.ReminderSetBirthdate);
+        break;
+      default:
+        Td.assertSuggestedAction_5f4bf3f7();
+        throw Td.unsupported(action);
+    }
+    item
+      .setData(action)
+      .setLongId(action.getConstructor());
+    return item;
+  }
+
+  private void checkBirthdate () {
+    int position = adapter.indexOfViewById(R.id.btn_birthdate);
+    boolean hadBirthdate = position != -1;
+    boolean hasBirthdate = userFull != null && userFull.birthdate != null;
+    if (hadBirthdate != hasBirthdate) {
+      if (hasBirthdate) {
+        position = adapter.indexOfViewById(R.id.btn_phone);
+        adapter.addItems(position + 1,
+          new ListItem(ListItem.TYPE_SEPARATOR),
+          newBirthdateItem()
+        );
+      } else {
+        adapter.removeRange(position - 1, 2);
+      }
+    } else if (hasBirthdate) {
+      adapter.updateValuedSettingByPosition(position);
+    }
   }
 
   private void setBio (@Nullable TdApi.FormattedText about) {
@@ -825,12 +895,26 @@ public class SettingsController extends ViewController<Void> implements
   }
 
   @Override
+  public void onSuggestedActionsChanged (TdApi.SuggestedAction[] addedActions, TdApi.SuggestedAction[] removedActions) {
+    executeOnUiThreadOptional(() -> {
+      for (TdApi.SuggestedAction action : addedActions) {
+        addSuggestionToList(action);
+      }
+      for (TdApi.SuggestedAction action : removedActions) {
+        removeSuggestionFromList(action);
+      }
+    });
+  }
+
+  @Override
   public void destroy () {
     super.destroy();
     tdlib.cache().removeMyUserListener(this);
+    setMyUserId(0);
     tdlib.listeners().unsubscribeFromConnectivityUpdates(this);
     tdlib.listeners().unsubscribeFromStickerUpdates(this);
     tdlib.listeners().unsubscribeFromSessionUpdates(this);
+    tdlib.listeners().removeOptionListener(this);
     TGLegacyManager.instance().removeEmojiListener(adapter);
     TdlibManager.instance().global().removeTokenStateListener(this);
     headerCell.performDestroy();
@@ -839,9 +923,11 @@ public class SettingsController extends ViewController<Void> implements
   private void updateHeader () {
     TdApi.User user = tdlib.myUser();
     if (headerCell != null) {
+      long chatId = user != null ? ChatId.fromUserId(user.id) : 0;
       headerCell.getAvatarReceiver().requestUser(tdlib, tdlib.myUserId(), AvatarReceiver.Options.FULL_SIZE);
       headerCell.setText(user != null ? TD.getUserName(user) : Lang.getString(R.string.LoadingUser), getSubtext());
       headerCell.setEmojiStatus(user);
+      headerCell.setAllowTitleClick(chatId);
       headerCell.invalidate();
     }
   }
@@ -856,12 +942,37 @@ public class SettingsController extends ViewController<Void> implements
 
   // Callbacks
 
+  private long myUserId;
+
+  private void setMyUserId (long myUserId) {
+    long oldMyUserId = this.myUserId;
+    if (oldMyUserId != myUserId) {
+      this.myUserId = myUserId;
+      if (oldMyUserId != 0) {
+        tdlib.cache().removeUserDataListener(oldMyUserId, this);
+      }
+      if (myUserId != 0) {
+        tdlib.cache().addUserDataListener(myUserId, this);
+      }
+    }
+  }
+
+  @Override
+  public void onUserFullUpdated (long userId, TdApi.UserFullInfo userFull) {
+    runOnUiThreadOptional(() -> {
+      if (myUserId == userId) {
+        processUserFull(userFull);
+      }
+    });
+  }
+
   @Override
   public void onMyUserUpdated (final TdApi.User myUser) {
     if (myUser == null) { // Ignoring log-out update
       return;
     }
     runOnUiThreadOptional(() -> {
+      setMyUserId(myUser.id);
       updateHeader();
       if (setUsername(myUser)) {
         adapter.updateValuedSettingById(R.id.btn_username);
@@ -948,14 +1059,46 @@ public class SettingsController extends ViewController<Void> implements
     tdlib.ui().openUrl(this, url, new TdlibUi.UrlOpenParameters().disableInstantView());
   }
 
-  private void viewSourceCode (boolean isTdlib) {
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    SourceCodeType.TELEGRAM_X,
+    SourceCodeType.TDLIB,
+    SourceCodeType.TGCALLS,
+    SourceCodeType.WEBRTC,
+    SourceCodeType.FFMPEG,
+    SourceCodeType.WEBP
+  })
+  private @interface SourceCodeType {
+    int TELEGRAM_X = 0, TDLIB = 1, TGCALLS = 2, WEBRTC = 3, FFMPEG = 4, WEBP = 5;
+  }
+
+  private void viewSourceCode (@SourceCodeType int sourceCodeType) {
     String url;
-    if (isTdlib) {
-      String tdlibCommitHash = Td.tdlibCommitHashFull();
-      url = AppBuildInfo.tdlibCommitUrl(tdlibCommitHash);
-    } else {
-      AppBuildInfo appBuildInfo = Settings.instance().getCurrentBuildInformation();
-      url = appBuildInfo.commitUrl();
+    switch (sourceCodeType) {
+      case SourceCodeType.TELEGRAM_X: {
+        AppBuildInfo appBuildInfo = Settings.instance().getCurrentBuildInformation();
+        url = appBuildInfo.commitUrl();
+        break;
+      }
+      case SourceCodeType.TDLIB: {
+        String tdlibCommitHash = Td.tdlibCommitHashFull();
+        url = AppBuildInfo.tdlibCommitUrl(tdlibCommitHash);
+        break;
+      }
+      case SourceCodeType.TGCALLS:
+        url = BuildConfig.TGCALLS_COMMIT_URL;
+        break;
+      case SourceCodeType.WEBRTC:
+        url = BuildConfig.WEBRTC_COMMIT_URL;
+        break;
+      case SourceCodeType.FFMPEG:
+        url = BuildConfig.FFMPEG_COMMIT_URL;
+        break;
+      case SourceCodeType.WEBP:
+        url = BuildConfig.WEBP_COMMIT_URL;
+        break;
+      default:
+        throw new IllegalArgumentException(Integer.toString(sourceCodeType));
     }
     if (!StringUtils.isEmpty(url)) {
       tdlib.ui().openUrl(this,
@@ -976,6 +1119,8 @@ public class SettingsController extends ViewController<Void> implements
       EditBioController c = new EditBioController(context, tdlib);
       c.setArguments(new EditBioController.Arguments(about != null ? about.text : "", 0));
       navigateTo(c);
+    } else if (viewId == R.id.btn_birthdate) {
+      tdlib.ui().openBirthdateEditor(this, v, TdlibUi.BirthdateOpenOrigin.PROFILE);
     } else if (viewId == R.id.btn_peer_id) {
       long selfId = tdlib.myUserId(true);
       if (selfId == 0) return;
@@ -1000,7 +1145,7 @@ public class SettingsController extends ViewController<Void> implements
       AppBuildInfo appBuildInfo = Settings.instance().getCurrentBuildInformation();
       tdlib.ui().openUrl(this, appBuildInfo.changesUrlFrom(previousBuildInfo), new TdlibUi.UrlOpenParameters().disableInstantView());
     } else if (viewId == R.id.btn_tdlib) {
-      viewSourceCode(true);
+      viewSourceCode(SourceCodeType.TDLIB);
     } else if (viewId == R.id.btn_sourceCode) {
       AppBuildInfo appBuildInfo = Settings.instance().getCurrentBuildInformation();
       PullRequest specificPullRequest = (PullRequest) ((ListItem) v.getTag()).getData();
@@ -1008,20 +1153,39 @@ public class SettingsController extends ViewController<Void> implements
         tdlib.ui().openUrl(this, specificPullRequest.getCommitUrl(), new TdlibUi.UrlOpenParameters().disableInstantView());
       } else if (!appBuildInfo.getPullRequests().isEmpty() || appBuildInfo.getTdlibCommitFull() != null) {
         Options.Builder b = new Options.Builder();
+        SpannableStringBuilder hint = new SpannableStringBuilder(Lang.getMarkdownString(this, R.string.OpenSourceGuide));
         if (!appBuildInfo.getPullRequests().isEmpty()) {
-          b.info(Lang.plural(R.string.PullRequestsInfo, appBuildInfo.getPullRequests().size()));
+          hint.append("\n\n");
+          hint.append(Lang.pluralBold(R.string.PullRequestsInfo, appBuildInfo.getPullRequests().size()));
         }
-        b.item(new OptionItem(R.id.btn_sourceCode, Lang.getString(R.string.format_commit, Lang.getString(R.string.ViewSourceCode), appBuildInfo.getCommit()), OPTION_COLOR_NORMAL, R.drawable.baseline_github_24));
+        b.info(hint);
+        b.item(new OptionItem(R.id.btn_sourceCode, Lang.getCharSequence(R.string.format_commit, BuildConfig.PROJECT_NAME, appBuildInfo.getCommit()), OptionColor.NORMAL, R.drawable.baseline_logo_telegram_24));
         if (appBuildInfo.getTdlibCommitFull() != null) {
-          b.item(new OptionItem(R.id.btn_tdlib, Lang.getCharSequence(R.string.format_commit, "TDLib " + Td.tdlibVersion(), Td.tdlibCommitHash()), OPTION_COLOR_NORMAL, R.drawable.baseline_tdlib_24));
+          b.item(new OptionItem(R.id.btn_tdlib, Lang.getCharSequence(R.string.format_commit, "TDLib " + Td.tdlibVersion(), Td.tdlibCommitHash()), OptionColor.NORMAL, R.drawable.baseline_tdlib_24));
+        }
+        b.item(new OptionItem(R.id.btn_tgcalls, Lang.getCharSequence(R.string.format_commit, "tgcalls", BuildConfig.TGCALLS_COMMIT), OptionColor.NORMAL, R.drawable.baseline_phone_in_talk_24));
+        b.item(new OptionItem(R.id.btn_webrtc, Lang.getCharSequence(R.string.format_commit, "WebRTC", BuildConfig.WEBRTC_COMMIT), OptionColor.NORMAL, R.drawable.baseline_webrtc_24));
+        b.item(new OptionItem(R.id.btn_ffmpeg, Lang.getCharSequence(R.string.format_commit, "FFmpeg", BuildConfig.FFMPEG_COMMIT), OptionColor.NORMAL, R.drawable.baseline_ffmpeg_24));
+        if (BuildConfig.WEBP_ENABLED && N.hasBuiltInWebpSupport()) {
+          b.item(new OptionItem(R.id.btn_webp, Lang.getCharSequence(R.string.format_commit, "WebP", BuildConfig.WEBP_COMMIT), OptionColor.NORMAL, R.drawable.dotvhs_baseline_webp_24));
         }
         int i = 0;
         for (PullRequest pullRequest : appBuildInfo.getPullRequests()) {
-          b.item(new OptionItem(i++, Lang.getString(R.string.format_commit, Lang.getString(R.string.PullRequestCommit, pullRequest.getId()), pullRequest.getCommit()), OPTION_COLOR_NORMAL, R.drawable.templarian_baseline_source_merge_24));
+          b.item(new OptionItem(i++, Lang.getString(R.string.format_commit, Lang.getString(R.string.PullRequestCommit, pullRequest.getId()), pullRequest.getCommit()), OptionColor.NORMAL, R.drawable.templarian_baseline_source_merge_24));
         }
         showOptions(b.build(), (view, id) -> {
-          if (id == R.id.btn_sourceCode || id == R.id.btn_tdlib) {
-            viewSourceCode(id == R.id.btn_tdlib);
+          if (id == R.id.btn_sourceCode) {
+            viewSourceCode(SourceCodeType.TELEGRAM_X);
+          } else if (id == R.id.btn_tdlib) {
+            viewSourceCode(SourceCodeType.TDLIB);
+          } else if (id == R.id.btn_webrtc) {
+            viewSourceCode(SourceCodeType.WEBRTC);
+          } else if (id == R.id.btn_ffmpeg) {
+            viewSourceCode(SourceCodeType.FFMPEG);
+          } else if (id == R.id.btn_webp) {
+            viewSourceCode(SourceCodeType.WEBP);
+          } else if (id == R.id.btn_tgcalls) {
+            viewSourceCode(SourceCodeType.TGCALLS);
           } else if (id >= 0 && id < appBuildInfo.getPullRequests().size()) {
             PullRequest pullRequest = appBuildInfo.getPullRequests().get(id);
             tdlib.ui().openUrl(this, pullRequest.getCommitUrl(), new TdlibUi.UrlOpenParameters().disableInstantView());
@@ -1053,22 +1217,24 @@ public class SettingsController extends ViewController<Void> implements
       tdlib.ui().openUrl(this, Lang.getString(R.string.url_faq), new TdlibUi.UrlOpenParameters().forceInstantView());
     } else if (viewId == R.id.btn_privacyPolicy) {
       tdlib.ui().openUrl(this, Lang.getStringSecure(R.string.url_privacyPolicy), new TdlibUi.UrlOpenParameters().forceInstantView());
-    } else if (viewId == R.id.btn_changePhoneNumber) {
-      showSuggestionPopup(new TdApi.SuggestedActionCheckPhoneNumber());
-    } else if (viewId == R.id.btn_2fa) {
-      showSuggestionPopup(new TdApi.SuggestedActionCheckPassword());
+    } else if (viewId == R.id.btn_suggestion) {
+      ListItem listItem = (ListItem) v.getTag();
+      showSuggestionPopup(v, (TdApi.SuggestedAction) listItem.getData());
     } else if (viewId == R.id.btn_build) {
       if (Settings.instance().hasLogsEnabled()) {
         showBuildOptions(true);
       } else {
         tdlib.getTesterLevel(testerLevel -> runOnUiThreadOptional(() ->
-          showBuildOptions(testerLevel >= Tdlib.TESTER_LEVEL_TESTER)
+          showBuildOptions(testerLevel >= Tdlib.TesterLevel.TESTER)
         ));
       }
     }
   }
 
-  private void showSuggestionPopup (TdApi.SuggestedAction suggestedAction) {
+  public void showSuggestionPopup (View suggestionView, TdApi.SuggestedAction suggestedAction) {
+    if (!tdlib.isSettingSuggestion(suggestedAction)) {
+      return;
+    }
     CharSequence info = null;
     IntList ids = new IntList(3);
     StringList titles = new StringList(3);
@@ -1081,17 +1247,17 @@ public class SettingsController extends ViewController<Void> implements
 
         ids.append(R.id.btn_changePhoneNumber);
         titles.append(R.string.ReminderActionChangePhoneNumber);
-        colors.append(OPTION_COLOR_NORMAL);
+        colors.append(OptionColor.NORMAL);
         icons.append(R.drawable.baseline_edit_24);
 
         ids.append(R.id.btn_cancel);
         titles.append(Lang.getString(R.string.ReminderCheckPhoneNumberHide, originalPhoneNumber));
-        colors.append(OPTION_COLOR_NORMAL);
+        colors.append(OptionColor.NORMAL);
         icons.append(R.drawable.baseline_check_24);
 
         ids.append(R.id.btn_info);
         titles.append(R.string.ReminderActionLearnMore);
-        colors.append(OPTION_COLOR_NORMAL);
+        colors.append(OptionColor.NORMAL);
         icons.append(R.drawable.baseline_info_24);
 
         break;
@@ -1101,15 +1267,23 @@ public class SettingsController extends ViewController<Void> implements
 
         ids.append(R.id.btn_2fa);
         titles.append(R.string.ReminderActionVerifyPassword);
-        colors.append(OPTION_COLOR_BLUE);
+        colors.append(OptionColor.BLUE);
         icons.append(R.drawable.mrgrigri_baseline_textbox_password_24);
 
         ids.append(R.id.btn_cancel);
         titles.append(R.string.ReminderCheckTfaPasswordHide);
-        colors.append(OPTION_COLOR_NORMAL);
+        colors.append(OptionColor.NORMAL);
         icons.append(R.drawable.baseline_cancel_24);
 
         break;
+      }
+      case TdApi.SuggestedActionSetBirthdate.CONSTRUCTOR: {
+        tdlib.ui().openBirthdateEditor(this, suggestionView, TdlibUi.BirthdateOpenOrigin.SUGGESTED_ACTION);
+        return;
+      }
+      default: {
+        Td.assertSuggestedAction_5f4bf3f7();
+        throw Td.unsupported(suggestedAction);
       }
     }
 
@@ -1140,26 +1314,31 @@ public class SettingsController extends ViewController<Void> implements
     });
   }
 
-  private void dismissSuggestion (TdApi.SuggestedAction suggestedAction) {
+  private void addSuggestionToList (TdApi.SuggestedAction suggestedAction) {
+    if (!tdlib.isSettingSuggestion(suggestedAction))
+      return;
+    int index = adapter.indexOfViewByIdReverse(R.id.btn_suggestion);
+    if (index != -1) {
+      // add separator & item
+      adapter.addItems(index + 1,
+        new ListItem(ListItem.TYPE_SEPARATOR_FULL),
+        newSuggestionItem(suggestedAction)
+      );
+    } else {
+      index = adapter.indexOfViewById(R.id.btn_bio);
+      adapter.addItems(index + 2,
+        new ListItem(ListItem.TYPE_SHADOW_TOP),
+        newSuggestionItem(suggestedAction),
+        new ListItem(ListItem.TYPE_SHADOW_BOTTOM)
+      );
+    }
+  }
+
+  private void removeSuggestionFromList (TdApi.SuggestedAction suggestedAction) {
     if (!tdlib.isSettingSuggestion(suggestedAction))
       return;
 
-    int removalIndex;
-
-    switch (suggestedAction.getConstructor()) {
-      case TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR: {
-        removalIndex = adapter.indexOfViewById(R.id.btn_changePhoneNumber);
-        break;
-      }
-      case TdApi.SuggestedActionCheckPassword.CONSTRUCTOR: {
-        removalIndex = adapter.indexOfViewById(R.id.btn_2fa);
-        break;
-      }
-      default: {
-        return;
-      }
-    }
-
+    int removalIndex = adapter.indexOfViewByLongId(suggestedAction.getConstructor());
     if (removalIndex == -1)
       return;
     ListItem previousItem = adapter.getItem(removalIndex - 1);
@@ -1184,7 +1363,9 @@ public class SettingsController extends ViewController<Void> implements
         break;
       }
     }
+  }
 
+  private void dismissSuggestion (TdApi.SuggestedAction suggestedAction) {
     tdlib.client().send(new TdApi.HideSuggestedAction(suggestedAction), tdlib.okHandler());
   }
 
@@ -1198,13 +1379,13 @@ public class SettingsController extends ViewController<Void> implements
     ids.append(R.id.btn_copyText);
     strings.append(R.string.CopyVersion);
     icons.append(R.drawable.baseline_content_copy_24);
-    colors.append(OPTION_COLOR_NORMAL);
+    colors.append(OptionColor.NORMAL);
 
     if (!Config.SHOW_COPY_REPORT_DETAILS_IN_SETTINGS) {
       ids.append(R.id.btn_copyDebug);
       strings.append(R.string.CopyReportData);
       icons.append(R.drawable.baseline_bug_report_24);
-      colors.append(OPTION_COLOR_NORMAL);
+      colors.append(OptionColor.NORMAL);
     }
 
     boolean notificationError = tdlib.context().getTokenState() == TdlibManager.TokenState.ERROR;
@@ -1212,24 +1393,24 @@ public class SettingsController extends ViewController<Void> implements
       ids.append(R.id.btn_pushService);
       strings.append(R.string.PushServices);
       icons.append(notificationError ? R.drawable.baseline_sync_problem_24 : R.drawable.baseline_sync_24);
-      colors.append(notificationError ? OPTION_COLOR_RED : OPTION_COLOR_NORMAL);
+      colors.append(notificationError ? OptionColor.RED : OptionColor.NORMAL);
     }
 
     if (allowDebug) {
       ids.append(R.id.btn_tdlib);
       strings.append(R.string.TdlibLogs);
       icons.append(R.drawable.baseline_build_24);
-      colors.append(OPTION_COLOR_NORMAL);
+      colors.append(OptionColor.NORMAL);
 
       ids.append(R.id.btn_build);
       strings.append(R.string.AppLogs);
       icons.append(R.drawable.baseline_build_24);
-      colors.append(OPTION_COLOR_NORMAL);
+      colors.append(OptionColor.NORMAL);
       
       ids.append(R.id.btn_experiment);
       strings.append(R.string.ExperimentalSettings);
       icons.append(R.drawable.templarian_baseline_flask_24);
-      colors.append(OPTION_COLOR_NORMAL);
+      colors.append(OptionColor.NORMAL);
     }
 
     SpannableStringBuilder b = new SpannableStringBuilder();

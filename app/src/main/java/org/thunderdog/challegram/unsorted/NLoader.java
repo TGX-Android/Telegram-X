@@ -19,14 +19,14 @@ import android.os.SystemClock;
 import android.text.TextUtils;
 
 import androidx.annotation.Nullable;
+import androidx.media3.common.C;
+import androidx.media3.decoder.ffmpeg.FfmpegLibrary;
+import androidx.media3.decoder.flac.FlacLibrary;
+import androidx.media3.decoder.opus.OpusLibrary;
+import androidx.media3.decoder.vp9.VpxLibrary;
 
 import com.getkeepsafe.relinker.ReLinker;
 import com.getkeepsafe.relinker.ReLinkerInstance;
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.ext.ffmpeg.FfmpegLibrary;
-import com.google.android.exoplayer2.ext.flac.FlacLibrary;
-import com.google.android.exoplayer2.ext.opus.OpusLibrary;
-import com.google.android.exoplayer2.ext.vp9.VpxLibrary;
 
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.N;

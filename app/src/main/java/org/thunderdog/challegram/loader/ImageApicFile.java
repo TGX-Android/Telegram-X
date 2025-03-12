@@ -14,7 +14,7 @@
  */
 package org.thunderdog.challegram.loader;
 
-import com.google.android.exoplayer2.metadata.id3.ApicFrame;
+import androidx.media3.extractor.metadata.id3.ApicFrame;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.data.TD;

@@ -61,8 +61,8 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
-import me.vkryl.td.MessageId;
-import me.vkryl.td.Td;
+import tgx.td.MessageId;
+import tgx.td.Td;
 
 public final class TGCommentButton implements FactorAnimator.Target, TextColorSet, FormattedCounterAnimator.Callback<Text>, ClickHelper.Delegate {
   @Retention(RetentionPolicy.SOURCE)
@@ -284,8 +284,8 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
     if (context.isRepliesChat()) {
       TdApi.MessageForwardInfo forwardInfo = context.msg.forwardInfo;
       MessageId replyToMessageId = MessageId.valueOf(context.msg.replyTo);
-      if (forwardInfo != null && forwardInfo.fromChatId != 0 && forwardInfo.fromMessageId != 0) {
-        MessageId replyMessageId = new MessageId(forwardInfo.fromChatId, forwardInfo.fromMessageId);
+      if (forwardInfo != null && forwardInfo.source != null && forwardInfo.source.chatId != 0 && forwardInfo.source.messageId != 0) {
+        MessageId replyMessageId = new MessageId(forwardInfo.source);
         context.openMessageThread(replyMessageId, replyToMessageId);
       } else if (replyToMessageId != null) {
         context.openMessageThread(replyToMessageId);
@@ -450,7 +450,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
 
     int avatarsX = right - (useBubbles ? Screen.dp(16f) : Screen.dp(38f));
     int avatarsY = rect.centerY();
-    avatars.draw(view, c, view.getAvatarsReceiver(), avatarsX, avatarsY, Gravity.RIGHT, alpha);
+    avatars.draw(c, view.getAvatarsReceiver(), avatarsX, avatarsY, Gravity.RIGHT, alpha);
 
     int badgeX = avatarsX - Math.round(avatars.getAnimatedWidth()) - Screen.dp(8f) - Screen.dp(BADGE_RADIUS);
     int badgeY = rect.centerY();
@@ -511,7 +511,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
 
     int avatarsX = right - Screen.dp(6f);
     int avatarsY = rect.centerY();
-    avatars.draw(view, c, view.getAvatarsReceiver(), avatarsX, avatarsY, Gravity.RIGHT, alpha);
+    avatars.draw(c, view.getAvatarsReceiver(), avatarsX, avatarsY, Gravity.RIGHT, alpha);
 
     float badgeX = avatarsX - avatars.getAnimatedWidth() - Screen.dp(8f) - Screen.dp(BADGE_RADIUS);
     float badgeY = rect.centerY();
@@ -645,17 +645,18 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
     MessageId messageId, fallbackMessageId;
     if (context.isRepliesChat()) {
       MessageId replyToMessageId = MessageId.valueOf(context.msg.replyTo);
-      if (context.msg.forwardInfo != null) {
-        messageId = new MessageId(context.msg.forwardInfo.fromChatId, context.msg.forwardInfo.fromMessageId);
+      TdApi.MessageForwardInfo forwardInfo = context.msg.forwardInfo;
+      if (forwardInfo != null && forwardInfo.source != null && forwardInfo.source.chatId != 0 && forwardInfo.source.messageId != 0) {
+        messageId = new MessageId(forwardInfo.source);
         fallbackMessageId = replyToMessageId;
       } else {
         messageId = replyToMessageId;
         fallbackMessageId = null;
       }
     } else {
-      TdApi.Message messageWithThread = context.findMessageWithThread();
-      if (messageWithThread != null) {
-        messageId = new MessageId(messageWithThread.chatId, messageWithThread.id);
+      TdApi.Message messageWithReplyInfo = context.findMessageWithReplyInfo();
+      if (messageWithReplyInfo != null) {
+        messageId = new MessageId(messageWithReplyInfo.chatId, messageWithReplyInfo.id);
         fallbackMessageId = null;
       } else {
         return;
@@ -771,7 +772,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
     forceTouchContext.setAnimationSourcePoint(sourceX, sourceY);
     forceTouchContext.setStateListener(controller);
     forceTouchContext.setStateListenerArgument(controller);
-    forceTouchContext.setMaximizeListener((target, animateToWhenReady, arg) -> MessagesController.maximizeFrom(tdlib, context.context(), target, animateToWhenReady, arg));
+    forceTouchContext.setMaximizeListener((target, animateToWhenReady, arg) -> MessagesController.maximizeFrom(tdlib, context.context(), target, animateToWhenReady, (MessagesController) arg, null));
 
     controller.onPrepareForceTouchContext(forceTouchContext);
 

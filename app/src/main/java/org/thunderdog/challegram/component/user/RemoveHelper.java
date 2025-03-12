@@ -188,7 +188,7 @@ public class RemoveHelper implements FactorAnimator.Target {
       @Override
       public int getMovementFlags (RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
         int dragFlags = callback instanceof ExtendedCallback ? ((ExtendedCallback) callback).makeDragFlags(recyclerView, viewHolder) : 0;
-        int movementFlags = recyclerView.getLayoutManager() != null && recyclerView.getAdapter() != null && recyclerView.getAdapter().getItemCount() > 0 && callback.canRemove(recyclerView, viewHolder, viewHolder.getAdapterPosition()) ? (Lang.rtl() ? ItemTouchHelper.RIGHT : ItemTouchHelper.LEFT) : 0;
+        int movementFlags = recyclerView.getLayoutManager() != null && recyclerView.getAdapter() != null && recyclerView.getAdapter().getItemCount() > 0 && callback.canRemove(recyclerView, viewHolder, viewHolder.getBindingAdapterPosition()) ? (Lang.rtl() ? ItemTouchHelper.RIGHT : ItemTouchHelper.LEFT) : 0;
         return dragFlags != 0 || movementFlags != 0 ? makeMovementFlags(dragFlags, movementFlags) : 0;
       }
 
@@ -238,8 +238,8 @@ public class RemoveHelper implements FactorAnimator.Target {
 
       @Override
       public boolean onMove (RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
-        int fromPosition = viewHolder.getAdapterPosition();
-        int toPosition = target.getAdapterPosition();
+        int fromPosition = viewHolder.getBindingAdapterPosition();
+        int toPosition = target.getBindingAdapterPosition();
 
         if (callback instanceof ExtendedCallback && ((ExtendedCallback) callback).onMove(recyclerView, viewHolder, target)) {
           if (dragFrom == -1)

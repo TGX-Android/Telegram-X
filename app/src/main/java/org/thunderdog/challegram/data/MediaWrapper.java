@@ -59,6 +59,7 @@ import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.MessageEditMediaPending;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.theme.ColorId;
@@ -84,7 +85,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class MediaWrapper implements FileProgressComponent.SimpleListener, FileProgressComponent.FallbackFileProvider {
   public interface OnClickListener {
@@ -277,12 +278,13 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       video.height = temp;
     }*/
 
-    setPreviewFile(video.minithumbnail, video.thumbnail);
-
     this.targetFile = video.video;
 
-    this.targetImageFile = createThumbFile(tdlib, video.video);
-    this.targetImageFile.setScaleType(ImageFile.CENTER_CROP);
+    if (!ignoreUpcomingContentUpdate()) {
+      setPreviewFile(video.minithumbnail, video.thumbnail);
+      this.targetImageFile = createThumbFile(tdlib, video.video);
+      this.targetImageFile.setScaleType(ImageFile.CENTER_CROP);
+    }
 
     this.contentWidth = video.width;
     this.contentHeight = video.height;
@@ -359,6 +361,19 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     }
     this.fileProgress.setFile(targetFile, source != null ? source.getMessage(messageId) : null);
     updateDuration();
+  }
+
+  public static MediaWrapper valueOf (BaseActivity context, Tdlib tdlib, @Nullable TGMessage source, @NonNull MessageEditMediaPending pending) {
+    if (pending.isPhoto()) {
+      return new MediaWrapper(context, tdlib, pending.getPhoto(), pending.chatId, pending.messageId, source, false, pending.isWebp(), null);
+    }
+    if (pending.isVideo()) {
+      return new MediaWrapper(context, tdlib, pending.getVideo(), pending.chatId, pending.messageId, source, false);
+    }
+    if (pending.isAnimation()) {
+      return new MediaWrapper(context, tdlib, pending.getAnimation(), pending.chatId, pending.messageId, source, false, false, false, null);
+    }
+    throw new IllegalArgumentException();
   }
 
   public void setOnClickListener (@Nullable OnClickListener onClickListener) {
@@ -724,13 +739,24 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     return fileProgress;
   }
 
+  private boolean ignoreUpcomingContentUpdate;
+
   public void updateMessageId (long oldMessageId, long newMessageId, boolean success) {
     if (this.sourceMessageId == oldMessageId) {
       this.sourceMessageId = newMessageId;
+      this.ignoreUpcomingContentUpdate = isVideo();
     }
     getFileProgress().updateMessageId(oldMessageId, newMessageId, success);
     updateDuration();
     updateRevealOnTap();
+  }
+
+  public boolean ignoreUpcomingContentUpdate () {
+    if (ignoreUpcomingContentUpdate) {
+      ignoreUpcomingContentUpdate = false;
+      return true;
+    }
+    return false;
   }
 
   public @Nullable TdApi.Photo getPhoto () {
@@ -777,7 +803,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   }
 
   private boolean showImage () {
-    return targetImageFile != null && TD.isFileLoaded(targetFile) && (fileProgress == null || fileProgress.isDownloaded()) && !isHot();
+    return targetImageFile != null && (TD.isFileLoaded(targetFile) && (fileProgress == null || fileProgress.isDownloaded())) && !isHot();
   }
 
   public void requestImage (ImageReceiver receiver) {
@@ -1255,29 +1281,41 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   // Stuff
 
   public boolean updatePhoto (long sourceMessageId, TdApi.MessagePhoto newPhoto) {
+    return updatePhoto(sourceMessageId, newPhoto.photo, newPhoto.hasSpoiler, isPhotoWebp);
+  }
+
+  public boolean updatePhoto (long sourceMessageId, TdApi.Photo photo, boolean hasSpoiler, boolean isWebp) {
     if (this.sourceMessageId != sourceMessageId) {
       return false;
     }
-    setPhoto(sourceMessageId, newPhoto.photo, isPhotoWebp);
-    setRevealOnTap(newPhoto.hasSpoiler);
+    setPhoto(sourceMessageId, photo, isWebp);
+    setRevealOnTap(hasSpoiler);
     return true;
   }
 
   public boolean updateVideo (long sourceMessageId, TdApi.MessageVideo newVideo) {
+    return updateVideo(sourceMessageId, newVideo.video, newVideo.hasSpoiler);
+  }
+
+  public boolean updateVideo (long sourceMessageId, TdApi.Video video, boolean hasSpoiler) {
     if (this.sourceMessageId != sourceMessageId) {
       return false;
     }
-    setVideo(sourceMessageId, newVideo.video);
-    setRevealOnTap(newVideo.hasSpoiler);
+    setVideo(sourceMessageId, video);
+    setRevealOnTap(hasSpoiler);
     return true;
   }
 
   public boolean updateAnimation (long sourceMessageId, TdApi.MessageAnimation newAnimation) {
+    return updateAnimation(sourceMessageId, newAnimation.animation, newAnimation.hasSpoiler);
+  }
+
+  public boolean updateAnimation (long sourceMessageId, TdApi.Animation animation, boolean hasSpoiler) {
     if (this.sourceMessageId != sourceMessageId) {
       return false;
     }
-    setAnimation(sourceMessageId, newAnimation.animation);
-    setRevealOnTap(newAnimation.hasSpoiler);
+    setAnimation(sourceMessageId, animation);
+    setRevealOnTap(hasSpoiler);
     return true;
   }
 

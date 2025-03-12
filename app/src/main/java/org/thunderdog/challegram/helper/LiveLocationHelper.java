@@ -18,6 +18,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
 import android.text.TextPaint;
@@ -66,9 +67,9 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.MessageId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.MessageId;
+import tgx.td.Td;
 
 public class LiveLocationHelper implements LiveLocationManager.Listener, FactorAnimator.Target, BaseView.ActionListProvider, ForceTouchView.ActionListener, MessageListener, Handler.Callback, ClickHelper.Delegate {
   private static final int ANIMATOR_SUBTEXT = 0;
@@ -109,7 +110,7 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
     this.onBackground = onBackground;
     this.callback = callback;
     this.icon = Drawables.get(context.getResources(), R.drawable.baseline_location_on_18);
-    this.handler = chatId != 0 ? new Handler(this) : null;
+    this.handler = chatId != 0 ? new Handler(Looper.getMainLooper(), this) : null;
     this.clickHelper = chatId != 0 ? new ClickHelper(this) : null;
   }
 
@@ -565,7 +566,7 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
       info = Lang.getString(R.string.StopLiveLocationInfo);
     }
 
-    c.showOptions(info, ids.get(), strings.get(), new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, icons.get(), (itemView, id) -> {
+    c.showOptions(info, ids.get(), strings.get(), new int[] {ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, icons.get(), (itemView, id) -> {
       if (id == R.id.btn_stopAllLiveLocations) {
         tdlib.cache().stopLiveLocations(chatId);
         if (after != null) {
@@ -640,7 +641,7 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
       }
       return false;
     });
-    b.setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter) -> {
+    b.setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter, window) -> {
       TdApi.Message message = (TdApi.Message) item.getData();
       TdApi.MessageLocation messageLocation = (TdApi.MessageLocation) message.content;
       MapController.Args args = new MapController.Args(messageLocation.location.latitude, messageLocation.location.longitude, message).setChatId(message.chatId, message.messageThreadId).setNavigateBackOnStop(true);

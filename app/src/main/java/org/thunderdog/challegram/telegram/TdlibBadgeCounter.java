@@ -18,7 +18,7 @@ import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.unsorted.Settings;
 
-import me.vkryl.td.ChatPosition;
+import tgx.td.ChatPosition;
 
 public class TdlibBadgeCounter {
   private int count;

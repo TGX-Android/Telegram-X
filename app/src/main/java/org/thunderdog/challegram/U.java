@@ -82,22 +82,22 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.os.EnvironmentCompat;
 import androidx.exifinterface.media.ExifInterface;
+import androidx.media3.common.PlaybackException;
+import androidx.media3.datasource.FileDataSource;
+import androidx.media3.exoplayer.DefaultLoadControl;
+import androidx.media3.exoplayer.DefaultRenderersFactory;
+import androidx.media3.exoplayer.ExoPlaybackException;
+import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.RenderersFactory;
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
+import androidx.media3.exoplayer.source.MediaSource;
+import androidx.media3.exoplayer.source.MediaSourceFactory;
+import androidx.media3.exoplayer.source.ProgressiveMediaSource;
+import androidx.media3.exoplayer.source.UnrecognizedInputFormatException;
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector;
+import androidx.media3.extractor.DefaultExtractorsFactory;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.exoplayer2.DefaultLoadControl;
-import com.google.android.exoplayer2.DefaultRenderersFactory;
-import com.google.android.exoplayer2.ExoPlaybackException;
-import com.google.android.exoplayer2.ExoPlayer;
-import com.google.android.exoplayer2.PlaybackException;
-import com.google.android.exoplayer2.RenderersFactory;
-import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
-import com.google.android.exoplayer2.source.DefaultMediaSourceFactory;
-import com.google.android.exoplayer2.source.MediaSource;
-import com.google.android.exoplayer2.source.MediaSourceFactory;
-import com.google.android.exoplayer2.source.ProgressiveMediaSource;
-import com.google.android.exoplayer2.source.UnrecognizedInputFormatException;
-import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
-import com.google.android.exoplayer2.upstream.FileDataSource;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 
@@ -107,12 +107,12 @@ import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.emoji.EmojiSpan;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.loader.ImageLoader;
 import org.thunderdog.challegram.loader.ImageReader;
 import org.thunderdog.challegram.loader.ImageStrictCache;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
+import org.thunderdog.challegram.telegram.RandomAccessDataSource;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibDataSource;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
@@ -121,13 +121,13 @@ import org.thunderdog.challegram.telegram.TdlibNotificationManager;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.TextController;
 import org.thunderdog.challegram.util.AppBuildInfo;
-import org.thunderdog.challegram.util.AppInstallationUtil;
 import org.thunderdog.challegram.util.Permissions;
+import org.thunderdog.challegram.util.text.TextReplacementSpan;
+import org.thunderdog.challegram.util.text.bidi.BiDiUtils;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
 import java.io.BufferedReader;
@@ -166,6 +166,7 @@ import java.util.zip.GZIPInputStream;
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGL11;
 
+import me.vkryl.android.AppInstallationUtil;
 import me.vkryl.android.LocaleUtils;
 import me.vkryl.android.SdkVersion;
 import me.vkryl.core.ArrayUtils;
@@ -178,12 +179,12 @@ import me.vkryl.core.collection.LongList;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.util.LocalVar;
-import me.vkryl.td.Td;
 import okio.BufferedSink;
 import okio.BufferedSource;
 import okio.Okio;
 import okio.Sink;
 import okio.Source;
+import tgx.td.Td;
 
 @SuppressWarnings ("JniMissingFunction")
 public class U {
@@ -492,9 +493,20 @@ public class U {
         case TdlibNotificationManager.ID_ONGOING_CALL_NOTIFICATION:
         case TdlibNotificationManager.ID_INCOMING_CALL_NOTIFICATION:
           knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL;
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (UI.getAppContext().checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+              knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
+            }
+          }
+          knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK;
           break;
         case TdlibNotificationManager.ID_PENDING_TASK:
-          knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC;
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE;
+          } else {
+            // FOREGROUND_SERVICE_TYPE_SHORT_SERVICE was added in Android 14.
+            knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST;
+          }
           break;
       }
       if (knownType != android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_NONE) {
@@ -733,8 +745,8 @@ public class U {
     return new ProgressiveMediaSource.Factory(new FileDataSource.Factory()).createMediaSource(newMediaItem(Uri.fromFile(file)));
   }
 
-  public static com.google.android.exoplayer2.MediaItem newMediaItem (Uri uri) {
-    return new com.google.android.exoplayer2.MediaItem.Builder().setUri(uri).build();
+  public static androidx.media3.common.MediaItem newMediaItem (Uri uri) {
+    return new androidx.media3.common.MediaItem.Builder().setUri(uri).build();
   }
 
   public static MediaSource newMediaSource (int accountId, TdApi.Message message) {
@@ -749,6 +761,10 @@ public class U {
     } else {
       return new ProgressiveMediaSource.Factory(new TdlibDataSource.Factory()).createMediaSource(newMediaItem(TdlibDataSource.UriFactory.create(accountId, file)));
     }
+  }
+
+  public static MediaSource newMediaSource (RandomAccessFile file) {
+    return new ProgressiveMediaSource.Factory(new RandomAccessDataSource.Factory(file)).createMediaSource(newMediaItem(Uri.EMPTY));
   }
 
   public static MediaSource newMediaSource (int accountId, int fileId) {
@@ -809,17 +825,12 @@ public class U {
     return Environment.MEDIA_MOUNTED.equals(state) || Environment.MEDIA_MOUNTED_READ_ONLY.equals(state);
   }
 
-  public static long getFreeMemorySize (StatFs statFs) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-      return statFs.getBlockSizeLong() * statFs.getAvailableBlocksLong();
-    } else {
-      //noinspection deprecation
-      return (long) statFs.getBlockSize() * (long) statFs.getAvailableBlocks();
-    }
-  }
-
   public static String getOtherNotificationChannel () {
     return getNotificationChannel("other", R.string.NotificationChannelOther);
+  }
+
+  public static String getMaybeNotificationChannel () {
+    return getNotificationChannel("maybe", R.string.NotificationChannelMaybe);
   }
 
   public static String getNotificationChannel (String id, int stringRes) {
@@ -938,15 +949,6 @@ public class U {
       b.append(hourOfDay < 12 ? " AM" : " PM");
     }
     return b.toString();
-  }
-
-  public static long getTotalMemorySize (StatFs statFs) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-      return statFs.getBlockSizeLong() * statFs.getBlockCountLong();
-    } else {
-      //noinspection deprecation
-      return (long) statFs.getBlockSize() * (long) statFs.getBlockCount();
-    }
   }
 
   private static final String MAP_DARK_STYLE = "&style=element:geometry%7Ccolor:0x212121&style=element:labels.icon%7Cvisibility:off&style=element:labels.text.fill%7Ccolor:0x757575&style=element:labels.text.stroke%7Ccolor:0x212121&style=feature:administrative%7Celement:geometry%7Ccolor:0x757575&style=feature:administrative.country%7Celement:labels.text.fill%7Ccolor:0x9e9e9e&style=feature:administrative.land_parcel%7Cvisibility:off&style=feature:administrative.locality%7Celement:labels.text.fill%7Ccolor:0xbdbdbd&style=feature:poi%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:poi.park%7Celement:geometry%7Ccolor:0x181818&style=feature:poi.park%7Celement:labels.text.fill%7Ccolor:0x616161&style=feature:poi.park%7Celement:labels.text.stroke%7Ccolor:0x1b1b1b&style=feature:road%7Celement:geometry.fill%7Ccolor:0x2c2c2c&style=feature:road%7Celement:labels.text.fill%7Ccolor:0x8a8a8a&style=feature:road.arterial%7Celement:geometry%7Ccolor:0x373737&style=feature:road.highway%7Celement:geometry%7Ccolor:0x3c3c3c&style=feature:road.highway.controlled_access%7Celement:geometry%7Ccolor:0x4e4e4e&style=feature:road.local%7Celement:labels.text.fill%7Ccolor:0x616161&style=feature:transit%7Celement:labels.text.fill%7Ccolor:0x757575&style=feature:water%7Celement:geometry%7Ccolor:0x000000&style=feature:water%7Celement:labels.text.fill%7Ccolor:0x3d3d3d";
@@ -1420,6 +1422,23 @@ public class U {
     });
   }
 
+  public static boolean toGalleryFile (TdApi.Message message, RunnableData<ImageGalleryFile> callback) {
+    final TdApi.File file = TD.getFile(message);
+    if (!TD.isFileLoaded(file)) {
+      return false;
+    }
+
+    final boolean isVideo = message.content.getConstructor() == TdApi.MessageVideo.CONSTRUCTOR;
+    toGalleryFile(new File(file.local.path), isVideo, imageGalleryFile -> {
+      if (imageGalleryFile != null) {
+        imageGalleryFile.setCaption(Td.textOrCaption(message.content));
+      }
+      callback.runWithData(imageGalleryFile);
+    });
+
+    return true;
+  }
+
   public static String getFileName (String path) {
     int i = path.lastIndexOf('/');
     return i != -1 ? path.substring(i + 1) : path;
@@ -1840,7 +1859,7 @@ public class U {
     return successCount == innerFiles.length && fromDir.delete();
   }
 
-  private static boolean moveFile (File fromFile, File toFile) {
+  public static boolean moveFile (File fromFile, File toFile) {
     if (fromFile.renameTo(toFile)) {
       return true;
     }
@@ -2056,7 +2075,7 @@ public class U {
     }
 
     final Spannable s = (Spannable) in;
-    EmojiSpan[] spans = s.getSpans(start, end, EmojiSpan.class);
+    TextReplacementSpan[] spans = s.getSpans(start, end, TextReplacementSpan.class);
     if (spans == null || spans.length == 0) {
       return measureText(in, start, end, p);
     }
@@ -2069,7 +2088,7 @@ public class U {
 
     float textWidth = 0;
     int startIndex = start;
-    for (EmojiSpan span : spans) {
+    for (TextReplacementSpan span : spans) {
       int spanStart = s.getSpanStart(span);
       if (startIndex < spanStart) {
         textWidth += measureText(in, startIndex, spanStart, p);
@@ -2141,7 +2160,7 @@ public class U {
       return 0;
     }
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+    if (Config.USE_TEXT_ADVANCE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !BiDiUtils.requiresBidi(in, start, end)) {
       /*
       getTextRunAdvances(char[] chars, int index, int count,
             int contextIndex, int contextCount, boolean isRtl, float[] advances,
@@ -2270,6 +2289,34 @@ public class U {
     }
   }*/
 
+  public static float measureTextRun (@Nullable CharSequence in, @NonNull Paint p, boolean isRtl) {
+    final int count;
+    if (in == null || (count = in.length()) == 0) {
+      return 0;
+    }
+
+    if (Config.USE_TEXT_ADVANCE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      return p.getRunAdvance(in, 0, count, 0, in.length(), isRtl, count);
+    }
+
+    return measureText(in, p);
+  }
+
+  public static float measureTextRun (@Nullable CharSequence in, int start, int end, @NonNull Paint p, boolean isRtl) {
+    final int count = end - start;
+
+    if (in == null || in.length() == 0 || count <= 0) {
+      return 0;
+    }
+
+    if (Config.USE_TEXT_ADVANCE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      return p.getRunAdvance(in, start, end, 0, in.length(), isRtl, end);
+    }
+
+    return measureText(in, start, end, p);
+  }
+
+  @Deprecated
   public static float measureText (@Nullable CharSequence in, int start, int end, @NonNull Paint p) {
     final int count = end - start;
 
@@ -2280,7 +2327,7 @@ public class U {
     if (p == null)
       throw new IllegalArgumentException();
 
-    if (Config.USE_TEXT_ADVANCE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Strings.getTextDirection(in, start, end) != Strings.DIRECTION_RTL) {
+    if (Config.USE_TEXT_ADVANCE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !BiDiUtils.requiresBidi(in, start, end)) {
       return p.getRunAdvance(in, start, end, 0, in.length(), false, end);
     } else {
       float[] widths = pickWidths(count, true);
@@ -2391,15 +2438,21 @@ public class U {
     String metadata = Lang.getAppBuildAndVersion(tdlib) + " (" + BuildConfig.COMMIT + ")\n" +
       (!buildInfo.getPullRequests().isEmpty() ? "PRs: " + buildInfo.pullRequestsList() + "\n" : "") +
       "TDLib: " + Td.tdlibVersion() + " (tdlib/td@" + Td.tdlibCommitHash() + ")\n" +
+      "tgcalls: TGX-Android/tgcalls@" + BuildConfig.TGCALLS_COMMIT + "\n" +
+      "WebRTC: TGX-Android/webrtc@" + BuildConfig.WEBRTC_COMMIT + "\n" +
       "Android: " + SdkVersion.getPrettyName() + " (" + Build.VERSION.SDK_INT + ")" + "\n" +
       "Device: " + Build.MANUFACTURER + " " + Build.BRAND + " " + Build.MODEL + " (" + Build.DISPLAY + ")\n" +
       "Screen: " + Screen.widestSide() + "x" + Screen.smallestSide() + " (density: " + Screen.density() + ", fps: " + Screen.refreshRate() + ")" + "\n" +
       "Build: `" + Build.FINGERPRINT + "`\n" +
       "Package: " + UI.getAppContext().getPackageName() + "\n" +
       "Locale: " + locale + (!locale.equals(appLocale) ? " (app: " + appLocale + ")" : "");
-    String installerName = AppInstallationUtil.getInstallerPrettyName();
+    String installerName = AppInstallationUtil.getInstallerPackageName(UI.getAppContext());
     if (!StringUtils.isEmpty(installerName)) {
-      metadata += "\nInstaller: " + installerName;
+      metadata += "\nInstaller: " + AppInstallationUtil.prettifyPackageName(installerName);
+    }
+    String initiatorName = AppInstallationUtil.getInitiatorPackageName(UI.getAppContext());
+    if (!StringUtils.isEmpty(initiatorName)) {
+      metadata += "\nInitiator: " + AppInstallationUtil.prettifyPackageName(initiatorName);
     }
     String fingerprint = U.getApkFingerprint("SHA1");
     if (!StringUtils.isEmpty(fingerprint)) {
@@ -3448,6 +3501,16 @@ public class U {
     }
   }
 
+  public static int getStreamVolume (int stream) {
+    final AudioManager audioManager = (AudioManager) UI.getContext().getSystemService(Context.AUDIO_SERVICE);
+    return audioManager.getStreamVolume(stream);
+  }
+
+  public static void adjustStreamVolume (int stream, int volume, int flags) {
+    final AudioManager audioManager = (AudioManager) UI.getContext().getSystemService(Context.AUDIO_SERVICE);
+    audioManager.adjustStreamVolume(stream, volume, flags);
+  }
+
   // ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION opened, but the permission is still not granted. Ignore until the app restarts.
 
   public static boolean canReadFile (String url) {
@@ -3489,12 +3552,15 @@ public class U {
         clipboard.setPrimaryClip(clip);
       }
     } else {
-      //noinspection deprecation
-      android.text.ClipboardManager clipboard = (android.text.ClipboardManager) UI.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
-      if (clipboard != null) {
-        //noinspection deprecation
-        clipboard.setText(text);
-      }
+      copyTextLegacy(text);
+    }
+  }
+
+  @SuppressWarnings("deprecation")
+  private static void copyTextLegacy (CharSequence text) {
+    android.text.ClipboardManager clipboard = (android.text.ClipboardManager) UI.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+    if (clipboard != null) {
+      clipboard.setText(text);
     }
   }
 
@@ -3517,12 +3583,16 @@ public class U {
         return null;
       }
     } else {
-      //noinspection deprecation
-      android.text.ClipboardManager clipboard = (android.text.ClipboardManager) UI.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
-      if (clipboard != null) {
-        //noinspection deprecation
-        return clipboard.getText();
-      }
+      return getCopyTextLegacy();
+    }
+    return null;
+  }
+
+  @SuppressWarnings("deprecation")
+  private static CharSequence getCopyTextLegacy () {
+    android.text.ClipboardManager clipboard = (android.text.ClipboardManager) UI.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+    if (clipboard != null) {
+      return clipboard.getText();
     }
     return null;
   }
@@ -3681,5 +3751,20 @@ public class U {
       set.add(value);
     }
     return Collections.unmodifiableSet(set);
+  }
+
+  public static long[] concat (long[] first, long[] second) {
+    long[] result = Arrays.copyOf(first, first.length + second.length);
+    System.arraycopy(second, 0, result, first.length, second.length);
+    return result;
+  }
+
+  @SuppressWarnings("deprecation")
+  public static String getCpuAbi () {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      return Build.SUPPORTED_ABIS[0];
+    } else {
+      return Build.CPU_ABI;
+    }
   }
 }

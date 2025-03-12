@@ -106,9 +106,9 @@ public abstract class TextEntity {
     if (callback.forceInstantView(url)) {
       parameters.forceInstantView();
     }
-    TdApi.WebPage webPage = callback.findWebPage(url);
+    TdApi.LinkPreview webPage = callback.findLinkPreview(url);
     if (webPage != null) {
-      parameters.sourceWebView(webPage);
+      parameters.sourceLinkPreview(webPage);
     }
     return parameters;
   }
@@ -135,7 +135,11 @@ public abstract class TextEntity {
   public abstract boolean isFullWidth ();
   public abstract boolean isCustomEmoji ();
   public abstract long getCustomEmojiId ();
+  public abstract boolean forceDisableAnimations ();
   public abstract TextEntity createCopy ();
+  public abstract boolean isQuote ();
+  public abstract  TdApi.TextEntity getQuote ();
+  public abstract int getQuoteId ();
 
   // TODO: TextEntityCustom & TextEntityMessage to make things simpler
   public abstract TextEntity setOnClickListener (ClickableSpan onClickListener);
@@ -152,6 +156,7 @@ public abstract class TextEntity {
     // different storages
     boolean isUnderline = isUnderline();
     boolean isStrikeThrough = isStrikethrough();
+    boolean isSmall = isSmall();
 
     Fonts.TextPaintStorage storage = textStyleProvider.getTextPaintStorage();
 
@@ -167,6 +172,9 @@ public abstract class TextEntity {
     if (isStrikeThrough) {
       storage = storage.getStrikeThroughStorage();
     }
+    if (isSmall) {
+      storage = storage.getAlternativeSizeStorage();
+    }
 
     TextPaint textPaint;
     if (isBold && isItalic) {
@@ -180,8 +188,7 @@ public abstract class TextEntity {
     }
 
     textStyleProvider.preparePaint(textPaint);
-
-    if (isSmall()) {
+    if (isSmall) {
       textPaint.setTextSize(textPaint.getTextSize() * .75f);
     }
 

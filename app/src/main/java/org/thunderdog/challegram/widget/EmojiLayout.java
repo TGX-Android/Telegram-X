@@ -15,12 +15,10 @@
 package org.thunderdog.challegram.widget;
 
 import android.content.Context;
-import android.os.Build;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 import android.widget.LinearLayout;
 
 import androidx.annotation.DrawableRes;
@@ -30,7 +28,6 @@ import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.viewpager.widget.PagerAdapter;
-import androidx.viewpager.widget.ViewPager;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
@@ -47,7 +44,6 @@ import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeId;
-import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.EmojiListController;
@@ -68,7 +64,7 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 
-public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPreDrawListener, ViewPager.OnPageChangeListener, FactorAnimator.Target, View.OnClickListener, Lang.Listener, EmojiLayoutRecyclerController.Callback {
+public class EmojiLayout extends FrameLayoutFix implements ViewPager.OnPageChangeListener, FactorAnimator.Target, View.OnClickListener, Lang.Listener, EmojiLayoutRecyclerController.Callback {
   public interface Listener {
     default void onEnterEmoji (String emoji) {}
     default void onEnterCustomEmoji (TGStickerObj sticker) {}
@@ -126,7 +122,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       themeProvider.showOptions(null, new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {
         Lang.getString(animatedEmojiOnly ? R.string.ClearRecentEmojiStatuses : R.string.ClearRecentStickers),
         Lang.getString(R.string.Cancel)
-      }, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_auto_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+      }, new int[] {ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, new int[] {R.drawable.baseline_auto_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
         if (id == R.id.btn_done) {
           setShowRecents(false);
           if (animatedEmojiOnly) {
@@ -150,7 +146,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
   private void clearRecentEmoji () {
     if (themeProvider != null) {
-      themeProvider.showOptions(null, new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearRecentEmojiAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_auto_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+      themeProvider.showOptions(null, new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearRecentEmojiAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, new int[] {R.drawable.baseline_auto_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
         if (id == R.id.btn_delete) {
           Emoji.instance().clearRecents();
           ViewController<?> c = adapter.getCachedItem(0);
@@ -174,15 +170,15 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       Lang.getString(R.string.CopyLink),
       Lang.getString(isTrending ? R.string.AddPack : R.string.DeletePack)
     }, new int[] {
-      ViewController.OPTION_COLOR_NORMAL,
-      isTrending ? ViewController.OPTION_COLOR_NORMAL : ViewController.OPTION_COLOR_RED
+      ViewController.OptionColor.NORMAL,
+      isTrending ? ViewController.OptionColor.NORMAL : ViewController.OptionColor.RED
     }, new int[] {
       R.drawable.baseline_link_24,
       isTrending ? R.drawable.deproko_baseline_insert_sticker_24 : R.drawable.baseline_delete_24
     }, (itemView, id) -> {
       if (id == R.id.more_btn_delete) {
         if (themeProvider != null) {
-          themeProvider.showOptions(Lang.getStringBold(R.string.RemoveEmojiSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.RemoveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
+          themeProvider.showOptions(Lang.getStringBold(R.string.RemoveEmojiSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.RemoveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
             if (resultId == R.id.btn_delete) {
               ViewController<?> c = adapter.getCachedItem(0);
               if (c != null) {
@@ -211,10 +207,10 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     if (animatedEmojiOnly) return;
 
     if (themeProvider != null) {
-      themeProvider.showOptions(null, new int[] {R.id.btn_copyLink, R.id.btn_archive, R.id.more_btn_delete}, new String[] {Lang.getString(R.string.CopyLink), Lang.getString(R.string.ArchivePack), Lang.getString(R.string.DeletePack)}, new int[] {ViewController.OPTION_COLOR_NORMAL, ViewController.OPTION_COLOR_NORMAL, ViewController.OPTION_COLOR_RED}, new int[] {R.drawable.baseline_link_24, R.drawable.baseline_archive_24, R.drawable.baseline_delete_24}, (itemView, id) -> {
+      themeProvider.showOptions(null, new int[] {R.id.btn_copyLink, R.id.btn_archive, R.id.more_btn_delete}, new String[] {Lang.getString(R.string.CopyLink), Lang.getString(R.string.ArchivePack), Lang.getString(R.string.DeletePack)}, new int[] {ViewController.OptionColor.NORMAL, ViewController.OptionColor.NORMAL, ViewController.OptionColor.RED}, new int[] {R.drawable.baseline_link_24, R.drawable.baseline_archive_24, R.drawable.baseline_delete_24}, (itemView, id) -> {
         if (id == R.id.more_btn_delete) {
           if (themeProvider != null) {
-            themeProvider.showOptions(Lang.getStringBold(R.string.RemoveStickerSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.RemoveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
+            themeProvider.showOptions(Lang.getStringBold(R.string.RemoveStickerSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.RemoveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
               if (resultId == R.id.btn_delete) {
                 parentController.tdlib().client().send(new TdApi.ChangeStickerSet(info.getId(), false, false), parentController.tdlib().okHandler());
               }
@@ -223,7 +219,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
           }
         } else if (id == R.id.btn_archive) {
           if (themeProvider != null) {
-            themeProvider.showOptions(Lang.getStringBold(R.string.ArchiveStickerSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ArchiveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_archive_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
+            themeProvider.showOptions(Lang.getStringBold(R.string.ArchiveStickerSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ArchiveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, new int[] {R.drawable.baseline_archive_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
               if (resultId == R.id.btn_delete) {
                 parentController.tdlib().client().send(new TdApi.ChangeStickerSet(info.getId(), false, true), parentController.tdlib().okHandler());
               }
@@ -301,23 +297,6 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     this.animatedEmojiOnly = animatedEmojiOnly;
     this.classicEmojiOnly = classicEmojiOnly;
     this.useDarkMode = useDarkMode;
-
-    /*
-    this.emojiSections = new ArrayList<>();
-    this.emojiSections.add(new EmojiSection(this, 0, R.drawable.baseline_access_time_24, R.drawable.baseline_watch_later_24).setFactor(1f, false).setMakeFirstTransparent().setOffsetHalf(false));
-    this.emojiSections.add(new EmojiSection(this, 1, R.drawable.baseline_emoticon_outline_24, R.drawable.baseline_emoticon_24).setMakeFirstTransparent());
-    this.emojiSections.add(new EmojiSection(this, 2, R.drawable.deproko_baseline_animals_outline_24, R.drawable.deproko_baseline_animals_24).setIsPanda(!useDarkMode));
-    this.emojiSections.add(new EmojiSection(this, 3, R.drawable.baseline_restaurant_menu_24, R.drawable.baseline_restaurant_menu_24));
-    this.emojiSections.add(new EmojiSection(this, 4, R.drawable.baseline_directions_car_24, R.drawable.baseline_directions_car_24));
-    this.emojiSections.add(new EmojiSection(this, 5, R.drawable.deproko_baseline_lamp_24, R.drawable.deproko_baseline_lamp_filled_24));
-    this.emojiSections.add(new EmojiSection(this, 6, R.drawable.deproko_baseline_flag_outline_24, R.drawable.deproko_baseline_flag_filled_24).setMakeFirstTransparent());
-
-    if (allowMedia) {
-      this.emojiSections.add(new EmojiSection(this, 7, R.drawable.deproko_baseline_stickers_24, 0).setActiveDisabled().setOffsetHalf(true));
-    } else {
-      this.emojiSections.get(this.emojiSections.size() - 1).setOffsetHalf(true);
-    }
-    */
 
     emojiSectionsSize = 7 + (allowMedia ? 1 : 0);
 
@@ -426,6 +405,20 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     // NewEmoji.instance().loadAllEmoji();
 
     setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+  }
+
+  public void setAllowMedia (boolean allowMedia) {
+    if (this.allowMedia != allowMedia) {
+      this.allowMedia = allowMedia;
+
+      if (pager.getCurrentItem() != 0) {
+        this.pager.setCurrentItem(0, false);
+      }
+      this.mediaSectionsView.setVisibility(allowMedia ? VISIBLE : INVISIBLE);
+      this.emojiHeaderView.setAllowMedia(allowMedia);
+      this.adapter.allowMedia = allowMedia;
+      this.adapter.notifyDataSetChanged();
+    }
   }
 
   private void checkBackground () {
@@ -598,11 +591,20 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   }
 
   public boolean setEmojiStatus (View view, TGStickerObj sticker, long expirationDate) {
-    return listener != null && listener.onSetEmojiStatus(view, sticker, new TdApi.EmojiStatus(sticker.getCustomEmojiId(), (int) expirationDate));
+    return listener != null && listener.onSetEmojiStatus(view, sticker, new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(sticker.getCustomEmojiId()), (int) expirationDate));
   }
 
   public boolean sendSticker (View view, TGStickerObj sticker, TdApi.MessageSendOptions sendOptions) {
-    return listener != null && listener.onSendSticker(view, sticker, sendOptions);
+    if (listener != null && listener.onSendSticker(view, sticker, sendOptions)) {
+      if (!sticker.isCustomEmoji() && sendOptions != null && sendOptions.updateOrderOfInstalledStickerSets) {
+        ViewController<?> c = adapter.getCachedItem(1);
+        if (c != null) {
+          ((EmojiMediaListController) c).expectReorder(sticker);
+        }
+      }
+      return true;
+    }
+    return false;
   }
 
   public void onEnterCustomEmoji (TGStickerObj sticker) {
@@ -865,7 +867,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       ignoreFirstScrollEvent = false;
       return;
     }
-    if (ignoreMovement || scrollState != org.thunderdog.challegram.widget.ViewPager.SCROLL_STATE_IDLE) {
+    if (ignoreMovement || scrollState != ViewPager.SCROLL_STATE_IDLE) {
       return;
     }
     lastHeaderVisibleY = 0;
@@ -881,7 +883,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       ignoreFirstScrollEvent = false;
       return;
     }
-    if (ignoreMovement || scrollState != org.thunderdog.challegram.widget.ViewPager.SCROLL_STATE_IDLE) {
+    if (ignoreMovement || scrollState != ViewPager.SCROLL_STATE_IDLE) {
       return;
     }
 
@@ -920,7 +922,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     private final ViewController<?> context;
     private final EmojiLayout parent;
     private final SparseArrayCompat<ViewController<?>> cachedItems;
-    private final boolean allowMedia;
+    private boolean allowMedia;
     private final ViewController<?> themeProvider;
 
     public Adapter (ViewController<?> context, EmojiLayout parent, boolean allowMedia, @Nullable ViewController<?> themeProvider) {
@@ -1008,6 +1010,14 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     }
 
     @Override
+    public int getItemPosition(Object object) {
+      if (object instanceof EmojiMediaListController && !allowMedia) {
+        return PagerAdapter.POSITION_NONE;
+      }
+      return super.getItemPosition(object);
+    };
+
+    @Override
     public boolean isViewFromObject (@NonNull View view, @NonNull Object object) {
       return object instanceof ViewController && ((ViewController<?>) object).getValue() == view;
     }
@@ -1050,6 +1060,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
   @Override
   public void onPageScrolled (int position, float positionOffset, int positionOffsetPixels) {
+    positionOffset = ViewPager.clampPositionOffset(positionOffset);
     setCurrentPageFactor((float) position + positionOffset);
 
     if (affectHeight) {
@@ -1121,7 +1132,11 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-    super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(forceHeight > 0 ? forceHeight : Keyboard.getSize(), MeasureSpec.EXACTLY));
+    if (forceHeight > 0) {
+      super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(forceHeight, MeasureSpec.EXACTLY));
+    } else {
+      super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }
     checkWidth(getMeasuredWidth());
   }
 
@@ -1216,58 +1231,10 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     adapter.destroyCachedItems();
   }
 
-  public void rebuildLayout () {
-    // Nothing to do?
-  }
-
   public void invalidateAll () {
     if (adapter != null) {
       adapter.invalidateCachedItems();
     }
-  }
-
-  public int getSize () {
-    return Keyboard.getSize();
-  }
-
-  private static final int STATE_NONE = 0;
-  private static final int STATE_AWAITING_SHOW = 1;
-  private static final int STATE_AWAITING_HIDE = 2;
-
-  private int keyboardState;
-
-  public void showKeyboard (android.widget.EditText input) {
-    keyboardState = STATE_AWAITING_SHOW;
-    Keyboard.show(input);
-  }
-
-  public void hideKeyboard (android.widget.EditText input) {
-    keyboardState = STATE_AWAITING_HIDE;
-    Keyboard.hide(input);
-  }
-
-  public void onKeyboardStateChanged (boolean visible) {
-    if (keyboardState == STATE_AWAITING_SHOW && visible) {
-      framesDropped = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N ? 45 : 55;
-    } else if (keyboardState == STATE_AWAITING_HIDE && !visible) {
-      keyboardState = STATE_NONE;
-    }
-  }
-
-  private int framesDropped;
-
-  @Override
-  public boolean onPreDraw () {
-    if (keyboardState == STATE_AWAITING_SHOW || keyboardState == STATE_AWAITING_HIDE) {
-      if (++framesDropped >= 60) {
-        framesDropped = 0;
-        keyboardState = STATE_NONE;
-        return true;
-      }
-      return false;
-    }
-
-    return true;
   }
 
   @Override
@@ -1320,6 +1287,10 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     } else if (controllerId == EmojiLayout.EMOJI_INSTALLED_CONTROLLER_ID && emojiHeaderView != null) {
       emojiHeaderView.removeStickerSection(section);
     }
+  }
+
+  public void setCurrentStickerSectionByStickerSetIndex (int stickerSetIndex) {
+    mediaSectionsView.scrollToStickerSectionBySetIndex(stickerSetIndex, true);
   }
 
   @Override

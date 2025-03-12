@@ -17,6 +17,7 @@ package org.thunderdog.challegram.ui;
 import android.content.Context;
 import android.view.View;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 
@@ -41,8 +42,8 @@ import java.util.List;
 
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class SharedMembersController extends SharedBaseController<DoubleTextWrapper> implements
   TdlibCache.BasicGroupDataChangeListener,
@@ -52,11 +53,6 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
   public SharedMembersController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
-
-  /*@Override
-  public int getIcon () {
-    return R.drawable.baseline_group_20;
-  }*/
 
   private boolean forceAdmins;
 
@@ -77,6 +73,22 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
       }
     }
     return Lang.getString(forceAdmins ? R.string.TabAdmins : R.string.TabMembers);
+  }
+
+  @DrawableRes
+  @Override
+  public int getIcon () {
+    if (specificFilter != null) {
+      switch (specificFilter.getConstructor()) {
+        case TdApi.SupergroupMembersFilterAdministrators.CONSTRUCTOR:
+          return R.drawable.baseline_stars_24;
+        case TdApi.SupergroupMembersFilterBanned.CONSTRUCTOR:
+          return R.drawable.baseline_gavel_24;
+        case TdApi.SupergroupMembersFilterRestricted.CONSTRUCTOR:
+          return R.drawable.baseline_block_24;
+      }
+    }
+    return forceAdmins ? R.drawable.baseline_stars_24 : R.drawable.baseline_group_24;
   }
 
   @Override
@@ -194,7 +206,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
         return DoubleTextWrapper.valueOf(tdlib, (TdApi.ChatMember) object, needFullMemberDescription(), needAdminSign());
       }
       case TdApi.User.CONSTRUCTOR: {
-        return new DoubleTextWrapper(tdlib, ((TdApi.User) object).id, true);
+        return new DoubleTextWrapper(tdlib, ((TdApi.User) object).id, true, DoubleTextWrapper.SubtitleOption.SHOW_ACCESS_TO_MESSAGE_PRIVACY);
       }
     }
     return null;
@@ -271,14 +283,14 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
     if (TD.isCreator(member.status)) {
       if (TD.isCreator(myStatus)) {
         ids.append(R.id.btn_editRights);
-        colors.append(OPTION_COLOR_NORMAL);
+        colors.append(OptionColor.NORMAL);
         icons.append(R.drawable.baseline_edit_24);
         strings.append(R.string.EditAdminTitle);
 
         boolean isAnonymous = ((TdApi.ChatMemberStatusCreator) member.status).isAnonymous;
         if (!isChannel() || isAnonymous) {
           ids.append(isAnonymous ? R.id.btn_makePublic : R.id.btn_makePrivate);
-          colors.append(OPTION_COLOR_NORMAL);
+          colors.append(OptionColor.NORMAL);
           icons.append(isAnonymous ? R.drawable.nilsfast_baseline_incognito_off_24 : R.drawable.infanf_baseline_incognito_24);
           strings.append(isAnonymous ? R.string.EditOwnerPublic : R.string.EditOwnerAnonymous);
         }
@@ -287,7 +299,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
       int promoteMode = TD.canPromoteAdmin(myStatus, member.status);
       if (promoteMode != TD.PROMOTE_MODE_NONE) {
         ids.append(R.id.btn_editRights);
-        colors.append(OPTION_COLOR_NORMAL);
+        colors.append(OptionColor.NORMAL);
         icons.append(R.drawable.baseline_stars_24);
         switch (promoteMode) {
           case TD.PROMOTE_MODE_EDIT:
@@ -311,7 +323,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
         )) {
           boolean isAnonymous = ((TdApi.ChatMemberStatusAdministrator) member.status).rights.isAnonymous;
           ids.append(isAnonymous ? R.id.btn_makePublic : R.id.btn_makePrivate);
-          colors.append(OPTION_COLOR_NORMAL);
+          colors.append(OptionColor.NORMAL);
           icons.append(isAnonymous ? R.drawable.nilsfast_baseline_incognito_off_24 : R.drawable.infanf_baseline_incognito_24);
           strings.append(isAnonymous ? R.string.EditAdminPublic : R.string.EditAdminAnonymous);
         }
@@ -321,7 +333,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
       if (restrictMode != TD.RESTRICT_MODE_NONE) {
         if (!isChannel() && !(restrictMode == TD.RESTRICT_MODE_EDIT && member.memberId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR)) {
           ids.append(R.id.btn_restrictMember);
-          colors.append(OPTION_COLOR_NORMAL);
+          colors.append(OptionColor.NORMAL);
           icons.append(R.drawable.baseline_block_24);
           switch (restrictMode) {
             case TD.RESTRICT_MODE_EDIT:
@@ -341,7 +353,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
         if (restrictMode != TD.RESTRICT_MODE_VIEW) {
           if (TD.isMember(member.status)) {
             ids.append(R.id.btn_blockSender);
-            colors.append(OPTION_COLOR_NORMAL);
+            colors.append(OptionColor.NORMAL);
             icons.append(R.drawable.baseline_remove_circle_24);
             strings.append(isChannel() ? R.string.ChannelRemoveUser : R.string.RemoveFromGroup);
           } else {
@@ -361,7 +373,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
                   R.string.UnbanMember
               );
               ids.append(R.id.btn_unblockSender);
-              colors.append(OPTION_COLOR_NORMAL);
+              colors.append(OptionColor.NORMAL);
               icons.append(R.drawable.baseline_remove_circle_24);
             }
           }
@@ -377,7 +389,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
         strings.append(Lang.getString(content.getSenderId().getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.ViewMessagesFromUser : R.string.ViewMessagesFromChat, tdlib.senderName(content.getSenderId(), true)));
       }
       icons.append(R.drawable.baseline_person_24);
-      colors.append(OPTION_COLOR_NORMAL);
+      colors.append(OptionColor.NORMAL);
     }
 
     if (!ids.isEmpty()) {

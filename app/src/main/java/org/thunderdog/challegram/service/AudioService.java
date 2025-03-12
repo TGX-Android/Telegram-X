@@ -36,9 +36,8 @@ import android.view.MotionEvent;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.metadata.id3.ApicFrame;
+import androidx.media3.common.C;
+import androidx.media3.extractor.metadata.id3.ApicFrame;
 
 import org.drinkless.tdlib.TdApi;
 import org.drinkmore.Tracer;
@@ -64,7 +63,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.vkryl.core.ArrayUtils;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class AudioService extends Service implements TGPlayerController.TrackListChangeListener, TGPlayerController.TrackListener, AudioController.ApicListener, AudioManager.OnAudioFocusChangeListener {
 

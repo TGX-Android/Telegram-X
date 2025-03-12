@@ -28,15 +28,15 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.tool.Drawables;
@@ -55,11 +55,25 @@ import me.vkryl.core.StringUtils;
 
 public class OptionsLayout extends LinearLayout implements Animated {
   private final CustomTextView textView;
+  private final CustomTextView headerView;
+  private final ViewController<?> parent;
+  private final @Nullable ThemeDelegate forcedTheme;
 
   public OptionsLayout (Context context, ViewController<?> parent, @Nullable ThemeDelegate forcedTheme) {
     super(context);
+    this.parent = parent;
+    this.forcedTheme = forcedTheme;
 
     setOrientation(LinearLayout.VERTICAL);
+
+    headerView = new CustomTextView(context, parent.tdlib());
+    headerView.setTextSize(18f);
+    headerView.setPadding(Screen.dp(16f), Screen.dp(18f), Screen.dp(16f), Screen.dp(6f));
+    headerView.setTextColorId(ColorId.text);
+    headerView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+    headerView.setMaxLineCount(1);
+    headerView.setVisibility(View.GONE);
+    addView(headerView);
 
     textView = new CustomTextView(context, parent.tdlib());
     textView.setPadding(Screen.dp(16f), Screen.dp(14f), Screen.dp(16f), Screen.dp(6f));
@@ -90,9 +104,11 @@ public class OptionsLayout extends LinearLayout implements Animated {
 
     if (forcedTheme != null) {
       textView.setForcedTheme(forcedTheme);
+      headerView.setForcedTheme(forcedTheme);
     } else {
       // parent.addThemeTextColorListener(textView, ColorId.textLight);
       parent.addThemeInvalidateListener(textView);
+      parent.addThemeInvalidateListener(headerView);
       parent.addThemeInvalidateListener(this);
     }
   }
@@ -118,35 +134,38 @@ public class OptionsLayout extends LinearLayout implements Animated {
     }
   }
 
-  public static @ColorId int getOptionColorId (int color) {
+  public static @ColorId int getOptionColorId (@ViewController.OptionColor int color) {
     switch (color) {
-      case ViewController.OPTION_COLOR_NORMAL: {
+      case ViewController.OptionColor.NORMAL:
         return ColorId.text;
-      }
-      case ViewController.OPTION_COLOR_RED: {
+      case ViewController.OptionColor.LIGHT:
+        return ColorId.textLight;
+      case ViewController.OptionColor.INACTIVE:
+        return ColorId.controlInactive;
+      case ViewController.OptionColor.RED:
         return ColorId.textNegative;
-      }
-      case ViewController.OPTION_COLOR_BLUE: {
+      case ViewController.OptionColor.BLUE:
         return ColorId.textNeutral;
-      }
+      case ViewController.OptionColor.GREEN:
+        return ColorId.iconPositive;
     }
     throw new IllegalArgumentException("color == " + color);
   }
 
-  public static TextView genOptionView (Context context, int id, CharSequence string, int color, int icon, OnClickListener onClickListener, @Nullable ThemeListenerList themeProvider, @Nullable ThemeDelegate forcedTheme) {
+  public static TextView genOptionView (Context context, int id, CharSequence string, @ViewController.OptionColor int textColor, int icon, @ViewController.OptionColor int iconColor, OnClickListener onClickListener, @Nullable ThemeListenerList themeProvider, @Nullable ThemeDelegate forcedTheme) {
     EmojiTextView text = new EmojiTextView(context);
     text.setScrollDisabled(true);
 
     text.setId(id);
     text.setTypeface(Fonts.getRobotoRegular());
     text.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
-    final int colorId = getOptionColorId(color);
+    final int textColorId = getOptionColorId(textColor);
     if (forcedTheme != null) {
-      text.setTextColor(forcedTheme.getColor(colorId));
+      text.setTextColor(forcedTheme.getColor(textColorId));
     } else {
-      text.setTextColor(Theme.getColor(colorId));
+      text.setTextColor(Theme.getColor(textColorId));
       if (themeProvider != null)
-        themeProvider.addThemeColorListener(text, colorId);
+        themeProvider.addThemeColorListener(text, textColorId);
     }
     text.setOnClickListener(onClickListener);
     text.setSingleLine(true);
@@ -157,7 +176,14 @@ public class OptionsLayout extends LinearLayout implements Animated {
     if (icon != 0) {
       Drawable drawable = Drawables.get(context.getResources(), icon);
       if (drawable != null) {
-        final int drawableColorId = color == ViewController.OPTION_COLOR_NORMAL ? ColorId.icon : colorId;
+        final int drawableColorId;
+        if (iconColor == ViewController.OptionColor.NORMAL) {
+          drawableColorId = ColorId.icon;
+        } else if (iconColor == ViewController.OptionColor.INACTIVE) {
+          drawableColorId = ColorId.controlInactive;
+        } else {
+          drawableColorId = getOptionColorId(iconColor);
+        }
         drawable.setColorFilter(Paints.getColorFilter(forcedTheme != null ? forcedTheme.getColor(drawableColorId) : Theme.getColor(drawableColorId)));
         if (themeProvider != null) {
           themeProvider.addThemeFilterListener(drawable, drawableColorId);
@@ -178,6 +204,76 @@ public class OptionsLayout extends LinearLayout implements Animated {
     }
 
     return text;
+  }
+
+  public void setHeader (CharSequence text) {
+    if (!StringUtils.isEmpty(text)) {
+      headerView.setBoldText(text, null, false);
+      headerView.setVisibility(View.VISIBLE);
+    } else {
+      headerView.setVisibility(View.GONE);
+    }
+  }
+
+  public static void updateSubtitle (EmojiTextView text, CharSequence name, @DrawableRes int icon, int color, @Nullable ThemeDelegate forcedTheme, @Nullable ViewController<?> themeProvider) {
+    updateSubtitle(text, name, icon, color, color, forcedTheme, themeProvider);
+  }
+
+  public static void updateSubtitle (EmojiTextView text, CharSequence name, @DrawableRes int icon, int textColor, int iconColor, @Nullable ThemeDelegate forcedTheme, @Nullable ViewController<?> themeProvider) {
+    final int textColorId = getOptionColorId(textColor);
+    if (forcedTheme != null) {
+      text.setTextColor(forcedTheme.getColor(textColorId));
+    } else {
+      text.setTextColor(Theme.getColor(textColorId));
+      if (themeProvider != null) {
+        themeProvider.addThemeTextColorListener(text, textColorId);
+      }
+    }
+    final int iconColorId = getOptionColorId(iconColor);
+    if (icon != 0) {
+      Drawable drawable = Drawables.get(text.getContext().getResources(), icon);
+      if (drawable != null) {
+        final int drawableColorId = iconColor == ViewController.OptionColor.NORMAL ? ColorId.icon : iconColorId;
+        drawable.setColorFilter(Paints.getColorFilter(forcedTheme != null ? forcedTheme.getColor(drawableColorId) : Theme.getColor(drawableColorId)));
+        if (themeProvider != null) {
+          themeProvider.addThemeFilterListener(drawable, drawableColorId);
+        }
+        if (Drawables.needMirror(icon)) {
+          // TODO
+        }
+        if (Lang.rtl()) {
+          text.setCompoundDrawablesWithIntrinsicBounds(null, null, drawable, null);
+        } else {
+          text.setCompoundDrawablesWithIntrinsicBounds(drawable, null, null, null);
+        }
+      }
+    }
+    if (!StringUtils.isEmpty(name)) {
+      text.setText(name);
+    }
+  }
+
+  public static EmojiTextView genSubtitle (Context context) {
+    EmojiTextView text = new EmojiTextView(context);
+    text.setScrollDisabled(true);
+    text.setMinHeight(Screen.dp(40f));
+    text.setTypeface(Fonts.getRobotoRegular());
+    text.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
+    text.setGravity(Lang.rtl() ? Gravity.RIGHT | Gravity.CENTER_VERTICAL : Gravity.LEFT | Gravity.CENTER_VERTICAL);
+    text.setPadding(Screen.dp(17f), Screen.dp(6f), Screen.dp(17f), 0);
+    text.setCompoundDrawablePadding(Screen.dp(8f));
+    text.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+    return text;
+  }
+
+  public void setSubtitle (ViewController.OptionItem item) {
+    setSubtitle(item.name, item.icon, item.textColor, item.iconColor);
+  }
+
+  public void setSubtitle (CharSequence name, @DrawableRes int icon, int textColor, int iconColor) {
+    EmojiTextView text = genSubtitle(getContext());
+    updateSubtitle(text, name, icon, textColor, iconColor, forcedTheme, parent);
+    addView(text, 1);
   }
 
   public void setInfo (ViewController<?> context, Tdlib tdlib, CharSequence info, boolean isTitle) {

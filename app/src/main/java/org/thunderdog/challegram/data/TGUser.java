@@ -37,8 +37,8 @@ import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class TGUser implements UserProvider {
   private static final int FLAG_LOCAL = 0x01;
@@ -242,6 +242,10 @@ public class TGUser implements UserProvider {
     }
   }
 
+  public boolean belongsToSenderId (@NonNull TdApi.MessageSender senderId) {
+    return getChatId() == Td.getSenderId(senderId);
+  }
+
   public void setChat (long chatId, @Nullable TdApi.Chat chat) {
     this.user = null;
     this.chatId = chatId;
@@ -345,6 +349,10 @@ public class TGUser implements UserProvider {
 
   public String getName () {
     return nameText;
+  }
+
+  public String getShorterName () {
+    return TD.getShorterUserNameOrNull(getFirstName(), getLastName());
   }
 
   public float getNameWidth () {

@@ -50,7 +50,7 @@ import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.unit.ByteUnit;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 @SuppressWarnings(value = "SpellCheckingInspection")
 public class Strings {
@@ -145,6 +145,14 @@ public class Strings {
       i += codePointSize;
     }
     return true;
+  }
+
+  public static int codePointCount (String cs) {
+    if (StringUtils.isEmpty(cs)) {
+      return 0;
+    } else {
+      return cs.codePointCount(0, cs.length());
+    }
   }
 
   public static boolean isTrimmed (CharSequence full, CharSequence trimmed) {
@@ -672,12 +680,12 @@ public class Strings {
     return b.toString();
   }
 
-  public static int getNumberLength (String input) {
+  public static int getNumberLength (CharSequence input) {
     if (StringUtils.isEmpty(input))
       return 0;
     int count = 0;
     for (int i = 0; i < input.length();) {
-      int codePoint = input.codePointAt(i);
+      int codePoint = Character.codePointAt(input, i);
       int size = Character.charCount(codePoint);
       if (size == 1 && codePoint >= '0' && codePoint <= '9') {
         count++;
@@ -705,11 +713,17 @@ public class Strings {
     return b.toString();
   }
 
-  public static CharSequence replaceBoldTokens (final String input) {
-    return replaceBoldTokens(input, ColorId.NONE);
+  public static CharSequence replaceBoldTokens (final CharSequence input) {
+    return replaceBoldTokens(input, Lang.boldCreator());
   }
 
-  public static CharSequence replaceBoldTokens (final String input, @ColorId int colorId) {
+  public static CharSequence replaceBoldTokens (final CharSequence input, @ColorId int colorId) {
+    return replaceBoldTokens(input, (target, argStart, argEnd, argIndex, needFakeBold) ->
+      new CustomTypefaceSpan(needFakeBold ? Fonts.getRobotoRegular() : Fonts.getRobotoMedium(), colorId).setFakeBold(needFakeBold)
+    );
+  }
+
+  public static CharSequence replaceBoldTokens (final CharSequence input, Lang.SpanCreator spanCreator) {
     String token = "**";
     int tokenLen = token.length();
 
@@ -722,12 +736,17 @@ public class Strings {
       end = ssb.toString().indexOf(token, start);
 
       if (start > -1 && end > -1) {
-        boolean fakeBold = Text.needFakeBold(ssb, start, end);
-        CustomTypefaceSpan span = new CustomTypefaceSpan(fakeBold ? Fonts.getRobotoRegular() : Fonts.getRobotoMedium(), colorId).setFakeBold(fakeBold);
-        ssb.setSpan(span, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         // Delete the tokens before and after the span
         ssb.delete(end, end + tokenLen);
         ssb.delete(start - tokenLen, start);
+        start -= tokenLen;
+        end -= tokenLen;
+
+        // Set span
+        boolean fakeBold = Text.needFakeBold(ssb, start, end);
+        Object span = spanCreator.onCreateSpan(ssb, start, end, count, fakeBold);
+        ssb.setSpan(span, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
         count++;
       }
     } while (start > -1 && end > -1);
@@ -857,13 +876,13 @@ public class Strings {
     }
   }
 
+  @SuppressWarnings("deprecation")
   public static String systemFormat (String formatPhone) {
     String result;
     try {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
         result = PhoneNumberUtils.formatNumber(formatPhone, "US");
       } else {
-        //noinspection deprecation
         result = PhoneNumberUtils.formatNumber(formatPhone);
       }
     } catch (Throwable t) {
@@ -1064,41 +1083,6 @@ public class Strings {
     return b;
   }
 
-  private static boolean isWeakRtl (int codePoint) {
-    switch (codePoint) {
-      case 0x5d1:
-      case 0x5d8:
-      case 0x5db:
-      case 0x5dc:
-      case 0x5de:
-      case 0x5e1:
-      case 0x5ea:
-      case 0xfb31:
-      case 0xfb38:
-      case 0xfb3c:
-      case 0xfb3e:
-      case 0xfb41:
-      case 0xfb4a:
-      case 0xfe91:
-      case 0xfb8c:
-      case 0x5dd:
-      case 0xfea1:
-      case 0x623:
-      case 0x628:
-      case 0x62d:
-      case 0x6a1:
-      case 0xfeaa:
-      case 0x642:
-      case 0xfea7:
-      case 0xfea8:
-      case 0x6aa:
-      case 0x6c3:
-      case 0xfe95:
-        return true;
-    }
-    return false;
-  }
-
   public static boolean isEuropeanNumber (int codePoint) {
     return Character.getDirectionality(codePoint) == Character.DIRECTIONALITY_EUROPEAN_NUMBER;
   }
@@ -1108,11 +1092,6 @@ public class Strings {
   }
 
   public static int getCodePointDirection (int codePoint) {
-    /*switch (codePoint) {
-      case '.'
-      return DIRECTION_NEUTRAL;
-    }*/
-
     int directionality = Character.getDirectionality(codePoint);
     switch (directionality) {
       case Character.DIRECTIONALITY_LEFT_TO_RIGHT:
@@ -1123,7 +1102,7 @@ public class Strings {
       case Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC:
       case Character.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING:
       case Character.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE:
-        return isWeakRtl(codePoint) ? DIRECTION_NEUTRAL : DIRECTION_RTL;
+        return DIRECTION_RTL;
     }
     return DIRECTION_NEUTRAL;
   }

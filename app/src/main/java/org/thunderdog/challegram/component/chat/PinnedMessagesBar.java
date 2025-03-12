@@ -28,6 +28,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
+import org.thunderdog.challegram.component.attach.MediaToReplacePickerManager;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.helper.LinkPreview;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -60,7 +61,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.td.MessageId;
+import tgx.td.MessageId;
 
 public class PinnedMessagesBar extends ViewGroup implements Destroyable, MessageListManager.ChangeListener, View.OnClickListener {
   private CustomRecyclerView recyclerView;
@@ -436,13 +437,13 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
         } else if (data.isMessage()) {
           TdApi.Message message = data.message;
           TdApi.InputTextQuote quote = data.quote;
-          previewView.setMessage(message, quote, new TdApi.SearchMessagesFilterPinned(), item.getStringValue(), ignoreAlbums ? MessagePreviewView.Options.IGNORE_ALBUM_REFRESHERS : MessagePreviewView.Options.NONE);
+          previewView.setMessage(message, quote, new TdApi.SearchMessagesFilterPinned(), item.getStringValue(), ignoreAlbums ? MessagePreviewView.Options.IGNORE_ALBUM_REFRESHERS : MessagePreviewView.Options.NONE, data.localPickedFile);
           if (messageList == null) {
             // override message preview
             MessageId highlightMessageId;
             //noinspection ConstantConditions
-            if (data.tdlib.isChannelAutoForward(message) && message.forwardInfo.fromChatId == contextChatId) {
-              highlightMessageId = new MessageId(message.forwardInfo.fromChatId, message.forwardInfo.fromMessageId);
+            if (data.tdlib.isChannelAutoForward(message) && message.forwardInfo.source != null && message.forwardInfo.source.chatId == contextChatId) {
+              highlightMessageId = new MessageId(message.forwardInfo.source);
             } else {
               highlightMessageId = new MessageId(message.chatId, message.id);
             }
@@ -461,7 +462,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
       public void onViewAttachedToWindow (SettingHolder holder) {
         super.onViewAttachedToWindow(holder);
         if (holder.itemView instanceof MessagePreviewView) {
-          int position = holder.getAdapterPosition();
+          int position = holder.getBindingAdapterPosition();
           updateContentInset((MessagePreviewView) holder.itemView, position);
         }
       }
@@ -631,6 +632,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
 
     public final MessagesController.MessageInputContext linkPreviewContext;
     public final String linkPreviewUrl;
+    public @Nullable MediaToReplacePickerManager.LocalPickedFile localPickedFile;
 
     public Entry (Tdlib tdlib, TdApi.Message message, @Nullable TdApi.InputTextQuote quote) {
       this.tdlib = tdlib;
@@ -648,6 +650,11 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
       this.message = null;
       this.accentColor = null;
       this.quote = null;
+    }
+
+    public Entry setForceLocalPicledFile (@Nullable MediaToReplacePickerManager.LocalPickedFile localPickedFile) {
+      this.localPickedFile = localPickedFile;
+      return this;
     }
 
     public boolean isLinkPreview () {
@@ -778,8 +785,12 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
   }
 
   public void setMessage (@Nullable Tdlib tdlib, @Nullable TdApi.Message message, @Nullable TdApi.InputTextQuote quote) {
+    setMessage(tdlib, message, quote, null);
+  }
+
+  public void setMessage (@Nullable Tdlib tdlib, @Nullable TdApi.Message message, @Nullable TdApi.InputTextQuote quote, @Nullable MediaToReplacePickerManager.LocalPickedFile localPickedFile) {
     if (tdlib != null && message != null) {
-      setStaticMessageList(Collections.singletonList(new Entry(tdlib, message, quote)), RecyclerView.NO_POSITION);
+      setStaticMessageList(Collections.singletonList(new Entry(tdlib, message, quote).setForceLocalPicledFile(localPickedFile)), RecyclerView.NO_POSITION);
     } else {
       setMessageList(null);
     }

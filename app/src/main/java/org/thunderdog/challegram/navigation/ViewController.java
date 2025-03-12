@@ -50,6 +50,7 @@ import android.widget.TextView;
 import androidx.annotation.CallSuper;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.IdRes;
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
@@ -103,6 +104,7 @@ import org.thunderdog.challegram.ui.camera.CameraController;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
+import org.thunderdog.challegram.util.ColumnDataPicker;
 import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.SimpleStringItem;
@@ -120,7 +122,10 @@ import org.thunderdog.challegram.widget.SeparatorView;
 import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.TimerView;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
@@ -139,14 +144,15 @@ import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.Future;
 import me.vkryl.core.lambda.FutureBool;
+import me.vkryl.core.lambda.FutureInt;
 import me.vkryl.core.lambda.FutureLong;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableInt;
 import me.vkryl.core.lambda.RunnableLong;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 // TODO separate Telegram-related stuff to TelegramViewController<T>. This will allow reusing navigation logic in other projects
 
@@ -276,6 +282,10 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     ThemeListenerEntry entry;
     addThemeListener(entry = new ThemeListenerEntry(ThemeListenerEntry.MODE_TEXT_COLOR, colorId, view));
     return entry;
+  }
+
+  public final void addThemeCompoundDrawableColorListener (TextView view, @ColorId int colorId) {
+    addThemeListener(new ThemeListenerEntry(ThemeListenerEntry.MODE_COMPOUND_DRAWABLE_COLOR, colorId, view));
   }
 
   public final ThemeListenerEntry addOrUpdateThemeTextColorListener (Object view, @ColorId int colorId) {
@@ -541,17 +551,26 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public final void runOnUiThreadOptional (Runnable runnable) {
-    runOnUiThreadOptional(runnable, null);
+    runOnUiThreadOptional(runnable, null, 0);
   }
 
   public final void runOnUiThreadOptional (Runnable runnable, @Nullable FutureBool condition) {
+    runOnUiThreadOptional(runnable, condition, 0);
+  }
+
+  public final void runOnUiThreadOptional (Runnable runnable, @Nullable FutureBool condition, long delay) {
     if (runnable == null)
       return;
-    runOnUiThread(() -> {
+    Runnable act = () -> {
       if (!isDestroyed() && (condition == null || condition.getBoolValue())) {
         runnable.run();
       }
-    });
+    };
+    if (delay > 0) {
+      runOnUiThread(act, delay);
+    } else {
+      runOnUiThread(act);
+    }
   }
 
   protected final void runOnUiThread (@NonNull Runnable runnable) {
@@ -846,6 +865,10 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   public View getLockFocusView () {
     return lockFocusView;
+  }
+
+  public final boolean needAlwaysShowKeyboardOnFocusView () {
+    return BitwiseUtils.hasFlag(flags, FLAG_LOCK_ALWAYS);
   }
 
   public void setLockFocusView (View view, boolean showAlways) {
@@ -1569,7 +1592,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public MaterialEditTextGroup openInputAlert (CharSequence title, CharSequence placeholder, @StringRes int doneRes, @StringRes int cancelRes, @Nullable CharSequence value, @Nullable String defaultValue, InputAlertCallback callback, boolean hideKeyboard, RunnableData<ViewGroup> layoutOverride, ThemeDelegate forcedTheme) {
-    final MaterialEditTextGroup inputView = new MaterialEditTextGroup(context);
+    final MaterialEditTextGroup inputView = new MaterialEditTextGroup(context, tdlib);
     inputView.setHint(placeholder);
     inputView.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS);
     if (!StringUtils.isEmpty(value)) {
@@ -1844,7 +1867,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public interface OnSettingItemClick {
-    void onSettingItemClick (View view, @IdRes int settingsId, ListItem item, TextView doneButton, SettingsAdapter settingsAdapter);
+    void onSettingItemClick (View view, @IdRes int settingsId, ListItem item, TextView doneButton, SettingsAdapter settingsAdapter, PopupLayout window);
   }
 
   public final void showSettings (final @IdRes int id, ListItem[] rawItems, final SettingsIntDelegate delegate) {
@@ -1855,6 +1878,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     showSettings(new SettingsWrapBuilder(id).setRawItems(rawItems).setIntDelegate(delegate).setAllowResize(allowResize));
   }
 
+  @SuppressWarnings("deprecation")
   public final @Nullable SettingsWrap showSettings (final SettingsWrapBuilder b) {
     if (isStackLocked()) {
       Log.i("Ignoring showSettings because stack is locked");
@@ -1990,7 +2014,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
           settings.adapter.processToggle(v);
         }
         if (tag != null && tag instanceof ListItem && b.onSettingItemClick != null) {
-          b.onSettingItemClick.onSettingItemClick(v, b.id, (ListItem) tag, settings.doneButton, settings.adapter);
+          b.onSettingItemClick.onSettingItemClick(v, b.id, (ListItem) tag, settings.doneButton, settings.adapter, settings.window);
         }
       }
     };
@@ -1999,7 +2023,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         switch (item.getViewType()) {
           case ListItem.TYPE_CHECKBOX_OPTION_DOUBLE_LINE: {
-            view.setData(item.getStringValue());
+            view.setData(item.getCharSequenceValue());
             break;
           }
           case ListItem.TYPE_CHECKBOX_OPTION:
@@ -2184,14 +2208,18 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   // Options delegate
 
-  public static final int OPTION_COLOR_NORMAL = 0x01;
-  public static final int OPTION_COLOR_RED = 0x02;
-  public static final int OPTION_COLOR_BLUE = 0x03;
-
-  public static final float DISABLED_ALPHA = .7f;
-
-  private OptionsLayout optionsWrap;
-  private View.OnClickListener onOptionClick;
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    OptionColor.NORMAL,
+    OptionColor.RED,
+    OptionColor.BLUE,
+    OptionColor.GREEN,
+    OptionColor.INACTIVE,
+    OptionColor.LIGHT
+  })
+  public @interface OptionColor {
+    int NORMAL = 1, RED = 2, BLUE = 3, GREEN = 4, INACTIVE = 5, LIGHT = 6;
+  }
 
   public final void showCallOptions (final String phoneNumber, final long userId) {
     if (userId == 0) {
@@ -2225,11 +2253,11 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public final PopupLayout showConfirm (@Nullable CharSequence info, @Nullable String okString, @NonNull Runnable onConfirm) {
-    return showConfirm(info, okString, R.drawable.baseline_check_circle_24, OPTION_COLOR_NORMAL, onConfirm);
+    return showConfirm(info, okString, R.drawable.baseline_check_circle_24, OptionColor.NORMAL, onConfirm);
   }
 
   public final PopupLayout showConfirm (@Nullable CharSequence info, @Nullable String okString, int okIcon, int okColor, @NonNull Runnable onConfirm) {
-    return showOptions(info, new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {okString != null ? okString : Lang.getString(R.string.OK), Lang.getString(R.string.Cancel)}, new int[] {okColor, OPTION_COLOR_NORMAL}, new int[] {okIcon, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+    return showOptions(info, new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {okString != null ? okString : Lang.getString(R.string.OK), Lang.getString(R.string.Cancel)}, new int[] {okColor, OptionColor.NORMAL}, new int[] {okIcon, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_done) {
         onConfirm.run();
       }
@@ -2258,7 +2286,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public final void showUnsavedChangesPromptBeforeLeaving (@Nullable CharSequence info, @NonNull String discardText, @Nullable Runnable onConfirm) {
-    showOptions(info, new int[]{R.id.btn_done, R.id.btn_cancel}, new String[]{discardText, Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+    showOptions(info, new int[]{R.id.btn_done, R.id.btn_cancel}, new String[]{discardText, Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_done) {
         if (onConfirm != null)
           onConfirm.run();
@@ -2273,35 +2301,39 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public final PopupLayout showWarning (CharSequence info, RunnableBool callback) {
-    return showOptions(info, new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.TdlibLogsWarningConfirm), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_warning_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+    return showOptions(info, new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.TdlibLogsWarningConfirm), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_warning_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       callback.runWithBool(id == R.id.btn_done);
       return true;
     });
   }
 
   public static class OptionItem {
-    public static final OptionItem SEPARATOR = new OptionItem(0, null, 0, 0);
+    public static final OptionItem SEPARATOR = new OptionItem(0, null, OptionColor.NORMAL, 0, 0);
 
     public final int id;
     public final CharSequence name;
-    public final int color;
+    public final @OptionColor int textColor, iconColor;
     public final int icon;
 
-    public OptionItem (int id, CharSequence name, int color, int icon) {
+    public OptionItem (int id, CharSequence name, @OptionColor int color, int icon) {
+      this(id, name, color, icon, color);
+    }
+
+    public OptionItem (int id, CharSequence name, @OptionColor int textColor, int icon, @OptionColor int iconColor) {
       this.id = id;
       this.name = name;
-      this.color = color;
+      this.textColor = textColor;
       this.icon = icon;
+      this.iconColor = iconColor;
     }
 
     public static class Builder {
       private int id;
       private CharSequence name;
-      private int color = OPTION_COLOR_NORMAL;
+      private int textColor = OptionColor.NORMAL, iconColor = OptionColor.NORMAL;
       private int icon;
 
       public Builder () {
-        this.id = id;
       }
 
       public Builder id (int id) {
@@ -2318,8 +2350,15 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         return name(Lang.getString(resId));
       }
 
-      public Builder color (int color) {
-        this.color = color;
+      public Builder color (@OptionColor int color) {
+        this.textColor = color;
+        this.iconColor = color;
+        return this;
+      }
+
+      public Builder color (@OptionColor int textColor, @OptionColor int iconColor) {
+        this.textColor = textColor;
+        this.iconColor = iconColor;
         return this;
       }
 
@@ -2329,25 +2368,46 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       }
 
       public OptionItem build () {
-        return new OptionItem(id, name, color, icon);
+        return new OptionItem(id, name, textColor, icon, iconColor);
       }
     }
   }
 
   public static class Options {
     public final CharSequence info;
+    public final CharSequence title;
+    public final OptionItem subtitle;
     public final OptionItem[] items;
+    public boolean ignoreOtherPopUps;
 
-    public Options (CharSequence info, OptionItem[] items) {
+    public Options (CharSequence info, CharSequence header, OptionItem subtitle, OptionItem[] items) {
       this.info = info;
+      this.title = header;
+      this.subtitle = subtitle;
       this.items = items;
+    }
+
+    public void setIgnoreOtherPopUps (boolean ignoreOtherPopUps) {
+      this.ignoreOtherPopUps = ignoreOtherPopUps;
     }
 
     public static class Builder {
       private CharSequence info;
-      private List<OptionItem> items = new ArrayList<>();
+      private CharSequence title;
+      private OptionItem subtitle;
+      private final List<OptionItem> items = new ArrayList<>();
 
       public Builder () {
+      }
+
+      public Builder title (CharSequence header) {
+        this.title = header;
+        return this;
+      }
+
+      public Builder subtitle (OptionItem item) {
+        this.subtitle = item;
+        return this;
       }
 
       public Builder info (CharSequence info) {
@@ -2362,8 +2422,26 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         return this;
       }
 
+      public Builder items (int[] ids, String[] titles, int[] colors, int[] icons) {
+        for (int i = 0; i < ids.length; i++) {
+          OptionItem item = new OptionItem.Builder()
+            .id(ids[i])
+            .name(titles[i])
+            .color(colors != null ? colors[i] : OptionColor.NORMAL)
+            .icon(icons != null ? icons[i] : 0)
+            .build();
+          items.add(item);
+        }
+        return this;
+      }
+
       public Builder cancelItem () {
-        return item(new OptionItem.Builder().id(R.id.btn_cancel).name(R.string.Cancel).icon(R.drawable.baseline_cancel_24).build());
+        return item(new OptionItem.Builder()
+          .id(R.id.btn_cancel)
+          .name(R.string.Cancel)
+          .icon(R.drawable.baseline_cancel_24)
+          .build()
+        );
       }
 
       public int itemCount () {
@@ -2371,7 +2449,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       }
 
       public Options build () {
-        return new Options(info, items.toArray(new OptionItem[0]));
+        return new Options(info, title, subtitle, items.toArray(new OptionItem[0]));
       }
     }
   }
@@ -2383,9 +2461,14 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   public final Options getOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons) {
     OptionItem[] items = new OptionItem[ids.length];
     for (int i = 0; i < ids.length; i++) {
-      items[i] = new OptionItem(ids != null ? ids[i] : i, titles[i], colors != null ? colors[i] : OPTION_COLOR_NORMAL, icons != null ? icons[i] : 0);
+      items[i] = new OptionItem.Builder()
+        .id(ids[i])
+        .name(titles[i])
+        .color(colors != null ? colors[i] : OptionColor.NORMAL)
+        .icon(icons != null ? icons[i] : 0)
+        .build();
     }
-    return new Options(info, items);
+    return new Options(info, null, null, items);
   }
 
   public final PopupLayout showOptions (Options options, final OptionDelegate delegate) {
@@ -2403,12 +2486,18 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
     popupLayout.setTag(this);
     popupLayout.init(true);
+    popupLayout.setDismissOtherPopUps(!options.ignoreOtherPopUps);
 
     if (delegate != null) {
       popupLayout.setDisableCancelOnTouchDown(delegate.disableCancelOnTouchdown());
     }
 
     OptionsLayout optionsWrap = new OptionsLayout(context(), this, forcedTheme);
+    optionsWrap.setHeader(options.title);
+    if (options.subtitle != null) {
+      optionsWrap.setSubtitle(options.subtitle);
+    }
+
     optionsWrap.setInfo(this, tdlib(), options.info, false);
     optionsWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
 
@@ -2459,7 +2548,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         totalHeight += shadowViewBottom.getLayoutParams().height + shadowViewTop.getLayoutParams().height;
         continue;
       }
-      TextView text = OptionsLayout.genOptionView(context, item.id, item.name, item.color, item.icon, onClickListener, getThemeListeners(), forcedTheme);
+      TextView text = OptionsLayout.genOptionView(context, item.id, item.name, item.textColor, item.icon, item.iconColor, onClickListener, getThemeListeners(), forcedTheme);
       RippleSupport.setTransparentSelector(text);
       if (forcedTheme != null)
         Theme.forceTheme(text, forcedTheme);
@@ -2484,7 +2573,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     int onBuildPopUp (PopupLayout popupLayout, OptionsLayout optionsLayout);
   }
 
-  protected final PopupLayout showPopup (CharSequence title, boolean isTitle, @NonNull PopUpBuilder popUpBuilder, @Nullable ThemeDelegate forcedTheme) {
+  public final PopupLayout showPopup (CharSequence title, boolean isTitle, @NonNull PopUpBuilder popUpBuilder, @Nullable ThemeDelegate forcedTheme) {
     final PopupLayout popupLayout = new PopupLayout(context);
     popupLayout.setTag(this);
     popupLayout.init(true);
@@ -2528,6 +2617,175 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     }, forcedTheme);
   }
 
+  public interface CalendarDatePickerListener {
+    boolean onCommitDate (ColumnDataPicker picker, View commitButtonView, int newDay, int newMonth, int newYear);
+    default void onPendingCommitDateChanged (ColumnDataPicker picker, int newDay, int newMonth, int newYear) { }
+  }
+
+  public final ColumnDataPicker showCalendarDatePicker (CharSequence title, CharSequence commitButtonText, int day, int month, int year, boolean yearOptional, CalendarDatePickerListener listener) {
+    ColumnDataPicker dataPicker = new ColumnDataPicker();
+
+    Calendar c = Calendar.getInstance();
+
+    final int minYear = 1875;
+    final int minDayOfMonth = 1;
+    final int minMonth = Calendar.JANUARY;
+    final int maxYear = c.get(Calendar.YEAR);
+    final int maxMonth = c.get(Calendar.MONTH);
+    final int maxDayOfMonth = c.get(Calendar.DAY_OF_MONTH);
+
+    c.set(Calendar.DAY_OF_MONTH, 1);
+    c.set(Calendar.MONTH, month);
+    c.set(Calendar.YEAR, year != 0 ? year : 2024 /*leap year*/);
+
+    int daysCount = c.getActualMaximum(Calendar.DAY_OF_MONTH);
+    final List<SimpleStringItem> dayItems = new ArrayList<>();
+    for (int currentDay = 1; currentDay <= daysCount; currentDay++) {
+      String str = currentDay < 10 ?
+        "0" + currentDay :
+        Integer.toString(currentDay);
+      dayItems.add(new SimpleStringItem(0, str)
+        .setArg1(currentDay));
+    }
+
+    String[] monthItemsRaw = Lang.getMonths(Lang.locale());
+    final List<SimpleStringItem> monthItems = new ArrayList<>();
+    int currentMonth = 0;
+    for (String monthItem : monthItemsRaw) {
+      monthItems.add(new SimpleStringItem(0, monthItem)
+        .setArg1(currentMonth));
+      currentMonth++;
+    }
+
+    final List<SimpleStringItem> yearItems = new ArrayList<>();
+    for (int currentYear = minYear; currentYear <= maxYear; currentYear++) {
+      String str = Integer.toString(currentYear);
+      yearItems.add(new SimpleStringItem(0, str)
+        .setArg1(currentYear));
+    }
+    if (yearOptional) {
+      yearItems.add(new SimpleStringItem(0, "—"));
+    }
+    int yearIndex = yearOptional && year == 0 ? yearItems.size() - 1 : year - minYear;
+
+    ColumnDataPicker.Column dayColumn = new ColumnDataPicker.Column(dayItems, new ColumnDataPicker.Column.StylingOptions(1f).setNoPadding(true), day - 1);
+    ColumnDataPicker.Column monthColumn = new ColumnDataPicker.Column(monthItems, new ColumnDataPicker.Column.StylingOptions(2.5f), month);
+    ColumnDataPicker.Column yearColumn = new ColumnDataPicker.Column(yearItems, new ColumnDataPicker.Column.StylingOptions(1f).setNoPadding(true), yearIndex);
+
+    List<ColumnDataPicker.Column> columns = Arrays.asList(
+      dayColumn,
+      monthColumn,
+      yearColumn
+    );
+
+    FutureInt getDay = () -> dayColumn.index + 1;
+    FutureInt getMonth = () -> monthColumn.index;
+    FutureInt getYear = () -> yearOptional && yearColumn.index == yearColumn.rows.size() - 1 ? 0 : minYear + yearColumn.index;
+
+    RunnableBool onValueChanged = checkMaxDay -> {
+      if (checkMaxDay) {
+        int maxDayCount = c.getActualMaximum(Calendar.DAY_OF_MONTH);
+        int prevMaxDayCount = dayColumn.rows.size();
+        while (dayColumn.rows.size() != maxDayCount) {
+          if (dayColumn.rows.size() > maxDayCount) {
+            dayColumn.rows.remove(dayColumn.rows.size() - 1);
+          } else {
+            int addedDay = dayColumn.rows.size() + 1;
+            String str = addedDay < 10 ? "0" + addedDay : Integer.toString(addedDay);
+            dayColumn.rows.add(new SimpleStringItem(0, str)
+              .setArg1(addedDay));
+          }
+        }
+        if (dayColumn.index >= maxDayCount) {
+          dayColumn.index = maxDayCount - 1;
+          // c.set(Calendar.DAY_OF_MONTH, maxDayCount);
+        }
+        if (maxDayCount > prevMaxDayCount) {
+          dayColumn.view.addRange(prevMaxDayCount, dayColumn.rows.subList(prevMaxDayCount, maxDayCount));
+        } else if (prevMaxDayCount > maxDayCount) {
+          dayColumn.view.removeRange(maxDayCount, prevMaxDayCount - maxDayCount);
+        }
+      }
+      if (listener != null) {
+        int newDay = getDay.getIntValue();
+        int newMonth = getMonth.getIntValue();
+        int newYear = getYear.getIntValue();
+        listener.onPendingCommitDateChanged(dataPicker, newDay, newMonth, newYear);
+      }
+    };
+
+    dayColumn.setMinMaxProvider((v, index) -> {
+      int newMonth = getMonth.getIntValue();
+      int newYear = getYear.getIntValue();
+      if (newYear == maxYear && newMonth == maxMonth) {
+        index = Math.min(index, maxDayOfMonth - 1);
+      }
+      if (newYear == minYear && newMonth == minMonth) {
+        index = Math.max(index, minDayOfMonth - 1);
+      }
+      return index;
+    });
+    dayColumn.setItemChangeListener((v, index) -> {
+      if (dayColumn.index != index) {
+        dayColumn.index = index;
+        // c.set(Calendar.DAY_OF_MONTH, index + 1);
+        onValueChanged.runWithBool(false);
+      }
+    });
+    monthColumn.setMinMaxProvider((v, index) -> {
+      int newYear = getYear.getIntValue();
+      if (newYear == maxYear) {
+        index = Math.min(index, maxMonth);
+      }
+      if (newYear == minYear) {
+        index = Math.max(index, minMonth);
+      }
+      return index;
+    });
+    monthColumn.setItemChangeListener(new InfiniteRecyclerView.ItemChangeListener<SimpleStringItem>() {
+      @Override
+      public void onCurrentIndexChanged (InfiniteRecyclerView<SimpleStringItem> v, int newMonth) {
+        if (monthColumn.index != newMonth) {
+          monthColumn.index = newMonth;
+          c.set(Calendar.MONTH, newMonth);
+          onValueChanged.runWithBool(true);
+        }
+      }
+
+      @Override
+      public void onCurrentIndexFinalized (InfiniteRecyclerView<SimpleStringItem> v, int index) {
+        dayColumn.view.checkFitsMinMax();
+      }
+    });
+    yearColumn.setItemChangeListener(new InfiniteRecyclerView.ItemChangeListener<SimpleStringItem>() {
+      @Override
+      public void onCurrentIndexChanged (InfiniteRecyclerView<SimpleStringItem> v, int newYearIndex) {
+        if (yearColumn.index != newYearIndex) {
+          yearColumn.index = newYearIndex;
+          int newYear = yearOptional && newYearIndex == yearItems.size() - 1 ? 2024 :
+            minYear + newYearIndex;
+          c.set(Calendar.YEAR, newYear);
+          onValueChanged.runWithBool(true);
+        }
+      }
+
+      @Override
+      public void onCurrentIndexFinalized (InfiniteRecyclerView<SimpleStringItem> v, int newYearIndex) {
+        monthColumn.view.checkFitsMinMax();
+        dayColumn.view.checkFitsMinMax();
+      }
+    });
+
+    dataPicker.setColumns(columns);
+    dataPicker.setSpacing(.5f, .5f);
+    dataPicker.showPopup(this, title, commitButtonText, null, (picker, commitButtonView) -> {
+      int newDay = getDay.getIntValue();
+      int newMonth = getMonth.getIntValue();
+      int newYear = getYear.getIntValue();
+      return listener != null && listener.onCommitDate(picker, commitButtonView, newDay, newMonth, newYear);
+    });
+    return dataPicker;
+  }
 
   public final PopupLayout showDateTimePicker (CharSequence title, @StringRes int todayRes, @StringRes int tomorrowRes, @StringRes int futureRes, final RunnableLong callback, final @Nullable ThemeDelegate forcedTheme) {
     return showDateTimePicker(tdlib, title, todayRes, tomorrowRes, futureRes, callback, forcedTheme);
@@ -2556,16 +2814,13 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         }
 
         @Override
-        public void setAlpha (int alpha) {
-
-        }
+        public void setAlpha (int alpha) { }
 
         @Override
-        public void setColorFilter (@Nullable ColorFilter colorFilter) {
-
-        }
+        public void setColorFilter (@Nullable ColorFilter colorFilter) { }
 
         @Override
+        @SuppressWarnings("deprecation")
         public int getOpacity () {
           return PixelFormat.UNKNOWN;
         }
@@ -2764,6 +3019,24 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   public final int tdlibId () {
     return tdlib != null ? tdlib.id() : TdlibAccount.NO_ID;
+  }
+
+  public final TooltipOverlayView.TooltipInfo showErrorTooltip (View view, CharSequence text) {
+    return showTooltip(view, R.drawable.baseline_error_24, text);
+  }
+
+  public final TooltipOverlayView.TooltipInfo showWarningTooltip (View view, CharSequence text) {
+    return showTooltip(view, R.drawable.baseline_warning_24, text);
+  }
+
+  public final TooltipOverlayView.TooltipInfo showInfoTooltip (View view, CharSequence text) {
+    return showTooltip(view, R.drawable.baseline_info_24, text);
+  }
+
+  public final TooltipOverlayView.TooltipInfo showTooltip (View view, @DrawableRes int icon, CharSequence text) {
+    return context.tooltipManager()
+      .builder(view)
+      .show(this, tdlib, icon, text);
   }
 
   public final void openTdlibLogs (int testerLevel, Crash crashInfo) {

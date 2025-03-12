@@ -12,8 +12,6 @@
  */
 package org.thunderdog.challegram.ui.camera;
 
-import android.graphics.Point;
-import android.graphics.Rect;
 import android.graphics.RectF;
 
 import androidx.annotation.Nullable;
@@ -25,6 +23,11 @@ public interface CameraDelegate {
    * Show text overlay
    * */
   void displayFatalErrorMessage (String msg);
+
+  /**
+   * Show hint over record button
+   * */
+  void displayHint (String hint);
 
   /**
    * Start error resolution, e.g.

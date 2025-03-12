@@ -80,6 +80,20 @@ typedef struct {
     int copy_comments;
 } oe_enc_opt;
 
+typedef struct {
+  ogg_int32_t _packetId;
+  opus_int64 bytes_written;
+  opus_int64 pages_out;
+  opus_int64 total_samples;
+  ogg_int64_t enc_granulepos;
+  int size_segments;
+  int last_segments;
+  ogg_int64_t last_granulepos;
+  opus_int32 min_bytes;
+  int max_frame_bytes;
+  int serialno;
+} resume_data;
+
 static int write_uint32(Packet *p, ogg_uint32_t val) {
     if (p->pos > p->maxlen - 4) {
         return 0;
@@ -249,17 +263,18 @@ static int writeOggPage(ogg_page *page, FILE *os) {
 }
 
 const opus_int32 bitrate = 32000;
-const opus_int32 rate = 48000;
 const opus_int32 frame_size = 960;
 const int with_cvbr = 1;
 const int max_ogg_delay = 0;
 const int comment_padding = 512;
 
+opus_int32 rate = 48000;
 opus_int32 coding_rate = 48000;
 ogg_int32_t _packetId;
 OpusEncoder *_encoder = 0;
 uint8_t *_packet = 0;
 ogg_stream_state os;
+char *_filePath = NULL;
 FILE *_fileOs = 0;
 oe_enc_opt inopt;
 OpusHeader header;
@@ -274,6 +289,7 @@ ogg_int64_t enc_granulepos;
 ogg_int64_t last_granulepos;
 int size_segments;
 int last_segments;
+int serialno;
 
 void cleanupRecorder() {
 
@@ -304,6 +320,10 @@ void cleanupRecorder() {
     size_segments = 0;
     last_segments = 0;
     last_granulepos = 0;
+    if (_filePath) {
+        free(_filePath);
+        _filePath = NULL;
+    }
     memset(&os, 0, sizeof(ogg_stream_state));
     memset(&inopt, 0, sizeof(oe_enc_opt));
     memset(&header, 0, sizeof(OpusHeader));
@@ -311,15 +331,24 @@ void cleanupRecorder() {
     memset(&og, 0, sizeof(ogg_page));
 }
 
-int initRecorder(const char *path) {
+int initRecorder(const char *path, opus_int32 sampleRate) {
     cleanupRecorder();
 
+    coding_rate = sampleRate;
+    rate = sampleRate;
+
     if (!path) {
+        loge(TAG_VOICE, "path is null");
         return 0;
     }
 
-    _fileOs = fopen(path, "wb");
+    int length = strlen(path);
+    _filePath = (char*) malloc(length + 1);
+    strcpy(_filePath, path);
+
+    _fileOs = fopen(path, "w");
     if (!_fileOs) {
+        loge(TAG_VOICE, "error cannot open file: %s", path);
         return 0;
     }
 
@@ -327,25 +356,13 @@ int initRecorder(const char *path) {
     inopt.gain = 0;
     inopt.endianness = 0;
     inopt.copy_comments = 0;
-    inopt.rawmode = 1;
-    inopt.ignorelength = 1;
+    inopt.rawmode = 0;
+    inopt.ignorelength = 0;
     inopt.samplesize = 16;
     inopt.channels = 1;
     inopt.skip = 0;
 
     comment_init(&inopt.comments, &inopt.comments_length, opus_get_version_string());
-
-    if (rate > 24000) {
-        coding_rate = 48000;
-    } else if (rate > 16000) {
-        coding_rate = 24000;
-    } else if (rate > 12000) {
-        coding_rate = 16000;
-    } else if (rate > 8000) {
-        coding_rate = 12000;
-    } else {
-        coding_rate = 8000;
-    }
 
     if (rate != coding_rate) {
         loge(TAG_VOICE, "Invalid rate");
@@ -369,6 +386,7 @@ int initRecorder(const char *path) {
     _packet = malloc(max_frame_bytes);
 
     result = opus_encoder_ctl(_encoder, OPUS_SET_BITRATE(bitrate));
+    //result = opus_encoder_ctl(_encoder, OPUS_SET_COMPLEXITY(10));
     if (result != OPUS_OK) {
         loge(TAG_VOICE, "Error OPUS_SET_BITRATE returned: %s", opus_strerror(result));
         return 0;
@@ -392,7 +410,7 @@ int initRecorder(const char *path) {
     header.preskip = (int)(inopt.skip * (48000.0 / coding_rate));
     inopt.extraout = (int)(header.preskip * (rate / 48000.0));
 
-    if (ogg_stream_init(&os, rand()) == -1) {
+    if (ogg_stream_init(&os, serialno = rand()) == -1) {
         loge(TAG_VOICE, "Error: stream init failed");
         return 0;
     }
@@ -446,6 +464,135 @@ int initRecorder(const char *path) {
     }
 
     free(inopt.comments);
+
+    return 1;
+}
+
+void saveResumeData() {
+    if (_filePath == NULL) {
+        return;
+    }
+    const char* ext = ".resume";
+    char* _resumeFilePath = (char*) malloc(strlen(_filePath) + strlen(ext) + 1);
+    strcpy(_resumeFilePath, _filePath);
+    strcat(_resumeFilePath, ext);
+
+    FILE* resumeFile = fopen(_resumeFilePath, "wb");
+    if (!resumeFile) {
+        loge(TAG_VOICE, "error cannot open resume file to write: %s", _resumeFilePath);
+        free(_resumeFilePath);
+        return;
+    }
+    resume_data data;
+    data._packetId = _packetId;
+    data.bytes_written = bytes_written;
+    data.pages_out = pages_out;
+    data.total_samples = total_samples;
+    data.enc_granulepos = enc_granulepos;
+    data.size_segments = size_segments;
+    data.last_segments = last_segments;
+    data.last_granulepos = last_granulepos;
+    data.min_bytes = min_bytes;
+    data.max_frame_bytes = max_frame_bytes;
+    data.serialno = serialno;
+
+    if (fwrite(&data, sizeof(resume_data), 1, resumeFile) != 1) {
+        loge(TAG_VOICE, "error writing resume data to file: %s", _resumeFilePath);
+    }
+    fclose(resumeFile);
+
+    free(_resumeFilePath);
+}
+
+resume_data readResumeData(const char* filePath) {
+
+    const char* ext = ".resume";
+    char* _resumeFilePath = (char*) malloc(strlen(filePath) + strlen(ext) + 1);
+    strcpy(_resumeFilePath, filePath);
+    strcat(_resumeFilePath, ext);
+
+    resume_data data;
+
+    FILE* resumeFile = fopen(_resumeFilePath, "rb");
+    if (!resumeFile) {
+        loge(TAG_VOICE, "error cannot open resume file to read: %s", _resumeFilePath);
+        memset(&data, 0, sizeof(resume_data));
+        free(_resumeFilePath);
+        return data;
+    }
+
+    if (fread(&data, sizeof(resume_data), 1, resumeFile) != 1) {
+        loge(TAG_VOICE, "error cannot read resume file: %s", _resumeFilePath);
+        memset(&data, 0, sizeof(resume_data));
+    }
+
+    fclose(resumeFile);
+    free(_resumeFilePath);
+
+    return data;
+}
+
+int resumeRecorder(const char *path, opus_int32 sampleRate) {
+    cleanupRecorder();
+
+    coding_rate = sampleRate;
+    rate = sampleRate;
+
+    if (!path) {
+        loge("path is null");
+        return 0;
+    }
+
+    int length = strlen(path);
+    _filePath = (char*) malloc(length + 1);
+    strcpy(_filePath, path);
+
+    resume_data resumeData = readResumeData(path);
+    _packetId = resumeData._packetId;
+    bytes_written = resumeData.bytes_written;
+    pages_out = resumeData.pages_out;
+    total_samples = resumeData.total_samples;
+    enc_granulepos = resumeData.enc_granulepos;
+    size_segments = resumeData.size_segments;
+    last_segments = resumeData.last_segments;
+    last_granulepos = resumeData.last_granulepos;
+    min_bytes = resumeData.min_bytes;
+    max_frame_bytes = resumeData.max_frame_bytes;
+    serialno = resumeData.serialno;
+
+    _fileOs = fopen(path, "a");
+    if (!_fileOs) {
+        loge(TAG_VOICE, "error cannot open resume file: %s", path);
+        return 0;
+    }
+
+    int result = OPUS_OK;
+    _encoder = opus_encoder_create(coding_rate, 1, OPUS_APPLICATION_VOIP, &result);
+    if (result != OPUS_OK) {
+        loge(TAG_VOICE, "Error cannot create encoder: %s", opus_strerror(result));
+        return 0;
+    }
+
+    _packet = malloc(max_frame_bytes);
+
+    result = opus_encoder_ctl(_encoder, OPUS_SET_BITRATE(bitrate));
+    //result = opus_encoder_ctl(_encoder, OPUS_SET_COMPLEXITY(10));
+    if (result != OPUS_OK) {
+        loge(TAG_VOICE, "Error OPUS_SET_BITRATE returned: %s", opus_strerror(result));
+        return 0;
+    }
+
+#ifdef OPUS_SET_LSB_DEPTH
+    result = opus_encoder_ctl(_encoder, OPUS_SET_LSB_DEPTH(max(8, min(24, 16))));
+    if (result != OPUS_OK) {
+        loge(TAG_VOICE, "Warning OPUS_SET_LSB_DEPTH returned: %s", opus_strerror(result));
+    }
+#endif
+
+    if (ogg_stream_init(&os, serialno) == -1) {
+        loge(TAG_VOICE, "Error: stream init failed");
+        return 0;
+    }
 
     return 1;
 }
@@ -535,10 +682,10 @@ int writeFrame(uint8_t *framePcmBytes, unsigned int frameByteCount) {
     return 1;
 }
 
-JNIEXPORT int Java_org_thunderdog_challegram_N_startRecord(JNIEnv *env, jclass class, jstring path) {
+JNIEXPORT jint Java_org_thunderdog_challegram_N_startRecord(JNIEnv *env, jclass class, jstring path, jint sampleRate) {
     const char *pathStr = (*env)->GetStringUTFChars(env, path, 0);
 
-    int result = initRecorder(pathStr);
+    int32_t result = initRecorder(pathStr, sampleRate);
 
     if (pathStr != 0) {
         (*env)->ReleaseStringUTFChars(env, path, pathStr);
@@ -547,12 +694,27 @@ JNIEXPORT int Java_org_thunderdog_challegram_N_startRecord(JNIEnv *env, jclass c
     return result;
 }
 
-JNIEXPORT int Java_org_thunderdog_challegram_N_writeFrame(JNIEnv *env, jclass class, jobject frame, jint len) {
+JNIEXPORT jint Java_org_thunderdog_challegram_N_resumeRecord(JNIEnv *env, jclass class, jstring path, jint sampleRate) {
+    const char *pathStr = (*env)->GetStringUTFChars(env, path, 0);
+
+    int32_t result = resumeRecorder(pathStr, sampleRate);
+
+    if (pathStr != 0) {
+        (*env)->ReleaseStringUTFChars(env, path, pathStr);
+    }
+
+    return result;
+}
+
+JNIEXPORT jint Java_org_thunderdog_challegram_N_writeFrame(JNIEnv *env, jclass class, jobject frame, jint len) {
     jbyte *frameBytes = (*env)->GetDirectBufferAddress(env, frame);
     return writeFrame((uint8_t *) frameBytes, (size_t) len);
 }
 
-JNIEXPORT void Java_org_thunderdog_challegram_N_stopRecord(JNIEnv *env, jclass class) {
+JNIEXPORT void Java_org_thunderdog_challegram_N_stopRecord(JNIEnv *env, jclass class, jboolean allowResuming) {
+    if (allowResuming && _filePath != NULL) {
+        saveResumeData();
+    }
     cleanupRecorder();
 }
 
@@ -663,11 +825,11 @@ JNIEXPORT void Java_org_thunderdog_challegram_N_readOpusFile(JNIEnv *env, jclass
     (*env)->ReleaseIntArrayElements(env, args, argsArr, 0);
 }
 
-JNIEXPORT int Java_org_thunderdog_challegram_N_seekOpusFile(JNIEnv *env, jclass class, jfloat position) {
+JNIEXPORT jint Java_org_thunderdog_challegram_N_seekOpusFile(JNIEnv *env, jclass class, jfloat position) {
     return seekPlayer(position);
 }
 
-JNIEXPORT int Java_org_thunderdog_challegram_N_openOpusFile(JNIEnv *env, jclass class, jstring path) {
+JNIEXPORT jint Java_org_thunderdog_challegram_N_openOpusFile(JNIEnv *env, jclass class, jstring path) {
     const char *pathStr = (*env)->GetStringUTFChars(env, path, 0);
 
     int result = initPlayer(pathStr);
@@ -679,7 +841,7 @@ JNIEXPORT int Java_org_thunderdog_challegram_N_openOpusFile(JNIEnv *env, jclass 
     return result;
 }
 
-JNIEXPORT int Java_org_thunderdog_challegram_N_isOpusFile(JNIEnv *env, jclass class, jstring path) {
+JNIEXPORT jint Java_org_thunderdog_challegram_N_isOpusFile(JNIEnv *env, jclass class, jstring path) {
     const char *pathStr = (*env)->GetStringUTFChars(env, path, 0);
 
     int result = 0;

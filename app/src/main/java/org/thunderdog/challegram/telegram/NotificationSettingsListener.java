@@ -18,6 +18,7 @@ import org.drinkless.tdlib.TdApi;
 
 public interface NotificationSettingsListener {
   default void onNotificationSettingsChanged (TdApi.NotificationSettingsScope scope, TdApi.ScopeNotificationSettings settings) { }
+  default void onReactionNotificationSettingsChanged (TdApi.ReactionNotificationSettings settings) { }
   default void onNotificationSettingsChanged (long chatId, TdApi.ChatNotificationSettings settings) { }
   default void onNotificationChannelChanged (TdApi.NotificationSettingsScope scope) { }
   default void onNotificationChannelChanged (long chatId) { }

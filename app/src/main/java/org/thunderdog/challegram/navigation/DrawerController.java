@@ -36,6 +36,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
@@ -90,7 +91,7 @@ import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
-import me.vkryl.td.ChatId;
+import tgx.td.ChatId;
 
 public class DrawerController extends ViewController<Void> implements View.OnClickListener, Settings.ProxyChangeListener, GlobalAccountListener, GlobalCountersListener, BaseView.CustomControllerProvider, BaseView.ActionListProvider, View.OnLongClickListener, TdlibSettingsManager.NotificationProblemListener, TdlibOptionListener, SessionListener, GlobalTokenStateListener {
   private int currentWidth, shadowWidth;
@@ -122,20 +123,20 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   private final ListItem proxyItem = new ListItem(ListItem.TYPE_DRAWER_ITEM_WITH_RADIO_SEPARATED, R.id.btn_proxy, R.drawable.baseline_security_24, R.string.Proxy);
 
   private boolean proxyAvailable;
-  private int settingsErrorIcon;
+  private BaseActivity.ClickBait settingsClickBait;
   private Tdlib.SessionsInfo sessionsInfo; // TODO move to BaseActivity
 
-  private int getSettingsErrorIcon () {
-    int errorIcon = context.getSettingsErrorIcon();
+  private BaseActivity.ClickBait getSettingsClickBait () {
+    BaseActivity.ClickBait clickBait = context.getSettingsClickBait();
     boolean haveIncompleteLoginAttempts = sessionsInfo != null && sessionsInfo.incompleteLoginAttempts.length > 0;
-    if (errorIcon != 0 && haveIncompleteLoginAttempts) {
-      return Tdlib.CHAT_FAILED;
-    } else if (errorIcon != 0) {
-      return errorIcon;
+    if (clickBait != null && haveIncompleteLoginAttempts) {
+      return new BaseActivity.ClickBait(clickBait.iconRes, true);
+    } else if (clickBait != null) {
+      return clickBait;
     } else if (haveIncompleteLoginAttempts) {
-      return Tdlib.CHAT_FAILED; // TODO find a good matching icon
+      return new BaseActivity.ClickBait(0, true);
     }
-    return 0;
+    return null;
   }
 
   private Tdlib lastTdlib;
@@ -151,7 +152,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     tdlib.settings().addNotificationProblemAvailabilityChangeListener(this);
     tdlib.listeners().addOptionsListener(this);
     tdlib.listeners().subscribeToSessionUpdates(this);
-    checkSettingsError();
+    checkSettingsClickBait();
     fetchSessions();
   }
 
@@ -163,7 +164,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
           runOnUiThreadOptional(() -> {
             if (this.lastTdlib == tdlib) {
               this.sessionsInfo = sessionsInfo;
-              checkSettingsError();
+              checkSettingsClickBait();
             }
           });
         }
@@ -182,27 +183,27 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
 
   @Override
   public void onTokenStateChanged (int newState, @Nullable String error, @Nullable Throwable fullError) {
-    checkSettingsError();
+    checkSettingsClickBait();
   }
 
   @Override
   public void onNotificationProblemsAvailabilityChanged (Tdlib tdlib, boolean available) {
-    checkSettingsError();
+    checkSettingsClickBait();
   }
 
   @Override
   public void onSuggestedActionsChanged (TdApi.SuggestedAction[] addedActions, TdApi.SuggestedAction[] removedActions) {
-    checkSettingsError();
+    checkSettingsClickBait();
   }
 
-  public void checkSettingsError () {
+  public void checkSettingsClickBait () {
     if (!UI.inUiThread()) {
-      runOnUiThreadOptional(this::checkSettingsError);
+      runOnUiThreadOptional(this::checkSettingsClickBait);
       return;
     }
-    int settingsErrorIcon = getSettingsErrorIcon();
-    if (this.settingsErrorIcon != settingsErrorIcon) {
-      this.settingsErrorIcon = settingsErrorIcon;
+    BaseActivity.ClickBait clickBait = getSettingsClickBait();
+    if ((clickBait == null) == (this.settingsClickBait != null) || (clickBait != null && !clickBait.equals(this.settingsClickBait))) {
+      this.settingsClickBait = clickBait;
       if (adapter != null) {
         int i = adapter.indexOfViewById(R.id.btn_settings);
         if (i != -1) {
@@ -215,7 +216,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   @Override
   public void onActivityResume () {
     super.onActivityResume();
-    checkSettingsError();
+    checkSettingsClickBait();
   }
 
   @Override
@@ -262,7 +263,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
       items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_calls, R.drawable.baseline_call_24, R.string.Calls));
     }
     items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_savedMessages, R.drawable.baseline_bookmark_24, R.string.SavedMessages));
-    this.settingsErrorIcon = getSettingsErrorIcon();
+    this.settingsClickBait = getSettingsClickBait();
     items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_settings, R.drawable.baseline_settings_24, R.string.Settings));
     items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_invite, R.drawable.baseline_person_add_24, R.string.InviteFriends));
 
@@ -306,10 +307,10 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
           view.setText(Lang.getDebugString(account.getName(), account.isDebug()));
           view.setCustomControllerProvider(DrawerController.this);
           view.setPreviewActionListProvider(DrawerController.this);
-        } else if (itemId == R.id.btn_settings) {
-          view.setError(settingsErrorIcon != 0, settingsErrorIcon != Tdlib.CHAT_FAILED ? settingsErrorIcon : 0, isUpdate);
+        } else if (itemId == R.id.btn_settings && settingsClickBait != null) {
+          view.setClickBait(settingsClickBait.isError, settingsClickBait.iconRes, isUpdate);
         } else {
-          view.setError(false, 0, isUpdate);
+          view.setClickBait(false, 0, isUpdate);
         }
       }
     };
@@ -343,7 +344,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
         if (!showingAccounts) {
           return 0;
         }
-        int position = viewHolder.getAdapterPosition();
+        int position = viewHolder.getBindingAdapterPosition();
         int accountsNum = TdlibManager.instance().getActiveAccounts().size();
         if (accountsNum <= 1) {
           return 0;
@@ -376,8 +377,8 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
           return false;
         }
 
-        int fromPosition = viewHolder.getAdapterPosition();
-        int toPosition = target.getAdapterPosition();
+        int fromPosition = viewHolder.getBindingAdapterPosition();
+        int toPosition = target.getBindingAdapterPosition();
 
         int accountsNum = TdlibManager.instance().getActiveAccounts().size();
 
@@ -685,7 +686,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
       adapter.updateValuedSettingByData(oldAccount);
     }
     adapter.updateValuedSettingByData(newAccount);
-    checkSettingsError();
+    checkSettingsClickBait();
   }
 
   @Override
@@ -788,15 +789,11 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     final int itemId = item.getId();
     if (itemId != R.id.account) {
       if (itemId == R.id.btn_addAccount) {
-        if (Config.ALLOW_DEBUG_DC) {
-          context.currentTdlib().ui().addAccount(context, true, true);
-        } else {
-          context.currentTdlib().getTesterLevel(level -> {
-            if (level >= Tdlib.TESTER_LEVEL_ADMIN) {
-              context.currentTdlib().ui().addAccount(context, true, true);
-            }
-          });
-        }
+        context.currentTdlib().getTesterLevel(level -> {
+          if (Config.ALLOW_DEBUG_DC || level >= Tdlib.TesterLevel.MIN_LEVEL_FOR_DEBUG_DC) {
+            context.currentTdlib().ui().addAccount(context, true, true);
+          }
+        });
       } else if (itemId == R.id.btn_calls) {
         clearRecentCalls();
       }
@@ -1241,7 +1238,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
         recyclerView.setItemAnimator(null);
       } else if (factor > 0f && recyclerView.getItemAnimator() == null) {
         recyclerView.setItemAnimator(recyclerAnimator);
-        checkSettingsError();
+        checkSettingsClickBait();
       }
       cancelSupportOpen();
 

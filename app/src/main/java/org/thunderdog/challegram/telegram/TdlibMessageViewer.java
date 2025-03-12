@@ -23,8 +23,6 @@ import androidx.collection.LongSparseArray;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
-import org.thunderdog.challegram.BuildConfig;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TD;
@@ -45,8 +43,8 @@ import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.FutureBool;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class TdlibMessageViewer {
   private static final long TRACK_MESSAGE_TIMEOUT_MS = 1000;
@@ -763,8 +761,6 @@ public class TdlibMessageViewer {
           }
           if (error != null) {
             TDLib.w("Unable to view %d messages in chat %d, source: %s, error: %s", messageIds.length, chatId, messageSource, TD.toErrorString(error));
-          } else if (BuildConfig.DEBUG) {
-            Log.i("Viewed %d messages in chat %d, source: %s", messageIds.length, chatId, messageSource);
           }
         });
       }
@@ -869,9 +865,6 @@ public class TdlibMessageViewer {
     }
     if (this.needRestrictScreenshots != needRestrictScreenshots) {
       this.needRestrictScreenshots = needRestrictScreenshots;
-      if (BuildConfig.DEBUG) {
-        UI.showToast("update restrictScreenshots to " + needRestrictScreenshots, Toast.LENGTH_SHORT);
-      }
       for (Listener listener : listeners) {
         listener.onNeedRestrictScreenshots(this, needRestrictScreenshots);
       }

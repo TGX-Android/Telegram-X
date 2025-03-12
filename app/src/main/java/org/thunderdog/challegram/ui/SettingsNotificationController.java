@@ -89,13 +89,15 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class SettingsNotificationController extends RecyclerViewController<SettingsNotificationController.Args> implements
   View.OnClickListener, View.OnLongClickListener,
@@ -453,14 +455,32 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       case TdlibNotificationManager.Status.FIREBASE_ERROR:
         return Lang.getMarkdownString(this, R.string.NotificationsGuideFirebaseError, Lang.boldCreator(), tdlib.context().getTokenError());
       case TdlibNotificationManager.Status.INTERNAL_ERROR: {
+        @StringRes int
+          specificChatRes = R.string.NotificationsGuideErrorChat,
+          commonRes = R.string.NotificationsGuideError;
+
+        TdlibSettingsManager.NotificationProblems problems = tdlib.settings().notificationProblems();
+        if (problems != null && !problems.isEmpty()) {
+          Set<String> messages = problems.allMessages();
+          if (messages.size() == 1) {
+            String message = messages.iterator().next();
+            if (message.toLowerCase().contains("Limit exceed; cannot create more channels".toLowerCase())) {
+              specificChatRes = R.string.NotificationsGuideCategoryLimitErrorChat;
+              commonRes = R.string.NotificationsGuideCategoryLimit;
+            } else {
+              // TODO: add more detailed guides, as they're going to be found.
+            }
+          }
+        }
+
         long chatId = tdlib.settings().getLastNotificationProblematicChat();
         if (chatId != 0) {
           TdApi.Chat chat = tdlib.chatSync(chatId);
           if (chat != null) {
-            return Lang.getMarkdownString(this, R.string.NotificationsGuideErrorChat, Lang.boldCreator(), tdlib.chatTitle(chat));
+            return Lang.getMarkdownString(this, specificChatRes, Lang.boldCreator(), tdlib.chatTitle(chat));
           }
         }
-        guideRes = R.string.NotificationsGuideError;
+        guideRes = commonRes;
         break;
       }
       case TdlibNotificationManager.Status.ACCOUNT_NOT_SELECTED:
@@ -953,6 +973,9 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           } else {
             view.setData(R.string.Default);
           }
+        } else if (itemId == R.id.btn_foregroundSync) {
+          boolean value = Settings.instance().getNewSetting(Settings.SETTING_FLAG_FOREGROUND_SERVICE_ENABLED);
+          view.getToggler().setRadioEnabled(value, isUpdate);
         } else if (itemId == R.id.btn_inApp_chatSounds) {
           view.getToggler().setRadioEnabled(tdlib.notifications().areInAppChatSoundsEnabled(), isUpdate);
         } else if (itemId == R.id.btn_customChat_pinnedMessages) {
@@ -1203,6 +1226,13 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_notifications_snooze, R.drawable.baseline_bullhorn_24, R.string.Channels).setData(tdlib.notifications().scopeChannel()));
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
+        if (!Config.FOREGROUND_SYNC_ALWAYS_ENABLED) {
+          items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+          items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_foregroundSync, 0, R.string.ForegroundSync));
+          items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+          items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, R.string.ForegroundSyncDesc)));
+        }
+
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
         items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_archiveSettings, 0, R.string.ArchiveSettings));
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
@@ -1410,7 +1440,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       adapter.processToggle(v, item, toggleValue);
       tdlib.context().setForceEnableNotifications(selectedAccount.id, toggleValue);
       if (selectedAccount.id == tdlib.id()) {
-        context.getDrawer().checkSettingsError(); // FIXME re-work to listeners
+        context.getDrawer().checkSettingsClickBait(); // FIXME re-work to listeners
       }
       updateNotificationModeHint(true);
       tdlib.context().onUpdateNotifications(null, notificationAccount -> notificationAccount.id == selectedAccount.id);
@@ -1438,6 +1468,12 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     } else if (viewId == R.id.btn_customChat_preview) {
       tdlib.notifications().toggleShowPreview(customChatId);
       adapter.updateValuedSettingById(R.id.btn_customChat_preview);
+    } else if (viewId == R.id.btn_foregroundSync) {
+      boolean value = adapter.toggleView(v);
+      Settings.instance().setNewSetting(Settings.SETTING_FLAG_FOREGROUND_SERVICE_ENABLED, value);
+      context.tooltipManager().builder(v).icon(R.drawable.baseline_info_24)
+        .show(tdlib, Lang.getMarkdownString(this, value ? R.string.ForegroundSyncDescOn : R.string.ForegroundSyncDescOff))
+        .hideDelayed(true, 5, TimeUnit.SECONDS);
     } else if (viewId == R.id.btn_inApp_chatSounds) {
       tdlib.notifications().toggleInAppChatSoundsEnabled();
       adapter.updateValuedSettingById(R.id.btn_inApp_chatSounds);
@@ -1474,8 +1510,8 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         }
         case TdlibNotificationManager.Status.FIREBASE_ERROR: {
           showOptions(new Options.Builder()
-            .item(new OptionItem(R.id.btn_retry, Lang.getString(R.string.FirebaseErrorResolveTryAgain), OPTION_COLOR_BLUE, R.drawable.baseline_sync_problem_24))
-            .item(new OptionItem(R.id.btn_share, Lang.getString(R.string.FirebaseErrorResolveShareError), OPTION_COLOR_NORMAL, R.drawable.baseline_forward_24))
+            .item(new OptionItem(R.id.btn_retry, Lang.getString(R.string.FirebaseErrorResolveTryAgain), OptionColor.BLUE, R.drawable.baseline_sync_problem_24))
+            .item(new OptionItem(R.id.btn_share, Lang.getString(R.string.FirebaseErrorResolveShareError), OptionColor.NORMAL, R.drawable.baseline_forward_24))
             .build(), (optionView, optionId) -> {
             if (optionId == R.id.btn_retry) {
               tdlib.context().checkDeviceToken(0, null);
@@ -1701,7 +1737,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         rawItems[4] = new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_vibrateOnlyIfSilent, 0, R.string.OnlyIfSilent, R.id.btn_vibrateOnlyIfSilent, currentSilentOnly);
       }
 
-      showSettings(new SettingsWrapBuilder(id).setRawItems(rawItems).setIntDelegate(this).setOnSettingItemClick((view, settingId, settingItem, doneButton, settingsAdapter) -> {
+      showSettings(new SettingsWrapBuilder(id).setRawItems(rawItems).setIntDelegate(this).setOnSettingItemClick((view, settingId, settingItem, doneButton, settingsAdapter, window) -> {
         final int settingItemId = settingItem.getId();
         if (settingItemId == R.id.btn_short) {
           try {
@@ -1866,7 +1902,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         items[i++] = new ListItem(ListItem.TYPE_RADIO_OPTION, 0, 0, ringtoneItem.isDefault() ? Lang.getString(R.string.IsDefault, ringtoneItem.getName()) : ringtoneItem.getName(), v.getId(), isCurrent).setStringKey(ringtoneItem.getUri().toString());
       }
 
-      showSettings(new SettingsWrapBuilder(v.getId()).setRawItems(items).setStringDelegate(this).setOnSettingItemClick((view, settingId, settingItem, doneButton, settingsAdapter) -> {
+      showSettings(new SettingsWrapBuilder(v.getId()).setRawItems(items).setStringDelegate(this).setOnSettingItemClick((view, settingId, settingItem, doneButton, settingsAdapter, window) -> {
         String path = settingItem.getStringCheckResult();
         if (path != null) {
           for (RingtoneItem ringtoneItem : ringtoneItems) {
@@ -1980,7 +2016,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   }
 
   private void showResetNotificationsConfirm () {
-    showOptions(Lang.getString(R.string.ResetNotificationsConfirm), new int[] {R.id.btn_resetNotifications, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ResetNotifications), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+    showOptions(Lang.getString(R.string.ResetNotificationsConfirm), new int[] {R.id.btn_resetNotifications, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ResetNotifications), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_resetNotifications) {
         resetNotificationSettings();
       }

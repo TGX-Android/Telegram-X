@@ -77,7 +77,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.ChatId;
+import tgx.td.ChatId;
 
 public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickListener, StickerSmallView.StickerMovementCallback, InlineResultsAdapter.HeightProvider, FactorAnimator.Target, View.OnLongClickListener, TGLegacyManager.EmojiLoadListener, BaseView.CustomControllerProvider {
   private RecyclerView recyclerView;
@@ -295,7 +295,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
       if (result instanceof InlineResultCommand) {
         return c instanceof MessagesController && ((MessagesController) c).canWriteMessages() && ((MessagesController) c).onCommandLongPressed((InlineResultCommand) result);
       } else if (result instanceof InlineResultHashtag) {
-        c.showOptions(Lang.getString(R.string.HashtagDeleteHint), new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getOK(), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        c.showOptions(Lang.getString(R.string.HashtagDeleteHint), new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getOK(), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
           if (id == R.id.btn_delete) {
             removeItem(result);
             delegate.tdlib().client().send(new TdApi.RemoveRecentHashtag(((InlineResultHashtag) result).data().substring(1)), delegate.tdlib().okHandler());
@@ -304,7 +304,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
         });
         return true;
       } else if (result instanceof InlineResultMention && ((InlineResultMention) result).isInlineBot()) {
-        c.showOptions(Lang.getString(R.string.BotDeleteHint), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getOK(), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        c.showOptions(Lang.getString(R.string.BotDeleteHint), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getOK(), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
           if (id == R.id.btn_delete) {
             removeItem(result);
             if (c instanceof MessagesController) {
@@ -395,7 +395,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
     return getVisibility() != View.VISIBLE || getAlpha() == 0f || super.onInterceptTouchEvent(ev);
   }
 
-  private int detectRecyclerTopEdge () {
+  public int detectRecyclerTopEdge () {
     int top;
     LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
     int i = manager.findFirstVisibleItemPosition();
@@ -487,7 +487,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
   private boolean animationNeeded;
   private float showFactor;
 
-  private float getVisibleFactor () {
+  public float getVisibleFactor () {
     return showFactor * (1f - hideFactor);
   }
 
@@ -543,6 +543,10 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
   private BoolAnimator hideAnimator;
 
   public void setHidden (boolean isHidden) {
+    setHidden(isHidden, true);
+  }
+
+  public void setHidden (boolean isHidden, boolean animated) {
     if (hideAnimator == null) {
       if (!isHidden) {
         return;
@@ -550,7 +554,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
       hideAnimator = new BoolAnimator(ANIMATOR_HIDE, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
     }
     calculateTranslateY();
-    hideAnimator.setValue(isHidden, showFactor > 0f);
+    hideAnimator.setValue(isHidden, animated && showFactor > 0f);
   }
 
   @Override
@@ -666,7 +670,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
 
   private ArrayList<InlineResult<?>> currentItems;
 
-  private void removeItem (InlineResult<?> result) {
+  public void removeItem (InlineResult<?> result) {
     if (currentItems == null) {
       return;
     }
@@ -849,8 +853,20 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
   @Override
   public int provideHeight () {
     int height = offsetProvider != null ? offsetProvider.provideParentHeight(this) : ((BaseActivity) getContext()).getContentView().getMeasuredHeight(); //  - measureItemsHeight();
-    height -= Math.min(measureItemsHeight(), Screen.smallestActualSide() / 2);
+    height -= getMinItemsHeight();
     return Math.max(0, height);
+  }
+
+  public int getMinItemsHeight () {
+    return Math.min(measureItemsHeight(), getHeightLimit());
+  }
+
+  public static int getHeightLimit () {
+    return Screen.smallestActualSide() / 2;
+  }
+
+  public ArrayList<InlineResult<?>> getCurrentItems () {
+    return currentItems;
   }
 
   // Switch pm utils
@@ -883,7 +899,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
           UI.post(() -> {
             if (!isCancelled()) {
               setItems(null);
-              delegate.tdlib().ui().openChat(c, chatId, new TdlibUi.ChatOpenParameters().keepStack().shareItem(new TGBotStart(delegate.tdlib().chatUserId(chatId), button.botStartParameter(), false)));
+              delegate.tdlib().ui().openChat(c, chatId, new TdlibUi.ChatOpenParameters().keepStack().shareItem(new TGBotStart(delegate.tdlib().chatUserId(chatId), button.botStartParameter(), false, true)));
             }
           });
         } else {
@@ -902,11 +918,11 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
   // Interfaces
 
   public interface PickListener {
-    void onHashtagPick (InlineResultHashtag result);
-    void onMentionPick (InlineResultMention result, @Nullable String usernamelessText);
-    void onCommandPick (InlineResultCommand result, boolean isLongPress);
-    void onEmojiSuggestionPick (InlineResultEmojiSuggestion result);
-    void onInlineQueryResultPick (InlineResult<?> result);
+    default void onHashtagPick (InlineResultHashtag result) {}
+    default void onMentionPick (InlineResultMention result, @Nullable String usernamelessText) {}
+    default void onCommandPick (InlineResultCommand result, boolean isLongPress) {}
+    default void onEmojiSuggestionPick (InlineResultEmojiSuggestion result) {}
+    default void onInlineQueryResultPick (InlineResult<?> result) {}
   }
 
   private PickListener listener;

@@ -27,8 +27,8 @@ import java.util.List;
 
 import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.lambda.RunnableInt;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public abstract class SenderListManager extends ListManager<TdApi.MessageSender> implements TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener, TdlibCache.SupergroupDataChangeListener, ChatListener {
   public interface ChangeListener extends ListManager.ListChangeListener<TdApi.MessageSender> { }

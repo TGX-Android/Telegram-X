@@ -31,7 +31,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.text.Letters;
 
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class UserContext {
   private final Tdlib tdlib;

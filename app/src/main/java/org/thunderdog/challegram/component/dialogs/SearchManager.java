@@ -39,8 +39,8 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.LongList;
 import me.vkryl.core.lambda.CancellableRunnable;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class SearchManager {
   public static abstract class Listener implements ListenerInterface {
@@ -990,7 +990,7 @@ public class SearchManager {
       if (isMore) {
         offset = messageList.nextOffset;
       }
-      tdlib.send(new TdApi.SearchMessages(chatList, query, offset, loadCount, null, 0, 0), new Tdlib.ResultHandler<>() {
+      tdlib.send(new TdApi.SearchMessages(chatList, query, offset, loadCount, null, null, 0, 0), new Tdlib.ResultHandler<>() {
         @Override
         public void onResult (TdApi.FoundMessages foundMessages, @Nullable TdApi.Error error) {
           if (contextId != currentContextId) {
@@ -1016,7 +1016,7 @@ public class SearchManager {
               }
             }
             if (foundMessageList.isEmpty() && !StringUtils.isEmpty(foundMessages.nextOffset)) {
-              tdlib.send(new TdApi.SearchMessages(chatList, query, foundMessages.nextOffset, loadCount, null, 0, 0), this);
+              tdlib.send(new TdApi.SearchMessages(chatList, query, foundMessages.nextOffset, loadCount, null, null, 0, 0), this);
               return;
             }
             messages = foundMessageList.toArray(new TGFoundMessage[0]);

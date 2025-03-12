@@ -53,7 +53,7 @@ public class FloatingButton extends View implements Destroyable, Screen.StatusBa
     super(context);
 
     heightDiff = -Size.getMaximumHeaderSizeDifference();
-    RippleSupport.setCircleBackground(this, 56f, 4f, ColorId.headerButton, null);
+    RippleSupport.setCircleBackground(this, 56f, 4f, ColorId.headerButton, true, null);
 
     int padding = Screen.dp(4f);
     int size = Screen.dp(56f);

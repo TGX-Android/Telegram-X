@@ -14,12 +14,12 @@
  */
 package org.thunderdog.challegram.util;
 
-import org.thunderdog.challegram.data.TGUser;
+import org.thunderdog.challegram.component.user.BubbleView;
 
 import java.util.List;
 
 public interface UserPickerMultiDelegate {
   long[] getAlreadySelectedChatIds ();
-  void onAlreadyPickedChatsChanged (List<TGUser> chats);
+  void onAlreadyPickedChatsChanged (List<BubbleView.Entry> entries);
   int provideMultiUserPickerHint ();
 }

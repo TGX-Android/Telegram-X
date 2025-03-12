@@ -8,10 +8,7 @@ import android.graphics.drawable.Drawable;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.thunderdog.challegram.data.TGReactions;
 import org.thunderdog.challegram.tool.Screen;
-
-import me.vkryl.android.animator.ListAnimator;
 
 public class ReactionsCounterDrawable extends Drawable {
   private final ReactionsListAnimator topReactions;

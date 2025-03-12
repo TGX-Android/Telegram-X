@@ -31,12 +31,10 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
-import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibUi;
-import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.util.SenderPickerDelegate;
@@ -46,8 +44,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.vkryl.core.ArrayUtils;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.Td;
+import tgx.td.ChatId;
+import tgx.td.Td;
 
 public class SettingsBlockedController extends RecyclerViewController<TdApi.BlockList> implements View.OnClickListener, Menu, TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener, SenderPickerDelegate, Client.ResultHandler, ChatListener {
   public SettingsBlockedController (Context context, Tdlib tdlib) {
@@ -110,7 +108,7 @@ public class SettingsBlockedController extends RecyclerViewController<TdApi.Bloc
 
   @Override
   public boolean onSenderPick (ContactsController context, View view, TdApi.MessageSender senderId) {
-    showOptions(Lang.getStringBold(senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.QBlockUser : R.string.QBlockChat, Strings.wrapRtlLtr(tdlib.senderName(senderId))), new int[] {R.id.btn_blockSender, R.id.btn_cancel}, new String[] {Lang.getString(senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.BlockUserBtn : R.string.BlockChatBtn), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_block_24, R.drawable.baseline_cancel_24});
+    showOptions(Lang.getStringBold(senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.QBlockUser : R.string.QBlockChat, Strings.wrapRtlLtr(tdlib.senderName(senderId))), new int[] {R.id.btn_blockSender, R.id.btn_cancel}, new String[] {Lang.getString(senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.BlockUserBtn : R.string.BlockChatBtn), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_block_24, R.drawable.baseline_cancel_24});
     return false;
   }
 
@@ -131,7 +129,7 @@ public class SettingsBlockedController extends RecyclerViewController<TdApi.Bloc
   }
 
   public void unblockSender (TGUser user) {
-    showOptions(Lang.getStringBold(R.string.QUnblockX, tdlib.senderName(user.getSenderId())), new int[]{R.id.btn_unblockSender, R.id.btn_cancel}, new String[]{Lang.getString(R.string.Unblock), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_block_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+    showOptions(Lang.getStringBold(R.string.QUnblockX, tdlib.senderName(user.getSenderId())), new int[]{R.id.btn_unblockSender, R.id.btn_cancel}, new String[]{Lang.getString(R.string.Unblock), Lang.getString(R.string.Cancel)}, new int[]{OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_block_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_unblockSender) {
         tdlib.blockSender(user.getSenderId(), null, tdlib.okHandler(() -> {
           runOnUiThreadOptional(() -> {
@@ -412,7 +410,9 @@ public class SettingsBlockedController extends RecyclerViewController<TdApi.Bloc
     if (v.getId() == R.id.user) {
       TGUser user = ((UserView) v).getUser();
       if (user != null) {
-        tdlib.ui().openChat(this, user.getSenderId(), new TdlibUi.ChatOpenParameters().keepStack());
+        tdlib.ui().openChat(this, user.getSenderId(), new TdlibUi.ChatOpenParameters().keepStack()
+          .urlOpenParameters(new TdlibUi.UrlOpenParameters().tooltip(context.tooltipManager().builder(v)))
+        );
       }
     }
   }

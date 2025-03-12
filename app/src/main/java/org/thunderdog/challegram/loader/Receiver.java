@@ -32,6 +32,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Views;
 
 import me.vkryl.core.ColorUtils;
+import tgx.td.data.StickerOutline;
 
 public interface Receiver extends TooltipOverlayView.LocationProvider {
   View getTargetView ();
@@ -85,6 +86,12 @@ public interface Receiver extends TooltipOverlayView.LocationProvider {
   }
   default void disablePorterDuffColorFilter () {
     setPorterDuffColorFilter(ColorId.NONE, 0f, true);
+  }
+
+  default void drawPlaceholderOutline (Canvas c, StickerOutline outline) {
+    if (outline != null && outline.hasPath()) {
+      drawPlaceholderContour(c, outline.getPath());
+    }
   }
 
   default void drawPlaceholderContour (Canvas c, Path path) {

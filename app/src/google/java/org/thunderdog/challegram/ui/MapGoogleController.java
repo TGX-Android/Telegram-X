@@ -64,7 +64,7 @@ import org.thunderdog.challegram.util.text.Letters;
 import java.util.List;
 
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.td.MessageId;
+import tgx.td.MessageId;
 
 final class MapGoogleController extends MapController<MapView, MapGoogleController.MarkerData> implements OnMapReadyCallback, GoogleMap.OnMyLocationChangeListener, GoogleMap.OnCameraMoveStartedListener, GoogleMap.OnMarkerClickListener {
   private static final float DEFAULT_ZOOM_LEVEL = 16.0f;

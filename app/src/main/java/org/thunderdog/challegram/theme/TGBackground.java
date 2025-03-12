@@ -37,8 +37,8 @@ import java.util.Map;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.leveldb.LevelDB;
-import me.vkryl.td.Td;
-import me.vkryl.td.TdConstants;
+import tgx.td.Td;
+import tgx.td.TdConstants;
 
 public class TGBackground {
   private final int accountId;

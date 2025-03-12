@@ -36,6 +36,7 @@ import org.thunderdog.challegram.unsorted.Passcode;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.CancellableRunnable;
 
+@SuppressWarnings("deprecation")
 public class RootFrameLayout extends FrameLayoutFix {
   private Object lastInsets;
 

@@ -25,6 +25,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.text.Editable;
 import android.text.Html;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -32,7 +33,6 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.ClickableSpan;
-import android.text.style.QuoteSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.TypefaceSpan;
@@ -44,6 +44,7 @@ import android.widget.Toast;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.IdRes;
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RawRes;
@@ -57,14 +58,19 @@ import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.component.attach.MediaBottomFilesController;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.emoji.CustomEmojiId;
 import org.thunderdog.challegram.emoji.EmojiSpan;
+import org.thunderdog.challegram.emoji.PreserveCustomEmojiFilter;
 import org.thunderdog.challegram.filegen.GenerationInfo;
+import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
+import org.thunderdog.challegram.filegen.VideoGenerationInfo;
 import org.thunderdog.challegram.loader.ImageFile;
+import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.PrivacySettings;
@@ -89,8 +95,13 @@ import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
+import org.thunderdog.challegram.util.text.TextEntityCustom;
+import org.thunderdog.challegram.util.text.TextEntityMessage;
+import org.thunderdog.challegram.util.text.quotes.QuoteSpan;
 
 import java.io.File;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -106,6 +117,7 @@ import me.vkryl.android.html.HtmlParser;
 import me.vkryl.android.html.HtmlTag;
 import me.vkryl.android.text.AcceptFilter;
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.FileUtils;
 import me.vkryl.core.ObjectUtils;
@@ -116,10 +128,11 @@ import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.Future;
 import me.vkryl.core.unit.ByteUnit;
-import me.vkryl.td.ChatId;
-import me.vkryl.td.MessageId;
-import me.vkryl.td.Td;
-import me.vkryl.td.TdConstants;
+import tgx.td.ChatId;
+import tgx.td.MessageId;
+import tgx.td.Td;
+import tgx.td.TdConstants;
+import tgx.td.data.MessageWithProperties;
 
 public class TD {
 
@@ -148,7 +161,7 @@ public class TD {
       case RightId.INVITE_USERS:
       case RightId.PIN_MESSAGES:
       case RightId.MANAGE_VIDEO_CHATS:
-      case RightId.MANAGE_TOPICS:
+      case RightId.MANAGE_OR_CREATE_TOPICS:
       case RightId.POST_STORIES:
       case RightId.EDIT_STORIES:
       case RightId.DELETE_STORIES:
@@ -176,6 +189,42 @@ public class TD {
   }
 
   public static boolean checkRight (TdApi.ChatPermissions permissions, @RightId int rightId) {
+    if (false) {
+      // compile check
+      new TdApi.ChatPermissions(
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      );
+      new TdApi.ChatAdministratorRights(
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      );
+    }
     switch (rightId) {
       case RightId.READ_MESSAGES:
         return true;
@@ -189,29 +238,31 @@ public class TD {
         return permissions.canSendPhotos;
       case RightId.SEND_VIDEOS:
         return permissions.canSendVideos;
-      case RightId.SEND_VOICE_NOTES:
-        return permissions.canSendVoiceNotes;
       case RightId.SEND_VIDEO_NOTES:
         return permissions.canSendVideoNotes;
-      case RightId.SEND_OTHER_MESSAGES:
-        return permissions.canSendOtherMessages;
+      case RightId.SEND_VOICE_NOTES:
+        return permissions.canSendVoiceNotes;
       case RightId.SEND_POLLS:
         return permissions.canSendPolls;
+      case RightId.SEND_OTHER_MESSAGES:
+        return permissions.canSendOtherMessages;
       case RightId.EMBED_LINKS:
-        return permissions.canAddWebPagePreviews;
+        return permissions.canAddLinkPreviews;
+      case RightId.CHANGE_CHAT_INFO:
+        return permissions.canChangeInfo;
       case RightId.INVITE_USERS:
         return permissions.canInviteUsers;
       case RightId.PIN_MESSAGES:
         return permissions.canPinMessages;
-      case RightId.CHANGE_CHAT_INFO:
-        return permissions.canChangeInfo;
+      // Same right, but different meaning
+      case RightId.MANAGE_OR_CREATE_TOPICS:
+        return permissions.canCreateTopics;
       // Admin-only
       case RightId.ADD_NEW_ADMINS:
       case RightId.BAN_USERS:
       case RightId.DELETE_MESSAGES:
       case RightId.EDIT_MESSAGES:
       case RightId.MANAGE_VIDEO_CHATS:
-      case RightId.MANAGE_TOPICS:
       case RightId.POST_STORIES:
       case RightId.EDIT_STORIES:
       case RightId.DELETE_STORIES:
@@ -232,7 +283,7 @@ public class TD {
     if (a.forwardInfo == null) {
       return a.chatId == b.chatId;
     }
-    if (a.forwardInfo.origin.getConstructor() != b.forwardInfo.origin.getConstructor() || a.forwardInfo.fromChatId != b.forwardInfo.fromChatId)
+    if (a.forwardInfo.origin.getConstructor() != b.forwardInfo.origin.getConstructor() || !Td.equalsTo(a.forwardInfo.source, b.forwardInfo.source, false))
       return false;
     if (splitAuthors) {
       switch (a.forwardInfo.origin.getConstructor()) {
@@ -528,13 +579,14 @@ public class TD {
       case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
       case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
       case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
+      case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR:
         return true;
 
       case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
         return allowInternal;
 
       default:
-        Td.assertTextEntityType_91234a79();
+        Td.assertTextEntityType_56c1e709();
         throw Td.unsupported(type);
     }
   }
@@ -589,21 +641,16 @@ public class TD {
   }
 
   public static TdApi.Thumbnail toThumbnail (TdApi.Sticker sticker) {
-    if (sticker == null) {
-      return null;
-    }
-    if (sticker.thumbnail != null)
-      return sticker.thumbnail;
-    if (Td.isAnimated(sticker.format))
-      return null;
-    return new TdApi.Thumbnail(new TdApi.ThumbnailFormatWebp(), sticker.width, sticker.height, sticker.sticker);
+    return Td.toThumbnail(sticker);
   }
 
   public static TdApi.Thumbnail toThumbnail (TdApi.PhotoSize photoSize) {
-    if (photoSize == null) {
-      return null;
-    }
-    return new TdApi.Thumbnail(new TdApi.ThumbnailFormatJpeg(), photoSize.width, photoSize.height, photoSize.photo);
+    return Td.toThumbnail(photoSize);
+  }
+
+  public static TdApi.Thumbnail toProfilePhotoThumbnail (TdApi.File file, boolean isBig) {
+    int size = isBig ? 640 : 160;
+    return new TdApi.Thumbnail(new TdApi.ThumbnailFormatJpeg(), size, size, file);
   }
 
   public static boolean canRetractVote (TdApi.Poll poll) {
@@ -745,6 +792,9 @@ public class TD {
     if (key.startsWith("custom_")) {
       return new TdApi.ReactionTypeCustomEmoji(Long.parseLong(key.substring("custom_".length())));
     }
+    if (key.equals("paid")) {
+      return new TdApi.ReactionTypePaid();
+    }
     return new TdApi.ReactionTypeEmoji(key);
   }
 
@@ -754,8 +804,10 @@ public class TD {
         return ((TdApi.ReactionTypeEmoji) reactionType).emoji;
       case TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR:
         return "custom_" + ((TdApi.ReactionTypeCustomEmoji) reactionType).customEmojiId;
+      case TdApi.ReactionTypePaid.CONSTRUCTOR:
+        return "paid";
       default:
-        Td.assertReactionType_7dcca074();
+        Td.assertReactionType_43844388();
         throw Td.unsupported(reactionType);
     }
   }
@@ -840,18 +892,6 @@ public class TD {
     return -1;
   }
 
-  public static boolean compareContents (@NonNull TdApi.Poll a, @NonNull TdApi.Poll b) {
-    if (a.options.length != b.options.length || !StringUtils.equalsOrBothEmpty(a.question, b.question))
-      return false;
-    int index = 0;
-    for (TdApi.PollOption option : a.options) {
-      if (!StringUtils.equalsOrBothEmpty(option.text, b.options[index].text))
-        return false;
-      index++;
-    }
-    return true;
-  }
-
   public static boolean isAll (TdApi.ChatEventLogFilters filters) {
     return filters == null || (
       filters.messageEdits &&
@@ -886,21 +926,19 @@ public class TD {
     return message != null && message.schedulingState != null;
   }
 
-  public static TdApi.PhotoSize toThumbnailSize (TdApi.Thumbnail thumbnail) {
-    if (thumbnail == null)
+  public static TdApi.ChatPhotoInfo toChatPhotoInfo (TdApi.Photo photo) {
+    if (photo == null)
       return null;
-    switch (thumbnail.format.getConstructor()) {
-      case TdApi.ThumbnailFormatJpeg.CONSTRUCTOR:
-      case TdApi.ThumbnailFormatPng.CONSTRUCTOR:
-      case TdApi.ThumbnailFormatWebp.CONSTRUCTOR: {
-        int maxSize = Math.max(thumbnail.width, thumbnail.height);
-        String type = maxSize <= 100 ? "s" : maxSize <= 320 ? "m" : "x";
-        return new TdApi.PhotoSize(type, thumbnail.file, thumbnail.width, thumbnail.height, null);
-      }
-      default: {
-        return null;
-      }
+    TdApi.PhotoSize smallest = findSmallest(photo, null);
+    TdApi.PhotoSize biggest = findSmallest(photo, smallest);
+    if (smallest == null) {
+      return null;
     }
+    return new TdApi.ChatPhotoInfo(smallest.photo, biggest != null ? biggest.photo : smallest.photo, photo.minithumbnail, false, false);
+  }
+
+  public static TdApi.PhotoSize toThumbnailSize (TdApi.Thumbnail thumbnail) {
+    return Td.toPhotoSize(thumbnail);
   }
 
   public static boolean needThemedColorFilter (TdApi.Sticker sticker) {
@@ -971,27 +1009,14 @@ public class TD {
   public static TdApi.Photo convertToPhoto (TdApi.Document document, @Nullable BitmapFactory.Options options, boolean isRotated) {
     Size size = getFinalResolution(document, options, isRotated);
     TdApi.PhotoSize thumbnailSize = toThumbnailSize(document.thumbnail);
-    TdApi.PhotoSize[] sizes = new TdApi.PhotoSize[thumbnailSize != null ? 2 : 1];
     TdApi.PhotoSize targetSize = new TdApi.PhotoSize("w", document.document, size.getWidth(), size.getHeight(), null);
-    if (thumbnailSize != null) {
-      sizes[0] = thumbnailSize;
-      sizes[1] = targetSize;
-    } else {
-      sizes[0] = targetSize;
-    }
-    return new TdApi.Photo(false, null, sizes);
+    return Td.toPhoto(thumbnailSize, targetSize);
   }
 
   public static TdApi.Photo convertToPhoto (TdApi.Sticker sticker) {
     TdApi.PhotoSize thumbnailSize = toThumbnailSize(sticker.thumbnail);
-    TdApi.PhotoSize[] sizes = new TdApi.PhotoSize[thumbnailSize != null ? 2 : 1];
-    if (thumbnailSize != null) {
-      sizes[0] = thumbnailSize;
-      sizes[1] = new TdApi.PhotoSize("w", sticker.sticker, sticker.width, sticker.height, null);
-    } else {
-      sizes[0] = new TdApi.PhotoSize("w", sticker.sticker, sticker.width, sticker.height, null);
-    }
-    return new TdApi.Photo(false, null, sizes);
+    TdApi.PhotoSize targetSize = new TdApi.PhotoSize("w", sticker.sticker, sticker.width, sticker.height, null);
+    return Td.toPhoto(thumbnailSize, targetSize);
   }
 
   public static boolean isMultiChat (TdApi.Chat chat) {
@@ -1040,28 +1065,6 @@ public class TD {
     return TimeUnit.SECONDS.toDays(muteForSeconds) / 365 > 0;
   }
 
-  public static boolean canSendToSecretChat (TdApi.MessageContent content) {
-    //noinspection SwitchIntDef
-    switch (content.getConstructor()) {
-      case TdApi.MessagePoll.CONSTRUCTOR:
-      case TdApi.MessageGame.CONSTRUCTOR:
-      case TdApi.MessageStory.CONSTRUCTOR:
-      case TdApi.MessageInvoice.CONSTRUCTOR:
-      case TdApi.MessageDice.CONSTRUCTOR:
-      case TdApi.MessagePremiumGiveaway.CONSTRUCTOR:
-      case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
-      case TdApi.MessagePremiumGiveawayCreated.CONSTRUCTOR:
-      case TdApi.MessagePremiumGiveawayCompleted.CONSTRUCTOR:
-      case TdApi.MessagePremiumGiveawayWinners.CONSTRUCTOR: {
-        return false;
-      }
-      default: {
-        Td.assertMessageContent_d40af239();
-      }
-    }
-    return true;
-  }
-
   public static int getViewCount (TdApi.MessageInteractionInfo interactionInfo) {
     return interactionInfo != null ? interactionInfo.viewCount : 0;
   }
@@ -1079,57 +1082,155 @@ public class TD {
     return user != null && user.type.getConstructor() == TdApi.UserTypeRegular.CONSTRUCTOR;
   }
 
-  public static TdApi.InputMessageContent toInputMessageContent (String filePath, TdApi.InputFile inputFile, @NonNull FileInfo info, TdApi.FormattedText caption, boolean hasSpoiler) {
-    return toInputMessageContent(filePath, inputFile, info, caption, true, true, true, true, hasSpoiler);
+  public static TdApi.InputMessageContent toInputMessageContent (TdApi.FormattedText caption, InlineResult<?> result, boolean showCaptionAboveMedia, boolean hasSpoiler, boolean allowDocument, boolean allowAudio, boolean allowVideo, boolean allowAnimation) {
+    if (result.getType() == InlineResult.TYPE_AUDIO) {
+      final MediaBottomFilesController.MusicEntry musicFile = (MediaBottomFilesController.MusicEntry) ((InlineResultCommon) result).getTag();
+      if (allowAudio) {
+        return new TdApi.InputMessageAudio(TD.createInputFile(musicFile.getPath(), musicFile.getMimeType()), null, (int) (musicFile.getDuration() / 1000L), musicFile.getTitle(), musicFile.getArtist(), caption);
+      } else if (allowDocument) {
+        return new TdApi.InputMessageDocument(TD.createInputFile(musicFile.getPath(), musicFile.getMimeType()), null, true, caption);
+      }
+    } else if (result.getType() == InlineResult.TYPE_DOCUMENT) {
+      final String path = result.getId();
+      final TD.FileInfo info = new TD.FileInfo();
+      final TdApi.InputFile inputFile = TD.createInputFile(path, null, info);
+      return TD.toInputMessageContent(path, inputFile, info, caption, allowAudio, allowAnimation, allowVideo, allowDocument, showCaptionAboveMedia, hasSpoiler);
+    }
+    return null;
   }
 
-  public static TdApi.InputMessageContent toInputMessageContent (String filePath, TdApi.InputFile inputFile, @NonNull FileInfo info, TdApi.FormattedText caption, boolean allowAudio, boolean allowAnimation, boolean allowVideo, boolean allowDocs, boolean hasSpoiler) {
+  public static TdApi.InputMessageContent toInputMessageContent (String filePath, TdApi.InputFile inputFile, @NonNull FileInfo info, TdApi.FormattedText caption, boolean showCaptionAboveMedia, boolean hasSpoiler) {
+    return toInputMessageContent(filePath, inputFile, info, caption, true, true, true, true, showCaptionAboveMedia, hasSpoiler);
+  }
+
+  public static TdApi.InputMessageContent toInputMessageContent (String filePath, TdApi.InputFile inputFile, @NonNull FileInfo info, TdApi.FormattedText caption, boolean allowAudio, boolean allowAnimation, boolean allowVideo, boolean allowDocs, boolean showCaptionAboveMedia, boolean hasSpoiler) {
     if (!StringUtils.isEmpty(info.mimeType)) {
-      if (allowAudio && info.mimeType.startsWith("audio/") && !info.mimeType.equals("audio/ogg")) {
+      boolean isContent = filePath.startsWith("content://");
+      boolean isAudio = info.mimeType.startsWith("audio/") && !info.mimeType.equals("audio/ogg");
+      boolean isVideo = info.mimeType.startsWith("video/");
+      boolean isPhoto = info.mimeType.startsWith("image/");
+
+      if (isAudio && allowAudio) {
+        // TODO rework U.MediaMetadata to support audio
         String title = null, performer = null;
-        int duration = 0;
-        MediaMetadataRetriever retriever;
-        try {
-          retriever = U.openRetriever(filePath);
-        } catch (Throwable ignored) {
-          retriever = null;
-        }
-        if (retriever != null) {
+        long durationMs = 0;
+
+        if (isContent) {
+          Uri uri = Uri.parse(filePath);
+          List<String> columns = new ArrayList<>();
+          columns.add(MediaStore.MediaColumns.TITLE);
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            columns.add(MediaStore.MediaColumns.DURATION);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+              columns.add(MediaStore.MediaColumns.ARTIST);
+              columns.add(MediaStore.MediaColumns.AUTHOR);
+            }
+          }
+
+          try (Cursor c = UI.getContext().getContentResolver().query(uri, columns.toArray(new String[0]), null, null, null)) {
+            if (c != null && c.moveToFirst()) {
+              title = c.getString(0);
+              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                durationMs = c.getLong(1);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                  performer = c.getString(2);
+                  if (StringUtils.isEmpty(performer)) {
+                    performer = c.getString(3);
+                  }
+                }
+              }
+              return new TdApi.InputMessageAudio(inputFile, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), title, performer, caption);
+            }
+          } catch (Throwable t) {
+            Log.w("Unable to fetch audio information", t);
+          }
+        } else {
+          MediaMetadataRetriever retriever;
           try {
-            duration = StringUtils.parseInt(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)) / 1000;
-            title = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
-            performer = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
-            if (StringUtils.isEmpty(performer)) {
-              performer = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_AUTHOR);
-            }
-          } finally {
-            U.closeRetriever(retriever);
+            retriever = U.openRetriever(filePath);
+          } catch (Throwable ignored) {
+            retriever = null;
           }
+          if (retriever != null) {
+            try {
+              durationMs = StringUtils.parseLong(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION));
+              title = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
+              performer = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
+              if (StringUtils.isEmpty(performer)) {
+                performer = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_AUTHOR);
+              }
+            } finally {
+              U.closeRetriever(retriever);
+            }
+          }
+          return new TdApi.InputMessageAudio(inputFile, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), title, performer, caption);
         }
-        return new TdApi.InputMessageAudio(inputFile, null, duration, title, performer, caption);
       }
-      if (info.mimeType.startsWith("video/")) {
-        try {
-          U.MediaMetadata metadata = U.getMediaMetadata(filePath);
-          if (metadata != null) {
-            int durationSeconds = (int) metadata.getDuration(TimeUnit.SECONDS);
-            if (metadata.hasVideo) {
-              int videoWidth = metadata.width;
-              int videoHeight = metadata.height;
-              if (U.isRotated(metadata.rotation)) {
-                int temp = videoWidth;
-                videoWidth = videoHeight;
-                videoHeight = temp;
+      if (isVideo && (allowVideo || allowAnimation)) {
+        long durationMs = 0;
+
+        if (isContent) {
+          Uri uri = Uri.parse(filePath);
+          List<String> columns = new ArrayList<>();
+          columns.add(MediaStore.MediaColumns.WIDTH);
+          columns.add(MediaStore.MediaColumns.HEIGHT);
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            columns.add(MediaStore.MediaColumns.ORIENTATION);
+            columns.add(MediaStore.MediaColumns.DURATION);
+            columns.add(MediaStore.MediaColumns.NUM_TRACKS);
+          }
+
+          try (Cursor c = UI.getContext().getContentResolver().query(uri, columns.toArray(new String[0]), null, null, null)) {
+            if (c != null && c.moveToFirst()) {
+              int width = c.getInt(0);
+              int height = c.getInt(1);
+              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                int orientation = c.getInt(2);
+                durationMs = c.getLong(3);
+                int numTracks = c.getInt(4);
+
+                if (U.isRotated(orientation)) {
+                  int temp = width;
+                  width = height;
+                  height = temp;
+                }
+
+                if (allowAnimation && durationMs < TimeUnit.SECONDS.toMillis(30) && info.knownSize < ByteUnit.MB.toBytes(10) && numTracks == 1) {
+                  return new TdApi.InputMessageAnimation(inputFile, null, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), width, height, caption, showCaptionAboveMedia, hasSpoiler);
+                } else if (allowVideo && durationMs > 0) {
+                  return new TdApi.InputMessageVideo(inputFile, null, null, 0, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), width, height, U.canStreamVideo(inputFile), caption, showCaptionAboveMedia, null, hasSpoiler);
+                }
               }
-              if (allowAnimation && durationSeconds < 30 && info.knownSize < ByteUnit.MB.toBytes(10) && !metadata.hasAudio) {
-                return new TdApi.InputMessageAnimation(inputFile, null, null, durationSeconds, videoWidth, videoHeight, caption, hasSpoiler);
-              } else if (allowVideo && durationSeconds > 0) {
-                return new TdApi.InputMessageVideo(inputFile, null, null, durationSeconds, videoWidth, videoHeight, U.canStreamVideo(inputFile), caption, null, hasSpoiler);
+              if (width > 0 && height > 0 && allowVideo) {
+                return new TdApi.InputMessageVideo(inputFile, null, null, 0, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), width, height, U.canStreamVideo(inputFile), caption, showCaptionAboveMedia, null, hasSpoiler);
               }
             }
+          } catch (Throwable t) {
+            Log.w("Unable to fetch audio information", t);
           }
-        } catch (Throwable t) {
-          Log.w("Cannot extract media metadata", t);
+        } else {
+          try {
+            U.MediaMetadata metadata = U.getMediaMetadata(filePath);
+            if (metadata != null) {
+              durationMs = metadata.getDuration(TimeUnit.MILLISECONDS);
+              if (metadata.hasVideo) {
+                int videoWidth = metadata.width;
+                int videoHeight = metadata.height;
+                if (U.isRotated(metadata.rotation)) {
+                  int temp = videoWidth;
+                  videoWidth = videoHeight;
+                  videoHeight = temp;
+                }
+                if (allowAnimation && durationMs < TimeUnit.SECONDS.toMillis(30) && info.knownSize < ByteUnit.MB.toBytes(10) && !metadata.hasAudio) {
+                  return new TdApi.InputMessageAnimation(inputFile, null, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), videoWidth, videoHeight, caption, showCaptionAboveMedia, hasSpoiler);
+                } else if (allowVideo && durationMs > 0) {
+                  return new TdApi.InputMessageVideo(inputFile, null, null, 0, null, (int) TimeUnit.MILLISECONDS.toSeconds(durationMs), videoWidth, videoHeight, U.canStreamVideo(inputFile), caption, showCaptionAboveMedia, null, hasSpoiler);
+                }
+              }
+            }
+          } catch (Throwable t) {
+            Log.w("Cannot extract media metadata", t);
+          }
         }
       }
     }
@@ -1148,6 +1249,24 @@ public class TD {
   }
 
   public static boolean hasRestrictions (TdApi.ChatPermissions a, TdApi.ChatPermissions defaultPermissions) {
+    if (Config.COMPILE_CHECK) {
+      new TdApi.ChatPermissions(
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      );
+    }
     return
       (a.canSendBasicMessages != defaultPermissions.canSendBasicMessages && defaultPermissions.canSendBasicMessages) ||
       (a.canSendAudios != defaultPermissions.canSendAudios && defaultPermissions.canSendAudios) ||
@@ -1157,11 +1276,12 @@ public class TD {
       (a.canSendVoiceNotes != defaultPermissions.canSendVoiceNotes && defaultPermissions.canSendVoiceNotes) ||
       (a.canSendVideoNotes != defaultPermissions.canSendVideoNotes && defaultPermissions.canSendVideoNotes) ||
       (a.canSendOtherMessages != defaultPermissions.canSendOtherMessages && defaultPermissions.canSendOtherMessages) ||
-      (a.canAddWebPagePreviews != defaultPermissions.canAddWebPagePreviews && defaultPermissions.canAddWebPagePreviews) ||
+      (a.canAddLinkPreviews != defaultPermissions.canAddLinkPreviews && defaultPermissions.canAddLinkPreviews) ||
       (a.canSendPolls != defaultPermissions.canSendPolls && defaultPermissions.canSendPolls) ||
       (a.canInviteUsers != defaultPermissions.canInviteUsers && defaultPermissions.canInviteUsers) ||
       (a.canPinMessages != defaultPermissions.canPinMessages && defaultPermissions.canPinMessages) ||
-      (a.canChangeInfo != defaultPermissions.canChangeInfo && defaultPermissions.canChangeInfo);
+      (a.canChangeInfo != defaultPermissions.canChangeInfo && defaultPermissions.canChangeInfo) ||
+      (a.canCreateTopics != defaultPermissions.canCreateTopics && defaultPermissions.canCreateTopics);
   }
 
   public static int getCombineMode (TdApi.Message message) {
@@ -1319,6 +1439,7 @@ public class TD {
     int ruleType = privacy.getMode();
     int minus = privacy.getMinusTotalCount(tdlib);
     int plus = privacy.getPlusTotalCount(tdlib);
+    boolean plusPremium = privacy.needPlusPremium();
 
     int nobodyExceptRes, nobodyRes;
     int contactsExceptRes, contactsRes;
@@ -1347,8 +1468,16 @@ public class TD {
         everybodyExceptRes = R.string.PrivacyShowBioEverybodyExcept;
         everybodyRes = R.string.PrivacyShowBioEverybody;
         break;
+      case TdApi.UserPrivacySettingShowBirthdate.CONSTRUCTOR:
+        nobodyExceptRes = R.string.PrivacyShowBirthdateNobodyExcept;
+        nobodyRes = R.string.PrivacyShowBirthdateNobody;
+        contactsExceptRes = R.string.PrivacyShowBirthdateContactsExcept;
+        contactsRes = R.string.PrivacyShowBirthdateContacts;
+        everybodyExceptRes = R.string.PrivacyShowBirthdateEverybodyExcept;
+        everybodyRes = R.string.PrivacyShowBirthdateEverybody;
+        break;
       case TdApi.UserPrivacySettingAllowChatInvites.CONSTRUCTOR:
-        nobodyExceptRes = R.string.PrivacyAddToGroupsNobodyExcept;
+        nobodyExceptRes =  R.string.PrivacyAddToGroupsNobodyExcept;
         nobodyRes = R.string.PrivacyAddToGroupsNobody;
         contactsExceptRes = R.string.PrivacyAddToGroupsContactsExcept;
         contactsRes = R.string.PrivacyAddToGroupsContacts;
@@ -1408,22 +1537,30 @@ public class TD {
         everybodyExceptRes = R.string.PrivacyVoiceVideoEverybodyExcept;
         everybodyRes = R.string.PrivacyVoiceVideoEverybody;
         break;
+      case TdApi.UserPrivacySettingAutosaveGifts.CONSTRUCTOR:
+        nobodyExceptRes = R.string.PrivacyGiftsNobodyExcept;
+        nobodyRes = R.string.PrivacyGiftsNobody;
+        contactsExceptRes = R.string.PrivacyGiftsContactsExcept;
+        contactsRes = R.string.PrivacyGiftsContacts;
+        everybodyExceptRes = R.string.PrivacyGiftsEverybodyExcept;
+        everybodyRes = R.string.PrivacyGiftsEverybody;
+        break;
       default:
-        Td.assertUserPrivacySetting_21d3f4();
+        Td.assertUserPrivacySetting_99ac9ff();
         throw new UnsupportedOperationException(Integer.toString(privacyKey));
     }
 
     int res, exceptRes;
     switch (ruleType) {
-      case PrivacySettings.MODE_NOBODY:
+      case PrivacySettings.Mode.NOBODY:
         res = nobodyRes;
         exceptRes = nobodyExceptRes;
         break;
-      case PrivacySettings.MODE_CONTACTS:
+      case PrivacySettings.Mode.CONTACTS:
         res = contactsRes;
         exceptRes = contactsExceptRes;
         break;
-      case PrivacySettings.MODE_EVERYBODY:
+      case PrivacySettings.Mode.EVERYBODY:
         res = everybodyRes;
         exceptRes = everybodyExceptRes;
         break;
@@ -1434,6 +1571,11 @@ public class TD {
     String exception = plus > 0 && minus > 0 ? Lang.getString(R.string.format_minusPlus, minus, plus) :
                        minus > 0 ? Lang.getString(R.string.format_minus, minus) :
                        plus > 0 ? Lang.getString(R.string.format_plus, plus) : null;
+    if (plusPremium) {
+      exception = exception != null ?
+        Lang.getString(R.string.format_exceptionPlusPremium, exception) :
+        Lang.getString(R.string.format_plusPremium);
+    }
     if (exception != null) {
       return exceptRes != 0 ? Lang.getString(exceptRes, exception) : Lang.getString(res) + " " + exception;
     } else {
@@ -1454,8 +1596,8 @@ public class TD {
     return type.getConstructor() == TdApi.ChatTypeSecret.CONSTRUCTOR;
   }
 
-  public static boolean hasInstantView (TdApi.WebPage webPage) {
-    return webPage != null && hasInstantView(webPage.instantViewVersion);
+  public static boolean hasInstantView (TdApi.LinkPreview linkPreview) {
+    return linkPreview != null && hasInstantView(linkPreview.instantViewVersion);
   }
 
   public static boolean hasInstantView (int version) {
@@ -1555,6 +1697,18 @@ public class TD {
       return "User#" + userId;
     }
     return getFirstName(user);
+  }
+
+  @Nullable
+  public static String getShorterUserNameOrNull (String firstName, String lastName) {
+    if (!StringUtils.isEmpty(firstName) && !StringUtils.isEmpty(lastName) && firstName.codePointCount(0, firstName.length()) > 1) {
+      return new StringBuilder()
+        .appendCodePoint(firstName.codePointAt(0))
+        .append(". ")
+        .append(lastName)
+        .toString();
+    }
+    return null;
   }
 
   public static Letters getLetters () {
@@ -1911,7 +2065,7 @@ public class TD {
   }
 
   public static TdApi.InputMessageAnimation toInputMessageContent (TdApi.Animation animation) {
-    return new TdApi.InputMessageAnimation(new TdApi.InputFileId(animation.animation.id), null, null, animation.duration, animation.width, animation.height, null, false);
+    return new TdApi.InputMessageAnimation(new TdApi.InputFileId(animation.animation.id), null, null, animation.duration, animation.width, animation.height, null, false, false);
   }
 
   public static TdApi.InputMessageAudio toInputMessageContent (TdApi.Audio audio) {
@@ -1959,17 +2113,10 @@ public class TD {
       TdlibAccentColor.defaultAccentColorIdForUserId(userId), 0,
       0, 0,
       null,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      null,
-      false,
-      false,
+      false, false, false,
+      null, false, false,
+      "", false, false,
       false, false,
-      true,
       new TdApi.UserTypeRegular(),
       null,
       false
@@ -2018,36 +2165,28 @@ public class TD {
     return entity.length;
   }
 
-  public static int getCodeLength (TdApi.AuthorizationState state) {
+  public static int codeLength (TdApi.AuthorizationState state, int fallbackCodeLength) {
     if (state != null) {
       switch (state.getConstructor()) {
-        case TdApi.AuthorizationStateWaitCode.CONSTRUCTOR:
-          return Td.codeLength(((TdApi.AuthorizationStateWaitCode) state).codeInfo.type, TdConstants.DEFAULT_CODE_LENGTH);
-        case TdApi.AuthorizationStateWaitEmailCode.CONSTRUCTOR:
-          return getCodeLength(((TdApi.AuthorizationStateWaitEmailCode) state).codeInfo);
+        case TdApi.AuthorizationStateWaitCode.CONSTRUCTOR: {
+          TdApi.AuthorizationStateWaitCode waitCode = (TdApi.AuthorizationStateWaitCode) state;
+          return Td.codeLength(waitCode.codeInfo.type, fallbackCodeLength);
+        }
+        case TdApi.AuthorizationStateWaitEmailCode.CONSTRUCTOR: {
+          TdApi.AuthorizationStateWaitEmailCode waitEmailCode = (TdApi.AuthorizationStateWaitEmailCode) state;
+          return codeLength(waitEmailCode.codeInfo, fallbackCodeLength);
+        }
+        default: {
+          Td.assertAuthorizationState_6e5056de();
+          break;
+        }
       }
     }
-    return TdConstants.DEFAULT_CODE_LENGTH;
+    return fallbackCodeLength;
   }
 
-  public static int getCodeLength (TdApi.EmailAddressAuthenticationCodeInfo info) {
-    return info.length == 0 ? 6 : info.length;
-  }
-
-  public static int getCodeLength (TdApi.AuthenticationCodeType info) {
-    switch (info.getConstructor()) {
-      case TdApi.AuthenticationCodeTypeCall.CONSTRUCTOR:
-        return ((TdApi.AuthenticationCodeTypeCall) info).length;
-      case TdApi.AuthenticationCodeTypeSms.CONSTRUCTOR:
-        return ((TdApi.AuthenticationCodeTypeSms) info).length;
-      case TdApi.AuthenticationCodeTypeTelegramMessage.CONSTRUCTOR:
-        return ((TdApi.AuthenticationCodeTypeTelegramMessage) info).length;
-      case TdApi.AuthenticationCodeTypeMissedCall.CONSTRUCTOR:
-        return ((TdApi.AuthenticationCodeTypeMissedCall) info).length;
-      /*case TdApi.AuthenticationCodeTypeFlashCall.CONSTRUCTOR:
-        return ((TdApi.AuthenticationCodeTypeFlashCall) info).pattern;*/
-    }
-    return TdConstants.DEFAULT_CODE_LENGTH;
+  public static int codeLength (TdApi.EmailAddressAuthenticationCodeInfo info, int fallbackCodeLength) {
+    return info.length != 0 ? info.length : fallbackCodeLength;
   }
 
   public static boolean isFileEmpty (TdApi.File file) {
@@ -2131,8 +2270,8 @@ public class TD {
   }
 
   public static String findLink (TdApi.MessageText text) {
-    if (text.webPage != null) {
-      return text.webPage.url;
+    if (text.linkPreview != null) {
+      return text.linkPreview.url;
     }
     if (text.text.entities == null) {
       return null;
@@ -2190,6 +2329,7 @@ public class TD {
   public static final String ERROR_USER_CHANNELS_TOO_MUCH = "USER_CHANNELS_TOO_MUCH";
   public static final String ERROR_CHANNELS_ADMIN_PUBLIC_TOO_MUCH = "CHANNELS_ADMIN_PUBLIC_TOO_MUCH";
   public static final String ERROR_CHANNELS_ADMIN_LOCATED_TOO_MUCH = "CHANNELS_ADMIN_LOCATED_TOO_MUCH";
+  public static final String ERROR_CHATLISTS_TOO_MUCH = "CHATLISTS_TOO_MUCH";
 
   public static @Nullable String translateError (int code, String message) {
     if (StringUtils.isEmpty(message)) {
@@ -2228,6 +2368,8 @@ public class TD {
       case "PEER_FLOOD": res = R.string.NobodyLikesSpam2; break;
       case "STICKERSET_INVALID": res = R.string.error_STICKERSET_INVALID; break;
       case "CHANNELS_TOO_MUCH": res = R.string.error_CHANNELS_TOO_MUCH; break;
+      case ERROR_CHATLISTS_TOO_MUCH: res = R.string.error_CHATLISTS_TOO_MUCH; break;
+      case "INVITES_TOO_MUCH": res = R.string.error_INVITES_TOO_MUCH; break;
       case "BOTS_TOO_MUCH": res = R.string.error_BOTS_TOO_MUCH; break;
       case "ADMINS_TOO_MUCH": res = R.string.error_ADMINS_TOO_MUCH; break;
       case "Not enough rights to invite members to the group chat": res = R.string.YouCantInviteMembers; break;
@@ -2264,10 +2406,10 @@ public class TD {
     return defaultValue;
   }
 
-  public static SparseIntArray calculateCounters (Map<String, TdApi.Message> map) {
+  public static SparseIntArray calculateCounters (Map<String, MessageWithProperties> map) {
     SparseIntArray result = new SparseIntArray();
-    for (TdApi.Message message : map.values()) {
-      int constructor = message.content.getConstructor();
+    for (MessageWithProperties message : map.values()) {
+      int constructor = message.message.content.getConstructor();
       result.put(constructor, result.get(constructor) + 1);
     }
     return result;
@@ -2288,29 +2430,11 @@ public class TD {
   }
 
   public static long getChatId (TdApi.Message[] messages) {
-    if (messages != null && messages.length > 0) {
-      long chatId = messages[0].chatId;
-      for (TdApi.Message message : messages) {
-        if (message.chatId != chatId) {
-          return 0;
-        }
-      }
-      return chatId;
-    }
-    return 0;
+    return Td.findUniqueChatId(messages);
   }
 
   public static TdApi.MessageSender getSender (TdApi.Message[] messages) {
-    if (messages != null && messages.length > 0) {
-      TdApi.MessageSender sender = messages[0].senderId;
-      for (TdApi.Message message : messages) {
-        if (!Td.equalsTo(sender, message.senderId)) {
-          return null;
-        }
-      }
-      return sender;
-    }
-    return null;
+    return Td.findUniqueSenderId(messages);
   }
 
   public static LongSparseArray<long[]> getMessageIds (TdApi.Message[] messages) {
@@ -2319,11 +2443,12 @@ public class TD {
     long chatId = 0;
     int remainingCount = messages.length;
     for (TdApi.Message message : messages) {
-      if (message.chatId != chatId) {
+      if (message.chatId != chatId || list == null) {
         chatId = message.chatId;
         list = temp.get(chatId);
         if (list == null) {
-          temp.put(chatId, list = new LongList(remainingCount));
+          list = new LongList(remainingCount);
+          temp.put(chatId, list);
         }
       }
       list.append(message.id);
@@ -2836,14 +2961,6 @@ public class TD {
     return false;
   }
 
-  public static boolean shouldInlineIv (TdApi.WebPage webPage) {
-    return "telegram_album".equals(webPage.type) || shouldInlineIv(webPage.displayUrl);
-  }
-
-  public static boolean shouldInlineIv (String url) {
-    return url.startsWith("instagram.com/") || url.startsWith("twitter.com/") || (url.startsWith("t.me/") && !url.startsWith("t.me/iv?"));
-  }
-
   public static File getCacheDir (boolean allowExternal) {
     File dir = null;
     if (allowExternal) {
@@ -3101,6 +3218,10 @@ public class TD {
     return false;
   }
 
+  public static boolean canEditBot (@Nullable TdApi.User user) {
+    return isBot(user) && ((TdApi.UserTypeBot) user.type).canBeEdited;
+  }
+
   public static boolean isChannel (TdApi.ChatType type) {
     return type != null && type.getConstructor() == TdApi.ChatTypeSupergroup.CONSTRUCTOR && ((TdApi.ChatTypeSupergroup) type).isChannel;
   }
@@ -3235,9 +3356,9 @@ public class TD {
     return findSmallest(photo.sizes, ignoreSize);
   }
 
-  public static @Nullable TdApi.PhotoSize findSmallest (TdApi.PhotoSize[] sizes, TdApi.PhotoSize ignoreSize) {
+  public static @Nullable TdApi.PhotoSize findSmallest (TdApi.PhotoSize[] sizes, @Nullable TdApi.PhotoSize ignoreSize) {
     if (sizes.length == 1) {
-      if (ignoreSize.width == sizes[0].width && ignoreSize.height == sizes[0].height && ignoreSize.photo.id == sizes[0].photo.id) {
+      if (ignoreSize != null && ignoreSize.width == sizes[0].width && ignoreSize.height == sizes[0].height && ignoreSize.photo.id == sizes[0].photo.id) {
         return null;
       }
       return sizes[0];
@@ -3246,7 +3367,7 @@ public class TD {
     int w = 0, h = 0;
     boolean first = true;
     for (TdApi.PhotoSize size : sizes) {
-      if (size.width == ignoreSize.width && size.height == ignoreSize.height && size.photo.id == ignoreSize.photo.id) {
+      if (ignoreSize != null && size.width == ignoreSize.width && size.height == ignoreSize.height && size.photo.id == ignoreSize.photo.id) {
         continue;
       }
       if (first || size.width < w || size.height < h) {
@@ -3345,15 +3466,6 @@ public class TD {
       }
     }
     return result;
-  }
-
-  public static TdApi.File getWebPagePreviewImage (TdApi.WebPage page) {
-    if (isPhotoEmpty(page.photo)) {
-      return null;
-    }
-    int size = Screen.dp(34f);
-    TdApi.PhotoSize photoSize = TD.findClosest(page.photo, size, size);
-    return photoSize == null ? null : photoSize.photo;
   }
 
   public static boolean canCopy (String caption) {
@@ -3456,79 +3568,63 @@ public class TD {
 
   public static String getTextFromMessageSpoilerless (TdApi.MessageContent content) {
     TdApi.FormattedText formattedText = Td.textOrCaption(content);
-    return formattedText != null ? TD.toCharSequence(formattedText, false, false).toString() : null;
+    return formattedText != null ? TD.toCharSequence(formattedText, TextEntityOption.NONE, false).toString() : null;
   }
 
-  public static @TdApi.MessageContent.Constructors int convertToMessageContent (TdApi.WebPage webPage) {
-    if (webPage == null)
-      return TdApi.MessageText.CONSTRUCTOR;
-    if (webPage.sticker != null)
-      return TdApi.MessageSticker.CONSTRUCTOR;
-    if (webPage.video != null)
-      return TdApi.MessageVideo.CONSTRUCTOR;
-    if (webPage.animation != null)
-      return TdApi.MessageAnimation.CONSTRUCTOR;
-    if (webPage.audio != null)
-      return TdApi.MessageAudio.CONSTRUCTOR;
-    if (webPage.document != null)
-      return TdApi.MessageDocument.CONSTRUCTOR;
-    if (webPage.photo != null)
-      return TdApi.MessagePhoto.CONSTRUCTOR;
-    return TdApi.MessageText.CONSTRUCTOR;
-  }
-
-  public static @Nullable TdApi.File getFile (TdApi.WebPage webPage) {
-    if (webPage == null)
+  public static @Nullable TdApi.File getFile (TdApi.LinkPreview linkPreview) {
+    if (linkPreview == null)
       return null;
-    if (webPage.sticker != null)
-      return webPage.sticker.sticker;
-    if (webPage.video != null)
-      return webPage.video.video;
-    if (webPage.animation != null)
-      return webPage.animation.animation;
-    if (webPage.audio != null)
-      return webPage.audio.audio;
-    if (webPage.document != null)
-      return webPage.document.document;
-    if (webPage.photo != null)
-      return getFile(webPage.photo);
+    if (Td.getSticker(linkPreview.type) != null)
+      return Td.getSticker(linkPreview.type).sticker;
+    if (Td.getVideo(linkPreview.type) != null)
+      return Td.getVideo(linkPreview.type).video;
+    if (Td.getAnimation(linkPreview.type) != null)
+      return Td.getAnimation(linkPreview.type).animation;
+    if (Td.getAudio(linkPreview.type) != null)
+      return Td.getAudio(linkPreview.type).audio;
+    if (Td.getDocument(linkPreview.type) != null)
+      return Td.getDocument(linkPreview.type).document;
+    TdApi.Photo photo = Td.getPhoto(linkPreview.type);
+    if (photo != null)
+      return getFile(photo);
     return null;
   }
 
-  public static @Nullable String getMimeType (TdApi.WebPage webPage) {
-    if (webPage == null)
+  public static @Nullable String getMimeType (TdApi.LinkPreview linkPreview) {
+    if (linkPreview == null)
       return null;
-    if (webPage.sticker != null)
+    if (Td.getSticker(linkPreview.type) != null)
       return "image/webp";
-    if (webPage.video != null) {
-      String mimeType = webPage.video.mimeType;
+    if (Td.getVideo(linkPreview.type) != null) {
+      String mimeType = Td.getVideo(linkPreview.type).mimeType;
       if (StringUtils.isEmpty(mimeType) || !mimeType.startsWith("video/"))
         mimeType = "video/*";
       return mimeType;
     }
-    if (webPage.animation != null) {
-      String mimeType = webPage.animation.mimeType;
+    if (Td.getAnimation(linkPreview.type) != null) {
+      String mimeType = Td.getAnimation(linkPreview.type).mimeType;
       if (StringUtils.isEmpty(mimeType) || !(mimeType.startsWith("video/") || mimeType.equals("image/gif")))
         mimeType = "video/*";
       return mimeType;
     }
-    if (webPage.audio != null) {
-      String mimeType = webPage.audio.mimeType;
+    if (Td.getAudio(linkPreview.type) != null) {
+      String mimeType = Td.getAudio(linkPreview.type).mimeType;
       if (StringUtils.isEmpty(mimeType) || !mimeType.startsWith("audio/"))
         mimeType = "audio/*";
       return mimeType;
     }
-    if (webPage.document != null) {
-      String mimeType = webPage.document.mimeType;
+    if (Td.getDocument(linkPreview.type) != null) {
+      TdApi.Document document = Td.getDocument(linkPreview.type);
+      String mimeType = document.mimeType;
       if (StringUtils.isEmpty(mimeType)) {
-        String extension = U.getExtension(webPage.document.fileName);
+        String extension = U.getExtension(document.fileName);
         mimeType = TGMimeType.mimeTypeForExtension(extension);
       }
       if (StringUtils.isEmpty(mimeType))
         return "application/octet-stream";
       return mimeType;
     }
-    if (webPage.photo != null)
+    if (Td.hasPhoto(linkPreview.type))
       return "image/jpeg";
     return null;
   }
@@ -3681,12 +3777,30 @@ public class TD {
     return size != null ? size.photo : null;
   }
 
+  public static @TdApi.MessageContent.Constructors int convertToMessageContent (TdApi.LinkPreview linkPreview) {
+    if (linkPreview == null)
+      return TdApi.MessageText.CONSTRUCTOR;
+    if (Td.getSticker(linkPreview.type) != null)
+      return TdApi.MessageSticker.CONSTRUCTOR;
+    if (Td.getVideo(linkPreview.type) != null)
+      return TdApi.MessageVideo.CONSTRUCTOR;
+    if (Td.getAnimation(linkPreview.type) != null)
+      return TdApi.MessageAnimation.CONSTRUCTOR;
+    if (Td.getAudio(linkPreview.type) != null)
+      return TdApi.MessageAudio.CONSTRUCTOR;
+    if (Td.getDocument(linkPreview.type) != null)
+      return TdApi.MessageDocument.CONSTRUCTOR;
+    if (Td.hasPhoto(linkPreview.type))
+      return TdApi.MessagePhoto.CONSTRUCTOR;
+    return TdApi.MessageText.CONSTRUCTOR;
+  }
+
   public static boolean isHeavyContent (TdApi.Message message) {
     if (message == null)
       return false;
     @TdApi.MessageContent.Constructors int constructor = message.content.getConstructor();
     if (constructor == TdApi.MessageText.CONSTRUCTOR) {
-      constructor = convertToMessageContent(((TdApi.MessageText) message.content).webPage);
+      constructor = convertToMessageContent(((TdApi.MessageText) message.content).linkPreview);
     }
     //noinspection SwitchIntDef
     switch (constructor) {
@@ -3741,7 +3855,7 @@ public class TD {
         return Td.findBiggest(((TdApi.MessageChatChangePhoto) msg.content).photo.sizes).photo;
       }
       case TdApi.MessageText.CONSTRUCTOR: {
-        return getFile(((TdApi.MessageText) msg.content).webPage);
+        return getFile(((TdApi.MessageText) msg.content).linkPreview);
       }
     }
     return null;
@@ -3786,7 +3900,7 @@ public class TD {
     }
     final String size = Strings.buildSize(totalSize);
     final long totalSizeFinal = totalSize;
-    context.showOptions(Lang.getString(files.length == 1 ? R.string.DeleteFileHint : R.string.DeleteMultipleFilesHint), new int[]{R.id.btn_deleteFile, R.id.btn_cancel}, new String[]{Lang.getString(R.string.ClearX, size), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+    context.showOptions(Lang.getString(files.length == 1 ? R.string.DeleteFileHint : R.string.DeleteMultipleFilesHint), new int[]{R.id.btn_deleteFile, R.id.btn_cancel}, new String[]{Lang.getString(R.string.ClearX, size), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OptionColor.RED, ViewController.OptionColor.NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_deleteFile) {
         TdlibManager.instance().player().stopPlaybackIfPlayingAnyOf(files);
         context.context().closeFilePip(files);
@@ -3920,15 +4034,15 @@ public class TD {
   public static @Nullable DownloadedFile getDownloadedFile (TGWebPage webPage) {
     if (webPage == null)
       return null;
-    TdApi.WebPage rawPage = webPage.getWebPage();
+    TdApi.LinkPreview rawLinkPreview = webPage.getLinkPreview();
     FileComponent component = webPage.getFileComponent();
     if (component != null) {
-      if (component.isAudio() && rawPage.audio != null) {
-        return TD.DownloadedFile.valueOf(rawPage.audio);
-      } else if (component.isVoice() && rawPage.voiceNote != null) {
-        return TD.DownloadedFile.valueOf(rawPage.voiceNote);
-      } else if (component.isDocument() && rawPage.document != null) {
-        return TD.DownloadedFile.valueOf(rawPage.document);
+      if (component.isAudio() && Td.getAudio(rawLinkPreview.type) != null) {
+        return TD.DownloadedFile.valueOf(Td.getAudio(rawLinkPreview.type));
+      } else if (component.isVoice() && Td.getVoiceNote(rawLinkPreview.type) != null) {
+        return TD.DownloadedFile.valueOf(Td.getVoiceNote(rawLinkPreview.type));
+      } else if (component.isDocument() && Td.getDocument(rawLinkPreview.type) != null) {
+        return TD.DownloadedFile.valueOf(Td.getDocument(rawLinkPreview.type));
       }
     }
     MediaWrapper wrapper = webPage.getMediaWrapper();
@@ -3938,33 +4052,34 @@ public class TD {
       } else if (wrapper.isVideo()) {
         return TD.DownloadedFile.valueOf(wrapper.getVideo());
       } else if (wrapper.isPhoto()) {
-        return TD.DownloadedFile.valueOfPhoto(wrapper.getTargetFile(), rawPage.sticker != null);
+        return TD.DownloadedFile.valueOfPhoto(wrapper.getTargetFile(), Td.getSticker(rawLinkPreview.type) != null);
       }
     }
 
     switch (webPage.getType()) {
       case TGWebPage.TYPE_GIF: {
-        if (rawPage.animation != null) {
-          return TD.DownloadedFile.valueOf(rawPage.animation);
+        if (Td.getAnimation(rawLinkPreview.type) != null) {
+          return TD.DownloadedFile.valueOf(Td.getAnimation(rawLinkPreview.type));
         }
         return null;
       }
       case TGWebPage.TYPE_VIDEO: {
-        if (rawPage.video != null) {
-          return TD.DownloadedFile.valueOf(rawPage.video);
+        if (Td.getVideo(rawLinkPreview.type) != null) {
+          return TD.DownloadedFile.valueOf(Td.getVideo(rawLinkPreview.type));
         }
         break;
       }
       case TGWebPage.TYPE_TELEGRAM_BACKGROUND: {
-        if (rawPage.document != null) {
-          return TD.DownloadedFile.valueOf(rawPage.document);
+        if (Td.getDocument(rawLinkPreview.type) != null) {
+          return TD.DownloadedFile.valueOf(Td.getDocument(rawLinkPreview.type));
         }
         return null;
       }
       case TGWebPage.TYPE_PHOTO: {
-        if (rawPage.photo != null) {
+        TdApi.Photo photo = Td.getPhoto(rawLinkPreview.type);
+        if (photo != null) {
           return TD.DownloadedFile.valueOfPhoto(webPage.getTargetFile(), false);
-        } else if (rawPage.sticker != null) {
+        } else if (Td.getSticker(rawLinkPreview.type) != null) {
           return TD.DownloadedFile.valueOfPhoto(webPage.getTargetFile(), true);
         }
         break;
@@ -4229,7 +4344,7 @@ public class TD {
       Log.w("getMarkdownText: %s", TD.toErrorString(error.error));
       return text.text;
     }
-    return toCharSequence(formattedText, true, true);
+    return toCharSequence(formattedText, TextEntityOption.ALLOW_INTERNAL, true);
   }
 
   private static HtmlTag toHtmlTag (TdApi.TextEntityType entityType) {
@@ -4250,6 +4365,8 @@ public class TD {
         return new HtmlTag("u");
       case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
         return new HtmlTag("blockquote");
+      case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR:
+        return new HtmlTag("details");
       case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
         return new HtmlTag(
           "<tg-user-mention data-user-id=\"" + ((TdApi.TextEntityTypeMentionName) entityType).userId + "\">",
@@ -4287,7 +4404,7 @@ public class TD {
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
         return null;
       default:
-        Td.assertTextEntityType_91234a79();
+        Td.assertTextEntityType_56c1e709();
         throw Td.unsupported(entityType);
     }
   }
@@ -4323,7 +4440,7 @@ public class TD {
         text.setSpan(span, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
       }
     };
-    return HtmlParser.fromHtml(htmlText, null, (opening, tag, output, xmlReader, attributes) -> {
+    CharSequence result = HtmlParser.fromHtml(htmlText, null, (opening, tag, output, xmlReader, attributes) -> {
       // <tg-user-mention data-user-id="ID">...</tg-user-mention>
       // <tg-pre-code data-language="LANG">...</tg-pre-code>
       // <animated-emoji data-document-id="ID">...</animated-emoji>
@@ -4349,11 +4466,17 @@ public class TD {
         } else if (tag.equalsIgnoreCase("tg-pre-code")) {
           String language = attributes.getValue("", "data-language");
           HtmlParser.start(output, new TdApi.TextEntityTypePreCode(language != null ? language : ""));
+        } else if (tag.equalsIgnoreCase("blockquote")) {
+          HtmlParser.start(output, new TdApi.TextEntityTypeBlockQuote());
+        } else if (tag.equalsIgnoreCase("details")) {
+          HtmlParser.start(output, new TdApi.TextEntityTypeExpandableBlockQuote());
         } else {
           return false;
         }
         return true;
       } else if (
+        tag.equalsIgnoreCase("blockquote") ||
+        tag.equalsIgnoreCase("details") ||
         tag.equalsIgnoreCase("tg-user-mention") ||
         tag.equalsIgnoreCase("animated-emoji") ||
         tag.equalsIgnoreCase("spoiler") ||
@@ -4367,47 +4490,60 @@ public class TD {
         return false;
       }
     });
+    if (result instanceof Editable) {
+      QuoteSpan.normalizeQuotes((Editable) result);
+    }
+
+    return result;
   }
 
   public static CharSequence toCopyText (TdApi.FormattedText text) {
     return toCharSequence(text);
   }
 
-  public static CharSequence toCharSequence (TdApi.FormattedText text) {
-    return toCharSequence(text, true, true);
+  public static CharSequence toCharSequence (TdApi.ChatFolderName name) {
+    return toCharSequence(name.text, TextEntityOption.ALLOW_INTERNAL | BitwiseUtils.optional(TextEntityOption.DISABLE_ANIMATIONS, !name.animateCustomEmoji), true);
   }
 
-  public static CharSequence toCharSequence (TdApi.FormattedText text, boolean allowInternal, boolean allowSpoilerContent) {
+  public static CharSequence toCharSequence (TdApi.FormattedText text) {
+    return toCharSequence(text, TextEntityOption.ALLOW_INTERNAL, true);
+  }
+
+  public static CharSequence toCharSequence (TdApi.FormattedText text, @TextEntityOption int options, boolean allowSpoilerContent) {
     if (text == null)
       return null;
     if (text.entities == null || text.entities.length == 0)
       return text.text;
     SpannableStringBuilder b = null;
     boolean hasSpoilers = false;
+
+    int offset = 0;
     for (TdApi.TextEntity entity : text.entities) {
+      final int entityOffset = entity.offset + offset;
       boolean isSpoiler = Td.isSpoiler(entity.type);
       if (isSpoiler) {
         hasSpoilers = true;
       }
-      Object span = isSpoiler && !allowSpoilerContent ? null : toSpan(entity.type, allowInternal);
+      Object span = isSpoiler && !allowSpoilerContent ? null : toSpan(entity.type, options);
       if (span != null) {
         if (b == null)
           b = new SpannableStringBuilder(text.text);
-        b.setSpan(span, entity.offset, entity.offset + entity.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        b.setSpan(span, entityOffset, entityOffset + entity.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
       }
     }
     if (!allowSpoilerContent && hasSpoilers) {
       StringBuilder builder = b != null ? null : new StringBuilder(text.text);
       for (int i = text.entities.length - 1; i >= 0; i--) {
         TdApi.TextEntity entity = text.entities[i];
+        final int entityOffset = entity.offset + offset;
         if (Td.isSpoiler(entity.type)) {
           String replacement = StringUtils.multiply(SPOILER_REPLACEMENT_CHAR, entity.length);
           if (b != null) {
-            b.delete(entity.offset, entity.offset + entity.length);
-            b.insert(entity.offset, replacement);
+            b.delete(entityOffset, entityOffset + entity.length);
+            b.insert(entityOffset, replacement);
           } else {
-            builder.delete(entity.offset, entity.offset + entity.length);
-            builder.insert(entity.offset, replacement);
+            builder.delete(entityOffset, entityOffset + entity.length);
+            builder.insert(entityOffset, replacement);
           }
         }
       }
@@ -4415,15 +4551,14 @@ public class TD {
         return builder.toString();
       }
     }
+    if (b != null) {
+      QuoteSpan.normalizeQuotesWithoutMerge(b);
+    }
     return b != null ? SpannableString.valueOf(b) : text.text;
   }
 
   public static Object toDisplaySpan (TdApi.TextEntityType type) {
     return toDisplaySpan(type, null, false);
-  }
-
-  public static Object tempToBlockQuoteSpan (boolean isDisplay, boolean needFakeBold) {
-    return new QuoteSpan(); // TODO
   }
 
   public static Object toDisplaySpan (TdApi.TextEntityType type, @Nullable Typeface defaultTypeface, boolean needFakeBold) {
@@ -4445,7 +4580,10 @@ public class TD {
         span = new CustomTypefaceSpan(Fonts.getRobotoItalic(), 0);
         break;
       case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
-        span = tempToBlockQuoteSpan(true, needFakeBold);
+        span = new QuoteSpan.EmptySpan(false);
+        break;
+      case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR:
+        span = new QuoteSpan.EmptySpan(true);
         break;
       case TdApi.TextEntityTypePre.CONSTRUCTOR:
       case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
@@ -4473,7 +4611,7 @@ public class TD {
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
         return null;
       default:
-        Td.assertTextEntityType_91234a79();
+        Td.assertTextEntityType_56c1e709();
         throw Td.unsupported(type);
     }
     if (span instanceof TdlibEntitySpan) {
@@ -4506,7 +4644,7 @@ public class TD {
   }
 
   public static Object toSpan (TdApi.TextEntityType type) {
-    return toSpan(type, true);
+    return toSpan(type, TextEntityOption.ALLOW_INTERNAL);
   }
 
   private static final String SPOILER_REPLACEMENT_CHAR = "▒";
@@ -4523,6 +4661,7 @@ public class TD {
       case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
       case TdApi.TextEntityTypePre.CONSTRUCTOR:
       case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
+      case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR:
       case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
       case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
       case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
@@ -4542,12 +4681,27 @@ public class TD {
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
         return false;
       default:
-        Td.assertTextEntityType_91234a79();
+        Td.assertTextEntityType_56c1e709();
         throw Td.unsupported(type);
     }
   }
 
-  public static Object toSpan (TdApi.TextEntityType type, boolean allowInternal) {
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef(value = {
+    TextEntityOption.NONE,
+    TextEntityOption.ALLOW_INTERNAL,
+    TextEntityOption.DISABLE_ANIMATIONS
+  }, flag = true)
+  public @interface TextEntityOption {
+    int NONE = 0;
+    int
+      ALLOW_INTERNAL = 1,
+      DISABLE_ANIMATIONS = 1 << 1;
+  }
+
+  public static Object toSpan (TdApi.TextEntityType type, @TextEntityOption int options) {
+    boolean allowInternal = BitwiseUtils.hasFlag(options, TextEntityOption.ALLOW_INTERNAL);
+    boolean forceDisableAnimations = BitwiseUtils.hasFlag(options, TextEntityOption.DISABLE_ANIMATIONS);
     if (type == null)
       return null;
     switch (type.getConstructor()) {
@@ -4575,9 +4729,11 @@ public class TD {
         }
         return null;
       case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
-        return new CustomEmojiId(((TdApi.TextEntityTypeCustomEmoji) type).customEmojiId);
+        return new CustomEmojiId(((TdApi.TextEntityTypeCustomEmoji) type).customEmojiId, forceDisableAnimations);
       case TdApi.TextEntityTypeBlockQuote.CONSTRUCTOR:
-        return tempToBlockQuoteSpan(false, false);
+        return new QuoteSpan.EmptySpan(false);
+      case TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR:
+        return new QuoteSpan.EmptySpan(true);
       // auto-detected entities
       case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
       case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
@@ -4590,14 +4746,69 @@ public class TD {
       case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
         return null;
       default:
-        Td.assertTextEntityType_91234a79();
+        Td.assertTextEntityType_56c1e709();
         throw Td.unsupported(type);
     }
+  }
+
+  public static Object[] toSpans (TextEntity entity, @TextEntityOption int options, boolean allowQuotes) {
+    if (entity == null) {
+      return null;
+    }
+
+    final ArrayList<Object> spans = new ArrayList<>();
+    if (entity.isBold()) {
+      spans.add(new StyleSpan(Typeface.BOLD));
+    }
+    if (entity.isItalic()) {
+      spans.add(new StyleSpan(Typeface.ITALIC));
+    }
+    if (entity.isMonospace()) {
+      spans.add(Fonts.FORCE_BUILTIN_MONO ? new TypefaceSpan(Fonts.getRobotoMono()) : new TypefaceSpan("monospace"));
+    }
+    if (entity.isStrikethrough()) {
+      spans.add(new StrikethroughSpan());
+    }
+    if (Config.SUPPORT_SYSTEM_UNDERLINE_SPAN && entity.isUnderline()) {
+      spans.add(new UnderlineSpan());
+    }
+    if (entity.getSpoiler() != null) {
+      spans.add(new BackgroundColorSpan(SPOILER_BACKGROUND_COLOR));
+    }
+    if (entity.getCustomEmojiId() != 0) {
+      spans.add(new CustomEmojiId(entity.getCustomEmojiId(), entity.forceDisableAnimations()));
+    }
+    if (allowQuotes && entity.isQuote()) {
+      TdApi.TextEntity quote = entity.getQuote();
+      spans.add(new QuoteSpan.EmptySpan(quote.type.getConstructor() == TdApi.TextEntityTypeExpandableBlockQuote.CONSTRUCTOR));
+    }
+
+    if (entity instanceof TextEntityMessage) {
+      TdApi.TextEntity clickableEntity = ((TextEntityMessage) entity).getClickableEntity();
+      if (clickableEntity != null) {
+        if (clickableEntity.type.getConstructor() == TdApi.TextEntityTypeTextUrl.CONSTRUCTOR || clickableEntity.type.getConstructor() == TdApi.TextEntityTypeMentionName.CONSTRUCTOR) {
+          Object span = toSpan(clickableEntity.type, options);
+          if (span != null) {
+            spans.add(span);
+          }
+        }
+      }
+    } else if (entity instanceof TextEntityCustom) {
+      String linkUrl = ((TextEntityCustom) entity).getLinkIfUrl();
+      if (!StringUtils.isEmpty(linkUrl)) {
+        spans.add(new URLSpan(linkUrl));
+      }
+    }
+
+    return spans.toArray(new Object[0]);
   }
 
   public static TdApi.TextEntityType[] toEntityType (Object span) {
     if (!canConvertToEntityType(span))
       return null;
+    if (span instanceof QuoteSpan) {
+      return new TdApi.TextEntityType[] { ((QuoteSpan) span).isExpandable() ? new TdApi.TextEntityTypeExpandableBlockQuote() : new TdApi.TextEntityTypeBlockQuote() };
+    }
     if (span instanceof CustomTypefaceSpan)
       return new TdApi.TextEntityType[] {((CustomTypefaceSpan) span).getTextEntityType()};
     if (span instanceof URLSpan) {
@@ -4734,6 +4945,9 @@ public class TD {
   }
 
   public static boolean canConvertToEntityType (Object span) {
+    if (span instanceof QuoteSpan) {
+      return true;
+    }
     if (span instanceof CustomTypefaceSpan)
       return ((CustomTypefaceSpan) span).getTextEntityType() != null;
     if (span instanceof URLSpan)
@@ -4769,6 +4983,10 @@ public class TD {
   }
 
   public static TdApi.TextEntity[] toEntities (CharSequence cs, boolean onlyLinks) {
+    return toEntities(cs, onlyLinks, false);
+  }
+
+  public static TdApi.TextEntity[] toEntities (CharSequence cs, boolean onlyLinks, boolean onlyRecoverableSpans) {
     if (!(cs instanceof Spanned))
       return null;
     Object[] spans = ((Spanned) cs).getSpans(0, cs.length(), Object.class);
@@ -4784,6 +5002,8 @@ public class TD {
       int end = ((Spanned) cs).getSpanEnd(span);
       for (TdApi.TextEntityType type : types) {
         if (onlyLinks && !Td.isTextUrl(type))
+          continue;
+        if (onlyRecoverableSpans && !(span instanceof PreserveCustomEmojiFilter.RecoverableSpan))
           continue;
         if (entities == null)
           entities = new ArrayList<>();
@@ -4978,9 +5198,12 @@ public class TD {
     switch (message.content.getConstructor()) {
       case TdApi.MessageExpiredPhoto.CONSTRUCTOR:
       case TdApi.MessageExpiredVideo.CONSTRUCTOR:
+      case TdApi.MessageExpiredVoiceNote.CONSTRUCTOR:
+      case TdApi.MessageExpiredVideoNote.CONSTRUCTOR:
+      case TdApi.MessagePaidMedia.CONSTRUCTOR:
         return true;
       default:
-        Td.assertMessageContent_d40af239();
+        Td.assertMessageContent_640c68ad();
         break;
     }
     return false;
@@ -5027,7 +5250,7 @@ public class TD {
     if (chatFolder == null) {
       return;
     }
-    bundle.putString(prefix + "_title", chatFolder.title);
+    saveChatFolderName(bundle, prefix + "_name", chatFolder.name);
     if (chatFolder.icon != null) {
       bundle.putString(prefix + "_iconName", chatFolder.icon.name);
     }
@@ -5038,12 +5261,23 @@ public class TD {
     bundle.putIntArray(prefix + "_excludedChatTypes", excludedChatTypes(chatFolder));
   }
 
+  public static void saveChatFolderName (Bundle bundle, String prefix, TdApi.ChatFolderName folderName) {
+    Td.put(bundle, prefix + "_text", folderName.text);
+    bundle.putBoolean(prefix + "_animateCustomEmoji", folderName.animateCustomEmoji);
+  }
+
+  public static TdApi.ChatFolderName restoreChatFolderName (Bundle bundle, String prefix) {
+    TdApi.FormattedText text = Td.restoreFormattedText(bundle, prefix + "_text");
+    boolean animateCustomEmoji = bundle.getBoolean(prefix + "_animateCustomEmoji");
+    return new TdApi.ChatFolderName(text, animateCustomEmoji);
+  }
+
   public static @Nullable TdApi.ChatFolder restoreChatFolder (Bundle bundle, String prefix) {
-    String title = bundle.getString(prefix + "_title");
-    if (title == null) {
+    TdApi.ChatFolderName name = restoreChatFolderName(bundle, prefix + "_name");
+    if (name == null) {
       return null;
     }
-    TdApi.ChatFolder chatFolder = newChatFolder(title);
+    TdApi.ChatFolder chatFolder = newChatFolder(name);
     String iconName = bundle.getString(prefix + "_iconName", null);
     if (iconName != null) {
       chatFolder.icon = new TdApi.ChatFolderIcon(iconName);
@@ -5059,12 +5293,28 @@ public class TD {
   }
 
   public static TdApi.ChatFolder newChatFolder () {
-    return new TdApi.ChatFolder("", null, false, ArrayUtils.EMPTY_LONGS, ArrayUtils.EMPTY_LONGS, ArrayUtils.EMPTY_LONGS, false, false, false, false, false, false, false, false);
+    return new TdApi.ChatFolder(
+      new TdApi.ChatFolderName(new TdApi.FormattedText("", new TdApi.TextEntity[0]), false),
+      null,
+      -1,
+      false,
+      ArrayUtils.EMPTY_LONGS,
+      ArrayUtils.EMPTY_LONGS,
+      ArrayUtils.EMPTY_LONGS,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    );
   }
 
-  public static TdApi.ChatFolder newChatFolder (String title) {
+  public static TdApi.ChatFolder newChatFolder (TdApi.ChatFolderName name) {
     TdApi.ChatFolder chatFolder = newChatFolder();
-    chatFolder.title = title;
+    chatFolder.name = name;
     return chatFolder;
   }
 
@@ -5104,30 +5354,11 @@ public class TD {
     chatFolder.excludedChatIds = U.toArray(chatIds);
   }
 
-  public static TdApi.ChatFolder copyOf (TdApi.ChatFolder folder) {
-    return new TdApi.ChatFolder(
-      folder.title,
-      folder.icon,
-      folder.isShareable,
-      folder.pinnedChatIds,
-      folder.includedChatIds,
-      folder.excludedChatIds,
-      folder.excludeMuted,
-      folder.excludeRead,
-      folder.excludeArchived,
-      folder.includeContacts,
-      folder.includeNonContacts,
-      folder.includeBots,
-      folder.includeGroups,
-      folder.includeChannels
-    );
-  }
-
   public static boolean contentEquals (TdApi.ChatFolder lhs, TdApi.ChatFolder rhs) {
     if (lhs == rhs) {
       return true;
     }
-    if (!ObjectUtils.equals(lhs.title, rhs.title)) return false;
+    if (!Td.equalsTo(lhs.name, rhs.name)) return false;
     String a = lhs.icon != null ? lhs.icon.name : null;
     String b = rhs.icon != null ? rhs.icon.name : null;
     return ObjectUtils.equals(a, b) &&
@@ -5213,6 +5444,10 @@ public class TD {
     chatFolder.excludeArchived = filter.accept(R.id.chatType_archived);
   }
 
+  public static boolean isSelfDestructTypeImmediately (TdApi.Message message) {
+    return message != null && message.selfDestructType != null && message.selfDestructType.getConstructor() == TdApi.MessageSelfDestructTypeImmediately.CONSTRUCTOR;
+  }
+
   public static final int[] CHAT_TYPES = {
     R.id.chatType_contact,
     R.id.chatType_nonContact,
@@ -5237,6 +5472,10 @@ public class TD {
     R.id.chatType_read,
     R.id.chatType_archived
   };
+
+  public static boolean isChatType (@IdRes int id) {
+    return ArrayUtils.contains(TD.CHAT_TYPES, id);
+  }
 
   public static @StringRes int chatTypeName (@IdRes int chatType) {
     if (chatType == R.id.chatType_contact) return R.string.CategoryContacts;
@@ -5291,7 +5530,7 @@ public class TD {
       return new TdApi.ChatFolderIcon("Private");
     }
     if (chatType == R.id.chatType_group) {
-      return new TdApi.ChatFolderIcon( "Groups");
+      return new TdApi.ChatFolderIcon("Groups");
     }
     if (chatType == R.id.chatType_channel) {
       return new TdApi.ChatFolderIcon("Channels");
@@ -5308,6 +5547,14 @@ public class TD {
     } else {
       return defaultIcon;
     }
+  }
+
+  public static @Nullable String getIconName (@Nullable TdApi.ChatFolderInfo info) {
+    return info != null && info.icon != null ? info.icon.name : null;
+  }
+
+  public static @Nullable String getIconName (@Nullable TdApi.ChatFolder folder) {
+    return folder != null && folder.icon != null ? folder.icon.name : null;
   }
 
   public static @DrawableRes int iconByName (String iconName, @DrawableRes int defaultIcon) {
@@ -5331,7 +5578,7 @@ public class TD {
       case "Cat":
         return R.drawable.templarian_baseline_cat_24;
       case "Crown":
-        return R.drawable.baseline_crown_circle_24;
+        return R.drawable.baseline_crown_24;
       case "Favorite":
         return R.drawable.baseline_star_24;
       case "Flower":
@@ -5353,8 +5600,7 @@ public class TD {
       case "Work":
         return R.drawable.baseline_work_24;
       case "Airplane":
-        // return R.drawable.baseline_flight_24;
-        return R.drawable.baseline_logo_telegram_24;
+        return R.drawable.baseline_telegram_24;
       case "Book":
         return R.drawable.baseline_book_24;
       case "Light":
@@ -5366,13 +5612,11 @@ public class TD {
       case "Note":
         return R.drawable.baseline_music_note_24;
       case "Palette":
-        // return R.drawable.baseline_palette_24;
-        return R.drawable.baseline_brush_24;
+        return R.drawable.baseline_palette_24;
       case "Unread":
         return R.drawable.baseline_mark_chat_unread_24;
       case "Travel":
-        // return R.drawable.baseline_explore_24;
-        return R.drawable.baseline_flight_24;
+        return R.drawable.baseline_airplane_24;
       case "Custom":
         return R.drawable.baseline_folder_24;
       case "Trade":
@@ -5383,4 +5627,296 @@ public class TD {
   }
 
   public static final String[] ICON_NAMES = {"All", "Unread", "Unmuted", "Bots", "Channels", "Groups", "Private", "Custom", "Setup", "Cat", "Crown", "Favorite", "Flower", "Game", "Home", "Love", "Mask", "Party", "Sport", "Study", "Trade", "Travel", "Work", "Airplane", "Book", "Light", "Like", "Money", "Note", "Palette"};
+
+  public static @Nullable String joinChatFolderNamesToString (Tdlib tdlib, TdApi.Chat chat, int excludeChatFolderId) {
+    TdApi.ChatPosition[] chatPositions = chat.positions;
+    if (chatPositions != null && chatPositions.length > 0) {
+      StringBuilder sb = new StringBuilder();
+      for (TdApi.ChatPosition chatPosition : chatPositions) {
+        if (!TD.isChatListFolder(chatPosition.list))
+          continue;
+        TdApi.ChatListFolder chatListFolder = (TdApi.ChatListFolder) chatPosition.list;
+        if (chatListFolder.chatFolderId == excludeChatFolderId) {
+          continue;
+        }
+        TdApi.ChatFolderInfo chatFolderInfo = tdlib.chatFolderInfo(chatListFolder.chatFolderId);
+        if (chatFolderInfo == null || Td.isEmpty(chatFolderInfo.name))
+          continue;
+        if (sb.length() > 0) {
+          sb.append(Lang.getConcatSeparator());
+        }
+        sb.append(chatFolderInfo.name.text.text); // TODO: support custom emoji
+      }
+      return sb.toString();
+    }
+    return null;
+  }
+
+  public static boolean isParticipating (@Nullable TdApi.GiveawayInfo info) {
+    if (info == null || info.getConstructor() != TdApi.GiveawayInfoOngoing.CONSTRUCTOR) {
+      return false;
+    }
+
+    TdApi.GiveawayInfoOngoing infoOngoing = (TdApi.GiveawayInfoOngoing) info;
+    return infoOngoing.status.getConstructor() == TdApi.GiveawayParticipantStatusParticipating.CONSTRUCTOR;
+  }
+
+  public static TdApi.InputFile getInputFile (TdApi.InputMessageContent content) {
+    switch (content.getConstructor()) {
+      case TdApi.InputMessagePhoto.CONSTRUCTOR:
+        return ((TdApi.InputMessagePhoto) content).photo;
+      case TdApi.InputMessageVideo.CONSTRUCTOR:
+        return ((TdApi.InputMessageVideo) content).video;
+      case TdApi.InputMessageDocument.CONSTRUCTOR:
+        return ((TdApi.InputMessageDocument) content).document;
+      case TdApi.InputMessageAnimation.CONSTRUCTOR:
+        return ((TdApi.InputMessageAnimation) content).animation;
+      case TdApi.InputMessageAudio.CONSTRUCTOR:
+        return ((TdApi.InputMessageAudio) content).audio;
+      case TdApi.InputMessageSticker.CONSTRUCTOR:
+        return ((TdApi.InputMessageSticker) content).sticker;
+      case TdApi.InputMessageVideoNote.CONSTRUCTOR:
+        return ((TdApi.InputMessageVideoNote) content).videoNote;
+      case TdApi.InputMessageVoiceNote.CONSTRUCTOR:
+        return ((TdApi.InputMessageVoiceNote) content).voiceNote;
+      case TdApi.InputMessageLocation.CONSTRUCTOR:
+      case TdApi.InputMessageContact.CONSTRUCTOR:
+      case TdApi.InputMessageDice.CONSTRUCTOR:
+      case TdApi.InputMessageGame.CONSTRUCTOR:
+      case TdApi.InputMessageInvoice.CONSTRUCTOR:
+      case TdApi.InputMessagePoll.CONSTRUCTOR:
+      case TdApi.InputMessageStory.CONSTRUCTOR:
+      case TdApi.InputMessageVenue.CONSTRUCTOR:
+      case TdApi.InputMessageForwarded.CONSTRUCTOR:
+      case TdApi.InputMessageText.CONSTRUCTOR:
+      case TdApi.InputMessagePaidMedia.CONSTRUCTOR:
+        return null;
+      default:
+        Td.assertInputMessageContent_6d335c();
+        throw Td.unsupported(content);
+    }
+  }
+
+  public static TdApi.FileType toFileType (TdApi.InputMessageContent content) {
+    switch (content.getConstructor()) {
+      case TdApi.InputMessagePhoto.CONSTRUCTOR:
+        return new TdApi.FileTypePhoto();
+      case TdApi.InputMessageVideo.CONSTRUCTOR:
+        return new TdApi.FileTypeVideo();
+      case TdApi.InputMessageDocument.CONSTRUCTOR:
+        return new TdApi.FileTypeDocument();
+      case TdApi.InputMessageAnimation.CONSTRUCTOR:
+        return new TdApi.FileTypeAnimation();
+      case TdApi.InputMessageAudio.CONSTRUCTOR:
+        return new TdApi.FileTypeAudio();
+      case TdApi.InputMessageSticker.CONSTRUCTOR:
+        return new TdApi.FileTypeSticker();
+      case TdApi.InputMessageVideoNote.CONSTRUCTOR:
+        return new TdApi.FileTypeVideoNote();
+      case TdApi.InputMessageVoiceNote.CONSTRUCTOR:
+        return new TdApi.FileTypeVoiceNote();
+      case TdApi.InputMessageLocation.CONSTRUCTOR:
+      case TdApi.InputMessageContact.CONSTRUCTOR:
+      case TdApi.InputMessageDice.CONSTRUCTOR:
+      case TdApi.InputMessageGame.CONSTRUCTOR:
+      case TdApi.InputMessageInvoice.CONSTRUCTOR:
+      case TdApi.InputMessagePoll.CONSTRUCTOR:
+      case TdApi.InputMessageStory.CONSTRUCTOR:
+      case TdApi.InputMessageVenue.CONSTRUCTOR:
+      case TdApi.InputMessageForwarded.CONSTRUCTOR:
+      case TdApi.InputMessageText.CONSTRUCTOR:
+      case TdApi.InputMessagePaidMedia.CONSTRUCTOR:
+        return null;
+      default:
+        Td.assertInputMessageContent_6d335c();
+        throw Td.unsupported(content);
+    }
+  }
+
+  public static void setInputFile (TdApi.InputMessageContent content, TdApi.InputFile inputFile) {
+    switch (content.getConstructor()) {
+      case TdApi.InputMessagePhoto.CONSTRUCTOR:
+        ((TdApi.InputMessagePhoto) content).photo = inputFile;
+        return;
+      case TdApi.InputMessageVideo.CONSTRUCTOR:
+        ((TdApi.InputMessageVideo) content).video = inputFile;
+        return;
+      case TdApi.InputMessageDocument.CONSTRUCTOR:
+        ((TdApi.InputMessageDocument) content).document = inputFile;
+        return;
+      case TdApi.InputMessageAnimation.CONSTRUCTOR:
+        ((TdApi.InputMessageAnimation) content).animation = inputFile;
+        return;
+      case TdApi.InputMessageAudio.CONSTRUCTOR:
+        ((TdApi.InputMessageAudio) content).audio = inputFile;
+        return;
+      case TdApi.InputMessageSticker.CONSTRUCTOR:
+        ((TdApi.InputMessageSticker) content).sticker = inputFile;
+        return;
+      case TdApi.InputMessageVideoNote.CONSTRUCTOR:
+        ((TdApi.InputMessageVideoNote) content).videoNote = inputFile;
+        return;
+      case TdApi.InputMessageVoiceNote.CONSTRUCTOR:
+        ((TdApi.InputMessageVoiceNote) content).voiceNote = inputFile;
+        return;
+      case TdApi.InputMessageLocation.CONSTRUCTOR:
+      case TdApi.InputMessageContact.CONSTRUCTOR:
+      case TdApi.InputMessageDice.CONSTRUCTOR:
+      case TdApi.InputMessageGame.CONSTRUCTOR:
+      case TdApi.InputMessageInvoice.CONSTRUCTOR:
+      case TdApi.InputMessagePoll.CONSTRUCTOR:
+      case TdApi.InputMessageStory.CONSTRUCTOR:
+      case TdApi.InputMessageVenue.CONSTRUCTOR:
+      case TdApi.InputMessageForwarded.CONSTRUCTOR:
+      case TdApi.InputMessageText.CONSTRUCTOR:
+      case TdApi.InputMessagePaidMedia.CONSTRUCTOR:
+        return;
+      default:
+        Td.assertInputMessageContent_6d335c();
+        throw Td.unsupported(content);
+    }
+  }
+
+  public static TdApi.InputThumbnail getInputThumbnail (TdApi.InputMessageContent content) {
+    switch (content.getConstructor()) {
+      case TdApi.InputMessagePhoto.CONSTRUCTOR:
+        return ((TdApi.InputMessagePhoto) content).thumbnail;
+      case TdApi.InputMessageVideo.CONSTRUCTOR:
+        return ((TdApi.InputMessageVideo) content).thumbnail;
+      case TdApi.InputMessageDocument.CONSTRUCTOR:
+        return ((TdApi.InputMessageDocument) content).thumbnail;
+      case TdApi.InputMessageAnimation.CONSTRUCTOR:
+        return ((TdApi.InputMessageAnimation) content).thumbnail;
+      case TdApi.InputMessageAudio.CONSTRUCTOR:
+        return ((TdApi.InputMessageAudio) content).albumCoverThumbnail;
+      case TdApi.InputMessageSticker.CONSTRUCTOR:
+        return ((TdApi.InputMessageSticker) content).thumbnail;
+      case TdApi.InputMessageVideoNote.CONSTRUCTOR:
+        return ((TdApi.InputMessageVideoNote) content).thumbnail;
+      case TdApi.InputMessageVoiceNote.CONSTRUCTOR:
+      case TdApi.InputMessageLocation.CONSTRUCTOR:
+      case TdApi.InputMessageContact.CONSTRUCTOR:
+      case TdApi.InputMessageDice.CONSTRUCTOR:
+      case TdApi.InputMessageGame.CONSTRUCTOR:
+      case TdApi.InputMessageInvoice.CONSTRUCTOR:
+      case TdApi.InputMessagePoll.CONSTRUCTOR:
+      case TdApi.InputMessageStory.CONSTRUCTOR:
+      case TdApi.InputMessageVenue.CONSTRUCTOR:
+      case TdApi.InputMessageForwarded.CONSTRUCTOR:
+      case TdApi.InputMessageText.CONSTRUCTOR:
+      case TdApi.InputMessagePaidMedia.CONSTRUCTOR:
+        return null;
+      default:
+        Td.assertInputMessageContent_6d335c();
+        throw Td.unsupported(content);
+    }
+  }
+
+  public static TdApi.InputFile getInputFileThumbnail (TdApi.InputMessageContent content) {
+    final TdApi.InputThumbnail inputThumbnail = getInputThumbnail(content);
+    return inputThumbnail != null ? inputThumbnail.thumbnail : null;
+  }
+
+  public static void setInputFileThumbnail (TdApi.InputMessageContent content, TdApi.InputFile inputFile) {
+    final TdApi.InputThumbnail inputThumbnail = getInputThumbnail(content);
+    if (inputThumbnail != null) {
+      inputThumbnail.thumbnail = inputFile;
+    }
+  }
+
+
+
+  public static TdApi.InputFile getInputFile (ImageGalleryFile file, boolean asFiles) {
+    if (file.isVideo()) {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+        MediaMetadataRetriever retriever = null;
+        try {
+          retriever = U.openRetriever(file.getFilePath());
+          String rotation = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
+          if (StringUtils.isNumeric(rotation)) {
+            file.setRotation(StringUtils.parseInt(rotation));
+          }
+        } catch (Throwable ignored) {}
+        U.closeRetriever(retriever);
+      }
+
+      return (Config.USE_VIDEO_COMPRESSION && !(asFiles && VideoGenerationInfo.isEmpty(file))) ?
+        VideoGenerationInfo.newFile(file.getFilePath(), file, asFiles) :
+        TD.createInputFile(file.getFilePath());
+    } else {
+      return (asFiles && PhotoGenerationInfo.isEmpty(file)) ?
+        TD.createInputFile(file.getFilePath()) :
+        PhotoGenerationInfo.newFile(file);
+    }
+  }
+
+
+  public static TdApi.InputMessageContent toContent (Tdlib tdlib, ImageGalleryFile file, boolean asFiles, boolean disableMarkdown, boolean showCaptionAboveMedia, boolean hasSpoiler, boolean isSecretChat) {
+    if (file.getSelfDestructType() != null && asFiles)
+      throw new IllegalArgumentException();
+    TdApi.InputMessageContent content;
+    if (file.isVideo()) {
+      boolean sendAsAnimation = file.shouldMuteVideo();
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+        MediaMetadataRetriever retriever = null;
+        try {
+          retriever = U.openRetriever(file.getFilePath());
+          if (!sendAsAnimation) {
+            String hasAudioStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO);
+            if (StringUtils.isEmpty(hasAudioStr) || !StringUtils.equalsOrBothEmpty(hasAudioStr.toLowerCase(), "yes")) {
+              sendAsAnimation = true;
+            }
+          }
+          String rotation = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
+          if (StringUtils.isNumeric(rotation)) {
+            file.setRotation(StringUtils.parseInt(rotation));
+          }
+        } catch (Throwable ignored) {
+          // Doing nothing
+        }
+        U.closeRetriever(retriever);
+      }
+
+      int[] size = new int[2];
+      file.getOutputSize(size);
+
+      final int width = size[0];
+      final int height = size[1];
+
+      final TD.FileInfo fileInfo = new TD.FileInfo();
+      boolean forceVideo = Config.USE_VIDEO_COMPRESSION && !(asFiles && VideoGenerationInfo.isEmpty(file));
+      final TdApi.InputFile inputVideo = forceVideo ? VideoGenerationInfo.newFile(file.getFilePath(), file, asFiles) : TD.createInputFile(file.getFilePath(), null, fileInfo);
+      TdApi.FormattedText caption = file.getCaption(true, !disableMarkdown);
+      if (asFiles && !forceVideo) {
+        content = tdlib.filegen().createThumbnail(TD.toInputMessageContent(file.getFilePath(), inputVideo, fileInfo, caption, showCaptionAboveMedia, hasSpoiler), isSecretChat);
+      } else /*if (sendAsAnimation && file.getSelfDestructType() == null && (files.length == 1 || !needGroupMedia)) {
+        content = tdlib.filegen().createThumbnail(new TdApi.InputMessageAnimation(inputVideo, null, null, file.getVideoDuration(true), width, height, caption, hasSpoiler), isSecretChat);
+      } else*/ {
+        content = tdlib.filegen().createThumbnail(new TdApi.InputMessageVideo(inputVideo, null, null, 0, null, file.getVideoDuration(true), width, height, U.canStreamVideo(inputVideo), caption, showCaptionAboveMedia, file.getSelfDestructType(), hasSpoiler), isSecretChat);
+      }
+    } else {
+      int[] size = new int[2];
+      file.getOutputSize(size);
+
+      final int width = size[0];
+      final int height = size[1];
+
+      final TdApi.InputFile inputFile;
+      if (asFiles && PhotoGenerationInfo.isEmpty(file)) {
+        inputFile = TD.createInputFile(file.getFilePath());
+      } else {
+        inputFile = PhotoGenerationInfo.newFile(file);
+      }
+
+      TdApi.FormattedText caption = file.getCaption(true, !disableMarkdown);
+
+      if (asFiles) {
+        content = tdlib.filegen().createThumbnail(new TdApi.InputMessageDocument(inputFile, null, false, caption), isSecretChat);
+      } else {
+        content = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(inputFile, null, null, width, height, caption, showCaptionAboveMedia, file.getSelfDestructType(), hasSpoiler), isSecretChat);
+      }
+    }
+
+    return content;
+  }
 }

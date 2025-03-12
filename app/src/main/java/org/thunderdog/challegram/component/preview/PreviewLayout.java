@@ -27,7 +27,6 @@ import androidx.collection.SparseArrayCompat;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
-import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.EmbeddedService;
@@ -42,7 +41,6 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.widget.PopupLayout;
 
 import me.vkryl.android.widget.FrameLayoutFix;
-import me.vkryl.core.StringUtils;
 
 public abstract class PreviewLayout extends FrameLayoutFix implements View.OnClickListener, PopupLayout.ShowListener, PopupLayout.DismissListener {
   protected EmbeddedService nativeEmbed;
@@ -91,7 +89,7 @@ public abstract class PreviewLayout extends FrameLayoutFix implements View.OnCli
     footerHeight += params.height;
 
     TextView item;
-    item = OptionsLayout.genOptionView(getContext(), id, Lang.getString(stringRes), ViewController.OPTION_COLOR_NORMAL, icon, this, themeListeners, null);
+    item = OptionsLayout.genOptionView(getContext(), id, Lang.getString(stringRes), ViewController.OptionColor.NORMAL, icon, ViewController.OptionColor.NORMAL, this, themeListeners, null);
     RippleSupport.setSimpleWhiteBackground(item);
     themeListeners.addThemeInvalidateListener(item);
     item.setLayoutParams(params);
@@ -135,8 +133,8 @@ public abstract class PreviewLayout extends FrameLayoutFix implements View.OnCli
     UI.getContext(getContext()).removeGlobalThemeListeners(themeListeners);
   }
 
-  public static boolean show (ViewController<?> parent, TdApi.WebPage webPage, boolean needConfirmation) {
-    EmbeddedService service = EmbeddedService.parse(webPage);
+  public static boolean show (ViewController<?> parent, TdApi.LinkPreview linkPreview, boolean needConfirmation) {
+    EmbeddedService service = EmbeddedService.parse(linkPreview);
     return show(parent, service, needConfirmation);
   }
 

@@ -77,11 +77,7 @@ public abstract class EditBaseController<T> extends ViewController<T> implements
     ViewSupport.setThemedBackground(contentView, getRecyclerBackgroundColorId(), this);
     contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-    recyclerView = (RecyclerView) Views.inflate(context(), R.layout.recycler, contentView);
-    recyclerView.setItemAnimator(itemAnimator = new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180l));
-    recyclerView.setHasFixedSize(true);
-    recyclerView.setLayoutManager(new LinearLayoutManager(context, RecyclerView.VERTICAL, false));
-    recyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    recyclerView = onCreateRecyclerView();
     contentView.addView(recyclerView);
 
     int padding = Screen.dp(4f);
@@ -107,6 +103,19 @@ public abstract class EditBaseController<T> extends ViewController<T> implements
     wrapper.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     wrapper.addView(contentView);
     return wrapper;
+  }
+
+  public RecyclerView getRecyclerView () {
+    return recyclerView;
+  }
+
+  protected RecyclerView onCreateRecyclerView () {
+    RecyclerView recyclerView = (RecyclerView) Views.inflate(context(), R.layout.recycler, contentView);
+    recyclerView.setItemAnimator(itemAnimator = new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180l));
+    recyclerView.setHasFixedSize(true);
+    recyclerView.setLayoutManager(new LinearLayoutManager(context, RecyclerView.VERTICAL, false));
+    recyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    return recyclerView;
   }
 
   @Override
@@ -169,13 +178,21 @@ public abstract class EditBaseController<T> extends ViewController<T> implements
     return doneVisible;
   }
 
+  protected void onDoneVisibleChanged (boolean isVisible) {
+    // override
+  }
+
   protected void setDoneVisible (boolean isVisible) {
+    setDoneVisible(isVisible, true);
+  }
+
+  protected void setDoneVisible (boolean isVisible, boolean allowAnimation) {
     if (this.doneVisible != isVisible) {
       this.doneVisible = isVisible;
       if (contentView.getParent() != null && doneButton.getMeasuredWidth() != 0 && isFocused()) {
         this.doneVisibilityFactor = 1f;
         doneButton.setMaximumAlpha(1f);
-        doneButton.setIsVisible(isVisible, true);
+        doneButton.setIsVisible(isVisible, allowAnimation);
       } else {
         if (isVisible) {
           if (needShowAnimationDelay()) {
@@ -189,6 +206,7 @@ public abstract class EditBaseController<T> extends ViewController<T> implements
         }
         doneButton.setIsVisible(isVisible, false);
       }
+      onDoneVisibleChanged(isVisible);
     }
   }
 
@@ -198,6 +216,7 @@ public abstract class EditBaseController<T> extends ViewController<T> implements
       this.doneVisibilityFactor = 1f;
       doneButton.setMaximumAlpha(1f);
       doneButton.setIsVisible(isVisible, false);
+      onDoneVisibleChanged(isVisible);
     }
   }
 

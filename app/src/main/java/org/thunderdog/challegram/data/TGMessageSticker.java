@@ -59,8 +59,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.collection.IntSet;
 import me.vkryl.core.collection.LongSet;
-import me.vkryl.td.Td;
-import me.vkryl.td.TdConstants;
+import tgx.td.Td;
+import tgx.td.TdConstants;
 
 public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener, TdlibEmojiManager.Watcher {
   private @Nullable TdApi.DiceStickers sticker;
@@ -200,7 +200,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
         outline.reset();
       }
       if (sticker != null) {
-        outline = Td.buildOutline(sticker, width, height, outline);
+        // FIXME outline = Td.buildOutline(sticker, width, height, outline);
         if (staticFile != null) {
           staticFile.setSize(Math.max(width, height));
         }
@@ -423,7 +423,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
   }
 
   protected boolean isSupportedMessageContent (TdApi.Message message, TdApi.MessageContent messageContent) {
-    if (specialType != SPECIAL_TYPE_NONE) {
+    if (specialType == SPECIAL_TYPE_ANIMATED_EMOJI) {
       final @EmojiMessageContentType int contentType = getEmojiMessageContentType(messageContent);
       if (contentType == EmojiMessageContentType.NOT_EMOJI) {
         return false;

@@ -20,7 +20,18 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.SOURCE)
-@IntDef({AvatarPickerMode.NONE, AvatarPickerMode.PROFILE, AvatarPickerMode.GROUP, AvatarPickerMode.CHANNEL})
+@IntDef({
+  AvatarPickerMode.NONE,
+  AvatarPickerMode.PROFILE,
+  AvatarPickerMode.GROUP,
+  AvatarPickerMode.CHANNEL,
+  AvatarPickerMode.BOT
+})
 public @interface AvatarPickerMode {
-  int NONE = 0, PROFILE = 1, GROUP = 2, CHANNEL = 3;
+  int
+    NONE = 0,
+    PROFILE = 1,
+    GROUP = 2,
+    CHANNEL = 3,
+    BOT = 4;
 }

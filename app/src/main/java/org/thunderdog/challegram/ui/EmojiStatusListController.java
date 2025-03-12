@@ -16,6 +16,7 @@ package org.thunderdog.challegram.ui;
 
 import android.content.Context;
 import android.os.Build;
+import android.text.TextUtils;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,6 +31,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.emoji.GifView;
 import org.thunderdog.challegram.component.emoji.MediaStickersAdapter;
@@ -51,11 +53,11 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.StickerSetsDataProvider;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.v.RtlGridLayoutManager;
 import org.thunderdog.challegram.widget.EmojiLayout;
-import org.thunderdog.challegram.util.StickerSetsDataProvider;
 import org.thunderdog.challegram.widget.ForceTouchView;
 
 import java.util.ArrayList;
@@ -68,6 +70,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.collection.LongList;
+import tgx.td.Td;
 
 public class EmojiStatusListController extends ViewController<EmojiLayout> implements
   StickerSmallView.StickerMovementCallback, StickerPreviewView.MenuStickerPreviewCallback,
@@ -932,52 +935,66 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
         LongList recentEmojiList = new LongList(200);
         LongList trendingEmojiList = new LongList(200);
         getCustomEmojiStatusList(new TdApi.GetThemedEmojiStatuses(), trendingEmojiList, () ->
-          getCustomEmojiStatusList(new TdApi.GetRecentEmojiStatuses(), recentEmojiList, () ->
+          getEmojiStatusList(new TdApi.GetRecentEmojiStatuses(), recentEmojiList, () ->
             getCustomEmojiStatusList(new TdApi.GetDefaultEmojiStatuses(), trendingEmojiList, () ->
               getCustomEmojiStickers(trendingEmojiList.get(), trendingStickersHandler(() ->
                 getCustomEmojiStickers(recentEmojiList.get(), serviceStickersHandler(null))))))
         );
       } else {
-        if (StringUtils.isEmpty(currentEmojiSearchRequest)) {
-          tdlib.client().send(new TdApi.SearchEmojis(currentTextSearchRequest, false, new String[] {"en"}), obj -> {
-            switch (obj.getConstructor()) {
-              case TdApi.Emojis.CONSTRUCTOR: {
-                TdApi.Emojis emojis = (TdApi.Emojis) obj;
-                if (emojis.emojis.length > 0) {
-                  StringBuilder b = new StringBuilder();
-                  for (String emoji : emojis.emojis) {
-                    if (b.length() > 0) {
-                      b.append(" ");
-                    }
-                    b.append(emoji);
-                  }
-
-                  tdlib.client().send(new TdApi.SearchStickers(new TdApi.StickerTypeCustomEmoji(), b.toString(), 200), serviceStickersHandler(currentTextSearchRequest));
-                } else {
-                  tdlib.client().send(new TdApi.SearchInstalledStickerSets(new TdApi.StickerTypeCustomEmoji(), currentTextSearchRequest, 200), stickerSetsHandler(false));
-                }
-                break;
-              }
-              case TdApi.Error.CONSTRUCTOR: {
-                UI.showError(obj);
-                break;
-              }
+        if (!StringUtils.isEmpty(currentEmojiSearchRequest)) {
+          tdlib.client().send(new TdApi.SearchStickers(new TdApi.StickerTypeCustomEmoji(), currentEmojiSearchRequest, null, U.getInputLanguages(), 0, 200), serviceStickersHandler(currentTextSearchRequest));
+        } else {
+          final String textQuery = currentTextSearchRequest;
+          tdlib.send(new TdApi.SearchEmojis(textQuery, U.getInputLanguages()), (keywords, error) -> {
+            if (error != null) {
+              UI.showError(error);
+              return;
+            }
+            String[] uniqueEmojis = Td.findUniqueEmojis(keywords.emojiKeywords);
+            if (uniqueEmojis.length > 0) {
+              String uniqueEmojisQuery = TextUtils.join(" ", uniqueEmojis);
+              tdlib.client().send(new TdApi.SearchStickers(new TdApi.StickerTypeCustomEmoji(), uniqueEmojisQuery, null, U.getInputLanguages(), 0, 200), serviceStickersHandler(currentTextSearchRequest));
+            } else {
+              tdlib.client().send(new TdApi.SearchInstalledStickerSets(new TdApi.StickerTypeCustomEmoji(), textQuery, 200), stickerSetsHandler(false));
             }
           });
-        } else {
-          tdlib.client().send(new TdApi.SearchStickers(new TdApi.StickerTypeCustomEmoji(), currentEmojiSearchRequest, 200), serviceStickersHandler(currentTextSearchRequest));
         }
       }
     }
   }
 
-  private void getCustomEmojiStatusList (TdApi.Function<TdApi.EmojiStatuses> req, LongList longList, Runnable onReceive) {
+  private void getEmojiStatusList (TdApi.Function<TdApi.EmojiStatuses> req, LongList longList, Runnable onReceive) {
     tdlib.client().send(req, object2 -> {
       switch (object2.getConstructor()) {
         case TdApi.EmojiStatuses.CONSTRUCTOR: {
-          long[] customEmojiIds = ((TdApi.EmojiStatuses) object2).customEmojiIds;
+          TdApi.EmojiStatus[] emojiStatuses = ((TdApi.EmojiStatuses) object2).emojiStatuses;
+          for (TdApi.EmojiStatus emojiStatus : emojiStatuses) {
+            if (longList.size() >= MAX_EMOJI_STATUS_COUNT) break;
+            if (emojiStatus.type.getConstructor() == TdApi.EmojiStatusTypeCustomEmoji.CONSTRUCTOR) {
+              // TODO upgradedGift
+              longList.append(Td.customEmojiId(emojiStatus));
+            }
+          }
+          onReceive.run();
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          UI.showError(object2);
+          break;
+        }
+      }
+    });
+  }
+
+  private static final int MAX_EMOJI_STATUS_COUNT = 1000;
+
+  private void getCustomEmojiStatusList (TdApi.Function<TdApi.EmojiStatusCustomEmojis> req, LongList longList, Runnable onReceive) {
+    tdlib.client().send(req, object2 -> {
+      switch (object2.getConstructor()) {
+        case TdApi.EmojiStatusCustomEmojis.CONSTRUCTOR: {
+          long[] customEmojiIds = ((TdApi.EmojiStatusCustomEmojis) object2).customEmojiIds;
           for (long customEmojiId : customEmojiIds) {
-            if (longList.size() >= 200) break;
+            if (longList.size() >= MAX_EMOJI_STATUS_COUNT) break;
             longList.append(customEmojiId);
           }
           onReceive.run();
@@ -1355,7 +1372,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
   /* Preview Sticker Menu */
 
   @Override
-  public void buildMenuStickerPreview (ArrayList<StickerPreviewView.MenuItem> menuItems, @NonNull TGStickerObj sticker, @NonNull StickerSmallView stickerSmallView) {
+  public void buildMenuStickerPreview (ArrayList<StickerPreviewView.MenuItem> menuItems, @NonNull TGStickerObj sticker) {
     menuItems.add(new StickerPreviewView.MenuItem(StickerPreviewView.MenuItem.MENU_ITEM_TEXT,
       Lang.getString(R.string.SetEmojiAsStatus).toUpperCase(), R.id.btn_setEmojiStatus, ColorId.textNeutral));
 
@@ -1364,11 +1381,15 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
   }
 
   @Override
-  public void onMenuStickerPreviewClick (View v, ViewController<?> context, @NonNull TGStickerObj sticker, @NonNull StickerSmallView stickerSmallView) {
+  public void onMenuStickerPreviewClick (View v, ViewController<?> context, @NonNull TGStickerObj sticker, @Nullable StickerSmallView stickerSmallView) {
+    if (stickerSmallView == null) {
+      return;
+    }
+
     final long emojiId = sticker.getCustomEmojiId();
     final int viewId = v.getId();
     if (viewId == R.id.btn_setEmojiStatus) {
-      tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(emojiId, 0)), tdlib.okHandler());
+      tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), 0)), tdlib.okHandler());
       stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, 0);
       stickerSmallView.closePreviewIfNeeded();
     } else if (viewId == R.id.btn_setEmojiStatusTimed) {
@@ -1386,11 +1407,11 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
           Lang.getString(R.string.SetEmojiAsStatusTimed2Days),
           Lang.getString(R.string.SetEmojiAsStatusTimedCustom)
         }, new int[] {
-          ViewController.OPTION_COLOR_NORMAL,
-          ViewController.OPTION_COLOR_NORMAL,
-          ViewController.OPTION_COLOR_NORMAL,
-          ViewController.OPTION_COLOR_NORMAL,
-          ViewController.OPTION_COLOR_NORMAL,
+          OptionColor.NORMAL,
+          OptionColor.NORMAL,
+          OptionColor.NORMAL,
+          OptionColor.NORMAL,
+          OptionColor.NORMAL,
         }, new int[] {
           R.drawable.baseline_access_time_24,
           R.drawable.baseline_access_time_24,
@@ -1408,7 +1429,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
             context.showDateTimePicker(tdlib, Lang.getString(titleRes), todayRes, tomorrowRes, futureRes, millis -> {
               long expirationDate = millis / 1000L;
               stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, expirationDate);
-              tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(emojiId, (int) expirationDate)), tdlib.okHandler());
+              tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), (int) expirationDate)), tdlib.okHandler());
               stickerSmallView.closePreviewIfNeeded();
             }, null);
             return true;
@@ -1428,7 +1449,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
           }
           long expirationDate = System.currentTimeMillis() / 1000L + duration;
           stickerSmallView.onSetEmojiStatus(v, sticker, emojiId, expirationDate);
-          tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(emojiId, (int) expirationDate)), tdlib.okHandler());
+          tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(new TdApi.EmojiStatusTypeCustomEmoji(emojiId), (int) expirationDate)), tdlib.okHandler());
           stickerSmallView.closePreviewIfNeeded();
           return true;
         });

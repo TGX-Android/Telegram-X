@@ -24,8 +24,8 @@ fi
 # Patch opus
 patch-opus-impl.sh
 
-# Patch ExoPlayer sources
-patch-exoplayer-impl.sh
+# Patch androidx-media sources
+patch-androidx-media-impl.sh
 
 # Build and configure libvpx
 build-vpx-impl.sh

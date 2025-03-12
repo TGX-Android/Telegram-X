@@ -6,7 +6,7 @@ source "$(pwd)/scripts/set-env.sh"
 reset.sh
 
 simple_modules=( \
-  thirdparty/ExoPlayer \
+  thirdparty/androidx-media \
   app/jni/thirdparty/jni-utils \
   app/jni/thirdparty/libtgvoip \
   app/jni/thirdparty/rlottie \
@@ -22,8 +22,8 @@ for module in "${simple_modules[@]}"; do
   popd > /dev/null
 done
 
-echo "Patching ExoPlayer..."
-patch-exoplayer-impl.sh
+echo "Patching androidx-media..."
+patch-androidx-media-impl.sh
 
 remote_modules=( webp libyuv ffmpeg lz4 flac opus opusfile ogg libvpx )
 for module in "${remote_modules[@]}"; do

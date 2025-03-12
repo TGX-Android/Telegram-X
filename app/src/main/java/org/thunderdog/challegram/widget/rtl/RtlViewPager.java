@@ -273,6 +273,7 @@ public class RtlViewPager extends ViewPager implements RtlCheckListener {
 
     @Override
     public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+      positionOffset = ViewPager.clampPositionOffset(positionOffset);
       if (!suppressOnPageChangeListeners) {
         if (isRtl()) {
           if (positionOffset == 0f && positionOffsetPixels == 0) {
@@ -324,6 +325,7 @@ public class RtlViewPager extends ViewPager implements RtlCheckListener {
       this.isRTL = isRTL;
     }
 
+    @SuppressWarnings("deprecation")
     SavedState(Parcel in, ClassLoader loader) {
       if (loader == null) {
         loader = getClass().getClassLoader();

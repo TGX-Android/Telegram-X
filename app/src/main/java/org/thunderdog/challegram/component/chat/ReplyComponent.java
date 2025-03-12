@@ -37,8 +37,6 @@ import org.thunderdog.challegram.data.ContentPreview;
 import org.thunderdog.challegram.data.MediaWrapper;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
-import org.thunderdog.challegram.data.TGWebPage;
-import org.thunderdog.challegram.helper.InlineSearchContext;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -53,7 +51,6 @@ import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -66,7 +63,7 @@ import me.vkryl.android.util.ViewProvider;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.td.Td;
+import tgx.td.Td;
 
 public class ReplyComponent implements Client.ResultHandler, Destroyable {
   private static final int FLAG_ALLOW_TOUCH_EVENTS = 1 << 1;
@@ -459,7 +456,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       if (Config.DEBUG_STICKER_OUTLINES && mediaPreview != null) {
         receiver.drawPlaceholderContour(c, mediaPreview.contour);
       }
-      if (mediaPreview != null && mediaPreview.hasSpoiler) {
+      if (mediaPreview != null && mediaPreview.needFireIcon) {
         float radius = Theme.getBubbleMergeRadius();
         DrawAlgorithms.drawRoundRect(c, radius, receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), Paints.fillingPaint(Theme.getColor(ColorId.spoilerMediaOverlay)));
         DrawAlgorithms.drawParticles(c, radius, receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), 1f);
@@ -595,8 +592,8 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
           }
         }
         if (replyToMessage.origin == null) {
-          if (message.forwardInfo != null && message.forwardInfo.fromChatId != 0 && message.forwardInfo.fromMessageId != 0 && !parent.isRepliesChat()) {
-            function = new TdApi.GetRepliedMessage(message.forwardInfo.fromChatId, message.forwardInfo.fromMessageId);
+          if (Td.hasMessageSource(message.forwardInfo) && !parent.isRepliesChat()) {
+            function = new TdApi.GetRepliedMessage(message.forwardInfo.source.chatId, message.forwardInfo.source.messageId);
           } else {
             function = new TdApi.GetRepliedMessage(message.chatId, message.id);
           }
@@ -719,14 +716,14 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     private final ImageFile miniThumbnail;
     private final ImageFile preview;
     private final Path contour;
-    private final boolean hasSpoiler;
+    private final boolean needFireIcon;
     private final boolean previewCircle;
 
-    public MediaPreview (ImageFile miniThumbnail, ImageFile preview, Path contour, boolean hasSpoiler, boolean previewCircle) {
+    public MediaPreview (ImageFile miniThumbnail, ImageFile preview, Path contour, boolean needFireIcon, boolean previewCircle) {
       this.miniThumbnail = miniThumbnail;
       this.preview = preview;
       this.contour = contour;
-      this.hasSpoiler = hasSpoiler;
+      this.needFireIcon = needFireIcon;
       this.previewCircle = previewCircle;
     }
   }
@@ -773,7 +770,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       case TdApi.MessageSticker.CONSTRUCTOR: {
         TdApi.Sticker sticker = ((TdApi.MessageSticker) content).sticker;
         thumbnail = sticker.thumbnail != null ? sticker.thumbnail : TD.toThumbnail(sticker);
-        contour = Td.buildOutline(sticker, isMessageComponent() ? mHeight : height);
+        // FIXME contour = Td.buildOutline(sticker, isMessageComponent() ? mHeight : height);
         break;
       }
       case TdApi.MessageVideo.CONSTRUCTOR: {
@@ -806,20 +803,155 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
         break;
       }
       case TdApi.MessageText.CONSTRUCTOR: {
-        TdApi.WebPage webPage = ((TdApi.MessageText) content).webPage;
-        if (webPage != null) {
-          if (webPage.photo != null) {
-            photoSize = MediaWrapper.pickDisplaySize(tdlib, webPage.photo.sizes, chatId);
-            miniThumbnail = webPage.photo.minithumbnail;
-          } else if (webPage.document != null && webPage.document.thumbnail != null) {
-            thumbnail = webPage.document.thumbnail;
-            miniThumbnail = webPage.document.minithumbnail;
-          } else if (webPage.sticker != null && webPage.sticker.thumbnail != null) {
-            thumbnail = webPage.sticker.thumbnail;
-            contour = Td.buildOutline(webPage.sticker, isMessageComponent() ? mHeight : height);
-          } else if (webPage.animation != null && webPage.animation.thumbnail != null) {
-            thumbnail = webPage.animation.thumbnail;
-            miniThumbnail = webPage.animation.minithumbnail;
+        TdApi.LinkPreview linkPreview = ((TdApi.MessageText) content).linkPreview;
+        if (linkPreview != null) {
+          switch (linkPreview.type.getConstructor()) {
+            case TdApi.LinkPreviewTypeSticker.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeSticker sticker = (TdApi.LinkPreviewTypeSticker) linkPreview.type;
+              thumbnail = sticker.sticker.thumbnail;
+              // FIXME contour = Td.buildOutline(sticker.sticker, isMessageComponent() ? mHeight : height);
+              break;
+            }
+            case TdApi.LinkPreviewTypeStickerSet.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeStickerSet stickerSet = (TdApi.LinkPreviewTypeStickerSet) linkPreview.type;
+              if (stickerSet.stickers.length > 0) {
+                TdApi.Sticker sticker = stickerSet.stickers[0];
+                thumbnail = sticker.thumbnail;
+                // FIXME contour = Td.buildOutline(sticker, isMessageComponent() ? mHeight : height);
+              }
+              break;
+            }
+            case TdApi.LinkPreviewTypeAnimation.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeAnimation animation = (TdApi.LinkPreviewTypeAnimation) linkPreview.type;
+              thumbnail = animation.animation.thumbnail;
+              miniThumbnail = animation.animation.minithumbnail;
+              break;
+            }
+            case TdApi.LinkPreviewTypeDocument.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeDocument document = (TdApi.LinkPreviewTypeDocument) linkPreview.type;
+              thumbnail = document.document.thumbnail;
+              miniThumbnail = document.document.minithumbnail;
+              break;
+            }
+            case TdApi.LinkPreviewTypePhoto.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypePhoto photo = (TdApi.LinkPreviewTypePhoto) linkPreview.type;
+              photoSize = MediaWrapper.pickDisplaySize(tdlib, photo.photo.sizes, chatId);
+              miniThumbnail = photo.photo.minithumbnail;
+              break;
+            }
+            case TdApi.LinkPreviewTypeArticle.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeArticle article = (TdApi.LinkPreviewTypeArticle) linkPreview.type;
+              if (article.photo != null) {
+                photoSize = MediaWrapper.pickDisplaySize(tdlib, article.photo.sizes, chatId);
+                miniThumbnail = article.photo.minithumbnail;
+              }
+              break;
+            }
+            case TdApi.LinkPreviewTypeVideo.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeVideo video = (TdApi.LinkPreviewTypeVideo) linkPreview.type;
+              if (video.video != null) {
+                thumbnail = video.video.thumbnail;
+                miniThumbnail = video.video.minithumbnail;
+              }
+              break;
+            }
+            case TdApi.LinkPreviewTypeEmbeddedAnimationPlayer.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeEmbeddedAnimationPlayer animationPlayer = (TdApi.LinkPreviewTypeEmbeddedAnimationPlayer) linkPreview.type;
+              if (animationPlayer.thumbnail != null) {
+                photoSize = MediaWrapper.pickDisplaySize(tdlib, animationPlayer.thumbnail.sizes, chatId);
+                miniThumbnail = animationPlayer.thumbnail.minithumbnail;
+              }
+              break;
+            }
+            case TdApi.LinkPreviewTypeEmbeddedVideoPlayer.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeEmbeddedVideoPlayer videoPlayer = (TdApi.LinkPreviewTypeEmbeddedVideoPlayer) linkPreview.type;
+              if (videoPlayer.thumbnail != null) {
+                photoSize = MediaWrapper.pickDisplaySize(tdlib, videoPlayer.thumbnail.sizes, chatId);
+                miniThumbnail = videoPlayer.thumbnail.minithumbnail;
+              }
+              break;
+            }
+            case TdApi.LinkPreviewTypeVideoNote.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeVideoNote videoNote = (TdApi.LinkPreviewTypeVideoNote) linkPreview.type;
+              thumbnail = videoNote.videoNote.thumbnail;
+              miniThumbnail = videoNote.videoNote.minithumbnail;
+              previewCircle = true;
+              break;
+            }
+            case TdApi.LinkPreviewTypeAlbum.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeAlbum album = (TdApi.LinkPreviewTypeAlbum) linkPreview.type;
+              if (album.media.length > 0) {
+                TdApi.LinkPreviewAlbumMedia albumMedia = album.media[0];
+                switch (albumMedia.getConstructor()) {
+                  case TdApi.LinkPreviewAlbumMediaPhoto.CONSTRUCTOR: {
+                    TdApi.LinkPreviewAlbumMediaPhoto photo = (TdApi.LinkPreviewAlbumMediaPhoto) albumMedia;
+                    photoSize = MediaWrapper.pickDisplaySize(tdlib, photo.photo.sizes, chatId);
+                    miniThumbnail = photo.photo.minithumbnail;
+                    break;
+                  }
+                  case TdApi.LinkPreviewAlbumMediaVideo.CONSTRUCTOR: {
+                    TdApi.LinkPreviewAlbumMediaVideo video = (TdApi.LinkPreviewAlbumMediaVideo) albumMedia;
+                    miniThumbnail = video.video.minithumbnail;
+                    thumbnail = video.video.thumbnail;
+                    break;
+                  }
+                  default: {
+                    Td.assertLinkPreviewAlbumMedia_8c33c943();
+                    throw Td.unsupported(albumMedia);
+                  }
+                }
+              }
+              break;
+            }
+            case TdApi.LinkPreviewTypeChat.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeChat chat = (TdApi.LinkPreviewTypeChat) linkPreview.type;
+              if (chat.photo != null) {
+                photoSize = MediaWrapper.pickDisplaySize(tdlib, chat.photo.sizes, chatId);
+                TdApi.PhotoSize smallest = Td.findSmallest(chat.photo.sizes);
+                if (smallest != null && smallest != photoSize) {
+                  thumbnail = TD.toThumbnail(photoSize);
+                }
+                miniThumbnail = chat.photo.minithumbnail;
+                previewCircle = true;
+              }
+              break;
+            }
+            case TdApi.LinkPreviewTypeUser.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeUser user = (TdApi.LinkPreviewTypeUser) linkPreview.type;
+              if (user.photo != null) {
+                photoSize = MediaWrapper.pickDisplaySize(tdlib, user.photo.sizes, chatId);
+                TdApi.PhotoSize smallest = Td.findSmallest(user.photo.sizes);
+                if (smallest != null && smallest != photoSize) {
+                  thumbnail = TD.toThumbnail(photoSize);
+                }
+                miniThumbnail = user.photo.minithumbnail;
+                previewCircle = true;
+              }
+              break;
+            }
+            case TdApi.LinkPreviewTypeVideoChat.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeVoiceNote.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeApp.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeAudio.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeBackground.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeChannelBoost.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeEmbeddedAudioPlayer.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeInvoice.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeMessage.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypePremiumGiftCode.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeShareableChatFolder.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeStory.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeSupergroupBoost.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeTheme.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeUnsupported.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeUpgradedGift.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeWebApp.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeExternalAudio.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeExternalVideo.CONSTRUCTOR:
+              break;
+            default:
+              Td.assertLinkPreviewType_e4d80559();
+              throw Td.unsupported(linkPreview.type);
           }
         }
         break;
@@ -853,7 +985,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     } else {
       miniPreview = null;
     }
-    return new MediaPreview(miniPreview, preview, contour, hasSpoiler, previewCircle);
+    return new MediaPreview(miniPreview, preview, contour, isPrivate || hasSpoiler, previewCircle);
   }
 
   private void setMessage (TdApi.Message msg, boolean forceRequestImage, boolean forceLocal) {
@@ -964,11 +1096,13 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
           tdlib.client().send(function, this);
           return;
         }
+        this.currentError = (TdApi.Error) object;
         if (!ignoreFailures) {
-          this.currentError = (TdApi.Error) object;
           String errorTitle = Lang.getString(R.string.Error);
           setContent((sender == null && StringUtils.isEmpty(senderName)) ? errorTitle : computeTitleText(errorTitle), TD.errorCode(object) == 404 ? new ContentPreview(null, R.string.DeletedMessage) : new ContentPreview(null, 0, TD.toErrorString(object), true), null, false);
           currentMessage = null;
+        } else {
+          setChannelTitle(TD.errorCode(object) == 404 ? Lang.getString(R.string.DeletedMessage) : TD.toErrorString(object));
         }
         break;
       }
