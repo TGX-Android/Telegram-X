@@ -533,7 +533,7 @@ public class TGCallService extends Service implements
 
   private CallSettings postponedCallSettings;
   boolean lastCameraStatus;
-  boolean lastCameraFrontFacing;
+  boolean lastCameraFrontFacing = true;
   boolean lastScreenSharing;
 
   @Override
