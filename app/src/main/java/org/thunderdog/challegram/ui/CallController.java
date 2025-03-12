@@ -51,7 +51,6 @@ import androidx.annotation.Nullable;
 import org.drinkless.tdlib.TdApi;
 import io.github.pytgcalls.AndroidUtils;
 import io.github.pytgcalls.devices.JavaVideoCapturerModule;
-import io.github.pytgcalls.media.SourceState;
 import io.github.pytgcalls.media.StreamDevice;
 import org.pytgcalls.ntgcallsx.VoIPFloatingLayout;
 import org.pytgcalls.ntgcallsx.VoIPTextureView;
@@ -98,6 +97,7 @@ import org.webrtc.VideoFrame;
 import java.util.ArrayList;
 import java.util.function.Function;
 
+import io.github.pytgcalls.media.StreamStatus;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ScrimUtil;
 import me.vkryl.android.ViewUtils;
@@ -1301,13 +1301,13 @@ public class CallController extends ViewController<CallController.Arguments> imp
             service.setRemoteSourceChangeCallback((chatId, remoteSource) -> AndroidUtils.runOnUIThread(() -> {
               if (remoteSource.device == StreamDevice.CAMERA || remoteSource.device == StreamDevice.SCREEN) {
                 var currentUserActive = callSettings.getLocalCameraState() != VoIPFloatingLayout.STATE_GONE;
-                if (remoteSource.state == SourceState.ACTIVE) {
+                if (remoteSource.state == StreamStatus.ACTIVE) {
                   callSettings.setRemoteCameraState(VoIPFloatingLayout.STATE_FULLSCREEN);
                   callingUserTextureView.setVisibility(View.VISIBLE);
                   callingUserTextureView.renderer.init(JavaVideoCapturerModule.getSharedEGLContext(), null);
                   callingUserMiniTextureRenderer.init(JavaVideoCapturerModule.getSharedEGLContext(), null);
                   if (currentUserActive) callSettings.setLocalCameraState(VoIPFloatingLayout.STATE_FLOATING);
-                } else if (remoteSource.state == SourceState.INACTIVE) {
+                } else if (remoteSource.state == StreamStatus.IDLING) {
                   callSettings.setRemoteCameraState(VoIPFloatingLayout.STATE_GONE);
                   callingUserTextureView.setVisibility(View.GONE);
                   callingUserTextureView.stopCapturing();

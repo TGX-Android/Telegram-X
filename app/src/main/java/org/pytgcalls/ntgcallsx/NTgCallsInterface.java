@@ -9,7 +9,7 @@ import android.view.WindowManager;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
-import io.github.pytgcalls.CallNetworkState;
+import io.github.pytgcalls.NetworkInfo;
 import io.github.pytgcalls.FrameCallback;
 import io.github.pytgcalls.NTgCalls;
 import io.github.pytgcalls.RemoteSourceChangeCallback;
@@ -52,9 +52,9 @@ public class NTgCallsInterface implements CallInterface {
     ntgcalls = new NTgCalls();
     ntgcalls.setSignalingDataCallback((callId, data) -> listener.onSignallingDataEmitted(data));
     ntgcalls.setConnectionChangeCallback((chatId, callNetworkState) -> {
-      if (callNetworkState.state == CallNetworkState.State.CONNECTED) {
+      if (callNetworkState.state == NetworkInfo.State.CONNECTED) {
          listener.onConnectionStateChanged(null, CallState.ESTABLISHED);
-      } else if (callNetworkState.state != CallNetworkState.State.CONNECTING) {
+      } else if (callNetworkState.state != NetworkInfo.State.CONNECTING) {
          listener.onConnectionStateChanged(null, CallState.FAILED);
       }
     });
