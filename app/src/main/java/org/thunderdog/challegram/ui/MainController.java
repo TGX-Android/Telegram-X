@@ -1455,8 +1455,37 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       TdApi.ChatList chatList = pagerChatLists.get(index);
       showChatListOptions(chatList);
       return true;
+    } else if (index == POSITION_CALLS) {
+      ViewController<?> controller = getCachedControllerForPosition(index);
+      if (controller instanceof CallListController) {
+        CallListController callListController = (CallListController) controller;
+        if (callListController.hasRecentCalls()) {
+          showClearCallsConfirmationDialog();
+          return true;
+        }
+      }
     }
     return false;
+  }
+
+  private void showClearCallsConfirmationDialog() {
+    showSettings(new SettingsWrapBuilder(R.id.btn_delete)
+      .setHeaderItem(new ListItem(ListItem.TYPE_INFO, R.id.text_title, 0, R.string.AreYouSureClearCalls, false))
+      .setRawItems(new ListItem[] {
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_deleteAll, 0, R.string.DeleteForEveryone, false)
+      })
+      .setIntDelegate((_id, result) -> {
+        if (_id == R.id.btn_delete) {
+          context.currentTdlib().clearCallsHistory(result.get(R.id.btn_deleteAll) != 0, success -> {
+            if (success) {
+              UI.showToast(R.string.Done, Toast.LENGTH_SHORT);
+            }
+          });
+        }
+      })
+      .setSaveStr(R.string.Delete)
+      .setSaveColorId(ColorId.textNegative)
+    );
   }
 
   private ChatsController newChatsController (TdApi.ChatList chatList, @Filter int filter) {
