@@ -335,7 +335,7 @@ public class CallListController extends RecyclerViewController<Void> implements
   }
 
   private void removeTopChat (final TGFoundChat chat) {
-    showOptions(Lang.getStringBold(R.string.ChatHintsDelete, chat.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.Delete), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_sweep_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+    showOptions(Lang.getStringBold(R.string.ChatHintsDelete, chat.getTitle()), new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getString(R.string.Delete), Lang.getString(R.string.Cancel)}, new int[]{OptionColor.RED, OptionColor.NORMAL}, new int[]{R.drawable.baseline_delete_sweep_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_delete) {
         tdlib.client().send(new TdApi.RemoveTopChat(new TdApi.TopChatCategoryCalls(), chat.getChatId()), tdlib.okHandler());
         if (hasTopChats()) {
@@ -673,7 +673,7 @@ public class CallListController extends RecyclerViewController<Void> implements
       final long chatId = call.getChatId();
       final long[] messageIdsToDelete = call.getMessageIds();
       if (messageIdsToDelete != null) {
-        showOptions(null, new int[] {R.id.btn_deleteAll, R.id.btn_openChat, R.id.btn_cancel}, new String[] {Lang.getString(R.string.DeleteEntry), Lang.getString(R.string.OpenChat), Lang.getString(R.string.Cancel)}, new int[] {OptionColor.RED, OptionColor.NORMAL, OptionColor.NORMAL}, new int[] {R.drawable.baseline_delete_sweep_24, R.drawable.baseline_chat_bubble_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        showOptions(null, new int[]{R.id.btn_deleteAll, R.id.btn_openChat, R.id.btn_cancel}, new String[]{Lang.getString(R.string.DeleteEntry), Lang.getString(R.string.OpenChat), Lang.getString(R.string.Cancel)}, new int[]{OptionColor.RED, OptionColor.NORMAL, OptionColor.NORMAL}, new int[]{R.drawable.baseline_delete_sweep_24, R.drawable.baseline_chat_bubble_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
           if (id == R.id.btn_deleteAll) {
             tdlib.deleteMessages(chatId, messageIdsToDelete, false);
           } else if (id == R.id.btn_openChat) {
