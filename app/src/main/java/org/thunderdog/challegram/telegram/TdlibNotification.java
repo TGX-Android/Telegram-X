@@ -529,7 +529,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
     CountDownLatch downloadLatch = new CountDownLatch(files.size());
     for (int i = 0; i < files.size(); i++) {
       TdApi.File file = files.valueAt(i).getFile();
-      tdlib.client().send(new TdApi.DownloadFile(file.id, 32, 0, 0, true), result -> {
+      tdlib.client().send(new TdApi.DownloadFile(file.id, TdlibFilesManager.PRIORITY_NOTIFICATION_MEDIA, 0, 0, true), result -> {
         switch (result.getConstructor()) {
           case TdApi.File.CONSTRUCTOR:
             synchronized (file) {

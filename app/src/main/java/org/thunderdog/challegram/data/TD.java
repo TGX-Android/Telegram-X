@@ -3899,6 +3899,40 @@ public class TD {
     return null;
   }
 
+  public static long getDurationMs (TdApi.Message msg) {
+    if (msg == null) {
+      return 0L;
+    }
+    switch (msg.content.getConstructor()) {
+      case TdApi.MessageAnimation.CONSTRUCTOR: {
+        return TimeUnit.SECONDS.toMillis(((TdApi.MessageAnimation) msg.content).animation.duration);
+      }
+      case TdApi.MessageVoiceNote.CONSTRUCTOR: {
+        return TimeUnit.SECONDS.toMillis(((TdApi.MessageVoiceNote) msg.content).voiceNote.duration);
+      }
+      case TdApi.MessageVideoNote.CONSTRUCTOR: {
+        return TimeUnit.SECONDS.toMillis(((TdApi.MessageVideoNote) msg.content).videoNote.duration);
+      }
+      case TdApi.MessageVideo.CONSTRUCTOR: {
+        return TimeUnit.SECONDS.toMillis(((TdApi.MessageVideo) msg.content).video.duration);
+      }
+      case TdApi.MessageDocument.CONSTRUCTOR: {
+        return 0L; // Unknown
+      }
+      case TdApi.MessageAudio.CONSTRUCTOR: {
+        return TimeUnit.SECONDS.toMillis(((TdApi.MessageAudio) msg.content).audio.duration);
+      }
+      case TdApi.MessageText.CONSTRUCTOR: {
+        TdApi.LinkPreview linkPreview = ((TdApi.MessageText) msg.content).linkPreview;
+        if (linkPreview != null) {
+          return TimeUnit.SECONDS.toMillis(Td.getDuration(linkPreview.type));
+        }
+        return 0L;
+      }
+    }
+    return 0L;
+  }
+
   public static TdApi.File getFile (TGMessage msg) {
     TdApi.File file = getFile(msg.getMessage());
     if (file != null) {

@@ -349,12 +349,12 @@ public class AudioController extends BasePlaybackController implements TGAudio.P
     if (reverseMode) {
       for (int i = count - 1; i >= 0; i--) {
         TdApi.Message track = trackList.get(i);
-        MediaSource source = U.newMediaSource(tdlib.id(), track);
+        MediaSource source = U.newAudioMediaSource(tdlib.id(), track);
         mediaSources.add(source);
       }
     } else {
       for (TdApi.Message track : trackList) {
-        MediaSource source = U.newMediaSource(tdlib.id(), track);
+        MediaSource source = U.newAudioMediaSource(tdlib.id(), track);
         mediaSources.add(source);
       }
     }
@@ -437,7 +437,7 @@ public class AudioController extends BasePlaybackController implements TGAudio.P
     if (position <= playIndex) {
       playIndex++;
     }
-    MediaSource mediaSource = U.newMediaSource(tdlib.id(), newTrack);
+    MediaSource mediaSource = U.newAudioMediaSource(tdlib.id(), newTrack);
     int currentSize = exoPlayer.getMediaItemCount();
     int atIndex = inReverseMode() ? currentSize - position : position;
     exoPlayer.addMediaSource(atIndex, mediaSource);
@@ -545,7 +545,7 @@ public class AudioController extends BasePlaybackController implements TGAudio.P
     boolean reverseOrder = (playFlags & TGPlayerController.PLAYLIST_FLAG_REVERSE) != 0;
     while (--remaining >= 0) {
       TdApi.Message addedTrack = addedItems.get(reverseOrder ? remaining : addedItems.size() - 1 - remaining);
-      newItems.add(U.newMediaSource(tdlib.id(), addedTrack));
+      newItems.add(U.newAudioMediaSource(tdlib.id(), addedTrack));
     }
 
     boolean addOnBottom = reverseOrder != areNew;

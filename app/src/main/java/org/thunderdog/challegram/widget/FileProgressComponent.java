@@ -555,7 +555,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
           runOnUiThreadOptional(c, defaultOpen);
           return true;
         }
-        tdlib.files().downloadFile(file, TdlibFilesManager.DEFAULT_DOWNLOAD_PRIORITY, (downloadedFile, error) -> {
+        tdlib.files().downloadFile(file, TdlibFilesManager.PRIORITY_USER_REQUEST_DOWNLOAD, (downloadedFile, error) -> {
           if (error != null) {
             UI.showError(error);
             return;

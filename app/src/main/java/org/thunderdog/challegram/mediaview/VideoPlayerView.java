@@ -52,6 +52,8 @@ import org.thunderdog.challegram.mediaview.crop.CroppedLayout;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.telegram.CallManager;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibDataSource;
+import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.UI;
@@ -60,6 +62,7 @@ import org.thunderdog.challegram.tool.Views;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
@@ -178,10 +181,11 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
       case MediaItem.TYPE_GIF: {
         HlsVideo hlsVideo = mediaItem.getHslVideo();
         TdApi.File targetFile = mediaItem.getTargetFile();
-        if (hlsVideo != null && !(TD.isFileLoaded(targetFile) || targetFile.local.isDownloadingActive)) {
-          source = U.newMediaSource(mediaItem.tdlib().id(), hlsVideo);
+        if (hlsVideo == null || TD.isFileLoaded(targetFile) || targetFile.local.isDownloadingActive) {
+          long durationMs = mediaItem.getVideoDuration(false, TimeUnit.MILLISECONDS);
+          source = U.newMediaSource(mediaItem.tdlib().id(), targetFile, TdlibFilesManager.PRIORITY_STREAMING_VIDEO, TdlibDataSource.Flag.OPTIMIZE_CHUNKS, durationMs);
         } else {
-          source = U.newMediaSource(mediaItem.tdlib().id(), targetFile);
+          source = U.newMediaSource(mediaItem.tdlib().id(), hlsVideo);
         }
         forcePlay = mediaItem.getType() == MediaItem.TYPE_GIF;
         break;

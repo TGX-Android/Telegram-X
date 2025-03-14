@@ -96,12 +96,10 @@ import androidx.media3.exoplayer.ExoPlaybackException;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.exoplayer.RenderersFactory;
 import androidx.media3.exoplayer.analytics.PlayerId;
-import androidx.media3.exoplayer.hls.BundledHlsMediaChunkExtractor;
 import androidx.media3.exoplayer.hls.DefaultHlsExtractorFactory;
 import androidx.media3.exoplayer.hls.HlsExtractorFactory;
 import androidx.media3.exoplayer.hls.HlsMediaChunkExtractor;
 import androidx.media3.exoplayer.hls.HlsMediaSource;
-import androidx.media3.exoplayer.hls.playlist.DefaultHlsPlaylistParserFactory;
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import androidx.media3.exoplayer.source.MediaSource;
 import androidx.media3.exoplayer.source.ProgressiveMediaSource;
@@ -129,6 +127,7 @@ import org.thunderdog.challegram.telegram.RandomAccessDataSource;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibDataSource;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
+import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibNotificationChannelGroup;
 import org.thunderdog.challegram.telegram.TdlibNotificationManager;
 import org.thunderdog.challegram.tool.Fonts;
@@ -765,8 +764,10 @@ public class U {
     return androidx.media3.common.MediaItem.fromUri(uri);
   }
 
-  public static MediaSource newMediaSource (int accountId, TdApi.Message message) {
-    return newMediaSource(accountId, TD.getFile(message));
+  public static MediaSource newAudioMediaSource (int accountId, TdApi.Message message) {
+    TdApi.File file = TD.getFile(message);
+    long durationMs = TD.getDurationMs(message);
+    return newMediaSource(accountId, file, TdlibFilesManager.PRIORITY_STREAMING_AUDIO, TdlibDataSource.Flag.DOWNLOAD_FULLY, durationMs);
   }
 
   public static MediaSource newMediaSource (int accountId, @Nullable HlsVideo hlsVideo) {
@@ -776,7 +777,7 @@ public class U {
 
     Uri manifestUri = TdlibDataSource.UriFactory.create(accountId, -1);
 
-    TdlibDataSource.Factory factory = new TdlibDataSource.Factory(accountId, new TdlibDataSource.RequestModifier() {
+    TdlibDataSource.Factory factory = new TdlibDataSource.Factory(accountId, TdlibFilesManager.PRIORITY_STREAMING_VIDEO, new TdlibDataSource.RequestModifier() {
       @Override
       public Uri modifyUri (Uri sourceUri) {
         String scheme = sourceUri.getScheme();
@@ -787,11 +788,11 @@ public class U {
           case HlsVideo.MTPROTO_SCHEME: {
             long streamId = HlsVideo.extractStreamId(sourceUri);
             int videoFileId = hlsVideo.findVideoFileIdByStreamId(streamId);
-            return TdlibDataSource.UriFactory.create(accountId, videoFileId);
+            return TdlibDataSource.UriFactory.create(accountId, videoFileId, TdlibFilesManager.PRIORITY_STREAMING_HLS_VIDEO, TdlibDataSource.Flag.DOWNLOAD_PRECISELY, TimeUnit.SECONDS.toMillis(hlsVideo.video.duration));
           }
           case HlsVideo.SCHEME: {
             HlsPath hlsPath = HlsPath.fromUri(sourceUri);
-            return TdlibDataSource.UriFactory.create(accountId, hlsPath.hlsFileId);
+            return TdlibDataSource.UriFactory.create(accountId, hlsPath.hlsFileId, TdlibFilesManager.PRIORITY_STREAMING_HLS_PLAYLIST, TdlibDataSource.Flag.DOWNLOAD_FULLY, 0);
           }
           default: {
             return sourceUri;
@@ -843,7 +844,7 @@ public class U {
     };
   }
 
-  public static MediaSource newMediaSource (int accountId, @Nullable TdApi.File file) {
+  public static MediaSource newMediaSource (int accountId, @Nullable TdApi.File file, int priority, @TdlibDataSource.Flag int flags, long durationMs) {
     if (file == null)
       throw new IllegalArgumentException();
     Uri uri;
@@ -852,7 +853,7 @@ public class U {
       uri = Uri.fromFile(new File(file.local.path));
       factory = new FileDataSource.Factory();
     } else {
-      uri = TdlibDataSource.UriFactory.create(accountId, file);
+      uri = TdlibDataSource.UriFactory.create(accountId, file, priority, flags, durationMs);
       factory = new TdlibDataSource.Factory();
     }
     androidx.media3.common.MediaItem media = newMediaItem(uri);

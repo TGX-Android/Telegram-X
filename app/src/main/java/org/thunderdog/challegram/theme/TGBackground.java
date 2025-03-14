@@ -27,6 +27,7 @@ import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageFileLocal;
 import org.thunderdog.challegram.loader.ImageFileRemote;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -542,7 +543,7 @@ public class TGBackground {
     if (target instanceof ImageFileRemote) {
       ((ImageFileRemote) target).extractFile(result -> {
         if (result instanceof TdApi.File) {
-          tdlib.client().send(new TdApi.DownloadFile(((TdApi.File) result).id, 32, 0, 0, false), tdlib.okHandler());
+          tdlib.client().send(new TdApi.DownloadFile(((TdApi.File) result).id, TdlibFilesManager.PRIORITY_CHAT_WALLPAPER, 0, 0, false), tdlib.okHandler());
         }
       });
     }

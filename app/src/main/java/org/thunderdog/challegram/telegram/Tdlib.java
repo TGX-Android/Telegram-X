@@ -10167,8 +10167,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       return;
     myProfilePhoto = newProfilePhoto;
     if (newProfilePhoto != null) {
-      client().send(new TdApi.DownloadFile(newProfilePhoto.small.id, TdlibFilesManager.CLOUD_PRIORITY + 2, 0, 0, true), profilePhotoHandler(false));
-      client().send(new TdApi.DownloadFile(newProfilePhoto.big.id, TdlibFilesManager.CLOUD_PRIORITY, 0, 0, true), profilePhotoHandler(true));
+      client().send(new TdApi.DownloadFile(newProfilePhoto.small.id, TdlibFilesManager.PRIORITY_SELF_AVATAR_SMALL, 0, 0, true), profilePhotoHandler(false));
+      client().send(new TdApi.DownloadFile(newProfilePhoto.big.id, TdlibFilesManager.PRIORITY_SELF_AVATAR_BIG, 0, 0, true), profilePhotoHandler(true));
     }
   }
 
@@ -10210,9 +10210,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       emoji().findOrRequest(newEmojiStatusId, entry -> {
         if (!entry.isNotFound() && newEmojiStatusId == myEmojiStatusId) {
           account().storeUserEmojiStatusMetadata(newEmojiStatusId, entry.value);
-          client().send(new TdApi.DownloadFile(entry.value.sticker.id, TdlibFilesManager.CLOUD_PRIORITY + 1, 0, 0, true), emojiStatusHandler(entry, false));
+          client().send(new TdApi.DownloadFile(entry.value.sticker.id, TdlibFilesManager.PRIORITY_SELF_EMOJI_STATUS, 0, 0, true), emojiStatusHandler(entry, false));
           if (entry.value.thumbnail != null) {
-            client().send(new TdApi.DownloadFile(entry.value.thumbnail.file.id, TdlibFilesManager.CLOUD_PRIORITY, 0, 0, true), emojiStatusHandler(entry, true));
+            client().send(new TdApi.DownloadFile(entry.value.thumbnail.file.id, TdlibFilesManager.PRIORITY_SELF_EMOJI_STATUS_THUMBNAIL, 0, 0, true), emojiStatusHandler(entry, true));
           }
         }
       });
