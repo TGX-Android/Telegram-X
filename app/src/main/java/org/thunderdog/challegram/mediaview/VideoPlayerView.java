@@ -36,7 +36,6 @@ import androidx.media3.common.VideoSize;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.exoplayer.analytics.AnalyticsListener;
 import androidx.media3.exoplayer.source.ClippingMediaSource;
-import androidx.media3.exoplayer.source.LoopingMediaSource;
 import androidx.media3.exoplayer.source.MediaSource;
 
 import org.drinkless.tdlib.TdApi;
@@ -46,6 +45,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.mediaview.crop.CropEffectFactory;
 import org.thunderdog.challegram.mediaview.crop.CropState;
 import org.thunderdog.challegram.mediaview.crop.CroppedLayout;
@@ -64,6 +64,7 @@ import java.util.List;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
+import tgx.td.data.HlsVideo;
 
 public class VideoPlayerView implements Player.Listener, CallManager.CurrentCallListener, Runnable {
   private final Context context;
@@ -141,7 +142,7 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
     }
     prepareTextureView();
     setMuted(mediaItem != null && mediaItem.needMute());
-    setLooping(forceLooping || (mediaItem != null && mediaItem.isSecret()));
+    setLooping(forceLooping || (mediaItem != null && (mediaItem.isSecret() || mediaItem.isGifType())));
     setNoProgressUpdates(mediaItem != null && mediaItem.isSecret());
     if (mediaItem != null) {
       TdlibManager.instance().calls().addCurrentCallListener(this);
@@ -173,13 +174,16 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
     boolean forcePlay = false;
 
     switch (mediaItem.getType()) {
-      case MediaItem.TYPE_VIDEO: {
-        source = U.newMediaSource(mediaItem.tdlib().id(), mediaItem.getTargetFile());
-        break;
-      }
+      case MediaItem.TYPE_VIDEO:
       case MediaItem.TYPE_GIF: {
-        source = new LoopingMediaSource(U.newMediaSource(mediaItem.tdlib().id(), mediaItem.getTargetFile()));
-        forcePlay = true;
+        HlsVideo hlsVideo = mediaItem.getHslVideo();
+        TdApi.File targetFile = mediaItem.getTargetFile();
+        if (hlsVideo != null && !(TD.isFileLoaded(targetFile) || targetFile.local.isDownloadingActive)) {
+          source = U.newMediaSource(mediaItem.tdlib().id(), hlsVideo);
+        } else {
+          source = U.newMediaSource(mediaItem.tdlib().id(), targetFile);
+        }
+        forcePlay = mediaItem.getType() == MediaItem.TYPE_GIF;
         break;
       }
       case MediaItem.TYPE_GALLERY_VIDEO: {
@@ -206,7 +210,7 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
       // setLongStreamingAlertHandler(true);
       this.player.addAnalyticsListener(new AnalyticsListener() {
         @Override
-        public void onRenderedFirstFrame (EventTime eventTime, Object output, long renderTimeMs) {
+        public void onRenderedFirstFrame (@NonNull EventTime eventTime, @NonNull Object output, long renderTimeMs) {
           setLongStreamingAlertHandler(false);
         }
       });
@@ -370,11 +374,9 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
 
   private void setDataSource (MediaSource mediaSource) {
     if (player != null && this.mediaSource != mediaSource) {
-      if (this.mediaSource != null && this.mediaSource instanceof ClippingMediaSource) {
-        // this.mediaSource.releaseSource();
-      }
       this.mediaSource = mediaSource;
       player.setMediaSource(mediaSource);
+      player.setRepeatMode(isLooping ? Player.REPEAT_MODE_ONE : Player.REPEAT_MODE_OFF);
       player.prepare();
     }
   }
@@ -436,14 +438,6 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
     }
   }
 
-  // utils
-
-  private MediaCellView boundCell;
-
-  public void setBoundCell (MediaCellView boundCell) {
-    this.boundCell = boundCell;
-  }
-
   // ExoPlayer listener
 
   @Override
@@ -456,14 +450,11 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
       callback.onBufferingStateChanged(playbackState == Player.STATE_BUFFERING);
     }
 
-    switch (playbackState) {
-      case Player.STATE_ENDED: {
-        if (isLooping && player != null) {
-          player.seekTo(0);
-        } else {
-          reset();
-        }
-        break;
+    if (playbackState == Player.STATE_ENDED) {
+      if (isLooping && player != null) {
+        player.seekTo(0);
+      } else {
+        reset();
       }
     }
   }
@@ -471,7 +462,7 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
   private boolean preferExtensions = Config.PREFER_RENDER_EXTENSIONS;
 
   @Override
-  public void onPlayerError (PlaybackException error) {
+  public void onPlayerError (@NonNull PlaybackException error) {
     if (U.isRenderError(error) && preferExtensions == Config.PREFER_RENDER_EXTENSIONS) {
       Log.w(Log.TAG_VIDEO, "Unable to play video, but trying to retry, preferExtensions:%b", error, preferExtensions);
       preferExtensions = !preferExtensions;

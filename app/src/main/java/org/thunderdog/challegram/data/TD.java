@@ -1545,8 +1545,16 @@ public class TD {
         everybodyExceptRes = R.string.PrivacyGiftsEverybodyExcept;
         everybodyRes = R.string.PrivacyGiftsEverybody;
         break;
+      case TdApi.UserPrivacySettingAllowUnpaidMessages.CONSTRUCTOR:
+        nobodyExceptRes = R.string.PrivacyNoFeeNobodyExcept;
+        nobodyRes = R.string.PrivacyNoFeeNobody;
+        contactsExceptRes = R.string.PrivacyNoFeeContactsExcept;
+        contactsRes = R.string.PrivacyNoFeeContacts;
+        everybodyExceptRes = R.string.PrivacyNoFeeEverybodyExcept;
+        everybodyRes = R.string.PrivacyNoFeeEverybody;
+        break;
       default:
-        Td.assertUserPrivacySetting_99ac9ff();
+        Td.assertUserPrivacySetting_6bbb3d7e();
         throw new UnsupportedOperationException(Integer.toString(privacyKey));
     }
 
@@ -2116,7 +2124,7 @@ public class TD {
       false, false, false,
       null, false, false,
       "", false, false,
-      false, false,
+      false, 0, false,
       new TdApi.UserTypeRegular(),
       null,
       false
@@ -3816,12 +3824,42 @@ public class TD {
     return false;
   }
 
-  public static boolean canDeleteFile (TdApi.Message message) {
-    return canDeleteFile(message, getFile(message));
+  public static boolean canDeleteFiles (Tdlib tdlib, TdApi.Message message) {
+    List<TdApi.File> files = getFiles(message);
+    if (files != null) {
+      tdlib.files().syncFiles(files, 500L);
+      for (TdApi.File file : files) {
+        if (canDeleteFile(message, file)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   public static boolean canDeleteFile (TdApi.Message message, TdApi.File file) {
-    return isHeavyContent(message) && file != null && file.local != null && file.local.canBeDeleted && file.local.downloadedPrefixSize > 0;
+    return isHeavyContent(message) && file != null && file.local != null && file.local.canBeDeleted && file.local.downloadedSize > 0;
+  }
+
+  public static @Nullable List<TdApi.File> getFiles (TdApi.Message msg) {
+    if (msg == null) {
+      return null;
+    }
+    if (msg.content.getConstructor() == TdApi.MessageVideo.CONSTRUCTOR) {
+      TdApi.MessageVideo video = (TdApi.MessageVideo) msg.content;
+      List<TdApi.File> files = new ArrayList<>();
+      files.add(video.video.video);
+      for (TdApi.AlternativeVideo alternativeVideo : video.alternativeVideos) {
+        files.add(alternativeVideo.hlsFile);
+        files.add(alternativeVideo.video);
+      }
+      return files;
+    }
+    TdApi.File singleFile = getFile(msg);
+    if (singleFile != null) {
+      return Collections.singletonList(singleFile);
+    }
+    return null;
   }
 
   public static @Nullable TdApi.File getFile (TdApi.Message msg) {

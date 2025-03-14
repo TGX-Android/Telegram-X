@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.unit.ByteUnit;
 import tgx.td.Td;
 
 public final class TdlibDataSource extends BaseDataSource {
@@ -47,14 +48,14 @@ public final class TdlibDataSource extends BaseDataSource {
     }
 
     public static Uri create (int accountId, int fileId) {
-      if (accountId == TdlibAccount.NO_ID)
-        throw new IllegalArgumentException();
-      return new Uri.Builder()
+      Uri.Builder b = new Uri.Builder()
         .scheme(SCHEME)
-        .authority(AUTHORITY)
-        .appendQueryParameter(PARAM_ACCOUNT, Integer.toString(accountId))
-        .appendQueryParameter(PARAM_FILE_ID, Integer.toString(fileId))
-        .build();
+        .authority(AUTHORITY);
+      if (accountId != TdlibAccount.NO_ID) {
+        b.appendQueryParameter(PARAM_ACCOUNT, Integer.toString(accountId));
+      }
+      b.appendQueryParameter(PARAM_FILE_ID, Integer.toString(fileId));
+      return b.build();
     }
 
     public static Uri create (int accountId, String remoteId) {
@@ -83,36 +84,72 @@ public final class TdlibDataSource extends BaseDataSource {
     }
   }
 
-  public static final class Factory implements DataSource.Factory {
-    @Override
-    @NonNull
-    public DataSource createDataSource () {
-      return new TdlibDataSource();
+  public interface RequestModifier {
+    default Uri modifyUri (Uri sourceUri) {
+      return sourceUri;
+    }
+    @Nullable
+    default DataSource redirectDataSource (Uri uri) {
+      return null;
     }
   }
 
+  public static final class Factory implements DataSource.Factory {
+    private final int defaultAccountId;
+    private final RequestModifier requestModifier;
+
+    public Factory () {
+      this(TdlibAccount.NO_ID);
+    }
+
+    public Factory (int defaultAccountId) {
+      this(defaultAccountId, null);
+    }
+
+    public Factory (int defaultAccountId, RequestModifier requestModifier) {
+      this.defaultAccountId = defaultAccountId;
+      this.requestModifier = requestModifier;
+    }
+
+    @Override
+    @NonNull
+    public DataSource createDataSource () {
+      return new TdlibDataSource(defaultAccountId, requestModifier);
+    }
+  }
+
+  private final int defaultAccountId;
+  private final RequestModifier requestModifier;
   private Uri uri;
   private long bytesRead;
+  private long initialOffset, maxReadLength;
   private Tdlib tdlib;
   private final Object fileLock = new Object();
   private TdApi.File file;
+  private DataSource redirectedToDataSource;
 
   private final FileUpdateListener listener = this::processUpdate;
 
   private boolean referenceAcquired;
 
-  public TdlibDataSource () {
+  public TdlibDataSource (int defaultAccountId, RequestModifier requestModifier) {
     super(true);
+    this.defaultAccountId = defaultAccountId;
+    this.requestModifier = requestModifier;
   }
 
   @Override
-  public long open (DataSpec dataSpec) throws TdlibDataSourceException {
-    final Uri uri = dataSpec.uri;
+  public long open (@NonNull DataSpec dataSpec) throws TdlibDataSourceException, IOException {
+    final Uri uri = requestModifier != null ? requestModifier.modifyUri(dataSpec.uri) : dataSpec.uri;
+    this.redirectedToDataSource = requestModifier != null ? requestModifier.redirectDataSource(uri) : null;
+    if (redirectedToDataSource != null) {
+      return redirectedToDataSource.open(dataSpec);
+    }
     if (!SCHEME.equals(uri.getScheme()))
       throw new TdlibDataSourceException("Unsupported URI scheme: " + uri.getScheme());
     if (!AUTHORITY.equals(uri.getAuthority()))
       throw new TdlibDataSourceException("Unsupported URI authority: " + uri.getAuthority());
-    final int accountId = StringUtils.parseInt(uri.getQueryParameter(PARAM_ACCOUNT), TdlibAccount.NO_ID);
+    final int accountId = StringUtils.parseInt(uri.getQueryParameter(PARAM_ACCOUNT), defaultAccountId);
     if (accountId == TdlibAccount.NO_ID)
       throw new TdlibDataSourceException(PARAM_ACCOUNT + " parameter is missing");
     final int fileId = StringUtils.parseInt(uri.getQueryParameter(PARAM_FILE_ID), -1);
@@ -123,22 +160,23 @@ public final class TdlibDataSource extends BaseDataSource {
     transferInitializing(dataSpec);
 
     this.uri = uri;
-    this.bytesRead = dataSpec.position;
+    this.initialOffset = bytesRead = dataSpec.position;
+    this.maxReadLength = dataSpec.length;
     this.tdlib = TdlibManager.getTdlib(accountId);
 
-    final TdApi.Function<?> function = !StringUtils.isEmpty(remoteId) ? new TdApi.GetRemoteFile(remoteId, null) : new TdApi.GetFile(fileId);
+    final TdApi.Function<TdApi.File> function = !StringUtils.isEmpty(remoteId) ? new TdApi.GetRemoteFile(remoteId, null) : new TdApi.GetFile(fileId);
 
     final CountDownLatch openLatch = new CountDownLatch(1);
     final AtomicBoolean isOpening = new AtomicBoolean(true);
     final AtomicReference<TdApi.Object> response = new AtomicReference<>();
 
-    tdlib.client().send(function, object -> {
+    tdlib.send(function, (file, error) -> {
       synchronized (isOpening) {
         if (isOpening.getAndSet(false)) {
-          if (object.getConstructor() == TdApi.File.CONSTRUCTOR) {
-            tdlib.listeners().addFileListener(((TdApi.File) object).id, listener);
+          if (file != null) {
+            tdlib.listeners().addFileListener(file.id, listener);
           }
-          response.set(object);
+          response.set(file != null ? file : error);
         }
       }
       openLatch.countDown();
@@ -166,7 +204,11 @@ public final class TdlibDataSource extends BaseDataSource {
       this.file = (TdApi.File) result;
     }
     transferStarted(dataSpec);
-    return file.size != 0 ? file.size : C.LENGTH_UNSET;
+    if (dataSpec.length != C.LENGTH_UNSET) {
+      return file.size != 0 ? Math.min(dataSpec.length, file.size) : dataSpec.length;
+    } else {
+      return file.size != 0 ? file.size : C.LENGTH_UNSET;
+    }
   }
 
   @TdlibThread
@@ -196,21 +238,28 @@ public final class TdlibDataSource extends BaseDataSource {
         return 0;
       }
     }
-    return Math.max(0, Math.min(length, available));
+    long availableBytes = Math.max(0L, Math.min(length, available));
+    if (maxReadLength != C.LENGTH_UNSET) {
+      long remainingBytes = initialOffset + maxReadLength - offset;
+      if (remainingBytes <= 0) {
+        return C.RESULT_END_OF_INPUT;
+      }
+      availableBytes = Math.min(availableBytes, remainingBytes);
+    }
+    return availableBytes;
   }
 
   private final TdApi.File localFile = new TdApi.File(0, 0, 0, new TdApi.LocalFile(), new TdApi.RemoteFile());
   private CountDownLatch latch;
   private RandomAccessFile openFile;
 
-  private boolean acquireReference (TdApi.File file, long offset) {
+  private boolean acquireOrUpdateReference (TdApi.File file, long offset, long limit) {
     if (!referenceAcquired && file.local.canBeDownloaded) {
       referenceAcquired = true;
-      tdlib.files().addCloudReference(file, offset, listener, false, true);
+      tdlib.files().addCloudReference(file, offset, limit, listener, false);
       return true;
     } else if (referenceAcquired) {
-      if (file.local.downloadOffset != offset && !TD.withinDistance(file, offset))
-        tdlib.files().seekCloudReference(file, listener, offset);
+      tdlib.files().updateCloudReference(file, listener, offset, limit);
       return true;
     }
     return false;
@@ -222,8 +271,13 @@ public final class TdlibDataSource extends BaseDataSource {
     }
   }
 
+  private static final long MIN_DOWNLOAD_CHUNK_LENGTH = ByteUnit.KIB.toBytes(64);
+
   @Override
-  public int read (@NonNull byte[] buffer, int bufferOffset, int readLength) throws TdlibDataSourceException {
+  public int read (@NonNull byte[] buffer, int bufferOffset, int readLength) throws IOException {
+    if (redirectedToDataSource != null) {
+      return redirectedToDataSource.read(buffer, bufferOffset, readLength);
+    }
     if (readLength == 0) {
       return 0;
     }
@@ -250,18 +304,38 @@ public final class TdlibDataSource extends BaseDataSource {
         if (file == null)
           throw new TdlibDataSourceException("file == null");
         final long offset = bytesRead;
-        if (file.size != 0 && offset >= file.size)
+        if (file.size != 0 && (offset >= file.size || (this.maxReadLength != C.LENGTH_UNSET && offset >= this.initialOffset + this.maxReadLength))) {
           return C.RESULT_END_OF_INPUT;
+        }
 
+        long downloadLimit;
+        if (maxReadLength != C.LENGTH_UNSET) {
+          downloadLimit = maxReadLength;
+        } else {
+          downloadLimit = offset - initialOffset + readLength;
+          downloadLimit += MIN_DOWNLOAD_CHUNK_LENGTH - (downloadLimit % MIN_DOWNLOAD_CHUNK_LENGTH);
+        }
+        if (file.size != 0) {
+          if (initialOffset + downloadLimit > file.size) {
+            downloadLimit = initialOffset == 0 ? TdlibFilesManager.LIMIT_MAX : file.size - initialOffset;
+          } else if (file.size - downloadLimit <= MIN_DOWNLOAD_CHUNK_LENGTH) {
+            downloadLimit = TdlibFilesManager.LIMIT_MAX;
+          }
+        }
         if (first) {
           first = false;
           if (file.local.isDownloadingCompleted) {
             releaseReference(file);
           } else {
-            acquireReference(file, offset);
+            acquireOrUpdateReference(file, initialOffset, downloadLimit);
           }
+        } else if (!file.local.isDownloadingCompleted && !file.local.isDownloadingActive) {
+          acquireOrUpdateReference(file, initialOffset, downloadLimit);
         }
         long available = getAvailableSize(file, offset, readLength);
+        if (available == C.RESULT_END_OF_INPUT) {
+          return C.RESULT_END_OF_INPUT;
+        }
         if (available == 0) {
           latch.await();
           continue;
@@ -282,7 +356,7 @@ public final class TdlibDataSource extends BaseDataSource {
           bytesRead += readCount;
           return readCount;
         } catch (IOException e) {
-          if (acquireReference(file, offset)) {
+          if (acquireOrUpdateReference(file, initialOffset, downloadLimit)) {
             latch.await();
           } else {
             throw new TdlibDataSourceException(e);
@@ -297,12 +371,20 @@ public final class TdlibDataSource extends BaseDataSource {
   @Nullable
   @Override
   public Uri getUri () {
+    if (redirectedToDataSource != null) {
+      return redirectedToDataSource.getUri();
+    }
     return uri;
   }
 
   @Override
-  public void close () {
+  public void close () throws IOException {
     uri = null;
+    if (redirectedToDataSource != null) {
+      redirectedToDataSource.close();
+      redirectedToDataSource = null;
+      return;
+    }
     TdApi.File file;
     synchronized (fileLock) {
       file = this.file;

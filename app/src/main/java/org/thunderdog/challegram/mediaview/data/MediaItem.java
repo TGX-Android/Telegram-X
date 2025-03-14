@@ -71,6 +71,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceList;
 import tgx.td.ChatId;
 import tgx.td.Td;
+import tgx.td.data.HlsVideo;
 
 public class MediaItem implements MessageSourceProvider, InvalidateContentProvider {
   public static final int TYPE_PHOTO = 0;
@@ -97,6 +98,8 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
   private int sourceDate;
   private TdApi.Photo sourcePhoto;
   private TdApi.Video sourceVideo;
+  private TdApi.AlternativeVideo[] sourceAlternativeVideos;
+  private TdApi.Photo sourceCover;
   private TdApi.Document sourceDocument;
   private TdApi.VideoNote sourceVideoNote;
   private TdApi.Animation sourceAnimation;
@@ -137,7 +140,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
         return copy;
       }
       case TYPE_VIDEO: {
-        MediaItem copy = new MediaItem(item.context, item.tdlib, item.sourceChatId, item.sourceMessageId, item.sourceSender, item.sourceDate, item.sourceVideo, item.caption, allowIcon).setMessage(item.msg);
+        MediaItem copy = new MediaItem(item.context, item.tdlib, item.sourceChatId, item.sourceMessageId, item.sourceSender, item.sourceDate, item.sourceVideo, item.sourceAlternativeVideos, item.sourceCover, item.caption, allowIcon).setMessage(item.msg);
         copy.copyOptions(item);
         return copy;
       }
@@ -183,7 +186,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
       case DocumentType.VIDEO: {
         TdApi.Video video = TD.convertToVideo(document, options, isRotated, mediaMetadata);
         this.type = TYPE_VIDEO;
-        setVideo(video, true, true);
+        setVideo(video, null, null, true, true);
         break;
       }
       case DocumentType.UNKNOWN:
@@ -461,11 +464,11 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     this.fileProgress.setFile(targetFile);
   }
 
-  public MediaItem (BaseActivity context, Tdlib tdlib, TdApi.Video video, TdApi.FormattedText caption, boolean allowIcon) {
-    this(context, tdlib, 0, 0, null, 0, video, caption, allowIcon);
+  public MediaItem (BaseActivity context, Tdlib tdlib, TdApi.Video video, TdApi.AlternativeVideo[] alternativeVideos, @Nullable TdApi.Photo cover, TdApi.FormattedText caption, boolean allowIcon) {
+    this(context, tdlib, 0, 0, null, 0, video, alternativeVideos, cover, caption, allowIcon);
   }
 
-  private MediaItem (BaseActivity context, Tdlib tdlib, long sourceChatId, long sourceMessageId, TdApi.MessageSender sourceSender, int sourceDate, TdApi.Video video, TdApi.FormattedText caption, boolean allowIcon) {
+  private MediaItem (BaseActivity context, Tdlib tdlib, long sourceChatId, long sourceMessageId, TdApi.MessageSender sourceSender, int sourceDate, TdApi.Video video, TdApi.AlternativeVideo[] alternativeVideos, @Nullable TdApi.Photo cover, TdApi.FormattedText caption, boolean allowIcon) {
     this.type = TYPE_VIDEO;
     this.context = context;
     this.tdlib = tdlib;
@@ -476,21 +479,46 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     this.sourceSender = sourceSender;
     this.sourceDate = sourceDate;
 
-    setVideo(video, allowIcon, false);
+    setVideo(video, alternativeVideos, cover, allowIcon, false);
   }
 
-  private void setVideo (TdApi.Video video, boolean allowIcon, boolean isDocument) {
+  @Nullable
+  public HlsVideo getHslVideo () {
+    if (sourceAlternativeVideos != null && sourceAlternativeVideos.length > 0) {
+      return new HlsVideo(sourceVideo, sourceAlternativeVideos);
+    } else {
+      return null;
+    }
+  }
+
+  private void setVideo (TdApi.Video video, TdApi.AlternativeVideo[] alternativeVideos, @Nullable TdApi.Photo cover, boolean allowIcon, boolean isDocument) {
     this.sourceVideo = video;
+    this.sourceAlternativeVideos = alternativeVideos;
 
-    setMiniThumbnail(video.minithumbnail);
-    setThumbnail(video.thumbnail);
-    this.targetFile = video.video;
+    if (cover != null) {
+      setMiniThumbnail(cover.minithumbnail);
+      TdApi.PhotoSize previewSize = MediaWrapper.buildPreviewSize(cover.sizes);
+      TdApi.PhotoSize targetSize = MediaWrapper.buildTargetFile(cover.sizes, previewSize);
+      if (previewSize == null) {
+        previewSize = targetSize;
+        targetSize = null;
+      }
+      setThumbnail(Td.toThumbnail(previewSize));
+      if (targetSize != null) {
+        this.targetImage = new ImageFile(tdlib, targetSize.photo);
+        this.targetImage.setScaleType(ImageFile.FIT_CENTER);
+        this.targetImage.setNoBlur();
+        this.targetImage.setNeedCancellation(true);
+        MediaWrapper.applyMaxSize(this.targetImage, targetSize);
+      }
+    } else {
+      setMiniThumbnail(video.minithumbnail);
+      setThumbnail(video.thumbnail);
 
-    // TODO: remove this targetImage at all, when video.thumbnail is available?
-    // if (previewImageFile == null) {
       this.targetImage = MediaWrapper.createThumbFile(tdlib, video.video);
       this.targetImage.setScaleType(ImageFile.FIT_CENTER);
-    // }
+    }
+    this.targetFile = video.video;
 
     this.width = video.width;
     this.height = video.height;
@@ -552,7 +580,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
   }
 
   private MediaItem (BaseActivity context, Tdlib tdlib, long sourceChatId, long sourceMessageId, TdApi.MessageSender sourceSender, int sourceDate, TdApi.MessageVideo video, boolean allowIcon) {
-    this(context, tdlib, sourceChatId, sourceMessageId, sourceSender, sourceDate, video.video, video.caption, allowIcon);
+    this(context, tdlib, sourceChatId, sourceMessageId, sourceSender, sourceDate, video.video, video.alternativeVideos, video.cover, video.caption, allowIcon);
     setShowCaptionAboveMedia(video.showCaptionAboveMedia);
     setHasSpoiler(video.hasSpoiler);
   }
@@ -874,8 +902,8 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     return new MediaItem(context, tdlib, photo, caption);
   }
 
-  public static MediaItem valueOf (BaseActivity context, Tdlib tdlib, TdApi.Video video, TdApi.FormattedText caption) {
-    return new MediaItem(context, tdlib, video, caption, true);
+  public static MediaItem valueOf (BaseActivity context, Tdlib tdlib, TdApi.Video video, TdApi.AlternativeVideo[] alternativeVideos, @Nullable TdApi.Photo cover, TdApi.FormattedText caption) {
+    return new MediaItem(context, tdlib, video, alternativeVideos, cover, caption, true);
   }
 
   public static MediaItem valueOf (BaseActivity context, Tdlib tdlib, TdApi.Animation animation, TdApi.FormattedText caption) {
@@ -978,7 +1006,8 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
             TdApi.Sticker sticker = Td.getSticker(linkPreview.type);
             return new MediaItem(context, tdlib, msg.chatId, msg.id, TD.convertToPhoto(sticker), true, false).setSourceMessage(msg);
           } else if (Td.getVideo(linkPreview.type) != null) {
-            return new MediaItem(context, tdlib, Td.getVideo(linkPreview.type), new TdApi.FormattedText("", null), true).setSourceMessage(msg);
+            // TODO: TDLib/server missing alternativeVideos in
+            return new MediaItem(context, tdlib, Td.getVideo(linkPreview.type), null, Td.getPhoto(linkPreview.type), new TdApi.FormattedText("", null), true).setSourceMessage(msg);
           } else if (Td.getAnimation(linkPreview.type) != null) {
             return new MediaItem(context, tdlib, Td.getAnimation(linkPreview.type), null).setSourceMessage(msg);
           } else {

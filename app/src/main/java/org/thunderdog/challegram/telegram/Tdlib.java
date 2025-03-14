@@ -4676,7 +4676,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public void resendMessages (long chatId, long[] messageIds) {
-    client().send(new TdApi.ResendMessages(chatId, messageIds, null), messageHandler());
+    client().send(new TdApi.ResendMessages(chatId, messageIds, null, 0), messageHandler());
   }
 
   private final HashMap<String, TdApi.MessageContent> pendingMessageTexts = new HashMap<>();

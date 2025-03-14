@@ -434,7 +434,8 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
               TdApi.PageBlockVideo video = (TdApi.PageBlockVideo) mediaBlock;
               if (video.video != null) {
                 String text = TD.getText(video.caption.text);
-                item = MediaItem.valueOf(parent.context(), parent.tdlib(), video.video, new TdApi.FormattedText(text, Text.findEntities(text, Text.ENTITY_FLAGS_EXTERNAL)));
+                // TODO: TDLib/server doesn't have alternativeVideos & cover in PageBlockVideo
+                item = MediaItem.valueOf(parent.context(), parent.tdlib(), video.video, null, null, new TdApi.FormattedText(text, Text.findEntities(text, Text.ENTITY_FLAGS_EXTERNAL)));
               }
               break;
             }
@@ -543,7 +544,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       setSmallMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), TD.convertToPhoto(sticker), chatId, messageId, parent, false));
       return true;
     } else if (Td.getVideo(linkPreview.type) != null) {
-      setSmallMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), Td.getVideo(linkPreview.type), chatId, messageId, parent, false));
+      setSmallMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), Td.getVideo(linkPreview.type), Td.getPhoto(linkPreview.type), chatId, messageId, parent, false));
       return true;
     } else {
       TdApi.Photo photo = Td.getPhoto(linkPreview.type);
@@ -900,7 +901,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       if (sticker != null) {
         setMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), TD.convertToPhoto(sticker), chatId, messageId, parent, false));
       } else if (Td.getVideo(linkPreview.type) != null) {
-        setMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), Td.getVideo(linkPreview.type), chatId, messageId, parent, false));
+        setMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), Td.getVideo(linkPreview.type), Td.getPhoto(linkPreview.type), chatId, messageId, parent, false));
       } else if (Td.hasPhoto(linkPreview.type)) {
         setMediaWrapper(new MediaWrapper(parent.context(), parent.tdlib(), Td.getPhoto(linkPreview.type), chatId, messageId, parent, false, false, EmbeddedService.parse(linkPreview)));
       } else {

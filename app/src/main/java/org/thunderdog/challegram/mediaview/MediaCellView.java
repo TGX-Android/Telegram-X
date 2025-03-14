@@ -2033,7 +2033,6 @@ public class MediaCellView extends ViewGroup implements
       videoParentView.setLayoutParams(FrameLayoutFix.newParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
       playerView = new VideoPlayerView(getContext(), videoParentView, 0, enableCropping);
       playerView.forceLooping(forceTouchMode);
-      playerView.setBoundCell(this);
       playerView.setCallback(this);
       hideStaticView = true;
       addView(videoParentView, 0);

@@ -1019,22 +1019,26 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     TdApi.File file = TD.getFile(msg.getMessage());
     if (file != null && !file.remote.isUploadingActive) {
       if (Config.useCloudPlayback(msg.getMessage()) && !file.local.isDownloadingCompleted) {
-        if (isMore) {
-          if (file.local.isDownloadingActive && !TdlibManager.instance().player().isPlayingFileId(file.id)) {
+        if (file.local.isDownloadingActive && !TdlibManager.instance().player().isPlayingFileId(file.id)) {
+          if (isMore) {
             ids.append(R.id.btn_pauseFile);
             strings.append(R.string.CloudPause);
             icons.append(R.drawable.baseline_cloud_pause_24);
+          } else {
+            moreOptions++;
           }
-          if (!file.local.isDownloadingActive) {
+        }
+        if (!file.local.isDownloadingActive) {
+          if (isMore) {
             ids.append(R.id.btn_downloadFile);
             if (file.local.downloadedSize > 0)
               strings.append(R.string.CloudResume);
             else
               strings.append(Lang.getString(R.string.CloudDownload, Strings.buildSize(file.size)));
             icons.append(R.drawable.baseline_cloud_download_24);
+          } else {
+            moreOptions++;
           }
-        } else {
-          moreOptions++;
         }
       }
     }
@@ -1043,7 +1047,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       boolean hasFilesToRemove = false;
       TdApi.Message[] allMessages = msg.getAllMessages();
       for (TdApi.Message message : allMessages) {
-        if (TD.canDeleteFile(message)) {
+        if (TD.canDeleteFiles(m.tdlib(), message)) {
           hasFilesToRemove = true;
           break;
         }
@@ -1138,8 +1142,6 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
             }
           }
         }
-      } else if (!isMore) {
-        moreOptions += 2;
       }
     }
 

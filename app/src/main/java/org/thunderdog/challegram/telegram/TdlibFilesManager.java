@@ -24,8 +24,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
 import androidx.core.os.CancellationSignal;
+import androidx.media3.common.C;
 
-import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -49,8 +49,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import me.vkryl.core.ObjectUtils;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceIntMap;
@@ -92,8 +94,257 @@ public class TdlibFilesManager implements GlobalConnectionListener {
   private final SparseIntArray pendingOperations;
   private final HashMap<Integer, TdApi.File> pendingFiles;
 
-  private final SparseArrayCompat<List<FileUpdateListener>> activeCloudReferences;
-  private final SparseIntArray downloadingCloudFiles;
+  private final SparseArrayCompat<DownloadOperation> activeDownloadReferences;
+
+  public static final int OFFSET_UNSET = C.INDEX_UNSET;
+  public static final int LIMIT_UNSET = C.LENGTH_UNSET;
+  public static final int LIMIT_MAX = 0; // Instruct to download fully
+
+  private static class DownloadOperation {
+    private static class Chunk {
+      public final long offset, limit;
+      @Nullable
+      public final Object source;
+
+      public Chunk (long offset, long limit, @Nullable Object source) {
+        if (limit == LIMIT_UNSET) {
+          limit = LIMIT_MAX;
+        }
+        this.offset = offset;
+        this.limit = limit;
+        this.source = source;
+      }
+
+      public boolean isPositioned () {
+        return offset != OFFSET_UNSET;
+      }
+
+      public boolean isFull () {
+        return limit == LIMIT_MAX;
+      }
+
+      public long endPosition () {
+        if (!isPositioned())
+          throw new IllegalStateException();
+        return offset + limit;
+      }
+
+      @Override
+      public boolean equals (Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        Chunk chunk = (Chunk) o;
+        return offset == chunk.offset && limit == chunk.limit && ObjectUtils.equals(source, this.source);
+      }
+
+      @Override
+      public int hashCode () {
+        return ObjectUtils.hashCode(offset, limit, source);
+      }
+    }
+
+    public boolean hasChunksWithSource (FileUpdateListener source) {
+      return indexOfFirstChunkWithSource(source) != -1;
+    }
+
+    public int indexOfFirstChunkWithSource (FileUpdateListener source) {
+      int index = 0;
+      for (Chunk chunk : chunks) {
+        if (ObjectUtils.equals(chunk.source, source)) {
+          return index;
+        }
+        index++;
+      }
+      return -1;
+    }
+
+    public final int fileId;
+    public final List<Chunk> chunks;
+    private final List<FileUpdateListener> listenersList;
+
+    private long offset = OFFSET_UNSET, limit = LIMIT_UNSET;
+    private long requestedOffset = OFFSET_UNSET, requestedLimit = LIMIT_UNSET;
+
+    public final boolean cancelOnRemoval;
+
+    public DownloadOperation (int fileId, boolean cancelOnRemoval) {
+      this.fileId = fileId;
+      this.cancelOnRemoval = cancelOnRemoval;
+      this.chunks = new ArrayList<>();
+      this.listenersList = new ArrayList<>();
+    }
+
+    public boolean isDownloaded (TdApi.File file, long offset, long length) {
+      if (offset == OFFSET_UNSET) {
+        offset = 0;
+      }
+      if (length == LIMIT_MAX) {
+        if (file.size == 0) {
+          return false;
+        }
+        length = file.size - offset;
+      }
+      return offset >= file.local.downloadOffset && offset + length <= file.local.downloadedPrefixSize;
+    }
+
+    public boolean requiresDownloadRestart (TdApi.File file) {
+      return !isEmpty() && !isDownloaded(file, offset, limit) && (!file.local.isDownloadingActive && !file.local.isDownloadingCompleted && file.local.canBeDownloaded);
+    }
+
+    public boolean prepareNewRequest (TdApi.File file) {
+      if (isEmpty() || isDownloaded(file, offset, limit)) {
+        return false;
+      }
+      if (requestedOffset == OFFSET_UNSET || requestedLimit == LIMIT_UNSET || // First request
+        offset < requestedOffset || // Seeking backwards
+        (requestedLimit == LIMIT_MAX) != (limit == LIMIT_MAX) // Limited/unlimited switch
+      ) {
+        // First request: pass offset,limit as is
+        requestedOffset = offset;
+        requestedLimit = limit;
+        return true;
+      }
+
+      final long requestedEnd = requestedOffset + requestedLimit;
+      if (requestedLimit != LIMIT_MAX) {
+        if (offset == requestedEnd) {
+          // Sequential request: grow limit
+          if (limit == LIMIT_MAX) {
+            requestedLimit = limit;
+          } else {
+            requestedLimit += limit;
+          }
+          return true;
+        }
+        if (offset > requestedEnd && offset - requestedEnd <= ByteUnit.KIB.toBytes(128)) {
+          // Gap from previous part is small: grow limit
+          if (limit == LIMIT_MAX) {
+            requestedLimit = LIMIT_MAX;
+          } else {
+            requestedLimit += offset - requestedEnd + limit;
+          }
+          return true;
+        }
+        if (offset >= requestedOffset && offset + limit <= requestedOffset + requestedLimit) {
+          long extraBytesBeforeChunk = offset - requestedOffset;
+          long extraBytesAfterChunk = (requestedOffset + requestedLimit) - (offset + limit);
+          if (extraBytesBeforeChunk + extraBytesAfterChunk < ByteUnit.KIB.toBytes(512)) {
+            // Covered by previous offset,limit
+            return false;
+          }
+        }
+      } else {
+        if (TD.withinDistance(file, offset)) {
+          // required chunk is being downloaded
+          return false;
+        }
+      }
+
+      // Fallback: pass request as is
+      requestedOffset = offset;
+      requestedLimit = limit;
+
+      return true;
+    }
+
+    public boolean addChunk (FileUpdateListener source, long offset, long limit) {
+      boolean firstChunk = !hasChunksWithSource(source);
+      chunks.add(new Chunk(offset, limit, source));
+      if (firstChunk) {
+        listenersList.add(source);
+      }
+      return updateOffsetAndLimit();
+    }
+
+    public boolean replaceChunk (FileUpdateListener source, long offset, long limit) {
+      int index = indexOfFirstChunkWithSource(source);
+      if (index != -1) {
+        Chunk existingChunk = chunks.get(index);
+        Chunk newChunk = new Chunk(offset, limit, source);
+        if (!existingChunk.equals(newChunk)) {
+          chunks.set(index, newChunk);
+          return updateOffsetAndLimit();
+        }
+      }
+      return false;
+    }
+
+    public boolean isEmpty () {
+      return chunks.isEmpty() || offset == OFFSET_UNSET || limit == LIMIT_UNSET;
+    }
+
+    public boolean removeAllChunksWithSource (FileUpdateListener source) {
+      boolean removed = false;
+      for (int i = chunks.size() - 1; i >= 0; i--) {
+        Chunk chunk = chunks.get(i);
+        if (ObjectUtils.equals(chunk.source, source)) {
+          chunks.remove(i);
+          removed = true;
+        }
+      }
+      if (removed) {
+        listenersList.remove(source);
+      }
+      return removed && updateOffsetAndLimit();
+    }
+
+    private boolean updateOffsetAndLimit () {
+      long offset = OFFSET_UNSET;
+      long limit = cancelOnRemoval ? LIMIT_UNSET : LIMIT_MAX;
+      if (!chunks.isEmpty()) {
+        for (int index = chunks.size() - 1; index >= 0; index--) {
+          Chunk chunk = chunks.get(index);
+          if (offset != OFFSET_UNSET && limit == LIMIT_MAX) {
+            break;
+          }
+          if (limit == LIMIT_UNSET) {
+            offset = chunk.offset;
+            limit = chunk.limit;
+            continue;
+          }
+          if (offset == OFFSET_UNSET || !chunk.isPositioned()) {
+            offset = offset == OFFSET_UNSET ? chunk.offset : offset;
+            limit = limit == LIMIT_MAX || chunk.isFull() ? LIMIT_MAX : Math.max(limit, chunk.limit);
+            continue;
+          }
+          if (chunk.isFull()) {
+            limit = LIMIT_MAX;
+          }
+          if (chunk.offset < offset) {
+            if (limit != LIMIT_MAX) {
+              limit += (offset - chunk.offset);
+            }
+            offset = chunk.offset;
+          }
+          if (limit != LIMIT_MAX) {
+            long currentEndPosition = offset + limit;
+            long endPosition = chunk.endPosition();
+            if (endPosition > currentEndPosition) {
+              limit += (endPosition - currentEndPosition);
+            }
+          }
+        }
+        if (offset == OFFSET_UNSET) {
+          offset = 0;
+        }
+        if (limit == LIMIT_UNSET) {
+          limit = LIMIT_MAX;
+        }
+      }
+      if (this.offset != offset || this.limit != limit) {
+        this.offset = offset;
+        this.limit = limit;
+        return true;
+      }
+      return false;
+    }
+
+    public void forEachListenerReverse (RunnableData<FileUpdateListener> actor) {
+      for (int i = listenersList.size() - 1; i >= 0; i--) {
+        FileUpdateListener source = listenersList.get(i);
+        actor.runWithData(source);
+      }
+    }
+  }
 
   private final HashSet<Integer> manuallyCancelledFiles;
 
@@ -107,8 +358,7 @@ public class TdlibFilesManager implements GlobalConnectionListener {
     this.pendingOperations = new SparseIntArray();
     this.pendingFiles = new HashMap<>();
 
-    this.activeCloudReferences = new SparseArrayCompat<>();
-    this.downloadingCloudFiles = new SparseIntArray();
+    this.activeDownloadReferences = new SparseArrayCompat<>();
 
     this.manuallyCancelledFiles = new HashSet<>();
 
@@ -117,28 +367,32 @@ public class TdlibFilesManager implements GlobalConnectionListener {
     tdlib.context().global().addConnectionListener(this);
   }
 
+  public void syncFiles (@Nullable final List<TdApi.File> files, final long timeoutMs) {
+    if (files != null) {
+      for (TdApi.File file : files) {
+        syncFile(file, null, timeoutMs);
+      }
+    }
+  }
+
   public void syncFile (@NonNull final TdApi.File file, @Nullable TdApi.FileType remoteFileType, final long timeoutMs) {
     final CountDownLatch latch = new CountDownLatch(1);
-    TdApi.Function<?> function;
+    TdApi.Function<TdApi.File> function;
     if (remoteFileType != null) {
       function = new TdApi.GetRemoteFile(file.remote.id, remoteFileType);
     } else {
       function = new TdApi.GetFile(file.id);
     }
-    final boolean[] signal = new boolean[1];
-    tdlib.client().send(function, object -> {
-      switch (object.getConstructor()) {
-        case TdApi.File.CONSTRUCTOR:
-          synchronized (signal) {
-            if (!signal[0]) {
-              signal[0] = true;
-              Td.copyTo((TdApi.File) object, file);
-            }
+    final AtomicBoolean signal = new AtomicBoolean();
+    tdlib.send(function, (tdlibFile, error) -> {
+      if (error != null) {
+        Log.w("getFile error: %s", TD.toErrorString(error));
+      } else {
+        synchronized (signal) {
+          if (!signal.getAndSet(true)) {
+            Td.copyTo(tdlibFile, file);
           }
-          break;
-        case TdApi.Error.CONSTRUCTOR:
-          Log.w("getFile error: %s", TD.toErrorString(object));
-          break;
+        }
       }
       latch.countDown();
     });
@@ -151,9 +405,9 @@ public class TdlibFilesManager implements GlobalConnectionListener {
     } catch (InterruptedException e) {
       Log.i(e);
     }
-    if (!signal[0]) {
+    if (!signal.get()) {
       synchronized (signal) {
-        signal[0] = true;
+        signal.set(true);
       }
     }
   }
@@ -249,121 +503,117 @@ public class TdlibFilesManager implements GlobalConnectionListener {
     }
   }
 
-  private final Client.ResultHandler filesHandler = new Client.ResultHandler() {
-    @Override
-    public void onResult (TdApi.Object object) {
-      switch (object.getConstructor()) {
-        case TdApi.Ok.CONSTRUCTOR: {
-          break;
+  private Tdlib.ResultHandler<TdApi.File> fileHandler (int fileId) {
+    return (file, error) -> {
+      Runnable abort = () -> {
+        int pendingOperation = pendingOperations.get(fileId);
+        if (pendingOperation == OPERATION_DOWNLOAD) {
+          removePendingOperation(fileId);
+          synchronized (this) {
+            notifyFileState(fileId, STATE_PAUSED, null);
+          }
         }
-        case TdApi.File.CONSTRUCTOR: {
-          TdApi.File file = (TdApi.File) object;
-          synchronized (activeCloudReferences) {
-            int status = downloadingCloudFiles.get(file.id);
-            if (status == 1) {
-              List<FileUpdateListener> references = activeCloudReferences.get(file.id);
-              if (references != null) {
-                final int size = references.size();
-                for (int i = size - 1; i >= 0; i--) {
-                  references.get(i).onUpdateFile(new TdApi.UpdateFile(Td.copyOf(file)));
-                }
-              }
-            }
-          }
-          if (file.local.isDownloadingCompleted) {
-            onFileLoaded(new TdApi.UpdateFile(file));
-          } else if (!file.local.isDownloadingActive) {
-            // TODO
-          }
-          break;
+      };
+      if (error != null) {
+        abort.run();
+        return;
+      }
+      synchronized (activeDownloadReferences) {
+        DownloadOperation downloadOperation = activeDownloadReferences.get(file.id);
+        if (downloadOperation != null) {
+          downloadOperation.forEachListenerReverse(listener ->
+            listener.onUpdateFile(new TdApi.UpdateFile(Td.copyOf(file)))
+          );
         }
       }
-    }
-  };
+      if (file.local.isDownloadingCompleted) {
+        onFileLoaded(new TdApi.UpdateFile(file));
+      } else if (!file.local.isDownloadingActive) {
+        abort.run();
+      }
+    };
+  }
 
   // Cloud referencing
 
   public static final int CLOUD_PRIORITY = 3;
 
-  public void seekCloudReference (TdApi.File file, FileUpdateListener source, long offset) {
-    synchronized (activeCloudReferences) {
-      if (TD.withinDistance(file, offset)) {
-        return;
-      }
-      List<FileUpdateListener> references = activeCloudReferences.get(file.id);
-      if (references != null && references.contains(source)) {
-        seekFileInternal(file, offset, 0);
+  private void performDownloadRequest (TdApi.File file, DownloadOperation operation) {
+    if (operation.prepareNewRequest(file)) {
+      if (!Config.DEBUG_DISABLE_DOWNLOAD) {
+        tdlib.send(downloadFile(file.id, CLOUD_PRIORITY, operation.requestedOffset, operation.requestedLimit, false), fileHandler(file.id));
       }
     }
   }
 
-  private void seekFileInternal (TdApi.File file, long offset, long limit) {
-    if (!TD.withinDistance(file, offset) && pendingOperations.get(file.id) == OPERATION_DOWNLOAD) {
-      if (!Config.DEBUG_DISABLE_DOWNLOAD) {
-        Log.i("FILES: downloadFile %d offset=%d", file.id, offset);
-        tdlib.client().send(new TdApi.DownloadFile(file.id, CLOUD_PRIORITY, offset, limit, false), filesHandler);
-      }
+  private TdApi.DownloadFile downloadFile (int fileId, int priority, long offset, long limit, boolean synchronous) {
+    if (Log.isEnabled(Log.TAG_TDLIB_FILES)) {
+      Log.i(Log.TAG_TDLIB_FILES, "downloadFile:%d priority:%d offset:%d limit:%d synchro:%b", fileId, priority, offset, limit, synchronous);
     }
+    if (limit == LIMIT_UNSET) {
+      limit = LIMIT_MAX; // Download full file
+    }
+    if (offset == OFFSET_UNSET) {
+      offset = 0;
+    }
+    return new TdApi.DownloadFile(fileId, priority, offset, limit, synchronous);
   }
 
   public void addCloudReference (TdApi.File file, FileUpdateListener source, boolean allowDuplicates) {
-    addCloudReference(file, 0, source, allowDuplicates, false);
+    addCloudReference(file, OFFSET_UNSET, LIMIT_UNSET, source, allowDuplicates);
   }
 
-  public void addCloudReference (TdApi.File file, long offset, FileUpdateListener source, boolean allowDuplicates, boolean offsetImportant) {
-    synchronized (activeCloudReferences) {
-      List<FileUpdateListener> references = activeCloudReferences.get(file.id);
-      if (references != null) {
-        if (!allowDuplicates && references.contains(source)) {
+  public void updateCloudReference (TdApi.File file, FileUpdateListener source, long newOffset, long newLimit) {
+    synchronized (activeDownloadReferences) {
+      DownloadOperation downloadOperation = activeDownloadReferences.get(file.id);
+      if (downloadOperation != null && (downloadOperation.replaceChunk(source, newOffset, newLimit) || downloadOperation.requiresDownloadRestart(file))) {
+        performDownloadRequest(file, downloadOperation);
+      }
+    }
+  }
+
+  public void addCloudReference (TdApi.File file, long offset, long limit, FileUpdateListener source, boolean allowDuplicates) {
+    synchronized (activeDownloadReferences) {
+      DownloadOperation downloadOperation = activeDownloadReferences.get(file.id);
+      if (downloadOperation != null) {
+        if (!allowDuplicates && downloadOperation.hasChunksWithSource(source)) {
           throw new IllegalStateException();
         }
-        references.add(source);
-        if (offsetImportant) {
-          seekFileInternal(file, offset, 0);
+        if (downloadOperation.addChunk(source, offset, limit) || downloadOperation.requiresDownloadRestart(file)) {
+          performDownloadRequest(file, downloadOperation);
         }
         return;
       }
-      references = new ArrayList<>();
-      references.add(source);
-      activeCloudReferences.put(file.id, references);
-      if (!file.local.isDownloadingActive) {
-        synchronized (this) {
-          int pendingOperation = pendingOperations.get(file.id);
-          if (pendingOperation == OPERATION_NONE) {
-            downloadingCloudFiles.put(file.id, 1);
-            downloadFileInternal(file.id, CLOUD_PRIORITY, offset, 0, null);
-          }
-        }
-      } else if (offsetImportant) {
-        seekFileInternal(file, offset, 0);
+
+      boolean needStartDownload = !file.local.isDownloadingActive;
+      downloadOperation = new DownloadOperation(file.id, needStartDownload);
+      downloadOperation.addChunk(source, offset, limit);
+      synchronized (this) {
+        activeDownloadReferences.put(file.id, downloadOperation);
       }
+
+      performDownloadRequest(file, downloadOperation);
     }
   }
 
   public void removeCloudReference (TdApi.File file, FileUpdateListener source) {
-    synchronized (activeCloudReferences) {
-      int index = activeCloudReferences.indexOfKey(file.id);
+    synchronized (activeDownloadReferences) {
+      int index = activeDownloadReferences.indexOfKey(file.id);
       if (index < 0) {
         return;
       }
-      List<FileUpdateListener> references = activeCloudReferences.valueAt(index);
-      if (references == null) {
+      DownloadOperation operation = activeDownloadReferences.valueAt(index);
+      if (operation == null) {
         return;
       }
-      if (!references.remove(source)) {
-        throw new IllegalStateException();
+      if ((operation.removeAllChunksWithSource(source) || operation.requiresDownloadRestart(file)) && !operation.isEmpty()) {
+        performDownloadRequest(file, operation);
       }
-      if (references.isEmpty()) {
-        activeCloudReferences.removeAt(index);
+      if (operation.isEmpty()) {
         synchronized (this) {
-          int i = downloadingCloudFiles.indexOfKey(file.id);
-          boolean hasStartedDownloadByCloud = i >= 0;
-          if (hasStartedDownloadByCloud) {
-            downloadingCloudFiles.removeAt(i);
-          }
-          int pendingOperation = pendingOperations.get(file.id);
-          if (pendingOperation != OPERATION_NONE && hasStartedDownloadByCloud) {
-            tdlib.client().send(new TdApi.CancelDownloadFile(file.id, false), filesHandler);
+          activeDownloadReferences.removeAt(index);
+          if (operation.cancelOnRemoval) {
+            tdlib.send(new TdApi.CancelDownloadFile(file.id, false), tdlib.typedOkHandler());
           }
         }
       }
@@ -435,27 +685,6 @@ public class TdlibFilesManager implements GlobalConnectionListener {
     }
   }
 
-  /*private static void notifyFileGenerationProgress (ArrayList<WeakReference<FileListener>> list, int fileId, int ready, int size) {
-    final int listSize = list.size();
-    for (int i = listSize - 1; i >= 0; i--) {
-      FileListener listener = list.get(i).get();
-      if (listener != null) {
-        listener.onFileGenerationProgress(fileId, ready, size);
-      } else {
-        list.remove(i);
-      }
-    }
-  }*/
-
-  /*private void notifyFileGenerationProgress (int fileId, int ready, int size) {
-    notifyFileGenerationProgress(globalListeners, fileId, ready, size);
-    ArrayList<WeakReference<FileListener>> list = listeners.get(fileId);
-    if (list != null) {
-      notifyFileGenerationProgress(list, fileId, ready, size);
-      U.checkReferenceList(listeners, list, fileId);
-    }
-  }*/
-
   private static void notifyFileGenerationFinished (ArrayList<WeakReference<FileListener>> list, TdApi.File file) {
     final int size = list.size();
     for (int i = size - 1; i >= 0; i--) {
@@ -477,22 +706,19 @@ public class TdlibFilesManager implements GlobalConnectionListener {
     }
   }*/
 
-  private void downloadFileInternal (int fileId, int priority, long offset, long limit, final @Nullable Client.ResultHandler handler) {
+  private void downloadFileInternal (int fileId, int priority, long offset, long limit, final @Nullable Tdlib.ResultHandler<TdApi.File> handler) {
     int pendingOperation = pendingOperations.get(fileId);
     if (pendingOperation == OPERATION_NONE) {
       pendingOperations.put(fileId, OPERATION_DOWNLOAD);
       notifyFileState(fileId, STATE_IN_PROGRESS, null);
-      if (Log.isEnabled(Log.TAG_TDLIB_FILES)) {
-        Log.i(Log.TAG_TDLIB_FILES, "downloadFileInternal id=%d priority=%d offset=%d", fileId, priority, offset);
-      }
       if (!Config.DEBUG_DISABLE_DOWNLOAD) {
         if (handler != null) {
-          tdlib.client().send(new TdApi.DownloadFile(fileId, priority, offset, limit, false), object -> {
-            filesHandler.onResult(object);
-            handler.onResult(object);
+          tdlib.send(downloadFile(fileId, priority, offset, limit, false), (file, error) -> {
+            fileHandler(fileId).onResult(file, error);
+            handler.onResult(file, error);
           });
         } else {
-          tdlib.client().send(new TdApi.DownloadFile(fileId, priority, offset, limit, false), filesHandler);
+          tdlib.send(downloadFile(fileId, priority, offset, limit, false), fileHandler(fileId));
         }
       }
     }
@@ -504,7 +730,7 @@ public class TdlibFilesManager implements GlobalConnectionListener {
         if (Log.isEnabled(Log.TAG_TDLIB_FILES)) {
           Log.i(Log.TAG_TDLIB_FILES, "cancelDownloadFile id=%d", fileId);
         }
-        tdlib.client().send(new TdApi.CancelDownloadFile(fileId, weak), filesHandler);
+        tdlib.send(new TdApi.CancelDownloadFile(fileId, weak), tdlib.typedOkHandler());
         break;
       }
     }
@@ -517,19 +743,21 @@ public class TdlibFilesManager implements GlobalConnectionListener {
 
   // Download for whatever reason
 
-  public void downloadFile (@NonNull TdApi.File file, @IntRange(from = 1, to = 32) int priority, long offset, long limit, @Nullable Client.ResultHandler handler) {
+  public void downloadFile (@NonNull TdApi.File file) {
+    downloadFile(file, DEFAULT_DOWNLOAD_PRIORITY, null);
+  }
+
+  public void downloadFile (@NonNull TdApi.File file, @IntRange(from = 1, to = 32) int priority, @Nullable Tdlib.ResultHandler<TdApi.File> handler) {
     synchronized (this) {
+      long offset = 0;
+      long limit = LIMIT_MAX;
       manuallyCancelledFiles.remove(file.id);
       if (!TD.isFileLoaded(file)) {
         downloadFileInternal(file.id, priority, offset, limit, handler);
       } else if (handler != null) {
-        tdlib.client().send(new TdApi.DownloadFile(file.id, priority, offset, limit, false), handler);
+        tdlib.send(downloadFile(file.id, priority, offset, limit, false), handler);
       }
     }
-  }
-
-  public void downloadFile (@NonNull TdApi.File file) {
-    downloadFile(file, DEFAULT_DOWNLOAD_PRIORITY, 0, 0, null);
   }
 
   public void isFileLoadedAndExists (TdApi.File file, RunnableBool after) {
@@ -632,42 +860,6 @@ public class TdlibFilesManager implements GlobalConnectionListener {
       }
     }
   }
-
-  /*public void onFileUpdate (TdApi.UpdateFileGenerationFinish update) {
-    synchronized (this) {
-      ArrayList<WeakReference<SimpleListener>> listeners = simpleListeners.get(update.file.id);
-      if (listeners != null) {
-        final int size = listeners.size();
-        for (int i = size - 1; i >= 0; i--) {
-          SimpleListener listener = listeners.get(i).get();
-          if (listener != null) {
-            listener.onUpdateFileGenerationFinish(update.file);
-          } else {
-            listeners.remove(i);
-          }
-        }
-        U.checkReferenceList(simpleListeners, listeners, update.file.id);
-      }
-    }
-  }
-
-  public void onFileGenerationFailed (TdApi.UpdateFileGenerationProgress update) {
-    synchronized (this) {
-      ArrayList<WeakReference<SimpleListener>> listeners = simpleListeners.get(update.fileId);
-      if (listeners != null) {
-        final int size = listeners.size();
-        for (int i = size - 1; i >= 0; i--) {
-          SimpleListener listener = listeners.get(i).get();
-          if (listener != null) {
-            listener.onUpdateFileGenerationFailure(update.fileId);
-          } else {
-            listeners.remove(i);
-          }
-        }
-        U.checkReferenceList(simpleListeners, listeners, update.fileId);
-      }
-    }
-  }*/
 
   public void onFileProgress (TdApi.UpdateFile update) {
     synchronized (this) {
