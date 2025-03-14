@@ -16,7 +16,9 @@ package org.thunderdog.challegram.ui;
 
 import android.content.Context;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -33,6 +35,8 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.CallItem;
 import org.thunderdog.challegram.data.CallSection;
 import org.thunderdog.challegram.data.TGFoundChat;
+import org.thunderdog.challegram.navigation.HeaderView;
+import org.thunderdog.challegram.navigation.MoreDelegate;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.DateChangeListener;
@@ -41,6 +45,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibOptionListener;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.StringList;
@@ -65,6 +70,7 @@ public class CallListController extends RecyclerViewController<Void> implements
   View.OnClickListener,
   Client.ResultHandler,
   MessageListener,
+  MoreDelegate,
   DateChangeListener,
   View.OnLongClickListener,
   BaseView.ActionListProvider, TdlibOptionListener {
@@ -80,6 +86,56 @@ public class CallListController extends RecyclerViewController<Void> implements
   @Override
   public CharSequence getName () {
     return Lang.getString(R.string.Calls);
+  }
+
+  @Override
+  protected int getMenuId () {
+    return messages != null && !messages.isEmpty() ? R.id.menu_btn_more : 0;
+  }
+
+  @Override
+  public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
+    if (id == R.id.menu_btn_more) {
+      header.addMoreButton(menu, this);
+    }
+  }
+
+  @Override
+  public void onMenuItemPressed (int id, View view) {
+    if (id == R.id.menu_btn_more) {
+      showMore(new int[] {R.id.btn_clear_recent_calls}, new String[] {Lang.getString(R.string.ClearRecentCalls)});
+    }
+  }
+
+  @Override
+  public void onMoreItemPressed (int id) {
+    if (id == R.id.btn_clear_recent_calls) {
+      showClearCallsConfirmationDialog();
+    }
+  }
+
+  public boolean hasRecentCalls() {
+    return messages != null && !messages.isEmpty();
+  }
+
+  private void showClearCallsConfirmationDialog() {
+    showSettings(new SettingsWrapBuilder(R.id.btn_delete)
+      .setHeaderItem(new ListItem(ListItem.TYPE_INFO, R.id.text_title, 0, R.string.AreYouSureClearCalls, false))
+      .setRawItems(new ListItem[] {
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_deleteAll, 0, R.string.DeleteForEveryone, false)
+      })
+      .setIntDelegate((_id, result) -> {
+        if (_id == R.id.btn_delete) {
+          context.currentTdlib().clearCallsHistory(result.get(R.id.btn_deleteAll) != 0, success -> {
+            if (success) {
+              UI.showToast(R.string.Done, Toast.LENGTH_SHORT);
+            }
+          });
+        }
+      })
+      .setSaveStr(R.string.Delete)
+      .setSaveColorId(ColorId.textNegative)
+    );
   }
 
   private SettingsAdapter adapter;
