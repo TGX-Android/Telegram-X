@@ -73,19 +73,19 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<Setting
 
   public static class Args {
     public final @Mode int mode;
-    public TdApi.UserPrivacySetting userPrivacySetting;
+    public final TdApi.UserPrivacySetting userPrivacySetting;
 
     public Args (TdApi.UserPrivacySetting userPrivacySetting) {
-      this(Mode.USER_PRIVACY_SETTING);
-      this.userPrivacySetting = userPrivacySetting;
+      this(Mode.USER_PRIVACY_SETTING, userPrivacySetting);
     }
 
-    private Args (@Mode int mode) {
+    private Args (@Mode int mode, TdApi.UserPrivacySetting setting) {
       this.mode = mode;
+      this.userPrivacySetting = setting;
     }
 
     public static Args newChatsPrivacy () {
-      return new Args(Mode.INCOMING_MESSAGES_PRIVACY);
+      return new Args(Mode.INCOMING_MESSAGES_PRIVACY, new TdApi.UserPrivacySettingAllowUnpaidMessages());
     }
   }
 
@@ -216,7 +216,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<Setting
         break;
       }
       case Mode.INCOMING_MESSAGES_PRIVACY: {
-        setArguments(new Args(mode));
+        setArguments(Args.newChatsPrivacy());
         return true;
       }
     }
@@ -756,7 +756,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<Setting
       Args args = getArgumentsStrict();
       if (args.mode == Mode.USER_PRIVACY_SETTING && args.userPrivacySetting.getConstructor() == setting.getConstructor()) {
         setPrivacyRules(rules);
-      } else if (args.mode == Mode.INCOMING_MESSAGES_PRIVACY && args.userPrivacySetting.getConstructor() == TdApi.UserPrivacySettingAllowUnpaidMessages.CONSTRUCTOR) {
+      } else if (args.mode == Mode.INCOMING_MESSAGES_PRIVACY && setting.getConstructor() == TdApi.UserPrivacySettingAllowUnpaidMessages.CONSTRUCTOR) {
         setNewChatPrivacySettings(currentNewChatPrivacySettings(), rules);
       }
     });
@@ -890,15 +890,25 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<Setting
   }
 
   private void loadExtraToggle () {
-    if (getArgumentsStrict().userPrivacySetting.getConstructor() == TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR) {
-      tdlib.send(new TdApi.GetReadDatePrivacySettings(), (readDatePrivacySetting, error) -> runOnUiThreadOptional(() -> {
-        if (error != null) {
-          UI.showError(error);
-        } else {
-          this.readDatePrivacySetting = readDatePrivacySetting;
-          updateExtraToggle(currentRules());
+    Args args = getArgumentsStrict();
+    switch (args.mode) {
+      case Mode.USER_PRIVACY_SETTING: {
+        if (args.userPrivacySetting.getConstructor() == TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR) {
+          tdlib.send(new TdApi.GetReadDatePrivacySettings(), (readDatePrivacySetting, error) -> runOnUiThreadOptional(() -> {
+            if (error != null) {
+              UI.showError(error);
+            } else {
+              this.readDatePrivacySetting = readDatePrivacySetting;
+              updateExtraToggle(currentRules());
+            }
+          }));
         }
-      }));
+        break;
+      }
+      case Mode.INCOMING_MESSAGES_PRIVACY: {
+
+        break;
+      }
     }
   }
 

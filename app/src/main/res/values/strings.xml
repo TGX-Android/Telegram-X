@@ -3822,6 +3822,7 @@
   <string name="GiftsPrivacyDesc">Choose whether gifts from specific senders need your approval before they\'re visible to others on your profile.</string>
   <string name="PrivacyMessage">Messages</string>
   <string name="PrivacyMessageEverybody">Everybody can message you</string>
+  <string name="PrivacyMessagePaid">Paid</string>
   <string name="PrivacyMessageContactsPremium">Only contacts and **Premium** users</string>
   <string name="PrivacyMessageTitle">Messages</string>
   <string name="PrivacyMessagePreview">New Chats</string>
