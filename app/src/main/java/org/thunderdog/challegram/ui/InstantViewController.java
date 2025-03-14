@@ -490,7 +490,7 @@ public class InstantViewController extends ViewController<InstantViewController.
     // recyclerView.setItemAnimator(new CustomItemAnimator(Anim.DECELERATE_INTERPOLATOR, 180l));
 
     if (!isReplace) {
-      tdlib.send(new TdApi.GetWebPageInstantView(getUrl(), true), (webPageInstantView, error) -> {
+      tdlib.send(new TdApi.GetWebPageInstantView(getUrl(), false), (webPageInstantView, error) -> {
         if (error != null) {
           UI.showError(error);
         } else {

@@ -3002,12 +3002,8 @@ public class TdlibUi extends Handler {
         post(runnable[0]);
         return;
       }
-      tdlib.send(new TdApi.GetWebPageInstantView(url, false), (instantView, error1) -> {
-        if (error1 != null) {
-          post(runnable[0]);
-          return;
-        }
-        if (!TD.hasInstantView(instantView.version)) {
+      tdlib.fetchInstantView(url, (instantView, instantViewError) -> {
+        if (instantViewError != null || tdlib.isBadInstantView(instantView)) {
           post(runnable[0]);
           return;
         }

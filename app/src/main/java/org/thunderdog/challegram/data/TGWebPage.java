@@ -23,7 +23,6 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.BuildConfig;
@@ -67,7 +66,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import tgx.td.Td;
 
-public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWrapper.OnClickListener, TGInlineKeyboard.ClickListener, Client.ResultHandler, Destroyable {
+public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWrapper.OnClickListener, TGInlineKeyboard.ClickListener, Destroyable {
   private static final int MAX_TITLE_LINES = 4;
   private static final int MAX_DESCRIPTION_LINES = 8;
 
@@ -361,10 +360,100 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     buildRippleButton();
     if ((flags & FLAG_PROCESSED) == 0 && needsSpecialProcessing()) {
       flags |= FLAG_PROCESSED;
-      parent.tdlib().client().send(new TdApi.GetWebPageInstantView(url, false), this);
+      parent.tdlib().send(new TdApi.GetWebPageInstantView(url, true), (localInstantView, error) -> {
+        if (error != null) {
+          parent.tdlib().send(new TdApi.GetWebPageInstantView(url, false), (remoteInstantView, error1) -> {
+            processWebPageInstantView(remoteInstantView);
+          });
+        } else {
+          processWebPageInstantView(localInstantView);
+        }
+      });
     }
     setViewProvider(viewProvider);
     height += lineWidth;
+  }
+
+  private void processWebPageInstantView (TdApi.WebPageInstantView instantView) {
+    if (instantView == null) {
+      return;
+    }
+    TdApi.PageBlock[] mediaBlocks = null;
+    main: for (TdApi.PageBlock pageBlock : instantView.pageBlocks) {
+      switch (pageBlock.getConstructor()) {
+        case TdApi.PageBlockSlideshow.CONSTRUCTOR: {
+          mediaBlocks = ((TdApi.PageBlockSlideshow) pageBlock).pageBlocks;
+          break main;
+        }
+        case TdApi.PageBlockCollage.CONSTRUCTOR: {
+          mediaBlocks = ((TdApi.PageBlockCollage) pageBlock).pageBlocks;
+          break main;
+        }
+      }
+    }
+    if (mediaBlocks == null || mediaBlocks.length <= 1) {
+      return;
+    }
+    MediaWrapper currentWrapper = mediaWrapper;
+    TdApi.File currentFile = currentWrapper != null ? currentWrapper.getTargetFile() : null;
+    int currentFileId = currentFile != null ? currentFile.id : 0;
+    final ArrayList<MediaItem> mediaItems = new ArrayList<>(mediaBlocks.length);
+    int position = -1;
+    int i = 0;
+    for (TdApi.PageBlock mediaBlock : mediaBlocks) {
+      MediaItem item = null;
+      // TODO entities
+      switch (mediaBlock.getConstructor()) {
+        case TdApi.PageBlockAnimation.CONSTRUCTOR: {
+          TdApi.PageBlockAnimation animation = (TdApi.PageBlockAnimation) mediaBlock;
+          if (animation.animation != null) {
+            String text = TD.getText(animation.caption.text);
+            item = MediaItem.valueOf(parent.context(), parent.tdlib(), animation.animation, new TdApi.FormattedText(text, Text.findEntities(text, Text.ENTITY_FLAGS_EXTERNAL)));
+          }
+          break;
+        }
+        case TdApi.PageBlockVideo.CONSTRUCTOR: {
+          TdApi.PageBlockVideo video = (TdApi.PageBlockVideo) mediaBlock;
+          if (video.video != null) {
+            String text = TD.getText(video.caption.text);
+            // TODO: TDLib/server doesn't have alternativeVideos & cover in PageBlockVideo
+            item = MediaItem.valueOf(parent.context(), parent.tdlib(), video.video, null, null, new TdApi.FormattedText(text, Text.findEntities(text, Text.ENTITY_FLAGS_EXTERNAL)));
+          }
+          break;
+        }
+        case TdApi.PageBlockPhoto.CONSTRUCTOR: {
+          TdApi.PageBlockPhoto photo = (TdApi.PageBlockPhoto) mediaBlock;
+          if (photo.photo != null) {
+            String text = TD.getText(photo.caption.text);
+            item = MediaItem.valueOf(parent.context(), parent.tdlib(), photo.photo, new TdApi.FormattedText(text, Text.findEntities(text, Text.ENTITY_FLAGS_EXTERNAL)));
+          }
+          break;
+        }
+      }
+      if (item == null) {
+        mediaItems.clear();
+        break;
+      }
+      if (position == -1 && item.getFileId() == currentFileId) {
+        item.setSourceMessage(parent.getMessage());
+        position = i;
+      }
+      mediaItems.add(item);
+      i++;
+    }
+    if (mediaItems.size() <= 1) {
+      return;
+    }
+    if (position == -1) {
+      position = 0;
+    }
+
+    if (!isDestroyed()) {
+      final int positionFinal = position;
+      final String text = Lang.getString(R.string.XofY, position + 1, mediaItems.size());
+      final float textWidth = U.measureText(text, Paints.whiteMediumPaint(13f, false, true));
+      parent.tdlib().ui().post(() -> setInstantItems(mediaItems, text, textWidth, positionFinal));
+    }
   }
 
   public int getInstantPosition () {
@@ -388,92 +477,6 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     }
     if (viewProvider != null) {
       viewProvider.invalidate();
-    }
-  }
-
-  @Override
-  public void onResult (TdApi.Object object) {
-    switch (object.getConstructor()) {
-      case TdApi.WebPageInstantView.CONSTRUCTOR: {
-        TdApi.WebPageInstantView instantView = (TdApi.WebPageInstantView) object;
-        TdApi.PageBlock[] mediaBlocks = null;
-        main: for (TdApi.PageBlock pageBlock : instantView.pageBlocks) {
-          switch (pageBlock.getConstructor()) {
-            case TdApi.PageBlockSlideshow.CONSTRUCTOR: {
-              mediaBlocks = ((TdApi.PageBlockSlideshow) pageBlock).pageBlocks;
-              break main;
-            }
-            case TdApi.PageBlockCollage.CONSTRUCTOR: {
-              mediaBlocks = ((TdApi.PageBlockCollage) pageBlock).pageBlocks;
-              break main;
-            }
-          }
-        }
-        if (mediaBlocks == null || mediaBlocks.length <= 1) {
-          return;
-        }
-        MediaWrapper currentWrapper = mediaWrapper;
-        TdApi.File currentFile = currentWrapper != null ? currentWrapper.getTargetFile() : null;
-        int currentFileId = currentFile != null ? currentFile.id : 0;
-        final ArrayList<MediaItem> mediaItems = new ArrayList<>(mediaBlocks.length);
-        int position = -1;
-        int i = 0;
-        for (TdApi.PageBlock mediaBlock : mediaBlocks) {
-          MediaItem item = null;
-          // TODO entities
-          switch (mediaBlock.getConstructor()) {
-            case TdApi.PageBlockAnimation.CONSTRUCTOR: {
-              TdApi.PageBlockAnimation animation = (TdApi.PageBlockAnimation) mediaBlock;
-              if (animation.animation != null) {
-                String text = TD.getText(animation.caption.text);
-                item = MediaItem.valueOf(parent.context(), parent.tdlib(), animation.animation, new TdApi.FormattedText(text, Text.findEntities(text, Text.ENTITY_FLAGS_EXTERNAL)));
-              }
-              break;
-            }
-            case TdApi.PageBlockVideo.CONSTRUCTOR: {
-              TdApi.PageBlockVideo video = (TdApi.PageBlockVideo) mediaBlock;
-              if (video.video != null) {
-                String text = TD.getText(video.caption.text);
-                // TODO: TDLib/server doesn't have alternativeVideos & cover in PageBlockVideo
-                item = MediaItem.valueOf(parent.context(), parent.tdlib(), video.video, null, null, new TdApi.FormattedText(text, Text.findEntities(text, Text.ENTITY_FLAGS_EXTERNAL)));
-              }
-              break;
-            }
-            case TdApi.PageBlockPhoto.CONSTRUCTOR: {
-              TdApi.PageBlockPhoto photo = (TdApi.PageBlockPhoto) mediaBlock;
-              if (photo.photo != null) {
-                String text = TD.getText(photo.caption.text);
-                item = MediaItem.valueOf(parent.context(), parent.tdlib(), photo.photo, new TdApi.FormattedText(text, Text.findEntities(text, Text.ENTITY_FLAGS_EXTERNAL)));
-              }
-              break;
-            }
-          }
-          if (item == null) {
-            mediaItems.clear();
-            break;
-          }
-          if (position == -1 && item.getFileId() == currentFileId) {
-            item.setSourceMessage(parent.getMessage());
-            position = i;
-          }
-          mediaItems.add(item);
-          i++;
-        }
-        if (mediaItems.size() <= 1) {
-          return;
-        }
-        if (position == -1) {
-          position = 0;
-        }
-
-        if (!isDestroyed()) {
-          final int positionFinal = position;
-          final String text = Lang.getString(R.string.XofY, position + 1, mediaItems.size());
-          final float textWidth = U.measureText(text, Paints.whiteMediumPaint(13f, false, true));
-          parent.tdlib().ui().post(() -> setInstantItems(mediaItems, text, textWidth, positionFinal));
-        }
-        break;
-      }
     }
   }
 
@@ -1063,7 +1066,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       button.makeActive();
       button.showProgressDelayed();
       String anchor = parent.findUriFragment(linkPreview);
-      parent.tdlib().send(new TdApi.GetWebPageInstantView(url, false), getInstantViewCallback(view, button, linkPreview, anchor));
+      parent.tdlib().fetchInstantView(url, getInstantViewCallback(view, button, linkPreview, anchor));
     } else {
       open(view, false);
     }
@@ -1347,69 +1350,35 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
 
   private Tdlib.ResultHandler<TdApi.WebPageInstantView> getInstantViewCallback (final View view, final TGInlineKeyboard.Button button, final TdApi.LinkPreview instantViewSource, final String anchor) {
     final int currentContextId = button.getContextId();
-    final boolean[] signal = new boolean[1];
-    return new Tdlib.ResultHandler<>() {
-      @Override
-      public void onResult (TdApi.WebPageInstantView instantView, @Nullable TdApi.Error error) {
-        if (error != null) {
-          runOnUiThread(() -> {
-            if (currentContextId != button.getContextId()) {
-              return;
-            }
-            button.makeInactive();
+    return (instantView, error) -> {
+      runOnUiThread(() -> {
+        if (currentContextId != button.getContextId()) {
+          return;
+        }
+        button.makeInactive();
+        if (parent.tdlib().isBadInstantView(instantView)) {
+          if (error != null) {
             button.showTooltip(view, TD.toErrorString(error));
-          });
-          return;
-        }
-
-        if (!TD.hasInstantView(instantView.version)) {
-          parent.tdlib().ui().post(() -> {
-            if (currentContextId == button.getContextId()) {
-              button.makeInactive();
-              button.showTooltip(view, R.string.InstantViewUnsupported);
-            }
-          });
-          return;
-        }
-
-        if (instantView.pageBlocks == null || instantView.pageBlocks.length == 0) {
-          boolean retry = !signal[0] && !instantView.isFull;
-          if (retry) {
-            signal[0] = true;
-            parent.tdlib().send(new TdApi.GetWebPageInstantView(instantViewSource.url, false), this);
           } else {
-            runOnUiThread(() -> {
-              if (currentContextId == button.getContextId()) {
-                button.makeInactive();
-                button.showTooltip(view, "TDLib: instantView.pageBlocks returned null " + (signal[0] ? "twice isFull == " + instantView.isFull : "with isFull == " + instantView.isFull));
-              }
-            });
+            button.showTooltip(view, !TD.hasInstantView(instantView.version) ? R.string.InstantViewUnsupported : R.string.InstantViewUnavailable);
           }
           return;
         }
 
-        runOnUiThread(() -> {
-          if (currentContextId != button.getContextId()) {
-            return;
-          }
-
-          button.makeInactive();
-
-          InstantViewController controller = new InstantViewController(parent.controller().context(), parent.tdlib());
-          controller.setArguments(new InstantViewController.Args(instantViewSource, instantView, anchor));
-          try {
-            controller.show();
-          } catch (UnsupportedOperationException e) {
-            Log.w("Unsupported Instant View block:%s", e, instantViewSource.url);
-            button.showTooltip(view, R.string.InstantViewUnsupported);
-            controller.destroy();
-          } catch (Throwable t) {
-            Log.e("Unable to open Instant View, url:%s", t, instantViewSource.url);
-            button.showTooltip(view, R.string.InstantViewError);
-            controller.destroy();
-          }
-        });
-      }
+        InstantViewController controller = new InstantViewController(parent.controller().context(), parent.tdlib());
+        controller.setArguments(new InstantViewController.Args(instantViewSource, instantView, anchor));
+        try {
+          controller.show();
+        } catch (UnsupportedOperationException e) {
+          Log.w("Unsupported Instant View block:%s", e, instantViewSource.url);
+          button.showTooltip(view, R.string.InstantViewUnsupported);
+          controller.destroy();
+        } catch (Throwable t) {
+          Log.e("Unable to open Instant View, url:%s", t, instantViewSource.url);
+          button.showTooltip(view, R.string.InstantViewError);
+          controller.destroy();
+        }
+      });
     };
   }
 }
