@@ -58,6 +58,7 @@ import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.widget.FileProgressComponent;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 import me.vkryl.android.util.ClickHelper;
@@ -132,7 +133,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
 
   private float instantTextWidth;
   private @Nullable String instantText;
-  private @Nullable ArrayList<MediaItem> instantItems;
+  private @Nullable List<MediaItem> instantItems;
   private int instantPosition;
   private final boolean isAdvertisement;
 
@@ -361,14 +362,14 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     if ((flags & FLAG_PROCESSED) == 0 && needsSpecialProcessing()) {
       flags |= FLAG_PROCESSED;
       if (linkPreview.type.getConstructor() == TdApi.LinkPreviewTypeAlbum.CONSTRUCTOR) {
-        processAlbum((TdApi.LinkPreviewTypeAlbum) linkPreview.type);
+        processAlbum((TdApi.LinkPreviewTypeAlbum) linkPreview.type, true);
       }
     }
     setViewProvider(viewProvider);
     height += lineWidth;
   }
 
-  private void processAlbum (TdApi.LinkPreviewTypeAlbum album) {
+  private List<MediaItem> processAlbum (TdApi.LinkPreviewTypeAlbum album, boolean updateTexts) {
     MediaWrapper currentWrapper = mediaWrapper;
     TdApi.File currentFile = currentWrapper != null ? currentWrapper.getTargetFile() : null;
     int currentFileId = currentFile != null ? currentFile.id : 0;
@@ -394,9 +395,9 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
           throw Td.unsupported(media);
         }
       }
+      item.setSourceMessage(parent.getMessage());
       if (position == -1 && item.getFileId() == currentFileId) {
         TdApi.FormattedText caption = StringUtils.isEmpty(album.caption) ? null : new TdApi.FormattedText(album.caption, Text.findEntities(album.caption, Text.ENTITY_FLAGS_EXTERNAL));
-        item.setSourceMessage(parent.getMessage());
         item.setCaption(caption);
         position = i;
       }
@@ -405,30 +406,36 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     }
 
     if (mediaItems.size() <= 1) {
-      return;
+      return null;
     }
     if (position == -1) {
       position = 0;
     }
 
-    final String text = Lang.getString(R.string.XofY, position + 1, mediaItems.size());
-    final float textWidth = U.measureText(text, Paints.whiteMediumPaint(13f, false, true));
-    setInstantItems(mediaItems, text, textWidth, position);
+    if (updateTexts) {
+      final String text = Lang.getString(R.string.XofY, position + 1, mediaItems.size());
+      final float textWidth = U.measureText(text, Paints.whiteMediumPaint(13f, false, true));
+      setInstantItems(mediaItems, text, textWidth, position);
+    }
+
+    return mediaItems;
+  }
+
+  public List<MediaItem> getInstantItems () {
+    if (linkPreview.type.getConstructor() != TdApi.LinkPreviewTypeAlbum.CONSTRUCTOR) {
+      return null;
+    }
+    return instantItems = processAlbum((TdApi.LinkPreviewTypeAlbum) linkPreview.type, false);
   }
 
   public int getInstantPosition () {
     return instantPosition;
   }
 
-  public ArrayList<MediaItem> getInstantItems () {
-    return instantItems;
-  }
-
   private void setInstantItems (@NonNull ArrayList<MediaItem> items, String text, float textWidth, int position) {
     if (isDestroyed()) {
       return;
     }
-    this.instantItems = items;
     this.instantText = text;
     this.instantTextWidth = textWidth;
     this.instantPosition = position;

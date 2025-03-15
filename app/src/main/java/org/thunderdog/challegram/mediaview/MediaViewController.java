@@ -3256,9 +3256,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
             videoSliderView.resetDuration(timeTotal, timeNow, isLoaded, animated && videoFactor != 0f);
           }
           videoSliderView.setFile(stack.getCurrent().getSourceGalleryFile());
-          boolean value = isLoaded && (stack.getCurrent().isGifType() || (commonFactor < 1f && !MediaItem.isGalleryType(stack.getCurrent().getType())));
-          videoSliderView.setShowPlayPause(value, animated && videoFactor != 0f);
-          if (value && commonFactor < 1f) {
+          MediaItem item = stack.getCurrent();
+          videoSliderView.setShowPlayPause(item.isVideoOrGif(), animated && videoFactor != 0f);
+          videoSliderView.setSlideEnabled(item.canSeekVideo());
+          if (item.isVideoOrGif() && commonFactor < 1f) {
             videoSliderView.setIsPlaying(true, animated && videoFactor != 0f);
             updatePipState(true);
           }
@@ -3281,10 +3282,12 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         } else {
           videoSliderView.resetDuration(timeTotal, timeNow, isLoaded, animated);
         }
-        videoSliderView.setFile(stack.getCurrent().getSourceGalleryFile());
-        boolean value = isLoaded && (stack.getCurrent().isGifType() || commonFactor < 1f);
-        videoSliderView.setShowPlayPause(value, animated);
-        if (value && (commonFactor < 1f || stack.getCurrent().isAutoplay())) {
+        MediaItem item = stack.getCurrent();
+        videoSliderView.updateSecondarySeek(TD.getFileOffsetProgress(item.getTargetFile()), TD.getFilePrefixProgress(item.getTargetFile()));
+        videoSliderView.setFile(item.getSourceGalleryFile());
+        videoSliderView.setShowPlayPause(item.isVideoOrGif(), animated);
+        videoSliderView.setSlideEnabled(item.canSeekVideo());
+        if (item.isVideoOrGif() && (commonFactor < 1f || item.isAutoplay())) {
           videoSliderView.setIsPlaying(true, animated);
           updatePipState(true);
         }
@@ -8281,8 +8284,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     stack = new MediaStack(context.context(), context.tdlib());
 
-    ArrayList<MediaItem> items = parsedWebPage.getInstantItems();
+    List<MediaItem> items = parsedWebPage.getInstantItems();
     if (items != null) {
+      List<TdApi.File> files = new ArrayList<>();
+      for (MediaItem item : items) {
+        files.add(item.getTargetFile());
+      }
+      msg.tdlib().files().syncFiles(files, 500L);
       stack.set(parsedWebPage.getInstantPosition(), items);
     } else {
       MediaItem item = MediaItem.valueOf(context.context(), context.tdlib(), msg.getMessage());

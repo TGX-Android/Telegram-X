@@ -1346,7 +1346,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
   }
 
   public boolean canSeekVideo () {
-    return isVideo() && (Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE || getFileProgress().isDownloaded());
+    return isVideo();
   }
 
   public boolean isVideoOrGif () {
@@ -1603,6 +1603,9 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
           break;
         }
         default: {
+          if (isVideoOrGif()) {
+            return;
+          }
           if (sourceChatId != 0 && !force) {
             if (!TD.isFileLoaded(targetFile)) {
               fileProgress.downloadAutomatically(sourceChatId);
