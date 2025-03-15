@@ -1594,7 +1594,8 @@ public class MediaCellView extends ViewGroup implements
     if (canTouch(isDown)) {
       detector.onTouchEvent(ev);
     }
-    return interceptAnyEvents || super.onInterceptTouchEvent(ev);
+    boolean res = super.onInterceptTouchEvent(ev);
+    return res || interceptAnyEvents;
   }
 
   public boolean canZoom () {

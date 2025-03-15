@@ -145,6 +145,7 @@ import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
+import org.thunderdog.challegram.v.MaxHeightScrollView;
 import org.thunderdog.challegram.widget.AttachDelegate;
 import org.thunderdog.challegram.widget.CheckView;
 import org.thunderdog.challegram.widget.CustomTextView;
@@ -3133,7 +3134,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private StopwatchHeaderButton stopwatchButton;
 
   private FrameLayoutFix bottomWrap;
-  private LinearLayout captionWrapView;
+  private ViewGroup captionWrapView;
   private View captionView;
   private InputView inputView;
   private ImageView captionEmojiButton, captionDoneButton;
@@ -5197,14 +5198,21 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         captionView.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         this.captionView = captionView;
 
-        captionWrapView = new LinearLayout(context);
-        captionWrapView.setOrientation(LinearLayout.VERTICAL);
-        captionWrapView.setBackgroundColor(Theme.getColor(ColorId.transparentEditor));
-        captionWrapView.setAlpha(0f);
-        captionWrapView.addView(captionView);
-        captionWrapView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
 
-        bottomWrap.addView(captionWrapView);
+        LinearLayout captionWrap = new LinearLayout(context);
+        captionWrap.setOrientation(LinearLayout.VERTICAL);
+        captionWrap.addView(captionView);
+        captionWrap.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        MaxHeightScrollView scrollView = new MaxHeightScrollView(context);
+        scrollView.setMaxHeight(Text.getLineHeight(TGMessage.getTextStyleProvider(), true) * 10);
+        scrollView.addView(captionWrap);
+        scrollView.setAlpha(0f);
+        scrollView.setBackgroundColor(Theme.getColor(ColorId.transparentEditor));
+        scrollView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
+        this.captionWrapView = scrollView;
+
+        bottomWrap.addView(this.captionWrapView);
 
         videoSliderView = new VideoControlView(context);
         videoSliderView.setOnPlayPauseClick(v -> {
@@ -8476,7 +8484,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private Args forceEditModeOld_arguments;
   private FrameLayoutFix forceEditModeOld_bottomWrap;
   private View forceEditModeOld_captionView;
-  private LinearLayout forceEditModeOld_captionWrapView;
+  private ViewGroup forceEditModeOld_captionWrapView;
   private List<View> forceEditMode_views;
 
   private boolean inForceEditMode () {
@@ -9009,7 +9017,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     captionEmojiButton.setEnabled(false);
     captionEmojiButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(55f), Screen.dp(52f), Gravity.LEFT | Gravity.BOTTOM));
 
-    captionWrapView = new LinearLayout(context) {
+    LinearLayout captionWrapView = new LinearLayout(context) {
       @Override
       public boolean onInterceptTouchEvent (MotionEvent ev) {
         return getVisibility() != View.VISIBLE || getAlpha() != 1f;
@@ -9036,6 +9044,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     captionWrapView.setBackgroundColor(Theme.getColor(ColorId.transparentEditor));
     captionWrapView.addView(captionView);
     captionWrapView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
+    this.captionWrapView = captionWrapView;
 
     if (!inProfilePhotoEditMode) {
       bottomWrap.addView(captionWrapView);
