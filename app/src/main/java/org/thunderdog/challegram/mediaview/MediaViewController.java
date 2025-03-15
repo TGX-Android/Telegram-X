@@ -3258,6 +3258,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           videoSliderView.setFile(stack.getCurrent().getSourceGalleryFile());
           MediaItem item = stack.getCurrent();
           videoSliderView.setShowPlayPause(item.isVideoOrGif(), animated && videoFactor != 0f);
+          videoSliderView.setIsPlaying(false, true);
           videoSliderView.setSlideEnabled(item.canSeekVideo());
           if (item.isVideoOrGif() && commonFactor < 1f) {
             videoSliderView.setIsPlaying(true, animated && videoFactor != 0f);
@@ -3286,6 +3287,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         videoSliderView.updateSecondarySeek(TD.getFileOffsetProgress(item.getTargetFile()), TD.getFilePrefixProgress(item.getTargetFile()));
         videoSliderView.setFile(item.getSourceGalleryFile());
         videoSliderView.setShowPlayPause(item.isVideoOrGif(), animated);
+        videoSliderView.setIsPlaying(false, true);
         videoSliderView.setSlideEnabled(item.canSeekVideo());
         if (item.isVideoOrGif() && (commonFactor < 1f || item.isAutoplay())) {
           videoSliderView.setIsPlaying(true, animated);
