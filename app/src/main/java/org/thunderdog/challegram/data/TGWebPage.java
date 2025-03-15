@@ -360,87 +360,50 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     buildRippleButton();
     if ((flags & FLAG_PROCESSED) == 0 && needsSpecialProcessing()) {
       flags |= FLAG_PROCESSED;
-      parent.tdlib().send(new TdApi.GetWebPageInstantView(url, true), (localInstantView, error) -> {
-        if (error != null) {
-          parent.tdlib().send(new TdApi.GetWebPageInstantView(url, false), (remoteInstantView, error1) -> {
-            processWebPageInstantView(remoteInstantView);
-          });
-        } else {
-          processWebPageInstantView(localInstantView);
-        }
-      });
+      if (linkPreview.type.getConstructor() == TdApi.LinkPreviewTypeAlbum.CONSTRUCTOR) {
+        processAlbum((TdApi.LinkPreviewTypeAlbum) linkPreview.type);
+      }
     }
     setViewProvider(viewProvider);
     height += lineWidth;
   }
 
-  private void processWebPageInstantView (TdApi.WebPageInstantView instantView) {
-    if (instantView == null) {
-      return;
-    }
-    TdApi.PageBlock[] mediaBlocks = null;
-    main: for (TdApi.PageBlock pageBlock : instantView.pageBlocks) {
-      switch (pageBlock.getConstructor()) {
-        case TdApi.PageBlockSlideshow.CONSTRUCTOR: {
-          mediaBlocks = ((TdApi.PageBlockSlideshow) pageBlock).pageBlocks;
-          break main;
-        }
-        case TdApi.PageBlockCollage.CONSTRUCTOR: {
-          mediaBlocks = ((TdApi.PageBlockCollage) pageBlock).pageBlocks;
-          break main;
-        }
-      }
-    }
-    if (mediaBlocks == null || mediaBlocks.length <= 1) {
-      return;
-    }
+  private void processAlbum (TdApi.LinkPreviewTypeAlbum album) {
     MediaWrapper currentWrapper = mediaWrapper;
     TdApi.File currentFile = currentWrapper != null ? currentWrapper.getTargetFile() : null;
     int currentFileId = currentFile != null ? currentFile.id : 0;
-    final ArrayList<MediaItem> mediaItems = new ArrayList<>(mediaBlocks.length);
+    final ArrayList<MediaItem> mediaItems = new ArrayList<>(album.media.length);
     int position = -1;
     int i = 0;
-    for (TdApi.PageBlock mediaBlock : mediaBlocks) {
-      MediaItem item = null;
-      // TODO entities
-      switch (mediaBlock.getConstructor()) {
-        case TdApi.PageBlockAnimation.CONSTRUCTOR: {
-          TdApi.PageBlockAnimation animation = (TdApi.PageBlockAnimation) mediaBlock;
-          if (animation.animation != null) {
-            String text = TD.getText(animation.caption.text);
-            item = MediaItem.valueOf(parent.context(), parent.tdlib(), animation.animation, new TdApi.FormattedText(text, Text.findEntities(text, Text.ENTITY_FLAGS_EXTERNAL)));
-          }
+
+    for (TdApi.LinkPreviewAlbumMedia media : album.media) {
+      MediaItem item;
+      switch (media.getConstructor()) {
+        case TdApi.LinkPreviewAlbumMediaPhoto.CONSTRUCTOR: {
+          TdApi.LinkPreviewAlbumMediaPhoto photo = (TdApi.LinkPreviewAlbumMediaPhoto) media;
+          item = MediaItem.valueOf(parent.context(), parent.tdlib(), photo.photo, null);
           break;
         }
-        case TdApi.PageBlockVideo.CONSTRUCTOR: {
-          TdApi.PageBlockVideo video = (TdApi.PageBlockVideo) mediaBlock;
-          if (video.video != null) {
-            String text = TD.getText(video.caption.text);
-            // TODO: TDLib/server doesn't have alternativeVideos & cover in PageBlockVideo
-            item = MediaItem.valueOf(parent.context(), parent.tdlib(), video.video, null, null, new TdApi.FormattedText(text, Text.findEntities(text, Text.ENTITY_FLAGS_EXTERNAL)));
-          }
+        case TdApi.LinkPreviewAlbumMediaVideo.CONSTRUCTOR: {
+          TdApi.LinkPreviewAlbumMediaVideo video = (TdApi.LinkPreviewAlbumMediaVideo) media;
+          item = MediaItem.valueOf(parent.context(), parent.tdlib(), video.video, null, null, null);
           break;
         }
-        case TdApi.PageBlockPhoto.CONSTRUCTOR: {
-          TdApi.PageBlockPhoto photo = (TdApi.PageBlockPhoto) mediaBlock;
-          if (photo.photo != null) {
-            String text = TD.getText(photo.caption.text);
-            item = MediaItem.valueOf(parent.context(), parent.tdlib(), photo.photo, new TdApi.FormattedText(text, Text.findEntities(text, Text.ENTITY_FLAGS_EXTERNAL)));
-          }
-          break;
+        default: {
+          Td.assertLinkPreviewAlbumMedia_8c33c943();
+          throw Td.unsupported(media);
         }
-      }
-      if (item == null) {
-        mediaItems.clear();
-        break;
       }
       if (position == -1 && item.getFileId() == currentFileId) {
+        TdApi.FormattedText caption = StringUtils.isEmpty(album.caption) ? null : new TdApi.FormattedText(album.caption, Text.findEntities(album.caption, Text.ENTITY_FLAGS_EXTERNAL));
         item.setSourceMessage(parent.getMessage());
+        item.setCaption(caption);
         position = i;
       }
       mediaItems.add(item);
       i++;
     }
+
     if (mediaItems.size() <= 1) {
       return;
     }
@@ -448,12 +411,9 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       position = 0;
     }
 
-    if (!isDestroyed()) {
-      final int positionFinal = position;
-      final String text = Lang.getString(R.string.XofY, position + 1, mediaItems.size());
-      final float textWidth = U.measureText(text, Paints.whiteMediumPaint(13f, false, true));
-      parent.tdlib().ui().post(() -> setInstantItems(mediaItems, text, textWidth, positionFinal));
-    }
+    final String text = Lang.getString(R.string.XofY, position + 1, mediaItems.size());
+    final float textWidth = U.measureText(text, Paints.whiteMediumPaint(13f, false, true));
+    setInstantItems(mediaItems, text, textWidth, position);
   }
 
   public int getInstantPosition () {

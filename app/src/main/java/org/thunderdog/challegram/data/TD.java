@@ -3788,6 +3788,15 @@ public class TD {
   public static @TdApi.MessageContent.Constructors int convertToMessageContent (TdApi.LinkPreview linkPreview) {
     if (linkPreview == null)
       return TdApi.MessageText.CONSTRUCTOR;
+    if (linkPreview.type.getConstructor() == TdApi.LinkPreviewTypeAlbum.CONSTRUCTOR) {
+      TdApi.LinkPreviewTypeAlbum album = (TdApi.LinkPreviewTypeAlbum) linkPreview.type;
+      for (TdApi.LinkPreviewAlbumMedia media : album.media) {
+        if (media.getConstructor() == TdApi.LinkPreviewAlbumMediaVideo.CONSTRUCTOR) {
+          return TdApi.MessageVideo.CONSTRUCTOR;
+        }
+      }
+      return TdApi.MessagePhoto.CONSTRUCTOR;
+    }
     if (Td.getSticker(linkPreview.type) != null)
       return TdApi.MessageSticker.CONSTRUCTOR;
     if (Td.getVideo(linkPreview.type) != null)
@@ -3827,7 +3836,7 @@ public class TD {
   public static boolean canDeleteFiles (Tdlib tdlib, TdApi.Message message) {
     List<TdApi.File> files = getFiles(message);
     if (files != null) {
-      tdlib.files().syncFiles(files, 500L);
+      tdlib.files().syncFiles(files, 1000L);
       for (TdApi.File file : files) {
         if (canDeleteFile(message, file)) {
           return true;
@@ -3845,15 +3854,51 @@ public class TD {
     if (msg == null) {
       return null;
     }
-    if (msg.content.getConstructor() == TdApi.MessageVideo.CONSTRUCTOR) {
-      TdApi.MessageVideo video = (TdApi.MessageVideo) msg.content;
-      List<TdApi.File> files = new ArrayList<>();
-      files.add(video.video.video);
-      for (TdApi.AlternativeVideo alternativeVideo : video.alternativeVideos) {
-        files.add(alternativeVideo.hlsFile);
-        files.add(alternativeVideo.video);
+    switch (msg.content.getConstructor()) {
+      case TdApi.MessageVideo.CONSTRUCTOR: {
+        TdApi.MessageVideo video = (TdApi.MessageVideo) msg.content;
+        List<TdApi.File> files = new ArrayList<>();
+        files.add(video.video.video);
+        for (TdApi.AlternativeVideo alternativeVideo : video.alternativeVideos) {
+          files.add(alternativeVideo.hlsFile);
+          files.add(alternativeVideo.video);
+        }
+        return files;
       }
-      return files;
+      case TdApi.MessageText.CONSTRUCTOR: {
+        TdApi.MessageText text = (TdApi.MessageText) msg.content;
+        TdApi.LinkPreview linkPreview = text.linkPreview;
+        if (linkPreview != null) {
+          switch (linkPreview.type.getConstructor()) {
+            case TdApi.LinkPreviewTypeAlbum.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeAlbum album = (TdApi.LinkPreviewTypeAlbum) linkPreview.type;
+              List<TdApi.File> files = new ArrayList<>();
+              for (TdApi.LinkPreviewAlbumMedia media : album.media) {
+                TdApi.File file;
+                switch (media.getConstructor()) {
+                  case TdApi.LinkPreviewAlbumMediaPhoto.CONSTRUCTOR: {
+                    TdApi.LinkPreviewAlbumMediaPhoto photo = (TdApi.LinkPreviewAlbumMediaPhoto) media;
+                    file = getFile(photo.photo);
+                    break;
+                  }
+                  case TdApi.LinkPreviewAlbumMediaVideo.CONSTRUCTOR: {
+                    TdApi.LinkPreviewAlbumMediaVideo video = (TdApi.LinkPreviewAlbumMediaVideo) media;
+                    file = video.video.video;
+                    break;
+                  }
+                  default: {
+                    Td.assertLinkPreviewAlbumMedia_8c33c943();
+                    throw Td.unsupported(media);
+                  }
+                }
+                files.add(file);
+              }
+              return files;
+            }
+          }
+        }
+        break;
+      }
     }
     TdApi.File singleFile = getFile(msg);
     if (singleFile != null) {
@@ -4103,18 +4148,57 @@ public class TD {
     }
   }
 
-  public static @Nullable DownloadedFile getDownloadedFile (TGWebPage webPage) {
+  public static @Nullable List<TD.DownloadedFile> getDownloadedFiles (TGWebPage webPage) {
     if (webPage == null)
       return null;
-    TdApi.LinkPreview rawLinkPreview = webPage.getLinkPreview();
+
+    TdApi.LinkPreview linkPreview = webPage.getLinkPreview();
+    if (linkPreview.type.getConstructor() == TdApi.LinkPreviewTypeAlbum.CONSTRUCTOR) {
+      TdApi.LinkPreviewTypeAlbum album = (TdApi.LinkPreviewTypeAlbum) linkPreview.type;
+      List<TD.DownloadedFile> downloadedFiles = new ArrayList<>();
+      for (TdApi.LinkPreviewAlbumMedia media : album.media) {
+        TD.DownloadedFile downloadedFile;
+        switch (media.getConstructor()) {
+          case TdApi.LinkPreviewAlbumMediaPhoto.CONSTRUCTOR: {
+            TdApi.LinkPreviewAlbumMediaPhoto photo = (TdApi.LinkPreviewAlbumMediaPhoto) media;
+            downloadedFile = TD.DownloadedFile.valueOfPhoto(getFile(photo.photo), false);
+            break;
+          }
+          case TdApi.LinkPreviewAlbumMediaVideo.CONSTRUCTOR: {
+            TdApi.LinkPreviewAlbumMediaVideo video = (TdApi.LinkPreviewAlbumMediaVideo) media;
+            downloadedFile = TD.DownloadedFile.valueOf(video.video);
+            break;
+          }
+          default: {
+            Td.assertLinkPreviewAlbumMedia_8c33c943();
+            throw Td.unsupported(media);
+          }
+        }
+        downloadedFiles.add(downloadedFile);
+      }
+      return downloadedFiles;
+    }
+
+    TD.DownloadedFile downloadedFile = getSingleDownloadedFile(webPage);
+    if (downloadedFile != null) {
+      return Collections.singletonList(downloadedFile);
+    }
+    return null;
+  }
+
+  private static @Nullable TD.DownloadedFile getSingleDownloadedFile (TGWebPage webPage) {
+    if (webPage == null)
+      return null;
+
+    TdApi.LinkPreview linkPreview = webPage.getLinkPreview();
     FileComponent component = webPage.getFileComponent();
     if (component != null) {
-      if (component.isAudio() && Td.getAudio(rawLinkPreview.type) != null) {
-        return TD.DownloadedFile.valueOf(Td.getAudio(rawLinkPreview.type));
-      } else if (component.isVoice() && Td.getVoiceNote(rawLinkPreview.type) != null) {
-        return TD.DownloadedFile.valueOf(Td.getVoiceNote(rawLinkPreview.type));
-      } else if (component.isDocument() && Td.getDocument(rawLinkPreview.type) != null) {
-        return TD.DownloadedFile.valueOf(Td.getDocument(rawLinkPreview.type));
+      if (component.isAudio() && Td.getAudio(linkPreview.type) != null) {
+        return TD.DownloadedFile.valueOf(Td.getAudio(linkPreview.type));
+      } else if (component.isVoice() && Td.getVoiceNote(linkPreview.type) != null) {
+        return TD.DownloadedFile.valueOf(Td.getVoiceNote(linkPreview.type));
+      } else if (component.isDocument() && Td.getDocument(linkPreview.type) != null) {
+        return TD.DownloadedFile.valueOf(Td.getDocument(linkPreview.type));
       }
     }
     MediaWrapper wrapper = webPage.getMediaWrapper();
@@ -4124,34 +4208,34 @@ public class TD {
       } else if (wrapper.isVideo()) {
         return TD.DownloadedFile.valueOf(wrapper.getVideo());
       } else if (wrapper.isPhoto()) {
-        return TD.DownloadedFile.valueOfPhoto(wrapper.getTargetFile(), Td.getSticker(rawLinkPreview.type) != null);
+        return TD.DownloadedFile.valueOfPhoto(wrapper.getTargetFile(), Td.getSticker(linkPreview.type) != null);
       }
     }
 
     switch (webPage.getType()) {
       case TGWebPage.TYPE_GIF: {
-        if (Td.getAnimation(rawLinkPreview.type) != null) {
-          return TD.DownloadedFile.valueOf(Td.getAnimation(rawLinkPreview.type));
+        if (Td.getAnimation(linkPreview.type) != null) {
+          return TD.DownloadedFile.valueOf(Td.getAnimation(linkPreview.type));
         }
         return null;
       }
       case TGWebPage.TYPE_VIDEO: {
-        if (Td.getVideo(rawLinkPreview.type) != null) {
-          return TD.DownloadedFile.valueOf(Td.getVideo(rawLinkPreview.type));
+        if (Td.getVideo(linkPreview.type) != null) {
+          return TD.DownloadedFile.valueOf(Td.getVideo(linkPreview.type));
         }
         break;
       }
       case TGWebPage.TYPE_TELEGRAM_BACKGROUND: {
-        if (Td.getDocument(rawLinkPreview.type) != null) {
-          return TD.DownloadedFile.valueOf(Td.getDocument(rawLinkPreview.type));
+        if (Td.getDocument(linkPreview.type) != null) {
+          return TD.DownloadedFile.valueOf(Td.getDocument(linkPreview.type));
         }
         return null;
       }
       case TGWebPage.TYPE_PHOTO: {
-        TdApi.Photo photo = Td.getPhoto(rawLinkPreview.type);
+        TdApi.Photo photo = Td.getPhoto(linkPreview.type);
         if (photo != null) {
           return TD.DownloadedFile.valueOfPhoto(webPage.getTargetFile(), false);
-        } else if (Td.getSticker(rawLinkPreview.type) != null) {
+        } else if (Td.getSticker(linkPreview.type) != null) {
           return TD.DownloadedFile.valueOfPhoto(webPage.getTargetFile(), true);
         }
         break;

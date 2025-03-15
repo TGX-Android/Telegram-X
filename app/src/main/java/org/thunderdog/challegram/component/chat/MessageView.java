@@ -927,9 +927,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       if (downloadedFiles.isEmpty() && singleMessage.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR && msg instanceof TGMessageText) {
         TGWebPage webPage = ((TGMessageText) msg).getParsedLinkPreview();
         if (webPage != null) {
-          TD.DownloadedFile downloadedFile = TD.getDownloadedFile(webPage);
-          if (downloadedFile != null) {
-            downloadedFiles.add(downloadedFile);
+          List<TD.DownloadedFile> linkPreviewFiles = TD.getDownloadedFiles(webPage);
+          if (linkPreviewFiles != null && !linkPreviewFiles.isEmpty()) {
+            downloadedFiles.addAll(linkPreviewFiles);
           }
         }
       }
