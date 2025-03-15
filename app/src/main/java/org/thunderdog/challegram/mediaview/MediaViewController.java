@@ -5208,7 +5208,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         captionWrap.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         MaxHeightScrollView scrollView = new MaxHeightScrollView(context);
-        scrollView.setMaxHeight(Text.getLineHeight(TGMessage.getTextStyleProvider(), true) * 10);
+        scrollView.setMaxHeight(Text.getLineHeight(TGMessage.getTextStyleProvider(), true) * 10 + Screen.dp(14f));
         scrollView.addView(captionWrap);
         scrollView.setAlpha(0f);
         scrollView.setBackgroundColor(Theme.getColor(ColorId.transparentEditor));
