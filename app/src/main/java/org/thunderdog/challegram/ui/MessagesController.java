@@ -3077,8 +3077,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
             showActionButton(Lang.getMarkdownString(this, R.string.UserNewChatRetricted, Lang.boldCreator(), tdlib.chatTitleShort(chat.id)), ACTION_EMPTY, false);
             break;
           }
+          case TdApi.CanSendMessageToUserResultUserHasPaidMessages.CONSTRUCTOR: {
+            TdApi.CanSendMessageToUserResultUserHasPaidMessages paidMessages = (TdApi.CanSendMessageToUserResultUserHasPaidMessages) canSendMessageToUser;
+            showActionButton(Lang.getMarkdownPlural(this, R.string.UserMessagesPaid, paidMessages.outgoingPaidMessageStarCount, Lang.boldCreator(), tdlib.chatTitleShort(chat.id)), ACTION_EMPTY, false);
+            break;
+          }
           default:
-            Td.assertCanSendMessageToUserResult_3ce8a048();
+            Td.assertCanSendMessageToUserResult_15fb1d0f();
             throw Td.unsupported(canSendMessageToUser);
         }
       } else if (secretChat != null && !TD.isSecretChatReady(secretChat)) {
@@ -3696,9 +3701,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
         final SparseArrayCompat<TdApi.File> files = new SparseArrayCompat<>(size);
         for (int i = 0; i < size; i++) {
           TdApi.Message message = selectedMessageIds.valueAt(i).getMessage(selectedMessageIds.keyAt(i));
-          TdApi.File file = TD.getFile(message);
-          if (TD.canDeleteFile(message, file)) {
-            files.put(file.id, file);
+          List<TdApi.File> filesList = TD.getFiles(message);
+          if (filesList != null) {
+            for (TdApi.File file : filesList) {
+              if (TD.canDeleteFile(message, file)) {
+                files.put(file.id, file);
+              }
+            }
           }
         }
         TD.deleteFiles(this, ArrayUtils.asArray(files, new TdApi.File[files.size()]), () -> finishSelectMode(-1));
@@ -5111,7 +5120,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       for (int i = 0; i < selectedMessageIds.size(); i++) {
         TGMessage msg = selectedMessageIds.valueAt(i);
         TdApi.Message message = msg.getMessage(selectedMessageIds.keyAt(i));
-        if (TD.canDeleteFile(message)) {
+        if (TD.canDeleteFiles(tdlib(), message)) {
           canClearCache++;
           hasMergedMessages = hasMergedMessages || msg.getCombinedMessageCount() > 0;
         }
@@ -5731,12 +5740,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
           TdApi.Message[] messages = selectedMessage.getAllMessages();
           final SparseArrayCompat<TdApi.File> files = new SparseArrayCompat<>(messages.length);
           for (TdApi.Message message : messages) {
-            TdApi.File file = TD.getFile(message);
-            if (TD.canDeleteFile(message, file)) {
-              files.put(file.id, file);
+            List<TdApi.File> filesList = TD.getFiles(message);
+            if (filesList != null) {
+              for (TdApi.File file : filesList) {
+                if (TD.canDeleteFile(message, file)) {
+                  files.put(file.id, file);
+                }
+              }
             }
           }
-          if (files.size() > 0) {
+          if (!files.isEmpty()) {
             TD.deleteFiles(this, ArrayUtils.asArray(files, new TdApi.File[files.size()]), null);
           }
         }

@@ -82,20 +82,31 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.os.EnvironmentCompat;
 import androidx.exifinterface.media.ExifInterface;
+import androidx.media3.common.C;
+import androidx.media3.common.Format;
+import androidx.media3.common.MimeTypes;
 import androidx.media3.common.PlaybackException;
+import androidx.media3.common.util.TimestampAdjuster;
+import androidx.media3.datasource.ByteArrayDataSource;
+import androidx.media3.datasource.DataSource;
 import androidx.media3.datasource.FileDataSource;
 import androidx.media3.exoplayer.DefaultLoadControl;
 import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.exoplayer.ExoPlaybackException;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.exoplayer.RenderersFactory;
+import androidx.media3.exoplayer.analytics.PlayerId;
+import androidx.media3.exoplayer.hls.DefaultHlsExtractorFactory;
+import androidx.media3.exoplayer.hls.HlsExtractorFactory;
+import androidx.media3.exoplayer.hls.HlsMediaChunkExtractor;
+import androidx.media3.exoplayer.hls.HlsMediaSource;
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import androidx.media3.exoplayer.source.MediaSource;
-import androidx.media3.exoplayer.source.MediaSourceFactory;
 import androidx.media3.exoplayer.source.ProgressiveMediaSource;
 import androidx.media3.exoplayer.source.UnrecognizedInputFormatException;
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector;
 import androidx.media3.extractor.DefaultExtractorsFactory;
+import androidx.media3.extractor.ExtractorInput;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -116,6 +127,7 @@ import org.thunderdog.challegram.telegram.RandomAccessDataSource;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibDataSource;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
+import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibNotificationChannelGroup;
 import org.thunderdog.challegram.telegram.TdlibNotificationManager;
 import org.thunderdog.challegram.tool.Fonts;
@@ -161,6 +173,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.zip.GZIPInputStream;
 
 import javax.microedition.khronos.egl.EGL10;
@@ -185,6 +198,8 @@ import okio.Okio;
 import okio.Sink;
 import okio.Source;
 import tgx.td.Td;
+import tgx.td.data.HlsPath;
+import tgx.td.data.HlsVideo;
 
 @SuppressWarnings ("JniMissingFunction")
 public class U {
@@ -736,7 +751,7 @@ public class U {
     // DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON
     final int extensionMode = preferExtensions || org.thunderdog.challegram.unsorted.Settings.instance().getNewSetting(org.thunderdog.challegram.unsorted.Settings.SETTING_FLAG_FORCE_EXO_PLAYER_EXTENSIONS) ? DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER : DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON;
     final RenderersFactory renderersFactory = new DefaultRenderersFactory(context).setExtensionRendererMode(extensionMode);
-    final MediaSourceFactory mediaSourceFactory = new DefaultMediaSourceFactory(context, new DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true));
+    final MediaSource.Factory mediaSourceFactory = new DefaultMediaSourceFactory(context, new DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true));
     return new ExoPlayer.Builder(context, renderersFactory, mediaSourceFactory)
       .setTrackSelector(new DefaultTrackSelector(context))
       .setLoadControl(new DefaultLoadControl())
@@ -756,21 +771,103 @@ public class U {
   }
 
   public static androidx.media3.common.MediaItem newMediaItem (Uri uri) {
-    return new androidx.media3.common.MediaItem.Builder().setUri(uri).build();
+    return androidx.media3.common.MediaItem.fromUri(uri);
   }
 
-  public static MediaSource newMediaSource (int accountId, TdApi.Message message) {
-    return newMediaSource(accountId, TD.getFile(message));
+  public static MediaSource newAudioMediaSource (int accountId, TdApi.Message message) {
+    TdApi.File file = TD.getFile(message);
+    long durationMs = TD.getDurationMs(message);
+    return newMediaSource(accountId, file, TdlibFilesManager.PRIORITY_STREAMING_AUDIO, TdlibDataSource.Flag.DOWNLOAD_FULLY, durationMs);
   }
 
-  public static MediaSource newMediaSource (int accountId, @Nullable TdApi.File file) {
+  public static MediaSource newMediaSource (int accountId, @Nullable HlsVideo hlsVideo) {
+    if (hlsVideo == null) {
+      throw new IllegalArgumentException();
+    }
+
+    Uri manifestUri = TdlibDataSource.UriFactory.create(accountId, -1);
+
+    TdlibDataSource.Factory factory = new TdlibDataSource.Factory(accountId, TdlibFilesManager.PRIORITY_STREAMING_VIDEO, new TdlibDataSource.RequestModifier() {
+      @Override
+      public Uri modifyUri (Uri sourceUri) {
+        String scheme = sourceUri.getScheme();
+        if (scheme == null) {
+          throw new IllegalArgumentException(sourceUri.toString());
+        }
+        switch (scheme) {
+          case HlsVideo.MTPROTO_SCHEME: {
+            long streamId = HlsVideo.extractStreamId(sourceUri);
+            int videoFileId = hlsVideo.findVideoFileIdByStreamId(streamId);
+            return TdlibDataSource.UriFactory.create(accountId, videoFileId, TdlibFilesManager.PRIORITY_STREAMING_HLS_VIDEO, TdlibDataSource.Flag.DOWNLOAD_PRECISELY, TimeUnit.SECONDS.toMillis(hlsVideo.video.duration));
+          }
+          case HlsVideo.SCHEME: {
+            HlsPath hlsPath = HlsPath.fromUri(sourceUri);
+            return TdlibDataSource.UriFactory.create(accountId, hlsPath.hlsFileId, TdlibFilesManager.PRIORITY_STREAMING_HLS_PLAYLIST, TdlibDataSource.Flag.DOWNLOAD_FULLY, 0);
+          }
+          default: {
+            return sourceUri;
+          }
+        }
+      }
+
+      @Nullable
+      @Override
+      public DataSource redirectDataSource (Uri uri) {
+        if (uri.equals(manifestUri)) {
+          String playlistData = hlsVideo.multivariantPlaylistData();
+          return new ByteArrayDataSource(playlistData.getBytes());
+        }
+        return null;
+      }
+    });
+
+    return new HlsMediaSource.Factory(factory)
+      .setAllowChunklessPreparation(false)
+      .setExtractorFactory(newHlsExtractorFactory(hlsVideo))
+      .createMediaSource(newMediaItem(manifestUri));
+  }
+
+  @NonNull private static HlsExtractorFactory newHlsExtractorFactory (@NonNull HlsVideo hlsVideo) {
+    DefaultHlsExtractorFactory defaultHlsExtractorFactory = new DefaultHlsExtractorFactory();
+    return new HlsExtractorFactory() {
+      @Override
+      @NonNull
+      public HlsMediaChunkExtractor createExtractor (@NonNull Uri uri, @NonNull Format format, @Nullable List<Format> muxedCaptionFormats, @NonNull TimestampAdjuster timestampAdjuster, @NonNull Map<String, List<String>> responseHeaders, @NonNull ExtractorInput sniffingExtractorInput, @NonNull PlayerId playerId) throws IOException {
+        if (HlsVideo.MTPROTO_SCHEME.equals(uri.getScheme())) {
+          long streamId = HlsVideo.extractStreamId(uri);
+          TdApi.AlternativeVideo alternativeVideo = hlsVideo.findVideoByStreamId(streamId);
+          format = format.buildUpon()
+            .setCodecs(alternativeVideo.codec)
+            .setWidth(alternativeVideo.width)
+            .setHeight(alternativeVideo.height)
+            .setContainerMimeType(MimeTypes.VIDEO_MP4)
+            .setCryptoType(C.CRYPTO_TYPE_UNSUPPORTED)
+            .build();
+          if (!timestampAdjuster.isInitialized()) {
+            try {
+              timestampAdjuster.sharedInitializeOrWait(true, 0, 0);
+            } catch (TimeoutException | InterruptedException ignored) { }
+          }
+        }
+        return defaultHlsExtractorFactory.createExtractor(uri, format, muxedCaptionFormats, timestampAdjuster, responseHeaders, sniffingExtractorInput, playerId);
+      }
+    };
+  }
+
+  public static MediaSource newMediaSource (int accountId, @Nullable TdApi.File file, int priority, @TdlibDataSource.Flag int flags, long durationMs) {
     if (file == null)
       throw new IllegalArgumentException();
+    Uri uri;
+    DataSource.Factory factory;
     if (file.id == -1 && !StringUtils.isEmpty(file.local.path)) {
-      return newMediaSource(new File(file.local.path));
+      uri = Uri.fromFile(new File(file.local.path));
+      factory = new FileDataSource.Factory();
     } else {
-      return new ProgressiveMediaSource.Factory(new TdlibDataSource.Factory()).createMediaSource(newMediaItem(TdlibDataSource.UriFactory.create(accountId, file)));
+      uri = TdlibDataSource.UriFactory.create(accountId, file, priority, flags, durationMs);
+      factory = new TdlibDataSource.Factory();
     }
+    androidx.media3.common.MediaItem media = newMediaItem(uri);
+    return new ProgressiveMediaSource.Factory(factory).createMediaSource(media);
   }
 
   public static MediaSource newMediaSource (RandomAccessFile file) {
@@ -778,7 +875,7 @@ public class U {
   }
 
   public static MediaSource newMediaSource (int accountId, int fileId) {
-    return new ProgressiveMediaSource.Factory(new TdlibDataSource.Factory()).createMediaSource(newMediaItem(TdlibDataSource.UriFactory.create(accountId, fileId)));
+    return new ProgressiveMediaSource.Factory(new TdlibDataSource.Factory(accountId)).createMediaSource(newMediaItem(TdlibDataSource.UriFactory.create(accountId, fileId)));
   }
 
   public static boolean isGooglePlayServicesAvailable (Context context) {
@@ -1214,11 +1311,12 @@ public class U {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
       return ValueAnimator.getDurationScale();
     }
-    try {
-      return Settings.Global.getFloat(context.getContentResolver(), Settings.Global.ANIMATOR_DURATION_SCALE, 1.0f);
-    } catch (Throwable ignored) {
-      return 1.0f;
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+      try {
+        return Settings.Global.getFloat(context.getContentResolver(), Settings.Global.ANIMATOR_DURATION_SCALE, 1.0f);
+      } catch (Throwable ignored) { }
     }
+    return 1.0f;
   }
   public static String getDataColumn(Context context, Uri uri, String selection, String[] selectionArgs) {
     final String column = "_data";

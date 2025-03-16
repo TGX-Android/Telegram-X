@@ -83,6 +83,7 @@ import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibChatList;
 import org.thunderdog.challegram.telegram.TdlibChatListSlice;
+import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
@@ -627,7 +628,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     }
     for (int i = 0; i < downloadingFiles.size(); i++) {
       FileEntry file = downloadingFiles.valueAt(i);
-      file.onTimeout = tdlib.files().downloadFileSync(file.file, -1, downloadedFile -> tdlib.ui().post(() -> onFileLoaded(file)), updatedFile -> tdlib.ui().post(this::dispatchDownloadProgress), null);
+      file.onTimeout = tdlib.files().downloadFileSync(file.file, TdlibFilesManager.PRIORITY_USER_REQUEST_SHARE, -1, downloadedFile -> tdlib.ui().post(() -> onFileLoaded(file)), updatedFile -> tdlib.ui().post(this::dispatchDownloadProgress), null);
     }
   }
 
@@ -1871,7 +1872,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           if (ChatId.isSecret(chatId)) {
             if (!properties.canBeCopiedToSecretChat)
               return Lang.getString(R.string.SecretChatForwardError);
-            TdApi.ForwardMessages function = new TdApi.ForwardMessages(chatId, 0, message.chatId, new long[] {message.id}, new TdApi.MessageSendOptions(false, false, false, false, false, null, 0, 0, true), needHideAuthor, needRemoveCaptions);
+            TdApi.ForwardMessages function = new TdApi.ForwardMessages(chatId, 0, message.chatId, new long[] {message.id}, new TdApi.MessageSendOptions(false, false, false, false, 0, false, null, 0, 0, true), needHideAuthor, needRemoveCaptions);
             TdApi.Object check = tdlib.clientExecute(function, 1000L);
             if (check instanceof TdApi.Error) {
               return TD.toErrorString(check);

@@ -210,7 +210,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   }
 
   public MediaWrapper (BaseActivity context, Tdlib tdlib, @NonNull TdApi.Document document, long chatId, long messageId, @Nullable TGMessage source, boolean useHotStuff) {
-    this(context, tdlib, new TdApi.Video(0, document.thumbnail.width, document.thumbnail.height, document.fileName, document.mimeType, false, true, document.minithumbnail, document.thumbnail, document.document), chatId, messageId, source, useHotStuff);
+    this(context, tdlib, new TdApi.Video(0, document.thumbnail.width, document.thumbnail.height, document.fileName, document.mimeType, false, true, document.minithumbnail, document.thumbnail, document.document), null, chatId, messageId, source, useHotStuff);
   }
 
   private void setVideoStreamingUi (boolean value) {
@@ -239,11 +239,11 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   }
 
   public MediaWrapper (BaseActivity context, Tdlib tdlib, @NonNull TdApi.MessageVideo video, long chatId, long messageId, @Nullable TGMessage source, boolean useHotStuff) {
-    this(context, tdlib, video.video, chatId, messageId, source, useHotStuff);
+    this(context, tdlib, video.video, video.cover, chatId, messageId, source, useHotStuff);
     setRevealOnTap(video.hasSpoiler);
   }
 
-  public MediaWrapper (BaseActivity context, Tdlib tdlib, @NonNull TdApi.Video video, long chatId, long messageId, @Nullable TGMessage source, boolean useHotStuff) {
+  public MediaWrapper (BaseActivity context, Tdlib tdlib, @NonNull TdApi.Video video, @Nullable TdApi.Photo cover, long chatId, long messageId, @Nullable TGMessage source, boolean useHotStuff) {
     this.tdlib = tdlib;
     this.source = source;
     this.sourceMessageId = messageId;
@@ -261,10 +261,10 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       fileProgress.setHideDownloadedIcon(true);
     }
 
-    setVideo(messageId, video);
+    setVideo(messageId, video, cover);
   }
 
-  private void setVideo (long messageId, TdApi.Video video) {
+  private void setVideo (long messageId, TdApi.Video video, @Nullable TdApi.Photo cover) {
     this.video = video;
 
     if ((video.width == 0 || video.height == 0) && video.thumbnail != null) {
@@ -281,9 +281,15 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     this.targetFile = video.video;
 
     if (!ignoreUpcomingContentUpdate()) {
-      setPreviewFile(video.minithumbnail, video.thumbnail);
-      this.targetImageFile = createThumbFile(tdlib, video.video);
-      this.targetImageFile.setScaleType(ImageFile.CENTER_CROP);
+      if (cover != null) {
+        TdApi.PhotoSize previewSize = MediaWrapper.buildPreviewSize(cover.sizes);
+        TdApi.PhotoSize targetSize = MediaWrapper.buildTargetFile(cover.sizes, previewSize);
+        setPreviewSize(cover.minithumbnail, targetSize);
+      } else {
+        setPreviewFile(video.minithumbnail, video.thumbnail);
+        this.targetImageFile = createThumbFile(tdlib, video.video);
+        this.targetImageFile.setScaleType(ImageFile.CENTER_CROP);
+      }
     }
 
     this.contentWidth = video.width;
@@ -368,7 +374,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       return new MediaWrapper(context, tdlib, pending.getPhoto(), pending.chatId, pending.messageId, source, false, pending.isWebp(), null);
     }
     if (pending.isVideo()) {
-      return new MediaWrapper(context, tdlib, pending.getVideo(), pending.chatId, pending.messageId, source, false);
+      return new MediaWrapper(context, tdlib, pending.getVideo(), pending.getVideoCover(), pending.chatId, pending.messageId, source, false);
     }
     if (pending.isAnimation()) {
       return new MediaWrapper(context, tdlib, pending.getAnimation(), pending.chatId, pending.messageId, source, false, false, false, null);
@@ -688,18 +694,20 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     return (a == null && b == null) || (a != null && b != null && ((a.id == b.id) || (a.local != null && b.local != null && StringUtils.equalsOrBothEmpty(a.local.path, b.local.path) && !StringUtils.isEmpty(a.local.path))));
   }
 
-  private void setPreviewSize (TdApi.Minithumbnail minithumbnail,  @Nullable TdApi.PhotoSize previewSize) {
+  private void setPreviewSize (TdApi.Minithumbnail minithumbnail, @Nullable TdApi.PhotoSize previewSize) {
     if (!isSameContent(this.previewSize != null ? this.previewSize.photo : null, previewSize != null ? previewSize.photo : null)) {
       this.previewSize = previewSize;
       setPreviewFile(minithumbnail, TD.toThumbnail(previewSize));
     } else if (this.miniThumbnail == null && minithumbnail != null) {
       miniThumbnail = new ImageFileLocal(minithumbnail);
+      miniThumbnail.setScaleType(ImageFile.CENTER_CROP);
     }
   }
 
   private void setPreviewFile (TdApi.Minithumbnail minithumbnail, TdApi.Thumbnail thumbnail) {
     if (minithumbnail != null) {
       miniThumbnail = new ImageFileLocal(minithumbnail);
+      miniThumbnail.setScaleType(ImageFile.CENTER_CROP);
     } else {
       miniThumbnail = null;
     }
@@ -1294,14 +1302,14 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   }
 
   public boolean updateVideo (long sourceMessageId, TdApi.MessageVideo newVideo) {
-    return updateVideo(sourceMessageId, newVideo.video, newVideo.hasSpoiler);
+    return updateVideo(sourceMessageId, newVideo.video, newVideo.cover, newVideo.hasSpoiler);
   }
 
-  public boolean updateVideo (long sourceMessageId, TdApi.Video video, boolean hasSpoiler) {
+  public boolean updateVideo (long sourceMessageId, TdApi.Video video, @Nullable TdApi.Photo cover, boolean hasSpoiler) {
     if (this.sourceMessageId != sourceMessageId) {
       return false;
     }
-    setVideo(sourceMessageId, video);
+    setVideo(sourceMessageId, video, cover);
     setRevealOnTap(hasSpoiler);
     return true;
   }

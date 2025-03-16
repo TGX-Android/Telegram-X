@@ -489,7 +489,7 @@ public class UI {
     if (string != null) {
       Log.critical("TDLib Error: %s", Log.generateException(2), string);
       int errorCode = TD.errorCode(obj);
-      if (errorCode != 401 && !(errorCode == 500 && "Client is closed".equals(TD.errorText(obj)))) {
+      if (errorCode != 401 && errorCode != 406 && !(errorCode == 500 && "Client is closed".equals(TD.errorText(obj)))) {
         showToast(string, Toast.LENGTH_SHORT);
       }
     }

@@ -928,7 +928,7 @@ public class TGMessageMedia extends TGMessage {
       if (pending.isPhoto() && wrapper.isPhoto()) {
         updated = wrapper.updatePhoto(messageId, pending.getPhoto(), pending.hasSpoiler(), pending.isWebp());
       } else if (pending.isVideo() && wrapper.isVideo()) {
-        updated = wrapper.updateVideo(messageId, pending.getVideo(), pending.hasSpoiler());
+        updated = wrapper.updateVideo(messageId, pending.getVideo(), pending.getVideoCover(), pending.hasSpoiler());
       } else if (pending.isAnimation() && wrapper.isGif()) {
         updated = wrapper.updateAnimation(messageId, pending.getAnimation(), pending.hasSpoiler());
       } else {

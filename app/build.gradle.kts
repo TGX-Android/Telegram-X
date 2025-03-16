@@ -427,6 +427,7 @@ dependencies {
   implementation("androidx.media3:media3-transformer:${LibraryVersions.ANDROIDX_MEDIA}")
   implementation("androidx.media3:media3-effect:${LibraryVersions.ANDROIDX_MEDIA}")
   implementation("androidx.media3:media3-common:${LibraryVersions.ANDROIDX_MEDIA}")
+  implementation("androidx.media3:media3-exoplayer-hls:${LibraryVersions.ANDROIDX_MEDIA}")
   // 17.x version requires minSdk 19 or higher
   implementation("com.google.mlkit:language-id:16.1.1")
   // The Checker Framework: https://checkerframework.org/CHANGELOG.md

@@ -1729,7 +1729,7 @@ public class RecordAudioVideoController implements
         TdApi.InputMessageReplyTo replyTo = targetController.obtainReplyTo();
         final TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(initialSendOptions, tdlib.chatDefaultDisableNotifications(chatId));
         if (newVideoNote.thumbnail == null && helperFile != null) {
-          tdlib.client().send(new TdApi.DownloadFile(helperFile.id, 1, 0, 0, true), result -> {
+          tdlib.client().send(new TdApi.DownloadFile(helperFile.id, TdlibFilesManager.PRIORITY_FILE_GENERATION, 0, 0, true), result -> {
             tdlib.sendMessage(chatId, messageThreadId, replyTo, finalSendOptions, result.getConstructor() == TdApi.File.CONSTRUCTOR ? tdlib.filegen().createThumbnail(videoNote, isSecretChat, (TdApi.File) result) : newVideoNote, null);
           });
         } else {

@@ -152,7 +152,7 @@ public class MessageEditMediaPending implements Tdlib.UploadFutureSimple.Callbac
   }
 
   public TdApi.MessageVideo getMessageVideo () {
-    return new TdApi.MessageVideo(getVideo(), new TdApi.AlternativeVideo[0], null, 0, getCaption(), showCaptionAboveMedia(), hasSpoiler(), false);
+    return new TdApi.MessageVideo(getVideo(), new TdApi.AlternativeVideo[0], getVideoCover(), 0, getCaption(), showCaptionAboveMedia(), hasSpoiler(), false);
   }
 
   public TdApi.MessageAnimation getMessageAnimation () {
@@ -175,6 +175,9 @@ public class MessageEditMediaPending implements Tdlib.UploadFutureSimple.Callbac
     return Td.showCaptionAboveMedia(content);
   }
 
+  public TdApi.Photo getVideoCover () {
+    return null; // TODO
+  }
   public boolean hasSpoiler () {
     switch (content.getConstructor()) {
       case TdApi.InputMessagePhoto.CONSTRUCTOR:

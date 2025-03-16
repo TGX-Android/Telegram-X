@@ -1044,7 +1044,7 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
     }));
   }
 
-  protected boolean supportsMessageClearing () {
+  protected boolean supportsMessageClearing (MessageWithProperties message) {
     return true;
   }
 
@@ -1094,30 +1094,35 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
   }
 
   public boolean canClearMessages () {
-    if (selectedMessages != null && supportsMessageClearing()) {
-      if (!selectedMessages.isEmpty()) {
-        for (MessageWithProperties message : selectedMessages.values()) {
-          TdApi.File file = TD.getFile(message.message);
-          if (file == null || !file.local.canBeDeleted || file.local.downloadedSize == 0) {
-            return false;
-          }
+    boolean hasSomethingToClear = false;
+    if (selectedMessages != null && !selectedMessages.isEmpty()) {
+      for (MessageWithProperties message : selectedMessages.values()) {
+        if (supportsMessageClearing(message) && TD.canDeleteFiles(tdlib(), message.message)) {
+          hasSomethingToClear = true;
+          break;
         }
-        return true;
       }
     }
-    return false;
+    return hasSomethingToClear;
   }
 
   public void clearMessages () {
     if (canClearMessages()) {
       final SparseArrayCompat<TdApi.File> files = new SparseArrayCompat<>(selectedMessages.size());
       for (MessageWithProperties message : selectedMessages.values()) {
-        TdApi.File file = TD.getFile(message.message);
-        if (file != null && file.local.canBeDeleted && file.local.downloadedSize > 0) {
-          files.put(file.id, file);
+        if (!supportsMessageClearing(message)) {
+          continue;
+        }
+        List<TdApi.File> filesList = TD.getFiles(message.message);
+        if (filesList != null) {
+          for (TdApi.File file : filesList) {
+            if (TD.canDeleteFile(message.message, file)) {
+              files.put(file.id, file);
+            }
+          }
         }
       }
-      TD.deleteFiles(this, ArrayUtils.asArray(files, new TdApi.File[files.size()]), () -> setInMediaSelectMode(false));
+      TD.deleteFiles(getParentOrSelf(), ArrayUtils.asArray(files, new TdApi.File[files.size()]), () -> setInMediaSelectMode(false));
     }
   }
 

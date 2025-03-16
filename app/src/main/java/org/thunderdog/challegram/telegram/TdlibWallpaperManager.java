@@ -117,7 +117,7 @@ public class TdlibWallpaperManager {
       if (result.getConstructor() == TdApi.Background.CONSTRUCTOR) {
         TdApi.Background background = (TdApi.Background) result;
         if (background.document != null) {
-          tdlib.client().send(new TdApi.DownloadFile(background.document.document.id, 32, 0, 0, true), fileResult -> tdlib.ui().post(after));
+          tdlib.client().send(new TdApi.DownloadFile(background.document.document.id, TdlibFilesManager.PRIORITY_CHAT_WALLPAPER, 0, 0, true), fileResult -> tdlib.ui().post(after));
           return;
         }
       }
