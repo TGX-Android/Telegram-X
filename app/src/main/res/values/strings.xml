@@ -5589,4 +5589,6 @@
   <string name="xBotUsers_one">%1$s monthly user</string>
   <string name="xBotUsers_other">%1$s monthly users</string>
 
+  <string name="AreYouSureClearCalls">Do you want to delete all recent calls?</string>
+  <string name="ClearRecentCalls">Clear recent calls</string>
 </resources>
