@@ -52,6 +52,7 @@ import java.util.concurrent.TimeUnit;
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.core.collection.IntList;
 import tgx.td.Td;
+import tgx.td.data.MessageWithProperties;
 
 public class SharedMediaController extends SharedBaseController<MediaItem> implements ClickHelper.Delegate, ForceTouchView.ActionListener {
   public SharedMediaController (Context context, Tdlib tdlib) {
@@ -238,55 +239,11 @@ public class SharedMediaController extends SharedBaseController<MediaItem> imple
     }
 
     return scrollY;
-/*
-      int i = 0;
-
-    int skipCount = 0;
-    for (SettingItem item : adapter.getItems()) {
-      if (skipCount > 0) {
-        if (item.getViewType() == SettingItem.TYPE_SMALL_MEDIA) {
-          skipCount--;
-          i++;
-          if (i == position) {
-            break;
-          }
-        } else {
-          skipCount = 0;
-        }
-      }
-      switch (item.getViewType()) {
-        case SettingItem.TYPE_SMALL_MEDIA: {
-          int width = recyclerView.getMeasuredWidth();
-          int maxItemWidth = width / spanCount;
-
-          skipCount = spanCount - 1;
-
-          // int spacing = Screen.dp(3f);
-          scrollY += maxItemWidth;*//*
-          for (int column = 0; column < spanCount; column++) {
-            int left = column * spacing / spanCount;
-            int right = spacing - (column + 1) * spacing / spanCount;
-            int spacingWidth = (left + right) / 2 + (left + right) % 2;
-            maxItemWidth = Math.max(maxItemWidth - spacingWidth, maxItemWidth);
-          }
-          scrollY += maxItemWidth + spacing * 2;*//*
-          break;
-        }
-
-      }
-
-      i++;
-      if (i == position) {
-        break;
-      }
-    }
-
-    return scrollY;*/
   }
 
   @Override
-  protected boolean supportsMessageClearing () {
-    return false;
+  protected boolean supportsMessageClearing (MessageWithProperties message) {
+    return message.message.content.getConstructor() == TdApi.MessageVideo.CONSTRUCTOR;
   }
 
   // Data

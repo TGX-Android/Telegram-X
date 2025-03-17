@@ -1226,6 +1226,7 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
       TdConstructor("TargetChatTypes"),
 
       TdConstructor("ChatActionBar"),
+      TdConstructor("AccountInfo"),
       TdConstructor("ChatPermissions"),
       TdConstructor("ChatPhoto"),
       TdConstructor("ChatAdministratorRights"),

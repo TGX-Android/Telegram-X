@@ -29,7 +29,7 @@ public class MediaStack {
   private final BaseActivity context;
   private final Tdlib tdlib;
   private int currentIndex;
-  private ArrayList<MediaItem> items;
+  private List<MediaItem> items;
   private int estimatedBefore, estimatedAfter;
   private Boolean reverseModeHint, forceThumbsHint;
 
@@ -91,7 +91,7 @@ public class MediaStack {
     currentIndex = foundIndex;
   }
 
-  public void set (int currentIndex, ArrayList<MediaItem> items) {
+  public void set (int currentIndex, List<MediaItem> items) {
     this.currentIndex = currentIndex;
     this.items = items;
   }
@@ -189,7 +189,7 @@ public class MediaStack {
     return items != null ? items.size() : 0;
   }
 
-  public ArrayList<MediaItem> getAll () {
+  public List<MediaItem> getAll () {
     return items;
   }
 

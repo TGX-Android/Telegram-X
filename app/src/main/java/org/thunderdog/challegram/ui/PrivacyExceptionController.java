@@ -308,9 +308,10 @@ public class PrivacyExceptionController extends RecyclerViewController<PrivacyEx
                   view.setData(R.string.PrivacyGiftsExceptionContacts);
                   break;
                 case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR:
+                case TdApi.UserPrivacySettingAllowUnpaidMessages.CONSTRUCTOR:
                   throw new IllegalStateException();
                 default: {
-                  Td.assertUserPrivacySetting_99ac9ff();
+                  Td.assertUserPrivacySetting_6bbb3d7e();
                   throw Td.unsupported(setting);
                 }
               }

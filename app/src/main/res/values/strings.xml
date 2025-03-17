@@ -346,6 +346,11 @@
   <string name="ChatContentProximityFromYouKm_one">%2$s is now within %1$s kilometer from you</string>
   <string name="ChatContentProximityFromYouKm_other">%2$s is now within %1$s kilometers from you</string>
 
+  <string name="ChatContentVideoChatAddYou">Invited you to the video chat</string>
+  <string name="ChatContentVideoChatAddSomeone">Invited someone to the video chat</string>
+  <string name="ChatContentLiveStreamAddYou">Invited you to the live stream</string>
+  <string name="ChatContentLiveStreamAddSomeone">Invited someone to the live stream</string>
+
   <string name="ChatContentSong">%1$s – %2$s</string>
   <string name="ChatContentCallWithDuration">%1$s (%2$s)</string>
   <string name="ChatContentGroupCreate">Created the group</string>
@@ -996,12 +1001,16 @@
   <string name="Everybody">Everybody</string>
   <string name="MyContacts">My Contacts</string>
   <string name="MyContactsAndPremium">My Contacts and **Premium** users</string>
+  <string name="ChargeForMessages">Charge for Messages</string>
+  <string name="ChargeForMessagesInfo">Charge a fee for messages from people outside your contacts or who you haven\'t messaged first.</string>
   <string name="Nobody">Nobody</string>
   <string name="WhoCanAddYouToGroupsAndChannels">Who can add you to groups and channels?</string>
   <string name="WhoCanAddMeInfo">You can restrict who can add you to groups and channels with granular precision.</string>
   <string name="LastSeenTitle">Who can see your Last Seen time?</string>
   <string name="CustomHelp">Unless you are a Premium user, you won\'t see Last Seen or Online statuses for people with whom you don\'t share yours. Approximate times will be shown instead (recently, within a week, within a month).</string>
   <string name="AlwaysShareWith">Always Share With</string>
+  <string name="RemoveMessageFee">Remove Fee</string>
+  <string name="RemoveMessageFeeHint">Add users or entire groups who won\'t have to pay to send you messages.</string>
   <string name="NeverShareWith">Never Share With</string>
   <string name="CustomShareSettingsHelp">These settings will override the values above.</string>
   <string name="PrivacyAddUsers">Add users</string>
@@ -2326,6 +2335,8 @@
   <string name="HoldToVideo">Hold to record video. Tap to switch to audio.</string>
   <string name="MessageContainsPremiumFeatures">Sending animated emoji requires **Telegram Premium**</string>
   <string name="UserNewChatRetricted">%1$s accepts new chats only from contacts and **Telegram&#160;Premium** users.</string>
+  <string name="UserMessagesPaid_one">Message %2$s for %1$s **star** per message</string>
+  <string name="UserMessagesPaid_other">Message %2$s for %1$s **stars** per message</string>
   <string name="SecretChatFeatureUnsupported">%1$s\'s Telegram client doesn\'t support this feature. They need to install an update first.</string>
   <string name="UseHqRoundVideos">Record HQ Round Videos</string>
   <string name="DiscardVideoMessageTitle">Discard Video Message</string>
@@ -3624,6 +3635,7 @@
   <string name="ViewStats">View Statistics</string>
 
   <string name="InstantViewUnsupported">Instant View for this page is not yet supported.</string>
+  <string name="InstantViewUnavailable">Instant View for this page is not available.</string>
   <string name="InstantViewError">Instant View could not be displayed due to an error.</string>
   <string name="InstantViewSectionUnsupported">Instant View for this section is not yet supported.</string>
   <string name="LanguageDatabase">Localizations</string>
@@ -3797,12 +3809,20 @@
   <string name="PrivacyGiftsExceptionOn">All</string>
   <string name="PrivacyGiftsExceptionOff">Only approved</string>
 
+  <string name="PrivacyNoFeeNobody">Everybody pays a message fee</string>
+  <string name="PrivacyNoFeeNobodyExcept">Everybody (%1$s) pays a message fee</string>
+  <string name="PrivacyNoFeeContacts">Only contacts do not pay a message fee</string>
+  <string name="PrivacyNoFeeContactsExcept">Only contacts (%1$s) do not pay a message fee</string>
+  <string name="PrivacyNoFeeEverybody">Everybody can message you without a fee</string>
+  <string name="PrivacyNoFeeEverybodyExcept">Everybody (%1$s) can message you without a fee</string>
+
   <string name="WhoCanSendVoiceVideo">Who can send me voice or video messages?</string>
   <string name="VoiceVideoPrivacyDesc">You can restrict who can send you voice or video messages with granular precision.</string>
   <string name="WhoCanDisplayGifts">Who can display gifts on my profile?</string>
   <string name="GiftsPrivacyDesc">Choose whether gifts from specific senders need your approval before they\'re visible to others on your profile.</string>
   <string name="PrivacyMessage">Messages</string>
   <string name="PrivacyMessageEverybody">Everybody can message you</string>
+  <string name="PrivacyMessagePaid">Paid</string>
   <string name="PrivacyMessageContactsPremium">Only contacts and **Premium** users</string>
   <string name="PrivacyMessageTitle">Messages</string>
   <string name="PrivacyMessagePreview">New Chats</string>
@@ -3811,6 +3831,8 @@
 
   <string name="EditPrivacyVoice">Send Me Voice Messages</string>
   <string name="EditPrivacyGifts">Display Gifts without approval</string>
+
+  <string name="EditPrivacyFreeMessages">Remove Fee</string>
 
   <string name="WhoCanForwardLink">Who can add a link to my account when forwarding my messages?</string>
   <string name="WhoCanForwardLinkInfo">You can restrict who can include a link to your account when forwarding your messages to other chats.</string>

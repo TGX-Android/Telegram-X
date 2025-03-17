@@ -322,7 +322,7 @@ public abstract class SettingsCloudController<T extends Settings.CloudSetting> e
               }
             });
           } else {
-            tdlib.files().addCloudReference(file, this, false);
+            tdlib.files().addCloudReference(file, TdlibFilesManager.PRIORITY_SERVICE_FILES, this, false);
           }
         }
       });

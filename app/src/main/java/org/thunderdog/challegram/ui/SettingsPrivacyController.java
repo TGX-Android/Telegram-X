@@ -452,6 +452,15 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
       if (!tdlib.canSetNewChatPrivacySettings() && tdlib.ui().showPremiumAlert(this, v, TdlibUi.PremiumFeature.NEW_CHATS_PRIVACY)) {
         return;
       }
+      if (true) {
+        context.tooltipManager()
+          .builder(v)
+          .icon(R.drawable.baseline_warning_24)
+          .controller(this)
+          .show(tdlib, "Changing message privacy is not available, please wait for the next update or try in desktop app.")
+          .hideDelayed();
+        return;
+      }
       SettingsPrivacyKeyController c = new SettingsPrivacyKeyController(context, tdlib);
       c.setArguments(SettingsPrivacyKeyController.Args.newChatsPrivacy());
       navigateTo(c);
@@ -797,7 +806,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
 
   private CharSequence buildNewChatsPrivacy () {
     if (newChatPrivacySettings != null) {
-      return Lang.getMarkdownString(this, newChatPrivacySettings.allowNewChatsFromUnknownUsers ? R.string.PrivacyMessageEverybody : R.string.PrivacyMessageContactsPremium);
+      return Lang.getMarkdownString(this, newChatPrivacySettings.incomingPaidMessageStarCount > 0 ? R.string.PrivacyMessagePaid : newChatPrivacySettings.allowNewChatsFromUnknownUsers ? R.string.PrivacyMessageEverybody : R.string.PrivacyMessageContactsPremium);
     } else {
       return Lang.getString(R.string.LoadingInformation);
     }

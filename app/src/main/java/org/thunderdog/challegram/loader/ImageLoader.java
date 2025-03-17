@@ -25,6 +25,7 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
+import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.tool.UI;
 
 import java.util.ArrayList;
@@ -127,7 +128,7 @@ public class ImageLoader {
               });
             } else {
               if (!Config.DEBUG_DISABLE_DOWNLOAD) {
-                tdlib.send(new TdApi.DownloadFile(fileId, 32, 0, 0, false), tdlib.imageLoadHandler());
+                tdlib.send(new TdApi.DownloadFile(fileId, TdlibFilesManager.PRIORITY_IMAGE, 0, 0, false), tdlib.imageLoadHandler());
               }
             }
           } else {
@@ -171,7 +172,7 @@ public class ImageLoader {
       onLoad(tdlib, file);
     } else {
       if (!Config.DEBUG_DISABLE_DOWNLOAD) {
-        tdlib.send(new TdApi.DownloadFile(file.id, 1, 0, 0, false), tdlib.imageLoadHandler());
+        tdlib.send(new TdApi.DownloadFile(file.id, TdlibFilesManager.PRIORITY_PERSISTENT_IMAGE, 0, 0, false), tdlib.imageLoadHandler());
       }
     }
   }

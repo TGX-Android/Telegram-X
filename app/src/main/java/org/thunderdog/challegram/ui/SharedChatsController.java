@@ -39,6 +39,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 
 import tgx.td.ChatId;
+import tgx.td.data.MessageWithProperties;
 
 public class SharedChatsController extends SharedBaseController<DoubleTextWrapper> implements TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener, ChatListener {
   @IntDef({
@@ -254,10 +255,9 @@ public class SharedChatsController extends SharedBaseController<DoubleTextWrappe
   }
 
   @Override
-  protected boolean supportsMessageClearing () {
+  protected boolean supportsMessageClearing (MessageWithProperties message) {
     return false;
   }
-
   @Override
   protected int getItemCellHeight () {
     return Screen.dp(62f);
