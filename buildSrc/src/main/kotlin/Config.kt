@@ -28,7 +28,7 @@ object LibraryVersions {
   const val DESUGAR = "2.0.4"
   const val ANDROIDX_CORE = "1.12.0" // 1.13.0+ requires minSdk 19+
   const val ANNOTATIONS = "1.9.0"
-  const val ANDROIDX_MEDIA = "1.3.1"
+  const val ANDROIDX_MEDIA = "1.4.1"
   const val ANDROIDX_CAMERA = "1.3.4"
 }
 

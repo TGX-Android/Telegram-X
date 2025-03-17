@@ -139,7 +139,7 @@ public class TdlibNotificationUtils {
       tdlib.files().syncFile(rawFile, null, 500);
       boolean fileLoaded = TD.isFileLoadedAndExists(rawFile);
       if (!fileLoaded && allowSyncDownload && allowDownload) {
-        tdlib.files().downloadFileSync(rawFile, 1000, null, null, null);
+        tdlib.files().downloadFileSync(rawFile, TdlibFilesManager.PRIORITY_NOTIFICATION_AVATAR, 1000, null, null, null);
         fileLoaded = TD.isFileLoadedAndExists(rawFile);
       }
       if (fileLoaded) {
@@ -160,7 +160,7 @@ public class TdlibNotificationUtils {
         }
       } else if (allowDownload) {
         if (!Config.DEBUG_DISABLE_DOWNLOAD) {
-          tdlib.client().send(new TdApi.DownloadFile(rawFile.id, 1, 0, 0, false), tdlib.silentHandler());
+          tdlib.client().send(new TdApi.DownloadFile(rawFile.id, TdlibFilesManager.PRIORITY_NOTIFICATION_MEDIA, 0, 0, false), tdlib.silentHandler());
         }
       }
     }

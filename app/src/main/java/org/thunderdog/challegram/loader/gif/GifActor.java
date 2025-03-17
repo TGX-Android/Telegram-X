@@ -33,6 +33,7 @@ import org.thunderdog.challegram.data.TGMessageSticker;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.ui.EmojiMediaListController;
@@ -112,7 +113,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
               flags |= FLAG_LOADING_FILE;
               if (!resultFile.local.isDownloadingActive) {
                 if (!Config.DEBUG_DISABLE_DOWNLOAD) {
-                  file.tdlib().client().send(new TdApi.DownloadFile(resultFile.id, 1, 0, 0, false), fileLoadHandler);
+                  file.tdlib().client().send(new TdApi.DownloadFile(resultFile.id, TdlibFilesManager.PRIORITY_GIFS, 0, 0, false), fileLoadHandler);
                 }
               }
             }
@@ -194,7 +195,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
     } else {
       flags |= FLAG_LOADING_FILE;
       if (!Config.DEBUG_DISABLE_DOWNLOAD) {
-        this.file.tdlib().client().send(new TdApi.DownloadFile(file.id, 1, 0, 0, false), fileLoadHandler);
+        this.file.tdlib().client().send(new TdApi.DownloadFile(file.id, TdlibFilesManager.PRIORITY_GIFS, 0, 0, false), fileLoadHandler);
       }
     }
   }

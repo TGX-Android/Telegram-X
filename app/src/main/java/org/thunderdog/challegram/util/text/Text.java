@@ -2205,6 +2205,13 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterTextPart, List
     return -getFontMetrics(textSizePx).ascent;
   }
 
+
+  public static int getLineHeight (TextStyleProvider textStyleProvider, boolean needPadding) {
+    TextPaint paint = textStyleProvider.getTextPaint();
+    Paint.FontMetricsInt fm = paint.getFontMetricsInt();
+    return (Math.abs(fm.descent - fm.ascent) + fm.leading) + (needPadding ? textStyleProvider.convertUnit(2f) : 0);
+  }
+
   public int getLineHeight (boolean needPadding) {
     Paint.FontMetricsInt fm = getFontMetrics();
     return (Math.abs(fm.descent - fm.ascent) + fm.leading) + (needPadding ? getLineSpacing() : 0);

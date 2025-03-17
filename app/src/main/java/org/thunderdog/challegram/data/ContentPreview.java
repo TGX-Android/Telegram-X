@@ -37,6 +37,8 @@ public class ContentPreview {
   public static final Emoji EMOJI_LINK = new Emoji("\uD83D\uDD17", R.drawable.baseline_link_16);
   public static final Emoji EMOJI_GAME = new Emoji("\uD83C\uDFAE", R.drawable.baseline_videogame_asset_16);
   public static final Emoji EMOJI_GROUP = new Emoji("\uD83D\uDC65", R.drawable.baseline_group_16);
+  public static final Emoji EMOJI_VIDEO_CHAT = new Emoji("\uD83D\uDC65", R.drawable.baseline_group_add_16);
+  public static final Emoji EMOJI_LIVE_STREAM = new Emoji("\uD83D\uDCE2", R.drawable.baseline_mic_16);
   public static final Emoji EMOJI_GIFT = new Emoji("\uD83C\uDF81", R.drawable.baseline_redeem_16);
   public static final Emoji EMOJI_STARS = new Emoji("\u2B50", R.drawable.baseline_premium_star_16);
   public static final Emoji EMOJI_BOOST = new Emoji("\u26A1", R.drawable.baseline_bolt_16);
@@ -1165,8 +1167,27 @@ public class ContentPreview {
           return getNotificationPreview(TdApi.MessagePaidMedia.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
         }
       }
+      case TdApi.PushMessageContentProximityAlertTriggered.CONSTRUCTOR: {
+        TdApi.PushMessageContentProximityAlertTriggered proximityAlertTriggered = (TdApi.PushMessageContentProximityAlertTriggered) push.content;
+        return getNotificationPreview(TdApi.MessageProximityAlertTriggered.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, proximityAlertTriggered.distance, 0);
+      }
+      case TdApi.PushMessageContentVideoChatStarted.CONSTRUCTOR: {
+        return getNotificationPreview(TdApi.MessageVideoChatStarted.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
+      }
+      case TdApi.PushMessageContentVideoChatEnded.CONSTRUCTOR: {
+        return getNotificationPreview(TdApi.MessageVideoChatEnded.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
+      }
+      case TdApi.PushMessageContentInviteVideoChatParticipants.CONSTRUCTOR: {
+        TdApi.PushMessageContentInviteVideoChatParticipants inviteVideoChatParticipants = (TdApi.PushMessageContentInviteVideoChatParticipants) push.content;
+        boolean isChannel = tdlib.isChannel(chatId);
+        if (inviteVideoChatParticipants.isCurrentUser) {
+          return new ContentPreview(isChannel ? EMOJI_LIVE_STREAM : EMOJI_VIDEO_CHAT, isChannel ? R.string.ChatContentLiveStreamAddYou : R.string.ChatContentVideoChatAddYou);
+        } else {
+          return new ContentPreview(isChannel ? EMOJI_LIVE_STREAM : EMOJI_VIDEO_CHAT, isChannel ? R.string.ChatContentLiveStreamAddSomeone : R.string.ChatContentVideoChatAddSomeone);
+        }
+      }
       default:
-        Td.assertPushMessageContent_7e58be7d();
+        Td.assertPushMessageContent_6685917b();
         throw Td.unsupported(push.content);
     }
   }
@@ -1443,12 +1464,15 @@ public class ContentPreview {
         return new ContentPreview(EMOJI_GIFT, 0, text, true);
       }
 
+      case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR: {
+        int distance = (int) arg1;
+        return new ContentPreview(EMOJI_LOCATION, 0, Lang.plural(distance >= 1000 ? R.string.ChatContentProximityFromYouKm : R.string.ChatContentProximityFromYouM, distance >= 1000 ? distance / 1000 : distance, tdlib.senderName(sender, true)), true);
+      }
 
       // Must be supported by the caller and never passed to this method.
       case TdApi.MessageGiftedPremium.CONSTRUCTOR:
       case TdApi.MessageGiftedStars.CONSTRUCTOR:
       case TdApi.MessageGameScore.CONSTRUCTOR:
-      case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR:
       case TdApi.MessageChatAddMembers.CONSTRUCTOR:
       case TdApi.MessageChatDeleteMember.CONSTRUCTOR:
       case TdApi.MessageCustomServiceAction.CONSTRUCTOR:

@@ -433,7 +433,7 @@ public class TdlibContactManager implements CleanupStartupDelegate {
               userIds[i] = user.id;
               if (user.profilePhoto != null && needDownload) {
                 if (!Config.DEBUG_DISABLE_DOWNLOAD) {
-                  tdlib.client().send(new TdApi.DownloadFile(user.profilePhoto.small.id, 1, 0, 0, false), tdlib.silentHandler());
+                  tdlib.client().send(new TdApi.DownloadFile(user.profilePhoto.small.id, TdlibFilesManager.PRIORITY_IMAGE, 0, 0, false), tdlib.silentHandler());
                 }
               }
             }
