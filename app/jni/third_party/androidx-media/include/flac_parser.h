@@ -19,15 +19,15 @@
 
 #include <stdint.h>
 
+// libFLAC parser
+#include <FLAC/stream_decoder.h>
+
 #include <array>
 #include <cstdlib>
 #include <string>
 #include <vector>
 
-// libFLAC parser
-#include "FLAC/stream_decoder.h"
-
-#include "include/data_source.h"
+#include "../include/data_source.h"
 
 typedef int status_t;
 
