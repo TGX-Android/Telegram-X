@@ -64,8 +64,10 @@ public class NTgCallsInterface implements CallInterface {
       48000,
       2
     );
-    ntgcalls.createP2PCall(
+    ntgcalls.createP2PCall(CALL_ID);
+    ntgcalls.setStreamSources(
       CALL_ID,
+      StreamMode.CAPTURE,
       new MediaDescription(
         micDescription,
         null,
