@@ -8372,6 +8372,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageGift.CONSTRUCTOR:
         case TdApi.MessageUpgradedGift.CONSTRUCTOR:
         case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
+
+        case TdApi.MessageGroupCall.CONSTRUCTOR: // TODO TGMessageCall
+        case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR: // TODO TGMessageService
+        case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR: // TODO TGMessageService
           break;
 
         case TdApi.MessageUnsupported.CONSTRUCTOR:
@@ -8385,7 +8389,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           break;
         }
         default: {
-          Td.assertMessageContent_640c68ad();
+          Td.assertMessageContent_235cea4f();
           throw Td.unsupported(msg.content);
         }
       }

@@ -34,7 +34,7 @@ import org.thunderdog.challegram.navigation.ViewController.OptionColor
 import org.thunderdog.challegram.telegram.Tdlib
 import org.thunderdog.challegram.theme.ThemeDelegate
 import org.thunderdog.challegram.tool.UI
-import tgx.td.assertReportChatSponsoredMessageResult_73a4465
+import tgx.td.assertReportSponsoredResult_79c7a88e
 import tgx.td.unsupported
 
 @JvmOverloads
@@ -52,8 +52,8 @@ fun <T> ViewController<T>.reportChatSponsoredMessage (
         UI.showError(error)
       } ?: reportResult?.let { result ->
         when (result.constructor) {
-          ReportChatSponsoredMessageResultOptionRequired.CONSTRUCTOR -> {
-            require(result is ReportChatSponsoredMessageResultOptionRequired)
+          ReportSponsoredResultOptionRequired.CONSTRUCTOR -> {
+            require(result is ReportSponsoredResultOptionRequired)
             val title = SpannableStringBuilder().apply {
               append(result.title.takeIf { it.isNotEmpty() }
                 ?: Lang.getMarkdownStringSecure(this@reportChatSponsoredMessage, R.string.ReportAdSubtitle))
@@ -81,32 +81,32 @@ fun <T> ViewController<T>.reportChatSponsoredMessage (
             popup?.setDisableCancelOnTouchDown(true)
           }
 
-          ReportChatSponsoredMessageResultOk.CONSTRUCTOR -> {
-            require(result is ReportChatSponsoredMessageResultOk)
+          ReportSponsoredResultOk.CONSTRUCTOR -> {
+            require(result is ReportSponsoredResultOk)
             UI.showToast(Lang.getMarkdownStringSecure(this, R.string.ReportAdOk), Toast.LENGTH_SHORT)
             after?.runWithBool(true)
           }
 
-          ReportChatSponsoredMessageResultFailed.CONSTRUCTOR -> {
-            require(result is ReportChatSponsoredMessageResultFailed)
+          ReportSponsoredResultFailed.CONSTRUCTOR -> {
+            require(result is ReportSponsoredResultFailed)
             UI.showToast(Lang.getMarkdownStringSecure(this, R.string.ReportAdFail), Toast.LENGTH_SHORT)
             after?.runWithBool(false)
           }
 
-          ReportChatSponsoredMessageResultAdsHidden.CONSTRUCTOR -> {
-            require(result is ReportChatSponsoredMessageResultAdsHidden)
+          ReportSponsoredResultAdsHidden.CONSTRUCTOR -> {
+            require(result is ReportSponsoredResultAdsHidden)
             UI.showToast(Lang.getMarkdownStringSecure(this, R.string.ReportAdHidden), Toast.LENGTH_SHORT)
             after?.runWithBool(false)
           }
 
-          ReportChatSponsoredMessageResultPremiumRequired.CONSTRUCTOR -> {
-            require(result is ReportChatSponsoredMessageResultPremiumRequired)
+          ReportSponsoredResultPremiumRequired.CONSTRUCTOR -> {
+            require(result is ReportSponsoredResultPremiumRequired)
             UI.showToast(Lang.getMarkdownStringSecure(this, R.string.ReportAdPremiumRequired), Toast.LENGTH_SHORT)
             after?.runWithBool(false)
           }
 
           else -> {
-            assertReportChatSponsoredMessageResult_73a4465()
+            assertReportSponsoredResult_79c7a88e()
             throw unsupported(result)
           }
         }

@@ -2205,23 +2205,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     TdlibUi.reportChat(this, getChatId(), array, null, after, true);
   }
 
-  private void reportSponsoredMessage (TdApi.SponsoredMessage sponsoredMessage, byte[] optionId) {
-    tdlib.send(new TdApi.ReportChatSponsoredMessage(getChatId(), sponsoredMessage.messageId, optionId), (result, error) -> runOnUiThreadOptional(() -> {
-      if (error != null) {
-        UI.showError(error);
-        return;
-      }
-      switch (result.getConstructor()) {
-        case TdApi.ReportChatSponsoredMessageResultOk.CONSTRUCTOR:
-          break;
-        case TdApi.ReportChatSponsoredMessageResultFailed.CONSTRUCTOR:
-        case TdApi.ReportChatSponsoredMessageResultOptionRequired.CONSTRUCTOR:
-        case TdApi.ReportChatSponsoredMessageResultAdsHidden.CONSTRUCTOR:
-        case TdApi.ReportChatSponsoredMessageResultPremiumRequired.CONSTRUCTOR:
-      }
-    }));
-  }
-
   public static final int PREVIEW_MODE_NONE = 0;
   public static final int PREVIEW_MODE_WALLPAPER = 1;
   public static final int PREVIEW_MODE_FONT_SIZE = 2;
@@ -6786,7 +6769,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           return !Td.equalsTo(oldText, newText);
         }
         default: {
-          Td.assertMessageContent_640c68ad();
+          Td.assertMessageContent_235cea4f();
           break;
         }
       }
@@ -7200,7 +7183,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         break;
       }
       default: {
-        Td.assertMessageContent_640c68ad();
+        Td.assertMessageContent_235cea4f();
         throw Td.unsupported(editContext.message.content);
       }
     }
@@ -7995,7 +7978,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           settings.useDefaultShowPreview, settings.showPreview,
           settings.useDefaultMuteStories, settings.muteStories,
           settings.useDefaultStorySound, settings.storySoundId,
-          settings.useDefaultShowStorySender, settings.showStorySender,
+          settings.useDefaultShowStoryPoster, settings.showStoryPoster,
           settings.useDefaultDisablePinnedMessageNotifications, settings.disablePinnedMessageNotifications,
           settings.useDefaultDisableMentionNotifications, settings.disableMentionNotifications
         );
@@ -10756,7 +10739,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
-  public void onChatMessageTtlSettingChanged (long chatId, int messageTtlSetting) {
+  public void onChatMessageTtlSettingChanged (long chatId, int messageAutoDeleteTime) {
     tdlib.ui().post(() -> {
       if (chat != null && chat.id == chatId) {
         tdlib.ui().updateTTLButton(R.id.menu_secretChat, headerView, chat, false);
