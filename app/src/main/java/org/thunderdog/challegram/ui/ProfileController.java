@@ -6373,7 +6373,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   // Secret chats
 
   @Override
-  public void onChatMessageTtlSettingChanged (long chatId, int messageTtlSetting) {
+  public void onChatMessageTtlSettingChanged (long chatId, int messageAutoDeleteTime) {
     tdlib.ui().post(() -> {
       if (chat != null && chat.id == chatId) {
         final boolean res = tdlib.ui().updateTTLButton(getMenuId(), headerView, chat, false);

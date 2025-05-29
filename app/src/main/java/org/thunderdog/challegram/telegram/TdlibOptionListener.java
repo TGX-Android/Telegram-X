@@ -27,6 +27,6 @@ public interface TdlibOptionListener {
   default void onSpeedLimitNotification (boolean isUpload)                                              { }
   default void onContactCloseBirthdayUsersChanged (TdApi.CloseBirthdayUser[] birthdayUsers) { }
   default void onArchiveAndMuteChatsFromUnknownUsersEnabled (boolean enabled) { }
-  default void onAccentColorsChanged () { }
+  default void onAccentColorsChanged (TdApi.AccentColor[] colors, int[] availableAccentColorIds) { }
   default void onProfileAccentColorsChanged (boolean listChanged) { }
 }

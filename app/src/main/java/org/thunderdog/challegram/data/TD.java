@@ -2185,7 +2185,7 @@ public class TD {
           return codeLength(waitEmailCode.codeInfo, fallbackCodeLength);
         }
         default: {
-          Td.assertAuthorizationState_6e5056de();
+          Td.assertAuthorizationState_ba756b5f();
           break;
         }
       }
@@ -5359,7 +5359,7 @@ public class TD {
       case TdApi.MessagePaidMedia.CONSTRUCTOR:
         return true;
       default:
-        Td.assertMessageContent_640c68ad();
+        Td.assertMessageContent_235cea4f();
         break;
     }
     return false;

@@ -610,8 +610,8 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       }
       case TdApi.MessageReplyToStory.CONSTRUCTOR: {
         TdApi.MessageReplyToStory replyToStory = (TdApi.MessageReplyToStory) message.replyTo;
-        function = new TdApi.GetStory(replyToStory.storySenderChatId, replyToStory.storyId, true);
-        retryFunction = new TdApi.GetStory(replyToStory.storySenderChatId, replyToStory.storyId, false);
+        function = new TdApi.GetStory(replyToStory.storyPosterChatId, replyToStory.storyId, true);
+        retryFunction = new TdApi.GetStory(replyToStory.storyPosterChatId, replyToStory.storyId, false);
         break;
       }
       default: {
@@ -929,6 +929,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
               }
               break;
             }
+            case TdApi.LinkPreviewTypeGroupCall.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeVideoChat.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeVoiceNote.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeApp.CONSTRUCTOR:
@@ -950,7 +951,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
             case TdApi.LinkPreviewTypeExternalVideo.CONSTRUCTOR:
               break;
             default:
-              Td.assertLinkPreviewType_e4d80559();
+              Td.assertLinkPreviewType_e3ce10d5();
               throw Td.unsupported(linkPreview.type);
           }
         }
