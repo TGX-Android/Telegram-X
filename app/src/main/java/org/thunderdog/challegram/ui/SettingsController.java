@@ -536,7 +536,7 @@ public class SettingsController extends ViewController<Void> implements
               view.setText(obtainWrapper(Lang.getString(R.string.ReminderSetBirthdateText), action.getConstructor()));
               break;
             default:
-              Td.assertSuggestedAction_5f4bf3f7();
+              Td.assertSuggestedAction_c92fb71c();
               throw Td.unsupported(action);
           }
         } else if (itemId == R.id.btn_birthdate) {
@@ -856,7 +856,7 @@ public class SettingsController extends ViewController<Void> implements
         item = new ListItem(ListItem.TYPE_INFO_MULTILINE, R.id.btn_suggestion, R.drawable.baseline_cake_variant_24, R.string.ReminderSetBirthdate);
         break;
       default:
-        Td.assertSuggestedAction_5f4bf3f7();
+        Td.assertSuggestedAction_c92fb71c();
         throw Td.unsupported(action);
     }
     item
@@ -1282,7 +1282,7 @@ public class SettingsController extends ViewController<Void> implements
         return;
       }
       default: {
-        Td.assertSuggestedAction_5f4bf3f7();
+        Td.assertSuggestedAction_c92fb71c();
         throw Td.unsupported(suggestedAction);
       }
     }

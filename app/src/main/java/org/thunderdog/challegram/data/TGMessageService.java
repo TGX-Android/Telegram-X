@@ -428,6 +428,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
               // cannot be pinned
             case TdApi.MessageBasicGroupChatCreate.CONSTRUCTOR:
             case TdApi.MessageCall.CONSTRUCTOR:
+            case TdApi.MessageGroupCall.CONSTRUCTOR:
             case TdApi.MessageChatAddMembers.CONSTRUCTOR:
             case TdApi.MessageChatChangePhoto.CONSTRUCTOR:
             case TdApi.MessageChatChangeTitle.CONSTRUCTOR:
@@ -456,6 +457,8 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessagePaymentRefunded.CONSTRUCTOR:
             case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
             case TdApi.MessagePinMessage.CONSTRUCTOR:
+            case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR:
+            case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR:
             case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR:
             case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
             case TdApi.MessageSupergroupChatCreate.CONSTRUCTOR:
@@ -481,7 +484,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              Td.assertMessageContent_640c68ad();
+              Td.assertMessageContent_235cea4f();
               throw Td.unsupported(message.content);
           }
           if (format == null) {
@@ -1441,6 +1444,11 @@ public final class TGMessageService extends TGMessageServiceImpl {
         );
       }
     });
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventAutomaticTranslationToggled automaticTranslationToggled) {
+    super(context, msg);
+    throw new IllegalStateException("TODO"); // TODO
   }
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventForumTopicCreated forumTopicCreated) {

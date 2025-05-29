@@ -713,6 +713,9 @@ public class ContentPreview {
       case TdApi.MessageGiveawayCreated.CONSTRUCTOR:
       case TdApi.MessageGift.CONSTRUCTOR:
       case TdApi.MessageUpgradedGift.CONSTRUCTOR:
+      case TdApi.MessageGroupCall.CONSTRUCTOR:
+      case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR:
+      case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR:
 
       // Handled by getSimpleContentPreview, but unsupported
       case TdApi.MessageUnsupported.CONSTRUCTOR:
@@ -732,7 +735,7 @@ public class ContentPreview {
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_640c68ad();
+        Td.assertMessageContent_235cea4f();
         throw Td.unsupported(message.content);
     }
     Refresher refresher = null;
@@ -1501,6 +1504,9 @@ public class ContentPreview {
       case TdApi.MessageGiveawayPrizeStars.CONSTRUCTOR:
       case TdApi.MessageGift.CONSTRUCTOR:
       case TdApi.MessageUpgradedGift.CONSTRUCTOR:
+      case TdApi.MessageGroupCall.CONSTRUCTOR: // TODO
+      case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR: // TODO
+      case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR: // TODO
         // TODO support these previews
         return new ContentPreview(EMOJI_QUIZ, R.string.UnsupportedMessage);
         
@@ -1512,7 +1518,7 @@ public class ContentPreview {
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_640c68ad();
+        Td.assertMessageContent_235cea4f();
         throw new UnsupportedOperationException(Integer.toString(type));
     }
   }

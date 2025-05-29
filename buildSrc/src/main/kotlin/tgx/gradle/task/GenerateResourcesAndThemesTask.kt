@@ -1220,7 +1220,7 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
       TdConstructor("Audio"),
 
       TdConstructor("StoryList"),
-      TdConstructor("SuggestedAction"),
+      TdConstructor("SuggestedAction", isExperimental = true),
 
       TdConstructor("TargetChat"),
       TdConstructor("TargetChatTypes"),

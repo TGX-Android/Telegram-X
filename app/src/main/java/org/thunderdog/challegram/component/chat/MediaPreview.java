@@ -196,6 +196,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.LinkPreviewTypeUnsupported.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeUpgradedGift.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeUser.CONSTRUCTOR:
+      case TdApi.LinkPreviewTypeGroupCall.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeVideoChat.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeWebApp.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeEmbeddedAnimationPlayer.CONSTRUCTOR:
@@ -206,7 +207,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       }
 
       default:
-        Td.assertLinkPreviewType_e4d80559();
+        Td.assertLinkPreviewType_e3ce10d5();
         throw Td.unsupported(linkPreview.type);
     }
     return false;
@@ -283,6 +284,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
             case TdApi.LinkPreviewTypeUpgradedGift.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeUser.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeVideoChat.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeGroupCall.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeWebApp.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeEmbeddedAnimationPlayer.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeExternalAudio.CONSTRUCTOR:
@@ -291,7 +293,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
               break;
             }
             default:
-              Td.assertLinkPreviewType_e4d80559();
+              Td.assertLinkPreviewType_e3ce10d5();
               throw Td.unsupported(linkPreview.type);
           }
         }
@@ -423,6 +425,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.MessageStory.CONSTRUCTOR:
       case TdApi.MessageInvoice.CONSTRUCTOR:
       case TdApi.MessageCall.CONSTRUCTOR:
+      case TdApi.MessageGroupCall.CONSTRUCTOR:
       case TdApi.MessageVideoChatScheduled.CONSTRUCTOR:
       case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
       case TdApi.MessageVideoChatEnded.CONSTRUCTOR:
@@ -457,6 +460,8 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.MessageGiveawayCompleted.CONSTRUCTOR:
       case TdApi.MessageGiveawayWinners.CONSTRUCTOR:
       case TdApi.MessageGiveawayPrizeStars.CONSTRUCTOR:
+      case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR:
+      case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR:
       case TdApi.MessageGift.CONSTRUCTOR:
       case TdApi.MessageUpgradedGift.CONSTRUCTOR:
       case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
@@ -474,7 +479,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
         break;
       }
       default: {
-        Td.assertMessageContent_640c68ad();
+        Td.assertMessageContent_235cea4f();
         throw Td.unsupported(message.content);
       }
     }

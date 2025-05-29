@@ -1172,6 +1172,7 @@ public class Lang {
       case TdApi.MessageChatBoost.CONSTRUCTOR:
       case TdApi.MessageBasicGroupChatCreate.CONSTRUCTOR:
       case TdApi.MessageCall.CONSTRUCTOR:
+      case TdApi.MessageGroupCall.CONSTRUCTOR:
       case TdApi.MessageChatAddMembers.CONSTRUCTOR:
       case TdApi.MessageChatChangePhoto.CONSTRUCTOR:
       case TdApi.MessageChatChangeTitle.CONSTRUCTOR:
@@ -1190,6 +1191,8 @@ public class Lang {
       case TdApi.MessagePaymentSuccessful.CONSTRUCTOR:
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessagePaymentRefunded.CONSTRUCTOR:
+      case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR:
+      case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR:
       case TdApi.MessagePinMessage.CONSTRUCTOR:
       case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
       case TdApi.MessageBotWriteAccessAllowed.CONSTRUCTOR:
@@ -1212,7 +1215,7 @@ public class Lang {
       case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
         break;
       default:
-        Td.assertMessageContent_640c68ad();
+        Td.assertMessageContent_235cea4f();
         throw Td.unsupported(message.content);
     }
     if (format == null) {

@@ -27,9 +27,9 @@ object LibraryVersions {
   const val MULTIDEX = "2.0.1"
   const val DESUGAR = "2.0.4"
   const val ANDROIDX_CORE = "1.12.0" // 1.13.0+ requires minSdk 19+
-  const val ANNOTATIONS = "1.9.0"
-  const val ANDROIDX_MEDIA = "1.4.1"
-  const val ANDROIDX_CAMERA = "1.3.4"
+  const val ANNOTATIONS = "1.9.1"
+  const val ANDROIDX_MEDIA = "1.6.1"
+  const val ANDROIDX_CAMERA = "1.4.2"
 }
 
 class AbiVariant (val flavor: String, vararg val filters: String = arrayOf(), val displayName: String = filters[0]) {

@@ -2343,6 +2343,11 @@ public class TdlibUi extends Handler {
     openChat(context, 0, new TdApi.SearchPublicChat(videoChatOrLiveStreamInvitation.chatUsername), new ChatOpenParameters().urlOpenParameters(openParameters).videoChatOrLiveStreamInvitation(videoChatOrLiveStreamInvitation).keepStack().openProfileInCaseOfPrivateChat());
   }
 
+  private void joinGroupCall (final TdlibDelegate context, final TdApi.InputGroupCall inputGroupCall, final @Nullable UrlOpenParameters openParameters) {
+    // TODO join group call
+    showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
+  }
+
   private static final int BOT_MODE_START = 0;
   private static final int BOT_MODE_START_IN_GROUP = 1;
   private static final int BOT_MODE_START_GAME = 2;
@@ -2530,7 +2535,7 @@ public class TdlibUi extends Handler {
     return;
   }
 
-  private void checkInviteLink (final TdlibDelegate context, final String inviteLink, final @Nullable UrlOpenParameters openParameters) {
+  private void checkChatInviteLink (final TdlibDelegate context, final String inviteLink, final @Nullable UrlOpenParameters openParameters) {
     // TODO progress
     tdlib.client().send(new TdApi.CheckChatInviteLink(inviteLink), object -> {
       switch (object.getConstructor()) {
@@ -3451,7 +3456,7 @@ public class TdlibUi extends Handler {
       }
       case TdApi.InternalLinkTypeChatInvite.CONSTRUCTOR: {
         TdApi.InternalLinkTypeChatInvite chatInvite = (TdApi.InternalLinkTypeChatInvite) linkType;
-        checkInviteLink(context, chatInvite.inviteLink, openParameters);
+        checkChatInviteLink(context, chatInvite.inviteLink, openParameters);
         break;
       }
       case TdApi.InternalLinkTypeMessageDraft.CONSTRUCTOR: {
@@ -3497,6 +3502,11 @@ public class TdlibUi extends Handler {
       case TdApi.InternalLinkTypeUserToken.CONSTRUCTOR: {
         final String token = ((TdApi.InternalLinkTypeUserToken) linkType).token;
         openChatProfile(context, 0, null, new TdApi.SearchUserByToken(token), openParameters);
+        break;
+      }
+      case TdApi.InternalLinkTypeGroupCall.CONSTRUCTOR: {
+        TdApi.InternalLinkTypeGroupCall groupCall = (TdApi.InternalLinkTypeGroupCall) linkType;
+        joinGroupCall(context, new TdApi.InputGroupCallLink(groupCall.inviteLink), openParameters);
         break;
       }
       case TdApi.InternalLinkTypeVideoChat.CONSTRUCTOR: {
@@ -3616,6 +3626,7 @@ public class TdlibUi extends Handler {
       case TdApi.InternalLinkTypePremiumGift.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatAffiliateProgram.CONSTRUCTOR:
       case TdApi.InternalLinkTypeUpgradedGift.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeMyStars.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypePassportDataRequest.CONSTRUCTOR: {
         showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
@@ -3745,7 +3756,7 @@ public class TdlibUi extends Handler {
         return; // async
       }
       default: {
-        Td.assertInternalLinkType_5626dbbe();
+        Td.assertInternalLinkType_547871e();
         throw Td.unsupported(linkType);
       }
     }
@@ -6966,7 +6977,7 @@ public class TdlibUi extends Handler {
         effectiveLimit = tdlib.addedShareableChatFolderCountMax();
         break;
       default:
-        Td.assertPremiumLimitType_3b3ed738();
+        Td.assertPremiumLimitType_6d916432();
         throw Td.unsupported(premiumLimitType);
     }
 
