@@ -3,10 +3,10 @@
 set(TGCALLS_DIR "${THIRDPARTY_DIR}/tgcalls")
 
 # Commit Telegram X currently relies on:
-# https://github.com/TelegramMessenger/tgcalls/tree/3484ec7d4dda025d90dd219edfb675ed8c87c9c1
+# https://github.com/TelegramMessenger/tgcalls/tree/c89f009c29e7142f1935383a978f2ad7c46da4d1
 
 # Source files list:
-# https://github.com/TelegramMessenger/Telegram-iOS/blob/ae3ee3d063df2dcde868a50aa6a6bbc8cfd8c63f/submodules/TgVoipWebrtc/BUILD
+# https://github.com/TelegramMessenger/Telegram-iOS/blob/1f869f309f183a5d91bc24387c1cb0ffbb302f5d/submodules/TgVoipWebrtc/BUILD
 
 add_library(tgcalls STATIC
   "${TGCALLS_DIR}/tgcalls/utils/gzip.cpp"
@@ -60,12 +60,15 @@ add_library(tgcalls STATIC
   "${TGCALLS_DIR}/tgcalls/v2/InstanceV2Impl.cpp"
   "${TGCALLS_DIR}/tgcalls/v2/InstanceV2ReferenceImpl.cpp"
   "${TGCALLS_DIR}/tgcalls/v2/NativeNetworkingImpl.cpp"
+  "${TGCALLS_DIR}/tgcalls/v2/RawTcpSocket.cpp"
   "${TGCALLS_DIR}/tgcalls/v2/ReflectorPort.cpp"
   "${TGCALLS_DIR}/tgcalls/v2/ReflectorRelayPortFactory.cpp"
   "${TGCALLS_DIR}/tgcalls/v2/Signaling.cpp"
   "${TGCALLS_DIR}/tgcalls/v2/SignalingEncryption.cpp"
   "${TGCALLS_DIR}/tgcalls/v2/SignalingConnection.cpp"
   "${TGCALLS_DIR}/tgcalls/v2/SignalingSctpConnection.cpp"
+  "${TGCALLS_DIR}/tgcalls/v2/SignalingKcpConnection.cpp"
+  "${TGCALLS_DIR}/tgcalls/v2/ikcp.cpp"
 )
 
 target_include_directories(tgcalls PRIVATE
