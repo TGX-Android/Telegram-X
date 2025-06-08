@@ -34,6 +34,7 @@ import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
 import androidx.collection.SparseArrayCompat;
 import androidx.core.os.CancellationSignal;
+import androidx.core.util.Consumer;
 import androidx.core.util.Pair;
 
 import com.google.android.gms.tasks.Task;
@@ -99,6 +100,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -10751,6 +10753,23 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       return ChatId.isBasicGroup(chatId) && canUpgradeChat(chatId);
     }
     return false;
+  }
+
+  public void clearCallsHistory(boolean revoke, Consumer<Boolean> callback) {
+    var _TAG = "ClearCallsHistory";
+    client().send(new TdApi.DeleteAllCallMessages(revoke), object -> {
+      if (object instanceof TdApi.Ok) {
+        Log.d(_TAG, "Call history cleared successfully." + (revoke ? " All call messages have been revoked." : ""));
+        callback.accept(true);
+      } else if (object instanceof TdApi.Error) {
+        TdApi.Error error = (TdApi.Error) object;
+        Log.e(_TAG, String.format(Locale.US, "Error clearing call history: Code %d, Message: %s", error.code, error.message));
+        callback.accept(false);
+      } else {
+        Log.w(_TAG, "Unexpected response from TDLib: " + object);
+        callback.accept(false);
+      }
+    });
   }
 
   public boolean isBroadcastGroup (long chatId) {

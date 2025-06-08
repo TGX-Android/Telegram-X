@@ -794,6 +794,9 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
             context.currentTdlib().ui().addAccount(context, true, true);
           }
         });
+      } else if (itemId == R.id.btn_calls) {
+        clearRecentCalls();
+        return true;
       }
       return false;
     }
@@ -803,6 +806,27 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     }
     touchHelper.startDrag(holder);
     return false;
+  }
+
+  public void clearRecentCalls () {
+    showSettings(new SettingsWrapBuilder(R.id.btn_delete)
+      .setHeaderItem(new ListItem(ListItem.TYPE_INFO, R.id.text_title, 0, R.string.AreYouSureClearCalls, false))
+      .setRawItems(
+        new ListItem[]{
+          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_deleteAll, 0, R.string.DeleteForEveryone, false)
+        })
+      .setIntDelegate((id, result) -> {
+        if (id == R.id.btn_delete) {
+          context.currentTdlib().clearCallsHistory(result.get(R.id.btn_deleteAll) != 0, success -> {
+            if (success) {
+              UI.showToast(R.string.Done, Toast.LENGTH_SHORT);
+            }
+          });
+        }
+      })
+      .setSaveStr(R.string.Delete)
+      .setSaveColorId(ColorId.textNegative)
+    );
   }
 
   @Override
