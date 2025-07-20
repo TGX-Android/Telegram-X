@@ -2617,7 +2617,7 @@
   <string name="ReportXMessages_other">Report %1$s messages</string>
 
   <string name="QReportMessageUser">Are you sure you want to report message from %1$s?</string>
-  <string name="QReportMessagesUser">Are you sure you want to report messages from %1$s</string>
+  <string name="QReportMessagesUser">Are you sure you want to report messages from %1$s?</string>
   <string name="QReportMessage">Are you sure you want to report %1$s\'s message?</string>
   <string name="QReportMessages">Are you sure you want to report %1$s\'s messages?</string>
   <string name="QReportXMessages_one">Are you sure you want to report %1$s message?</string>
@@ -5581,7 +5581,7 @@
   <string name="ReportAd">Report Ad</string>
   <string name="ReportAdSubtitle">What\'s wrong with this ad?</string>
   <string name="ReportAdPolicy">Learn more about our [Ad Policies and Guidelines](https://ads.telegram.org/guidelines).</string>
-  <string name="ReportAdOk">Add will be reviewed by moderators.</string>
+  <string name="ReportAdOk">Ad will be reviewed by moderators.</string>
   <string name="ReportAdFail">There was an error while reporting this ad.</string>
   <string name="ReportAdHidden">You will no longer see any ads.</string>
   <string name="ReportAdPremiumRequired">**Telegram Premium** subscription is required to hide ads.</string>
