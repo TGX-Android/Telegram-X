@@ -102,8 +102,9 @@ public class TdlibMessageViewer {
 
   public static class VisibleMessage {
     public final long chatId;
-    public final TdApi.Message message;
-    public final TdApi.SponsoredMessage sponsoredMessage;
+    public final long messageId;
+    public final int date;
+    public final boolean isSent, shouldRestrictScreenshots, isScreenshotSensitive, isSponsored;
     public final VisibilityState visibility = new VisibilityState(true);
     public @Flags long flags;
     public long viewId;
@@ -111,18 +112,28 @@ public class TdlibMessageViewer {
 
     public VisibleMessage (@NonNull TdApi.Message message, @Flags long flags, long viewId) {
       this.chatId = message.chatId;
-      this.message = message;
-      this.sponsoredMessage = null;
+      this.messageId = message.id;
       this.flags = flags;
       this.viewId = viewId;
+
+      this.date = message.date;
+      this.isSent = message.sendingState == null;
+      this.isSponsored = false;
+      this.shouldRestrictScreenshots = !message.canBeSaved;
+      this.isScreenshotSensitive = TD.isScreenshotSensitive(message);
     }
 
     public VisibleMessage (long chatId, @NonNull TdApi.SponsoredMessage sponsoredMessage, long flags, long viewId) {
       this.chatId = chatId;
-      this.message = null;
-      this.sponsoredMessage = sponsoredMessage;
+      this.messageId = sponsoredMessage.messageId;
       this.flags = flags;
       this.viewId = viewId;
+
+      this.date = 0;
+      this.isSent = false;
+      this.isSponsored = true;
+      this.shouldRestrictScreenshots = false;
+      this.isScreenshotSensitive = false;
     }
 
     public long getChatId () {
@@ -130,38 +141,38 @@ public class TdlibMessageViewer {
     }
 
     public long getMessageId () {
-      return sponsoredMessage != null ? sponsoredMessage.messageId : message != null ? message.id : 0;
+      return messageId;
     }
 
     public int getMessageDate () {
-      if (message == null)
+      if (isSponsored())
         throw new IllegalStateException();
-      return message.date;
+      return date;
     }
 
     public boolean isSponsored () {
-      return sponsoredMessage != null;
+      return isSponsored;
     }
 
     public boolean needRefreshInteractionInfo () {
-      if (message != null && message.sendingState == null) {
+      if (isSent) {
         return BitwiseUtils.hasFlag(flags, Flags.REFRESH_INTERACTION_INFO);
       }
       return false;
     }
 
     public boolean needRestrictScreenshots () {
-      return message != null && !message.canBeSaved;
+      return shouldRestrictScreenshots;
     }
 
     public boolean needScreenshotNotification () {
-      if (message == null || needRestrictScreenshots()) {
+      if (isSponsored() || needRestrictScreenshots()) {
         return false;
       }
       if (BitwiseUtils.hasFlag(flags, Flags.NO_SCREENSHOT_NOTIFICATION)) {
         return false;
       }
-      if (BitwiseUtils.hasFlag(flags, Flags.NO_SENSITIVE_SCREENSHOT_NOTIFICATION) && TD.isScreenshotSensitive(message)) {
+      if (BitwiseUtils.hasFlag(flags, Flags.NO_SENSITIVE_SCREENSHOT_NOTIFICATION) && isScreenshotSensitive) {
         return false;
       }
       return true;

@@ -44,6 +44,8 @@ data class TdlibOptions(
   @JvmField var canEditFactCheck: Boolean = false,
   @JvmField var canWithdrawChatRevenue: Boolean = false,
   @JvmField var canGiftStars: Boolean = false,
+  @JvmField var canEnablePaidMessages: Boolean = false,
+  @JvmField var canPreloadWeather: Boolean = false,
 
   @JvmField var disableTopChats: Boolean = false,
   @JvmField var disableContactRegisteredNotifications: Boolean = false,
@@ -62,17 +64,37 @@ data class TdlibOptions(
   @JvmField var giveawayDurationMax: Int = 2678400,
   @JvmField var giveawayCountryCountMax: Int = 10,
 
+  @JvmField var usdToThousandStarRate: Long = 0,
+  @JvmField var thousandStarToUsdRate: Long = 0,
+
+  @JvmField var giftTextLengthMax: Int = 128,
+  @JvmField var pinnedGiftCountMax: Int = 6,
+
   @JvmField var giftSellPeriod: Long = 7776000L,
+  @JvmField var giftResaleStarCountMin: Long = 125L,
+  @JvmField var giftResaleStarCountMax: Long = 100000L,
+  @JvmField var giftResaleEarningsPerMille: Long = 800L,
+
   @JvmField var starWithdrawalCountMin: Long = 1000L,
   @JvmField var paidReactionStarCountMax: Long = 2500L,
+  @JvmField var paidMessageEarningsPerMille: Long = 850L,
+  @JvmField var paidMessageStarCountMax: Long = 10000L,
+  @JvmField var paidMediaMessageStarCountMax: Long = 10000L,
+  @JvmField var subscriptionStarCountMin: Long = 10000L,
+  @JvmField var subscriptionStarCountMax: Long = 10000L,
+
+  @JvmField var affiliateProgramCommissionPerMilleMin: Long = 1L,
+  @JvmField var affiliateProgramCommissionPerMilleMax: Long = 800L,
 
   @JvmField var quickReplyShortcutCountMax: Int = 100,
   @JvmField var quickReplyShortcutMessageCountMax: Int = 20,
 
   @JvmField var tMeUrl: String = "",
+  @JvmField var tonBlockchainExplorerUrl: String = "",
 
   @JvmField var languagePackId: String = "",
   @JvmField var suggestedLanguagePackId: String = "",
+  @JvmField var webAppAllowedProtocols: Set<String> = setOf("https"),
 
   @JvmField var animationSearchBotUsername: String = "gif",
   @JvmField var venueSearchBotUsername: String = "foursquare",
@@ -87,7 +109,14 @@ data class TdlibOptions(
   @JvmField var telegramServiceNotificationsChatId: Long = fromUserId(TELEGRAM_ACCOUNT_ID),
   @JvmField var verificationCodesBotChatId: Long = fromUserId(VERIFICATION_CODES_BOT_ACCOUNT_ID),
 
+  @JvmField var botMediaPreviewCountMax: Int = 12,
+  @JvmField var botVerificationCustomDescriptionLengthMax: Int = 70,
+
+  @JvmField var canAcceptCalls: Boolean = false,
   @JvmField var callsEnabled: Boolean = true,
+
+  @JvmField var groupCallParticipantCountMax: Int = 200,
+
   @JvmField var callConnectTimeoutMs: Long = 30000L,
   @JvmField var callPacketTimeoutMs: Long = 10000L,
 
@@ -165,6 +194,11 @@ data class TdlibOptions(
   @JvmField var storyExpirePeriod: Long = 0,
   @JvmField var storyPostingEnabled: Boolean = true,
 
+  @JvmField var starRefProgramAllowed: Boolean = false,
+  @JvmField var starRefConnectAllowed: Boolean = false,
+
+  @JvmField var isDeveloper: Boolean = false,
+
   @JvmField var groupCallVideoParticipantsMax: Int = 10000,
   @JvmField var rtcServers: List<RtcServer> = listOf()
 ) {
@@ -209,6 +243,10 @@ data class TdlibOptions(
         canWithdrawChatRevenue = value.boolValue()
       "can_gift_stars" ->
         canGiftStars = value.boolValue()
+      "can_enable_paid_messages" ->
+        canEnablePaidMessages = value.boolValue()
+      "can_preload_weather" ->
+        canPreloadWeather = value.boolValue()
 
       "disable_top_chats" ->
         disableTopChats = value.boolValue()
@@ -242,12 +280,44 @@ data class TdlibOptions(
       "giveaway_country_count_max" ->
         giveawayCountryCountMax = value.intValue()
 
+      "usd_to_thousand_star_rate" ->
+        usdToThousandStarRate = value.longValue()
+      "thousand_star_to_usd_rate" ->
+        thousandStarToUsdRate = value.longValue()
+
+      "gift_text_length_max" ->
+        giftTextLengthMax = value.intValue()
+      "pinned_gift_count_max" ->
+        pinnedGiftCountMax = value.intValue()
+
       "gift_sell_period" ->
         giftSellPeriod = value.longValue()
+      "gift_resale_star_count_min" ->
+        giftResaleStarCountMin = value.longValue()
+      "gift_resale_star_count_max" ->
+        giftResaleStarCountMax = value.longValue()
+      "gift_resale_earnings_per_mille" ->
+        giftResaleEarningsPerMille = value.longValue()
+
       "star_withdrawal_count_min" ->
         starWithdrawalCountMin = value.longValue()
       "paid_reaction_star_count_max" ->
         paidReactionStarCountMax = value.longValue()
+      "paid_message_earnings_per_mille" ->
+        paidMessageEarningsPerMille = value.longValue()
+      "paid_message_star_count_max" ->
+        paidMessageStarCountMax = value.longValue()
+      "paid_media_message_star_count_max" ->
+        paidMediaMessageStarCountMax = value.longValue()
+      "subscription_star_count_min" ->
+        subscriptionStarCountMin = value.longValue()
+      "subscription_star_count_max" ->
+        subscriptionStarCountMax = value.longValue()
+
+      "affiliate_program_commission_per_mille_min" ->
+        affiliateProgramCommissionPerMilleMin = value.longValue()
+      "affiliate_program_commission_per_mille_max" ->
+        affiliateProgramCommissionPerMilleMax = value.longValue()
 
       "quick_reply_shortcut_count_max" ->
         quickReplyShortcutCountMax = value.intValue()
@@ -256,11 +326,16 @@ data class TdlibOptions(
 
       "t_me_url" ->
         tMeUrl = value.stringValue()
+      "ton_blockchain_explorer_url" ->
+        tonBlockchainExplorerUrl = value.stringValue()
 
       "language_pack_id" ->
         languagePackId = value.stringValue()
       "suggested_language_pack_id" ->
         suggestedLanguagePackId = value.stringValue()
+
+      "web_app_allowed_protocols" ->
+        webAppAllowedProtocols = value.stringValue().split(" ").toHashSet()
 
       "animation_search_bot_username" ->
         animationSearchBotUsername = value.stringValue()
@@ -285,8 +360,19 @@ data class TdlibOptions(
       "verification_codes_bot_chat_id" ->
         verificationCodesBotChatId = value.longValue()
 
+      "bot_media_preview_count_max" ->
+        botMediaPreviewCountMax = value.intValue()
+      "bot_verification_custom_description_length_max" ->
+        botVerificationCustomDescriptionLengthMax = value.intValue()
+
+      "can_accept_calls" ->
+        canAcceptCalls = value.boolValue()
       "calls_enabled" ->
         callsEnabled = value.boolValue()
+
+      "group_call_participant_count_max" ->
+        groupCallParticipantCountMax = value.intValue()
+
       "call_connect_timeout_ms" ->
         callConnectTimeoutMs = value.longValue()
       "call_packet_timeout_ms" ->
@@ -469,6 +555,14 @@ data class TdlibOptions(
         storyExpirePeriod = value.longValue()
       "stories_posting" ->
         storyPostingEnabled = value.stringValue() == "enabled"
+
+      "starref_program_allowed" ->
+        starRefProgramAllowed = value.boolValue()
+      "starref_connect_allowed" ->
+        starRefConnectAllowed = value.boolValue()
+
+      "dev" ->
+        isDeveloper = value.boolValue()
 
       "groupcall_video_participants_max" ->
         groupCallVideoParticipantsMax = value.intValue()

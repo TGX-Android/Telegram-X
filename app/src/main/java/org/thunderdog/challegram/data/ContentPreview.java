@@ -455,20 +455,10 @@ public class ContentPreview {
           return new ContentPreview(EMOJI_LOCATION, 0, Lang.plural(alert.distance >= 1000 ? R.string.ChatContentProximityKm : R.string.ChatContentProximityM, alert.distance >= 1000 ? alert.distance / 1000 : alert.distance, tdlib.senderName(alert.travelerId, true), tdlib.senderName(alert.watcherId, true)), true);
         }
       }
-      case TdApi.MessageVideoChatStarted.CONSTRUCTOR: {
-        if (message.isChannelPost) {
-          return new ContentPreview(EMOJI_CALL, message.isOutgoing ? R.string.ChatContentLiveStreamStarted_outgoing : R.string.ChatContentLiveStreamStarted);
-        } else {
-          return new ContentPreview(EMOJI_CALL, message.isOutgoing ? R.string.ChatContentVoiceChatStarted_outgoing : R.string.ChatContentVoiceChatStarted);
-        }
-      }
       case TdApi.MessageVideoChatEnded.CONSTRUCTOR: {
         TdApi.MessageVideoChatEnded videoChatOrLiveStream = (TdApi.MessageVideoChatEnded) message.content;
-        if (message.isChannelPost) {
-          return new ContentPreview(EMOJI_CALL_END, 0, Lang.getString(message.isOutgoing ? R.string.ChatContentLiveStreamFinished_outgoing : R.string.ChatContentLiveStreamFinished, Lang.getCallDuration(videoChatOrLiveStream.duration)), true);
-        } else {
-          return new ContentPreview(EMOJI_CALL_END, 0, Lang.getString(message.isOutgoing ? R.string.ChatContentVoiceChatFinished_outgoing : R.string.ChatContentVoiceChatFinished, Lang.getCallDuration(videoChatOrLiveStream.duration)), true);
-        }
+        arg1 = videoChatOrLiveStream.duration;
+        break;
       }
       case TdApi.MessageVideoChatScheduled.CONSTRUCTOR: {
         TdApi.MessageVideoChatScheduled event = (TdApi.MessageVideoChatScheduled) message.content;
@@ -713,6 +703,7 @@ public class ContentPreview {
       case TdApi.MessageGiveawayCreated.CONSTRUCTOR:
       case TdApi.MessageGift.CONSTRUCTOR:
       case TdApi.MessageUpgradedGift.CONSTRUCTOR:
+      case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
       case TdApi.MessageGroupCall.CONSTRUCTOR:
       case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR:
       case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR:
@@ -1472,6 +1463,30 @@ public class ContentPreview {
         return new ContentPreview(EMOJI_LOCATION, 0, Lang.plural(distance >= 1000 ? R.string.ChatContentProximityFromYouKm : R.string.ChatContentProximityFromYouM, distance >= 1000 ? distance / 1000 : distance, tdlib.senderName(sender, true)), true);
       }
 
+      case TdApi.MessageVideoChatStarted.CONSTRUCTOR: {
+        if (tdlib.isChannel(chatId)) {
+          return new ContentPreview(EMOJI_CALL, isOutgoing ? R.string.ChatContentLiveStreamStarted_outgoing : R.string.ChatContentLiveStreamStarted);
+        } else {
+          return new ContentPreview(EMOJI_CALL, isOutgoing ? R.string.ChatContentVoiceChatStarted_outgoing : R.string.ChatContentVoiceChatStarted);
+        }
+      }
+      case TdApi.MessageVideoChatEnded.CONSTRUCTOR: {
+        int duration = (int) arg1;
+        if (duration > 0) {
+          if (tdlib.isChannel(chatId)) {
+            return new ContentPreview(EMOJI_CALL_END, 0, Lang.getString(isOutgoing ? R.string.ChatContentLiveStreamFinished_outgoing : R.string.ChatContentLiveStreamFinished, Lang.getCallDuration(duration)), true);
+          } else {
+            return new ContentPreview(EMOJI_CALL_END, 0, Lang.getString(isOutgoing ? R.string.ChatContentVoiceChatFinished_outgoing : R.string.ChatContentVoiceChatFinished, Lang.getCallDuration(duration)), true);
+          }
+        } else {
+          if (tdlib.isChannel(chatId)) {
+            return new ContentPreview(EMOJI_CALL_END, 0, Lang.getString(isOutgoing ? R.string.ChatContentLiveStreamFinishedNoTime_outgoing : R.string.ChatContentLiveStreamFinishedNoTime, Lang.getCallDuration(duration)), true);
+          } else {
+            return new ContentPreview(EMOJI_CALL_END, 0, Lang.getString(isOutgoing ? R.string.ChatContentVoiceChatFinishedNoTime_outgoing : R.string.ChatContentVoiceChatFinishedNoTime, Lang.getCallDuration(duration)), true);
+          }
+        }
+      }
+
       // Must be supported by the caller and never passed to this method.
       case TdApi.MessageGiftedPremium.CONSTRUCTOR:
       case TdApi.MessageGiftedStars.CONSTRUCTOR:
@@ -1482,8 +1497,6 @@ public class ContentPreview {
       case TdApi.MessageBotWriteAccessAllowed.CONSTRUCTOR:
       case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
       case TdApi.MessageInviteVideoChatParticipants.CONSTRUCTOR:
-      case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
-      case TdApi.MessageVideoChatEnded.CONSTRUCTOR:
       case TdApi.MessageVideoChatScheduled.CONSTRUCTOR:
       case TdApi.MessagePinMessage.CONSTRUCTOR:
       case TdApi.MessagePaymentSuccessful.CONSTRUCTOR:

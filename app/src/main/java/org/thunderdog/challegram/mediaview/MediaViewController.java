@@ -46,7 +46,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -1600,7 +1599,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private boolean canEdit () {
     MediaItem current = stack.getCurrent();
-    return (mode == MODE_MESSAGES || mode == MODE_SIMPLE) && current != null && !current.isVideo() && !current.isGifType() && (current.canBeShared() && current.canBeSaved() || !tdlib.hasRestriction(current.getSourceChatId(), RightId.SEND_PHOTOS));
+    return (mode == MODE_MESSAGES || mode == MODE_SIMPLE) && current != null && !current.isVideo() && !current.isGifType() && (current.canBeShared() && current.canBeSaved() && !tdlib.hasRestriction(current.getSourceChatId(), RightId.SEND_PHOTOS));
   }
 
   private boolean canShare () {

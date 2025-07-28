@@ -5345,13 +5345,16 @@ public class TD {
   }
 
   public static boolean isScreenshotSensitive (TdApi.Message message) {
-    if (message == null) {
+    return message != null && isScreenshotSensitive(message.content);
+  }
+  public static boolean isScreenshotSensitive (TdApi.MessageContent content) {
+    if (content == null) {
       return false;
     }
-    if (Td.isSecret(message.content)) {
+    if (Td.isSecret(content)) {
       return true;
     }
-    switch (message.content.getConstructor()) {
+    switch (content.getConstructor()) {
       case TdApi.MessageExpiredPhoto.CONSTRUCTOR:
       case TdApi.MessageExpiredVideo.CONSTRUCTOR:
       case TdApi.MessageExpiredVoiceNote.CONSTRUCTOR:
