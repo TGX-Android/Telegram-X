@@ -87,7 +87,10 @@ import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import kotlin.collections.ArrayDeque;
+import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableLong;
@@ -325,11 +328,46 @@ public class VideoGen {
       return;
     }
 
+    awaitOrConvertVideo(sourcePath, destinationPath, info, entry, onProgress, onComplete, onCancel, onFailure);
+  }
+
+  private final AtomicInteger runningVideoGenerations = new AtomicInteger();
+  private final ArrayDeque<Runnable> pendingVideoGenerations = new ArrayDeque<>();
+
+  private int maxParallelVideoGenerations () {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+      return MathUtils.clamp(Runtime.getRuntime().availableProcessors(), 1, 8);
+    } else {
+      return 1;
+    }
+  }
+
+  private void awaitOrConvertVideo (String sourcePath, String destinationPath, VideoGenerationInfo info, Entry entry, ProgressCallback onProgress, Runnable onComplete, RunnableData<String> onCancel, RunnableData<Throwable> onFailure) {
+    Runnable act = () -> {
+      runningVideoGenerations.incrementAndGet();
+      convertVideo(sourcePath, destinationPath, info, entry, onProgress, onComplete, onCancel, onFailure, () -> {
+        runningVideoGenerations.decrementAndGet();
+        queue.post(this::checkPostponedVideoGenerations, 0);
+      });
+    };
+    pendingVideoGenerations.add(act);
+    checkPostponedVideoGenerations();
+  }
+
+  private void checkPostponedVideoGenerations () {
+    int maxParallelOps = maxParallelVideoGenerations();
+    while (!pendingVideoGenerations.isEmpty() && runningVideoGenerations.get() < maxParallelOps) {
+      Runnable act = pendingVideoGenerations.removeFirst();
+      act.run();
+    }
+  }
+
+  private void convertVideo (String sourcePath, String destinationPath, VideoGenerationInfo info, Entry entry, ProgressCallback onProgress, Runnable onComplete, RunnableData<String> onCancel, RunnableData<Throwable> onFailure, Runnable after) {
     try {
       if (Config.MODERN_VIDEO_TRANSCODING_ENABLED) {
-        convertVideoComplexV2(sourcePath, destinationPath, info, entry, onProgress, onComplete, onCancel, onFailure);
+        convertVideoComplexV2(sourcePath, destinationPath, info, entry, onProgress, onComplete, onCancel, onFailure, after);
       } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-        convertVideoComplex(sourcePath, destinationPath, info, entry, onProgress, onComplete, onCancel, onFailure);
+        convertVideoComplex(sourcePath, destinationPath, info, entry, onProgress, onComplete, onCancel, onFailure, after);
       } else {
         onFailure.runWithData(new RuntimeException());
       }
@@ -340,7 +378,7 @@ public class VideoGen {
   }
 
   @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-  private void convertVideoComplexV2 (String sourcePath, String destinationPath, VideoGenerationInfo info, Entry entry, ProgressCallback onProgress, Runnable onComplete, RunnableData<String> onCancel, RunnableData<Throwable> onFailure) throws FileNotFoundException {
+  private void convertVideoComplexV2 (String sourcePath, String destinationPath, VideoGenerationInfo info, Entry entry, ProgressCallback onProgress, Runnable onComplete, RunnableData<String> onCancel, RunnableData<Throwable> onFailure, Runnable after) throws FileNotFoundException {
     MediaMetadataRetriever retriever = U.openRetriever(sourcePath);
     if (retriever == null)
       throw new NullPointerException();
@@ -429,6 +467,7 @@ public class VideoGen {
             transformFinished.set(true);
             onComplete.run();
           }
+          U.run(after);
         }
 
         @Override
@@ -438,6 +477,7 @@ public class VideoGen {
             transformFinished.set(true);
             onFailure.runWithData(exportException);
           }
+          U.run(after);
         }
       });
     if (!editedMediaItem.removeAudio) {
@@ -505,7 +545,7 @@ public class VideoGen {
   }
 
   @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
-  private void convertVideoComplex (String sourcePath, String destinationPath, VideoGenerationInfo info, Entry entry, ProgressCallback onProgress, Runnable onComplete, RunnableData<String> onCancel, RunnableData<Throwable> onFailure) {
+  private void convertVideoComplex (String sourcePath, String destinationPath, VideoGenerationInfo info, Entry entry, ProgressCallback onProgress, Runnable onComplete, RunnableData<String> onCancel, RunnableData<Throwable> onFailure, @Nullable Runnable after) {
     if (info.hasCrop()) {
       throw new IllegalArgumentException();
     }
@@ -588,16 +628,19 @@ public class VideoGen {
               sendOriginal(info, entry);
               break;
           }
+          U.run(after);
         }
 
         @Override
         public void onTranscodeCanceled () {
           onCancel.runWithData("Transcode canceled");
+          U.run(after);
         }
 
         @Override
         public void onTranscodeFailed (@NonNull Throwable exception) {
           onFailure.runWithData(exception);
+          U.run(after);
         }
       })
       .transcode();
