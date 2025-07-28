@@ -429,6 +429,8 @@
   <string name="ChatContentVoiceChatStarted_outgoing">Started a video chat</string>
   <string name="ChatContentVoiceChatFinished">Ended the video chat (%1$s)</string>
   <string name="ChatContentVoiceChatFinished_outgoing">Ended the video chat (%1$s)</string>
+  <string name="ChatContentVoiceChatFinishedNoTime">Ended the video chat</string>
+  <string name="ChatContentVoiceChatFinishedNoTime_outgoing">Ended the video chat®</string>
   <string name="ChatContentVoiceChatInviteYou">Invited you to the video chat</string>
   <string name="ChatContentVoiceChatInvite">Invited %1$s to the video chat</string>
   <string name="ChatContentVoiceChatInvite_outgoing">Invited %1$s to the video chat</string>
@@ -439,6 +441,8 @@
 
   <string name="ChatContentLiveStreamStarted">Started a live stream</string>
   <string name="ChatContentLiveStreamStarted_outgoing">Started a live stream</string>
+  <string name="ChatContentLiveStreamFinishedNoTime">Ended the live stream</string>
+  <string name="ChatContentLiveStreamFinishedNoTime_outgoing">Ended the live stream</string>
   <string name="ChatContentLiveStreamFinished">Ended the live stream (%1$s)</string>
   <string name="ChatContentLiveStreamFinished_outgoing">Ended the live stream (%1$s)</string>
   <string name="ChatContentLiveStreamInviteYou">Invited you to the live stream</string>
