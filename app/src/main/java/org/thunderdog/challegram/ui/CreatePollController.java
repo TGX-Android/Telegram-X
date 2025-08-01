@@ -23,6 +23,7 @@ import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -64,18 +65,20 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
   public static class Args {
     public final long chatId;
     public final ThreadInfo messageThread;
+    public final TdApi.MessageTopic messageTopicId;
     public final Callback callback;
     public final boolean forceRegular, forceQuiz;
 
-    public Args (long chatId, ThreadInfo threadInfo, Callback callback) {
-      this(chatId, threadInfo, callback, false, false);
+    public Args (long chatId, ThreadInfo threadInfo, @Nullable TdApi.MessageTopic messageTopicId, Callback callback) {
+      this(chatId, threadInfo, messageTopicId, callback, false, false);
     }
 
-    public Args (long chatId, ThreadInfo threadInfo, Callback callback, boolean forceQuiz, boolean forceRegular) {
+    public Args (long chatId, ThreadInfo threadInfo, @Nullable TdApi.MessageTopic messageTopicId, Callback callback, boolean forceQuiz, boolean forceRegular) {
       if (callback == null)
         throw new IllegalArgumentException();
       this.chatId = chatId;
       this.messageThread = threadInfo;
+      this.messageTopicId = messageTopicId;
       this.callback = callback;
       this.forceRegular = forceRegular;
       this.forceQuiz = forceQuiz;
@@ -658,6 +661,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     Args args = getArgumentsStrict();
     final long chatId = args.chatId;
     final ThreadInfo messageThread = args.messageThread;
+    final TdApi.MessageTopic messageTopicId = args.messageTopicId;
     if (sendOptions.schedulingState == null && args.callback.areScheduledOnly(this)) {
       tdlib.ui().showScheduleOptions(this, chatId, false, (modifiedSendOptions, disableMarkdown1) -> send(modifiedSendOptions, disableMarkdown), sendOptions, null);
       return;
@@ -678,25 +682,21 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     TdApi.FormattedText[] optionsArray = options.toArray(new TdApi.FormattedText[0]);
     TdApi.InputMessagePoll poll = new TdApi.InputMessagePoll(question, optionsArray, isAnonymousVoting, isQuiz ? new TdApi.PollTypeQuiz(correctOptionId, explanation) : new TdApi.PollTypeRegular(isMultiChoiceVote), 0, 0, false);
 
-    RunnableData<TdApi.Message> after = message -> {
-      tdlib.ui().post(() -> {
-        if (!isDestroyed()) {
-          getDoneButton().setInProgress(false);
-          if (message != null) {
-            if (sendOptions.schedulingState != null && !args.callback.areScheduledOnly(this)) {
-              NavigationStack stack = navigationStack();
-              if (stack != null) {
-                MessagesController c = new MessagesController(context, tdlib);
-                c.setArguments(new MessagesController.Arguments(args.callback.provideChatList(this), tdlib.chatStrict(args.chatId), /* messageThread */ null, null, MessagesManager.HIGHLIGHT_MODE_NONE, null).setScheduled(true));
-                stack.insertBack(c);
-              }
-            }
-            navigateBack();
+    RunnableData<TdApi.Message> after = message -> runOnUiThreadOptional(() -> {
+      getDoneButton().setInProgress(false);
+      if (message != null) {
+        if (sendOptions.schedulingState != null && !args.callback.areScheduledOnly(this)) {
+          NavigationStack stack = navigationStack();
+          if (stack != null) {
+            MessagesController c = new MessagesController(context, tdlib);
+            c.setArguments(new MessagesController.Arguments(args.callback.provideChatList(this), tdlib.chatStrict(args.chatId), /* messageThread */ null, messageTopicId, null, MessagesManager.HIGHLIGHT_MODE_NONE, null).setScheduled(true));
+            stack.insertBack(c);
           }
         }
-      });
-    };
-    final TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(sendOptions, tdlib.chatDefaultDisableNotifications(chatId));
+        navigateBack();
+      }
+    });
+    final TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(sendOptions, Td.directMessagesChatTopicId(messageTopicId), tdlib.chatDefaultDisableNotifications(chatId));
     if (!getArgumentsStrict().callback.onSendPoll(this, chatId, messageThread != null ? messageThread.getMessageThreadId() : 0, poll, finalSendOptions, after)) {
       tdlib.sendMessage(chatId, messageThread != null ? messageThread.getMessageThreadId() : 0, null, finalSendOptions, poll, after);
     }

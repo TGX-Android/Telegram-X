@@ -1038,11 +1038,11 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     }
 
     if (accounts.size() == 1) {
-      new LiveLocationHelper(this, accounts.get(0).tdlib(), 0, 0, null, false, null).init().openLiveLocationList(false).destroy();
+      new LiveLocationHelper(this, accounts.get(0).tdlib(), 0, 0, null, null, false, null).init().openLiveLocationList(false).destroy();
       return;
     }
 
-    performAs(accounts, null, null, account -> account.tdlib().awaitInitialization(() -> handler.post(() -> new LiveLocationHelper(MainActivity.this, account.tdlib(), 0, 0, null, false, null).init().openLiveLocationList(true).destroy())));
+    performAs(accounts, null, null, account -> account.tdlib().awaitInitialization(() -> handler.post(() -> new LiveLocationHelper(MainActivity.this, account.tdlib(), 0, 0, null, null, false, null).init().openLiveLocationList(true).destroy())));
   }
 
   private void resolveLiveLocationError (boolean force) {

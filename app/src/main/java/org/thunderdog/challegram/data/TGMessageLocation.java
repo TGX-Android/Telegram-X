@@ -928,7 +928,7 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
             } else {
               args = new MapController.Args(point.latitude, point.longitude);
             }
-            args.setChatId(msg.chatId, messagesController().getMessageThreadId());
+            args.setChatId(msg.chatId, messagesController().getMessageThreadId(), messagesController().getMessageTopicId());
             if (venue != null) {
               args.title = venue.title;
               args.address = venue.address;

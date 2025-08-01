@@ -440,7 +440,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     } else if (id == R.id.menu_btn_forward) {
       exportContent();
     } else if (id == R.id.btn_menu_customize) {
-      showShareSettings();
+      reloadMessageProperties(this::showShareSettings);
     } else if (id == R.id.menu_btn_clear) {
       clearSearchInput();
     }
@@ -788,7 +788,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
               textRes = R.string.ShareTextPlain;
               break;
             default:
-              Td.assertMessageContent_235cea4f();
+              Td.assertMessageContent_ef7732f4();
               title1Res = R.string.ShareTitleMedia;
               title2Res = R.string.ShareTitleMediaX;
               textRes = R.string.ShareTextMedia;
@@ -1198,13 +1198,13 @@ public class ShareController extends TelegramViewController<ShareController.Args
       boolean needHideKeyboard = parentView.getId() == R.id.btn_done;
       final int viewId = view.getId();
       if (viewId == R.id.btn_settings) {
-        showShareSettings();
+        reloadMessageProperties(this::showShareSettings);
       } else if (viewId == R.id.btn_sendScheduled) {
         tdlib.ui().showScheduleOptions(this, selectedChats.size() == 1 ? selectedChats.valueAt(0).getChatId() : 0, false, (sendOptions, disableMarkdown) -> performSend(needHideKeyboard, sendOptions, false), defaultSendOptions, null);
       } else if (viewId == R.id.btn_sendOnceOnline) {
         performSend(needHideKeyboard, Td.newSendOptions(defaultSendOptions, new TdApi.MessageSchedulingStateSendWhenOnline()), false);
       } else if (viewId == R.id.btn_sendNoSound) {
-        performSend(needHideKeyboard, Td.newSendOptions(defaultSendOptions, true), false);
+        performSend(needHideKeyboard, Td.newSendOptions(defaultSendOptions, 0L, true), false);
       } else if (viewId == R.id.btn_sendAndOpen) {
         performSend(needHideKeyboard, Td.newSendOptions(defaultSendOptions), true);
       }
@@ -1439,6 +1439,10 @@ public class ShareController extends TelegramViewController<ShareController.Args
           }
         });
       });
+    } else {
+      if (after != null) {
+        after.runWithData(null);
+      }
     }
   }
 
@@ -1872,7 +1876,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           if (ChatId.isSecret(chatId)) {
             if (!properties.canBeCopiedToSecretChat)
               return Lang.getString(R.string.SecretChatForwardError);
-            TdApi.ForwardMessages function = new TdApi.ForwardMessages(chatId, 0, message.chatId, new long[] {message.id}, new TdApi.MessageSendOptions(false, false, false, false, 0, false, null, 0, 0, true), needHideAuthor, needRemoveCaptions);
+            TdApi.ForwardMessages function = new TdApi.ForwardMessages(chatId, 0, message.chatId, new long[] {message.id}, new TdApi.MessageSendOptions(0L, false, false, false, false, 0, false, null, 0, 0, true), needHideAuthor, needRemoveCaptions);
             TdApi.Object check = tdlib.clientExecute(function, 1000L);
             if (check instanceof TdApi.Error) {
               return TD.toErrorString(check);
@@ -3216,22 +3220,31 @@ public class ShareController extends TelegramViewController<ShareController.Args
     return true;
   }
 
-  private void showShareSettings () {
+  private void showShareSettings (TdApi.MessageProperties[] messageProperties) {
     boolean canRemoveCaptions = false;
     int canSendWithoutSound = 0;
     boolean hasSecretChats = false;
     List<ListItem> items = new ArrayList<>();
+    boolean canBeCopied = true;
 
     if (mode == MODE_MESSAGES) {
-      for (TdApi.Message message : getArgumentsStrict().messages) {
-        if (!Td.isText(message.content) && TD.canCopyText(message)) {
-          canRemoveCaptions = true;
+      Args args = getArgumentsStrict();
+      for (int i = 0; i < args.messages.length; i++) {
+        TdApi.Message message = args.messages[i];
+        TdApi.MessageProperties properties = messageProperties[i];
+        if (!properties.canBeCopied) {
+          canBeCopied = false;
           break;
         }
+        if (!Td.isText(message.content) && TD.canCopyText(message)) {
+          canRemoveCaptions = true;
+        }
       }
-      items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_hideAuthor, 0, R.string.SendAsCopy, R.id.btn_hideAuthor, needHideAuthor));
-      if (canRemoveCaptions) {
-        items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_removeCaptions, 0, R.string.RemoveCaptions, R.id.btn_removeCaptions, needRemoveCaptions));
+      if (canBeCopied) {
+        items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_hideAuthor, 0, R.string.SendAsCopy, R.id.btn_hideAuthor, needHideAuthor));
+        if (canRemoveCaptions) {
+          items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_removeCaptions, 0, R.string.RemoveCaptions, R.id.btn_removeCaptions, needRemoveCaptions));
+        }
       }
     }
 
@@ -3298,7 +3311,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
     final Args args = getArgumentsStrict();
 
-    TdApi.MessageSendOptions cloudSendOptions = Td.newSendOptions(finalSendOptions, forceSendWithoutSound);
+    TdApi.MessageSendOptions cloudSendOptions = Td.newSendOptions(finalSendOptions, 0L, forceSendWithoutSound);
     // FIXME: it seems separate sendOptions for secret chats no longer required or something is broken?
     TdApi.MessageSendOptions secretSendOptions = Td.newSendOptions(cloudSendOptions);
 

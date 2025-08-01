@@ -229,7 +229,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     private boolean reverseMode;
 
-    private long receiverChatId, messageThreadId, savedMessagesTopicId;
+    private long receiverChatId, messageThreadId;
+    private TdApi.MessageTopic topicId;
 
     private boolean areOnlyScheduled;
 
@@ -298,8 +299,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       return this;
     }
 
-    public Args setSavedMessagesTopicId (long savedMessagesTopicId) {
-      this.savedMessagesTopicId = savedMessagesTopicId;
+    public Args setTopicId (TdApi.MessageTopic topicId) {
+      this.topicId = topicId;
       return this;
     }
 
@@ -369,7 +370,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private @Nullable MediaSendDelegate sendDelegate;
   private MediaStack stack;
   private @Nullable TdApi.SearchMessagesFilter filter;
-  private long messageThreadId, savedMessagesTopicId;
+  private TdApi.MessageTopic topicId;
+  private long messageThreadId;
 
   @Override
   public void setArguments (Args args) {
@@ -382,7 +384,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     this.reverseMode = args.reverseMode;
     this.filter = args.filter;
     this.messageThreadId = args.messageThreadId;
-    this.savedMessagesTopicId = args.savedMessagesTopicId;
+    this.topicId = args.topicId;
   }
 
   public MediaViewThumbLocation getCurrentTargetLocation () {
@@ -2185,13 +2187,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     return this.filter != null ? this.filter : mode == MODE_CHAT_PROFILE ? new TdApi.SearchMessagesFilterChatPhoto() : new TdApi.SearchMessagesFilterPhotoAndVideo();
   }
 
-  private Client.ResultHandler foundChatMessagesHandler (long chatId, long fromMessageId, int loadCount) {
+  private Client.ResultHandler foundChatMessagesHandler (long chatId, TdApi.MessageTopic topicId, long fromMessageId, int loadCount) {
     return result -> {
       switch (result.getConstructor()) {
         case TdApi.FoundChatMessages.CONSTRUCTOR: {
           TdApi.FoundChatMessages foundChatMessages = (TdApi.FoundChatMessages) result;
           runOnUiThreadOptional(() ->
-            addItems(chatId, fromMessageId, loadCount, foundChatMessages)
+            addItems(chatId, topicId, fromMessageId, loadCount, foundChatMessages)
           );
           break;
         }
@@ -2218,13 +2220,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           MediaItem item = reverseMode ? stack.lastAvalable() : stack.firstAvailable();
           long initialFromMessageId = item.getSourceMessageId();
           TdApi.SearchChatMessages searchFunction = new TdApi.SearchChatMessages(
-            chatId, null, null,
+            chatId, topicId, null, null,
             initialFromMessageId, 0,
-            LOAD_COUNT, searchFilter(),
-            messageThreadId,
-            savedMessagesTopicId
+            LOAD_COUNT, searchFilter()
           );
-          tdlib.client().send(searchFunction, foundChatMessagesHandler(chatId, initialFromMessageId, LOAD_COUNT));
+          tdlib.client().send(searchFunction, foundChatMessagesHandler(chatId, topicId, initialFromMessageId, LOAD_COUNT));
         }
         break;
       }
@@ -2235,13 +2235,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           MediaItem item = stack.lastAvalable();
           long initialFromMessageId = item.getSourceMessageId();
           TdApi.SearchChatMessages searchFunction = new TdApi.SearchChatMessages(
-            chatId, null, null,
+            chatId, topicId, null, null,
             initialFromMessageId, 0,
-            LOAD_COUNT_PROFILE, searchFilter(),
-            messageThreadId,
-            savedMessagesTopicId
+            LOAD_COUNT_PROFILE, searchFilter()
           );
-          tdlib.client().send(searchFunction, foundChatMessagesHandler(chatId, initialFromMessageId, LOAD_COUNT_PROFILE));
+          tdlib.client().send(searchFunction, foundChatMessagesHandler(chatId, topicId, initialFromMessageId, LOAD_COUNT_PROFILE));
         }
         break;
       }
@@ -2323,7 +2321,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
   }
 
-  private void addItems (long chatId, long fromMessageId, int loadCount, TdApi.FoundChatMessages messages) {
+  private void addItems (long chatId, TdApi.MessageTopic topicId, long fromMessageId, int loadCount, TdApi.FoundChatMessages messages) {
     long messagesChatId = TD.getChatId(messages.messages);
     if (messagesChatId == 0) {
       messagesChatId = chatId;
@@ -2343,13 +2341,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       getArgumentsStrict().noLoadMore = true;
     } else if (addedCount == 0) {
       TdApi.SearchChatMessages retryFunction = new TdApi.SearchChatMessages(
-        chatId, null, null,
+        chatId, topicId, null, null,
         messages.nextFromMessageId, 0,
-        loadCount, searchFilter(),
-        messageThreadId,
-        savedMessagesTopicId
+        loadCount, searchFilter()
       );
-      tdlib.client().send(retryFunction, foundChatMessagesHandler(chatId, messages.nextFromMessageId, loadCount));
+      tdlib.client().send(retryFunction, foundChatMessagesHandler(chatId, topicId, messages.nextFromMessageId, loadCount));
       return;
     }
     isLoading = false;

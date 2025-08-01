@@ -132,7 +132,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
   }
 
   @Override
-  protected TdApi.Function<?> buildRequest (long chatId, long messageThreadId, String query, long offset, String secretOffset, int limit) {
+  protected TdApi.Function<?> buildRequest (long chatId, TdApi.MessageTopic topicId, String query, long offset, String secretOffset, int limit) {
     limit = offset == 0 ? 50 : 100;
     long supergroupId = ChatId.toSupergroupId(chatId);
     if (!StringUtils.isEmpty(query)) {
@@ -636,7 +636,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
         if (!isDestroyed()) {
           tdlib.cache().unsubscribeFromGroupUpdates(groupId, this);
           groupId = 0;
-          setArguments(new Args(ChatId.fromSupergroupId(basicGroup.upgradedToSupergroupId), messageThreadId));
+          setArguments(new Args(ChatId.fromSupergroupId(basicGroup.upgradedToSupergroupId), topicId));
         }
       });
     }

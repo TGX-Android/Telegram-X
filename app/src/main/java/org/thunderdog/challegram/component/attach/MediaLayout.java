@@ -699,7 +699,7 @@ public class MediaLayout extends FrameLayoutFix implements
             long chatId = getTargetChatId();
             if (chatId != 0) {
               CreatePollController c = new CreatePollController(target.context(), target.tdlib());
-              c.setArguments(new CreatePollController.Args(chatId, target.getMessageThread(), target));
+              c.setArguments(new CreatePollController.Args(chatId, target.getMessageThread(), target.getMessageTopicId(), target));
               parent.navigateTo(c);
               hide(false);
             }

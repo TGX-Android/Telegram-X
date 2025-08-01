@@ -100,6 +100,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
     public boolean isFaded;
 
     public long chatId, messageThreadId;
+    public TdApi.MessageTopic messageTopicId;
 
     public Args (double latitude, double longitude) {
       this.mode = MODE_DROPPED_PIN;
@@ -122,9 +123,10 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
       return this;
     }
 
-    public Args setChatId (long chatId, long messageThreadId) {
+    public Args setChatId (long chatId, long messageThreadId, TdApi.MessageTopic messageTopicId) {
       this.chatId = chatId;
       this.messageThreadId = messageThreadId;
+      this.messageTopicId = messageTopicId;
       return this;
     }
 
@@ -787,7 +789,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
             Args args = getArgumentsStrict();
             inShareProgress = true;
             adapter.updateValuedSettingById(R.id.liveLocationSelf);
-            tdlib.sendMessage(args.chatId, args.messageThreadId, null, Td.newSendOptions(tdlib.chatDefaultDisableNotifications(args.chatId)), new TdApi.InputMessageLocation(new TdApi.Location(myLocation.latitude, myLocation.longitude, myLocation.accuracy), arg1, myLocation.heading, 0));
+            tdlib.sendMessage(args.chatId, args.messageThreadId, null, Td.newSendOptions(Td.directMessagesChatTopicId(args.messageTopicId), tdlib.chatDefaultDisableNotifications(args.chatId)), new TdApi.InputMessageLocation(new TdApi.Location(myLocation.latitude, myLocation.longitude, myLocation.accuracy), arg1, myLocation.heading, 0));
           }
         });
         break;

@@ -3024,6 +3024,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     return chat != null ? chat.id : 0;
   }
 
+  @Nullable
+  public TdApi.MessageTopic getTopicId () {
+    // Ability to alter in future.
+    return null;
+  }
+
   @Override
   public int getRootColorId () {
     return ColorId.background;
@@ -5936,7 +5942,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private void getMessageCount (TdApi.SearchMessagesFilter filter, boolean returnLocal) {
-    tdlib.send(new TdApi.GetChatMessageCount(getChatId(), filter, 0, returnLocal), (messageCount, error) -> {
+    tdlib.send(new TdApi.GetChatMessageCount(getChatId(), getTopicId(), filter, returnLocal), (messageCount, error) -> {
       int count;
       if (error != null) {
         Log.e("TDLib error getMessageCount chatId:%d, filter:%s, returnLocal:%b: %s", getChatId(), filter, returnLocal, TD.toErrorString(error));
@@ -6117,7 +6123,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     SharedBaseController<?> controller = getControllers().get(position);
     if (!controller.isPrepared()) {
       controller.setPrepared();
-      controller.setArguments(new SharedBaseController.Args(chat.id, messageThread != null ? messageThread.getMessageThreadId() : 0));
+      controller.setArguments(new SharedBaseController.Args(chat.id, getTopicId()));
       controller.setParent(this);
     }
     return controller;

@@ -109,6 +109,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
   private @Nullable TdApi.Chat chat;
   private @Nullable ThreadInfo messageThread;
+  private @Nullable TdApi.MessageTopic topicId;
 
   private CancellableResultHandler sponsoredResultHandler;
   private final MessagesSearchManagerMiddleware searchManagerMiddleware;
@@ -158,9 +159,10 @@ public class MessagesLoader implements Client.ResultHandler {
     reuse();
   }
 
-  public void setChat (@Nullable TdApi.Chat chat, @Nullable ThreadInfo messageThread, int mode, TdApi.SearchMessagesFilter filter) {
+  public void setChat (@Nullable TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable TdApi.MessageTopic topicId, int mode, TdApi.SearchMessagesFilter filter) {
     this.chat = chat;
     this.messageThread = messageThread;
+    this.topicId = topicId;
     this.specialMode = mode;
     this.searchFilter = filter;
     this.messageSource = newMessageSource();
@@ -194,6 +196,18 @@ public class MessagesLoader implements Client.ResultHandler {
       return new TdApi.MessageSourceSearch();
     } else if (getMessageThreadId() != 0) {
       return new TdApi.MessageSourceMessageThreadHistory();
+    } else if (topicId != null) {
+      switch (topicId.getConstructor()) {
+        case TdApi.MessageTopicForum.CONSTRUCTOR:
+          return new TdApi.MessageSourceForumTopicHistory();
+        case TdApi.MessageTopicDirectMessages.CONSTRUCTOR:
+          return new TdApi.MessageSourceDirectMessagesChatTopicHistory();
+        case TdApi.MessageTopicSavedMessages.CONSTRUCTOR:
+          return new TdApi.MessageSourceChatHistory();
+        default:
+          Td.assertMessageTopic_e5c08b7c();
+          throw Td.unsupported(topicId);
+      }
     } else {
       return new TdApi.MessageSourceChatHistory();
     }
@@ -217,6 +231,11 @@ public class MessagesLoader implements Client.ResultHandler {
 
   public long getMessageThreadId () {
     return messageThread != null ? messageThread.getMessageThreadId() : 0;
+  }
+
+  @Nullable
+  public TdApi.MessageTopic getTopicId () {
+    return topicId;
   }
 
   @Nullable
@@ -1119,7 +1138,7 @@ public class MessagesLoader implements Client.ResultHandler {
             function = new TdApi.SearchSecretMessages(sourceChatId, searchQuery, lastSearchNextOffset, limit, searchFilter);
           } else {
             Log.ensureReturnType(TdApi.SearchChatMessages.class, TdApi.FoundChatMessages.class);
-            function = new TdApi.SearchChatMessages(sourceChatId, searchQuery, searchSender, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, searchFilter, messageThread != null ? messageThread.getMessageThreadId() : 0, 0);
+            function = new TdApi.SearchChatMessages(sourceChatId, topicId, searchQuery, searchSender, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, searchFilter);
           }
           break;
         }
@@ -1132,7 +1151,7 @@ public class MessagesLoader implements Client.ResultHandler {
           if (hasSearchFilter()) {
             loadingLocal = false;
             Log.ensureReturnType(TdApi.SearchChatMessages.class, TdApi.FoundChatMessages.class);
-            function = new TdApi.SearchChatMessages(sourceChatId, null, null, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, searchFilter, messageThread != null ? messageThread.getMessageThreadId() : 0, 0);
+            function = new TdApi.SearchChatMessages(sourceChatId, topicId, null, null, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, searchFilter);
           } else if (messageThread != null) {
             loadingLocal = false;
             Log.ensureReturnType(TdApi.GetMessageThreadHistory.class, TdApi.Messages.class);
@@ -1218,10 +1237,10 @@ public class MessagesLoader implements Client.ResultHandler {
       null,
       tdlib.isSelfSender(event.memberId),
       false, false, canBeSaved, false,
-      isChannel, false, false,
+      isChannel, false,
       event.date, 0,
       null, null, null, null,
-      null, null, 0, 0,
+      null, null, 0, null,
       null, 0, 0,
       0, 0, 0, 0, null,
       0, 0, false,

@@ -711,7 +711,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     }
 
     if (filter == null) {
-      liveLocationHelper = new LiveLocationHelper(this.context, tdlib, 0, 0, chatsView, true, this);
+      liveLocationHelper = new LiveLocationHelper(this.context, tdlib, 0, 0, null, chatsView, true, this);
       liveLocationHelper.init();
     }
 

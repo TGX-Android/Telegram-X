@@ -719,6 +719,9 @@ public class ContentPreview {
       case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
       case TdApi.MessagePassportDataSent.CONSTRUCTOR:
       case TdApi.MessageChatSetBackground.CONSTRUCTOR:
+      case TdApi.MessageChecklist.CONSTRUCTOR:
+      case TdApi.MessageChecklistTasksDone.CONSTRUCTOR:
+      case TdApi.MessageChecklistTasksAdded.CONSTRUCTOR:
         break;
 
       // Bots only. Unused
@@ -726,7 +729,7 @@ public class ContentPreview {
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_235cea4f();
+        Td.assertMessageContent_ef7732f4();
         throw Td.unsupported(message.content);
     }
     Refresher refresher = null;
@@ -1180,8 +1183,13 @@ public class ContentPreview {
           return new ContentPreview(isChannel ? EMOJI_LIVE_STREAM : EMOJI_VIDEO_CHAT, isChannel ? R.string.ChatContentLiveStreamAddSomeone : R.string.ChatContentVideoChatAddSomeone);
         }
       }
+      case TdApi.PushMessageContentChecklist.CONSTRUCTOR:
+      case TdApi.PushMessageContentChecklistTasksAdded.CONSTRUCTOR:
+      case TdApi.PushMessageContentChecklistTasksDone.CONSTRUCTOR: {
+        return getNotificationPreview(TdApi.MessageUnsupported.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
+      }
       default:
-        Td.assertPushMessageContent_6685917b();
+        Td.assertPushMessageContent_55b7513d();
         throw Td.unsupported(push.content);
     }
   }
@@ -1517,6 +1525,9 @@ public class ContentPreview {
       case TdApi.MessageGiveawayPrizeStars.CONSTRUCTOR:
       case TdApi.MessageGift.CONSTRUCTOR:
       case TdApi.MessageUpgradedGift.CONSTRUCTOR:
+      case TdApi.MessageChecklist.CONSTRUCTOR:
+      case TdApi.MessageChecklistTasksDone.CONSTRUCTOR:
+      case TdApi.MessageChecklistTasksAdded.CONSTRUCTOR:
       case TdApi.MessageGroupCall.CONSTRUCTOR: // TODO
       case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR: // TODO
       case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR: // TODO
@@ -1531,7 +1542,7 @@ public class ContentPreview {
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_235cea4f();
+        Td.assertMessageContent_ef7732f4();
         throw new UnsupportedOperationException(Integer.toString(type));
     }
   }

@@ -584,7 +584,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   // Search
 
   public void openSearch (TdApi.Chat chat, String query, TdApi.MessageSender sender, TdApi.SearchMessagesFilter filter) {
-    loader.setChat(chat, null, MessagesLoader.SPECIAL_MODE_SEARCH, filter);
+    loader.setChat(chat, null, null, MessagesLoader.SPECIAL_MODE_SEARCH, filter);
     loader.setSearchParameters(query, sender, filter);
     adapter.setChatType(chat.type);
     if (filter != null && Td.isPinnedFilter(filter)) {
@@ -613,7 +613,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void openEventLog (TdApi.Chat chat) {
-    loader.setChat(chat, null, MessagesLoader.SPECIAL_MODE_EVENT_LOG, null);
+    loader.setChat(chat, null, null, MessagesLoader.SPECIAL_MODE_EVENT_LOG, null);
     adapter.setChatType(chat.type);
     loadFromStart();
   }
@@ -680,7 +680,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   private void initPinned (long chatId, int initialLoadCount, int loadCount) {
-    this.pinnedMessages = new MessageListManager(tdlib, initialLoadCount, loadCount, pinnedMessageListener, chatId, 0, null, null, new TdApi.SearchMessagesFilterPinned(), 0, 0);
+    this.pinnedMessages = new MessageListManager(tdlib, initialLoadCount, loadCount, pinnedMessageListener, chatId, 0, null, null, null, new TdApi.SearchMessagesFilterPinned());
     this.pinnedMessages.addMaxMessageIdListener(pinnedMessageAvailabilityChangeListener);
     this.pinnedMessages.addChangeListener(new MessageListManager.ChangeListener() {
       @Override
@@ -696,7 +696,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     tdlib.settings().addPinnedMessageDismissListener(this);
   }
 
-  public void openChat (TdApi.Chat chat, @Nullable ThreadInfo messageThread, TdApi.SearchMessagesFilter filter, MessagesController context, boolean areScheduled, boolean needPinnedMessages) {
+  public void openChat (TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable TdApi.MessageTopic topicId, TdApi.SearchMessagesFilter filter, MessagesController context, boolean areScheduled, boolean needPinnedMessages) {
     if (chat.id != 0) {
       if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
         Log.i(Log.TAG_MESSAGES_LOADER, "[CREATE] chatId:%d", chat.id);
@@ -710,12 +710,12 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       this.pinnedMessages = null;
     }
     if (!areScheduled && tdlib.chatRestricted(chat)) {
-      loader.setChat(chat, messageThread, MessagesLoader.SPECIAL_MODE_RESTRICTED, null);
+      loader.setChat(chat, messageThread, topicId, MessagesLoader.SPECIAL_MODE_RESTRICTED, null);
       clearHeaderMessage();
       adapter.setChatType(chat.type);
       loadFromStart();
     } else {
-      loader.setChat(chat, messageThread, areScheduled ? MessagesLoader.SPECIAL_MODE_SCHEDULED : MessagesLoader.SPECIAL_MODE_NONE, filter);
+      loader.setChat(chat, messageThread, topicId, areScheduled ? MessagesLoader.SPECIAL_MODE_SCHEDULED : MessagesLoader.SPECIAL_MODE_NONE, filter);
       clearHeaderMessage();
       adapter.setChatType(chat.type);
       if (highlightMessageId != null) {
@@ -2410,7 +2410,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       fromMessageId = message.getBiggestId();
     }
     final long chatId = loader.getChatId();
-    final long messageThreadId = loader.getMessageThreadId();
+    final TdApi.MessageTopic topicId = loader.getTopicId();
     final AtomicBoolean isRetry = new AtomicBoolean();
     mentionsHandler = new CancellableResultHandler() {
       @Override
@@ -2418,7 +2418,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (object.getConstructor() == TdApi.FoundChatMessages.CONSTRUCTOR) {
           TdApi.FoundChatMessages messages = (TdApi.FoundChatMessages) object;
           if (messages.totalCount > 0 && messages.messages.length == 0 && isRetry.getAndSet(true)) {
-            tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, 0, 0, 10, new TdApi.SearchMessagesFilterUnreadMention(), messageThreadId, 0), this);
+            tdlib.client().send(new TdApi.SearchChatMessages(chatId, topicId, null, null, 0, 0, 10, new TdApi.SearchMessagesFilterUnreadMention()), this);
           } else {
             setMentions(this, messages, isRetry.get() ? 0 : fromMessageId);
           }
@@ -2427,7 +2427,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         }
       }
     };
-    tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, fromMessageId, -9, 10, new TdApi.SearchMessagesFilterUnreadMention(), messageThreadId, 0), mentionsHandler);
+    tdlib.client().send(new TdApi.SearchChatMessages(chatId, topicId, null, null, fromMessageId, -9, 10, new TdApi.SearchMessagesFilterUnreadMention()), mentionsHandler);
   }
 
   private void setMentions (final CancellableResultHandler handler, final TdApi.FoundChatMessages messages, final long fromMessageId) {
@@ -2499,7 +2499,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       fromMessageId = message.getBiggestId();
     }
     final long chatId = loader.getChatId();
-    final long messageThreadId = loader.getMessageThreadId();
+    final TdApi.MessageTopic topicId = loader.getTopicId();
     final AtomicBoolean isRetry = new AtomicBoolean();
     reactionsHandler = new CancellableResultHandler() {
       @Override
@@ -2507,7 +2507,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (object.getConstructor() == TdApi.FoundChatMessages.CONSTRUCTOR) {
           TdApi.FoundChatMessages messages = (TdApi.FoundChatMessages) object;
           if (messages.totalCount > 0 && messages.messages.length == 0 && !isRetry.getAndSet(true)) {
-            tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, 0, 0, 10, new TdApi.SearchMessagesFilterUnreadReaction(), messageThreadId, 0), this);
+            tdlib.client().send(new TdApi.SearchChatMessages(chatId, topicId, null, null, 0, 0, 10, new TdApi.SearchMessagesFilterUnreadReaction()), this);
           } else {
             setUnreadReactions(this, messages, isRetry.get() ? 0 : fromMessageId);
           }
@@ -2516,7 +2516,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         }
       }
     };
-    tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, fromMessageId, -9, 10, new TdApi.SearchMessagesFilterUnreadReaction(), messageThreadId, 0), reactionsHandler);
+    tdlib.client().send(new TdApi.SearchChatMessages(chatId, topicId, null, null, fromMessageId, -9, 10, new TdApi.SearchMessagesFilterUnreadReaction()), reactionsHandler);
   }
 
 
@@ -2543,11 +2543,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     searchManager.onPrepare();
   }
 
-  public void search (long chatId, @Nullable ThreadInfo messageThread, TdApi.MessageSender sender, TdApi.SearchMessagesFilter filter, boolean isSecret, String input, MessageId foundMessageId) {
+  public void search (long chatId, @Nullable ThreadInfo messageThread, @Nullable TdApi.MessageTopic topicId, TdApi.MessageSender sender, TdApi.SearchMessagesFilter filter, boolean isSecret, String input, MessageId foundMessageId) {
     if (isEventLog()) {
       applyEventLogFilters(eventLogFilters, input, eventLogUserIds);
     } else {
-      searchManager.search(messageThread != null ? messageThread.getChatId() : chatId, messageThread != null ? messageThread.getMessageThreadId() : 0, sender, filter, isSecret, input, foundMessageId);
+      searchManager.search(messageThread != null ? messageThread.getChatId() : chatId, topicId, sender, filter, isSecret, input, foundMessageId);
     }
   }
 

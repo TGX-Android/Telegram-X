@@ -1306,6 +1306,7 @@
   <string name="ActionPinnedGeo">%1$s pinned a **location**</string>
   <string name="ActionPinnedPoll">%1$s pinned a **poll**</string>
   <string name="ActionPinnedQuiz">%1$s pinned a **quiz**</string>
+  <string name="ActionPinnedChecklist">%1$s pinned a **checklist**</string>
   <string name="ActionPinnedGeoLive">%1$s pinned a **live location**</string>
   <string name="ActionPinnedSticker">%1$s pinned a **sticker**</string>
   <string name="ActionPinnedGif">%1$s pinned a **GIF**</string>

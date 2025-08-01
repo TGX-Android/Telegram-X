@@ -153,8 +153,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
 
 
   private long playlistChatId;
-  private long playlistMessageThreadId;
-  private TdApi.SavedMessagesTopic savedMessagesTopic;
+  private TdApi.MessageTopic playlistTopicId;
   private long playlistMaxMessageId, playlistMinMessageId;
   private String playlistSearchQuery;
   private TdApi.GetInlineQueryResults playlistInlineQuery;
@@ -1209,7 +1208,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
         this.playlistMinMessageId = this.playlistMaxMessageId = 0;
       }
       this.playlistSearchQuery = null;
-      this.playlistMessageThreadId = 0;
+      this.playlistTopicId = null;
       this.playlistInlineQuery = null;
       this.playlistInlineNextOffset = this.playlistSearchNextOffset = null; this.playlistSearchNextFromMessageId = 0;
       this.removedMessageList.clear();
@@ -1217,7 +1216,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
         playlistSearchQuery = playList.searchQuery;
         playlistSearchNextOffset = playList.searchNextOffset;
         playlistSearchNextFromMessageId = playList.searchNextFromMessageId;
-        playlistMessageThreadId = playList.messageThreadId;
+        playlistTopicId = playList.topicId;
         if (playList.playListInformationSet) {
           playlistChatId = playList.chatId;
           playlistMaxMessageId = playList.maxMessageId;
@@ -1511,20 +1510,16 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
       messageListStateFlags |= LIST_STATE_LOADED_NEW;
     } else {
       requestOld = allowOlder ? new TdApi.SearchChatMessages(
-        chatId, playlistSearchQuery, null,
+        chatId, playlistTopicId, playlistSearchQuery, null,
         playlistSearchNextFromMessageId != 0 ? Math.min(minMessageId, playlistSearchNextFromMessageId) : minMessageId,
-        0, 100, filter,
-        playlistMessageThreadId,
-        0
+        0, 100, filter
       ) : null;
       requestNew = allowNewer ? playlistInlineQuery != null ? makeNextInlineQuery() : new TdApi.SearchChatMessages(
-        chatId,
+        chatId, playlistTopicId,
         playlistSearchQuery, null,
         maxMessageId,
         -99, 100,
-        filter,
-        playlistMessageThreadId,
-        0
+        filter
       ) : null;
     }
 
@@ -1813,7 +1808,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
     private int playListFlags;
     private String searchQuery, searchNextOffset;
     private long searchNextFromMessageId;
-    private long messageThreadId;
+    private @Nullable TdApi.MessageTopic topicId;
 
     private List<TdApi.Message> removedMessages;
 
@@ -1903,10 +1898,10 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
     }
 
     /**
-     * Message thread identifier to be passed in {@link org.drinkless.tdlib.TdApi.SearchChatMessages} query
+     * Topic identifier to be passed in {@link org.drinkless.tdlib.TdApi.SearchChatMessages} query
      */
-    public PlayList setMessageThreadId (long messageThreadId) {
-      this.messageThreadId = messageThreadId;
+    public PlayList setTopicId (@Nullable TdApi.MessageTopic topicId) {
+      this.topicId = topicId;
       return this;
     }
   }

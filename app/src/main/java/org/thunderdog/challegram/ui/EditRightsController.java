@@ -846,7 +846,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
             case RightId.SEND_VOICE_NOTES:
             case RightId.SEND_OTHER_MESSAGES:
             case RightId.EMBED_LINKS:
-            case RightId.SEND_POLLS:
+            case RightId.SEND_POLLS_OR_CHECKLISTS:
               return me.rights.canPostMessages;
             case RightId.READ_MESSAGES:
               return true;
@@ -1386,7 +1386,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       case RightId.SEND_DOCS:
       case RightId.SEND_PHOTOS:
       case RightId.SEND_VIDEOS:
-      case RightId.SEND_POLLS:
+      case RightId.SEND_POLLS_OR_CHECKLISTS:
       case RightId.SEND_VOICE_NOTES:
       case RightId.SEND_VIDEO_NOTES:
       case RightId.SEND_OTHER_MESSAGES: {
@@ -1406,7 +1406,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           case RightId.SEND_VIDEOS:
             targetRestrict.permissions.canSendVideos = newValue;
             break;
-          case RightId.SEND_POLLS:
+          case RightId.SEND_POLLS_OR_CHECKLISTS:
             targetRestrict.permissions.canSendPolls = newValue;
             break;
           case RightId.SEND_VOICE_NOTES:
@@ -1506,7 +1506,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       targetRestrict.permissions.canSendVoiceNotes = getValueForId(RightId.SEND_VOICE_NOTES);
       targetRestrict.permissions.canSendVideoNotes = getValueForId(RightId.SEND_VIDEO_NOTES);
       targetRestrict.permissions.canSendOtherMessages = getValueForId(RightId.SEND_OTHER_MESSAGES);
-      targetRestrict.permissions.canSendPolls = getValueForId(RightId.SEND_POLLS);
+      targetRestrict.permissions.canSendPolls = getValueForId(RightId.SEND_POLLS_OR_CHECKLISTS);
     }
     updateValues();
     checkDoneButton();
@@ -1583,7 +1583,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         return canViewMessages && targetRestrict.permissions.canSendVideoNotes;
       case RightId.SEND_OTHER_MESSAGES:
         return canViewMessages && targetRestrict.permissions.canSendOtherMessages;
-      case RightId.SEND_POLLS:
+      case RightId.SEND_POLLS_OR_CHECKLISTS:
         return canViewMessages && targetRestrict.permissions.canSendPolls;
       case RightId.CHANGE_CHAT_INFO:
         if (getArgumentsStrict().mode == MODE_ADMIN_PROMOTION) {
@@ -1651,7 +1651,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         return R.string.RightSendVideoNote;
       case RightId.SEND_OTHER_MESSAGES:
         return R.string.UserRestrictionsSendStickers;
-      case RightId.SEND_POLLS:
+      case RightId.SEND_POLLS_OR_CHECKLISTS:
         return R.string.UserRestrictionsSendPolls;
       case RightId.EMBED_LINKS:
         return R.string.UserRestrictionsEmbedLinks;
@@ -1724,7 +1724,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       case RightId.SEND_VOICE_NOTES:
       case RightId.SEND_VIDEO_NOTES:
       case RightId.SEND_OTHER_MESSAGES:
-      case RightId.SEND_POLLS:
+      case RightId.SEND_POLLS_OR_CHECKLISTS:
       case RightId.EMBED_LINKS:
       default:
         return 0;
@@ -1867,7 +1867,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     RightId.SEND_VOICE_NOTES,
     RightId.SEND_VIDEO_NOTES,
     RightId.SEND_OTHER_MESSAGES,
-    RightId.SEND_POLLS,
+    RightId.SEND_POLLS_OR_CHECKLISTS,
     RightId.EMBED_LINKS,
   };
 

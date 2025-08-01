@@ -402,7 +402,7 @@ public class TdlibUi extends Handler {
         }
       });
       // TODO TDLib / server: ability to get totalCount with limit=0
-      tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, senderId, 0, 0, 1, null, 0, 0), result -> {
+      tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, senderId, 0, 0, 1, null), result -> {
         if (result.getConstructor() == TdApi.FoundChatMessages.CONSTRUCTOR) {
           int moreCount = ((TdApi.FoundChatMessages) result).totalCount - deletingMessages.length;
           if (moreCount > 0) {
@@ -1726,6 +1726,7 @@ public class TdlibUi extends Handler {
     public String inviteLink;
     public TdApi.ChatInviteLinkInfo inviteLinkInfo;
     public ThreadInfo threadInfo;
+    public TdApi.MessageTopic messageTopicId;
     public TdApi.SearchMessagesFilter filter;
     public TdApi.InternalLinkTypeVideoChat videoChatOrLiveStreamInvitation;
     public TdApi.FormattedText fillDraft;
@@ -1752,8 +1753,8 @@ public class TdlibUi extends Handler {
         outState.putString(keyPrefix + "cp_chatList", TD.makeChatListKey(chatList));
       if (threadInfo != null)
         threadInfo.saveTo(outState, keyPrefix + "cp_messageThread");
-      if (filter != null)
-        Td.put(outState, keyPrefix + "cp_filter", filter);
+      Td.put(outState, keyPrefix + "cp_topicId", messageTopicId);
+      Td.put(outState, keyPrefix + "cp_filter", filter);
       return true;
     }
 
@@ -1768,6 +1769,7 @@ public class TdlibUi extends Handler {
       if (threadInfo == ThreadInfo.INVALID)
         return null;
       params.threadInfo = threadInfo;
+      params.messageTopicId = Td.restoreMessageTopic(in, keyPrefix + "cp_topicId");
       params.filter = Td.restoreSearchMessagesFilter(in, keyPrefix + "cp_filter");
       return params;
     }
@@ -2093,6 +2095,7 @@ public class TdlibUi extends Handler {
     final boolean onlyScheduled = (options & CHAT_OPTION_SCHEDULED_MESSAGES) != 0;
     final TdApi.InternalLinkTypeVideoChat voiceChatInvitation = params != null ? params.videoChatOrLiveStreamInvitation : null;
     final ThreadInfo messageThread = params != null ? params.threadInfo : null;
+    final TdApi.MessageTopic messageTopicId = params != null ? params.messageTopicId : null;
     final TdApi.SearchMessagesFilter filter = params != null ? params.filter : null;
     final MessagesController.Referrer referrer = params != null && !StringUtils.isEmpty(params.inviteLink) ? new MessagesController.Referrer(params.inviteLink) : null;
     final TdApi.FormattedText forceDraft = params != null && !Td.isEmpty(params.fillDraft) ? params.fillDraft : null;
@@ -2224,11 +2227,11 @@ public class TdlibUi extends Handler {
 
     final MessagesController.Arguments arguments;
     if (params != null && !StringUtils.isEmpty(params.searchQuery) && params.foundMessage != null) {
-      arguments = new MessagesController.Arguments(chatList, chat, messageThread, highlightMessageId, highlightMode, filter, params.foundMessage, params.searchQuery);
+      arguments = new MessagesController.Arguments(chatList, chat, messageThread, messageTopicId, highlightMessageId, highlightMode, filter, params.foundMessage, params.searchQuery);
     } else if (highlightMessageId != null) {
-      arguments = new MessagesController.Arguments(chatList, chat, messageThread, highlightMessageId, highlightMode, filter);
+      arguments = new MessagesController.Arguments(chatList, chat, messageThread, messageTopicId, highlightMessageId, highlightMode, filter);
     } else {
-      arguments = new MessagesController.Arguments(tdlib, chatList, chat, messageThread, filter);
+      arguments = new MessagesController.Arguments(tdlib, chatList, chat, messageThread, messageTopicId, filter);
     }
     controller.setArguments(arguments
       .setScheduled(onlyScheduled)
@@ -6699,7 +6702,7 @@ public class TdlibUi extends Handler {
       } else if (menuItemId == R.id.btn_sendNoMarkdown) {
         sendCallback.onSendRequested(Td.newSendOptions(), true);
       } else if (menuItemId == R.id.btn_sendNoSound) {
-        sendCallback.onSendRequested(Td.newSendOptions(true), false);
+        sendCallback.onSendRequested(Td.newSendOptions(0L, true), false);
       } else if (menuItemId == R.id.btn_sendOnceOnline) {
         sendCallback.onSendRequested(Td.newSendOptions(new TdApi.MessageSchedulingStateSendWhenOnline()), false);
       }
@@ -6768,7 +6771,7 @@ public class TdlibUi extends Handler {
     context.showOptions(null, ids.get(), strings.get(), null, icons.get(), (v, optionId) -> {
       long seconds = 0;
       if (optionId == R.id.btn_sendNoSound) {
-        callback.runWithData(Td.newSendOptions(defaultSendOptions, true));
+        callback.runWithData(Td.newSendOptions(defaultSendOptions, 0L, true));
         return true;
       } else if (optionId == R.id.btn_sendOnceOnline) {
         callback.runWithData(Td.newSendOptions(defaultSendOptions, new TdApi.MessageSchedulingStateSendWhenOnline()));

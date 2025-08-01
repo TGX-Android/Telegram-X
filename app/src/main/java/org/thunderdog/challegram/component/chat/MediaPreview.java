@@ -474,12 +474,15 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.MessagePassportDataSent.CONSTRUCTOR:
       case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
       case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR:
+      case TdApi.MessageChecklist.CONSTRUCTOR:
+      case TdApi.MessageChecklistTasksDone.CONSTRUCTOR:
+      case TdApi.MessageChecklistTasksAdded.CONSTRUCTOR:
       case TdApi.MessageUnsupported.CONSTRUCTOR: {
         // No media preview.
         break;
       }
       default: {
-        Td.assertMessageContent_235cea4f();
+        Td.assertMessageContent_ef7732f4();
         throw Td.unsupported(message.content);
       }
     }

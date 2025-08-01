@@ -1137,6 +1137,9 @@ public class Lang {
       case TdApi.MessagePoll.CONSTRUCTOR:
         res = ((TdApi.MessagePoll) message.content).poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR ? R.string.ActionPinnedQuiz : R.string.ActionPinnedPoll;
         break;
+      case TdApi.MessageChecklist.CONSTRUCTOR:
+        res = R.string.ActionPinnedChecklist;
+        break;
       case TdApi.MessageLocation.CONSTRUCTOR:
         res = ((TdApi.MessageLocation) message.content).livePeriod > 0 ? R.string.ActionPinnedGeoLive : R.string.ActionPinnedGeo;
         break;
@@ -1193,6 +1196,7 @@ public class Lang {
       case TdApi.MessagePaymentRefunded.CONSTRUCTOR:
       case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR:
       case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR:
+      case TdApi.MessageDirectMessagePriceChanged.CONSTRUCTOR:
       case TdApi.MessagePinMessage.CONSTRUCTOR:
       case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
       case TdApi.MessageBotWriteAccessAllowed.CONSTRUCTOR:
@@ -1213,9 +1217,11 @@ public class Lang {
       case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
+      case TdApi.MessageChecklistTasksAdded.CONSTRUCTOR:
+      case TdApi.MessageChecklistTasksDone.CONSTRUCTOR:
         break;
       default:
-        Td.assertMessageContent_235cea4f();
+        Td.assertMessageContent_ef7732f4();
         throw Td.unsupported(message.content);
     }
     if (format == null) {

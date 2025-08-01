@@ -384,6 +384,9 @@ public final class TGMessageService extends TGMessageServiceImpl {
                 R.string.ActionPinnedQuiz :
                 R.string.ActionPinnedPoll;
               break;
+            case TdApi.MessageChecklist.CONSTRUCTOR:
+              staticResId = R.string.ActionPinnedChecklist;
+              break;
             case TdApi.MessageLocation.CONSTRUCTOR:
               staticResId = ((TdApi.MessageLocation) message.content).livePeriod > 0 ?
                 R.string.ActionPinnedGeoLive :
@@ -481,10 +484,13 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageGift.CONSTRUCTOR:
             case TdApi.MessageUpgradedGift.CONSTRUCTOR:
             case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
+            case TdApi.MessageChecklistTasksAdded.CONSTRUCTOR:
+            case TdApi.MessageChecklistTasksDone.CONSTRUCTOR:
+            case TdApi.MessageDirectMessagePriceChanged.CONSTRUCTOR:
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              Td.assertMessageContent_235cea4f();
+              Td.assertMessageContent_ef7732f4();
               throw Td.unsupported(message.content);
           }
           if (format == null) {
@@ -1715,7 +1721,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
         tdlib.ui().openMap(this, new MapController.Args(
             chatLocation.location.latitude,
             chatLocation.location.longitude
-          ).setChatId(msg.chatId, messagesController().getMessageThreadId())
+          ).setChatId(msg.chatId, messagesController().getMessageThreadId(), messagesController().getMessageTopicId())
             .setLocationOwnerChatId(msg.chatId)
             .setIsFaded(locationChanged.newLocation == null)
         )
