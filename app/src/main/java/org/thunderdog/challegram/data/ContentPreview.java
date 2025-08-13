@@ -707,6 +707,7 @@ public class ContentPreview {
       case TdApi.MessageGroupCall.CONSTRUCTOR:
       case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR:
       case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR:
+      case TdApi.MessageDirectMessagePriceChanged.CONSTRUCTOR:
 
       // Handled by getSimpleContentPreview, but unsupported
       case TdApi.MessageUnsupported.CONSTRUCTOR:
@@ -1528,9 +1529,10 @@ public class ContentPreview {
       case TdApi.MessageChecklist.CONSTRUCTOR:
       case TdApi.MessageChecklistTasksDone.CONSTRUCTOR:
       case TdApi.MessageChecklistTasksAdded.CONSTRUCTOR:
-      case TdApi.MessageGroupCall.CONSTRUCTOR: // TODO
-      case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR: // TODO
-      case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR: // TODO
+      case TdApi.MessageGroupCall.CONSTRUCTOR:
+      case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR:
+      case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR:
+      case TdApi.MessageDirectMessagePriceChanged.CONSTRUCTOR:
         // TODO support these previews
         return new ContentPreview(EMOJI_QUIZ, R.string.UnsupportedMessage);
         

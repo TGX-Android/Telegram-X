@@ -462,6 +462,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.MessageGiveawayPrizeStars.CONSTRUCTOR:
       case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR:
       case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR:
+      case TdApi.MessageDirectMessagePriceChanged.CONSTRUCTOR:
       case TdApi.MessageGift.CONSTRUCTOR:
       case TdApi.MessageUpgradedGift.CONSTRUCTOR:
       case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
