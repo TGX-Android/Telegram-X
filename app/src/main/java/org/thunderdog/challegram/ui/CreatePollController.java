@@ -227,7 +227,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     decoration.addRange(items.size() - 3, items.size());
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-    items.add(descriptionItem = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.plural(R.string.PollOptionsLimit, TdConstants.MAX_POLL_OPTION_COUNT - options.size()), false));
+    items.add(descriptionItem = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.plural(R.string.PollOptionsLimit, tdlib.options().pollAnswerCountMax - options.size()), false));
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     int settingCount = 0;
@@ -445,12 +445,13 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
   private boolean isAdding;
 
   private boolean addOption () {
-    if (options.size() >= TdConstants.MAX_POLL_OPTION_COUNT || isAdding)
+    final int maxPollOptionCount = tdlib.options().pollAnswerCountMax;
+    if (options.size() >= maxPollOptionCount || isAdding)
       return false;
     int i = adapter.indexOfViewById(R.id.optionAdd);
     isAdding = true;
     int targetIndex;
-    if (options.size() + 1 == TdConstants.MAX_POLL_OPTION_COUNT) {
+    if (options.size() + 1 == maxPollOptionCount) {
       adapter.setItem(targetIndex = i, createNewOption());
     } else {
       adapter.getItems().add(i - 1, createNewOption());
@@ -495,7 +496,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     int adapterPosition = adapter.indexOfView(option);
     if (adapterPosition == -1)
       throw new AssertionError();
-    if (options.size() == TdConstants.MAX_POLL_OPTION_COUNT - 1) {
+    if (options.size() == tdlib.options().pollAnswerCountMax - 1) {
       if (i == options.size()) {
         adapter.setItem(adapterPosition, addItem);
       } else {
@@ -526,7 +527,8 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
   }
 
   private void updateLimit () {
-    if (descriptionItem.setStringIfChanged(TdConstants.MAX_POLL_OPTION_COUNT <= options.size() ? Lang.getString(R.string.PollOptionsMax) : Lang.plural(R.string.PollOptionsLimit, TdConstants.MAX_POLL_OPTION_COUNT - options.size()))) {
+    final int maxPollOptionCount = tdlib.options().pollAnswerCountMax;
+    if (descriptionItem.setStringIfChanged(maxPollOptionCount <= options.size() ? Lang.getString(R.string.PollOptionsMax) : Lang.plural(R.string.PollOptionsLimit, maxPollOptionCount - options.size()))) {
       adapter.updateValuedSetting(descriptionItem);
     }
   }
@@ -630,7 +632,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     }
     boolean hasCustomEmoji = TD.hasCustomEmoji(question);
     int correctOptionId = -1;
-    List<TdApi.FormattedText> options = new ArrayList<>(TdConstants.MAX_POLL_OPTION_COUNT);
+    List<TdApi.FormattedText> options = new ArrayList<>(tdlib.options().pollAnswerCountMax);
     for (ListItem optionItem : this.options) {
       CharSequence cs = StringUtils.trim(optionItem.getCharSequenceValue());
       if (StringUtils.isEmpty(cs))
