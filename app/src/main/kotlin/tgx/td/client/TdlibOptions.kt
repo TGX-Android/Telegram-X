@@ -82,6 +82,7 @@ data class TdlibOptions(
   @JvmField var paidMediaMessageStarCountMax: Long = 10000L,
   @JvmField var subscriptionStarCountMin: Long = 10000L,
   @JvmField var subscriptionStarCountMax: Long = 10000L,
+  @JvmField var directChannelMessageStarCountDefault: Long = 10L,
 
   @JvmField var affiliateProgramCommissionPerMilleMin: Long = 1L,
   @JvmField var affiliateProgramCommissionPerMilleMax: Long = 800L,
@@ -143,6 +144,12 @@ data class TdlibOptions(
   @JvmField var messageCaptionLengthMax: Int = 1024,
   @JvmField var messageReplyQuoteLengthMax: Int = 1024,
 
+  @JvmField var pollAnswerCountMax: Int = 12,
+
+  @JvmField var checklistTaskCountMax: Int = 30,
+  @JvmField var checklistTaskTextLengthMax: Int = 200,
+  @JvmField var checklistTitleLengthMax: Int = 255,
+
   @JvmField var factCheckLengthMax: Int = 1024,
 
   @JvmField var basicGroupSizeMax: Int = 200,
@@ -193,6 +200,9 @@ data class TdlibOptions(
 
   @JvmField var storyExpirePeriod: Long = 0,
   @JvmField var storyPostingEnabled: Boolean = true,
+
+  @JvmField var translationsManualEnabled: Boolean = true,
+  @JvmField var translationsAutoEnabled: Boolean = true,
 
   @JvmField var starRefProgramAllowed: Boolean = false,
   @JvmField var starRefConnectAllowed: Boolean = false,
@@ -313,6 +323,8 @@ data class TdlibOptions(
         subscriptionStarCountMin = value.longValue()
       "subscription_star_count_max" ->
         subscriptionStarCountMax = value.longValue()
+      "direct_channel_message_star_count_default" ->
+        directChannelMessageStarCountDefault = value.longValue() /*10*/
 
       "affiliate_program_commission_per_mille_min" ->
         affiliateProgramCommissionPerMilleMin = value.longValue()
@@ -415,6 +427,16 @@ data class TdlibOptions(
         messageCaptionLengthMax = value.intValue()
       "message_reply_quote_length_max" ->
         messageReplyQuoteLengthMax = value.intValue()
+
+      "poll_answer_count_max" ->
+        pollAnswerCountMax = value.intValue()
+
+      "checklist_task_count_max" ->
+        checklistTaskCountMax = value.intValue()
+      "checklist_task_text_length_max" ->
+        checklistTaskTextLengthMax = value.intValue()
+      "checklist_title_length_max" ->
+        checklistTitleLengthMax = value.intValue()
 
       "fact_check_length_max" ->
         factCheckLengthMax = value.intValue()
@@ -555,6 +577,11 @@ data class TdlibOptions(
         storyExpirePeriod = value.longValue()
       "stories_posting" ->
         storyPostingEnabled = value.stringValue() == "enabled"
+
+      "translations_manual_enabled" ->
+        translationsManualEnabled = value.stringValue() == "enabled"
+      "translations_auto_enabled" ->
+        translationsAutoEnabled = value.stringValue() == "enabled"
 
       "starref_program_allowed" ->
         starRefProgramAllowed = value.boolValue()
