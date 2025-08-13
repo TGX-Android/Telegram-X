@@ -53,6 +53,8 @@ public class ContentPreview {
   public static final Emoji EMOJI_PAID_PHOTO = new Emoji("\u2B50", R.drawable.baseline_premium_star_16); // ⭐
   public static final Emoji EMOJI_PAID_VIDEO = new Emoji("\u2B50", R.drawable.baseline_premium_star_16);
   public static final Emoji EMOJI_PAID_MEDIA = new Emoji("\u2B50", R.drawable.baseline_premium_star_16);
+  public static final Emoji EMOJI_DIRECT_MESSAGES = new Emoji("\uD83D\uDCAC", R.drawable.baseline_chat_bubble_16);
+  public static final Emoji EMOJI_PAID_DIRECT_MESSAGES = new Emoji("\uD83D\uDCB8", R.drawable.baseline_premium_star_16);
   public static final Emoji EMOJI_VOICE = new Emoji("\uD83C\uDFA4", R.drawable.baseline_mic_16);
   public static final Emoji EMOJI_GIF = new Emoji("\uD83D\uDC7E", R.drawable.deproko_baseline_gif_filled_16);
   public static final Emoji EMOJI_LOCATION = new Emoji("\uD83D\uDCCC", R.drawable.baseline_gps_fixed_16);
@@ -245,8 +247,8 @@ public class ContentPreview {
     }
     String alternativeText = null;
     boolean alternativeTextTranslatable = false;
-    int arg1 = ARG_NONE;
-    int arg2 = ARG_NONE;
+    long arg1 = ARG_NONE;
+    long arg2 = ARG_NONE;
     switch (type) {
       case TdApi.MessageText.CONSTRUCTOR: {
         TdApi.MessageText messageText = (TdApi.MessageText) message.content;
@@ -633,6 +635,13 @@ public class ContentPreview {
         break;
       }
 
+      case TdApi.MessageDirectMessagePriceChanged.CONSTRUCTOR: {
+        TdApi.MessageDirectMessagePriceChanged directMessagePriceChanged = (TdApi.MessageDirectMessagePriceChanged) message.content;
+        arg1 = directMessagePriceChanged.isEnabled ? ARG_TRUE : ARG_NONE;
+        arg2 = directMessagePriceChanged.paidMessageStarCount;
+        break;
+      }
+
       case TdApi.MessageCustomServiceAction.CONSTRUCTOR: {
         TdApi.MessageCustomServiceAction serviceAction = (TdApi.MessageCustomServiceAction) message.content;
         return new ContentPreview(EMOJI_INFO, 0, serviceAction.text);
@@ -707,7 +716,6 @@ public class ContentPreview {
       case TdApi.MessageGroupCall.CONSTRUCTOR:
       case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR:
       case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR:
-      case TdApi.MessageDirectMessagePriceChanged.CONSTRUCTOR:
 
       // Handled by getSimpleContentPreview, but unsupported
       case TdApi.MessageUnsupported.CONSTRUCTOR:
@@ -1404,6 +1412,17 @@ public class ContentPreview {
           }
         }
       }
+      case TdApi.MessageDirectMessagePriceChanged.CONSTRUCTOR: {
+        boolean isEnabled = arg1 == ARG_TRUE;
+        long starsCount = arg2;
+        if (!isEnabled) {
+          return new ContentPreview(EMOJI_DIRECT_MESSAGES, R.string.ChatContentDmDisabled);
+        } else if (starsCount == 0) {
+          return new ContentPreview(EMOJI_DIRECT_MESSAGES, R.string.ChatContentDmEnabled);
+        } else {
+          return new ContentPreview(EMOJI_PAID_DIRECT_MESSAGES, 0, Lang.plural(R.string.ChatContentDmEnabledPaid, starsCount), true);
+        }
+      }
       case TdApi.MessageCall.CONSTRUCTOR:
         switch ((int) arg1) {
           case ARG_CALL_DECLINED:
@@ -1532,7 +1551,6 @@ public class ContentPreview {
       case TdApi.MessageGroupCall.CONSTRUCTOR:
       case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR:
       case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR:
-      case TdApi.MessageDirectMessagePriceChanged.CONSTRUCTOR:
         // TODO support these previews
         return new ContentPreview(EMOJI_QUIZ, R.string.UnsupportedMessage);
         

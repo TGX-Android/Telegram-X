@@ -5368,6 +5368,10 @@ public class TD {
     return false;
   }
 
+  public static boolean canAccessMembers (TdApi.Supergroup supergroup) {
+    return supergroup != null && !supergroup.isDirectMessagesGroup;
+  }
+
   public static boolean hasCustomEmoji (TdApi.FormattedText text) {
     if (text == null || text.entities == null) {
       return false;

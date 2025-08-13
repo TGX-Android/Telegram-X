@@ -2504,8 +2504,21 @@ public class TdlibUi extends Handler {
     openChat(context, ChatId.fromSupergroupId(supergroupId), new TdApi.CreateSupergroupChat(supergroupId, false), params);
   }
 
-  public void openLinkedChat (final TdlibDelegate context, final long supergroupId, final @Nullable ChatOpenParameters params) {
-    openChat(context, 0, new TdApi.GetSupergroupFullInfo(supergroupId), params);
+  public void openLinkedChat (final TdlibDelegate context, final long supergroupId, final boolean directMessages, final @Nullable ChatOpenParameters params) {
+    tdlib.send(new TdApi.GetSupergroupFullInfo(supergroupId), (supergroupFull, error) -> {
+      if (supergroupFull != null) {
+        long chatId = directMessages ? supergroupFull.directMessagesChatId : supergroupFull.linkedChatId;
+        if (chatId == 0) {
+          showLinkTooltip(tdlib, R.drawable.baseline_error_24, Lang.getMarkdownString(context, R.string.LinkedChatNotFound), params != null ? params.urlOpenParameters : null);
+        } else {
+          openChat(context, chatId, params);
+        }
+      } else {
+        showChatOpenError(new TdApi.GetSupergroupFullInfo(supergroupId), error, params);
+        if (params != null)
+          tdlib.ui().post(params::onDone);
+      }
+    });
   }
 
   public void openSupergroupProfile (final TdlibDelegate context, final long supergroupId, final @Nullable UrlOpenParameters openParameters) {

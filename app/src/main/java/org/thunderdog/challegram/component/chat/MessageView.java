@@ -790,7 +790,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         }
       }
 
-      if (m.canWriteMessages() && isSent && msg.canReplyTo()) {
+      if (m.canSelectReply() && isSent && msg.canReplyTo()) {
         if (msg.getMessage().content.getConstructor() == TdApi.MessageDice.CONSTRUCTOR && !msg.tdlib().hasRestriction(msg.getMessage().chatId, RightId.SEND_OTHER_MESSAGES)) {
           String emoji = ((TdApi.MessageDice) msg.getMessage().content).emoji;
           ids.append(R.id.btn_messageReplyWithDice);
@@ -1146,7 +1146,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     }
 
     // Messages from X
-    if (chat != null && msg.tdlib().isMultiChat(chat.id)) {
+    if (chat != null && msg.tdlib().isMultiChat(chat.id) && !msg.tdlib().isDirectMessagesChat(chat.id)) {
       if (isMore) {
         ids.append(R.id.btn_messageViewList);
         int icon = R.drawable.baseline_person_24;

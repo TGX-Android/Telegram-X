@@ -52,7 +52,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
-import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
@@ -666,11 +665,6 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     IntList ids = new IntList(4);
     StringList strings = new StringList(4);
 
-    if (BuildConfig.DEBUG) {
-      ids.append(R.id.btn_recentActions);
-      strings.append(R.string.EventLog);
-    }
-
     if (canAddAnyKindOfMembers()) {
       ids.append(R.id.more_btn_addMember);
       strings.append(Lang.getString(R.string.AddMember));
@@ -682,7 +676,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
     }
 
-    if (mode == Mode.SUPERGROUP || mode == Mode.GROUP) {
+    if (!tdlib.isDirectMessagesChat(getChatId()) && (mode == Mode.SUPERGROUP || mode == Mode.GROUP)) {
       if (!canManageChat()) {
         ids.append(R.id.more_btn_viewAdmins);
         strings.append(R.string.ViewAdmins);
@@ -966,7 +960,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       if (supergroup != null && supergroup.isChannel && supergroup.hasLinkedChat) {
         long linkedChatId = supergroupFull != null ? supergroupFull.linkedChatId : 0;
         if (linkedChatId != 0) {
-          tdlib.ui().openLinkedChat(this, supergroup.id, new TdlibUi.ChatOpenParameters().keepStack().removeDuplicates());
+          tdlib.ui().openLinkedChat(this, supergroup.id, false, new TdlibUi.ChatOpenParameters().keepStack().removeDuplicates());
           return;
         }
       }
@@ -3010,6 +3004,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (mode == Mode.USER) {
       return TD.canEditBot(user);
     }
+    if (tdlib.isDirectMessagesChat(getChatId())) {
+      return false;
+    }
     if (tdlib.canChangeInfo(chat)) {
       return true;
     }
@@ -4048,7 +4045,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
     boolean hasActions = false;
 
-    if (supergroup != null && TD.isAdmin(myStatus)) { // TODO server: recent actions for basic groups?
+    if (supergroup != null && TD.isAdmin(myStatus) && !supergroup.isDirectMessagesGroup) { // TODO server: recent actions for basic groups?
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_recentActions, 0, R.string.EventLog));
       added = true;
@@ -4336,7 +4333,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   public boolean canAddAnyKindOfMembers () {
     TdApi.ChatMemberStatus status = tdlib.chatStatus(chat.id);
-    return (status != null && status.getConstructor() != TdApi.ChatMemberStatusLeft.CONSTRUCTOR) && (tdlib.canInviteUsers(chat) || canBanMembers() || canPromoteMembers()); // FIXME or not?
+    return (status != null && status.getConstructor() != TdApi.ChatMemberStatusLeft.CONSTRUCTOR) && !tdlib.isDirectMessagesChat(chat.id) && (tdlib.canInviteUsers(chat) || canBanMembers() || canPromoteMembers()); // FIXME or not?
   }
 
   @Override
@@ -5787,7 +5784,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
           if (mode == Mode.GROUP) {
             controllers.add(new SharedMembersController(context, tdlib));
-          } else if (mode == Mode.SUPERGROUP) {
+          } else if (mode == Mode.SUPERGROUP && TD.canAccessMembers(supergroup)) {
             TdApi.SupergroupFullInfo supergroupFull = tdlib.cache().supergroupFull(supergroup.id);
             if (supergroupFull != null && supergroupFull.canGetMembers) {
               SharedMembersController c = new SharedMembersController(context, tdlib);

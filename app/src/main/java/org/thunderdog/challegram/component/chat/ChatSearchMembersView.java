@@ -19,6 +19,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
@@ -182,6 +183,11 @@ public class ChatSearchMembersView extends FrameLayout implements TdlibCache.Bas
 
   private void loadMembers (final String query, boolean isStart) {
     if (tdlib.isChannel(chatId)) return;
+
+    TdApi.Supergroup supergroup = tdlib.chatToSupergroup(chatId);
+    if (supergroup != null && !TD.canAccessMembers(supergroup)) {
+      return;
+    }
 
     boolean queryWasChanged = !StringUtils.equalsOrBothEmpty(query, currentQuery);
     if (this.isLoading && !queryWasChanged) {

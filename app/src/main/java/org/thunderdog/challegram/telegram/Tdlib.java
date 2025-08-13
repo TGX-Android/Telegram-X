@@ -2788,7 +2788,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   public boolean isAnonymousAdminNonCreator (long chatId) {
     TdApi.ChatMemberStatus status = chatStatus(chatId);
-    return status != null && Td.isAnonymous(status) && !TD.isCreator(status);
+    TdApi.Supergroup supergroup = chatToSupergroup(chatId);
+    return status != null && Td.isAnonymous(status) && !TD.isCreator(status) && !(supergroup != null && supergroup.isAdministeredDirectMessagesGroup);
   }
 
   public @Nullable TdApi.ChatMemberStatus chatStatus (long chatId) {
@@ -4070,6 +4071,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return ChatId.isUserChat(chatId);
   }
 
+  public boolean isDirectMessagesChat (long chatId) {
+    TdApi.Supergroup supergroup = chatToSupergroup(chatId);
+    return supergroup != null && supergroup.isDirectMessagesGroup;
+  }
+
+  public boolean hasDirectMessagesChat (long chatId) {
+    TdApi.Supergroup supergroup = chatToSupergroup(chatId);
+    return supergroup != null && supergroup.hasDirectMessagesGroup;
+  }
+
   public boolean isRepliesChat (long chatId) {
     return (options.repliesBotChatId != 0 && options.repliesBotChatId == chatId) || (chatId == ChatId.fromUserId(options.repliesBotUserId));
   }
@@ -5112,7 +5123,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       if (supergroup == null) {
         return CHAT_ACCESS_FAIL;
       }
-      boolean isPublic = Td.hasUsername(supergroup) || supergroup.hasLinkedChat || supergroup.hasLocation;
+      if (supergroup.isAdministeredDirectMessagesGroup) {
+        return CHAT_ACCESS_OK;
+      }
+      boolean isPublic = Td.hasUsername(supergroup) || supergroup.hasLinkedChat || supergroup.hasLocation || supergroup.isDirectMessagesGroup;
       boolean isTemporary = isTemporaryAccessible(chat.id);
       switch (supergroup.status.getConstructor()) {
         case TdApi.ChatMemberStatusLeft.CONSTRUCTOR:

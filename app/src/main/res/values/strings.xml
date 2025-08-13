@@ -346,6 +346,11 @@
   <string name="ChatContentProximityFromYouKm_one">%2$s is now within %1$s kilometer from you</string>
   <string name="ChatContentProximityFromYouKm_other">%2$s is now within %1$s kilometers from you</string>
 
+  <string name="ChatContentDmEnabled">Now accepts direct messages</string>
+  <string name="ChatContentDmEnabledPaid_one">Now accepts direct messages for %1$s star each</string>
+  <string name="ChatContentDmEnabledPaid_other">Now accepts direct messages for %1$s stars each</string>
+  <string name="ChatContentDmDisabled">Disabled direct messages</string>
+
   <string name="ChatContentVideoChatAddYou">Invited you to the video chat</string>
   <string name="ChatContentVideoChatAddSomeone">Invited someone to the video chat</string>
   <string name="ChatContentLiveStreamAddYou">Invited you to the live stream</string>
@@ -519,6 +524,7 @@
   <string name="ViewAdmins">View admins</string>
   <string name="SwipeShare">Share</string>
   <string name="SwipeReply">Reply</string>
+  <string name="ReplyRequiredHint">Choose a message to reply</string>
   <string name="edit">Edit</string>
   <string name="Delete">Delete</string>
   <string name="BotInvite">Add to group</string>
@@ -578,6 +584,7 @@
   <string name="ChannelPublic">Public Channel</string>
   <string name="ChannelPublicInfo">Public channels can be found in search, anyone can join them.</string>
   <string name="ChannelUsernameHelp">If you set a public link, other people will be able to find and join your channel.\n\nYou can use a–z, 0–9 and underscores.\nMinimum length is 5 characters.</string>
+  <string name="DirectMessages">Direct Messages</string>
   <string name="ChannelPrivate">Private Channel</string>
   <string name="ChannelPrivateInfo">Private channels can only be joined via invite link.</string>
   <string name="ChannelPrivateLinkHelp">People can join your channel by following this link. You can revoke the link at any time.</string>
@@ -2379,7 +2386,13 @@
   <string name="OpenMessage">View Message</string>
   <string name="SavedMessages">Saved Messages</string>
   <string name="Saved">Saved</string>
+  <string name="direct_messages_enabled">Direct messages were enabled in this channel</string>
+  <string name="channel_enable_dm">%1$s now accepts direct messages</string>
+  <string name="channel_enable_dm_paid_one">%2$s now accepts direct messages for %1$s star each</string>
+  <string name="channel_enable_dm_paid_other">%2$s now accepts direct messages for %1$s stars each</string>
+  <string name="channel_disable_dm">%1$s disabled direct messages</string>
   <string name="channel_create_somebody">Channel "%1$s" created</string>
+  <string name="LinkedChatNotFound">Linked chat not found</string>
   <string name="channel_user_add">%1$s joined the channel</string>
   <string name="channel_user_add_self">You joined the channel</string>
   <string name="channel_user_remove">%1$s left the channel</string>
