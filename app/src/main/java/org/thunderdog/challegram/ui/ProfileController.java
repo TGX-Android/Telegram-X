@@ -135,6 +135,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import kotlin.ranges.IntRange;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.text.CodePointCountFilter;
@@ -1903,11 +1904,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
               break;
           }
         } else if (itemId == R.id.btn_chatPermissions) {
-          int totalPermissionsCount = TdConstants.CHAT_PERMISSIONS_COUNT;
-          if (!tdlib.isForum(chat.id)) {
-            totalPermissionsCount--;
-          }
-          view.setData(Lang.plural(R.string.xPermissions, Td.count(chat.permissions), totalPermissionsCount));
+          IntRange range = Td.count(chat.permissions, tdlib.isForum(chat.id));
+          view.setData(Lang.plural(R.string.xPermissions, range.getStart(), range.getEndInclusive()));
         } else if (itemId == R.id.btn_enabledReactions) {
           TdApi.ChatAvailableReactions availableReactions = chat.availableReactions;
           switch (availableReactions.getConstructor()) {
