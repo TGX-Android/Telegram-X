@@ -66,6 +66,7 @@ data class TdlibOptions(
 
   @JvmField var usdToThousandStarRate: Long = 0,
   @JvmField var thousandStarToUsdRate: Long = 0,
+  @JvmField var millionToncoinToUsdRate: Long = 0,
 
   @JvmField var giftTextLengthMax: Int = 128,
   @JvmField var pinnedGiftCountMax: Int = 6,
@@ -76,6 +77,7 @@ data class TdlibOptions(
   @JvmField var giftResaleEarningsPerMille: Long = 800L,
 
   @JvmField var starWithdrawalCountMin: Long = 1000L,
+  @JvmField var starWithdrawalCountMax: Long = 25000000L,
   @JvmField var paidReactionStarCountMax: Long = 2500L,
   @JvmField var paidMessageEarningsPerMille: Long = 850L,
   @JvmField var paidMessageStarCountMax: Long = 10000L,
@@ -90,8 +92,19 @@ data class TdlibOptions(
   @JvmField var quickReplyShortcutCountMax: Int = 100,
   @JvmField var quickReplyShortcutMessageCountMax: Int = 20,
 
+  @JvmField var suggestedPostLifetimeMin: Int = 86400,
+  @JvmField var suggestedPostStarCountMin: Long = 5L,
+  @JvmField var suggestedPostStarCountMax: Long = 100000L,
+  @JvmField var suggestedPostStarEarningsPerMille: Long = 850L,
+  @JvmField var suggestedPostToncoinCentCountMin: Long = 1L,
+  @JvmField var suggestedPostToncoinCentCountMax: Long = 1000000L,
+  @JvmField var suggestedPostToncoinEarningsPerMille: Long = 850L,
+  @JvmField var suggestedPostSendDelayMin: Int = 300,
+  @JvmField var suggestedPostSendDelayMax: Int = 2678400,
+
   @JvmField var tMeUrl: String = "",
   @JvmField var tonBlockchainExplorerUrl: String = "",
+  @JvmField var toncoinTopUpUrl: String = "",
 
   @JvmField var languagePackId: String = "",
   @JvmField var suggestedLanguagePackId: String = "",
@@ -294,6 +307,8 @@ data class TdlibOptions(
         usdToThousandStarRate = value.longValue()
       "thousand_star_to_usd_rate" ->
         thousandStarToUsdRate = value.longValue()
+      "million_toncoin_to_usd_rate" ->
+        millionToncoinToUsdRate = value.longValue()
 
       "gift_text_length_max" ->
         giftTextLengthMax = value.intValue()
@@ -311,6 +326,8 @@ data class TdlibOptions(
 
       "star_withdrawal_count_min" ->
         starWithdrawalCountMin = value.longValue()
+      "star_withdrawal_count_max" ->
+        starWithdrawalCountMax = value.longValue()
       "paid_reaction_star_count_max" ->
         paidReactionStarCountMax = value.longValue()
       "paid_message_earnings_per_mille" ->
@@ -336,10 +353,31 @@ data class TdlibOptions(
       "quick_reply_shortcut_message_count_max" ->
         quickReplyShortcutMessageCountMax = value.intValue()
 
+      "suggested_post_lifetime_min" ->
+        suggestedPostLifetimeMin = value.intValue()
+      "suggested_post_star_count_min" ->
+        suggestedPostStarCountMin = value.longValue()
+      "suggested_post_star_count_max" ->
+        suggestedPostStarCountMax = value.longValue()
+      "suggested_post_star_earnings_per_mille" ->
+        suggestedPostStarEarningsPerMille = value.longValue()
+      "suggested_post_toncoin_cent_count_min" ->
+        suggestedPostToncoinCentCountMin = value.longValue()
+      "suggested_post_toncoin_cent_count_max" ->
+        suggestedPostToncoinCentCountMax = value.longValue()
+      "suggested_post_toncoin_earnings_per_mille" ->
+        suggestedPostToncoinEarningsPerMille = value.longValue()
+      "suggested_post_send_delay_min" ->
+        suggestedPostSendDelayMin = value.intValue()
+      "suggested_post_send_delay_max" ->
+        suggestedPostSendDelayMax = value.intValue()
+
       "t_me_url" ->
         tMeUrl = value.stringValue()
       "ton_blockchain_explorer_url" ->
         tonBlockchainExplorerUrl = value.stringValue()
+      "toncoin_top_up_url" ->
+        toncoinTopUpUrl = value.stringValue()
 
       "language_pack_id" ->
         languagePackId = value.stringValue()
