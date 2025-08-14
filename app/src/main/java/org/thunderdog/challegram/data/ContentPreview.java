@@ -731,6 +731,12 @@ public class ContentPreview {
       case TdApi.MessageChecklist.CONSTRUCTOR:
       case TdApi.MessageChecklistTasksDone.CONSTRUCTOR:
       case TdApi.MessageChecklistTasksAdded.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostApprovalFailed.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostApproved.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostDeclined.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostPaid.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
+      case TdApi.MessageGiftedTon.CONSTRUCTOR:
         break;
 
       // Bots only. Unused
@@ -738,7 +744,7 @@ public class ContentPreview {
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_ef7732f4();
+        Td.assertMessageContent_7c00740();
         throw Td.unsupported(message.content);
     }
     Refresher refresher = null;
@@ -1551,6 +1557,12 @@ public class ContentPreview {
       case TdApi.MessageGroupCall.CONSTRUCTOR:
       case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR:
       case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostApprovalFailed.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostApproved.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostDeclined.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostPaid.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
+      case TdApi.MessageGiftedTon.CONSTRUCTOR:
         // TODO support these previews
         return new ContentPreview(EMOJI_QUIZ, R.string.UnsupportedMessage);
         
@@ -1562,7 +1574,7 @@ public class ContentPreview {
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_ef7732f4();
+        Td.assertMessageContent_7c00740();
         throw new UnsupportedOperationException(Integer.toString(type));
     }
   }

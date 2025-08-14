@@ -4735,7 +4735,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.MessageAnimation.CONSTRUCTOR:
         return !photoVideoOnly;
       default:
-        Td.assertMessageContent_ef7732f4();
+        Td.assertMessageContent_7c00740();
         break;
     }
 
@@ -4819,7 +4819,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
           return Td.textOrCaption(messageText);
       }
-      Td.assertMessageContent_ef7732f4();
+      Td.assertMessageContent_7c00740();
       throw Td.unsupported(messageText);
     }
     MessageEditMediaPending pendingEditMedia = getPendingMessageMedia(chatId, messageId);
@@ -7578,6 +7578,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private void updateMessageFactCheck (TdApi.UpdateMessageFactCheck update) {
     // TODO
   }
+  
+  @TdlibThread
+  private void updateSuggestedPostInfo (TdApi.UpdateMessageSuggestedPostInfo update) {
+    // TODO
+  }
 
   @TdlibThread
   private void updateMessagesDeleted (TdApi.UpdateDeleteMessages update) {
@@ -9317,6 +9322,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   @TdlibThread
+  private void updateOwnedTonCount (TdApi.UpdateOwnedTonCount update) {
+    // TODO(ton)
+  }
+
+  @TdlibThread
   private void updateOption (ClientHolder context, TdApi.UpdateOption update) {
     @TdlibOptions.UpdateResult int updateResult = options.handleUpdate(update);
 
@@ -9751,6 +9761,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       }
       case TdApi.UpdateMessageFactCheck.CONSTRUCTOR: {
         updateMessageFactCheck((TdApi.UpdateMessageFactCheck) update);
+        break;
+      }
+      case TdApi.UpdateMessageSuggestedPostInfo.CONSTRUCTOR: {
+        updateSuggestedPostInfo((TdApi.UpdateMessageSuggestedPostInfo) update);
         break;
       }
       case TdApi.UpdateChatUnreadReactionCount.CONSTRUCTOR: {
@@ -10202,7 +10216,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         throw Td.unsupported(update);
       }
       default: {
-        Td.assertUpdate_ad4f93d8();
+        Td.assertUpdate_e8e2dbe3();
         throw Td.unsupported(update);
       }
     }
@@ -11171,6 +11185,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
         case TdApi.MessageGiftedPremium.CONSTRUCTOR:
         case TdApi.MessageGiftedStars.CONSTRUCTOR:
+        case TdApi.MessageGiftedTon.CONSTRUCTOR:
         case TdApi.MessageGift.CONSTRUCTOR:
         case TdApi.MessageUpgradedGift.CONSTRUCTOR:
         case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
@@ -11200,11 +11215,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageChecklistTasksAdded.CONSTRUCTOR:
         case TdApi.MessageChecklistTasksDone.CONSTRUCTOR:
         case TdApi.MessageDirectMessagePriceChanged.CONSTRUCTOR:
+        case TdApi.MessageSuggestedPostApprovalFailed.CONSTRUCTOR:
+        case TdApi.MessageSuggestedPostApproved.CONSTRUCTOR:
+        case TdApi.MessageSuggestedPostDeclined.CONSTRUCTOR:
+        case TdApi.MessageSuggestedPostPaid.CONSTRUCTOR:
+        case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
           // None of these messages ever passed to this method,
           // assuming we want to check RightId.SEND_BASIC_MESSAGES
           return getBasicMessageRestrictionText(chat);
         default:
-          Td.assertMessageContent_ef7732f4();
+          Td.assertMessageContent_7c00740();
           throw Td.unsupported(message.content);
       }
     }
@@ -11505,6 +11525,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case RightId.INVITE_USERS:
         case RightId.MANAGE_VIDEO_CHATS:
         case RightId.MANAGE_OR_CREATE_TOPICS:
+        case RightId.MANAGE_DIRECT_MESSAGES:
         case RightId.POST_STORIES:
         case RightId.EDIT_STORIES:
         case RightId.DELETE_STORIES:
@@ -11595,6 +11616,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case RightId.INVITE_USERS:
       case RightId.MANAGE_VIDEO_CHATS:
       case RightId.MANAGE_OR_CREATE_TOPICS:
+      case RightId.MANAGE_DIRECT_MESSAGES:
       case RightId.POST_STORIES:
       case RightId.EDIT_STORIES:
       case RightId.DELETE_STORIES:

@@ -565,6 +565,7 @@ public class ChatEventUtil {
               true,
               true,
               true,
+              true,
               true
             );
           }
@@ -591,6 +592,7 @@ public class ChatEventUtil {
             appendRight(b, R.string.EventLogPromotedManageTopics, oldAdmin.rights.canManageTopics, newAdmin.rights.canManageTopics, false);
             appendRight(b, R.string.EventLogPromotedRemainAnonymous, oldAdmin.rights.isAnonymous, newAdmin.rights.isAnonymous, false);
           }
+          appendRight(b, R.string.EventLogPromotedManageDirectMessages, oldAdmin.rights.canManageDirectMessages, newAdmin.rights.canManageDirectMessages, false);
           appendRight(b, R.string.EventLogPromotedAddAdmins, oldAdmin.rights.canPromoteMembers, newAdmin.rights.canPromoteMembers, false);
           appendRight(b, R.string.EventLogPromotedTitle, R.string.EventLogPromotedTitleChange, oldAdmin.customTitle, newAdmin.customTitle, false);
         } else if (oldStatus != null && newStatus != null) {

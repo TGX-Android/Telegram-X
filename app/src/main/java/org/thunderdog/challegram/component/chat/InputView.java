@@ -1586,15 +1586,27 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
             }
             if (needMenu) {
               tdlib.ui().showScheduleOptions(controller, chatId, false,
-                (sendOptions, disableMarkdown) ->
+                (sendOptions, disableMarkdown) -> {
+                  TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(
+                    sendOptions,
+                    controller.getDirectMessagesChatTopicId(replyInfo),
+                    controller.getInputSuggestedPostInfo(replyInfo),
+                    silent
+                  );
                   tdlib.sendMessage(chatId, messageThreadId, replyTo,
-                    Td.newSendOptions(sendOptions, controller.getDirectMessagesChatTopicId(replyInfo), silent),
+                    finalSendOptions,
                     content,
                     null
-                  ),
+                  );
+                },
                 null, null);
             } else {
-              tdlib.sendMessage(chatId, messageThreadId, replyTo, Td.newSendOptions(controller.getDirectMessagesChatTopicId(replyInfo), silent), content);
+              TdApi.MessageSendOptions sendOptions = Td.newSendOptions(
+                controller.getDirectMessagesChatTopicId(replyInfo),
+                controller.getInputSuggestedPostInfo(replyInfo),
+                silent
+              );
+              tdlib.sendMessage(chatId, messageThreadId, replyTo, sendOptions, content);
             }
           });
         });

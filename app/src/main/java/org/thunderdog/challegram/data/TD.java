@@ -165,6 +165,7 @@ public class TD {
       case RightId.POST_STORIES:
       case RightId.EDIT_STORIES:
       case RightId.DELETE_STORIES:
+      case RightId.MANAGE_DIRECT_MESSAGES:
       case RightId.ADD_NEW_ADMINS:
       case RightId.REMAIN_ANONYMOUS:
         return true;
@@ -208,6 +209,7 @@ public class TD {
         false
       );
       new TdApi.ChatAdministratorRights(
+        false,
         false,
         false,
         false,
@@ -266,6 +268,7 @@ public class TD {
       case RightId.POST_STORIES:
       case RightId.EDIT_STORIES:
       case RightId.DELETE_STORIES:
+      case RightId.MANAGE_DIRECT_MESSAGES:
       case RightId.REMAIN_ANONYMOUS:
         break;
     }
@@ -5362,7 +5365,7 @@ public class TD {
       case TdApi.MessagePaidMedia.CONSTRUCTOR:
         return true;
       default:
-        Td.assertMessageContent_ef7732f4();
+        Td.assertMessageContent_7c00740();
         break;
     }
     return false;

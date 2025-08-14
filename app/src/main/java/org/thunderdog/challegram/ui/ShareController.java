@@ -788,7 +788,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
               textRes = R.string.ShareTextPlain;
               break;
             default:
-              Td.assertMessageContent_ef7732f4();
+              Td.assertMessageContent_7c00740();
               title1Res = R.string.ShareTitleMedia;
               title2Res = R.string.ShareTitleMediaX;
               textRes = R.string.ShareTextMedia;
@@ -1204,7 +1204,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       } else if (viewId == R.id.btn_sendOnceOnline) {
         performSend(needHideKeyboard, Td.newSendOptions(defaultSendOptions, new TdApi.MessageSchedulingStateSendWhenOnline()), false);
       } else if (viewId == R.id.btn_sendNoSound) {
-        performSend(needHideKeyboard, Td.newSendOptions(defaultSendOptions, 0L, true), false);
+        performSend(needHideKeyboard, Td.newSendOptions(defaultSendOptions, 0L, null, true), false);
       } else if (viewId == R.id.btn_sendAndOpen) {
         performSend(needHideKeyboard, Td.newSendOptions(defaultSendOptions), true);
       }
@@ -1876,7 +1876,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           if (ChatId.isSecret(chatId)) {
             if (!properties.canBeCopiedToSecretChat)
               return Lang.getString(R.string.SecretChatForwardError);
-            TdApi.ForwardMessages function = new TdApi.ForwardMessages(chatId, 0, message.chatId, new long[] {message.id}, new TdApi.MessageSendOptions(0L, false, false, false, false, 0, false, null, 0, 0, true), needHideAuthor, needRemoveCaptions);
+            TdApi.ForwardMessages function = new TdApi.ForwardMessages(chatId, 0, message.chatId, new long[] {message.id}, new TdApi.MessageSendOptions(0L, null, false, false, false, false, 0, false, null, 0, 0, true), needHideAuthor, needRemoveCaptions);
             TdApi.Object check = tdlib.clientExecute(function, 1000L);
             if (check instanceof TdApi.Error) {
               return TD.toErrorString(check);
@@ -3311,7 +3311,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
     final Args args = getArgumentsStrict();
 
-    TdApi.MessageSendOptions cloudSendOptions = Td.newSendOptions(finalSendOptions, 0L, forceSendWithoutSound);
+    TdApi.MessageSendOptions cloudSendOptions = Td.newSendOptions(finalSendOptions, 0L, null, forceSendWithoutSound);
     // FIXME: it seems separate sendOptions for secret chats no longer required or something is broken?
     TdApi.MessageSendOptions secretSendOptions = Td.newSendOptions(cloudSendOptions);
 
@@ -3360,7 +3360,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           }
 
           if (messageReplyIncluded) {
-            replyTo = new TdApi.InputMessageReplyToMessage(contentfulMediaMessageId != 0 ? contentfulMediaMessageId : args.messages[0].id, null);
+            replyTo = new TdApi.InputMessageReplyToMessage(contentfulMediaMessageId != 0 ? contentfulMediaMessageId : args.messages[0].id, null, 0);
           }
         }
         functions.addAll(TD.sendMessageText(chatId, 0, replyTo, sendOptions, new TdApi.InputMessageText(comment, null, false), tdlib.maxMessageTextLength()));

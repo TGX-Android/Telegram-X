@@ -789,7 +789,18 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
             Args args = getArgumentsStrict();
             inShareProgress = true;
             adapter.updateValuedSettingById(R.id.liveLocationSelf);
-            tdlib.sendMessage(args.chatId, args.messageThreadId, null, Td.newSendOptions(Td.directMessagesChatTopicId(args.messageTopicId), tdlib.chatDefaultDisableNotifications(args.chatId)), new TdApi.InputMessageLocation(new TdApi.Location(myLocation.latitude, myLocation.longitude, myLocation.accuracy), arg1, myLocation.heading, 0));
+            tdlib.sendMessage(
+              args.chatId,
+              args.messageThreadId,
+              null,
+              Td.newSendOptions(
+                Td.directMessagesChatTopicId(args.messageTopicId),
+                null,
+                tdlib.chatDefaultDisableNotifications(args.chatId)
+              ),
+              new TdApi.InputMessageLocation(
+                new TdApi.Location(myLocation.latitude, myLocation.longitude, myLocation.accuracy), arg1, myLocation.heading, 0)
+            );
           }
         });
         break;

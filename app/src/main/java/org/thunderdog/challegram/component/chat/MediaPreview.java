@@ -402,6 +402,12 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
           return new MediaPreviewSimple(tdlib, size, cornerRadius, giftedStars.sticker);
         break;
       }
+      case TdApi.MessageGiftedTon.CONSTRUCTOR: {
+        TdApi.MessageGiftedTon giftedTon = (TdApi.MessageGiftedTon) message.content;
+        if (giftedTon.sticker != null)
+          return new MediaPreviewSimple(tdlib, size, cornerRadius, giftedTon.sticker);
+        break;
+      }
       case TdApi.MessagePremiumGiftCode.CONSTRUCTOR: {
         TdApi.Sticker sticker = ((TdApi.MessagePremiumGiftCode) message.content).sticker;
         if (sticker != null)
@@ -478,12 +484,17 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.MessageChecklist.CONSTRUCTOR:
       case TdApi.MessageChecklistTasksDone.CONSTRUCTOR:
       case TdApi.MessageChecklistTasksAdded.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostApprovalFailed.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostApproved.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostDeclined.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostPaid.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
       case TdApi.MessageUnsupported.CONSTRUCTOR: {
         // No media preview.
         break;
       }
       default: {
-        Td.assertMessageContent_ef7732f4();
+        Td.assertMessageContent_7c00740();
         throw Td.unsupported(message.content);
       }
     }

@@ -154,6 +154,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
                 true,
                 true,
                 true,
+                true,
                 creator.isAnonymous
               )
             );
@@ -198,6 +199,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         true,
         true,
         isForum,
+        true,
         true,
         true,
         true,
@@ -829,6 +831,8 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
               return me.rights.canManageVideoChats;
             case RightId.MANAGE_OR_CREATE_TOPICS:
               return me.rights.canManageTopics;
+            case RightId.MANAGE_DIRECT_MESSAGES:
+              return me.rights.canManageDirectMessages;
             case RightId.POST_STORIES:
               return me.rights.canPostStories;
             case RightId.EDIT_STORIES:
@@ -1082,6 +1086,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       rightIdOptions.add(new RightOption(R.string.RightMessages, MANAGE_CHANNEL_POSTS_IDS));
       rightIdOptions.add(new RightOption(RightId.INVITE_USERS));
       rightIdOptions.add(new RightOption(RightId.MANAGE_VIDEO_CHATS));
+      rightIdOptions.add(new RightOption(RightId.MANAGE_DIRECT_MESSAGES));
       rightIdOptions.add(new RightOption(RightId.ADD_NEW_ADMINS));
       rightIdOptions.add(new RightOption(R.string.RightStories, MANAGE_STORIES_RIGHT_IDS));
     } else {
@@ -1467,6 +1472,9 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       case RightId.MANAGE_VIDEO_CHATS:
         targetAdmin.rights.canManageVideoChats = newValue;
         break;
+      case RightId.MANAGE_DIRECT_MESSAGES:
+        targetAdmin.rights.canManageDirectMessages = newValue;
+        break;
       case RightId.MANAGE_OR_CREATE_TOPICS:
         if (getArgumentsStrict().mode == MODE_ADMIN_PROMOTION) {
           targetAdmin.rights.canManageTopics = newValue;
@@ -1611,6 +1619,8 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         return targetAdmin.rights.canPromoteMembers;
       case RightId.MANAGE_VIDEO_CHATS:
         return targetAdmin.rights.canManageVideoChats;
+      case RightId.MANAGE_DIRECT_MESSAGES:
+        return targetAdmin.rights.canManageDirectMessages;
       case RightId.MANAGE_OR_CREATE_TOPICS:
         if (getArgumentsStrict().mode == MODE_ADMIN_PROMOTION) {
           return targetAdmin.rights.canManageTopics;
@@ -1671,6 +1681,8 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         return R.string.RightEditMessages;
       case RightId.MANAGE_VIDEO_CHATS:
         return isChannel ? R.string.RightLiveStreams : R.string.RightVoiceChats;
+      case RightId.MANAGE_DIRECT_MESSAGES:
+        return R.string.RightDirectMessages;
       case RightId.MANAGE_OR_CREATE_TOPICS:
         return getArgumentsStrict().mode == MODE_ADMIN_PROMOTION ? R.string.RightTopics : R.string.RightTopicsCreate;
       case RightId.POST_STORIES:
@@ -1711,6 +1723,8 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
 
       case RightId.MANAGE_VIDEO_CHATS:
         return R.drawable.baseline_video_chat_24;
+      case RightId.MANAGE_DIRECT_MESSAGES:
+        return R.drawable.baseline_chat_bubble_24;
       case RightId.MANAGE_OR_CREATE_TOPICS:
         return R.drawable.baseline_format_list_bulleted_type_24;
 

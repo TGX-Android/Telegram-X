@@ -1978,6 +1978,7 @@
   <string name="RightEditMessages">Edit Messages</string>
   <string name="RightVoiceChats">Manage video chats</string>
   <string name="RightLiveStreams">Manage live streams</string>
+  <string name="RightDirectMessages">Manage direct messages</string>
   <string name="RightTopics">Manage topics</string>
   <string name="RightTopicsCreate">Create topics</string>
   <string name="RightStories">Stories</string>
@@ -2180,6 +2181,7 @@
   <string name="EventLogPromotedRemainAnonymous">Remain anonymous</string>
   <string name="EventLogPromotedManageVoiceChats">Manage video chats</string>
   <string name="EventLogPromotedManageLiveStreams">Manage live streams</string>
+  <string name="EventLogPromotedManageDirectMessages">Manage direct messages</string>
   <string name="EventLogPromotedTitle">Title: %1$s</string>
   <string name="EventLogPromotedTitleChange">Title: %1$s → %2$s</string>
   <string name="EventLogPromotedBanUsers">Ban users</string>

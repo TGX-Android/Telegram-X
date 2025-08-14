@@ -1728,7 +1728,12 @@ public class RecordAudioVideoController implements
         long messageThreadId = targetController.getMessageThreadId();
         MessagesController.ReplyInfo replyInfo = targetController.obtainReplyTo();
         TdApi.InputMessageReplyTo replyTo = replyInfo != null ? replyInfo.toInputMessageReply() : null;
-        TdApi.MessageSendOptions sendOptions = Td.newSendOptions(modifiedSendOptions, targetController.getDirectMessagesChatTopicId(replyInfo), targetController.obtainSilentMode());
+        TdApi.MessageSendOptions sendOptions = Td.newSendOptions(
+          modifiedSendOptions,
+          targetController.getDirectMessagesChatTopicId(replyInfo),
+          targetController.getInputSuggestedPostInfo(replyInfo),
+          targetController.obtainSilentMode()
+        );
         if (newVideoNote.thumbnail == null && helperFile != null) {
           tdlib.client().send(new TdApi.DownloadFile(helperFile.id, TdlibFilesManager.PRIORITY_FILE_GENERATION, 0, 0, true), result -> {
             tdlib.sendMessage(chatId, messageThreadId, replyTo, sendOptions, result.getConstructor() == TdApi.File.CONSTRUCTOR ? tdlib.filegen().createThumbnail(videoNote, isSecretChat, (TdApi.File) result) : newVideoNote, null);
@@ -1749,7 +1754,12 @@ public class RecordAudioVideoController implements
         long messageThreadId = targetController.getMessageThreadId();
         MessagesController.ReplyInfo replyInfo = targetController.obtainReplyTo();
         TdApi.InputMessageReplyTo replyTo = replyInfo != null ? replyInfo.toInputMessageReply() : null;
-        TdApi.MessageSendOptions sendOptions = Td.newSendOptions(modifiedSendOptions, targetController.getDirectMessagesChatTopicId(replyInfo), targetController.obtainSilentMode());
+        TdApi.MessageSendOptions sendOptions = Td.newSendOptions(
+          modifiedSendOptions,
+          targetController.getDirectMessagesChatTopicId(replyInfo),
+          targetController.getInputSuggestedPostInfo(replyInfo),
+          targetController.obtainSilentMode()
+        );
         tdlib.sendMessage(chatId, messageThreadId, replyTo, sendOptions, voiceNote, null);
       });
     }

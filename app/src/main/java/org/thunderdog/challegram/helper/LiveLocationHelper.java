@@ -647,7 +647,11 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
     b.setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter, window) -> {
       TdApi.Message message = (TdApi.Message) item.getData();
       TdApi.MessageLocation messageLocation = (TdApi.MessageLocation) message.content;
-      MapController.Args args = new MapController.Args(messageLocation.location.latitude, messageLocation.location.longitude, message).setChatId(message.chatId, message.messageThreadId, message.topicId).setNavigateBackOnStop(true);
+      MapController.Args args = new MapController.Args(messageLocation.location.latitude, messageLocation.location.longitude, message).setChatId(
+        message.chatId,
+        message.messageThreadId,
+        message.topicId
+      ).setNavigateBackOnStop(true);
       tdlib.ui().openMap(new TdlibContext(context, tdlib), args);
       wrap[0].window.hideWindow(true);
     });
