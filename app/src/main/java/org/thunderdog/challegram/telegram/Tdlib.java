@@ -2217,6 +2217,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     tdlibThread = Thread.currentThread();
   }
 
+  public void ensureTdlibThread () {
+    if (!inTdlibThread())
+      throw new IllegalStateException(Thread.currentThread().getName());
+  }
+
   public boolean inTdlibThread () {
     if (tdlibThread != null) {
       // FIXME[tdlib]: it is safe as long as there's just one thread for all apps

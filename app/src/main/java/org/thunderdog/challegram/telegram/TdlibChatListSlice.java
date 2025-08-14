@@ -98,6 +98,7 @@ public class TdlibChatListSlice {
     return displayCount == loadedCount() && sourceList.isEndReached();
   }
 
+  @TdlibThread
   private int indexOfChat (long chatId) {
     // TODO lookup without increase in number of operations
     int index = 0;
@@ -110,10 +111,12 @@ public class TdlibChatListSlice {
     return -1;
   }
 
+  @TdlibThread
   private int findExistingIndex (int originalIndex, long chatId) {
     return needSort() ? indexOfChat(chatId) : originalIndex;
   }
 
+  @TdlibThread
   protected int findInsertIndex (Entry entry) {
     final int atIndex = Collections.binarySearch(filteredList, entry);
     if (atIndex >= 0)
@@ -129,6 +132,7 @@ public class TdlibChatListSlice {
     this.listener = new ChatListListener() {
       @Override
       public void onChatChanged (TdlibChatList chatList, TdApi.Chat chat, int index, Tdlib.ChatChange changeInfo) {
+        tdlib.ensureTdlibThread();
         index = findExistingIndex(index, chat.id);
         if (index != -1) {
           if (index < displayCount) {
@@ -140,6 +144,7 @@ public class TdlibChatListSlice {
 
       @Override
       public void onChatAdded (TdlibChatList chatList, TdApi.Chat chat, int atIndex, Tdlib.ChatChange changeInfo) {
+        tdlib.ensureTdlibThread();
         if (filter != null) {
           if (!filter.accept(chat))
             return;
@@ -164,6 +169,7 @@ public class TdlibChatListSlice {
 
       @Override
       public void onChatRemoved (TdlibChatList chatList, TdApi.Chat chat, int fromIndex, Tdlib.ChatChange changeInfo) {
+        tdlib.ensureTdlibThread();
         fromIndex = findExistingIndex(fromIndex, chat.id);
         if (fromIndex != -1 && !filteredList.get(fromIndex).keepPosition) {
           /*Entry removedEntry =*/ filteredList.remove(fromIndex);
@@ -177,6 +183,7 @@ public class TdlibChatListSlice {
 
       @Override
       public void onChatMoved (TdlibChatList chatList, TdApi.Chat chat, int fromIndex, int toIndex, Tdlib.ChatChange changeInfo) {
+        tdlib.ensureTdlibThread();
         final boolean needSort = needSort();
         if (needSort) {
           fromIndex = findExistingIndex(fromIndex, chat.id);
@@ -229,6 +236,7 @@ public class TdlibChatListSlice {
 
       @Override
       public void onChatListItemChanged (TdlibChatList chatList, TdApi.Chat chat, int changeType) {
+        tdlib.ensureTdlibThread();
         final int existingIndex = indexOfChat(chat.id);
         if (existingIndex == -1) {
           if (filter != null && filter.accept(chat)) { // chat became unfiltered
@@ -259,6 +267,7 @@ public class TdlibChatListSlice {
 
     this.subCallback = subCallback;
     final RunnableData<List<TdlibChatList.Entry>> callback = (moreChats) -> {
+      tdlib.ensureTdlibThread();
       synchronized (filteredList) {
         List<Entry> addedEntries = new ArrayList<>(moreChats.size());
         for (TdlibChatList.Entry entry : moreChats) {
@@ -295,6 +304,7 @@ public class TdlibChatListSlice {
     if (loadingInitialChunk) {
       return 0;
     }
+    tdlib.ensureTdlibThread();
     final int notifyCount = Math.max(0, Math.min(filteredList.size(), maxSize) - displayCount);
     if (notifyCount > 0) {
       final List<Entry> slice = new ArrayList<>(notifyCount);
@@ -350,6 +360,7 @@ public class TdlibChatListSlice {
     if (this.listener == null)
       throw new IllegalStateException();
     tdlib.chat(chatId, createFunction, chat -> {
+      tdlib.ensureTdlibThread();
       final int fromIndex = indexOfChat(chatId);
       if (fromIndex != -1) {
         /*if (fromIndex == 0) // No need to do anything
