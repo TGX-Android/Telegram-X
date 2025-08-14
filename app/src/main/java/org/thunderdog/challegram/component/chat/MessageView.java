@@ -790,7 +790,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         }
       }
 
-      if (m.canSelectReply() && isSent && msg.canReplyTo()) {
+      if (m.canWriteMessagesOrWaitingForReply() && isSent && msg.canReplyTo()) {
         if (msg.getMessage().content.getConstructor() == TdApi.MessageDice.CONSTRUCTOR && !msg.tdlib().hasRestriction(msg.getMessage().chatId, RightId.SEND_OTHER_MESSAGES)) {
           String emoji = ((TdApi.MessageDice) msg.getMessage().content).emoji;
           ids.append(R.id.btn_messageReplyWithDice);

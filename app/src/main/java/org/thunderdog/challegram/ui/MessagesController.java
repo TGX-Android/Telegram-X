@@ -4056,7 +4056,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean canSaveDraft () {
-    return canWriteMessages() && getChatId() != 0 && !inPreviewMode() && !isInForceTouchMode();
+    return canWriteMessagesOrWaitingForReply() && getChatId() != 0 && !inPreviewMode() && !isInForceTouchMode();
   }
 
   private void saveDraft () {
@@ -5420,7 +5420,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return inputView != null && bottomWrap.getVisibility() == View.VISIBLE && inputView.getVisibility() == View.VISIBLE;
   }
 
-  public boolean canSelectReply () {
+  public boolean canWriteMessagesOrWaitingForReply () {
     return canWriteMessages() || (actionShowing && actionMode == ACTION_AWAITING_REPLY);
   }
 

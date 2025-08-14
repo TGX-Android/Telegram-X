@@ -8819,7 +8819,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       return;
     }
 
-    final boolean canReply = Settings.instance().needChatQuickReply() && messagesController().canSelectReply() && !messagesController().needTabs() && canReplyTo();
+    final boolean canReply = Settings.instance().needChatQuickReply() && messagesController().canWriteMessagesOrWaitingForReply() && !messagesController().needTabs() && canReplyTo();
     final boolean canShare = Settings.instance().needChatQuickShare() && !messagesController().isSecretChat() && canBeForwarded();
 
     leftActions.clear();
