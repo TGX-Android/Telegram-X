@@ -1,6 +1,7 @@
 package org.thunderdog.challegram.util;
 
 import android.content.Context;
+import android.os.Build;
 
 import androidx.annotation.Nullable;
 
@@ -14,6 +15,12 @@ public class LanguageDetector {
   }
 
   private static void detectLanguage (Context context, String text, RunnableData<String> onSuccess, @Nullable RunnableData<Throwable> onFail, boolean initializeFirst) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+      if (onFail != null) {
+        onFail.runWithData(new IllegalStateException("Not available on this Android version."));
+      }
+      return;
+    }
     try {
       if (initializeFirst) {
         com.google.mlkit.common.sdkinternal.MlKitContext.zza(context);
