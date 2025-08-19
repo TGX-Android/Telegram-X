@@ -196,8 +196,7 @@ data class TdlibOptions(
   @JvmField var forceInAppUpdate: Boolean = false,
   @JvmField var youtubePipDisabled: Boolean = false,
 
-  @JvmField var qrLoginCamera: Boolean = false,
-  @JvmField var qrLoginCode: String = "",
+  @JvmField var qrLoginCamera: Boolean = true,
 
   @JvmField var stickersEmojiSuggestOnlyApi: Boolean = false,
   @JvmField var emojiesAnimatedZoom: Float = DEFAULT_EMOJIES_ANIMATED_ZOOM.toFloat(),
@@ -578,8 +577,6 @@ data class TdlibOptions(
 
       "qr_login_camera" ->
         qrLoginCamera = value.boolValue()
-      "qr_login_code" ->
-        qrLoginCode = value.stringValue()
 
       "stickers_emoji_suggest_only_api" ->
         stickersEmojiSuggestOnlyApi = value.boolValue()
