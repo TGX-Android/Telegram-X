@@ -434,7 +434,7 @@ dependencies {
   // ReLinker: https://github.com/KeepSafe/ReLinker/blob/master/CHANGELOG.md
   implementation("com.getkeepsafe.relinker:relinker:1.4.5")
   // Konfetti: https://github.com/DanielMartinus/Konfetti/blob/main/README.md
-  implementation("nl.dionsegijn:konfetti-xml:2.0.4")
+  implementation("nl.dionsegijn:konfetti-xml:2.0.5")
   // Transcoder: https://github.com/natario1/Transcoder/blob/master/docs/_about/changelog.md
   implementation("com.github.natario1:Transcoder:ba8f098c94")
   // https://github.com/mikereedell/sunrisesunsetlib-java
