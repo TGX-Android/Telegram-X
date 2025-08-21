@@ -722,7 +722,7 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
     });
     popupLayout.setShowListener(popup -> stickersController.setItemAnimator());
     popupLayout.setPopupHeightProvider(this);
-    popupLayout.init(true);
+    popupLayout.init(Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM);
     popupLayout.setHideKeyboard();
     popupLayout.setNeedRootInsets();
     popupLayout.showSimplePopupView(this, calculateTotalHeight());

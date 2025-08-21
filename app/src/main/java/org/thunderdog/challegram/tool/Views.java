@@ -855,6 +855,12 @@ public class Views {
     }
   }
 
+  public static void setPaddingBottom (View view, int paddingBottom) {
+    if (view != null) {
+      view.setPadding(view.getPaddingLeft(), view.getPaddingTop(), view.getPaddingRight(), paddingBottom);
+    }
+  }
+
   public static void setBottomMargin (View view, int margin) {
     if (view != null) {
       ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) view.getLayoutParams();

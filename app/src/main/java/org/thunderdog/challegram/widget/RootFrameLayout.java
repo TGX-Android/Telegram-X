@@ -27,10 +27,13 @@ import android.view.ViewTreeObserver;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
+import org.thunderdog.challegram.navigation.InterceptLayout;
+import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Passcode;
 
 import me.vkryl.android.widget.FrameLayoutFix;
@@ -260,13 +263,33 @@ public class RootFrameLayout extends FrameLayoutFix {
     int right = wi.getSystemWindowInsetRight();
     int bottom = wi.getSystemWindowInsetBottom();
 
-    lp.leftMargin = ignoreAll || ignoreHorizontal ? 0 : left;
-    lp.topMargin = ignoreAll || topOnly ? 0 : top;
-    lp.rightMargin = ignoreAll || ignoreHorizontal ? 0 : right;
-    lp.bottomMargin = ignoreAll || ignoreBottom || shouldIgnoreBottomMargin(child, bottom) ? 0 : bottom;
-    if (UI.getContext(getContext()).dispatchCameraMargins(child, lp.leftMargin, lp.topMargin, lp.rightMargin, bottom)) {
+    int leftMargin = ignoreAll || ignoreHorizontal ? 0 : left;
+    int topMargin = ignoreAll || topOnly ? 0 : top;
+    int rightMargin = ignoreAll || ignoreHorizontal ? 0 : right;
+    int bottomMargin = ignoreAll || ignoreBottom || shouldIgnoreBottomMargin(child, bottom) ? 0 : bottom;
+    if (UI.getContext(getContext()).dispatchCameraMargins(child, leftMargin, topMargin, rightMargin, bottom)) {
       lp.leftMargin = lp.topMargin = lp.rightMargin = lp.bottomMargin = 0;
+    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM && child instanceof InterceptLayout) {
+      lp.leftMargin = lp.topMargin = lp.rightMargin = lp.bottomMargin = 0;
+      ViewGroup group = (ViewGroup) child;
+      for (int i = 0; i < group.getChildCount(); i++) {
+        View innerChild = group.getChildAt(i);
+        if (innerChild == null) continue;
+        boolean update;
+        if (innerChild.getTag() instanceof NavigationController) {
+          update = ((NavigationController) innerChild.getTag()).dispatchInnerMargins(innerChild, leftMargin, topMargin, rightMargin, bottomMargin);
+        } else {
+          update = Views.setMargins(innerChild, leftMargin, topMargin, rightMargin, bottomMargin);
+        }
+        if (update) {
+          Views.updateLayoutParams(innerChild);
+        }
+      }
     } else {
+      lp.leftMargin = leftMargin;
+      lp.topMargin = topMargin;
+      lp.rightMargin = rightMargin;
+      lp.bottomMargin = bottomMargin;
       ViewController<?> c = ViewController.findAncestor(child);
       if (c != null) {
         c.dispatchInnerMargins(left, top, right, bottom);

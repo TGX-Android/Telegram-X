@@ -212,6 +212,21 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     return currentHeaderOffset != -1 ? currentHeaderOffset : 0;
   }
 
+  public int getSize () {
+    if (currentHeaderOffset == -1) {
+      return HeaderView.getSize(needOffsets);
+    } else {
+      return HeaderView.getSize(false) + currentHeaderOffset;
+    }
+  }
+
+  public int getEffectiveTopOffset () {
+    if (needOffsets) {
+      return currentHeaderOffset != -1 ? currentHeaderOffset : getTopOffset();
+    }
+    return 0;
+  }
+
   private void setHeaderOffset (int headerOffset) {
     if (this.currentHeaderOffset != headerOffset) {
       this.currentHeaderOffset = headerOffset;
