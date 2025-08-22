@@ -1545,8 +1545,8 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     // TODO more
   }
 
-  public boolean dispatchInnerMargins (View parentView, int left, int top, int right, int bottom) {
+  public boolean dispatchVerticalMargins (View child, int top,  int bottom) {
     // TODO per-controller bottom margin handling
-    return Views.setMargins(parentView, left, top, right, bottom);
+    return Views.setMargins(child, 0, top, 0, bottom);
   }
 }

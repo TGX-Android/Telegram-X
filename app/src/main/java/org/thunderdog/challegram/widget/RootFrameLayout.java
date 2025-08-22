@@ -25,6 +25,7 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 
 import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.component.chat.InlineResultsWrap;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.navigation.InterceptLayout;
@@ -178,7 +179,10 @@ public class RootFrameLayout extends FrameLayoutFix {
       android.view.WindowInsets insets = (android.view.WindowInsets) insetsRaw;
 
       if (this instanceof BaseRootLayout) {
-        Screen.setStatusBarHeight(insets.getSystemWindowInsetTop());
+        int statusBarHeight = insets.getSystemWindowInsetTop();
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM || !UI.getContext(getContext()).isInFullScreen()) {
+          Screen.setStatusBarHeight(statusBarHeight);
+        }
       }
 
       boolean changed;
@@ -269,22 +273,6 @@ public class RootFrameLayout extends FrameLayoutFix {
     int bottomMargin = ignoreAll || ignoreBottom || shouldIgnoreBottomMargin(child, bottom) ? 0 : bottom;
     if (UI.getContext(getContext()).dispatchCameraMargins(child, leftMargin, topMargin, rightMargin, bottom)) {
       lp.leftMargin = lp.topMargin = lp.rightMargin = lp.bottomMargin = 0;
-    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM && child instanceof InterceptLayout) {
-      lp.leftMargin = lp.topMargin = lp.rightMargin = lp.bottomMargin = 0;
-      ViewGroup group = (ViewGroup) child;
-      for (int i = 0; i < group.getChildCount(); i++) {
-        View innerChild = group.getChildAt(i);
-        if (innerChild == null) continue;
-        boolean update;
-        if (innerChild.getTag() instanceof NavigationController) {
-          update = ((NavigationController) innerChild.getTag()).dispatchInnerMargins(innerChild, leftMargin, topMargin, rightMargin, bottomMargin);
-        } else {
-          update = Views.setMargins(innerChild, leftMargin, topMargin, rightMargin, bottomMargin);
-        }
-        if (update) {
-          Views.updateLayoutParams(innerChild);
-        }
-      }
     } else {
       lp.leftMargin = leftMargin;
       lp.topMargin = topMargin;
@@ -293,6 +281,60 @@ public class RootFrameLayout extends FrameLayoutFix {
       ViewController<?> c = ViewController.findAncestor(child);
       if (c != null) {
         c.dispatchInnerMargins(left, top, right, bottom);
+      }
+    }
+  }
+
+  public int getInnerContentHeight () {
+    return getMeasuredHeight() - getBottomInset();
+  }
+
+  public int getBottomInset () {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      return (ignoreAll || ignoreBottom || lastInsets == null ? 0 : ((android.view.WindowInsets) lastInsets).getSystemWindowInsetBottom());
+    } else {
+      return 0;
+    }
+  }
+
+  public int getTopInset () {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      return lastInsets != null ? ((android.view.WindowInsets) lastInsets).getSystemWindowInsetTop() : 0;
+    } else {
+      return 0;
+    }
+  }
+
+  @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+  private void applyNavigationInsets (InterceptLayout child, MarginLayoutParams params, Object insets) {
+    android.view.WindowInsets wi = (android.view.WindowInsets) insets;
+
+    int left = wi.getSystemWindowInsetLeft();
+    int top = wi.getSystemWindowInsetTop();
+    int right = wi.getSystemWindowInsetRight();
+    int bottom =  wi.getSystemWindowInsetBottom();
+
+    int leftMargin = ignoreAll || ignoreHorizontal ? 0 : left;
+    int topMargin = ignoreAll || true ? 0 : top;
+    int rightMargin = ignoreAll || ignoreHorizontal ? 0 : right;
+    int bottomMargin = ignoreAll || ignoreBottom || shouldIgnoreBottomMargin(child, bottom) ? 0 : bottom;
+
+    params.leftMargin = leftMargin;
+    params.rightMargin = rightMargin;
+
+    for (int i = 0; i < child.getChildCount(); i++) {
+      View innerChild = child.getChildAt(i);
+      if (innerChild != null) {
+        boolean updated;
+        if (innerChild.getTag() instanceof NavigationController) {
+          NavigationController navigation = (NavigationController) innerChild.getTag();
+          updated = navigation.dispatchVerticalMargins(innerChild, topMargin, bottomMargin);
+        } else {
+          updated = Views.setMargins(innerChild, 0, topMargin, 0, bottomMargin);
+        }
+        if (updated) {
+          Views.updateLayoutParams(innerChild);
+        }
       }
     }
   }
@@ -311,7 +353,9 @@ public class RootFrameLayout extends FrameLayoutFix {
         View view = getChildAt(i);
         if (view != null) {
           LayoutParams params = (LayoutParams) view.getLayoutParams();
-          if (view.getFitsSystemWindows()) {
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM && view instanceof InterceptLayout) {
+            applyNavigationInsets((InterceptLayout) view, params, lastInsets);
+          } else if (view.getFitsSystemWindows()) {
             dispatchChildInsets(view, lastInsets, 0);
           } else {
             applyMarginInsets(view, params, lastInsets, params.gravity, true);

@@ -3979,6 +3979,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     thumbsLayoutManager = new LinearLayoutManager(context(), LinearLayoutManager.HORIZONTAL, Lang.rtl());
 
     thumbsRecyclerView = new ThumbRecyclerView(context());
+    Views.setPaddingBottom(thumbsRecyclerView, controlsMargin);
     thumbsRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       private boolean thumbsScrolling;
 
@@ -5181,6 +5182,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         contentView.addView(pipControlsWrap);
 
         fp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.BOTTOM);
+        fp.bottomMargin = getBottomWrapMargin();
 
         bottomWrap = new FrameLayoutFix(context);
         bottomWrap.setLayoutParams(fp);
@@ -8523,6 +8525,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void stopFullScreenTemporarily (boolean stop) {
+    if (APPLY_ALL_INSETS) {
+      return;
+    }
     if (stop) {
       popupView.setIgnoreBottom(false);
       popupView.setIgnoreAllInsets(false);
@@ -8759,7 +8764,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     mediaView.setOffsets(0, 0, 0, 0, 0); // Screen.dp(56f)
     editWrap = new FrameLayoutFix(context);
     editWrap.setBackgroundColor(Theme.getColor(ColorId.transparentEditor));
-    editWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f), Gravity.BOTTOM));
+    editWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, controlsMargin + Screen.dp(56f), Gravity.BOTTOM));
+    Views.setPaddingBottom(editWrap, controlsMargin);
 
     backButton = new EditButton(context);
     backButton.setId(R.id.btn_back);
@@ -8919,7 +8925,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     // Bottom wrap
 
     FrameLayoutFix.LayoutParams fp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.BOTTOM);
-    fp.bottomMargin = Screen.dp(56f);
+    fp.bottomMargin = getBottomWrapMargin();
 
     bottomWrap = new FrameLayoutFix(context);
     bottomWrap.setLayoutParams(fp);

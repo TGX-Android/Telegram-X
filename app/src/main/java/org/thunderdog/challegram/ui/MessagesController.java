@@ -8593,7 +8593,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (isInForceTouchMode()) {
       return makeGuessAboutForcePreviewHeight();
     } else {
-      int height = Screen.currentHeight() - HeaderView.getSize(true);
+      int height;
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+        height = context().getVisibleContentHeight() - context().getRootView().getTopInset() - HeaderView.getSize(false);
+      } else {
+        height = Screen.currentHeight() - HeaderView.getSize(true);
+      }
 
       if (canWriteMessages() || actionShowing) {
         height -= Screen.dp(49f);

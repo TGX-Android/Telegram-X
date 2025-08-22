@@ -852,9 +852,10 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
 
   @Override
   public int provideHeight () {
-    int height = offsetProvider != null ? offsetProvider.provideParentHeight(this) : ((BaseActivity) getContext()).getContentView().getMeasuredHeight(); //  - measureItemsHeight();
+    int height = offsetProvider != null ? offsetProvider.provideParentHeight(this) : ((BaseActivity) getContext()).getVisibleContentHeight(); //  - measureItemsHeight();
     height -= getMinItemsHeight();
-    return Math.max(0, height);
+    int minHeight = Math.max(Screen.getStatusBarHeight(), ((BaseActivity) getContext()).getRootView().getTopInset()) + lastBottomMargin;
+    return Math.max(minHeight, height);
   }
 
   public int getMinItemsHeight () {
