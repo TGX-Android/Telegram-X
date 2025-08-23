@@ -244,7 +244,7 @@ public class Config {
 
   public static final int MINIMUM_CALL_CONTACTS_SUGGESTIONS = 3;
 
-  public static final boolean USE_CUSTOM_NAVIGATION_COLOR = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM;
+  public static final boolean USE_CUSTOM_NAVIGATION_COLOR = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O;
 
   public static final boolean PREFER_RENDER_EXTENSIONS = true;
 
