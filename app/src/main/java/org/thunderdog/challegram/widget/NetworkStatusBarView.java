@@ -223,7 +223,7 @@ public class NetworkStatusBarView extends FrameLayoutFix implements Destroyable,
       this.factor = factor;
       statusWrap.setAlpha(factor);
       statusWrap.setTranslationY(-Screen.getStatusBarHeight() + (int) ((float) Screen.getStatusBarHeight() * getVisibilityFactor()));
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM && false) { // TODO: status bar icons in profile media
+      if (Config.USE_TRANSPARENT_STATUS_BAR) {
         backgroundDrawable.setAlphaFactor(factor);
       }
       checkLowProfile();
