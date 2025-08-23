@@ -44,7 +44,7 @@ import me.vkryl.core.reference.ReferenceList;
 
 @SuppressWarnings("deprecation")
 public class RootFrameLayout extends FrameLayoutFix {
-  private boolean ignoreBottom, ignoreSystemNavigationBar, ignoreAll;
+  private boolean ignoreBottom, ignoreSystemNavigationBar, ignoreAll, ignoreIme;
   private final ViewTreeObserver.OnPreDrawListener onPreDrawListener = () -> false;
 
   private Keyboard.OnStateChangeListener keyboardListener;
@@ -70,7 +70,7 @@ public class RootFrameLayout extends FrameLayoutFix {
     return 0;
   }
 
-  private static boolean updateInsets (Rect rect, Object insetsRaw) {
+  private static boolean updateInsets (Rect rect, Object insetsRaw, boolean includeIme) {
     final int left, top, right, bottom;
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && insetsRaw != null) {
       android.view.WindowInsets windowInsets = (android.view.WindowInsets) insetsRaw;
@@ -78,7 +78,7 @@ public class RootFrameLayout extends FrameLayoutFix {
         android.graphics.Insets insets = windowInsets.getInsets(
           android.view.WindowInsets.Type.systemBars() |
             android.view.WindowInsets.Type.displayCutout() |
-            android.view.WindowInsets.Type.ime()
+            (includeIme ? android.view.WindowInsets.Type.ime() : 0)
         );
         left = insets.left;
         top = insets.top;
@@ -236,7 +236,7 @@ public class RootFrameLayout extends FrameLayoutFix {
 
   public void processWindowInsets (Object insetsRaw) {
     boolean hadInsets = hasInsets;
-    boolean systemInsetsUpdated = updateInsets(systemInsets, insetsRaw);
+    boolean systemInsetsUpdated = updateInsets(systemInsets, insetsRaw, !ignoreIme);
     boolean verticalSystemInsetsUpdated = !hasInsets || systemInsets.top != prevSystemInsets.top || systemInsets.bottom != prevSystemInsets.bottom;
     boolean horizontalSystemInsetsUpdated = !hasInsets || systemInsets.left != prevSystemInsets.left || systemInsets.right != prevSystemInsets.right;
 
@@ -315,14 +315,9 @@ public class RootFrameLayout extends FrameLayoutFix {
     if (UI.getContext(getContext()).dispatchCameraMargins(child, systemInsets.left, systemInsets.top, systemInsets.right, systemInsets.bottom)) {
       newWindowInsets = (android.view.WindowInsets) newWindowInsets(newWindowInsets, 0, 0, 0, 0);
     } else {
-      /*if (ignoreAll) {
-        newWindowInsets = (android.view.WindowInsets) newWindowInsets(newWindowInsets, 0, 0, 0, 0);
-      } else if (ignoreBottom || shouldIgnoreBottomMargin(bottom)) {
-        newWindowInsets = (android.view.WindowInsets) newWindowInsets(newWindowInsets, systemInsets.left, systemInsets.top, systemInsets.right, 0);
-      }*/
       ViewController<?> c = ViewController.findAncestor(child);
       if (c != null) {
-        c.dispatchInnerMargins(child, (MarginLayoutParams) child.getLayoutParams(), false, left, top, right, bottom);
+        c.dispatchSystemInsets(child, (MarginLayoutParams) child.getLayoutParams(), left, top, right, bottom);
       }
     }
     child.dispatchApplyWindowInsets(newWindowInsets);
@@ -331,11 +326,17 @@ public class RootFrameLayout extends FrameLayoutFix {
   private boolean ignoreHorizontal;
 
   public void setIgnoreHorizontal () {
-    ignoreHorizontal = true;
+    if (!ignoreHorizontal) {
+      ignoreHorizontal = true;
+      requestLayout();
+    }
   }
 
   public void setIgnoreBottom (boolean ignoreBottom) {
-    this.ignoreBottom = ignoreBottom;
+    if (this.ignoreBottom != ignoreBottom) {
+      this.ignoreBottom = ignoreBottom;
+      requestLayout();
+    }
   }
 
   private void applyMarginInsets (View child, MarginLayoutParams lp, Rect insets, int gravity, boolean ignoreTop) {
@@ -352,7 +353,7 @@ public class RootFrameLayout extends FrameLayoutFix {
       lp.bottomMargin = bottomMargin;
       ViewController<?> c = ViewController.findAncestor(child);
       if (c != null) {
-        c.dispatchInnerMargins(child, lp, true, insets.left, insets.top, insets.right, insets.bottom);
+        c.dispatchSystemInsets(child, lp, insets.left, insets.top, insets.right, insets.bottom);
       }
     }
   }
@@ -384,13 +385,12 @@ public class RootFrameLayout extends FrameLayoutFix {
         if (innerChild.getTag() instanceof NavigationController) {
           NavigationController navigation = (NavigationController) innerChild.getTag();
           updated = navigation.dispatchInnerMargins(innerChild, (MarginLayoutParams) innerChild.getLayoutParams(), leftMargin, topMargin, rightMargin, bottomMargin);
-          Log.v("navigation margin: %d", bottomMargin);
         } else if (innerChild instanceof OverlayView) {
           updated = Views.setMargins(innerChild, 0, 0, 0, 0);
         } else {
           ViewController<?> c = ViewController.findAncestor(innerChild);
           if (c != null) {
-            updated = c.dispatchInnerMargins(innerChild, (MarginLayoutParams) innerChild.getLayoutParams(), true, leftMargin, topMargin, rightMargin, bottomMargin);
+            updated = c.dispatchSystemInsets(innerChild, (MarginLayoutParams) innerChild.getLayoutParams(), leftMargin, topMargin, rightMargin, bottomMargin);
           } else {
             updated = Views.setMargins(innerChild, leftMargin, topMargin, rightMargin, bottomMargin);
           }

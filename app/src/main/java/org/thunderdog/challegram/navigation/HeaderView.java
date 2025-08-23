@@ -172,7 +172,6 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     this.filling = new HeaderFilling(this, null);
     if (needOffsets) {
       filling.setNeedOffsets();
-      // setHeaderOffset(getTopOffset());
       setClipToPadding(false);
     } else {
       setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, getSize(false) + filling.getExtraHeight(), Gravity.TOP));
@@ -190,10 +189,12 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   @Override
   protected void onAttachedToWindow () {
     super.onAttachedToWindow();
-    rootView = Views.findAncestor(this, RootFrameLayout.class);
-    if (rootView != null) {
-      rootView.addInsetsChangeListener(this);
-      setHeaderOffset(rootView.getTopInset());
+    if (needOffsets) {
+      rootView = Views.findAncestor(this, RootFrameLayout.class);
+      if (rootView != null) {
+        rootView.addInsetsChangeListener(this);
+        setHeaderOffset(rootView.getTopInset());
+      }
     }
   }
 
@@ -218,7 +219,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     this.filling = new HeaderFilling(this, controller);
     this.filling.setNeedOffsets();
     this.filling.layout((int) height, getHeightFactor());
-    setHeaderOffset(getTopOffset());
+    // setHeaderOffset(getTopOffset());
     ViewUtils.setBackground(this, filling);
     TGLegacyManager.instance().addEmojiListener(this);
   }
@@ -267,7 +268,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
       if (isOwningStack) {
         setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, getSize(true) + filling.getExtraHeight(), Gravity.TOP));
       } else {
-        setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Size.getMaximumHeaderSize() + getTopOffset() + filling.getExtraHeight() + Size.getHeaderPortraitSize(), Gravity.TOP));
+        setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Size.getMaximumHeaderSize() + getEffectiveTopOffset() + filling.getExtraHeight() + Size.getHeaderPortraitSize(), Gravity.TOP));
       }
       // requestLayout();
     }
@@ -1483,14 +1484,14 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
       }
       case MODE_VERTICAL: {
         if (translateForward) {
-          title.setTranslationY(-(Size.getHeaderPortraitSize() + HeaderView.getTopOffset()) * raptor);
+          title.setTranslationY(-(Size.getHeaderPortraitSize() + getEffectiveTopOffset()) * raptor);
           preview.setTranslationY(currentY * (1f - raptor));
           if (previewItem != null) {
             previewItem.applyCustomHeaderAnimations(raptor);
           }
         } else {
           title.setTranslationY(currentY * raptor);
-          preview.setTranslationY(-((Size.getHeaderPortraitSize() + HeaderView.getTopOffset()) * (1f - raptor)));
+          preview.setTranslationY(-((Size.getHeaderPortraitSize() + getEffectiveTopOffset()) * (1f - raptor)));
           if (baseItem != null) {
             baseItem.applyCustomHeaderAnimations(1f - raptor);
           }
@@ -1514,14 +1515,14 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
         menu.setAlpha(1f - raptor);
         if (translationMode == MODE_VERTICAL) {
           //noinspection ResourceType
-          menu.setTranslationY(translateForward ? -(Size.getHeaderPortraitSize() + HeaderView.getTopOffset()) * raptor : currentY * raptor);
+          menu.setTranslationY(translateForward ? -(Size.getHeaderPortraitSize() + getEffectiveTopOffset()) * raptor : currentY * raptor);
         }
       }
       if (useMenuPreview) {
         menuPreview.setAlpha(raptor);
         if (translationMode == MODE_VERTICAL) {
           //noinspection ResourceType
-          menuPreview.setTranslationY(translateForward ? currentY * (1f - raptor) : -((Size.getHeaderPortraitSize() + HeaderView.getTopOffset()) * (1f - raptor)));
+          menuPreview.setTranslationY(translateForward ? currentY * (1f - raptor) : -((Size.getHeaderPortraitSize() + getEffectiveTopOffset()) * (1f - raptor)));
         }
       }
     }
@@ -1530,13 +1531,13 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
       if (backFade) {
         backButton.setAlpha(raptor);
         if (translationMode == MODE_VERTICAL) {
-          backButton.setTranslationY(-(Size.getHeaderPortraitSize() + HeaderView.getTopOffset()) * (1f - raptor));
+          backButton.setTranslationY(-(Size.getHeaderPortraitSize() + getEffectiveTopOffset()) * (1f - raptor));
         }
         backButton.setTranslationX(preview.getTranslationX());
       } else {
         backButton.setAlpha(1f - raptor);
         if (translationMode == MODE_VERTICAL) {
-          backButton.setTranslationY((Size.getHeaderPortraitSize() + HeaderView.getTopOffset()) * raptor);
+          backButton.setTranslationY((Size.getHeaderPortraitSize() + getEffectiveTopOffset()) * raptor);
         }
         backButton.setTranslationX(title.getTranslationX());
       }
@@ -2230,9 +2231,9 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     this.translationFactor = factor;
 
     if (right != null && !forward && right.usePopupMode()) {
-      this.currentY = left.getHeaderHeight() + HeaderView.getTopOffset();
+      this.currentY = left.getHeaderHeight() + getEffectiveTopOffset();
     } else {
-      this.currentY = getCurrentHeight() + HeaderView.getTopOffset();
+      this.currentY = getCurrentHeight() + getEffectiveTopOffset();
     }
 
     genPreview(left, right, forward); // Starting the preparation
@@ -2380,7 +2381,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
           backButton.setTranslationY(0);
         } else {
           if (translationMode == MODE_VERTICAL) {
-            backButton.setTranslationY(-(Size.getHeaderPortraitSize() + HeaderView.getTopOffset()));
+            backButton.setTranslationY(-(Size.getHeaderPortraitSize() + getEffectiveTopOffset()));
           } else {
             backButton.setTranslationY(0);
           }

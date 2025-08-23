@@ -23,6 +23,7 @@ import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.Build;
 import android.text.TextPaint;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -1056,6 +1057,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     };
     addThemeInvalidateListener(recyclerView);
     recyclerView.setItemAnimator(null);
+    recyclerView.setClipToPadding(false);
     recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
@@ -2271,7 +2273,9 @@ public class ShareController extends TelegramViewController<ShareController.Args
     super.applySearchTransformFactor(factor, isOpening);
     setSmoothScrollFactor(isOpening ? factor : 1f - factor);
     setScrollLocked(factor == 1f);
-    popupLayout.setIgnoreBottom(factor != 0f);
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+      popupLayout.setIgnoreBottom(factor != 0f);
+    }
   }
 
   private boolean isScrollLocked;
@@ -2363,13 +2367,20 @@ public class ShareController extends TelegramViewController<ShareController.Args
     popupLayout.setBoundController(this);
     popupLayout.setPopupHeightProvider(this);
     popupLayout.setOverlayStatusBar(overlayStatusBar);
-    popupLayout.init(false);
+    popupLayout.init(Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM);
     popupLayout.setHideKeyboard();
     popupLayout.setNeedRootInsets();
     popupLayout.setTouchProvider(this);
     popupLayout.setIgnoreHorizontal();
     getValue();
     context().addFullScreenView(this, false);
+  }
+
+  @Override
+  public boolean dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, int left, int top, int right, int bottom) {
+    boolean updated = super.dispatchSystemInsets(parentView, originalParams, left, top, right, bottom);
+    recyclerView.setPadding(0, 0, 0, systemInsets.bottom);
+    return updated;
   }
 
   @Override
@@ -2391,7 +2402,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
   }
 
   private int getContentOffset () {
-    return getTargetHeight() / 2 - HeaderView.getSize(true) - (isExpanded ? calculateMovementDistance() : 0) + (canShareLink ? 0 : Screen.dp(56f) / 2);
+    return getTargetHeight() / 2 - HeaderView.getSize(true) - (isExpanded ? calculateMovementDistance() : 0) + (canShareLink ? 0 : Screen.dp(56f) / 2) - (recyclerView != null ? recyclerView.getPaddingBottom() : 0);
   }
 
   private int calculateTotalHeight () {

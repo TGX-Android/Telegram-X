@@ -23,7 +23,6 @@ import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Shader;
-import android.os.Build;
 import android.os.SystemClock;
 import android.view.Gravity;
 import android.view.View;
@@ -221,9 +220,10 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   }
 
   @Override
-  public boolean dispatchInnerMargins (View parentView, ViewGroup.MarginLayoutParams originalParams, boolean margins, int left, int top, int right, int bottom) {
-    recyclerView.setPadding(0, top, 0, bottom);
-    return false;
+  public boolean dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, int left, int top, int right, int bottom) {
+    boolean updated = super.dispatchSystemInsets(parentView, originalParams, left, top, right, bottom);
+    recyclerView.setPadding(0, 0, 0, systemInsets.bottom);
+    return updated;
   }
 
   @Override

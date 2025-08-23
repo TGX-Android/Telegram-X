@@ -57,7 +57,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
@@ -5323,7 +5322,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   @Override
-  public boolean dispatchInnerMargins (View parentView, ViewGroup.MarginLayoutParams originalParams, boolean margins, int left, int top, int right, int bottom) {
+  public boolean dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, int left, int top, int right, int bottom) {
     boolean changed = this.bottomInnerMargin != bottom;
     this.bottomInnerMargin = bottom;
     if (APPLY_ALL_INSETS || (mode == MODE_GALLERY && isFromCamera)) {
@@ -5346,7 +5345,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       }
       mediaView.layoutCells();
     }
-    return false;
+    return super.dispatchSystemInsets(parentView, originalParams, left, top, right, bottom);
   }
 
   @Override
