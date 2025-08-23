@@ -44,7 +44,7 @@ import me.vkryl.core.reference.ReferenceList;
 
 @SuppressWarnings("deprecation")
 public class RootFrameLayout extends FrameLayoutFix {
-  private boolean ignoreBottom, ignoreSystemNavigationBar, ignoreAll, ignoreIme;
+  private boolean ignoreBottom, ignoreSystemNavigationBar, ignoreAll, alwaysApplyIme;
   private final ViewTreeObserver.OnPreDrawListener onPreDrawListener = () -> false;
 
   private Keyboard.OnStateChangeListener keyboardListener;
@@ -132,17 +132,21 @@ public class RootFrameLayout extends FrameLayoutFix {
     }
   }
 
-  private boolean keyboardVisible;
+  private boolean isKeyboardVisible;
   private CancellableRunnable lastAction;
 
   private void setKeyboardVisible (final boolean isVisible) {
-    if (this.keyboardVisible != isVisible) {
-      this.keyboardVisible = isVisible;
+    if (this.isKeyboardVisible != isVisible) {
+      this.isKeyboardVisible = isVisible;
       if (lastAction != null) {
         lastAction.cancel();
         lastAction = null;
       }
       if (keyboardListener != null) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+          keyboardListener.onKeyboardStateChanged(isVisible);
+          return;
+        }
         ViewTreeObserver observer = getViewTreeObserver();
         observer.removeOnPreDrawListener(onPreDrawListener);
         observer.addOnPreDrawListener(onPreDrawListener);
@@ -236,11 +240,10 @@ public class RootFrameLayout extends FrameLayoutFix {
 
   public void processWindowInsets (Object insetsRaw) {
     boolean hadInsets = hasInsets;
-    boolean systemInsetsUpdated = updateInsets(systemInsets, insetsRaw, !ignoreIme);
+    boolean systemInsetsUpdated = updateInsets(systemInsets, insetsRaw, true);
     boolean verticalSystemInsetsUpdated = !hasInsets || systemInsets.top != prevSystemInsets.top || systemInsets.bottom != prevSystemInsets.bottom;
     boolean horizontalSystemInsetsUpdated = !hasInsets || systemInsets.left != prevSystemInsets.left || systemInsets.right != prevSystemInsets.right;
 
-    Log.v("update insets: %d %d %d %d", systemInsets.left, systemInsets.top, systemInsets.right, systemInsets.bottom);
     boolean ignoreChanges = Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM && UI.getContext(getContext()).isInFullScreen() && verticalSystemInsetsUpdated != horizontalSystemInsetsUpdated;
     boolean effectiveInsetsUpdated = !ignoreChanges && U.setRect(effectiveInsets, systemInsets.left, systemInsets.top, systemInsets.right, systemInsets.bottom);
     if (!ignoreChanges) {
@@ -250,6 +253,16 @@ public class RootFrameLayout extends FrameLayoutFix {
     windowInsetsRaw = insetsRaw;
     hasInsets = true;
 
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      int imeHeight = getImeHeight(insetsRaw);
+      if (imeHeight > 0) {
+        Keyboard.processSize(imeHeight);
+        setKeyboardVisible(true);
+      } else {
+        setKeyboardVisible(false);
+      }
+    }
+
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !ignoreChanges && verticalSystemInsetsUpdated && !horizontalSystemInsetsUpdated) {
       if (this instanceof BaseRootLayout) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM || !UI.getContext(getContext()).isInFullScreen()) {
@@ -257,15 +270,7 @@ public class RootFrameLayout extends FrameLayoutFix {
         }
       }
 
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-        int imeHeight = getImeHeight(insetsRaw);
-        if (imeHeight > 0) {
-          Keyboard.processSize(imeHeight);
-          setKeyboardVisible(true);
-        } else {
-          setKeyboardVisible(false);
-        }
-      } else {
+     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
         if (hadInsets && !ignoreSystemNavigationBar) {
           int bottomDiff = (shouldIgnoreBottomMargin(prevSystemInsets.bottom) ? 0 : prevSystemInsets.bottom) - (shouldIgnoreBottomMargin(effectiveInsets.bottom) ? 0 : effectiveInsets.bottom);
 
@@ -291,6 +296,9 @@ public class RootFrameLayout extends FrameLayoutFix {
   }
 
   private boolean shouldIgnoreBottomMargin (int bottom) {
+    if (alwaysApplyIme && isKeyboardVisible) {
+      return false;
+    }
     return ignoreBottom || ignoreAll || (ignoreSystemNavigationBar && bottom <= Screen.getNavigationBarHeight());
   }
 
@@ -332,6 +340,13 @@ public class RootFrameLayout extends FrameLayoutFix {
     }
   }
 
+  public void setAlwaysApplyIme (boolean alwaysApplyIme) {
+    if (this.alwaysApplyIme != alwaysApplyIme) {
+      this.alwaysApplyIme = alwaysApplyIme;
+      requestLayout();
+    }
+  }
+
   public void setIgnoreBottom (boolean ignoreBottom) {
     if (this.ignoreBottom != ignoreBottom) {
       this.ignoreBottom = ignoreBottom;
@@ -359,11 +374,11 @@ public class RootFrameLayout extends FrameLayoutFix {
   }
 
   public int getInnerContentHeight () {
-    return getMeasuredHeight() - getBottomInset();
+    return getMeasuredHeight() - (shouldIgnoreBottomMargin(effectiveInsets.bottom) ? 0 : getBottomInset());
   }
 
   public int getBottomInset () {
-    return hasInsets && !shouldIgnoreBottomMargin(effectiveInsets.bottom) ? effectiveInsets.bottom : 0;
+    return hasInsets ? effectiveInsets.bottom : 0;
   }
 
   public int getTopInset () {

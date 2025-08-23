@@ -1122,7 +1122,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           if (i >= itemCount - addSize) {
             int rowCount = (int) Math.ceil((float) itemCount / (float) spanCount);
             int itemsHeight = rowCount * Screen.dp(86f) + Screen.dp(HORIZONTAL_PADDING_SIZE) + Screen.dp(VERTICAL_PADDING_SIZE);
-            outRect.bottom = Math.max(0, getValue().getMeasuredHeight() == 0 ? Screen.currentHeight() : getValue().getMeasuredHeight() - HeaderView.getSize(true) - itemsHeight - (canShareLink ? Screen.dp(56f) : 0));
+            outRect.bottom = Math.max(0, getValue().getMeasuredHeight() == 0 ? Screen.currentHeight() : getValue().getMeasuredHeight() - HeaderView.getSize(true) - itemsHeight - (canShareLink ? Screen.dp(56f) + extraBottomInset : 0));
           }
         }
       }
@@ -1132,7 +1132,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
     contentView.addView(recyclerView);
 
-    params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f));
+    params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f) + extraBottomInset);
     params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
     sendButton = new SendButton(context);
     sendButton.setLayoutParams(params);
@@ -1156,7 +1156,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       }
     }
     if (!canShareLink) {
-      sendButton.setTranslationY(Screen.dp(56f));
+      sendButton.setTranslationY(Screen.dp(56f) + extraBottomInset);
       sendButton.setIsReady(true, false);
     }
     addThemeInvalidateListener(sendButton);
@@ -1719,7 +1719,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       });
       for (TdlibChatListSlice list : listByChatList.values()) {
         TdApi.ChatPosition position = ChatPosition.findPosition(selectedChat, list.chatList());
-        if (position != null && position.order != 0) {
+        if ((position != null && position.order != 0) || TD.isChatListMain(list.chatList())) {
           Runnable doAfter;
           if (isDisplayingChatList(list.chatList())) {
             doAfter = after; after = null;
@@ -2368,6 +2368,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     popupLayout.setPopupHeightProvider(this);
     popupLayout.setOverlayStatusBar(overlayStatusBar);
     popupLayout.init(Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM);
+    popupLayout.setAlwaysApplyIme(true);
     popupLayout.setHideKeyboard();
     popupLayout.setNeedRootInsets();
     popupLayout.setTouchProvider(this);
@@ -2380,6 +2381,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
   public boolean dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, int left, int top, int right, int bottom) {
     boolean updated = super.dispatchSystemInsets(parentView, originalParams, left, top, right, bottom);
     recyclerView.setPadding(0, 0, 0, systemInsets.bottom);
+    setExtraBottomInset(systemInsets.bottom - originalParams.bottomMargin);
     return updated;
   }
 
@@ -2402,7 +2404,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
   }
 
   private int getContentOffset () {
-    return getTargetHeight() / 2 - HeaderView.getSize(true) - (isExpanded ? calculateMovementDistance() : 0) + (canShareLink ? 0 : Screen.dp(56f) / 2) - (recyclerView != null ? recyclerView.getPaddingBottom() : 0);
+    return getTargetHeight() / 2 - HeaderView.getSize(true) - (isExpanded ? calculateMovementDistance() : 0) + (canShareLink ? 0 : Screen.dp(56f) / 2 + extraBottomInset);
   }
 
   private int calculateTotalHeight () {
@@ -2622,25 +2624,26 @@ public class ShareController extends TelegramViewController<ShareController.Args
     private void doDraw (Canvas c) {
       final int width = getMeasuredWidth();
       final int height = getMeasuredHeight();
+      final int buttonHeight = Screen.dp(56f);
       final int color = factor == 0f ? Theme.fillingColor() : factor == 1f ? Theme.getColor(ColorId.fillingPositive) : ColorUtils.fromToArgb(Theme.fillingColor(), Theme.getColor(ColorId.fillingPositive), factor);
       c.drawColor(color);
       if (factor != 0f && factor != 1f) {
         float radius = (float) Math.sqrt(width * width + height * height) * .5f;
-        c.drawCircle(width / 2, height / 2, radius * factor, Paints.fillingPaint(ColorUtils.alphaColor(factor, Theme.getColor(ColorId.fillingPositive))));
+        c.drawCircle(width / 2f, buttonHeight / 2f, radius * factor, Paints.fillingPaint(ColorUtils.alphaColor(factor, Theme.getColor(ColorId.fillingPositive))));
       }
       final int textColor = factor == 0f ? Theme.getColor(ColorId.textNeutral) : factor == 1f ? Theme.getColor(ColorId.fillingPositiveContent) : ColorUtils.fromToArgb(Theme.getColor(ColorId.textNeutral), Theme.getColor(ColorId.fillingPositiveContent), factor);
       if (factor <= .5f) {
         TextPaint paint = Paints.getTitleBigPaint(copyTextFake);
         final int sourceTextColor = paint.getColor();
         paint.setColor(textColor);
-        c.drawText(copyText, width / 2 - copyWidth / 2, height / 2 + Screen.dp(7f), paint);
+        c.drawText(copyText, width / 2f - copyWidth / 2, buttonHeight / 2f + Screen.dp(7f), paint);
         paint.setColor(sourceTextColor);
       }
       if (factor >= .5f) {
         TextPaint paint = Paints.getTitleBigPaint(sendTextFake);
         final int sourceTextColor = paint.getColor();
         paint.setColor(textColor);
-        c.drawText(sendText, width / 2 - sendWidth / 2, height / 2 + Screen.dp(7f), paint);
+        c.drawText(sendText, width / 2f - sendWidth / 2, buttonHeight / 2f + Screen.dp(7f), paint);
         paint.setColor(sourceTextColor);
       }
     }
@@ -2687,11 +2690,21 @@ public class ShareController extends TelegramViewController<ShareController.Args
     emojiButton.setTranslationY(y);
   }
 
+  @Override
+  protected void onExtraBottomInsetChanged (int extraBottomInset) {
+    if (keyboardFrameLayout != null) {
+      keyboardFrameLayout.setExtraBottomInset(extraBottomInset);
+    }
+    Views.setLayoutHeight(sendButton, Screen.dp(56f) + extraBottomInset);
+    checkCommentPosition();
+    checkButtonsPosition();
+  }
+
   private int calculateMovementDistance () {
     if (canShareLink) {
       return Math.max(bottomWrap.getMeasuredHeight(), Screen.dp(48f));
     } else {
-      return Math.max(bottomWrap.getMeasuredHeight(), Screen.dp(48f)) + Screen.dp(56f);
+      return Math.max(bottomWrap.getMeasuredHeight(), Screen.dp(48f)) + Screen.dp(56f) + extraBottomInset;
     }
   }
 
@@ -2967,6 +2980,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
         keyboardFrameLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
         keyboardFrameLayout.setParentView(bottomWrap, contentView, wrapView);
         keyboardFrameLayout.setUpdateTranslationListener(this::onKeyboardLayoutTranslation);
+        keyboardFrameLayout.setExtraBottomInset(extraBottomInset);
 
         textFormattingLayout = keyboardFrameLayout.contentView.textFormattingLayout;
         textFormattingLayout.init(this, inputView, new TextFormattingLayout.Delegate() {

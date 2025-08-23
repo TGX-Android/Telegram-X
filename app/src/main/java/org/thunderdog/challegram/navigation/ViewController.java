@@ -1200,6 +1200,19 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   private float lastPlayerFactor;
 
+  protected int extraBottomInset;
+
+  public final void setExtraBottomInset (int extraBottomInset) {
+    if (this.extraBottomInset != extraBottomInset) {
+      this.extraBottomInset = extraBottomInset;
+      onExtraBottomInsetChanged(extraBottomInset);
+    }
+  }
+
+  protected void onExtraBottomInsetChanged (int extraBottomInset) {
+    // override in children
+  }
+
   protected final Rect systemInsets = new Rect();
 
   @CallSuper
