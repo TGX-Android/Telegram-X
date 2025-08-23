@@ -51,9 +51,8 @@ import me.vkryl.android.ViewUtils;
 import me.vkryl.core.ColorUtils;
 
 public class ViewSupport {
-  public static void setThemedBackground (View view, @ColorId int colorId) {
-    setThemedBackground(view, colorId, null);
-    // view.setBackgroundColor(0);
+  public static FillingDrawable setThemedBackground (View view, @ColorId int colorId) {
+    return setThemedBackground(view, colorId, null);
   }
 
   public static FillingDrawable setThemedBackground (View view, @ColorId int colorId, @Nullable ViewController<?> themeProvider) {

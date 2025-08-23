@@ -23,6 +23,7 @@ import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Shader;
+import android.os.Build;
 import android.os.SystemClock;
 import android.view.Gravity;
 import android.view.View;
@@ -220,6 +221,12 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   }
 
   @Override
+  public boolean dispatchInnerMargins (View parentView, ViewGroup.MarginLayoutParams originalParams, boolean margins, int left, int top, int right, int bottom) {
+    recyclerView.setPadding(0, top, 0, bottom);
+    return false;
+  }
+
+  @Override
   protected View onCreateView (Context context) {
     shadowWidth = Screen.dp(7f);
 
@@ -235,6 +242,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     contentView.setVisibility(View.GONE);
     contentView.setTranslationX(-currentWidth);
     contentView.setLayoutParams(FrameLayoutFix.newParams(currentWidth, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.LEFT));
+    UI.setFullscreenIfNeeded(contentView);
 
     ShadowView shadowView = new ShadowView(context);
     shadowView.setSimpleRightShadow(false);
@@ -318,6 +326,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     adapter.setItems(items, true);
 
     recyclerView = new RecyclerView(context);
+    recyclerView.setClipToPadding(false);
     recyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
       @Override
       public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {

@@ -45,7 +45,6 @@ import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SwitchDrawable;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.theme.ColorId;
@@ -63,6 +62,7 @@ import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.widget.ClearButton;
 import org.thunderdog.challegram.widget.EmojiTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
+import org.thunderdog.challegram.widget.RootFrameLayout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -77,7 +77,7 @@ import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.util.ColorChanger;
 
 @SuppressWarnings("unused")
-public class HeaderView extends FrameLayoutFix implements View.OnClickListener, View.OnLongClickListener, Destroyable, Lang.Listener, Screen.StatusBarHeightChangeListener, TGLegacyManager.EmojiLoadListener {
+public class HeaderView extends FrameLayoutFix implements View.OnClickListener, View.OnLongClickListener, Destroyable, Lang.Listener, RootFrameLayout.InsetsChangeListener, TGLegacyManager.EmojiLoadListener {
   private static boolean BACK_BUTTON_ON_TOP = true;
 
   private static final float TRANSLATION_FACTOR = .14f;
@@ -172,7 +172,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     this.filling = new HeaderFilling(this, null);
     if (needOffsets) {
       filling.setNeedOffsets();
-      setHeaderOffset(getTopOffset());
+      // setHeaderOffset(getTopOffset());
       setClipToPadding(false);
     } else {
       setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, getSize(false) + filling.getExtraHeight(), Gravity.TOP));
@@ -183,14 +183,32 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     TGLegacyManager.instance().addEmojiListener(this);
     Lang.addLanguageListener(this);
     controller.addDestroyListener(this);
-    if (needOffsets) {
-      Screen.addStatusBarHeightListener(this);
+  }
+
+  private RootFrameLayout rootView;
+
+  @Override
+  protected void onAttachedToWindow () {
+    super.onAttachedToWindow();
+    rootView = Views.findAncestor(this, RootFrameLayout.class);
+    if (rootView != null) {
+      rootView.addInsetsChangeListener(this);
+      setHeaderOffset(rootView.getTopInset());
     }
   }
 
   @Override
-  public void onStatusBarHeightChanged (int newHeight) {
-    setHeaderOffset(getTopOffset());
+  protected void onDetachedFromWindow () {
+    super.onDetachedFromWindow();
+    if (rootView != null) {
+      rootView.removeInsetsChangeListener(this);
+      rootView = null;
+    }
+  }
+
+  @Override
+  public void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect systemInsets, boolean isUpdate) {
+    setHeaderOffset(effectiveInsets.top);
   }
 
   public void initWithController (NavigationController controller) {
@@ -202,7 +220,6 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     this.filling.layout((int) height, getHeightFactor());
     setHeaderOffset(getTopOffset());
     ViewUtils.setBackground(this, filling);
-    Screen.addStatusBarHeightListener(this);
     TGLegacyManager.instance().addEmojiListener(this);
   }
 
@@ -2836,7 +2853,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   }
 
   public static int getTopOffset () {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && Config.USE_FULLSCREEN_NAVIGATION) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       return Screen.getStatusBarHeight();
     }
     return 0;
@@ -2848,7 +2865,10 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   public void performDestroy () {
     TGLegacyManager.instance().removeEmojiListener(this);
     Lang.removeLanguageListener(this);
-    Screen.removeStatusBarHeightListener(this);
+    if (rootView != null) {
+      rootView.removeInsetsChangeListener(this);
+      rootView = null;
+    }
     if (filling != null) {
       filling.performDestroy();
     }

@@ -1200,8 +1200,9 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   private float lastPlayerFactor;
 
-  public void dispatchInnerMargins (int left, int top, int right, int bottom) {
+  public boolean dispatchInnerMargins (View parentView, ViewGroup.MarginLayoutParams originalParams, boolean margins, int left, int top, int right, int bottom) {
     // override in children
+    return false;
   }
 
   public View getViewForApplyingOffsets () {

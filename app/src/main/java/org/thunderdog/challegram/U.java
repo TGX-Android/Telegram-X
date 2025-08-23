@@ -3701,6 +3701,14 @@ public class U {
     return false;
   }
 
+  public static boolean setRect (Rect rect, int left, int top, int right, int bottom) {
+    if (rect.left != left || rect.top != top || rect.right != right || rect.bottom != bottom) {
+      rect.set(left, top, right, bottom);
+      return true;
+    }
+    return false;
+  }
+
   public static String[] getInputLanguages () {
     final List<String> inputLanguages = new ArrayList<>();
     InputMethodManager imm = (InputMethodManager) UI.getAppContext().getSystemService(Context.INPUT_METHOD_SERVICE);

@@ -190,7 +190,7 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
     topShadow.setSimpleTopShadow(true);
     themeListener.addThemeInvalidateListener(topShadow);
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && Config.USE_FULLSCREEN_NAVIGATION) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       topLick = new LickView(context);
       themeListener.addThemeInvalidateListener(topLick);
     }
@@ -281,24 +281,8 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
     makeRequest(STATE_INSTALLED, setIds);
   }
 
-  private float statusBarFactor;
-
-  private void setStatusBarFactor (float factor) {
-    if (this.statusBarFactor != factor) {
-      this.statusBarFactor = factor;
-      OverlayView view = ((BaseActivity) getContext()).getLayeredOverlayView();
-      int toColor = HeaderView.whiteStatusColor();
-      int fromColor = view != null ? view.getCurrentStatusBarColor() : toColor;
-      UI.setStatusBarColor(ColorUtils.fromToArgb(fromColor, toColor, factor));
-    }
-  }
-
   public void setIsOneShot () {
     this.isOneShot = true;
-  }
-
-  private int getStatusBarLimit () {
-    return Size.getHeaderPortraitSize() / 2;
   }
 
   private void updateHeader () {
@@ -313,13 +297,8 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
     float factor = top > topOffset ? 0f : 1f - ((float) top / (float) topOffset);
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-      if (Config.USE_FULLSCREEN_NAVIGATION) {
-        if (topLick != null) {
-          topLick.setFactor(factor);
-        }
-      } else {
-        int limit = getStatusBarLimit();
-        setStatusBarFactor(top > limit ? 0f : 1f - ((float) top / (float) limit));
+      if (topLick != null) {
+        topLick.setFactor(factor);
       }
     }
 
@@ -607,24 +586,12 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
         return;
       }
 
-      if (Config.USE_FULLSCREEN_NAVIGATION) {
-        if (topLick != null) {
-          if (topLick.factor >= .4f) {
-            stickersController.scrollBy((int) ((float) HeaderView.getTopOffset() * (1f - topLick.factor)));
-            isScrollByHeader = true;
-          } else {
-            stickersController.scrollBy(-(int) ((float) HeaderView.getTopOffset() * topLick.factor));
-          }
-        }
-
-      } else {
-        if (statusBarFactor != 0f && statusBarFactor != 1f) {
-          if (statusBarFactor >= .4f) {
-            stickersController.scrollBy(getHeaderTop());
-            isScrollByHeader = true;
-          } else {
-            stickersController.scrollBy(-(getStatusBarLimit() - getHeaderTop()));
-          }
+      if (topLick != null) {
+        if (topLick.factor >= .4f) {
+          stickersController.scrollBy((int) ((float) HeaderView.getTopOffset() * (1f - topLick.factor)));
+          isScrollByHeader = true;
+        } else {
+          stickersController.scrollBy(-(int) ((float) HeaderView.getTopOffset() * topLick.factor));
         }
       }
     }
