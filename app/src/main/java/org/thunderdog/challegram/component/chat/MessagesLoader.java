@@ -1598,7 +1598,7 @@ public class MessagesLoader implements Client.ResultHandler {
         break;
       }
       case MODE_MORE_BOTTOM: {
-        if (!loadingLocal && (totalCount == 0 || totalCount == 1)) {
+        if (totalCount == 0 && !loadingLocal) {
           canLoadBottom = false;
           if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
             Log.i(Log.TAG_MESSAGES_LOADER, "Bottom end reached.");
