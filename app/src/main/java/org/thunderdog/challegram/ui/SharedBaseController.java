@@ -81,11 +81,12 @@ import tgx.td.data.MessageWithProperties;
 
 public abstract class SharedBaseController <T extends MessageSourceProvider> extends ViewController<SharedBaseController.Args> implements View.OnClickListener, View.OnLongClickListener, FactorAnimator.Target, MessageListener, MediaCollectorDelegate, MediaViewDelegate {
   public static class Args {
-    public long chatId, messageThreadId;
+    public long chatId;
+    public TdApi.MessageTopic topicId;
 
-    public Args (long chatId, long messageThreadId) {
+    public Args (long chatId, TdApi.MessageTopic topicId) {
       this.chatId = chatId;
-      this.messageThreadId = messageThreadId;
+      this.topicId = topicId;
     }
   }
 
@@ -119,13 +120,14 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
     throw new IllegalArgumentException("unsupported filter: " + filter);
   }
 
-  protected long chatId, messageThreadId;
+  protected long chatId;
+  protected TdApi.MessageTopic topicId;
 
   @Override
   public void setArguments (Args args) {
     super.setArguments(args);
     chatId = args.chatId;
-    messageThreadId = args.messageThreadId;
+    topicId = args.topicId;
   }
 
   private boolean isPrepared;
@@ -513,16 +515,16 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
   private CancellableRunnable searchTask;
   private CancellableResultHandler baseHandler;
 
-  protected TdApi.Function<?> buildRequest (final long chatId, final long messageThreadId, final String query, final long offset, final String secretOffset, final int limit) {
+  protected TdApi.Function<?> buildRequest (final long chatId, final TdApi.MessageTopic topicId, final String query, final long offset, final String secretOffset, final int limit) {
     if (StringUtils.isEmpty(query) || !ChatId.isSecret(chatId)) {
-      return new TdApi.SearchChatMessages(chatId, query, null, offset, 0, limit, provideSearchFilter(), messageThreadId, 0);
+      return new TdApi.SearchChatMessages(chatId, topicId, query, null, offset, 0, limit, provideSearchFilter());
     } else {
       return new TdApi.SearchSecretMessages(chatId, query, secretOffset, limit, provideSearchFilter());
     }
   }
 
-  protected final void performRequest (final long chatId, final long messageThreadId, final String query, final long offset, final String secretOffset, final int limit) {
-    TdApi.Function<?> function = buildRequest(chatId, messageThreadId, query, offset, secretOffset, limit);
+  protected final void performRequest (final long chatId, final TdApi.MessageTopic topicId, final String query, final long offset, final String secretOffset, final int limit) {
+    TdApi.Function<?> function = buildRequest(chatId, topicId, query, offset, secretOffset, limit);
     if (function == null) {
       return;
     }
@@ -559,7 +561,7 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
 
       if (currentQuery == null || currentQuery.isEmpty()) {
         if (!processingSearch) {
-          performRequest(chatId, messageThreadId, query, fromMessageId, nextSecretSearchOffset, limit);
+          performRequest(chatId, topicId, query, fromMessageId, nextSecretSearchOffset, limit);
           if (fromMessageId == 0) {
             baseHandler = null;
           }
@@ -571,13 +573,13 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
           searchTask = new CancellableRunnable() {
             @Override
             public void act () {
-              performRequest(chatId, messageThreadId, query, fromMessageId, nextSecretSearchOffset, limit);
+              performRequest(chatId, topicId, query, fromMessageId, nextSecretSearchOffset, limit);
             }
           };
           searchTask.removeOnCancel(UI.getAppHandler());
           UI.post(searchTask, 300l);
         } else {
-          performRequest(chatId, messageThreadId, query, fromMessageId, nextSecretSearchOffset, limit);
+          performRequest(chatId, topicId, query, fromMessageId, nextSecretSearchOffset, limit);
         }
       }
     }

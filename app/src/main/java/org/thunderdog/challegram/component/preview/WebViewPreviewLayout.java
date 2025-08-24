@@ -217,16 +217,9 @@ public class WebViewPreviewLayout extends PreviewLayout {
     final BaseActivity context = UI.getContext(getContext());
     context.setScreenFlagEnabled(BaseActivity.SCREEN_FLAG_PLAYING_FULLSCREEN_WEB_VIDEO, inFullscreen);
     if (inFullscreen) {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !Config.USE_FULLSCREEN_NAVIGATION) {
-        savedStatusBarColor = context.getWindow().getStatusBarColor();
-        context.getWindow().setStatusBarColor(0xff000000);
-      }
       context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
       context.setWindowDecorSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE, false);
     } else {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !Config.USE_FULLSCREEN_NAVIGATION) {
-        context.getWindow().setStatusBarColor(savedStatusBarColor);
-      }
       context.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
       context.setWindowDecorSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE, false);
     }

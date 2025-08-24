@@ -1726,14 +1726,20 @@ public class RecordAudioVideoController implements
         TdApi.InputMessageVideoNote newVideoNote = tdlib.filegen().createThumbnail(videoNote, isSecretChat, helperFile);
         long chatId = targetController.getChatId();
         long messageThreadId = targetController.getMessageThreadId();
-        TdApi.InputMessageReplyTo replyTo = targetController.obtainReplyTo();
-        final TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(initialSendOptions, tdlib.chatDefaultDisableNotifications(chatId));
+        MessagesController.ReplyInfo replyInfo = targetController.obtainReplyTo();
+        TdApi.InputMessageReplyTo replyTo = replyInfo != null ? replyInfo.toInputMessageReply() : null;
+        TdApi.MessageSendOptions sendOptions = Td.newSendOptions(
+          modifiedSendOptions,
+          targetController.getDirectMessagesChatTopicId(replyInfo),
+          targetController.getInputSuggestedPostInfo(replyInfo),
+          targetController.obtainSilentMode()
+        );
         if (newVideoNote.thumbnail == null && helperFile != null) {
           tdlib.client().send(new TdApi.DownloadFile(helperFile.id, TdlibFilesManager.PRIORITY_FILE_GENERATION, 0, 0, true), result -> {
-            tdlib.sendMessage(chatId, messageThreadId, replyTo, finalSendOptions, result.getConstructor() == TdApi.File.CONSTRUCTOR ? tdlib.filegen().createThumbnail(videoNote, isSecretChat, (TdApi.File) result) : newVideoNote, null);
+            tdlib.sendMessage(chatId, messageThreadId, replyTo, sendOptions, result.getConstructor() == TdApi.File.CONSTRUCTOR ? tdlib.filegen().createThumbnail(videoNote, isSecretChat, (TdApi.File) result) : newVideoNote, null);
           });
         } else {
-          tdlib.sendMessage(chatId, messageThreadId, replyTo, finalSendOptions, newVideoNote, null);
+          tdlib.sendMessage(chatId, messageThreadId, replyTo, sendOptions, newVideoNote, null);
         }
       });
     }
@@ -1746,9 +1752,15 @@ public class RecordAudioVideoController implements
       targetController.pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
         long chatId = targetController.getChatId();
         long messageThreadId = targetController.getMessageThreadId();
-        TdApi.InputMessageReplyTo replyTo = targetController.obtainReplyTo();
-        final TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(initialSendOptions, tdlib.chatDefaultDisableNotifications(chatId));
-        tdlib.sendMessage(chatId, messageThreadId, replyTo, finalSendOptions, voiceNote, null);
+        MessagesController.ReplyInfo replyInfo = targetController.obtainReplyTo();
+        TdApi.InputMessageReplyTo replyTo = replyInfo != null ? replyInfo.toInputMessageReply() : null;
+        TdApi.MessageSendOptions sendOptions = Td.newSendOptions(
+          modifiedSendOptions,
+          targetController.getDirectMessagesChatTopicId(replyInfo),
+          targetController.getInputSuggestedPostInfo(replyInfo),
+          targetController.obtainSilentMode()
+        );
+        tdlib.sendMessage(chatId, messageThreadId, replyTo, sendOptions, voiceNote, null);
       });
     }
 

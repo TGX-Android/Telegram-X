@@ -189,7 +189,7 @@ public class CallManager implements GlobalCallListener {
       if (currentCall.id != call.id) {
         if (!call.isOutgoing) {
           if (call.state.getConstructor() == TdApi.CallStatePending.CONSTRUCTOR) {
-            tdlib.client().send(new TdApi.DiscardCall(call.id, false, 0, call.isVideo, 0), tdlib.okHandler());
+            tdlib.client().send(new TdApi.DiscardCall(call.id, false, null, 0, call.isVideo, 0), tdlib.okHandler());
           }
         }
         return;
@@ -243,7 +243,7 @@ public class CallManager implements GlobalCallListener {
 
   private static void discardCall (Tdlib tdlib, final int callId, final boolean isVideo) {
     Log.v(Log.TAG_VOIP, "#%d: DiscardCall requested, isVideo:%b", callId, isVideo);
-    tdlib.client().send(new TdApi.DiscardCall(callId, false, 0, isVideo, 0), object -> Log.v(Log.TAG_VOIP, "#%d: DiscardCall completed: %s", callId, object));
+    tdlib.client().send(new TdApi.DiscardCall(callId, false, null, 0, isVideo, 0), object -> Log.v(Log.TAG_VOIP, "#%d: DiscardCall completed: %s", callId, object));
   }
 
   /*
@@ -446,7 +446,7 @@ debugCall id:long debug:string = Ok;
       return;
     }
     context.context().closeAllMedia(false);
-    context.tdlib().send(new TdApi.CreateCall(userId, VoIP.getProtocol(), false, 0), (callId, error) -> {
+    context.tdlib().send(new TdApi.CreateCall(userId, VoIP.getProtocol(), false), (callId, error) -> {
       if (error != null) {
         Log.e(Log.TAG_VOIP, "Failed to create call: %s", TD.toErrorString(error));
         UI.showError(error);
@@ -529,7 +529,7 @@ debugCall id:long debug:string = Ok;
     }
     int duration = getCallDuration(tdlib, callId);
     Log.v(Log.TAG_VOIP, "#%d: DiscardCall, isDisconnect: %b, connectionId: %d, duration: %d", callId, isDisconnect, connectionId, duration);
-    tdlib.client().send(new TdApi.DiscardCall(callId, isDisconnect, Math.max(0, duration), false, connectionId), object -> {
+    tdlib.client().send(new TdApi.DiscardCall(callId, isDisconnect, null, Math.max(0, duration), false, connectionId), object -> {
       Log.v(Log.TAG_VOIP, "#%d: DiscardCall completed: %s", callId, object);
     });
   }

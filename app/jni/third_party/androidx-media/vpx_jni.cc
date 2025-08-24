@@ -529,15 +529,19 @@ DECODER_FUNC(jint, vpxGetFrame, jlong jContext, jobject jOutputBuffer) {
     return 1;
   }
 
+  // LINT.IfChange
   const int kOutputModeYuv = 0;
   const int kOutputModeSurfaceYuv = 1;
+  // LINT.ThenChange(../../../../common/src/main/java/androidx/media3/common/C.java)
 
   int outputMode = env->GetIntField(jOutputBuffer, outputModeField);
   if (outputMode == kOutputModeYuv) {
+    // LINT.IfChange
     const int kColorspaceUnknown = 0;
     const int kColorspaceBT601 = 1;
     const int kColorspaceBT709 = 2;
     const int kColorspaceBT2020 = 3;
+    // LINT.ThenChange(../../../../decoder/src/main/java/androidx/media3/decoder/VideoDecoderOutputBuffer.java)
 
     int colorspace = kColorspaceUnknown;
     switch (img->cs) {

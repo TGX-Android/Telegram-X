@@ -152,7 +152,7 @@ public class MessageEditMediaPending implements Tdlib.UploadFutureSimple.Callbac
   }
 
   public TdApi.MessageVideo getMessageVideo () {
-    return new TdApi.MessageVideo(getVideo(), new TdApi.AlternativeVideo[0], getVideoCover(), 0, getCaption(), showCaptionAboveMedia(), hasSpoiler(), false);
+    return new TdApi.MessageVideo(getVideo(), new TdApi.AlternativeVideo[0], new TdApi.VideoStoryboard[0], getVideoCover(), 0, getCaption(), showCaptionAboveMedia(), hasSpoiler(), false);
   }
 
   public TdApi.MessageAnimation getMessageAnimation () {

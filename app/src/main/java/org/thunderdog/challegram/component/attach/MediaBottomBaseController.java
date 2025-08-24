@@ -228,8 +228,8 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
     }
   }
 
-  private static int getTargetHeight () {
-    return Screen.currentHeight() - HeaderView.getTopOffset();
+  private int getTargetHeight () {
+    return context.getRootView().getMeasuredHeight() - HeaderView.getTopOffset() - context.getRootView().getBottomInset();
   }
 
   private void updateRecyclerTop (int height) {
@@ -559,7 +559,7 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
     return y >= recyclerView.getTranslationY() && y <= recyclerView.getTranslationY() + recyclerView.getMeasuredHeight();
   }
 
-  public static int getMaxHeight () {
+  public final int getMaxHeight () {
     return getTargetHeight(); //  - HeaderView.getSize();
   }
 

@@ -78,6 +78,12 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
     trendingSetsController.stickerSets = new ArrayList<>();
   }
 
+  @Override
+  protected void onExtraBottomInsetChanged (int extraBottomInset) {
+    emojiController.setExtraBottomInset(extraBottomInset);
+    trendingSetsController.setExtraBottomInset(extraBottomInset);
+  }
+
   public TGStickerObj modifyStickerObj (TGStickerObj sticker) {
     sticker.setPreviewOptimizationMode(GifFile.OptimizationMode.EMOJI_PREVIEW);
     return sticker;

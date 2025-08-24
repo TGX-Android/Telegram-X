@@ -494,7 +494,7 @@ public class MediaLayout extends FrameLayoutFix implements
     popupLayout.setDismissListener(this);
     popupLayout.setNeedRootInsets();
     popupLayout.setOverlayStatusBar(overlayStatusBar);
-    popupLayout.init(true);
+    popupLayout.init(Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM);
     popupLayout.showAnimatedPopupView(this, this);
   }
 
@@ -699,7 +699,13 @@ public class MediaLayout extends FrameLayoutFix implements
             long chatId = getTargetChatId();
             if (chatId != 0) {
               CreatePollController c = new CreatePollController(target.context(), target.tdlib());
-              c.setArguments(new CreatePollController.Args(chatId, target.getMessageThread(), target));
+              c.setArguments(new CreatePollController.Args(
+                chatId,
+                target.getMessageThread(),
+                target.getMessageTopicId(),
+                target.getInputSuggestedPostInfo(null),
+                target
+              ));
               parent.navigateTo(c);
               hide(false);
             }

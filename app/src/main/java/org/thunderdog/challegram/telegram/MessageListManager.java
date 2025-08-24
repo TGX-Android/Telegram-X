@@ -35,27 +35,25 @@ public final class MessageListManager extends ListManager<TdApi.Message> impleme
 
   private final long chatId;
   private final long startFromMessageId;
+  private final TdApi.MessageTopic topicId;
   private final @Nullable String query;
   private final @Nullable TdApi.MessageSender sender;
   private final @Nullable TdApi.SearchMessagesFilter filter;
-  private final long messageThreadId, savedMessagesTopicId;
 
   private boolean onlyLocalEndReached, onlyLocalReverseEndReached;
 
   public MessageListManager (Tdlib tdlib, int initialLoadCount, int loadCount, @Nullable ChangeListener listener, long chatId, long startFromMessageId,
+                             @Nullable TdApi.MessageTopic topicId,
                              @Nullable String query,
                              @Nullable TdApi.MessageSender sender,
-                             @Nullable TdApi.SearchMessagesFilter filter,
-                             long messageThreadId,
-                             long savedMessagesTopicId) {
+                             @Nullable TdApi.SearchMessagesFilter filter) {
     super(tdlib, initialLoadCount, loadCount, startFromMessageId != 0, listener);
     this.chatId = chatId;
     this.startFromMessageId = startFromMessageId;
+    this.topicId = topicId;
     this.query = query;
     this.sender = sender;
     this.filter = filter;
-    this.messageThreadId = messageThreadId;
-    this.savedMessagesTopicId = savedMessagesTopicId;
     subscribeToUpdates();
     loadTotalCount(null);
     addChangeListener(maxMessageIdListener);
@@ -103,23 +101,23 @@ public final class MessageListManager extends ListManager<TdApi.Message> impleme
   private boolean matchesFilter (TdApi.Message message) {
     return message.chatId == chatId && (!hasFilter() || (
       StringUtils.isEmpty(query) && // unsupported
-      (messageThreadId == 0 || message.messageThreadId == messageThreadId) &&
       (sender == null || Td.equalsTo(message.senderId, sender)) &&
-      (filter == null || Td.matchesFilter(message, filter))
+      (filter == null || Td.matchesFilter(message, filter)) &&
+      (topicId == null || Td.equalsTo(message.topicId, topicId))
     ));
   }
 
   private boolean hasFilter () {
-    return filter != null || hasComplexFilter();
+    return filter != null || topicId != null || hasComplexFilter();
   }
 
   private boolean hasComplexFilter () {
-    return !StringUtils.isEmpty(query) || sender != null || messageThreadId != 0;
+    return !StringUtils.isEmpty(query) || sender != null;
   }
 
   private void fetchMessageCount (boolean local, @Nullable RunnableInt callback) {
     if (!hasComplexFilter() && filter != null) {
-      tdlib.send(new TdApi.GetChatMessageCount(chatId, filter, savedMessagesTopicId, local), (chatMessageCount, error) -> {
+      tdlib.send(new TdApi.GetChatMessageCount(chatId, topicId, filter, local), (chatMessageCount, error) -> {
         final int count;
         if (error != null) {
           Log.e("GetChatMessageCount: %s, filter:%s, chatId:%s", TD.toErrorString(error), filter, chatId);
@@ -141,7 +139,7 @@ public final class MessageListManager extends ListManager<TdApi.Message> impleme
           }
           return;
         }
-        tdlib.send(new TdApi.SearchChatMessages(chatId, query, sender, 0, 0, 1, filter, messageThreadId, savedMessagesTopicId), (foundChatMessages, error) -> {
+        tdlib.send(new TdApi.SearchChatMessages(chatId, topicId, query, sender, 0, 0, 1, filter), (foundChatMessages, error) -> {
           final int count;
           if (error != null) {
             Log.e("SearchChatMessages: %s, chatId: %d", TD.toErrorString(error), chatId);
@@ -218,9 +216,9 @@ public final class MessageListManager extends ListManager<TdApi.Message> impleme
     long fromMessageId = this.items.isEmpty() ? startFromMessageId : this.items.get(reverse ? 0 : this.items.size() - 1).id;
     if (hasFilter()) {
       if (reverse) {
-        return new TdApi.SearchChatMessages(chatId, query, sender, fromMessageId, -loadCount, loadCount + 1, filter, messageThreadId, savedMessagesTopicId);
+        return new TdApi.SearchChatMessages(chatId, topicId, query, sender, fromMessageId, -loadCount, loadCount + 1, filter);
       } else {
-        return new TdApi.SearchChatMessages(chatId, query, sender, nextSearchFromMessageId != null && nextSearchFromMessageId != 0 ? nextSearchFromMessageId : fromMessageId, 0, loadCount, filter, messageThreadId, savedMessagesTopicId);
+        return new TdApi.SearchChatMessages(chatId, topicId, query, sender, nextSearchFromMessageId != null && nextSearchFromMessageId != 0 ? nextSearchFromMessageId : fromMessageId, 0, loadCount, filter);
       }
     } else {
       if (reverse) {

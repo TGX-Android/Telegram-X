@@ -172,6 +172,7 @@ open class ModulePlugin : Plugin<Project> {
               applicationId = appId
 
               buildConfigString("PROJECT_NAME", appName)
+              buildConfigBool("SHARED_STL", Config.SHARED_STL)
 
               buildConfigString("SAFETYNET_API_KEY", safetyNetToken)
               buildConfigString("RECAPTCHA_KEY_ID", recaptchaKeyId)

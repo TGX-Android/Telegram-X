@@ -1536,7 +1536,8 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         Uri uri = inputContentInfo.getContentUri();
         long timestamp = System.currentTimeMillis();
         long messageThreadId = controller.getMessageThreadId();
-        TdApi.InputMessageReplyTo replyTo = controller.obtainReplyTo();
+        MessagesController.ReplyInfo replyInfo = controller.obtainReplyTo();
+        TdApi.InputMessageReplyTo replyTo = replyInfo != null ? replyInfo.toInputMessageReply() : null;
         boolean silent = controller.obtainSilentMode();
         boolean needMenu = controller.areScheduledOnly();
 
@@ -1585,15 +1586,27 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
             }
             if (needMenu) {
               tdlib.ui().showScheduleOptions(controller, chatId, false,
-                (sendOptions, disableMarkdown) ->
+                (sendOptions, disableMarkdown) -> {
+                  TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(
+                    sendOptions,
+                    controller.getDirectMessagesChatTopicId(replyInfo),
+                    controller.getInputSuggestedPostInfo(replyInfo),
+                    silent
+                  );
                   tdlib.sendMessage(chatId, messageThreadId, replyTo,
-                    Td.newSendOptions(sendOptions, silent),
+                    finalSendOptions,
                     content,
                     null
-                  ),
+                  );
+                },
                 null, null);
             } else {
-              tdlib.sendMessage(chatId, messageThreadId, replyTo, Td.newSendOptions(silent), content);
+              TdApi.MessageSendOptions sendOptions = Td.newSendOptions(
+                controller.getDirectMessagesChatTopicId(replyInfo),
+                controller.getInputSuggestedPostInfo(replyInfo),
+                silent
+              );
+              tdlib.sendMessage(chatId, messageThreadId, replyTo, sendOptions, content);
             }
           });
         });

@@ -346,6 +346,11 @@
   <string name="ChatContentProximityFromYouKm_one">%2$s is now within %1$s kilometer from you</string>
   <string name="ChatContentProximityFromYouKm_other">%2$s is now within %1$s kilometers from you</string>
 
+  <string name="ChatContentDmEnabled">Now accepts direct messages</string>
+  <string name="ChatContentDmEnabledPaid_one">Now accepts direct messages for %1$s star each</string>
+  <string name="ChatContentDmEnabledPaid_other">Now accepts direct messages for %1$s stars each</string>
+  <string name="ChatContentDmDisabled">Disabled direct messages</string>
+
   <string name="ChatContentVideoChatAddYou">Invited you to the video chat</string>
   <string name="ChatContentVideoChatAddSomeone">Invited someone to the video chat</string>
   <string name="ChatContentLiveStreamAddYou">Invited you to the live stream</string>
@@ -429,6 +434,8 @@
   <string name="ChatContentVoiceChatStarted_outgoing">Started a video chat</string>
   <string name="ChatContentVoiceChatFinished">Ended the video chat (%1$s)</string>
   <string name="ChatContentVoiceChatFinished_outgoing">Ended the video chat (%1$s)</string>
+  <string name="ChatContentVoiceChatFinishedNoTime">Ended the video chat</string>
+  <string name="ChatContentVoiceChatFinishedNoTime_outgoing">Ended the video chat®</string>
   <string name="ChatContentVoiceChatInviteYou">Invited you to the video chat</string>
   <string name="ChatContentVoiceChatInvite">Invited %1$s to the video chat</string>
   <string name="ChatContentVoiceChatInvite_outgoing">Invited %1$s to the video chat</string>
@@ -439,6 +446,8 @@
 
   <string name="ChatContentLiveStreamStarted">Started a live stream</string>
   <string name="ChatContentLiveStreamStarted_outgoing">Started a live stream</string>
+  <string name="ChatContentLiveStreamFinishedNoTime">Ended the live stream</string>
+  <string name="ChatContentLiveStreamFinishedNoTime_outgoing">Ended the live stream</string>
   <string name="ChatContentLiveStreamFinished">Ended the live stream (%1$s)</string>
   <string name="ChatContentLiveStreamFinished_outgoing">Ended the live stream (%1$s)</string>
   <string name="ChatContentLiveStreamInviteYou">Invited you to the live stream</string>
@@ -515,6 +524,7 @@
   <string name="ViewAdmins">View admins</string>
   <string name="SwipeShare">Share</string>
   <string name="SwipeReply">Reply</string>
+  <string name="ReplyRequiredHint">Choose a message to reply</string>
   <string name="edit">Edit</string>
   <string name="Delete">Delete</string>
   <string name="BotInvite">Add to group</string>
@@ -574,6 +584,7 @@
   <string name="ChannelPublic">Public Channel</string>
   <string name="ChannelPublicInfo">Public channels can be found in search, anyone can join them.</string>
   <string name="ChannelUsernameHelp">If you set a public link, other people will be able to find and join your channel.\n\nYou can use a–z, 0–9 and underscores.\nMinimum length is 5 characters.</string>
+  <string name="DirectMessages">Direct Messages</string>
   <string name="ChannelPrivate">Private Channel</string>
   <string name="ChannelPrivateInfo">Private channels can only be joined via invite link.</string>
   <string name="ChannelPrivateLinkHelp">People can join your channel by following this link. You can revoke the link at any time.</string>
@@ -1302,6 +1313,7 @@
   <string name="ActionPinnedGeo">%1$s pinned a **location**</string>
   <string name="ActionPinnedPoll">%1$s pinned a **poll**</string>
   <string name="ActionPinnedQuiz">%1$s pinned a **quiz**</string>
+  <string name="ActionPinnedChecklist">%1$s pinned a **checklist**</string>
   <string name="ActionPinnedGeoLive">%1$s pinned a **live location**</string>
   <string name="ActionPinnedSticker">%1$s pinned a **sticker**</string>
   <string name="ActionPinnedGif">%1$s pinned a **GIF**</string>
@@ -1966,6 +1978,7 @@
   <string name="RightEditMessages">Edit Messages</string>
   <string name="RightVoiceChats">Manage video chats</string>
   <string name="RightLiveStreams">Manage live streams</string>
+  <string name="RightDirectMessages">Manage direct messages</string>
   <string name="RightTopics">Manage topics</string>
   <string name="RightTopicsCreate">Create topics</string>
   <string name="RightStories">Stories</string>
@@ -2168,6 +2181,7 @@
   <string name="EventLogPromotedRemainAnonymous">Remain anonymous</string>
   <string name="EventLogPromotedManageVoiceChats">Manage video chats</string>
   <string name="EventLogPromotedManageLiveStreams">Manage live streams</string>
+  <string name="EventLogPromotedManageDirectMessages">Manage direct messages</string>
   <string name="EventLogPromotedTitle">Title: %1$s</string>
   <string name="EventLogPromotedTitleChange">Title: %1$s → %2$s</string>
   <string name="EventLogPromotedBanUsers">Ban users</string>
@@ -2374,7 +2388,13 @@
   <string name="OpenMessage">View Message</string>
   <string name="SavedMessages">Saved Messages</string>
   <string name="Saved">Saved</string>
+  <string name="direct_messages_enabled">Direct messages were enabled in this channel</string>
+  <string name="channel_enable_dm">%1$s now accepts direct messages</string>
+  <string name="channel_enable_dm_paid_one">%2$s now accepts direct messages for %1$s star each</string>
+  <string name="channel_enable_dm_paid_other">%2$s now accepts direct messages for %1$s stars each</string>
+  <string name="channel_disable_dm">%1$s disabled direct messages</string>
   <string name="channel_create_somebody">Channel "%1$s" created</string>
+  <string name="LinkedChatNotFound">Linked chat not found</string>
   <string name="channel_user_add">%1$s joined the channel</string>
   <string name="channel_user_add_self">You joined the channel</string>
   <string name="channel_user_remove">%1$s left the channel</string>
@@ -2617,7 +2637,7 @@
   <string name="ReportXMessages_other">Report %1$s messages</string>
 
   <string name="QReportMessageUser">Are you sure you want to report message from %1$s?</string>
-  <string name="QReportMessagesUser">Are you sure you want to report messages from %1$s</string>
+  <string name="QReportMessagesUser">Are you sure you want to report messages from %1$s?</string>
   <string name="QReportMessage">Are you sure you want to report %1$s\'s message?</string>
   <string name="QReportMessages">Are you sure you want to report %1$s\'s messages?</string>
   <string name="QReportXMessages_one">Are you sure you want to report %1$s message?</string>
@@ -5581,7 +5601,7 @@
   <string name="ReportAd">Report Ad</string>
   <string name="ReportAdSubtitle">What\'s wrong with this ad?</string>
   <string name="ReportAdPolicy">Learn more about our [Ad Policies and Guidelines](https://ads.telegram.org/guidelines).</string>
-  <string name="ReportAdOk">Add will be reviewed by moderators.</string>
+  <string name="ReportAdOk">Ad will be reviewed by moderators.</string>
   <string name="ReportAdFail">There was an error while reporting this ad.</string>
   <string name="ReportAdHidden">You will no longer see any ads.</string>
   <string name="ReportAdPremiumRequired">**Telegram Premium** subscription is required to hide ads.</string>

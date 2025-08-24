@@ -488,6 +488,7 @@
   <item type="id" name="btn_unmute" />
   <item type="id" name="btn_follow" />
   <item type="id" name="btn_openLinkedChat" />
+  <item type="id" name="btn_openDirectMessages" />
   <item type="id" name="btn_restartTdlib" />
   <item type="id" name="btn_chatSettings" />
   <item type="id" name="btn_devices" />

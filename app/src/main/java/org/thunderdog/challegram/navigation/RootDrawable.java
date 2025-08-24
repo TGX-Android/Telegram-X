@@ -54,7 +54,7 @@ public class RootDrawable extends Drawable {
     if (!state.isDisabled) {
       c.drawColor(Theme.getColor(state.getColorId()));
     }
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
       int height = Screen.getNavigationBarHeight();
       if (height > 0 && state.context.hadSoftwareKeysOnActivityLaunch()) {
         int rotation = state.context.getWindowRotationDegrees();

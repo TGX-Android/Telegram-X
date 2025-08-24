@@ -67,14 +67,15 @@ public final class N {
   public static native void onSurfaceChanged (int a_width_px, int a_height_px, float a_scale_factor, int a1);
 
   // gif.c
-  public static native long createDecoder (String path, int[] metadata, double startMediaTimestamp);
+  public static final int DECODER_METADATA_ARRAY_SIZE = 5;
+  public static native long createDecoder (String path, long[] metadata, double startMediaTimestamp);
   public static native long createLottieDecoder (String path, String jsonData, double[] metadata, int fitzpatrickType);
   public static native void getLottieSize (long ptr, int[] size);
   public static native void cancelLottieDecoder (long ptr);
   public static native int createLottieCache (long ptr, String cachePath, Bitmap firstFrame, Bitmap bitmap, boolean allowCreate, boolean limitFps); // 0 = ok, 1 = need create, 2 = error
   public static native void destroyDecoder (long ptr);
   public static native boolean destroyLottieDecoder (long ptr);
-  public static native int getVideoFrame (long ptr, Bitmap bitmap, int[] metadata);
+  public static native int getVideoFrame (long ptr, Bitmap bitmap, long[] metadata);
   public static native boolean getLottieFrame (long ptr, Bitmap bitmap, long frameNo);
   public static native boolean isVideoBroken (long ptr);
   public static native boolean seekVideoToStart (long ptr);

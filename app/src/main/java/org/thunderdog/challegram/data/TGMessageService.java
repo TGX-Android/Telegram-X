@@ -384,6 +384,9 @@ public final class TGMessageService extends TGMessageServiceImpl {
                 R.string.ActionPinnedQuiz :
                 R.string.ActionPinnedPoll;
               break;
+            case TdApi.MessageChecklist.CONSTRUCTOR:
+              staticResId = R.string.ActionPinnedChecklist;
+              break;
             case TdApi.MessageLocation.CONSTRUCTOR:
               staticResId = ((TdApi.MessageLocation) message.content).livePeriod > 0 ?
                 R.string.ActionPinnedGeoLive :
@@ -428,6 +431,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
               // cannot be pinned
             case TdApi.MessageBasicGroupChatCreate.CONSTRUCTOR:
             case TdApi.MessageCall.CONSTRUCTOR:
+            case TdApi.MessageGroupCall.CONSTRUCTOR:
             case TdApi.MessageChatAddMembers.CONSTRUCTOR:
             case TdApi.MessageChatChangePhoto.CONSTRUCTOR:
             case TdApi.MessageChatChangeTitle.CONSTRUCTOR:
@@ -444,6 +448,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageGameScore.CONSTRUCTOR:
             case TdApi.MessageGiftedPremium.CONSTRUCTOR:
             case TdApi.MessageGiftedStars.CONSTRUCTOR:
+            case TdApi.MessageGiftedTon.CONSTRUCTOR:
             case TdApi.MessagePremiumGiftCode.CONSTRUCTOR:
             case TdApi.MessageGiveawayCreated.CONSTRUCTOR:
             case TdApi.MessageGiveawayCompleted.CONSTRUCTOR:
@@ -456,6 +461,8 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessagePaymentRefunded.CONSTRUCTOR:
             case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
             case TdApi.MessagePinMessage.CONSTRUCTOR:
+            case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR:
+            case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR:
             case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR:
             case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
             case TdApi.MessageSupergroupChatCreate.CONSTRUCTOR:
@@ -478,10 +485,18 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageGift.CONSTRUCTOR:
             case TdApi.MessageUpgradedGift.CONSTRUCTOR:
             case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
+            case TdApi.MessageChecklistTasksAdded.CONSTRUCTOR:
+            case TdApi.MessageChecklistTasksDone.CONSTRUCTOR:
+            case TdApi.MessageDirectMessagePriceChanged.CONSTRUCTOR:
+            case TdApi.MessageSuggestedPostApprovalFailed.CONSTRUCTOR:
+            case TdApi.MessageSuggestedPostApproved.CONSTRUCTOR:
+            case TdApi.MessageSuggestedPostDeclined.CONSTRUCTOR:
+            case TdApi.MessageSuggestedPostPaid.CONSTRUCTOR:
+            case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
               staticResId = R.string.ActionPinnedNoText;
               break;
             default:
-              Td.assertMessageContent_640c68ad();
+              Td.assertMessageContent_7c00740();
               throw Td.unsupported(message.content);
           }
           if (format == null) {
@@ -541,7 +556,12 @@ public final class TGMessageService extends TGMessageServiceImpl {
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageSupergroupChatCreate supergroupCreate) {
     super(context, msg);
     setTextCreator(() -> {
-      if (msg.isChannelPost) {
+      TdApi.Supergroup supergroup = tdlib().chatToSupergroup(msg.chatId);
+      if (supergroup != null && supergroup.isDirectMessagesGroup) {
+        return getText(
+          R.string.direct_messages_enabled
+        );
+      } else if (msg.isChannelPost) {
         return getText(
           R.string.channel_create_somebody,
           new BoldArgument(supergroupCreate.title)
@@ -556,6 +576,29 @@ public final class TGMessageService extends TGMessageServiceImpl {
           R.string.group_created,
           new SenderArgument(sender),
           new BoldArgument(supergroupCreate.title)
+        );
+      }
+    });
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageDirectMessagePriceChanged directMessagePriceChanged) {
+    super(context, msg);
+    setTextCreator(() -> {
+      if (!directMessagePriceChanged.isEnabled) {
+        return getText(
+          R.string.channel_disable_dm,
+          new SenderArgument(sender)
+        );
+      } else if (directMessagePriceChanged.paidMessageStarCount == 0) {
+        return getText(
+          R.string.channel_enable_dm,
+          new SenderArgument(sender)
+        );
+      } else {
+        return getPlural(
+          R.string.channel_enable_dm_paid,
+          directMessagePriceChanged.paidMessageStarCount,
+          new SenderArgument(sender)
         );
       }
     });
@@ -1443,6 +1486,11 @@ public final class TGMessageService extends TGMessageServiceImpl {
     });
   }
 
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventAutomaticTranslationToggled automaticTranslationToggled) {
+    super(context, msg);
+    throw new IllegalStateException("TODO"); // TODO
+  }
+
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventForumTopicCreated forumTopicCreated) {
     this(context, msg, forumTopicCreated.topicInfo, R.string.EventLogForumTopicCreated, R.string.EventLogForumTopicCreatedYou);
   }
@@ -1707,7 +1755,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
         tdlib.ui().openMap(this, new MapController.Args(
             chatLocation.location.latitude,
             chatLocation.location.longitude
-          ).setChatId(msg.chatId, messagesController().getMessageThreadId())
+          ).setChatId(msg.chatId, messagesController().getMessageThreadId(), messagesController().getMessageTopicId())
             .setLocationOwnerChatId(msg.chatId)
             .setIsFaded(locationChanged.newLocation == null)
         )

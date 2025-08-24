@@ -132,8 +132,8 @@ public class TdlibSingleUnreadReactionsManager implements ChatListener, MessageL
         }
       };
       tdlib.client().send(new TdApi.SearchChatMessages(
-        chatId, null, null, 0, 0, 100,
-        new TdApi.SearchMessagesFilterUnreadReaction(), 0, 0), handler
+        chatId, null, null, null, 0, 0, 100,
+        new TdApi.SearchMessagesFilterUnreadReaction()), handler
       );
     }
 

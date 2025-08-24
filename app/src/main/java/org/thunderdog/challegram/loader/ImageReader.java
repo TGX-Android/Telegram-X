@@ -659,13 +659,13 @@ public class ImageReader {
   }
 
   public static Bitmap decodeVideoFrame (String path, int maxSize) {
-    int[] metadata = new int[4];
+    long[] metadata = new long[N.DECODER_METADATA_ARRAY_SIZE];
     long ptr = N.createDecoder(path, metadata, 0);
     if (ptr == 0)
       return null;
     int rotation = U.getVideoRotation(path);
-    int width = metadata[0];
-    int height = metadata[1];
+    int width = (int) metadata[0];
+    int height = (int) metadata[1];
     boolean error = (width <= 0 || height <= 0);
     boolean ok = false;
     Bitmap bitmap = null;

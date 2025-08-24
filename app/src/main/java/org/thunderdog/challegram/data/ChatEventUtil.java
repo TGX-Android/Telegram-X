@@ -117,6 +117,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventForumTopicToggleIsClosed.CONSTRUCTOR:
       case TdApi.ChatEventForumTopicToggleIsHidden.CONSTRUCTOR:
       case TdApi.ChatEventMemberSubscriptionExtended.CONSTRUCTOR:
+      case TdApi.ChatEventAutomaticTranslationToggled.CONSTRUCTOR:
         return ActionMessageMode.ONLY_SERVICE;
       // only full (native)
       case TdApi.ChatEventMessageAutoDeleteTimeChanged.CONSTRUCTOR:
@@ -134,7 +135,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
         return ActionMessageMode.ONLY_FULL;
       default: {
-        Td.assertChatEventAction_b387a44d();
+        Td.assertChatEventAction_53b6b01e();
         throw Td.unsupported(action);
       }
     }
@@ -223,6 +224,8 @@ public class ChatEventUtil {
         return new TGMessageService(context, msg, (TdApi.ChatEventForumTopicToggleIsHidden) action);
       case TdApi.ChatEventMemberSubscriptionExtended.CONSTRUCTOR:
         return new TGMessageService(context, msg, (TdApi.ChatEventMemberSubscriptionExtended) action);
+      case TdApi.ChatEventAutomaticTranslationToggled.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventAutomaticTranslationToggled) action);
       // only full (native)
       case TdApi.ChatEventMessageAutoDeleteTimeChanged.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
@@ -239,7 +242,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
         throw new IllegalArgumentException(action.toString());
       default: {
-        Td.assertChatEventAction_b387a44d();
+        Td.assertChatEventAction_53b6b01e();
         throw Td.unsupported(action);
       }
     }
@@ -562,6 +565,7 @@ public class ChatEventUtil {
               true,
               true,
               true,
+              true,
               true
             );
           }
@@ -588,6 +592,7 @@ public class ChatEventUtil {
             appendRight(b, R.string.EventLogPromotedManageTopics, oldAdmin.rights.canManageTopics, newAdmin.rights.canManageTopics, false);
             appendRight(b, R.string.EventLogPromotedRemainAnonymous, oldAdmin.rights.isAnonymous, newAdmin.rights.isAnonymous, false);
           }
+          appendRight(b, R.string.EventLogPromotedManageDirectMessages, oldAdmin.rights.canManageDirectMessages, newAdmin.rights.canManageDirectMessages, false);
           appendRight(b, R.string.EventLogPromotedAddAdmins, oldAdmin.rights.canPromoteMembers, newAdmin.rights.canPromoteMembers, false);
           appendRight(b, R.string.EventLogPromotedTitle, R.string.EventLogPromotedTitleChange, oldAdmin.customTitle, newAdmin.customTitle, false);
         } else if (oldStatus != null && newStatus != null) {
@@ -674,9 +679,10 @@ public class ChatEventUtil {
       case TdApi.ChatEventForumTopicToggleIsClosed.CONSTRUCTOR:
       case TdApi.ChatEventForumTopicToggleIsHidden.CONSTRUCTOR:
       case TdApi.ChatEventMemberSubscriptionExtended.CONSTRUCTOR:
+      case TdApi.ChatEventAutomaticTranslationToggled.CONSTRUCTOR:
         throw new IllegalArgumentException(action.toString());
       default: {
-        Td.assertChatEventAction_b387a44d();
+        Td.assertChatEventAction_53b6b01e();
         throw Td.unsupported(action);
       }
     }
@@ -995,11 +1001,12 @@ public class ChatEventUtil {
       case TdApi.ChatEventForumTopicToggleIsHidden.CONSTRUCTOR:
       case TdApi.ChatEventForumTopicToggleIsClosed.CONSTRUCTOR:
       case TdApi.ChatEventMemberSubscriptionExtended.CONSTRUCTOR:
+      case TdApi.ChatEventAutomaticTranslationToggled.CONSTRUCTOR:
         throw new IllegalArgumentException(event.action.toString());
 
       // Unsupported
       default: {
-        Td.assertChatEventAction_b387a44d();
+        Td.assertChatEventAction_53b6b01e();
         throw Td.unsupported(event.action);
       }
     }

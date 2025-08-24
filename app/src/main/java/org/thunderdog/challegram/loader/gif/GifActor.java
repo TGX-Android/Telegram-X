@@ -72,7 +72,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
   private final GifFile file;
   private final Object gifLock = new Object();
   private @Nullable GifState gif;
-  private final int[] metadata;
+  private final long[] metadata;
   private final double[] lottieMetadata;
   private final GifThread thread;
   private final boolean isLottie;
@@ -94,7 +94,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
     file.setVibrationPattern(Emoji.VIBRATION_PATTERN_NONE);
     this.maxFrameRate = file.hasOptimizations() || Settings.instance().getNewSetting(Settings.SETTING_FLAG_LIMIT_STICKERS_FPS) ? REDUCED_MAX_FRAME_RATE : DEFAULT_MAX_FRAME_RATE;
     this.isLottie = file.getGifType() == GifFile.TYPE_TG_LOTTIE;
-    this.metadata = new int[4];
+    this.metadata = new long[N.DECODER_METADATA_ARRAY_SIZE];
     this.lottieMetadata = new double[3];
     this.thread = thread;
     this.file = file;
@@ -359,8 +359,8 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
       }
     } else {
       nativePtr = N.createDecoder(path, metadata, file.getStartMediaTimestamp());
-      width = metadata[0];
-      height = metadata[1];
+      width = (int) metadata[0];
+      height = (int) metadata[1];
       error = (width <= 0 || height <= 0);
     }
     if (error) {
@@ -407,7 +407,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
     GifBridge.instance().onGifLoaded(file, gif);
   }
 
-  private volatile int lastTimeStamp;
+  private volatile long lastTimeStamp;
   private volatile double lastFrameNo;
   private long totalFrameCount;
   private double frameRate;
@@ -656,7 +656,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
   // GifStage thread
   private void scheduleNext (boolean force) {
     final double frameDelay;
-    final int nextTimeStamp;
+    final long nextTimeStamp;
 
     final float screenFrameRate = Screen.refreshRate();
     final double screenFrameRateDelay = 1000.0 / screenFrameRate;
@@ -672,14 +672,15 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
       frameDelay = Math.max(screenFrameRateDelay, avgFrameRateDelay);
       nextTimeStamp = 0;
     } else {
-      final int lastTimeStamp = this.lastTimeStamp;
+      final long lastTimeStamp = this.lastTimeStamp;
       nextTimeStamp = metadata[3];
 
       if (nextTimeStamp > lastTimeStamp) {
-        final int differenceMs = nextTimeStamp - lastTimeStamp;
-        frameDelay = Math.max(screenFrameRateDelay, differenceMs);
+        final long differenceMs = nextTimeStamp - lastTimeStamp;
+        frameDelay = Math.max(differenceMs, screenFrameRateDelay);
       } else {
-        frameDelay = Math.max(screenFrameRateDelay, avgFrameRateDelay);
+        final long remainingDurationMs = metadata[4];
+        frameDelay = Math.max(remainingDurationMs, Math.max(avgFrameRateDelay, screenFrameRateDelay));
       }
     }
 

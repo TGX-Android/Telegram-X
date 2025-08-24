@@ -1200,8 +1200,26 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   private float lastPlayerFactor;
 
-  public void dispatchInnerMargins (int left, int top, int right, int bottom) {
+  protected int extraBottomInset;
+
+  public final void setExtraBottomInset (int extraBottomInset) {
+    if (this.extraBottomInset != extraBottomInset) {
+      this.extraBottomInset = extraBottomInset;
+      onExtraBottomInsetChanged(extraBottomInset);
+    }
+  }
+
+  protected void onExtraBottomInsetChanged (int extraBottomInset) {
     // override in children
+  }
+
+  protected final Rect systemInsets = new Rect();
+
+  @CallSuper
+  public boolean dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, int left, int top, int right, int bottom) {
+    systemInsets.set(left, top, right, bottom);
+    // override in children
+    return false;
   }
 
   public View getViewForApplyingOffsets () {

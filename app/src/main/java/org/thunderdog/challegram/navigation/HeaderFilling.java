@@ -125,7 +125,7 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
   }
 
   private int getTopOffset () {
-    return needOffsets ? HeaderView.getTopOffset() : 0;
+    return needOffsets ? headerView.getEffectiveTopOffset() : 0;
   }
 
   private final ClickHelper helper;
@@ -409,7 +409,7 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
         float startX = Lang.rtl() ? Screen.dp(49f) / 2 - Screen.dp(3f) - Screen.dp(5f) : width - Screen.dp(49f) / 2 + Screen.dp(3f) + Screen.dp(5f);
         float endX = width / 2;
         float x = startX + (endX - startX) * radiusFactor;
-        float y = HeaderView.getTopOffset() + HeaderView.getSize(false) / 2 + Screen.dp(2f);
+        float y = headerView.getEffectiveTopOffset() + HeaderView.getSize(false) / 2 + Screen.dp(2f);
         c.drawCircle(x, y, radius * radiusFactor, Paints.fillingPaint(ColorUtils.alphaColor(.35f + .65f * radiusFactor, radiusColor)));
         // c.drawCircle(startX, y, Screen.dp(2f), Paints.fillingPaint(0xaaff0000));
         c.restore();

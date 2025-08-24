@@ -152,7 +152,7 @@ public class TD {
       case RightId.SEND_VOICE_NOTES:
       case RightId.SEND_VIDEO_NOTES:
       case RightId.SEND_OTHER_MESSAGES:
-      case RightId.SEND_POLLS:
+      case RightId.SEND_POLLS_OR_CHECKLISTS:
       case RightId.EMBED_LINKS:
       case RightId.CHANGE_CHAT_INFO:
       case RightId.EDIT_MESSAGES:
@@ -165,6 +165,7 @@ public class TD {
       case RightId.POST_STORIES:
       case RightId.EDIT_STORIES:
       case RightId.DELETE_STORIES:
+      case RightId.MANAGE_DIRECT_MESSAGES:
       case RightId.ADD_NEW_ADMINS:
       case RightId.REMAIN_ANONYMOUS:
         return true;
@@ -222,6 +223,7 @@ public class TD {
         false,
         false,
         false,
+        false,
         false
       );
     }
@@ -242,7 +244,7 @@ public class TD {
         return permissions.canSendVideoNotes;
       case RightId.SEND_VOICE_NOTES:
         return permissions.canSendVoiceNotes;
-      case RightId.SEND_POLLS:
+      case RightId.SEND_POLLS_OR_CHECKLISTS:
         return permissions.canSendPolls;
       case RightId.SEND_OTHER_MESSAGES:
         return permissions.canSendOtherMessages;
@@ -266,6 +268,7 @@ public class TD {
       case RightId.POST_STORIES:
       case RightId.EDIT_STORIES:
       case RightId.DELETE_STORIES:
+      case RightId.MANAGE_DIRECT_MESSAGES:
       case RightId.REMAIN_ANONYMOUS:
         break;
     }
@@ -2185,7 +2188,7 @@ public class TD {
           return codeLength(waitEmailCode.codeInfo, fallbackCodeLength);
         }
         default: {
-          Td.assertAuthorizationState_6e5056de();
+          Td.assertAuthorizationState_ba756b5f();
           break;
         }
       }
@@ -5345,13 +5348,16 @@ public class TD {
   }
 
   public static boolean isScreenshotSensitive (TdApi.Message message) {
-    if (message == null) {
+    return message != null && isScreenshotSensitive(message.content);
+  }
+  public static boolean isScreenshotSensitive (TdApi.MessageContent content) {
+    if (content == null) {
       return false;
     }
-    if (Td.isSecret(message.content)) {
+    if (Td.isSecret(content)) {
       return true;
     }
-    switch (message.content.getConstructor()) {
+    switch (content.getConstructor()) {
       case TdApi.MessageExpiredPhoto.CONSTRUCTOR:
       case TdApi.MessageExpiredVideo.CONSTRUCTOR:
       case TdApi.MessageExpiredVoiceNote.CONSTRUCTOR:
@@ -5359,10 +5365,14 @@ public class TD {
       case TdApi.MessagePaidMedia.CONSTRUCTOR:
         return true;
       default:
-        Td.assertMessageContent_640c68ad();
+        Td.assertMessageContent_7c00740();
         break;
     }
     return false;
+  }
+
+  public static boolean canAccessMembers (TdApi.Supergroup supergroup) {
+    return supergroup != null && !supergroup.isDirectMessagesGroup;
   }
 
   public static boolean hasCustomEmoji (TdApi.FormattedText text) {
@@ -5841,6 +5851,7 @@ public class TD {
       case TdApi.InputMessageGame.CONSTRUCTOR:
       case TdApi.InputMessageInvoice.CONSTRUCTOR:
       case TdApi.InputMessagePoll.CONSTRUCTOR:
+      case TdApi.InputMessageChecklist.CONSTRUCTOR:
       case TdApi.InputMessageStory.CONSTRUCTOR:
       case TdApi.InputMessageVenue.CONSTRUCTOR:
       case TdApi.InputMessageForwarded.CONSTRUCTOR:
@@ -5848,7 +5859,7 @@ public class TD {
       case TdApi.InputMessagePaidMedia.CONSTRUCTOR:
         return null;
       default:
-        Td.assertInputMessageContent_6d335c();
+        Td.assertInputMessageContent_65313187();
         throw Td.unsupported(content);
     }
   }
@@ -5877,6 +5888,7 @@ public class TD {
       case TdApi.InputMessageGame.CONSTRUCTOR:
       case TdApi.InputMessageInvoice.CONSTRUCTOR:
       case TdApi.InputMessagePoll.CONSTRUCTOR:
+      case TdApi.InputMessageChecklist.CONSTRUCTOR:
       case TdApi.InputMessageStory.CONSTRUCTOR:
       case TdApi.InputMessageVenue.CONSTRUCTOR:
       case TdApi.InputMessageForwarded.CONSTRUCTOR:
@@ -5884,7 +5896,7 @@ public class TD {
       case TdApi.InputMessagePaidMedia.CONSTRUCTOR:
         return null;
       default:
-        Td.assertInputMessageContent_6d335c();
+        Td.assertInputMessageContent_65313187();
         throw Td.unsupported(content);
     }
   }
@@ -5921,6 +5933,7 @@ public class TD {
       case TdApi.InputMessageGame.CONSTRUCTOR:
       case TdApi.InputMessageInvoice.CONSTRUCTOR:
       case TdApi.InputMessagePoll.CONSTRUCTOR:
+      case TdApi.InputMessageChecklist.CONSTRUCTOR:
       case TdApi.InputMessageStory.CONSTRUCTOR:
       case TdApi.InputMessageVenue.CONSTRUCTOR:
       case TdApi.InputMessageForwarded.CONSTRUCTOR:
@@ -5928,7 +5941,7 @@ public class TD {
       case TdApi.InputMessagePaidMedia.CONSTRUCTOR:
         return;
       default:
-        Td.assertInputMessageContent_6d335c();
+        Td.assertInputMessageContent_65313187();
         throw Td.unsupported(content);
     }
   }
@@ -5956,6 +5969,7 @@ public class TD {
       case TdApi.InputMessageGame.CONSTRUCTOR:
       case TdApi.InputMessageInvoice.CONSTRUCTOR:
       case TdApi.InputMessagePoll.CONSTRUCTOR:
+      case TdApi.InputMessageChecklist.CONSTRUCTOR:
       case TdApi.InputMessageStory.CONSTRUCTOR:
       case TdApi.InputMessageVenue.CONSTRUCTOR:
       case TdApi.InputMessageForwarded.CONSTRUCTOR:
@@ -5963,7 +5977,7 @@ public class TD {
       case TdApi.InputMessagePaidMedia.CONSTRUCTOR:
         return null;
       default:
-        Td.assertInputMessageContent_6d335c();
+        Td.assertInputMessageContent_65313187();
         throw Td.unsupported(content);
     }
   }

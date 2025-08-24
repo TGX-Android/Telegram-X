@@ -134,6 +134,7 @@ import org.thunderdog.challegram.widget.DragDropLayout;
 import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.NetworkStatusBarView;
 import org.thunderdog.challegram.widget.PopupLayout;
+import org.thunderdog.challegram.widget.RootFrameLayout;
 import org.thunderdog.challegram.widget.StickersSuggestionsLayout;
 
 import java.lang.ref.Reference;
@@ -937,6 +938,10 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       return uiVisibility;
     }
     return View.SYSTEM_UI_FLAG_VISIBLE;
+  }
+
+  public boolean isInFullScreen () {
+    return isFullscreen;
   }
 
   private void setFullScreen (boolean isFullscreen) {
@@ -1944,6 +1949,18 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   public View getContentView () {
     return contentView;
+  }
+
+  public RootFrameLayout getRootView () {
+    return rootView;
+  }
+
+  public int getVisibleContentHeight () {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+      return rootView.getInnerContentHeight();
+    } else {
+      return contentView.getMeasuredHeight();
+    }
   }
 
   public int getControllerWidth (View view) {

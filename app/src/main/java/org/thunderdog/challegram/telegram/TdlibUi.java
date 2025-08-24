@@ -402,7 +402,7 @@ public class TdlibUi extends Handler {
         }
       });
       // TODO TDLib / server: ability to get totalCount with limit=0
-      tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, senderId, 0, 0, 1, null, 0, 0), result -> {
+      tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, senderId, 0, 0, 1, null), result -> {
         if (result.getConstructor() == TdApi.FoundChatMessages.CONSTRUCTOR) {
           int moreCount = ((TdApi.FoundChatMessages) result).totalCount - deletingMessages.length;
           if (moreCount > 0) {
@@ -1726,6 +1726,7 @@ public class TdlibUi extends Handler {
     public String inviteLink;
     public TdApi.ChatInviteLinkInfo inviteLinkInfo;
     public ThreadInfo threadInfo;
+    public TdApi.MessageTopic messageTopicId;
     public TdApi.SearchMessagesFilter filter;
     public TdApi.InternalLinkTypeVideoChat videoChatOrLiveStreamInvitation;
     public TdApi.FormattedText fillDraft;
@@ -1752,8 +1753,8 @@ public class TdlibUi extends Handler {
         outState.putString(keyPrefix + "cp_chatList", TD.makeChatListKey(chatList));
       if (threadInfo != null)
         threadInfo.saveTo(outState, keyPrefix + "cp_messageThread");
-      if (filter != null)
-        Td.put(outState, keyPrefix + "cp_filter", filter);
+      Td.put(outState, keyPrefix + "cp_topicId", messageTopicId);
+      Td.put(outState, keyPrefix + "cp_filter", filter);
       return true;
     }
 
@@ -1768,6 +1769,7 @@ public class TdlibUi extends Handler {
       if (threadInfo == ThreadInfo.INVALID)
         return null;
       params.threadInfo = threadInfo;
+      params.messageTopicId = Td.restoreMessageTopic(in, keyPrefix + "cp_topicId");
       params.filter = Td.restoreSearchMessagesFilter(in, keyPrefix + "cp_filter");
       return params;
     }
@@ -2093,6 +2095,7 @@ public class TdlibUi extends Handler {
     final boolean onlyScheduled = (options & CHAT_OPTION_SCHEDULED_MESSAGES) != 0;
     final TdApi.InternalLinkTypeVideoChat voiceChatInvitation = params != null ? params.videoChatOrLiveStreamInvitation : null;
     final ThreadInfo messageThread = params != null ? params.threadInfo : null;
+    final TdApi.MessageTopic messageTopicId = params != null ? params.messageTopicId : null;
     final TdApi.SearchMessagesFilter filter = params != null ? params.filter : null;
     final MessagesController.Referrer referrer = params != null && !StringUtils.isEmpty(params.inviteLink) ? new MessagesController.Referrer(params.inviteLink) : null;
     final TdApi.FormattedText forceDraft = params != null && !Td.isEmpty(params.fillDraft) ? params.fillDraft : null;
@@ -2224,11 +2227,11 @@ public class TdlibUi extends Handler {
 
     final MessagesController.Arguments arguments;
     if (params != null && !StringUtils.isEmpty(params.searchQuery) && params.foundMessage != null) {
-      arguments = new MessagesController.Arguments(chatList, chat, messageThread, highlightMessageId, highlightMode, filter, params.foundMessage, params.searchQuery);
+      arguments = new MessagesController.Arguments(chatList, chat, messageThread, messageTopicId, highlightMessageId, highlightMode, filter, params.foundMessage, params.searchQuery);
     } else if (highlightMessageId != null) {
-      arguments = new MessagesController.Arguments(chatList, chat, messageThread, highlightMessageId, highlightMode, filter);
+      arguments = new MessagesController.Arguments(chatList, chat, messageThread, messageTopicId, highlightMessageId, highlightMode, filter);
     } else {
-      arguments = new MessagesController.Arguments(tdlib, chatList, chat, messageThread, filter);
+      arguments = new MessagesController.Arguments(tdlib, chatList, chat, messageThread, messageTopicId, filter);
     }
     controller.setArguments(arguments
       .setScheduled(onlyScheduled)
@@ -2343,6 +2346,11 @@ public class TdlibUi extends Handler {
     openChat(context, 0, new TdApi.SearchPublicChat(videoChatOrLiveStreamInvitation.chatUsername), new ChatOpenParameters().urlOpenParameters(openParameters).videoChatOrLiveStreamInvitation(videoChatOrLiveStreamInvitation).keepStack().openProfileInCaseOfPrivateChat());
   }
 
+  private void joinGroupCall (final TdlibDelegate context, final TdApi.InputGroupCall inputGroupCall, final @Nullable UrlOpenParameters openParameters) {
+    // TODO join group call
+    showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
+  }
+
   private static final int BOT_MODE_START = 0;
   private static final int BOT_MODE_START_IN_GROUP = 1;
   private static final int BOT_MODE_START_GAME = 2;
@@ -2426,7 +2434,15 @@ public class TdlibUi extends Handler {
               if (message != null && message.replyTo == null && message.forwardInfo != null && tdlib.isChannelAutoForward(message)) {
                 tdlib.send(new TdApi.GetRepliedMessage(message.forwardInfo.source.chatId, message.forwardInfo.source.messageId), (repliedMessage, repliedMessageError) -> {
                   if (repliedMessage != null) {
-                    message.replyTo = new TdApi.MessageReplyToMessage(repliedMessage.chatId, repliedMessage.id, null, null, repliedMessage.date, repliedMessage.content);
+                    message.replyTo = new TdApi.MessageReplyToMessage(
+                      repliedMessage.chatId,
+                      repliedMessage.id,
+                      null,
+                      0,
+                      null,
+                      repliedMessage.date,
+                      repliedMessage.content
+                    );
                   }
                   openMessage(context, messageThread.getChatId(), messageId, messageThread, openParameters);
                 });
@@ -2496,8 +2512,21 @@ public class TdlibUi extends Handler {
     openChat(context, ChatId.fromSupergroupId(supergroupId), new TdApi.CreateSupergroupChat(supergroupId, false), params);
   }
 
-  public void openLinkedChat (final TdlibDelegate context, final long supergroupId, final @Nullable ChatOpenParameters params) {
-    openChat(context, 0, new TdApi.GetSupergroupFullInfo(supergroupId), params);
+  public void openLinkedChat (final TdlibDelegate context, final long supergroupId, final boolean directMessages, final @Nullable ChatOpenParameters params) {
+    tdlib.send(new TdApi.GetSupergroupFullInfo(supergroupId), (supergroupFull, error) -> {
+      if (supergroupFull != null) {
+        long chatId = directMessages ? supergroupFull.directMessagesChatId : supergroupFull.linkedChatId;
+        if (chatId == 0) {
+          showLinkTooltip(tdlib, R.drawable.baseline_error_24, Lang.getMarkdownString(context, R.string.LinkedChatNotFound), params != null ? params.urlOpenParameters : null);
+        } else {
+          openChat(context, chatId, params);
+        }
+      } else {
+        showChatOpenError(new TdApi.GetSupergroupFullInfo(supergroupId), error, params);
+        if (params != null)
+          tdlib.ui().post(params::onDone);
+      }
+    });
   }
 
   public void openSupergroupProfile (final TdlibDelegate context, final long supergroupId, final @Nullable UrlOpenParameters openParameters) {
@@ -2530,7 +2559,7 @@ public class TdlibUi extends Handler {
     return;
   }
 
-  private void checkInviteLink (final TdlibDelegate context, final String inviteLink, final @Nullable UrlOpenParameters openParameters) {
+  private void checkChatInviteLink (final TdlibDelegate context, final String inviteLink, final @Nullable UrlOpenParameters openParameters) {
     // TODO progress
     tdlib.client().send(new TdApi.CheckChatInviteLink(inviteLink), object -> {
       switch (object.getConstructor()) {
@@ -3451,7 +3480,7 @@ public class TdlibUi extends Handler {
       }
       case TdApi.InternalLinkTypeChatInvite.CONSTRUCTOR: {
         TdApi.InternalLinkTypeChatInvite chatInvite = (TdApi.InternalLinkTypeChatInvite) linkType;
-        checkInviteLink(context, chatInvite.inviteLink, openParameters);
+        checkChatInviteLink(context, chatInvite.inviteLink, openParameters);
         break;
       }
       case TdApi.InternalLinkTypeMessageDraft.CONSTRUCTOR: {
@@ -3497,6 +3526,11 @@ public class TdlibUi extends Handler {
       case TdApi.InternalLinkTypeUserToken.CONSTRUCTOR: {
         final String token = ((TdApi.InternalLinkTypeUserToken) linkType).token;
         openChatProfile(context, 0, null, new TdApi.SearchUserByToken(token), openParameters);
+        break;
+      }
+      case TdApi.InternalLinkTypeGroupCall.CONSTRUCTOR: {
+        TdApi.InternalLinkTypeGroupCall groupCall = (TdApi.InternalLinkTypeGroupCall) linkType;
+        joinGroupCall(context, new TdApi.InputGroupCallLink(groupCall.inviteLink), openParameters);
         break;
       }
       case TdApi.InternalLinkTypeVideoChat.CONSTRUCTOR: {
@@ -3616,6 +3650,8 @@ public class TdlibUi extends Handler {
       case TdApi.InternalLinkTypePremiumGift.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatAffiliateProgram.CONSTRUCTOR:
       case TdApi.InternalLinkTypeUpgradedGift.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeMyStars.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeMyToncoins.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypePassportDataRequest.CONSTRUCTOR: {
         showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
@@ -3745,7 +3781,7 @@ public class TdlibUi extends Handler {
         return; // async
       }
       default: {
-        Td.assertInternalLinkType_5626dbbe();
+        Td.assertInternalLinkType_35d33133();
         throw Td.unsupported(linkType);
       }
     }
@@ -6688,7 +6724,7 @@ public class TdlibUi extends Handler {
       } else if (menuItemId == R.id.btn_sendNoMarkdown) {
         sendCallback.onSendRequested(Td.newSendOptions(), true);
       } else if (menuItemId == R.id.btn_sendNoSound) {
-        sendCallback.onSendRequested(Td.newSendOptions(true), false);
+        sendCallback.onSendRequested(Td.newSendOptions(0L, null, true), false);
       } else if (menuItemId == R.id.btn_sendOnceOnline) {
         sendCallback.onSendRequested(Td.newSendOptions(new TdApi.MessageSchedulingStateSendWhenOnline()), false);
       }
@@ -6757,7 +6793,7 @@ public class TdlibUi extends Handler {
     context.showOptions(null, ids.get(), strings.get(), null, icons.get(), (v, optionId) -> {
       long seconds = 0;
       if (optionId == R.id.btn_sendNoSound) {
-        callback.runWithData(Td.newSendOptions(defaultSendOptions, true));
+        callback.runWithData(Td.newSendOptions(defaultSendOptions, 0L, null, true));
         return true;
       } else if (optionId == R.id.btn_sendOnceOnline) {
         callback.runWithData(Td.newSendOptions(defaultSendOptions, new TdApi.MessageSchedulingStateSendWhenOnline()));
@@ -6966,7 +7002,7 @@ public class TdlibUi extends Handler {
         effectiveLimit = tdlib.addedShareableChatFolderCountMax();
         break;
       default:
-        Td.assertPremiumLimitType_3b3ed738();
+        Td.assertPremiumLimitType_6d916432();
         throw Td.unsupported(premiumLimitType);
     }
 

@@ -72,11 +72,9 @@ set(ORIGINAL_CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS}")
 
 set(EXCLUDE_LIBS
   libjni-utils.a
-  libflac.a
   libyuv.a
   "${VPX_LIB_PATH}"
   libopus.a
-  libogg.a
   libopusfile.a
   librlottie.a
   liblz4.a
@@ -125,6 +123,12 @@ set_target_properties(tdjni PROPERTIES IMPORTED_LOCATION
 )
 target_link_libraries(tdjni INTERFACE ssl crypto)
 
+# opus
+include("${CMAKE_HOME_DIRECTORY}/BuildOpus.cmake")
+
+# ogg
+include("${CMAKE_HOME_DIRECTORY}/BuildOgg.cmake")
+
 # flac
 include("${CMAKE_HOME_DIRECTORY}/BuildFlac.cmake")
 
@@ -140,12 +144,6 @@ include("${CMAKE_HOME_DIRECTORY}/BuildYuv.cmake")
 add_library(vpx STATIC IMPORTED)
 set_target_properties(vpx PROPERTIES IMPORTED_LOCATION "${VPX_LIB_PATH}")
 target_include_directories(vpx INTERFACE "${VPX_DIR}/include")
-
-# opus
-include("${CMAKE_HOME_DIRECTORY}/BuildOpus.cmake")
-
-# ogg
-include("${CMAKE_HOME_DIRECTORY}/BuildOgg.cmake")
 
 # opusfile
 include("${CMAKE_HOME_DIRECTORY}/BuildOpusfile.cmake")
@@ -254,7 +252,7 @@ target_link_libraries(${NATIVE_LIB}
   ssl
   tdjni
   jni-utils
-  flac
+  FLAC
   yuv
   vpx
   ogg
@@ -280,6 +278,13 @@ target_link_libraries(${NATIVE_LIB}
   android
   cpufeatures
 )
+
+if (${ANDROID_ABI} STREQUAL "arm64-v8a" OR ${ANDROID_ABI} STREQUAL "x86_64")
+  # Enable 16 KB ELF alignment.
+  target_link_options(${NATIVE_LIB} PRIVATE
+    "-Wl,-z,max-page-size=16384"
+  )
+endif()
 
 include(AndroidNdkModules)
 android_ndk_import_module_cpufeatures()

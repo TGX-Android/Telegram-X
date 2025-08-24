@@ -31,7 +31,6 @@
 #include <tgcalls/legacy/InstanceImplLegacy.h>
 #include <tgcalls/InstanceImpl.h>
 #include <tgcalls/v2/InstanceV2Impl.h>
-#include <tgcalls/v2_4_0_0/InstanceV2_4_0_0Impl.h>
 #include <tgcalls/v2/InstanceV2ReferenceImpl.h>
 
 #include <tgcalls/VideoCaptureInterface.h>
