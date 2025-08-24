@@ -458,7 +458,7 @@ dependencies {
   implementation("com.googlecode.mp4parser:isoparser:1.0.6")
 
   // NTgCalls: https://github.com/pytgcalls/ntgcalls/
-  implementation("io.github.pytgcalls:ntgcalls:2.0.1")
+  implementation("io.github.pytgcalls:ntgcalls:2.0.6")
 }
 
 if (!isExperimentalBuild) {
