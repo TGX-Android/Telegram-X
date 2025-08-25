@@ -131,7 +131,12 @@ open class ModulePlugin : Plugin<Project> {
 
         project.afterEvaluate {
           tasks.withType(JavaCompile::class.java).configureEach {
-            options.compilerArgs.addAll(listOf("-Xmaxerrs", "2000", "-Xlint:unchecked", "-Xlint:deprecation"))
+            options.compilerArgs.addAll(listOf(
+              "-Xmaxerrs", "2000",
+              "-Xmaxwarns", "2000",
+              "-Xlint:unchecked",
+              "-Xlint:deprecation"
+            ))
           }
         }
 
