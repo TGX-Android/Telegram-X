@@ -1415,6 +1415,7 @@ public class PlaybackController extends ViewController<Void> implements Menu, Mo
         }
 
         @Override
+        @SuppressWarnings("deprecation")
         public int getOpacity () {
           return PixelFormat.UNKNOWN;
         }

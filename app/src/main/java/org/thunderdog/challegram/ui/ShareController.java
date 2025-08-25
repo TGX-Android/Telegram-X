@@ -2539,6 +2539,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
         }
 
         @Override
+        @SuppressWarnings("deprecation")
         public int getOpacity () {
           return PixelFormat.UNKNOWN;
         }

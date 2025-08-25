@@ -86,6 +86,7 @@ public class RootDrawable extends Drawable {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public int getOpacity () {
     return PixelFormat.UNKNOWN;
   }

@@ -503,6 +503,7 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public int getOpacity () {
       return PixelFormat.UNKNOWN;
     }

@@ -72,6 +72,7 @@ public abstract class SimpleShapeDrawable extends Drawable implements ColorChang
   public void setColorFilter (ColorFilter colorFilter) { }
 
   @Override
+  @SuppressWarnings("deprecation")
   public int getOpacity () {
     return PixelFormat.UNKNOWN;
   }
