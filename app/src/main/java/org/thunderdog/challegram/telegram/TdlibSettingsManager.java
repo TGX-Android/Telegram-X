@@ -526,9 +526,9 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
         try {
           String language = Locale.getDefault().getLanguage();
           if (!StringUtils.isEmpty(language)) {
-            if (language.equals(new Locale("ja").getLanguage()) ||
-              language.equals(new Locale("ko").getLanguage()) ||
-              language.equals(new Locale("zh").getLanguage())) {
+            if (language.equals(Locale.JAPANESE.getLanguage()) ||
+              language.equals(Locale.KOREAN.getLanguage()) ||
+              language.equals(Locale.CHINESE.getLanguage())) {
               defaultStyle = ThemeManager.CHAT_STYLE_MODERN;
             }
           }

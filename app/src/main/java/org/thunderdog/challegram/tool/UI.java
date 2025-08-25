@@ -37,7 +37,6 @@ import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.core.content.ContextCompat;
-import androidx.core.view.WindowCompat;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
@@ -430,26 +429,6 @@ public class UI {
 
   public static Resources getResources () {
     return appContext.getResources();
-  }
-
-  @SuppressWarnings("deprecation")
-  public static Locale getLocale (Configuration configuration) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-      android.os.LocaleList list = configuration.getLocales();
-      return list.get(0);
-    } else {
-      return configuration.locale;
-    }
-  }
-
-  public static Locale getSystemLocale () {
-    Configuration configuration = Resources.getSystem().getConfiguration();
-    return getLocale(configuration);
-  }
-
-  public static Locale getConfigurationLocale () {
-    Configuration configuration = getAppContext().getResources().getConfiguration();
-    return getLocale(configuration);
   }
 
   public static void removePendingRunnable (Runnable runnable) {
@@ -859,7 +838,7 @@ public class UI {
               inputLanguages.add(code);
           }
         } else {
-          String code = LocaleUtils.toBcp47Language(getSystemLocale());
+          String code = LocaleUtils.toBcp47Language(Lang.getSystemLocale());
           if (!StringUtils.isEmpty(code)) {
             inputLanguages.add(code);
           }
