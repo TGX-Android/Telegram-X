@@ -160,6 +160,20 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
     tdlib.listeners().subscribeToMessageUpdates(chatId, this);
   }
 
+  @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    if (recyclerView != null) {
+      recyclerView.setClipToPadding(extraBottomInset == 0);
+      Views.setPaddingBottom(recyclerView, extraBottomInset);
+    }
+  }
+
   private TdlibMessageViewer.Viewport messageViewport;
 
   @SuppressLint("InflateParams")
@@ -168,6 +182,8 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
     messageViewport = tdlib.messageViewer().createViewport(new TdApi.MessageSourceSearch(), this);
     recyclerView = (MediaRecyclerView) Views.inflate(context(), R.layout.recycler_sharedmedia, null);
     recyclerView.setOverScrollMode(RecyclerView.OVER_SCROLL_NEVER);
+    recyclerView.setClipToPadding(extraBottomInset == 0);
+    Views.setPaddingBottom(recyclerView, extraBottomInset);
     addThemeInvalidateListener(recyclerView);
     if (alternateParent != null) {
       recyclerView.setBackgroundColor(Theme.backgroundColor());

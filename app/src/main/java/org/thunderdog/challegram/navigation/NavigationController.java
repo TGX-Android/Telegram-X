@@ -1553,7 +1553,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       controller.setBottomInset(bottomInset, bottomInsetWithoutIme);
     } else {
       View view = controller.getValue();
-      Views.setBottomMargin(view, bottomInset);
+      Views.setPaddingBottom(view, bottomInset);
     }
   }
 

@@ -146,6 +146,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.FutureBool;
+import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableLong;
 import tgx.td.ChatId;
 import tgx.td.Td;
@@ -944,6 +945,19 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private RtlViewPager pager;
   private ViewControllerPagerAdapter pagerAdapter;
+
+  @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    iterateControllers(c ->
+      c.setBottomInset(extraBottomInset, extraBottomInsetWithoutIme)
+    );
+  }
 
   @Override
   protected int getBackButton () {
@@ -5511,12 +5525,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private void stopCachedScrolls () {
-    for (int i = 0; i < pagerAdapter.getCount(); i++) {
-      ViewController<?> c = pagerAdapter.findCachedControllerByPosition(i);
-      if (c != null) {
-        ((SharedBaseController<?>) c).stopScroll();
-      }
-    }
+    iterateControllers(SharedBaseController::stopScroll);
   }
 
   private boolean belongsToBaseRecycler (int width, float y) {
@@ -5548,13 +5557,17 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private void onItemsHeightProbablyChanged () {
     cachedItemsWidth = cachedItemsHeight = 0;
+    iterateControllers(SharedBaseController::onItemsHeightProbablyChanged);
+    checkTopViewPosition();
+  }
+
+  private void iterateControllers (RunnableData<SharedBaseController<?>> callback) {
     for (int i = 0; i < pagerAdapter.getCount(); i++) {
       ViewController<?> c = pagerAdapter.findCachedControllerByPosition(i);
       if (c != null) {
-        ((SharedBaseController<?>) c).onItemsHeightProbablyChanged();
+        callback.runWithData((SharedBaseController<?>) c);
       }
     }
-    checkTopViewPosition();
   }
 
   private void onGlobalHeightChanged () {
@@ -5562,12 +5575,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       onItemsHeightProbablyChanged();
     }
     baseRecyclerView.invalidateItemDecorations();
-    for (int i = 0; i < pagerAdapter.getCount(); i++) {
-      ViewController<?> c = pagerAdapter.findCachedControllerByPosition(i);
-      if (c != null) {
-        ((SharedBaseController<?>) c).onGlobalHeightChanged();
-      }
-    }
+    iterateControllers(SharedBaseController::onGlobalHeightChanged);
   }
 
   private boolean eventsBelongToPager;
@@ -6127,6 +6135,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   @Override
   public void onPrepareToShow (int position, ViewController<?> controller) {
     super.onPrepareToShow();
+    controller.setBottomInset(extraBottomInset, extraBottomInsetWithoutIme);
     if (baseRecyclerView.getMeasuredWidth() != 0) {
       checkContentScrollY(controller);
     }
@@ -6674,36 +6683,24 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
     }
 
-    final int size = pagerAdapter.getCount();
-    for (int i = 0; i < size; i++) {
-      ViewController<?> c = pagerAdapter.findCachedControllerByPosition(i);
-      if (c != null) {
-        ((SharedBaseController<?>) c).addMessage(message);
-      }
-    }
+    iterateControllers(c ->
+      c.addMessage(message)
+    );
   }
 
   @UiThread
   private void removeMessages (long[] messageIds) {
-    final int size = pagerAdapter.getCount();
-    for (int i = 0; i < size; i++) {
-      ViewController<?> c = pagerAdapter.findCachedControllerByPosition(i);
-      if (c != null) {
-        ((SharedBaseController<?>) c).removeMessages(messageIds);
-      }
-    }
+    iterateControllers(c ->
+      c.removeMessages(messageIds)
+    );
     refreshCounters();
   }
 
   @UiThread
   private void editMessage (long messageId, TdApi.MessageContent content) {
-    final int size = pagerAdapter.getCount();
-    for (int i = 0; i < size; i++) {
-      ViewController<?> c = pagerAdapter.findCachedControllerByPosition(i);
-      if (c != null) {
-        ((SharedBaseController<?>) c).editMessage(messageId, content);
-      }
-    }
+    iterateControllers(c ->
+      c.editMessage(messageId, content)
+    );
   }
 
   public static boolean filterMediaMessage (TdApi.Message message) {

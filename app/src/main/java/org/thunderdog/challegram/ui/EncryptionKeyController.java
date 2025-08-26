@@ -38,6 +38,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.ShadowView;
@@ -77,10 +78,26 @@ public class EncryptionKeyController extends ViewController<EncryptionKeyControl
     return Lang.getString(R.string.EncryptionKey);
   }
 
+  private RelativeLayout contentView;
+
+  @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    if (contentView != null) {
+      Views.setPaddingBottom(contentView, extraBottomInset);
+    }
+  }
+
   @Override
   protected View onCreateView (Context context) {
-    final RelativeLayout contentView = new RelativeLayout(context);
+    contentView = new RelativeLayout(context);
     contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    Views.setPaddingBottom(contentView, extraBottomInset);
     ViewSupport.setThemedBackground(contentView, ColorId.background, this);
 
     final FrameLayoutFix keyView = new FrameLayoutFix(context) {
