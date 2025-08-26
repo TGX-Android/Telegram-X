@@ -50,7 +50,7 @@ public class NavigationLayout extends FrameLayoutFix implements Destroyable, Roo
   }
 
   @Override
-  public void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect systemInsets, boolean isUpdate) {
+  public void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect effectiveInsetsWithoutIme, boolean isUpdate) {
     applyTopInset(effectiveInsets.top);
   }
 

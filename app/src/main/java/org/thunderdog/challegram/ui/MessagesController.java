@@ -8594,7 +8594,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return makeGuessAboutForcePreviewHeight();
     } else {
       int height;
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+      if (Config.ENABLE_EDGE_TO_EDGE) {
         height = context().getVisibleContentHeight() - context().getRootView().getTopInset() - HeaderView.getSize(false);
       } else {
         height = Screen.currentHeight() - HeaderView.getSize(true);

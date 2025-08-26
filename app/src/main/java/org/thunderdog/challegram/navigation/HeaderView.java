@@ -208,7 +208,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   }
 
   @Override
-  public void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect systemInsets, boolean isUpdate) {
+  public void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect effectiveInsetsWithoutIme, boolean isUpdate) {
     setHeaderOffset(effectiveInsets.top);
   }
 

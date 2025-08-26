@@ -25,6 +25,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
@@ -54,7 +55,7 @@ public class RootDrawable extends Drawable {
     if (!state.isDisabled) {
       c.drawColor(Theme.getColor(state.getColorId()));
     }
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && !Config.ENABLE_EDGE_TO_EDGE) {
       int height = Screen.getNavigationBarHeight();
       if (height > 0 && state.context.hadSoftwareKeysOnActivityLaunch()) {
         int rotation = state.context.getWindowRotationDegrees();

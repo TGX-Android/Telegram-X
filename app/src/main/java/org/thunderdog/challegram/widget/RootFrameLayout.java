@@ -24,9 +24,11 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.widget.FrameLayout;
 
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.navigation.InterceptLayout;
 import org.thunderdog.challegram.navigation.NavigationController;
@@ -143,10 +145,6 @@ public class RootFrameLayout extends FrameLayoutFix {
         lastAction = null;
       }
       if (keyboardListener != null) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-          keyboardListener.onKeyboardStateChanged(isVisible);
-          return;
-        }
         ViewTreeObserver observer = getViewTreeObserver();
         observer.removeOnPreDrawListener(onPreDrawListener);
         observer.addOnPreDrawListener(onPreDrawListener);
@@ -217,7 +215,7 @@ public class RootFrameLayout extends FrameLayoutFix {
   }
 
   public interface InsetsChangeListener {
-    void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect systemInsets, boolean isUpdate);
+    void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect effectiveInsetsWithoutIme, boolean isUpdate);
   }
 
   private final ReferenceList<InsetsChangeListener> listeners = new ReferenceList<>();
@@ -235,19 +233,27 @@ public class RootFrameLayout extends FrameLayoutFix {
   private boolean hasInsets;
   private Object windowInsetsRaw;
   private final Rect systemInsets = new Rect();
+  private final Rect systemInsetsWithoutIme = new Rect();
 
   private final Rect effectiveInsets = new Rect();
+  private final Rect effectiveInsetsWithoutIme = new Rect();
+
+  private final Rect legacyInsets = new Rect();
 
   public void processWindowInsets (Object insetsRaw) {
     boolean hadInsets = hasInsets;
     boolean systemInsetsUpdated = updateInsets(systemInsets, insetsRaw, true);
+    boolean systemInsetsWithoutImeUpdated = updateInsets(systemInsetsWithoutIme, insetsRaw, false);
     boolean verticalSystemInsetsUpdated = !hasInsets || systemInsets.top != prevSystemInsets.top || systemInsets.bottom != prevSystemInsets.bottom;
     boolean horizontalSystemInsetsUpdated = !hasInsets || systemInsets.left != prevSystemInsets.left || systemInsets.right != prevSystemInsets.right;
 
-    boolean ignoreChanges = Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM && UI.getContext(getContext()).isInFullScreen() && verticalSystemInsetsUpdated != horizontalSystemInsetsUpdated;
+    boolean ignoreChanges = Config.ENABLE_EDGE_TO_EDGE && UI.getContext(getContext()).isInFullScreen() && verticalSystemInsetsUpdated != horizontalSystemInsetsUpdated;
     boolean effectiveInsetsUpdated = !ignoreChanges && U.setRect(effectiveInsets, systemInsets.left, systemInsets.top, systemInsets.right, systemInsets.bottom);
     if (!ignoreChanges) {
       effectiveInsets.set(systemInsets);
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        effectiveInsetsWithoutIme.set(systemInsetsWithoutIme);
+      }
     }
 
     windowInsetsRaw = insetsRaw;
@@ -265,12 +271,12 @@ public class RootFrameLayout extends FrameLayoutFix {
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !ignoreChanges && verticalSystemInsetsUpdated && !horizontalSystemInsetsUpdated) {
       if (this instanceof BaseRootLayout) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM || !UI.getContext(getContext()).isInFullScreen()) {
+        if (!Config.ENABLE_EDGE_TO_EDGE || !UI.getContext(getContext()).isInFullScreen()) {
           Screen.setStatusBarHeight(effectiveInsets.top);
         }
       }
 
-     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+     if (!Config.ENABLE_EDGE_TO_EDGE) {
         if (hadInsets && !ignoreSystemNavigationBar) {
           int bottomDiff = (shouldIgnoreBottomMargin(prevSystemInsets.bottom) ? 0 : prevSystemInsets.bottom) - (shouldIgnoreBottomMargin(effectiveInsets.bottom) ? 0 : effectiveInsets.bottom);
 
@@ -284,9 +290,16 @@ public class RootFrameLayout extends FrameLayoutFix {
       }
     }
 
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R && !ignoreChanges) {
+      effectiveInsetsWithoutIme.set(systemInsetsWithoutIme);
+      if (isKeyboardVisible && effectiveInsetsWithoutIme.bottom == effectiveInsets.bottom) {
+        effectiveInsetsWithoutIme.bottom = Math.max(0, effectiveInsets.bottom - Keyboard.getSize());
+      }
+    }
+
     if (effectiveInsetsUpdated || systemInsetsUpdated) {
       for (InsetsChangeListener listener : listeners) {
-        listener.onInsetsChanged(this, effectiveInsets, systemInsets, hadInsets);
+        listener.onInsetsChanged(this, effectiveInsets, effectiveInsetsWithoutIme, hadInsets);
       }
       requestLayout();
     }
@@ -304,10 +317,12 @@ public class RootFrameLayout extends FrameLayoutFix {
 
   @TargetApi(Build.VERSION_CODES.LOLLIPOP)
   private void dispatchChildInsets (View child, Object windowInsetsRaw, int gravity) {
-    int left = ignoreAll || ignoreHorizontal || gravity == Gravity.RIGHT ? 0 : systemInsets.left;
-    int top = ignoreAll ? 0 : systemInsets.top;
-    int right = ignoreAll || ignoreHorizontal || gravity == Gravity.LEFT ? 0 : systemInsets.right;
-    int bottom = shouldIgnoreBottomMargin(systemInsets.bottom) ? 0 : systemInsets.bottom;
+    legacyInsets.set(
+      ignoreAll || ignoreHorizontal || gravity == Gravity.RIGHT ? 0 : systemInsets.left,
+      ignoreAll ? 0 : systemInsets.top,
+      ignoreAll || ignoreHorizontal || gravity == Gravity.LEFT ? 0 : systemInsets.right,
+      shouldIgnoreBottomMargin(systemInsets.bottom) ? 0 : systemInsets.bottom
+    );
 
     android.view.WindowInsets originalWindowInsets = (android.view.WindowInsets) windowInsetsRaw;
     android.view.WindowInsets newWindowInsets;
@@ -320,12 +335,23 @@ public class RootFrameLayout extends FrameLayoutFix {
       newWindowInsets = originalWindowInsets;
     }
 
-    if (UI.getContext(getContext()).dispatchCameraMargins(child, systemInsets.left, systemInsets.top, systemInsets.right, systemInsets.bottom)) {
+    if (UI.getContext(getContext()).dispatchCameraMargins(child, legacyInsets, effectiveInsets, effectiveInsetsWithoutIme)) {
       newWindowInsets = (android.view.WindowInsets) newWindowInsets(newWindowInsets, 0, 0, 0, 0);
     } else {
+      MarginLayoutParams params = (MarginLayoutParams) child.getLayoutParams();
+      int originalLeft = params.leftMargin;
+      int originalTop = params.topMargin;
+      int originalRight = params.rightMargin;
+      int originalBottom = params.bottomMargin;
       ViewController<?> c = ViewController.findAncestor(child);
       if (c != null) {
-        c.dispatchSystemInsets(child, (MarginLayoutParams) child.getLayoutParams(), left, top, right, bottom);
+        c.dispatchSystemInsets(child, params, legacyInsets, effectiveInsets, effectiveInsetsWithoutIme, true);
+      }
+      if (params.leftMargin != originalLeft ||
+        params.topMargin != originalTop ||
+        params.rightMargin != originalRight ||
+        params.bottomMargin != originalBottom) {
+        Views.updateLayoutParams(child);
       }
     }
     child.dispatchApplyWindowInsets(newWindowInsets);
@@ -354,21 +380,71 @@ public class RootFrameLayout extends FrameLayoutFix {
     }
   }
 
-  private void applyMarginInsets (View child, MarginLayoutParams lp, Rect insets, int gravity, boolean ignoreTop) {
-    int leftMargin = ignoreAll || ignoreHorizontal || gravity == Gravity.RIGHT ? 0 : insets.left;
-    int topMargin = ignoreAll || ignoreTop ? 0 : insets.top;
-    int rightMargin = ignoreAll || ignoreHorizontal || gravity == Gravity.LEFT ? 0 : insets.right;
-    int bottomMargin = shouldIgnoreBottomMargin(insets.bottom) ? 0 : insets.bottom;
-    if (UI.getContext(getContext()).dispatchCameraMargins(child, leftMargin, topMargin, rightMargin, bottomMargin)) {
-      lp.leftMargin = lp.topMargin = lp.rightMargin = lp.bottomMargin = 0;
+  private void applyMarginInsets (View child, FrameLayout.LayoutParams params, Rect legacyInsets, Rect insets, Rect insetsWithoutIme) {
+    legacyInsets.set(
+      ignoreAll || ignoreHorizontal || params.gravity == Gravity.RIGHT ? 0 : effectiveInsets.left,
+      ignoreAll || true ? 0 : effectiveInsets.top,
+      ignoreAll || ignoreHorizontal || params.gravity == Gravity.LEFT ? 0 : effectiveInsets.right,
+      shouldIgnoreBottomMargin(effectiveInsets.bottom) ? 0 : effectiveInsets.bottom
+    );
+    if (UI.getContext(getContext()).dispatchCameraMargins(child, legacyInsets, insets, insetsWithoutIme)) {
+      Views.setMargins(params, 0, 0, 0, 0);
     } else {
-      lp.leftMargin = leftMargin;
-      lp.topMargin = topMargin;
-      lp.rightMargin = rightMargin;
-      lp.bottomMargin = bottomMargin;
+      Views.setMargins(params,
+        legacyInsets.left,
+        legacyInsets.top,
+        legacyInsets.right,
+        legacyInsets.bottom
+      );
       ViewController<?> c = ViewController.findAncestor(child);
       if (c != null) {
-        c.dispatchSystemInsets(child, lp, insets.left, insets.top, insets.right, insets.bottom);
+        c.dispatchSystemInsets(child, params, legacyInsets, insets, insetsWithoutIme, false);
+      }
+    }
+  }
+
+  private void applyNavigationInsets (InterceptLayout navigationLayout, MarginLayoutParams navigationLayoutParams, Rect insets, Rect insetsWithoutIme) {
+    // No need for insets in navigation
+    Views.setMargins(navigationLayoutParams, 0, 0, 0, 0);
+
+    legacyInsets.set(
+      ignoreAll || ignoreHorizontal ? 0 : insets.left,
+      ignoreAll || true ? 0 : insets.top,
+      ignoreAll || ignoreHorizontal ? 0 : insets.right,
+      shouldIgnoreBottomMargin(insets.bottom) ? 0 : insets.bottom
+    );
+
+    for (int i = 0; i < navigationLayout.getChildCount(); i++) {
+      View innerChild = navigationLayout.getChildAt(i);
+      if (innerChild != null) {
+        MarginLayoutParams params = (MarginLayoutParams) innerChild.getLayoutParams();
+        int originalLeft = params.leftMargin;
+        int originalTop = params.topMargin;
+        int originalRight = params.rightMargin;
+        int originalBottom = params.bottomMargin;
+        if (innerChild.getTag() instanceof NavigationController) {
+          NavigationController navigation = (NavigationController) innerChild.getTag();
+          navigation.dispatchSystemInsets(innerChild, params, legacyInsets, insets, insetsWithoutIme);
+        } else if (innerChild instanceof OverlayView) {
+          Views.setMargins(params, 0, 0, 0, 0);
+        } else {
+          Views.setMargins(params,
+            legacyInsets.left,
+            legacyInsets.top,
+            legacyInsets.right,
+            legacyInsets.bottom
+          );
+          ViewController<?> c = ViewController.findAncestor(innerChild);
+          if (c != null) {
+            c.dispatchSystemInsets(innerChild, params, legacyInsets, insets, insetsWithoutIme, false);
+          }
+        }
+        if (params.leftMargin != originalLeft ||
+          params.topMargin != originalTop ||
+          params.rightMargin != originalRight ||
+          params.bottomMargin != originalBottom) {
+          Views.updateLayoutParams(innerChild);
+        }
       }
     }
   }
@@ -385,38 +461,6 @@ public class RootFrameLayout extends FrameLayoutFix {
     return hasInsets ? effectiveInsets.top : 0;
   }
 
-  private void applyNavigationInsets (InterceptLayout navigationLayout, MarginLayoutParams params, Rect insets) {
-    Views.setMargins(params, 0, 0, 0, 0);
-
-    int leftMargin = ignoreAll || ignoreHorizontal ? 0 : insets.left;
-    int topMargin = 0;
-    int rightMargin = ignoreAll || ignoreHorizontal ? 0 : insets.right;
-    int bottomMargin = shouldIgnoreBottomMargin(insets.bottom) ? 0 : insets.bottom;
-
-    for (int i = 0; i < navigationLayout.getChildCount(); i++) {
-      View innerChild = navigationLayout.getChildAt(i);
-      if (innerChild != null) {
-        boolean updated;
-        if (innerChild.getTag() instanceof NavigationController) {
-          NavigationController navigation = (NavigationController) innerChild.getTag();
-          updated = navigation.dispatchInnerMargins(innerChild, (MarginLayoutParams) innerChild.getLayoutParams(), leftMargin, topMargin, rightMargin, bottomMargin);
-        } else if (innerChild instanceof OverlayView) {
-          updated = Views.setMargins(innerChild, 0, 0, 0, 0);
-        } else {
-          ViewController<?> c = ViewController.findAncestor(innerChild);
-          if (c != null) {
-            updated = c.dispatchSystemInsets(innerChild, (MarginLayoutParams) innerChild.getLayoutParams(), leftMargin, topMargin, rightMargin, bottomMargin);
-          } else {
-            updated = Views.setMargins(innerChild, leftMargin, topMargin, rightMargin, bottomMargin);
-          }
-        }
-        if (updated) {
-          Views.updateLayoutParams(innerChild);
-        }
-      }
-    }
-  }
-
   private int previousHeight;
   private int previousWidth;
 
@@ -431,12 +475,12 @@ public class RootFrameLayout extends FrameLayoutFix {
         View view = getChildAt(i);
         if (view != null) {
           LayoutParams params = (LayoutParams) view.getLayoutParams();
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM && view instanceof InterceptLayout) {
-            applyNavigationInsets((InterceptLayout) view, params, effectiveInsets);
+          if (Config.ENABLE_EDGE_TO_EDGE && view instanceof InterceptLayout) {
+            applyNavigationInsets((InterceptLayout) view, params, effectiveInsets, effectiveInsetsWithoutIme);
           } else if (view.getFitsSystemWindows()) {
             dispatchChildInsets(view, windowInsetsRaw, params.gravity);
           } else {
-            applyMarginInsets(view, params, effectiveInsets, params.gravity, true);
+            applyMarginInsets(view, params, legacyInsets, effectiveInsets, effectiveInsetsWithoutIme);
           }
         }
       }

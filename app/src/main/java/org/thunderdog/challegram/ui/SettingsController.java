@@ -72,6 +72,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.AppBuildInfo;
@@ -390,6 +391,20 @@ public class SettingsController extends ViewController<Void> implements
   private AppBuildInfo previousBuildInfo;
 
   @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    if (contentView != null) {
+      Views.setPaddingBottom(this.contentView, extraBottomInset);
+      this.contentView.setClipToPadding(extraBottomInset == 0);
+    }
+  }
+
+  @Override
   protected View onCreateView (Context context) {
     this.headerCell = new ComplexHeaderView(context, tdlib, this);
     this.headerCell.setAvatarExpandListener((headerView1, expandFactor, byCollapse, allowanceFactor, collapseFactor) -> updateButtonsColor());
@@ -426,6 +441,8 @@ public class SettingsController extends ViewController<Void> implements
     initMyUser();
 
     this.contentView = new ComplexRecyclerView(context, this);
+    Views.setPaddingBottom(this.contentView, extraBottomInset);
+    this.contentView.setClipToPadding(extraBottomInset == 0);
     this.contentView.setHasFixedSize(true);
     this.contentView.setHeaderView(headerCell, this);
     this.contentView.setItemAnimator(null);

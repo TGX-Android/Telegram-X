@@ -220,10 +220,15 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   }
 
   @Override
-  public boolean dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, int left, int top, int right, int bottom) {
-    boolean updated = super.dispatchSystemInsets(parentView, originalParams, left, top, right, bottom);
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
+  public void dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, Rect legacyInsets, Rect insets, Rect insetsWithoutIme, boolean fitsSystemWindows) {
+    super.dispatchSystemInsets(parentView, originalParams, legacyInsets, insets, insetsWithoutIme, fitsSystemWindows);
+    originalParams.bottomMargin = 0;
     recyclerView.setPadding(0, 0, 0, systemInsets.bottom);
-    return updated;
   }
 
   @Override

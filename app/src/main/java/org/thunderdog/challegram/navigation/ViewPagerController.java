@@ -160,6 +160,16 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
   }
 
   @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    if (adapter != null) {
+      for (ViewController<?> c : adapter.attachedControllers) {
+        c.setBottomInset(extraBottomInset, extraBottomInsetWithoutIme);
+      }
+    }
+  }
+
+  @Override
   protected View onCreateView (Context context) {
     FrameLayoutFix contentView = new FrameLayoutFix(context) {
       @Override
@@ -833,6 +843,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     public Object instantiateItem (@NonNull ViewGroup container, int position) {
       ViewController<?> c = prepareViewController(reversePosition(position));
       container.addView(c.getValue());
+      c.setBottomInset(parent.extraBottomInset, parent.extraBottomInsetWithoutIme);
       attachedControllers.add(c);
       parent.updateControllerState(c, position);
       if ((position == parent.currentPosition || (parent.currentPositionOffset != 0f && position == parent.currentPosition + (parent.currentPositionOffset > 0f ? 1 : -1))) && c.shouldDisallowScreenshots()) {

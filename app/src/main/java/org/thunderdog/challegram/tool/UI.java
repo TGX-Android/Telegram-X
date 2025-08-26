@@ -588,8 +588,11 @@ public class UI {
   public static void clearActivity (BaseActivity a) {
     a.requestWindowFeature(Window.FEATURE_NO_TITLE);
     Window w = a.getWindow();
-    // TODO: rework to Window.setDecorFitsSystemWindows(boolean)
-    w.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+    if (Config.ENABLE_EDGE_TO_EDGE) {
+      w.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+    } else {
+      w.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+    }
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
       w.setBackgroundDrawableResource(R.drawable.transparent);
     } else {

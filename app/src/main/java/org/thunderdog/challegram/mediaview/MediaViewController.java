@@ -202,7 +202,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   public static final int MODE_SECRET = 4; // just single photo, no animations and etc
   public static final int MODE_SIMPLE = 5;
 
-  private static final boolean APPLY_ALL_INSETS = Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM;
+  private static final boolean APPLY_ALL_INSETS = Config.ENABLE_EDGE_TO_EDGE;
 
   public MediaViewController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -5322,11 +5322,12 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   @Override
-  public boolean dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, int left, int top, int right, int bottom) {
-    boolean changed = this.bottomInnerMargin != bottom;
-    this.bottomInnerMargin = bottom;
+  public void dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, Rect legacyInsets, Rect insets, Rect insetsWithoutIme, boolean fitsSystemWindows) {
+    super.dispatchSystemInsets(parentView, originalParams, legacyInsets, insets, insetsWithoutIme, fitsSystemWindows);
+    boolean changed = this.bottomInnerMargin != legacyInsets.bottom;
+    this.bottomInnerMargin = legacyInsets.bottom;
     if (APPLY_ALL_INSETS || (mode == MODE_GALLERY && isFromCamera)) {
-      int controlsMargin = APPLY_ALL_INSETS || bottom <= Screen.getNavigationBarHeight() ? bottom : 0;
+      int controlsMargin = APPLY_ALL_INSETS || legacyInsets.bottom <= Screen.getNavigationBarHeight() ? legacyInsets.bottom : 0;
       setControlsMargin(controlsMargin);
       int bottomOffset = getSectionBottomOffset(SECTION_CROP);
       Views.setBottomMargin(cropTargetView, bottomOffset);
@@ -5345,7 +5346,6 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       }
       mediaView.layoutCells();
     }
-    return super.dispatchSystemInsets(parentView, originalParams, left, top, right, bottom);
   }
 
   @Override

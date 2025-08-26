@@ -84,7 +84,13 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayoutRec
   }
 
   @Override
-  protected void onExtraBottomInsetChanged (int extraBottomInset) {
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
     if (recyclerView != null) {
       recyclerView.setPadding(0, 0, 0, extraBottomInset);
     }

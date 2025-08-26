@@ -420,6 +420,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     this.navigationController = navigationController;
     this.headerView = navigationController.getHeaderView();
     this.floatingButton = navigationController.getFloatingButton();
+    navigationController.applyBottomInset(this);
   }
 
   public void attachHeaderViewWithoutNavigation (HeaderView headerView) {
@@ -434,6 +435,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     this.navigationController = null;
     this.headerView = null;
     this.floatingButton = null;
+    setBottomInset(0, 0);
   }
 
   protected final NavigationStack navigationStack () {
@@ -1201,25 +1203,32 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   private float lastPlayerFactor;
 
   protected int extraBottomInset;
+  protected int extraBottomInsetWithoutIme;
 
-  public final void setExtraBottomInset (int extraBottomInset) {
-    if (this.extraBottomInset != extraBottomInset) {
+  public final void setBottomInset (int extraBottomInset, int extraBottomInsetWithoutIme) {
+    if (this.extraBottomInset != extraBottomInset || this.extraBottomInsetWithoutIme != extraBottomInsetWithoutIme) {
       this.extraBottomInset = extraBottomInset;
-      onExtraBottomInsetChanged(extraBottomInset);
+      this.extraBottomInsetWithoutIme = extraBottomInsetWithoutIme;
+      onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, extraBottomInset == extraBottomInsetWithoutIme);
     }
   }
 
-  protected void onExtraBottomInsetChanged (int extraBottomInset) {
+  public boolean supportsBottomInset () {
+    return false;
+  }
+
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
     // override in children
   }
 
   protected final Rect systemInsets = new Rect();
+  protected final Rect systemInsetsWithoutIme = new Rect();
 
   @CallSuper
-  public boolean dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, int left, int top, int right, int bottom) {
-    systemInsets.set(left, top, right, bottom);
+  public void dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, Rect legacyInsets, Rect insets, Rect insetsWithoutIme, boolean fitsSystemWindows) {
+    systemInsets.set(insets);
+    systemInsetsWithoutIme.set(insetsWithoutIme);
     // override in children
-    return false;
   }
 
   public View getViewForApplyingOffsets () {

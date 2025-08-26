@@ -407,15 +407,16 @@ public class EmojiLayout extends FrameLayoutFix implements ViewPager.OnPageChang
     setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
   }
 
-  private int extraBottomInset;
+  private int extraBottomInset, extraBottomInsetWithoutKeyboard;
 
-  public void setExtraBottomInset (int extraBottomInset) {
-    if (this.extraBottomInset != extraBottomInset) {
+  public void setExtraBottomInset (int extraBottomInset, int extraBottomInsetWithoutKeyboard) {
+    if (this.extraBottomInset != extraBottomInset || this.extraBottomInsetWithoutKeyboard != extraBottomInsetWithoutKeyboard) {
       this.extraBottomInset = extraBottomInset;
+      this.extraBottomInsetWithoutKeyboard = extraBottomInsetWithoutKeyboard;
       if (adapter != null) {
         for (int i = 0; i < adapter.cachedItems.size(); i++) {
           ViewController<?> controller = adapter.cachedItems.valueAt(i);
-          controller.setExtraBottomInset(extraBottomInset);
+          controller.setBottomInset(extraBottomInset, extraBottomInsetWithoutKeyboard);
         }
       }
     }
@@ -1019,7 +1020,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewPager.OnPageChang
           c.bindThemeListeners(themeProvider);
         }
       }
-      c.setExtraBottomInset(parent.extraBottomInset);
+      c.setBottomInset(parent.extraBottomInset, parent.extraBottomInsetWithoutKeyboard);
       container.addView(c.getValue());
       return c;
     }

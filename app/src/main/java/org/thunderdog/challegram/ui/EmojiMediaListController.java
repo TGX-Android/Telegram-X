@@ -114,9 +114,15 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   }
 
   @Override
-  protected void onExtraBottomInsetChanged (int extraBottomInset) {
-    stickersController.setExtraBottomInset(extraBottomInset);
-    trendingSetsController.setExtraBottomInset(extraBottomInset);
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    stickersController.setBottomInset(extraBottomInset, extraBottomInsetWithoutIme);
+    trendingSetsController.setBottomInset(extraBottomInset, extraBottomInsetWithoutIme);
     if (gifsView != null) {
       gifsView.setPadding(0, 0, 0, extraBottomInset);
     }

@@ -30,6 +30,7 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -1956,7 +1957,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   public int getVisibleContentHeight () {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+    if (Config.ENABLE_EDGE_TO_EDGE) {
       return rootView.getInnerContentHeight();
     } else {
       return contentView.getMeasuredHeight();
@@ -3129,9 +3130,14 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     hideSoftwareKeyboard();
   }
 
-  public boolean dispatchCameraMargins (View view, int left, int top, int right, int bottom) {
+  public boolean dispatchCameraMargins (View view, Rect legacyInsets, Rect insets, Rect insetsWithoutIme) {
     if (view != null && camera != null && camera.getWrapUnchecked() == view) {
-      camera.setControlMargins(left, top, right, bottom);
+      camera.setControlMargins(
+        insetsWithoutIme.left,
+        insetsWithoutIme.top,
+        insetsWithoutIme.right,
+        insetsWithoutIme.bottom
+      );
       return true;
     }
     return false;
