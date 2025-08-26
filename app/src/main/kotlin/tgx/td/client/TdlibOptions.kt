@@ -66,6 +66,7 @@ data class TdlibOptions(
 
   @JvmField var usdToThousandStarRate: Long = 0,
   @JvmField var thousandStarToUsdRate: Long = 0,
+  @JvmField var millionToncoinToUsdRate: Long = 0,
 
   @JvmField var giftTextLengthMax: Int = 128,
   @JvmField var pinnedGiftCountMax: Int = 6,
@@ -76,12 +77,14 @@ data class TdlibOptions(
   @JvmField var giftResaleEarningsPerMille: Long = 800L,
 
   @JvmField var starWithdrawalCountMin: Long = 1000L,
+  @JvmField var starWithdrawalCountMax: Long = 25000000L,
   @JvmField var paidReactionStarCountMax: Long = 2500L,
   @JvmField var paidMessageEarningsPerMille: Long = 850L,
   @JvmField var paidMessageStarCountMax: Long = 10000L,
   @JvmField var paidMediaMessageStarCountMax: Long = 10000L,
   @JvmField var subscriptionStarCountMin: Long = 10000L,
   @JvmField var subscriptionStarCountMax: Long = 10000L,
+  @JvmField var directChannelMessageStarCountDefault: Long = 10L,
 
   @JvmField var affiliateProgramCommissionPerMilleMin: Long = 1L,
   @JvmField var affiliateProgramCommissionPerMilleMax: Long = 800L,
@@ -89,8 +92,19 @@ data class TdlibOptions(
   @JvmField var quickReplyShortcutCountMax: Int = 100,
   @JvmField var quickReplyShortcutMessageCountMax: Int = 20,
 
+  @JvmField var suggestedPostLifetimeMin: Int = 86400,
+  @JvmField var suggestedPostStarCountMin: Long = 5L,
+  @JvmField var suggestedPostStarCountMax: Long = 100000L,
+  @JvmField var suggestedPostStarEarningsPerMille: Long = 850L,
+  @JvmField var suggestedPostToncoinCentCountMin: Long = 1L,
+  @JvmField var suggestedPostToncoinCentCountMax: Long = 1000000L,
+  @JvmField var suggestedPostToncoinEarningsPerMille: Long = 850L,
+  @JvmField var suggestedPostSendDelayMin: Int = 300,
+  @JvmField var suggestedPostSendDelayMax: Int = 2678400,
+
   @JvmField var tMeUrl: String = "",
   @JvmField var tonBlockchainExplorerUrl: String = "",
+  @JvmField var toncoinTopUpUrl: String = "",
 
   @JvmField var languagePackId: String = "",
   @JvmField var suggestedLanguagePackId: String = "",
@@ -143,6 +157,12 @@ data class TdlibOptions(
   @JvmField var messageCaptionLengthMax: Int = 1024,
   @JvmField var messageReplyQuoteLengthMax: Int = 1024,
 
+  @JvmField var pollAnswerCountMax: Int = 12,
+
+  @JvmField var checklistTaskCountMax: Int = 30,
+  @JvmField var checklistTaskTextLengthMax: Int = 200,
+  @JvmField var checklistTitleLengthMax: Int = 255,
+
   @JvmField var factCheckLengthMax: Int = 1024,
 
   @JvmField var basicGroupSizeMax: Int = 200,
@@ -176,8 +196,7 @@ data class TdlibOptions(
   @JvmField var forceInAppUpdate: Boolean = false,
   @JvmField var youtubePipDisabled: Boolean = false,
 
-  @JvmField var qrLoginCamera: Boolean = false,
-  @JvmField var qrLoginCode: String = "",
+  @JvmField var qrLoginCamera: Boolean = true,
 
   @JvmField var stickersEmojiSuggestOnlyApi: Boolean = false,
   @JvmField var emojiesAnimatedZoom: Float = DEFAULT_EMOJIES_ANIMATED_ZOOM.toFloat(),
@@ -193,6 +212,9 @@ data class TdlibOptions(
 
   @JvmField var storyExpirePeriod: Long = 0,
   @JvmField var storyPostingEnabled: Boolean = true,
+
+  @JvmField var translationsManualEnabled: Boolean = true,
+  @JvmField var translationsAutoEnabled: Boolean = true,
 
   @JvmField var starRefProgramAllowed: Boolean = false,
   @JvmField var starRefConnectAllowed: Boolean = false,
@@ -284,6 +306,8 @@ data class TdlibOptions(
         usdToThousandStarRate = value.longValue()
       "thousand_star_to_usd_rate" ->
         thousandStarToUsdRate = value.longValue()
+      "million_toncoin_to_usd_rate" ->
+        millionToncoinToUsdRate = value.longValue()
 
       "gift_text_length_max" ->
         giftTextLengthMax = value.intValue()
@@ -301,6 +325,8 @@ data class TdlibOptions(
 
       "star_withdrawal_count_min" ->
         starWithdrawalCountMin = value.longValue()
+      "star_withdrawal_count_max" ->
+        starWithdrawalCountMax = value.longValue()
       "paid_reaction_star_count_max" ->
         paidReactionStarCountMax = value.longValue()
       "paid_message_earnings_per_mille" ->
@@ -313,6 +339,8 @@ data class TdlibOptions(
         subscriptionStarCountMin = value.longValue()
       "subscription_star_count_max" ->
         subscriptionStarCountMax = value.longValue()
+      "direct_channel_message_star_count_default" ->
+        directChannelMessageStarCountDefault = value.longValue() /*10*/
 
       "affiliate_program_commission_per_mille_min" ->
         affiliateProgramCommissionPerMilleMin = value.longValue()
@@ -324,10 +352,31 @@ data class TdlibOptions(
       "quick_reply_shortcut_message_count_max" ->
         quickReplyShortcutMessageCountMax = value.intValue()
 
+      "suggested_post_lifetime_min" ->
+        suggestedPostLifetimeMin = value.intValue()
+      "suggested_post_star_count_min" ->
+        suggestedPostStarCountMin = value.longValue()
+      "suggested_post_star_count_max" ->
+        suggestedPostStarCountMax = value.longValue()
+      "suggested_post_star_earnings_per_mille" ->
+        suggestedPostStarEarningsPerMille = value.longValue()
+      "suggested_post_toncoin_cent_count_min" ->
+        suggestedPostToncoinCentCountMin = value.longValue()
+      "suggested_post_toncoin_cent_count_max" ->
+        suggestedPostToncoinCentCountMax = value.longValue()
+      "suggested_post_toncoin_earnings_per_mille" ->
+        suggestedPostToncoinEarningsPerMille = value.longValue()
+      "suggested_post_send_delay_min" ->
+        suggestedPostSendDelayMin = value.intValue()
+      "suggested_post_send_delay_max" ->
+        suggestedPostSendDelayMax = value.intValue()
+
       "t_me_url" ->
         tMeUrl = value.stringValue()
       "ton_blockchain_explorer_url" ->
         tonBlockchainExplorerUrl = value.stringValue()
+      "toncoin_top_up_url" ->
+        toncoinTopUpUrl = value.stringValue()
 
       "language_pack_id" ->
         languagePackId = value.stringValue()
@@ -415,6 +464,16 @@ data class TdlibOptions(
         messageCaptionLengthMax = value.intValue()
       "message_reply_quote_length_max" ->
         messageReplyQuoteLengthMax = value.intValue()
+
+      "poll_answer_count_max" ->
+        pollAnswerCountMax = value.intValue()
+
+      "checklist_task_count_max" ->
+        checklistTaskCountMax = value.intValue()
+      "checklist_task_text_length_max" ->
+        checklistTaskTextLengthMax = value.intValue()
+      "checklist_title_length_max" ->
+        checklistTitleLengthMax = value.intValue()
 
       "fact_check_length_max" ->
         factCheckLengthMax = value.intValue()
@@ -518,8 +577,6 @@ data class TdlibOptions(
 
       "qr_login_camera" ->
         qrLoginCamera = value.boolValue()
-      "qr_login_code" ->
-        qrLoginCode = value.stringValue()
 
       "stickers_emoji_suggest_only_api" ->
         stickersEmojiSuggestOnlyApi = value.boolValue()
@@ -555,6 +612,11 @@ data class TdlibOptions(
         storyExpirePeriod = value.longValue()
       "stories_posting" ->
         storyPostingEnabled = value.stringValue() == "enabled"
+
+      "translations_manual_enabled" ->
+        translationsManualEnabled = value.stringValue() == "enabled"
+      "translations_auto_enabled" ->
+        translationsAutoEnabled = value.stringValue() == "enabled"
 
       "starref_program_allowed" ->
         starRefProgramAllowed = value.boolValue()

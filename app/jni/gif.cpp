@@ -188,7 +188,7 @@ int open_codec_context (int *stream_idx, AVCodecContext **dec_ctx, AVFormatConte
   return 0;
 }
 
-JNI_FUNC(jlong, createDecoder, jstring src, jintArray data, jdouble startMediaTimestamp) {
+JNI_FUNC(jlong, createDecoder, jstring src, jlongArray data, jdouble startMediaTimestamp) {
 
   VideoInfo *info = new VideoInfo(jni::from_jstring(env, src));
 
@@ -266,7 +266,8 @@ JNI_FUNC(jlong, createDecoder, jstring src, jintArray data, jdouble startMediaTi
     }
   }
 
-  int frameRate = (int) (1000 * av_q2d(info->video_stream->avg_frame_rate));
+  long frameRate = (long) (1000.0 * av_q2d(info->video_stream->avg_frame_rate));
+  long duration = (long) (1000.0 * av_q2d(info->video_stream->time_base) * (double) info->video_stream->duration);
 
   info->dstWidth = dstWidth;
   info->dstHeight = dstHeight;
@@ -284,7 +285,7 @@ JNI_FUNC(jlong, createDecoder, jstring src, jintArray data, jdouble startMediaTi
     }
   }
 
-  jint *dataArr = env->GetIntArrayElements(data, 0);
+  jlong *dataArr = env->GetLongArrayElements(data, 0);
   if (dataArr != nullptr) {
     dataArr[0] = dstWidth;
     dataArr[1] = dstHeight;
@@ -299,7 +300,7 @@ JNI_FUNC(jlong, createDecoder, jstring src, jintArray data, jdouble startMediaTi
     } else {
       dataArr[2] = 0;
     }*/
-    env->ReleaseIntArrayElements(data, dataArr, 0);
+    env->ReleaseLongArrayElements(data, dataArr, 0);
   }
 
   //LOGD("successfully opened file %s", info->src);
@@ -357,17 +358,21 @@ JNI_FUNC(jboolean, isVideoBroken, jlong ptr) {
   }
 }
 
-void to_android_bitmap (JNIEnv *env, VideoInfo *info, jobject bitmap, jintArray data) {
+void to_android_bitmap (JNIEnv *env, VideoInfo *info, jobject bitmap, jlongArray data) {
   auto fmt = (AVPixelFormat) info->frame->format;
 
   AndroidBitmapInfo bitmapInfo;
   AndroidBitmap_getInfo(env, bitmap, &bitmapInfo);
 
   if (bitmapInfo.width == info->dstWidth && bitmapInfo.height == info->dstHeight) {
-    jint *dataArr = env->GetIntArrayElements(data, 0);
+    jlong *dataArr = env->GetLongArrayElements(data, 0);
     if (dataArr != nullptr) {
-      dataArr[3] = (int) (1000 * info->frame->pts * av_q2d(info->video_stream->time_base));
-      env->ReleaseIntArrayElements(data, dataArr, 0);
+      jlong timestamp = (jlong) (1000.0 * ((double) info->frame->pts * av_q2d(info->video_stream->time_base)));
+      if (timestamp > dataArr[3]) {
+          dataArr[4] = timestamp - dataArr[3];
+      }
+      dataArr[3] = timestamp;
+      env->ReleaseLongArrayElements(data, dataArr, 0);
     }
 
     AVFrame *frame = info->frame;
@@ -425,7 +430,7 @@ void to_android_bitmap (JNIEnv *env, VideoInfo *info, jobject bitmap, jintArray 
   }
 }
 
-JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jintArray data) {
+JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jlongArray data) {
   if (ptr == 0 || bitmap == nullptr) {
     return 0;
   }

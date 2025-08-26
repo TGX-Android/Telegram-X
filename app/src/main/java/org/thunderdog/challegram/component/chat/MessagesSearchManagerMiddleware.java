@@ -106,7 +106,24 @@ public class MessagesSearchManagerMiddleware {
 
   @SuppressLint("DefaultLocale")
   private static String makeContextId (TdApi.SearchChatMessages query) {
-    return String.format("chat_%d_%d_%d_%d_%s", query.chatId, Td.getSenderId(query.senderId), query.filter != null ? query.filter.getConstructor() : 0, query.messageThreadId, query.query);
+    return String.format("chat_%d_%d_%d_%s_%s", query.chatId, Td.getSenderId(query.senderId), query.filter != null ? query.filter.getConstructor() : 0, keyOf(query.topicId), query.query);
+  }
+
+  private static String keyOf (TdApi.MessageTopic topicId) {
+    if (topicId != null) {
+      switch (topicId.getConstructor()) {
+        case TdApi.MessageTopicForum.CONSTRUCTOR:
+          return "forum" + ((TdApi.MessageTopicForum) topicId).forumTopicId;
+        case TdApi.MessageTopicDirectMessages.CONSTRUCTOR:
+          return "direct" + ((TdApi.MessageTopicDirectMessages) topicId).directMessagesChatTopicId;
+        case TdApi.MessageTopicSavedMessages.CONSTRUCTOR:
+          return "saved" + ((TdApi.MessageTopicSavedMessages) topicId).savedMessagesTopicId;
+        default:
+          Td.assertMessageTopic_e5c08b7c();
+          throw Td.unsupported(topicId);
+      }
+    }
+    return "default";
   }
 
   public static class BaseSearchResultManager implements SendSearchRequestManager {
@@ -492,7 +509,7 @@ public class MessagesSearchManagerMiddleware {
 
     if (queryIsEmpty) {
       if (hasMediaFilter) {
-        return new TdApi.SearchChatMessages(query.chatId, query.query, null, !StringUtils.isEmpty(query.offset) ? Long.parseLong(query.offset) : 0, 0, query.limit, safeFilter, 0, 0);
+        return new TdApi.SearchChatMessages(query.chatId, null, query.query, null, !StringUtils.isEmpty(query.offset) ? Long.parseLong(query.offset) : 0, 0, query.limit, safeFilter);
       } else {
         return new TdApi.GetChatHistory(query.chatId, !StringUtils.isEmpty(query.offset) ? Long.parseLong(query.offset) : 0, 0, query.limit, false);
       }

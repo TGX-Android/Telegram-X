@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.widget;
 
 import android.content.Context;
+import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -27,6 +28,7 @@ import androidx.annotation.StringRes;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.FillingDrawable;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.support.ViewSupport;
@@ -47,11 +49,13 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.core.util.ColorChanger;
 
 public class NetworkStatusBarView extends FrameLayoutFix implements Destroyable, Screen.StatusBarHeightChangeListener, GlobalConnectionListener, FactorAnimator.Target, PopupLayout.TouchSectionProvider, Runnable, BaseActivity.ActivityListener, GlobalAccountListener {
-  private ProgressComponentView progressView;
-  private TextView textView;
-  private LinearLayout statusWrap;
+  private final ProgressComponentView progressView;
+  private final TextView textView;
+  private final LinearLayout statusWrap;
+  private final FillingDrawable backgroundDrawable;
 
   public NetworkStatusBarView (Context context) {
     super(context);
@@ -84,7 +88,7 @@ public class NetworkStatusBarView extends FrameLayoutFix implements Destroyable,
     statusWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER_HORIZONTAL));
 
     addView(statusWrap);
-    ViewSupport.setThemedBackground(this, ColorId.statusBar);
+    backgroundDrawable = ViewSupport.setThemedBackground(this, ColorId.statusBar);
 
 
     TdlibManager.instance().global().addAccountListener(this);
@@ -219,6 +223,9 @@ public class NetworkStatusBarView extends FrameLayoutFix implements Destroyable,
       this.factor = factor;
       statusWrap.setAlpha(factor);
       statusWrap.setTranslationY(-Screen.getStatusBarHeight() + (int) ((float) Screen.getStatusBarHeight() * getVisibilityFactor()));
+      if (Config.USE_TRANSPARENT_STATUS_BAR) {
+        backgroundDrawable.setAlphaFactor(factor);
+      }
       checkLowProfile();
     }
   }

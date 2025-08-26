@@ -20,6 +20,7 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -35,13 +36,14 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Size;
+import org.thunderdog.challegram.widget.RootFrameLayout;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.Destroyable;
 
-public class FloatingButton extends View implements Destroyable, Screen.StatusBarHeightChangeListener {
+public class FloatingButton extends View implements Destroyable, RootFrameLayout.InsetsChangeListener {
   private float center;
   private float heightDiff;
 
@@ -66,7 +68,6 @@ public class FloatingButton extends View implements Destroyable, Screen.StatusBa
     params.rightMargin = params.leftMargin = Screen.dp(16f) - padding;
 
     setLayoutParams(params);
-    Screen.addStatusBarHeightListener(this);
 
     isShowing = true;
 
@@ -76,14 +77,39 @@ public class FloatingButton extends View implements Destroyable, Screen.StatusBa
     setScaleY(MIN_SCALE);
   }
 
+  private RootFrameLayout rootView;
+
   @Override
-  public void onStatusBarHeightChanged (int newHeight) {
-    Views.setTopMargin(this, HeaderView.getBigSize(true) - Screen.dp(30f) - Screen.dp(4f));
+  protected void onAttachedToWindow () {
+    super.onAttachedToWindow();
+    rootView = Views.findAncestor(this, RootFrameLayout.class);
+    if (rootView != null) {
+      rootView.addInsetsChangeListener(this);
+      applyTopInset(rootView.getTopInset());
+    }
+  }
+
+  @Override
+  public void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect systemInsets, boolean isUpdate) {
+    applyTopInset(effectiveInsets.top);
+  }
+
+  @Override
+  protected void onDetachedFromWindow () {
+    super.onDetachedFromWindow();
+    performDestroy();
+  }
+
+  private void applyTopInset (int topInset) {
+    Views.setTopMargin(this, HeaderView.getBigSize(false) + topInset - Screen.dp(30f) - Screen.dp(4f));
   }
 
   @Override
   public void performDestroy () {
-    Screen.removeStatusBarHeightListener(this);
+    if (rootView != null) {
+      rootView.removeInsetsChangeListener(this);
+      rootView = null;
+    }
   }
 
   private Drawable leftIcon, rightIcon;

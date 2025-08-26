@@ -2217,6 +2217,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     tdlibThread = Thread.currentThread();
   }
 
+  public void ensureTdlibThread () {
+    if (!inTdlibThread())
+      throw new IllegalStateException(Thread.currentThread().getName());
+  }
+
   public boolean inTdlibThread () {
     if (tdlibThread != null) {
       // FIXME[tdlib]: it is safe as long as there's just one thread for all apps
@@ -2788,7 +2793,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   public boolean isAnonymousAdminNonCreator (long chatId) {
     TdApi.ChatMemberStatus status = chatStatus(chatId);
-    return status != null && Td.isAnonymous(status) && !TD.isCreator(status);
+    TdApi.Supergroup supergroup = chatToSupergroup(chatId);
+    return status != null && Td.isAnonymous(status) && !TD.isCreator(status) && !(supergroup != null && supergroup.isAdministeredDirectMessagesGroup);
   }
 
   public @Nullable TdApi.ChatMemberStatus chatStatus (long chatId) {
@@ -4070,6 +4076,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return ChatId.isUserChat(chatId);
   }
 
+  public boolean isDirectMessagesChat (long chatId) {
+    TdApi.Supergroup supergroup = chatToSupergroup(chatId);
+    return supergroup != null && supergroup.isDirectMessagesGroup;
+  }
+
+  public boolean hasDirectMessagesChat (long chatId) {
+    TdApi.Supergroup supergroup = chatToSupergroup(chatId);
+    return supergroup != null && supergroup.hasDirectMessagesGroup;
+  }
+
   public boolean isRepliesChat (long chatId) {
     return (options.repliesBotChatId != 0 && options.repliesBotChatId == chatId) || (chatId == ChatId.fromUserId(options.repliesBotUserId));
   }
@@ -4724,7 +4740,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.MessageAnimation.CONSTRUCTOR:
         return !photoVideoOnly;
       default:
-        Td.assertMessageContent_235cea4f();
+        Td.assertMessageContent_7c00740();
         break;
     }
 
@@ -4808,7 +4824,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
           return Td.textOrCaption(messageText);
       }
-      Td.assertMessageContent_235cea4f();
+      Td.assertMessageContent_7c00740();
       throw Td.unsupported(messageText);
     }
     MessageEditMediaPending pendingEditMedia = getPendingMessageMedia(chatId, messageId);
@@ -5112,7 +5128,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       if (supergroup == null) {
         return CHAT_ACCESS_FAIL;
       }
-      boolean isPublic = Td.hasUsername(supergroup) || supergroup.hasLinkedChat || supergroup.hasLocation;
+      if (supergroup.isAdministeredDirectMessagesGroup) {
+        return CHAT_ACCESS_OK;
+      }
+      boolean isPublic = Td.hasUsername(supergroup) || supergroup.hasLinkedChat || supergroup.hasLocation || supergroup.isDirectMessagesGroup;
       boolean isTemporary = isTemporaryAccessible(chat.id);
       switch (supergroup.status.getConstructor()) {
         case TdApi.ChatMemberStatusLeft.CONSTRUCTOR:
@@ -6946,7 +6965,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public boolean allowQrLoginCamera () {
-    return (options.qrLoginCamera && Config.QR_AVAILABLE) || BuildConfig.DEBUG;
+    return (options.qrLoginCamera && Config.QR_AVAILABLE);
   }
 
   public long callPacketTimeoutMs () {
@@ -7562,6 +7581,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   @TdlibThread
   private void updateMessageFactCheck (TdApi.UpdateMessageFactCheck update) {
+    // TODO
+  }
+  
+  @TdlibThread
+  private void updateSuggestedPostInfo (TdApi.UpdateMessageSuggestedPostInfo update) {
     // TODO
   }
 
@@ -8288,6 +8312,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       chat.viewAsTopics = update.viewAsTopics;
     }
     listeners.updateChatViewAsTopics(update);
+  }
+
+  @TdlibThread
+  private void updateDirectMessagesChatTopic (TdApi.UpdateDirectMessagesChatTopic update) {
+
+  }
+
+  @TdlibThread
+  private void updateTopicMessageCount (TdApi.UpdateTopicMessageCount update) {
+
   }
 
   @TdlibThread
@@ -9293,6 +9327,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   @TdlibThread
+  private void updateOwnedTonCount (TdApi.UpdateOwnedTonCount update) {
+    // TODO(ton)
+  }
+
+  @TdlibThread
   private void updateOption (ClientHolder context, TdApi.UpdateOption update) {
     @TdlibOptions.UpdateResult int updateResult = options.handleUpdate(update);
 
@@ -9675,6 +9714,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateChatViewAsTopics((TdApi.UpdateChatViewAsTopics) update);
         break;
       }
+      case TdApi.UpdateDirectMessagesChatTopic.CONSTRUCTOR: {
+        updateDirectMessagesChatTopic((TdApi.UpdateDirectMessagesChatTopic) update);
+        break;
+      }
+      case TdApi.UpdateTopicMessageCount.CONSTRUCTOR: {
+        updateTopicMessageCount((TdApi.UpdateTopicMessageCount) update);
+        break;
+      }
 
       // Join requests
       case TdApi.UpdateChatPendingJoinRequests.CONSTRUCTOR: {
@@ -9719,6 +9766,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       }
       case TdApi.UpdateMessageFactCheck.CONSTRUCTOR: {
         updateMessageFactCheck((TdApi.UpdateMessageFactCheck) update);
+        break;
+      }
+      case TdApi.UpdateMessageSuggestedPostInfo.CONSTRUCTOR: {
+        updateSuggestedPostInfo((TdApi.UpdateMessageSuggestedPostInfo) update);
         break;
       }
       case TdApi.UpdateChatUnreadReactionCount.CONSTRUCTOR: {
@@ -10170,7 +10221,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         throw Td.unsupported(update);
       }
       default: {
-        Td.assertUpdate_b40eb8d7();
+        Td.assertUpdate_e8e2dbe3();
         throw Td.unsupported(update);
       }
     }
@@ -10441,7 +10492,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     boolean needFilter = !StringUtils.isEmpty(query) || filter != null;
     TdApi.Function<?> function;
     if (needFilter) {
-      function = new TdApi.SearchChatMessages(chatId, query, null, 0, 0, 100, filter, 0, 0);
+      function = new TdApi.SearchChatMessages(chatId, null, query, null, 0, 0, 100, filter);
     } else {
       function = new TdApi.GetChatHistory(chatId, 0, 0, 0, false);
     }
@@ -11073,7 +11124,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageDice.CONSTRUCTOR:
           return getStickerRestrictionText(chat);
         case TdApi.MessagePoll.CONSTRUCTOR:
-          return getDefaultRestrictionText(chat, RightId.SEND_POLLS);
+        case TdApi.MessageChecklist.CONSTRUCTOR:
+          return getDefaultRestrictionText(chat, RightId.SEND_POLLS_OR_CHECKLISTS);
         case TdApi.MessageAudio.CONSTRUCTOR:
           return getDefaultRestrictionText(chat, RightId.SEND_AUDIO);
         case TdApi.MessageDocument.CONSTRUCTOR:
@@ -11138,6 +11190,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
         case TdApi.MessageGiftedPremium.CONSTRUCTOR:
         case TdApi.MessageGiftedStars.CONSTRUCTOR:
+        case TdApi.MessageGiftedTon.CONSTRUCTOR:
         case TdApi.MessageGift.CONSTRUCTOR:
         case TdApi.MessageUpgradedGift.CONSTRUCTOR:
         case TdApi.MessageRefundedUpgradedGift.CONSTRUCTOR:
@@ -11164,11 +11217,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
         case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
         case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
+        case TdApi.MessageChecklistTasksAdded.CONSTRUCTOR:
+        case TdApi.MessageChecklistTasksDone.CONSTRUCTOR:
+        case TdApi.MessageDirectMessagePriceChanged.CONSTRUCTOR:
+        case TdApi.MessageSuggestedPostApprovalFailed.CONSTRUCTOR:
+        case TdApi.MessageSuggestedPostApproved.CONSTRUCTOR:
+        case TdApi.MessageSuggestedPostDeclined.CONSTRUCTOR:
+        case TdApi.MessageSuggestedPostPaid.CONSTRUCTOR:
+        case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
           // None of these messages ever passed to this method,
           // assuming we want to check RightId.SEND_BASIC_MESSAGES
           return getBasicMessageRestrictionText(chat);
         default:
-          Td.assertMessageContent_235cea4f();
+          Td.assertMessageContent_7c00740();
           throw Td.unsupported(message.content);
       }
     }
@@ -11192,7 +11253,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.InputMessageVoiceNote.CONSTRUCTOR:
           return getDefaultRestrictionText(chat, RightId.SEND_VOICE_NOTES);
         case TdApi.InputMessagePoll.CONSTRUCTOR:
-          return getDefaultRestrictionText(chat, RightId.SEND_POLLS);
+        case TdApi.InputMessageChecklist.CONSTRUCTOR:
+          return getDefaultRestrictionText(chat, RightId.SEND_POLLS_OR_CHECKLISTS);
         // RightId.SEND_OTHER_MESSAGES
         case TdApi.InputMessageAnimation.CONSTRUCTOR:
           return getGifRestrictionText(chat);
@@ -11214,7 +11276,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.InputMessagePaidMedia.CONSTRUCTOR:
           return getBasicMessageRestrictionText(chat);
         default:
-          Td.assertInputMessageContent_6d335c();
+          Td.assertInputMessageContent_65313187();
           throw Td.unsupported(content);
       }
     }
@@ -11328,7 +11390,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         restrictedMediaRes = R.string.ChatRestrictedOther;
         restrictedMediaUntilRes = R.string.ChatRestrictedOtherUntil;
         break;
-      case RightId.SEND_POLLS:
+      case RightId.SEND_POLLS_OR_CHECKLISTS:
         disabledMediaRes = R.string.ChatDisabledPolls;
         restrictedMediaRes = R.string.ChatRestrictedPolls;
         restrictedMediaUntilRes = R.string.ChatRestrictedPollsUntil;
@@ -11395,7 +11457,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public CharSequence getPollRestrictionText (TdApi.Chat chat) {
-    return getDefaultRestrictionText(chat, RightId.SEND_POLLS);
+    return getDefaultRestrictionText(chat, RightId.SEND_POLLS_OR_CHECKLISTS);
   }
 
   public CharSequence getDiceRestrictionText (TdApi.Chat chat, String emoji) {
@@ -11449,7 +11511,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case RightId.SEND_VOICE_NOTES:
         case RightId.SEND_VIDEO_NOTES:
         case RightId.SEND_OTHER_MESSAGES:
-        case RightId.SEND_POLLS: {
+        case RightId.SEND_POLLS_OR_CHECKLISTS: {
           break;
         }
         case RightId.EMBED_LINKS: {
@@ -11468,6 +11530,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case RightId.INVITE_USERS:
         case RightId.MANAGE_VIDEO_CHATS:
         case RightId.MANAGE_OR_CREATE_TOPICS:
+        case RightId.MANAGE_DIRECT_MESSAGES:
         case RightId.POST_STORIES:
         case RightId.EDIT_STORIES:
         case RightId.DELETE_STORIES:
@@ -11547,7 +11610,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case RightId.SEND_VOICE_NOTES:
       case RightId.SEND_VIDEO_NOTES:
       case RightId.SEND_OTHER_MESSAGES:
-      case RightId.SEND_POLLS:
+      case RightId.SEND_POLLS_OR_CHECKLISTS:
         break;
       case RightId.EMBED_LINKS:
       case RightId.ADD_NEW_ADMINS:
@@ -11558,6 +11621,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case RightId.INVITE_USERS:
       case RightId.MANAGE_VIDEO_CHATS:
       case RightId.MANAGE_OR_CREATE_TOPICS:
+      case RightId.MANAGE_DIRECT_MESSAGES:
       case RightId.POST_STORIES:
       case RightId.EDIT_STORIES:
       case RightId.DELETE_STORIES:

@@ -790,7 +790,7 @@ public class TdlibMessageViewer {
           messageSource = this.messageSource;
           break;
         default:
-          Td.assertMessageSource_eeb3e95();
+          Td.assertMessageSource_cac7e80c();
           messageSource = new TdApi.MessageSourceHistoryPreview();
           break;
       }

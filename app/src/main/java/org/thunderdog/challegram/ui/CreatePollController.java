@@ -23,6 +23,7 @@ import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -64,18 +65,22 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
   public static class Args {
     public final long chatId;
     public final ThreadInfo messageThread;
+    public final TdApi.MessageTopic messageTopicId;
+    public final TdApi.InputSuggestedPostInfo inputSuggestedPostInfo;
     public final Callback callback;
     public final boolean forceRegular, forceQuiz;
 
-    public Args (long chatId, ThreadInfo threadInfo, Callback callback) {
-      this(chatId, threadInfo, callback, false, false);
+    public Args (long chatId, ThreadInfo threadInfo, @Nullable TdApi.MessageTopic messageTopicId, TdApi.InputSuggestedPostInfo inputSuggestedPostInfo, Callback callback) {
+      this(chatId, threadInfo, messageTopicId, inputSuggestedPostInfo, callback, false, false);
     }
 
-    public Args (long chatId, ThreadInfo threadInfo, Callback callback, boolean forceQuiz, boolean forceRegular) {
+    public Args (long chatId, ThreadInfo threadInfo, @Nullable TdApi.MessageTopic messageTopicId, TdApi.InputSuggestedPostInfo inputSuggestedPostInfo, Callback callback, boolean forceQuiz, boolean forceRegular) {
       if (callback == null)
         throw new IllegalArgumentException();
       this.chatId = chatId;
       this.messageThread = threadInfo;
+      this.messageTopicId = messageTopicId;
+      this.inputSuggestedPostInfo = inputSuggestedPostInfo;
       this.callback = callback;
       this.forceRegular = forceRegular;
       this.forceQuiz = forceQuiz;
@@ -224,7 +229,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     decoration.addRange(items.size() - 3, items.size());
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-    items.add(descriptionItem = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.plural(R.string.PollOptionsLimit, TdConstants.MAX_POLL_OPTION_COUNT - options.size()), false));
+    items.add(descriptionItem = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.plural(R.string.PollOptionsLimit, tdlib.options().pollAnswerCountMax - options.size()), false));
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     int settingCount = 0;
@@ -442,12 +447,13 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
   private boolean isAdding;
 
   private boolean addOption () {
-    if (options.size() >= TdConstants.MAX_POLL_OPTION_COUNT || isAdding)
+    final int maxPollOptionCount = tdlib.options().pollAnswerCountMax;
+    if (options.size() >= maxPollOptionCount || isAdding)
       return false;
     int i = adapter.indexOfViewById(R.id.optionAdd);
     isAdding = true;
     int targetIndex;
-    if (options.size() + 1 == TdConstants.MAX_POLL_OPTION_COUNT) {
+    if (options.size() + 1 == maxPollOptionCount) {
       adapter.setItem(targetIndex = i, createNewOption());
     } else {
       adapter.getItems().add(i - 1, createNewOption());
@@ -492,7 +498,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     int adapterPosition = adapter.indexOfView(option);
     if (adapterPosition == -1)
       throw new AssertionError();
-    if (options.size() == TdConstants.MAX_POLL_OPTION_COUNT - 1) {
+    if (options.size() == tdlib.options().pollAnswerCountMax - 1) {
       if (i == options.size()) {
         adapter.setItem(adapterPosition, addItem);
       } else {
@@ -523,7 +529,8 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
   }
 
   private void updateLimit () {
-    if (descriptionItem.setStringIfChanged(TdConstants.MAX_POLL_OPTION_COUNT <= options.size() ? Lang.getString(R.string.PollOptionsMax) : Lang.plural(R.string.PollOptionsLimit, TdConstants.MAX_POLL_OPTION_COUNT - options.size()))) {
+    final int maxPollOptionCount = tdlib.options().pollAnswerCountMax;
+    if (descriptionItem.setStringIfChanged(maxPollOptionCount <= options.size() ? Lang.getString(R.string.PollOptionsMax) : Lang.plural(R.string.PollOptionsLimit, maxPollOptionCount - options.size()))) {
       adapter.updateValuedSetting(descriptionItem);
     }
   }
@@ -627,7 +634,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     }
     boolean hasCustomEmoji = TD.hasCustomEmoji(question);
     int correctOptionId = -1;
-    List<TdApi.FormattedText> options = new ArrayList<>(TdConstants.MAX_POLL_OPTION_COUNT);
+    List<TdApi.FormattedText> options = new ArrayList<>(tdlib.options().pollAnswerCountMax);
     for (ListItem optionItem : this.options) {
       CharSequence cs = StringUtils.trim(optionItem.getCharSequenceValue());
       if (StringUtils.isEmpty(cs))
@@ -658,6 +665,8 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     Args args = getArgumentsStrict();
     final long chatId = args.chatId;
     final ThreadInfo messageThread = args.messageThread;
+    final TdApi.MessageTopic messageTopicId = args.messageTopicId;
+    final TdApi.InputSuggestedPostInfo suggestedPostInfo = args.inputSuggestedPostInfo;
     if (sendOptions.schedulingState == null && args.callback.areScheduledOnly(this)) {
       tdlib.ui().showScheduleOptions(this, chatId, false, (modifiedSendOptions, disableMarkdown1) -> send(modifiedSendOptions, disableMarkdown), sendOptions, null);
       return;
@@ -678,25 +687,21 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     TdApi.FormattedText[] optionsArray = options.toArray(new TdApi.FormattedText[0]);
     TdApi.InputMessagePoll poll = new TdApi.InputMessagePoll(question, optionsArray, isAnonymousVoting, isQuiz ? new TdApi.PollTypeQuiz(correctOptionId, explanation) : new TdApi.PollTypeRegular(isMultiChoiceVote), 0, 0, false);
 
-    RunnableData<TdApi.Message> after = message -> {
-      tdlib.ui().post(() -> {
-        if (!isDestroyed()) {
-          getDoneButton().setInProgress(false);
-          if (message != null) {
-            if (sendOptions.schedulingState != null && !args.callback.areScheduledOnly(this)) {
-              NavigationStack stack = navigationStack();
-              if (stack != null) {
-                MessagesController c = new MessagesController(context, tdlib);
-                c.setArguments(new MessagesController.Arguments(args.callback.provideChatList(this), tdlib.chatStrict(args.chatId), /* messageThread */ null, null, MessagesManager.HIGHLIGHT_MODE_NONE, null).setScheduled(true));
-                stack.insertBack(c);
-              }
-            }
-            navigateBack();
+    RunnableData<TdApi.Message> after = message -> runOnUiThreadOptional(() -> {
+      getDoneButton().setInProgress(false);
+      if (message != null) {
+        if (sendOptions.schedulingState != null && !args.callback.areScheduledOnly(this)) {
+          NavigationStack stack = navigationStack();
+          if (stack != null) {
+            MessagesController c = new MessagesController(context, tdlib);
+            c.setArguments(new MessagesController.Arguments(args.callback.provideChatList(this), tdlib.chatStrict(args.chatId), /* messageThread */ null, messageTopicId, null, MessagesManager.HIGHLIGHT_MODE_NONE, null).setScheduled(true));
+            stack.insertBack(c);
           }
         }
-      });
-    };
-    final TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(sendOptions, tdlib.chatDefaultDisableNotifications(chatId));
+        navigateBack();
+      }
+    });
+    final TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(sendOptions, Td.directMessagesChatTopicId(messageTopicId), suggestedPostInfo, tdlib.chatDefaultDisableNotifications(chatId));
     if (!getArgumentsStrict().callback.onSendPoll(this, chatId, messageThread != null ? messageThread.getMessageThreadId() : 0, poll, finalSendOptions, after)) {
       tdlib.sendMessage(chatId, messageThread != null ? messageThread.getMessageThreadId() : 0, null, finalSendOptions, poll, after);
     }

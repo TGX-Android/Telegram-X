@@ -5,6 +5,8 @@ import android.view.MotionEvent;
 import android.view.ViewParent;
 import android.widget.ScrollView;
 
+import org.thunderdog.challegram.tool.Views;
+
 public class MaxHeightScrollView extends ScrollView {
   public MaxHeightScrollView (Context context) {
     super(context);
@@ -34,10 +36,10 @@ public class MaxHeightScrollView extends ScrollView {
 
   @Override
   public boolean onTouchEvent (MotionEvent ev) {
-    boolean res = super.onTouchEvent(ev) && (ev.getAction() != MotionEvent.ACTION_DOWN || isScrollable);
+    boolean res = super.onTouchEvent(ev) && (ev.getAction() != MotionEvent.ACTION_DOWN || (isScrollable && Views.isValid(this)));
     switch (ev.getAction()) {
       case MotionEvent.ACTION_DOWN: {
-        if (isScrollable) {
+        if (isScrollable && Views.isValid(this)) {
           ViewParent parent = getParent();
           if (parent != null) {
             parent.requestDisallowInterceptTouchEvent(true);
@@ -58,6 +60,6 @@ public class MaxHeightScrollView extends ScrollView {
 
   @Override
   public boolean onInterceptTouchEvent (MotionEvent ev) {
-    return super.onInterceptTouchEvent(ev) && (ev.getAction() != MotionEvent.ACTION_DOWN || isScrollable);
+    return super.onInterceptTouchEvent(ev) && (ev.getAction() != MotionEvent.ACTION_DOWN || (Views.isValid(this)));
   }
 }

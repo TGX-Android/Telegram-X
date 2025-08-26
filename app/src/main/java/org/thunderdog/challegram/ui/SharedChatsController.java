@@ -102,7 +102,7 @@ public class SharedChatsController extends SharedBaseController<DoubleTextWrappe
   }
 
   @Override
-  protected TdApi.Function<?> buildRequest (long chatId, long messageThreadId, String query, long offset, String secretOffset, int limit) {
+  protected TdApi.Function<?> buildRequest (long chatId, TdApi.MessageTopic topicId, String query, long offset, String secretOffset, int limit) {
     switch (mode) {
       case Mode.GROUPS_IN_COMMON:
         return new TdApi.GetGroupsInCommon(tdlib.chatUserId(chatId), offset, limit);

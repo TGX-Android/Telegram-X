@@ -360,7 +360,7 @@ public class BotHelper implements Runnable, InlineSearchContext.CommandListProvi
         TdApi.ReplyMarkupShowKeyboard showKeyboard = (TdApi.ReplyMarkupShowKeyboard) markup;
         processShowKeyboard(messageId, showKeyboard);
         if (type == TYPE_GROUP || type == TYPE_SUPERGROUP) {
-          context.showReply(message, null, false, false); // FIXME?
+          context.showReply(message, null, 0, false, false); // FIXME?
         }
         context.setCustomBotPlaceholder(showKeyboard.inputFieldPlaceholder);
         break;
@@ -381,9 +381,9 @@ public class BotHelper implements Runnable, InlineSearchContext.CommandListProvi
   private void processForceReply (MessageWithProperties message, boolean personal) {
     if (personal) {
       context.showKeyboard();
-      context.showReply(message, null, false, false);
+      context.showReply(message, null, 0, false, false);
     } else if (type == TYPE_PRIVATE) {
-      context.showReply(message, null, false, false);
+      context.showReply(message, null, 0, false, false);
     }
     if (message != null) {
       context.tdlib().send(new TdApi.DeleteChatReplyMarkup(chatId, message.message.id), context.tdlib().typedOkHandler());

@@ -113,6 +113,15 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     }, null, 2000L);
   }
 
+  @Override
+  protected void onExtraBottomInsetChanged (int extraBottomInset) {
+    stickersController.setExtraBottomInset(extraBottomInset);
+    trendingSetsController.setExtraBottomInset(extraBottomInset);
+    if (gifsView != null) {
+      gifsView.setPadding(0, 0, 0, extraBottomInset);
+    }
+  }
+
   public void expectReorder (TGStickerObj stickerObj) {
     if (stickerObj == null || stickersAdapter == null)
       return;
@@ -393,6 +402,8 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
 
       gifsView = new RecyclerView(context()); // (RecyclerView) Views.inflate(R.layout.recycler, contentView);
       gifsView.setItemAnimator(null);
+      gifsView.setClipToPadding(false);
+      gifsView.setPadding(0, 0, 0, extraBottomInset);
       gifsView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
       gifsView.setHasFixedSize(true);
       gifsView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS :View.OVER_SCROLL_NEVER);

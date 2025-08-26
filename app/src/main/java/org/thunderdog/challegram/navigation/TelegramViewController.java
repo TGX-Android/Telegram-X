@@ -143,11 +143,22 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
     });
   }
 
+  @Override
+  public boolean dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, int left, int top, int right, int bottom) {
+    boolean updated = super.dispatchSystemInsets(parentView, originalParams, left, top, right, bottom);
+    if (chatSearchView != null) {
+      chatSearchView.setPadding(0, 0, 0, bottom);
+    }
+    return updated;
+  }
+
   protected final CustomRecyclerView generateChatSearchView (@Nullable ViewGroup parent) {
     final boolean noChatSearch = (getChatSearchFlags() & SearchManager.FLAG_NO_CHATS) != 0;
     chatSearchViewport = tdlib.messageViewer().createViewport(new TdApi.MessageSourceSearch(), this);
     chatSearchViewport.addIgnoreLock(() -> !this.isSearchContentVisible);
     chatSearchView = (CustomRecyclerView) Views.inflate(context(), R.layout.recycler_custom, parent);
+    chatSearchView.setClipToPadding(false);
+    chatSearchView.setPadding(0, 0, 0, systemInsets.bottom);
     Views.setScrollBarPosition(chatSearchView);
     tdlib.ui().attachViewportToRecyclerView(chatSearchViewport, chatSearchView);
     chatSearchView.addOnScrollListener(new RecyclerView.OnScrollListener() {

@@ -719,7 +719,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
         return MessagesController.getForcePreviewHeight(hasHeader, hasFooter);
       }
     };
-    controller.setArguments(new MessagesController.Arguments(context.tdlib(), null, chat, messageThread, null));
+    controller.setArguments(new MessagesController.Arguments(context.tdlib(), null, chat, messageThread, null, null));
     openPreviewAsync(controller, x, y);
   }
 

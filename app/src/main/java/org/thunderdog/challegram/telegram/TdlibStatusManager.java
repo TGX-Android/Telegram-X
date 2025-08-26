@@ -16,6 +16,7 @@ package org.thunderdog.challegram.telegram;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 
 import org.drinkless.tdlib.TdApi;
@@ -716,17 +717,26 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
     }
 
     TdApi.Supergroup supergroup = tdlib.cache().supergroup(supergroupId);
-    if (memberCount == 0) {
-      memberCount = supergroup != null ? supergroup.memberCount : 0;
+    boolean isDirectMessages = supergroup != null && supergroup.isDirectMessagesGroup;
+    if (!isDirectMessages) {
+      if (memberCount == 0) {
+        memberCount = supergroup != null ? supergroup.memberCount : 0;
+      }
+      if (memberCount > 0) {
+        return Lang.pluralMembers(memberCount, tdlib.chatOnlineMemberCount(ChatId.fromSupergroupId(supergroupId)), supergroup != null && supergroup.isChannel);
+      }
+      if (supergroup == null) {
+        return "channel unavailable";
+      }
     }
-
-    if (memberCount > 0) {
-      return Lang.pluralMembers(memberCount, tdlib.chatOnlineMemberCount(ChatId.fromSupergroupId(supergroupId)), supergroup != null && supergroup.isChannel);
+    @StringRes int resource;
+    if (supergroup.isDirectMessagesGroup) {
+      resource = R.string.DirectMessages;
+    } else if (supergroup.isChannel) {
+      resource = !Td.hasUsername(supergroup) ? R.string.ChannelPrivate : R.string.Channel;
+    } else {
+      resource = !Td.isEmpty(supergroup.usernames) ? R.string.PublicGroup : R.string.Group;
     }
-    if (supergroup == null) {
-      return "channel unavailable";
-    }
-    int resource = supergroup.isChannel ? (!Td.hasUsername(supergroup) ? R.string.ChannelPrivate : R.string.Channel) : (!Td.isEmpty(supergroup.usernames) ? R.string.PublicGroup : R.string.Group);
     return Lang.lowercase(Lang.getString(resource));
   }
 }

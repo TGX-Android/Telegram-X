@@ -320,25 +320,19 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
           if (chat != null) {
             if (threadMessages != null && threadMessages.length > 0) {
               cancelAsyncPreview();
-              tdlib.client().send(new TdApi.GetMessageThread(chatId, threadMessages[0].id), result -> {
-                switch (result.getConstructor()) {
-                  case TdApi.MessageThreadInfo.CONSTRUCTOR: {
-                    TdApi.MessageThreadInfo threadInfo = (TdApi.MessageThreadInfo) result;
-                    tdlib.ui().post(() -> {
-                      if (pendingTask == null && pendingController == null) {
-                        openChatPreviewAsync(chatList, chat, ThreadInfo.openedFromChat(tdlib, threadInfo, chatId, contextChatId), filter, x, y);
-                      }
-                    });
-                    break;
-                  }
-                  case TdApi.Error.CONSTRUCTOR: {
-                    Log.i("Message thread unavailable %d %d: %s", chatId, threadMessages[0].id, TD.toErrorString(result));
-                    break;
-                  }
+              tdlib.send(new TdApi.GetMessageThread(chatId, threadMessages[0].id), (threadInfo, error) -> {
+                if (error != null) {
+                  Log.i("Message thread unavailable %d %d: %s", chatId, threadMessages[0].id, TD.toErrorString(error));
+                } else {
+                  tdlib.ui().post(() -> {
+                    if (pendingTask == null && pendingController == null) {
+                      openChatPreviewAsync(chatList, chat, ThreadInfo.openedFromChat(tdlib, threadInfo, chatId, contextChatId), null, filter, x, y);
+                    }
+                  });
                 }
               });
             } else {
-              openChatPreviewAsync(chatList, chat, null, filter, x, y);
+              openChatPreviewAsync(chatList, chat, null, null, filter, x, y);
             }
             return false;
           }
@@ -468,32 +462,32 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
   private ViewController<?> pendingController;
   private CancellableRunnable pendingTask;
 
-  private void openChatPreviewAsync (TdApi.ChatList chatList, TdApi.Chat chat, @Nullable ThreadInfo messageThread, TdApi.SearchMessagesFilter filter, float x, float y) {
+  private void openChatPreviewAsync (TdApi.ChatList chatList, TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable TdApi.MessageTopic messageTopicId, TdApi.SearchMessagesFilter filter, float x, float y) {
     if (currentOpenPreview != null) {
       return;
     }
     cancelAsyncPreview();
     final MessagesController controller = new MessagesController(getContext(), tdlib);
     controller.setInForceTouchMode(true);
-    controller.setArguments(createChatPreviewArguments(chatList, chat, messageThread, filter));
+    controller.setArguments(createChatPreviewArguments(chatList, chat, messageThread, messageTopicId, filter));
     openPreviewAsync(controller, x, y);
   }
 
-  public final MessagesController.Arguments createChatPreviewArguments (TdApi.ChatList chatList, TdApi.Chat chat, @Nullable ThreadInfo messageThread, TdApi.SearchMessagesFilter filter) {
+  public final MessagesController.Arguments createChatPreviewArguments (TdApi.ChatList chatList, TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable TdApi.MessageTopic messageTopicId, TdApi.SearchMessagesFilter filter) {
     ViewController<?> controller = context().navigation().getCurrentStackItem();
     if (controller != null) {
       String query = controller.inSearchMode() ? controller.getLastSearchInput() : null;
       if (!StringUtils.isEmpty(query) && highlightMode != MessagesManager.HIGHLIGHT_MODE_NONE) {
         controller.preventLeavingSearchMode();
-        return new MessagesController.Arguments(chatList, chat, messageThread, highlightMessageId, highlightMode, filter, highlightMessageId, query);
+        return new MessagesController.Arguments(chatList, chat, messageThread, messageTopicId, highlightMessageId, highlightMode, filter, highlightMessageId, query);
       }
     }
     if (filter != null) {
       return new MessagesController.Arguments(chatList, chat, null, null, filter, highlightMessageId, highlightMode);
     } else if (highlightMode != MessagesManager.HIGHLIGHT_MODE_NONE) {
-      return new MessagesController.Arguments(chatList, chat, messageThread, highlightMessageId, highlightMode, filter);
+      return new MessagesController.Arguments(chatList, chat, messageThread, messageTopicId, highlightMessageId, highlightMode, filter);
     } else {
-      return new MessagesController.Arguments(tdlib, chatList, chat, messageThread, filter);
+      return new MessagesController.Arguments(tdlib, chatList, chat, messageThread, messageTopicId, filter);
     }
   }
 

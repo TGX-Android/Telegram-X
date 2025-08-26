@@ -37,6 +37,7 @@ import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.WindowCompat;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
@@ -605,7 +606,6 @@ public class UI {
 
   public static final int NAVIGATION_BAR_COLOR = false && Device.NEED_LIGHT_NAVIGATION_COLOR ? 0xfff0f0f0 : 0xff000000;
 
-  @SuppressWarnings("deprecation")
   public static void clearActivity (BaseActivity a) {
     a.requestWindowFeature(Window.FEATURE_NO_TITLE);
     Window w = a.getWindow();
@@ -618,7 +618,6 @@ public class UI {
       if (Config.USE_CUSTOM_NAVIGATION_COLOR) {
         w.setNavigationBarColor(Theme.backgroundColor());
         if (!Theme.isDark()) {
-          // TODO: rework to WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
           visibility |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
         }
       } else {
@@ -626,7 +625,6 @@ public class UI {
       }
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
         if (Theme.needLightStatusBar()) {
-          // TODO: rework to WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
           visibility |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
         }
       }
@@ -637,47 +635,26 @@ public class UI {
       RootDrawable d = new RootDrawable(a);
       w.setBackgroundDrawable(d);
       a.setRootDrawable(d);
-      if (Config.USE_FULLSCREEN_NAVIGATION) {
-        w.setStatusBarColor(0); // 0x4c000000
-      } else {
-        w.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-        // TODO: rework to Window.setStatusBarColor(int)
-        w.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-        w.setStatusBarColor(HeaderView.defaultStatusColor());
-      }
-      /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-        WindowManager.LayoutParams params = w.getAttributes();
-        params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
-        w.setAttributes(params);
-      }*/
+      w.setStatusBarColor(0);
     }
   }
 
   @SuppressWarnings("deprecation")
   public static void setFullscreenIfNeeded (View view) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && Config.USE_FULLSCREEN_NAVIGATION) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       view.setFitsSystemWindows(true);
       // TODO: rework to WindowInsetsController
       view.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
     }
   }
 
-  public static void setNewStatusBarColor (int color) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && Config.USE_FULLSCREEN_NAVIGATION) {
-      final BaseActivity context = getUiContext();
-      if (context != null && context.getWindow() != null) {
-        context.getWindow().setStatusBarColor(color);
-      }
-    }
-  }
-
   public static void setStatusBarColor (int color) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !Config.USE_FULLSCREEN_NAVIGATION) {
+    /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !Config.USE_FULLSCREEN_NAVIGATION) {
       final BaseActivity context = getUiContext();
       if (context != null && context.getWindow() != null) {
         context.getWindow().setStatusBarColor(color);
       }
-    }
+    }*/
   }
 
   public static int getStatusBarColor () {
