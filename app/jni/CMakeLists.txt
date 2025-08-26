@@ -281,5 +281,12 @@ target_link_libraries(${NATIVE_LIB}
   cpufeatures
 )
 
+if (${ANDROID_ABI} STREQUAL "arm64-v8a" OR ${ANDROID_ABI} STREQUAL "x86_64")
+  # Enable 16 KB ELF alignment.
+  target_link_options(${NATIVE_LIB} PRIVATE
+    "-Wl,-z,max-page-size=16384"
+  )
+endif()
+
 include(AndroidNdkModules)
 android_ndk_import_module_cpufeatures()

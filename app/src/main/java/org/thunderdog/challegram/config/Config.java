@@ -98,7 +98,6 @@ public class Config {
   public static final boolean DISABLE_SENDING_MEDIA_CACHE = false; // BuildConfig.DEBUG; // FIXME: TDLib
   public static final boolean WORKAROUND_NEED_MODIFY = true; // FIXME TDLib
 
-  public static final boolean USE_FULLSCREEN_NAVIGATION = true;
   public static final boolean USE_FULLSCREEN_NAVIGATION_CONTENT = false; // BuildConfig.DEBUG;
   public static final boolean USE_TRANSLUCENT_NAVIGATION = false; // Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
 
@@ -246,6 +245,7 @@ public class Config {
   public static final int MINIMUM_CALL_CONTACTS_SUGGESTIONS = 3;
 
   public static final boolean USE_CUSTOM_NAVIGATION_COLOR = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O;
+  public static final boolean USE_TRANSPARENT_STATUS_BAR = false; // Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM;
 
   public static final boolean PREFER_RENDER_EXTENSIONS = true;
 

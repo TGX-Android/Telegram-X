@@ -46,7 +46,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -203,6 +202,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   public static final int MODE_SECRET = 4; // just single photo, no animations and etc
   public static final int MODE_SIMPLE = 5;
 
+  private static final boolean APPLY_ALL_INSETS = Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM;
+
   public MediaViewController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
@@ -230,7 +231,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     private boolean reverseMode;
 
-    private long receiverChatId, messageThreadId, savedMessagesTopicId;
+    private long receiverChatId, messageThreadId;
+    private TdApi.MessageTopic topicId;
 
     private boolean areOnlyScheduled;
 
@@ -299,8 +301,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       return this;
     }
 
-    public Args setSavedMessagesTopicId (long savedMessagesTopicId) {
-      this.savedMessagesTopicId = savedMessagesTopicId;
+    public Args setTopicId (TdApi.MessageTopic topicId) {
+      this.topicId = topicId;
       return this;
     }
 
@@ -370,7 +372,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private @Nullable MediaSendDelegate sendDelegate;
   private MediaStack stack;
   private @Nullable TdApi.SearchMessagesFilter filter;
-  private long messageThreadId, savedMessagesTopicId;
+  private TdApi.MessageTopic topicId;
+  private long messageThreadId;
 
   @Override
   public void setArguments (Args args) {
@@ -383,7 +386,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     this.reverseMode = args.reverseMode;
     this.filter = args.filter;
     this.messageThreadId = args.messageThreadId;
-    this.savedMessagesTopicId = args.savedMessagesTopicId;
+    this.topicId = args.topicId;
   }
 
   public MediaViewThumbLocation getCurrentTargetLocation () {
@@ -804,7 +807,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private int getBottomWrapMargin () {
-    return (inCaption ? 0 : Screen.dp(56f)) + controlsMargin;
+    return (inCaption || mode != MODE_GALLERY ? 0 : Screen.dp(56f)) + controlsMargin;
   }
 
   private void setInCaption (boolean inCaption) {
@@ -1600,7 +1603,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private boolean canEdit () {
     MediaItem current = stack.getCurrent();
-    return (mode == MODE_MESSAGES || mode == MODE_SIMPLE) && current != null && !current.isVideo() && !current.isGifType() && (current.canBeShared() && current.canBeSaved() || !tdlib.hasRestriction(current.getSourceChatId(), RightId.SEND_PHOTOS));
+    return (mode == MODE_MESSAGES || mode == MODE_SIMPLE) && current != null && !current.isVideo() && !current.isGifType() && (current.canBeShared() && current.canBeSaved() && !tdlib.hasRestriction(current.getSourceChatId(), RightId.SEND_PHOTOS));
   }
 
   private boolean canShare () {
@@ -1944,7 +1947,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (headerCell != null) {
       int rightMargin = measureButtonsPadding();
       int leftMargin = Screen.dp(68f);
-      if (Views.setMargins((FrameLayout.LayoutParams) headerCell.getLayoutParams(), Lang.rtl() ? rightMargin : leftMargin, headerView.needOffsets() ? HeaderView.getTopOffset() : 0, Lang.rtl() ? leftMargin : rightMargin, 0)) {
+      if (Views.setMargins((FrameLayout.LayoutParams) headerCell.getLayoutParams(), Lang.rtl() ? rightMargin : leftMargin, headerView.getEffectiveTopOffset(), Lang.rtl() ? leftMargin : rightMargin, 0)) {
         Views.updateLayoutParams(headerCell);
       }
     }
@@ -2061,7 +2064,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private void initHeaderStyle () {
     if (headerView != null) {
       if (revealAnimationType == ANIMATION_TYPE_REVEAL) {
-        headerView.setTranslationY(-HeaderView.getSize(headerView.needOffsets()));
+        headerView.setTranslationY(-headerView.getSize());
       } else {
         headerView.setAlpha(0f);
       }
@@ -2074,7 +2077,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     switch (revealAnimationType) {
       case ANIMATION_TYPE_REVEAL: {
         if (headerView != null) {
-          headerView.setTranslationY(-HeaderView.getSize(headerView.needOffsets()) * Math.max(1f - alpha, getForceEditModeVisibility()));
+          headerView.setTranslationY(-headerView.getSize() * Math.max(1f - alpha, getForceEditModeVisibility()));
         }
         break;
       }
@@ -2186,13 +2189,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     return this.filter != null ? this.filter : mode == MODE_CHAT_PROFILE ? new TdApi.SearchMessagesFilterChatPhoto() : new TdApi.SearchMessagesFilterPhotoAndVideo();
   }
 
-  private Client.ResultHandler foundChatMessagesHandler (long chatId, long fromMessageId, int loadCount) {
+  private Client.ResultHandler foundChatMessagesHandler (long chatId, TdApi.MessageTopic topicId, long fromMessageId, int loadCount) {
     return result -> {
       switch (result.getConstructor()) {
         case TdApi.FoundChatMessages.CONSTRUCTOR: {
           TdApi.FoundChatMessages foundChatMessages = (TdApi.FoundChatMessages) result;
           runOnUiThreadOptional(() ->
-            addItems(chatId, fromMessageId, loadCount, foundChatMessages)
+            addItems(chatId, topicId, fromMessageId, loadCount, foundChatMessages)
           );
           break;
         }
@@ -2219,13 +2222,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           MediaItem item = reverseMode ? stack.lastAvalable() : stack.firstAvailable();
           long initialFromMessageId = item.getSourceMessageId();
           TdApi.SearchChatMessages searchFunction = new TdApi.SearchChatMessages(
-            chatId, null, null,
+            chatId, topicId, null, null,
             initialFromMessageId, 0,
-            LOAD_COUNT, searchFilter(),
-            messageThreadId,
-            savedMessagesTopicId
+            LOAD_COUNT, searchFilter()
           );
-          tdlib.client().send(searchFunction, foundChatMessagesHandler(chatId, initialFromMessageId, LOAD_COUNT));
+          tdlib.client().send(searchFunction, foundChatMessagesHandler(chatId, topicId, initialFromMessageId, LOAD_COUNT));
         }
         break;
       }
@@ -2236,13 +2237,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           MediaItem item = stack.lastAvalable();
           long initialFromMessageId = item.getSourceMessageId();
           TdApi.SearchChatMessages searchFunction = new TdApi.SearchChatMessages(
-            chatId, null, null,
+            chatId, topicId, null, null,
             initialFromMessageId, 0,
-            LOAD_COUNT_PROFILE, searchFilter(),
-            messageThreadId,
-            savedMessagesTopicId
+            LOAD_COUNT_PROFILE, searchFilter()
           );
-          tdlib.client().send(searchFunction, foundChatMessagesHandler(chatId, initialFromMessageId, LOAD_COUNT_PROFILE));
+          tdlib.client().send(searchFunction, foundChatMessagesHandler(chatId, topicId, initialFromMessageId, LOAD_COUNT_PROFILE));
         }
         break;
       }
@@ -2324,7 +2323,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
   }
 
-  private void addItems (long chatId, long fromMessageId, int loadCount, TdApi.FoundChatMessages messages) {
+  private void addItems (long chatId, TdApi.MessageTopic topicId, long fromMessageId, int loadCount, TdApi.FoundChatMessages messages) {
     long messagesChatId = TD.getChatId(messages.messages);
     if (messagesChatId == 0) {
       messagesChatId = chatId;
@@ -2344,13 +2343,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       getArgumentsStrict().noLoadMore = true;
     } else if (addedCount == 0) {
       TdApi.SearchChatMessages retryFunction = new TdApi.SearchChatMessages(
-        chatId, null, null,
+        chatId, topicId, null, null,
         messages.nextFromMessageId, 0,
-        loadCount, searchFilter(),
-        messageThreadId,
-        savedMessagesTopicId
+        loadCount, searchFilter()
       );
-      tdlib.client().send(retryFunction, foundChatMessagesHandler(chatId, messages.nextFromMessageId, loadCount));
+      tdlib.client().send(retryFunction, foundChatMessagesHandler(chatId, topicId, messages.nextFromMessageId, loadCount));
       return;
     }
     isLoading = false;
@@ -3410,6 +3407,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private boolean ignoreCaptionUpdate;
 
   private boolean canRunFullscreen () {
+    if (APPLY_ALL_INSETS) {
+      return true;
+    }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && Config.CUTOUT_ENABLED && mode == MODE_MESSAGES) {
       return true;
     }
@@ -3460,6 +3460,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (captionFactor == 1f && captionWrapView != null) {
       height += captionWrapView.getMeasuredHeight();
     }
+    if (APPLY_ALL_INSETS) {
+      height += bottomInnerMargin;
+    }
     return height;
   }
 
@@ -3472,7 +3475,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       setCommonFactor(1f - dismissFactor);
 
       if (headerView != null) {
-        headerView.setTranslationY(-HeaderView.getSize(headerView.needOffsets()) * Math.max(dismissFactor, getForceEditModeVisibility()));
+        headerView.setTranslationY(-headerView.getSize() * Math.max(dismissFactor, getForceEditModeVisibility()));
       }
 
       if (mode == MODE_GALLERY) {
@@ -3486,7 +3489,6 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private void checkBottomWrapY () {
     int thumbsDistance = (Screen.dp(THUMBS_PADDING) * 2 + Screen.dp(THUMBS_HEIGHT)) * (inForceEditMode() ? 0 : 1);
     float offsetDistance = (float) measureBottomWrapHeight() * dismissFactor - getKeyboardOffset();
-    // int appliedBottomPadding = -this.appliedBottomPadding;
     if (bottomWrap != null) {
       bottomWrap.setTranslationY(offsetDistance - (thumbsFactor * (float) thumbsDistance) * (1f - dismissFactor) - appliedBottomPadding);
     }
@@ -4013,7 +4015,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     thumbsRecyclerView.setAdapter(thumbsAdapter);
 
     thumbsRecyclerView.setAlpha(0f);
-    thumbsRecyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(THUMBS_PADDING) * 2 + Screen.dp(THUMBS_HEIGHT), Gravity.BOTTOM));
+    thumbsRecyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
+    Views.setBottomMargin(thumbsRecyclerView, controlsMargin);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !Config.DISABLE_VIEWER_ELEVATION) {
       thumbsRecyclerView.setElevation(Screen.dp(3f));
     }
@@ -4506,7 +4509,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     public static ThumbViewHolder create (Context context, MediaViewController controller) {
       ThumbView thumbView = new ThumbView(context, controller.thumbsRecyclerView);
-      thumbView.setLayoutParams(new RecyclerView.LayoutParams(controller.calculateThumbWidth(), ViewGroup.LayoutParams.MATCH_PARENT));
+      thumbView.setLayoutParams(new RecyclerView.LayoutParams(controller.calculateThumbWidth(), Screen.dp(THUMBS_PADDING) * 2 + Screen.dp(THUMBS_HEIGHT)));
       return new ThumbViewHolder(thumbView);
       /*thumbView.setLayoutParams(FrameLayout.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
       FrameLayout wrapView = new FrameLayout(context);
@@ -5078,11 +5081,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         headerView.setElevation(Screen.dp(3f));
       }
       attachHeaderViewWithoutNavigation(headerView);
-      headerView.initWithSingleController(this, (SET_FULLSCREEN_ON_OPEN || canRunFullscreen()) && !Config.CUTOUT_ENABLED);
+      headerView.initWithSingleController(this, APPLY_ALL_INSETS || ((SET_FULLSCREEN_ON_OPEN || canRunFullscreen()) && !Config.CUTOUT_ENABLED));
       headerView.getFilling().setShadowAlpha(0f);
       int leftMargin = Screen.dp(68f);
       int rightMargin = measureButtonsPadding();
-      Views.setMargins((FrameLayout.LayoutParams) headerCell.getLayoutParams(), Lang.rtl() ? rightMargin : leftMargin, headerView.needOffsets() ? HeaderView.getTopOffset() : 0, Lang.rtl() ? leftMargin : rightMargin, 0);
+      Views.setMargins((FrameLayout.LayoutParams) headerCell.getLayoutParams(), Lang.rtl() ? rightMargin : leftMargin, headerView.getEffectiveTopOffset(), Lang.rtl() ? leftMargin : rightMargin, 0);
       contentView.addView(headerView);
     }
 
@@ -5179,6 +5182,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         contentView.addView(pipControlsWrap);
 
         fp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.BOTTOM);
+        fp.bottomMargin = getBottomWrapMargin();
 
         bottomWrap = new FrameLayoutFix(context);
         bottomWrap.setLayoutParams(fp);
@@ -5296,6 +5300,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private void setControlsMargin (int margin) {
     if (this.controlsMargin != margin) {
       this.controlsMargin = margin;
+      Views.setBottomMargin(thumbsRecyclerView, margin);
       Views.setBottomMargin(editWrap, margin);
       Views.setBottomMargin(bottomWrap, getBottomWrapMargin());
     }
@@ -5317,16 +5322,18 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   @Override
-  public void dispatchInnerMargins (int left, int top, int right, int bottom) {
+  public boolean dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, int left, int top, int right, int bottom) {
     boolean changed = this.bottomInnerMargin != bottom;
     this.bottomInnerMargin = bottom;
-    if (mode == MODE_GALLERY && isFromCamera) {
-      setControlsMargin(bottom > Screen.getNavigationBarHeight() ? 0 : bottom);
+    if (APPLY_ALL_INSETS || (mode == MODE_GALLERY && isFromCamera)) {
+      int controlsMargin = APPLY_ALL_INSETS || bottom <= Screen.getNavigationBarHeight() ? bottom : 0;
+      setControlsMargin(controlsMargin);
       int bottomOffset = getSectionBottomOffset(SECTION_CROP);
       Views.setBottomMargin(cropTargetView, bottomOffset);
       if (cropAreaView != null) {
         cropAreaView.setOffsetBottom(bottomOffset);
       }
+      checkBottomWrapY();
     }
     if (mediaView != null) {
       if (changed) {
@@ -5338,6 +5345,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       }
       mediaView.layoutCells();
     }
+    return super.dispatchSystemInsets(parentView, originalParams, left, top, right, bottom);
   }
 
   @Override
@@ -5591,7 +5599,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (mode != MODE_GALLERY) {
       return 0;
     }
-    int add = isFromCamera ? this.bottomInnerMargin : 0;
+    int add = APPLY_ALL_INSETS || isFromCamera ? this.bottomInnerMargin : 0;
     switch (section) {
       case SECTION_CAPTION: {
         return 0; // Screen.dp(56f);
@@ -8517,6 +8525,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void stopFullScreenTemporarily (boolean stop) {
+    if (APPLY_ALL_INSETS) {
+      return;
+    }
     if (stop) {
       popupView.setIgnoreBottom(false);
       popupView.setIgnoreAllInsets(false);
@@ -8754,6 +8765,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     editWrap = new FrameLayoutFix(context);
     editWrap.setBackgroundColor(Theme.getColor(ColorId.transparentEditor));
     editWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f), Gravity.BOTTOM));
+    Views.setBottomMargin(editWrap, controlsMargin);
 
     backButton = new EditButton(context);
     backButton.setId(R.id.btn_back);
@@ -8913,7 +8925,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     // Bottom wrap
 
     FrameLayoutFix.LayoutParams fp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.BOTTOM);
-    fp.bottomMargin = Screen.dp(56f);
+    fp.bottomMargin = getBottomWrapMargin();
 
     bottomWrap = new FrameLayoutFix(context);
     bottomWrap.setLayoutParams(fp);

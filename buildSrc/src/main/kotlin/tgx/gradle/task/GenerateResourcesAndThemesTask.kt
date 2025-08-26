@@ -1265,6 +1265,7 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
         "MessageReplyToMessage.originSendDate",
         "MessageReplyToMessage.content",
       )),
+      TdConstructor("MessageTopic"),
 
       TdConstructor("LinkPreviewType"),
       TdConstructor("LinkPreviewAlbumMedia"),

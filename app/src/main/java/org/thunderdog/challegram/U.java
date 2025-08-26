@@ -509,9 +509,7 @@ public class U {
         case TdlibNotificationManager.ID_INCOMING_CALL_NOTIFICATION:
           knownType = android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL;
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (UI.getAppContext().checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-              knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
-            }
+            knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
           }
           knownType |= android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK;
           break;
@@ -3698,6 +3696,14 @@ public class U {
   public static boolean setRect (RectF rectF, float left, float top, float right, float bottom) {
     if (rectF.left != left || rectF.top != top || rectF.right != right || rectF.bottom != bottom) {
       rectF.set(left, top, right, bottom);
+      return true;
+    }
+    return false;
+  }
+
+  public static boolean setRect (Rect rect, int left, int top, int right, int bottom) {
+    if (rect.left != left || rect.top != top || rect.right != right || rect.bottom != bottom) {
+      rect.set(left, top, right, bottom);
       return true;
     }
     return false;

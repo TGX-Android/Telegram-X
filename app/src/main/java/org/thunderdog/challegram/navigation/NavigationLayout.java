@@ -15,33 +15,58 @@
 package org.thunderdog.challegram.navigation;
 
 import android.content.Context;
+import android.graphics.Rect;
 
-import org.thunderdog.challegram.config.Config;
-import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.widget.RootFrameLayout;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.Destroyable;
 
-public class NavigationLayout extends FrameLayoutFix implements Destroyable, Screen.StatusBarHeightChangeListener {
+public class NavigationLayout extends FrameLayoutFix implements Destroyable, RootFrameLayout.InsetsChangeListener {
   public NavigationLayout (Context context) {
     super(context);
-    if (!Config.USE_FULLSCREEN_NAVIGATION_CONTENT) {
-      setPadding(0, HeaderView.getSize(true), 0, 0);
-      Screen.addStatusBarHeightListener(this);
+  }
+
+  private RootFrameLayout rootView;
+
+  @Override
+  protected void onAttachedToWindow () {
+    super.onAttachedToWindow();
+    rootView = Views.findAncestor(this, RootFrameLayout.class);
+    if (rootView != null) {
+      rootView.addInsetsChangeListener(this);
+      applyTopInset(rootView.getTopInset());
     }
   }
 
   @Override
-  public void onStatusBarHeightChanged (int newHeight) {
-    int newPadding = HeaderView.getSize(true);
-    if (getPaddingTop() != newPadding) {
-      setPadding(0, newPadding, 0, 0);
+  protected void onDetachedFromWindow () {
+    super.onDetachedFromWindow();
+    if (rootView != null) {
+      rootView.removeInsetsChangeListener(this);
+      rootView = null;
+    }
+  }
+
+  @Override
+  public void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect systemInsets, boolean isUpdate) {
+    applyTopInset(effectiveInsets.top);
+  }
+
+  private void applyTopInset (int topInset) {
+    int newSize = HeaderView.getSize(false) + topInset;
+    if (newSize != getPaddingTop()) {
+      setPadding(0, newSize, 0, 0);
     }
   }
 
   @Override
   public void performDestroy () {
-    Screen.removeStatusBarHeightListener(this);
+    if (rootView != null) {
+      rootView.removeInsetsChangeListener(this);
+      rootView = null;
+    }
   }
 
   /* optimization */

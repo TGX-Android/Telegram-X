@@ -53,6 +53,8 @@ public class ContentPreview {
   public static final Emoji EMOJI_PAID_PHOTO = new Emoji("\u2B50", R.drawable.baseline_premium_star_16); // ⭐
   public static final Emoji EMOJI_PAID_VIDEO = new Emoji("\u2B50", R.drawable.baseline_premium_star_16);
   public static final Emoji EMOJI_PAID_MEDIA = new Emoji("\u2B50", R.drawable.baseline_premium_star_16);
+  public static final Emoji EMOJI_DIRECT_MESSAGES = new Emoji("\uD83D\uDCAC", R.drawable.baseline_chat_bubble_16);
+  public static final Emoji EMOJI_PAID_DIRECT_MESSAGES = new Emoji("\uD83D\uDCB8", R.drawable.baseline_premium_star_16);
   public static final Emoji EMOJI_VOICE = new Emoji("\uD83C\uDFA4", R.drawable.baseline_mic_16);
   public static final Emoji EMOJI_GIF = new Emoji("\uD83D\uDC7E", R.drawable.deproko_baseline_gif_filled_16);
   public static final Emoji EMOJI_LOCATION = new Emoji("\uD83D\uDCCC", R.drawable.baseline_gps_fixed_16);
@@ -245,8 +247,8 @@ public class ContentPreview {
     }
     String alternativeText = null;
     boolean alternativeTextTranslatable = false;
-    int arg1 = ARG_NONE;
-    int arg2 = ARG_NONE;
+    long arg1 = ARG_NONE;
+    long arg2 = ARG_NONE;
     switch (type) {
       case TdApi.MessageText.CONSTRUCTOR: {
         TdApi.MessageText messageText = (TdApi.MessageText) message.content;
@@ -455,20 +457,10 @@ public class ContentPreview {
           return new ContentPreview(EMOJI_LOCATION, 0, Lang.plural(alert.distance >= 1000 ? R.string.ChatContentProximityKm : R.string.ChatContentProximityM, alert.distance >= 1000 ? alert.distance / 1000 : alert.distance, tdlib.senderName(alert.travelerId, true), tdlib.senderName(alert.watcherId, true)), true);
         }
       }
-      case TdApi.MessageVideoChatStarted.CONSTRUCTOR: {
-        if (message.isChannelPost) {
-          return new ContentPreview(EMOJI_CALL, message.isOutgoing ? R.string.ChatContentLiveStreamStarted_outgoing : R.string.ChatContentLiveStreamStarted);
-        } else {
-          return new ContentPreview(EMOJI_CALL, message.isOutgoing ? R.string.ChatContentVoiceChatStarted_outgoing : R.string.ChatContentVoiceChatStarted);
-        }
-      }
       case TdApi.MessageVideoChatEnded.CONSTRUCTOR: {
         TdApi.MessageVideoChatEnded videoChatOrLiveStream = (TdApi.MessageVideoChatEnded) message.content;
-        if (message.isChannelPost) {
-          return new ContentPreview(EMOJI_CALL_END, 0, Lang.getString(message.isOutgoing ? R.string.ChatContentLiveStreamFinished_outgoing : R.string.ChatContentLiveStreamFinished, Lang.getCallDuration(videoChatOrLiveStream.duration)), true);
-        } else {
-          return new ContentPreview(EMOJI_CALL_END, 0, Lang.getString(message.isOutgoing ? R.string.ChatContentVoiceChatFinished_outgoing : R.string.ChatContentVoiceChatFinished, Lang.getCallDuration(videoChatOrLiveStream.duration)), true);
-        }
+        arg1 = videoChatOrLiveStream.duration;
+        break;
       }
       case TdApi.MessageVideoChatScheduled.CONSTRUCTOR: {
         TdApi.MessageVideoChatScheduled event = (TdApi.MessageVideoChatScheduled) message.content;
@@ -643,6 +635,13 @@ public class ContentPreview {
         break;
       }
 
+      case TdApi.MessageDirectMessagePriceChanged.CONSTRUCTOR: {
+        TdApi.MessageDirectMessagePriceChanged directMessagePriceChanged = (TdApi.MessageDirectMessagePriceChanged) message.content;
+        arg1 = directMessagePriceChanged.isEnabled ? ARG_TRUE : ARG_NONE;
+        arg2 = directMessagePriceChanged.paidMessageStarCount;
+        break;
+      }
+
       case TdApi.MessageCustomServiceAction.CONSTRUCTOR: {
         TdApi.MessageCustomServiceAction serviceAction = (TdApi.MessageCustomServiceAction) message.content;
         return new ContentPreview(EMOJI_INFO, 0, serviceAction.text);
@@ -713,6 +712,7 @@ public class ContentPreview {
       case TdApi.MessageGiveawayCreated.CONSTRUCTOR:
       case TdApi.MessageGift.CONSTRUCTOR:
       case TdApi.MessageUpgradedGift.CONSTRUCTOR:
+      case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
       case TdApi.MessageGroupCall.CONSTRUCTOR:
       case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR:
       case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR:
@@ -728,6 +728,15 @@ public class ContentPreview {
       case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
       case TdApi.MessagePassportDataSent.CONSTRUCTOR:
       case TdApi.MessageChatSetBackground.CONSTRUCTOR:
+      case TdApi.MessageChecklist.CONSTRUCTOR:
+      case TdApi.MessageChecklistTasksDone.CONSTRUCTOR:
+      case TdApi.MessageChecklistTasksAdded.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostApprovalFailed.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostApproved.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostDeclined.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostPaid.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
+      case TdApi.MessageGiftedTon.CONSTRUCTOR:
         break;
 
       // Bots only. Unused
@@ -735,7 +744,7 @@ public class ContentPreview {
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_235cea4f();
+        Td.assertMessageContent_7c00740();
         throw Td.unsupported(message.content);
     }
     Refresher refresher = null;
@@ -1189,8 +1198,13 @@ public class ContentPreview {
           return new ContentPreview(isChannel ? EMOJI_LIVE_STREAM : EMOJI_VIDEO_CHAT, isChannel ? R.string.ChatContentLiveStreamAddSomeone : R.string.ChatContentVideoChatAddSomeone);
         }
       }
+      case TdApi.PushMessageContentChecklist.CONSTRUCTOR:
+      case TdApi.PushMessageContentChecklistTasksAdded.CONSTRUCTOR:
+      case TdApi.PushMessageContentChecklistTasksDone.CONSTRUCTOR: {
+        return getNotificationPreview(TdApi.MessageUnsupported.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null);
+      }
       default:
-        Td.assertPushMessageContent_6685917b();
+        Td.assertPushMessageContent_55b7513d();
         throw Td.unsupported(push.content);
     }
   }
@@ -1404,6 +1418,17 @@ public class ContentPreview {
           }
         }
       }
+      case TdApi.MessageDirectMessagePriceChanged.CONSTRUCTOR: {
+        boolean isEnabled = arg1 == ARG_TRUE;
+        long starsCount = arg2;
+        if (!isEnabled) {
+          return new ContentPreview(EMOJI_DIRECT_MESSAGES, R.string.ChatContentDmDisabled);
+        } else if (starsCount == 0) {
+          return new ContentPreview(EMOJI_DIRECT_MESSAGES, R.string.ChatContentDmEnabled);
+        } else {
+          return new ContentPreview(EMOJI_PAID_DIRECT_MESSAGES, 0, Lang.plural(R.string.ChatContentDmEnabledPaid, starsCount), true);
+        }
+      }
       case TdApi.MessageCall.CONSTRUCTOR:
         switch ((int) arg1) {
           case ARG_CALL_DECLINED:
@@ -1472,6 +1497,30 @@ public class ContentPreview {
         return new ContentPreview(EMOJI_LOCATION, 0, Lang.plural(distance >= 1000 ? R.string.ChatContentProximityFromYouKm : R.string.ChatContentProximityFromYouM, distance >= 1000 ? distance / 1000 : distance, tdlib.senderName(sender, true)), true);
       }
 
+      case TdApi.MessageVideoChatStarted.CONSTRUCTOR: {
+        if (tdlib.isChannel(chatId)) {
+          return new ContentPreview(EMOJI_CALL, isOutgoing ? R.string.ChatContentLiveStreamStarted_outgoing : R.string.ChatContentLiveStreamStarted);
+        } else {
+          return new ContentPreview(EMOJI_CALL, isOutgoing ? R.string.ChatContentVoiceChatStarted_outgoing : R.string.ChatContentVoiceChatStarted);
+        }
+      }
+      case TdApi.MessageVideoChatEnded.CONSTRUCTOR: {
+        int duration = (int) arg1;
+        if (duration > 0) {
+          if (tdlib.isChannel(chatId)) {
+            return new ContentPreview(EMOJI_CALL_END, 0, Lang.getString(isOutgoing ? R.string.ChatContentLiveStreamFinished_outgoing : R.string.ChatContentLiveStreamFinished, Lang.getCallDuration(duration)), true);
+          } else {
+            return new ContentPreview(EMOJI_CALL_END, 0, Lang.getString(isOutgoing ? R.string.ChatContentVoiceChatFinished_outgoing : R.string.ChatContentVoiceChatFinished, Lang.getCallDuration(duration)), true);
+          }
+        } else {
+          if (tdlib.isChannel(chatId)) {
+            return new ContentPreview(EMOJI_CALL_END, 0, Lang.getString(isOutgoing ? R.string.ChatContentLiveStreamFinishedNoTime_outgoing : R.string.ChatContentLiveStreamFinishedNoTime, Lang.getCallDuration(duration)), true);
+          } else {
+            return new ContentPreview(EMOJI_CALL_END, 0, Lang.getString(isOutgoing ? R.string.ChatContentVoiceChatFinishedNoTime_outgoing : R.string.ChatContentVoiceChatFinishedNoTime, Lang.getCallDuration(duration)), true);
+          }
+        }
+      }
+
       // Must be supported by the caller and never passed to this method.
       case TdApi.MessageGiftedPremium.CONSTRUCTOR:
       case TdApi.MessageGiftedStars.CONSTRUCTOR:
@@ -1482,8 +1531,6 @@ public class ContentPreview {
       case TdApi.MessageBotWriteAccessAllowed.CONSTRUCTOR:
       case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
       case TdApi.MessageInviteVideoChatParticipants.CONSTRUCTOR:
-      case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
-      case TdApi.MessageVideoChatEnded.CONSTRUCTOR:
       case TdApi.MessageVideoChatScheduled.CONSTRUCTOR:
       case TdApi.MessagePinMessage.CONSTRUCTOR:
       case TdApi.MessagePaymentSuccessful.CONSTRUCTOR:
@@ -1504,9 +1551,18 @@ public class ContentPreview {
       case TdApi.MessageGiveawayPrizeStars.CONSTRUCTOR:
       case TdApi.MessageGift.CONSTRUCTOR:
       case TdApi.MessageUpgradedGift.CONSTRUCTOR:
-      case TdApi.MessageGroupCall.CONSTRUCTOR: // TODO
-      case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR: // TODO
-      case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR: // TODO
+      case TdApi.MessageChecklist.CONSTRUCTOR:
+      case TdApi.MessageChecklistTasksDone.CONSTRUCTOR:
+      case TdApi.MessageChecklistTasksAdded.CONSTRUCTOR:
+      case TdApi.MessageGroupCall.CONSTRUCTOR:
+      case TdApi.MessagePaidMessagesRefunded.CONSTRUCTOR:
+      case TdApi.MessagePaidMessagePriceChanged.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostApprovalFailed.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostApproved.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostDeclined.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostPaid.CONSTRUCTOR:
+      case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
+      case TdApi.MessageGiftedTon.CONSTRUCTOR:
         // TODO support these previews
         return new ContentPreview(EMOJI_QUIZ, R.string.UnsupportedMessage);
         
@@ -1518,7 +1574,7 @@ public class ContentPreview {
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
-        Td.assertMessageContent_235cea4f();
+        Td.assertMessageContent_7c00740();
         throw new UnsupportedOperationException(Integer.toString(type));
     }
   }

@@ -50,7 +50,8 @@ public class MessagesSearchManager {
 
   private TdApi.SearchMessagesFilter currentSearchFilter;
   private int currentTotalCount;
-  private long currentChatId, currentMessageThreadId;
+  private long currentChatId;
+  private TdApi.MessageTopic currentTopicId;
   private TdApi.MessageSender currentFromSender;
   private boolean currentIsSecret;
   private String currentInput;
@@ -80,12 +81,12 @@ public class MessagesSearchManager {
   }
 
   public void onDismiss () {
-    reset(0l, 0l, "");
+    reset(0L, null, "");
   }
 
-  private int reset (long chatId, long messageThreadId, String input) {
+  private int reset (long chatId, TdApi.MessageTopic topicId, String input) {
     currentChatId = chatId;
-    currentMessageThreadId = messageThreadId;
+    currentTopicId = topicId;
     currentInput = input;
     flags = currentTotalCount = 0;
     currentSearchResults.clear();
@@ -104,8 +105,8 @@ public class MessagesSearchManager {
   private MessageId foundTargetMessageId;
 
   // Typing the search
-  public void search (final long chatId, final long messageThreadId, final TdApi.MessageSender fromSender, final TdApi.SearchMessagesFilter filter, final boolean isSecret, final String input, MessageId foundMsgId) {
-    final int contextId = reset(chatId, messageThreadId, input);
+  public void search (final long chatId, final TdApi.MessageTopic topicId, final TdApi.MessageSender fromSender, final TdApi.SearchMessagesFilter filter, final boolean isSecret, final String input, MessageId foundMsgId) {
+    final int contextId = reset(chatId, topicId, input);
 
     if (input.length() == 0 && fromSender == null && filter == null) {
       delegate.showSearchResult(STATE_NO_INPUT, 0, true, true, null);
@@ -133,13 +134,13 @@ public class MessagesSearchManager {
     searchRunnable = new CancellableRunnable() {
       @Override
       public void act () {
-        searchInternal(contextId, chatId, messageThreadId, fromSender, filter, isSecret, input, 0, null, SEARCH_DIRECTION_TOP);
+        searchInternal(contextId, chatId, topicId, fromSender, filter, isSecret, input, 0, null, SEARCH_DIRECTION_TOP);
       }
     };
     UI.post(searchRunnable, isSecret ? 0 : SEARCH_DELAY);
   }
 
-  private void searchInternal (final int contextId, final long chatId, final long messageThreadId, final TdApi.MessageSender fromSender, final TdApi.SearchMessagesFilter filter, final boolean isSecret, final String input, final long fromMessageId, final String nextSearchOffset, final int direction) {
+  private void searchInternal (final int contextId, final long chatId, final TdApi.MessageTopic topicId, final TdApi.MessageSender fromSender, final TdApi.SearchMessagesFilter filter, final boolean isSecret, final String input, final long fromMessageId, final String nextSearchOffset, final int direction) {
     if (this.contextId != contextId) {
       return;
     }
@@ -177,7 +178,7 @@ public class MessagesSearchManager {
       searchManagerMiddleware.search(query, fromSender, handler);
     } else {
       final int offset = direction == SEARCH_DIRECTION_TOP ? 0 : ( direction == SEARCH_DIRECTION_BOTTOM ? -19 : -10);
-      TdApi.SearchChatMessages function = new TdApi.SearchChatMessages(chatId, input, fromSender, fromMessageId, offset, SEARCH_LOAD_LIMIT, filter, messageThreadId, 0);
+      TdApi.SearchChatMessages function = new TdApi.SearchChatMessages(chatId, topicId, input, fromSender, fromMessageId, offset, SEARCH_LOAD_LIMIT, filter);
       searchManagerMiddleware.search(function, handler);
     }
   }
@@ -284,7 +285,7 @@ public class MessagesSearchManager {
         flags |= FLAG_LOADING;
         currentSearchResults.clear();
         currentSearchResultsArr.clear();
-        searchInternal(contextId, currentChatId, currentMessageThreadId, currentFromSender, currentSearchFilter, currentIsSecret, currentInput, foundTargetMessageId.getMessageId(), currentSecretOffset, SEARCH_DIRECTION_AROUND);
+        searchInternal(contextId, currentChatId, currentTopicId, currentFromSender, currentSearchFilter, currentIsSecret, currentInput, foundTargetMessageId.getMessageId(), currentSecretOffset, SEARCH_DIRECTION_AROUND);
         return;
       }
     }
@@ -316,7 +317,7 @@ public class MessagesSearchManager {
     } else if (next ? canLoadTop() : canLoadBottom()) {
       flags |= FLAG_LOADING;
       delegate.onAwaitNext(next);
-      searchInternal(contextId, currentChatId, currentMessageThreadId, currentFromSender, currentSearchFilter, currentIsSecret, currentInput,
+      searchInternal(contextId, currentChatId, currentTopicId, currentFromSender, currentSearchFilter, currentIsSecret, currentInput,
         currentDisplayedMessage, currentSecretOffset, next ? SEARCH_DIRECTION_TOP : SEARCH_DIRECTION_BOTTOM);
     }
   }
@@ -330,7 +331,7 @@ public class MessagesSearchManager {
       currentSearchResults.clear();
       currentSearchResultsArr.clear();
       delegate.showSearchResult(STATE_LOADING, 0, true, true, null);
-      searchInternal(contextId, currentChatId, currentMessageThreadId, currentFromSender, currentSearchFilter, currentIsSecret, currentInput,
+      searchInternal(contextId, currentChatId, currentTopicId, currentFromSender, currentSearchFilter, currentIsSecret, currentInput,
         currentDisplayedMessage, currentSecretOffset, SEARCH_DIRECTION_AROUND);
     }
   }

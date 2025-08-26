@@ -343,7 +343,9 @@ android {
   packaging {
     Config.SUPPORTED_ABI.forEach { abi ->
       jniLibs.pickFirsts.let { set ->
-        set.add("lib/$abi/libc++_shared.so")
+        if (Config.SHARED_STL) {
+          set.add("lib/$abi/libc++_shared.so")
+        }
         set.add("tdlib/openssl/$abi/lib/libcryptox.so")
         set.add("tdlib/openssl/$abi/lib/libsslx.so")
         set.add("tdlib/src/main/libs/$abi/libtdjni.so")
@@ -422,9 +424,9 @@ dependencies {
   implementation("androidx.media3:media3-common:${LibraryVersions.ANDROIDX_MEDIA}")
   implementation("androidx.media3:media3-exoplayer-hls:${LibraryVersions.ANDROIDX_MEDIA}")
   // 17.x version requires minSdk 19 or higher
-  implementation("com.google.mlkit:language-id:16.1.1")
+  implementation("com.google.mlkit:language-id:17.0.6")
   // The Checker Framework: https://checkerframework.org/CHANGELOG.md
-  compileOnly("org.checkerframework:checker-qual:3.49.3")
+  compileOnly("org.checkerframework:checker-qual:3.49.5")
   // OkHttp: https://github.com/square/okhttp/blob/master/CHANGELOG.md
   implementation("com.squareup.okhttp3:okhttp:4.12.0")
   // ShortcutBadger: https://github.com/leolin310148/ShortcutBadger
@@ -432,7 +434,7 @@ dependencies {
   // ReLinker: https://github.com/KeepSafe/ReLinker/blob/master/CHANGELOG.md
   implementation("com.getkeepsafe.relinker:relinker:1.4.5")
   // Konfetti: https://github.com/DanielMartinus/Konfetti/blob/main/README.md
-  implementation("nl.dionsegijn:konfetti-xml:2.0.4")
+  implementation("nl.dionsegijn:konfetti-xml:2.0.5")
   // Transcoder: https://github.com/natario1/Transcoder/blob/master/docs/_about/changelog.md
   implementation("com.github.natario1:Transcoder:ba8f098c94")
   // https://github.com/mikereedell/sunrisesunsetlib-java

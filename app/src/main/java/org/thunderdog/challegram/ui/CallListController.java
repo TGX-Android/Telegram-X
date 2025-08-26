@@ -58,10 +58,11 @@ import org.thunderdog.challegram.widget.ListInfoView;
 import org.thunderdog.challegram.widget.VerticalChatView;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 import me.vkryl.android.AnimatorUtils;
+import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import tgx.td.Td;
@@ -456,12 +457,13 @@ public class CallListController extends RecyclerViewController<Void> implements
     adapter.updateValuedSettingById(R.id.btn_calls);
   }
 
-  private void addMessages (TdApi.FoundMessages messages) {
-    nextOffset = messages.nextOffset;
+  private void addMessages (TdApi.FoundMessages foundMessages) {
+    nextOffset = foundMessages.nextOffset;
     if (StringUtils.isEmpty(nextOffset)) {
       endReached = true;
     }
-    if (messages.messages.length == 0) {
+    TdApi.Message[] messages = Arrays.stream(foundMessages.messages).filter(CallListController::filter).toArray(TdApi.Message[]::new);
+    if (messages.length == 0) {
       adapter.updateValuedSettingById(R.id.btn_calls);
       return;
     }
@@ -478,7 +480,7 @@ public class CallListController extends RecyclerViewController<Void> implements
     }
     int startIndex = needReplace ? 0 : adapter.getItems().size() - 2;
 
-    for (TdApi.Message message : messages.messages) {
+    for (TdApi.Message message : messages) {
       this.messages.add(message);
       CallItem item = new CallItem(tdlib, message);
       int state = currentSection != null ? currentSection.appendItem(item) : CallSection.STATE_NONE;
@@ -596,7 +598,7 @@ public class CallListController extends RecyclerViewController<Void> implements
 
   private void setMessages (TdApi.FoundMessages messages) {
     this.messages = new ArrayList<>(messages.messages.length);
-    Collections.addAll(this.messages, messages.messages);
+    ArrayUtils.addAllFiltered(this.messages, messages.messages, CallListController::filter);
     this.nextOffset = messages.nextOffset;
     buildSections();
     removeItemAnimatorDelayed();
@@ -803,7 +805,7 @@ public class CallListController extends RecyclerViewController<Void> implements
   }
 
   private static boolean filter (TdApi.Message message) {
-    return Td.isCall(message.content) && message.sendingState == null && message.schedulingState == null;
+    return Td.isCall(message.content) && message.sendingState == null && message.schedulingState == null && message.content.getConstructor() == TdApi.MessageCall.CONSTRUCTOR;
   }
 
   @Override

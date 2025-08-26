@@ -812,6 +812,20 @@ public class Views {
     return view != null && setMargins((ViewGroup.MarginLayoutParams) view.getLayoutParams(), left, top, right, bottom);
   }
 
+  @Nullable
+  @SuppressWarnings("unchecked")
+  public static <T extends View> T findAncestor (View view, Class<T> clazz) {
+    if (view != null) {
+      ViewParent parent = view.getParent();
+      do {
+        if (clazz.isAssignableFrom(parent.getClass())) {
+          return (T) parent;
+        }
+      } while ((parent = parent.getParent()) != null);
+    }
+    return null;
+  }
+
   public static void translateMarginsToPadding (View view) {
     if (view != null) {
       ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
@@ -852,6 +866,12 @@ public class Views {
         params.topMargin = margin;
         view.setLayoutParams(params);
       }
+    }
+  }
+
+  public static void setPaddingBottom (View view, int paddingBottom) {
+    if (view != null) {
+      view.setPadding(view.getPaddingLeft(), view.getPaddingTop(), view.getPaddingRight(), paddingBottom);
     }
   }
 

@@ -30,7 +30,7 @@ import java.lang.annotation.RetentionPolicy;
   RightId.SEND_VOICE_NOTES,
   RightId.SEND_VIDEO_NOTES,
   RightId.SEND_OTHER_MESSAGES,
-  RightId.SEND_POLLS,
+  RightId.SEND_POLLS_OR_CHECKLISTS,
   RightId.EMBED_LINKS,
   RightId.CHANGE_CHAT_INFO,
   RightId.EDIT_MESSAGES,
@@ -43,6 +43,7 @@ import java.lang.annotation.RetentionPolicy;
   RightId.EDIT_STORIES,
   RightId.DELETE_STORIES,
   RightId.MANAGE_OR_CREATE_TOPICS,
+  RightId.MANAGE_DIRECT_MESSAGES,
   RightId.ADD_NEW_ADMINS,
   RightId.REMAIN_ANONYMOUS
 })
@@ -57,7 +58,7 @@ public @interface RightId {
     SEND_VOICE_NOTES = 7,
     SEND_VIDEO_NOTES = 8,
     SEND_OTHER_MESSAGES = 9,
-    SEND_POLLS = 10,
+    SEND_POLLS_OR_CHECKLISTS = 10,
     EMBED_LINKS = 11,
     CHANGE_CHAT_INFO = 12,
     EDIT_MESSAGES = 13,
@@ -70,6 +71,7 @@ public @interface RightId {
     EDIT_STORIES = 20,
     DELETE_STORIES = 21,
     MANAGE_OR_CREATE_TOPICS = 22,
-    ADD_NEW_ADMINS = 23,
-    REMAIN_ANONYMOUS = 24;
+    MANAGE_DIRECT_MESSAGES = 23,
+    ADD_NEW_ADMINS = 100,
+    REMAIN_ANONYMOUS = 101;
 }

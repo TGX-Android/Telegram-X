@@ -308,7 +308,8 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   }
 
   private boolean hasPreview () {
-    return mediaPreview != null && (mediaPreview.miniThumbnail != null || mediaPreview.preview != null);
+    MediaPreview preview = this.mediaPreview;
+    return preview != null && (preview.miniThumbnail != null || preview.preview != null);
   }
 
   private int getTextLeft () {
