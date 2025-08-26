@@ -398,10 +398,7 @@ public class SettingsController extends ViewController<Void> implements
   @Override
   protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
     super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
-    if (contentView != null) {
-      Views.setPaddingBottom(this.contentView, extraBottomInset);
-      this.contentView.setClipToPadding(extraBottomInset == 0);
-    }
+    Views.applyBottomInset(contentView, extraBottomInset);
   }
 
   @Override
@@ -441,8 +438,7 @@ public class SettingsController extends ViewController<Void> implements
     initMyUser();
 
     this.contentView = new ComplexRecyclerView(context, this);
-    Views.setPaddingBottom(this.contentView, extraBottomInset);
-    this.contentView.setClipToPadding(extraBottomInset == 0);
+    Views.applyBottomInset(contentView, extraBottomInset);
     this.contentView.setHasFixedSize(true);
     this.contentView.setHeaderView(headerCell, this);
     this.contentView.setItemAnimator(null);

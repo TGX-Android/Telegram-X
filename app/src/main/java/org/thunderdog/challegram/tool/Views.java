@@ -800,6 +800,13 @@ public class Views {
     }
   }
 
+  public static void applyBottomInset (RecyclerView recyclerView, int bottomInset) {
+    if (recyclerView != null) {
+      setPaddingBottom(recyclerView, bottomInset);
+      recyclerView.setClipToPadding(bottomInset == 0);
+    }
+  }
+
   public static void removeRule (RelativeLayout.LayoutParams params, int verb) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
       params.removeRule(verb);

@@ -228,7 +228,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   public void dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, Rect legacyInsets, Rect insets, Rect insetsWithoutIme, boolean fitsSystemWindows) {
     super.dispatchSystemInsets(parentView, originalParams, legacyInsets, insets, insetsWithoutIme, fitsSystemWindows);
     originalParams.bottomMargin = 0;
-    recyclerView.setPadding(0, 0, 0, systemInsets.bottom);
+    Views.applyBottomInset(recyclerView, systemInsets.bottom);
   }
 
   @Override
@@ -331,7 +331,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     adapter.setItems(items, true);
 
     recyclerView = new RecyclerView(context);
-    recyclerView.setClipToPadding(false);
+    Views.applyBottomInset(recyclerView, systemInsets.bottom);
     recyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
       @Override
       public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {

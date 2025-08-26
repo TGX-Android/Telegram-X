@@ -475,10 +475,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   @Override
   protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
     super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
-    if (chatsView != null) {
-      chatsView.setClipToPadding(extraBottomInset == 0);
-      Views.setPaddingBottom(chatsView, extraBottomInset);
-    }
+    Views.applyBottomInset(chatsView, extraBottomInset);
   }
 
   @Override
@@ -496,8 +493,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         adapter.notifyLastItemChanged();
       }
     });
-    chatsView.setClipToPadding(extraBottomInset != 0);
-    Views.setPaddingBottom(chatsView, extraBottomInset);
+    Views.applyBottomInset(chatsView, extraBottomInset);
     chatsView.setItemAnimator(null);
     if (isInForceTouchMode()) {
       chatsView.setVerticalScrollBarEnabled(false);
