@@ -945,6 +945,10 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     return isFullscreen;
   }
 
+  public boolean isHideNavigation () {
+    return hideNavigation;
+  }
+
   private void setFullScreen (boolean isFullscreen) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       if (this.isFullscreen != isFullscreen) {

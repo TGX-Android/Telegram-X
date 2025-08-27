@@ -150,9 +150,11 @@ import org.thunderdog.challegram.widget.CheckView;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.FileProgressComponent;
+import org.thunderdog.challegram.widget.FillingSpace;
 import org.thunderdog.challegram.widget.KeyboardFrameLayout;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
+import org.thunderdog.challegram.widget.RootFrameLayout;
 import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.TextFormattingLayout;
 import org.thunderdog.challegram.widget.VideoTimelineView;
@@ -190,7 +192,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   MediaCellView.Callback, SliderView.Listener, TGLegacyManager.EmojiLoadListener, Menu, MoreDelegate,
   PopupLayout.TouchSectionProvider, FlingDetector.Callback, CallManager.CurrentCallListener,
   ColorPreviewView.BrushChangeListener, PaintState.UndoStateListener, MediaView.FactorChangeListener,
-  EmojiToneHelper.Delegate, MessageListener, InputView.SelectionChangeListener, PopupLayout.ShowListener {
+  EmojiToneHelper.Delegate, MessageListener, InputView.SelectionChangeListener, PopupLayout.ShowListener,
+  RootFrameLayout.InsetsChangeListener{
 
   private static final long REVEAL_ANIMATION_DURATION = /*BuildConfig.DEBUG ? 1800l :*/ 180;
   private static final long REVEAL_OPEN_ANIMATION_DURATION = /*BuildConfig.DEBUG ? 1800l :*/ 180l;
@@ -494,15 +497,17 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void setBottomAlpha (float alpha) {
+    float visibility = alpha * headerVisible.getFloatValue() * (1f - pipFactor);
     if (hasCaption() || mode == MODE_GALLERY) {
-      captionWrapView.setAlpha(alpha * headerVisible.getFloatValue() * (1f - pipFactor));
+      captionWrapView.setAlpha(visibility);
     }
     if (videoSliderView != null) {
-      videoSliderView.setAlpha(alpha * headerVisible.getFloatValue() * (1f - pipFactor));
+      videoSliderView.setAlpha(visibility);
     }
     if (thumbsRecyclerView != null) {
-      thumbsRecyclerView.setAlpha(alpha * headerVisible.getFloatValue() * (1f - pipFactor));
+      thumbsRecyclerView.setAlpha(visibility);
     }
+    updateBottomSpaceAlpha();
   }
 
   private void updateMainItemsAlpha () {
@@ -828,6 +833,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       Views.setBottomMargin(bottomWrap, getBottomWrapMargin());
       editWrap.setVisibility(inCaption ? View.GONE : View.VISIBLE);
       updateSliderAlpha();
+      updateBottomSpaceAlpha();
       if (this.inCaptionAnimator == null) {
         this.inCaptionAnimator = new FactorAnimator(ANIMATOR_ID_CAPTION, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l, this.inCaptionFactor);
       }
@@ -1450,6 +1456,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (this.captionFactor != factor) {
       this.captionFactor = factor;
       captionWrapView.setAlpha(factor * headerVisible.getFloatValue());
+      updateBottomSpaceAlpha();
     }
   }
 
@@ -1956,15 +1963,6 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private boolean toggleHeaderVisibility () {
     if (headerView != null && needHeader()) {
       boolean isVisible = headerVisible.toggleValue(true);
-      // FIXME: currently there is a "jump" (by the height of navigation bar) effect upon entering/leaving full screen mode
-      // In order to properly fix it:
-      // 1. Bug in third-party dependency has to be fixed (caused by SubsamplingScaleImageView.java:1435-1436)
-      // 2. MediaViewController.dispatchInnerMargins should start passing non-zero values to MediaView
-      // 3. MediaCellView.setOffsets should start properly handling non-zero parameters (currently some of them are unsupported)
-      // For now, it is considered that having proper full-screen mode is more important
-      // than not seeing this visual "glitch".
-      //
-      // Leaving this comment for whoever going to invest time to properly resolve this issue in the future.
       if (isVisible) {
         context().removeHideNavigationView(this);
       } else {
@@ -1985,6 +1983,16 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
   }
 
+  private void updateBottomSpaceAlpha () {
+    if (bottomSpace != null) {
+      float captionWrapAlpha = Views.isValid(captionWrapView) ? captionWrapView.getAlpha() : 0f;
+      float sliderAlpha = Views.isValid(videoSliderView) ? videoSliderView.getAlpha() * videoSliderView.getInnerAlpha() : 0f;
+      float thumbsAlpha = Views.isValid(thumbsRecyclerView) ? thumbsRecyclerView.getAlpha() : 0f;
+      float alpha = /*headerVisible.getFloatValue() * (1f - pipFactor) * */(Math.max(captionWrapAlpha, Math.max(thumbsAlpha, sliderAlpha)));
+      bottomSpace.setAlpha(alpha);
+    }
+  }
+
   private void updateSliderAlpha () {
     if (videoSliderView != null) {
       float alpha = headerVisible.getFloatValue() * (1f - pipFactor) * (inCaption ? 0f : 1f);
@@ -1998,12 +2006,14 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (this.headerAlpha != alpha) {
       this.headerAlpha = alpha;
       updateThumbsAlpha();
+      updateBottomSpaceAlpha();
     }
   }
 
   private void updateThumbsAlpha () {
     if (thumbsRecyclerView != null) {
       thumbsRecyclerView.setAlpha(headerAlpha * headerVisible.getFloatValue() * (1f - pipFactor));
+      updateBottomSpaceAlpha();
     }
   }
 
@@ -2022,6 +2032,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     updateCaptionAlpha();
     updateSliderAlpha();
     updateThumbsAlpha();
+    updateBottomSpaceAlpha();
   }
 
   private void onMediaStackChanged (boolean itemCountChanged) {
@@ -2721,6 +2732,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       updateCaptionAlpha();
       updateSliderAlpha();
       updateThumbsAlpha();
+      updateBottomSpaceAlpha();
 
       updatePhotoRevealFactor();
     }
@@ -3115,6 +3127,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private FrameLayoutFix contentView;
   private MediaView mediaView;
+  private FillingSpace bottomSpace;
   private FrameLayoutFix pipControlsWrap;
   private EditButton pipOpenButton, pipCloseButton;
   private View pipBackgroundView;
@@ -3337,6 +3350,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       checkBottomComponentOffsets();
       if (videoSliderView != null) {
         videoSliderView.setInnerAlpha(factor);
+        updateBottomSpaceAlpha();
       }
     }
   }
@@ -3489,12 +3503,20 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private void checkBottomWrapY () {
     int thumbsDistance = (Screen.dp(THUMBS_PADDING) * 2 + Screen.dp(THUMBS_HEIGHT)) * (inForceEditMode() ? 0 : 1);
     float offsetDistance = (float) measureBottomWrapHeight() * dismissFactor - getKeyboardOffset();
+    float maxY = 0;
     if (bottomWrap != null) {
-      bottomWrap.setTranslationY(offsetDistance - (thumbsFactor * (float) thumbsDistance) * (1f - dismissFactor) - appliedBottomPadding);
+      float y = offsetDistance - (thumbsFactor * (float) thumbsDistance) * (1f - dismissFactor) - appliedBottomPadding;
+      bottomWrap.setTranslationY(y);
+      maxY = Math.max(0, y);
     }
     if (thumbsRecyclerView != null) {
       float dy = ((float) thumbsDistance * Math.max((1f - thumbsFactor), dismissFactor));
-      thumbsRecyclerView.setTranslationY(offsetDistance + dy - appliedBottomPadding);
+      float y = offsetDistance + dy - appliedBottomPadding;
+      thumbsRecyclerView.setTranslationY(y);
+      maxY = Math.max(0, y);
+    }
+    if (bottomSpace != null) {
+      bottomSpace.setTranslationY(maxY);
     }
   }
 
@@ -3652,6 +3674,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       checkBottomWrapY();
       checkThumbsItemAnimator();
       updateThumbsAlpha();
+      updateBottomSpaceAlpha();
     }
   }
 
@@ -4896,6 +4919,18 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       private int lastWidth, lastHeight;
 
       @Override
+      protected void onAttachedToWindow () {
+        super.onAttachedToWindow();
+        setRootView(Views.findAncestor(this, RootFrameLayout.class, false));
+      }
+
+      @Override
+      protected void onDetachedFromWindow () {
+        super.onDetachedFromWindow();
+        setRootView(null);
+      }
+
+      @Override
       protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
         updatePipLayout(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec), true, true);
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -5253,6 +5288,16 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       }
     }
 
+    bottomSpace = new FillingSpace(context);
+    bottomSpace.setThemedBackground(ColorId.transparentEditor, this);
+    bottomSpace.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, Gravity.BOTTOM));
+    bottomSpace.setAlpha(0f);
+    bottomSpace.setLayoutHeight(bottomInnerMargin, true);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !Config.DISABLE_VIEWER_ELEVATION) {
+      bottomSpace.setElevation(Screen.dp(3f));
+    }
+    contentView.addView(bottomSpace);
+
     updateVideoState(false);
     updateCaption(false);
 
@@ -5303,6 +5348,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       Views.setBottomMargin(thumbsRecyclerView, margin);
       Views.setBottomMargin(editWrap, margin);
       Views.setBottomMargin(bottomWrap, getBottomWrapMargin());
+      bottomSpace.setLayoutHeight(margin, true);
     }
   }
 
@@ -5321,13 +5367,57 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
   }
 
+  private int topOffset;
+
+  private void setTopOffset (int topOffset) {
+    if (this.topOffset != topOffset) {
+      this.topOffset = topOffset;
+      Views.setPaddingTop(othersView, topOffset);
+      if (receiverView != null) {
+        FrameLayout.LayoutParams fp = (FrameLayout.LayoutParams) receiverView.getLayoutParams();
+        if (topOffset > 0) {
+          fp.leftMargin = Screen.dp(8f);
+          fp.topMargin = topOffset + Screen.dp(4f);
+        } else {
+          fp.leftMargin = Screen.dp(12f);
+          fp.topMargin = Screen.dp(4f);
+        }
+        receiverView.setLayoutParams(fp);
+      }
+
+      Views.setTopMargin(checkView, Screen.dp(20f) - Screen.dp(9f) + topOffset / 2);
+      Views.setTopMargin(counterView, Screen.dp(26f) + topOffset / 2);
+    }
+  }
+
+  private RootFrameLayout rootView;
+
+  private void setRootView (RootFrameLayout rootView) {
+    if (this.rootView != rootView) {
+      if (this.rootView != null) {
+        this.rootView.removeInsetsChangeListener(this);
+      }
+      this.rootView = rootView;
+      if (rootView != null) {
+        rootView.addInsetsChangeListener(this);
+        setTopOffset(rootView.getSystemInsets().top);
+      }
+    }
+  }
+
   @Override
-  public void dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, Rect legacyInsets, Rect insets, Rect insetsWithoutIme, boolean fitsSystemWindows) {
-    super.dispatchSystemInsets(parentView, originalParams, legacyInsets, insets, insetsWithoutIme, fitsSystemWindows);
-    boolean changed = this.bottomInnerMargin != legacyInsets.bottom;
-    this.bottomInnerMargin = legacyInsets.bottom;
+  public void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect effectiveInsetsWithoutIme, Rect systemInsets, Rect systemInsetsWithoutIme, boolean isUpdate) {
+    setTopOffset(systemInsets.top);
+  }
+
+  @Override
+  public void dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, Rect legacyInsets, Rect insets, Rect insetsWithoutIme, Rect systemInsets, Rect systemInsetsWithoutIme, boolean fitsSystemWindows) {
+    super.dispatchSystemInsets(parentView, originalParams, legacyInsets, insets, insetsWithoutIme, systemInsets, systemInsetsWithoutIme, fitsSystemWindows);
+    int bottomInset = insets.bottom;
+    boolean changed = this.bottomInnerMargin != bottomInset;
+    this.bottomInnerMargin = bottomInset;
     if (APPLY_ALL_INSETS || (mode == MODE_GALLERY && isFromCamera)) {
-      int controlsMargin = APPLY_ALL_INSETS || legacyInsets.bottom <= Screen.getNavigationBarHeight() ? legacyInsets.bottom : 0;
+      int controlsMargin = APPLY_ALL_INSETS || bottomInset <= Screen.getNavigationBarHeight() ? bottomInset : 0;
       setControlsMargin(controlsMargin);
       int bottomOffset = getSectionBottomOffset(SECTION_CROP);
       Views.setBottomMargin(cropTargetView, bottomOffset);
@@ -5478,10 +5568,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
       FrameLayoutFix.LayoutParams params;
 
-      params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(112f) + HeaderView.getTopOffset(), Gravity.TOP);
+      params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(112f) + topOffset, Gravity.TOP);
 
       othersView = new MediaOtherRecyclerView(context());
-      othersView.setPadding(Screen.dp(2f), HeaderView.getTopOffset(), Screen.dp(2f), 0);
+      othersView.setPadding(Screen.dp(2f), topOffset, Screen.dp(2f), 0);
       othersView.setLayoutManager(new LinearLayoutManager(context(), LinearLayoutManager.HORIZONTAL, true));
       othersView.setHasFixedSize(true);
       othersView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180l));
@@ -7500,6 +7590,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         if (videoSliderView != null) {
           videoSliderView.setAlpha(factor);
         }
+        updateBottomSpaceAlpha();
 
         // setTranslationY(captionView.getMeasuredHeight() * (1f - factor));
         break;
@@ -9173,7 +9264,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     int size = Screen.dp(20f) * 2 + Screen.dp(1f) * 2 + innerPadding * 2;
     fp = FrameLayoutFix.newParams(size, size, Gravity.TOP | Gravity.RIGHT);
     fp.rightMargin = Screen.dp(20f) - innerPadding;
-    fp.topMargin = Screen.dp(20f) - innerPadding + HeaderView.getTopOffset() / 2;
+    fp.topMargin = Screen.dp(20f) - innerPadding + topOffset / 2;
 
     checkView = new CheckView(context);
     checkView.setId(R.id.btn_check);
@@ -9185,7 +9276,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     fp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(30f), Gravity.RIGHT);
     fp.rightMargin = Screen.dp(78f);
-    fp.topMargin = Screen.dp(26f) + HeaderView.getTopOffset() / 2;
+    fp.topMargin = Screen.dp(26f) + topOffset / 2;
 
     counterView = new CounterView(context);
     counterView.setId(R.id.btn_counter);
@@ -9235,9 +9326,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     final CharSequence text = StringUtils.isEmpty(args.receiverRowText) ? (chat != null ? tdlib.chatTitle(chat) : null) : args.receiverRowText;
 
     FrameLayoutFix.LayoutParams fp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.getStatusBarHeight());
-    if (HeaderView.getTopOffset() > 0) {
+    if (topOffset > 0) {
       fp.leftMargin = Screen.dp(8f);
-      fp.topMargin = HeaderView.getTopOffset() + Screen.dp(4f);
+      fp.topMargin = topOffset + Screen.dp(4f);
     } else {
       fp.leftMargin = Screen.dp(12f);
       fp.topMargin = Screen.dp(4f);

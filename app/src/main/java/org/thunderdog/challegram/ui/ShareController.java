@@ -2388,8 +2388,8 @@ public class ShareController extends TelegramViewController<ShareController.Args
   }
 
   @Override
-  public void dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, Rect legacyInsets, Rect insets, Rect insetsWithoutIme, boolean fitsSystemWindows) {
-    super.dispatchSystemInsets(parentView, originalParams, legacyInsets, insets, insetsWithoutIme, fitsSystemWindows);
+  public void dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, Rect legacyInsets, Rect insets, Rect insetsWithoutIme, Rect systemInsets, Rect systemInsetsWithoutIme, boolean fitsSystemWindows) {
+    super.dispatchSystemInsets(parentView, originalParams, legacyInsets, insets, insetsWithoutIme, systemInsets, systemInsetsWithoutIme, fitsSystemWindows);
     originalParams.bottomMargin = 0;
     recyclerView.setPadding(0, 0, 0, insets.bottom);
     setBottomInset(insets.bottom, insetsWithoutIme.bottom);

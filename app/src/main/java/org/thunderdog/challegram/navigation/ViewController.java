@@ -1225,9 +1225,9 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   protected final Rect systemInsetsWithoutIme = new Rect();
 
   @CallSuper
-  public void dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, Rect legacyInsets, Rect insets, Rect insetsWithoutIme, boolean fitsSystemWindows) {
-    systemInsets.set(insets);
-    systemInsetsWithoutIme.set(insetsWithoutIme);
+  public void dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, Rect legacyInsets, Rect insets, Rect insetsWithoutIme, Rect systemInsets, Rect systemInsetsWithoutIme, boolean fitsSystemWindows) {
+    this.systemInsets.set(insets);
+    this.systemInsetsWithoutIme.set(insetsWithoutIme);
     // override in children
   }
 

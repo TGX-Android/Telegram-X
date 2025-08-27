@@ -821,14 +821,19 @@ public class Views {
 
   @Nullable
   @SuppressWarnings("unchecked")
-  public static <T extends View> T findAncestor (View view, Class<T> clazz) {
+  public static <T extends View> T findAncestor (View view, Class<T> clazz, boolean root) {
     if (view != null) {
       ViewParent parent = view.getParent();
+      T found = null;
       do {
         if (clazz.isAssignableFrom(parent.getClass())) {
-          return (T) parent;
+          found = (T) parent;
+          if (!root) {
+            return found;
+          }
         }
       } while ((parent = parent.getParent()) != null);
+      return found;
     }
     return null;
   }
@@ -879,6 +884,12 @@ public class Views {
   public static void setPaddingBottom (View view, int paddingBottom) {
     if (view != null) {
       view.setPadding(view.getPaddingLeft(), view.getPaddingTop(), view.getPaddingRight(), paddingBottom);
+    }
+  }
+
+  public static void setPaddingTop (View view, int paddingTop) {
+    if (view != null) {
+      view.setPadding(view.getPaddingLeft(), paddingTop, view.getPaddingRight(), view.getPaddingBottom());
     }
   }
 

@@ -215,7 +215,7 @@ public class RootFrameLayout extends FrameLayoutFix {
   }
 
   public interface InsetsChangeListener {
-    void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect effectiveInsetsWithoutIme, boolean isUpdate);
+    void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect effectiveInsetsWithoutIme, Rect systemInsets, Rect systemInsetsWithoutIme, boolean isUpdate);
   }
 
   private final ReferenceList<InsetsChangeListener> listeners = new ReferenceList<>();
@@ -247,7 +247,7 @@ public class RootFrameLayout extends FrameLayoutFix {
     boolean verticalSystemInsetsUpdated = !hasInsets || systemInsets.top != prevSystemInsets.top || systemInsets.bottom != prevSystemInsets.bottom;
     boolean horizontalSystemInsetsUpdated = !hasInsets || systemInsets.left != prevSystemInsets.left || systemInsets.right != prevSystemInsets.right;
 
-    boolean ignoreChanges = Config.ENABLE_EDGE_TO_EDGE && UI.getContext(getContext()).isInFullScreen() && verticalSystemInsetsUpdated != horizontalSystemInsetsUpdated;
+    boolean ignoreChanges = Config.ENABLE_EDGE_TO_EDGE && UI.getContext(getContext()).isInFullScreen() && (this instanceof BaseRootLayout || (UI.getContext(getContext()).isHideNavigation() && verticalSystemInsetsUpdated && !horizontalSystemInsetsUpdated));
     boolean effectiveInsetsUpdated = !ignoreChanges && U.setRect(effectiveInsets, systemInsets.left, systemInsets.top, systemInsets.right, systemInsets.bottom);
     if (!ignoreChanges) {
       effectiveInsets.set(systemInsets);
@@ -299,7 +299,7 @@ public class RootFrameLayout extends FrameLayoutFix {
 
     if (effectiveInsetsUpdated || systemInsetsUpdated) {
       for (InsetsChangeListener listener : listeners) {
-        listener.onInsetsChanged(this, effectiveInsets, effectiveInsetsWithoutIme, hadInsets);
+        listener.onInsetsChanged(this, effectiveInsets, effectiveInsetsWithoutIme, systemInsets, systemInsetsWithoutIme, hadInsets);
       }
       requestLayout();
     }
@@ -345,7 +345,7 @@ public class RootFrameLayout extends FrameLayoutFix {
       int originalBottom = params.bottomMargin;
       ViewController<?> c = ViewController.findAncestor(child);
       if (c != null) {
-        c.dispatchSystemInsets(child, params, legacyInsets, effectiveInsets, effectiveInsetsWithoutIme, true);
+        c.dispatchSystemInsets(child, params, legacyInsets, effectiveInsets, effectiveInsetsWithoutIme, systemInsets, systemInsetsWithoutIme, true);
       }
       if (params.leftMargin != originalLeft ||
         params.topMargin != originalTop ||
@@ -398,7 +398,7 @@ public class RootFrameLayout extends FrameLayoutFix {
       );
       ViewController<?> c = ViewController.findAncestor(child);
       if (c != null) {
-        c.dispatchSystemInsets(child, params, legacyInsets, insets, insetsWithoutIme, false);
+        c.dispatchSystemInsets(child, params, legacyInsets, insets, insetsWithoutIme, systemInsets, systemInsetsWithoutIme, false);
       }
     }
   }
@@ -436,7 +436,7 @@ public class RootFrameLayout extends FrameLayoutFix {
           );
           ViewController<?> c = ViewController.findAncestor(innerChild);
           if (c != null) {
-            c.dispatchSystemInsets(innerChild, params, legacyInsets, insets, insetsWithoutIme, false);
+            c.dispatchSystemInsets(innerChild, params, legacyInsets, insets, insetsWithoutIme, systemInsets, systemInsetsWithoutIme, false);
           }
         }
         if (params.leftMargin != originalLeft ||
@@ -459,6 +459,10 @@ public class RootFrameLayout extends FrameLayoutFix {
 
   public int getTopInset () {
     return hasInsets ? effectiveInsets.top : 0;
+  }
+
+  public Rect getSystemInsets () {
+    return systemInsets;
   }
 
   private int previousHeight;

@@ -31,18 +31,14 @@ import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
 
 import org.drinkless.tdlib.TdApi;
-import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.emoji.MediaStickersAdapter;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.NavigationController;
-import org.thunderdog.challegram.navigation.OverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
-import org.thunderdog.challegram.telegram.RightId;
 import org.thunderdog.challegram.telegram.StickersListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
@@ -73,7 +69,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
-import me.vkryl.core.ColorUtils;
 import me.vkryl.core.collection.LongList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableBool;
@@ -209,7 +204,7 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
   }
 
   @Override
-  public void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect effectiveInsetsWithoutIme, boolean isUpdate) {
+  public void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect effectiveInsetsWithoutIme, Rect systemInsets, Rect systemInsetsWithoutIme, boolean isUpdate) {
     Views.setLayoutHeight(buttonWrap, Screen.dp(56f) + effectiveInsetsWithoutIme.bottom);
     buttonWrap.setPadding(0, 0, 0, effectiveInsetsWithoutIme.bottom);
     Views.setLayoutHeight(bottomWrap, Screen.dp(56f) + Screen.dp(7f) + effectiveInsetsWithoutIme.bottom);
