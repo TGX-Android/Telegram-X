@@ -2717,7 +2717,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       keyboardFrameLayout.setExtraBottomInset(extraBottomInset, extraBottomInsetWithoutIme);
     }
     Views.setLayoutHeight(sendButton, Screen.dp(56f) + extraBottomInset);
-    spaceView.setLayoutHeight(extraBottomInset);
+    spaceView.setLayoutHeight(extraBottomInset, false);
     spaceView.setVisibility(needBottomOffset() ? View.VISIBLE : View.INVISIBLE);
     if (needBottomOffset()) {
       Views.setBottomMargin(bottomWrap, extraBottomInset);
@@ -2813,7 +2813,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       }
       params.bottomMargin = needBottomOffset() ? extraBottomInset : 0;
       if (spaceView != null) {
-        spaceView.setLayoutHeight(extraBottomInset);
+        spaceView.setLayoutHeight(extraBottomInset, false);
         spaceView.setVisibility(needBottomOffset() ? View.VISIBLE : View.INVISIBLE);
       }
       okButton.setVisibility(isHidden ? View.VISIBLE : View.INVISIBLE);

@@ -200,7 +200,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     }
     if (bottomBar != null) {
       Views.setBottomMargin(bottomBar, extraBottomInsetWithoutIme);
-      bottomBarSpace.setLayoutHeight(extraBottomInsetWithoutIme);
+      bottomBarSpace.setLayoutHeight(extraBottomInsetWithoutIme, true);
     }
     checkMargins();
   }
@@ -2734,7 +2734,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         bottomBarSpace = new FillingSpace(context);
         bottomBarSpace.setThemedBackground(ColorId.headerLightBackground, this);
         pagerWrap.addView(bottomBarSpace, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, Gravity.BOTTOM));
-        bottomBarSpace.setLayoutHeight(extraBottomInsetWithoutIme);
+        bottomBarSpace.setLayoutHeight(extraBottomInsetWithoutIme, true);
 
         if (Config.CHAT_FOLDERS_HIDE_BOTTOM_BAR_ON_SCROLL) {
           isBottomBarVisible.setValue(true, false);

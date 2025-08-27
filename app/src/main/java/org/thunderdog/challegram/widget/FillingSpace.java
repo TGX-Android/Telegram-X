@@ -15,10 +15,14 @@ import me.vkryl.core.lambda.Destroyable;
 public class FillingSpace extends View implements Destroyable {
   public FillingSpace (Context context) {
     super(context);
+    setVisibility(View.GONE);
   }
 
-  public void setLayoutHeight (int height) {
+  public void setLayoutHeight (int height, boolean updateVisibility) {
     Views.setLayoutHeight(this, height);
+    if (updateVisibility) {
+      setVisibility(height > 0 ? View.VISIBLE : View.GONE);
+    }
   }
 
   private ViewController<?> themeProvider;
