@@ -269,7 +269,7 @@ public class RootFrameLayout extends FrameLayoutFix {
       }
     }
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !ignoreChanges && verticalSystemInsetsUpdated && !horizontalSystemInsetsUpdated) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !ignoreChanges) {
       if (this instanceof BaseRootLayout) {
         if (!Config.ENABLE_EDGE_TO_EDGE || !UI.getContext(getContext()).isInFullScreen()) {
           Screen.setStatusBarHeight(effectiveInsets.top);
@@ -277,7 +277,7 @@ public class RootFrameLayout extends FrameLayoutFix {
       }
 
      if (!Config.ENABLE_EDGE_TO_EDGE) {
-        if (hadInsets && !ignoreSystemNavigationBar) {
+        if (hadInsets && !ignoreSystemNavigationBar && verticalSystemInsetsUpdated && !horizontalSystemInsetsUpdated) {
           int bottomDiff = (shouldIgnoreBottomMargin(prevSystemInsets.bottom) ? 0 : prevSystemInsets.bottom) - (shouldIgnoreBottomMargin(effectiveInsets.bottom) ? 0 : effectiveInsets.bottom);
 
           int rightDiff = prevSystemInsets.right - effectiveInsets.right;
