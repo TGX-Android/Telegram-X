@@ -57,7 +57,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
-import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
@@ -703,6 +702,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
             if (inlineResultsView != null) {
               inlineResultsView.updatePosition(true);
             }
+            checkCaptionButtonsY();
           }
         };
         keyboardFrameLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
@@ -827,7 +827,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       mediaView.setDisableTouch(inCaption);
       mediaView.setButStillNeedClick(inCaption ? this : null);
 
-      Views.setBottomMargin(bottomWrap, getBottomWrapMargin());
+      updateBottomWrapMargin();
       editWrap.setVisibility(inCaption ? View.GONE : View.VISIBLE);
       updateSliderAlpha();
       updateBottomSpaceAlpha();
@@ -1978,6 +1978,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       float alpha = captionFactor * headerVisible.getFloatValue() * (1f - pipFactor);
       captionWrapView.setAlpha(alpha);
     }
+  }
+
+  private void updateBottomWrapMargin () {
+    int newMargin = getBottomWrapMargin();
+    Views.setBottomMargin(bottomWrap, newMargin);
   }
 
   private void updateBottomSpaceAlpha () {
@@ -3323,7 +3328,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     boolean needMargin = videoFactor == 1f && !inCaption;
     if (this.needVideoMargin != needMargin) {
       this.needVideoMargin = needMargin;
-      captionWrapView.setTranslationY((needMargin ? 0 : (float) -Screen.dp(56f) * videoFactor * (inCaption ? 0f : 1f)) + (thumbsFactor * Screen.dp(THUMBS_PADDING)));
+      float y = (needMargin ? 0 : (float) -Screen.dp(56f) * videoFactor * (inCaption ? 0f : 1f)) + (thumbsFactor * Screen.dp(THUMBS_PADDING));
+      captionWrapView.setTranslationY(y);
       Views.setBottomMargin(captionWrapView, (needVideoMargin ? Screen.dp(56f) : 0));
     }
   }
@@ -3333,7 +3339,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (captionWrapView != null) {
       updateCaptionLayout();
       if (!needVideoMargin) {
-        captionWrapView.setTranslationY((float) -Screen.dp(56f) * videoFactor + thumbOffset);
+        float y = (float) -Screen.dp(56f) * videoFactor + thumbOffset;
+        captionWrapView.setTranslationY(y);
       }
     }
     if (videoSliderView != null) {
@@ -5346,7 +5353,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       this.controlsMargin = margin;
       Views.setBottomMargin(thumbsRecyclerView, margin);
       Views.setBottomMargin(editWrap, margin);
-      Views.setBottomMargin(bottomWrap, getBottomWrapMargin());
+      updateBottomWrapMargin();
       bottomSpace.setLayoutHeight(margin, false);
       bottomSpace.setVisibility(margin > 0 && !emojiShown ? View.VISIBLE : View.GONE);
     }
@@ -8545,7 +8552,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       if (inlineResultsView != null) {
         inlineResultsView.updatePosition(false);
       }
-      Views.setBottomMargin(bottomWrap, getBottomWrapMargin());
+      updateBottomWrapMargin();
       if (bottomSpace != null) {
         bottomSpace.setVisibility(bottomInnerMargin > 0 && !emojiShown ? View.VISIBLE : View.GONE);
       }

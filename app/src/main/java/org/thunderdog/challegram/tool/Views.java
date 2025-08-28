@@ -895,14 +895,16 @@ public class Views {
     }
   }
 
-  public static void setBottomMargin (View view, int margin) {
+  public static boolean setBottomMargin (View view, int margin) {
     if (view != null) {
       ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
       if (params.bottomMargin != margin) {
         params.bottomMargin = margin;
         view.setLayoutParams(params);
+        return true;
       }
     }
+    return false;
   }
 
   public static void setRightMargin (View view, int margin) {
