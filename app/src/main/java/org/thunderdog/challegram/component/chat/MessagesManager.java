@@ -1246,7 +1246,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       case MessagesLoader.MODE_MORE_BOTTOM: {
         int firstIndex = manager.findFirstVisibleItemPosition();
         View view = manager.findViewByPosition(firstIndex);
-        int currentOffset = view == null ? 0 : manager.getHeight() - view.getBottom();
+        int currentOffset = view == null ? 0 : calculateOffsetInPixels(view);
         adapter.addMessages(items, false);
         manager.scrollToPositionWithOffset(firstIndex + items.size(), currentOffset);
         break;
@@ -1376,12 +1376,12 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         RunnableData<TGMessage> action = (lastMessage) -> {
           if (lastMessage == null) return;
           controller.sponsoredMessageLoaded = true;
-          boolean isFirstItemVisible = manager.findFirstCompletelyVisibleItemPosition() == 0;
           // TODO multi-ad support
+          int firstIndex = manager.findFirstVisibleItemPosition();
+          View view = manager.findViewByPosition(firstIndex);
+          int currentOffset = view == null ? 0 : calculateOffsetInPixels(view) + (firstIndex == 0 ? Screen.dp(48f) : 0);
           adapter.addMessage(TGMessage.valueOf(this, loader.getChatId(), sponsoredMessages.messages[0]), false, false);
-          if (isFirstItemVisible && !isScrolling && !controller.canWriteMessages()) {
-            manager.scrollToPositionWithOffset(1, Screen.dp(48f));
-          }
+          manager.scrollToPositionWithOffset(firstIndex + 1, currentOffset);
         };
 
         TGMessage bottomMessage = findBottomMessage();
@@ -1637,7 +1637,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         int scrollOffsetInPixels = 0;
         View view = manager.findViewByPosition(0);
         if (view != null && view.getParent() != null) {
-          scrollOffsetInPixels = ((View) view.getParent()).getBottom() - view.getBottom();
+          scrollOffsetInPixels = calculateOffsetInPixels(view);
         }
 
         boolean bottomFullyVisible = manager.findFirstCompletelyVisibleItemPosition() == 0;
@@ -1658,6 +1658,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     } else if (message.isSending()) {
       loadFromStart();
     }
+  }
+
+  private int calculateOffsetInPixels (View view) {
+    View parentView = (View) view.getParent();
+    return parentView.getMeasuredHeight() - parentView.getPaddingBottom() - view.getBottom();
   }
 
   @Override
@@ -2260,7 +2265,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         }
         View view = manager.findViewByPosition(i);
         if (view != null && view.getParent() != null) {
-          scrollOffsetInPixels = ((View) view.getParent()).getBottom() - view.getBottom();
+          scrollOffsetInPixels = calculateOffsetInPixels(view);
         }
         if (readFully && scrollOffsetInPixels == 0) {
           scrollMessageId = scrollMessageChatId = 0;
@@ -2293,14 +2298,16 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       final int accountId = tdlib.id();
       final long chatId = loader.getChatId();
       final long messageThreadId = loader.getMessageThreadId();
+      Settings.SavedMessageId savedMessageId = new Settings.SavedMessageId(
+        new MessageId(scrollMessageChatId, scrollMessageId, scrollMessageOtherIds),
+        scrollOffsetInPixels,
+        returnToMessageIds,
+        readFully, topEndMessageId
+      );
       Settings.instance().setScrollMessageId(accountId,
         chatId, messageThreadId,
-        new Settings.SavedMessageId(
-          new MessageId(scrollMessageChatId, scrollMessageId, scrollMessageOtherIds),
-          scrollOffsetInPixels,
-          returnToMessageIds,
-          readFully, topEndMessageId
-        ));
+        savedMessageId
+      );
 
       if (pinnedMessages != null && chatId == scrollMessageChatId) {
         pinnedMessages.ensureMessageAvailability(scrollMessageId);
@@ -2756,7 +2763,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   public boolean isAtVeryBottom () {
     View view = findBottomView();
-    return view != null && view.getBottom() == ((View) view.getParent()).getMeasuredHeight();
+    return view != null && view.getBottom() == ((View) view.getParent()).getMeasuredHeight() - ((View) view.getParent()).getPaddingBottom();
   }
 
   /*public boolean canApplyRecyclerOffsets () {
