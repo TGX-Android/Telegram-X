@@ -482,6 +482,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         break;
       }
     }
+    updateBottomSpaceAlpha();
   }
 
   private boolean hasCaption () {
@@ -1987,10 +1988,15 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private void updateBottomSpaceAlpha () {
     if (bottomSpace != null) {
-      float captionWrapAlpha = Views.isValid(captionWrapView) ? captionWrapView.getAlpha() : 0f;
-      float sliderAlpha = Views.isValid(videoSliderView) ? videoSliderView.getAlpha() * videoSliderView.getInnerAlpha() : 0f;
-      float thumbsAlpha = Views.isValid(thumbsRecyclerView) ? thumbsRecyclerView.getAlpha() : 0f;
-      float alpha = /*headerVisible.getFloatValue() * (1f - pipFactor) * */(Math.max(captionWrapAlpha, Math.max(thumbsAlpha, sliderAlpha)));
+      float alpha;
+      if (mode == MODE_GALLERY) {
+        alpha = editWrap != null ? editWrap.getAlpha() : 0f;
+      } else {
+        float captionWrapAlpha = Views.isValid(captionWrapView) ? captionWrapView.getAlpha() : 0f;
+        float sliderAlpha = Views.isValid(videoSliderView) ? videoSliderView.getAlpha() * videoSliderView.getInnerAlpha() : 0f;
+        float thumbsAlpha = Views.isValid(thumbsRecyclerView) ? thumbsRecyclerView.getAlpha() : 0f;
+        alpha = Math.max(captionWrapAlpha, Math.max(thumbsAlpha, sliderAlpha));
+      }
       bottomSpace.setAlpha(alpha);
     }
   }
