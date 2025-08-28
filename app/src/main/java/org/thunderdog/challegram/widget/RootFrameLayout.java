@@ -380,6 +380,10 @@ public class RootFrameLayout extends FrameLayoutFix {
     }
   }
 
+  public interface MarginModifier {
+    void onApplyMarginInsets (View child, FrameLayout.LayoutParams params, Rect legacyInsets, Rect insets, Rect insetsWithoutIme);
+  }
+
   private void applyMarginInsets (View child, FrameLayout.LayoutParams params, Rect legacyInsets, Rect insets, Rect insetsWithoutIme) {
     legacyInsets.set(
       ignoreAll || ignoreHorizontal || params.gravity == Gravity.RIGHT ? 0 : effectiveInsets.left,
@@ -390,12 +394,16 @@ public class RootFrameLayout extends FrameLayoutFix {
     if (UI.getContext(getContext()).dispatchCameraMargins(child, legacyInsets, insets, insetsWithoutIme)) {
       Views.setMargins(params, 0, 0, 0, 0);
     } else {
-      Views.setMargins(params,
-        legacyInsets.left,
-        legacyInsets.top,
-        legacyInsets.right,
-        legacyInsets.bottom
-      );
+      if (child instanceof MarginModifier) {
+        ((MarginModifier) child).onApplyMarginInsets(child, params, legacyInsets, insets, insetsWithoutIme);
+      } else {
+        Views.setMargins(params,
+          legacyInsets.left,
+          legacyInsets.top,
+          legacyInsets.right,
+          legacyInsets.bottom
+        );
+      }
       ViewController<?> c = ViewController.findAncestor(child);
       if (c != null) {
         c.dispatchSystemInsets(child, params, legacyInsets, insets, insetsWithoutIme, systemInsets, systemInsetsWithoutIme, false);

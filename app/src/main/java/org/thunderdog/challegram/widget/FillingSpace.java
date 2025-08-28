@@ -18,11 +18,12 @@ public class FillingSpace extends View implements Destroyable {
     setVisibility(View.GONE);
   }
 
-  public void setLayoutHeight (int height, boolean updateVisibility) {
-    Views.setLayoutHeight(this, height);
+  public boolean setLayoutHeight (int height, boolean updateVisibility) {
+    boolean updated = Views.setLayoutHeight(this, height);
     if (updateVisibility) {
       setVisibility(height > 0 ? View.VISIBLE : View.GONE);
     }
+    return updated;
   }
 
   private ViewController<?> themeProvider;

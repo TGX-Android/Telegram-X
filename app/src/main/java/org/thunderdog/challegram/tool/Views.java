@@ -861,14 +861,16 @@ public class Views {
     return false;
   }
 
-  public static void setLayoutHeight (View view, int height) {
+  public static boolean setLayoutHeight (View view, int height) {
     if (view != null) {
       ViewGroup.LayoutParams params = view.getLayoutParams();
       if (params != null && params.height != height) {
         params.height = height;
         view.setLayoutParams(params);
+        return true;
       }
     }
+    return false;
   }
 
   public static void setTopMargin (View view, int margin) {

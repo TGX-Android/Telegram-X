@@ -1009,7 +1009,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   @Override
   public boolean needsInlineBots () {
-    return !isCaptionEditing() && tdlib.canSendMessage(controller.getChat(), RightId.SEND_OTHER_MESSAGES);
+    return !isCaptionEditing() && tdlib.canSendMessage(controller.getChat(), RightId.SEND_OTHER_MESSAGES) && !controller.hasAttachedFiles();
   }
 
   @Override

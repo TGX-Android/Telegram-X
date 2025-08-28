@@ -607,6 +607,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     Views.setPaddingBottom(bottomBar, extraBottomInsetWithoutIme);
     updateBottomBarStyle();
     updateMessagesViewInset();
+    onMessagesFrameChanged();
   }
 
   private void updateMessagesViewInset () {
@@ -1502,7 +1503,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             blocked = false;
           }
           if (!blocked) {
-            blocked = getCurrentItem() == 0 && (UI.getContext(MessagesController.this.context()).getRecordAudioVideoController().isOpen() || (inputView != null && inputView.getInlineSearchContext().isVisibleOrActive()));
+            blocked = getCurrentItem() == 0 && (UI.getContext(MessagesController.this.context()).getRecordAudioVideoController().isOpen() || (inputView != null && inputView.getInlineSearchContext().isVisibleOrActive()) || (attachedFiles != null && attachedFiles.isDisplayingItems()));
           }
 
           return !blocked && super.onInterceptTouchEvent(ev);
@@ -1654,6 +1655,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       checkPagerInputBlocked();
       checkRoundVideo();
       checkInlineResults();
+      onMessagesFrameChanged();
     }
   }
 
@@ -4261,6 +4263,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (manager != null) {
       manager.destroy(this);
+    }
+    if (attachedFiles != null) {
+      context.removeFromRoot(attachedFiles);
     }
 
     if (tooltipInfo != null) {
@@ -8792,7 +8797,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (bottomWrap != null) {
       int height = emojiShown || commandsShown ? 0 : extraBottomInset;
       Views.setPaddingBottom(bottomWrap, height);
-      bottomSpace.setLayoutHeight(height, false);
+      if (bottomSpace.setLayoutHeight(height, false)) {
+        onMessagesFrameChanged();
+      }
     }
   }
 
@@ -9021,7 +9028,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     inputView.getSymbolUnderCursorPosition(symbolUnderCursorPosition);
     cursorCoordinates[0] = symbolUnderCursorPosition[0] + inputView.getLeft() + inputView.getPaddingLeft();
-    cursorCoordinates[1] = symbolUnderCursorPosition[1] - inputView.getLineHeight() + Screen.currentHeight() - getInputOffset(true) - Screen.dp(40);
+    int y = context.getRootView().getMeasuredHeight() - getInputOffset(true) - extraBottomInset;
+    // cursorCoordinates[1] = symbolUnderCursorPosition[1] - inputView.getLineHeight() + context.getRootView().getMeasuredHeight() - extraBottomInset - getInputOffset(true) - Screen.dp(40);
+    cursorCoordinates[1] = y;
     return cursorCoordinates;
   }
 
@@ -9034,6 +9043,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       bottom += getReplyOffset();
     }
     bottom += getKeyboardOffset();
+    bottom -= extraBottomInset;
     return bottom;
   }
 
@@ -12591,6 +12601,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     setCustomCaptionPlaceholder(hasAttachedFiles ? Lang.getString(R.string.Caption) : null);
     if (inputView != null) {
+      inputView.getInlineSearchContext().setIsCaption(hasAttachedFiles);
       checkSendButton(animated);
     }
     if (emojiLayout != null) {
@@ -12739,27 +12750,24 @@ public class MessagesController extends ViewController<MessagesController.Argume
         public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
           super.onFactorChanged(id, factor, fraction, callee);
           updateReplyView();
+          if (factor == 0f) {
+            if (getParent() != null) {
+              context.removeFromRoot(this);
+            }
+          } else {
+            if (getParent() == null) {
+              context.addToRoot(this, false);
+            }
+          }
         }
       };
       attachedFilesAnimator = new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 150L);
       attachedFiles.getRecyclerView().setItemAnimator(null);
-      attachedFiles.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-      attachedFiles.setOffsetProvider(new InlineResultsWrap.OffsetProvider() {
-        @Override
-        public int provideOffset (InlineResultsWrap v) {
-          return getInputOffset(false);
-        }
-
-        @Override
-        public int provideParentHeight (InlineResultsWrap v) {
-          return contentView.getMeasuredHeight();
-        }
-      });
       attachedFiles.setListener(new InlineResultsWrap.PickListener() {});
     }
 
     if (attachedFiles.getParent() == null) {
-      contentView.addView(attachedFiles);
+      context().addToRoot(attachedFiles, false);
     }
 
     attachedFiles.showItems(this, results, false, null, null, null, needHideAttachedFiles());

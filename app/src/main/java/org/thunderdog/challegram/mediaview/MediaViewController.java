@@ -57,6 +57,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
@@ -541,13 +542,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   @Override
   public int provideOffset (InlineResultsWrap v) {
-    final int offset = keyboardFrameLayout != null && keyboardFrameLayout.getVisibility() == View.VISIBLE && keyboardFrameLayout.getParent() != null ? keyboardFrameLayout.getMeasuredHeight() : 0;
-    return (captionView.getMeasuredHeight() /*- Screen.dp(50f)*/) + offset;
-  }
-
-  @Override
-  public int provideParentHeight (InlineResultsWrap v) {
-    return popupView.getMeasuredHeight();
+    final int offset = keyboardFrameLayout != null && emojiShown ? Math.max(0, keyboardFrameLayout.getMeasuredHeight() - bottomInnerMargin) : 0;
+    return (captionWrapView.getMeasuredHeight()) + offset;
   }
 
   @Override
@@ -557,19 +553,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         return;
       }
 
-      FrameLayoutFix.LayoutParams params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM);
-      // params.bottomMargin = Screen.dp(50f);
-      inlineResultsView = new InlineResultsWrap(context()) {
-        @Override
-        protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-          super.onMeasure(widthMeasureSpec, popupView.getMeasuredHeight());
-        }
-      };
+      inlineResultsView = new InlineResultsWrap(context());
       inlineResultsView.setListener((InlineResultsWrap.PickListener) captionView);
       inlineResultsView.setAlpha(inCaptionFactor);
       inlineResultsView.setOffsetProvider(this);
       inlineResultsView.setUseDarkMode(true);
-      inlineResultsView.setLayoutParams(params);
     }
 
     if (results != null && !results.isEmpty()) {
@@ -708,11 +696,20 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private void openEmojiKeyboard () {
     if (!emojiShown) {
       if (keyboardFrameLayout == null) {
-        keyboardFrameLayout = new KeyboardFrameLayout(context());
+        keyboardFrameLayout = new KeyboardFrameLayout(context()) {
+          @Override
+          protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            if (inlineResultsView != null) {
+              inlineResultsView.updatePosition(true);
+            }
+          }
+        };
         keyboardFrameLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
         keyboardFrameLayout.setParentView(bottomWrap, contentView, popupView);
         keyboardFrameLayout.setUpdateTranslationListener(this::onKeyboardLayoutTranslation);
         keyboardFrameLayout.useHideByDetachView();
+        keyboardFrameLayout.setExtraBottomInset(systemInsets.bottom, systemInsets.bottom);
 
         textFormattingLayout = keyboardFrameLayout.contentView.textFormattingLayout;
         textFormattingLayout.init(this, inputView, new TextFormattingLayout.Delegate() {
@@ -812,7 +809,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private int getBottomWrapMargin () {
-    return (inCaption || mode != MODE_GALLERY ? 0 : Screen.dp(56f)) + controlsMargin;
+    return (inCaption || mode != MODE_GALLERY ? 0 : Screen.dp(56f)) + (emojiShown ? 0 : controlsMargin);
   }
 
   private void setInCaption (boolean inCaption) {
@@ -3504,6 +3501,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     int thumbsDistance = (Screen.dp(THUMBS_PADDING) * 2 + Screen.dp(THUMBS_HEIGHT)) * (inForceEditMode() ? 0 : 1);
     float offsetDistance = (float) measureBottomWrapHeight() * dismissFactor - getKeyboardOffset();
     float maxY = 0;
+    int appliedBottomPadding = emojiShown ? 0 : this.appliedBottomPadding;
     if (bottomWrap != null) {
       float y = offsetDistance - (thumbsFactor * (float) thumbsDistance) * (1f - dismissFactor) - appliedBottomPadding;
       bottomWrap.setTranslationY(y);
@@ -5292,7 +5290,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     bottomSpace.setThemedBackground(ColorId.transparentEditor, this);
     bottomSpace.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, Gravity.BOTTOM));
     bottomSpace.setAlpha(0f);
-    bottomSpace.setLayoutHeight(bottomInnerMargin, true);
+    bottomSpace.setLayoutHeight(bottomInnerMargin, false);
+    bottomSpace.setVisibility(bottomInnerMargin > 0 ? View.VISIBLE : View.GONE);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !Config.DISABLE_VIEWER_ELEVATION) {
       bottomSpace.setElevation(Screen.dp(3f));
     }
@@ -5348,7 +5347,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       Views.setBottomMargin(thumbsRecyclerView, margin);
       Views.setBottomMargin(editWrap, margin);
       Views.setBottomMargin(bottomWrap, getBottomWrapMargin());
-      bottomSpace.setLayoutHeight(margin, true);
+      bottomSpace.setLayoutHeight(margin, false);
+      bottomSpace.setVisibility(margin > 0 && !emojiShown ? View.VISIBLE : View.GONE);
     }
   }
 
@@ -5425,6 +5425,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         cropAreaView.setOffsetBottom(bottomOffset);
       }
       checkBottomWrapY();
+      if (keyboardFrameLayout != null) {
+        keyboardFrameLayout.setExtraBottomInset(insets.bottom, insetsWithoutIme.bottom);
+      }
     }
     if (mediaView != null) {
       if (changed) {
@@ -8538,6 +8541,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       setTextFormattingLayoutVisible(textInputHasSelection);
       if (inputView != null) {
         inputView.setActionModeVisibility(!textInputHasSelection || !emojiShown);
+      }
+      if (inlineResultsView != null) {
+        inlineResultsView.updatePosition(false);
+      }
+      Views.setBottomMargin(bottomWrap, getBottomWrapMargin());
+      if (bottomSpace != null) {
+        bottomSpace.setVisibility(bottomInnerMargin > 0 && !emojiShown ? View.VISIBLE : View.GONE);
       }
     }
   }

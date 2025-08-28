@@ -2194,6 +2194,12 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     return inlineResultsView;
   }
 
+  public void destroyStickersSuggestions (StickersSuggestionsLayout layout) {
+    if (emojiSuggestionsWrap == layout) {
+      emojiSuggestionsWrap = null;
+    }
+  }
+
   public void setEmojiSuggestions (MessagesController context, @Nullable ArrayList<TGStickerObj> stickers, @Nullable RecyclerView.OnScrollListener scrollCallback, StickersSuggestionsLayout.Delegate choosingDelegate) {
     if (emojiSuggestionsWrap == null) {
       emojiSuggestionsWrap = new StickersSuggestionsLayout(context.context());
