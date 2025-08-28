@@ -605,7 +605,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     );
     Views.setLayoutHeight(bottomBar, Screen.dp(48f) + extraBottomInsetWithoutIme);
     Views.setPaddingBottom(bottomBar, extraBottomInsetWithoutIme);
-    updateBottomBarStyle();
+    checkScrollButtonOffsets();
     updateMessagesViewInset();
     onMessagesFrameChanged();
   }
@@ -1413,7 +1413,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     bottomBar.setOnClickListener(this);
     bottomBar.setLayoutParams(params);
     addThemeInvalidateListener(bottomBar);
-    updateBottomBarStyle();
+    checkScrollButtonOffsets();
     updateMessagesViewInset();
 
     if (previewMode == PREVIEW_MODE_WALLPAPER_OBJECT) {

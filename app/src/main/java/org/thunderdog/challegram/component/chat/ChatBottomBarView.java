@@ -253,12 +253,25 @@ public class ChatBottomBarView extends BaseView {
   public void setCollapseFactor (float collapseFactor) {
     if (this.collapseFactor != collapseFactor) {
       this.collapseFactor = collapseFactor;
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-        invalidateOutline();
-      }
-      drawable.invalidateSelf();
-      invalidate();
+      update();
     }
+  }
+
+  @Override
+  public void setPadding (int left, int top, int right, int bottom) {
+    boolean bottomUpdated = bottom != getPaddingBottom();
+    super.setPadding(left, top, right, bottom);
+    if (bottomUpdated) {
+      update();
+    }
+  }
+
+  public void update () {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      invalidateOutline();
+    }
+    drawable.invalidateSelf();
+    invalidate();
   }
 
   @Override
