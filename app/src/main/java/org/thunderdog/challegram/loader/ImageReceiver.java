@@ -1180,8 +1180,17 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
         c.save();
         c.rotate(rotation, left + (right - left) / 2f, top + (bottom - top) / 2f);
       }
+      float scaleType = file.getScaleType();
+      boolean hasScale = scaleType == ImageFile.CENTER_CROP || scaleType == ImageFile.FIT_CENTER;
+      if (hasScale) {
+        c.save();
+        c.clipRect(left, top, right, bottom);
+      }
       drawRoundRect(c, roundRect, radius, radius, roundPaint);
       if (rotation != 0) {
+        c.restore();
+      }
+      if (hasScale) {
         c.restore();
       }
     } else if (file.getScaleType() == ImageFile.CENTER_REPEAT) {
