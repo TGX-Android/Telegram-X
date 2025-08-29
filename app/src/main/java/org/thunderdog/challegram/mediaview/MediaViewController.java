@@ -205,7 +205,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   public static final int MODE_SECRET = 4; // just single photo, no animations and etc
   public static final int MODE_SIMPLE = 5;
 
-  private static final boolean APPLY_ALL_INSETS = Config.ENABLE_EDGE_TO_EDGE;
+  private boolean useEdgeToEdge () {
+    return Settings.instance().useEdgeToEdge();
+  }
 
   public MediaViewController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -3432,7 +3434,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private boolean ignoreCaptionUpdate;
 
   private boolean canRunFullscreen () {
-    if (APPLY_ALL_INSETS) {
+    if (useEdgeToEdge()) {
       return true;
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && Config.CUTOUT_ENABLED && mode == MODE_MESSAGES) {
@@ -3485,7 +3487,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (captionFactor == 1f && captionWrapView != null) {
       height += captionWrapView.getMeasuredHeight();
     }
-    if (APPLY_ALL_INSETS) {
+    if (useEdgeToEdge()) {
       height += bottomInnerMargin;
     }
     return height;
@@ -5128,7 +5130,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         headerView.setElevation(Screen.dp(3f));
       }
       attachHeaderViewWithoutNavigation(headerView);
-      headerView.initWithSingleController(this, APPLY_ALL_INSETS || ((SET_FULLSCREEN_ON_OPEN || canRunFullscreen()) && !Config.CUTOUT_ENABLED));
+      headerView.initWithSingleController(this, useEdgeToEdge() || ((SET_FULLSCREEN_ON_OPEN || canRunFullscreen()) && !Config.CUTOUT_ENABLED));
       headerView.getFilling().setShadowAlpha(0f);
       int leftMargin = Screen.dp(68f);
       int rightMargin = measureButtonsPadding();
@@ -5430,8 +5432,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     int bottomInset = insets.bottom;
     boolean changed = this.bottomInnerMargin != bottomInset;
     this.bottomInnerMargin = bottomInset;
-    if (APPLY_ALL_INSETS || (mode == MODE_GALLERY && isFromCamera)) {
-      int controlsMargin = APPLY_ALL_INSETS || bottomInset <= Screen.getNavigationBarHeight() ? bottomInset : 0;
+    if (useEdgeToEdge() || (mode == MODE_GALLERY && isFromCamera)) {
+      int controlsMargin = useEdgeToEdge() || bottomInset <= Screen.getNavigationBarHeight() ? bottomInset : 0;
       setControlsMargin(controlsMargin);
       int bottomOffset = getSectionBottomOffset(SECTION_CROP);
       Views.setBottomMargin(cropTargetView, bottomOffset);
@@ -5706,7 +5708,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (mode != MODE_GALLERY) {
       return 0;
     }
-    int add = APPLY_ALL_INSETS || isFromCamera ? this.bottomInnerMargin : 0;
+    int add = useEdgeToEdge() || isFromCamera ? this.bottomInnerMargin : 0;
     switch (section) {
       case SECTION_CAPTION: {
         return 0; // Screen.dp(56f);
@@ -8640,7 +8642,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void stopFullScreenTemporarily (boolean stop) {
-    if (APPLY_ALL_INSETS) {
+    if (useEdgeToEdge()) {
       return;
     }
     if (stop) {

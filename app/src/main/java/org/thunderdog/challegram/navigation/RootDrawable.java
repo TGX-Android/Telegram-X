@@ -33,6 +33,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.Settings;
 
 public class RootDrawable extends Drawable {
   private final RootState state;
@@ -57,7 +58,7 @@ public class RootDrawable extends Drawable {
     if (!state.isDisabled) {
       c.drawColor(Theme.getColor(state.getColorId()));
     }
-    if (Config.ENABLE_EDGE_TO_EDGE) {
+    if (Settings.instance().useEdgeToEdge()) {
       int width = state.context.getRootView().getMeasuredWidth();
       int height = state.context.getRootView().getMeasuredHeight();
       Rect rect = state.context.getRootView().getSystemInsetsWithoutIme();

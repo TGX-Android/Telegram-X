@@ -1234,7 +1234,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     bottomWrap.setId(R.id.share_bottom);
     bottomWrap.setOrientation(LinearLayout.VERTICAL);
     contentView.addView(bottomWrap);
-    if (Config.ENABLE_EDGE_TO_EDGE) {
+    if (Settings.instance().useEdgeToEdge()) {
       RelativeLayout.LayoutParams rp = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0);
       rp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
       spaceView = new FillingSpace(context);
@@ -2283,7 +2283,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     super.applySearchTransformFactor(factor, isOpening);
     setSmoothScrollFactor(isOpening ? factor : 1f - factor);
     setScrollLocked(factor == 1f);
-    if (!Config.ENABLE_EDGE_TO_EDGE) {
+    if (!Settings.instance().useEdgeToEdge()) {
       popupLayout.setIgnoreBottom(factor != 0f);
     }
   }
@@ -2377,7 +2377,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     popupLayout.setBoundController(this);
     popupLayout.setPopupHeightProvider(this);
     popupLayout.setOverlayStatusBar(overlayStatusBar);
-    popupLayout.init(Config.ENABLE_EDGE_TO_EDGE);
+    popupLayout.init(Settings.instance().useEdgeToEdge());
     popupLayout.setAlwaysApplyIme(true);
     popupLayout.setHideKeyboard();
     popupLayout.setNeedRootInsets();

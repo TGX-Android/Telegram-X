@@ -588,7 +588,7 @@ public class UI {
   public static void clearActivity (BaseActivity a) {
     a.requestWindowFeature(Window.FEATURE_NO_TITLE);
     Window w = a.getWindow();
-    if (Config.ENABLE_EDGE_TO_EDGE) {
+    if (Settings.instance().useEdgeToEdge()) {
       w.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
     } else {
       w.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);

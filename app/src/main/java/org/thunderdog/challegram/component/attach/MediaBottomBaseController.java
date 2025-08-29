@@ -40,6 +40,7 @@ import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.widget.EmptyTextView;
 
@@ -148,7 +149,7 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
   }
 
   private int getBarHeightIfAvailable () {
-    return mediaLayout.inSpecificMode() && mediaLayout.getMode() != MediaLayout.MODE_CUSTOM_ADAPTER ? 0 : MediaBottomBar.getBarHeight() + (Config.ENABLE_EDGE_TO_EDGE ? context.getRootView().getSystemInsetsWithoutIme().bottom : 0);
+    return mediaLayout.inSpecificMode() && mediaLayout.getMode() != MediaLayout.MODE_CUSTOM_ADAPTER ? 0 : MediaBottomBar.getBarHeight() + (Settings.instance().useEdgeToEdge() ? context.getRootView().getSystemInsetsWithoutIme().bottom : 0);
   }
 
   private void resetStartHeights (boolean initial) {

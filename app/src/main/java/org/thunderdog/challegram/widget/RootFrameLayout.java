@@ -39,6 +39,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Passcode;
+import org.thunderdog.challegram.unsorted.Settings;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.CancellableRunnable;
@@ -244,7 +245,7 @@ public class RootFrameLayout extends FrameLayoutFix {
   private boolean hasIgnoredChanged;
 
   public void forceHideKeyboard () {
-    if (Config.ENABLE_EDGE_TO_EDGE) {
+    if (Settings.instance().useEdgeToEdge()) {
       if (hasIgnoredChanged && systemInsetsWithoutIme.bottom == systemInsets.bottom) {
         effectiveInsets.set(effectiveInsetsWithoutIme);
         notifyChanges(true);
@@ -261,7 +262,7 @@ public class RootFrameLayout extends FrameLayoutFix {
     final int imeHeight = CAN_DETECT_IME ? getImeHeight(insetsRaw) : 0;
     final boolean isKeyboardVisible = imeHeight > 0;
 
-    boolean ignoreChanges = Config.ENABLE_EDGE_TO_EDGE && !force &&
+    boolean ignoreChanges = Settings.instance().useEdgeToEdge() && !force &&
       UI.getContext(getContext()).isInFullScreen() &&
       (this instanceof BaseRootLayout || (UI.getContext(getContext()).isHideNavigation() && verticalSystemInsetsUpdated && !horizontalSystemInsetsUpdated));
     hasIgnoredChanged = ignoreChanges;
@@ -287,12 +288,12 @@ public class RootFrameLayout extends FrameLayoutFix {
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !ignoreChanges) {
       if (this instanceof BaseRootLayout) {
-        if (!Config.ENABLE_EDGE_TO_EDGE || !UI.getContext(getContext()).isInFullScreen()) {
+        if (!Settings.instance().useEdgeToEdge() || !UI.getContext(getContext()).isInFullScreen()) {
           Screen.setStatusBarHeight(effectiveInsets.top);
         }
       }
 
-     if (!Config.ENABLE_EDGE_TO_EDGE) {
+     if (!Settings.instance().useEdgeToEdge()) {
         if (hadInsets && !ignoreSystemNavigationBar && verticalSystemInsetsUpdated && !horizontalSystemInsetsUpdated) {
           int bottomDiff = (shouldIgnoreBottomMargin(prevSystemInsets.bottom) ? 0 : prevSystemInsets.bottom) - (shouldIgnoreBottomMargin(effectiveInsets.bottom) ? 0 : effectiveInsets.bottom);
 
@@ -511,7 +512,7 @@ public class RootFrameLayout extends FrameLayoutFix {
         View view = getChildAt(i);
         if (view != null) {
           LayoutParams params = (LayoutParams) view.getLayoutParams();
-          if (Config.ENABLE_EDGE_TO_EDGE && view instanceof InterceptLayout) {
+          if (Settings.instance().useEdgeToEdge() && view instanceof InterceptLayout) {
             applyNavigationInsets((InterceptLayout) view, params, effectiveInsets, effectiveInsetsWithoutIme);
           } else if (view.getFitsSystemWindows()) {
             dispatchChildInsets(view, windowInsetsRaw, params.gravity);

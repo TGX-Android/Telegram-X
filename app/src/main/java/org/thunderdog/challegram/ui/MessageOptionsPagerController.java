@@ -57,6 +57,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.text.Counter;
@@ -459,7 +460,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
         - (Screen.dp(54) + HeaderView.getTopOffset())
         - getOptionItemsHeight()
         - Screen.dp(1)
-        - (Config.ENABLE_EDGE_TO_EDGE ? context().getRootView().getSystemInsetsWithoutIme().bottom : 0)
+        - (Settings.instance().useEdgeToEdge() ? context().getRootView().getSystemInsetsWithoutIme().bottom : 0)
       );
     } else {
       return Screen.currentHeight() / 2;

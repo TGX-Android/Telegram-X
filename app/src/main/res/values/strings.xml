@@ -5287,6 +5287,9 @@
   <string name="Experiment_PeerIds">Show Peer IDs in Profiles</string>
   <string name="Experiment_PeerIdsInfo">Show API identifiers of users and chats in their profiles</string>
 
+  <string name="Experiment_NoEdgeToEdge">Disable Edge to Edge</string>
+  <string name="Experiment_NoEdgeToEdgeInfo">Edge to Edge support on Android 11–14 is not tested, issues are expected. Use this settings to compare behavior without edge-to-edge mode.</string>
+
   <string name="PeerId">Peer ID</string>
   <string name="UserId">User ID</string>
   <string name="SecretChatId">Secret Chat ID</string>

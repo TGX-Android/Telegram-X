@@ -247,7 +247,8 @@ public class Config {
   public static final boolean USE_CUSTOM_NAVIGATION_COLOR = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O;
   public static final boolean USE_TRANSPARENT_STATUS_BAR = false; // Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM;
 
-  public static final boolean ENABLE_EDGE_TO_EDGE = Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM;
+  public static final boolean EDGE_TO_EDGE_AVAILABLE = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R;
+  public static final boolean EDGE_TO_EDGE_CUSTOMIZABLE = EDGE_TO_EDGE_AVAILABLE && (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM || BuildConfig.TARGET_SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM);
 
   public static final boolean PREFER_RENDER_EXTENSIONS = true;
 

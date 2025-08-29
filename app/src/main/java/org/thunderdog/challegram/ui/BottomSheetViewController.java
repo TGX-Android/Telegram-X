@@ -29,6 +29,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.LickView;
 import org.thunderdog.challegram.widget.PopupLayout;
@@ -528,7 +529,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
 
       if (position == 0 || isUnknown) {
         top = controller.canHideByScroll() ?
-          (controller.getTargetHeight() - HeaderView.getTopOffset() - (Config.ENABLE_EDGE_TO_EDGE ? controller.context().getRootView().getSystemInsetsWithoutIme().bottom : 0)):
+          (controller.getTargetHeight() - HeaderView.getTopOffset() - (Settings.instance().useEdgeToEdge() ? controller.context().getRootView().getSystemInsetsWithoutIme().bottom : 0)):
           (controller.getContentOffset());
       }
       if (position == itemCount - 1 || isUnknown) {

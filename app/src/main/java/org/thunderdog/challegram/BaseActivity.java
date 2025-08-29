@@ -1961,7 +1961,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   public int getVisibleContentHeight () {
-    if (Config.ENABLE_EDGE_TO_EDGE) {
+    if (Settings.instance().useEdgeToEdge()) {
       return rootView.getInnerContentHeight();
     } else {
       return contentView.getMeasuredHeight();
@@ -2103,7 +2103,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       // forceTouchWindow.setNeedRootInsets();
     }
     forceTouchWindow.init(true);
-    forceTouchWindow.setNeedFullScreen(Config.ENABLE_EDGE_TO_EDGE);
+    forceTouchWindow.setNeedFullScreen(Settings.instance().useEdgeToEdge());
     if (!context.allowFullscreen()) {
       forceTouchWindow.setNeedRootInsets();
     }

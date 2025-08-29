@@ -521,7 +521,7 @@ public class MediaLayout extends FrameLayoutFix implements
     popupLayout.setDismissListener(this);
     popupLayout.setNeedRootInsets();
     popupLayout.setOverlayStatusBar(overlayStatusBar);
-    popupLayout.init(!Config.ENABLE_EDGE_TO_EDGE);
+    popupLayout.init(true);
     popupLayout.showAnimatedPopupView(this, this);
   }
 
