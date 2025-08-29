@@ -459,7 +459,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
         - (Screen.dp(54) + HeaderView.getTopOffset())
         - getOptionItemsHeight()
         - Screen.dp(1)
-        - context().getRootView().getSystemInsetsWithoutIme().bottom
+        - (Config.ENABLE_EDGE_TO_EDGE ? context().getRootView().getSystemInsetsWithoutIme().bottom : 0)
       );
     } else {
       return Screen.currentHeight() / 2;

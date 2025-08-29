@@ -16,6 +16,7 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -527,7 +528,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
 
       if (position == 0 || isUnknown) {
         top = controller.canHideByScroll() ?
-          (controller.getTargetHeight() - HeaderView.getTopOffset() - controller.context().getRootView().getSystemInsetsWithoutIme().bottom):
+          (controller.getTargetHeight() - HeaderView.getTopOffset() - (Config.ENABLE_EDGE_TO_EDGE ? controller.context().getRootView().getSystemInsetsWithoutIme().bottom : 0)):
           (controller.getContentOffset());
       }
       if (position == itemCount - 1 || isUnknown) {
