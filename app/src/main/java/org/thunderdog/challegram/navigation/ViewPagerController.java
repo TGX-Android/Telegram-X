@@ -23,6 +23,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.CallSuper;
 import androidx.annotation.IdRes;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
@@ -160,6 +161,12 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
   }
 
   @Override
+  public final boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
+  @CallSuper
   protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
     super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
     if (adapter != null) {

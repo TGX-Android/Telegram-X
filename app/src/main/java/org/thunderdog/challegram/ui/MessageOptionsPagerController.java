@@ -214,6 +214,14 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   }
 
   @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    if (reactionsPickerController != null) {
+      reactionsPickerController.setBottomInset(extraBottomInset, extraBottomInsetWithoutIme);
+    }
+  }
+
+  @Override
   protected void onBeforeCreateView () {
     headerCell = new ViewPagerHeaderViewReactionsCompact(context, state) {
       @Override
@@ -445,7 +453,9 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       return (getTargetHeight()
         - (Screen.dp(54) + HeaderView.getTopOffset())
         - getOptionItemsHeight()
-        - Screen.dp(1));
+        - Screen.dp(1)
+        - context().getRootView().getSystemInsetsWithoutIme().bottom
+      );
     } else {
       return Screen.currentHeight() / 2;
     }
@@ -684,6 +694,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       }
     };
     reactionsPickerController.setArguments(state);
+    reactionsPickerController.setBottomInset(extraBottomInset, extraBottomInsetWithoutIme);
     reactionsPickerController.getValue();
 
     reactionsPickerRecyclerView = reactionsPickerController.getRecyclerView();
@@ -705,7 +716,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
         if (position == itemCount - 1) {
           int keyboardHeight = getKeyboardState() ? Keyboard.getSize(Keyboard.getSize()) : 0;
-          bottom = Math.max(parent.getMeasuredHeight() - reactionsPickerController.measureItemsHeight(), keyboardHeight + Screen.dp(64));
+          bottom = Math.max(parent.getMeasuredHeight() - parent.getPaddingBottom() - reactionsPickerController.measureItemsHeight(), keyboardHeight + Screen.dp(64));
         }
 
         outRect.set(leftRight, 0, leftRight, bottom);

@@ -53,6 +53,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.StickerSetsDataProvider;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.EmojiLayout;
@@ -88,6 +89,21 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
   }
 
   @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    Views.applyBottomInset(recyclerView, extraBottomInsetWithoutIme);
+    Views.setLayoutHeight(bottomHeaderViewGroup, HeaderView.getSize(false) + extraBottomInsetWithoutIme);
+    if (bottomHeaderView != null) {
+      bottomHeaderView.setBackgroundHeight(HeaderView.getSize(false) + extraBottomInsetWithoutIme);
+    }
+  }
+
+  @Override
   protected View onCreateView (Context context) {
     ArrayList<EmojiSection> emojiSections = new ArrayList<>(3);
     if (state.needShowCustomEmojiInsidePicker) {
@@ -104,6 +120,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     bottomHeaderCell.setSectionsOnClickListener(this::onStickerSectionClick);
 
     recyclerView = onCreateRecyclerView();
+    Views.applyBottomInset(recyclerView, extraBottomInsetWithoutIme);
     recyclerView.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> reactionsController.invalidateStickerObjModifiers());
     recyclerView.setItemAnimator(null);
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -775,6 +792,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     };
     bottomHeaderView.initWithSingleController(fakeControllerForBottomHeader, false);
     bottomHeaderView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.BOTTOM));
+    bottomHeaderView.setBackgroundHeight(HeaderView.getSize(false) + extraBottomInsetWithoutIme);
     fakeControllerForBottomHeader.attachHeaderViewWithoutNavigation(bottomHeaderView);
 
     emojiTypesRecyclerView = new EmojiCategoriesRecyclerView(context);
@@ -785,7 +803,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     emojiTypesRecyclerView.setMinimalLeftPadding(((int) U.measureText(Lang.getString(R.string.Search), Paints.getRegularTextPaint(16))) + Screen.dp(68 - 56));
 
     bottomHeaderViewGroup = new FrameLayout(context);
-    bottomHeaderViewGroup.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, HeaderView.getSize(false), Gravity.BOTTOM));
+    bottomHeaderViewGroup.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, HeaderView.getSize(false) + extraBottomInsetWithoutIme, Gravity.BOTTOM));
     bottomHeaderViewGroup.addView(bottomHeaderView);
     bottomHeaderViewGroup.addView(emojiTypesRecyclerView);
   }

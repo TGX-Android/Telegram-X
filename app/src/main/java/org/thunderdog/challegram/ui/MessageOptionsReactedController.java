@@ -147,7 +147,11 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
       items.add(new ListItem(ListItem.TYPE_LIST_INFO_VIEW));
     }
 
-    adapter.notifyItemRangeChanged(itemsCount, items.size() - itemsCount);
+    if (itemsCount > 0) {
+      adapter.notifyItemRangeChanged(itemsCount - 1, items.size() - itemsCount + 1);
+    } else {
+      adapter.notifyItemRangeChanged(itemsCount, items.size() - itemsCount);
+    }
   }
 
   @Override

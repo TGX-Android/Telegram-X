@@ -188,11 +188,6 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   }
 
   @Override
-  public boolean supportsBottomInset () {
-    return true;
-  }
-
-  @Override
   protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
     super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
     if (composeWrap != null) {

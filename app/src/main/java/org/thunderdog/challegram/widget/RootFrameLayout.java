@@ -493,6 +493,10 @@ public class RootFrameLayout extends FrameLayoutFix {
     return systemInsets;
   }
 
+  public Rect getSystemInsetsWithoutIme () {
+    return systemInsetsWithoutIme;
+  }
+
   private int previousHeight;
   private int previousWidth;
 

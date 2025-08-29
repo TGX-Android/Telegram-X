@@ -113,7 +113,6 @@ import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.widget.CustomTextView;
-import org.thunderdog.challegram.widget.FillingDecoration;
 import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.InfiniteRecyclerView;
 import org.thunderdog.challegram.widget.MaterialEditText;
@@ -124,6 +123,7 @@ import org.thunderdog.challegram.widget.RootFrameLayout;
 import org.thunderdog.challegram.widget.SeparatorView;
 import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.TimerView;
+import org.thunderdog.challegram.widget.decoration.BottomInsetFillingDecoration;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -2013,36 +2013,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         }
       }
     };
-    recyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
-      @Override
-      public void onDraw (@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
-        super.onDraw(c, parent, state);
-
-        LinearLayoutManager manager = (LinearLayoutManager) parent.getLayoutManager();
-
-        int maxBottom = -1;
-        boolean hasBottom = false;
-        for (int i = 0; i < manager.getChildCount(); i++) {
-          View view = manager.getChildAt(i);
-          if (view != null) {
-            int bottom = manager.getDecoratedBottom(view);
-            if (hasBottom) {
-              maxBottom = Math.max(bottom, maxBottom);
-            } else {
-              maxBottom = bottom;
-            }
-            hasBottom = true;
-          }
-        }
-
-        if (hasBottom) {
-          int height = parent.getMeasuredHeight();
-          if (height > maxBottom) {
-            c.drawRect(0, maxBottom, parent.getMeasuredWidth(), height, Paints.fillingPaint(Theme.fillingColor()));
-          }
-        }
-      }
-    });
+    recyclerView.addItemDecoration(new BottomInsetFillingDecoration(ColorId.filling));
     settings.recyclerView = recyclerView;
     if (b.allowResize) {
       recyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
