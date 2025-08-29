@@ -2103,6 +2103,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       // forceTouchWindow.setNeedRootInsets();
     }
     forceTouchWindow.init(true);
+    forceTouchWindow.setNeedFullScreen(Config.ENABLE_EDGE_TO_EDGE);
     if (!context.allowFullscreen()) {
       forceTouchWindow.setNeedRootInsets();
     }
