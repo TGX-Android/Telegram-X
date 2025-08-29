@@ -1161,28 +1161,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public boolean isUnauthorized () {
-    if (authorizationState != null) {
-      switch (authorizationState.getConstructor()) {
-        case TdApi.AuthorizationStateWaitPhoneNumber.CONSTRUCTOR:
-        case TdApi.AuthorizationStateWaitEmailAddress.CONSTRUCTOR:
-        case TdApi.AuthorizationStateWaitCode.CONSTRUCTOR:
-        case TdApi.AuthorizationStateWaitEmailCode.CONSTRUCTOR:
-        case TdApi.AuthorizationStateWaitPassword.CONSTRUCTOR:
-        case TdApi.AuthorizationStateWaitOtherDeviceConfirmation.CONSTRUCTOR:
-        case TdApi.AuthorizationStateLoggingOut.CONSTRUCTOR:
-        case TdApi.AuthorizationStateWaitRegistration.CONSTRUCTOR:
-          return true;
-        case TdApi.AuthorizationStateReady.CONSTRUCTOR:
-          return false;
-        case TdApi.AuthorizationStateClosed.CONSTRUCTOR:
-        case TdApi.AuthorizationStateClosing.CONSTRUCTOR:
-        case TdApi.AuthorizationStateWaitTdlibParameters.CONSTRUCTOR:
-          break; // because we cannot know for sure
-        default:
-          throw new AssertionError(authorizationState);
-      }
-    }
-    return false;
+    @Status int status = getStatus(authorizationState);
+    return status == Status.UNAUTHORIZED;
   }
 
   public @Status int authorizationStatus () {

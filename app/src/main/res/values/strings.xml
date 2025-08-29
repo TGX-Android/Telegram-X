@@ -108,6 +108,9 @@
   <string name="format_notificationTicker">%1$s: %2$s</string>
   <string name="format_sessionsAndWebsites">%1$s, %2$s</string>
   <string name="login_PhoneNumber">Phone number</string>
+  <string name="login_PremiumRequiredTitle">Telegram Premium required</string>
+  <string name="login_PremiumRequiredBtn">Visit telegram.org</string>
+  <string name="login_PremiumRequired">**Telegram Premium** is required to proceed.\n\nUnfortunately, it\'s currently not possible to make in-app purchases through **Telegram X**.\n\nPlease use one of other official apps and enter the same phone number to set up the subscription.</string>
   <string name="login_error">Error: %1$s. __Contact us__, if you need help.</string>
   <string name="login_Code">Code</string>
   <string name="login_LastDigits_one">Last %1$s digit</string>
