@@ -146,9 +146,15 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
     }
 
     @Override
+    protected boolean needRecyclerBottomInset () {
+      return false;
+    }
+
+    @Override
     protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
       super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
       int buttonHeight = Screen.dp(56f) + extraBottomInsetWithoutIme;
+      Views.setLayoutHeight(bottomButton, buttonHeight);
       Views.setPaddingBottom(bottomButton, extraBottomInsetWithoutIme);
       Views.setBottomMargin(getRecyclerView(), buttonHeight);
     }
