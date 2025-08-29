@@ -1256,6 +1256,7 @@ class Chip extends Drawable implements FlowListAnimator.Measurable, Drawable.Cal
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public int getOpacity () {
     return PixelFormat.TRANSLUCENT;
   }

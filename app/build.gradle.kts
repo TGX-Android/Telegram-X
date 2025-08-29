@@ -72,6 +72,8 @@ android {
 
     buildConfigField("boolean", "EXPERIMENTAL", isExperimentalBuild.toString())
 
+    buildConfigInt("TARGET_SDK_INT", versions.getIntOrThrow("version.sdk_target"))
+
     buildConfigInt("TELEGRAM_API_ID", properties.getIntOrThrow("telegram.api_id"))
     buildConfigString("TELEGRAM_API_HASH", properties.getOrThrow("telegram.api_hash"))
 

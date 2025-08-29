@@ -84,10 +84,14 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayoutRec
   }
 
   @Override
-  protected void onExtraBottomInsetChanged (int extraBottomInset) {
-    if (recyclerView != null) {
-      recyclerView.setPadding(0, 0, 0, extraBottomInset);
-    }
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    Views.applyBottomInset(recyclerView, extraBottomInset);
   }
 
   @Override
@@ -119,8 +123,7 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayoutRec
         checkWidth(getMeasuredWidth());
       }
     };
-    recyclerView.setClipToPadding(false);
-    recyclerView.setPadding(0, 0, 0, extraBottomInset);
+    Views.applyBottomInset(recyclerView, extraBottomInset);
     recyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS :View.OVER_SCROLL_NEVER);
     recyclerView.setHasFixedSize(true);

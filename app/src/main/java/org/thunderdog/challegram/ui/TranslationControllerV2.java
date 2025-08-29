@@ -110,6 +110,11 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     translationCounterDrawable.setInvalidateCallback(this::updateAnimations);
   }
 
+  @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
   protected View onCreateView (Context context) {
     headerView = new HeaderView(context);
 
@@ -548,6 +553,11 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
       super(context, tdlib);
       this.parent = parent;
       translationControllerFragment = new TranslationControllerV2(context, tdlib, this);
+    }
+
+    @Override
+    public boolean supportsBottomInset () {
+      return translationControllerFragment.supportsBottomInset();
     }
 
     private TextColorSet textColorSet;

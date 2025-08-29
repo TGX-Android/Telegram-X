@@ -19,6 +19,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.graphics.Rect;
 import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
@@ -1545,8 +1546,31 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     // TODO more
   }
 
-  public boolean dispatchInnerMargins (View child, ViewGroup.MarginLayoutParams layoutParams, int left, int top, int right, int bottom) {
-    // TODO per-controller bottom margin handling
-    return Views.setMargins(layoutParams, left, top, right, bottom);
+  private int bottomInset, bottomInsetWithoutIme;
+
+  public void applyBottomInset (ViewController<?> controller) {
+    if (controller.supportsBottomInset()) {
+      controller.setBottomInset(bottomInset, bottomInsetWithoutIme);
+    } else {
+      View view = controller.getValue();
+      Views.setPaddingBottom(view, bottomInset);
+    }
+  }
+
+  private void setBottomInset (int bottomInset, int bottomInsetWithoutIme) {
+    if (this.bottomInset != bottomInset || this.bottomInsetWithoutIme != bottomInsetWithoutIme) {
+      this.bottomInset = bottomInset;
+      this.bottomInsetWithoutIme = bottomInsetWithoutIme;
+      if (childWrappers != null) {
+        for (ViewController<?> controller : childWrappers) {
+          applyBottomInset(controller);
+        }
+      }
+    }
+  }
+
+  public void dispatchSystemInsets (View child, ViewGroup.MarginLayoutParams layoutParams, Rect legacyInsets, Rect systemInsets, Rect systemInsetWithoutIme) {
+    Views.setMargins(layoutParams, legacyInsets.left, legacyInsets.top, legacyInsets.right, 0);
+    setBottomInset(systemInsets.bottom, systemInsetWithoutIme.bottom);
   }
 }

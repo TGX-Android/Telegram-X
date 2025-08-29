@@ -23,6 +23,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.CallSuper;
 import androidx.annotation.IdRes;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
@@ -157,6 +158,20 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
   @ColorId
   protected int getDrawerReplacementColorId () {
     return ColorId.filling;
+  }
+
+  @Override
+  public abstract boolean supportsBottomInset ();
+
+  @Override
+  @CallSuper
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    if (adapter != null) {
+      for (ViewController<?> c : adapter.attachedControllers) {
+        c.setBottomInset(extraBottomInset, extraBottomInsetWithoutIme);
+      }
+    }
   }
 
   @Override
@@ -833,6 +848,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     public Object instantiateItem (@NonNull ViewGroup container, int position) {
       ViewController<?> c = prepareViewController(reversePosition(position));
       container.addView(c.getValue());
+      c.setBottomInset(parent.extraBottomInset, parent.extraBottomInsetWithoutIme);
       attachedControllers.add(c);
       parent.updateControllerState(c, position);
       if ((position == parent.currentPosition || (parent.currentPositionOffset != 0f && position == parent.currentPosition + (parent.currentPositionOffset > 0f ? 1 : -1))) && c.shouldDisallowScreenshots()) {

@@ -67,6 +67,11 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
   }
 
   @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
   protected Page onCreateSinglePage () {
     return new Page(context, tdlib, this);
   }
@@ -136,12 +141,29 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
     }
 
     @Override
+    public boolean supportsBottomInset () {
+      return true;
+    }
+
+    @Override
+    protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+      super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+      int buttonHeight = Screen.dp(56f) + extraBottomInsetWithoutIme;
+      Views.setPaddingBottom(bottomButton, extraBottomInsetWithoutIme);
+      Views.setBottomMargin(getRecyclerView(), buttonHeight);
+    }
+
+    private TextView bottomButton;
+
+    @Override
     protected View onCreateView (Context context) {
       View view = super.onCreateView(context);
 
-      int buttonHeight = Screen.dp(56f);
+      int buttonHeight = Screen.dp(56f) + extraBottomInsetWithoutIme;
       FrameLayoutFix wrap = (FrameLayoutFix) view;
-      wrap.addView(buildActionButton(), FrameLayoutFix.newParams(LayoutHelper.MATCH_PARENT, buttonHeight, Gravity.BOTTOM));
+      bottomButton = buildActionButton();
+      Views.setPaddingBottom(bottomButton, extraBottomInsetWithoutIme);
+      wrap.addView(bottomButton, FrameLayoutFix.newParams(LayoutHelper.MATCH_PARENT, buttonHeight, Gravity.BOTTOM));
       Views.setBottomMargin(getRecyclerView(), buttonHeight);
       return view;
     }
@@ -199,7 +221,7 @@ public class ChatFoldersFeatureController extends SinglePageBottomSheetViewContr
       return R.id.controller_chatFoldersFeature;
     }
 
-    private View buildActionButton () {
+    private TextView buildActionButton () {
       TextView button = new TextView(context);
       button.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
       button.setTypeface(Fonts.getRobotoMedium());

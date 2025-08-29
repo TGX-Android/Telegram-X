@@ -37,7 +37,6 @@ import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.core.content.ContextCompat;
-import androidx.core.view.WindowCompat;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
@@ -432,26 +431,6 @@ public class UI {
     return appContext.getResources();
   }
 
-  @SuppressWarnings("deprecation")
-  public static Locale getLocale (Configuration configuration) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-      android.os.LocaleList list = configuration.getLocales();
-      return list.get(0);
-    } else {
-      return configuration.locale;
-    }
-  }
-
-  public static Locale getSystemLocale () {
-    Configuration configuration = Resources.getSystem().getConfiguration();
-    return getLocale(configuration);
-  }
-
-  public static Locale getConfigurationLocale () {
-    Configuration configuration = getAppContext().getResources().getConfiguration();
-    return getLocale(configuration);
-  }
-
   public static void removePendingRunnable (Runnable runnable) {
     getAppHandler().removeCallbacks(runnable);
   }
@@ -609,8 +588,11 @@ public class UI {
   public static void clearActivity (BaseActivity a) {
     a.requestWindowFeature(Window.FEATURE_NO_TITLE);
     Window w = a.getWindow();
-    // TODO: rework to Window.setDecorFitsSystemWindows(boolean)
-    w.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+    if (Settings.instance().useEdgeToEdge()) {
+      w.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+    } else {
+      w.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+    }
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
       w.setBackgroundDrawableResource(R.drawable.transparent);
     } else {
@@ -859,7 +841,7 @@ public class UI {
               inputLanguages.add(code);
           }
         } else {
-          String code = LocaleUtils.toBcp47Language(getSystemLocale());
+          String code = LocaleUtils.toBcp47Language(Lang.getSystemLocale());
           if (!StringUtils.isEmpty(code)) {
             inputLanguages.add(code);
           }

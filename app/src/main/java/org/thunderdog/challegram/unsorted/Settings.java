@@ -427,6 +427,7 @@ public class Settings {
 
   public static final long EXPERIMENT_FLAG_ALLOW_EXPERIMENTS = 1;
   public static final long EXPERIMENT_FLAG_SHOW_PEER_IDS = 1 << 2;
+  public static final long EXPERIMENT_FLAG_NO_EDGE_TO_EDGE = 1 << 3;
 
   public static final long REMOVED_EXPERIMENT_FLAG_ENABLE_FOLDERS = 1 << 1;
 
@@ -2780,6 +2781,16 @@ public class Settings {
 
   public void setUseSystemFonts (boolean useSystemFonts) {
     setSetting(FLAG_OTHER_USE_SYSTEM_FONTS, useSystemFonts);
+  }
+
+  public boolean useEdgeToEdge () {
+    if (Config.EDGE_TO_EDGE_AVAILABLE) {
+      if (Config.EDGE_TO_EDGE_CUSTOMIZABLE) {
+        return !isExperimentEnabled(EXPERIMENT_FLAG_NO_EDGE_TO_EDGE);
+      }
+      return true;
+    }
+    return false;
   }
 
   public boolean useBigEmoji () {

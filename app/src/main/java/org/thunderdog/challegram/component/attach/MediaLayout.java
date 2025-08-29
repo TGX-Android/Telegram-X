@@ -19,6 +19,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
 import android.content.Intent;
+import android.graphics.Rect;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -79,6 +80,7 @@ import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
+import org.thunderdog.challegram.widget.RootFrameLayout;
 import org.thunderdog.challegram.widget.SendButton;
 import org.thunderdog.challegram.widget.ShadowView;
 
@@ -98,7 +100,7 @@ import tgx.td.TdConstants;
 public class MediaLayout extends FrameLayoutFix implements
   MediaBottomBar.Callback, BaseActivity.PopupAnimatorOverride,
   View.OnClickListener, BaseActivity.ActivityListener, ActivityResultHandler, /*ActivityResultCancelHandler,*/ BackListener,
-  PopupLayout.AnimatedPopupProvider, PopupLayout.DismissListener, FactorAnimator.Target, ThemeChangeListener, Lang.Listener, Destroyable, PopupLayout.TouchDownInterceptor {
+  PopupLayout.AnimatedPopupProvider, PopupLayout.DismissListener, FactorAnimator.Target, ThemeChangeListener, Lang.Listener, Destroyable, PopupLayout.TouchDownInterceptor, RootFrameLayout.MarginModifier {
 
   private interface MediaCallback { }
 
@@ -140,6 +142,29 @@ public class MediaLayout extends FrameLayoutFix implements
   public MediaLayout (ViewController<?> context) {
     super(context.context());
     this.parent = context;
+  }
+
+  private int extraBottomInset, extraBottomInsetWithoutIme;
+
+  private void setExtraBottomInset (int extraBottomInset, int extraBottomInsetWithoutIme) {
+    if (this.extraBottomInset != extraBottomInset || this.extraBottomInsetWithoutIme != extraBottomInsetWithoutIme) {
+      this.extraBottomInset = extraBottomInset;
+      this.extraBottomInsetWithoutIme = extraBottomInsetWithoutIme;
+      if (bottomBar != null) {
+        bottomBar.setBottomInset(extraBottomInsetWithoutIme);
+      }
+      for (MediaBottomBaseController<?> controller : controllers) {
+        if (controller != null) {
+          controller.setBottomInset(extraBottomInset, extraBottomInsetWithoutIme);
+        }
+      }
+    }
+  }
+
+  @Override
+  public void onApplyMarginInsets (View child, LayoutParams params, Rect legacyInsets, Rect insets, Rect insetsWithoutIme) {
+    Views.setMargins(params, legacyInsets.left, legacyInsets.top, legacyInsets.right, 0);
+    setExtraBottomInset(insets.bottom, insetsWithoutIme.bottom);
   }
 
   public Tdlib tdlib () {
@@ -252,6 +277,7 @@ public class MediaLayout extends FrameLayoutFix implements
 
     if (mode == MODE_DEFAULT) {
       bottomBar = new MediaBottomBar(getContext());
+      bottomBar.setBottomInset(extraBottomInsetWithoutIme);
       bottomBar.setItems(items, index);
       bottomBar.setCallback(this);
       shadowView = new ShadowView(getContext());
@@ -421,6 +447,7 @@ public class MediaLayout extends FrameLayoutFix implements
     if (c == null) {
       c = createControllerForIndex(index);
       c.attachToThemeListeners(themeListeners);
+      c.setBottomInset(extraBottomInsetWithoutIme, extraBottomInsetWithoutIme);
       controllers[index] = c;
     }
     return c;
@@ -494,7 +521,7 @@ public class MediaLayout extends FrameLayoutFix implements
     popupLayout.setDismissListener(this);
     popupLayout.setNeedRootInsets();
     popupLayout.setOverlayStatusBar(overlayStatusBar);
-    popupLayout.init(Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM);
+    popupLayout.init(true);
     popupLayout.showAnimatedPopupView(this, this);
   }
 
@@ -805,7 +832,7 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   private int getBottomBarHeight () {
-    return customBottomBar != null ? customBottomBar.getMeasuredHeight() : MediaBottomBar.getBarHeight();
+    return customBottomBar != null ? customBottomBar.getMeasuredHeight() : MediaBottomBar.getBarHeight() + extraBottomInsetWithoutIme;
   }
 
   public int getCurrentBottomBarHeight () {

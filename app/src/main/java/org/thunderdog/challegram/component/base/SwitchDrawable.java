@@ -146,6 +146,7 @@ public class SwitchDrawable extends Drawable {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public int getOpacity () {
     return PixelFormat.UNKNOWN;
   }

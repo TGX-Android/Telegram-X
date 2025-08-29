@@ -31,6 +31,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
@@ -39,6 +40,7 @@ import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.widget.EmptyTextView;
 
@@ -147,7 +149,7 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
   }
 
   private int getBarHeightIfAvailable () {
-    return mediaLayout.inSpecificMode() && mediaLayout.getMode() != MediaLayout.MODE_CUSTOM_ADAPTER ? 0 : MediaBottomBar.getBarHeight();
+    return mediaLayout.inSpecificMode() && mediaLayout.getMode() != MediaLayout.MODE_CUSTOM_ADAPTER ? 0 : MediaBottomBar.getBarHeight() + (Settings.instance().useEdgeToEdge() ? context.getRootView().getSystemInsetsWithoutIme().bottom : 0);
   }
 
   private void resetStartHeights (boolean initial) {
@@ -229,7 +231,7 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
   }
 
   private int getTargetHeight () {
-    return context.getRootView().getMeasuredHeight() - HeaderView.getTopOffset() - context.getRootView().getBottomInset();
+    return context.getRootView().getMeasuredHeight() - HeaderView.getTopOffset();
   }
 
   private void updateRecyclerTop (int height) {
@@ -247,6 +249,17 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
   protected MediaBottomBaseRecyclerView recyclerView;
   private EmptyTextView emptyView;
 
+  @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    Views.applyBottomInset(recyclerView, extraBottomInsetWithoutIme);
+  }
+
   protected final MediaContentView buildContentView (boolean needProgress) {
     contentView = new MediaContentView(context());
     contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -258,6 +271,7 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
     params.bottomMargin = HeaderView.getTopOffset();
 
     recyclerView = new MediaBottomBaseRecyclerView(context());
+    Views.applyBottomInset(recyclerView, extraBottomInsetWithoutIme);
     recyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
       @Override
       public void getItemOffsets (Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {

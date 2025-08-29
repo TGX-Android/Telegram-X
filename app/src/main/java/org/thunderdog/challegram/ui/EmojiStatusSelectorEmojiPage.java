@@ -97,6 +97,22 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
   }
 
   @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    if (emojiCustomListLayout != null) {
+      emojiCustomListLayout.setExtraBottomInset(extraBottomInset, extraBottomInsetWithoutIme);
+    }
+    if (emojiCustomListController != null) {
+      emojiCustomListController.setBottomInset(extraBottomInset, extraBottomInsetWithoutIme);
+    }
+  }
+
+  @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
     headerView = new HeaderView(context) {
       @Override
@@ -116,6 +132,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     parent.addThemeInvalidateListener(headerView);
 
     emojiCustomListLayout = new EmojiLayout(context());
+    emojiCustomListLayout.setExtraBottomInset(extraBottomInset, extraBottomInsetWithoutIme);
     emojiCustomListLayout.initWithEmojiStatus(this, this, this);
 
     emojiCustomListController = new EmojiStatusListController(context, tdlib) {
@@ -641,6 +658,17 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
       this.animationDelegate = delegate;
       fragment = new EmojiStatusSelectorEmojiPage(context, tdlib, this);
       foregroundView = new FrameLayout(context);
+    }
+
+    @Override
+    public boolean supportsBottomInset () {
+      return fragment.supportsBottomInset();
+    }
+
+    @Override
+    protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+      super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+      fragment.setBottomInset(extraBottomInset, extraBottomInsetWithoutIme);
     }
 
     @Override

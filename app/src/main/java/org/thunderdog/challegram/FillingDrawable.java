@@ -110,6 +110,7 @@ public class FillingDrawable extends Drawable {
   public final void setColorFilter (ColorFilter colorFilter) { }
 
   @Override
+  @SuppressWarnings("deprecation")
   public final int getOpacity () {
     return PixelFormat.UNKNOWN;
   }

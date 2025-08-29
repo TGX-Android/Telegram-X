@@ -468,6 +468,17 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   private TdlibMessageViewer.Viewport chatsViewport;
 
   @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    Views.applyBottomInset(chatsView, extraBottomInset);
+  }
+
+  @Override
   protected View onCreateView (Context context) {
     list();
     updateNetworkStatus(tdlib.connectionState());
@@ -482,6 +493,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         adapter.notifyLastItemChanged();
       }
     });
+    Views.applyBottomInset(chatsView, extraBottomInset);
     chatsView.setItemAnimator(null);
     if (isInForceTouchMode()) {
       chatsView.setVerticalScrollBarEnabled(false);

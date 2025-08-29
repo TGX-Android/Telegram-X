@@ -190,7 +190,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   protected void onAttachedToWindow () {
     super.onAttachedToWindow();
     if (needOffsets) {
-      rootView = Views.findAncestor(this, RootFrameLayout.class);
+      rootView = Views.findAncestor(this, RootFrameLayout.class, false);
       if (rootView != null) {
         rootView.addInsetsChangeListener(this);
         setHeaderOffset(rootView.getTopInset());
@@ -208,7 +208,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   }
 
   @Override
-  public void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect systemInsets, boolean isUpdate) {
+  public void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect effectiveInsetsWithoutIme, Rect systemInsets, Rect systemInsetsWithoutIme, boolean isUpdate) {
     setHeaderOffset(effectiveInsets.top);
   }
 

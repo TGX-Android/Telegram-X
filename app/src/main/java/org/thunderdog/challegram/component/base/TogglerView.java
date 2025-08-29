@@ -105,6 +105,7 @@ public class TogglerView extends View implements FactorAnimator.Target, TooltipO
         }
 
         @Override
+        @SuppressWarnings("deprecation")
         public int getOpacity () {
           return PixelFormat.UNKNOWN;
         }

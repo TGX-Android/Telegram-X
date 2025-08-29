@@ -2541,7 +2541,7 @@ public class U {
 
   public static String getUsefulMetadata (@Nullable Tdlib tdlib) {
     AppBuildInfo buildInfo = org.thunderdog.challegram.unsorted.Settings.instance().getCurrentBuildInformation();
-    String locale = UI.getAppContext().getResources().getConfiguration().locale.toString();
+    String locale = Lang.getConfigurationLocale().toString();
     String appLocale = Lang.locale().toString();
     String metadata = Lang.getAppBuildAndVersion(tdlib) + " (" + BuildConfig.COMMIT + ")\n" +
       (!buildInfo.getPullRequests().isEmpty() ? "PRs: " + buildInfo.pullRequestsList() + "\n" : "") +
@@ -2697,7 +2697,7 @@ public class U {
 
   public static Locale getDisplayLocaleOfSubtypeLocale (@NonNull final String localeString) {
     if (NO_LANGUAGE.equals(localeString)) {
-      return UI.getResources().getConfiguration().locale;
+      return Lang.getPrimaryLocale(UI.getResources().getConfiguration());
     }
     return constructLocaleFromString(localeString);
   }
@@ -2708,16 +2708,7 @@ public class U {
       // TODO: Should this be Locale.ROOT?
       return null;
     }
-    final String[] localeParams = localeStr.split("_", 3);
-    if (localeParams.length == 1) {
-      return new Locale(localeParams[0]);
-    } else if (localeParams.length == 2) {
-      return new Locale(localeParams[0], localeParams[1]);
-    } else if (localeParams.length == 3) {
-      return new Locale(localeParams[0], localeParams[1], localeParams[2]);
-    }
-    // TODO: Should return Locale.ROOT instead of null?
-    return null;
+    return Lang.obtainLocale(localeStr);
   }
 
   public static @Nullable Bitmap tryDecodeVideoThumb (String path, long timeUs, int dstWidth, int dstHeight, @Nullable int[] rotation) {
@@ -3785,7 +3776,7 @@ public class U {
               inputLanguages.add(code);
           }
         } else {
-          String code = LocaleUtils.toBcp47Language(Resources.getSystem().getConfiguration().locale);
+          String code = LocaleUtils.toBcp47Language(Lang.getPrimaryLocale(Resources.getSystem().getConfiguration()));
           if (!StringUtils.isEmpty(code)) {
             inputLanguages.add(code);
           }
@@ -3807,12 +3798,18 @@ public class U {
           return languageTag;
         }
       }
-      String locale = ims.getLocale();
-      if (!StringUtils.isEmpty(locale)) {
-        Locale l = U.getDisplayLocaleOfSubtypeLocale(locale);
-        if (l != null) {
-          return LocaleUtils.toBcp47Language(l);
-        }
+      return toLanguageCodePreNougat(ims);
+    }
+    return null;
+  }
+
+  @SuppressWarnings("deprecation")
+  private static String toLanguageCodePreNougat (InputMethodSubtype ims) {
+    String locale = ims.getLocale();
+    if (!StringUtils.isEmpty(locale)) {
+      Locale l = U.getDisplayLocaleOfSubtypeLocale(locale);
+      if (l != null) {
+        return LocaleUtils.toBcp47Language(l);
       }
     }
     return null;

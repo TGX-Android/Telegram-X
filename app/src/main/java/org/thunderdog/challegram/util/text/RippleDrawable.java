@@ -222,6 +222,7 @@ public class RippleDrawable extends Drawable {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public int getOpacity () {
     return PixelFormat.UNKNOWN;
   }

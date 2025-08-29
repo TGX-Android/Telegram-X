@@ -15,7 +15,6 @@
 package org.thunderdog.challegram.widget;
 
 import android.content.Context;
-import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -44,12 +43,12 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.core.util.ColorChanger;
 
 public class NetworkStatusBarView extends FrameLayoutFix implements Destroyable, Screen.StatusBarHeightChangeListener, GlobalConnectionListener, FactorAnimator.Target, PopupLayout.TouchSectionProvider, Runnable, BaseActivity.ActivityListener, GlobalAccountListener {
   private final ProgressComponentView progressView;
@@ -101,11 +100,7 @@ public class NetworkStatusBarView extends FrameLayoutFix implements Destroyable,
 
   @Override
   public void onStatusBarHeightChanged (int newHeight) {
-    // Log.i("new height: %d", newHeight);
-    if (getLayoutParams() != null && getLayoutParams().height != newHeight) {
-      getLayoutParams().height = newHeight;
-      setLayoutParams(getLayoutParams());
-    }
+    Views.setLayoutHeight(this, newHeight);
   }
 
   public void addThemeListeners (ThemeListenerList list) {

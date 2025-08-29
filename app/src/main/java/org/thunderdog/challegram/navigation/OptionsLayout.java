@@ -18,6 +18,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.PixelFormat;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -25,6 +26,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -48,12 +50,13 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.EmojiTextView;
+import org.thunderdog.challegram.widget.RootFrameLayout;
 
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.Animated;
 import me.vkryl.core.StringUtils;
 
-public class OptionsLayout extends LinearLayout implements Animated {
+public class OptionsLayout extends LinearLayout implements Animated, RootFrameLayout.MarginModifier {
   private final CustomTextView textView;
   private final CustomTextView headerView;
   private final ViewController<?> parent;
@@ -97,6 +100,7 @@ public class OptionsLayout extends LinearLayout implements Animated {
       public void setColorFilter (@Nullable ColorFilter colorFilter) { }
 
       @Override
+      @SuppressWarnings("deprecation")
       public int getOpacity () {
         return PixelFormat.UNKNOWN;
       }
@@ -111,6 +115,12 @@ public class OptionsLayout extends LinearLayout implements Animated {
       parent.addThemeInvalidateListener(headerView);
       parent.addThemeInvalidateListener(this);
     }
+  }
+
+  @Override
+  public void onApplyMarginInsets (View child, FrameLayout.LayoutParams params, Rect legacyInsets, Rect insets, Rect insetsWithoutIme) {
+    Views.setMargins(params, insets.left, 0, insets.right, 0);
+    Views.setPaddingBottom(this, insetsWithoutIme.bottom);
   }
 
   @Override

@@ -23,7 +23,6 @@ import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.Build;
 import android.text.TextPaint;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -106,6 +105,7 @@ import org.thunderdog.challegram.v.RtlGridLayoutManager;
 import org.thunderdog.challegram.widget.BaseView;
 import org.thunderdog.challegram.widget.CustomImageView;
 import org.thunderdog.challegram.widget.EmojiLayout;
+import org.thunderdog.challegram.widget.FillingSpace;
 import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.KeyboardFrameLayout;
 import org.thunderdog.challegram.widget.PopupLayout;
@@ -899,6 +899,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
   }
 
   private RelativeLayout contentView;
+  private FillingSpace spaceView;
   private CustomRecyclerView chatSearchView;
   private CustomRecyclerView recyclerView;
   private SettingsAdapter adapter;
@@ -1233,6 +1234,15 @@ public class ShareController extends TelegramViewController<ShareController.Args
     bottomWrap.setId(R.id.share_bottom);
     bottomWrap.setOrientation(LinearLayout.VERTICAL);
     contentView.addView(bottomWrap);
+    if (Settings.instance().useEdgeToEdge()) {
+      RelativeLayout.LayoutParams rp = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0);
+      rp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+      spaceView = new FillingSpace(context);
+      spaceView.setLayoutParams(rp);
+      spaceView.setVisibility(View.INVISIBLE);
+      spaceView.setThemedBackground(ColorId.filling, this);
+      contentView.addView(spaceView);
+    }
 
     inputView = new InputView(context, tdlib, this) {
       @Override
@@ -2273,7 +2283,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     super.applySearchTransformFactor(factor, isOpening);
     setSmoothScrollFactor(isOpening ? factor : 1f - factor);
     setScrollLocked(factor == 1f);
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+    if (!Settings.instance().useEdgeToEdge()) {
       popupLayout.setIgnoreBottom(factor != 0f);
     }
   }
@@ -2367,7 +2377,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     popupLayout.setBoundController(this);
     popupLayout.setPopupHeightProvider(this);
     popupLayout.setOverlayStatusBar(overlayStatusBar);
-    popupLayout.init(Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM);
+    popupLayout.init(Settings.instance().useEdgeToEdge());
     popupLayout.setAlwaysApplyIme(true);
     popupLayout.setHideKeyboard();
     popupLayout.setNeedRootInsets();
@@ -2378,11 +2388,11 @@ public class ShareController extends TelegramViewController<ShareController.Args
   }
 
   @Override
-  public boolean dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, int left, int top, int right, int bottom) {
-    boolean updated = super.dispatchSystemInsets(parentView, originalParams, left, top, right, bottom);
-    recyclerView.setPadding(0, 0, 0, systemInsets.bottom);
-    setExtraBottomInset(systemInsets.bottom - originalParams.bottomMargin);
-    return updated;
+  public void dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, Rect legacyInsets, Rect insets, Rect insetsWithoutIme, Rect systemInsets, Rect systemInsetsWithoutIme, boolean fitsSystemWindows) {
+    super.dispatchSystemInsets(parentView, originalParams, legacyInsets, insets, insetsWithoutIme, systemInsets, systemInsetsWithoutIme, fitsSystemWindows);
+    originalParams.bottomMargin = 0;
+    recyclerView.setPadding(0, 0, 0, insets.bottom);
+    setBottomInset(insets.bottom, insetsWithoutIme.bottom);
   }
 
   @Override
@@ -2539,6 +2549,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
         }
 
         @Override
+        @SuppressWarnings("deprecation")
         public int getOpacity () {
           return PixelFormat.UNKNOWN;
         }
@@ -2690,12 +2701,29 @@ public class ShareController extends TelegramViewController<ShareController.Args
     emojiButton.setTranslationY(y);
   }
 
+  private boolean needBottomOffset () {
+    return isSendHidden && extraBottomInset > extraBottomInsetWithoutIme;
+  }
+
   @Override
-  protected void onExtraBottomInsetChanged (int extraBottomInset) {
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
     if (keyboardFrameLayout != null) {
-      keyboardFrameLayout.setExtraBottomInset(extraBottomInset);
+      keyboardFrameLayout.setExtraBottomInset(extraBottomInset, extraBottomInsetWithoutIme);
     }
     Views.setLayoutHeight(sendButton, Screen.dp(56f) + extraBottomInset);
+    spaceView.setLayoutHeight(extraBottomInset, false);
+    spaceView.setVisibility(needBottomOffset() ? View.VISIBLE : View.INVISIBLE);
+    if (needBottomOffset()) {
+      Views.setBottomMargin(bottomWrap, extraBottomInset);
+    } else {
+      Views.setBottomMargin(bottomWrap, 0);
+    }
     checkCommentPosition();
     checkButtonsPosition();
   }
@@ -2783,7 +2811,13 @@ public class ShareController extends TelegramViewController<ShareController.Args
         params.addRule(RelativeLayout.ABOVE, R.id.btn_send);
         params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, 0);
       }
+      params.bottomMargin = needBottomOffset() ? extraBottomInset : 0;
+      if (spaceView != null) {
+        spaceView.setLayoutHeight(extraBottomInset, false);
+        spaceView.setVisibility(needBottomOffset() ? View.VISIBLE : View.INVISIBLE);
+      }
       okButton.setVisibility(isHidden ? View.VISIBLE : View.INVISIBLE);
+      Views.updateLayoutParams(bottomWrap);
     }
   }
 
@@ -2980,7 +3014,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
         keyboardFrameLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
         keyboardFrameLayout.setParentView(bottomWrap, contentView, wrapView);
         keyboardFrameLayout.setUpdateTranslationListener(this::onKeyboardLayoutTranslation);
-        keyboardFrameLayout.setExtraBottomInset(extraBottomInset);
+        keyboardFrameLayout.setExtraBottomInset(extraBottomInset, extraBottomInsetWithoutIme);
 
         textFormattingLayout = keyboardFrameLayout.contentView.textFormattingLayout;
         textFormattingLayout.init(this, inputView, new TextFormattingLayout.Delegate() {

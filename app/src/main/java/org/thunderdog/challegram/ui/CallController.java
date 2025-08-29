@@ -109,7 +109,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 
-public class CallController extends ViewController<CallController.Arguments> implements TdlibCache.UserDataChangeListener, TdlibCache.CallStateChangeListener, View.OnClickListener, FactorAnimator.Target, Runnable, CallControlsLayout.CallControlCallback, ActivityResultHandler {
+public class CallController extends ViewController<CallController.Arguments> implements TdlibCache.UserDataChangeListener, TdlibCache.CallStateChangeListener, View.OnClickListener, FactorAnimator.Target, Runnable, CallControlsLayout.CallControlCallback, ActivityResultHandler, Screen.StatusBarHeightChangeListener {
   private static final boolean DEBUG_FADE_BRANDING = true;
   private static final int SCREEN_CAPTURE_REQUEST_CODE = 1001;
 
@@ -347,6 +347,26 @@ public class CallController extends ViewController<CallController.Arguments> imp
   }
 
   @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    Views.setPaddingBottom(buttonWrap, extraBottomInset);
+    Views.setPaddingBottom(callControlsLayout, extraBottomInset);
+  }
+
+  @Override
+  public void onStatusBarHeightChanged (int newHeight) {
+    int startMargin = Math.max(Screen.dp(18f) + newHeight, Screen.dp(42f));
+    Views.setTopMargin(brandWrap, startMargin);
+    Views.setTopMargin(nameView, startMargin + Screen.dp(34f));
+    Views.setTopMargin(stateView, startMargin + Screen.dp(94f));
+  }
+
+  @Override
   protected View onCreateView (final Context context) {
     final FrameLayoutFix contentView = new FrameLayoutFix(context) {
       @Override
@@ -478,7 +498,9 @@ public class CallController extends ViewController<CallController.Arguments> imp
 
     // Top-left corner
 
-    params.topMargin = Screen.dp(76f);
+    int startMargin = Math.max(Screen.dp(18f) + Screen.getStatusBarHeight(), Screen.dp(42f));
+
+    params.topMargin = startMargin + Screen.dp(34f);
     params.leftMargin = params.rightMargin = Screen.dp(18f);
 
     nameView = new EmojiTextView(context) {
@@ -514,7 +536,7 @@ public class CallController extends ViewController<CallController.Arguments> imp
     emojiStatusHelper = new EmojiStatusHelper(tdlib, nameView, null);
 
     params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-    params.topMargin = Screen.dp(136f);
+    params.topMargin = startMargin + Screen.dp(94f);
     params.leftMargin = params.rightMargin = Screen.dp(18f);
 
     stateView = new TextView(context);
@@ -530,8 +552,9 @@ public class CallController extends ViewController<CallController.Arguments> imp
     stateView.setLayoutParams(params);
     contentView.addView(stateView);
 
+    Screen.addStatusBarHeightListener(this);
     params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-    params.topMargin = Screen.dp(42f);
+    params.topMargin = startMargin;
     params.leftMargin = params.rightMargin = Screen.dp(18f);
     brandWrap = new LinearLayout(context);
     if (DEBUG_FADE_BRANDING) {
@@ -763,6 +786,7 @@ public class CallController extends ViewController<CallController.Arguments> imp
     buttonWrap.addView(speakerButtonContainer);
     buttonWrap.addView(messageButtonContainer);
     buttonWrap.addView(wrapButton.apply(muteButtonView));
+    Views.setPaddingBottom(buttonWrap, extraBottomInset);
     Drawable drawable = ScrimUtil.makeCubicGradientScrimDrawable(0xff000000, 2, Gravity.BOTTOM, false);
     drawable.setAlpha((int) (255f * .3f));
     ViewUtils.setBackground(buttonWrap, drawable);
@@ -771,6 +795,7 @@ public class CallController extends ViewController<CallController.Arguments> imp
     // Answer controls
 
     callControlsLayout = new CallControlsLayout(context, this);
+    Views.setPaddingBottom(callControlsLayout, extraBottomInset);
     callControlsLayout.setCallback(this);
     callControlsLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     contentView.addView(callControlsLayout);
@@ -1638,6 +1663,7 @@ public class CallController extends ViewController<CallController.Arguments> imp
   @Override
   public void destroy () {
     super.destroy();
+    Screen.removeStatusBarHeightListener(this);
     tdlib.cache().unsubscribeFromCallUpdates(call.id, this);
     tdlib.cache().removeUserDataListener(call.userId, this);
     avatarView.performDestroy();

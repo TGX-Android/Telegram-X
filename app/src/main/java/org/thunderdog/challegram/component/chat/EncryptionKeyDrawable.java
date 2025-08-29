@@ -97,6 +97,7 @@ public class EncryptionKeyDrawable extends Drawable {
   public void setColorFilter (ColorFilter cf) { }
 
   @Override
+  @SuppressWarnings("deprecation")
   public int getOpacity () {
     return PixelFormat.UNKNOWN;
   }

@@ -135,6 +135,11 @@ public class ChatFolderInviteLinkController extends BottomSheetViewController<Ch
   }
 
   @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
   protected ViewController<?> onCreatePagerItemForPosition (Context context, int position) {
     if (position != 0) return null;
     setHeaderPosition(getContentOffset() + HeaderView.getTopOffset());
