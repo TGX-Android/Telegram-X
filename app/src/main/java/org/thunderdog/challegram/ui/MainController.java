@@ -1694,6 +1694,11 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   }
 
   @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
   protected ViewController<?> onCreatePagerItemForPosition (Context context, final int position) {
     final ViewController<?> c;
     long pagerItemId = getPagerItemId(position);

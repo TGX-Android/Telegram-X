@@ -104,10 +104,16 @@ public abstract class RecyclerViewController<T> extends TelegramViewController<T
     return true;
   }
 
+  protected boolean needRecyclerBottomInset () {
+    return true;
+  }
+
   @Override
   protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
     super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
-    Views.applyBottomInset(recyclerView, extraBottomInset);
+    if (needRecyclerBottomInset()) {
+      Views.applyBottomInset(recyclerView, extraBottomInset);
+    }
   }
 
   @SuppressLint("InflateParams")
@@ -119,7 +125,9 @@ public abstract class RecyclerViewController<T> extends TelegramViewController<T
     }
     wrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     recyclerView = onCreateRecyclerView();
-    Views.applyBottomInset(recyclerView, extraBottomInset);
+    if (needRecyclerBottomInset()) {
+      Views.applyBottomInset(recyclerView, extraBottomInset);
+    }
     Views.setScrollBarPosition(recyclerView);
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override

@@ -246,6 +246,9 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
   }
 
   @Override
+  public abstract boolean supportsBottomInset ();
+
+  @Override
   protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
     super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
     invalidateAllItemDecorations();
@@ -653,6 +656,9 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
     public boolean needBottomDecorationOffsets (RecyclerView parent) {
       return true;
     }
+
+    @Override
+    public abstract boolean supportsBottomInset ();
 
     public final void ensureMaxScrollY (int scrollY, int maxScrollY) {
       CustomRecyclerView recyclerView = getRecyclerView();

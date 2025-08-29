@@ -75,6 +75,17 @@ public class StickersTrendingController extends ViewController<Void> implements 
   private MediaStickersAdapter adapter;
 
   @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    Views.applyBottomInset(recyclerView, extraBottomInset);
+  }
+
+  @Override
   protected View onCreateView (Context context) {
     adapter = new MediaStickersAdapter(this, this, !isEmoji, this);
     adapter.setIsBig();
@@ -88,6 +99,7 @@ public class StickersTrendingController extends ViewController<Void> implements 
     });
 
     recyclerView = (RecyclerView) Views.inflate(context(), R.layout.recycler, null);
+    Views.applyBottomInset(recyclerView, extraBottomInset);
     Views.setScrollBarPosition(recyclerView);
     // recyclerView.setItemAnimator(null);
     recyclerView.setLayoutManager(manager);

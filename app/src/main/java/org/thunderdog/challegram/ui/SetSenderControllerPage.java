@@ -66,7 +66,12 @@ public class SetSenderControllerPage extends BottomSheetViewController.BottomShe
     headerView.setWillNotDraw(false);
     addThemeInvalidateListener(headerView);
     return headerView;
-  };
+  }
+
+  @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
 
   @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {

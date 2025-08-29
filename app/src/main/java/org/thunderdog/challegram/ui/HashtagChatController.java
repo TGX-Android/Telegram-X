@@ -160,6 +160,11 @@ public class HashtagChatController extends ViewPagerController<HashtagChatContro
   }
 
   @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
   protected ViewController<?> onCreatePagerItemForPosition (Context context, int position) {
     Arguments args = getArgumentsStrict();
     switch (position) {

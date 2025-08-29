@@ -161,9 +161,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
   }
 
   @Override
-  public final boolean supportsBottomInset () {
-    return true;
-  }
+  public abstract boolean supportsBottomInset ();
 
   @Override
   @CallSuper

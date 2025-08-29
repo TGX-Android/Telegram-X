@@ -44,6 +44,11 @@ public class SimpleViewPagerController extends ViewPagerController<Object> {
   }
 
   @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
   protected int getBackButton () {
     return BackHeaderButton.TYPE_BACK;
   }

@@ -47,6 +47,10 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
     this.reactionType = reactionType;
   }
 
+  @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
 
   @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
