@@ -1295,6 +1295,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           }
           onHide();
         } else if (finalFactor == 1f) {
+          context().getRootView().forceHideKeyboard();
           popupView.onCustomShowComplete();
           mediaView.setDisableAnimations(false);
           if (!SET_FULLSCREEN_ON_OPEN) {

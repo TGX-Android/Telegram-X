@@ -128,7 +128,7 @@ public class RootFrameLayout extends FrameLayoutFix {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       UI.setFullscreenIfNeeded(this);
       setOnApplyWindowInsetsListener((v, insets) -> {
-        processWindowInsets(insets);
+        processWindowInsets(insets, false);
         return insets.consumeSystemWindowInsets();
       });
     }
@@ -240,18 +240,35 @@ public class RootFrameLayout extends FrameLayoutFix {
 
   private final Rect legacyInsets = new Rect();
 
-  public void processWindowInsets (Object insetsRaw) {
+  private static final boolean CAN_DETECT_IME = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R;
+  private boolean hasIgnoredChanged;
+
+  public void forceHideKeyboard () {
+    if (Config.ENABLE_EDGE_TO_EDGE) {
+      if (hasIgnoredChanged && systemInsetsWithoutIme.bottom == systemInsets.bottom) {
+        effectiveInsets.set(effectiveInsetsWithoutIme);
+        notifyChanges(true);
+      }
+    }
+  }
+
+  private void processWindowInsets (Object insetsRaw, boolean force) {
     boolean hadInsets = hasInsets;
     boolean systemInsetsUpdated = updateInsets(systemInsets, insetsRaw, true);
     boolean systemInsetsWithoutImeUpdated = updateInsets(systemInsetsWithoutIme, insetsRaw, false);
     boolean verticalSystemInsetsUpdated = !hasInsets || systemInsets.top != prevSystemInsets.top || systemInsets.bottom != prevSystemInsets.bottom;
     boolean horizontalSystemInsetsUpdated = !hasInsets || systemInsets.left != prevSystemInsets.left || systemInsets.right != prevSystemInsets.right;
+    final int imeHeight = CAN_DETECT_IME ? getImeHeight(insetsRaw) : 0;
+    final boolean isKeyboardVisible = imeHeight > 0;
 
-    boolean ignoreChanges = Config.ENABLE_EDGE_TO_EDGE && UI.getContext(getContext()).isInFullScreen() && (this instanceof BaseRootLayout || (UI.getContext(getContext()).isHideNavigation() && verticalSystemInsetsUpdated && !horizontalSystemInsetsUpdated));
+    boolean ignoreChanges = Config.ENABLE_EDGE_TO_EDGE && !force &&
+      UI.getContext(getContext()).isInFullScreen() &&
+      (this instanceof BaseRootLayout || (UI.getContext(getContext()).isHideNavigation() && verticalSystemInsetsUpdated && !horizontalSystemInsetsUpdated));
+    hasIgnoredChanged = ignoreChanges;
     boolean effectiveInsetsUpdated = !ignoreChanges && U.setRect(effectiveInsets, systemInsets.left, systemInsets.top, systemInsets.right, systemInsets.bottom);
     if (!ignoreChanges) {
       effectiveInsets.set(systemInsets);
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      if (CAN_DETECT_IME) {
         effectiveInsetsWithoutIme.set(systemInsetsWithoutIme);
       }
     }
@@ -259,8 +276,7 @@ public class RootFrameLayout extends FrameLayoutFix {
     windowInsetsRaw = insetsRaw;
     hasInsets = true;
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-      int imeHeight = getImeHeight(insetsRaw);
+    if (CAN_DETECT_IME) {
       if (imeHeight > 0) {
         Keyboard.processSize(imeHeight);
         setKeyboardVisible(true);
@@ -290,7 +306,7 @@ public class RootFrameLayout extends FrameLayoutFix {
       }
     }
 
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R && !ignoreChanges) {
+    if (!CAN_DETECT_IME && !ignoreChanges) {
       effectiveInsetsWithoutIme.set(systemInsetsWithoutIme);
       if (isKeyboardVisible && effectiveInsetsWithoutIme.bottom == effectiveInsets.bottom) {
         effectiveInsetsWithoutIme.bottom = Math.max(0, effectiveInsets.bottom - Keyboard.getSize());
@@ -298,14 +314,18 @@ public class RootFrameLayout extends FrameLayoutFix {
     }
 
     if (effectiveInsetsUpdated || systemInsetsUpdated) {
-      for (InsetsChangeListener listener : listeners) {
-        listener.onInsetsChanged(this, effectiveInsets, effectiveInsetsWithoutIme, systemInsets, systemInsetsWithoutIme, hadInsets);
-      }
-      requestLayout();
+      notifyChanges(hadInsets);
     }
 
     prevSystemInsets.set(systemInsets);
     hasInsets = true;
+  }
+
+  private void notifyChanges (boolean hadInsets) {
+    for (InsetsChangeListener listener : listeners) {
+      listener.onInsetsChanged(this, effectiveInsets, effectiveInsetsWithoutIme, systemInsets, systemInsetsWithoutIme, hadInsets);
+    }
+    requestLayout();
   }
 
   private boolean shouldIgnoreBottomMargin (int bottom) {
