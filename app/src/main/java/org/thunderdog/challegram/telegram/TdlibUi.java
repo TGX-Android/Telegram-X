@@ -3763,9 +3763,16 @@ public class TdlibUi extends Handler {
         TdApi.InternalLinkTypeUnknownDeepLink unknownDeepLink = (TdApi.InternalLinkTypeUnknownDeepLink) linkType;
         tdlib.send(new TdApi.GetDeepLinkInfo(unknownDeepLink.link), (deepLink, error) -> {
           if (error != null) {
-            if (after != null) {
-              post(() -> after.runWithBool(false));
-            }
+            post(() -> {
+              if (error.code == 404) {
+                showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.DeepLinkUnsupported), openParameters);
+              } else {
+                showLinkTooltip(tdlib, R.drawable.baseline_warning_24, TD.toErrorString(error), openParameters);
+              }
+              if (after != null) {
+                after.runWithBool(true); // Forcing true to avoid trying to open it again.
+              }
+            });
           } else {
             post(() -> {
               ViewController<?> c = context.context().navigation().getCurrentStackItem();
