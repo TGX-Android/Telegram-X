@@ -461,6 +461,8 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     return 60.0f;
   }
 
+  private boolean isGestureNavigationEnabled;
+
   @Override
   public void onCreate (Bundle savedInstanceState) {
     UI.setContext(this);
@@ -483,6 +485,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (Config.USE_CUSTOM_NAVIGATION_COLOR) {
       this.isWindowLight = !Theme.isDark();
     }
+    this.isGestureNavigationEnabled = Screen.isGesturalNavigationEnabled(getResources());
     // UI.resetSizes();
     setActivityState(UI.State.RESUMED);
     TdlibManager.instance().watchDog().onActivityCreate(this);
@@ -1137,6 +1140,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       throw t;
     }
     checkAutoNightMode();
+    setGestureNavigationEnabled(Screen.isGesturalNavigationEnabled(getResources()));
     Intents.revokeFileReadPermissions();
     enableFocus();
     if (timeFilter == null) {
@@ -1309,6 +1313,13 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
   }
 
+  private void setGestureNavigationEnabled (boolean isEnabled) {
+    if (this.isGestureNavigationEnabled != isEnabled) {
+      this.isGestureNavigationEnabled = isEnabled;
+      updateNavigationBarColor();
+    }
+  }
+
   @Override
   public void onConfigurationChanged (@NonNull Configuration newConfig)  {
     super.onConfigurationChanged(newConfig);
@@ -1320,6 +1331,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (camera != null) {
       camera.onConfigurationChanged(newConfig);
     }
+    setGestureNavigationEnabled(Screen.isGesturalNavigationEnabled(getResources()));
     currentOrientation = newConfig.orientation;
     Lang.checkLanguageCode();
     setSystemNightMode(newConfig.uiMode & Configuration.UI_MODE_NIGHT_MASK);
@@ -3352,7 +3364,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         color = ColorUtils.fromToArgb(color, Theme.getColor(ColorId.passcode), passcodeFactor);
         isLight = isLight && passcodeFactor < .5f;
       }
-      UI.setNavigationBarColor(getWindow(), color);
+      UI.setNavigationBarColor(getWindow(), color, isGestureNavigationEnabled);
       if (this.isWindowLight != isLight) {
         this.isWindowLight = isLight;
         UI.setLightSystemBars(getWindow(), isLight, Theme.needLightStatusBar(), lastWindowVisibility, true);

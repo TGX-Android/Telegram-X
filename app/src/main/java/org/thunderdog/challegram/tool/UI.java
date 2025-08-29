@@ -611,11 +611,15 @@ public class UI {
     w.getDecorView().setSystemUiVisibility(visibility);
   }
 
-  public static void setNavigationBarColor (Window w, int color) {
+  public static void setNavigationBarColor (Window w, int color, boolean isGestureNavigationEnabled) {
     if (Config.USE_CUSTOM_NAVIGATION_COLOR) {
       if (Settings.instance().useEdgeToEdge()) {
-        int transparentColor = Color.alpha(color) == 255 ? ColorUtils.alphaColor(.75f , color) : color;
-        w.setNavigationBarColor(transparentColor);
+        if (isGestureNavigationEnabled) {
+          w.setNavigationBarColor(Color.TRANSPARENT);
+        } else {
+          int transparentColor = Color.alpha(color) == 255 ? ColorUtils.alphaColor(.75f, color) : color;
+          w.setNavigationBarColor(transparentColor);
+        }
       } else {
         w.setNavigationBarColor(color);
       }
@@ -640,7 +644,7 @@ public class UI {
       w.setBackgroundDrawableResource(R.drawable.transparent);
     } else {
       if (Config.USE_CUSTOM_NAVIGATION_COLOR) {
-        setNavigationBarColor(w, Theme.backgroundColor());
+        setNavigationBarColor(w, Theme.backgroundColor(), Screen.isGesturalNavigationEnabled(getResources()));
       } else {
         w.setNavigationBarColor(NAVIGATION_BAR_COLOR);
       }
