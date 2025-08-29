@@ -608,6 +608,25 @@ public class MessagesController extends ViewController<MessagesController.Argume
     checkScrollButtonOffsets();
     updateMessagesViewInset();
     onMessagesFrameChanged();
+    if (searchControlsForChannel) {
+      Views.setLayoutHeight(searchControlsLayout, Screen.dp(48f) + extraBottomInset);
+    }
+    Views.setPaddingBottom(searchControlsReveal, extraBottomInset);
+    if (searchControlsLayout != null && needSearchControlsTranslate()) {
+      searchControlsLayout.setTranslationY((Screen.dp(49f) + extraBottomInset) * (1f - searchControlsFactor));
+    }
+    updateSearchControlsInset();
+  }
+
+  private void updateSearchControlsInset () {
+    if (searchControlsLayout != null) {
+      for (int i = 0; i < searchControlsLayout.getChildCount(); i++) {
+        View view = searchControlsLayout.getChildAt(i);
+        if (view != null && view != searchControlsReveal) {
+          Views.setBottomMargin(view, extraBottomInset / 2);
+        }
+      }
+    }
   }
 
   private void updateMessagesViewInset () {
@@ -11362,6 +11381,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     searchControlsReveal = new RippleRevealView(context);
     searchControlsReveal.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     searchControlsLayout.addView(searchControlsReveal);
+    Views.setPaddingBottom(searchControlsReveal, extraBottomInset);
     addThemeInvalidateListener(searchControlsReveal);
 
     fp = FrameLayoutFix.newParams(Screen.dp(52f), Screen.dp(49f), Gravity.LEFT | Gravity.CENTER_VERTICAL);
@@ -11436,6 +11456,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     setSearchInProgress(0f);
     setSearchControlsFactor(0f);
+    updateSearchControlsInset();
   }
 
   private boolean searchControlsForChannel;
@@ -11468,7 +11489,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           rp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
           rp.addRule(RelativeLayout.ALIGN_BOTTOM, 0);
           rp.addRule(RelativeLayout.ALIGN_TOP, 0);
-          rp.height = Screen.dp(48f);
+          rp.height = Screen.dp(48f) + extraBottomInset;
         } else {
           rp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, 0);
           rp.addRule(RelativeLayout.ALIGN_BOTTOM, R.id.msg_bottom);
@@ -11558,7 +11579,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       boolean translate = needSearchControlsTranslate();
       searchControlsReveal.setRevealFactor(translate ? 1f : factor);
-      searchControlsLayout.setTranslationY(translate ? Screen.dp(49f) * (1f - factor) : 0f);
+      searchControlsLayout.setTranslationY(translate ? (Screen.dp(49f) + extraBottomInset) * (1f - factor) : 0f);
       if (translate) {
         checkScrollButtonOffsets();
       }
@@ -11570,7 +11591,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private float getSearchControlsOffset () {
-    return needSearchControlsTranslate() && searchControlsFactor != -1f ? Screen.dp(49f) * searchControlsFactor : 0f;
+    return needSearchControlsTranslate() && searchControlsFactor != -1f ? (Screen.dp(49f) + extraBottomInset) * (searchControlsFactor) : 0f;
   }
 
   @Override
