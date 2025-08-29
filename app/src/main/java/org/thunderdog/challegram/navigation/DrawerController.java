@@ -228,7 +228,14 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   public void dispatchSystemInsets (View parentView, ViewGroup.MarginLayoutParams originalParams, Rect legacyInsets, Rect insets, Rect insetsWithoutIme, Rect systemInsets, Rect systemInsetsWithoutIme, boolean fitsSystemWindows) {
     super.dispatchSystemInsets(parentView, originalParams, legacyInsets, insets, insetsWithoutIme, systemInsets, systemInsetsWithoutIme, fitsSystemWindows);
     originalParams.bottomMargin = 0;
-    Views.applyBottomInset(recyclerView, this.systemInsets.bottom);
+    originalParams.leftMargin = 0;
+    recyclerView.setPadding(systemInsets.left, 0, 0, systemInsets.bottom);
+    recyclerView.setClipToPadding(systemInsets.left == 0 && systemInsets.bottom == 0);
+    headerView.setPadding(systemInsets.left, 0, 0, 0);
+  }
+
+  private int currentWidth () {
+    return currentWidth + systemInsets.left;
   }
 
   @Override
@@ -237,6 +244,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
 
     currentWidth = Math.min(Screen.smallestSide() - Screen.dp(56f), Screen.dp(300f)) + shadowWidth;
 
+    int currentWidth = currentWidth();
     contentView = new DrawerContentView(context) {
       @Override
       protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
@@ -256,6 +264,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     contentView.addView(shadowView);
 
     headerView = new DrawerHeaderView(context, this);
+
     addThemeInvalidateListener(headerView);
     headerView.setLayoutParams(FrameLayoutFix.newParams(currentWidth - shadowWidth, Screen.dp(148f) + HeaderView.getTopOffset(), Gravity.TOP));
     contentView.addView(headerView);
@@ -1012,7 +1021,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   }
 
   public int getWidth () {
-    return currentWidth;
+    return currentWidth();
   }
 
   public int getShadowWidth () {
@@ -1094,7 +1103,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
       ValueAnimator animator = AnimatorUtils.simpleValueAnimator();
       final float startFactor = getFactor();
       animator.addUpdateListener(animation -> setFactor(startFactor - startFactor * AnimatorUtils.getFraction(animation)));
-      animator.setDuration(NavigationController.calculateDropDuration(currentWidth + lastTranslation(), velocity, 300, 180));
+      animator.setDuration(NavigationController.calculateDropDuration(currentWidth() + lastTranslation(), velocity, 300, 180));
       animator.setInterpolator(AnimatorUtils.DECELERATE_INTERPOLATOR);
       animator.addListener(new AnimatorListenerAdapter() {
         @Override
@@ -1200,7 +1209,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
       if (Lang.rtl()) {
         contentView.setTranslationX(getScreenWidth());
       } else {
-        contentView.setTranslationX(-currentWidth);
+        contentView.setTranslationX(-currentWidth());
       }
     }
 
@@ -1214,11 +1223,11 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   public void translate (int lastScrollX) {
     float translation;
     if (Lang.rtl()) {
-      translation = isVisible ? currentWidth - lastScrollX : -lastScrollX;
+      translation = isVisible ? currentWidth() - lastScrollX : -lastScrollX;
     } else {
-      translation = isVisible ? currentWidth + lastScrollX : lastScrollX;
+      translation = isVisible ? currentWidth() + lastScrollX : lastScrollX;
     }
-    setFactor(MathUtils.clamp(translation / (float) currentWidth));
+    setFactor(MathUtils.clamp(translation / (float) currentWidth()));
   }
 
   private float factor;
@@ -1239,11 +1248,11 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
 
       if (Lang.rtl()) {
         float currentScreenWidth = getScreenWidth();
-        translation = currentScreenWidth - (currentWidth - shadowWidth) * factor;
-        oldTranslation = currentScreenWidth - (currentWidth - shadowWidth) * this.factor;
+        translation = currentScreenWidth - (currentWidth() - shadowWidth) * factor;
+        oldTranslation = currentScreenWidth - (currentWidth() - shadowWidth) * this.factor;
       } else {
-        translation = -currentWidth * (1f - factor);
-        oldTranslation = -currentWidth * (1f - this.factor);
+        translation = -currentWidth() * (1f - factor);
+        oldTranslation = -currentWidth() * (1f - this.factor);
       }
 
       if (factor != 0f && factor != 1f && Math.abs(oldTranslation - translation) < 1f) {
@@ -1261,7 +1270,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
       /*float cx = currentWidth * factor;
       overlay.setTranslationX(cx <= 1f ? 0 : cx - 1f);*/
       if (currentView != null) {
-        currentView.setClipLeft((int) (currentWidth * factor));
+        currentView.setClipLeft((int) (currentWidth() * factor));
       }
 
       if (factor == 0f && !StringUtils.isEmpty(shareTextOnClose)) {
@@ -1275,7 +1284,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   }
 
   public float lastTranslation () {
-    return currentWidth * (1f - factor);
+    return currentWidth() * (1f - factor);
   }
 
   /*private static class DrawerItem {
