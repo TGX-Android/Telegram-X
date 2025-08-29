@@ -44,6 +44,7 @@ import android.view.ViewParent;
 import android.view.WindowManager;
 import android.view.animation.Interpolator;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -112,12 +113,14 @@ import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.widget.CustomTextView;
+import org.thunderdog.challegram.widget.FillingDecoration;
 import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.InfiniteRecyclerView;
 import org.thunderdog.challegram.widget.MaterialEditText;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
+import org.thunderdog.challegram.widget.RootFrameLayout;
 import org.thunderdog.challegram.widget.SeparatorView;
 import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.TimerView;
@@ -1905,6 +1908,43 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     showSettings(new SettingsWrapBuilder(id).setRawItems(rawItems).setIntDelegate(delegate).setAllowResize(allowResize));
   }
 
+  private static class SettingsWrapLayout extends FrameLayoutFix implements RootFrameLayout.MarginModifier {
+    public SettingsWrapLayout (@NonNull Context context) {
+      super(context);
+    }
+
+    @Override
+    public void onApplyMarginInsets (View child, LayoutParams params, Rect legacyInsets, Rect insets, Rect insetsWithoutIme) {
+      Views.setMargins(params, insets.left, insets.top, insets.right, 0);
+      setBottomInset(insetsWithoutIme.bottom);
+    }
+
+    private int bottomInset;
+
+    private void setBottomInset (int extraBottomInsetWithoutIme) {
+      if (this.bottomInset != extraBottomInsetWithoutIme) {
+        this.bottomInset = extraBottomInsetWithoutIme;
+        if (footerView != null) {
+          footerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f) + extraBottomInsetWithoutIme, Gravity.BOTTOM));
+          Views.setPaddingBottom(footerView, extraBottomInsetWithoutIme);
+        }
+        Views.applyBottomInset(recyclerView, footerView == null ? extraBottomInsetWithoutIme : 0);
+        Views.setBottomMargin(shadowView, Screen.dp(56f) + extraBottomInsetWithoutIme);
+      }
+    }
+
+    private RecyclerView recyclerView;
+    private FrameLayout footerView;
+    private SeparatorView shadowView;
+
+    private void setBottomInsetTargets (RecyclerView recyclerView, FrameLayout footerView, SeparatorView shadowView, int inset) {
+      this.recyclerView = recyclerView;
+      this.footerView = footerView;
+      this.shadowView = shadowView;
+      this.bottomInset = inset;
+    }
+  }
+
   @SuppressWarnings("deprecation")
   public final @Nullable SettingsWrap showSettings (final SettingsWrapBuilder b) {
     if (isStackLocked()) {
@@ -1938,8 +1978,8 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       Collections.addAll(items, b.rawItems);
     }
 
-    final FrameLayoutFix popupView = new FrameLayoutFix(context);
-    popupView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    final SettingsWrapLayout settingsLayout = new SettingsWrapLayout(context);
+    settingsLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
     final SettingsWrap settings = new SettingsWrap();
 
@@ -1973,6 +2013,36 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         }
       }
     };
+    recyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
+      @Override
+      public void onDraw (@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+        super.onDraw(c, parent, state);
+
+        LinearLayoutManager manager = (LinearLayoutManager) parent.getLayoutManager();
+
+        int maxBottom = -1;
+        boolean hasBottom = false;
+        for (int i = 0; i < manager.getChildCount(); i++) {
+          View view = manager.getChildAt(i);
+          if (view != null) {
+            int bottom = manager.getDecoratedBottom(view);
+            if (hasBottom) {
+              maxBottom = Math.max(bottom, maxBottom);
+            } else {
+              maxBottom = bottom;
+            }
+            hasBottom = true;
+          }
+        }
+
+        if (hasBottom) {
+          int height = parent.getMeasuredHeight();
+          if (height > maxBottom) {
+            c.drawRect(0, maxBottom, parent.getMeasuredWidth(), height, Paints.fillingPaint(Theme.fillingColor()));
+          }
+        }
+      }
+    });
     settings.recyclerView = recyclerView;
     if (b.allowResize) {
       recyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
@@ -1994,7 +2064,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       if (firstPosition == 0) {
         View view = manager.findViewByPosition(0);
         if (view != null) {
-          return Math.min(Screen.currentHeight(), Math.min(popupView.getMeasuredHeight() - view.getTop(), settings.adapter.measureHeight(-1)) + Screen.dp(56f) + (Screen.needsKeyboardPadding(context) ? Screen.getNavigationBarFrameHeight() : 0));
+          return Math.min(Screen.currentHeight(), Math.min(settingsLayout.getMeasuredHeight() - view.getTop(), settings.adapter.measureHeight(-1)) + Screen.dp(56f) + extraBottomInsetWithoutIme);
         }
       }
       return Screen.currentHeight();
@@ -2005,6 +2075,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     }
     popupLayout.addStatusBar();
     popupLayout.setDismissListener(b.dismissListener);
+    popupLayout.setNeedFullScreen(true);
 
     final View.OnClickListener onClickListener = v -> {
       final int viewId = v.getId();
@@ -2085,7 +2156,8 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         }
       };
       ViewSupport.setThemedBackground(footerView, ColorId.filling, this);
-      footerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f), Gravity.BOTTOM));
+      footerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f) + extraBottomInsetWithoutIme, Gravity.BOTTOM));
+      Views.setPaddingBottom(footerView, extraBottomInsetWithoutIme);
 
       for (int i = 0; i < 2; i++) {
         TextView button = new NoScrollTextView(context);
@@ -2119,69 +2191,33 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     }
 
     FrameLayoutFix.LayoutParams params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM);
-    params.bottomMargin = footerView != null ? Screen.dp(56f) : 0;
+    params.bottomMargin = footerView != null ? Screen.dp(56f) + extraBottomInsetWithoutIme : 0;
 
+    Views.applyBottomInset(recyclerView, footerView == null ? extraBottomInsetWithoutIme : 0);
     recyclerView.setAdapter(settings.adapter);
     recyclerView.setLayoutParams(params);
-
-    popupView.addView(recyclerView);
-    if (footerView != null) {
-      popupView.addView(footerView);
-    }
+    addThemeInvalidateListener(recyclerView);
 
     SeparatorView shadowView = null;
 
+    settingsLayout.addView(recyclerView);
+    if (footerView != null) {
+      settingsLayout.addView(footerView);
+    }
+
     if (footerView != null) {
       params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(1f), Gravity.BOTTOM);
-      params.bottomMargin = Screen.dp(56f);
+      params.bottomMargin = Screen.dp(56f) + extraBottomInsetWithoutIme;
       shadowView = SeparatorView.simpleSeparator(context, params, true);
       shadowView.setAlignBottom();
       addThemeInvalidateListener(shadowView);
-      popupView.addView(shadowView);
+      settingsLayout.addView(shadowView);
     }
 
-    int popupAdditionalHeight = 0;
-
-    if (Screen.needsKeyboardPadding(context)) {
-      popupAdditionalHeight = Screen.getNavigationBarFrameHeight();
-
-      View dummyView = new View(context);
-      dummyView.setBackgroundColor(Theme.getColor(ColorId.filling));
-      addThemeBackgroundColorListener(dummyView, ColorId.filling);
-
-      FrameLayoutFix.LayoutParams modifiedParams = (FrameLayoutFix.LayoutParams) recyclerView.getLayoutParams();
-      modifiedParams.bottomMargin += popupAdditionalHeight;
-      recyclerView.setLayoutParams(modifiedParams);
-
-      if (footerView != null) {
-        modifiedParams = (FrameLayoutFix.LayoutParams) footerView.getLayoutParams();
-        modifiedParams.bottomMargin += popupAdditionalHeight;
-        footerView.setLayoutParams(modifiedParams);
-      }
-
-      if (shadowView != null) {
-        modifiedParams = (FrameLayoutFix.LayoutParams) shadowView.getLayoutParams();
-        modifiedParams.bottomMargin += popupAdditionalHeight;
-        shadowView.setLayoutParams(modifiedParams);
-      }
-
-      modifiedParams = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, popupAdditionalHeight, Gravity.BOTTOM);
-      dummyView.setLayoutParams(modifiedParams);
-
-      modifiedParams = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(1f), Gravity.BOTTOM);
-      modifiedParams.bottomMargin = popupAdditionalHeight;
-
-      SeparatorView bottomShadowView = SeparatorView.simpleSeparator(context, modifiedParams, true);
-      bottomShadowView.setAlignBottom();
-      addThemeInvalidateListener(bottomShadowView);
-      popupView.addView(bottomShadowView);
-
-      popupView.addView(dummyView);
-      popupLayout.setNeedFullScreen(true);
-    }
+    settingsLayout.setBottomInsetTargets(recyclerView, footerView, shadowView, extraBottomInset);
 
     final int height = settings.adapter.measureHeight(-1);
-    final int desiredHeight = height + (footerView != null ? Screen.dp(56f) : 0) + popupAdditionalHeight;
+    final int desiredHeight = height + (footerView != null ? Screen.dp(56f) : 0) + extraBottomInsetWithoutIme;
     final int popupHeight = Math.min(Screen.currentHeight(), desiredHeight);
 
     if (desiredHeight > Screen.currentActualHeight() && checkedIndex != -1) {
@@ -2189,7 +2225,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       ((LinearLayoutManager) recyclerView.getLayoutManager()).scrollToPositionWithOffset(checkedIndex, (Screen.currentActualHeight() - Screen.dp(56f)) / 2 - viewHeight / 2);
     }
     popupLayout.addThemeListeners(this);
-    popupLayout.showSimplePopupView(popupView, Math.min(Screen.currentHeight() / 2 + Screen.dp(56f), popupHeight));
+    popupLayout.showSimplePopupView(settingsLayout, Math.min(Screen.currentHeight() / 2 + Screen.dp(56f), popupHeight));
 
     onCreatePopupLayout(popupLayout);
     return settings;
@@ -2509,11 +2545,11 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     }
 
     final PopupLayout popupLayout = new PopupLayout(context);
-    int popupAdditionalHeight;
 
     popupLayout.setTag(this);
     popupLayout.init(true);
     popupLayout.setDismissOtherPopUps(!options.ignoreOtherPopUps);
+    popupLayout.setNeedFullScreen(true);
 
     if (delegate != null) {
       popupLayout.setDisableCancelOnTouchDown(delegate.disableCancelOnTouchdown());
@@ -2527,14 +2563,6 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
     optionsWrap.setInfo(this, tdlib(), options.info, false);
     optionsWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
-
-    if (Screen.needsKeyboardPadding(context)) {
-      popupAdditionalHeight = Screen.getNavigationBarFrameHeight();
-      optionsWrap.setPadding(0, 0, 0, popupAdditionalHeight);
-      popupLayout.setNeedFullScreen(true);
-    } else {
-      popupAdditionalHeight = 0;
-    }
 
     ShadowView shadowView = new ShadowView(context);
     shadowView.setSimpleTopShadow(true);
@@ -2557,7 +2585,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         }
       };
     }
-    int totalHeight = shadowView.getLayoutParams().height + optionsWrap.getTextHeight() + popupAdditionalHeight;
+    int totalHeight = shadowView.getLayoutParams().height + optionsWrap.getTextHeight() + extraBottomInsetWithoutIme;
     int index = 0;
     for (OptionItem item : options.items) {
       if (item == OptionItem.SEPARATOR) {
@@ -2604,6 +2632,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     final PopupLayout popupLayout = new PopupLayout(context);
     popupLayout.setTag(this);
     popupLayout.init(true);
+    popupLayout.setNeedFullScreen(true);
 
     int totalHeight = 0;
 
@@ -2619,13 +2648,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     totalHeight += shadowView.getLayoutParams().height;
 
     totalHeight += popUpBuilder.onBuildPopUp(popupLayout, optionsWrap);
-
-    if (Screen.needsKeyboardPadding(context)) {
-      int additionalHeight = Screen.getNavigationBarFrameHeight();
-      totalHeight += additionalHeight;
-      optionsWrap.setPadding(0, 0, 0, additionalHeight);
-      popupLayout.setNeedFullScreen(true);
-    }
+    totalHeight += extraBottomInsetWithoutIme;
 
     popupLayout.showSimplePopupView(optionsWrap, totalHeight);
     onCreatePopupLayout(popupLayout);
