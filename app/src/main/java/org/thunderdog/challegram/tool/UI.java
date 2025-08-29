@@ -20,6 +20,7 @@ import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.CancellationSignal;
 import android.os.Handler;
@@ -28,15 +29,19 @@ import android.os.Looper;
 import android.text.format.DateFormat;
 import android.view.View;
 import android.view.Window;
+import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
 import android.widget.Toast;
 
+import androidx.activity.EdgeToEdge;
 import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
@@ -77,6 +82,8 @@ import me.vkryl.android.SdkVersion;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.util.InvalidateDelegate;
 import me.vkryl.android.util.LayoutDelegate;
+import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceList;
 
@@ -585,6 +592,36 @@ public class UI {
 
   public static final int NAVIGATION_BAR_COLOR = false && Device.NEED_LIGHT_NAVIGATION_COLOR ? 0xfff0f0f0 : 0xff000000;
 
+  public static void setLightSystemBars (Window w, boolean lightNavigationBar, boolean lightStatusBar, int newVisibility, boolean forceNewVisibility) {
+    if (Settings.instance().useEdgeToEdge() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      android.view.WindowInsetsController insetsController = w.getInsetsController();
+      if (insetsController != null) {
+        int flags =
+          android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS |
+          android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS;
+        int setFlags =
+          BitwiseUtils.optional(android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS, lightNavigationBar) |
+          BitwiseUtils.optional(android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS, lightStatusBar);
+        insetsController.setSystemBarsAppearance(setFlags, flags);
+      }
+    }
+    int visibility = forceNewVisibility ? newVisibility : w.getDecorView().getSystemUiVisibility();
+    visibility = BitwiseUtils.setFlag(visibility, View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR, lightNavigationBar);
+    visibility = BitwiseUtils.setFlag(visibility, View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR, lightStatusBar);
+    w.getDecorView().setSystemUiVisibility(visibility);
+  }
+
+  public static void setNavigationBarColor (Window w, int color) {
+    if (Config.USE_CUSTOM_NAVIGATION_COLOR) {
+      if (Settings.instance().useEdgeToEdge()) {
+        int transparentColor = Color.alpha(color) == 255 ? ColorUtils.alphaColor(.75f , color) : color;
+        w.setNavigationBarColor(transparentColor);
+      } else {
+        w.setNavigationBarColor(color);
+      }
+    }
+  }
+
   public static void clearActivity (BaseActivity a) {
     a.requestWindowFeature(Window.FEATURE_NO_TITLE);
     Window w = a.getWindow();
@@ -593,27 +630,21 @@ public class UI {
     } else {
       w.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
     }
+    if (Settings.instance().useEdgeToEdge()) {
+      EdgeToEdge.enable(a);
+      if (Config.EDGE_TO_EDGE_CUSTOMIZABLE) {
+        w.setNavigationBarContrastEnforced(false);
+      }
+    }
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
       w.setBackgroundDrawableResource(R.drawable.transparent);
     } else {
-      int visibility = 0;
       if (Config.USE_CUSTOM_NAVIGATION_COLOR) {
-        w.setNavigationBarColor(Theme.backgroundColor());
-        if (!Theme.isDark()) {
-          visibility |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-        }
+        setNavigationBarColor(w, Theme.backgroundColor());
       } else {
         w.setNavigationBarColor(NAVIGATION_BAR_COLOR);
       }
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-        if (Theme.needLightStatusBar()) {
-          visibility |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-        }
-      }
-      if (visibility != 0) {
-        // TODO: rework to WindowInsetsController
-        w.getDecorView().setSystemUiVisibility(visibility);
-      }
+      setLightSystemBars(w, !Theme.isDark(), Theme.needLightStatusBar(), 0, false);
       RootDrawable d = new RootDrawable(a);
       w.setBackgroundDrawable(d);
       a.setRootDrawable(d);

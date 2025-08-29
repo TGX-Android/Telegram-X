@@ -863,19 +863,11 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   public void setWindowDecorSystemUiVisibility (int visibility, boolean remember) {
-    View decorView = getWindow().getDecorView();
-    int setVisibility = visibility;
-    boolean isLight = false;
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && Config.USE_CUSTOM_NAVIGATION_COLOR && !Theme.isDark() && (visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) {
-      setVisibility |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-      isLight = true;
-    }
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Theme.needLightStatusBar()) {
-      setVisibility |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-    }
-    decorView.setSystemUiVisibility(setVisibility);
-    if (this.isWindowLight != isLight) {
-      this.isWindowLight = isLight;
+    boolean lightNavigationBar = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && Config.USE_CUSTOM_NAVIGATION_COLOR && !Theme.isDark() && (visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0;
+    boolean lightStatusBar = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Theme.needLightStatusBar();
+    UI.setLightSystemBars(getWindow(), lightNavigationBar, lightStatusBar, visibility, true);
+    if (this.isWindowLight != lightNavigationBar) {
+      this.isWindowLight = lightNavigationBar;
       updateNavigationBarColor();
     }
     lastWindowVisibility = visibility;
@@ -3360,18 +3352,10 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         color = ColorUtils.fromToArgb(color, Theme.getColor(ColorId.passcode), passcodeFactor);
         isLight = isLight && passcodeFactor < .5f;
       }
-      getWindow().setNavigationBarColor(color);
+      UI.setNavigationBarColor(getWindow(), color);
       if (this.isWindowLight != isLight) {
         this.isWindowLight = isLight;
-        int visibility = lastWindowVisibility;
-        if (isLight) {
-          visibility |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-        }
-        if (Theme.needLightStatusBar()) {
-          visibility |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-        }
-        // TODO: rework to WindowInsetsControlle
-        getWindow().getDecorView().setSystemUiVisibility(visibility);
+        UI.setLightSystemBars(getWindow(), isLight, Theme.needLightStatusBar(), lastWindowVisibility, true);
       }
     }
   }
