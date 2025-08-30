@@ -26,9 +26,10 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 
+import androidx.annotation.IntDef;
+
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.navigation.InterceptLayout;
 import org.thunderdog.challegram.navigation.NavigationController;
@@ -40,6 +41,9 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.CancellableRunnable;
@@ -73,16 +77,43 @@ public class RootFrameLayout extends FrameLayoutFix {
     return 0;
   }
 
-  private static boolean updateInsets (Rect rect, Object insetsRaw, boolean includeIme) {
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    InsetsType.CUTOUT,
+    InsetsType.CUTOUT_AND_IME,
+    InsetsType.GESTURES
+  })
+  private @interface InsetsType {
+    int CUTOUT = 0, CUTOUT_AND_IME = 1, GESTURES = 2;
+  }
+
+  private static boolean updateInsets (Rect rect, Object insetsRaw, @InsetsType int insetsType) {
     final int left, top, right, bottom;
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && insetsRaw != null) {
       android.view.WindowInsets windowInsets = (android.view.WindowInsets) insetsRaw;
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-        android.graphics.Insets insets = windowInsets.getInsets(
-          android.view.WindowInsets.Type.systemBars() |
-            android.view.WindowInsets.Type.displayCutout() |
-            (includeIme ? android.view.WindowInsets.Type.ime() : 0)
-        );
+        int typeMask;
+        switch (insetsType) {
+          case InsetsType.CUTOUT:
+            typeMask =
+              android.view.WindowInsets.Type.systemBars() |
+              android.view.WindowInsets.Type.displayCutout();
+            break;
+          case InsetsType.CUTOUT_AND_IME:
+            typeMask =
+              android.view.WindowInsets.Type.systemBars() |
+              android.view.WindowInsets.Type.displayCutout() |
+              android.view.WindowInsets.Type.ime();
+            break;
+          case InsetsType.GESTURES:
+            typeMask =
+              android.view.WindowInsets.Type.systemGestures() |
+              android.view.WindowInsets.Type.mandatorySystemGestures();
+            break;
+          default:
+            throw new AssertionError(Integer.toString(insetsType));
+        }
+        android.graphics.Insets insets = windowInsets.getInsets(typeMask);
         left = insets.left;
         top = insets.top;
         right = insets.right;
@@ -235,6 +266,7 @@ public class RootFrameLayout extends FrameLayoutFix {
   private Object windowInsetsRaw;
   private final Rect systemInsets = new Rect();
   private final Rect systemInsetsWithoutIme = new Rect();
+  private final Rect systemGesturesInsets = new Rect();
 
   private final Rect effectiveInsets = new Rect();
   private final Rect effectiveInsetsWithoutIme = new Rect();
@@ -253,10 +285,15 @@ public class RootFrameLayout extends FrameLayoutFix {
     }
   }
 
+  public Rect getGestureInsets () {
+    return systemGesturesInsets;
+  }
+
   private void processWindowInsets (Object insetsRaw, boolean force) {
     boolean hadInsets = hasInsets;
-    boolean systemInsetsUpdated = updateInsets(systemInsets, insetsRaw, true);
-    boolean systemInsetsWithoutImeUpdated = updateInsets(systemInsetsWithoutIme, insetsRaw, false);
+    boolean systemInsetsUpdated = updateInsets(systemInsets, insetsRaw, InsetsType.CUTOUT_AND_IME);
+    boolean systemInsetsWithoutImeUpdated = updateInsets(systemInsetsWithoutIme, insetsRaw, InsetsType.CUTOUT);
+    boolean gesturesUpdated = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && updateInsets(systemGesturesInsets, insetsRaw, InsetsType.GESTURES);
     boolean verticalSystemInsetsUpdated = !hasInsets || systemInsets.top != prevSystemInsets.top || systemInsets.bottom != prevSystemInsets.bottom;
     boolean horizontalSystemInsetsUpdated = !hasInsets || systemInsets.left != prevSystemInsets.left || systemInsets.right != prevSystemInsets.right;
     final int imeHeight = CAN_DETECT_IME ? getImeHeight(insetsRaw) : 0;

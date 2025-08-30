@@ -5212,26 +5212,32 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   @Override
-  public boolean closeSearchModeByBackPress (boolean fromTop) {
-    clearSearchInput();
+  public boolean closeSearchModeByBackPress (boolean fromTop, boolean commit) {
+    if (commit) {
+      clearSearchInput();
+    }
     return false;
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (isTransforming() || (expandAnimator != null && expandAnimator.isAnimating())) {
       return true;
     }
     if (inSelectMode) {
-      clearSelectMode();
+      if (commit) {
+        clearSelectMode();
+      }
       return true;
     }
     if (isEditing() && hasUnsavedChanges()) {
-      showUnsavedChangesPromptBeforeLeaving(null);
+      if (commit) {
+        showUnsavedChangesPromptBeforeLeaving(null);
+      }
       return true;
     }
 
-    return false;
+    return super.performOnBackPressed(fromTop, commit);
   }
 
   @Override

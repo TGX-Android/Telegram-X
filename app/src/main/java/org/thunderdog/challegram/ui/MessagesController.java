@@ -8754,40 +8754,50 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     BaseActivity context = context();
     if (context.getRecordAudioVideoController().isOpen()) {
-      context.getRecordAudioVideoController().finishRecording(true);
+      if (commit) {
+        context.getRecordAudioVideoController().finishRecording(true);
+      }
       return true;
     }
     if (hasEditedChanges()) {
-      if (isEditingCaption()) {
-        showUnsavedChangesPromptBeforeLeaving(Lang.getString(R.string.DiscardEditCaptionHint), Lang.getString(R.string.DiscardEditCaption), null);
-      } else {
-        showUnsavedChangesPromptBeforeLeaving(Lang.getString(R.string.DiscardEditMsgHint), Lang.getString(R.string.DiscardEditMsg), null);
+      if (commit) {
+        if (isEditingCaption()) {
+          showUnsavedChangesPromptBeforeLeaving(Lang.getString(R.string.DiscardEditCaptionHint), Lang.getString(R.string.DiscardEditCaption), null);
+        } else {
+          showUnsavedChangesPromptBeforeLeaving(Lang.getString(R.string.DiscardEditMsgHint), Lang.getString(R.string.DiscardEditMsg), null);
+        }
       }
       return true;
     }
 
     if (hasAttachedFiles()) {
-      showUnsavedChangesPromptBeforeLeaving(Lang.getString(R.string.DiscardCaptionHint), Lang.getString(R.string.DiscardEditCaption), null);
+      if (commit) {
+        showUnsavedChangesPromptBeforeLeaving(Lang.getString(R.string.DiscardCaptionHint), Lang.getString(R.string.DiscardEditCaption), null);
+      }
       return true;
     }
 
-    if (fromTop) {
-      return false;
+    if (!fromTop) {
+      if (emojiShown) {
+        if (commit) {
+          emojiState = false;
+          closeEmojiKeyboard();
+        }
+        return true;
+      }
+      if (commandsShown) {
+        if (commit) {
+          commandsState = false;
+          closeCommandsKeyboard(true);
+        }
+        return true;
+      }
     }
-    if (emojiShown) {
-      emojiState = false;
-      closeEmojiKeyboard();
-      return true;
-    }
-    if (commandsShown) {
-      commandsState = false;
-      closeCommandsKeyboard(true);
-      return true;
-    }
-    return false;
+
+    return super.performOnBackPressed(fromTop, commit);
   }
 
   private boolean emojiShown, emojiState;

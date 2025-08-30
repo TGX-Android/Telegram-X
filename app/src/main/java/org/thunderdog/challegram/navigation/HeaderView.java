@@ -1420,6 +1420,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   private boolean useShadowSwitch, shadowSwitch;
   private boolean usePlayerSwitch, playerSwitch;
   private float translationFactor;
+  private boolean forceRtlAnimation;
 
   public float getTranslation () {
     return translationFactor;
@@ -1459,7 +1460,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
 
     switch (translationMode) {
       case MODE_HORIZONTAL: {
-        if (Lang.rtl()) {
+        if (forceRtlAnimation || Lang.rtl()) {
           if (translateForward) {
             title.setTranslationX(currentX * raptor);
             preview.setTranslationX(-currentX * (1f - raptor));
@@ -1725,7 +1726,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   private void transform (final ViewController<?> controller, final int mode, int arg, final boolean open, boolean animated, final Runnable after, boolean needUpdateKeyboard) {
     this.transformMode = mode;
 
-    openPreview(controller, null, open, MODE_FADE, translationFactor);
+    openPreview(controller, null, open, MODE_FADE, translationFactor, false);
 
     if (open) {
       switch (mode) {
@@ -2224,11 +2225,12 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
 
   private boolean previewOpened = false;
 
-  void openPreview (ViewController<?> left, ViewController<?> right, boolean forward, int direction, float factor) {
+  void openPreview (ViewController<?> left, ViewController<?> right, boolean forward, int direction, float factor, boolean forceRtl) {
     this.previewOpened = true;
     this.currentX = (float) getMeasuredWidth() * TRANSLATION_FACTOR;
     this.translationMode = direction;
     this.translationFactor = factor;
+    this.forceRtlAnimation = direction == MODE_HORIZONTAL && forceRtl;
 
     if (right != null && !forward && right.usePopupMode()) {
       this.currentY = left.getHeaderHeight() + getEffectiveTopOffset();

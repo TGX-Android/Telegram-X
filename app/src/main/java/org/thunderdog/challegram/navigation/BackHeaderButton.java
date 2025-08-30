@@ -137,7 +137,7 @@ public class BackHeaderButton extends HeaderButton implements View.OnClickListen
           context.getDrawer().open();
         }
       } else {
-        context.onBackPressed(true);
+        context.performBackPress(true);
       }
     }
   }

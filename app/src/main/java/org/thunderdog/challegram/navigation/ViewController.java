@@ -205,7 +205,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public void onInteractedWithContent () {
-    this.flags |= FLAG_CONTENT_INTERACTED;
+    setFlags(flags | FLAG_CONTENT_INTERACTED);
   }
 
   public boolean hasInteractedWithContent () {
@@ -419,7 +419,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   protected void attachNavigationController (NavigationController navigationController) {
-    this.flags |= FLAG_ATTACHED_TO_NAVIGATION;
+    setFlags(flags | FLAG_ATTACHED_TO_NAVIGATION);
     this.navigationController = navigationController;
     this.headerView = navigationController.getHeaderView();
     this.floatingButton = navigationController.getFloatingButton();
@@ -427,14 +427,14 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public void attachHeaderViewWithoutNavigation (HeaderView headerView) {
-    this.flags &= ~FLAG_ATTACHED_TO_NAVIGATION; // since it's false state
+    setFlags(this.flags & (~FLAG_ATTACHED_TO_NAVIGATION)); // since it's false state
     this.headerView = headerView;
     this.navigationController = null;
     this.floatingButton = null;
   }
 
   protected void detachNavigationController () {
-    this.flags &= ~FLAG_ATTACHED_TO_NAVIGATION;
+    setFlags(this.flags & (~FLAG_ATTACHED_TO_NAVIGATION));
     this.navigationController = null;
     this.headerView = null;
     this.floatingButton = null;
@@ -522,18 +522,6 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   public boolean navigateTo (ViewController<?> c) {
     return !isStackLocked() && navigationController != null && navigationController.navigateTo(c);
   }
-
-  /*protected boolean navigateTo (Class<? extends ViewController> rawController) {
-    return (flags & FLAG_ATTACHED_TO_NAVIGATION) != 0 && navigationController.navigateTo(rawController);
-  }
-
-  protected boolean navigateTo (Class<? extends ViewController> rawController, Object args) {
-    return (flags & FLAG_ATTACHED_TO_NAVIGATION) != 0 && navigationController.navigateTo(rawController, args);
-  }*/
-
-  /*protected boolean navigateTo (ViewController<?> c, Object args) {
-    return (flags & FLAG_ATTACHED_TO_NAVIGATION) != 0 && navigationController.navigateTo(c, args);
-  }*/
 
   public boolean isAttachedToNavigationController () {
     return (flags & FLAG_ATTACHED_TO_NAVIGATION) != 0;
@@ -882,11 +870,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     } else {
       this.lockFocusView = view;
     }
-    if (showAlways) {
-      flags |= FLAG_LOCK_ALWAYS;
-    } else {
-      flags &= ~FLAG_LOCK_ALWAYS;
-    }
+    setFlags(BitwiseUtils.setFlag(flags, FLAG_LOCK_ALWAYS, showAlways));
   }
 
   @CallSuper
@@ -1334,11 +1318,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public final void setShareCustomHeaderView (boolean share) {
-    if (share) {
-      flags |= FLAG_SHARE_CUSTOM_HEADER;
-    } else {
-      flags &= ~FLAG_SHARE_CUSTOM_HEADER;
-    }
+    setFlags(BitwiseUtils.setFlag(flags, FLAG_SHARE_CUSTOM_HEADER, share));
   }
 
   protected final boolean shareCustomHeaderView () {
@@ -1423,11 +1403,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   public void setSwipeNavigationEnabled (boolean enabled) {
-    if (!enabled) {
-      flags |= FLAG_SWIPE_DISABLED;
-    } else {
-      flags &= ~FLAG_SWIPE_DISABLED;
-    }
+    setFlags(BitwiseUtils.setFlag(flags, FLAG_SWIPE_DISABLED, !enabled));
   }
 
   protected boolean swipeNavigationEnabled () {
@@ -1443,11 +1419,11 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   protected final void enterCustomMode () {
-    flags |= FLAG_IN_CUSTOM_MODE;
+    setFlags(flags | FLAG_IN_CUSTOM_MODE);
   }
 
   protected final void leaveCustomMode () {
-    flags &= ~FLAG_IN_CUSTOM_MODE;
+    setFlags(flags & (~FLAG_IN_CUSTOM_MODE));
   }
 
   public final boolean inSearchMode () {
@@ -1463,37 +1439,56 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   protected final void enterSearchMode () {
-    flags |= FLAG_IN_SEARCH_MODE;
+    setFlags(flags | FLAG_IN_SEARCH_MODE);
   }
 
   protected void onAfterLeaveSearchMode () { }
 
   protected final void leaveSearchMode () {
-    flags &= ~FLAG_IN_SEARCH_MODE;
+    setFlags(flags & (~FLAG_IN_SEARCH_MODE));
     onAfterLeaveSearchMode();
     setSearchTransformFactor(0f, false);
   }
 
   public final void preventLeavingSearchMode () {
-    flags |= FLAG_PREVENT_LEAVING_SEARCH_MODE;
+    setFlags(flags | FLAG_PREVENT_LEAVING_SEARCH_MODE);
   }
 
   public final boolean inSelectMode () {
-    return (flags & FLAG_IN_SELECT_MODE) != 0;
+    return BitwiseUtils.hasFlag(flags, FLAG_IN_SELECT_MODE);
+  }
+
+  private boolean setFlags (int flags) {
+    if (this.flags != flags) {
+      int oldFlags = this.flags;
+      this.flags = flags;
+      int changedFlags = oldFlags ^ flags;
+      if (BitwiseUtils.hasFlag(changedFlags,
+        FLAG_IN_SELECT_MODE |
+          FLAG_IN_SEARCH_MODE |
+          FLAG_IN_CUSTOM_MODE
+      )) {
+        context.notifyBackPressAvailabilityChanged();
+      }
+      return true;
+    }
+    return false;
   }
 
   protected final void enterSelectMode () {
-    flags |= FLAG_IN_SELECT_MODE;
+    setFlags(flags | FLAG_IN_SELECT_MODE);
   }
 
   protected final void leaveSelectMode () {
-    flags &= ~FLAG_IN_SELECT_MODE;
+    setFlags(flags & (~FLAG_IN_SELECT_MODE));
   }
 
   public final void leaveTransformMode () {
+    int flags = this.flags;
     flags &= ~FLAG_IN_SELECT_MODE;
     flags &= ~FLAG_IN_SEARCH_MODE;
     flags &= ~FLAG_IN_CUSTOM_MODE;
+    setFlags(flags);
   }
 
   protected boolean useDrawer () {
@@ -3137,7 +3132,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   protected final void preventHideKeyboardOnBlur () {
-    this.flags |= FLAG_PREVENT_KEYBOARD_HIDE;
+    setFlags(this.flags | FLAG_PREVENT_KEYBOARD_HIDE);
   }
 
   public final @Nullable View getWrapUnchecked () {
@@ -3204,21 +3199,23 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   @CallSuper
   public void onActivityPause () {
+    int flags = this.flags;
     flags &= ~FLAG_KEYBOARD_SHOWN;
     flags |= FLAG_PAUSED;
+    setFlags(flags);
   }
 
   @CallSuper
   public void onActivityResume () {
     if (lockFocusView != null && lockFocusView.isEnabled() && isPaused() && (flags & FLAG_KEYBOARD_SHOWN) == 0 && navigationController != null && !navigationController.isAnimating()) {
       if (((flags & FLAG_LOCK_ALWAYS) != 0 || (flags & FLAG_KEYBOARD_STATE) != 0) && !context.isPasscodeShowing() && !context.isWindowPopupShowing()) {
-        flags |= FLAG_KEYBOARD_SHOWN;
+        setFlags(flags | FLAG_KEYBOARD_SHOWN);
         UI.showKeyboardDelayed(lockFocusView);
       } else {
         Keyboard.hide(lockFocusView);
       }
     }
-    flags &= ~FLAG_PAUSED;
+    setFlags(flags & (~FLAG_PAUSED));
   }
 
   @CallSuper
@@ -3263,12 +3260,12 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       if (currentPopup != null) {
         ((Keyboard.OnStateChangeListener) currentPopup).closeAdditionalKeyboards();
       }
-      flags |= FLAG_KEYBOARD_STATE;
+      setFlags(flags | FLAG_KEYBOARD_STATE);
     } else {
       if ((flags & FLAG_KEYBOARD_STATE) == 0) {
         return false;
       }
-      flags &= ~FLAG_KEYBOARD_STATE;
+      setFlags(flags & (~FLAG_KEYBOARD_STATE));
     }
     if (currentPopup != null) {
       ((Keyboard.OnStateChangeListener) currentPopup).onKeyboardStateChanged(visible);
@@ -3344,7 +3341,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   public final void onAttachStateChanged (NavigationController navigation, boolean isAttached) {
     boolean nowIsAttached = (this.flags & FLAG_ATTACH_STATE) != 0;
     if (nowIsAttached != isAttached) {
-      this.flags = BitwiseUtils.setFlag(this.flags, FLAG_ATTACH_STATE, isAttached);
+      setFlags(BitwiseUtils.setFlag(this.flags, FLAG_ATTACH_STATE, isAttached));
       if (attachListeners != null) {
         for (AttachListener listener : attachListeners) {
           listener.onAttachStateChanged(this, navigation, isAttached);
@@ -3436,11 +3433,13 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   @CallSuper
   public void onFocus () {
+    int flags = this.flags;
     flags |= FLAG_FOCUSED;
     flags &= ~FLAG_PREVENT_LEAVING_SEARCH_MODE;
+    setFlags(flags);
     if (lockFocusView != null && lockFocusView.isEnabled() && (flags & FLAG_KEYBOARD_SHOWN) == 0) {
       if ((flags & FLAG_LOCK_ALWAYS) != 0) {
-        flags |= FLAG_KEYBOARD_SHOWN;
+        setFlags(this.flags | FLAG_KEYBOARD_SHOWN);
         Keyboard.show(lockFocusView);
         UI.showKeyboardDelayed(lockFocusView);
       }
@@ -3459,6 +3458,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   @CallSuper
   public void onBlur () {
+    int flags = this.flags;
     flags &= ~FLAG_FOCUSED;
     if (lockFocusView != null && lockFocusView.isEnabled() && ((flags & FLAG_IN_SEARCH_MODE) != 0 || (flags & FLAG_KEYBOARD_SHOWN) != 0 || (flags & FLAG_KEYBOARD_STATE) != 0)) {
       flags &= ~FLAG_KEYBOARD_SHOWN;
@@ -3468,6 +3468,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         Keyboard.hide(lockFocusView);
       }
     }
+    setFlags(flags);
     onFocusStateChanged();
     notifyFocusChanged(false);
     context.removeKeyEventListener(this);
@@ -3500,15 +3501,16 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     return false;
   }
 
-  public boolean closeSearchModeByBackPress (boolean fromTop) {
+  public boolean closeSearchModeByBackPress (boolean fromTop, boolean commit) {
     return false;
   }
 
-  public boolean onBackPressed (boolean fromTop) {
+  @CallSuper
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     return false;
   }
 
-  public boolean passBackPressToActivity (boolean fromTop) {
+  public boolean needPassBackPressToActivity (boolean fromTop) {
     return false;
   }
 
@@ -3589,7 +3591,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   @CallSuper
   public void destroy () {
     if ((flags & FLAG_DESTROYED) == 0) {
-      flags |= FLAG_DESTROYED;
+      setFlags(flags | FLAG_DESTROYED);
       if (localeChangers != null) {
         localeChangers.clear();
       }
@@ -3737,7 +3739,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   public final void setInForceTouchMode (boolean inForceTouchMode) {
     if (isInForceTouchMode() != inForceTouchMode) {
-      this.flags = BitwiseUtils.setFlag(this.flags, FLAG_IN_FORCE_TOUCH_MODE, inForceTouchMode);
+      setFlags(BitwiseUtils.setFlag(this.flags, FLAG_IN_FORCE_TOUCH_MODE, inForceTouchMode));
       onForceTouchModeChanged(inForceTouchMode);
     }
   }
@@ -3766,7 +3768,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   public final void maximizeFromPreview () {
     if (isInForceTouchMode() && (flags & FLAG_MAXIMIZING) == 0) {
-      flags |= FLAG_MAXIMIZING;
+      setFlags(flags | FLAG_MAXIMIZING);
       UI.forceVibrate(getValue(), false);
       context.closeForceTouch();
     }

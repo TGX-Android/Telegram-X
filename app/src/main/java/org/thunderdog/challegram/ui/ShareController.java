@@ -418,16 +418,20 @@ public class ShareController extends TelegramViewController<ShareController.Args
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (inSearchMode()) {
-      closeSearchMode(null);
+      if (commit) {
+        closeSearchMode(null);
+      }
       return true;
     }
     if (emojiShown) {
-      forceCloseEmojiKeyboard();
+      if (commit) {
+        forceCloseEmojiKeyboard();
+      }
       return true;
     }
-    return false;
+    return super.performOnBackPressed(fromTop, commit);
   }
 
   @Override

@@ -135,7 +135,9 @@
     android:theme="@style/AppTheme"
     android:requestLegacyExternalStorage="true"
     android:preserveLegacyExternalStorage="true"
-    tools:targetApi="r">
+    android:enableOnBackInvokedCallback="true"
+    tools:targetApi="35"
+    tools:ignore="RtlEnabled">
 
     <meta-data
       android:name="firebase_analytics_collection_deactivated"

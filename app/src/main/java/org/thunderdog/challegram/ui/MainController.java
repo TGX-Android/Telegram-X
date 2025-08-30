@@ -976,6 +976,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         break;
       }
     }
+    context.notifyBackPressAvailabilityChanged();
   }
 
   @Override
@@ -1848,12 +1849,23 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (composeWrap != null && composeWrap.isShowing()) {
-      composeWrap.close();
+      if (commit) {
+        composeWrap.close();
+      }
       return true;
     }
-    return scrollToFirstPosition();
+    if (commit) {
+      if (scrollToFirstPosition()) {
+        return true;
+      }
+    } else {
+      if (!isAtFirstPosition()) {
+        return true;
+      }
+    }
+    return super.performOnBackPressed(fromTop, commit);
   }
 
   // Intent process

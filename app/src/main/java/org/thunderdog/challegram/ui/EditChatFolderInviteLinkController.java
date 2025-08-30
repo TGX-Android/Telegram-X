@@ -241,12 +241,14 @@ public class EditChatFolderInviteLinkController extends EditBaseController<EditC
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (hasUnsavedChanges()) {
-      showUnsavedChangesPromptBeforeLeaving(/* onConfirm */ null);
+      if (commit) {
+        showUnsavedChangesPromptBeforeLeaving(/* onConfirm */ null);
+      }
       return true;
     }
-    return super.onBackPressed(fromTop);
+    return super.performOnBackPressed(fromTop, commit);
   }
 
   @Override

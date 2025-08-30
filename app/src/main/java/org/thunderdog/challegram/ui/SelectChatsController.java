@@ -469,16 +469,20 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (hasBubbles() && isChatSearchOpen() && headerCell != null) {
-      headerCell.clearSearchInput();
+      if (commit) {
+        headerCell.clearSearchInput();
+      }
       return true;
     }
     if (hasChanges()) {
-      showUnsavedChangesPromptBeforeLeaving(null);
+      if (commit) {
+        showUnsavedChangesPromptBeforeLeaving(null);
+      }
       return true;
     }
-    return super.onBackPressed(fromTop);
+    return super.performOnBackPressed(fromTop, commit);
   }
 
   @Override

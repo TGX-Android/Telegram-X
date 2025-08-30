@@ -3198,31 +3198,41 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private float counterFactor;
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (inSlideMode || (slideAnimator != null && slideAnimator.isAnimating())) {
       return true;
     }
     if (showOtherMedias) {
-      setShowOtherMedias(false);
+      if (commit) {
+        setShowOtherMedias(false);
+      }
       return true;
     }
     if (currentSection != SECTION_CAPTION) {
-      goBackToCaption(true);
+      if (commit) {
+        goBackToCaption(true);
+      }
       return true;
     }
     if (emojiShown) {
-      forceCloseEmojiKeyboard();
+      if (commit) {
+        forceCloseEmojiKeyboard();
+      }
       return true;
     }
     if (mediaView.isZoomed()) {
-      mediaView.normalizeZoom();
+      if (commit) {
+        mediaView.normalizeZoom();
+      }
       return true;
     }
     if (inForceEditMode()) {
-      closeForceEditMode();
+      if (commit) {
+        closeForceEditMode();
+      }
       return true;
     }
-    return false;
+    return super.performOnBackPressed(fromTop, commit);
   }
 
   private void setCounterFactor (float counterFactor) {
@@ -8141,7 +8151,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   public void close () {
     if (inPictureInPicture) {
       closePictureInPicture();
-    } else if (forceAnimationType != -1 || !onBackPressed(false)) {
+    } else if (forceAnimationType != -1 || !performOnBackPressed(false, true)) {
       popupView.hideWindow(true);
     }
   }

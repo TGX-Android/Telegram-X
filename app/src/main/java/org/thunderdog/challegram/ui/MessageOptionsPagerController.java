@@ -81,7 +81,6 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import tgx.td.Td;
-import tgx.td.TdExt;
 
 public class MessageOptionsPagerController extends BottomSheetViewController<OptionDelegate> implements
   FactorAnimator.Target, View.OnClickListener, Menu, DrawableProvider, PopupLayout.TouchDownInterceptor,
@@ -562,10 +561,12 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (reactionsPickerVisibility != null && reactionsPickerVisibility.getValue()) {
-      if (!reactionsPickerController.onBackPressed(fromTop)) {
-        hideReactionPicker();
+      if (!reactionsPickerController.performOnBackPressed(fromTop, commit)) {
+        if (commit) {
+          hideReactionPicker();
+        }
       }
       return true;
     }

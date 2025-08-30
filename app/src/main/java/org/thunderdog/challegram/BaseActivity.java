@@ -60,7 +60,9 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.BackEventCompat;
 import androidx.activity.ComponentActivity;
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -85,16 +87,19 @@ import org.thunderdog.challegram.data.InlineResult;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.navigation.ActivityResultHandler;
+import org.thunderdog.challegram.navigation.BackPressMode;
 import org.thunderdog.challegram.navigation.DrawerController;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.InterceptLayout;
 import org.thunderdog.challegram.navigation.MenuMoreWrap;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.NavigationGestureController;
+import org.thunderdog.challegram.navigation.NavigationStack;
 import org.thunderdog.challegram.navigation.OptionsLayout;
 import org.thunderdog.challegram.navigation.OverlayView;
 import org.thunderdog.challegram.navigation.ReactionsOverlayView;
 import org.thunderdog.challegram.navigation.RootDrawable;
+import org.thunderdog.challegram.navigation.SystemBackEventListener;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.player.RecordAudioVideoController;
@@ -242,7 +247,11 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   public boolean isAnimating (boolean intercept) {
-    return (navigation != null && (intercept ? navigation.isAnimatingWithEffect() : navigation.isAnimating())) || (drawer != null && drawer.isAnimating()) || isProgressShowing || (cameraAnimator != null && cameraAnimator.isAnimating());
+    return
+      (navigation != null && (intercept ? navigation.isAnimatingWithEffect() : navigation.isAnimating())) ||
+      (drawer != null && drawer.isAnimating()) ||
+      isProgressShowing ||
+      (cameraAnimator != null && cameraAnimator.isAnimating());
   }
 
   public boolean processTouchEvent (MotionEvent event) {
@@ -485,7 +494,6 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (Config.USE_CUSTOM_NAVIGATION_COLOR) {
       this.isWindowLight = !Theme.isDark();
     }
-    this.isGestureNavigationEnabled = Screen.isGesturalNavigationEnabled(getResources());
     // UI.resetSizes();
     setActivityState(UI.State.RESUMED);
     TdlibManager.instance().watchDog().onActivityCreate(this);
@@ -500,6 +508,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
     Screen.checkDensity();
 
+    this.isGestureNavigationEnabled = Screen.isGesturalNavigationEnabled(getResources());
     mHasSoftwareKeys = hasSoftwareKeys();
 
     currentOrientation = UI.getOrientation();
@@ -569,9 +578,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
     Lang.addLanguageListener(this);
 
-    /*if (BuildConfig.DEBUG) {
-      addRemoveRtlSwitch();
-    }*/
+    navigation.getStack().addChangeListener(navigationStackChangeListener);
+    backPressedCallback.setEnabled(isBackPressActionAvailable(handleOnBackPress(false, false)));
+    getOnBackPressedDispatcher().addCallback(backPressedCallback);
   }
 
   private View rtlSwitchView;
@@ -1197,6 +1206,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
     setOrientationLockFlags(0);
     if (navigation != null) {
+      navigation.getStack().removeChangeListener(navigationStackChangeListener);
       navigation.destroy();
     }
     Lang.removeLanguageListener(this);
@@ -1342,57 +1352,140 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
   }
 
-  @Override
-  @SuppressWarnings("deprecation")
-  public void onBackPressed () {
-    if (isPasscodeShowing) {
-      super.onBackPressed();
-    } else {
-      onBackPressed(false);
+  private final NavigationStack.ChangeListener navigationStackChangeListener = stack -> {
+    notifyBackPressAvailabilityChanged();
+  };
+
+  private final OnBackPressedCallback backPressedCallback = new OnBackPressedCallback(false) {
+    @Override
+    public void handleOnBackPressed () {
+      boolean handled = false;
+      if (backPressTarget != null) {
+        handled = backPressTarget.onSystemBackPressed();
+        backPressTarget = null;
+      }
+      if (!handled) {
+        performBackPress(false);
+      }
+    }
+
+    private SystemBackEventListener backPressTarget;
+
+    @Override
+    public void handleOnBackStarted (@NonNull BackEventCompat backEvent) {
+      @BackPressMode int mode = backPressMode;
+      SystemBackEventListener target;
+      switch (mode) {
+        case BackPressMode.NAVIGATE_BACK_IN_STACK:
+          target = navigation;
+          break;
+        case BackPressMode.CLOSE_NAVIGATION_DRAWER:
+          target = drawer;
+          break;
+        case BackPressMode.CUSTOM_ACTION_PERFORMED:
+        case BackPressMode.SYSTEM_ACTION_REQUIRED:
+          target = null;
+          break;
+        default:
+          throw new AssertionError(Integer.toString(mode));
+      }
+      if (target != null && target.onSystemBackStarted(backEvent)) {
+        backPressTarget = target;
+      } else {
+        backPressTarget = null;
+      }
+    }
+
+    @Override
+    public void handleOnBackCancelled () {
+      if (backPressTarget != null) {
+        backPressTarget.onSystemBackCancelled();
+        backPressTarget = null;
+      }
+    }
+
+    @Override
+    public void handleOnBackProgressed (@NonNull BackEventCompat backEvent) {
+      if (backPressTarget != null) {
+        backPressTarget.onSystemBackProgressed(backEvent);
+      }
+    }
+  };
+
+  private static boolean isBackPressActionAvailable (@BackPressMode int backPressMode) {
+    return backPressMode != BackPressMode.SYSTEM_ACTION_REQUIRED;
+  }
+
+  private @BackPressMode int backPressMode = BackPressMode.SYSTEM_ACTION_REQUIRED;
+
+  public void notifyBackPressAvailabilityChanged () {
+    @BackPressMode int backPressMode = handleOnBackPress(false, false);
+    this.backPressMode = backPressMode;
+    boolean isEnabled = isBackPressActionAvailable(backPressMode);
+    if (backPressedCallback.isEnabled() != isEnabled) {
+      backPressedCallback.setEnabled(isEnabled);
     }
   }
 
-  @SuppressWarnings("deprecation")
-  public void onBackPressed (boolean fromTop) {
+  public void performBackPress (boolean fromTop) {
+    if (handleOnBackPress(fromTop, true) == BackPressMode.SYSTEM_ACTION_REQUIRED) {
+      backPressedCallback.setEnabled(false);
+      getOnBackPressedDispatcher().onBackPressed();
+    }
+  }
+
+  public @BackPressMode int handleOnBackPress (boolean fromTop, boolean commit) {
+    if (isPasscodeShowing) {
+      return BackPressMode.SYSTEM_ACTION_REQUIRED;
+    }
     if (isProgressShowing) {
-      if (progressListener != null) {
+      if (progressListener != null && commit) {
         hideProgress(true);
       }
-      return;
+      return BackPressMode.CUSTOM_ACTION_PERFORMED;
     }
-    if (tooltipOverlayView != null && tooltipOverlayView.onBackPressed()) {
-      return;
+    if (tooltipOverlayView != null && tooltipOverlayView.handleOnBackPress(commit)) {
+      return BackPressMode.CUSTOM_ACTION_PERFORMED;
     }
-    if (dismissLastOpenWindow(false, true, fromTop)) {
-      return;
+    if (dismissLastOpenWindow(false, true, fromTop, commit)) {
+      return BackPressMode.CUSTOM_ACTION_PERFORMED;
     }
     if (isCameraOpen) {
-      closeCameraByBackPress();
-      return;
+      if (commit) {
+        closeCameraByBackPress();
+      }
+      return BackPressMode.CUSTOM_ACTION_PERFORMED;
     }
     if (recordAudioVideoController.isOpen()) {
-      recordAudioVideoController.onBackPressed();
-      return;
+      if (commit) {
+        recordAudioVideoController.onBackPressed();
+      }
+      return BackPressMode.CUSTOM_ACTION_PERFORMED;
     }
-    if (!isAnimating(false)) {
-      if (navigation.passBackPressToActivity(fromTop)) {
-        super.onBackPressed();
-        return;
-      }
-      if (navigation.onBackPressed(fromTop)) {
-        return;
-      }
-      if (drawer != null && drawer.isVisible()) {
+    if (isAnimating(false)) {
+      return BackPressMode.CUSTOM_ACTION_PERFORMED;
+    }
+    if (navigation.passBackPressToActivity(fromTop)) {
+      return BackPressMode.SYSTEM_ACTION_REQUIRED;
+    }
+    @BackPressMode int navigationBackPress = navigation.performOnBackPressed(fromTop, commit);
+    if (navigationBackPress != BackPressMode.SYSTEM_ACTION_REQUIRED) {
+      return navigationBackPress;
+    }
+    if (drawer != null && drawer.isVisible()) {
+      if (commit) {
         drawer.close(0f, null);
+      }
+      return BackPressMode.CLOSE_NAVIGATION_DRAWER;
+    } else {
+      ViewController<?> c = navigation.getCurrentStackItem();
+      if (c != null && (c.inSelectMode() || c.inSearchMode() || c.inCustomMode())) {
+        navigationBackPress = navigation.performOnBackPressed(fromTop, commit);
+        return navigationBackPress != BackPressMode.SYSTEM_ACTION_REQUIRED ?
+          navigationBackPress :
+          BackPressMode.CUSTOM_ACTION_PERFORMED;
       } else {
-        ViewController<?> c = navigation.getCurrentStackItem();
-        if (c == null) {
-          super.onBackPressed();
-        } else if (c.inSelectMode() || c.inSearchMode() || c.inCustomMode()) {
-          navigation.onBackPressed(fromTop);
-        } else {
-          super.onBackPressed();
-        }
+        return BackPressMode.SYSTEM_ACTION_REQUIRED;
       }
     }
   }
@@ -1595,6 +1688,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   private void setIsPasscodeShowing (boolean isShowing) {
     if (this.isPasscodeShowing != isShowing) {
       this.isPasscodeShowing = isShowing;
+      notifyBackPressAvailabilityChanged();
       if (isShowing) {
         removeAllWindows();
       } else {
@@ -1777,6 +1871,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       return;
     }
     isProgressShowing = true;
+    notifyBackPressAvailabilityChanged();
     final boolean firstTime;
     if (progressWrap == null) {
       progressWrap = new ProgressWrap(this);
@@ -1853,6 +1948,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
     isProgressShowing = false;
     isProgressAnimating = true;
+    notifyBackPressAvailabilityChanged();
 
     ValueAnimator obj;
     obj = AnimatorUtils.simpleValueAnimator();
@@ -2361,6 +2457,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     windows.add(window);
     checkDisallowScreenshots();
     window.showBoundWindow(rootView);
+    notifyBackPressAvailabilityChanged();
   }
 
   public boolean hasAnimatingWindow () {
@@ -2385,6 +2482,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (!windows.remove(window)) {
       completelyForgetThisWindow(window);
     }
+    notifyBackPressAvailabilityChanged();
     checkDisallowScreenshots();
   }
 
@@ -2393,18 +2491,20 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     return popupLayout != null ? popupLayout.getBoundController() : null;
   }
 
-  public boolean dismissLastOpenWindow (boolean byKeyPress, boolean byBackPress, boolean byHeaderBackPress) {
+  public boolean dismissLastOpenWindow (boolean byKeyPress, boolean byBackPress, boolean byHeaderBackPress, boolean commit) {
     final int size = windows.size();
     for (int i = size - 1; i >= 0; i--) {
       PopupLayout window = windows.get(i);
       if (window.isBoundWindowShowing()) {
         if (byKeyPress && window.canHideKeyboard()) {
-          return window.hideSoftwareKeyboard();
+          return commit || window.hideSoftwareKeyboard();
         }
-        if (byBackPress && window.onBackPressed(byHeaderBackPress)) {
+        if (byBackPress && window.performOnBackPressed(byHeaderBackPress, commit)) {
           return true;
         }
-        window.hideWindow(true);
+        if (commit) {
+          window.hideWindow(true);
+        }
         return true;
       }
     }
@@ -2422,6 +2522,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       }
       forgottenWindows.put(i, window);
     }
+    notifyBackPressAvailabilityChanged();
   }
 
   private int indexOfForgottenWindow (PopupLayout window) {
@@ -2446,6 +2547,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       }
       forgottenWindows.remove(oldIndex);
       checkDisallowScreenshots();
+      notifyBackPressAvailabilityChanged();
     }
   }
 
@@ -2789,6 +2891,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     switch (id) {
       case ANIMATOR_ID_CAMERA: {
         processCameraAnimationFinish(finalFactor);
+        notifyBackPressAvailabilityChanged();
         break;
       }
     }
@@ -3038,6 +3141,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   private void setCameraOpen (ViewController.CameraOpenOptions options, boolean isOpen, boolean byDrag) {
     if (this.isCameraOpen != isOpen) {
       this.isCameraOpen = isOpen;
+      notifyBackPressAvailabilityChanged();
       if (isOpen) {
         this.cameraOptions = options;
       }
@@ -3111,6 +3215,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       } else if (toFactor == 0f && !isCameraOpen) {
         onCameraCompletelyClosed();
       }
+      notifyBackPressAvailabilityChanged();
     });
   }
 

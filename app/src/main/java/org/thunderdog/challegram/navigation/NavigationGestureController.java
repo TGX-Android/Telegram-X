@@ -15,6 +15,8 @@
 package org.thunderdog.challegram.navigation;
 
 import android.content.Context;
+import android.graphics.Rect;
+import android.os.Build;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 
@@ -23,7 +25,9 @@ import androidx.annotation.Nullable;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Size;
+import org.thunderdog.challegram.widget.RootFrameLayout;
 
 public class NavigationGestureController implements GestureDetector.OnGestureListener {
   private GestureDetector gestureDetector;
@@ -128,7 +132,19 @@ public class NavigationGestureController implements GestureDetector.OnGestureLis
 
   private boolean canSlideBack (ViewController<?> c, float x, float y) {
     int stackSize = navigation.getStackSize();
-    return navigation.swipeNavigationEnabled() && stackSize > 0 && c != null && c.swipeNavigationEnabled() && !c.forceFadeMode() && !c.inSelectMode() && !c.inCustomMode() && !(stackSize == 1 && c.inSearchMode()) && c.canSlideBackFrom(navigation, x, y);
+    if (navigation.swipeNavigationEnabled() && stackSize > 0 && c != null){
+      if (c.swipeNavigationEnabled() && !c.forceFadeMode() && !c.inSelectMode() && !c.inCustomMode() && !(stackSize == 1 && c.inSearchMode()) && c.canSlideBackFrom(navigation, x, y)) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+          RootFrameLayout rootFrameLayout = UI.getContext(navigation.getContext()).getRootView();
+          Rect gestureInsets = rootFrameLayout.getGestureInsets();
+          if (x < gestureInsets.left || x > rootFrameLayout.getMeasuredWidth() - gestureInsets.right) {
+            return false;
+          }
+        }
+        return true;
+      }
+    }
+    return false;
   }
 
   public void onCancel () {

@@ -116,12 +116,14 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (inSearchMode()) {
-      mediaLayout.getHeaderView().closeSearchMode(true, null);
+      if (commit) {
+        mediaLayout.getHeaderView().closeSearchMode(true, null);
+      }
       return true;
     }
-    return false;
+    return super.performOnBackPressed(fromTop, commit);
   }
 
   public boolean canMoveRecycler () {
@@ -205,7 +207,7 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
     return true;
   }
 
-  public boolean showExitWarning (boolean isExitingSelection) {
+  public boolean showExitWarning (boolean isExitingSelection, boolean commit) {
     // override
     return false;
   }

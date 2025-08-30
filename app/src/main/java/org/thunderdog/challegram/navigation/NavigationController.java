@@ -25,6 +25,8 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.activity.BackEventCompat;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.BaseActivity;
@@ -49,7 +51,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.Future;
 
-public class NavigationController implements Future<View>, ThemeChangeListener, Lang.Listener {
+public class NavigationController implements Future<View>, ThemeChangeListener, Lang.Listener, SystemBackEventListener {
   static final boolean DROP_SHADOW_ENABLED = true;
   static final boolean USE_PREVIEW_FADE = true;
   static final boolean USE_LAYOUT_LIMITS = false;
@@ -349,7 +351,8 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
       shadowView = new ShadowView(context);
       shadowView.setLayoutParams(params);
-      if (Lang.rtl()) {
+      checkShadowDirection();
+      if (needRtl()) {
         shadowView.setSimpleRightShadow(false);
       } else {
         shadowView.setSimpleLeftShadow(false);
@@ -527,36 +530,42 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
   public boolean passBackPressToActivity (boolean fromTop) {
     ViewController<?> c = getStack().getCurrent();
-    return c != null && c.passBackPressToActivity(fromTop);
+    return c != null && c.needPassBackPressToActivity(fromTop);
   }
 
-  public boolean onBackPressed (boolean fromTop) {
+  public @BackPressMode int performOnBackPressed (boolean fromTop, boolean commit) {
     if (headerView.inSelectMode()) {
-      headerView.closeSelectMode(true, true);
-      return true;
+      if (commit) {
+        headerView.closeSelectMode(true, true);
+      }
+      return BackPressMode.CUSTOM_ACTION_PERFORMED;
     }
     ViewController<?> c = getStack().getCurrent();
     if (headerView.inSearchMode()) {
-      if (c != null && c.closeSearchModeByBackPress(fromTop)) {
-        return true;
+      if (c != null && c.closeSearchModeByBackPress(fromTop, commit)) {
+        return BackPressMode.CUSTOM_ACTION_PERFORMED;
       }
-      headerView.closeSearchMode(true, null); // delayed: (c != null && c.inChatSearchMode())
-      return true;
+      if (commit) {
+        headerView.closeSearchMode(true, null); // delayed: (c != null && c.inChatSearchMode())
+      }
+      return BackPressMode.CUSTOM_ACTION_PERFORMED;
     }
     /*if (headerView.inCustomMode()) {
       headerView.closeCustomMode();
       return true;
     }*/
     if (c != null) {
-      if (c.onBackPressed(fromTop)) {
-        return true;
+      if (c.performOnBackPressed(fromTop, commit)) {
+        return BackPressMode.CUSTOM_ACTION_PERFORMED;
       }
       if (getStackSize() > 1) {
-        navigateBack();
-        return true;
+        if (commit) {
+          navigateBack();
+        }
+        return BackPressMode.NAVIGATE_BACK_IN_STACK;
       }
     }
-    return false;
+    return BackPressMode.SYSTEM_ACTION_REQUIRED;
   }
 
   private boolean isCurrentControllerAnimating () {
@@ -581,6 +590,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
   public final boolean navigateTo (ViewController<?> controller) {
     if (!isAnimating && getStackSize() > 0 && controller != null && !isCurrentControllerAnimating()) {
       isAnimating = true;
+      UI.getContext(context).notifyBackPressAvailabilityChanged();
       clearStackLock();
       processor.navigateTo(controller);
       return true;
@@ -644,9 +654,9 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     return false;
   }
 
-  private void prepareHeaderAnimation (ViewController<?> left, ViewController<?> right, boolean forward, int direction) {
+  private void prepareHeaderAnimation (ViewController<?> left, ViewController<?> right, boolean forward, int direction, boolean forceRtl) {
     lastHeaderFactor = forward ? 1f : 0f;
-    headerView.openPreview(left, right, forward, direction, lastHeaderFactor);
+    headerView.openPreview(left, right, forward, direction, lastHeaderFactor, forceRtl);
 
     if (!forward && right.usePopupMode()) {
       fromHeaderHeight = left.getHeaderHeight();
@@ -655,11 +665,14 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     }
   }
 
-  public void prepareFactorAnimation (ViewController<?> left, ViewController<?> right, boolean forward, int direction) {
+  public void prepareFactorAnimation (ViewController<?> left, ViewController<?> right, boolean forward, int direction, boolean forceRtl) {
     preventLayout();
     if (Views.HARDWARE_LAYER_ENABLED) {
       setLayerType(View.LAYER_TYPE_HARDWARE, left, right);
     }
+
+    forceRtlAnimation = forceRtl && direction == TRANSLATION_HORIZONTAL;
+    checkShadowDirection();
 
     if (forward) {
       right.applyPlayerOffset(currentPlayerFactor, currentPlayerOffset);
@@ -841,7 +854,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       }
     }
 
-    prepareHeaderAnimation(left, right, forward, direction);
+    prepareHeaderAnimation(left, right, forward, direction, forceRtlAnimation);
 
     layoutIfRequested();
     onAfterShow();
@@ -929,9 +942,9 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     final ViewController<?> left, right;
 
     if (forward) {
-      prepareFactorAnimation(left = getStack().getPrevious(), right = controller, true, direction);
+      prepareFactorAnimation(left = getStack().getPrevious(), right = controller, true, direction, false);
     } else {
-      prepareFactorAnimation(left = controller, right = getStack().getCurrent(), false, direction);
+      prepareFactorAnimation(left = controller, right = getStack().getCurrent(), false, direction, false);
     }
 
     final boolean[] isDone = new boolean[1];
@@ -1035,6 +1048,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
   void setIsAnimating (boolean animating) {
     if (isAnimating != animating) {
       isAnimating = animating;
+      ((BaseActivity) context).notifyBackPressAvailabilityChanged();
       ((BaseActivity) context).setIsKeyboardBlocked(animating);
       UI.getContext(context).setOrientationLockFlagEnabled(BaseActivity.ORIENTATION_FLAG_NAVIGATING, animating);
       if (actionMode != null) {
@@ -1082,18 +1096,37 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
   }
 
   boolean openPreview (float y) {
-    return openPreview(y, false);
+    return openPreviewImpl(y, false, false);
   }
 
   public boolean forcePreviewPreviouewItem () {
-    return openPreview(0, true);
+    return openPreviewImpl(0, true, false);
   }
 
   public void closePreviousPreviewItem () {
     closePreview(0f);
   }
 
-  private boolean openPreview (float y, boolean force) {
+  private boolean forceRtlAnimation;
+
+  private boolean needRtl () {
+    return forceRtlAnimation || Lang.rtl();
+  }
+
+  private boolean shadowIsRtl;
+  private void checkShadowDirection () {
+    boolean rtl = needRtl();
+    if (shadowView != null && shadowIsRtl != rtl) {
+      shadowIsRtl = rtl;
+      if (rtl) {
+        shadowView.setSimpleRightShadow(false);
+      } else {
+        shadowView.setSimpleLeftShadow(false);
+      }
+    }
+  }
+
+  private boolean openPreviewImpl (float y, boolean force, boolean forceRtl) {
     if (getStack().getCurrentIndex() <= 0) {
       processor.clearAnimation();
       return false;
@@ -1112,9 +1145,9 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     setIsAnimating(true);
 
     if (right.usePopupMode()) {
-      prepareFactorAnimation(getStack().getPrevious(), right, false, force ? TRANSLATION_NONE : TRANSLATION_VERTICAL);
+      prepareFactorAnimation(getStack().getPrevious(), right, false, force ? TRANSLATION_NONE : TRANSLATION_VERTICAL, forceRtl);
     } else {
-      prepareFactorAnimation(getStack().getPrevious(), right, false, force ? TRANSLATION_NONE : TRANSLATION_HORIZONTAL);
+      prepareFactorAnimation(getStack().getPrevious(), right, false, force ? TRANSLATION_NONE : TRANSLATION_HORIZONTAL, forceRtl);
     }
 
     return true;
@@ -1343,7 +1376,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
         float px2 = factor * currentPrevWidth;
 
-        if (Lang.rtl()) {
+        if (needRtl()) {
           rightWrap.setTranslationX(-px);
           currentRight.onTranslationChanged(-px);
 
@@ -1373,7 +1406,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
         if (DROP_SHADOW_ENABLED) {
           //noinspection ResourceType
-          shadowView.setTranslationX(Lang.rtl() ? -px + currentWidth : px - Size.getNavigationShadowSize());
+          shadowView.setTranslationX(needRtl() ? -px + currentWidth : px - Size.getNavigationShadowSize());
           shadowView.setAlpha(.65f + .45f * factor);
         }
 
@@ -1440,12 +1473,46 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
   final void translatePreview (float px) {
     if (isAnimating) {
-      if (Lang.rtl() && translationMode == TRANSLATION_HORIZONTAL) {
+      if (needRtl() && translationMode == TRANSLATION_HORIZONTAL) {
         setFactor(-px / currentWidth);
       } else {
         setFactor(px / currentWidth);
       }
     }
+  }
+
+  @Override
+  public boolean onSystemBackStarted (@NonNull BackEventCompat backEvent) {
+    if (swipeNavigationEnabled()) {
+      if (openPreviewImpl(backEvent.getTouchY(), false, backEvent.getSwipeEdge() == BackEventCompat.EDGE_RIGHT)) {
+        setFactor(backEvent.getProgress());
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
+  public void onSystemBackProgressed (@NonNull BackEventCompat backEvent) {
+    if (isAnimating) {
+      setFactor(backEvent.getProgress());
+    }
+  }
+
+  @Override
+  public void onSystemBackCancelled () {
+    if (isAnimating) {
+      closePreview(0f);
+    }
+  }
+
+  @Override
+  public boolean onSystemBackPressed () {
+    if (isAnimating) {
+      applyPreview(0f);
+      return true;
+    }
+    return false;
   }
 
   public final void configurationChanged (Configuration newConfig) {
@@ -1531,13 +1598,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     if (directionChanged) {
       if (Views.setGravity(floatingButton, Gravity.TOP | (Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT)))
         Views.updateLayoutParams(floatingButton);
-      if (shadowView != null) {
-        if (Lang.rtl()) {
-          shadowView.setSimpleRightShadow(false);
-        } else {
-          shadowView.setSimpleLeftShadow(false);
-        }
-      }
+      checkShadowDirection();
     }
 
     if (headerView != null) {

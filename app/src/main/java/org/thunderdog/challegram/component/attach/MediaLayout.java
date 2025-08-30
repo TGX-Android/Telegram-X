@@ -394,25 +394,29 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean onBackPressed (boolean fromTop, boolean commit) {
     MediaBottomBaseController<?> c = getCurrentController();
     if (c.isAnimating()) {
       return true;
     }
-    if (c.onBackPressed(fromTop)) {
+    if (c.performOnBackPressed(fromTop, commit)) {
       return true;
     }
     if (counterView != null && counterView.isEnabled()) {
-      if (!c.showExitWarning(false)) {
-        cancelMultiSelection();
+      if (commit) {
+        if (!c.showExitWarning(false, commit)) {
+          cancelMultiSelection();
+        }
       }
       return true;
     }
     if (c.isExpanded()) {
-      c.collapseToStart();
+      if (commit) {
+        c.collapseToStart();
+      }
       return true;
     }
-    return c.showExitWarning(false);
+    return c.showExitWarning(false, commit);
   }
 
   public long getTargetChatId () {
@@ -528,7 +532,7 @@ public class MediaLayout extends FrameLayoutFix implements
   @Override
   public boolean onBackgroundTouchDown (PopupLayout popupLayout, MotionEvent e) {
     MediaBottomBaseController<?> c = getCurrentController();
-    return c != null && c.showExitWarning(false);
+    return c != null && c.showExitWarning(false, true);
   }
 
   @Override
@@ -1402,7 +1406,7 @@ public class MediaLayout extends FrameLayoutFix implements
     } else if (viewId == R.id.btn_mosaic) {
       setNeedGroupMedia(!needGroupMedia, true);
     } else if (viewId == R.id.btn_close) {
-      if (!getCurrentController().showExitWarning(true)) {
+      if (!getCurrentController().showExitWarning(true, true)) {
         cancelMultiSelection();
       }
     }

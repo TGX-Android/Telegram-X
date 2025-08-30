@@ -440,6 +440,7 @@ public class OverlayButtonWrap extends FrameLayoutFix implements View.OnClickLis
         setChildrenLayerType(LAYER_TYPE_NONE);
       }
     }
+    UI.getContext(getContext()).notifyBackPressAvailabilityChanged();
   }
 
   // Background shit
