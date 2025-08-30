@@ -1195,7 +1195,7 @@ public class TGCallService extends Service implements
     callInitialized = false; // FIXME?
   }
 
-  private boolean isInitiated () {
+  public boolean isInitiated () {
     return tgcalls != null && tgcalls.isInitiated();
   }
 

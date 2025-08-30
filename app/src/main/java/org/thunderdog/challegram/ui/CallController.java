@@ -724,13 +724,6 @@ public class CallController extends ViewController<CallController.Arguments> imp
     messageButtonView.setIcon(R.drawable.baseline_chat_bubble_24);
     messageButtonView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(72f), Screen.dp(72f), Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM));
 
-    muteButtonView = new ButtonView(context);
-    muteButtonView.setId(R.id.btn_mute);
-    muteButtonView.setOnClickListener(this);
-    muteButtonView.setIcon(R.drawable.baseline_mic_24);
-    muteButtonView.setNeedCross(true);
-    muteButtonView.setLayoutParams(buttonParams);
-
     speakerButtonView = new ButtonView(context);
     speakerButtonView.setId(R.id.btn_speaker);
     speakerButtonView.setOnClickListener(this);
@@ -811,12 +804,28 @@ public class CallController extends ViewController<CallController.Arguments> imp
     setTexts();
     updateCallState();
 
+    TGCallService service = TGCallService.currentInstance();
+    if (service != null) {
+      if (service.isInitiated()) {
+        if (service.isVideoSupported()) {
+          videoButtonContainer.setVisibility(View.VISIBLE);
+        }
+        otherOptionsContainer.setVisibility(View.VISIBLE);
+        messageButtonContainer.setVisibility(View.GONE);
+      }
+      setupVideoFrameListeners(service);
+    }
+
     if (callSettings != null) {
       muteButtonView.setIsActive(callSettings.isMicMuted(), false);
       speakerButtonView.setIsActive(callSettings.isSpeakerModeEnabled(), false);
+
       if (callSettings.isScreenSharing()) {
         videoButtonView.setIcon(R.drawable.baseline_share_arrow_24);
+        otherOptionsContainer.setVisibility(View.GONE);
+        messageButtonContainer.setVisibility(View.VISIBLE);
       }
+
       videoButtonView.setIsActive((callSettings.getLocalCameraState() != VoIPFloatingLayout.STATE_GONE || callSettings.isScreenSharing()), false);
       flipCameraButtonView.setIsActive(!callSettings.isCameraFrontFacing(), false);
       flipCameraButtonView.setIcon(callSettings != null && !callSettings.isCameraFrontFacing() ? R.drawable.baseline_camera_rear_24 : R.drawable.baseline_camera_front_24);
@@ -1261,6 +1270,61 @@ public class CallController extends ViewController<CallController.Arguments> imp
     currentUserCameraFloatingLayout.setTag(state);
   }
 
+  private void setupVideoFrameListeners(TGCallService service) {
+    service.setRemoteSourceChangeCallback((chatId, remoteSource) -> AndroidUtils.runOnUIThread(() -> {
+      if (remoteSource.device == StreamDevice.CAMERA || remoteSource.device == StreamDevice.SCREEN) {
+        var currentUserActive = callSettings.getLocalCameraState() != VoIPFloatingLayout.STATE_GONE;
+        if (remoteSource.state == StreamStatus.ACTIVE) {
+          callSettings.setRemoteCameraState(VoIPFloatingLayout.STATE_FULLSCREEN);
+          callingUserTextureView.setVisibility(View.VISIBLE);
+          callingUserTextureView.renderer.init(JavaVideoCapturerModule.getSharedEGLContext(), null);
+          callingUserMiniTextureRenderer.init(JavaVideoCapturerModule.getSharedEGLContext(), null);
+          if (currentUserActive) callSettings.setLocalCameraState(VoIPFloatingLayout.STATE_FLOATING);
+        } else if (remoteSource.state == StreamStatus.IDLING) {
+          callSettings.setRemoteCameraState(VoIPFloatingLayout.STATE_GONE);
+          callingUserTextureView.setVisibility(View.GONE);
+          callingUserTextureView.stopCapturing();
+          callingUserMiniTextureRenderer.release();
+          if (currentUserActive) callSettings.setLocalCameraState(VoIPFloatingLayout.STATE_FULLSCREEN);
+        }
+        if (currentUserActive) showFloatingLayout(true);
+        showMiniFloatingLayout(true);
+      }
+    }));
+    service.setFrameCallback((chatId, streamMode, streamDevice, frameList) -> {
+      var isVideo = streamDevice == StreamDevice.CAMERA || streamDevice == StreamDevice.SCREEN;
+      if (isVideo) {
+        var rawFrame = frameList.get(0);
+        int ySize = rawFrame.frameData.width * rawFrame.frameData.height;
+        int uvSize = ySize / 4;
+        var i420Buffer = JavaI420Buffer.allocate(rawFrame.frameData.width, rawFrame.frameData.height);
+        i420Buffer.getDataY().put(rawFrame.data, 0, ySize).flip();
+        i420Buffer.getDataU().put(rawFrame.data, ySize, uvSize).flip();
+        i420Buffer.getDataV().put(rawFrame.data, ySize + uvSize, uvSize).flip();
+        VideoFrame frame = new VideoFrame(i420Buffer, rawFrame.frameData.rotation, System.nanoTime());
+
+        switch (streamMode) {
+          case CAPTURE:
+            if (callSettings.getLocalCameraState() != VoIPFloatingLayout.STATE_GONE) {
+              currentUserTextureView.onFrame(frame);
+            }
+            break;
+          case PLAYBACK:
+            switch (callSettings.getRemoteCameraState()) {
+              case VoIPFloatingLayout.STATE_FULLSCREEN:
+                callingUserTextureView.onFrame(frame);
+                break;
+              case VoIPFloatingLayout.STATE_FLOATING:
+                callingUserMiniTextureRenderer.onFrame(frame);
+                break;
+            }
+            break;
+        }
+        i420Buffer.release();
+      }
+    });
+  }
+
   @Override
   public void onUserUpdated (final TdApi.User user) {
     tdlib.ui().post(() -> {
@@ -1323,58 +1387,7 @@ public class CallController extends ViewController<CallController.Arguments> imp
             if (callSettings == null) {
               callSettings = new CallSettings(tdlib, call.id);
             }
-            service.setRemoteSourceChangeCallback((chatId, remoteSource) -> AndroidUtils.runOnUIThread(() -> {
-              if (remoteSource.device == StreamDevice.CAMERA || remoteSource.device == StreamDevice.SCREEN) {
-                var currentUserActive = callSettings.getLocalCameraState() != VoIPFloatingLayout.STATE_GONE;
-                if (remoteSource.state == StreamStatus.ACTIVE) {
-                  callSettings.setRemoteCameraState(VoIPFloatingLayout.STATE_FULLSCREEN);
-                  callingUserTextureView.setVisibility(View.VISIBLE);
-                  callingUserTextureView.renderer.init(JavaVideoCapturerModule.getSharedEGLContext(), null);
-                  callingUserMiniTextureRenderer.init(JavaVideoCapturerModule.getSharedEGLContext(), null);
-                  if (currentUserActive) callSettings.setLocalCameraState(VoIPFloatingLayout.STATE_FLOATING);
-                } else if (remoteSource.state == StreamStatus.IDLING) {
-                  callSettings.setRemoteCameraState(VoIPFloatingLayout.STATE_GONE);
-                  callingUserTextureView.setVisibility(View.GONE);
-                  callingUserTextureView.stopCapturing();
-                  callingUserMiniTextureRenderer.release();
-                  if (currentUserActive) callSettings.setLocalCameraState(VoIPFloatingLayout.STATE_FULLSCREEN);
-                }
-                if (currentUserActive) showFloatingLayout(true);
-                showMiniFloatingLayout(true);
-              }
-            }));
-            service.setFrameCallback((chatId, streamMode, streamDevice, frameList) -> {
-              var isVideo = streamDevice == StreamDevice.CAMERA || streamDevice == StreamDevice.SCREEN;
-              if (isVideo) {
-                var rawFrame = frameList.get(0);
-                int ySize = rawFrame.frameData.width * rawFrame.frameData.height;
-                int uvSize = ySize / 4;
-                var i420Buffer = JavaI420Buffer.allocate(rawFrame.frameData.width, rawFrame.frameData.height);
-                i420Buffer.getDataY().put(rawFrame.data, 0, ySize).flip();
-                i420Buffer.getDataU().put(rawFrame.data, ySize, uvSize).flip();
-                i420Buffer.getDataV().put(rawFrame.data, ySize + uvSize, uvSize).flip();
-                VideoFrame frame = new VideoFrame(i420Buffer, rawFrame.frameData.rotation, System.nanoTime());
-
-                switch (streamMode) {
-                  case CAPTURE:
-                    if (callSettings.getLocalCameraState() != VoIPFloatingLayout.STATE_GONE) {
-                      currentUserTextureView.onFrame(frame);
-                    }
-                    break;
-                  case PLAYBACK:
-                    switch (callSettings.getRemoteCameraState()) {
-                      case VoIPFloatingLayout.STATE_FULLSCREEN:
-                        callingUserTextureView.onFrame(frame);
-                        break;
-                      case VoIPFloatingLayout.STATE_FLOATING:
-                        callingUserMiniTextureRenderer.onFrame(frame);
-                        break;
-                    }
-                    break;
-                }
-                i420Buffer.release();
-              }
-            });
+            setupVideoFrameListeners(service);
           }
         });
       }
