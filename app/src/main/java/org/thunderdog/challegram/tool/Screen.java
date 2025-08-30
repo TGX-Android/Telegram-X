@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.tool;
 
 import android.content.Context;
+import android.content.res.Resources;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.Build;
@@ -273,18 +274,18 @@ public class Screen {
 
   @Deprecated
   public static boolean needsKeyboardPadding (BaseActivity context) {
-    return context.isKeyboardVisible() && isGesturalNavigationEnabled() && getNavigationBarHeight() > 0;
+    return context.isKeyboardVisible() && isGesturalNavigationEnabled(UI.getResources()) && getNavigationBarHeight() > 0;
   }
 
-  private static boolean isGesturalNavigationEnabled () {
+  public static boolean isGesturalNavigationEnabled (Resources resources) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
       return false;
     }
 
     try {
-      int resourceId = UI.getResources().getIdentifier("config_navBarInteractionMode", "integer", "android");
+      int resourceId = resources.getIdentifier("config_navBarInteractionMode", "integer", "android");
       if (resourceId > 0) {
-        return UI.getResources().getInteger(resourceId) == 2; // 2 is gestural by AOSP docs, SO says some Samsung devices can have values like 17694897, needs further investigation
+        return resources.getInteger(resourceId) == 2; // 2 is gestural by AOSP docs, SO says some Samsung devices can have values like 17694897, needs further investigation
       }
     } catch (android.content.res.Resources.NotFoundException ignored) {}
 

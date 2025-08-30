@@ -140,6 +140,7 @@
   <item type="id" name="controller_linkChat" />
   <item type="id" name="controller_enabledReactions"/>
   <item type="id" name="controller_deleteAccount"/>
+  <item type="id" name="controller_waitForPremium"/>
 
   <item type="id" name="controller_setEmojiStatusPager" />
 
@@ -295,6 +296,7 @@
 
   <item type="id" name="btn_double" />
   <item type="id" name="btn_date" />
+  <item type="id" name="btn_buyPremium" />
   <item type="id" name="input_customTitle" />
   <item type="id" name="avatar" />
   <item type="id" name="chat" />

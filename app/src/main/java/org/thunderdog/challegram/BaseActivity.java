@@ -461,6 +461,8 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     return 60.0f;
   }
 
+  private boolean isGestureNavigationEnabled;
+
   @Override
   public void onCreate (Bundle savedInstanceState) {
     UI.setContext(this);
@@ -483,6 +485,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (Config.USE_CUSTOM_NAVIGATION_COLOR) {
       this.isWindowLight = !Theme.isDark();
     }
+    this.isGestureNavigationEnabled = Screen.isGesturalNavigationEnabled(getResources());
     // UI.resetSizes();
     setActivityState(UI.State.RESUMED);
     TdlibManager.instance().watchDog().onActivityCreate(this);
@@ -863,19 +866,11 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   public void setWindowDecorSystemUiVisibility (int visibility, boolean remember) {
-    View decorView = getWindow().getDecorView();
-    int setVisibility = visibility;
-    boolean isLight = false;
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && Config.USE_CUSTOM_NAVIGATION_COLOR && !Theme.isDark() && (visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) {
-      setVisibility |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-      isLight = true;
-    }
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Theme.needLightStatusBar()) {
-      setVisibility |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-    }
-    decorView.setSystemUiVisibility(setVisibility);
-    if (this.isWindowLight != isLight) {
-      this.isWindowLight = isLight;
+    boolean lightNavigationBar = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && Config.USE_CUSTOM_NAVIGATION_COLOR && !Theme.isDark() && (visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0;
+    boolean lightStatusBar = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Theme.needLightStatusBar();
+    UI.setLightSystemBars(getWindow(), lightNavigationBar, lightStatusBar, visibility, true);
+    if (this.isWindowLight != lightNavigationBar) {
+      this.isWindowLight = lightNavigationBar;
       updateNavigationBarColor();
     }
     lastWindowVisibility = visibility;
@@ -1145,6 +1140,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       throw t;
     }
     checkAutoNightMode();
+    setGestureNavigationEnabled(Screen.isGesturalNavigationEnabled(getResources()));
     Intents.revokeFileReadPermissions();
     enableFocus();
     if (timeFilter == null) {
@@ -1317,6 +1313,13 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
   }
 
+  private void setGestureNavigationEnabled (boolean isEnabled) {
+    if (this.isGestureNavigationEnabled != isEnabled) {
+      this.isGestureNavigationEnabled = isEnabled;
+      updateNavigationBarColor();
+    }
+  }
+
   @Override
   public void onConfigurationChanged (@NonNull Configuration newConfig)  {
     super.onConfigurationChanged(newConfig);
@@ -1328,6 +1331,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (camera != null) {
       camera.onConfigurationChanged(newConfig);
     }
+    setGestureNavigationEnabled(Screen.isGesturalNavigationEnabled(getResources()));
     currentOrientation = newConfig.orientation;
     Lang.checkLanguageCode();
     setSystemNightMode(newConfig.uiMode & Configuration.UI_MODE_NIGHT_MASK);
@@ -3367,18 +3371,10 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         color = ColorUtils.fromToArgb(color, Theme.getColor(ColorId.passcode), passcodeFactor);
         isLight = isLight && passcodeFactor < .5f;
       }
-      getWindow().setNavigationBarColor(color);
+      UI.setNavigationBarColor(getWindow(), color, isGestureNavigationEnabled);
       if (this.isWindowLight != isLight) {
         this.isWindowLight = isLight;
-        int visibility = lastWindowVisibility;
-        if (isLight) {
-          visibility |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-        }
-        if (Theme.needLightStatusBar()) {
-          visibility |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-        }
-        // TODO: rework to WindowInsetsControlle
-        getWindow().getDecorView().setSystemUiVisibility(visibility);
+        UI.setLightSystemBars(getWindow(), isLight, Theme.needLightStatusBar(), lastWindowVisibility, true);
       }
     }
   }
