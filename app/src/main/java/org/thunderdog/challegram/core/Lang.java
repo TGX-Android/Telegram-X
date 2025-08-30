@@ -2414,12 +2414,19 @@ public class Lang {
 
   public static CharSequence getBirthdate (@NonNull TdApi.Birthdate birthdate, boolean includeAge, boolean isSelf) {
     Calendar c = Calendar.getInstance();
+    c.setTimeInMillis(0);
     c.set(Calendar.DAY_OF_MONTH, birthdate.day);
     c.set(Calendar.MONTH, birthdate.month - 1);
+    int birthDayOfThisYear = -1;
     String date;
     if (birthdate.year != 0) {
       c.set(Calendar.YEAR, birthdate.year);
       date = dateYearShort(c);
+
+      Calendar now = DateUtils.getNowCalendar();
+      now.set(Calendar.DAY_OF_MONTH, birthdate.day);
+      now.set(Calendar.MONTH, birthdate.month - 1);
+      birthDayOfThisYear = now.get(Calendar.DAY_OF_YEAR);
     } else {
       date = dateShort(c);
     }
@@ -2427,13 +2434,12 @@ public class Lang {
     int daysTillBirthday = 0;
     if (birthdate.year != 0) {
       Calendar now = DateUtils.getNowCalendar();
-      ageYears = now.get(Calendar.YEAR) - c.get(Calendar.YEAR);
+      ageYears = now.get(Calendar.YEAR) - birthdate.year;
       int today = now.get(Calendar.DAY_OF_YEAR);
-      int birthday = c.get(Calendar.DAY_OF_YEAR);
-      if (today < birthday) {
+      if (today < birthDayOfThisYear) {
         ageYears--;
       }
-      daysTillBirthday = birthday - today;
+      daysTillBirthday = birthDayOfThisYear - today;
     }
     if (includeAge && ageYears > 0) {
       CharSequence age;
