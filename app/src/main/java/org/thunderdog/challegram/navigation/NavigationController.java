@@ -687,8 +687,19 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       setLayerType(View.LAYER_TYPE_HARDWARE, left, right);
     }
 
-    if (predictiveGestureMode != PredictiveGesture.NONE && Settings.instance().needReduceMotion()) {
-      direction = TRANSLATION_FADE;
+    boolean forceRtl = false;
+
+    if (predictiveGestureMode != PredictiveGesture.NONE) {
+      if (Settings.instance().needReduceMotion()) {
+        direction = TRANSLATION_FADE;
+      } else if (direction == TRANSLATION_HORIZONTAL && predictiveGestureMode == PredictiveGesture.BACK_FROM_RIGHT_EDGE) {
+        forceRtl = !Settings.instance().getNewSetting(Settings.SETTING_FLAG_FORCE_DEFAULT_ANIMATION_FOR_RIGHT_SWIPE_EDGE);
+      }
+    }
+
+    if (forceRtlAnimation != forceRtl) {
+      forceRtlAnimation = forceRtl;
+      checkShadowDirection();
     }
 
     if (forward) {

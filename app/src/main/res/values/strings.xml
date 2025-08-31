@@ -1488,6 +1488,7 @@
   <string name="DataSettings">Data and Storage</string>
   <string name="StorageUsage">Storage Usage</string>
   <string name="ReduceMotion">Reduce Motion</string>
+  <string name="RightSwipeEdgeAnimation">Match Predictive Gesture</string>
   <string name="StorageUsageHint">Manage disk space</string>
   <string name="MobileUsage">Mobile Data Usage</string>
   <string name="WiFiUsage">Wi-Fi Data Usage</string>
