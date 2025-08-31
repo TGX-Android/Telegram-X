@@ -10032,6 +10032,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateOwnedStarCount((TdApi.UpdateOwnedStarCount) update);
         break;
       }
+      case TdApi.UpdateOwnedTonCount.CONSTRUCTOR: {
+        updateOwnedTonCount((TdApi.UpdateOwnedTonCount) update);
+        break;
+      }
       case TdApi.UpdateSpeechRecognitionTrial.CONSTRUCTOR: {
         updateSpeechRecognitionTrial((TdApi.UpdateSpeechRecognitionTrial) update);
         break;
