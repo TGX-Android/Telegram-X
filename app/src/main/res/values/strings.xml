@@ -2435,7 +2435,7 @@
   <string name="ContactsOnTelegramMany_other">%2$s and %1$s more of your contacts are&#160;using&#160;Telegram</string>
   <string name="SearchPeople">Search People</string>
   <string name="ManyContactsJoined">1000+ contacts on Telegram</string>
-  <string name="InviteTextCommonMany_one">Hey, I\'m using Telegram to chat – and so is %1$s of our other contact. Join us! Download it here: %2$s</string>
+  <string name="InviteTextCommonMany_one">Hey, I\'m using Telegram to chat – and so is %1$s of our other contacts. Join us! Download it here: %2$s</string>
   <string name="InviteTextCommonMany_other">Hey, I\'m using Telegram to chat – and so are %1$s of our other contacts. Join us! Download it here: %2$s</string>
   <string name="InviteTextCommonOverThousand">Hey, I\'m using Telegram to chat – and so are 1000+ of our other contacts. Join us! Download it here: %1$s</string>
   <string name="InviteContacts">Invite Contacts</string>
