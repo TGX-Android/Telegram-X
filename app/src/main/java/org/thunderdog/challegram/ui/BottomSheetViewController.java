@@ -4,7 +4,6 @@ import android.animation.Animator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
-import android.os.Build;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,7 +16,7 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.thunderdog.challegram.config.Device;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -26,11 +25,11 @@ import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.LickView;
 import org.thunderdog.challegram.widget.PopupLayout;
@@ -245,14 +244,16 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
   }
 
   protected int getTargetHeight () {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-      return Screen.currentHeight()
-        + (context.isKeyboardVisible() ? Keyboard.getSize() : 0)
-        - (Screen.needsKeyboardPadding(context) ? Screen.getNavigationBarFrameDifference() : 0)
-        + (context.isKeyboardVisible() && Device.NEED_ADD_KEYBOARD_SIZE ? Screen.getNavigationBarHeight() : 0);
-    } else {
-      return Screen.currentHeight();
-    }
+    return context().getRootView().getMeasuredHeight();
+  }
+
+  @Override
+  public abstract boolean supportsBottomInset ();
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    invalidateAllItemDecorations();
   }
 
   protected void invalidateAllItemDecorations () {
@@ -416,6 +417,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
     popupLayout.setBoundController(this);
     popupLayout.setPopupHeightProvider(this);
     popupLayout.init(true);
+    popupLayout.setNeedFullScreen(true);
     popupLayout.setTouchProvider(this);
   }
 
@@ -527,12 +529,12 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
 
       if (position == 0 || isUnknown) {
         top = controller.canHideByScroll() ?
-          (controller.getTargetHeight() - HeaderView.getTopOffset()):
+          (controller.getTargetHeight() - HeaderView.getTopOffset() - (Settings.instance().useEdgeToEdge() ? controller.context().getRootView().getSystemInsetsWithoutIme().bottom : 0)):
           (controller.getContentOffset());
       }
       if (position == itemCount - 1 || isUnknown) {
         final int itemsHeight = isUnknown ? view.getMeasuredHeight() : page.getItemsHeight(parent);
-        final int parentHeight = parent.getMeasuredHeight();
+        final int parentHeight = parent.getMeasuredHeight() - parent.getPaddingBottom();
         bottom = parentHeight - itemsHeight;
       }
 
@@ -656,6 +658,9 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
     public boolean needBottomDecorationOffsets (RecyclerView parent) {
       return true;
     }
+
+    @Override
+    public abstract boolean supportsBottomInset ();
 
     public final void ensureMaxScrollY (int scrollY, int maxScrollY) {
       CustomRecyclerView recyclerView = getRecyclerView();

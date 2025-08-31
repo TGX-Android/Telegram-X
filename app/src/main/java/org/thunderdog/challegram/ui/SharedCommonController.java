@@ -291,7 +291,7 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
 
     alternateParent.showOptions(null, new int[]{R.id.btn_showInChat, R.id.btn_share, R.id.btn_delete}, new String[]{Lang.getString(R.string.ShowInChat), Lang.getString(R.string.Share), Lang.getString(R.string.Delete)}, new int[]{OptionColor.NORMAL, OptionColor.NORMAL, OptionColor.RED}, new int[] {R.drawable.baseline_visibility_24, R.drawable.baseline_forward_24, R.drawable.baseline_delete_24}, (itemView, id) -> {
       if (id == R.id.btn_showInChat) {
-        alternateParent.closeSearchModeByBackPress(false);
+        alternateParent.closeSearchModeByBackPress(false, true);
         tdlib.ui().openMessage(SharedCommonController.this, c.getMessage(), new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
       } else if (id == R.id.btn_share) {
         ShareController share = new ShareController(context, tdlib);

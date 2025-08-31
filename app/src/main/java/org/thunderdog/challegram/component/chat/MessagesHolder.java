@@ -236,6 +236,7 @@ public class MessagesHolder extends RecyclerView.ViewHolder {
             }
 
             @Override
+            @SuppressWarnings("deprecation")
             public int getOpacity () {
               return PixelFormat.UNKNOWN;
             }

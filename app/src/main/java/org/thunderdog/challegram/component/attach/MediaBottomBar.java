@@ -38,6 +38,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
@@ -115,6 +116,11 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
     setWillNotDraw(false);
     ViewUtils.setBackground(this, new MediaBottomBarBackground());
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, barHeight, Gravity.BOTTOM));
+  }
+
+  public void setBottomInset (int inset) {
+    Views.setPaddingBottom(this, inset);
+    Views.setLayoutHeight(this, barHeight + inset);
   }
 
   // Getters
@@ -423,6 +429,7 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
 
       int centerX = barWidth / 2;
       int centerY = barHeight / 2;
+      int barHeight = MediaBottomBar.this.barHeight + MediaBottomBar.this.getPaddingBottom();
 
       if (overlayFactor != 1f) {
         int backgroundColor = Theme.getColor(items[index].backgroundColorId);
@@ -503,6 +510,7 @@ public class MediaBottomBar extends FrameLayoutFix implements GestureDetector.On
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public int getOpacity () {
       return PixelFormat.UNKNOWN;
     }

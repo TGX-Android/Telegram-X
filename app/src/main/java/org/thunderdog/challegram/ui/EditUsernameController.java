@@ -598,12 +598,14 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (hasUnsavedChanges()) {
-      showUnsavedChangesPromptBeforeLeaving(null);
+      if (commit) {
+        showUnsavedChangesPromptBeforeLeaving(null);
+      }
       return true;
     }
-    return super.onBackPressed(fromTop);
+    return super.performOnBackPressed(fromTop, commit);
   }
 
   private void checkUsernameInternal (boolean forceIgnoreChatId, final CancellableRunnable runnable) {

@@ -133,7 +133,7 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
   }
 
   @Override
-  public boolean passBackPressToActivity (boolean fromTop) {
+  public boolean needPassBackPressToActivity (boolean fromTop) {
     return true;
   }
 
@@ -295,9 +295,11 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
         }
       }
       popupLayout.setDisableCancelOnTouchDown(true);
-      popupLayout.setBackListener((fromTop) -> {
+      popupLayout.setBackListener((fromTop, commit) -> {
         if (loginRequest == request) {
-          cancelLoginRequest();
+          if (commit) {
+            cancelLoginRequest();
+          }
         }
         return false;
       });
@@ -333,9 +335,11 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
     });
     if (popupLayout != null) {
       popupLayout.setDisableCancelOnTouchDown(true);
-      popupLayout.setBackListener((fromTop) -> {
+      popupLayout.setBackListener((fromTop, commit) -> {
         if (loginRequest == request) {
-          cancelLoginRequest();
+          if (commit) {
+            cancelLoginRequest();
+          }
         }
         return false;
       });

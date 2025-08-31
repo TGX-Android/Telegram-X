@@ -997,16 +997,20 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
-    if (super.onBackPressed(fromTop)) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
+    if (super.performOnBackPressed(fromTop, commit)) {
       return true;
     }
     if (inFileSelectMode) {
-      mediaLayout.cancelMultiSelection();
+      if (commit) {
+        mediaLayout.cancelMultiSelection();
+      }
       return true;
     }
     if (!stack.isEmpty()) {
-      navigateUpper();
+      if (commit) {
+        navigateUpper();
+      }
       return true;
     }
     return false;

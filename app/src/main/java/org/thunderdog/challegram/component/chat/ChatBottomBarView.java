@@ -44,6 +44,7 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.MathUtils;
 
 public class ChatBottomBarView extends BaseView {
   private Drawable drawable;
@@ -100,16 +101,32 @@ public class ChatBottomBarView extends BaseView {
     return (int) (Screen.dp(48f) / 2f * collapseFactor);
   }
 
+  private final RectF fromRect = new RectF(), toRect = new RectF();
+
   private RectF buildRectF () {
-    int fromWidth = getMeasuredWidth() - getPaddingLeft() - getPaddingRight();
-    int fromHeight = getMeasuredHeight() - getPaddingTop() - getPaddingBottom();
-    int cx = getPaddingLeft() + fromWidth / 2;
-    int cy = getPaddingTop() + fromHeight / 2;
+    int fromWidth = getMeasuredWidth();
+    int fromHeight = getMeasuredHeight();
     int toSize = Screen.dp(48f);
-    int width = fromWidth + (int) ((float) (toSize - fromWidth) * collapseFactor);
-    int height = fromHeight + (int) ((float) (toSize - fromHeight) * collapseFactor);
+
     RectF rectF = Paints.getRectF();
-    rectF.set(cx - width / 2, cy - height / 2, cx + width / 2, cy + height / 2);
+
+    float centerX = fromWidth / 2f;
+    float centerY = getPaddingTop() + (getMeasuredHeight() - getPaddingTop() - getPaddingBottom()) / 2f;
+
+    fromRect.set(0, 0, fromWidth, fromHeight);
+    toRect.set(
+      centerX - toSize / 2f,
+      centerY - toSize / 2f,
+      centerX + toSize / 2f,
+      centerY + toSize / 2f
+    );
+
+    rectF.set(
+      MathUtils.fromTo(fromRect.left, toRect.left, collapseFactor),
+      MathUtils.fromTo(fromRect.top, toRect.top, collapseFactor),
+      MathUtils.fromTo(fromRect.right, toRect.right, collapseFactor),
+      MathUtils.fromTo(fromRect.bottom, toRect.bottom, collapseFactor)
+    );
     return rectF;
   }
 
@@ -149,16 +166,19 @@ public class ChatBottomBarView extends BaseView {
 
     private static final float SCALE = .8f;
 
-    public void draw (Canvas c, View view, float collapseFactor, float factor) {
-      int cx = view.getPaddingLeft() + (view.getMeasuredWidth() - view.getPaddingRight() - view.getPaddingLeft()) / 2;
-      int cy = view.getPaddingTop() + (view.getMeasuredHeight() - view.getPaddingBottom() - view.getPaddingTop()) / 2;
+    public void draw (Canvas c, View view, float collapseFactor, float factor, float rectX, float rectY) {
+      float fromCx = view.getPaddingLeft() + (view.getMeasuredWidth() - view.getPaddingRight() - view.getPaddingLeft()) / 2f;
+      float fromCy = view.getPaddingTop() + (view.getMeasuredHeight() - view.getPaddingBottom() - view.getPaddingTop()) / 2f;
+
+      float cx = fromCx + (rectX - fromCx) * collapseFactor;
+      float cy = fromCy + (rectY - fromCy) * collapseFactor;
 
       if (prevState != null) {
         c.save();
         float displayFactor = 1f - this.factor;
         float scale = SCALE + (1f - SCALE) * displayFactor;
         c.scale(scale, scale, cx, cy);
-        prevState.draw(c, view, collapseFactor, displayFactor);
+        prevState.draw(c, view, collapseFactor, displayFactor, cx, cy);
         c.restore();
       }
       factor *= this.factor;
@@ -172,11 +192,11 @@ public class ChatBottomBarView extends BaseView {
         saveCount = -1;
       }
       if (drawingText != null && collapseFactor < 1f) {
-        drawingText.draw(c, cx - drawingText.getWidth() / 2, cy - drawingText.getHeight() / 2, null, factor * (1f - collapseFactor));
+        drawingText.draw(c, (int) (cx - drawingText.getWidth() / 2f), (int) (cy - drawingText.getHeight() / 2f), null, factor * (1f - collapseFactor));
       }
       if (collapseFactor > 0f && drawable != null) {
         Paint paint = PorterDuffPaint.get(ColorId.circleButtonChatIcon, factor * collapseFactor);
-        Drawables.draw(c, drawable, cx - drawable.getMinimumWidth() / 2, cy - drawable.getMinimumHeight() / 2, paint);
+        Drawables.drawCentered(c, drawable, cx, cy, paint);
       }
       if (needScale) {
         Views.restore(c, saveCount);
@@ -233,12 +253,25 @@ public class ChatBottomBarView extends BaseView {
   public void setCollapseFactor (float collapseFactor) {
     if (this.collapseFactor != collapseFactor) {
       this.collapseFactor = collapseFactor;
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-        invalidateOutline();
-      }
-      drawable.invalidateSelf();
-      invalidate();
+      update();
     }
+  }
+
+  @Override
+  public void setPadding (int left, int top, int right, int bottom) {
+    boolean bottomUpdated = bottom != getPaddingBottom();
+    super.setPadding(left, top, right, bottom);
+    if (bottomUpdated) {
+      update();
+    }
+  }
+
+  public void update () {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      invalidateOutline();
+    }
+    drawable.invalidateSelf();
+    invalidate();
   }
 
   @Override
@@ -247,7 +280,7 @@ public class ChatBottomBarView extends BaseView {
       RectF rectF = buildRectF();
       c.save();
       c.clipRect(rectF.left, rectF.top, rectF.right, rectF.bottom);
-      state.draw(c, this, collapseFactor, 1f);
+      state.draw(c, this, collapseFactor, 1f, rectF.centerX(), rectF.centerY());
       c.restore();
     }
   }

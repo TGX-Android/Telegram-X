@@ -108,6 +108,9 @@
   <string name="format_notificationTicker">%1$s: %2$s</string>
   <string name="format_sessionsAndWebsites">%1$s, %2$s</string>
   <string name="login_PhoneNumber">Phone number</string>
+  <string name="login_PremiumRequiredTitle">Telegram Premium required</string>
+  <string name="login_PremiumRequiredBtn">Visit telegram.org</string>
+  <string name="login_PremiumRequired">**Telegram Premium** is required to proceed.\n\nUnfortunately, it\'s currently not possible to make in-app purchases through **Telegram X**.\n\nPlease use one of other official apps and enter the same phone number to set up the subscription.</string>
   <string name="login_error">Error: %1$s. __Contact us__, if you need help.</string>
   <string name="login_Code">Code</string>
   <string name="login_LastDigits_one">Last %1$s digit</string>
@@ -5286,6 +5289,9 @@
   <string name="ExperimentalSettingsUnavailable">No experiments available. Come back later.</string>
   <string name="Experiment_PeerIds">Show Peer IDs in Profiles</string>
   <string name="Experiment_PeerIdsInfo">Show API identifiers of users and chats in their profiles</string>
+
+  <string name="Experiment_NoEdgeToEdge">Disable Edge to Edge</string>
+  <string name="Experiment_NoEdgeToEdgeInfo">Edge to Edge support on Android 11–14 is not tested, issues are expected. Use this settings to compare behavior without edge-to-edge mode.</string>
 
   <string name="PeerId">Peer ID</string>
   <string name="UserId">User ID</string>

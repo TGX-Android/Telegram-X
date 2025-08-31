@@ -37,6 +37,7 @@ public class EmojiDrawable extends Drawable {
   public void setColorFilter (ColorFilter colorFilter) { }
 
   @Override
+  @SuppressWarnings("deprecation")
   public int getOpacity () {
     return PixelFormat.TRANSPARENT;
   }

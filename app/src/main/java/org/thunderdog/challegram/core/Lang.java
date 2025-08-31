@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.core;
 
 import android.content.Context;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Build;
 import android.text.Spannable;
@@ -2413,12 +2414,19 @@ public class Lang {
 
   public static CharSequence getBirthdate (@NonNull TdApi.Birthdate birthdate, boolean includeAge, boolean isSelf) {
     Calendar c = Calendar.getInstance();
+    c.setTimeInMillis(0);
     c.set(Calendar.DAY_OF_MONTH, birthdate.day);
     c.set(Calendar.MONTH, birthdate.month - 1);
+    int birthDayOfThisYear = -1;
     String date;
     if (birthdate.year != 0) {
       c.set(Calendar.YEAR, birthdate.year);
       date = dateYearShort(c);
+
+      Calendar now = DateUtils.getNowCalendar();
+      now.set(Calendar.DAY_OF_MONTH, birthdate.day);
+      now.set(Calendar.MONTH, birthdate.month - 1);
+      birthDayOfThisYear = now.get(Calendar.DAY_OF_YEAR);
     } else {
       date = dateShort(c);
     }
@@ -2426,13 +2434,12 @@ public class Lang {
     int daysTillBirthday = 0;
     if (birthdate.year != 0) {
       Calendar now = DateUtils.getNowCalendar();
-      ageYears = now.get(Calendar.YEAR) - c.get(Calendar.YEAR);
+      ageYears = now.get(Calendar.YEAR) - birthdate.year;
       int today = now.get(Calendar.DAY_OF_YEAR);
-      int birthday = c.get(Calendar.DAY_OF_YEAR);
-      if (today < birthday) {
+      if (today < birthDayOfThisYear) {
         ageYears--;
       }
-      daysTillBirthday = birthday - today;
+      daysTillBirthday = birthDayOfThisYear - today;
     }
     if (includeAge && ageYears > 0) {
       CharSequence age;
@@ -3427,6 +3434,78 @@ public class Lang {
     checkLanguageSettings(true);
   }
 
+  @SuppressWarnings("deprecation")
+  public static Locale getPrimaryLocale (Configuration configuration) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+      android.os.LocaleList list = configuration.getLocales();
+      return list.get(0);
+    } else {
+      return configuration.locale;
+    }
+  }
+
+  public static Locale getSystemLocale () {
+    Configuration configuration = Resources.getSystem().getConfiguration();
+    return getPrimaryLocale(configuration);
+  }
+
+  public static Locale getConfigurationLocale () {
+    Configuration configuration = UI.getAppContext().getResources().getConfiguration();
+    return getPrimaryLocale(configuration);
+  }
+
+  public static Locale obtainLocale (String languageTag) {
+    String language = Lang.cleanLanguageCode(languageTag);
+    String country;
+    if (languageTag.length() > language.length()) {
+      country = Lang.cleanLanguageCode(languageTag.substring(language.length() + 1));
+    } else {
+      country = null;
+    }
+    String variant;
+    if (!StringUtils.isEmpty(country) && languageTag.length() > country.length() + language.length() + 2) {
+      variant = Lang.cleanLanguageCode(languageTag.substring(language.length() + country.length() + 2));
+    } else {
+      variant = null;
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+      if (!StringUtils.isEmpty(variant)) {
+        return Locale.of(language, country, variant);
+      } else if (!StringUtils.isEmpty(country)) {
+        return Locale.of(language, country);
+      } else {
+        return Locale.of(language);
+      }
+    } else {
+      return obtainLocalePreBaklava(languageTag, language, country, variant);
+    }
+  }
+
+  @SuppressWarnings("deprecation")
+  private static Locale obtainLocalePreBaklava (String languageTag, String language, String country, String variant) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      try {
+        Locale.Builder b = new Locale.Builder()
+          .setLanguage(language);
+        if (!StringUtils.isEmpty(country)) {
+          b.setRegion(country);
+        }
+        if (!StringUtils.isEmpty(variant)) {
+          b.setVariant(variant);
+        }
+        return b.build();
+      } catch (RuntimeException illformedLocaleException) {
+        return Locale.forLanguageTag(languageTag);
+      }
+    } else if (!StringUtils.isEmpty(variant)) {
+      return new Locale(language, country,variant);
+    } else if (!StringUtils.isEmpty(country)) {
+      return new Locale(language, country);
+    } else {
+      return new Locale(language);
+    }
+  }
+
   private static void checkLanguageSettings (boolean sendEvents) {
     setLanguageAllowLowercase(!"1".equals(Lang.getString(R.string.language_disable_lowercase)), sendEvents);
     setLanguageRtl(Settings.instance().needRtl(packId(), getLanguageDirection() == LANGUAGE_DIRECTION_RTL), sendEvents);
@@ -3434,13 +3513,10 @@ public class Lang {
     String dateFormatLocale = Lang.getString(R.string.language_dateFormatLocale);
     if (!StringUtils.isEmpty(dateFormatLocale) && !"0".equals(dateFormatLocale)) {
       try {
-        String language = Lang.cleanLanguageCode(dateFormatLocale);
-        if (language.length() == dateFormatLocale.length()) {
-          dateLocale = new Locale(language);
-        } else {
-          dateLocale = new Locale(language, Lang.cleanLanguageCode(dateFormatLocale.substring(language.length() + 1)));
-        }
-      } catch (Throwable ignored) { }
+        dateLocale = obtainLocale(dateFormatLocale);
+      } catch (Throwable t) {
+        Log.v("Unable to obtain locale for tag %s", t, dateFormatLocale);
+      }
     }
     setDateLocale(dateLocale, sendEvents);
     languageSettingsLoaded = true;

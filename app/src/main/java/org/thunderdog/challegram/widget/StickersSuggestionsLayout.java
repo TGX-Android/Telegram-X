@@ -21,7 +21,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -40,6 +39,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.MessagesController;
 
 import java.util.ArrayList;
@@ -103,13 +103,13 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
     stickerSuggestionArrowView = new ImageView(context);
     stickerSuggestionArrowView.setScaleType(ImageView.ScaleType.CENTER);
     stickerSuggestionArrowView.setImageResource(R.drawable.stickers_back_arrow);
-    stickerSuggestionArrowView.setColorFilter(new PorterDuffColorFilter(Theme.headerFloatBackgroundColor(), PorterDuff.Mode.MULTIPLY));
     addView(stickerSuggestionArrowView);
   }
 
   public void init (@NonNull MessagesController parent, boolean isEmoji) {
     this.parent = parent;
     this.isEmoji = isEmoji;
+    this.stickerSuggestionArrowView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(ColorId.overlayFilling), PorterDuff.Mode.MULTIPLY));
     this.stickerSuggestionAdapter = new StickerSuggestionAdapter(parent, manager, parent, isEmoji) {
       @Override
       public void onStickerPreviewOpened (StickerSmallView view, TGStickerObj sticker) {
@@ -144,11 +144,7 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
     int stickersListTotalHeight = stickersListTopHeight + Screen.dp(6.5f);
     int stickerArrowHeight = Screen.dp(12f);
 
-    RelativeLayout.LayoutParams params;
-    params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, stickersListTotalHeight + stickerArrowHeight);
-    params.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
-    params.bottomMargin = -(Screen.dp(8f) + stickerArrowHeight);
-    setLayoutParams(params);
+    setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, stickersListTotalHeight + stickerArrowHeight));
 
     stickerSuggestionsView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, stickersListTotalHeight));
 
@@ -277,9 +273,13 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
     ViewController<?> c = UI.getCurrentStackItem(getContext());
     float tx = 0;
     if (c instanceof MessagesController) {
+      int stickersListTopHeight = Screen.dp(isEmoji ? 36 : 72) + Screen.dp(2.5f);
+      int stickersListTotalHeight = stickersListTopHeight + Screen.dp(6.5f);
+      int stickerArrowHeight = Screen.dp(12f);
+
       int[] cords = ((MessagesController) c).getInputCursorOffset();
       setArrowX(cords[0]);
-      setTranslationY(cords[1]);
+      setTranslationY(cords[1] - (stickersListTopHeight / 2f + stickerArrowHeight));
       tx -= ((MessagesController) c).getPagerScrollOffsetInPixels();
     } else {
       // setTranslationY(0);

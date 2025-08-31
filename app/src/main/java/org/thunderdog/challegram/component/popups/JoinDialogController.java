@@ -62,8 +62,10 @@ public class JoinDialogController extends MediaBottomBaseController<Void> implem
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
+    if (commit) {
     mediaLayout.hide(false);
+    }
     return true;
   }
 

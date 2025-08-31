@@ -97,6 +97,22 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
   }
 
   @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    if (emojiCustomListLayout != null) {
+      emojiCustomListLayout.setExtraBottomInset(extraBottomInset, extraBottomInsetWithoutIme);
+    }
+    if (emojiCustomListController != null) {
+      emojiCustomListController.setBottomInset(extraBottomInset, extraBottomInsetWithoutIme);
+    }
+  }
+
+  @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
     headerView = new HeaderView(context) {
       @Override
@@ -116,6 +132,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     parent.addThemeInvalidateListener(headerView);
 
     emojiCustomListLayout = new EmojiLayout(context());
+    emojiCustomListLayout.setExtraBottomInset(extraBottomInset, extraBottomInsetWithoutIme);
     emojiCustomListLayout.initWithEmojiStatus(this, this, this);
 
     emojiCustomListController = new EmojiStatusListController(context, tdlib) {
@@ -446,20 +463,24 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
   }
 
   @Override
-  public boolean closeSearchModeByBackPress (boolean fromTop) {
+  public boolean closeSearchModeByBackPress (boolean fromTop, boolean commit) {
     return true;
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (inEmojiSelectMode) {
-      closeEmojiSelectMode();
+      if (commit) {
+        closeEmojiSelectMode();
+      }
       return true;
     } else if (inSearchMode()) {
-      closeSearchMode(null);
+      if (commit) {
+        closeSearchMode(null);
+      }
       return true;
     }
-    return false;
+    return super.performOnBackPressed(fromTop, commit);
   }
 
   @Override
@@ -641,6 +662,17 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
       this.animationDelegate = delegate;
       fragment = new EmojiStatusSelectorEmojiPage(context, tdlib, this);
       foregroundView = new FrameLayout(context);
+    }
+
+    @Override
+    public boolean supportsBottomInset () {
+      return fragment.supportsBottomInset();
+    }
+
+    @Override
+    protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+      super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+      fragment.setBottomInset(extraBottomInset, extraBottomInsetWithoutIme);
     }
 
     @Override

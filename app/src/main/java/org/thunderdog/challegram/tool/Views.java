@@ -800,6 +800,13 @@ public class Views {
     }
   }
 
+  public static void applyBottomInset (RecyclerView recyclerView, int bottomInset) {
+    if (recyclerView != null) {
+      setPaddingBottom(recyclerView, bottomInset);
+      recyclerView.setClipToPadding(bottomInset == 0);
+    }
+  }
+
   public static void removeRule (RelativeLayout.LayoutParams params, int verb) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
       params.removeRule(verb);
@@ -814,14 +821,19 @@ public class Views {
 
   @Nullable
   @SuppressWarnings("unchecked")
-  public static <T extends View> T findAncestor (View view, Class<T> clazz) {
+  public static <T extends View> T findAncestor (View view, Class<T> clazz, boolean root) {
     if (view != null) {
       ViewParent parent = view.getParent();
+      T found = null;
       do {
         if (clazz.isAssignableFrom(parent.getClass())) {
-          return (T) parent;
+          found = (T) parent;
+          if (!root) {
+            return found;
+          }
         }
       } while ((parent = parent.getParent()) != null);
+      return found;
     }
     return null;
   }
@@ -849,14 +861,16 @@ public class Views {
     return false;
   }
 
-  public static void setLayoutHeight (View view, int height) {
+  public static boolean setLayoutHeight (View view, int height) {
     if (view != null) {
       ViewGroup.LayoutParams params = view.getLayoutParams();
       if (params != null && params.height != height) {
         params.height = height;
         view.setLayoutParams(params);
+        return true;
       }
     }
+    return false;
   }
 
   public static void setTopMargin (View view, int margin) {
@@ -875,14 +889,22 @@ public class Views {
     }
   }
 
-  public static void setBottomMargin (View view, int margin) {
+  public static void setPaddingTop (View view, int paddingTop) {
+    if (view != null) {
+      view.setPadding(view.getPaddingLeft(), paddingTop, view.getPaddingRight(), view.getPaddingBottom());
+    }
+  }
+
+  public static boolean setBottomMargin (View view, int margin) {
     if (view != null) {
       ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
       if (params.bottomMargin != margin) {
         params.bottomMargin = margin;
         view.setLayoutParams(params);
+        return true;
       }
     }
+    return false;
   }
 
   public static void setRightMargin (View view, int margin) {

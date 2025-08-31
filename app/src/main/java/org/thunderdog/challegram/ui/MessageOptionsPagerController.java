@@ -57,6 +57,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.text.Counter;
@@ -80,7 +81,6 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import tgx.td.Td;
-import tgx.td.TdExt;
 
 public class MessageOptionsPagerController extends BottomSheetViewController<OptionDelegate> implements
   FactorAnimator.Target, View.OnClickListener, Menu, DrawableProvider, PopupLayout.TouchDownInterceptor,
@@ -211,6 +211,19 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     }
 
     return headerView;
+  }
+
+  @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    super.onBottomInsetChanged(extraBottomInset, extraBottomInsetWithoutIme, isImeInset);
+    if (reactionsPickerController != null) {
+      reactionsPickerController.setBottomInset(extraBottomInset, extraBottomInsetWithoutIme);
+    }
   }
 
   @Override
@@ -445,7 +458,9 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       return (getTargetHeight()
         - (Screen.dp(54) + HeaderView.getTopOffset())
         - getOptionItemsHeight()
-        - Screen.dp(1));
+        - Screen.dp(1)
+        - (Settings.instance().useEdgeToEdge() ? context().getRootView().getSystemInsetsWithoutIme().bottom : 0)
+      );
     } else {
       return Screen.currentHeight() / 2;
     }
@@ -546,10 +561,12 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (reactionsPickerVisibility != null && reactionsPickerVisibility.getValue()) {
-      if (!reactionsPickerController.onBackPressed(fromTop)) {
-        hideReactionPicker();
+      if (!reactionsPickerController.performOnBackPressed(fromTop, commit)) {
+        if (commit) {
+          hideReactionPicker();
+        }
       }
       return true;
     }
@@ -684,6 +701,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       }
     };
     reactionsPickerController.setArguments(state);
+    reactionsPickerController.setBottomInset(extraBottomInset, extraBottomInsetWithoutIme);
     reactionsPickerController.getValue();
 
     reactionsPickerRecyclerView = reactionsPickerController.getRecyclerView();
@@ -705,7 +723,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
         if (position == itemCount - 1) {
           int keyboardHeight = getKeyboardState() ? Keyboard.getSize(Keyboard.getSize()) : 0;
-          bottom = Math.max(parent.getMeasuredHeight() - reactionsPickerController.measureItemsHeight(), keyboardHeight + Screen.dp(64));
+          bottom = Math.max(parent.getMeasuredHeight() - parent.getPaddingBottom() - reactionsPickerController.measureItemsHeight(), keyboardHeight + Screen.dp(64));
         }
 
         outRect.set(leftRight, 0, leftRight, bottom);

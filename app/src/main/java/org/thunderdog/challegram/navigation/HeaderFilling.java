@@ -1393,6 +1393,7 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
   public void setColorFilter (ColorFilter colorFilter) { }
 
   @Override
+  @SuppressWarnings("deprecation")
   public int getOpacity () {
     return PixelFormat.UNKNOWN;
   }

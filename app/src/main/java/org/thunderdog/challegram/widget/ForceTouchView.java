@@ -95,7 +95,7 @@ import tgx.td.Td;
 
 public class ForceTouchView extends FrameLayoutFix implements
   PopupLayout.AnimatedPopupProvider, FactorAnimator.Target,
-  ChatListener, MessageThreadListener, NotificationSettingsListener, TdlibCache.UserDataChangeListener, TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener, ThemeChangeListener, TdlibCache.UserStatusChangeListener, SensitiveContentContainer {
+  ChatListener, MessageThreadListener, NotificationSettingsListener, TdlibCache.UserDataChangeListener, TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener, ThemeChangeListener, TdlibCache.UserStatusChangeListener, SensitiveContentContainer, RootFrameLayout.MarginModifier {
   private ForceTouchContext forceTouchContext;
   private final RelativeLayout contentWrap;
   private final View backgroundView;
@@ -238,6 +238,11 @@ public class ForceTouchView extends FrameLayoutFix implements
 
     themeListenerList.addThemeInvalidateListener(contentWrap);
     complexAvatarReceiver = new ComplexReceiver(this);
+  }
+
+  @Override
+  public void onApplyMarginInsets (View child, LayoutParams params, Rect legacyInsets, Rect insets, Rect insetsWithoutIme) {
+    // Views.setBottomMargin(contentWrap, insets.bottom / 2);
   }
 
   @Override

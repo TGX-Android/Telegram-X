@@ -1276,12 +1276,14 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (hasAnyChanges()) {
-      showUnsavedChangesPromptBeforeLeaving(null);
+      if (commit) {
+        showUnsavedChangesPromptBeforeLeaving(null);
+      }
       return true;
     }
-    return false;
+    return super.performOnBackPressed(fromTop, commit);
   }
 
   private void setCanViewMessages (boolean value) {

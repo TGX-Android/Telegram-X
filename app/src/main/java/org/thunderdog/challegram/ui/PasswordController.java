@@ -1859,12 +1859,14 @@ public class PasswordController extends ViewController<PasswordController.Args> 
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (hasUnsavedChanges()) {
-      showUnsavedChangesPromptBeforeLeaving(this::navigateBack);
+      if (commit) {
+        showUnsavedChangesPromptBeforeLeaving(this::navigateBack);
+      }
       return true;
     }
-    return super.onBackPressed(fromTop);
+    return super.performOnBackPressed(fromTop, commit);
   }
 
   private TdApi.EmailAddressAuthenticationCodeInfo emailAddressAuthenticationCodeInfo;

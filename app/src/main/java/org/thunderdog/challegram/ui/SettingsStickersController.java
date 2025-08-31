@@ -174,6 +174,11 @@ public class SettingsStickersController extends ViewPagerController<SettingsCont
   }
 
   @Override
+  public boolean supportsBottomInset () {
+    return true;
+  }
+
+  @Override
   protected ViewController<?> onCreatePagerItemForPosition (Context context, int position) {
     switch (position) {
       case STICKERS_POSITION: {

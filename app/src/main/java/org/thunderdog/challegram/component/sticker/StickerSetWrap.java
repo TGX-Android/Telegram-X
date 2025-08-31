@@ -17,6 +17,7 @@ package org.thunderdog.challegram.component.sticker;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Rect;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -30,18 +31,14 @@ import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
 
 import org.drinkless.tdlib.TdApi;
-import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.emoji.MediaStickersAdapter;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.NavigationController;
-import org.thunderdog.challegram.navigation.OverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
-import org.thunderdog.challegram.telegram.RightId;
 import org.thunderdog.challegram.telegram.StickersListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
@@ -61,6 +58,7 @@ import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ProgressComponentView;
+import org.thunderdog.challegram.widget.RootFrameLayout;
 import org.thunderdog.challegram.widget.ShadowView;
 
 import java.util.ArrayList;
@@ -71,14 +69,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
-import me.vkryl.core.ColorUtils;
 import me.vkryl.core.collection.LongList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableBool;
 import tgx.td.Td;
 
 @SuppressLint("ViewConstructor")
-public class StickerSetWrap extends FrameLayoutFix implements StickersListController.StickerSetProvider, MediaStickersAdapter.OffsetProvider, View.OnClickListener, FactorAnimator.Target, PopupLayout.PopupHeightProvider, StickersListener {
+public class StickerSetWrap extends FrameLayoutFix implements StickersListController.StickerSetProvider, MediaStickersAdapter.OffsetProvider, View.OnClickListener, FactorAnimator.Target, PopupLayout.PopupHeightProvider, StickersListener, RootFrameLayout.InsetsChangeListener {
   private final HeaderView headerView;
   private final StickersListController stickersController;
   private final FrameLayoutFix bottomWrap;
@@ -122,6 +119,8 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
 
   private final Tdlib tdlib;
 
+  private final FrameLayoutFix buttonWrap;
+
   public StickerSetWrap (Context context, Tdlib tdlib) {
     super(context);
 
@@ -136,7 +135,7 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
     bottomWrap.addView(shadowView);
     themeListener.addThemeInvalidateListener(shadowView);
 
-    FrameLayoutFix buttonWrap = new FrameLayoutFix(context);
+    buttonWrap = new FrameLayoutFix(context);
     ViewSupport.setThemedBackground(buttonWrap, ColorId.filling);
     themeListener.addThemeInvalidateListener(buttonWrap);
     buttonWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f), Gravity.BOTTOM));
@@ -202,6 +201,13 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
   public void invalidate () {
     headerView.resetColors(stickersController, null);
     super.invalidate();
+  }
+
+  @Override
+  public void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect effectiveInsetsWithoutIme, Rect systemInsets, Rect systemInsetsWithoutIme, boolean isUpdate) {
+    Views.setLayoutHeight(buttonWrap, Screen.dp(56f) + effectiveInsetsWithoutIme.bottom);
+    buttonWrap.setPadding(0, 0, 0, effectiveInsetsWithoutIme.bottom);
+    Views.setLayoutHeight(bottomWrap, Screen.dp(56f) + Screen.dp(7f) + effectiveInsetsWithoutIme.bottom);
   }
 
   @Override
@@ -689,7 +695,8 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
     });
     popupLayout.setShowListener(popup -> stickersController.setItemAnimator());
     popupLayout.setPopupHeightProvider(this);
-    popupLayout.init(Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM);
+    popupLayout.init(true);
+    popupLayout.addInsetsChangeListener(this);
     popupLayout.setHideKeyboard();
     popupLayout.setNeedRootInsets();
     popupLayout.showSimplePopupView(this, calculateTotalHeight());

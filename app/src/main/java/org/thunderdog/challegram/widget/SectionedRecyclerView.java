@@ -196,13 +196,17 @@ public class SectionedRecyclerView extends RecyclerView implements Runnable {
   private final int scrollbarPadding = Screen.dp(9f);
   private final int scrollbarMinHeight = Screen.dp(32f);
 
+  private int getScrollBarViewportHeight () {
+    return getMeasuredHeight() - getPaddingBottom();
+  }
+
   private void layoutScrollbar () {
     if (adapter == null || adapter.getSectionCount() == 0) {
       scrollbarEnabled = false;
       return;
     }
 
-    final int totalHeight = getMeasuredHeight();
+    final int totalHeight = getScrollBarViewportHeight();
     if (totalHeight <= 0) {
       scrollbarEnabled = false;
       return;
@@ -267,7 +271,7 @@ public class SectionedRecyclerView extends RecyclerView implements Runnable {
       }
     }
 
-    return (float) scrollY / (float) (totalScrollY - getMeasuredHeight());
+    return (float) scrollY / (float) (totalScrollY - getScrollBarViewportHeight());
   }
 
   private final RectF bubbleRect = new RectF();
@@ -340,7 +344,7 @@ public class SectionedRecyclerView extends RecyclerView implements Runnable {
   private void moveScrollbar (float y) {
     float dy = y - lastScrollY;
     lastScrollY = y;
-    float scale = (float) totalScrollY / (float) getMeasuredHeight();
+    float scale = (float) totalScrollY / (float) getScrollBarViewportHeight();
     int by = (int) (dy * scale);
     if (by != 0) {
       scrollBy(0, by);

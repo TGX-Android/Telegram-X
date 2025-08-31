@@ -128,6 +128,7 @@ public class GiftParticlesDrawable extends Drawable {
   public void setColorFilter (@Nullable ColorFilter colorFilter) { }
 
   @Override
+  @SuppressWarnings("deprecation")
   public int getOpacity () {
     return PixelFormat.UNKNOWN;
   }

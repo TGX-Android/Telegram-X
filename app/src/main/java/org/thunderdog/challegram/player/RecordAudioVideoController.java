@@ -967,12 +967,16 @@ public class RecordAudioVideoController implements
 
   private void setEditFactor (float factor) {
     if (this.editFactor != factor) {
+      boolean wasOpen = isOpen();
       this.editFactor = factor;
       lockView.setEditFactor(factor);
       updateMainAlphas();
       updateButtons();
       updateMiddle();
       updateLockY();
+      if (isOpen() != wasOpen) {
+        context.notifyBackPressAvailabilityChanged();
+      }
     }
   }
 
@@ -998,11 +1002,16 @@ public class RecordAudioVideoController implements
     return mode != RECORD_MODE_NONE && mode != RECORD_MODE_VIDEO_EDIT && mode != RECORD_MODE_AUDIO_EDIT;
   }
 
+  private void setRecordModeImpl (int mode) {
+    this.recordMode = mode;
+    context.notifyBackPressAvailabilityChanged();
+  }
+
   private void setRecordMode (int mode, boolean animated) {
     boolean wasRecording = isInRecording(this.recordMode);
     boolean isRecording = isInRecording(mode);
     this.recordingVideo = isVideoMode(this.recordMode) || isVideoMode(mode);
-    this.recordMode = mode;
+    setRecordModeImpl(mode);
     if (targetController != null) {
       targetController.setChatAction(recordingVideo ? TdApi.ChatActionRecordingVideoNote.CONSTRUCTOR : TdApi.ChatActionRecordingVoiceNote.CONSTRUCTOR, mode != RECORD_MODE_NONE, false);
       targetController.hideBottomHint();
@@ -1325,6 +1334,7 @@ public class RecordAudioVideoController implements
 
   private void setRecordFactor (float factor) {
     if (this.recordFactor != factor) {
+      boolean wasOpen = isOpen();
       this.recordFactor = factor;
 
       updateMainAlphas();
@@ -1332,6 +1342,10 @@ public class RecordAudioVideoController implements
       updateLockY();
       updateDuration();
       updateMiddle();
+
+      if (wasOpen != isOpen()) {
+        context.notifyBackPressAvailabilityChanged();
+      }
     }
   }
 
@@ -1471,7 +1485,7 @@ public class RecordAudioVideoController implements
 
       ownedCamera.getLegacyManager().setUseRoundRender(false);
 
-      recordMode = RECORD_MODE_NONE;
+      setRecordModeImpl(RECORD_MODE_NONE);
       resetRoundState();
       // editFactor = 0f;
 
@@ -1937,7 +1951,7 @@ public class RecordAudioVideoController implements
       return;
     }
 
-    this.recordMode = RECORD_MODE_NONE;
+    setRecordModeImpl(RECORD_MODE_NONE);
 
     if (initialSendOptions != null) {
       if (videoPreviewView.hasTrim()) {
@@ -1976,7 +1990,7 @@ public class RecordAudioVideoController implements
       return;
     }
 
-    this.recordMode = RECORD_MODE_NONE;
+    setRecordModeImpl(RECORD_MODE_NONE);
 
     final var record = voiceRecord;
     if (initialSendOptions != null && record != null) {

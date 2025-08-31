@@ -193,12 +193,14 @@ public abstract class SettingsCloudController<T extends Settings.CloudSetting> e
   }
 
   @Override
-  public boolean onBackPressed (boolean fromTop) {
+  public boolean performOnBackPressed (boolean fromTop, boolean commit) {
     if (installingSetting != null) {
-      showUnsavedChangesPromptBeforeLeaving(() -> selectSetting(getCurrentSetting()));
+      if (commit) {
+        showUnsavedChangesPromptBeforeLeaving(() -> selectSetting(getCurrentSetting()));
+      }
       return true;
     }
-    return super.onBackPressed(fromTop);
+    return super.performOnBackPressed(fromTop, commit);
   }
 
   private void updateSetting (T setting) {

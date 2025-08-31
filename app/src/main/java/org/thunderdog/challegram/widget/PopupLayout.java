@@ -227,8 +227,8 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
 
   private ViewController<?> boundController;
 
-  public boolean onBackPressed (boolean byHeaderBackPress) {
-    return (backListener != null && backListener.onBackPressed(byHeaderBackPress)) || (boundController != null && boundController.onBackPressed(false)) || (boundView != null && boundView instanceof BackListener && ((BackListener) boundView).onBackPressed(byHeaderBackPress));
+  public boolean performOnBackPressed (boolean byHeaderBackPress, boolean commit) {
+    return (backListener != null && backListener.onBackPressed(byHeaderBackPress, commit)) || (boundController != null && boundController.performOnBackPressed(false, commit)) || (boundView != null && boundView instanceof BackListener && ((BackListener) boundView).onBackPressed(byHeaderBackPress, commit));
   }
 
   public void setBoundController (ViewController<?> boundController) {
