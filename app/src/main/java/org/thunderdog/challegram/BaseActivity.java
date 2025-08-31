@@ -1369,10 +1369,22 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       }
     }
 
+    private boolean cancelBackPressTarget () {
+      if (backPressTarget != null) {
+        backPressTarget.onSystemBackCancelled();
+        backPressTarget = null;
+        return true;
+      }
+      return false;
+    }
+
     private SystemBackEventListener backPressTarget;
 
     @Override
     public void handleOnBackStarted (@NonNull BackEventCompat backEvent) {
+      if (cancelBackPressTarget()) {
+        Log.i("System didn't dispatch onBackCancelled / onBackPressed!");
+      }
       @BackPressMode int mode = backPressMode;
       SystemBackEventListener target;
       switch (mode) {
@@ -1398,10 +1410,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
     @Override
     public void handleOnBackCancelled () {
-      if (backPressTarget != null) {
-        backPressTarget.onSystemBackCancelled();
-        backPressTarget = null;
-      }
+      cancelBackPressTarget();
     }
 
     @Override
