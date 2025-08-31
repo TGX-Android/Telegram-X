@@ -15,10 +15,13 @@
 package org.thunderdog.challegram.widget;
 
 import android.content.Context;
+import android.graphics.Rect;
+import android.os.Build;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -44,13 +47,14 @@ import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.unsorted.Settings;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.Destroyable;
 
-public class NetworkStatusBarView extends FrameLayoutFix implements Destroyable, Screen.StatusBarHeightChangeListener, GlobalConnectionListener, FactorAnimator.Target, PopupLayout.TouchSectionProvider, Runnable, BaseActivity.ActivityListener, GlobalAccountListener {
+public class NetworkStatusBarView extends FrameLayoutFix implements Destroyable, Screen.StatusBarHeightChangeListener, GlobalConnectionListener, FactorAnimator.Target, PopupLayout.TouchSectionProvider, Runnable, BaseActivity.ActivityListener, GlobalAccountListener, RootFrameLayout.InsetsChangeListener {
   private final ProgressComponentView progressView;
   private final TextView textView;
   private final LinearLayout statusWrap;
@@ -96,6 +100,72 @@ public class NetworkStatusBarView extends FrameLayoutFix implements Destroyable,
     setFactor(this.isVisible ? 1f : 0f);
 
     UI.getContext(getContext()).addActivityListener(this);
+  }
+
+  private RootFrameLayout rootView;
+
+  @Override
+  protected void onAttachedToWindow () {
+    super.onAttachedToWindow();
+    rootView = Views.findAncestor(this, RootFrameLayout.class, true);
+    if (rootView != null) {
+      rootView.addInsetsChangeListener(this);
+    }
+  }
+
+  @Override
+  protected void onDetachedFromWindow () {
+    super.onDetachedFromWindow();
+    if (rootView != null) {
+      rootView.removeInsetsChangeListener(this);
+      rootView = null;
+    }
+  }
+
+  @Override
+  public void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect effectiveInsetsWithoutIme, Rect systemInsets, Rect systemInsetsWithoutIme, boolean isUpdate) { }
+
+  @Override
+  public void onSecondaryInsetsChanged (RootFrameLayout viewGroup, boolean systemGesturesInsetsChanged, boolean displayCutoutInsetsChanged) {
+    if (displayCutoutInsetsChanged) {
+      applyTopInset(viewGroup, viewGroup.getDisplayCutoutTopInset());
+    }
+  }
+
+  private int getFrameWidth () {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+      // TODO
+    }
+    return getResources().getDisplayMetrics().widthPixels;
+  }
+
+  private void applyTopInset (RootFrameLayout rootView, Rect rect) {
+    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) statusWrap.getLayoutParams();
+    boolean updated;
+
+    if (rect.isEmpty()) {
+      updated = Views.setGravity(layoutParams, Gravity.CENTER_HORIZONTAL);
+      updated = Views.setMargins(layoutParams, 0, 0, 0, 0) || updated;
+    } else {
+      int width = getFrameWidth();
+      int distanceFromLeft = rect.left;
+      int distanceFromRight = width - rect.right;
+
+      if (distanceFromRight > distanceFromLeft) {
+        updated = Views.setGravity(layoutParams, Gravity.CENTER_HORIZONTAL);
+        updated = Views.setMargins(layoutParams, (rect.right + Screen.dp(12f)) / 2, 0, 0, 0) || updated;
+      }/* else if (distanceFromLeft == distanceFromRight) {
+        updated = Views.setGravity(layoutParams, Gravity.LEFT);
+        updated = Views.setMargins(layoutParams, Screen.dp(12f), 0, rect.left + Screen.dp(12f), 0) || updated;
+      }*/ else {
+        updated = Views.setGravity(layoutParams, Gravity.CENTER_HORIZONTAL);
+        updated = Views.setMargins(layoutParams, 0, 0, (rect.right + Screen.dp(12f)) / 2, 0) || updated;
+      }
+    }
+
+    if (updated) {
+      Views.updateLayoutParams(statusWrap);
+    }
   }
 
   @Override
@@ -218,7 +288,7 @@ public class NetworkStatusBarView extends FrameLayoutFix implements Destroyable,
       this.factor = factor;
       statusWrap.setAlpha(factor);
       statusWrap.setTranslationY(-Screen.getStatusBarHeight() + (int) ((float) Screen.getStatusBarHeight() * getVisibilityFactor()));
-      if (Config.USE_TRANSPARENT_STATUS_BAR) {
+      if (Config.USE_TRANSPARENT_STATUS_BAR && Settings.instance().useEdgeToEdge()) {
         backgroundDrawable.setAlphaFactor(factor);
       }
       checkLowProfile();

@@ -79,12 +79,17 @@ public class RootFrameLayout extends FrameLayoutFix {
 
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({
-    InsetsType.CUTOUT,
-    InsetsType.CUTOUT_AND_IME,
-    InsetsType.GESTURES
+    InsetsType.SYSTEM_BARS_CUTOUT,
+    InsetsType.SYSTEM_BARS_CUTOUT_IME,
+    InsetsType.SYSTEM_GESTURES,
+    InsetsType.DISPLAY_CUTOUT,
   })
   private @interface InsetsType {
-    int CUTOUT = 0, CUTOUT_AND_IME = 1, GESTURES = 2;
+    int
+      SYSTEM_BARS_CUTOUT = 0,
+      SYSTEM_BARS_CUTOUT_IME = 1,
+      SYSTEM_GESTURES = 2,
+      DISPLAY_CUTOUT = 3;
   }
 
   private static boolean updateInsets (Rect rect, Object insetsRaw, @InsetsType int insetsType) {
@@ -94,21 +99,25 @@ public class RootFrameLayout extends FrameLayoutFix {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
         int typeMask;
         switch (insetsType) {
-          case InsetsType.CUTOUT:
+          case InsetsType.SYSTEM_BARS_CUTOUT:
             typeMask =
               android.view.WindowInsets.Type.systemBars() |
               android.view.WindowInsets.Type.displayCutout();
             break;
-          case InsetsType.CUTOUT_AND_IME:
+          case InsetsType.SYSTEM_BARS_CUTOUT_IME:
             typeMask =
               android.view.WindowInsets.Type.systemBars() |
               android.view.WindowInsets.Type.displayCutout() |
               android.view.WindowInsets.Type.ime();
             break;
-          case InsetsType.GESTURES:
+          case InsetsType.SYSTEM_GESTURES:
             typeMask =
               android.view.WindowInsets.Type.systemGestures() |
               android.view.WindowInsets.Type.mandatorySystemGestures();
+            break;
+          case InsetsType.DISPLAY_CUTOUT:
+            typeMask =
+              android.view.WindowInsets.Type.displayCutout();
             break;
           default:
             throw new AssertionError(Integer.toString(insetsType));
@@ -248,6 +257,7 @@ public class RootFrameLayout extends FrameLayoutFix {
 
   public interface InsetsChangeListener {
     void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect effectiveInsetsWithoutIme, Rect systemInsets, Rect systemInsetsWithoutIme, boolean isUpdate);
+    default void onSecondaryInsetsChanged (RootFrameLayout viewGroup, boolean systemGesturesInsetsChanged, boolean displayCutoutInsetsChanged) { }
   }
 
   private final ReferenceList<InsetsChangeListener> listeners = new ReferenceList<>();
@@ -267,6 +277,9 @@ public class RootFrameLayout extends FrameLayoutFix {
   private final Rect systemInsets = new Rect();
   private final Rect systemInsetsWithoutIme = new Rect();
   private final Rect systemGesturesInsets = new Rect();
+
+  private final Rect displayCutoutInsets = new Rect();
+  private final Rect displayCutoutTopInset = new Rect();
 
   private final Rect effectiveInsets = new Rect();
   private final Rect effectiveInsetsWithoutIme = new Rect();
@@ -291,9 +304,10 @@ public class RootFrameLayout extends FrameLayoutFix {
 
   private void processWindowInsets (Object insetsRaw, boolean force) {
     boolean hadInsets = hasInsets;
-    boolean systemInsetsUpdated = updateInsets(systemInsets, insetsRaw, InsetsType.CUTOUT_AND_IME);
-    boolean systemInsetsWithoutImeUpdated = updateInsets(systemInsetsWithoutIme, insetsRaw, InsetsType.CUTOUT);
-    boolean gesturesUpdated = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && updateInsets(systemGesturesInsets, insetsRaw, InsetsType.GESTURES);
+    boolean systemInsetsUpdated = updateInsets(systemInsets, insetsRaw, InsetsType.SYSTEM_BARS_CUTOUT_IME);
+    boolean systemInsetsWithoutImeUpdated = updateInsets(systemInsetsWithoutIme, insetsRaw, InsetsType.SYSTEM_BARS_CUTOUT);
+    boolean systemGesturesUpdated = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && updateInsets(systemGesturesInsets, insetsRaw, InsetsType.SYSTEM_GESTURES);
+    boolean displayCutoutUpdated = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && updateInsets(displayCutoutInsets, insetsRaw, InsetsType.DISPLAY_CUTOUT);
     boolean verticalSystemInsetsUpdated = !hasInsets || systemInsets.top != prevSystemInsets.top || systemInsets.bottom != prevSystemInsets.bottom;
     boolean horizontalSystemInsetsUpdated = !hasInsets || systemInsets.left != prevSystemInsets.left || systemInsets.right != prevSystemInsets.right;
     final int imeHeight = CAN_DETECT_IME ? getImeHeight(insetsRaw) : 0;
@@ -355,6 +369,20 @@ public class RootFrameLayout extends FrameLayoutFix {
       notifyChanges(hadInsets);
     }
 
+    if ((systemGesturesUpdated || displayCutoutUpdated) && (this instanceof BaseRootLayout)) {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && displayCutoutUpdated) {
+        android.view.WindowInsets rootInsets = getRootWindowInsets();
+        android.view.DisplayCutout displayCutout = rootInsets.getDisplayCutout();
+        Rect topInset = displayCutout != null ? displayCutout.getBoundingRectTop() : null;
+        if (topInset != null) {
+          displayCutoutTopInset.set(topInset);
+        } else {
+          displayCutoutTopInset.setEmpty();
+        }
+      }
+      notifySecondaryChanges(systemGesturesUpdated, displayCutoutUpdated);
+    }
+
     prevSystemInsets.set(systemInsets);
     hasInsets = true;
   }
@@ -364,6 +392,12 @@ public class RootFrameLayout extends FrameLayoutFix {
       listener.onInsetsChanged(this, effectiveInsets, effectiveInsetsWithoutIme, systemInsets, systemInsetsWithoutIme, hadInsets);
     }
     requestLayout();
+  }
+
+  private void notifySecondaryChanges (boolean systemGesturesUpdated, boolean displayCutoutUpdated) {
+    for (InsetsChangeListener listener : listeners) {
+      listener.onSecondaryInsetsChanged(this, systemGesturesUpdated, displayCutoutUpdated);
+    }
   }
 
   private boolean shouldIgnoreBottomMargin (int bottom) {
@@ -533,6 +567,10 @@ public class RootFrameLayout extends FrameLayoutFix {
 
   public Rect getSystemInsetsWithoutIme () {
     return systemInsetsWithoutIme;
+  }
+
+  public Rect getDisplayCutoutTopInset () {
+    return displayCutoutTopInset;
   }
 
   private int previousHeight;
