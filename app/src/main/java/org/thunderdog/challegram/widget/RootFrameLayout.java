@@ -298,8 +298,27 @@ public class RootFrameLayout extends FrameLayoutFix {
     }
   }
 
-  public Rect getGestureInsets () {
+  public Rect getSystemGesturesInsets () {
     return systemGesturesInsets;
+  }
+
+  private final int[] childLocation = new int[2];
+  private final int[] rootLocation = new int[2];
+
+  public boolean isWithinSystemGesturesArea (View child, MotionEvent event) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+      return false;
+    }
+
+    child.getLocationInWindow(childLocation);
+    getLocationInWindow(rootLocation);
+
+    float x = event.getX() + childLocation[0] - rootLocation[0];
+    float y = event.getY() + childLocation[1] - rootLocation[1];
+
+    return
+      x < systemGesturesInsets.left || x > getMeasuredWidth() - systemGesturesInsets.right ||
+      y < systemGesturesInsets.top || y > getMeasuredHeight() - systemGesturesInsets.bottom;
   }
 
   private void processWindowInsets (Object insetsRaw, boolean force) {
