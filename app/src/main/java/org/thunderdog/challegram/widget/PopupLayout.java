@@ -298,7 +298,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
       View rootView = window.getContentView().getRootView();
       ViewGroup.LayoutParams layoutParams = rootView.getLayoutParams();
       boolean disallowScreenShots = shouldDisallowScreenshots();
-      if (!(layoutParams instanceof WindowManager.LayoutParams)) {
+      if (!(layoutParams instanceof WindowManager.LayoutParams) || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && !rootView.isAttachedToWindow())) {
         // TODO: analyze in what situations container parameters become `android.widget.FrameLayout$LayoutParams`
         // after that, uncomment code below, if it's caused by root view, not by window detachment
         /*int windowFlags =
