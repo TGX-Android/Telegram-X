@@ -1385,6 +1385,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       if (cancelBackPressTarget()) {
         Log.i("System didn't dispatch onBackCancelled / onBackPressed!");
       }
+      notifyBackPressAvailabilityChanged();
       @BackPressMode int mode = backPressMode;
       SystemBackEventListener target;
       switch (mode) {

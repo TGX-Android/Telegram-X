@@ -922,6 +922,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
         } else if (finalFactor == 1f) {
           onCustomShowComplete();
         }
+        UI.getContext(getContext()).notifyBackPressAvailabilityChanged();
         break;
       }
     }
