@@ -616,7 +616,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
   }
 
   private TdApi.FormattedText getExplanation (boolean parseMarkdown) {
-    CharSequence explanationText = isQuiz ? explanationItem.getCharSequenceValue() : null;
+    CharSequence explanationText = isQuiz && explanationItem != null ? explanationItem.getCharSequenceValue() : null;
     if (!StringUtils.isEmpty(explanationText)) {
       TdApi.FormattedText explanation = TD.toFormattedText(explanationText, false);
       if (parseMarkdown)
