@@ -438,7 +438,7 @@
   <string name="ChatContentVoiceChatFinished">Ended the video chat (%1$s)</string>
   <string name="ChatContentVoiceChatFinished_outgoing">Ended the video chat (%1$s)</string>
   <string name="ChatContentVoiceChatFinishedNoTime">Ended the video chat</string>
-  <string name="ChatContentVoiceChatFinishedNoTime_outgoing">Ended the video chat®</string>
+  <string name="ChatContentVoiceChatFinishedNoTime_outgoing">Ended the video chat</string>
   <string name="ChatContentVoiceChatInviteYou">Invited you to the video chat</string>
   <string name="ChatContentVoiceChatInvite">Invited %1$s to the video chat</string>
   <string name="ChatContentVoiceChatInvite_outgoing">Invited %1$s to the video chat</string>
@@ -2435,7 +2435,7 @@
   <string name="ContactsOnTelegramMany_other">%2$s and %1$s more of your contacts are&#160;using&#160;Telegram</string>
   <string name="SearchPeople">Search People</string>
   <string name="ManyContactsJoined">1000+ contacts on Telegram</string>
-  <string name="InviteTextCommonMany_one">Hey, I\'m using Telegram to chat – and so is %1$s of our other contact. Join us! Download it here: %2$s</string>
+  <string name="InviteTextCommonMany_one">Hey, I\'m using Telegram to chat – and so is %1$s of our other contacts. Join us! Download it here: %2$s</string>
   <string name="InviteTextCommonMany_other">Hey, I\'m using Telegram to chat – and so are %1$s of our other contacts. Join us! Download it here: %2$s</string>
   <string name="InviteTextCommonOverThousand">Hey, I\'m using Telegram to chat – and so are 1000+ of our other contacts. Join us! Download it here: %1$s</string>
   <string name="InviteContacts">Invite Contacts</string>
@@ -5292,7 +5292,7 @@
   <string name="Experiment_PeerIdsInfo">Show API identifiers of users and chats in their profiles</string>
 
   <string name="Experiment_NoEdgeToEdge">Disable Edge to Edge</string>
-  <string name="Experiment_NoEdgeToEdgeInfo">Edge to Edge support on Android 11–14 is not tested, issues are expected. Use this settings to compare behavior without edge-to-edge mode.</string>
+  <string name="Experiment_NoEdgeToEdgeInfo">Edge to Edge support on Android 11–14 is not tested, issues are expected. Use these settings to compare behavior without edge-to-edge mode.</string>
 
   <string name="PeerId">Peer ID</string>
   <string name="UserId">User ID</string>
