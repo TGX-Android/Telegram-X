@@ -37,26 +37,26 @@ extern "C" {
 #define LOGD(...) \
   ((void)logd(TAG_NDK, __VA_ARGS__))
 
-#define LIBRARY_FUNC(RETURN_TYPE, NAME, ...)                                   \
-  extern "C" {                                                                 \
-  JNIEXPORT RETURN_TYPE                                                        \
-      Java_androidx_media3_decoder_ffmpeg_FfmpegLibrary_##NAME(JNIEnv *env,    \
-                                                               jobject thiz,   \
-                                                               ##__VA_ARGS__); \
-  }                                                                            \
-  JNIEXPORT RETURN_TYPE                                                        \
-      Java_androidx_media3_decoder_ffmpeg_FfmpegLibrary_##NAME(                \
-          JNIEnv *env, jobject thiz, ##__VA_ARGS__)
+#define LIBRARY_FUNC(RETURN_TYPE, NAME, ...)                               \
+  extern "C" {                                                             \
+  JNIEXPORT RETURN_TYPE                                                    \
+  Java_androidx_media3_decoder_ffmpeg_FfmpegLibrary_##NAME(JNIEnv *env,    \
+                                                           jobject thiz,   \
+                                                           ##__VA_ARGS__); \
+  }                                                                        \
+  JNIEXPORT RETURN_TYPE                                                    \
+  Java_androidx_media3_decoder_ffmpeg_FfmpegLibrary_##NAME(                \
+      JNIEnv *env, jobject thiz, ##__VA_ARGS__)
 
-#define AUDIO_DECODER_FUNC(RETURN_TYPE, NAME, ...)                   \
-  extern "C" {                                                       \
-  JNIEXPORT RETURN_TYPE                                              \
-      Java_androidx_media3_decoder_ffmpeg_FfmpegAudioDecoder_##NAME( \
-          JNIEnv *env, jobject thiz, ##__VA_ARGS__);                 \
-  }                                                                  \
-  JNIEXPORT RETURN_TYPE                                              \
-      Java_androidx_media3_decoder_ffmpeg_FfmpegAudioDecoder_##NAME( \
-          JNIEnv *env, jobject thiz, ##__VA_ARGS__)
+#define AUDIO_DECODER_FUNC(RETURN_TYPE, NAME, ...)               \
+  extern "C" {                                                   \
+  JNIEXPORT RETURN_TYPE                                          \
+  Java_androidx_media3_decoder_ffmpeg_FfmpegAudioDecoder_##NAME( \
+      JNIEnv *env, jobject thiz, ##__VA_ARGS__);                 \
+  }                                                              \
+  JNIEXPORT RETURN_TYPE                                          \
+  Java_androidx_media3_decoder_ffmpeg_FfmpegAudioDecoder_##NAME( \
+      JNIEnv *env, jobject thiz, ##__VA_ARGS__)
 
 #define ERROR_STRING_BUFFER_LENGTH 256
 
@@ -236,6 +236,8 @@ AUDIO_DECODER_FUNC(jlong, ffmpegReset, jlong jContext, jbyteArray extraData) {
 
   AVCodecID codecId = context->codec_id;
   if (codecId == AV_CODEC_ID_TRUEHD) {
+    jboolean outputFloat =
+        (jboolean)(context->request_sample_fmt == OUTPUT_FORMAT_PCM_FLOAT);
     // Release and recreate the context if the codec is TrueHD.
     // TODO: Figure out why flushing doesn't work for this codec.
     releaseContext(context);
@@ -244,8 +246,6 @@ AUDIO_DECODER_FUNC(jlong, ffmpegReset, jlong jContext, jbyteArray extraData) {
       LOGE("Unexpected error finding codec %d.", codecId);
       return 0L;
     }
-    jboolean outputFloat =
-        (jboolean)(context->request_sample_fmt == OUTPUT_FORMAT_PCM_FLOAT);
     return (jlong)createContext(env, codec, extraData, outputFloat,
                                 /* rawSampleRate= */ -1,
                                 /* rawChannelCount= */ -1);

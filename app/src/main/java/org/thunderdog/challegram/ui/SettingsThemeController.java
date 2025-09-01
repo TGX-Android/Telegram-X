@@ -638,6 +638,10 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_systemFonts, 0, R.string.UseSystemFonts));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_forceExoPlayerExtensions, 0, R.string.ForceBuiltinDecoding));
+      if (Config.HLS_VIDEO_ENABLED) {
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.DisableHlsVideo).setLongId(Settings.SETTING_FLAG_FORCE_DISABLE_HLS_VIDEO));
+      }
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_audioCompression, 0, R.string.CompressAudio));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));

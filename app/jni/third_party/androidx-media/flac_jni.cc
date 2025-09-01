@@ -28,16 +28,16 @@
 #define ALOGV(...) \
   ((void)logv(TAG_NDK, __VA_ARGS__))
 
-#define DECODER_FUNC(RETURN_TYPE, NAME, ...)                                  \
-  extern "C" {                                                                \
-  JNIEXPORT RETURN_TYPE                                                       \
-      Java_androidx_media3_decoder_flac_FlacDecoderJni_##NAME(JNIEnv *env,    \
-                                                              jobject thiz,   \
-                                                              ##__VA_ARGS__); \
-  }                                                                           \
-  JNIEXPORT RETURN_TYPE                                                       \
-      Java_androidx_media3_decoder_flac_FlacDecoderJni_##NAME(                \
-          JNIEnv *env, jobject thiz, ##__VA_ARGS__)
+#define DECODER_FUNC(RETURN_TYPE, NAME, ...)                              \
+  extern "C" {                                                            \
+  JNIEXPORT RETURN_TYPE                                                   \
+  Java_androidx_media3_decoder_flac_FlacDecoderJni_##NAME(JNIEnv *env,    \
+                                                          jobject thiz,   \
+                                                          ##__VA_ARGS__); \
+  }                                                                       \
+  JNIEXPORT RETURN_TYPE                                                   \
+  Java_androidx_media3_decoder_flac_FlacDecoderJni_##NAME(                \
+      JNIEnv *env, jobject thiz, ##__VA_ARGS__)
 
 class JavaDataSource : public DataSource {
  public:
