@@ -1489,6 +1489,7 @@
   <string name="StorageUsage">Storage Usage</string>
   <string name="ReduceMotion">Reduce Motion</string>
   <string name="RightSwipeEdgeAnimation">Match Predictive Gesture</string>
+  <string name="RightSwipeEdgeAnimationInfo">When enabled, animation will follow the finger direction when swiping from the right edge of the screen.</string>
   <string name="StorageUsageHint">Manage disk space</string>
   <string name="MobileUsage">Mobile Data Usage</string>
   <string name="WiFiUsage">Wi-Fi Data Usage</string>

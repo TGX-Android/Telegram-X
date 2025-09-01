@@ -313,10 +313,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         } else if (itemId == R.id.btn_sendByEnter) {
           v.getToggler().setRadioEnabled(Settings.instance().needSendByEnter(), isUpdate);
         } else if (itemId == R.id.btn_toggleNewSetting) {
-          boolean value = Settings.instance().getNewSetting(item.getLongId());
-          if (item.getBoolValue())
-            value = !value;
-          v.getToggler().setRadioEnabled(value, isUpdate);
+          updateSettingView(v, item, isUpdate);
         } else if (itemId == R.id.btn_updateAutomatically) {
           int mode = Settings.instance().getAutoUpdateMode();
           v.getToggler().setRadioEnabled(mode != Settings.AUTO_UPDATE_MODE_NEVER, isUpdate);
@@ -519,10 +516,6 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_customVibrations, 0, R.string.CustomVibrations));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_reduceMotion, 0, R.string.ReduceMotion, Settings.instance().needReduceMotion()));
-      if (Config.EDGE_TO_EDGE_AVAILABLE) {
-        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-        items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.RightSwipeEdgeAnimation).setLongId(Settings.SETTING_FLAG_FORCE_DEFAULT_ANIMATION_FOR_RIGHT_SWIPE_EDGE).setBoolValue(true));
-      }
       if (Lang.rtl() || Lang.getLanguageDirection() != Lang.LANGUAGE_DIRECTION_LTR) {
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_switchRtl, 0, R.string.RtlLayout));
@@ -1218,14 +1211,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
     } else if (viewId == R.id.btn_sendByEnter) {
       Settings.instance().setNeedSendByEnter(adapter.toggleView(v));
     } else if (viewId == R.id.btn_toggleNewSetting) {
-      ListItem item = (ListItem) v.getTag();
-      boolean value = adapter.toggleView(v);
-      if (item.getBoolValue())
-        value = !value;
-      Settings.instance().setNewSetting(item.getLongId(), value);
-      if (value && item.getLongId() == Settings.SETTING_FLAG_DOWNLOAD_BETAS) {
-        context().appUpdater().checkForUpdates();
-      }
+      handleSettingClick(v, adapter);
     } else if (viewId == R.id.btn_subscribeToBeta) {
       tdlib.ui().subscribeToBeta(this);
     } else if (viewId == R.id.btn_checkUpdates) {

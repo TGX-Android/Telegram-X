@@ -3382,6 +3382,24 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     }
   }*/
 
+  protected final void updateSettingView (SettingView v, ListItem item, boolean isUpdate) {
+    boolean value = Settings.instance().getNewSetting(item.getLongId());
+    if (item.getBoolValue())
+      value = !value;
+    v.getToggler().setRadioEnabled(value, isUpdate);
+  }
+
+  protected final void handleSettingClick (View v, SettingsAdapter adapter) {
+    ListItem item = (ListItem) v.getTag();
+    boolean value = adapter.toggleView(v);
+    if (item.getBoolValue())
+      value = !value;
+    Settings.instance().setNewSetting(item.getLongId(), value);
+    if (value && item.getLongId() == Settings.SETTING_FLAG_DOWNLOAD_BETAS) {
+      context().appUpdater().checkForUpdates();
+    }
+  }
+
   protected void onFocusStateChanged () { }
 
   public interface FocusStateListener {
