@@ -800,10 +800,10 @@ public class Views {
     }
   }
 
-  public static void applyBottomInset (RecyclerView recyclerView, int bottomInset) {
-    if (recyclerView != null) {
-      setPaddingBottom(recyclerView, bottomInset);
-      recyclerView.setClipToPadding(bottomInset == 0);
+  public static void applyBottomInset (ViewGroup viewGroup, int bottomInset) {
+    if (viewGroup != null) {
+      setPaddingBottom(viewGroup, bottomInset);
+      viewGroup.setClipToPadding(bottomInset == 0);
     }
   }
 

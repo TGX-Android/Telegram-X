@@ -616,6 +616,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       searchControlsLayout.setTranslationY((Screen.dp(49f) + extraBottomInset) * (1f - searchControlsFactor));
     }
     updateSearchControlsInset();
+    if (keyboardWrapper != null && keyboardLayout != null) {
+      Views.applyBottomInset(keyboardWrapper, extraBottomInsetWithoutIme);
+      Views.setLayoutHeight(keyboardWrapper, keyboardLayout.getSize() + extraBottomInsetWithoutIme);
+    }
   }
 
   private void updateSearchControlsInset () {
@@ -7538,7 +7542,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       keyboardLayout.setCallback(this);
 
       keyboardWrapper.addView(keyboardLayout);
-      keyboardWrapper.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, keyboardLayout.getSize()));
+      keyboardWrapper.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, keyboardLayout.getSize() + extraBottomInsetWithoutIme));
+      Views.applyBottomInset(keyboardWrapper, extraBottomInsetWithoutIme);
 
       bottomWrap.addView(keyboardWrapper);
       contentView.getViewTreeObserver().addOnPreDrawListener(keyboardLayout);
