@@ -919,6 +919,10 @@ public class TGMessageMedia extends TGMessage {
   private boolean updateMediaWrapperImpl (long chatId, long messageId, @Nullable TdApi.MessageContent content, @Nullable MessageEditMediaPending pending) {
     final MediaWrapper wrapper = mosaicWrapper.findMediaWrapperByMessageId(messageId);
 
+    if (wrapper == null) {
+      return false;
+    }
+
     int oldContentWidth = wrapper.getContentWidth();
     int oldContentHeight = wrapper.getContentHeight();
     boolean updated = false;
