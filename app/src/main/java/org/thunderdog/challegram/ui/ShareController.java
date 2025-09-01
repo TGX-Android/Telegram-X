@@ -2686,23 +2686,27 @@ public class ShareController extends TelegramViewController<ShareController.Args
   }
 
   private void checkCommentPosition () {
-    float y = (float) calculateMovementDistance() * (1f - expandFactor) - getKeyboardOffset();
-    bottomWrap.setTranslationY(y);
-    if (OPEN_KEYBOARD_WITH_AUTOSCROLL) {
-      stubInputView.setTranslationY(y);
+    if (bottomWrap != null) {
+      float y = (float) calculateMovementDistance() * (1f - expandFactor) - getKeyboardOffset();
+      bottomWrap.setTranslationY(y);
+      if (OPEN_KEYBOARD_WITH_AUTOSCROLL) {
+        stubInputView.setTranslationY(y);
+      }
+      bottomShadow.setTranslationY(y);
+      if (!canShareLink) {
+        sendButton.setTranslationY(y);
+      }
+      checkButtonsPosition();
     }
-    bottomShadow.setTranslationY(y);
-    if (!canShareLink) {
-      sendButton.setTranslationY(y);
-    }
-    checkButtonsPosition();
   }
 
   private void checkButtonsPosition () {
-    int add = Math.max(0, inputView.getMeasuredHeight() - Screen.dp(48f));
-    float y = bottomWrap.getTranslationY() + add;
-    okButton.setTranslationY(y);
-    emojiButton.setTranslationY(y);
+    if (bottomWrap != null) {
+      int add = Math.max(0, inputView.getMeasuredHeight() - Screen.dp(48f));
+      float y = bottomWrap.getTranslationY() + add;
+      okButton.setTranslationY(y);
+      emojiButton.setTranslationY(y);
+    }
   }
 
   private boolean needBottomOffset () {
@@ -2721,8 +2725,10 @@ public class ShareController extends TelegramViewController<ShareController.Args
       keyboardFrameLayout.setExtraBottomInset(extraBottomInset, extraBottomInsetWithoutIme);
     }
     Views.setLayoutHeight(sendButton, Screen.dp(56f) + extraBottomInset);
-    spaceView.setLayoutHeight(extraBottomInset, false);
-    spaceView.setVisibility(needBottomOffset() ? View.VISIBLE : View.INVISIBLE);
+      if (spaceView != null) {
+      spaceView.setLayoutHeight(extraBottomInset, false);
+      spaceView.setVisibility(needBottomOffset() ? View.VISIBLE : View.INVISIBLE);
+    }
     if (needBottomOffset()) {
       Views.setBottomMargin(bottomWrap, extraBottomInset);
     } else {
