@@ -1344,7 +1344,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
       if (forward) {
         addView(menuPreview, -1);
       } else {
-        addView(menuPreview, 3);
+        addView(menuPreview, Math.min(3, getChildCount()));
       }
     } else {
       menuPreviewUsed = false;
