@@ -7679,7 +7679,20 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
       @Override
       public boolean forceInstantView (String link) {
-        return hasInstantView(link);
+        int instantViewOption = Settings.instance().getInstantViewMode();
+        switch (instantViewOption) {
+          case Settings.INSTANT_VIEW_MODE_ALL:
+            return hasInstantView(link);
+          case Settings.INSTANT_VIEW_MODE_INTERNAL:
+            return hasInstantView(link) && isInternalLink(link);
+          case Settings.INSTANT_VIEW_MODE_NONE:
+            return false;
+        }
+        return true;
+      }
+
+      private boolean isInternalLink(String link) {
+        return link.contains("telegram.org") || link.contains("telegra.ph");
       }
 
       @Override
@@ -7717,6 +7730,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         return false;
       }
 
+      // Austin right here
       @Override
       public boolean onUrlClick (View view, String link, boolean promptUser, @NonNull TdlibUi.UrlOpenParameters openParameters) {
         trackSponsoredMessageClicked();
