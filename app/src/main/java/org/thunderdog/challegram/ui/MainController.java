@@ -1840,14 +1840,6 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   @Override
   public void onMenuItemPressed (int id, View view) {
     if (id == R.id.menu_btn_search) {
-      if (BuildConfig.DEBUG) {
-        if (updateSnackBar != null && updateSnackBar.getVisibilityFactor() == 1f) {
-          updateSnackBar.dismissSnackBar(true);
-        } else {
-          onAppUpdateAvailable(true, false);
-        }
-        return;
-      }
       tdlib.checkDeadlocks(() -> runOnUiThreadOptional(() -> {
         if (isFocused()) {
           openSearchMode();
