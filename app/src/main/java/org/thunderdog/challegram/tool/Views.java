@@ -825,14 +825,16 @@ public class Views {
     if (view != null) {
       ViewParent parent = view.getParent();
       T found = null;
-      do {
-        if (clazz.isAssignableFrom(parent.getClass())) {
-          found = (T) parent;
-          if (!root) {
-            return found;
+      if (parent != null) {
+        do {
+          if (clazz.isAssignableFrom(parent.getClass())) {
+            found = (T) parent;
+            if (!root) {
+              return found;
+            }
           }
-        }
-      } while ((parent = parent.getParent()) != null);
+        } while ((parent = parent.getParent()) != null);
+      }
       return found;
     }
     return null;
