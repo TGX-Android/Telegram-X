@@ -2885,7 +2885,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     notifyPagerItemPositionsChanged();
     ViewPager pager = getViewPager();
     if (pager != null) {
-      onPageSelected(getCurrentPagerItemPosition(), pager.getCurrentItem());
+      onPageSelected(pager.getCurrentItem());
     }
     if (oldHasFolders != hasFolders() && pagerWrap != null) {
       checkTabs();
