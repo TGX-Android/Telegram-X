@@ -39,6 +39,7 @@ public class Config {
   public static final boolean CHAT_FOLDERS_UNSET_DEFAULT_ICONS = false; // Until there's a fix on server
 
   public static final boolean TEST_NEW_FEATURES_PROMPTS = false;
+  public static final boolean ADJUST_STATUS_BAR_TO_AVOID_DISPLAY_CUTOUT = false;
 
   public static final boolean NEED_SILENT_BROADCAST = false;
 
