@@ -15,19 +15,21 @@
 package org.thunderdog.challegram.widget;
 
 import android.content.Context;
+import android.graphics.Rect;
 import android.view.Gravity;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
 
-public class DoneButton extends CircleButton {
+public class DoneButton extends CircleButton implements RootFrameLayout.InsetsChangeListener {
   private final FactorAnimator.Target target;
 
   private static final int ANIMATOR_VISIBILITY = 0;
@@ -42,7 +44,8 @@ public class DoneButton extends CircleButton {
     int padding = Screen.dp(4f);
     FrameLayoutFix.LayoutParams params;
     params = FrameLayoutFix.newParams(Screen.dp(56f) + padding * 2, Screen.dp(56f) + padding * 2, (Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM);
-    params.rightMargin = params.bottomMargin = Screen.dp(16f) - padding;
+    params.rightMargin = Screen.dp(16f) - padding;
+    params.bottomMargin = Screen.dp(16f) - padding;
     setLayoutParams(params);
 
     setAlpha(0f);
@@ -64,6 +67,32 @@ public class DoneButton extends CircleButton {
 
       }
     };
+  }
+
+  private RootFrameLayout rootFrameLayout;
+
+  @Override
+  protected void onAttachedToWindow () {
+    super.onAttachedToWindow();
+    rootFrameLayout = Views.findAncestor(this, RootFrameLayout.class, true);
+    if (rootFrameLayout != null) {
+      rootFrameLayout.addInsetsChangeListener(this);
+      Views.setBottomMargin(this, Screen.dp(16f) - Screen.dp(4f) + rootFrameLayout.getSystemInsets().bottom);
+    }
+  }
+
+  @Override
+  protected void onDetachedFromWindow () {
+    super.onDetachedFromWindow();
+    if (rootFrameLayout != null) {
+      rootFrameLayout.removeInsetsChangeListener(this);
+      rootFrameLayout = null;
+    }
+  }
+
+  @Override
+  public void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect effectiveInsetsWithoutIme, Rect systemInsets, Rect systemInsetsWithoutIme, boolean isUpdate) {
+    Views.setBottomMargin(this, Screen.dp(16f) - Screen.dp(4f) + systemInsets.bottom);
   }
 
   private boolean isVisible;
