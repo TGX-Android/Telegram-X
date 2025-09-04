@@ -89,6 +89,9 @@
 -keep class org.webrtc.** { *; }
 -keepclassmembers class org.webrtc.** { *; }
 
+-keep class io.github.pytgcalls.** { *; }
+-keepclassmembers class io.github.pytgcalls.** { *; }
+
 # Other
 
 -dontwarn org.bouncycastle.jsse.BCSSLParameters
