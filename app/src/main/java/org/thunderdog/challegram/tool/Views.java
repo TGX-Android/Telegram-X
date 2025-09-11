@@ -823,17 +823,16 @@ public class Views {
   @SuppressWarnings("unchecked")
   public static <T extends View> T findAncestor (View view, Class<T> clazz, boolean root) {
     if (view != null) {
-      ViewParent parent = view.getParent();
       T found = null;
-      if (parent != null) {
-        do {
-          if (clazz.isAssignableFrom(parent.getClass())) {
-            found = (T) parent;
-            if (!root) {
-              return found;
-            }
+      ViewParent parent = view.getParent();
+      while (parent != null) {
+        if (clazz.isAssignableFrom(parent.getClass())) {
+          found = (T) parent;
+          if (!root) {
+            return found;
           }
-        } while ((parent = parent.getParent()) != null);
+        }
+        parent = parent.getParent();
       }
       return found;
     }
