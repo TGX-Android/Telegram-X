@@ -16,6 +16,7 @@ package org.thunderdog.challegram.service;
 
 import android.app.Service;
 import android.content.Intent;
+import android.os.Build;
 import android.os.IBinder;
 
 import androidx.annotation.Nullable;
@@ -34,7 +35,11 @@ public class BootListenerService extends Service {
   @Override
   public int onStartCommand (Intent intent, int flags, int startId) {
     UI.initApp(getApplicationContext());
-    TdlibManager.makeSync(getApplicationContext(), TdlibAccount.NO_ID, TdlibManager.SYNC_CAUSE_BOOT, 0, false, 0);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+      stopSelf();
+    } else {
+      TdlibManager.makeSync(getApplicationContext(), TdlibAccount.NO_ID, TdlibManager.SYNC_CAUSE_BOOT, 0, false, 0);
+    }
     return START_NOT_STICKY;
   }
 }

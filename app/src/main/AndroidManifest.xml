@@ -173,7 +173,7 @@
 
     <service
       android:name=".service.BootListenerService"
-      android:enabled="true"
+      android:enabled="@bool/bootServiceEnabled"
       android:exported="false"
       android:stopWithTask="false">
       <intent-filter>
