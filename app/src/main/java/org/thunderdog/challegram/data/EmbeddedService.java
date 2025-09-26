@@ -266,6 +266,7 @@ public class EmbeddedService {
             // Needed if the service is not supported for embedding using TDLib (height will be normal anyway)
             viewType = TYPE_CUSTOM_EMBED;
           }
+          break;
         }
         case "music.apple.com":
         case "podcasts.apple.com": {

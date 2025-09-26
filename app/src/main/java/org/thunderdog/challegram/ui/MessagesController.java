@@ -691,6 +691,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
               throw new UnsupportedOperationException(filledWp.fill.toString());
           }
         }
+        break;
       }
       default: {
         break;

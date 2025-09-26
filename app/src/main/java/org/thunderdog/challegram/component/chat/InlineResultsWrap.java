@@ -184,6 +184,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
                 break;
               }
             }
+            break;
           }
           case MotionEvent.ACTION_UP:
           case MotionEvent.ACTION_CANCEL: {

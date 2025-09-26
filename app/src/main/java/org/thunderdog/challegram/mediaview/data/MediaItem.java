@@ -969,6 +969,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
             if (changedPhoto.oldPhoto != null || changedPhoto.newPhoto != null) {
               return new MediaItem(context, tdlib, msg.chatId, 0, changedPhoto.newPhoto != null ? changedPhoto.newPhoto : changedPhoto.oldPhoto).setSourceSender(event.event.memberId).setSourceDate(event.event.date);
             }
+            break;
           }
           default: {
             Td.assertChatEventAction_53b6b01e();
