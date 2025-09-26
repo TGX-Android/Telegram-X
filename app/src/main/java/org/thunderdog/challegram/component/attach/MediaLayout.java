@@ -273,7 +273,7 @@ public class MediaLayout extends FrameLayoutFix implements
       }
     }
 
-    controllers = new MediaBottomBaseController[items.length];
+    controllers = new MediaBottomBaseController<?>[items.length];
 
     if (mode == MODE_DEFAULT) {
       bottomBar = new MediaBottomBar(getContext());
@@ -328,7 +328,7 @@ public class MediaLayout extends FrameLayoutFix implements
 
   public void initCustom () {
     mode = MODE_CUSTOM_POPUP;
-    controllers = new MediaBottomBaseController[1];
+    controllers = new MediaBottomBaseController<?>[1];
     currentController = getControllerForIndex(0);
     View controllerView = currentController.getValue();
 

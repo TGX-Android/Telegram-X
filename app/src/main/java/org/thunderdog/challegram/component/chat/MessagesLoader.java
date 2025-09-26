@@ -1243,7 +1243,7 @@ public class MessagesLoader implements Client.ResultHandler {
       null, null, null, 0, null,
       null, 0, 0,
       0, 0, 0, 0, null,
-      0, 0, false,
+      0, 0,
       null, null, null
     );
   }

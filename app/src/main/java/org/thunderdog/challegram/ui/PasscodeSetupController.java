@@ -24,19 +24,20 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
-import org.thunderdog.challegram.core.FingerprintPassword;
+import org.thunderdog.challegram.core.BiometricAuthentication;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.ChatPasscode;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.theme.ColorId;
@@ -60,9 +61,9 @@ import me.vkryl.core.lambda.RunnableInt;
 public class PasscodeSetupController extends ViewController<PasscodeSetupController.Args> implements View.OnClickListener, Runnable {
   public static class Args {
     public final TdApi.Chat chat;
-    public final Tdlib.ChatPasscode passcode;
+    public final ChatPasscode passcode;
 
-    public Args (TdApi.Chat chat, Tdlib.ChatPasscode passcode) {
+    public Args (TdApi.Chat chat, ChatPasscode passcode) {
       this.chat = chat;
       this.passcode = passcode;
     }
@@ -77,8 +78,8 @@ public class PasscodeSetupController extends ViewController<PasscodeSetupControl
   private SettingView visibilityView;
   private @Nullable SeparatorView visibilitySeparator;
   private @Nullable SettingView screenshotView, notificationsView;
-  private SettingView fingerprintView;
-  private SeparatorView fingerprintSeparator;
+  private SettingView biometricsView;
+  private SeparatorView biometricsSeparator;
   private ShadowView topShadowView, bottomShadowView;
 
   public PasscodeSetupController (Context context, Tdlib tdlib) {
@@ -107,10 +108,10 @@ public class PasscodeSetupController extends ViewController<PasscodeSetupControl
   }
 
   private void checkItemsAvailability () {
-    boolean isAvailable = getPasscodeMode() != Passcode.MODE_FINGERPRINT && FingerprintPassword.isAvailable();
-    fingerprintSeparator.setVisibility(isAvailable ? View.VISIBLE : View.GONE);
-    fingerprintView.setVisibility(isAvailable ? View.VISIBLE : View.GONE);
-    boolean canChangeVisibility = getPasscodeMode() != Passcode.MODE_FINGERPRINT;
+    boolean isAvailable = getPasscodeMode() != Passcode.MODE_BIOMETRICS && BiometricAuthentication.isAvailable();
+    biometricsSeparator.setVisibility(isAvailable ? View.VISIBLE : View.GONE);
+    biometricsView.setVisibility(isAvailable ? View.VISIBLE : View.GONE);
+    boolean canChangeVisibility = getPasscodeMode() != Passcode.MODE_BIOMETRICS;
     visibilityView.setVisibility(canChangeVisibility ? View.VISIBLE : View.GONE);
     if (visibilitySeparator != null) {
       visibilitySeparator.setVisibility(canChangeVisibility ? View.VISIBLE : View.GONE);
@@ -127,7 +128,7 @@ public class PasscodeSetupController extends ViewController<PasscodeSetupControl
   }
 
   private TdApi.Chat specificChat;
-  private Tdlib.ChatPasscode chatPasscode;
+  private ChatPasscode chatPasscode;
 
   @Override
   public void setArguments (Args args) {
@@ -209,20 +210,27 @@ public class PasscodeSetupController extends ViewController<PasscodeSetupControl
       topShadowView = shadow;
     }
 
-    // Fingerprint
+    // Biometrics
 
-    fingerprintView = new SettingView(context, tdlib);
-    fingerprintView.setId(R.id.btn_fingerprint);
-    fingerprintView.setType(SettingView.TYPE_RADIO);
-    fingerprintView.setName(R.string.passcode_fingerprint);
-    fingerprintView.getToggler().setRadioEnabled(needUnlockByFingerprint(), false);
-    fingerprintView.setOnClickListener(this);
-    fingerprintView.addThemeListeners(this);
-    autoLockWrap.addView(fingerprintView);
+    boolean biometricsEnabled = needUnlockWithBiometrics();
+    biometricsView = new SettingView(context, tdlib);
+    biometricsView.setId(R.id.btn_biometrics);
+    biometricsView.setType(SettingView.TYPE_INFO_COMPACT);
+    biometricsView.addToggler();
+    biometricsView.setSwapDataAndName();
+    biometricsView.setName(BiometricAuthentication.ONLY_FINGERPRINT ?
+      R.string.passcode_fingerprint :
+      R.string.passcode_biometrics
+    );
+    biometricsView.getToggler().setRadioEnabled(biometricsEnabled, false);
+    biometricsView.setData(Lang.getMarkdownString(this, useStrongBiometrics(biometricsEnabled) ? R.string.BiometricsStrong : R.string.BiometricsWeak));
+    biometricsView.setOnClickListener(this);
+    biometricsView.addThemeListeners(this);
+    autoLockWrap.addView(biometricsView);
 
-    fingerprintSeparator = SeparatorView.simpleSeparator(context, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(1f)), true);
-    addThemeInvalidateListener(fingerprintSeparator);
-    autoLockWrap.addView(fingerprintSeparator);
+    biometricsSeparator = SeparatorView.simpleSeparator(context, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(1f)), true);
+    addThemeInvalidateListener(biometricsSeparator);
+    autoLockWrap.addView(biometricsSeparator);
 
     // Visibility
 
@@ -384,7 +392,9 @@ public class PasscodeSetupController extends ViewController<PasscodeSetupControl
     if (specificChat != null) {
       chatPasscode = tdlib.chatPasscode(specificChat);
     }
-    fingerprintView.getToggler().setRadioEnabled(needUnlockByFingerprint(), fingerprintView.getVisibility() == View.VISIBLE && isFocused());
+    boolean biometricsEnabled = needUnlockWithBiometrics();
+    biometricsView.getToggler().setRadioEnabled(biometricsEnabled, biometricsView.getVisibility() == View.VISIBLE && isFocused());
+    biometricsView.setData(Lang.getMarkdownString(this, useStrongBiometrics(biometricsEnabled) ? R.string.BiometricsStrong : R.string.BiometricsWeak));
     if (!removedPasscodeItem && isAttachedToNavigationController()) {
       removedPasscodeItem = true;
       if (isPasscodeEnabled()) {
@@ -411,8 +421,8 @@ public class PasscodeSetupController extends ViewController<PasscodeSetupControl
     checkItemsAvailability();
   }
 
-  private void showPasscodeOptions () {
-    showPasscodeOptions(this, null, mode -> {
+  private void showPasscodeOptions (View v) {
+    showPasscodeOptions(this, v, null, mode -> {
       PasscodeController c = new PasscodeController(context, tdlib);
       if (specificChat != null) {
         c.setArguments(new PasscodeController.Args(specificChat, chatPasscode, null));
@@ -423,9 +433,9 @@ public class PasscodeSetupController extends ViewController<PasscodeSetupControl
     });
   }
 
-  public static void showPasscodeOptions (ViewController<?> context, CharSequence info, RunnableInt callback) {
-    boolean fingerprintAvailable = FingerprintPassword.isAvailable();
-    int size = fingerprintAvailable ? 5 : 4;
+  public void showPasscodeOptions (ViewController<?> context, View v, CharSequence info, RunnableInt callback) {
+    boolean biometricsAvailable = BiometricAuthentication.isAvailable();
+    int size = biometricsAvailable ? 5 : 4;
     IntList ids = new IntList(size);
     StringList strings = new StringList(size);
     IntList icons = new IntList(size);
@@ -446,9 +456,9 @@ public class PasscodeSetupController extends ViewController<PasscodeSetupControl
     strings.append(R.string.PasscodeGesture);
     icons.append(R.drawable.baseline_gesture_24);
 
-    if (fingerprintAvailable) {
-      ids.append(R.id.btn_passcodeType_fingerprint);
-      strings.append(R.string.PasscodeFingerprint);
+    if (biometricsAvailable) {
+      ids.append(R.id.btn_passcodeType_biometrics);
+      strings.append(BiometricAuthentication.ONLY_FINGERPRINT ? R.string.PasscodeFingerprint : R.string.PasscodeBiometrics);
       icons.append(R.drawable.baseline_fingerprint_24);
     }
 
@@ -462,16 +472,17 @@ public class PasscodeSetupController extends ViewController<PasscodeSetupControl
         mode = Passcode.MODE_PATTERN;
       } else if (id == R.id.btn_passcodeType_gesture) {
         mode = Passcode.MODE_GESTURE;
-      } else if (id == R.id.btn_passcodeType_fingerprint) {
-        mode = Passcode.MODE_FINGERPRINT;
+      } else if (id == R.id.btn_passcodeType_biometrics) {
+        mode = Passcode.MODE_BIOMETRICS;
       } else {
         mode = 0;
       }
       if (mode == 0) {
         return true;
       }
-      if (mode == Passcode.MODE_FINGERPRINT && (!FingerprintPassword.isAvailable() || !FingerprintPassword.hasFingerprints())) {
-        UI.showToast(R.string.fingerprint_hint3, Toast.LENGTH_SHORT);
+      if (mode == Passcode.MODE_BIOMETRICS && (!BiometricAuthentication.isAvailable() || BiometricAuthentication.isMissingEnrolledData(useStrongBiometrics(false)))) {
+        @StringRes int errorRes = BiometricAuthentication.ONLY_FINGERPRINT ? R.string.fingerprint_hint3 : R.string.biometrics_hint3;
+        context.context().tooltipManager().builder(v).icon(R.drawable.baseline_error_24).show(tdlib, errorRes).hideDelayed();
         return true;
       }
       callback.runWithInt(mode);
@@ -486,28 +497,30 @@ public class PasscodeSetupController extends ViewController<PasscodeSetupControl
       boolean enabled = !isPasscodeEnabled();
 
       if (enabled) {
-        showPasscodeOptions();
+        showPasscodeOptions(v);
       } else {
         disablePasscode();
         updateEnabledStatus(true);
       }
     } else if (viewId == R.id.btn_passcode_change) {
       if (isPasscodeEnabled()) {
-        showPasscodeOptions();
+        showPasscodeOptions(v);
       }
-    } else if (viewId == R.id.btn_fingerprint) {
-      if (fingerprintView.getToggler().isEnabled()) {
-        fingerprintView.toggleRadio();
-        disableUnlockByFingerprint();
-      } else if (!FingerprintPassword.isAvailable() || !FingerprintPassword.hasFingerprints()) {
-        UI.showToast(R.string.fingerprint_hint3, Toast.LENGTH_SHORT);
+    } else if (viewId == R.id.btn_biometrics) {
+      if (biometricsView.getToggler().isEnabled()) {
+        biometricsView.toggleRadio();
+        biometricsView.setData(Lang.getMarkdownString(this, useStrongBiometrics(false) ? R.string.BiometricsStrong : R.string.BiometricsWeak));
+        disableUnlockByBiometrics();
+      } else if (!BiometricAuthentication.isAvailable() || BiometricAuthentication.isMissingEnrolledData(useStrongBiometrics(false))) {
+        int errorRes = BiometricAuthentication.ONLY_FINGERPRINT ? R.string.fingerprint_hint3 : R.string.biometrics_hint3;
+        context.tooltipManager().builder(v).icon(R.drawable.baseline_error_24).show(tdlib, errorRes).hideDelayed();
       } else {
         PasscodeController c = new PasscodeController(context, tdlib);
         if (specificChat != null) {
           c.setArguments(new PasscodeController.Args(specificChat, chatPasscode, null));
         }
         c.setPasscodeMode(PasscodeController.MODE_SETUP);
-        c.setInFingerprintSetup();
+        c.setInBiometricsSetup();
         navigateTo(c);
       }
     } else if (viewId == R.id.btn_pattern) {
@@ -574,11 +587,23 @@ public class PasscodeSetupController extends ViewController<PasscodeSetupControl
     }
   }
 
-  private boolean needUnlockByFingerprint () {
+  private boolean needUnlockWithBiometrics () {
     if (specificChat != null) {
-      return chatPasscode != null && !StringUtils.isEmpty(chatPasscode.fingerHash);
+      return chatPasscode != null && !StringUtils.isEmpty(chatPasscode.biometricsHash);
     } else {
-      return Passcode.instance().needUnlockByFingerprint();
+      return Passcode.instance().needUnlockWithBiometrics();
+    }
+  }
+
+  private boolean useStrongBiometrics (boolean biometricsEnabled) {
+    if (biometricsEnabled) {
+      if (specificChat != null) {
+        return chatPasscode != null && chatPasscode.requireStrongBiometrics();
+      } else {
+        return Passcode.instance().useStrongBiometrics();
+      }
+    } else {
+      return BiometricAuthentication.isStrongAvailable(false);
     }
   }
 
@@ -599,14 +624,14 @@ public class PasscodeSetupController extends ViewController<PasscodeSetupControl
     }
   }
 
-  private void disableUnlockByFingerprint () {
+  private void disableUnlockByBiometrics () {
     if (specificChat != null) {
       if (chatPasscode != null) {
-        chatPasscode.fingerHash = null;
+        chatPasscode.biometricsHash = null;
         tdlib.setPasscode(specificChat, chatPasscode);
       }
     } else {
-      Passcode.instance().disableUnlockByFingerprint();
+      Passcode.instance().disableUnlockByBiometrics();
     }
   }
 

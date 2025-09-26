@@ -4116,4 +4116,17 @@ public class Lang {
 
     return defaultName;
   }
+
+  public static String getRestrictionText (TdApi.RestrictionInfo restrictionInfo) {
+    if (restrictionInfo != null) {
+      if (!StringUtils.isEmpty(restrictionInfo.restrictionReason)) {
+        return restrictionInfo.restrictionReason;
+      }
+      if (restrictionInfo.hasSensitiveContent) {
+        return getString(R.string.SensitiveContent);
+      }
+      return getString(R.string.RestrictedContent);
+    }
+    return "";
+  }
 }

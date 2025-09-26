@@ -353,7 +353,7 @@ public class NonMaterialButton extends View implements FactorAnimator.Target, Cl
     int width = getMeasuredWidth();
     int height = getMeasuredHeight();
 
-    int padding = (int) (getStrokeWidth() / 2);
+    int padding = getStrokeWidth() / 2;
     int left = padding; // + (int) ((float) (width - Screen.dp(14f) * 2) * doneFactor);
     rect.set(left, padding, width - padding, height - padding);
 
@@ -363,7 +363,7 @@ public class NonMaterialButton extends View implements FactorAnimator.Target, Cl
 
   private void setProgressBounds () {
     if (progress != null) {
-      int padding = (int) (getStrokeWidth() / 2);
+      int padding = (getStrokeWidth() / 2);
       int width = getMeasuredWidth();
       progress.setBounds((width - Screen.dp(13f) - padding), padding, width - padding, padding + Screen.dp(13f));
     }
@@ -440,7 +440,7 @@ public class NonMaterialButton extends View implements FactorAnimator.Target, Cl
       RectF rectF = Paints.getRectF();
       int radius = Screen.dp(3f);
 
-      int padding = (int) (getStrokeWidth() / 2);
+      int padding = (getStrokeWidth() / 2);
       rectF.set(padding, padding, width - padding, height - padding);
 
       final boolean saved = buttonFactor != 1f;

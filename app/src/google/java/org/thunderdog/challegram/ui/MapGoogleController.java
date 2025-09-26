@@ -270,8 +270,8 @@ final class MapGoogleController extends MapController<MapView, MapGoogleControll
 
     @Override
     public void imageLoaded (final ImageFile file, boolean successful, Bitmap bitmap) {
-      if (successful && isRequested(file) && canvas != null && U.isValidBitmap((Bitmap) bitmap)) {
-        drawAvatar(canvas, (Bitmap) bitmap);
+      if (successful && isRequested(file) && canvas != null && U.isValidBitmap(bitmap)) {
+        drawAvatar(canvas, bitmap);
         UI.post(() -> {
           if (isRequested(file)) {
             marker.setIcon(BitmapDescriptorFactory.fromBitmap(this.bitmap));

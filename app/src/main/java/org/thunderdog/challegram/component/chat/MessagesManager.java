@@ -2347,9 +2347,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   public void setEmptyText (TextView view, boolean isLoaded) {
     if (loader.getSpecialMode() == MessagesLoader.SPECIAL_MODE_RESTRICTED) {
-      String restrictionReason = tdlib.chatRestrictionReason(loader.getChatId());
-      if (restrictionReason != null) {
-        view.setText(restrictionReason);
+      String restrictionText = Lang.getRestrictionText(tdlib.chatRestriction(loader.getChatId()));
+      if (!StringUtils.isEmpty(restrictionText)) {
+        view.setText(restrictionText);
         return;
       }
     }

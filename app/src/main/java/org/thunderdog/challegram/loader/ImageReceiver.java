@@ -202,8 +202,8 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     } else {
       ratio = Math.min(widthRatio, heightRatio);
     }
-    sourceWidth *= ratio;
-    sourceHeight *= ratio;
+    sourceWidth = (int) ((float) sourceWidth * ratio);
+    sourceHeight = (int) ((float) sourceHeight * ratio);
     return sourceWidth;
   }
 
@@ -247,8 +247,8 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     } else {
       ratio = Math.min(widthRatio, heightRatio);
     }
-    sourceWidth *= ratio;
-    sourceHeight *= ratio;
+    sourceWidth = (int) ((float) sourceWidth * ratio);
+    sourceHeight = (int) ((float) sourceHeight * ratio);
     return sourceHeight;
   }
 
@@ -359,7 +359,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
 
   @Override
   public void onCropStateChanged (ImageFile file, CropState newCropState) {
-    if (!displayCrop.compare(newCropState)) {
+    if (!displayCrop.equalsTo(newCropState)) {
       displayCrop.set(newCropState);
       forceBoundsLayout();
       invalidateFully();
@@ -995,7 +995,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     ImageFile currentFile = this.file;
     if (compareToFile(currentFile, file)) {
       if (successful) {
-        handler.display(this, currentFile, (Bitmap) bitmap);
+        handler.display(this, currentFile, bitmap);
       } else {
         setBundle(currentFile, null, false);
       }
@@ -1131,8 +1131,8 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
           int availHeight = bottom - top;
 
           float ratio = Math.min((float) availWidth / (float) sourceWidth, (float) availHeight / (float) sourceHeight);
-          sourceWidth *= ratio;
-          sourceHeight *= ratio;
+          sourceWidth = (int) ((float) sourceWidth * ratio);
+          sourceHeight = (int) ((float) sourceHeight * ratio);
 
           int centerX = (left + right) / 2;
           int centerY = (top + bottom) / 2;

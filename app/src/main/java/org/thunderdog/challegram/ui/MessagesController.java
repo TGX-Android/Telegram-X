@@ -9072,13 +9072,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (bottomWrap.getVisibility() == View.GONE) {
       return 0;
     }
-    int bottom = bottomWrap.getMeasuredHeight();
+    float bottom = bottomWrap.getMeasuredHeight();
     if (!excludeTranslation) {
       bottom += getReplyOffset();
     }
     bottom += getKeyboardOffset();
     bottom -= extraBottomInset;
-    return bottom;
+    return (int) bottom;
   }
 
   // Stickers
@@ -12218,7 +12218,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (content == null) {
         return MESSAGE_TYPE_TEXT;
       }
-      if (!StringUtils.isEmpty(msg.restrictionReason) && Settings.instance().needRestrictContent()) {
+      if (Td.hasRestriction(msg.restrictionInfo, Settings.instance().needRestrictContent())) {
         return MESSAGE_TYPE_TEXT;
       }
       switch (content.getConstructor()) {

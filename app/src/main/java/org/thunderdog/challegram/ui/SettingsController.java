@@ -613,7 +613,7 @@ public class SettingsController extends ViewController<Void> implements
     TdApi.SuggestedAction[] actions = tdlib.getSuggestedActions();
     int addedActionItems = 0;
     for (TdApi.SuggestedAction action : actions) {
-      if (!tdlib.isSettingSuggestion(action)) {
+      if (!Tdlib.isSettingSuggestion(action)) {
         continue;
       }
       items.add(new ListItem(addedActionItems == 0 ? ListItem.TYPE_SHADOW_TOP : ListItem.TYPE_SEPARATOR));
@@ -1245,7 +1245,7 @@ public class SettingsController extends ViewController<Void> implements
   }
 
   public void showSuggestionPopup (View suggestionView, TdApi.SuggestedAction suggestedAction) {
-    if (!tdlib.isSettingSuggestion(suggestedAction)) {
+    if (!Tdlib.isSettingSuggestion(suggestedAction)) {
       return;
     }
     CharSequence info = null;
@@ -1328,7 +1328,7 @@ public class SettingsController extends ViewController<Void> implements
   }
 
   private void addSuggestionToList (TdApi.SuggestedAction suggestedAction) {
-    if (!tdlib.isSettingSuggestion(suggestedAction))
+    if (!Tdlib.isSettingSuggestion(suggestedAction))
       return;
     int index = adapter.indexOfViewByIdReverse(R.id.btn_suggestion);
     if (index != -1) {
@@ -1348,7 +1348,7 @@ public class SettingsController extends ViewController<Void> implements
   }
 
   private void removeSuggestionFromList (TdApi.SuggestedAction suggestedAction) {
-    if (!tdlib.isSettingSuggestion(suggestedAction))
+    if (!Tdlib.isSettingSuggestion(suggestedAction))
       return;
 
     int removalIndex = adapter.indexOfViewByLongId(suggestedAction.getConstructor());

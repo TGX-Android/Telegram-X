@@ -207,7 +207,8 @@ public final class TGMessageService extends TGMessageServiceImpl {
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatSetTheme setTheme) {
     super(context, msg);
     setTextCreator(() -> {
-      if (StringUtils.isEmpty(setTheme.themeName)) {
+      String themeName = Td.themeName(setTheme.theme);
+      if (StringUtils.isEmpty(themeName)) {
         if (msg.isOutgoing) {
           return getText(
             R.string.ChatThemeDisabled_outgoing
@@ -222,13 +223,13 @@ public final class TGMessageService extends TGMessageServiceImpl {
         if (msg.isOutgoing) {
           return getText(
             R.string.ChatThemeSet_outgoing,
-            new BoldArgument(setTheme.themeName)
+            new BoldArgument(themeName)
           );
         } else {
           return getText(
             R.string.ChatThemeSet,
             new SenderArgument(sender, isUserChat()),
-            new BoldArgument(setTheme.themeName)
+            new BoldArgument(themeName)
           );
         }
       }

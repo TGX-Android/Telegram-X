@@ -119,7 +119,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
 
   private int flags;
 
-  private final ViewController parent;
+  private final ViewController<?> parent;
 
   private Drawable arrowDrawable;
   private Drawable topShadow, bottomShadow;

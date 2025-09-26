@@ -285,7 +285,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
       final int topOffset = HeaderView.getTopOffset();
       final float top = y - topOffset;
       lickView.setTranslationY(realHeaderOffset - topOffset);
-      float factor = top > topOffset ? 0f : 1f - ((float) top / (float) topOffset);
+      float factor = top > topOffset ? 0f : 1f - (top / (float) topOffset);
       lickView.setFactor(factor);
       onUpdateLickViewFactor(factor);
       // headerView.getFilling().setShadowAlpha(factor);

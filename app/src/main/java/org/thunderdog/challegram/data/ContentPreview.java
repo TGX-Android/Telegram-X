@@ -222,13 +222,14 @@ public class ContentPreview {
       return new ContentPreview(EMOJI_ERROR, 0, Lang.getString(R.string.DeletedMessage), false);
     }
     if (Settings.instance().needRestrictContent()) {
-      if (!StringUtils.isEmpty(message.restrictionReason)) {
-        return new ContentPreview(EMOJI_ERROR, 0, message.restrictionReason, false);
+      String restrictionText = Lang.getRestrictionText(message.restrictionInfo);
+      if (!StringUtils.isEmpty(restrictionText)) {
+        return new ContentPreview(EMOJI_ERROR, 0, restrictionText, false);
       }
       if (checkChatRestrictions && chatId != 0) { // Otherwise lookup is handled by the caller
-        String restrictionReason = tdlib.chatRestrictionReason(chatId);
-        if (restrictionReason != null) {
-          return new ContentPreview(EMOJI_ERROR, 0, restrictionReason, false);
+        restrictionText = Lang.getRestrictionText(tdlib.chatRestriction(chatId));
+        if (!StringUtils.isEmpty(restrictionText)) {
+          return new ContentPreview(EMOJI_ERROR, 0, restrictionText, false);
         }
       }
     }
@@ -528,7 +529,7 @@ public class ContentPreview {
         arg1 = ((TdApi.MessageChatSetMessageAutoDeleteTime) message.content).messageAutoDeleteTime;
         break;
       case TdApi.MessageChatSetTheme.CONSTRUCTOR:
-        alternativeText = ((TdApi.MessageChatSetTheme) message.content).themeName;
+        alternativeText = Td.themeName(((TdApi.MessageChatSetTheme) message.content).theme);
         break;
       case TdApi.MessageGiftedPremium.CONSTRUCTOR: {
         // TODO: R.string.ChatContent*
@@ -1121,7 +1122,7 @@ public class ContentPreview {
         return getNotificationPreview(TdApi.MessageChatChangeTitle.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentChatChangeTitle) push.content).title);
 
       case TdApi.PushMessageContentChatSetTheme.CONSTRUCTOR:
-        return getNotificationPreview(TdApi.MessageChatSetTheme.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentChatSetTheme) push.content).themeName);
+        return getNotificationPreview(TdApi.MessageChatSetTheme.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentChatSetTheme) push.content).name);
       case TdApi.PushMessageContentChatSetBackground.CONSTRUCTOR:
         return getNotificationPreview(TdApi.MessageChatSetBackground.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, ((TdApi.PushMessageContentChatSetBackground) push.content).isSame ? ARG_TRUE : ARG_NONE, 0);
       case TdApi.PushMessageContentSuggestProfilePhoto.CONSTRUCTOR:

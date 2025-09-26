@@ -183,6 +183,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.LinkPreviewTypeBackground.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeChannelBoost.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeChat.CONSTRUCTOR:
+      case TdApi.LinkPreviewTypeDirectMessagesChat.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeEmbeddedAudioPlayer.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeEmbeddedVideoPlayer.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeInvoice.CONSTRUCTOR:
@@ -191,10 +192,12 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.LinkPreviewTypeShareableChatFolder.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeStickerSet.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeStory.CONSTRUCTOR:
+      case TdApi.LinkPreviewTypeStoryAlbum.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeSupergroupBoost.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeTheme.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeUnsupported.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeUpgradedGift.CONSTRUCTOR:
+      case TdApi.LinkPreviewTypeGiftCollection.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeUser.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeGroupCall.CONSTRUCTOR:
       case TdApi.LinkPreviewTypeVideoChat.CONSTRUCTOR:
@@ -205,9 +208,8 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
         // TODO support more types
         break;
       }
-
       default:
-        Td.assertLinkPreviewType_e3ce10d5();
+        Td.assertLinkPreviewType_4868cb55();
         throw Td.unsupported(linkPreview.type);
     }
     return false;
@@ -270,6 +272,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
             case TdApi.LinkPreviewTypeBackground.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeChannelBoost.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeChat.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeDirectMessagesChat.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeEmbeddedAudioPlayer.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeEmbeddedVideoPlayer.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeInvoice.CONSTRUCTOR:
@@ -278,10 +281,12 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
             case TdApi.LinkPreviewTypeShareableChatFolder.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeStickerSet.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeStory.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeStoryAlbum.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeSupergroupBoost.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeTheme.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeUnsupported.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeUpgradedGift.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeGiftCollection.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeUser.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeVideoChat.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeGroupCall.CONSTRUCTOR:
@@ -293,7 +298,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
               break;
             }
             default:
-              Td.assertLinkPreviewType_e3ce10d5();
+              Td.assertLinkPreviewType_4868cb55();
               throw Td.unsupported(linkPreview.type);
           }
         }

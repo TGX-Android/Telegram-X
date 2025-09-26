@@ -5264,17 +5264,21 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean isRestrictedByTelegram () {
+    return isRestrictedByTelegram(Settings.instance().needRestrictContent());
+  }
+
+  public boolean isRestrictedByTelegram (boolean restrictSensitiveContent) {
     synchronized (this) {
       if (combinedMessages != null) {
         for (TdApi.Message message : combinedMessages) {
-          if (!StringUtils.isEmpty(message.restrictionReason)) {
+          if (Td.hasRestriction(message.restrictionInfo, restrictSensitiveContent)) {
             return true;
           }
         }
       }
     }
 
-    return !StringUtils.isEmpty(msg.restrictionReason);
+    return Td.hasRestriction(msg.restrictionInfo, restrictSensitiveContent);
   }
 
   protected boolean replaceTimeWithEditTime () {
@@ -5872,7 +5876,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     dst.canBeSaved = src.canBeSaved;
     dst.hasTimestampedMedia = src.hasTimestampedMedia;
-    dst.hasSensitiveContent = src.hasSensitiveContent;
+    dst.restrictionInfo = src.restrictionInfo;
 
     dst.editDate = src.editDate;
     dst.isChannelPost = src.isChannelPost;
@@ -8127,9 +8131,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (content == null) {
         return new TGMessageText(context, msg, new TdApi.FormattedText(Lang.getString(R.string.DeletedMessage), null));
       }
-      if (!StringUtils.isEmpty(msg.restrictionReason) && Settings.instance().needRestrictContent()) {
-        TGMessageText text = new TGMessageText(context, msg, new TdApi.FormattedText(msg.restrictionReason, new TdApi.TextEntity[]{
-          new TdApi.TextEntity(0, msg.restrictionReason.length(), new TdApi.TextEntityTypeItalic())
+      if (Td.hasRestriction(msg.restrictionInfo, Settings.instance().needRestrictContent())) {
+        String restrictionText = Lang.getRestrictionText(msg.restrictionInfo);
+        TGMessageText text = new TGMessageText(context, msg, new TdApi.FormattedText(restrictionText, new TdApi.TextEntity[]{
+          new TdApi.TextEntity(0, restrictionText.length(), new TdApi.TextEntityTypeItalic())
         }));
         text.addMessageFlags(FLAG_UNSUPPORTED);
         return text;

@@ -503,6 +503,7 @@
   <string name="PasscodeMismatchPin">PINs do not match</string>
   <string name="PasscodeMismatchPattern">Patterns do not match</string>
   <string name="PasscodeMismatchFingerprint">Fingerprints do not match</string>
+  <string name="PasscodeMismatchBiometrics">Biometrics do not match</string>
 
   <string name="PasscodeInvalidPassword">Invalid Password</string>
   <string name="PasscodeInvalidGesture">Invalid Gesture</string>
@@ -517,6 +518,7 @@
   <string name="ChangePasscode">Change Passcode</string>
   <string name="passcode_passcodeInvisibility">Passcode Invisibility</string>
   <string name="passcode_fingerprint">Unlock with Fingerprint</string>
+  <string name="passcode_biometrics">Unlock with Biometrics</string>
   <string name="LoadingInformation">Loading information…</string>
   <string name="BlockContact">Block</string>
   <string name="BlockBot">Block Bot</string>
@@ -549,6 +551,8 @@
   <string name="slideToCancel">Slide to Cancel</string>
   <string name="fingerprint_hint3">Please add at least one fingerprint in System Settings &gt; Security &gt; Fingerprints.</string>
   <string name="fingerprint_fail">Unknown finger</string>
+  <string name="biometrics_hint3">Please add biometrics in System Settings &gt; Security &gt; Biometrics.</string>
+  <string name="biometrics_fail">Unknown biometrics</string>
   <string name="cam_hint">Please allow Telegram X to use camera in System Settings &gt; Apps &gt; Telegram X &gt; Permissions</string>
   <string name="Settings">Settings</string>
   <string name="LogOut">Log out</string>
@@ -771,6 +775,11 @@
   <string name="PasscodePattern">Pattern</string>
   <string name="PasscodeGesture">Gesture</string>
   <string name="PasscodeFingerprint">Fingerprint</string>
+  <string name="PasscodeBiometrics">Biometrics</string>
+  <string name="PasscodeBiometricsStrong">Biometrics (strong)</string>
+  <string name="PasscodeBiometricsWeak">Biometrics (weak)</string>
+  <string name="BiometricsStrong">Strong (**Class 3** sensor)</string>
+  <string name="BiometricsWeak">Weak (**Class 2** sensor)</string>
   <string name="NewChannel">New Channel</string>
   <string name="NewGroup">New Group</string>
   <string name="NewChat">New Chat</string>
@@ -779,16 +788,25 @@
   <string name="ChooseYourPattern">Choose your pattern</string>
   <string name="ChooseYourGesture">Draw your gesture</string>
   <string name="TouchYourSensor">Touch your sensor</string>
+  <string name="TouchYourSensorWeak">Touch your sensor (weak)</string>
+  <string name="UseBiometrics">Use your biometrics</string>
+  <string name="UseBiometricsWeak">Use your biometrics (weak)</string>
+  <string name="CancelBiometrics">Cancel</string>
   <string name="ConfirmYourPIN">Confirm your PIN</string>
   <string name="ConfirmYourPassword">Confirm your password</string>
   <string name="ConfirmYourPattern">Confirm your pattern</string>
   <string name="ConfirmYourGesture">Confirm your gesture</string>
   <string name="ConfirmYourFingerprint">Confirm your fingerprint</string>
+  <string name="ConfirmYourFingerprintWeak">Confirm your fingerprint (weak)</string>
+  <string name="ConfirmYourBiometricsStrong">Confirm your biometrics (strong)</string>
+  <string name="ConfirmYourBiometrics">Confirm your biometrics</string>
+  <string name="ConfirmYourBiometricsWeak">Confirm your biometrics (weak)</string>
   <string name="UnlockByPIN">Enter your PIN to unlock</string>
   <string name="UnlockByPassword">Enter your password to unlock</string>
   <string name="UnlockByPattern">Draw your pattern to unlock</string>
   <string name="UnlockByGesture">Draw your gesture to unlock</string>
   <string name="UnlockByFingerprint">Touch sensor to unlock</string>
+  <string name="UnlockByBiometrics">Use biometrics to unlock</string>
   <string name="SecretLinkPreviewEnable">Enable</string>
   <string name="AirplaneModeDisable">Disable</string>
   <string name="EditName">Edit name</string>
@@ -5617,5 +5635,8 @@
 
   <string name="xBotUsers_one">%1$s monthly user</string>
   <string name="xBotUsers_other">%1$s monthly users</string>
+
+  <string name="RestrictedContent">Restricted Content</string>
+  <string name="SensitiveContent">Sensitive Content</string>
 
 </resources>

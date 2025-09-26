@@ -67,6 +67,7 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
+import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
@@ -167,7 +168,7 @@ import tgx.app.RecaptchaContext;
 import tgx.app.RecaptchaProviderRegistry;
 
 @SuppressWarnings("deprecation")
-public abstract class BaseActivity extends ComponentActivity implements View.OnTouchListener, FactorAnimator.Target, Keyboard.OnStateChangeListener, ThemeChangeListener, SensorEventListener, TGPlayerController.TrackChangeListener, TGLegacyManager.EmojiLoadListener, Lang.Listener, Handler.Callback {
+public abstract class BaseActivity extends FragmentActivity implements View.OnTouchListener, FactorAnimator.Target, Keyboard.OnStateChangeListener, ThemeChangeListener, SensorEventListener, TGPlayerController.TrackChangeListener, TGLegacyManager.EmojiLoadListener, Lang.Listener, Handler.Callback {
   public static final long POPUP_SHOW_SLOW_DURATION = 240l;
 
   private static final int OPEN_CAMERA_BY_TAP = 1;
@@ -259,7 +260,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   public void addToRoot (View view, boolean ignoreStatusBar) {
-    int i = passcodeController != null && isPasscodeShowing ? rootView.indexOfChild(passcodeController.getValue()) : -1;
+    int i = passcodeController != null && isPasscodeShowing && view != tooltipOverlayView ? rootView.indexOfChild(passcodeController.getValue()) : -1;
 
     // TODO make some overlay for PiPs
     if (i == -1) {
@@ -1657,7 +1658,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     passcodeController.setPasscodeMode(PasscodeController.MODE_UNLOCK);
     passcodeController.onPrepareToShow();
     rootView.removeView(contentView);
-    rootView.addView(passcodeController.getValue());
+    addToRoot(passcodeController.getValue(), true);
     passcodeController.onActivityResume();
     passcodeController.onFocus();
 

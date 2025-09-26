@@ -134,8 +134,15 @@ open class ModulePlugin : Plugin<Project> {
             options.compilerArgs.addAll(listOf(
               "-Xmaxerrs", "2000",
               "-Xmaxwarns", "2000",
-              "-Xlint:unchecked",
-              "-Xlint:deprecation"
+              "-Xlint:all",
+              "-Xlint:-unchecked",
+              "-Xlint:-deprecation",
+              "-Xlint:-serial",
+
+              "-Xlint:-lossy-conversions",
+              "-Xlint:-overloads",
+              "-Xlint:-overrides",
+              "-Xlint:-this-escape",
             ))
           }
         }

@@ -1299,9 +1299,9 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
       return;
     }
 
-    String restrictionReason = tdlib.chatRestrictionReason(chat);
-    if (restrictionReason != null) {
-      setContentPreview(new ContentPreview(ContentPreview.EMOJI_ERROR, 0, restrictionReason, false));
+    String restrictionText = Lang.getRestrictionText(tdlib.chatRestriction(chat));
+    if (!StringUtils.isEmpty(restrictionText)) {
+      setContentPreview(new ContentPreview(ContentPreview.EMOJI_ERROR, 0, restrictionText, false));
       return;
     }
 

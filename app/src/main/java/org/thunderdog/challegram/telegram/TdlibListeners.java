@@ -976,7 +976,7 @@ public class TdlibListeners {
 
   void updateChatTheme (TdApi.UpdateChatTheme update, TdApi.Chat chat, @Nullable TdlibChatList[] chatLists) {
     runChatUpdate(update.chatId, listener ->
-      listener.onChatThemeChanged(update.chatId, update.themeName)
+      listener.onChatThemeChanged(update.chatId, update.theme)
     );
     if (chatLists != null) {
       for (TdlibChatList chatList : chatLists) {
@@ -1638,6 +1638,12 @@ public class TdlibListeners {
   void updateStarRevenueStatus (TdApi.UpdateStarRevenueStatus update) {
     runUpdate(optionListeners, listener ->
       listener.onStarRevenueStatusUpdated(update.ownerId, update.status)
+    );
+  }
+
+  void updateTonRevenueStatus (TdApi.UpdateTonRevenueStatus update) {
+    runUpdate(optionListeners, listener ->
+      listener.onTonRevenueStatusUpdated(update.status)
     );
   }
 

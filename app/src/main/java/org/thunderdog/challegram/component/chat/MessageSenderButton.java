@@ -230,7 +230,7 @@ public class MessageSenderButton extends FrameLayout implements ReplaceAnimator.
   }
 
   @Override
-  public void onItemChanged (ReplaceAnimator animator) {
+  public void onItemChanged (ReplaceAnimator<?> animator) {
     currentButtonView.setAlpha(0f);
     currentButtonView.setTranslationY(0);
     oldButtonView.setAlpha(0f);

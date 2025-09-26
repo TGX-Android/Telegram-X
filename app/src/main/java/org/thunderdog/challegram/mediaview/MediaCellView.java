@@ -1018,7 +1018,7 @@ public class MediaCellView extends ViewGroup implements
         bottom = centerY + height / 2 + clipVertical;
       }
 
-      int radius = imageWidth != imageHeight ? 0 : (int) ((float) thumb.getRadius() * (1f - MathUtils.clamp(revealFactor)));
+      int radius = imageWidth != imageHeight ? 0 : (int) (thumb.getRadius() * (1f - MathUtils.clamp(revealFactor)));
       setImageRadius(radius, revealFactor);
 
       if (!receiver.setBounds(left, top, right, bottom) && forceLayout) {

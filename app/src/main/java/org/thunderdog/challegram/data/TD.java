@@ -2126,7 +2126,7 @@ public class TD {
       null,
       false, false, false,
       null, false, false,
-      "", false, false,
+      null, false, false,
       false, 0, false,
       new TdApi.UserTypeRegular(),
       null,

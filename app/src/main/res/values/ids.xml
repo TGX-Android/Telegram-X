@@ -596,9 +596,9 @@
   <item type="id" name="btn_passcodeType_password" />
   <item type="id" name="btn_passcodeType_pattern" />
   <item type="id" name="btn_passcodeType_gesture" />
-  <item type="id" name="btn_passcodeType_fingerprint" />
+  <item type="id" name="btn_passcodeType_biometrics" />
   <item type="id" name="btn_pattern" />
-  <item type="id" name="btn_fingerprint" />
+  <item type="id" name="btn_biometrics" />
   <item type="id" name="btn_screenCapture" />
   <item type="id" name="btn_notificationContent" />
   <item type="id" name="btn_passcode_change" />

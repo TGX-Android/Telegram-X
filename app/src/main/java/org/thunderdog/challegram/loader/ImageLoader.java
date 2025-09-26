@@ -340,7 +340,7 @@ public class ImageLoader {
           if (Log.isEnabled(Log.TAG_IMAGE_LOADER)) {
             Log.d(Log.TAG_IMAGE_LOADER, "#%s: recycling, because there will be no references", file.toString());
           }
-          ((Bitmap) bitmap).recycle();
+          bitmap.recycle();
         }
       }
 
