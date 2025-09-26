@@ -2,6 +2,12 @@ plugins {
   `kotlin-dsl`
 }
 
+java {
+  toolchain {
+    languageVersion = JavaLanguageVersion.of(21)
+  }
+}
+
 gradlePlugin {
   plugins {
     register("module-plugin") {
