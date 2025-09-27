@@ -344,12 +344,14 @@ public class PasscodeSetupController extends ViewController<PasscodeSetupControl
     boolean isEnabled = isPasscodeEnabled();
 
     if (!animated) {
+      checkItemsAvailability();
       autoLockWrap.setAlpha(1f);
       autoLockWrap.setVisibility(isEnabled ? View.VISIBLE : View.GONE);
       return;
     }
 
     if (isEnabled) {
+      checkItemsAvailability();
       autoLockWrap.setAlpha(0f);
       autoLockWrap.setVisibility(View.VISIBLE);
     }
