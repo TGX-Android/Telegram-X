@@ -543,7 +543,7 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
 
   @Override
   public void onAuthenticated (BiometricPrompt.AuthenticationResult result, boolean strong) {
-    final int biometricsId = strong ? 1 : 0;
+    final int biometricsId = 0; // strong ? 1 : 0;
     isBiometricAuthenticationActive = false;
     if (controllerMode != MODE_SETUP) {
       if (controllerMode == MODE_UNLOCK_SETUP && Passcode.instance().compareBiometrics(biometricsId, strong)) {
