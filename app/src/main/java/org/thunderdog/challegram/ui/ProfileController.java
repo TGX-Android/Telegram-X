@@ -5810,7 +5810,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             }
           }
 
-          if (!StringUtils.isEmpty(restrictionText)) {
+          if (StringUtils.isEmpty(restrictionText)) {
             if (Config.HIDE_EMPTY_TABS) {
               int syncTabCount = SYNC_TAB_COUNT;
               TdApi.SearchMessagesFilter[] filters = getFiltersOrder();
