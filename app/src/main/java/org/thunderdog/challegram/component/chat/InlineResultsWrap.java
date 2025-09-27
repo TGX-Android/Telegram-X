@@ -940,7 +940,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
       switchPmHandler = null;
     }
 
-    final ViewController<?> c = UI.getCurrentStackItem();
+    final ViewController<?> c = UI.getCurrentStackItem(getContext());
     long sourceChatId = 0;
     if (c instanceof MessagesController) {
       if (((MessagesController) c).comparePrivateUserId(button.getUserId())) {

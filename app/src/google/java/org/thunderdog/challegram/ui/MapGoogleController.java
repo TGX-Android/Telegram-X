@@ -586,6 +586,7 @@ final class MapGoogleController extends MapController<MapView, MapGoogleControll
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public boolean onMarkerClick (Marker marker) {
     LocationPoint<MarkerData> point = (LocationPoint<MarkerData>) marker.getTag();
     if (point != null) {

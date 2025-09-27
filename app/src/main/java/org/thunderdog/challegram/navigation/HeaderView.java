@@ -56,6 +56,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.ToggleDelegate;
 import org.thunderdog.challegram.v.HeaderEditText;
@@ -280,8 +281,13 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
 
   // Theme stuff
 
+  @SuppressWarnings("deprecation")
   private void invalidateHeader () {
-    invalidate(0, 0, getMeasuredWidth(), filling.getBottom() + filling.getExtraHeight());
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      invalidate();
+    } else {
+      invalidate(0, 0, getMeasuredWidth(), filling.getBottom() + filling.getExtraHeight());
+    }
   }
 
   public void resetColors (ViewController<?> c, ViewController<?> preview) {
@@ -1149,7 +1155,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
         return false;
       }
       if (e.getAction() == MotionEvent.ACTION_DOWN && e.getY() < filling.getBottom()) {
-        ViewController<?> c = UI.getCurrentStackItem();
+        ViewController<?> c = UI.getCurrentStackItem(getContext());
         if (c != null) {
           c.dismissIntercept();
         }
@@ -1623,7 +1629,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       if (useBarSwitch) {
-        window.setStatusBarColor(barChanger.getColor(raptor));
+        setStatusBarColor(window, barChanger.getColor(raptor));
       }
     }
 
@@ -1639,6 +1645,12 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
         preview.invalidate();
       }
     }
+  }
+
+  @SuppressWarnings("deprecation")
+  @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+  private static void setStatusBarColor (Window window, int color) {
+    window.setStatusBarColor(color);
   }
 
   void applyPreview (ViewController<?> current) {
@@ -2805,6 +2817,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     return ColorUtils.compositeColor(color, STATUS_OVERLAY_COLOR);
   }
 
+  @SuppressWarnings("deprecation")
   public static int computeStatusBarColor (ViewController<?> c, int alpha) {
     return ColorUtils.compositeColor(c.getStatusBarColor(), Color.argb((int) ((float) alpha / 255f * (float) Color.alpha(STATUS_OVERLAY_COLOR)), Color.red(STATUS_OVERLAY_COLOR), Color.green(STATUS_OVERLAY_COLOR), Color.blue(STATUS_OVERLAY_COLOR)));
   }

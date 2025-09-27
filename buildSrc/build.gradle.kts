@@ -1,9 +1,21 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
   `kotlin-dsl`
 }
 
 java {
   toolchain {
+    languageVersion = JavaLanguageVersion.of(21)
+  }
+}
+
+kotlin {
+  compilerOptions {
+    allWarningsAsErrors = true
+    jvmTarget = JvmTarget.JVM_21
+  }
+  jvmToolchain {
     languageVersion = JavaLanguageVersion.of(21)
   }
 }

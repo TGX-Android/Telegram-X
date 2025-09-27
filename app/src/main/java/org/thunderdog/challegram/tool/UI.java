@@ -29,7 +29,6 @@ import android.os.Looper;
 import android.text.format.DateFormat;
 import android.view.View;
 import android.view.Window;
-import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
@@ -40,8 +39,6 @@ import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.core.content.ContextCompat;
-import androidx.core.view.WindowCompat;
-import androidx.core.view.WindowInsetsControllerCompat;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
@@ -585,13 +582,13 @@ public class UI {
     return navigation != null ? navigation.getStack().getCurrent() : null;
   }
 
-  @Deprecated
   public static ViewController<?> getCurrentStackItem (Context context) {
     return UI.getContext(context).navigation().getCurrentStackItem();
   }
 
   public static final int NAVIGATION_BAR_COLOR = false && Device.NEED_LIGHT_NAVIGATION_COLOR ? 0xfff0f0f0 : 0xff000000;
 
+  @SuppressWarnings("deprecation")
   public static void setLightSystemBars (Window w, boolean lightNavigationBar, boolean lightStatusBar, int newVisibility, boolean forceNewVisibility) {
     if (Settings.instance().useEdgeToEdge() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
       android.view.WindowInsetsController insetsController = w.getInsetsController();
@@ -611,6 +608,7 @@ public class UI {
     w.getDecorView().setSystemUiVisibility(visibility);
   }
 
+  @SuppressWarnings("deprecation")
   public static void setNavigationBarColor (Window w, int color, boolean isGestureNavigationEnabled) {
     if (Config.USE_CUSTOM_NAVIGATION_COLOR) {
       if (Settings.instance().useEdgeToEdge()) {
@@ -626,6 +624,7 @@ public class UI {
     }
   }
 
+  @SuppressWarnings("deprecation")
   public static void clearActivity (BaseActivity a) {
     a.requestWindowFeature(Window.FEATURE_NO_TITLE);
     Window w = a.getWindow();
@@ -674,13 +673,16 @@ public class UI {
     }*/
   }
 
+  @SuppressWarnings("deprecation")
   public static int getStatusBarColor () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       final BaseActivity context = getUiContext();
-      return context == null || context.getWindow() == null ? 0 : context.getWindow().getStatusBarColor();
-    } else {
-      return 0;
+      final Window window = context != null ? context.getWindow() : null;
+      if (window != null) {
+        return window.getStatusBarColor();
+      }
     }
+    return 0;
   }
 
   public static Window getWindow () {

@@ -2412,7 +2412,6 @@ public class U {
     return measureText(in, start, end, p);
   }
 
-  @Deprecated
   public static float measureText (@Nullable CharSequence in, int start, int end, @NonNull Paint p) {
     final int count = end - start;
 
@@ -3609,6 +3608,7 @@ public class U {
     }
   }
 
+  @SuppressWarnings("try")
   public static boolean canReadContentUri (Uri uri) {
     try (InputStream ignored = openInputStream(uri.toString())) {
       return true;

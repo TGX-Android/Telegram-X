@@ -1334,6 +1334,7 @@ public class TdlibContactManager implements CleanupStartupDelegate {
       this.context = context;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void handleMessage (Message msg) {
       switch (msg.what) {
@@ -1342,7 +1343,6 @@ public class TdlibContactManager implements CleanupStartupDelegate {
           break;
         }
         case ACTION_SET_UNREGISTERED_CONTACTS: {
-          //noinspection unchecked
           context.setUnregisteredContactsImpl((ArrayList<UnregisteredContact>) msg.obj);
           break;
         }

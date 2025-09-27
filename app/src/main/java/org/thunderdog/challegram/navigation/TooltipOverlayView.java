@@ -935,6 +935,7 @@ public class TooltipOverlayView extends ViewGroup {
       return false;
     }
 
+    @SuppressWarnings("deprecation")
     public void draw (Canvas c) {
       float factor = this.isVisible.getFloatValue();
       float alpha = MathUtils.clamp(factor);

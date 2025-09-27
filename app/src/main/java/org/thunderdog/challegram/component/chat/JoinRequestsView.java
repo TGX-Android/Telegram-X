@@ -83,7 +83,7 @@ public class JoinRequestsView extends BaseView implements Destroyable, ComplexRe
       int cy = getMeasuredHeight() / 2;
       int baseCx = Screen.dp(AVATAR_RADIUS) + Screen.dp(12f);
       int spacing = Screen.dp(AVATAR_RADIUS) * 2 - Screen.dp(AVATAR_SPACING);
-      canvas.saveLayerAlpha(0, 0, getMeasuredWidth(), getMeasuredHeight(), 255, Canvas.ALL_SAVE_FLAG);
+      Views.saveLayerAlpha(canvas, 0, 0, getMeasuredWidth(), getMeasuredHeight(), 255, Canvas.ALL_SAVE_FLAG);
       for (int index = joinRequestEntries.size() - 1; index >= 0; index--) {
         ListAnimator.Entry<UserEntry> item = joinRequestEntries.getEntry(index);
         float cx = baseCx + (item.getPosition() * spacing);

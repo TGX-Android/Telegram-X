@@ -1073,7 +1073,6 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayoutRec
     void onMoveStickerSection (@IdRes int controllerId, int fromSection, int toSection);
     void onRemoveStickerSection (@IdRes int controllerId, int section);
 
-    @Deprecated
     boolean isAnimatedEmojiOnly ();
     float getHeaderHideFactor ();
   }

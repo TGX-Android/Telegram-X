@@ -258,15 +258,18 @@ public abstract class CameraApi {
         } else if (mFeatures.has(CameraFeatures.FEATURE_FACING_FRONT)) {
           return CameraFeatures.FEATURE_FLASH_FAKE;
         }
+        break;
       case CameraFeatures.FEATURE_FLASH_ON:
       case CameraFeatures.FEATURE_FLASH_FAKE:
         if (Config.CAMERA_AUTO_FLASH_ENABLED && mFeatures.has(CameraFeatures.FEATURE_FLASH_AUTO)) {
           return CameraFeatures.FEATURE_FLASH_AUTO;
         }
+        break;
       case CameraFeatures.FEATURE_FLASH_AUTO:
         if (mFeatures.canFlash(true)) {
           return CameraFeatures.FEATURE_FLASH_OFF;
         }
+        break;
     }
     return mFlashMode;
   }

@@ -219,6 +219,15 @@ public class Views {
     return getParentsTop(view, limit, false);
   }
 
+  @SuppressWarnings("deprecation")
+  public static int saveLayerAlpha (Canvas c, float left, float top, float right, float bottom, int alpha, int flags) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      return c.saveLayerAlpha(left, top, right, bottom, alpha);
+    } else {
+      return c.saveLayerAlpha(left, top, right, bottom, alpha, flags);
+    }
+  }
+
   private static int getParentsTop (View view, int limit, boolean includeTranslation) {
     int top = 0;
     ViewParent parent = view.getParent();

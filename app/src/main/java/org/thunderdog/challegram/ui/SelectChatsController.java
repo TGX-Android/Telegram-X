@@ -1189,7 +1189,7 @@ class Chip extends Drawable implements FlowListAnimator.Measurable, Drawable.Cal
     }
     int saveCount;
     if (alpha < 0xFF) {
-      saveCount = canvas.saveLayerAlpha(bounds.left, bounds.top, bounds.right, bounds.bottom, alpha, Canvas.ALL_SAVE_FLAG);
+      saveCount = Views.saveLayerAlpha(canvas, bounds.left, bounds.top, bounds.right, bounds.bottom, alpha, Canvas.ALL_SAVE_FLAG);
     } else {
       saveCount = Integer.MIN_VALUE;
     }

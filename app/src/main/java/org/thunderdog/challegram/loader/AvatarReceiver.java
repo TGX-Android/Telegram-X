@@ -50,6 +50,7 @@ import me.vkryl.core.lambda.FutureBool;
 import tgx.td.ChatId;
 import tgx.td.Td;
 
+@SuppressWarnings("unchecked")
 public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener, TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener {
   public static class FullChatPhoto {
     public final @NonNull TdApi.ChatPhoto chatPhoto;
@@ -949,7 +950,6 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     return primaryReceiver().getTargetHeight();
   }
 
-  /** @noinspection unchecked*/
   @Override
   public final AvatarReceiver setUpdateListener (ReceiverUpdateListener listener) {
     if (listener != null) {

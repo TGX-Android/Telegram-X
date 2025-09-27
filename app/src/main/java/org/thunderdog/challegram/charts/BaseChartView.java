@@ -40,6 +40,7 @@ import org.thunderdog.challegram.tool.Screen;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+@SuppressWarnings("unchecked")
 public abstract class BaseChartView<T extends ChartData, L extends LineViewData> extends View implements ChartPickerDelegate.Listener, ThemeInvalidateListener {
 
     public SharedUiComponents sharedUiComponents;

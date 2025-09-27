@@ -846,7 +846,8 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
   }
 
   @Override
-  protected void onDraw (Canvas c) {
+  @SuppressWarnings("deprecation")
+  protected void onDraw (@NonNull Canvas c) {
     TdlibStatusManager.ChatState state = (flags & FLAG_NO_STATUS) != 0 ? null : status.drawingState();
     float statusVisibility = state != null ? state.visibility() : 0f;
     float textAlpha = 1f - statusVisibility;
