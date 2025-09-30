@@ -16,6 +16,7 @@ package org.thunderdog.challegram.component.chat;
 
 import android.content.Context;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -80,6 +81,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.FutureBool;
 import me.vkryl.core.lambda.RunnableData;
 import tgx.td.ChatId;
 import tgx.td.MessageId;
@@ -405,11 +407,16 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   private boolean lastScrollToBottomVisible;
 
+  private boolean isLastMessageSponsored () {
+    TGMessage msg = adapter.getBottomMessage();
+    return msg != null && msg.isSponsoredMessage();
+  }
+
   private void checkScrollButton (int first, int last) {
     if (controller().inWallpaperPreviewMode())
       return;
     boolean hasMessages = getActiveMessageCount() > 0;
-    boolean isVisible = hasMessages && first != -1 && last != -1 && adapter.getMessageCount() >= last;
+    boolean isVisible = hasMessages && first != -1 && last != -1 && first >= (isLastMessageSponsored() ? 1 : 0) && last < adapter.getMessageCount();
     if (isVisible) {
       isVisible = first >= 2;
       if (!isVisible) {
@@ -419,7 +426,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         long sumHeight = 0;
         for (int i = 0; i < first; i++) {
           TGMessage msg = adapter.getMessage(i);
-          if (msg != null) {
+          if (msg != null && !msg.isSponsoredMessage()) {
             sumHeight += msg.getHeight();
             if (sumHeight >= checkHeight) {
               break;
@@ -733,8 +740,15 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
       @Override
       public boolean isMessageContentVisible (TdlibMessageViewer.Viewport viewport, View view) {
-        // TODO return false when "FOLLOW" bar overlaps the message entirely
-        return true;
+        if (inSpecialMode()) {
+          return true;
+        }
+        MessageProvider provider = (MessageProvider) view;
+        ViewGroup parent = (ViewGroup) view.getParent();
+        int bottomEdge = parent.getMeasuredHeight() - parent.getPaddingBottom() - getExtraScrollSpacing();
+        int top = view.getTop() + provider.getMessage().getTopContentEdge();
+        int visibleHeight = bottomEdge - top;
+        return visibleHeight > 0 && (!provider.isSponsoredMessage() || visibleHeight >= Screen.dp(12f));
       }
 
       @Override
@@ -886,7 +900,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void resetScroll () {
-    manager.scrollToPositionWithOffset(0, 0);
+    scrollToPositionWithOffsetImpl(0, 0);
     stopScroll();
   }
 
@@ -923,10 +937,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (controller.canWriteMessages()) {
           manager.scrollToPosition(1);
         } else {
-          manager.scrollToPositionWithOffset(1, Screen.dp(48f));
+          scrollToPositionWithOffsetImpl(1, getExtraScrollSpacing());
         }
       } else {
-        manager.scrollToPositionWithOffset(0, 0);
+        scrollToPositionWithOffsetImpl(0, 0);
       }
     } else {
       boolean needScrollBy = false;
@@ -937,7 +951,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       }
       if (needScrollBy) {
         // scrollToPositionWithOffset(0, 0, true);
-        manager.scrollToPositionWithOffset(0, 0);
+        scrollToPositionWithOffsetImpl(0, 0);
       } else {
         controller.getMessagesView().smoothScrollToPosition(0);
       }
@@ -1082,7 +1096,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   private void loadFromStart (MessageId fromId, TGMessage startMessage) {
     adapter.reset(startMessage);
-    manager.scrollToPositionWithOffset(0, 0);
+    scrollToPositionWithOffsetImpl(0, 0);
     loader.loadFromStart(fromId);
     viewMessages(false);
   }
@@ -1225,7 +1239,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           } else if (scrollMessageId != null && isHeaderMessage(scrollMessageId) && !adapter.isEmpty()) {
             scrollToMessage(adapter.getItemCount() - 1, adapter.getTopMessage(), highlightMode == HIGHLIGHT_MODE_NONE ? HIGHLIGHT_MODE_START : highlightMode, false, false);
           } else if (scrollPosition == 0) {
-            manager.scrollToPositionWithOffset(0, 0);
+            scrollToPositionWithOffsetImpl(0, 0);
           } else {
             manager.scrollToPosition(scrollPosition);
           }
@@ -1246,9 +1260,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       case MessagesLoader.MODE_MORE_BOTTOM: {
         int firstIndex = manager.findFirstVisibleItemPosition();
         View view = manager.findViewByPosition(firstIndex);
-        int currentOffset = view == null ? 0 : calculateOffsetInPixels(view);
+        int currentOffset = view == null ? 0 : calculateOffsetInPixels(view, 0);
         adapter.addMessages(items, false);
-        manager.scrollToPositionWithOffset(firstIndex + items.size(), currentOffset);
+        scrollToPositionWithOffsetImpl(firstIndex + items.size(), currentOffset);
         break;
       }
     }
@@ -1317,7 +1331,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void onBottomEndChecked () {
-    requestSponsoredMessage();
+    if (isFocused) {
+      requestSponsoredMessage();
+    }
   }
 
   private void checkTopEndReached (List<TGMessage> items, boolean willRepeat, boolean canLoadTop) {
@@ -1360,28 +1376,43 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
+  public boolean maintainScrollPositionAndOffset (FutureBool modifier) {
+    int firstIndex = manager.findFirstVisibleItemPosition();
+    if (firstIndex == RecyclerView.NO_POSITION) {
+      return modifier.getBoolValue();
+    }
+    View view = manager.findViewByPosition(firstIndex);
+    TGMessage message = adapter.getMessage(firstIndex);
+    int currentOffset = view == null ? 0 : calculateOffsetInPixels(view, message != null ? message.getExtraPadding() : 0);
+    if (modifier.getBoolValue()) {
+      int newIndex = message != null ? adapter.indexOfMessageContainer(message.getId()) : firstIndex;
+      if (newIndex == -1) {
+        newIndex = firstIndex;
+      }
+      scrollToPositionWithOffsetImpl(newIndex, currentOffset - (message != null ? message.getExtraPadding() : 0));
+      return true;
+    }
+    return false;
+  }
+
+  private void scrollToPositionWithOffsetImpl (int position, int offset) {
+    manager.scrollToPositionWithOffset(position, offset);
+  }
+
   private void requestSponsoredMessage () {
-    // TODO rework this crap
     synchronized (controller) {
       if (controller.sponsoredMessageLoaded) {
         return;
       }
+      controller.sponsoredMessageLoaded = true;
 
       loader.requestSponsoredMessage(loader.getChatId(), sponsoredMessages -> {
         if (sponsoredMessages == null || sponsoredMessages.messages.length == 0) {
-          controller.sponsoredMessageLoaded = true;
           return;
         }
 
         RunnableData<TGMessage> action = (lastMessage) -> {
-          if (lastMessage == null) return;
-          controller.sponsoredMessageLoaded = true;
-          // TODO multi-ad support
-          int firstIndex = manager.findFirstVisibleItemPosition();
-          View view = manager.findViewByPosition(firstIndex);
-          int currentOffset = view == null ? 0 : calculateOffsetInPixels(view) + (firstIndex == 0 ? Screen.dp(48f) : 0);
           adapter.addMessage(TGMessage.valueOf(this, loader.getChatId(), sponsoredMessages.messages[0]), false, false);
-          manager.scrollToPositionWithOffset(firstIndex + 1, currentOffset);
         };
 
         TGMessage bottomMessage = findBottomMessage();
@@ -1397,6 +1428,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private int getActiveMessageCount () {
     int messageCount = adapter.getMessageCount();
     if (messageCount > 0 && isHeaderMessage(adapter.getTopMessage())) {
+      messageCount--;
+    }
+    TGMessage bottomMessage = adapter.getBottomMessage();
+    if (messageCount > 0 && bottomMessage != null && bottomMessage.isSponsoredMessage()) {
       messageCount--;
     }
     return messageCount;
@@ -1637,7 +1672,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         int scrollOffsetInPixels = 0;
         View view = manager.findViewByPosition(0);
         if (view != null && view.getParent() != null) {
-          scrollOffsetInPixels = calculateOffsetInPixels(view);
+          scrollOffsetInPixels = calculateOffsetInPixels(view, 0);
         }
 
         boolean bottomFullyVisible = manager.findFirstCompletelyVisibleItemPosition() == 0;
@@ -1646,10 +1681,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
             if (controller.canWriteMessages()) {
               manager.scrollToPosition(1);
             } else {
-              manager.scrollToPositionWithOffset(1, Screen.dp(48f));
+              scrollToPositionWithOffsetImpl(1, getExtraScrollSpacing());
             }
           } else {
-            manager.scrollToPositionWithOffset(0, scrollOffsetInPixels);
+            scrollToPositionWithOffsetImpl(0, scrollOffsetInPixels);
           }
         }
       } else {
@@ -1660,9 +1695,17 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
-  private int calculateOffsetInPixels (View view) {
+  private int getExtraScrollSpacing () {
+    if (controller.canWriteMessages()) {
+      return 0;
+    } else {
+      return Screen.dp(48f);
+    }
+  }
+
+  private int calculateOffsetInPixels (View view, int extraPadding) {
     View parentView = (View) view.getParent();
-    return parentView.getMeasuredHeight() - parentView.getPaddingBottom() - view.getBottom();
+    return parentView.getMeasuredHeight() - parentView.getPaddingBottom() - view.getBottom() + extraPadding;
   }
 
   @Override
@@ -1761,7 +1804,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         int firstCompletelyVisibleItemPosition = manager.findFirstCompletelyVisibleItemPosition();
         adapter.moveItem(index, newIndex);
         if (firstCompletelyVisibleItemPosition == 0) {
-          manager.scrollToPositionWithOffset(0, 0);
+          scrollToPositionWithOffsetImpl(0, 0);
         }
       } else {
         items.add(newIndex, msg);
@@ -2237,7 +2280,24 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       return;
     }
 
-    int i = manager.findFirstVisibleItemPosition();
+    int firstVisibleItemPosition = manager.findFirstVisibleItemPosition();
+    int lastVisibleItemPosition = manager.findLastVisibleItemPosition();
+
+    int overlayHeight = getExtraScrollSpacing();
+    if (overlayHeight > 0 && firstVisibleItemPosition != RecyclerView.NO_POSITION) {
+      while (firstVisibleItemPosition != lastVisibleItemPosition) {
+        View view = manager.findViewByPosition(firstVisibleItemPosition);
+        if (view == null) {
+          break;
+        }
+        int offset = calculateOffsetInPixels(view, 0);
+        int top = offset + view.getMeasuredHeight();
+        if (top > overlayHeight) {
+          break;
+        }
+        firstVisibleItemPosition++;
+      }
+    }
 
     long scrollChatId = 0;
     long scrollMessageId = 0, scrollMessageChatId = 0;
@@ -2247,8 +2307,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     boolean readFully = false;
     long topEndMessageId = 0;
 
-    if (i != -1 && MessagesHolder.isMessageType(adapter.getItemViewType(i))) {
-      TGMessage message = adapter.getMessage(i);
+    TGMessage message = adapter.getMessage(firstVisibleItemPosition);
+
+    if (firstVisibleItemPosition != RecyclerView.NO_POSITION && MessagesHolder.isMessageType(adapter.getItemViewType(firstVisibleItemPosition))) {
       boolean isBottomSponsored = adapter.getBottomMessage() != null && adapter.getBottomMessage().isSponsoredMessage() && adapter.getMessageCount() > 1;
 
       ThreadInfo threadInfo = loader.getMessageThread();
@@ -2263,9 +2324,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           TdApi.Chat chat = tdlib.chat(scrollChatId);
           readFully = chat != null && chat.lastMessage != null && chat.lastMessage.id == scrollMessageId;
         }
-        View view = manager.findViewByPosition(i);
+        View view = manager.findViewByPosition(firstVisibleItemPosition);
         if (view != null && view.getParent() != null) {
-          scrollOffsetInPixels = calculateOffsetInPixels(view);
+          scrollOffsetInPixels = calculateOffsetInPixels(view, message.getExtraPadding());
         }
         if (readFully && scrollOffsetInPixels == 0) {
           scrollMessageId = scrollMessageChatId = 0;
@@ -2323,6 +2384,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private void onFocus () {
     viewMessages(false);
     saveScrollPosition();
+    requestSponsoredMessage();
   }
 
   // Highlight message id
@@ -2664,10 +2726,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       if (Math.abs(scrollBy) < controller.getMessagesView().getMeasuredHeight() * (useRoundVideoScrollFix ? 1.5f : 1f)) {
         controller.getMessagesView().smoothScrollBy(0, scrollBy);
       } else {
-        manager.scrollToPositionWithOffset(index, offset);
+        scrollToPositionWithOffsetImpl(index, offset);
       }
     } else {
-      manager.scrollToPositionWithOffset(index, offset);
+      scrollToPositionWithOffsetImpl(index, offset);
     }
   }
 
@@ -2686,7 +2748,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (messageThread != null) {
       int targetHeight = getTargetHeight();
       if (FeatureToggles.SCROLL_TO_HEADER_MESSAGE_ON_THREAD_FIRST_OPEN && isTopMessageHeader) {
-        manager.scrollToPositionWithOffset(messageCount - 1, targetHeight / 2);
+        scrollToPositionWithOffsetImpl(messageCount - 1, targetHeight / 2);
         return;
       }
       if (shouldShowThreadHeaderPreview() && isTopMessageHeader) {
@@ -2705,9 +2767,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           targetHeight -= previewHeight;
         }
       }
-      manager.scrollToPositionWithOffset(scrollIndex, targetHeight - scrollMessage.getHeight());
+      scrollToPositionWithOffsetImpl(scrollIndex, targetHeight - scrollMessage.getHeight());
     } else {
-      manager.scrollToPositionWithOffset(scrollIndex, -scrollMessage.getHeight());
+      scrollToPositionWithOffsetImpl(scrollIndex, -scrollMessage.getHeight());
     }
   }
 
@@ -2719,7 +2781,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (highlightMode == HIGHLIGHT_MODE_POSITION_RESTORE) {
       final int accountId = tdlib.id();
       Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(accountId, loader.getChatId(), loader.getMessageThreadId());
-      int offset = messageId != null ? messageId.offsetPixels : 0;
+      int offset = messageId != null ? messageId.offsetPixels - scrollMessage.getExtraPadding() : 0;
       this.returnToMessageIds = messageId != null ? messageId.returnToMessageIds : null;
       scrollToPositionWithOffset(index, offset, false);
       checkScrollToBottomButton();
@@ -2749,14 +2811,14 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       scrollToPositionWithOffset(index, height / 2 - fullHeight / 2 + scrollMessage.findTopEdge(), smooth, isPlayingRoundMessage);
     }
 
-    // manager.scrollToPositionWithOffset(index, 0);
+    // scrollToPositionWithOffsetImpl(index, 0);
 
     /*int padding = scrollMessage.findTopEdge();
     if ((fullHeight - padding) > height) {
-      manager.scrollToPositionWithOffset(index, height - fullHeight + padding);
+      scrollToPositionWithOffsetImpl(index, height - fullHeight + padding);
     } else {
       int itemHeight = (int) ((float) (fullHeight - padding) * .5f);
-      manager.scrollToPositionWithOffset(index, (int) ((float) height * .5f - itemHeight));
+      scrollToPositionWithOffsetImpl(index, (int) ((float) height * .5f - itemHeight));
     }
     context.showScrollButton(animateScrollButton);*/
   }

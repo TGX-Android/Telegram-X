@@ -37,6 +37,7 @@ import org.thunderdog.challegram.v.MessagesRecyclerView;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import tgx.td.MessageId;
 
@@ -435,6 +436,20 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
   }
 
   public boolean addMessage (TGMessage message, boolean top, boolean needScrollToBottom) {
+    if (!top && !needScrollToBottom) {
+      AtomicBoolean tempRes = new AtomicBoolean();
+      manager.maintainScrollPositionAndOffset(() -> {
+        boolean res = addMessageImpl(message, top, needScrollToBottom);
+        tempRes.set(res);
+        return !res;
+      });
+      return tempRes.get();
+    } else {
+      return addMessageImpl(message, top, needScrollToBottom);
+    }
+  }
+
+  public boolean addMessageImpl (TGMessage message, boolean top, boolean needScrollToBottom) {
     if (manager.needRemoveDuplicates() && indexOfMessageContainer(message.getId()) != -1)
       return false;
 
@@ -473,9 +488,9 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
 
     TGMessage bottomMessage = top ? null : getMessage(0);
     TGMessage topMessage = top ? getMessage(getMessageCount() - 1) : null;
-    boolean sponsoredFlag = bottomMessage != null && bottomMessage.isSponsoredMessage();
+    boolean hasFollowingSponsoredMessage = bottomMessage != null && bottomMessage.isSponsoredMessage();
 
-    if (sponsoredFlag && items != null) {
+    if (hasFollowingSponsoredMessage && items != null) {
       for (TGMessage msg : items) {
         if (!msg.isSponsoredMessage()) {
           bottomMessage = msg;
@@ -493,7 +508,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
       if (!message.isOld()) {
         message.markAsBeingAdded(true);
       }
-      if ((!needScrollToBottom || message.isOld()) && !message.isOutgoing() && message.checkIsUnread(false) && !hasUnreadSeparator()) {
+      if (!message.isSponsoredMessage() && (!needScrollToBottom || message.isOld()) && !message.isOutgoing() && message.checkIsUnread(false) && !hasUnreadSeparator()) {
         TdApi.Chat chat = message.tdlib().chat(message.getChatId());
         if (chat != null) {
           ThreadInfo messageThread = message.messagesController().getMessageThread();
@@ -525,16 +540,21 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
         notifyItemChanged(items.size() - 2);
       }
     } else {
-      int newIndex = sponsoredFlag ? 1 : 0;
+      int insertionIndex = hasFollowingSponsoredMessage ? 1 : 0;
       if (bottomMessage != null) {
-        notifyItemChanged(newIndex);
+        notifyItemChanged(insertionIndex);
       }
-      items.add(newIndex, message);
+      items.add(insertionIndex, message);
       if (prevSize == 0) {
         notifyItemChanged(0);
       } else {
-        notifyItemInserted(newIndex);
-        notifyItemRangeChanged(0, items.size());
+        notifyItemInserted(insertionIndex);
+        if (insertionIndex + 1 < items.size()) {
+          notifyItemChanged(insertionIndex + 1);
+        }
+        if (insertionIndex > 0) {
+          notifyItemChanged(insertionIndex - 1);
+        }
       }
     }
 

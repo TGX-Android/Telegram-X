@@ -634,7 +634,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void updateMessagesViewInset () {
-    Views.applyBottomInset(messagesView, bottomWrap != null && bottomWrap.getVisibility() == View.VISIBLE ? 0 : extraBottomInset);
+    int inset = bottomWrap != null && bottomWrap.getVisibility() == View.VISIBLE ? 0 : extraBottomInset;
+    int appliedInset = Views.getAppliedBottomInset(messagesView);
+    if (inset != appliedInset) {
+      manager.maintainScrollPositionAndOffset(() -> {
+        return Views.applyBottomInset(messagesView, inset);
+      });
+    }
   }
 
   @Override

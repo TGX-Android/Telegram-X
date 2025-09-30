@@ -809,11 +809,17 @@ public class Views {
     }
   }
 
-  public static void applyBottomInset (ViewGroup viewGroup, int bottomInset) {
+  public static boolean applyBottomInset (ViewGroup viewGroup, int bottomInset) {
     if (viewGroup != null) {
-      setPaddingBottom(viewGroup, bottomInset);
+      boolean changed = setPaddingBottom(viewGroup, bottomInset);
       viewGroup.setClipToPadding(bottomInset == 0);
+      return changed;
     }
+    return false;
+  }
+
+  public static int getAppliedBottomInset (ViewGroup viewGroup) {
+    return viewGroup != null ? viewGroup.getPaddingBottom() : 0;
   }
 
   public static void removeRule (RelativeLayout.LayoutParams params, int verb) {
@@ -893,10 +899,13 @@ public class Views {
     }
   }
 
-  public static void setPaddingBottom (View view, int paddingBottom) {
+  public static boolean setPaddingBottom (View view, int paddingBottom) {
     if (view != null) {
+      int prevPaddingBottom = view.getPaddingBottom();
       view.setPadding(view.getPaddingLeft(), view.getPaddingTop(), view.getPaddingRight(), paddingBottom);
+      return prevPaddingBottom != paddingBottom;
     }
+    return false;
   }
 
   public static void setPaddingTop (View view, int paddingTop) {

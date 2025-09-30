@@ -1376,7 +1376,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return useBubbles() ? getBubbleViewPaddingBottom() : xPaddingBottom;
   }
 
-  protected final int getExtraPadding () {
+  public final int getExtraPadding () {
     if (needSponsorSmallPadding) {
       return Screen.dp(7f);
     }
