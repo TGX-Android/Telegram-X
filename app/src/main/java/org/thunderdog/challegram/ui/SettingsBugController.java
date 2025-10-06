@@ -1410,9 +1410,9 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
     } else if (viewId == R.id.btn_secret_resetLocalNotificationSettings) {
       tdlib.notifications().resetNotificationSettings(true);
     } else if (viewId == R.id.btn_secret_attest) {
-      tdlib.requestPlayIntegrity(-1, StringUtils.random("0123456789abcdef", 32), (result, isError) -> {
+      tdlib.requestPlayIntegrity(-1, StringUtils.random("0123456789abcdef", 32), (data) -> {
         runOnUiThread(() -> {
-          openAlert(R.string.AppName, result);
+          openAlert(R.string.AppName, data);
         });
       });
     } else if (viewId == R.id.btn_secret_databaseStats) {
