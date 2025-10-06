@@ -1261,7 +1261,15 @@ public class U {
   }
 
   public static void openFile (TdlibDelegate context, TdApi.Video video) {
-    openFile(context, StringUtils.isEmpty(video.fileName) ? ("video/mp4".equals(video.mimeType) ? "video.mp4" : "video/quicktime".equals(video.mimeType) ? "video.mov" : "") : video.fileName, new File(video.video.local.path), video.mimeType, 0);
+    String displayName = StringUtils.isEmpty(video.fileName) ? ("video/mp4".equals(video.mimeType) ? "video.mp4" : "video/quicktime".equals(video.mimeType) ? "video.mov" : "") : video.fileName;
+    String mimeType = video.mimeType;
+    openFile(context, displayName, new File(video.video.local.path), mimeType, 0);
+  }
+
+  public static void openFile (TdlibDelegate context, TdApi.Animation animation) {
+    String displayName = StringUtils.isEmpty(animation.fileName) ? ("video/mp4".equals(animation.mimeType) ? "animation.mp4" : "video/quicktime".equals(animation.mimeType) ? "animation.mov" : "") : animation.fileName;
+    String mimeType = animation.mimeType;
+    openFile(context, displayName, new File(animation.animation.local.path), mimeType, 0);
   }
 
   public static Uri getUri (Parcelable parcelable) {

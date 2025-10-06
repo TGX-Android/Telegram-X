@@ -1591,6 +1591,10 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     return sourceVideo;
   }
 
+  public TdApi.Animation getSourceAnimation () {
+    return sourceAnimation;
+  }
+
   public TdApi.Document getSourceDocument () {
     return sourceDocument;
   }

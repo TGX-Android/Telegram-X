@@ -61,6 +61,7 @@ import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.mediaview.gl.EGLEditorView;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
@@ -2062,7 +2063,21 @@ public class MediaCellView extends ViewGroup implements
         }
         media.setComponentsAlpha(1f);
       } else {
-        U.openFile(UI.getContext(getContext()).navigation().getCurrentStackItem(), media.getSourceVideo());
+        TdlibDelegate context = UI.getContext(getContext()).navigation().getCurrentStackItem();
+        TdApi.Video video = media.getSourceVideo();
+        if (video != null) {
+          U.openFile(context, video);
+          return;
+        }
+        TdApi.Animation animation = media.getSourceAnimation();
+        if (animation != null) {
+          U.openFile(context, animation);
+          return;
+        }
+        TdApi.Document document = media.getSourceDocument();
+        if (document != null) {
+          U.openFile(context, document.fileName, new File(document.document.local.path), document.mimeType, 0);
+        }
       }
     }
   }
