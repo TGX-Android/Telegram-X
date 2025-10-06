@@ -379,8 +379,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private CircleButton scrollToBottomButton, mentionButton, reactionsButton;
   private CounterBadgeView unreadCountView, mentionCountView, reactionsCountView;
 
-  public boolean sponsoredMessageLoaded = false;
-
   public MessagesController (Context context, Tdlib tdlib) {
     super(context, tdlib);
     this.manager = new MessagesManager(this);
@@ -4324,7 +4322,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     botStartArgument = null;
-    sponsoredMessageLoaded = false;
 
     // switch pm state
     clearSwitchPmButton();

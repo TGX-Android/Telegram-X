@@ -1627,6 +1627,27 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return clientHolder().client;
   }
 
+  public static abstract class CancellableResultHandler<T extends TdApi.Object> implements ResultHandler<T> {
+    private final CancellationSignal signal = new CancellationSignal();
+
+    public void cancel () {
+      signal.cancel();
+    }
+
+    public boolean isPending () {
+      return !signal.isCanceled();
+    }
+
+    public abstract void act (T result, @Nullable TdApi.Error error);
+
+    @Override
+    public final void onResult (T result, @Nullable TdApi.Error error) {
+      if (isPending()) {
+        act(result, error);
+      }
+    }
+  }
+
   public interface ResultHandler<T extends TdApi.Object> {
     void onResult (T result, @Nullable TdApi.Error error);
 

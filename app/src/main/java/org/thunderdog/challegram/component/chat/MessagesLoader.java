@@ -44,7 +44,6 @@ import org.thunderdog.challegram.telegram.TdlibMessageViewer;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
-import org.thunderdog.challegram.util.CancellableResultHandler;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -111,7 +110,7 @@ public class MessagesLoader implements Client.ResultHandler {
   private @Nullable ThreadInfo messageThread;
   private @Nullable TdApi.MessageTopic topicId;
 
-  private CancellableResultHandler sponsoredResultHandler;
+  private Tdlib.CancellableResultHandler<TdApi.SponsoredMessages> sponsoredResultHandler;
   private final MessagesSearchManagerMiddleware searchManagerMiddleware;
 
   private long contextId;
@@ -120,36 +119,25 @@ public class MessagesLoader implements Client.ResultHandler {
     return tdlib.isChannel(chatId) && !manager.controller().isInForceTouchMode() && !manager.controller().inPreviewMode() && !manager.controller().areScheduledOnly() && !manager.controller().arePinnedMessages();
   }
 
-  // Callback is called only on successful load
-  public void requestSponsoredMessage (long chatId, RunnableData<TdApi.SponsoredMessages> callback) {
+  public void requestSponsoredMessages (long chatId, RunnableData<TdApi.SponsoredMessages> callback) {
     if (!canShowSponsoredMessage(chatId) || isLoadingSponsoredMessage) {
       return;
     }
-
     isLoadingSponsoredMessage = true;
-    sponsoredResultHandler = new CancellableResultHandler() {
+    final long contextId = this.contextId;
+    sponsoredResultHandler = new Tdlib.CancellableResultHandler<>() {
       @Override
-      public void processResult (TdApi.Object object) {
+      public void act (TdApi.SponsoredMessages sponsoredMessages, @Nullable TdApi.Error error) {
         UI.post(() -> {
           isLoadingSponsoredMessage = false;
           sponsoredResultHandler = null;
-
-          TdApi.SponsoredMessages message;
-
-          if (object.getConstructor() == TdApi.SponsoredMessages.CONSTRUCTOR) {
-            message = ((TdApi.SponsoredMessages) object);
-          } else {
-            message = null;
-          }
-
-          if (chatId == getChatId()) {
-            callback.runWithData(message);
+          if (chatId == getChatId() && MessagesLoader.this.contextId == contextId) {
+            callback.runWithData(sponsoredMessages);
           }
         });
       }
     };
-
-    tdlib.client().send(new TdApi.GetChatSponsoredMessages(chatId), sponsoredResultHandler);
+    tdlib.send(new TdApi.GetChatSponsoredMessages(chatId), sponsoredResultHandler);
   }
 
   public MessagesLoader (MessagesManager manager, MessagesSearchManagerMiddleware searchMiddleware) {
@@ -569,6 +557,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
     if (sponsoredResultHandler != null) {
       sponsoredResultHandler.cancel();
+      sponsoredResultHandler = null;
     }
 
     synchronized (lock) {
@@ -1774,13 +1763,13 @@ public class MessagesLoader implements Client.ResultHandler {
 
   @Nullable
   private MessageId getStartBottom () {
-    TGMessage msg = manager.getAdapter().getBottomMessage();
+    TGMessage msg = manager.getAdapter().getBottomActiveMessage();
     return msg != null ? new MessageId(msg.getChatId(), msg.getBiggestId()) : null;
   }
 
   @Nullable
   private MessageId getStartTop () {
-    TGMessage msg = manager.getAdapter().getTopMessage();
+    TGMessage msg = manager.getAdapter().getTopActiveMessage();
     return msg != null ? new MessageId(msg.getChatId(), msg.getSmallestId()) : null;
   }
 
