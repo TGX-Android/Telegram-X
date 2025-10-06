@@ -738,11 +738,11 @@ public class ContentPreview {
       case TdApi.MessageSuggestedPostPaid.CONSTRUCTOR:
       case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
       case TdApi.MessageGiftedTon.CONSTRUCTOR:
+      case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
         break;
 
       // Bots only. Unused
       case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
-      case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
         Td.assertMessageContent_7c00740();
@@ -1564,6 +1564,7 @@ public class ContentPreview {
       case TdApi.MessageSuggestedPostPaid.CONSTRUCTOR:
       case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
       case TdApi.MessageGiftedTon.CONSTRUCTOR:
+      case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
         // TODO support these previews
         return new ContentPreview(EMOJI_QUIZ, R.string.UnsupportedMessage);
         
@@ -1572,7 +1573,6 @@ public class ContentPreview {
 
       // Bots only. Unused
       case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
-      case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
       default:
         Td.assertMessageContent_7c00740();

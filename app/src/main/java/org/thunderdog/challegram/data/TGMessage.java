@@ -8394,6 +8394,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageSuggestedPostPaid.CONSTRUCTOR:
         case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
         case TdApi.MessageGiftedTon.CONSTRUCTOR:
+        case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
           break;
 
         case TdApi.MessageUnsupported.CONSTRUCTOR:
@@ -8401,7 +8402,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           break;
         // bots only
         case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
-        case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
         case TdApi.MessageWebAppDataReceived.CONSTRUCTOR: {
           Log.e("Received bot message for a regular user:\n%s", msg);
           break;
