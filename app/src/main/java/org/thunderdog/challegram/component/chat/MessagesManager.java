@@ -31,6 +31,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
@@ -746,7 +747,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           return true;
         }
         MessageProvider provider = (MessageProvider) view;
-        if (Config.TEST_MULTI_SPONSORED_MESSAGES && provider.isSponsoredMessage()) {
+        if ((Config.TEST_MULTI_SPONSORED_MESSAGES || BuildConfig.DEBUG) && provider.isSponsoredMessage()) {
           return false;
         }
         ViewGroup parent = (ViewGroup) view.getParent();
@@ -1422,8 +1423,14 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       return;
     }
 
+    int keepExtraSponsoredMessagesCount = 0;
+    if (!isLastMessageSponsored()) {
+      // Keep one sponsored message for bottom.
+      keepExtraSponsoredMessagesCount = 1;
+    }
+
     int insertedSponsoredMessagesCount = calculateInsertedSponsoredMessagesCount();
-    if (insertedSponsoredMessagesCount >= sponsoredMessages.messages.length) {
+    if (insertedSponsoredMessagesCount >= sponsoredMessages.messages.length - keepExtraSponsoredMessagesCount) {
       return;
     }
 
@@ -1455,8 +1462,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         topMessage.rebuildLayout();
       }
 
-      TGMessage sponsoredMessage = TGMessage.valueOf(this, loader.getChatId(), sponsoredMessages.messages[insertedSponsoredMessagesCount], false);
-      sponsoredMessage.mergeWith(topMessage, false);
+      boolean isBottom = insertIndex == 0;
+      boolean isBelowAllMessages = isBottom && !loader.canLoadBottom() && (!fromTop || adapter.getMessageCount() == 0);
+      TGMessage sponsoredMessage = TGMessage.valueOf(this, loader.getChatId(), sponsoredMessages.messages[insertedSponsoredMessagesCount], isBelowAllMessages);
+      sponsoredMessage.mergeWith(topMessage, isBottom);
       sponsoredMessage.prepareLayout();
       addedItems.add(insertIndex, sponsoredMessage);
       insertedSponsoredMessagesCount++;
@@ -1478,10 +1487,14 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           break;
         }
       }
-    } while (insertedSponsoredMessagesCount < sponsoredMessages.messages.length);
+    } while (insertedSponsoredMessagesCount + keepExtraSponsoredMessagesCount < sponsoredMessages.messages.length);
   }
 
   private void insertFirstSponsoredMessage () {
+    UI.post(this::insertFirstSponsoredMessageImpl, 350L);
+  }
+
+  private void insertFirstSponsoredMessageImpl () {
     if (sponsoredMessages == null || sponsoredMessages.messages.length == 0 || loader.canLoadBottom()) {
       return;
     }
