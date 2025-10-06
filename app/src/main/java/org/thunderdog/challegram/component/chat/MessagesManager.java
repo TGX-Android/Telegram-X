@@ -20,6 +20,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 import androidx.annotation.WorkerThread;
@@ -76,7 +77,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -1534,22 +1537,91 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     });
     this.sponsoredContext = sponsoredContext;
 
-    loader.requestSponsoredMessages(loader.getChatId(), sponsoredMessages -> {
-      controller.runOnUiThreadOptional(() -> {
-        if (sponsoredContext == this.sponsoredContext) {
-          if (Config.TEST_MULTI_SPONSORED_MESSAGES && sponsoredMessages.messages.length > 0) {
-            TdApi.SponsoredMessage[] newMessages = new TdApi.SponsoredMessage[100];
-            for (int i = 0; i < newMessages.length; i++) {
-              newMessages[i] = sponsoredMessages.messages[i % sponsoredMessages.messages.length];
-            }
-            sponsoredMessages.messagesBetween = 2;
-            sponsoredMessages.messages = newMessages;
+    RunnableData<TdApi.SponsoredMessages> act = sponsoredMessages -> controller.runOnUiThreadOptional(() -> {
+      if (sponsoredContext == this.sponsoredContext) {
+        if (Config.TEST_MULTI_SPONSORED_MESSAGES && sponsoredMessages != null && sponsoredMessages.messages.length > 0) {
+          TdApi.SponsoredMessage[] newMessages = new TdApi.SponsoredMessage[100];
+          for (int i = 0; i < newMessages.length; i++) {
+            newMessages[i] = sponsoredMessages.messages[i % sponsoredMessages.messages.length];
           }
-          this.sponsoredMessages = sponsoredMessages;
-          insertFirstSponsoredMessage();
+          sponsoredMessages.messagesBetween = 2;
+          sponsoredMessages.messages = newMessages;
+        }
+        this.sponsoredMessages = sponsoredMessages;
+        insertFirstSponsoredMessage();
+      }
+    });
+
+    loader.requestSponsoredMessages(loader.getChatId(), sponsoredMessages -> {
+      if (sponsoredMessages != null && sponsoredMessages.messages.length > 0) {
+        filterSponsoredMessages(sponsoredMessages, act);
+      } else {
+        act.runWithData(sponsoredMessages);
+      }
+    });
+  }
+
+  @SuppressWarnings("SwitchIntDef")
+  private static boolean isSupported (@NonNull TdApi.InternalLinkType internalLinkType) {
+    // Matches TdlibUi.openInternalLinkType
+    switch (internalLinkType.getConstructor()) {
+      case TdApi.InternalLinkTypeBotAddToChannel.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeStory.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeStoryAlbum.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeDefaultMessageAutoDeleteTimerSettings.CONSTRUCTOR:
+
+      case TdApi.InternalLinkTypeAttachmentMenuBot.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeWebApp.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeMainWebApp.CONSTRUCTOR:
+
+      case TdApi.InternalLinkTypeInvoice.CONSTRUCTOR:
+
+      case TdApi.InternalLinkTypePremiumFeatures.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeRestorePurchases.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeBuyStars.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeChatBoost.CONSTRUCTOR:
+      case TdApi.InternalLinkTypePremiumGift.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeGiftCollection.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeChatAffiliateProgram.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeUpgradedGift.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeMyStars.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeMyToncoins.CONSTRUCTOR:
+
+      case TdApi.InternalLinkTypePassportDataRequest.CONSTRUCTOR:
+        return false;
+
+      default:
+        Td.assertInternalLinkType_eaa9fead();
+        return true;
+    }
+  }
+
+  private void filterSponsoredMessages (TdApi.SponsoredMessages sponsoredMessages, RunnableData<TdApi.SponsoredMessages> after) {
+    Map<String, TdApi.InternalLinkType> internalLinkTypeMap = new HashMap<>();
+    Runnable act = () -> {
+      List<TdApi.SponsoredMessage> sponsoredMessagesList = new ArrayList<>();
+      for (TdApi.SponsoredMessage sponsoredMessage : sponsoredMessages.messages) {
+        TdApi.InternalLinkType internalLinkType = internalLinkTypeMap.get(sponsoredMessage.sponsor.url);
+        if (internalLinkType == null || isSupported(internalLinkType)) {
+          sponsoredMessagesList.add(sponsoredMessage);
+        }
+      }
+      if (sponsoredMessagesList.size() < sponsoredMessages.messages.length) {
+        sponsoredMessages.messages = sponsoredMessagesList.toArray(new TdApi.SponsoredMessage[0]);
+      }
+      after.runWithData(sponsoredMessages);
+    };
+    AtomicInteger remaining = new AtomicInteger(sponsoredMessages.messages.length);
+    for (TdApi.SponsoredMessage sponsoredMessage : sponsoredMessages.messages) {
+      tdlib.send(new TdApi.GetInternalLinkType(sponsoredMessage.sponsor.url), (internalLinkType, error) -> {
+        if (internalLinkType != null) {
+          internalLinkTypeMap.put(sponsoredMessage.sponsor.url, internalLinkType);
+        }
+        if (remaining.decrementAndGet() == 0) {
+          act.run();
         }
       });
-    });
+    }
   }
 
   private int getActiveMessageCount () {
