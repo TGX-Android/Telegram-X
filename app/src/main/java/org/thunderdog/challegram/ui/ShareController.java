@@ -3656,23 +3656,29 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
   private @Nullable PopupLayout folderSelectorLayout;
 
+  private static class FolderMenuWrap extends MenuMoreWrap {
+    public FolderMenuWrap (Context context) {
+      super(context, true);
+    }
+
+    @Override
+    protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+      int overrideHeightMeasureSpec;
+      int heightSpecMode = MeasureSpec.getMode(heightMeasureSpec);
+      if (heightSpecMode == MeasureSpec.UNSPECIFIED) {
+        overrideHeightMeasureSpec = heightMeasureSpec;
+      } else {
+        int heightSpecSize = Math.max(MeasureSpec.getSize(heightMeasureSpec) - Math.round(getTranslationY()), 0);
+        overrideHeightMeasureSpec = MeasureSpec.makeMeasureSpec(heightSpecSize, heightSpecMode);
+      }
+      super.onMeasure(widthMeasureSpec, overrideHeightMeasureSpec);
+    }
+  }
+
   private void showFolderSelector () {
     if (headerView == null)
       return;
-    MenuMoreWrap menu = new MenuMoreWrap(context, /* scrollable */ true) {
-      @Override
-      protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-        int overrideHeightMeasureSpec;
-        int heightSpecMode = MeasureSpec.getMode(heightMeasureSpec);
-        if (heightSpecMode == MeasureSpec.UNSPECIFIED) {
-          overrideHeightMeasureSpec = heightMeasureSpec;
-        } else {
-          int heightSpecSize = Math.max(MeasureSpec.getSize(heightMeasureSpec) - Math.round(getTranslationY()), 0);
-          overrideHeightMeasureSpec = MeasureSpec.makeMeasureSpec(heightSpecSize, heightSpecMode);
-        }
-        super.onMeasure(widthMeasureSpec, overrideHeightMeasureSpec);
-      }
-    };
+    FolderMenuWrap menu = new FolderMenuWrap(context);
     menu.init(getThemeListeners(), null);
     menu.addItem(0, Lang.getString(R.string.CategoryMain), R.drawable.baseline_forum_24, null, v -> {
       PopupLayout popupLayout = PopupLayout.parentOf(v);
@@ -3692,7 +3698,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     menu.setAnchorMode(MenuMoreWrap.ANCHOR_MODE_HEADER);
     menu.setTranslationY(headerView.getTranslationY());
     folderSelectorLayout = new PopupLayout(context);
-    folderSelectorLayout.init(true);
+    folderSelectorLayout.init(!Settings.instance().useEdgeToEdge());
     folderSelectorLayout.setNeedRootInsets();
     folderSelectorLayout.setOverlayStatusBar(true);
     folderSelectorLayout.setDismissListener((popup) -> folderSelectorLayout = null);
