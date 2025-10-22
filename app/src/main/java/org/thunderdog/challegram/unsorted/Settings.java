@@ -43,6 +43,7 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Background;
+import org.thunderdog.challegram.core.BiometricAuthentication;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.emoji.Emoji;
@@ -182,7 +183,8 @@ public class Settings {
   private static final int VERSION_45 = 45; // Reset "Big emoji" setting to default
   private static final int VERSION_46 = 46; // Remove folders experimental setting
   private static final int VERSION_47 = 47; // Force reset released features list
-  private static final int VERSION = VERSION_47;
+  private static final int VERSION_48 = 48; // Force strong sensor, if user has it.
+  private static final int VERSION = VERSION_48;
 
   private static final AtomicBoolean hasInstance = new AtomicBoolean(false);
   private static volatile Settings instance;
@@ -424,6 +426,8 @@ public class Settings {
   public static final long SETTING_FLAG_FOREGROUND_SERVICE_ENABLED = 1 << 16;
   public static final long SETTING_FLAG_DYNAMIC_ORDER_STICKER_PACKS = 1 << 17;
   public static final long SETTING_FLAG_DYNAMIC_ORDER_EMOJI_PACKS = 1 << 18;
+  public static final long SETTING_FLAG_FORCE_DEFAULT_ANIMATION_FOR_RIGHT_SWIPE_EDGE = 1 << 19;
+  public static final long SETTING_FLAG_FORCE_DISABLE_HLS_VIDEO = 1 << 20;
 
   public static final long EXPERIMENT_FLAG_ALLOW_EXPERIMENTS = 1;
   public static final long EXPERIMENT_FLAG_SHOW_PEER_IDS = 1 << 2;
@@ -1713,10 +1717,10 @@ public class Settings {
       }
       case VERSION_12: {
         int mode = pmc.getInt(Passcode.KEY_PASSCODE_MODE, Passcode.MODE_NONE);
-        if (mode == Passcode.MODE_FINGERPRINT) {
+        if (mode == Passcode.MODE_BIOMETRICS) {
           String passcodeHash = pmc.getString(Passcode.KEY_PASSCODE_HASH, null);
           if (passcodeHash != null) {
-            editor.putString(Passcode.KEY_PASSCODE_FINGERPRINT_HASH, passcodeHash);
+            editor.putString(Passcode.KEY_PASSCODE_BIOMETRICS_HASH, passcodeHash);
           }
         }
         break;
@@ -2198,6 +2202,18 @@ public class Settings {
         // No features were officially available before VERSION_46.
         // Reset just once in VERSION_47 right prior to stable release.
         editor.putLong(KEY_FEATURES, 0);
+        break;
+      }
+      case VERSION_48: {
+        int passcodeMode = pmc.getInt(Passcode.KEY_PASSCODE_MODE, Passcode.MODE_NONE);
+        if (Passcode.isValidMode(passcodeMode) && passcodeMode != Passcode.MODE_NONE) {
+          String extraBiometricsHash = passcodeMode != Passcode.MODE_BIOMETRICS ? pmc.getString(Passcode.KEY_PASSCODE_BIOMETRICS_HASH, null) : null;
+          boolean usesBiometrics = passcodeMode == Passcode.MODE_BIOMETRICS || extraBiometricsHash != null;
+          if (usesBiometrics) {
+            boolean strongEnrolled = BiometricAuthentication.isStrongAvailable(true);
+            pmc.putInt(Passcode.KEY_PASSCODE_BIOMETRICS_OPTIONS, BitwiseUtils.optional(Passcode.BIOMETRICS_OPTION_ONLY_STRONG, strongEnrolled));
+          }
+        }
         break;
       }
     }
@@ -3291,8 +3307,8 @@ public class Settings {
       );
       if (ratio > 1f)
         return null;
-      majorSize *= ratio;
-      minorSize *= ratio;
+      majorSize = (int) ((float) majorSize * ratio);
+      minorSize = (int) ((float) minorSize * ratio);
       if (majorSize % 2 == 1) majorSize--;
       if (minorSize % 2 == 1) minorSize--;
       return new VideoSize(majorSize, minorSize);
@@ -6991,7 +7007,12 @@ public class Settings {
       long previousInstallationId = currentBuildInformation != null ? currentBuildInformation.getInstallationId() - 1 : -1;
       int previouslyInstalledVersionCode = previousInstallationId != -1 ?
         AppBuildInfo.restoreVersionCode(pmc, KEY_APP_INSTALLATION_PREFIX + previousInstallationId) : 0;
-      previouslyAvailableFeatures = FeatureAvailability.recoverAvailableFeaturesForAppVersionCode(previouslyInstalledVersionCode);
+      if (previouslyInstalledVersionCode != 0) {
+        previouslyAvailableFeatures = FeatureAvailability.recoverAvailableFeaturesForAppVersionCode(previouslyInstalledVersionCode);
+      } else {
+        // Do not bombard with a dozen of pop-ups on clean app installations
+        previouslyAvailableFeatures = currentlyAvailableFeatures;
+      }
       saveFeatures = true;
     }
     if (currentlyAvailableFeatures != previouslyAvailableFeatures) {

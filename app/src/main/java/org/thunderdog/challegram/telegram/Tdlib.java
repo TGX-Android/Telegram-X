@@ -1627,6 +1627,27 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return clientHolder().client;
   }
 
+  public static abstract class CancellableResultHandler<T extends TdApi.Object> implements ResultHandler<T> {
+    private final CancellationSignal signal = new CancellationSignal();
+
+    public void cancel () {
+      signal.cancel();
+    }
+
+    public boolean isPending () {
+      return !signal.isCanceled();
+    }
+
+    public abstract void act (T result, @Nullable TdApi.Error error);
+
+    @Override
+    public final void onResult (T result, @Nullable TdApi.Error error) {
+      if (isPending()) {
+        act(result, error);
+      }
+    }
+  }
+
   public interface ResultHandler<T extends TdApi.Object> {
     void onResult (T result, @Nullable TdApi.Error error);
 
@@ -4172,18 +4193,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public boolean chatRestricted (long chatId) {
-    return !StringUtils.isEmpty(chatRestrictionReason(chatId));
+    return chatRestriction(chatId) != null;
   }
 
   public boolean chatRestricted (TdApi.Chat chat) {
-    return !StringUtils.isEmpty(chatRestrictionReason(chat));
+    return chatRestriction(chat) != null;
   }
 
-  public String chatRestrictionReason (long chatId) {
-    return chatRestrictionReason(chatStrict(chatId));
+  public TdApi.RestrictionInfo chatRestriction (long chatId) {
+    return chatRestriction(chatStrict(chatId));
   }
 
-  public String chatRestrictionReason (TdApi.Chat chat) {
+  public TdApi.RestrictionInfo chatRestriction (TdApi.Chat chat) {
     if (chat == null || !Settings.instance().needRestrictContent()) {
       return null;
     }
@@ -4191,10 +4212,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.ChatTypePrivate.CONSTRUCTOR:
       case TdApi.ChatTypeSecret.CONSTRUCTOR:
         TdApi.User user = chatUser(chat);
-        return user != null && !StringUtils.isEmpty(user.restrictionReason) ? user.restrictionReason : null;
+        return user != null ? user.restrictionInfo : null;
       case TdApi.ChatTypeSupergroup.CONSTRUCTOR:
         TdApi.Supergroup supergroup = cache().supergroup(ChatId.toSupergroupId(chat.id));
-        return supergroup != null && !StringUtils.isEmpty(supergroup.restrictionReason) ? supergroup.restrictionReason : null;
+        return supergroup != null ? supergroup.restrictionInfo : null;
     }
     return null;
   }
@@ -6288,65 +6309,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return chat != null && chat.type.getConstructor() == TdApi.ChatTypeSecret.CONSTRUCTOR;
   }
 
-  private static final int CLIENT_DATA_VERSION = 0;
-
-  public static class ChatPasscode {
-    public static final int FLAG_INVISIBLE = 1;
-
-    public int mode;
-    private int flags;
-    public String hash;
-    public @Nullable String fingerHash;
-
-    public ChatPasscode (int mode, int flags, String hash, @Nullable String fingerHash) {
-      this.mode = mode;
-      this.flags = flags;
-      this.hash = hash;
-      this.fingerHash = fingerHash;
-    }
-
-    public boolean isVisible () {
-      return (flags & FLAG_INVISIBLE) == 0;
-    }
-
-    public void setIsVisible (boolean isVisible) {
-      flags = BitwiseUtils.setFlag(flags, FLAG_INVISIBLE, !isVisible);
-    }
-
-    public boolean unlock (int mode, String hash) {
-      return this.mode == mode && this.hash.equals(hash);
-    }
-
-    public boolean unlockWithFingerprint (String fingerHash) {
-      return !StringUtils.isEmpty(this.fingerHash) && this.fingerHash.equals(fingerHash);
-    }
-
-    @Override
-    public final String toString () {
-      StringBuilder b = new StringBuilder()
-        .append(CLIENT_DATA_VERSION)
-        .append('_')
-        .append(mode)
-        .append('_')
-        .append(flags)
-        .append('_')
-        .append(hash.length())
-        .append('_')
-        .append(hash);
-      if (!StringUtils.isEmpty(fingerHash)) {
-        b.append('_').append(fingerHash.length()).append('_').append(fingerHash);
-      }
-      return b.toString();
-    }
-
-    public static int makeFlags (boolean isVisible) {
-      int flags = 0;
-      if (!isVisible) {
-        flags |= FLAG_INVISIBLE;
-      }
-      return flags;
-    }
-  }
+  static final int CLIENT_DATA_VERSION = 0;
 
   public boolean hasPasscode (long chatId) {
     return hasPasscode(chat(chatId));
@@ -6383,7 +6346,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       return null;
     }
     if (version < CLIENT_DATA_VERSION) {
-      for (; version <= CLIENT_DATA_VERSION; version++) {
+      for (version = version + 1; version <= CLIENT_DATA_VERSION; version++) {
         clientData = upgradeChatClientData(chat, version);
       }
       setChatClientData(chat, clientData);
@@ -8097,7 +8060,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       if (TdlibUtils.assertChat(update.chatId, chat, update)) {
         return;
       }
-      chat.themeName = update.themeName;
+      chat.theme = update.theme;
       chatLists = chatListsImpl(chat.positions);
     }
     listeners.updateChatTheme(update, chat, chatLists);
@@ -8717,6 +8680,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   // Updates: SECURITY
 
+  @SuppressWarnings("deprecation")
   private void updateServiceNotification (TdApi.UpdateServiceNotification update) {
     final TdApi.FormattedText text = Td.textOrCaption(update.content);
     CharSequence msg = TD.toDisplayCharSequence(text);
@@ -8989,29 +8953,70 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     ui().sendMessage(ui().obtainMessage(MSG_ACTION_DISPATCH_TERMS_OF_SERVICE, update));
   }
 
-  public interface IntegrityCallback {
-    void onIntegrityResult (String result, boolean isError);
+  public interface ApplicationVerificationCallback {
+    void onApplicationVerificationResult (@NonNull String data);
   }
 
-  public void requestPlayIntegrity (long verificationId, String nonce, IntegrityCallback callback) {
+  public static final class ApplicationVerificationException extends RuntimeException {
+    public ApplicationVerificationException (@NonNull String message) {
+      super(message);
+    }
+
+    public ApplicationVerificationException (@NonNull String message, Throwable cause) {
+      super(message, cause);
+    }
+
+    public static String formatPlayIntegrityMessage (Exception e) {
+      if (e == null) return "NULL";
+      String str = "";
+      if (e.getClass() != null && e.getClass().getSimpleName() != null) {
+        str = e.getClass().getSimpleName();
+        if (str == null) str = "";
+      }
+      if (e.getMessage() != null) {
+        if (str.length() > 0) str += " ";
+        str += e.getMessage();
+      }
+      return str.toUpperCase().replaceAll(" ", "_");
+    }
+
+    public static String formatReCaptchaMessage (Exception e) {
+      if (e == null) return "NULL";
+      if (e.getMessage() == null) return "MSG_NULL";
+      return e.getMessage().replaceAll(" ", "_").toUpperCase();
+    }
+  }
+
+  public void requestPlayIntegrity (long verificationId, String nonce, ApplicationVerificationCallback callback) {
     TDLib.Tag.playIntegrity("Received Play Integrity request verificationId=%d", verificationId);
     RunnableData<Exception> onError = e -> {
       TDLib.Tag.playIntegrity("failure verificationId=%d: %s", verificationId, Log.toString(e));
-      final String error = Log.toErrorString(e);
-      callback.onIntegrityResult(error, true);
+      final String error;
+      if (e instanceof ApplicationVerificationException) {
+        error = e.getMessage();
+      } else {
+        error = "PLAYINTEGRITY_FAILED_EXCEPTION_" + ApplicationVerificationException.formatPlayIntegrityMessage(e);
+      }
+      callback.onApplicationVerificationResult(error);
     };
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
-      onError.runWithData(new IllegalStateException("SDK_LEVEL_TOO_LOW: " + Build.VERSION.SDK_INT));
+      onError.runWithData(new ApplicationVerificationException("PLAYINTEGRITY_FAILED_SDK_TOO_LOW_" + Build.VERSION.SDK_INT));
       return;
     }
+    long projectId = 0;
     try {
       FirebaseOptions options = FirebaseOptions.fromResource(UI.getAppContext());
       String projectIdRaw = options != null ? options.getGcmSenderId() : "";
-      if (StringUtils.isEmpty(projectIdRaw)) {
-        onError.runWithData(new IllegalStateException("PLAY_SERVICES_PROJECT_NUMBER_UNKNOWN"));
-        return;
+      if (!StringUtils.isEmpty(projectIdRaw)) {
+        projectId = Long.parseLong(projectIdRaw);
+      } else {
+        throw new IllegalStateException();
       }
-      long projectId = Long.parseLong(projectIdRaw);
+    } catch (Exception e) {
+      onError.runWithData(new ApplicationVerificationException("PLAYINTEGRITY_FAILED_EXCEPTION_NOPROJECT"));
+      return;
+    }
+    try {
       IntegrityTokenRequest request = IntegrityTokenRequest.builder()
         .setNonce(nonce)
         .setCloudProjectNumber(projectId)
@@ -9021,9 +9026,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       integrityTokenResponse
         .addOnSuccessListener(r -> {
           final String token = r.token();
-          TDLib.Tag.playIntegrity("success verificationId=%d: %s", verificationId, token);
-          final String result = token != null ? token : "PLAYINTEGRITY_FAILED_EXCEPTION_NULL";
-          callback.onIntegrityResult(result, token != null);
+          if (token != null) {
+            TDLib.Tag.playIntegrity("success verificationId=%d: %s", verificationId, token);
+            callback.onApplicationVerificationResult(token);
+          } else {
+            onError.runWithData(new ApplicationVerificationException("PLAYINTEGRITY_FAILED_EXCEPTION_NULL"));
+          }
         })
         .addOnFailureListener(onError::runWithData);
     } catch (Exception e) {
@@ -9031,46 +9039,67 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
-  public void requestRecaptcha (long verificationId, String action, String recaptchaKeyId, IntegrityCallback callback) {
+  public void requestRecaptcha (long verificationId, String action, String recaptchaKeyId, ApplicationVerificationCallback callback) {
     TDLib.Tag.recaptcha("Received ReCaptcha request verificationId=%d action=%s", verificationId, action);
-    RunnableData<Exception> onError = e -> {
-      final String error = Log.toErrorString(e);
-      callback.onIntegrityResult(error, true);
+    RunnableData<ApplicationVerificationException> onError = e -> {
+      TDLib.Tag.recaptcha("failure verificationId=%d: %s", verificationId, Log.toString(e));
+      callback.onApplicationVerificationResult(e.getMessage());
     };
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
-      onError.runWithData(new IllegalStateException("SDK_LEVEL_TOO_LOW: " + Build.VERSION.SDK_INT));
+      onError.runWithData(new ApplicationVerificationException("RECAPTCHA_FAILED_SDK_TOO_LOW_" + Build.VERSION.SDK_INT));
       return;
     }
     RunnableData<RecaptchaTasksClient> actor = client -> {
       client.executeTask(RecaptchaAction.custom(action))
         .addOnSuccessListener(token -> {
-          TDLib.Tag.recaptcha("success verificationId=%d", verificationId);
-          callback.onIntegrityResult(token, false);
+          if (token != null) {
+            TDLib.Tag.recaptcha("success verificationId=%d", verificationId);
+            callback.onApplicationVerificationResult(token);
+          } else {
+            onError.runWithData(new ApplicationVerificationException("RECAPTCHA_FAILED_TOKEN_NULL"));
+          }
         })
-        .addOnFailureListener(error -> {
-          TDLib.Tag.recaptcha("failure verificationId=%d: %s", verificationId, Log.toString(error));
-          onError.runWithData(error);
-        });
+        .addOnFailureListener(taskError ->
+          onError.runWithData(new ApplicationVerificationException("RECAPTCHA_FAILED_TASK_EXCEPTION_" + ApplicationVerificationException.formatReCaptchaMessage(taskError), taskError))
+        );
     };
-    RecaptchaProviderRegistry.INSTANCE.execute(recaptchaKeyId, actor, onError);
+    RecaptchaProviderRegistry.INSTANCE.execute(recaptchaKeyId, actor, clientError ->
+      onError.runWithData(new ApplicationVerificationException("RECAPTCHA_FAILED_GETCLIENT_EXCEPTION_" + ApplicationVerificationException.formatReCaptchaMessage(clientError), clientError))
+    );
+  }
+
+  private TdApi.AgeVerificationParameters ageVerificationParameters;
+
+  @TdlibThread
+  private void updateAgeVerificationParameters (TdApi.UpdateAgeVerificationParameters update) {
+    synchronized (dataLock) {
+      this.ageVerificationParameters = update.parameters;
+    }
+  }
+
+  @Nullable
+  public TdApi.AgeVerificationParameters ageVerificationParameters () {
+    synchronized (dataLock) {
+      return ageVerificationParameters;
+    }
   }
 
   @TdlibThread
   private void updateApplicationVerificationRequired (TdApi.UpdateApplicationVerificationRequired update) {
     incrementJobReferenceCount();
     Runnable after = this::decrementJobReferenceCount;
-    requestPlayIntegrity(update.verificationId, update.nonce, (token, isError) -> {
-      send(new TdApi.SetApplicationVerificationToken(update.verificationId, isError ? null : token), typedOkHandler(after));
-    });
+    requestPlayIntegrity(update.verificationId, update.nonce, data ->
+      send(new TdApi.SetApplicationVerificationToken(update.verificationId, data), typedOkHandler(after))
+    );
   }
 
   @TdlibThread
   private void updateApplicationRecaptchaVerificationRequired (TdApi.UpdateApplicationRecaptchaVerificationRequired update) {
     incrementJobReferenceCount();
     Runnable after = this::decrementJobReferenceCount;
-    requestRecaptcha(update.verificationId, update.action, update.recaptchaKeyId, (token, isError) -> {
-      send(new TdApi.SetApplicationVerificationToken(update.verificationId, isError ? null : token), typedOkHandler(after));
-    });
+    requestRecaptcha(update.verificationId, update.action, update.recaptchaKeyId, data ->
+      send(new TdApi.SetApplicationVerificationToken(update.verificationId, data), typedOkHandler(after))
+    );
   }
 
   @TdlibThread
@@ -9125,14 +9154,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
-  private final Map<String, TdApi.ChatTheme> chatThemes = new HashMap<>();
+  private final Map<String, TdApi.EmojiChatTheme> emojiChatThemes = new HashMap<>();
 
   @TdlibThread
-  private void updateChatThemes (TdApi.UpdateChatThemes update) {
+  private void updateChatThemes (TdApi.UpdateEmojiChatThemes update) {
     synchronized (dataLock) {
-      chatThemes.clear();
-      for (TdApi.ChatTheme theme : update.chatThemes) {
-        chatThemes.put(theme.name, theme);
+      emojiChatThemes.clear();
+      for (TdApi.EmojiChatTheme emojiChatTheme : update.chatThemes) {
+        emojiChatThemes.put(emojiChatTheme.name, emojiChatTheme);
       }
     }
   }
@@ -9196,11 +9225,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private void updateStarRevenueStatus (TdApi.UpdateStarRevenueStatus update) {
     listeners.updateStarRevenueStatus(update);
   }
+  
+  @TdlibThread
+  private void updateTonRevenueStatus (TdApi.UpdateTonRevenueStatus update) {
+    listeners.updateTonRevenueStatus(update);
+  }
 
   @AnyThread
-  public @Nullable TdApi.ChatTheme chatTheme (String themeName) {
+  public @Nullable TdApi.EmojiChatTheme emojiChatTheme (String themeName) {
     synchronized (dataLock) {
-      return chatThemes.get(themeName);
+      return emojiChatThemes.get(themeName);
     }
   }
 
@@ -10120,6 +10154,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateTermsOfService((TdApi.UpdateTermsOfService) update);
         break;
       }
+      case TdApi.UpdateAgeVerificationParameters.CONSTRUCTOR: {
+        updateAgeVerificationParameters((TdApi.UpdateAgeVerificationParameters) update);
+        break;
+      }
       case TdApi.UpdateApplicationVerificationRequired.CONSTRUCTOR: {
         updateApplicationVerificationRequired((TdApi.UpdateApplicationVerificationRequired) update);
         break;
@@ -10144,8 +10182,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateContactCloseBirthdays((TdApi.UpdateContactCloseBirthdays) update);
         break;
       }
-      case TdApi.UpdateChatThemes.CONSTRUCTOR: {
-        updateChatThemes((TdApi.UpdateChatThemes) update);
+      case TdApi.UpdateEmojiChatThemes.CONSTRUCTOR: {
+        updateChatThemes((TdApi.UpdateEmojiChatThemes) update);
         break;
       }
       case TdApi.UpdateChatBackground.CONSTRUCTOR: {
@@ -10166,6 +10204,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       }
       case TdApi.UpdateStarRevenueStatus.CONSTRUCTOR: {
         updateStarRevenueStatus((TdApi.UpdateStarRevenueStatus) update);
+        break;
+      }
+      case TdApi.UpdateTonRevenueStatus.CONSTRUCTOR: {
+        updateTonRevenueStatus((TdApi.UpdateTonRevenueStatus) update);
         break;
       }
 
@@ -10205,7 +10247,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         throw Td.unsupported(update);
       }
       default: {
-        Td.assertUpdate_e8e2dbe3();
+        Td.assertUpdate_6de2aab6();
         throw Td.unsupported(update);
       }
     }
@@ -10933,6 +10975,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR:
             if (!((TdApi.ChatMemberStatusRestricted) status).permissions.canPinMessages)
               return false;
+            break;
           case TdApi.ChatMemberStatusLeft.CONSTRUCTOR:
           case TdApi.ChatMemberStatusBanned.CONSTRUCTOR:
           case TdApi.ChatMemberStatusMember.CONSTRUCTOR:

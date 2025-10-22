@@ -26,10 +26,12 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.activity.BackEventCompat;
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
@@ -44,6 +46,8 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.widget.ShadowView;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 
 import me.vkryl.android.AnimatorUtils;
@@ -665,14 +669,39 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     }
   }
 
-  public void prepareFactorAnimation (ViewController<?> left, ViewController<?> right, boolean forward, int direction, boolean forceRtl) {
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    PredictiveGesture.NONE,
+    PredictiveGesture.BACK_FROM_LEFT_EDGE,
+    PredictiveGesture.BACK_FROM_RIGHT_EDGE
+  })
+  public @interface PredictiveGesture {
+    int
+      NONE = 0,
+      BACK_FROM_LEFT_EDGE = 1,
+      BACK_FROM_RIGHT_EDGE = 2;
+  }
+
+  public void prepareFactorAnimation (ViewController<?> left, ViewController<?> right, boolean forward, int direction, @PredictiveGesture int predictiveGestureMode) {
     preventLayout();
     if (Views.HARDWARE_LAYER_ENABLED) {
       setLayerType(View.LAYER_TYPE_HARDWARE, left, right);
     }
 
-    forceRtlAnimation = forceRtl && direction == TRANSLATION_HORIZONTAL;
-    checkShadowDirection();
+    boolean forceRtl = false;
+
+    if (predictiveGestureMode != PredictiveGesture.NONE) {
+      if (Settings.instance().needReduceMotion()) {
+        direction = TRANSLATION_FADE;
+      } else if (direction == TRANSLATION_HORIZONTAL && predictiveGestureMode == PredictiveGesture.BACK_FROM_RIGHT_EDGE) {
+        forceRtl = !Settings.instance().getNewSetting(Settings.SETTING_FLAG_FORCE_DEFAULT_ANIMATION_FOR_RIGHT_SWIPE_EDGE);
+      }
+    }
+
+    if (forceRtlAnimation != forceRtl) {
+      forceRtlAnimation = forceRtl;
+      checkShadowDirection();
+    }
 
     if (forward) {
       right.applyPlayerOffset(currentPlayerFactor, currentPlayerOffset);
@@ -942,9 +971,9 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     final ViewController<?> left, right;
 
     if (forward) {
-      prepareFactorAnimation(left = getStack().getPrevious(), right = controller, true, direction, false);
+      prepareFactorAnimation(left = getStack().getPrevious(), right = controller, true, direction, PredictiveGesture.NONE);
     } else {
-      prepareFactorAnimation(left = controller, right = getStack().getCurrent(), false, direction, false);
+      prepareFactorAnimation(left = controller, right = getStack().getCurrent(), false, direction, PredictiveGesture.NONE);
     }
 
     final boolean[] isDone = new boolean[1];
@@ -1096,11 +1125,11 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
   }
 
   boolean openPreview (float y) {
-    return openPreviewImpl(y, false, false);
+    return openPreviewImpl(y, false, PredictiveGesture.NONE);
   }
 
   public boolean forcePreviewPreviouewItem () {
-    return openPreviewImpl(0, true, false);
+    return openPreviewImpl(0, true, PredictiveGesture.NONE);
   }
 
   public void closePreviousPreviewItem () {
@@ -1126,7 +1155,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     }
   }
 
-  private boolean openPreviewImpl (float y, boolean force, boolean forceRtl) {
+  private boolean openPreviewImpl (float y, boolean force, int predictiveGestureMode) {
     if (getStack().getCurrentIndex() <= 0) {
       processor.clearAnimation();
       return false;
@@ -1145,9 +1174,9 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     setIsAnimating(true);
 
     if (right.usePopupMode()) {
-      prepareFactorAnimation(getStack().getPrevious(), right, false, force ? TRANSLATION_NONE : TRANSLATION_VERTICAL, forceRtl);
+      prepareFactorAnimation(getStack().getPrevious(), right, false, force ? TRANSLATION_NONE : TRANSLATION_VERTICAL, predictiveGestureMode);
     } else {
-      prepareFactorAnimation(getStack().getPrevious(), right, false, force ? TRANSLATION_NONE : TRANSLATION_HORIZONTAL, forceRtl);
+      prepareFactorAnimation(getStack().getPrevious(), right, false, force ? TRANSLATION_NONE : TRANSLATION_HORIZONTAL, predictiveGestureMode);
     }
 
     return true;
@@ -1484,7 +1513,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
   @Override
   public boolean onSystemBackStarted (@NonNull BackEventCompat backEvent) {
     if (swipeNavigationEnabled()) {
-      if (openPreviewImpl(backEvent.getTouchY(), false, backEvent.getSwipeEdge() == BackEventCompat.EDGE_RIGHT)) {
+      if (openPreviewImpl(backEvent.getTouchY(), false, backEvent.getSwipeEdge() == BackEventCompat.EDGE_RIGHT ? PredictiveGesture.BACK_FROM_RIGHT_EDGE : PredictiveGesture.BACK_FROM_LEFT_EDGE)) {
         setFactor(backEvent.getProgress());
         return true;
       }

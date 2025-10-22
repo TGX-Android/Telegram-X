@@ -742,7 +742,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
       c.restore();
     } else {
       c.drawText((String) text, rtl ? viewWidth - textWidth - x : x, y, paint);
-      emojiStatusHelper.draw(c, (int) (x + textWidth + Screen.dp(6)), (int) textY);
+      emojiStatusHelper.draw(c, (int) (x + textWidth + Screen.dp(6)), textY);
     }
   }
 

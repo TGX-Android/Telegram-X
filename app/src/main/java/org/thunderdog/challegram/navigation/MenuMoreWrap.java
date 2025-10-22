@@ -88,7 +88,7 @@ public class MenuMoreWrap extends MenuMoreWrapAbstract implements Animated {
   private final LinearLayout itemsLayout;
 
   public MenuMoreWrap (Context context) {
-    this(context, /* scrollable */ false);
+    this(context, false);
   }
 
   public MenuMoreWrap (Context context, boolean scrollable) {
@@ -101,7 +101,8 @@ public class MenuMoreWrap extends MenuMoreWrapAbstract implements Animated {
       itemsLayout.setOrientation(LinearLayout.VERTICAL);
       ScrollView scrollView = new ScrollView(context);
       scrollView.addView(itemsLayout, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-      addView(scrollView, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+      scrollView.setLayoutParams(new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+      addView(scrollView);
     } else {
       itemsLayout = this;
     }

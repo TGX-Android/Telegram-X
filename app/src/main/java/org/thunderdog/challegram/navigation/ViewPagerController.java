@@ -463,6 +463,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
   @Override
   public final void onPageSelected (int position) {
     onPageSelected(adapter.reversePosition(position), position);
+    context.notifyBackPressAvailabilityChanged();
   }
 
   private boolean disallowKeyboardHideOnPageScrolled;

@@ -384,6 +384,7 @@ dependencies {
   implementation(project(":vkryl:td"))
   // AndroidX: https://developer.android.com/jetpack/androidx/versions
   implementation("androidx.activity:activity:1.8.2") // 1.9.0+ requires minSdkVersion 19
+  implementation("androidx.biometric:biometric:1.1.0")
   implementation("androidx.palette:palette:1.0.0")
   implementation("androidx.recyclerview:recyclerview:1.3.2") // 1.4.0+ requires minSdkVersion 21
   implementation("androidx.constraintlayout:constraintlayout:2.1.4") // 2.2.0+ requires minSdkVersion 21
@@ -428,7 +429,7 @@ dependencies {
   // 17.x version requires minSdk 19 or higher
   implementation("com.google.mlkit:language-id:17.0.6")
   // The Checker Framework: https://checkerframework.org/CHANGELOG.md
-  compileOnly("org.checkerframework:checker-qual:3.49.5")
+  compileOnly("org.checkerframework:checker-qual:3.51.0")
   // OkHttp: https://github.com/square/okhttp/blob/master/CHANGELOG.md
   implementation("com.squareup.okhttp3:okhttp:4.12.0")
   // ShortcutBadger: https://github.com/leolin310148/ShortcutBadger

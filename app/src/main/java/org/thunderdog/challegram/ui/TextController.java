@@ -322,6 +322,7 @@ public class TextController extends ViewController<TextController.Arguments> imp
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public boolean handleMessage (Message msg) {
     switch (msg.what) {
       case READ_PROGRESS: {
@@ -329,13 +330,11 @@ public class TextController extends ViewController<TextController.Arguments> imp
         return true;
       }
       case DISPLAY_LINES: {
-        //noinspection unchecked
         displayLines((ArrayList<LineCell>) msg.obj, msg.arg1);
         return true;
       }
       case READ_COMPLETE: {
         displayProgress(msg.arg1, false);
-        //noinspection unchecked
         displayLines((ArrayList<LineCell>) msg.obj, msg.arg1);
         return true;
       }

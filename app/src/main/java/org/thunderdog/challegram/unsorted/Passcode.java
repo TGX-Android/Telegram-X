@@ -20,12 +20,14 @@ import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
+import org.thunderdog.challegram.core.BiometricAuthentication;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.tool.UI;
 
 import java.util.concurrent.TimeUnit;
 
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.reference.ReferenceList;
 
 public class Passcode implements UI.StateListener {
@@ -47,7 +49,7 @@ public class Passcode implements UI.StateListener {
   public static final int MODE_PASSWORD = 0x02;
   public static final int MODE_PATTERN  = 0x03;
   public static final int MODE_GESTURE  = 0x04;
-  public static final int MODE_FINGERPRINT = 0x05;
+  public static final int MODE_BIOMETRICS = 0x05;
 
   public static boolean isValidMode (int mode) {
     switch (mode) {
@@ -55,7 +57,7 @@ public class Passcode implements UI.StateListener {
       case MODE_PASSWORD:
       case MODE_PATTERN:
       case MODE_GESTURE:
-      case MODE_FINGERPRINT:
+      case MODE_BIOMETRICS:
         return true;
     }
     return false;
@@ -86,7 +88,8 @@ public class Passcode implements UI.StateListener {
   private int autolockMode;
   private long autolockTime;
 
-  private String passcodeHash, fingerprintHash;
+  private String passcodeHash, biometricsHash;
+  private int biometricsOptions;
 
   private boolean isLocked;
   private final ReferenceList<LockListener> listeners = new ReferenceList<>(true);
@@ -99,14 +102,18 @@ public class Passcode implements UI.StateListener {
   private static final String KEY_PASSCODE_AUTOLOCK_MODE = "pc_al_mode";
   private static final String KEY_PASSCODE_AUTOLOCK_TIME = "pc_time";
   private static final String KEY_PASSCODE_DISPLAY_NOTIFICATIONS = "pc_notifications";
-  public static final String KEY_PASSCODE_FINGERPRINT_HASH = "pc_finger_hash";
+  public static final String KEY_PASSCODE_BIOMETRICS_HASH = "pc_finger_hash";
+
+  public static final String KEY_PASSCODE_BIOMETRICS_OPTIONS = "pc_biometrics";
+  public static final int BIOMETRICS_OPTION_ONLY_STRONG = 1;
 
   private Passcode () {
     Settings prefs = Settings.instance();
     mode = prefs.getInt(KEY_PASSCODE_MODE, MODE_NONE);
     autolockMode = prefs.getInt(KEY_PASSCODE_AUTOLOCK_MODE, AUTOLOCK_MODE_NONE);
 
-    fingerprintHash = prefs.getString(KEY_PASSCODE_FINGERPRINT_HASH, null);
+    biometricsHash = prefs.getString(KEY_PASSCODE_BIOMETRICS_HASH, null);
+    biometricsOptions = prefs.getInt(KEY_PASSCODE_BIOMETRICS_OPTIONS, 0);
 
     if (mode != MODE_NONE) {
       isLocked = prefs.getBoolean(KEY_PASSCODE_LOCKED, false);
@@ -198,20 +205,32 @@ public class Passcode implements UI.StateListener {
     return 0;
   }
 
-  public boolean needUnlockByFingerprint () {
-    return fingerprintHash != null;
+  public boolean needUnlockWithBiometrics () {
+    return biometricsHash != null;
   }
 
-  public void disableUnlockByFingerprint () {
-    if (fingerprintHash != null) {
-      fingerprintHash = null;
-      Settings.instance().remove(KEY_PASSCODE_FINGERPRINT_HASH);
+  public void disableUnlockByBiometrics () {
+    if (biometricsHash != null) {
+      biometricsHash = null;
+      biometricsOptions = 0;
+      Settings.instance().edit()
+        .remove(KEY_PASSCODE_BIOMETRICS_HASH)
+        .remove(KEY_PASSCODE_BIOMETRICS_OPTIONS)
+        .apply();
     }
   }
 
-  public void enableUnlockByFingerprint (int fingerId) {
-    this.fingerprintHash = getPasscodeHashOld(String.valueOf(fingerId));
-    Settings.instance().putString(KEY_PASSCODE_FINGERPRINT_HASH, fingerprintHash);
+  public void enableUnlockByBiometrics (long biometricsId, boolean strong) {
+    this.biometricsHash = getPasscodeHashOld(String.valueOf(biometricsId));
+    this.biometricsOptions = BitwiseUtils.optional(BIOMETRICS_OPTION_ONLY_STRONG, strong);
+    Settings.instance().edit()
+      .putString(KEY_PASSCODE_BIOMETRICS_HASH, biometricsHash)
+      .putInt(KEY_PASSCODE_BIOMETRICS_OPTIONS, biometricsOptions)
+      .apply();
+  }
+
+  public boolean useStrongBiometrics () {
+    return BitwiseUtils.hasFlag(biometricsOptions, BIOMETRICS_OPTION_ONLY_STRONG);
   }
 
   public int getAutolockMode () {
@@ -316,7 +335,7 @@ public class Passcode implements UI.StateListener {
     return passcode != null ? U.md5(U.md5(passcode + SALT_OLD)) : null;
   }
 
-  public void setPasscodeHash (int mode, String passcode) {
+  public void setPasscodeHash (int mode, String passcode, int extraOptions) {
     boolean turnedOn = this.mode == MODE_NONE && mode != MODE_NONE;
     this.mode = mode;
     this.passcodeHash = getPasscodeHashOld(passcode);
@@ -326,6 +345,10 @@ public class Passcode implements UI.StateListener {
       edit.putString(KEY_PASSCODE_HASH, passcodeHash);
     } else {
       edit.remove(KEY_PASSCODE_HASH);
+    }
+    if (mode == MODE_BIOMETRICS && passcodeHash != null) {
+      this.biometricsOptions = extraOptions;
+      edit.putInt(KEY_PASSCODE_BIOMETRICS_OPTIONS, extraOptions);
     }
     edit.apply();
     if (turnedOn) {
@@ -345,12 +368,17 @@ public class Passcode implements UI.StateListener {
     return passcodeHash != null && pattern != null && pattern.length() >= MIN_PATTERN_SIZE && passcodeHash.equals(getPasscodeHashOld(pattern));
   }
 
-  public boolean compareFinger (int fingerId) {
-    if (mode == MODE_FINGERPRINT) {
-      return passcodeHash != null && passcodeHash.equals(getPasscodeHashOld(String.valueOf(fingerId)));
+  public boolean compareBiometrics (long biometricsId, boolean strong) {
+    final boolean ok;
+    if (mode == MODE_BIOMETRICS) {
+      ok = passcodeHash != null && passcodeHash.equals(getPasscodeHashOld(String.valueOf(biometricsId)));
     } else {
-      return fingerprintHash != null && fingerprintHash.equals(getPasscodeHashOld(String.valueOf(fingerId)));
+      ok = biometricsHash != null && biometricsHash.equals(getPasscodeHashOld(String.valueOf(biometricsId)));
     }
+    if (ok) {
+      return strong || !BitwiseUtils.hasFlag(biometricsOptions, BIOMETRICS_OPTION_ONLY_STRONG);
+    }
+    return false;
   }
 
   public static boolean isValidPincode (String pincode) {
@@ -358,7 +386,7 @@ public class Passcode implements UI.StateListener {
   }
 
   public void setPincode (String pincode) {
-    setPasscodeHash(MODE_PINCODE, pincode);
+    setPasscodeHash(MODE_PINCODE, pincode, 0);
   }
 
   public static boolean isValidPassword (String password) {
@@ -366,11 +394,11 @@ public class Passcode implements UI.StateListener {
   }
 
   public void setPassword (String password) {
-    setPasscodeHash(MODE_PASSWORD, password);
+    setPasscodeHash(MODE_PASSWORD, password,0 );
   }
 
   public void setGesture () {
-    setPasscodeHash(MODE_GESTURE, "");
+    setPasscodeHash(MODE_GESTURE, "", 0);
   }
 
   public static boolean isValidPattern (String pattern) {
@@ -378,11 +406,12 @@ public class Passcode implements UI.StateListener {
   }
 
   public void setPattern (String pattern) {
-    setPasscodeHash(MODE_PATTERN, pattern);
+    setPasscodeHash(MODE_PATTERN, pattern, 0);
   }
 
-  public void setFingerprint (int fingerId) {
-    setPasscodeHash(MODE_FINGERPRINT, String.valueOf(fingerId));
+  public void setBiometrics (long biometricsId, boolean strong) {
+    int newOptions = BitwiseUtils.optional(BIOMETRICS_OPTION_ONLY_STRONG, strong);
+    setPasscodeHash(MODE_BIOMETRICS, String.valueOf(biometricsId), newOptions);
   }
 
   public boolean unlockByPassword (String password) {
@@ -413,8 +442,8 @@ public class Passcode implements UI.StateListener {
     return false;
   }
 
-  public boolean unlockByFinger (int fingerId) {
-    if (compareFinger(fingerId)) {
+  public boolean unlockByBiometrics (long biometricsId, boolean strong) {
+    if (compareBiometrics(biometricsId, strong)) {
       setLocked(false);
       return true;
     }
@@ -423,18 +452,33 @@ public class Passcode implements UI.StateListener {
 
   // Strings
 
-  public String getModeName () { // Used in Settings screen
-    return getModeName(mode);
+  public CharSequence getModeName () { // Used in Settings screen
+    if (mode == MODE_BIOMETRICS) {
+      boolean isStrong = useStrongBiometrics();
+      if (BiometricAuthentication.ONLY_FINGERPRINT) {
+        return Lang.getString(R.string.PasscodeFingerprint);
+      } else {
+        return Lang.getString(isStrong ? R.string.PasscodeBiometricsStrong : R.string.PasscodeBiometricsWeak);
+      }
+    } else {
+      return getModeName(mode);
+    }
   }
 
-  public static String getModeName (int mode) {
+  public static CharSequence getModeName (int mode) {
     switch (mode) {
       case MODE_NONE: return Lang.getString(R.string.PasscodeSettingDisabled);
       case MODE_PINCODE: return Lang.getString(R.string.PasscodePIN);
       case MODE_PASSWORD: return Lang.getString(R.string.login_Password);
       case MODE_PATTERN: return Lang.getString(R.string.PasscodePattern);
       case MODE_GESTURE: return Lang.getString(R.string.PasscodeGesture);
-      case MODE_FINGERPRINT: return Lang.getString(R.string.PasscodeFingerprint);
+      case MODE_BIOMETRICS: {
+        if (BiometricAuthentication.ONLY_FINGERPRINT) {
+          return Lang.getString(R.string.PasscodeFingerprint);
+        } else {
+          return Lang.getString(R.string.PasscodeBiometrics);
+        }
+      }
     }
     return "ERROR";
   }
@@ -450,7 +494,7 @@ public class Passcode implements UI.StateListener {
     };
   }
 
-  public static String getActionName (int mode, int state) {
+  public static String getActionName (int mode, int state, boolean useExtraData, int extraData) {
     switch (mode) {
       case MODE_PINCODE: {
         switch (state) {
@@ -484,11 +528,26 @@ public class Passcode implements UI.StateListener {
         }
         return null;
       }
-      case MODE_FINGERPRINT: {
-        switch (state) {
-          case STATE_UNLOCK: return Lang.getString(R.string.UnlockByFingerprint);
-          case STATE_CHOOSE: return Lang.getString(R.string.TouchYourSensor);
-          case STATE_CONFIRM: return Lang.getString(R.string.ConfirmYourFingerprint);
+      case MODE_BIOMETRICS: {
+        boolean isStrong = BitwiseUtils.hasFlag(extraData, Passcode.BIOMETRICS_OPTION_ONLY_STRONG);
+        if (BiometricAuthentication.ONLY_FINGERPRINT) {
+          switch (state) {
+            case STATE_UNLOCK:
+              return Lang.getString(R.string.UnlockByFingerprint);
+            case STATE_CHOOSE:
+              return Lang.getString(isStrong || !useExtraData ? R.string.TouchYourSensor : R.string.TouchYourSensorWeak);
+            case STATE_CONFIRM:
+              return Lang.getString(isStrong || !useExtraData ? R.string.ConfirmYourFingerprint : R.string.ConfirmYourFingerprintWeak);
+          }
+        } else {
+          switch (state) {
+            case STATE_UNLOCK:
+              return Lang.getString(R.string.UnlockByBiometrics);
+            case STATE_CHOOSE:
+              return Lang.getString(isStrong || !useExtraData ? R.string.UseBiometrics : R.string.UseBiometricsWeak);
+            case STATE_CONFIRM:
+              return Lang.getString(!useExtraData ? R.string.ConfirmYourBiometrics : isStrong ? R.string.ConfirmYourBiometricsStrong : R.string.ConfirmYourBiometricsWeak);
+          }
         }
         return null;
       }

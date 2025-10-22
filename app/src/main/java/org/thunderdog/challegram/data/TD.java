@@ -1594,8 +1594,8 @@ public class TD {
     }
   }
 
+  @SuppressWarnings("unchecked")
   public static <T extends TdApi.Object> TdApi.Function<T>[] toArray (Collection<TdApi.Function<T>> collection) {
-    //noinspection unchecked
     return (TdApi.Function<T>[]) collection.toArray(new TdApi.Function<?>[0]);
   }
 
@@ -2126,7 +2126,7 @@ public class TD {
       null,
       false, false, false,
       null, false, false,
-      "", false, false,
+      null, false, false,
       false, 0, false,
       new TdApi.UserTypeRegular(),
       null,

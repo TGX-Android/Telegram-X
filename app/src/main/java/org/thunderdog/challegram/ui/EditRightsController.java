@@ -1831,7 +1831,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       CharSequence[] hints = errorHints.toArray(new CharSequence[0]);
       CharSequence hint = TextUtils.join("\n", hints);
       context().tooltipManager()
-        .builder(((SettingView) view).getToggler())
+        .builder(view.getToggler())
         .show(this, tdlib, R.drawable.baseline_info_24, hint);
     }
   }

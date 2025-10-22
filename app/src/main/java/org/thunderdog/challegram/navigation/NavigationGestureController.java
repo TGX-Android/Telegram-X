@@ -136,7 +136,7 @@ public class NavigationGestureController implements GestureDetector.OnGestureLis
       if (c.swipeNavigationEnabled() && !c.forceFadeMode() && !c.inSelectMode() && !c.inCustomMode() && !(stackSize == 1 && c.inSearchMode()) && c.canSlideBackFrom(navigation, x, y)) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
           RootFrameLayout rootFrameLayout = UI.getContext(navigation.getContext()).getRootView();
-          Rect gestureInsets = rootFrameLayout.getGestureInsets();
+          Rect gestureInsets = rootFrameLayout.getSystemGesturesInsets();
           if (x < gestureInsets.left || x > rootFrameLayout.getMeasuredWidth() - gestureInsets.right) {
             return false;
           }

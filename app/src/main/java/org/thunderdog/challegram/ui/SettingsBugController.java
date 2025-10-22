@@ -497,6 +497,8 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
           view.getToggler().setRadioEnabled(Settings.instance().forceTdlibRestart(), isUpdate);
         } else if (itemId == R.id.btn_switchRtl) {
           view.getToggler().setRadioEnabled(Lang.rtl(), isUpdate);
+        } else if (itemId == R.id.btn_toggleNewSetting) {
+          handleSettingClick(view, adapter);
         } else if (itemId == R.id.btn_experiment) {
           view.getToggler().setRadioEnabled(Settings.instance().isExperimentEnabled(item.getLongValue()), isUpdate);
         } else if (itemId == R.id.btn_secret_pushToken) {
@@ -742,6 +744,15 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
           items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_experiment, 0, R.string.Experiment_PeerIds).setLongValue(Settings.EXPERIMENT_FLAG_SHOW_PEER_IDS));
           items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
           items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.Experiment_PeerIdsInfo));
+        }
+
+        if (Config.EDGE_TO_EDGE_AVAILABLE && (testerLevel >= Tdlib.TesterLevel.ADMIN || Settings.instance().getNewSetting(Settings.SETTING_FLAG_FORCE_DEFAULT_ANIMATION_FOR_RIGHT_SWIPE_EDGE))) {
+          if (!items.isEmpty()) {
+            items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+          }
+          items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.RightSwipeEdgeAnimation).setLongId(Settings.SETTING_FLAG_FORCE_DEFAULT_ANIMATION_FOR_RIGHT_SWIPE_EDGE).setBoolValue(true));
+          items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+          items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.RightSwipeEdgeAnimationInfo));
         }
 
         if (Config.EDGE_TO_EDGE_CUSTOMIZABLE) {
@@ -1160,6 +1171,8 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       navigateTo(c);
     } else if (viewId == R.id.btn_switchRtl) {
       Settings.instance().setNeedRtl(Lang.packId(), adapter.toggleView(v));
+    } else if (viewId == R.id.btn_toggleNewSetting) {
+      handleSettingClick(v, adapter);
     } else if (viewId == R.id.btn_experiment) {
       ListItem item = (ListItem) v.getTag();
       if (Settings.instance().setExperimentEnabled(item.getLongValue(), adapter.toggleView(v))) {
@@ -1397,9 +1410,9 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
     } else if (viewId == R.id.btn_secret_resetLocalNotificationSettings) {
       tdlib.notifications().resetNotificationSettings(true);
     } else if (viewId == R.id.btn_secret_attest) {
-      tdlib.requestPlayIntegrity(-1, StringUtils.random("0123456789abcdef", 32), (result, isError) -> {
+      tdlib.requestPlayIntegrity(-1, StringUtils.random("0123456789abcdef", 32), (data) -> {
         runOnUiThread(() -> {
-          openAlert(R.string.AppName, result);
+          openAlert(R.string.AppName, data);
         });
       });
     } else if (viewId == R.id.btn_secret_databaseStats) {

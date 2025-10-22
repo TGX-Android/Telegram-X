@@ -16,10 +16,13 @@ package org.thunderdog.challegram.mediaview.crop;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.Objects;
 
+import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.MathUtils;
 
@@ -130,7 +133,7 @@ public class CropState {
     return flags;
   }
 
-  public boolean compare (CropState state) {
+  public boolean equalsTo (@Nullable CropState state) {
     if (state == null) {
       return isEmpty();
     }
@@ -146,7 +149,12 @@ public class CropState {
 
   @Override
   public boolean equals (Object obj) {
-    return this == obj || (obj instanceof CropState && compare((CropState) obj));
+    return this == obj || (obj instanceof CropState && equalsTo((CropState) obj));
+  }
+
+  @Override
+  public int hashCode () {
+    return ArrayUtils.hash(left, top, right, bottom, rotateBy, degreesAroundCenter, flags);
   }
 
   protected void onCropChanged (boolean rectChanged) { }

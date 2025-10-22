@@ -94,6 +94,9 @@ public class ThreadInfo {
   public boolean isRootMessage (@Nullable TdApi.MessageReplyTo replyTo) {
     if (replyTo != null && replyTo.getConstructor() == TdApi.MessageReplyToMessage.CONSTRUCTOR) {
       TdApi.MessageReplyToMessage replyToMessage = (TdApi.MessageReplyToMessage) replyTo;
+      if (!Td.isEmpty(replyToMessage.quote)) {
+        return false;
+      }
       TdApi.Message message = getMessage(replyToMessage.messageId);
       return message != null && message.chatId == replyToMessage.chatId;
     }

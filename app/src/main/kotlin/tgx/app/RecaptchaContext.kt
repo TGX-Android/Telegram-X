@@ -4,6 +4,7 @@ import android.app.Application
 import com.google.android.recaptcha.Recaptcha
 import com.google.android.recaptcha.RecaptchaTasksClient
 import org.thunderdog.challegram.BuildConfig
+import org.thunderdog.challegram.telegram.Tdlib
 
 private typealias Callback = (RecaptchaTasksClient?, Exception?) -> Unit
 
@@ -34,7 +35,7 @@ class RecaptchaContext @JvmOverloads constructor(
           executeScheduledTasks()
         }
     } ?: {
-      fatalError = IllegalStateException("ReCaptcha unavailable")
+      fatalError = Tdlib.ApplicationVerificationException("RECAPTCHA_FAILED_NO_KEY_ID")
       executeScheduledTasks()
     }
   }

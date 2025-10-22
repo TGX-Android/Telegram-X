@@ -1180,6 +1180,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   public static final String MODE_RW = "rw";
   public static final String MODE_R = "r";
 
+  @SuppressWarnings("try")
   private synchronized void saveAccountConfig (int mode, int accountId) {
     long ms = SystemClock.uptimeMillis();
     File file = getAccountConfigFile();

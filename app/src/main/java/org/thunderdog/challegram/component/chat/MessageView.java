@@ -69,6 +69,7 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
 import org.thunderdog.challegram.voip.VoIPLogs;
+import org.thunderdog.challegram.widget.RootFrameLayout;
 import org.thunderdog.challegram.widget.SparseDrawableView;
 
 import java.util.List;
@@ -1479,7 +1480,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     }
   }
 
-  private boolean startSwipeIfNeeded (float diffX) {
+  private boolean startSwipeIfNeeded (MotionEvent e, float diffX) {
     if (msg == null || msg.isNotSent() || !msg.canSwipe() || msg.isSponsoredMessage() || UI.getContext(getContext()).getRecordAudioVideoController().isOpen()) {
       return false;
     }
@@ -1488,6 +1489,11 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     if (recyclerView == null) {
       return false;
     }
+    RootFrameLayout rootView = Views.findAncestor(this, RootFrameLayout.class, true);
+    if (rootView != null && rootView.isWithinSystemGesturesArea(this, e)) {
+      return false;
+    }
+
     if (touchX > MessagesController.getSlideBackBound()) {
       msg.checkTranslatableText(() -> {
         msg.loadAvailableReactions(() -> {
@@ -1579,7 +1585,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         }
         MessagesRecyclerView recyclerView = findParentRecyclerView();
         if (recyclerView != null && !recyclerView.disallowInterceptTouchEvent() && diffY < Screen.getTouchSlop() && diffX > Screen.getTouchSlop()) {
-          if (startSwipeIfNeeded(e.getX() - touchX)) {
+          if (startSwipeIfNeeded(e, e.getX() - touchX)) {
             if ((flags & FLAG_WILL_CALL_LONG_PRESS) != 0) {
               preventLongPress();
             }

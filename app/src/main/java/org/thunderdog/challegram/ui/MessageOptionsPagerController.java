@@ -646,6 +646,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   protected void setupPopupLayout (PopupLayout popupLayout) {
     popupLayout.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
     popupLayout.setBoundController(this);

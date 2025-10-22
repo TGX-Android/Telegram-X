@@ -58,6 +58,7 @@ import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.unsorted.Settings;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -181,7 +182,7 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
       case MediaItem.TYPE_GIF: {
         HlsVideo hlsVideo = mediaItem.getHslVideo();
         TdApi.File targetFile = mediaItem.getTargetFile();
-        if (hlsVideo == null || TD.isFileLoaded(targetFile) || targetFile.local.isDownloadingActive) {
+        if (hlsVideo == null || TD.isFileLoaded(targetFile) || targetFile.local.isDownloadingActive || !Config.HLS_VIDEO_ENABLED || Settings.instance().getNewSetting(Settings.SETTING_FLAG_FORCE_DISABLE_HLS_VIDEO)) {
           long durationMs = mediaItem.getVideoDuration(false, TimeUnit.MILLISECONDS);
           source = U.newMediaSource(mediaItem.tdlib().id(), targetFile, TdlibFilesManager.PRIORITY_STREAMING_VIDEO, TdlibDataSource.Flag.OPTIMIZE_CHUNKS, durationMs);
         } else {

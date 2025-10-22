@@ -194,7 +194,7 @@ public class EmbeddedService {
         return parse(url, videoPlayer.width, videoPlayer.height, videoPlayer.thumbnail, videoPlayer.url, allowAutoplay);
       }
       default:
-        Td.assertLinkPreviewType_e3ce10d5();
+        Td.assertLinkPreviewType_4868cb55();
         break;
     }
     return null;
@@ -266,6 +266,7 @@ public class EmbeddedService {
             // Needed if the service is not supported for embedding using TDLib (height will be normal anyway)
             viewType = TYPE_CUSTOM_EMBED;
           }
+          break;
         }
         case "music.apple.com":
         case "podcasts.apple.com": {

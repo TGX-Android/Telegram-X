@@ -587,11 +587,11 @@ public class TdlibUi extends Handler {
     });
   }
 
-  public static void showDeleteOptions (ViewController<?> context, MessageWithProperties message) {
+  public void showDeleteOptions (ViewController<?> context, MessageWithProperties message) {
     showDeleteOptions(context, new MessageWithProperties[] {message}, null);
   }
 
-  public static void showDeleteOptions (final ViewController<?> context, final MessageWithProperties[] messages, final @Nullable Runnable after) {
+  public void showDeleteOptions (final ViewController<?> context, final MessageWithProperties[] messages, final @Nullable Runnable after) {
     if (context != null && messages != null && messages.length > 0) {
       if (deleteSuperGroupMessages(context, messages, after)) {
         return;
@@ -846,7 +846,7 @@ public class TdlibUi extends Handler {
     showTTLPicker(context, selfDestructType, !ChatId.isSecret(chat.id), false, false, 0, result -> setTTL(chat, result.ttlTime));
   }
 
-  public static void showTTLPicker (final Context context, @Nullable TdApi.MessageSelfDestructType currentSelfDestructType, boolean allowInstant, boolean useDarkMode, boolean precise, @StringRes int message, final RunnableData<TTLOption> callback) {
+  public void showTTLPicker (final Context context, @Nullable TdApi.MessageSelfDestructType currentSelfDestructType, boolean allowInstant, boolean useDarkMode, boolean precise, @StringRes int message, final RunnableData<TTLOption> callback) {
     final ArrayList<TTLOption> ttlOptions = new ArrayList<>(21);
     ttlOptions.add(new TTLOption(0, Lang.getString(R.string.Off)));
     if (allowInstant) {
@@ -1706,6 +1706,7 @@ public class TdlibUi extends Handler {
   private static final int CHAT_OPTION_REMOVE_DUPLICATES = 1 << 5;
   private static final int CHAT_OPTION_SCHEDULED_MESSAGES = 1 << 6;
   private static final int CHAT_OPTION_OPEN_PROFILE_IF_DUPLICATE = 1 << 7;
+  private static final int CHAT_OPTION_OPEN_DIRECT_MESSAGES_CHAT = 1 << 8;
 
   public static class ChatOpenParameters {
     public int options;
@@ -1850,6 +1851,11 @@ public class TdlibUi extends Handler {
 
     public ChatOpenParameters openProfileInCaseOfDuplicateChat () {
       this.options |= CHAT_OPTION_OPEN_PROFILE_IF_DUPLICATE;
+      return this;
+    }
+
+    public ChatOpenParameters openDirectMessagesChat () {
+      this.options |= CHAT_OPTION_OPEN_DIRECT_MESSAGES_CHAT;
       return this;
     }
 
@@ -2106,6 +2112,11 @@ public class TdlibUi extends Handler {
       return;
     }
 
+    if ((options & CHAT_OPTION_OPEN_DIRECT_MESSAGES_CHAT) != 0) {
+      openDirectMessagesChat(context, chat, messageThread, urlOpenParameters, params::onDone);
+      return;
+    }
+
     if ((options & CHAT_OPTION_NO_OPEN) != 0) {
       if (after != null) {
         after.runWithLong(chat.id);
@@ -2266,6 +2277,31 @@ public class TdlibUi extends Handler {
     }
   }
 
+  public void openDirectMessagesChat (final TdlibDelegate context, final @NonNull TdApi.Chat chat, final @Nullable ThreadInfo threadInfo, final @Nullable UrlOpenParameters openParameters, @Nullable Runnable after) {
+    if (TdlibManager.inBackgroundThread()) {
+      tdlib.runOnUiThread(() -> openDirectMessagesChat(context, chat, threadInfo, openParameters, after));
+      return;
+    }
+    TdApi.Supergroup supergroup = tdlib.chatToSupergroup(chat.id);
+    if (supergroup == null || !tdlib.hasDirectMessagesChat(chat.id)) {
+      showAccessError(context, openParameters, Tdlib.CHAT_ACCESS_FAIL, false);
+      if (after != null) {
+        after.run();
+      }
+      return;
+    }
+    tdlib.cache().supergroupFull(supergroup.id, supergroupFull -> {
+      if (supergroupFull == null || supergroupFull.directMessagesChatId == 0) {
+        showAccessError(context, openParameters, Tdlib.CHAT_ACCESS_FAIL, false);
+      } else {
+        openChat(context, supergroupFull.directMessagesChatId, new ChatOpenParameters().keepStack().urlOpenParameters(openParameters));
+      }
+      if (after != null) {
+        after.run();
+      }
+    });
+  }
+
   public void openChatProfile (final TdlibDelegate context, final @NonNull TdApi.Chat chat, final @Nullable ThreadInfo threadInfo, final @Nullable UrlOpenParameters openParameters) {
     if (TdlibManager.inBackgroundThread()) {
       tdlib.runOnUiThread(() -> openChatProfile(context, chat, threadInfo, openParameters));
@@ -2340,6 +2376,10 @@ public class TdlibUi extends Handler {
 
   public void openPublicChat (final TdlibDelegate context, final @NonNull String username, final @Nullable UrlOpenParameters openParameters) {
     openChat(context, 0, new TdApi.SearchPublicChat(username), new ChatOpenParameters().urlOpenParameters(openParameters).keepStack().openProfileInCaseOfPrivateChat());
+  }
+
+  public void openDirectMessages (final TdlibDelegate context, final @NonNull String username, final @Nullable UrlOpenParameters openParameters) {
+    openChat(context, 0, new TdApi.SearchPublicChat(username), new ChatOpenParameters().urlOpenParameters(openParameters).keepStack().openDirectMessagesChat());
   }
 
   public void openVideoChatOrLiveStream (final TdlibDelegate context, final @NonNull TdApi.InternalLinkTypeVideoChat videoChatOrLiveStreamInvitation, final @Nullable UrlOpenParameters openParameters) {
@@ -2644,7 +2684,7 @@ public class TdlibUi extends Handler {
     public MessageId messageId;
     public String refererUrl, instantViewFallbackUrl, originalUrl;
     public TooltipOverlayView.TooltipBuilder tooltip;
-    public boolean requireOpenPrompt, ignoreExplicitUserInteraction;
+    public boolean requireOpenPrompt, ignoreExplicitUserInteraction, forceDirectMessagesChat;
     public Runnable openPromptCancellationCallback;
     public String displayUrl;
 
@@ -3615,6 +3655,11 @@ public class TdlibUi extends Handler {
         }
         break;
       }
+      case TdApi.InternalLinkTypeDirectMessagesChat.CONSTRUCTOR: {
+        TdApi.InternalLinkTypeDirectMessagesChat directMessagesChat = (TdApi.InternalLinkTypeDirectMessagesChat) linkType;
+        openDirectMessages(context, directMessagesChat.channelUsername, openParameters);
+        break;
+      }
       case TdApi.InternalLinkTypeInstantView.CONSTRUCTOR: {
         TdApi.InternalLinkTypeInstantView instantView = (TdApi.InternalLinkTypeInstantView) linkType;
         UrlOpenParameters instantViewOpenParameters = new UrlOpenParameters(openParameters)
@@ -3629,12 +3674,13 @@ public class TdlibUi extends Handler {
       case TdApi.InternalLinkTypeActiveSessions.CONSTRUCTOR: {
         SettingsSessionsController sessions = new SettingsSessionsController(context.context(), context.tdlib());
         SettingsWebsitesController websites = new SettingsWebsitesController(context.context(), context.tdlib());
-        ViewController<?> c = new SimpleViewPagerController(context.context(), context.tdlib(), new ViewController[] {sessions, websites}, new String[] {Lang.getString(R.string.Devices).toUpperCase(), Lang.getString(R.string.Websites).toUpperCase()}, false);
+        ViewController<?> c = new SimpleViewPagerController(context.context(), context.tdlib(), new ViewController<?>[] {sessions, websites}, new String[] {Lang.getString(R.string.Devices).toUpperCase(), Lang.getString(R.string.Websites).toUpperCase()}, false);
         context.context().navigation().navigateTo(c);
         break;
       }
 
       case TdApi.InternalLinkTypeStory.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeStoryAlbum.CONSTRUCTOR:
       case TdApi.InternalLinkTypeDefaultMessageAutoDeleteTimerSettings.CONSTRUCTOR:
 
       case TdApi.InternalLinkTypeAttachmentMenuBot.CONSTRUCTOR:
@@ -3648,6 +3694,7 @@ public class TdlibUi extends Handler {
       case TdApi.InternalLinkTypeBuyStars.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatBoost.CONSTRUCTOR:
       case TdApi.InternalLinkTypePremiumGift.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeGiftCollection.CONSTRUCTOR:
       case TdApi.InternalLinkTypeChatAffiliateProgram.CONSTRUCTOR:
       case TdApi.InternalLinkTypeUpgradedGift.CONSTRUCTOR:
       case TdApi.InternalLinkTypeMyStars.CONSTRUCTOR:
@@ -3788,7 +3835,7 @@ public class TdlibUi extends Handler {
         return; // async
       }
       default: {
-        Td.assertInternalLinkType_35d33133();
+        Td.assertInternalLinkType_eaa9fead();
         throw Td.unsupported(linkType);
       }
     }

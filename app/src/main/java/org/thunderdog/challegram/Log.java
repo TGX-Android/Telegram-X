@@ -590,6 +590,7 @@ public class Log {
           if (logDir != null) {
             pool = new BaseThread("Log") {
               @Override
+              @SuppressWarnings("unchecked")
               protected void process (Message msg) {
                 synchronized (Log.class) {
                   switch (msg.what) {
@@ -602,14 +603,12 @@ public class Log {
                       break;
                     }
                     case ACTION_GET_LOG_FILES: {
-                      //noinspection unchecked
                       ((RunnableData<LogFiles>) msg.obj).runWithData(getLogFilesImpl());
                       break;
                     }
                     case ACTION_DELETE_ALL: {
                       Object[] args = (Object[]) msg.obj;
 
-                      //noinspection unchecked
                       deleteAllImpl((LogFiles) args[0], (RunnableData<LogFiles>) args[1], (RunnableData<LogFiles>) args[2]);
 
                       args[0] = null;

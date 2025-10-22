@@ -917,6 +917,19 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
               }
               break;
             }
+            case TdApi.LinkPreviewTypeDirectMessagesChat.CONSTRUCTOR: {
+              TdApi.LinkPreviewTypeDirectMessagesChat chat = (TdApi.LinkPreviewTypeDirectMessagesChat) linkPreview.type;
+              if (chat.photo != null) {
+                photoSize = MediaWrapper.pickDisplaySize(tdlib, chat.photo.sizes, chatId);
+                TdApi.PhotoSize smallest = Td.findSmallest(chat.photo.sizes);
+                if (smallest != null && smallest != photoSize) {
+                  thumbnail = TD.toThumbnail(photoSize);
+                }
+                miniThumbnail = chat.photo.minithumbnail;
+                previewCircle = true;
+              }
+              break;
+            }
             case TdApi.LinkPreviewTypeUser.CONSTRUCTOR: {
               TdApi.LinkPreviewTypeUser user = (TdApi.LinkPreviewTypeUser) linkPreview.type;
               if (user.photo != null) {
@@ -943,16 +956,18 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
             case TdApi.LinkPreviewTypePremiumGiftCode.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeShareableChatFolder.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeStory.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeStoryAlbum.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeSupergroupBoost.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeTheme.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeUnsupported.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeUpgradedGift.CONSTRUCTOR:
+            case TdApi.LinkPreviewTypeGiftCollection.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeWebApp.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeExternalAudio.CONSTRUCTOR:
             case TdApi.LinkPreviewTypeExternalVideo.CONSTRUCTOR:
               break;
             default:
-              Td.assertLinkPreviewType_e3ce10d5();
+              Td.assertLinkPreviewType_4868cb55();
               throw Td.unsupported(linkPreview.type);
           }
         }

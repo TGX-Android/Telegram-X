@@ -22,6 +22,7 @@ import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.method.LinkMovementMethod;
+import android.util.Base64;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -37,6 +38,8 @@ import androidx.annotation.StringRes;
 import com.google.android.gms.safetynet.SafetyNet;
 
 import org.drinkless.tdlib.TdApi;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.TDLib;
@@ -688,7 +691,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       return;
     }
 
-    TDLib.Tag.integrity(verificationParameters, "Verification success: %s", result);
+    TDLib.Tag.integrity(verificationParameters, "Verification result: %s", result);
     TdApi.Function<TdApi.Ok> function;
     switch (mode) {
       case MODE_CODE_PHONE_CONFIRM:
@@ -716,6 +719,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
 
   private String lastVerificationError;
 
+  @SuppressWarnings("ConstantConditions")
   private void sendFirebaseSmsViaSafetyNet (TdApi.FirebaseDeviceVerificationParametersSafetyNet safetyNetParameters, RunnableData<String> onVerificationError) {
     String safetyNetApiKey = tdlib.safetyNetApiKey();
     if (StringUtils.isEmpty(safetyNetApiKey)) {
@@ -728,12 +732,45 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       requestNextCodeType(new TdApi.ResendCodeReasonVerificationFailed("GOOGLE_PLAY_SERVICES_UNAVAILABLE"), false);
       return;
     }
-    //noinspection ConstantConditions
     SafetyNet.getClient(context)
       .attest(safetyNetParameters.nonce, safetyNetApiKey)
       .addOnSuccessListener(attestationSuccess -> {
         String result = attestationSuccess.getJwsResult();
-        handleVerificationResult(safetyNetParameters, false, result, onVerificationError);
+        if (result == null) {
+          TDLib.Tag.safetyNet("Resend firebase sms because JWS = null");
+          requestNextCodeType(new TdApi.ResendCodeReasonVerificationFailed("SAFETYNET_NULL_JWS"), false);
+          return;
+        }
+        String[] spl = result.split("\\.");
+        if (spl.length == 0) {
+          TDLib.Tag.safetyNet("Resend firebase sms because can't split JWS token");
+          requestNextCodeType(new TdApi.ResendCodeReasonVerificationFailed("SAFETYNET_CANT_SPLIT"), false);
+          return;
+        }
+        try {
+          JSONObject obj = new JSONObject(new String(Base64.decode(spl[1].getBytes(StringUtils.UTF_8), 0)));
+          final boolean basicIntegrity = obj.optBoolean("basicIntegrity");
+          final boolean ctsProfileMatch = obj.optBoolean("ctsProfileMatch");
+          if (basicIntegrity && ctsProfileMatch) {
+            handleVerificationResult(safetyNetParameters, false, result, onVerificationError);
+          } else {
+            if (!basicIntegrity && !ctsProfileMatch) {
+              TDLib.Tag.safetyNet("Resend firebase sms because ctsProfileMatch = false and basicIntegrity = false");
+              requestNextCodeType(new TdApi.ResendCodeReasonVerificationFailed("SAFETYNET_BASICINTEGRITY_CTSPROFILEMATCH_FALSE"), false);
+            } else {
+              if (!basicIntegrity) {
+                TDLib.Tag.safetyNet("Resend firebase sms because basicIntegrity = false");
+                requestNextCodeType(new TdApi.ResendCodeReasonVerificationFailed("SAFETYNET_BASICINTEGRITY_FALSE"), false);
+              } else {
+                TDLib.Tag.safetyNet("Resend firebase sms because ctsProfileMatch = false");
+                requestNextCodeType(new TdApi.ResendCodeReasonVerificationFailed("SAFETYNET_CTSPROFILEMATCH_FALSE"), false);
+              }
+            }
+          }
+        } catch (JSONException e) {
+          TDLib.Tag.safetyNet("Resend firebase sms because of exception: %s", Log.toString(e));
+          requestNextCodeType(new TdApi.ResendCodeReasonVerificationFailed("SAFETYNET_JSON_EXCEPTION"), false);
+        }
       })
       .addOnFailureListener(attestationError -> {
         String error = attestationError.getMessage();
@@ -744,10 +781,10 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       });
   }
 
-  private void sendFirebaseSmsViaPlayIntegrity (TdApi.FirebaseDeviceVerificationParametersPlayIntegrity playIntegrityParameters, RunnableData<String> onAttestationFailure) {
-    tdlib.requestPlayIntegrity(-1, playIntegrityParameters.nonce, (result, isError) -> {
-      handleVerificationResult(playIntegrityParameters, isError, result, onAttestationFailure);
-    });
+  private void sendFirebaseSmsViaPlayIntegrity (TdApi.FirebaseDeviceVerificationParametersPlayIntegrity playIntegrityParameters, RunnableData<String> onVerificationError) {
+    tdlib.requestPlayIntegrity(-1, playIntegrityParameters.nonce, (data) ->
+      handleVerificationResult(playIntegrityParameters, false, data, onVerificationError)
+    );
   }
 
   @Override

@@ -5792,7 +5792,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           break;
         }
         default: {
-          String restrictionReason = tdlib.chatRestrictionReason(chat);
+          String restrictionText = Lang.getRestrictionText(tdlib.chatRestriction(chat));
 
           if (mode == Mode.GROUP) {
             controllers.add(new SharedMembersController(context, tdlib));
@@ -5810,7 +5810,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             }
           }
 
-          if (restrictionReason == null) {
+          if (StringUtils.isEmpty(restrictionText)) {
             if (Config.HIDE_EMPTY_TABS) {
               int syncTabCount = SYNC_TAB_COUNT;
               TdApi.SearchMessagesFilter[] filters = getFiltersOrder();
@@ -5834,7 +5834,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             getSimilarChatsCount(false, true);
             getSimilarChatsCount(true, true);
           } else {
-            controllers.add(new SharedRestrictionController(context, tdlib).setRestrictionReason(restrictionReason));
+            controllers.add(new SharedRestrictionController(context, tdlib).setRestrictionReason(restrictionText));
           }
 
           switch (mode) {

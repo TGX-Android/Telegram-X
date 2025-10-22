@@ -228,7 +228,7 @@ public class LinkPreviewToggleView extends AppCompatImageView implements Tooltip
     float minY = centerY - height / 2f + verticalInset + lineSize;
     float maxY = centerY + height / 2f - verticalInset - lineSize;
 
-    centerY += MathUtils.clamp(1f - showAboveText.getFloatValue()) * ((int) (height / 2) + (int) (height % 2) + Screen.dp(.5f));
+    centerY += MathUtils.clamp(1f - showAboveText.getFloatValue()) * ((height / 2) + (height % 2) + Screen.dp(.5f));
 
     final float left = centerX - width / 2f;
     final float top = centerY - height / 2f;

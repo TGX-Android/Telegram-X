@@ -18,7 +18,7 @@ import tgx.gradle.fatal
 object Config {
   const val PRIMARY_SDK_VERSION = 21
   const val MIN_SDK_VERSION = 16
-  val JAVA_VERSION = org.gradle.api.JavaVersion.VERSION_11
+  val JAVA_VERSION = org.gradle.api.JavaVersion.VERSION_21
   val ANDROIDX_MEDIA_EXTENSIONS = arrayOf("decoder_ffmpeg", "decoder_flac", "decoder_opus", "decoder_vp9")
   val SUPPORTED_ABI = arrayOf("armeabi-v7a", "arm64-v8a", "x86_64", "x86")
 
@@ -31,7 +31,7 @@ object LibraryVersions {
   const val DESUGAR = "2.1.5"
   const val ANDROIDX_CORE = "1.12.0" // 1.13.0+ requires minSdk 19+
   const val ANNOTATIONS = "1.9.1"
-  const val ANDROIDX_MEDIA = "1.6.1"
+  const val ANDROIDX_MEDIA = "1.8.0"
   const val ANDROIDX_CAMERA = "1.4.2"
 }
 

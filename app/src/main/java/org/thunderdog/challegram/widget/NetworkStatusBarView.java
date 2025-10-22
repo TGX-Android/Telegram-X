@@ -127,7 +127,7 @@ public class NetworkStatusBarView extends FrameLayoutFix implements Destroyable,
 
   @Override
   public void onSecondaryInsetsChanged (RootFrameLayout viewGroup, boolean systemGesturesInsetsChanged, boolean displayCutoutInsetsChanged) {
-    if (displayCutoutInsetsChanged) {
+    if (Config.ADJUST_STATUS_BAR_TO_AVOID_DISPLAY_CUTOUT && displayCutoutInsetsChanged) {
       applyTopInset(viewGroup, viewGroup.getDisplayCutoutTopInset());
     }
   }

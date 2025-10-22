@@ -1910,7 +1910,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
     @Override
     public void onApplyMarginInsets (View child, LayoutParams params, Rect legacyInsets, Rect insets, Rect insetsWithoutIme) {
-      Views.setMargins(params, insets.left, insets.top, insets.right, 0);
+      Views.setMargins(params, insets.left, 0, insets.right, 0);
       setBottomInset(insetsWithoutIme.bottom);
     }
 
@@ -2015,7 +2015,14 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         @Override
         public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
           int position = parent.getChildAdapterPosition(view);
-          outRect.top = position == 0 ? Screen.currentHeight() / 2 + Screen.dp(12f) : 0;
+
+          if (position == 0) {
+            int contentHeight = settings.adapter.measureHeight(-1);
+            int controlsHeight = context.getRootView().getSystemInsetsWithoutIme().bottom + (b.disableFooter ? 0 : Screen.dp(56f));
+            outRect.top = Math.max((Screen.currentHeight() - controlsHeight) / 2, Screen.currentHeight() - contentHeight - controlsHeight);
+          } else {
+            outRect.top = 0;
+          }
         }
       });
     }
@@ -2039,7 +2046,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     if (b.needRootInsets) {
       popupLayout.setNeedRootInsets();
     }
-    popupLayout.addStatusBar();
+    // popupLayout.addStatusBar();
     popupLayout.setDismissListener(b.dismissListener);
     popupLayout.setNeedFullScreen(true);
 
@@ -3381,6 +3388,24 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       }
     }
   }*/
+
+  protected final void updateSettingView (SettingView v, ListItem item, boolean isUpdate) {
+    boolean value = Settings.instance().getNewSetting(item.getLongId());
+    if (item.getBoolValue())
+      value = !value;
+    v.getToggler().setRadioEnabled(value, isUpdate);
+  }
+
+  protected final void handleSettingClick (View v, SettingsAdapter adapter) {
+    ListItem item = (ListItem) v.getTag();
+    boolean value = adapter.toggleView(v);
+    if (item.getBoolValue())
+      value = !value;
+    Settings.instance().setNewSetting(item.getLongId(), value);
+    if (value && item.getLongId() == Settings.SETTING_FLAG_DOWNLOAD_BETAS) {
+      context().appUpdater().checkForUpdates();
+    }
+  }
 
   protected void onFocusStateChanged () { }
 

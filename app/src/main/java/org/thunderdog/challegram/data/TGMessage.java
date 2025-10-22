@@ -200,7 +200,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private static final int FLAG_NO_UNREAD = 1 << 20;
   private static final int FLAG_ATTACHED = 1 << 21;
   private static final int FLAG_EVENT_LOG = 1 << 22;
-  // private static final int FLAG_IS_ADMIN = 1 << 24;
+  private static final int FLAG_BELOW_ALL_MESSAGES = 1 << 24;
   private static final int FLAG_SELF_CHAT = 1 << 25;
   private static final int FLAG_IGNORE_SWIPE = 1 << 26;
   private static final int FLAG_READY_QUICK_LEFT = 1 << 27;
@@ -318,14 +318,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private final TranslationsManager mTranslationsManager;
 
   protected TGMessage (MessagesManager manager, TdApi.Message msg) {
-    this(manager, msg, null);
+    this(manager, msg, null, false);
   }
 
-  protected TGMessage (MessagesManager manager, TdApi.SponsoredMessage sponsoredMessage, long inChatId) {
-    this(manager, toFakeMessage(manager, inChatId, sponsoredMessage), sponsoredMessage);
+  protected TGMessage (MessagesManager manager, TdApi.SponsoredMessage sponsoredMessage, long inChatId, boolean isBelowAllMessages) {
+    this(manager, toFakeMessage(manager, inChatId, sponsoredMessage), sponsoredMessage, isBelowAllMessages);
   }
 
-  private TGMessage (MessagesManager manager, TdApi.Message msg, @Nullable TdApi.SponsoredMessage sponsoredMessage) {
+  private TGMessage (MessagesManager manager, TdApi.Message msg, @Nullable TdApi.SponsoredMessage sponsoredMessage, boolean isBelowAllMessages) {
     if (!initialized) {
       synchronized (TGMessage.class) {
         if (!initialized) {
@@ -350,6 +350,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     this.currentViews.setContentProvider(this);
     this.msg = msg;
     this.sponsoredMessage = sponsoredMessage;
+    this.flags |= BitwiseUtils.optional(FLAG_BELOW_ALL_MESSAGES, isBelowAllMessages);
     this.messageReactions = new TGReactions(this, tdlib, msg.interactionInfo != null ? msg.interactionInfo.reactions : null, new TGReactions.MessageReactionsDelegate() {
       @Override
       public void onClick (View v, TGReactions.MessageReactionEntry entry) {
@@ -733,7 +734,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   public final boolean mergeWith (@Nullable TGMessage top, boolean isBottom) {
     if (top != null) {
       top.setNeedExtraPadding(false);
-      top.setNeedExtraPresponsoredPadding(isSponsoredMessage());
+      top.setNeedExtraPresponsoredPadding(isSponsoredMessage() && BitwiseUtils.hasFlag(flags, FLAG_BELOW_ALL_MESSAGES));
       flags |= MESSAGE_FLAG_HAS_OLDER_MESSAGE;
     } else {
       flags &= ~MESSAGE_FLAG_HAS_OLDER_MESSAGE;
@@ -769,7 +770,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     boolean isChannel = isChannel();
 
     TdApi.Message topMessage = top.getMessage();
-    if (top.headerDisabled() || (flags & FLAG_SHOW_BADGE) != 0 || !tdlib.isSameSender(topMessage, msg) || !TD.isSameSource(topMessage, msg, forceForwardOrImportInfo()) || topMessage.viaBotUserId != msg.viaBotUserId || !StringUtils.equalsOrBothEmpty(topMessage.authorSignature, msg.authorSignature) || mergeDisabled() || (useBubbles ? top.isOutgoingBubble() != isOutgoingBubble() : top.getMessage().mediaAlbumId != msg.mediaAlbumId || msg.mediaAlbumId != 0)) {
+    if (top.headerDisabled() || top.isSponsoredMessage() != isSponsoredMessage() || (flags & FLAG_SHOW_BADGE) != 0 || !tdlib.isSameSender(topMessage, msg) || !TD.isSameSource(topMessage, msg, forceForwardOrImportInfo()) || topMessage.viaBotUserId != msg.viaBotUserId || !StringUtils.equalsOrBothEmpty(topMessage.authorSignature, msg.authorSignature) || mergeDisabled() || (useBubbles ? top.isOutgoingBubble() != isOutgoingBubble() : top.getMessage().mediaAlbumId != msg.mediaAlbumId || msg.mediaAlbumId != 0)) {
       setHeaderEnabled(!headerDisabled());
       top.setIsBottom(true);
       return false;
@@ -1376,7 +1377,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return useBubbles() ? getBubbleViewPaddingBottom() : xPaddingBottom;
   }
 
-  protected final int getExtraPadding () {
+  public final int getExtraPadding () {
     if (needSponsorSmallPadding) {
       return Screen.dp(7f);
     }
@@ -5264,17 +5265,21 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean isRestrictedByTelegram () {
+    return isRestrictedByTelegram(Settings.instance().needRestrictContent());
+  }
+
+  public boolean isRestrictedByTelegram (boolean restrictSensitiveContent) {
     synchronized (this) {
       if (combinedMessages != null) {
         for (TdApi.Message message : combinedMessages) {
-          if (!StringUtils.isEmpty(message.restrictionReason)) {
+          if (Td.hasRestriction(message.restrictionInfo, restrictSensitiveContent)) {
             return true;
           }
         }
       }
     }
 
-    return !StringUtils.isEmpty(msg.restrictionReason);
+    return Td.hasRestriction(msg.restrictionInfo, restrictSensitiveContent);
   }
 
   protected boolean replaceTimeWithEditTime () {
@@ -5872,7 +5877,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     dst.canBeSaved = src.canBeSaved;
     dst.hasTimestampedMedia = src.hasTimestampedMedia;
-    dst.hasSensitiveContent = src.hasSensitiveContent;
+    dst.restrictionInfo = src.restrictionInfo;
 
     dst.editDate = src.editDate;
     dst.isChannelPost = src.isChannelPost;
@@ -8055,14 +8060,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return fakeMessage;
   }
 
-  public static TGMessage valueOf (MessagesManager manager, long inChatId, TdApi.SponsoredMessage sponsoredMessage) {
+  public static TGMessage valueOf (MessagesManager manager, long inChatId, TdApi.SponsoredMessage sponsoredMessage, boolean isBelowAllMessages) {
     switch (sponsoredMessage.content.getConstructor()) {
       case TdApi.MessageText.CONSTRUCTOR:
-        return new TGMessageText(manager, sponsoredMessage, inChatId);
+        return new TGMessageText(manager, sponsoredMessage, inChatId, isBelowAllMessages);
       case TdApi.MessageAnimation.CONSTRUCTOR:
       case TdApi.MessagePhoto.CONSTRUCTOR:
       case TdApi.MessageVideo.CONSTRUCTOR:
-        return new TGMessageMedia(manager, sponsoredMessage, inChatId);
+        return new TGMessageMedia(manager, sponsoredMessage, inChatId, isBelowAllMessages);
     }
     throw new UnsupportedOperationException(sponsoredMessage.content.toString());
   }
@@ -8127,9 +8132,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (content == null) {
         return new TGMessageText(context, msg, new TdApi.FormattedText(Lang.getString(R.string.DeletedMessage), null));
       }
-      if (!StringUtils.isEmpty(msg.restrictionReason) && Settings.instance().needRestrictContent()) {
-        TGMessageText text = new TGMessageText(context, msg, new TdApi.FormattedText(msg.restrictionReason, new TdApi.TextEntity[]{
-          new TdApi.TextEntity(0, msg.restrictionReason.length(), new TdApi.TextEntityTypeItalic())
+      if (Td.hasRestriction(msg.restrictionInfo, Settings.instance().needRestrictContent())) {
+        String restrictionText = Lang.getRestrictionText(msg.restrictionInfo);
+        TGMessageText text = new TGMessageText(context, msg, new TdApi.FormattedText(restrictionText, new TdApi.TextEntity[]{
+          new TdApi.TextEntity(0, restrictionText.length(), new TdApi.TextEntityTypeItalic())
         }));
         text.addMessageFlags(FLAG_UNSUPPORTED);
         return text;
@@ -8388,6 +8394,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageSuggestedPostPaid.CONSTRUCTOR:
         case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
         case TdApi.MessageGiftedTon.CONSTRUCTOR:
+        case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
           break;
 
         case TdApi.MessageUnsupported.CONSTRUCTOR:
@@ -8395,7 +8402,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           break;
         // bots only
         case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
-        case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
         case TdApi.MessageWebAppDataReceived.CONSTRUCTOR: {
           Log.e("Received bot message for a regular user:\n%s", msg);
           break;

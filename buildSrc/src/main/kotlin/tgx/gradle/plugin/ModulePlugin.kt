@@ -122,20 +122,23 @@ open class ModulePlugin : Plugin<Project> {
           jniLibs.srcDirs("jniLibs")
         }
 
-        project.tasks.withType(KotlinCompile::class.java).configureEach {
-          kotlinOptions {
-            jvmTarget = Config.JAVA_VERSION.toString()
-            allWarningsAsErrors = true
-          }
-        }
-
         project.afterEvaluate {
           tasks.withType(JavaCompile::class.java).configureEach {
             options.compilerArgs.addAll(listOf(
               "-Xmaxerrs", "2000",
               "-Xmaxwarns", "2000",
+
+              "-Xlint:all",
               "-Xlint:unchecked",
-              "-Xlint:deprecation"
+
+              "-Xlint:-serial",
+              "-Xlint:-lossy-conversions",
+              "-Xlint:-overloads",
+              "-Xlint:-overrides",
+              "-Xlint:-this-escape",
+
+              // TODO: fix deprecation warnings by migrating to newer APIs.
+              "-Xlint:-deprecation",
             ))
           }
         }

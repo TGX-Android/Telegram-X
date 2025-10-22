@@ -5872,7 +5872,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private void setEditBitmap (ImageFile file, Bitmap bitmap) {
     UI.post(() -> {
       if (currentTargetImageFile == file) {
-        setSourceBitmap(currentTargetImageFile, currentSourceFile, (Bitmap) bitmap);
+        setSourceBitmap(currentTargetImageFile, currentSourceFile, bitmap);
         editorView.reset(currentSourceFile, sourceBitmap.getWidth(), sourceBitmap.getHeight(), sourceBitmap, currentFiltersState, currentSourceFile.getPaintState());
         editorView.setEditorVisible(true);
       }
@@ -6634,7 +6634,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private boolean hasCropChanges () {
-    return !oldCropState.compare(currentCropState);
+    return !oldCropState.equalsTo(currentCropState);
   }
 
   private void resetCropState () {
@@ -7264,7 +7264,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       }
       case SECTION_CROP: {
         if (oldCropState != null && !oldCropState.isEmpty()) {
-          if (!oldCropState.compare(currentCropState)) {
+          if (!oldCropState.equalsTo(currentCropState)) {
             resetCrop(false);
           }
           stack.getCurrent().setCropState(oldCropState);

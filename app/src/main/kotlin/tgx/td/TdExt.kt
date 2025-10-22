@@ -125,6 +125,7 @@ fun LinkPreview?.getRepresentationTitle (): String {
       LinkPreviewTypeBackground.CONSTRUCTOR,
       LinkPreviewTypeChannelBoost.CONSTRUCTOR,
       LinkPreviewTypeChat.CONSTRUCTOR,
+      LinkPreviewTypeDirectMessagesChat.CONSTRUCTOR,
       LinkPreviewTypeEmbeddedAudioPlayer.CONSTRUCTOR,
       LinkPreviewTypeInvoice.CONSTRUCTOR,
       LinkPreviewTypeMessage.CONSTRUCTOR,
@@ -132,10 +133,12 @@ fun LinkPreview?.getRepresentationTitle (): String {
       LinkPreviewTypeShareableChatFolder.CONSTRUCTOR,
       LinkPreviewTypeStickerSet.CONSTRUCTOR,
       LinkPreviewTypeStory.CONSTRUCTOR,
+      LinkPreviewTypeStoryAlbum.CONSTRUCTOR,
       LinkPreviewTypeSupergroupBoost.CONSTRUCTOR,
       LinkPreviewTypeTheme.CONSTRUCTOR,
       LinkPreviewTypeUnsupported.CONSTRUCTOR,
       LinkPreviewTypeUpgradedGift.CONSTRUCTOR,
+      LinkPreviewTypeGiftCollection.CONSTRUCTOR,
       LinkPreviewTypeUser.CONSTRUCTOR,
       LinkPreviewTypeGroupCall.CONSTRUCTOR,
       LinkPreviewTypeVideoChat.CONSTRUCTOR,
@@ -147,7 +150,7 @@ fun LinkPreview?.getRepresentationTitle (): String {
         null
       }
       else -> {
-        assertLinkPreviewType_e3ce10d5()
+        assertLinkPreviewType_4868cb55()
         throw unsupported(it)
       }
     }
@@ -169,7 +172,7 @@ fun LinkPreview?.getContentTitle (): String {
             it.audio?.title
           }
           else -> {
-            assertLinkPreviewType_e3ce10d5()
+            assertLinkPreviewType_4868cb55()
             null
           }
         }
@@ -216,6 +219,10 @@ fun LinkPreviewType?.getMediaFile (): File? {
       require(this is LinkPreviewTypeChat)
       this.photo?.sizes?.findBiggest()?.photo
     }
+    LinkPreviewTypeDirectMessagesChat.CONSTRUCTOR -> {
+      require(this is LinkPreviewTypeDirectMessagesChat)
+      this.photo?.sizes?.findBiggest()?.photo
+    }
     LinkPreviewTypeDocument.CONSTRUCTOR -> {
       require(this is LinkPreviewTypeDocument)
       this.document.document
@@ -230,7 +237,11 @@ fun LinkPreviewType?.getMediaFile (): File? {
     }
     LinkPreviewTypeStory.CONSTRUCTOR -> {
       require(this is LinkPreviewTypeStory)
-      throw unsupported(this)
+      null
+    }
+    LinkPreviewTypeStoryAlbum.CONSTRUCTOR -> {
+      require(this is LinkPreviewTypeStoryAlbum)
+      null
     }
     LinkPreviewTypeSupergroupBoost.CONSTRUCTOR -> {
       require(this is LinkPreviewTypeSupergroupBoost)
@@ -273,9 +284,10 @@ fun LinkPreviewType?.getMediaFile (): File? {
     LinkPreviewTypeVideoChat.CONSTRUCTOR,
     LinkPreviewTypeWebApp.CONSTRUCTOR,
     LinkPreviewTypeUpgradedGift.CONSTRUCTOR,
+    LinkPreviewTypeGiftCollection.CONSTRUCTOR,
     LinkPreviewTypeUnsupported.CONSTRUCTOR -> null
     else -> {
-      assertLinkPreviewType_e3ce10d5()
+      assertLinkPreviewType_4868cb55()
       throw unsupported(this)
     }
   }
