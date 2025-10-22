@@ -7007,7 +7007,12 @@ public class Settings {
       long previousInstallationId = currentBuildInformation != null ? currentBuildInformation.getInstallationId() - 1 : -1;
       int previouslyInstalledVersionCode = previousInstallationId != -1 ?
         AppBuildInfo.restoreVersionCode(pmc, KEY_APP_INSTALLATION_PREFIX + previousInstallationId) : 0;
-      previouslyAvailableFeatures = FeatureAvailability.recoverAvailableFeaturesForAppVersionCode(previouslyInstalledVersionCode);
+      if (previouslyInstalledVersionCode != 0) {
+        previouslyAvailableFeatures = FeatureAvailability.recoverAvailableFeaturesForAppVersionCode(previouslyInstalledVersionCode);
+      } else {
+        // Do not bombard with a dozen of pop-ups on clean app installations
+        previouslyAvailableFeatures = currentlyAvailableFeatures;
+      }
       saveFeatures = true;
     }
     if (currentlyAvailableFeatures != previouslyAvailableFeatures) {
