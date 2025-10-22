@@ -241,13 +241,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
   private Client.ResultHandler newHandler (final boolean allowMoreTop, final boolean allowMoreBottom, boolean needFindUnread) {
     final long currentContextId = contextId;
-    if (DEBUG_HANDLER) {
-      Log.w("lastHandler = [new instance], error: %b", Log.generateException(1), lastHandler != null);
-    }
-    if (lastHandler != null) {
-      throw new IllegalStateException("lastHandler != null");
-    }
-    return lastHandler = new Client.ResultHandler() {
+    Client.ResultHandler handler = new Client.ResultHandler() {
       @Override
       public void onResult (final TdApi.Object object) {
         if (contextId != currentContextId) {
@@ -534,6 +528,16 @@ public class MessagesLoader implements Client.ResultHandler {
           needFindUnread && object.getConstructor() == TdApi.Messages.CONSTRUCTOR, missingAlbums);
       }
     };
+    synchronized (lock) {
+      if (DEBUG_HANDLER) {
+        Log.w("lastHandler = [new instance], error: %b", Log.generateException(1), lastHandler != null);
+      }
+      if (lastHandler != null) {
+        throw new IllegalStateException("lastHandler != null");
+      }
+      lastHandler = handler;
+      return handler;
+    }
   }
 
   public void reuse () {
@@ -1185,7 +1189,7 @@ public class MessagesLoader implements Client.ResultHandler {
   }
 
   private boolean loadMore (boolean fromTop, int count, boolean onlyLocal) {
-    if (isLoading || getChatId() == 0) {
+    if (isLoading || getChatId() == 0 || lastHandler != null) {
       return false;
     }
     if (fromTop) {
