@@ -1123,7 +1123,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   public void onMediaZoomStart () {
-    if (mode == MODE_GALLERY && currentSection == SECTION_PAINT) {
+    if (mode == MODE_GALLERY && currentSection == SECTION_PAINT && paintView != null) {
       paintView.getContentWrap().cancelDrawingByZoom();
     }
   }
