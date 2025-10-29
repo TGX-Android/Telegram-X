@@ -1623,7 +1623,7 @@ public class TD {
     return messageIds;
   }
 
-  public static boolean forwardMessages (long toChatId, long toMessageThreadId, TdApi.Message[] messages, boolean sendCopy, boolean removeCaption, TdApi.MessageSendOptions options, ArrayList<TdApi.Function<?>> out) {
+  public static boolean forwardMessages (long toChatId, @Nullable TdApi.MessageTopic toMessageTopicId, TdApi.Message[] messages, boolean sendCopy, boolean removeCaption, TdApi.MessageSendOptions options, ArrayList<TdApi.Function<?>> out) {
     if (messages.length == 0) {
       return false;
     }
@@ -1633,7 +1633,7 @@ public class TD {
     for (TdApi.Message message : messages) {
       if (message.chatId != fromChatId) {
         if (size > 0) {
-          out.add(new TdApi.ForwardMessages(toChatId, toMessageThreadId, fromChatId, getMessageIds(messages, index, size), options, sendCopy, removeCaption));
+          out.add(new TdApi.ForwardMessages(toChatId, toMessageTopicId, fromChatId, getMessageIds(messages, index, size), options, sendCopy, removeCaption));
         }
         fromChatId = message.chatId;
         index += size;
@@ -1642,7 +1642,7 @@ public class TD {
       size++;
     }
     if (size > 0) {
-      out.add(new TdApi.ForwardMessages(toChatId, toMessageThreadId, fromChatId, getMessageIds(messages, index, size), options, sendCopy, removeCaption));
+      out.add(new TdApi.ForwardMessages(toChatId, toMessageTopicId, fromChatId, getMessageIds(messages, index, size), options, sendCopy, removeCaption));
     }
     return true;
   }
@@ -2122,7 +2122,7 @@ public class TD {
       new TdApi.UserStatusEmpty(),
       null,
       TdlibAccentColor.defaultAccentColorIdForUserId(userId), 0,
-      0, 0,
+      null, 0, 0,
       null,
       false, false, false,
       null, false, false,
@@ -2818,12 +2818,12 @@ public class TD {
     } else {
       TdApi.InputMessageContent[] array = new TdApi.InputMessageContent[album.size()];
       album.toArray(array);
-      functions.add(new TdApi.SendMessageAlbum(chatId, 0, null, options, array));
+      functions.add(new TdApi.SendMessageAlbum(chatId, null, null, options, array));
     }
     album.clear();
   }
 
-  public static List<TdApi.Function<?>> toFunctions (long chatId, long messageThreadId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.InputMessageContent[] content, boolean needGroupMedia) {
+  public static List<TdApi.Function<?>> toFunctions (long chatId, @Nullable TdApi.MessageTopic topicId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.InputMessageContent[] content, boolean needGroupMedia) {
     if (content.length == 0)
       return Collections.emptyList();
 
@@ -2858,14 +2858,14 @@ public class TD {
       }
 
       if (sliceSize == 1) {
-        functions.add(new TdApi.SendMessage(chatId, messageThreadId, functions.isEmpty() ? replyTo : null, options, null, slice[0]));
+        functions.add(new TdApi.SendMessage(chatId, topicId, functions.isEmpty() ? replyTo : null, options, null, slice[0]));
       } else {
         for (TdApi.InputMessageContent inputContent : slice) {
           if (inputContent.getConstructor() == TdApi.InputMessageDocument.CONSTRUCTOR) {
             ((TdApi.InputMessageDocument) inputContent).disableContentTypeDetection = true;
           }
         }
-        functions.add(new TdApi.SendMessageAlbum(chatId, messageThreadId, functions.isEmpty() ? replyTo : null, options, slice));
+        functions.add(new TdApi.SendMessageAlbum(chatId, topicId, functions.isEmpty() ? replyTo : null, options, slice));
       }
 
       remaining -= sliceSize;
@@ -2876,7 +2876,7 @@ public class TD {
   }
 
   public static void processSingle (Tdlib tdlib, long chatId, TdApi.MessageSendOptions options, List<TdApi.Function<?>> functions, TdApi.InputMessageContent content) {
-    functions.add(new TdApi.SendMessage(chatId, 0, null, options, null, content));
+    functions.add(new TdApi.SendMessage(chatId, null, null, options, null, content));
   }
 
   public static boolean withinDistance (TdApi.File file, long offset) {
@@ -5205,11 +5205,11 @@ public class TD {
     return -1;
   }
 
-  public static List<TdApi.SendMessage> sendMessageText (long chatId, long messageThreadId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions sendOptions, @NonNull TdApi.InputMessageContent content, int maxCodePointCount) {
+  public static List<TdApi.SendMessage> sendMessageText (long chatId, @Nullable TdApi.MessageTopic topicId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions sendOptions, @NonNull TdApi.InputMessageContent content, int maxCodePointCount) {
     List<TdApi.InputMessageContent> list = explodeText(content, maxCodePointCount);
     List<TdApi.SendMessage> result = new ArrayList<>(list.size());
     for (TdApi.InputMessageContent item : list) {
-      result.add(new TdApi.SendMessage(chatId, messageThreadId, replyTo, sendOptions, null, item));
+      result.add(new TdApi.SendMessage(chatId, topicId, replyTo, sendOptions, null, item));
     }
     return result;
   }
@@ -5365,7 +5365,7 @@ public class TD {
       case TdApi.MessagePaidMedia.CONSTRUCTOR:
         return true;
       default:
-        Td.assertMessageContent_7c00740();
+        Td.assertMessageContent_52d0a6e8();
         break;
     }
     return false;
@@ -5380,7 +5380,7 @@ public class TD {
       return false;
     }
 
-    for (TdApi.TextEntity entity: text.entities) {
+    for (TdApi.TextEntity entity : text.entities) {
       if (entity.type.getConstructor() == TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR) {
         return true;
       }

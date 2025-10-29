@@ -1267,8 +1267,8 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Sti
 
   private final TdlibStatusManager.Helper status;
 
-  public void attachChatStatus (long chatId, long messageThreadId) {
-    status.attachToChat(chatId, messageThreadId);
+  public void attachChatStatus (long chatId, @Nullable TdApi.MessageTopic messageTopic) {
+    status.attachToChat(chatId, messageTopic);
   }
 
   public void removeChatStatus () {

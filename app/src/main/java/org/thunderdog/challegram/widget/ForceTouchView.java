@@ -1396,7 +1396,7 @@ public class ForceTouchView extends FrameLayoutFix implements
       tdlib.listeners().subscribeToChatUpdates(chat.id, this);
       tdlib.listeners().subscribeToSettingsUpdates(chat.id, this);
       if (messageThread == null || chat.id == messageThread.getChatId()) {
-        headerView.attachChatStatus(chat.id, messageThread != null ? messageThread.getMessageThreadId() : 0);
+        headerView.attachChatStatus(chat.id, messageThread != null ? messageThread.getMessageTopicId() : null);
       }
       if (messageThread != null) {
         messageThread.addListener(this);
@@ -1521,7 +1521,7 @@ public class ForceTouchView extends FrameLayoutFix implements
   }
 
   @Override
-  public void onMessageThreadReplyCountChanged (long chatId, long messageThreadId, int replyCount) {
+  public void onMessageThreadReplyCountChanged (long chatId, TdApi.MessageTopic topicId, int replyCount) {
     setChatSubtitle();
   }
 }

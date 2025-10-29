@@ -43,12 +43,14 @@ public class ThreadInfo {
   private final @Nullable Tdlib tdlib;
   private final boolean areComments;
   private final TdApi.MessageThreadInfo threadInfo;
+  private final TdApi.MessageTopicThread topicId;
   private final long contextChatId;
 
   private ThreadInfo (@Nullable Tdlib tdlib, @NonNull TdApi.MessageThreadInfo threadInfo, long contextChatId, boolean areComments) {
     this.tdlib = tdlib;
     this.areComments = areComments;
     this.threadInfo = threadInfo;
+    this.topicId = new TdApi.MessageTopicThread(threadInfo.messageThreadId);
     this.contextChatId = contextChatId;
     setDraft(threadInfo.draftMessage); // nulls draftMessage.replyToMessageId if draft is reply to one of message from which the thread starts
   }
@@ -83,12 +85,8 @@ public class ThreadInfo {
     return ObjectUtils.hashCode(objects);
   }
 
-  public boolean belongsTo (long chatId, long messageThreadId) {
-    return threadInfo.chatId == chatId && threadInfo.messageThreadId == messageThreadId;
-  }
-
-  public boolean hasMessages () {
-    return threadInfo.messages != null && threadInfo.messages.length > 0;
+  public boolean belongsTo (long chatId, @Nullable TdApi.MessageTopic topicId) {
+    return threadInfo.chatId == chatId && Td.equalsTo(topicId, this.topicId);
   }
 
   public boolean isRootMessage (@Nullable TdApi.MessageReplyTo replyTo) {
@@ -181,8 +179,9 @@ public class ThreadInfo {
     return contextChatId != 0 ? contextChatId : getChatId();
   }
 
-  public long getMessageThreadId () {
-    return threadInfo.messageThreadId;
+  @NonNull
+  public TdApi.MessageTopicThread getMessageTopicId () {
+    return topicId;
   }
 
   public long getLastReadInboxMessageId () {
@@ -408,7 +407,7 @@ public class ThreadInfo {
   }
 
   public void updateNewMessage (TGMessage message) {
-    if (message.isScheduled() || message.getMessageThreadId() != getMessageThreadId())
+    if (message.isScheduled() || !Td.matchesTopic(message.getMessageTopicId(), topicId))
       return;
 
     int replyCount = getReplyCount() + message.getMessageCount();
@@ -438,7 +437,7 @@ public class ThreadInfo {
   }
 
   public void updateReadInbox (@Nullable TdApi.Message message) {
-    if (message == null || message.messageThreadId != getMessageThreadId() || TD.isScheduled(message))
+    if (message == null || TD.isScheduled(message) || !Td.matchesTopic(message.topicId, this.topicId))
       return;
     updateReadInbox(message.id);
   }
@@ -511,31 +510,31 @@ public class ThreadInfo {
 
   private void notifyMessageThreadReadInbox () {
     for (MessageThreadListener listener : listeners) {
-      listener.onMessageThreadReadInbox(getChatId(), getMessageThreadId(), getLastReadInboxMessageId(), getUnreadMessageCount());
+      listener.onMessageThreadReadInbox(getChatId(), getMessageTopicId(), getLastReadInboxMessageId(), getUnreadMessageCount());
     }
   }
 
   private void notifyMessageThreadReadOutbox () {
     for (MessageThreadListener listener : listeners) {
-      listener.onMessageThreadReadOutbox(getChatId(), getMessageThreadId(), getLastReadOutboxMessageId());
+      listener.onMessageThreadReadOutbox(getChatId(), getMessageTopicId(), getLastReadOutboxMessageId());
     }
   }
 
   private void notifyMessageThreadReplyCountChanged () {
     for (MessageThreadListener listener : listeners) {
-      listener.onMessageThreadReplyCountChanged(getChatId(), getMessageThreadId(), getReplyCount());
+      listener.onMessageThreadReplyCountChanged(getChatId(), getMessageTopicId(), getReplyCount());
     }
   }
 
   private void notifyMessageThreadLastMessageChanged () {
     for (MessageThreadListener listener : listeners) {
-      listener.onMessageThreadLastMessageChanged(getChatId(), getMessageThreadId(), getLastMessageId());
+      listener.onMessageThreadLastMessageChanged(getChatId(), getMessageTopicId(), getLastMessageId());
     }
   }
 
   private void notifyMessageThreadDeleted () {
     for (MessageThreadListener listener : listeners) {
-      listener.onMessageThreadDeleted(getChatId(), getMessageThreadId());
+      listener.onMessageThreadDeleted(getChatId(), getMessageTopicId());
     }
   }
 

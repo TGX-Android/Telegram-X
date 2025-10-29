@@ -34,7 +34,6 @@ import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.NavigationStack;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -64,21 +63,19 @@ import tgx.td.TdConstants;
 public class CreatePollController extends RecyclerViewController<CreatePollController.Args> implements View.OnClickListener, SettingsAdapter.TextChangeListener {
   public static class Args {
     public final long chatId;
-    public final ThreadInfo messageThread;
     public final TdApi.MessageTopic messageTopicId;
     public final TdApi.InputSuggestedPostInfo inputSuggestedPostInfo;
     public final Callback callback;
     public final boolean forceRegular, forceQuiz;
 
-    public Args (long chatId, ThreadInfo threadInfo, @Nullable TdApi.MessageTopic messageTopicId, TdApi.InputSuggestedPostInfo inputSuggestedPostInfo, Callback callback) {
-      this(chatId, threadInfo, messageTopicId, inputSuggestedPostInfo, callback, false, false);
+    public Args (long chatId, @Nullable TdApi.MessageTopic messageTopicId, TdApi.InputSuggestedPostInfo inputSuggestedPostInfo, Callback callback) {
+      this(chatId, messageTopicId, inputSuggestedPostInfo, callback, false, false);
     }
 
-    public Args (long chatId, ThreadInfo threadInfo, @Nullable TdApi.MessageTopic messageTopicId, TdApi.InputSuggestedPostInfo inputSuggestedPostInfo, Callback callback, boolean forceQuiz, boolean forceRegular) {
+    public Args (long chatId, @Nullable TdApi.MessageTopic messageTopicId, TdApi.InputSuggestedPostInfo inputSuggestedPostInfo, Callback callback, boolean forceQuiz, boolean forceRegular) {
       if (callback == null)
         throw new IllegalArgumentException();
       this.chatId = chatId;
-      this.messageThread = threadInfo;
       this.messageTopicId = messageTopicId;
       this.inputSuggestedPostInfo = inputSuggestedPostInfo;
       this.callback = callback;
@@ -88,7 +85,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
   }
 
   public interface Callback {
-    boolean onSendPoll (CreatePollController context, long chatId, long messageThreadId, TdApi.InputMessagePoll poll, TdApi.MessageSendOptions sendOptions, RunnableData<TdApi.Message> after);
+    boolean onSendPoll (CreatePollController context, long chatId, @Nullable TdApi.MessageTopic topicId, TdApi.InputMessagePoll poll, TdApi.MessageSendOptions sendOptions, RunnableData<TdApi.Message> after);
     boolean areScheduledOnly (CreatePollController context);
     TdApi.ChatList provideChatList (CreatePollController context);
   }
@@ -666,7 +663,6 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
 
     Args args = getArgumentsStrict();
     final long chatId = args.chatId;
-    final ThreadInfo messageThread = args.messageThread;
     final TdApi.MessageTopic messageTopicId = args.messageTopicId;
     final TdApi.InputSuggestedPostInfo suggestedPostInfo = args.inputSuggestedPostInfo;
     if (sendOptions.schedulingState == null && args.callback.areScheduledOnly(this)) {
@@ -703,9 +699,9 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
         navigateBack();
       }
     });
-    final TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(sendOptions, Td.directMessagesChatTopicId(messageTopicId), suggestedPostInfo, tdlib.chatDefaultDisableNotifications(chatId));
-    if (!getArgumentsStrict().callback.onSendPoll(this, chatId, messageThread != null ? messageThread.getMessageThreadId() : 0, poll, finalSendOptions, after)) {
-      tdlib.sendMessage(chatId, messageThread != null ? messageThread.getMessageThreadId() : 0, null, finalSendOptions, poll, after);
+    final TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(sendOptions, suggestedPostInfo, tdlib.chatDefaultDisableNotifications(chatId));
+    if (!getArgumentsStrict().callback.onSendPoll(this, chatId, messageTopicId, poll, finalSendOptions, after)) {
+      tdlib.sendMessage(chatId, messageTopicId, null, finalSendOptions, poll, after);
     }
   }
 }

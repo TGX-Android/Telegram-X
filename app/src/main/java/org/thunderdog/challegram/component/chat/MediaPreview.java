@@ -462,6 +462,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
       case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
       case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
       case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
+      case TdApi.MessageSuggestBirthdate.CONSTRUCTOR:
       case TdApi.MessageCustomServiceAction.CONSTRUCTOR:
       case TdApi.MessageGameScore.CONSTRUCTOR:
       case TdApi.MessagePaymentSuccessful.CONSTRUCTOR:
@@ -499,7 +500,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
         break;
       }
       default: {
-        Td.assertMessageContent_7c00740();
+        Td.assertMessageContent_52d0a6e8();
         throw Td.unsupported(message.content);
       }
     }

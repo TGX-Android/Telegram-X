@@ -4686,27 +4686,27 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     client().send(new TdApi.ViewMessages(chatId, messageIds, new TdApi.MessageSourceScreenshot(), false), messageHandler());
   }
 
-  public void sendMessage (long chatId, long messageThreadId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.Animation animation) {
+  public void sendMessage (long chatId, @Nullable TdApi.MessageTopic topicId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.Animation animation) {
     TdApi.InputMessageContent inputMessageContent = new TdApi.InputMessageAnimation(new TdApi.InputFileId(animation.animation.id), null, null, animation.duration, animation.width, animation.height, null, false, false);
-    sendMessage(chatId, messageThreadId, replyTo, options, inputMessageContent);
+    sendMessage(chatId, topicId, replyTo, options, inputMessageContent);
   }
 
-  public void sendMessage (long chatId, long messageThreadId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.Audio audio) {
+  public void sendMessage (long chatId, @Nullable TdApi.MessageTopic topicId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.Audio audio) {
     TdApi.InputMessageContent inputMessageContent = new TdApi.InputMessageAudio(new TdApi.InputFileId(audio.audio.id), null, audio.duration, audio.title, audio.performer, null);
-    sendMessage(chatId, messageThreadId, replyTo, options, inputMessageContent);
+    sendMessage(chatId, topicId, replyTo, options, inputMessageContent);
   }
 
-  public void sendMessage (long chatId, long messageThreadId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.Sticker sticker, @Nullable String emoji) {
+  public void sendMessage (long chatId, @Nullable TdApi.MessageTopic topicId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.Sticker sticker, @Nullable String emoji) {
     TdApi.InputMessageContent inputMessageContent = new TdApi.InputMessageSticker(new TdApi.InputFileId(sticker.sticker.id), null, 0, 0, emoji);
-    sendMessage(chatId, messageThreadId, replyTo, options, inputMessageContent);
+    sendMessage(chatId, topicId, replyTo, options, inputMessageContent);
   }
 
-  public void sendMessage (long chatId, long messageThreadId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.InputMessageContent inputMessageContent) {
-    sendMessage(chatId, messageThreadId, replyTo, options, inputMessageContent, null);
+  public void sendMessage (long chatId, @Nullable TdApi.MessageTopic topicId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.InputMessageContent inputMessageContent) {
+    sendMessage(chatId, topicId, replyTo, options, inputMessageContent, null);
   }
 
-  public void sendMessage (long chatId, long messageThreadId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.InputMessageContent inputMessageContent, @Nullable RunnableData<TdApi.Message> after) {
-    client().send(new TdApi.SendMessage(chatId, messageThreadId, replyTo, options, null, inputMessageContent), after != null ? result -> {
+  public void sendMessage (long chatId, @Nullable TdApi.MessageTopic topicId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.InputMessageContent inputMessageContent, @Nullable RunnableData<TdApi.Message> after) {
+    client().send(new TdApi.SendMessage(chatId, topicId, replyTo, options, null, inputMessageContent), after != null ? result -> {
       messageHandler.onResult(result);
       after.runWithData(result instanceof TdApi.Message ? (TdApi.Message) result : null);
     } : messageHandler());
@@ -4741,7 +4741,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.MessageAnimation.CONSTRUCTOR:
         return !photoVideoOnly;
       default:
-        Td.assertMessageContent_7c00740();
+        Td.assertMessageContent_52d0a6e8();
         break;
     }
 
@@ -4825,7 +4825,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
           return Td.textOrCaption(messageText);
       }
-      Td.assertMessageContent_7c00740();
+      Td.assertMessageContent_52d0a6e8();
       throw Td.unsupported(messageText);
     }
     MessageEditMediaPending pendingEditMedia = getPendingMessageMedia(chatId, messageId);
@@ -5018,12 +5018,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
   }
 
-  public void forwardMessage (long chatId, long messageThreadId, long fromChatId, long messageId, TdApi.MessageSendOptions options) {
-    client().send(new TdApi.ForwardMessages(chatId, messageThreadId, fromChatId, new long[] {messageId}, options, false, false), messageHandler());
+  public void forwardMessage (long chatId, @Nullable TdApi.MessageTopic topicId, long fromChatId, long messageId, TdApi.MessageSendOptions options) {
+    client().send(new TdApi.ForwardMessages(chatId, topicId, fromChatId, new long[] {messageId}, options, false, false), messageHandler());
   }
 
-  public void sendInlineQueryResult (long chatId, long messageThreadId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, long queryId, String resultId) {
-    client().send(new TdApi.SendInlineQueryResultMessage(chatId, messageThreadId, replyTo, options, queryId, resultId, false), messageHandler());
+  public void sendInlineQueryResult (long chatId, @Nullable TdApi.MessageTopic topicId, @Nullable TdApi.InputMessageReplyTo replyTo, TdApi.MessageSendOptions options, long queryId, String resultId) {
+    client().send(new TdApi.SendInlineQueryResultMessage(chatId, topicId, replyTo, options, queryId, resultId, false), messageHandler());
   }
 
   public void sendBotStartMessage (long botUserId, long chatId, String parameter) {
@@ -8233,7 +8233,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   @TdlibThread
   private void updateForumTopicInfo (TdApi.UpdateForumTopicInfo update) {
-    String cacheKey = update.info.chatId + "_" + update.info.messageThreadId;
+    String cacheKey = update.info.chatId + "_" + update.info.forumTopicId;
     synchronized (dataLock) {
       forumTopicInfos.put(cacheKey, update.info);
     }
@@ -8583,6 +8583,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   @TdlibThread
   private void updateGroupCallParticipants (TdApi.UpdateGroupCallParticipants update) {
     listeners.updateGroupCallParticipants(update);
+  }
+
+  @TdlibThread
+  private void updateGroupCallNewMessage (TdApi.UpdateGroupCallNewMessage update) {
+    listeners.updateGroupCallNewMessage(update);
   }
 
   @TdlibThread
@@ -9918,6 +9923,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         updateGroupCall((TdApi.UpdateGroupCall) update);
         break;
       }
+      case TdApi.UpdateGroupCallNewMessage.CONSTRUCTOR: {
+        updateGroupCallNewMessage((TdApi.UpdateGroupCallNewMessage) update);
+        break;
+      }
       case TdApi.UpdateGroupCallVerificationState.CONSTRUCTOR: {
         updateGroupCallVerificationState((TdApi.UpdateGroupCallVerificationState) update);
         break;
@@ -10247,7 +10256,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         throw Td.unsupported(update);
       }
       default: {
-        Td.assertUpdate_6de2aab6();
+        Td.assertUpdate_850f929d();
         throw Td.unsupported(update);
       }
     }
@@ -11236,6 +11245,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessagePinMessage.CONSTRUCTOR:
         case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
         case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
+        case TdApi.MessageSuggestBirthdate.CONSTRUCTOR:
         case TdApi.MessageSupergroupChatCreate.CONSTRUCTOR:
         case TdApi.MessageUnsupported.CONSTRUCTOR:
         case TdApi.MessageUsersShared.CONSTRUCTOR:
@@ -11256,7 +11266,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           // assuming we want to check RightId.SEND_BASIC_MESSAGES
           return getBasicMessageRestrictionText(chat);
         default:
-          Td.assertMessageContent_7c00740();
+          Td.assertMessageContent_52d0a6e8();
           throw Td.unsupported(message.content);
       }
     }

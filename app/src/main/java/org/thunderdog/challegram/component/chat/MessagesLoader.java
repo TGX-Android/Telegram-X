@@ -182,20 +182,21 @@ public class MessagesLoader implements Client.ResultHandler {
       return new TdApi.MessageSourceChatEventLog();
     } else if (specialMode == MessagesLoader.SPECIAL_MODE_SEARCH) {
       return new TdApi.MessageSourceSearch();
-    } else if (getMessageThreadId() != 0) {
-      return new TdApi.MessageSourceMessageThreadHistory();
     } else if (topicId != null) {
-      switch (topicId.getConstructor()) {
-        case TdApi.MessageTopicForum.CONSTRUCTOR:
-          return new TdApi.MessageSourceForumTopicHistory();
-        case TdApi.MessageTopicDirectMessages.CONSTRUCTOR:
-          return new TdApi.MessageSourceDirectMessagesChatTopicHistory();
-        case TdApi.MessageTopicSavedMessages.CONSTRUCTOR:
-          return new TdApi.MessageSourceChatHistory();
-        default:
-          Td.assertMessageTopic_e5c08b7c();
+      return switch (topicId.getConstructor()) {
+        case TdApi.MessageTopicThread.CONSTRUCTOR ->
+          new TdApi.MessageSourceMessageThreadHistory();
+        case TdApi.MessageTopicForum.CONSTRUCTOR ->
+          new TdApi.MessageSourceForumTopicHistory();
+        case TdApi.MessageTopicDirectMessages.CONSTRUCTOR ->
+          new TdApi.MessageSourceDirectMessagesChatTopicHistory();
+        case TdApi.MessageTopicSavedMessages.CONSTRUCTOR ->
+          new TdApi.MessageSourceChatHistory();
+        default -> {
+          Td.assertMessageTopic_98b4a9a3();
           throw Td.unsupported(topicId);
-      }
+        }
+      };
     } else {
       return new TdApi.MessageSourceChatHistory();
     }
@@ -217,8 +218,9 @@ public class MessagesLoader implements Client.ResultHandler {
     return messageThread != null ? messageThread.getChatId() : chat != null ? chat.id : 0;
   }
 
-  public long getMessageThreadId () {
-    return messageThread != null ? messageThread.getMessageThreadId() : 0;
+  @Nullable
+  public TdApi.MessageTopic getMessageTopicId () {
+    return messageThread != null ? messageThread.getMessageTopicId() : null;
   }
 
   @Nullable
@@ -1233,7 +1235,7 @@ public class MessagesLoader implements Client.ResultHandler {
       isChannel, false, false, false,
       event.date, 0,
       null, null, null, null,
-      null, null, null, 0, null,
+      null, null, null, null,
       null, 0, 0,
       0, 0, 0, 0, null,
       0, 0,

@@ -20,5 +20,6 @@ public interface GroupCallListener {
   default void onGroupCallUpdated (TdApi.GroupCall groupCall) { }
   default void onGroupCallParticipantUpdated (int groupCallId, TdApi.GroupCallParticipant participant) { }
   default void onGroupCallParticipantsChanged (int groupCallId, long[] participantUserIds) { }
+  default void onGroupCallNewMessage (int groupCallId, TdApi.MessageSender senderId, TdApi.FormattedText text) { }
   default void onGroupCallVerificationStateChanged (int groupCallId, int generation, String[] emojis) { }
 }

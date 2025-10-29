@@ -100,8 +100,8 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
     public long locationOwnerChatId;
     public boolean isFaded;
 
-    public long chatId, messageThreadId;
-    public TdApi.MessageTopic messageTopicId;
+    public long chatId;
+    public TdApi.MessageTopic topicId;
 
     public Args (double latitude, double longitude) {
       this.mode = MODE_DROPPED_PIN;
@@ -124,10 +124,9 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
       return this;
     }
 
-    public Args setChatId (long chatId, long messageThreadId, TdApi.MessageTopic messageTopicId) {
+    public Args setChatId (long chatId, TdApi.MessageTopic messageTopicId) {
       this.chatId = chatId;
-      this.messageThreadId = messageThreadId;
-      this.messageTopicId = messageTopicId;
+      this.topicId = messageTopicId;
       return this;
     }
 
@@ -792,10 +791,9 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
             adapter.updateValuedSettingById(R.id.liveLocationSelf);
             tdlib.sendMessage(
               args.chatId,
-              args.messageThreadId,
+              args.topicId,
               null,
               Td.newSendOptions(
-                Td.directMessagesChatTopicId(args.messageTopicId),
                 null,
                 tdlib.chatDefaultDisableNotifications(args.chatId)
               ),

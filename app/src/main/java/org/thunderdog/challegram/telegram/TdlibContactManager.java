@@ -205,7 +205,7 @@ public class TdlibContactManager implements CleanupStartupDelegate {
       public void onResult (TdApi.Object clearImportResult) {
         switch (clearImportResult.getConstructor()) {
           case TdApi.Ok.CONSTRUCTOR:
-            tdlib.client().send(new TdApi.ChangeImportedContacts(new TdApi.Contact[0]), this);
+            tdlib.client().send(new TdApi.ChangeImportedContacts(new TdApi.ImportedContact[0]), this);
             break;
           case TdApi.ImportedContacts.CONSTRUCTOR:
             tdlib.searchContacts(null, 1000, new Client.ResultHandler() {
@@ -249,16 +249,10 @@ public class TdlibContactManager implements CleanupStartupDelegate {
     setRegisteredContactsImpl(null, 0, false);
     maxModificationDate = 0;
     if (includeServer) {
-      tdlib.client().send(new TdApi.ClearImportedContacts(), tdlib.okHandler());
-      tdlib.client().send(new TdApi.ChangeImportedContacts(new TdApi.Contact[0]), object -> {
-        switch (object.getConstructor()) {
-          case TdApi.ImportedContacts.CONSTRUCTOR: {
-            break;
-          }
-          case TdApi.Error.CONSTRUCTOR: {
-            Log.e(Log.TAG_CONTACT, "changeImportedContacts contact[0]: %s", TD.toErrorString(object));
-            break;
-          }
+      tdlib.send(new TdApi.ClearImportedContacts(), tdlib.typedOkHandler());
+      tdlib.send(new TdApi.ChangeImportedContacts(new TdApi.ImportedContact[0]), (importedContacts, error) -> {
+        if (error != null) {
+          Log.e(Log.TAG_CONTACT, "changeImportedContacts contact[0]: %s", TD.toErrorString(error));
         }
         deleteServerImportedContacts(after);
       });
@@ -266,15 +260,9 @@ public class TdlibContactManager implements CleanupStartupDelegate {
   }
 
   private void deleteServerImportedContacts (final Runnable after) {
-    tdlib.client().send(new TdApi.ClearImportedContacts(), object -> {
-      switch (object.getConstructor()) {
-        case TdApi.Ok.CONSTRUCTOR: {
-          break;
-        }
-        case TdApi.Error.CONSTRUCTOR: {
-          Log.w(Log.TAG_CONTACT, "Failed to reset contacts: %s", TD.toErrorString(object));
-          break;
-        }
+    tdlib.send(new TdApi.ClearImportedContacts(), (ok, error) -> {
+      if (error != null) {
+        Log.w(Log.TAG_CONTACT, "Failed to reset contacts: %s", TD.toErrorString(error));
       }
       U.run(after);
     });
@@ -546,18 +534,18 @@ public class TdlibContactManager implements CleanupStartupDelegate {
     startSyncIfNeeded(context, true, null);
   }
 
-  private static void addRobots (ArrayList<TdApi.Contact> out) {
+  private static void addRobots (ArrayList<TdApi.ImportedContact> out) {
     out.ensureCapacity(out.size() + Config.MAX_ROBOT_ID);
     for (int robotId = 1; robotId <= Config.MAX_ROBOT_ID; robotId++) {
-      out.add(new TdApi.Contact("99966173" + (50 + robotId), "Robot #" + robotId, "(imported)", null, 0));
+      out.add(new TdApi.ImportedContact("99966173" + (50 + robotId), "Robot #" + robotId, "(imported)", null));
     }
   }
 
   public void startSyncIfNeeded (final BaseActivity context, final boolean force, @Nullable final Runnable callback) {
     if (UI.TEST_MODE == UI.TEST_MODE_USER) {
-      ArrayList<TdApi.Contact> contacts = new ArrayList<>(Config.MAX_ROBOT_ID);
+      ArrayList<TdApi.ImportedContact> contacts = new ArrayList<>(Config.MAX_ROBOT_ID);
       addRobots(contacts);
-      TdApi.Contact[] contactsArray = new TdApi.Contact[contacts.size()];
+      TdApi.ImportedContact[] contactsArray = new TdApi.ImportedContact[contacts.size()];
       contacts.toArray(contactsArray);
       importContacts(new CancellableRunnable() {
         @Override
@@ -836,7 +824,7 @@ public class TdlibContactManager implements CleanupStartupDelegate {
     Cursor c = null;
     int count;
     Context context = UI.getAppContext();
-    TdApi.Contact[] result = null;
+    TdApi.ImportedContact[] result = null;
     long maxModificationDate = 0;
     try {
       ContentResolver resolver = context.getContentResolver();
@@ -1034,17 +1022,17 @@ public class TdlibContactManager implements CleanupStartupDelegate {
           contact.addVariation(new NameVariation(contact.phoneNumbers, firstName, lastName, middleName, fullNameStyle));
         }
         U.closeCursor(c); c = null;
-        ArrayList<TdApi.Contact> futureResult = new ArrayList<>(validContactCount);
+        ArrayList<TdApi.ImportedContact> futureResult = new ArrayList<>(validContactCount);
         for (ContactData contact : contacts) {
           contact.convertToContact(futureResult);
         }
         if (UI.inTestMode()) {
           addRobots(futureResult);
         }
-        result = new TdApi.Contact[futureResult.size()];
+        result = new TdApi.ImportedContact[futureResult.size()];
         futureResult.toArray(result);
       } else {
-        result = new TdApi.Contact[0];
+        result = new TdApi.ImportedContact[0];
       }
     } catch (Throwable t) {
       U.closeCursor(c);
@@ -1061,7 +1049,7 @@ public class TdlibContactManager implements CleanupStartupDelegate {
     }
   }
 
-  private void importContacts (final CancellableRunnable cancellationSingal, final TdApi.Contact[] contacts) {
+  private void importContacts (final CancellableRunnable cancellationSingal, final TdApi.ImportedContact[] contacts) {
     if (Log.isEnabled(Log.TAG_CONTACT)) {
       if (Log.checkLogLevel(Log.LEVEL_VERBOSE)) {
         Log.v(Log.TAG_CONTACT, "Importing %d contacts...\n%s", contacts.length, TextUtils.join("\n", contacts));
@@ -1077,7 +1065,7 @@ public class TdlibContactManager implements CleanupStartupDelegate {
           int i = 0;
           for (long userId : imported.userIds) {
             if (userId == 0) {
-              TdApi.Contact contact = contacts[i];
+              TdApi.ImportedContact contact = contacts[i];
               int importerCount = imported.importerCount[i];
               if (unregisteredContacts == null) {
                 unregisteredContacts = new ArrayList<>();
@@ -1121,13 +1109,13 @@ public class TdlibContactManager implements CleanupStartupDelegate {
   }
 
   public static class UnregisteredContact {
-    public final TdApi.Contact contact;
+    public final TdApi.ImportedContact contact;
     public final int importerCount;
     public final String displayPhoneNumber;
 
     public final Letters letters;
 
-    private UnregisteredContact (TdApi.Contact contact, String displayPhoneNumber, int importerCount) {
+    private UnregisteredContact (TdApi.ImportedContact contact, String displayPhoneNumber, int importerCount) {
       this.contact = contact;
       this.displayPhoneNumber = displayPhoneNumber;
       this.importerCount = importerCount > 1 ? importerCount : 0;
@@ -1265,7 +1253,7 @@ public class TdlibContactManager implements CleanupStartupDelegate {
       }
     }
 
-    public void convertToContact (ArrayList<TdApi.Contact> out) {
+    public void convertToContact (ArrayList<TdApi.ImportedContact> out) {
       String displayName = getDisplayName();
       String firstName = displayName;
       String lastName = null;
@@ -1299,11 +1287,11 @@ public class TdlibContactManager implements CleanupStartupDelegate {
         Log.e(Log.TAG_CONTACT, "Contact name not found for %s", TextUtils.join(", ", rawPhoneNumbers));
       } else if (StringUtils.isEmpty(firstName)) {
         for (String phoneNumber : rawPhoneNumbers) {
-          out.add(new TdApi.Contact(phoneNumber, lastName, null, null, 0));
+          out.add(new TdApi.ImportedContact(phoneNumber, lastName, null, null));
         }
       } else {
         for (String phoneNumber : rawPhoneNumbers) {
-          out.add(new TdApi.Contact(phoneNumber, firstName, lastName, null, 0));
+          out.add(new TdApi.ImportedContact(phoneNumber, firstName, lastName, null));
         }
       }
     }

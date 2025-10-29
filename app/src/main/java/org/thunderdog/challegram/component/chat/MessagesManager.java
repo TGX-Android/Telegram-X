@@ -1350,7 +1350,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         topEndReached = true;
       } else if (!items.isEmpty()) {
         final int accountId = tdlib.id();
-        Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(accountId, loader.getChatId(), loader.getMessageThreadId());
+        Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(accountId, loader.getChatId(), loader.getMessageTopicId());
         if (messageId != null && messageId.topEndMessageId != 0) {
           TGMessage topMessage = items.get(items.size() - 1);
           topEndReached = topMessage.isDescendantOrSelf(messageId.topEndMessageId);
@@ -1836,8 +1836,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       case MessagesLoader.SPECIAL_MODE_SEARCH:
         return;
     }
-    long messageThreadId = loader.getMessageThreadId();
-    if (messageThreadId != 0 && message.getMessageThreadId() != messageThreadId) {
+    TdApi.MessageTopic topicId = loader.getMessageTopicId();
+    if (!Td.matchesTopic(message.getMessageTopicId(), topicId)) {
       return;
     }
     ThreadInfo messageThread = loader.getMessageThread();
@@ -2559,7 +2559,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (scrollChatId != 0) {
       final int accountId = tdlib.id();
       final long chatId = loader.getChatId();
-      final long messageThreadId = loader.getMessageThreadId();
+      final TdApi.MessageTopic topicId = loader.getMessageTopicId();
       Settings.SavedMessageId savedMessageId = new Settings.SavedMessageId(
         new MessageId(scrollMessageChatId, scrollMessageId, scrollMessageOtherIds),
         scrollOffsetInPixels,
@@ -2567,7 +2567,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         readFully, topEndMessageId
       );
       Settings.instance().setScrollMessageId(accountId,
-        chatId, messageThreadId,
+        chatId, topicId,
         savedMessageId
       );
 
@@ -2981,7 +2981,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
     if (highlightMode == HIGHLIGHT_MODE_POSITION_RESTORE) {
       final int accountId = tdlib.id();
-      Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(accountId, loader.getChatId(), loader.getMessageThreadId());
+      Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(accountId, loader.getChatId(), loader.getMessageTopicId());
       int offset = messageId != null ? messageId.offsetPixels - scrollMessage.getExtraPadding() : 0;
       this.returnToMessageIds = messageId != null ? messageId.returnToMessageIds : null;
       scrollToPositionWithOffset(index, offset, false);
@@ -3236,8 +3236,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       return HIGHLIGHT_MODE_NONE;
     }
     boolean canGoUnread = canGoUnread(chat, threadInfo);
-    long messageThreadId = threadInfo != null ? threadInfo.getMessageThreadId() : 0;
-    Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(accountId, chat.id, messageThreadId);
+    Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(accountId, chat.id,
+      threadInfo != null ? threadInfo.getMessageTopicId() : null
+    );
     boolean preferUnreadFirst = messageId == null || messageId.readFully;
     if (preferUnreadFirst) {
       if (canGoUnread)
@@ -3260,7 +3261,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     switch (anchorMode) {
       case HIGHLIGHT_MODE_POSITION_RESTORE: {
         Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(
-          accountId, chat.id, threadInfo != null ? threadInfo.getMessageThreadId() : 0
+          accountId, chat.id, threadInfo != null ? threadInfo.getMessageTopicId() : null
         );
         return messageId != null && messageId.id.getMessageId() != 0 ? messageId.id : null;
       }
@@ -3537,8 +3538,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   @Override
-  public void onMessageThreadReadOutbox (long chatId, long messageThreadId, long lastReadOutboxMessageId) {
-    if (chatId == loader.getChatId() && messageThreadId == loader.getMessageThreadId()) {
+  public void onMessageThreadReadOutbox (long chatId, TdApi.MessageTopic topicId, long lastReadOutboxMessageId) {
+    if (chatId == loader.getChatId() && Td.equalsTo(topicId, loader.getMessageTopicId())) {
       TdApi.Chat chat = tdlib.chat(chatId);
       long lastGlobalReadOutboxMessageId = chat != null ? chat.lastReadOutboxMessageId : 0;
       if (lastReadOutboxMessageId > lastGlobalReadOutboxMessageId) {

@@ -1213,6 +1213,7 @@ public class Lang {
       case TdApi.MessageInviteVideoChatParticipants.CONSTRUCTOR:
       case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR:
       case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
+      case TdApi.MessageSuggestBirthdate.CONSTRUCTOR:
       case TdApi.MessageUsersShared.CONSTRUCTOR:
       case TdApi.MessageVideoChatEnded.CONSTRUCTOR:
       case TdApi.MessageVideoChatScheduled.CONSTRUCTOR:
@@ -1228,7 +1229,7 @@ public class Lang {
       case TdApi.MessageSuggestedPostRefunded.CONSTRUCTOR:
         break;
       default:
-        Td.assertMessageContent_7c00740();
+        Td.assertMessageContent_52d0a6e8();
         throw Td.unsupported(message.content);
     }
     if (format == null) {

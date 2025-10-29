@@ -589,9 +589,9 @@ public class TdlibListeners {
     );
   }
 
-  private void runForumUpdate (long chatId, long messageThreadId, RunnableData<ForumTopicInfoListener> act) {
+  private void runForumUpdate (long chatId, int forumTopicId, RunnableData<ForumTopicInfoListener> act) {
     runUpdate(act,
-      specificForumTopicListeners.iterator(uniqueForumTopicKey(chatId, messageThreadId)),
+      specificForumTopicListeners.iterator(uniqueForumTopicKey(chatId, forumTopicId)),
       chatListeners.iterator(),
       specificChatListeners.iterator(chatId)
     );
@@ -1140,6 +1140,14 @@ public class TdlibListeners {
     );
   }
 
+  // updateGroupCallNewMessage
+
+  void updateGroupCallNewMessage (TdApi.UpdateGroupCallNewMessage update) {
+    runGroupCallUpdate(update.groupCallId, listener ->
+      listener.onGroupCallNewMessage(update.groupCallId, update.senderId, update.text)
+    );
+  }
+
   // updateGroupCallVerificationState
 
   void updateGroupCallVerificationState (TdApi.UpdateGroupCallVerificationState update) {
@@ -1235,12 +1243,12 @@ public class TdlibListeners {
 
   // updateForumTopicInfo
 
-  private static String uniqueForumTopicKey (long chatId, long messageThreadId) {
-    return chatId + "_" + messageThreadId;
+  private static String uniqueForumTopicKey (long chatId, int forumTopicId) {
+    return chatId + "_" + forumTopicId;
   }
 
   void updateForumTopicInfo (TdApi.UpdateForumTopicInfo update) {
-    runForumUpdate(update.info.chatId, update.info.messageThreadId, listener ->
+    runForumUpdate(update.info.chatId, update.info.forumTopicId, listener ->
       listener.onForumTopicInfoChanged(update.info)
     );
   }
@@ -1248,8 +1256,8 @@ public class TdlibListeners {
   // updateForumTopic
 
   void updateForumTopic (TdApi.UpdateForumTopic update) {
-    runForumUpdate(update.chatId, update.messageThreadId, listener ->
-      listener.onForumTopicUpdated(update.chatId, update.messageThreadId, update.isPinned, update.lastReadInboxMessageId, update.lastReadOutboxMessageId, update.notificationSettings)
+    runForumUpdate(update.chatId, update.forumTopicId, listener ->
+      listener.onForumTopicUpdated(update.chatId, update.forumTopicId, update.isPinned, update.lastReadInboxMessageId, update.lastReadOutboxMessageId, update.notificationSettings)
     );
   }
 

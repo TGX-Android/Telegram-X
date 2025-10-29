@@ -423,8 +423,9 @@ public class MediaLayout extends FrameLayoutFix implements
     return target != null ? target.getChatId() : 0;
   }
 
-  public long getTargetMessageThreadId () {
-    return target != null ? target.getMessageThreadId() : 0;
+  @Nullable
+  public TdApi.MessageTopic getTargetTopicId () {
+    return target != null ? target.getMessageTopicId() : null;
   }
 
   public boolean areScheduledOnly () {
@@ -732,7 +733,6 @@ public class MediaLayout extends FrameLayoutFix implements
               CreatePollController c = new CreatePollController(target.context(), target.tdlib());
               c.setArguments(new CreatePollController.Args(
                 chatId,
-                target.getMessageThread(),
                 target.getMessageTopicId(),
                 target.getInputSuggestedPostInfo(null),
                 target

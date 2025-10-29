@@ -223,7 +223,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       } else {
         replyTo = null;
       }
-      tdlib.sendMessage(extras.chatId, extras.messageThreadId, replyTo, Td.newSendOptions(), new TdApi.InputMessageText(new TdApi.FormattedText(text.toString(), null), null, false), sendingMessage -> {
+      tdlib.sendMessage(extras.chatId, extras.topicId, replyTo, Td.newSendOptions(), new TdApi.InputMessageText(new TdApi.FormattedText(text.toString(), null), null, false), sendingMessage -> {
         if (sendingMessage == null) {
           UI.showToast(R.string.NotificationReplyFailed, Toast.LENGTH_SHORT);
           if (onDone != null) {

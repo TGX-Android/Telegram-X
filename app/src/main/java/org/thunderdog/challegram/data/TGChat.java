@@ -1532,7 +1532,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
       flags = BitwiseUtils.setFlag(flags, FLAG_ATTACHED, isAttached);
       if (statusHelper != null) {
         if (isAttached) {
-          statusHelper.attachToChat(chat.id, 0);
+          statusHelper.attachToChat(chat.id, null);
         } else {
           statusHelper.detachFromAnyChat();
         }

@@ -1535,9 +1535,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         }
         Uri uri = inputContentInfo.getContentUri();
         long timestamp = System.currentTimeMillis();
-        long messageThreadId = controller.getMessageThreadId();
         MessagesController.ReplyInfo replyInfo = controller.obtainReplyTo();
         TdApi.InputMessageReplyTo replyTo = replyInfo != null ? replyInfo.toInputMessageReply() : null;
+        TdApi.MessageTopic topicId = controller.getMessageTopicId(replyInfo);
         boolean silent = controller.obtainSilentMode();
         boolean needMenu = controller.areScheduledOnly();
 
@@ -1589,11 +1589,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
                 (sendOptions, disableMarkdown) -> {
                   TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(
                     sendOptions,
-                    controller.getDirectMessagesChatTopicId(replyInfo),
                     controller.getInputSuggestedPostInfo(replyInfo),
                     silent
                   );
-                  tdlib.sendMessage(chatId, messageThreadId, replyTo,
+                  tdlib.sendMessage(chatId, topicId, replyTo,
                     finalSendOptions,
                     content,
                     null
@@ -1602,11 +1601,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
                 null, null);
             } else {
               TdApi.MessageSendOptions sendOptions = Td.newSendOptions(
-                controller.getDirectMessagesChatTopicId(replyInfo),
                 controller.getInputSuggestedPostInfo(replyInfo),
                 silent
               );
-              tdlib.sendMessage(chatId, messageThreadId, replyTo, sendOptions, content);
+              tdlib.sendMessage(chatId, topicId, replyTo, sendOptions, content);
             }
           });
         });

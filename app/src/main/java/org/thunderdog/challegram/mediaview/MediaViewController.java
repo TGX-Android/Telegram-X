@@ -236,8 +236,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     private boolean reverseMode;
 
-    private long receiverChatId, messageThreadId;
-    private TdApi.MessageTopic topicId;
+    private long receiverChatId;
+    private @Nullable TdApi.MessageTopic topicId;
 
     private boolean areOnlyScheduled;
 
@@ -298,11 +298,6 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     public Args setReceiverChatId (long chatId) {
       this.receiverChatId = chatId;
-      return this;
-    }
-
-    public Args setMessageThreadId (long messageThreadId) {
-      this.messageThreadId = messageThreadId;
       return this;
     }
 
@@ -377,8 +372,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private @Nullable MediaSendDelegate sendDelegate;
   private MediaStack stack;
   private @Nullable TdApi.SearchMessagesFilter filter;
-  private TdApi.MessageTopic topicId;
-  private long messageThreadId;
+  private @Nullable TdApi.MessageTopic topicId;
 
   @Override
   public void setArguments (Args args) {
@@ -390,7 +384,6 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     this.stack = args.stack;
     this.reverseMode = args.reverseMode;
     this.filter = args.filter;
-    this.messageThreadId = args.messageThreadId;
     this.topicId = args.topicId;
   }
 
@@ -1803,7 +1796,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         UI.copyText(getArgumentsStrict().copyLink, R.string.CopiedLink);
       } else if (item.getSourceChatId() != 0) {
         if (tdlib.canCopyPostLink(item.getMessage())) {
-          tdlib.getMessageLink(item.getMessage(), false, messageThreadId != 0, link -> UI.copyText(link.url, link.isPublic ? R.string.CopiedLink : R.string.CopiedLinkPrivate));
+          tdlib.getMessageLink(item.getMessage(), false, Td.messageThreadId(topicId) != 0, link -> UI.copyText(link.url, link.isPublic ? R.string.CopiedLink : R.string.CopiedLinkPrivate));
         }
       }
     } else if (id == R.id.btn_open) {
@@ -1895,7 +1888,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       forceAnimationType = ANIMATION_TYPE_FADE;
 
       ViewController<?> c = context.navigation().getCurrentStackItem();
-      if (c instanceof MessagesController && c.getChatId() == item.getSourceChatId() && ((MessagesController) c).getMessageThreadId() == messageThreadId) {
+      if (c instanceof MessagesController && ((MessagesController) c).compareChat(item.getSourceChatId(), topicId)) {
         ((MessagesController) c).highlightMessage(new MessageId(item.getSourceChatId(), item.getSourceMessageId()));
       } else {
         tdlib.ui().openMessage(this, item.getSourceChatId(), new MessageId(item.getSourceChatId(), item.getSourceMessageId()), null);
@@ -8438,7 +8431,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (context instanceof MediaCollectorDelegate) {
       ((MediaCollectorDelegate) context).modifyMediaArguments(msg, args);
     }
-    args.setMessageThreadId(msg.messagesController().getMessageThreadId());
+    args.setTopicId(msg.messagesController().getMessageTopicId());
 
     openWithArgs(context, args);
   }
@@ -8520,7 +8513,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       ((MediaCollectorDelegate) context).modifyMediaArguments(msg, args);
     }
     args.setFilter(filter);
-    args.setMessageThreadId(messageContainer.messagesController().getMessageThreadId());
+    args.setTopicId(messageContainer.messagesController().getMessageTopicId());
     args.areOnlyScheduled = TD.isScheduled(msg);
 
     openWithArgs(context, args);

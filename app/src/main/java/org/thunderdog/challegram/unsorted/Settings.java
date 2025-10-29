@@ -123,6 +123,7 @@ import me.vkryl.leveldb.LevelDB;
 import tgx.td.ChatId;
 import tgx.td.MessageId;
 import tgx.td.Td;
+import tgx.td.TdConstants;
 
 /**
  * All app-related settings.
@@ -960,7 +961,7 @@ public class Settings {
   public int[] getIntArray (String key) {
     return pmc.getIntArray(key);
   }
-  
+
   public void putIntArray (String key, int[] value) {
     pmc.putIntArray(key, value);
   }
@@ -4256,14 +4257,14 @@ public class Settings {
     removeByPrefix(key(KEY_SCROLL_CHAT_PREFIX, accountId), editor);
   }
 
-  public void setScrollMessageId (int accountId, long chatId, long messageThreadId, @Nullable SavedMessageId savedMessageId) {
-    String keyId = makeScrollChatKey(KEY_SCROLL_CHAT_MESSAGE_ID, accountId, chatId, messageThreadId);
-    String keyChatId = makeScrollChatKey(KEY_SCROLL_CHAT_MESSAGE_CHAT_ID, accountId, chatId, messageThreadId);
-    String keyReturnToIds = makeScrollChatKey(KEY_SCROLL_CHAT_RETURN_TO_MESSAGE_IDS_STACK, accountId, chatId, messageThreadId);
-    String keyAliases = makeScrollChatKey(KEY_SCROLL_CHAT_ALIASES, accountId, chatId, messageThreadId);
-    String keyOffset = makeScrollChatKey(KEY_SCROLL_CHAT_OFFSET, accountId, chatId, messageThreadId);
-    String keyReadFully = makeScrollChatKey(KEY_SCROLL_CHAT_READ_FULLY, accountId, chatId, messageThreadId);
-    String keyTopEnd = makeScrollChatKey(KEY_SCROLL_CHAT_TOP_END, accountId, chatId, messageThreadId);
+  public void setScrollMessageId (int accountId, long chatId, @Nullable TdApi.MessageTopic topicId, @Nullable SavedMessageId savedMessageId) {
+    String keyId = makeScrollChatKey(KEY_SCROLL_CHAT_MESSAGE_ID, accountId, chatId, topicId);
+    String keyChatId = makeScrollChatKey(KEY_SCROLL_CHAT_MESSAGE_CHAT_ID, accountId, chatId, topicId);
+    String keyReturnToIds = makeScrollChatKey(KEY_SCROLL_CHAT_RETURN_TO_MESSAGE_IDS_STACK, accountId, chatId, topicId);
+    String keyAliases = makeScrollChatKey(KEY_SCROLL_CHAT_ALIASES, accountId, chatId, topicId);
+    String keyOffset = makeScrollChatKey(KEY_SCROLL_CHAT_OFFSET, accountId, chatId, topicId);
+    String keyReadFully = makeScrollChatKey(KEY_SCROLL_CHAT_READ_FULLY, accountId, chatId, topicId);
+    String keyTopEnd = makeScrollChatKey(KEY_SCROLL_CHAT_TOP_END, accountId, chatId, topicId);
     SharedPreferences.Editor editor = edit();
     if (savedMessageId == null) {
       editor
@@ -4314,19 +4315,29 @@ public class Settings {
   }
 
   @Nullable
-  public SavedMessageId getScrollMessageId (int accountId, long chatId, long messageThreadId) {
-    String prefix = key(KEY_SCROLL_CHAT_PREFIX + chatId, accountId);
+  public SavedMessageId getScrollMessageId (int accountId, long chatId, @Nullable TdApi.MessageTopic topicId) {
+    String prefix = makeScrollChatKey(null, accountId, chatId, null);
+    String topicSuffix = topicId != null ? "_" + Td.cacheKey(topicId) : null;
     SavedMessageId.Builder b = null;
     for (LevelDB.Entry entry : pmc.find(prefix)) {
-      long keyMessageThreadId = StringUtils.parseLong(entry.key().replaceAll("^.+_thread(\\d+)$", "$1"));
-      if (messageThreadId != keyMessageThreadId) {
+      String key = entry.key();
+      boolean mismatch;
+      if (StringUtils.isEmpty(topicSuffix)) {
+        if (TdConstants.COMPILE_CHECK) {
+          Td.assertMessageTopic_98b4a9a3();
+        }
+        mismatch = key.matches("^.+_(?:thread|forum|direct|saved)+\\d+$");
+      } else {
+        mismatch = !key.endsWith(topicSuffix);
+      }
+      if (mismatch) {
         continue;
       }
       if (b == null) {
         b = new SavedMessageId.Builder(chatId);
       }
-      String suffix = entry.key().substring(prefix.length()).replaceAll("_thread[\\d]+$", "");
-      switch (suffix) {
+      String dataKey = key.substring(prefix.length(), key.length() - StringUtils.length(topicSuffix));
+      switch (dataKey) {
         case KEY_SCROLL_CHAT_MESSAGE_ID:
           b.messageId = entry.asLong();
           break;
@@ -4392,10 +4403,14 @@ public class Settings {
     }
   }
 
-  private static String makeScrollChatKey (String key, int accountId, long chatId, long messageThreadId) {
-    StringBuilder b = new StringBuilder(KEY_SCROLL_CHAT_PREFIX).append(chatId).append(key);
-    if (messageThreadId != 0) {
-      b.append("_thread").append(messageThreadId);
+  private static String makeScrollChatKey (String key, int accountId, long chatId, @Nullable TdApi.MessageTopic topicId) {
+    StringBuilder b = new StringBuilder(KEY_SCROLL_CHAT_PREFIX)
+      .append(chatId);
+    if (key != null) {
+      b.append(key);
+    }
+    if (topicId != null) {
+      b.append("_").append(Td.cacheKey(topicId));
     }
     return key(b.toString(), accountId);
   }
