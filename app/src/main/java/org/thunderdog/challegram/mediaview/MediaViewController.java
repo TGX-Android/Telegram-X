@@ -261,6 +261,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     private @AvatarPickerMode int avatarPickerMode;
 
+    public Args setCustomSubtitle (String subtitle) {
+      this.customSubtitle = subtitle;
+      return this;
+    }
+
     public Args setAvatarPickerMode (@AvatarPickerMode int avatarPickerMode) {
       if (mode != MODE_GALLERY) {
         throw new IllegalStateException();
@@ -2046,7 +2051,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         String currentIndex = Strings.buildCounter(stack.getEstimatedIndex() + 1);
         String totalIndex = Strings.buildCounter(stack.getEstimatedSize());
         if (getArgumentsStrict().noLoadMore && stack.getEstimatedSize() == 1) {
-          if (stack.getCurrent().isVideo()) {
+          TdApi.SponsoredMessage sponsoredMessage = stack.getCurrent().getSourceSponsoredMessage();
+          if (sponsoredMessage != null) {
+            headerCell.setTitle(sponsoredMessage.isRecommended ? R.string.MediaRecommendation : R.string.MediaAd);
+          } else if (stack.getCurrent().isVideo()) {
             headerCell.setTitle(R.string.Video);
           } else if (stack.getCurrent().isGif()) {
             headerCell.setTitle(R.string.Gif);
@@ -8270,7 +8278,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       filter = new TdApi.SearchMessagesFilterAnimation();
     }
     if (context instanceof MediaCollectorDelegate) {
-      stack = ((MediaCollectorDelegate) context).collectMedias(item.getSourceMessageId(), filter);
+      stack = ((MediaCollectorDelegate) context).collectMedias(item.getSourceMessageId(), false, filter);
     }
 
     if (stack == null) {
@@ -8386,7 +8394,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (context instanceof MediaCollectorDelegate) {
       ((MediaCollectorDelegate) context).modifyMediaArguments(message, args);
     }
-    args.noLoadMore = message.isEventLog();
+    args.noLoadMore = message.isEventLog() || message.isSponsoredMessage();
     args.areOnlyScheduled = message.isScheduled();
 
     openWithArgs(context, args);
@@ -8452,12 +8460,12 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   public static void openFromMessage (TGMessageMedia messageContainer, long messageId) {
     ViewController<?> context = messageContainer.controller();
     TdApi.Message msg = messageContainer.getMessage(messageId);
-    MediaItem item = MediaItem.valueOf(context.context(), context.tdlib(), msg);
+    MediaItem item = MediaItem.valueOf(messageContainer, messageId);
     if (item == null) {
       return;
     }
 
-    boolean allowLoadMore = !item.isSecret() && !item.isViewOnce();
+    boolean allowLoadMore = !messageContainer.isSponsoredMessage() && !item.isSecret() && !item.isViewOnce();
     TdApi.SearchMessagesFilter filter = null;
     if (allowLoadMore) {
       //noinspection SwitchIntDef
@@ -8499,7 +8507,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       return;
     }
     if (allowLoadMore && context instanceof MediaCollectorDelegate) {
-      stack = ((MediaCollectorDelegate) context).collectMedias(msg.id, filter);
+      stack = ((MediaCollectorDelegate) context).collectMedias(msg.id, messageContainer.isSponsoredMessage(), filter);
     }
 
     if (stack == null) {
@@ -8508,13 +8516,17 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
 
     Args args = new Args(context, MODE_MESSAGES, stack);
-    args.noLoadMore = !allowLoadMore || messageContainer.isEventLog();
+    args.noLoadMore = !allowLoadMore || messageContainer.isEventLog() || messageContainer.isSponsoredMessage();
     if (context instanceof MediaCollectorDelegate) {
       ((MediaCollectorDelegate) context).modifyMediaArguments(msg, args);
     }
     args.setFilter(filter);
     args.setTopicId(messageContainer.messagesController().getMessageTopicId());
     args.areOnlyScheduled = TD.isScheduled(msg);
+
+    if (messageContainer.isSponsoredMessage()) {
+      args.setCustomSubtitle(messageContainer.getSponsoredMessage().title);
+    }
 
     openWithArgs(context, args);
   }

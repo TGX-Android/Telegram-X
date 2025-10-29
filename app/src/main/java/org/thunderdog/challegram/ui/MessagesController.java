@@ -10596,13 +10596,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
   // Audio utils
 
   @Override
-  public MediaStack collectMedias (long fromMessageId, @Nullable TdApi.SearchMessagesFilter filter) {
+  public MediaStack collectMedias (long fromMessageId, boolean isSponsored, @Nullable TdApi.SearchMessagesFilter filter) {
     if (!needTabs() || pagerScrollPosition == MediaTabsAdapter.POSITION_MESSAGES) {
-      return manager.collectMedias(fromMessageId, filter);
+      return manager.collectMedias(fromMessageId, isSponsored, filter);
     } else {
       SharedBaseController<?> c = pagerContentAdapter != null ? pagerContentAdapter.cachedItems.get(pagerScrollPosition) : null;
-      if (c instanceof MediaCollectorDelegate) {
-        return ((MediaCollectorDelegate) c).collectMedias(fromMessageId, filter);
+      if (c != null) {
+        return c.collectMedias(fromMessageId, isSponsored, filter);
       }
     }
     return null;

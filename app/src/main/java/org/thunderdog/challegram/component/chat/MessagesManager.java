@@ -2313,7 +2313,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   // Collectors
 
-  public MediaStack collectMedias (final long fromMessageId, @Nullable TdApi.SearchMessagesFilter filter) {
+  public MediaStack collectMedias (final long fromMessageId, final boolean isSponsored, @Nullable TdApi.SearchMessagesFilter filter) {
     ArrayList<TGMessage> items = adapter.getItems();
     if (items == null) {
       return null;
@@ -2324,16 +2324,21 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     AtomicBoolean found = new AtomicBoolean();
     AtomicInteger addedAfter = new AtomicInteger();
 
+    RunnableData<MediaItem> addItem = item -> {
+      if (item != null) {
+        result.add(0, item);
+        if (found.get()) {
+          addedAfter.incrementAndGet();
+        }
+      }
+    };
     RunnableData<TdApi.Message> callback = message -> {
       if (Td.isSecret(message.content))
         return;
       boolean matchesFilter = filter == null || Td.matchesFilter(message, filter);
       MediaItem item = matchesFilter ? MediaItem.valueOf(controller.context(), tdlib, message) : null;
       if (item != null) {
-        result.add(0, item);
-        if (found.get()) {
-          addedAfter.incrementAndGet();
-        }
+        addItem.runWithData(item);
         if (message.id == fromMessageId) {
           found.set(true);
         }
@@ -2341,7 +2346,22 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     };
 
     for (TGMessage parsedMessage : items) {
-      parsedMessage.iterate(callback, true);
+      if (parsedMessage.isSponsoredMessage() != isSponsored) {
+        continue;
+      }
+      if (!isSponsored) {
+        parsedMessage.iterate(callback, true);
+        continue;
+      }
+      if (Td.matchesFilter(parsedMessage.getMessage(), filter)) {
+        MediaItem item = MediaItem.valueOf(controller.context(), tdlib, parsedMessage.getChatId(), parsedMessage.getSponsoredMessage());
+        if (item != null) {
+          addItem.runWithData(item);
+          if (parsedMessage.getId() == fromMessageId) {
+            found.set(true);
+          }
+        }
+      }
     }
 
     if (!found.get()) {

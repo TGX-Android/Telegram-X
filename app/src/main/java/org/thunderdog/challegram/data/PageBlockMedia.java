@@ -582,11 +582,6 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
   }
 
   @Override
-  public MediaStack collectMedias (long fromMessageId, @Nullable TdApi.SearchMessagesFilter filter) {
-    return null;
-  }
-
-  @Override
   public void modifyMediaArguments (Object cause, MediaViewController.Args args) {
     args.delegate = this;
   }
