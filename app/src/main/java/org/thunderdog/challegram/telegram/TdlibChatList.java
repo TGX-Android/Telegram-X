@@ -28,7 +28,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
@@ -36,7 +35,7 @@ import me.vkryl.core.reference.ReferenceList;
 import tgx.td.ChatPosition;
 import tgx.td.Td;
 
-public final class TdlibChatList implements Comparator<TdlibChatList.Entry>, Destroyable {
+public final class TdlibChatList implements Comparator<TdlibChatList.Entry> {
   public static class Entry implements Comparable<Entry> {
     public final TdApi.Chat chat;
     public final TdApi.ChatList chatList;
@@ -424,17 +423,6 @@ public final class TdlibChatList implements Comparator<TdlibChatList.Entry>, Des
       int index = list.size() - 1;
       Entry entry = list.get(index);
       removeChatFromList(index, new Tdlib.ChatChange(new TdApi.ChatPosition(entry.effectivePosition.list, 0, false, entry.effectivePosition.source), Tdlib.ChatChange.ORDER));
-    }
-  }
-
-  @Override
-  public void performDestroy () {
-    synchronized (subscribedListeners) {
-      // Ensure that none of the children will ever receive new updates
-      for (ChatListListener listener : subscribedListeners) {
-        tdlib.listeners().unsubscribeFromChatListUpdates(chatList, listener);
-      }
-      subscribedListeners.clear();
     }
   }
 

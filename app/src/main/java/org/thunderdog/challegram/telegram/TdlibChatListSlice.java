@@ -314,7 +314,7 @@ public final class TdlibChatListSlice implements Destroyable {
     sourceList.initializeList(filter, listener, callback, this.maxSize = initialChunkSize, () -> {
       loadingInitialChunk = false;
       dispatchChats(0);
-      if (onLoadInitialChunk != null) {
+      if (!isDestroyed() && onLoadInitialChunk != null) {
         onLoadInitialChunk.run();
       }
     });
@@ -322,9 +322,17 @@ public final class TdlibChatListSlice implements Destroyable {
 
   private boolean loadingInitialChunk;
 
+  private boolean isSuspended () {
+    return loadingInitialChunk || isDestroyed();
+  }
+
+  private boolean isDestroyed () {
+    return isDestroyed;
+  }
+
   @TdlibThread
   private int dispatchChats (final int changeFlags) {
-    if (loadingInitialChunk) {
+    if (isSuspended()) {
       return 0;
     }
     tdlib.ensureTdlibThread();
@@ -342,7 +350,7 @@ public final class TdlibChatListSlice implements Destroyable {
   }
 
   public void loadMore (int moreCount, Runnable after) {
-    if (loadingInitialChunk)
+    if (isSuspended())
       return;
     tdlib.runOnTdlibThread(() -> {
       maxSize += moreCount;
@@ -361,16 +369,13 @@ public final class TdlibChatListSlice implements Destroyable {
     });
   }
 
+  private boolean isDestroyed;
+
   @Override
   public void performDestroy () {
-    unsubscribeFromUpdates(this.subListener);
-  }
-
-  private void unsubscribeFromUpdates (ChatListListener subListener) {
-    if (this.listener != null && this.subListener == subListener) {
+    if (!isDestroyed) {
+      isDestroyed = true;
       sourceList.unsubscribeFromUpdates(this.listener);
-      this.subListener = null;
-      this.listener = null;
     }
   }
 
@@ -385,6 +390,9 @@ public final class TdlibChatListSlice implements Destroyable {
       throw new IllegalStateException();
     tdlib.chat(chatId, createFunction, chat -> {
       tdlib.ensureTdlibThread();
+      if (isDestroyed()) {
+        return;
+      }
       final int fromIndex = indexOfChat(chatId);
       if (fromIndex != -1) {
         /*if (fromIndex == 0) // No need to do anything
