@@ -10535,9 +10535,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (isEditingMessage()) {
       topicId = editContext.getExistingMessage().topicId;
     } else {
-      topicId = getMessageTopicId();
+      topicId = getMessageTopicId(reply);
       if (topicId == null && reply != null) {
-        topicId = reply.message.message.topicId != null ? reply.message.message.topicId : new TdApi.MessageTopicThread(reply.message.message.id);
+        topicId = reply.message.message.topicId != null ?
+          reply.message.message.topicId :
+          tdlib.hasMessageThreads(reply.message.message.chatId) ?
+          new TdApi.MessageTopicThread(reply.message.message.id) :
+          null;
       }
     }
     if (set) {
