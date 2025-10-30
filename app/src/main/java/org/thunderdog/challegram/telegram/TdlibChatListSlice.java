@@ -30,11 +30,19 @@ import me.vkryl.core.lambda.Future;
 import me.vkryl.core.lambda.RunnableData;
 import tgx.td.ChatPosition;
 
-public class TdlibChatListSlice implements Destroyable {
+public final class TdlibChatListSlice implements Destroyable {
+  public interface Modifier {
+    default boolean modifySlice (TdlibChatListSlice chatListSlice, List<Entry> slice, int currentSize) {
+      // Override in children, e.g. additional filtering and ordering
+      return false;
+    }
+  }
+
   private final Tdlib tdlib;
   private final TdlibChatList sourceList;
   private final Filter<TdApi.Chat> filter;
   private final boolean keepPositions;
+  private final @Nullable Modifier modifier;
 
   private ChatListListener listener, subListener;
   private final List<Entry> filteredList = new ArrayList<>();
@@ -66,12 +74,13 @@ public class TdlibChatListSlice implements Destroyable {
     }
   }
 
-  public TdlibChatListSlice (Tdlib tdlib, TdApi.ChatList chatList, Filter<TdApi.Chat> filter, boolean keepPositions) {
+  TdlibChatListSlice (Tdlib tdlib, TdlibChatList chatList, Filter<TdApi.Chat> filter, boolean keepPositions, @Nullable Modifier modifier) {
     this.tdlib = tdlib;
-    this.sourceList = tdlib.chatList(chatList);
+    this.sourceList = chatList;
     this.filter = filter;
     this.keepPositions = keepPositions;
     this.haveCustomModifications = keepPositions;
+    this.modifier = modifier;
   }
 
   private int loadedCount () {
@@ -290,7 +299,7 @@ public class TdlibChatListSlice implements Destroyable {
         if (addedEntries.isEmpty()) {
           return;
         }
-        boolean haveCustomModifications = modifySlice(addedEntries, filteredList.size());
+        boolean haveCustomModifications = modifier != null && modifier.modifySlice(this, addedEntries, filteredList.size());
         filteredList.addAll(addedEntries);
         if (haveCustomModifications) {
           this.haveCustomModifications = true;
@@ -367,11 +376,6 @@ public class TdlibChatListSlice implements Destroyable {
 
   private boolean needSort () {
     return filter != null || haveCustomModifications;
-  }
-
-  protected boolean modifySlice (List<Entry> slice, int currentSize) {
-    // Override in children, e.g. additional filtering and ordering
-    return false;
   }
 
   public void bringToTop (long chatId, @Nullable Future<TdApi.Function<?>> createFunction, @Nullable Runnable after) {

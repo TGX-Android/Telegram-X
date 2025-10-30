@@ -1463,16 +1463,17 @@ public class ShareController extends TelegramViewController<ShareController.Args
   }
 
   private void initializeChatList (TdApi.ChatList chatList) {
-    TdlibChatListSlice list = new TdlibChatListSlice(tdlib, chatList, this, true) {
+    TdlibChatListSlice list = tdlib.chatList(chatList).slice(this, true, new TdlibChatListSlice.Modifier() {
       @Override
-      protected boolean modifySlice (List<Entry> slice, int currentSize) {
+      public boolean modifySlice (TdlibChatListSlice chatListSlice, List<TdlibChatListSlice.Entry> slice, int currentSize) {
+        TdApi.ChatList chatList = chatListSlice.chatList();
         int index = 0;
-        for (Entry entry : slice) {
+        for (TdlibChatListSlice.Entry entry : slice) {
           if (tdlib.isSelfChat(entry.chat)) {
             if (currentSize > 0) {
               slice.remove(index);
               return true;
-            } else if (index == 0 || ChatPosition.isPinned(entry.chat, chatList())) {
+            } else if (index == 0 || ChatPosition.isPinned(entry.chat, chatList)) {
               return false;
             } else {
               slice.remove(index);
@@ -1483,19 +1484,21 @@ public class ShareController extends TelegramViewController<ShareController.Args
           }
           index++;
         }
-        if (currentSize == 0 && TD.isChatListMain(chatList())) {
+        if (currentSize == 0 && TD.isChatListMain(chatList)) {
           TdApi.Chat selfChat = tdlib.selfChat();
-          if (selfChat != null && !ChatPosition.isPinned(selfChat, chatList())) {
-            Entry entry = new Entry(selfChat, chatList(), ChatPosition.findPosition(selfChat, chatList()), true);
+          if (selfChat != null && !ChatPosition.isPinned(selfChat, chatList)) {
+            TdlibChatListSlice.Entry entry = new TdlibChatListSlice.Entry(selfChat, chatList, ChatPosition.findPosition(selfChat, chatList), true);
             entry.bringToTop();
             slice.add(0, entry);
             return true;
           }
-          bringToTop(tdlib.selfChatId(), () -> new TdApi.CreatePrivateChat(tdlib.myUserId(), false), null);
+          chatListSlice.bringToTop(tdlib.selfChatId(), () -> new TdApi.CreatePrivateChat(tdlib.myUserId(), false), null);
         }
         return false;
       }
-    };
+    });
+
+    /**/
     // FIXME replace Math.max with proper fix.
     int startLoadCount = Math.max(20, Screen.calculateLoadingItems(Screen.dp(95f), 1) * calculateSpanCount());
     list.initializeList(this, entries -> processChats(list.chatList(), entries), startLoadCount, this::executeScheduledAnimation);

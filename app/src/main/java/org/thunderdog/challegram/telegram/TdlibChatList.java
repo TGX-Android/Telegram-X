@@ -35,7 +35,7 @@ import me.vkryl.core.reference.ReferenceList;
 import tgx.td.ChatPosition;
 import tgx.td.Td;
 
-public class TdlibChatList implements Comparator<TdlibChatList.Entry>, Destroyable {
+public final class TdlibChatList implements Comparator<TdlibChatList.Entry>, Destroyable {
   public static class Entry implements Comparable<Entry> {
     public final TdApi.Chat chat;
     public final TdApi.ChatList chatList;
@@ -87,6 +87,14 @@ public class TdlibChatList implements Comparator<TdlibChatList.Entry>, Destroyab
   TdlibChatList (Tdlib tdlib, TdApi.ChatList chatList) {
     this.tdlib = tdlib;
     this.chatList = chatList;
+  }
+
+  public TdlibChatListSlice slice (Filter<TdApi.Chat> filter) {
+    return slice(filter, false, null);
+  }
+
+  public TdlibChatListSlice slice (Filter<TdApi.Chat> filter, boolean keepPositions, TdlibChatListSlice.Modifier modifier) {
+    return new TdlibChatListSlice(tdlib, this, filter, keepPositions, modifier);
   }
 
   // Listeners API

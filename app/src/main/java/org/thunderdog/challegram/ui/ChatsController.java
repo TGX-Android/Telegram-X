@@ -460,7 +460,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   public TdlibChatListSlice list () {
     if (list == null) {
-      this.list = new TdlibChatListSlice(tdlib, chatList(), filter, false);
+      this.list = tdlib.chatList(chatList()).slice(filter);
     }
     return list;
   }
