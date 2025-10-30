@@ -2720,10 +2720,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   private @NonNull TdlibChatList chatListImpl (@NonNull TdApi.ChatList chatList) {
     final String key = TD.makeChatListKey(chatList);
-    TdlibChatList list = chatLists.get(key);
-    if (list == null) {
-      list = new TdlibChatList(this, chatList);
-      chatLists.put(key, list);
+    TdlibChatList list;
+    synchronized (chatLists) {
+      list = chatLists.get(key);
+      if (list == null) {
+        list = new TdlibChatList(this, chatList);
+        chatLists.put(key, list);
+      }
     }
     return list;
   }
@@ -7101,24 +7104,25 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   // Updates: NOTIFICATIONS
 
   private boolean havePendingNotifications, haveInitializedNotifications;
-
   private void resetState () {
     haveInitializedNotifications = false;
     ignoreNotificationUpdates = false;
   }
 
+  @TdlibThread
   private void resetChatsData () {
     knownChatIds.clear();
     chats.clear();
-    for (TdlibChatList chatList : chatLists.values()) {
-      chatList.performDestroy();
+    synchronized (chatLists) {
+      for (TdlibChatList chatList : chatLists.values()) {
+        chatList.clear();
+      }
     }
-    chatLists.clear();
     forumTopicInfos.clear();
   }
 
+  @TdlibThread
   private void resetContextualData () {
-    // chats.clear();
     resetChatsData();
     activeCalls.clear();
     activeStories.clear();

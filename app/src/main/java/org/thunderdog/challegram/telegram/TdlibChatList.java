@@ -418,6 +418,15 @@ public final class TdlibChatList implements Comparator<TdlibChatList.Entry>, Des
     }
   }
 
+  void clear () {
+    tdlib.ensureTdlibThread();
+    while (!list.isEmpty()) {
+      int index = list.size() - 1;
+      Entry entry = list.get(index);
+      removeChatFromList(index, new Tdlib.ChatChange(new TdApi.ChatPosition(entry.effectivePosition.list, 0, false, entry.effectivePosition.source), Tdlib.ChatChange.ORDER));
+    }
+  }
+
   @Override
   public void performDestroy () {
     synchronized (subscribedListeners) {
