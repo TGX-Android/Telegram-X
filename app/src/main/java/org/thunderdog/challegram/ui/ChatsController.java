@@ -2705,7 +2705,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     tdlib.settings().removeUserPreferenceChangeListener(this);
     tdlib.listeners().unsubscribeFromGlobalUpdates(this);
     tdlib.cache().unsubscribeFromGlobalUpdates(this);
-    list.unsubscribeFromUpdates(this);
+    list.performDestroy();
     TGLegacyManager.instance().removeEmojiListener(this);
     tdlib.contacts().removeListener(this);
     tdlib.context().dateManager().removeListener(this);

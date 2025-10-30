@@ -432,7 +432,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
   @Override
   public void destroy () {
     super.destroy();
-    chatListSlice.unsubscribeFromUpdates(this);
+    chatListSlice.performDestroy();
     if (headerCell != null) {
       headerCell.destroy();
     }

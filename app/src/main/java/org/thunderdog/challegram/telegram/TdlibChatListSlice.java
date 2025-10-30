@@ -24,12 +24,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.Future;
 import me.vkryl.core.lambda.RunnableData;
 import tgx.td.ChatPosition;
 
-public class TdlibChatListSlice {
+public class TdlibChatListSlice implements Destroyable {
   private final Tdlib tdlib;
   private final TdlibChatList sourceList;
   private final Filter<TdApi.Chat> filter;
@@ -162,7 +163,7 @@ public class TdlibChatListSlice {
             insertIndex = originalIndex;
           }
         } catch (RuntimeException e) {
-          Log.e("Chats in source: %d", e, sourceList.count(null));
+          Log.e("Chats in source: %d & %d, same: %b", e, sourceList.count(null), chatList.count(null), sourceList == chatList);
           throw e;
         }
         if (insertIndex < displayCount) {
@@ -345,7 +346,12 @@ public class TdlibChatListSlice {
     });
   }
 
-  public void unsubscribeFromUpdates (ChatListListener subListener) {
+  @Override
+  public void performDestroy () {
+    unsubscribeFromUpdates(this.subListener);
+  }
+
+  private void unsubscribeFromUpdates (ChatListListener subListener) {
     if (this.listener != null && this.subListener == subListener) {
       sourceList.unsubscribeFromUpdates(this.listener);
       this.subListener = null;

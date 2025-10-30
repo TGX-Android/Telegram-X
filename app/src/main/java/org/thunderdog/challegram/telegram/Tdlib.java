@@ -7110,6 +7110,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private void resetChatsData () {
     knownChatIds.clear();
     chats.clear();
+    for (TdlibChatList chatList : chatLists.values()) {
+      chatList.performDestroy();
+    }
     chatLists.clear();
     forumTopicInfos.clear();
   }
@@ -9072,7 +9075,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
           onError.runWithData(new ApplicationVerificationException("RECAPTCHA_FAILED_TASK_EXCEPTION_" + ApplicationVerificationException.formatReCaptchaMessage(taskError), taskError))
         );
     };
-    RecaptchaProviderRegistry.INSTANCE.execute(recaptchaKeyId, actor, clientError ->
+    RecaptchaProviderRegistry.execute(recaptchaKeyId, actor, clientError ->
       onError.runWithData(new ApplicationVerificationException("RECAPTCHA_FAILED_GETCLIENT_EXCEPTION_" + ApplicationVerificationException.formatReCaptchaMessage(clientError), clientError))
     );
   }

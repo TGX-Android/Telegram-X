@@ -3716,7 +3716,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
   public void destroy () {
     super.destroy();
     for (TdlibChatListSlice list : listByChatList.values()) {
-      list.unsubscribeFromUpdates(this);
+      list.performDestroy();
     }
     Views.destroyRecyclerView(recyclerView);
     TGLegacyManager.instance().removeEmojiListener(adapter);

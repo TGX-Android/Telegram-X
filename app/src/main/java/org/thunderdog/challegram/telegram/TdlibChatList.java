@@ -27,13 +27,15 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
+import me.vkryl.core.reference.ReferenceList;
 import tgx.td.ChatPosition;
 import tgx.td.Td;
 
-public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterChangeListener {
+public class TdlibChatList implements Comparator<TdlibChatList.Entry>, Destroyable {
   public static class Entry implements Comparable<Entry> {
     public final TdApi.Chat chat;
     public final TdApi.ChatList chatList;
@@ -89,12 +91,20 @@ public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterCh
 
   // Listeners API
 
+  private final ReferenceList<ChatListListener> subscribedListeners = new ReferenceList<>();
+
   public void subscribeToUpdates (ChatListListener listener) {
-    tdlib.listeners().subscribeToChatListUpdates(chatList, listener);
+    synchronized (subscribedListeners) {
+      tdlib.listeners().subscribeToChatListUpdates(chatList, listener);
+      subscribedListeners.add(listener);
+    }
   }
 
   public void unsubscribeFromUpdates (ChatListListener listener) {
-    tdlib.listeners().unsubscribeFromChatListUpdates(chatList, listener);
+    synchronized (subscribedListeners) {
+      tdlib.listeners().unsubscribeFromChatListUpdates(chatList, listener);
+      subscribedListeners.remove(listener);
+    }
   }
 
   // State API
@@ -219,7 +229,7 @@ public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterCh
   // Load API
 
   @AnyThread
-  public void initializeList (@Nullable Filter<TdApi.Chat> filter, ChatListListener listener, @NonNull RunnableData<List<Entry>> callback, int initialChunk, Runnable onLoadInitialChunk) {
+  void initializeList (@Nullable Filter<TdApi.Chat> filter, ChatListListener listener, @NonNull RunnableData<List<Entry>> callback, int initialChunk, Runnable onLoadInitialChunk) {
     getChats(filter, (list) -> {
       tdlib.ensureTdlibThread();
       callback.runWithData(list);
@@ -389,6 +399,17 @@ public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterCh
       if (changeInfo.metadataChanged()) {
         tdlib.listeners().updateChatChanged(this, existingEntry.chat, prevIndex, changeInfo);
       }
+    }
+  }
+
+  @Override
+  public void performDestroy () {
+    synchronized (subscribedListeners) {
+      // Ensure that none of the children will ever receive new updates
+      for (ChatListListener listener : subscribedListeners) {
+        tdlib.listeners().unsubscribeFromChatListUpdates(chatList, listener);
+      }
+      subscribedListeners.clear();
     }
   }
 
