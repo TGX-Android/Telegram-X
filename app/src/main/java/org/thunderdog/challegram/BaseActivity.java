@@ -163,6 +163,7 @@ import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceUtils;
 import nl.dionsegijn.konfetti.xml.KonfettiView;
+import tgx.app.RecaptchaProviderRegistry;
 
 @SuppressWarnings("deprecation")
 public abstract class BaseActivity extends FragmentActivity implements View.OnTouchListener, FactorAnimator.Target, Keyboard.OnStateChangeListener, ThemeChangeListener, SensorEventListener, TGPlayerController.TrackChangeListener, TGLegacyManager.EmojiLoadListener, Lang.Listener, Handler.Callback {
@@ -467,6 +468,8 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
 
     AppState.initApplication();
     AppState.ensureReady();
+
+    RecaptchaProviderRegistry.setApplication(this.getApplication());
 
     appUpdater = new AppUpdater(this);
     roundVideoController = new RoundVideoController(this);
