@@ -415,6 +415,15 @@ public class TdlibChatList implements Comparator<TdlibChatList.Entry>, Destroyab
 
   // Internal
 
+  @Override
+  @NonNull
+  public String toString () {
+    return chatList +
+      " (list: " + list +
+      ", state: " + state +
+      ')';
+  }
+
   private void addChatToList (Entry entry, Tdlib.ChatChange changeInfo) {
     tdlib.ensureTdlibThread();
     int atIndex;

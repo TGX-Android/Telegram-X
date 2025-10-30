@@ -80,8 +80,11 @@ public class TdlibChatListSlice implements Destroyable {
     }
   }
 
-  public TdlibChatList sourceList () {
-    return sourceList;
+  private void ensureTdlibThreadAndList (TdlibChatList chatList) {
+    tdlib.ensureTdlibThread();
+    if (this.sourceList != chatList) {
+      throw new IllegalStateException("Received an update from " + chatList + ", expected: " + sourceList);
+    }
   }
 
   public TdApi.ChatList chatList () {
@@ -134,7 +137,7 @@ public class TdlibChatListSlice implements Destroyable {
     this.listener = new ChatListListener() {
       @Override
       public void onChatChanged (TdlibChatList chatList, TdApi.Chat chat, int index, Tdlib.ChatChange changeInfo) {
-        tdlib.ensureTdlibThread();
+        ensureTdlibThreadAndList(chatList);
         index = findExistingIndex(index, chat.id);
         if (index != -1) {
           if (index < displayCount) {
@@ -146,7 +149,7 @@ public class TdlibChatListSlice implements Destroyable {
 
       @Override
       public void onChatAdded (TdlibChatList chatList, TdApi.Chat chat, final int originalIndex, Tdlib.ChatChange changeInfo) {
-        tdlib.ensureTdlibThread();
+        ensureTdlibThreadAndList(chatList);
         if (filter != null) {
           if (!filter.accept(chat))
             return;
@@ -177,7 +180,7 @@ public class TdlibChatListSlice implements Destroyable {
 
       @Override
       public void onChatRemoved (TdlibChatList chatList, TdApi.Chat chat, int fromIndex, Tdlib.ChatChange changeInfo) {
-        tdlib.ensureTdlibThread();
+        ensureTdlibThreadAndList(chatList);
         fromIndex = findExistingIndex(fromIndex, chat.id);
         if (fromIndex != -1 && !filteredList.get(fromIndex).keepPosition) {
           /*Entry removedEntry =*/ filteredList.remove(fromIndex);
@@ -191,7 +194,7 @@ public class TdlibChatListSlice implements Destroyable {
 
       @Override
       public void onChatMoved (TdlibChatList chatList, TdApi.Chat chat, int fromIndex, int toIndex, Tdlib.ChatChange changeInfo) {
-        tdlib.ensureTdlibThread();
+        ensureTdlibThreadAndList(chatList);
         final boolean needSort = needSort();
         if (needSort) {
           fromIndex = findExistingIndex(fromIndex, chat.id);
@@ -239,12 +242,13 @@ public class TdlibChatListSlice implements Destroyable {
 
       @Override
       public void onChatListStateChanged (TdlibChatList chatList, int newState, int oldState) {
+        ensureTdlibThreadAndList(chatList);
         subListener.onChatListStateChanged(chatList, newState, oldState);
       }
 
       @Override
       public void onChatListItemChanged (TdlibChatList chatList, TdApi.Chat chat, int changeType) {
-        tdlib.ensureTdlibThread();
+        ensureTdlibThreadAndList(chatList);
         final int existingIndex = indexOfChat(chat.id);
         if (existingIndex == -1) {
           if (filter != null && filter.accept(chat)) { // chat became unfiltered
