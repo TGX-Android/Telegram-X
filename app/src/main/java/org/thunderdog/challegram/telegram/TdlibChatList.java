@@ -18,6 +18,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.data.TD;
 
 import java.lang.annotation.Retention;
@@ -84,9 +85,16 @@ public final class TdlibChatList implements Comparator<TdlibChatList.Entry>, Des
 
   private @State int state = State.END_NOT_REACHED;
 
+  private final RuntimeException origin;
+
   TdlibChatList (Tdlib tdlib, TdApi.ChatList chatList) {
     this.tdlib = tdlib;
     this.chatList = chatList;
+    this.origin = Log.generateException();
+  }
+
+  public RuntimeException origin () {
+    return origin;
   }
 
   public TdlibChatListSlice slice (Filter<TdApi.Chat> filter) {
@@ -427,7 +435,8 @@ public final class TdlibChatList implements Comparator<TdlibChatList.Entry>, Des
   @NonNull
   public String toString () {
     return chatList +
-      " (list: " + list +
+      "(tdlib: " + tdlib +
+      ", list: " + list +
       ", state: " + state +
       ')';
   }

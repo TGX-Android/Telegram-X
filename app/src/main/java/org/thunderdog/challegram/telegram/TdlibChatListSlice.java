@@ -92,6 +92,8 @@ public final class TdlibChatListSlice implements Destroyable {
   private void ensureTdlibThreadAndList (TdlibChatList chatList) {
     tdlib.ensureTdlibThread();
     if (this.sourceList != chatList) {
+      Log.e("Origin of our list:", this.sourceList.origin());
+      Log.e("Origin of their list:", chatList.origin());
       throw new IllegalStateException("Received an update from " + chatList + ", expected: " + sourceList);
     }
   }
