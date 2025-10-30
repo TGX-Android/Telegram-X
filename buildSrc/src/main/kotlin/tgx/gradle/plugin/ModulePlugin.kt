@@ -25,7 +25,6 @@ import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.extra
 import org.gradle.kotlin.dsl.get
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import tgx.gradle.*
 import java.io.File
 
@@ -68,11 +67,6 @@ open class ModulePlugin : Plugin<Project> {
     }
     val safetyNetToken = if (keystore != null) {
       properties.getProperty("safetynet.api_key", "")
-    } else {
-      null
-    }
-    val recaptchaKeyId = if (keystore != null) {
-      properties.getProperty("recaptcha.key_id", "")
     } else {
       null
     }
@@ -181,7 +175,6 @@ open class ModulePlugin : Plugin<Project> {
               buildConfigBool("SHARED_STL", Config.SHARED_STL)
 
               buildConfigString("SAFETYNET_API_KEY", safetyNetToken)
-              buildConfigString("RECAPTCHA_KEY_ID", recaptchaKeyId)
 
               buildConfigString("DOWNLOAD_URL", appDownloadUrl)
               buildConfigString("GOOGLE_PLAY_URL", googlePlayUrl)

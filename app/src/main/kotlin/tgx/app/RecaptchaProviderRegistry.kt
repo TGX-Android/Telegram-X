@@ -16,7 +16,7 @@ object RecaptchaProviderRegistry {
 
   fun addProvider(context: RecaptchaContext) {
     this.context = context
-    val key = context.recaptchaKeyId.takeIf { !it.isNullOrEmpty() } ?: ""
+    val key = context.recaptchaSiteKey.takeIf { !it.isNullOrEmpty() } ?: ""
     map[key] = context
     executePostponedTasks()
   }
@@ -28,7 +28,7 @@ object RecaptchaProviderRegistry {
 
   private fun getContext(keyId: String): RecaptchaContext? {
     return map[keyId] ?: context?.let {
-      if (it.recaptchaKeyId == keyId) {
+      if (it.recaptchaSiteKey == keyId) {
         it
       } else {
         val modifiedContext = RecaptchaContext(it.application, keyId)

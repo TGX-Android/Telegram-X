@@ -3,14 +3,13 @@ package tgx.app
 import android.app.Application
 import com.google.android.recaptcha.Recaptcha
 import com.google.android.recaptcha.RecaptchaTasksClient
-import org.thunderdog.challegram.BuildConfig
 import org.thunderdog.challegram.telegram.Tdlib
 
 private typealias Callback = (RecaptchaTasksClient?, Exception?) -> Unit
 
-class RecaptchaContext @JvmOverloads constructor(
+class RecaptchaContext(
   val application: Application,
-  val recaptchaKeyId: String? = BuildConfig.RECAPTCHA_KEY_ID
+  val recaptchaSiteKey: String
 ) {
   private var initializationStarted: Boolean = false
   private var client: RecaptchaTasksClient? = null
@@ -24,8 +23,10 @@ class RecaptchaContext @JvmOverloads constructor(
     if (initializationStarted)
       return
     initializationStarted = true
-    recaptchaKeyId.takeIf { !it.isNullOrEmpty() }?.let { key ->
-      Recaptcha.getTasksClient(application, key)
+    recaptchaSiteKey.takeIf {
+      it.isNotEmpty()
+    }?.let { siteKey ->
+      Recaptcha.getTasksClient(application, siteKey)
         .addOnSuccessListener {
           client = it
           executeScheduledTasks()
