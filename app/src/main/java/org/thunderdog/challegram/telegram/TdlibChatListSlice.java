@@ -18,6 +18,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.Log;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -143,23 +144,29 @@ public class TdlibChatListSlice {
       }
 
       @Override
-      public void onChatAdded (TdlibChatList chatList, TdApi.Chat chat, int atIndex, Tdlib.ChatChange changeInfo) {
+      public void onChatAdded (TdlibChatList chatList, TdApi.Chat chat, final int originalIndex, Tdlib.ChatChange changeInfo) {
         tdlib.ensureTdlibThread();
         if (filter != null) {
           if (!filter.accept(chat))
             return;
         }
         Entry entry = new Entry(chat, chatList.chatList(), changeInfo.position, keepPositions);
-        if (needSort()) {
-          atIndex = findInsertIndex(entry);
+        final int insertIndex;
+        try {
+          if (needSort()) {
+            final int sortedIndex = findInsertIndex(entry);
+            filteredList.add(sortedIndex, entry);
+            insertIndex = sortedIndex;
+          } else {
+            filteredList.add(originalIndex, entry);
+            insertIndex = originalIndex;
+          }
+        } catch (RuntimeException e) {
+          Log.e("Chats in source: %d", e, sourceList.count(null));
+          throw e;
         }
-        if (atIndex == filteredList.size()) {
-          filteredList.add(entry);
-        } else {
-          filteredList.add(atIndex, entry);
-        }
-        if (atIndex < displayCount) {
-          subListener.onChatAdded(chatList, chat, atIndex, changeInfo);
+        if (insertIndex < displayCount) {
+          subListener.onChatAdded(chatList, chat, insertIndex, changeInfo);
           displayCount++;
           subListener.onChatListChanged(chatList, ChangeFlags.ITEM_ADDED);
         } else {
@@ -339,8 +346,9 @@ public class TdlibChatListSlice {
   }
 
   public void unsubscribeFromUpdates (ChatListListener subListener) {
-    if (this.listener != null) {
+    if (this.listener != null && this.subListener == subListener) {
       sourceList.unsubscribeFromUpdates(this.listener);
+      this.subListener = null;
       this.listener = null;
     }
   }

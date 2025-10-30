@@ -954,7 +954,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   private long getPauseTimeout () {
-    if (Settings.instance().forceTdlibRestart())
+    if (Config.TEST_TDLIB_RESTARTS || Settings.instance().forceTdlibRestart())
       return TimeUnit.SECONDS.toMillis(1);
     if (!context().hasUi())
       return TimeUnit.SECONDS.toMillis(5); // No UI (running in the background), no limits

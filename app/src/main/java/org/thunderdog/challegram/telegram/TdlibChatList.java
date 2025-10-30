@@ -221,6 +221,7 @@ public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterCh
   @AnyThread
   public void initializeList (@Nullable Filter<TdApi.Chat> filter, ChatListListener listener, @NonNull RunnableData<List<Entry>> callback, int initialChunk, Runnable onLoadInitialChunk) {
     getChats(filter, (list) -> {
+      tdlib.ensureTdlibThread();
       callback.runWithData(list);
       subscribeToUpdates(listener);
     });
@@ -394,6 +395,7 @@ public class TdlibChatList implements Comparator<TdlibChatList.Entry>, CounterCh
   // Internal
 
   private void addChatToList (Entry entry, Tdlib.ChatChange changeInfo) {
+    tdlib.ensureTdlibThread();
     int atIndex;
     synchronized (list) {
       atIndex = Collections.binarySearch(this.list, entry, this);
