@@ -802,8 +802,13 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
     keyEventListeners.remove(listener);
   }
 
+  private boolean backKeyDownReceived;
+
   @Override
-  public boolean onKeyDown (int keyCode, KeyEvent event) {
+  public final boolean onKeyDown (int keyCode, KeyEvent event) {
+    if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_DOWN) {
+      backKeyDownReceived = true;
+    }
     boolean handled = false;
     for (KeyEventListener listener : keyEventListeners) {
       if (!handled && listener.onKeyDown(keyCode, event)) {
@@ -814,7 +819,14 @@ public abstract class BaseActivity extends FragmentActivity implements View.OnTo
   }
 
   @Override
-  public boolean onKeyUp (int keyCode, KeyEvent event) {
+  public final boolean onKeyUp (int keyCode, KeyEvent event) {
+    if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_UP) {
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P && !backKeyDownReceived) {
+        getOnBackPressedDispatcher().onBackPressed();
+        return true;
+      }
+      backKeyDownReceived = false;
+    }
     boolean handled = false;
     for (KeyEventListener listener : keyEventListeners) {
       if (!handled && listener.onKeyUp(keyCode, event)) {
