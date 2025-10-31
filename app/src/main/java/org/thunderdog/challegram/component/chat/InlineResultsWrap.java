@@ -79,7 +79,7 @@ import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import tgx.td.ChatId;
 
-public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickListener, StickerSmallView.StickerMovementCallback, InlineResultsAdapter.HeightProvider, FactorAnimator.Target, View.OnLongClickListener, TGLegacyManager.EmojiLoadListener, BaseView.CustomControllerProvider, RootFrameLayout.InsetsChangeListener, RootFrameLayout.MarginModifier {
+public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickListener, StickerSmallView.StickerMovementCallback, InlineResultsAdapter.HeightProvider, FactorAnimator.Target, View.OnLongClickListener, TGLegacyManager.EmojiLoadListener, BaseView.CustomControllerProvider, RootFrameLayout.MarginModifier {
   private RecyclerView recyclerView;
   private ShadowView shadowView;
   private GridLayoutManager gridManager;
@@ -812,6 +812,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
     if (adapter.getItemCount() > 0) {
       adapter.notifyItemChanged(0);
     }
+    Views.setBottomMargin(this, bottomInset + lastBottomMargin);
   }
 
   @Override
@@ -830,7 +831,6 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
   private void setBottomMargin (int bottomMargin) {
     if (this.lastBottomMargin != bottomMargin) {
       this.lastBottomMargin = bottomMargin;
-      Views.setBottomMargin(this, bottomInset + bottomMargin);
       updateOffset();
     }
     if (lickView != null) {
@@ -871,29 +871,28 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
 
   private int topOffset, bottomInset;
 
-  private void setInsets (int topOffset, int bottomInset) {
+  private boolean setInsets (int topOffset, int bottomInset) {
     if (this.topOffset != topOffset || this.bottomInset != bottomInset) {
       this.topOffset = topOffset;
       this.bottomInset = bottomInset;
-      Views.setBottomMargin(this, bottomInset + lastBottomMargin);
-      updateOffset();
+      return true;
     }
+    return false;
   }
 
   @Override
   public void onApplyMarginInsets (View child, LayoutParams params, Rect legacyInsets, Rect insets, Rect insetsWithoutIme) {
-    Views.setMargins(params,
+    boolean changed;
+    changed = Views.setMargins(params,
       legacyInsets.left,
       legacyInsets.top,
       legacyInsets.right,
       insets.bottom + lastBottomMargin
     );
-    setInsets(insets.top, insets.bottom);
-  }
-
-  @Override
-  public void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect effectiveInsetsWithoutIme, Rect systemInsets, Rect systemInsetsWithoutIme, boolean isUpdate) {
-    setInsets(systemInsets.top, systemInsets.bottom);
+    changed = setInsets(insets.top, insets.bottom) || changed;
+    if (changed) {
+      UI.post(this::updateOffset);
+    }
   }
 
   private RootFrameLayout rootView;
@@ -902,20 +901,12 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
   protected void onAttachedToWindow () {
     super.onAttachedToWindow();
     rootView = Views.findAncestor(this, RootFrameLayout.class, true);
-    if (rootView != null) {
-      rootView.addInsetsChangeListener(this);
-      Rect systemInsets = rootView.getSystemInsets();
-      setInsets(systemInsets.top, systemInsets.bottom);
-    }
   }
 
   @Override
   protected void onDetachedFromWindow () {
     super.onDetachedFromWindow();
-    if (rootView != null) {
-      rootView.removeInsetsChangeListener(this);
-      rootView = null;
-    }
+    rootView = null;
   }
 
   public int getMinItemsHeight () {
