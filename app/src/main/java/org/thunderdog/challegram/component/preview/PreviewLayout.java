@@ -15,6 +15,8 @@
 package org.thunderdog.challegram.component.preview;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.view.Gravity;
 import android.view.View;
@@ -22,6 +24,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.CallSuper;
+import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
 import androidx.collection.SparseArrayCompat;
 
@@ -34,15 +37,20 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.navigation.OptionsLayout;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeListenerList;
+import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.widget.PopupLayout;
+import org.thunderdog.challegram.widget.RootFrameLayout;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 
-public abstract class PreviewLayout extends FrameLayoutFix implements View.OnClickListener, PopupLayout.ShowListener, PopupLayout.DismissListener {
+public abstract class PreviewLayout extends FrameLayoutFix implements View.OnClickListener, PopupLayout.ShowListener, PopupLayout.DismissListener, RootFrameLayout.InsetsChangeListener {
   protected EmbeddedService nativeEmbed;
   protected int footerHeight;
   protected final ViewController<?> parent;
@@ -57,6 +65,7 @@ public abstract class PreviewLayout extends FrameLayoutFix implements View.OnCli
     addFooterItem(R.id.btn_openLink, R.string.OpenInExternalApp,  R.drawable.baseline_open_in_browser_24);
 
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
+    themeListeners.addThemeInvalidateListener(this);
 
     UI.getContext(context).addGlobalThemeListeners(themeListeners);
   }
@@ -112,12 +121,62 @@ public abstract class PreviewLayout extends FrameLayoutFix implements View.OnCli
     popupLayout.setOverlayStatusBar(true);
     popupLayout.setShowListener(this);
     popupLayout.setDismissListener(this);
+    popupLayout.init(true);
     popupLayout.showSimplePopupView(this, getPreviewHeight());
+  }
+
+  private RootFrameLayout rootFrameLayout;
+
+  @Override
+  protected void onAttachedToWindow () {
+    super.onAttachedToWindow();
+    if (Settings.instance().useEdgeToEdge()) {
+      rootFrameLayout = Views.findAncestor(this, RootFrameLayout.class, false);
+      if (rootFrameLayout != null) {
+        rootFrameLayout.addInsetsChangeListener(this);
+        Rect rect = rootFrameLayout.getSystemInsetsWithoutIme();
+        setVerticalInsets(rect.top, rect.bottom);
+      }
+    }
+  }
+
+  @Override
+  protected void onDetachedFromWindow () {
+    super.onDetachedFromWindow();
+    if (rootFrameLayout != null) {
+      rootFrameLayout.removeInsetsChangeListener(this);
+      rootFrameLayout = null;
+    }
+  }
+
+  @Override
+  public void onInsetsChanged (RootFrameLayout viewGroup, Rect effectiveInsets, Rect effectiveInsetsWithoutIme, Rect systemInsets, Rect systemInsetsWithoutIme, boolean isUpdate) {
+    setVerticalInsets(systemInsetsWithoutIme.top, systemInsetsWithoutIme.bottom);
+  }
+
+  private int topInset, bottomInset;
+
+  private void setVerticalInsets (int top, int bottomInset) {
+    if (this.topInset != top || this.bottomInset != bottomInset) {
+      this.topInset = top;
+      this.bottomInset = bottomInset;
+      Views.setPaddingBottom(this, bottomInset);
+      setWillNotDraw(bottomInset == 0);
+      UI.post(this::requestLayout);
+    }
+  }
+
+  @Override
+  protected void onDraw (@NonNull Canvas c) {
+    super.onDraw(c);
+    if (getPaddingBottom() != 0) {
+      c.drawRect(0, getMeasuredHeight() - getPaddingBottom(), getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(Theme.fillingColor()));
+    }
   }
 
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-    super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(computeHeight(MeasureSpec.getSize(widthMeasureSpec)), MeasureSpec.EXACTLY));
+    super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(computeHeight(MeasureSpec.getSize(widthMeasureSpec)) + bottomInset + topInset, MeasureSpec.EXACTLY));
   }
 
   protected abstract int computeHeight (int currentWidth);
