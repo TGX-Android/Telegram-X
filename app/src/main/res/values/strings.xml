@@ -952,7 +952,7 @@
   <string name="Off">Off</string>
   <string name="TimerInstant">Immediately</string>
   <string name="Chats">Chats</string>
-  <string name="Birthdate">Date of birth</string>
+  <string name="Birthdate">Birthday</string>
   <string name="Notifications">Notifications</string>
   <string name="NotificationsEnabled">Enabled</string>
   <string name="NotificationsEnabledHint">Enabled (%1$s)</string>
@@ -1403,10 +1403,10 @@
   <string name="SetBirthdateWarning">Set birthdate to %1$s? There\'s a time frame before you can change it to another date.</string>
   <string name="SetBirthdateOk">Confirm</string>
   <string name="SetBirthdate">Tap to set</string>
-  <string name="BirthdayPopupTitle">Date of Birth</string>
+  <string name="BirthdayPopupTitle">Birthday</string>
   <string name="BirthdateEmpty">Unset</string>
-  <string name="MenuBirthdateSet">Add Date of Birth</string>
-  <string name="MenuBirthdateEdit">Edit Date of Birth</string>
+  <string name="MenuBirthdateSet">Add Birthday</string>
+  <string name="MenuBirthdateEdit">Edit Birthday</string>
   <string name="MenuBirthdatePrivacy">Change Privacy Settings</string>
   <string name="MenuBirthdateRemove">Remove</string>
   <string name="PhoneMobile">Mobile</string>
@@ -1786,7 +1786,7 @@
   <string name="SendSticker">Send sticker</string>
   <string name="ViewPackPreview">View Pack</string>
   <string name="UserBio">Bio</string>
-  <string name="UserBirthdate">Date of Birth</string>
+  <string name="UserBirthdate">Birthday</string>
   <string name="BotInfo">Description</string>
   <string name="BotDescription">Intro</string>
   <string name="EditBotUsername">Public Link</string>
@@ -3871,7 +3871,7 @@
   <string name="PrivacyMessageTitle">Messages</string>
   <string name="PrivacyMessagePreview">New Chats</string>
   <string name="WhoCanSendMessages">Who can send me messages?</string>
-  <string name="NewChatsPrivacyDesc">You can restrict messages from users who are not in your contacts and don\'t have **Telegram&#160;Premium**.</string>
+  <string name="NewChatsPrivacyDesc">You can restrict messages from users who are not in your contacts and whom you haven\'t messaged first.</string>
 
   <string name="EditPrivacyVoice">Send Me Voice Messages</string>
   <string name="EditPrivacyGifts">Display Gifts without approval</string>
@@ -3975,8 +3975,8 @@
   <string name="WhoCanSeePhoneInfo">Users who have your number saved in their contacts will also see it on Telegram.</string>
   <string name="WhoCanSeeBio">Who can see your bio?</string>
   <string name="WhoCanSeeBioInfo">You can restrict who can see the bio on your profile with granular precision.</string>
-  <string name="WhoCanSeeBirthdate">Who can see your date of birth?</string>
-  <string name="WhoCanSeeBirthdateInfo">You can restrict who can see the date of birth on your profile with granular precision.</string>
+  <string name="WhoCanSeeBirthdate">Who can see your birthday?</string>
+  <string name="WhoCanSeeBirthdateInfo">You can restrict who can see the birthday on your profile with granular precision.</string>
 
   <string name="PrivacyShowNumberExceptionOn">Visible</string>
   <string name="PrivacyShowNumberExceptionContacts">Visible only for contacts</string>
@@ -4001,12 +4001,12 @@
   <string name="PrivacyShowBirthdateExceptionOn">Visible</string>
   <string name="PrivacyShowBirthdateExceptionContacts">Visible only for contacts</string>
   <string name="PrivacyShowBirthdateExceptionOff">Hidden</string>
-  <string name="PrivacyShowBirthdateNobody">Nobody can see your date of birth</string>
-  <string name="PrivacyShowBirthdateNobodyExcept">Nobody (%1$s) can see your date of birth</string>
-  <string name="PrivacyShowBirthdateContacts">Only contacts can see your date of birth</string>
-  <string name="PrivacyShowBirthdateContactsExcept">Only contacts (%1$s) can see your date of birth</string>
-  <string name="PrivacyShowBirthdateEverybody">Everybody can see your date of birth</string>
-  <string name="PrivacyShowBirthdateEverybodyExcept">Everybody (%1$s) can see your date of birth</string>
+  <string name="PrivacyShowBirthdateNobody">Nobody can see your birthday</string>
+  <string name="PrivacyShowBirthdateNobodyExcept">Nobody (%1$s) can see your birthday</string>
+  <string name="PrivacyShowBirthdateContacts">Only contacts can see your birthday</string>
+  <string name="PrivacyShowBirthdateContactsExcept">Only contacts (%1$s) can see your birthday</string>
+  <string name="PrivacyShowBirthdateEverybody">Everybody can see your birthday</string>
+  <string name="PrivacyShowBirthdateEverybodyExcept">Everybody (%1$s) can see your birthday</string>
 
   <!--<string name="PrivacyAllowFindingNobody">Nobody can see your phone number</string>
   <string name="PrivacyAllowFindingNobodyExcept">Nobody (%1$s) can see your phone number</string>-->
@@ -4435,7 +4435,7 @@
   <string name="EditPrivacyStatus">Last Seen &amp; Online</string>
   <string name="EditPrivacyPhoneNumber">Phone Number</string>
   <string name="EditPrivacyBio">Bio</string>
-  <string name="EditPrivacyBirthdate">Date of Birth</string>
+  <string name="EditPrivacyBirthdate">Birthday</string>
 
   <string name="EditPrivacyReadDate">See My Read Date</string>
   <string name="EditPrivacyReadDateToggleHint">You can hide your **Read Date** only from everyone who can\'t see your **Last Seen &amp; Online**.\n\nSee **[Privacy and Security](tg://settings/privacy)** – **Last Seen &amp; Online** – **Hide Read Time**.</string>
