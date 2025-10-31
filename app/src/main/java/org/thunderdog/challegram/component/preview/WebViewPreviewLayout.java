@@ -209,7 +209,11 @@ public class WebViewPreviewLayout extends PreviewLayout {
 
   @Override
   public void onPopupCompletelyShown (PopupLayout popup) {
-    preview.loadUrl(nativeEmbed.embedUrl);
+    if (nativeEmbed.hasAdditionalHttpHeaders()) {
+      preview.loadUrl(nativeEmbed.embedUrl, nativeEmbed.additionalHttpHeaders);
+    } else {
+      preview.loadUrl(nativeEmbed.embedUrl);
+    }
   }
 
   private void processFullscreen (boolean inFullscreen) {
