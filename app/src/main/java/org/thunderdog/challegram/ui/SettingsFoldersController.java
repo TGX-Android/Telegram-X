@@ -41,7 +41,6 @@ import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.telegram.ChatFolderStyle;

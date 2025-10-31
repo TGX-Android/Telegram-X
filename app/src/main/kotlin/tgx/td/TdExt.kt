@@ -16,7 +16,8 @@
 
 package tgx.td
 
-import androidx.collection.*
+import androidx.collection.LongSparseArray
+import androidx.collection.set
 import org.drinkless.tdlib.TdApi.*
 import org.thunderdog.challegram.R
 import org.thunderdog.challegram.core.Lang
