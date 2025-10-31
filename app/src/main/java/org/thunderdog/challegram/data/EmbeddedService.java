@@ -177,7 +177,7 @@ public class EmbeddedService {
     String time = uri.getQueryParameter("t");
     Uri.Builder b = new Uri.Builder()
       .scheme("https")
-      .authority("www.youtube.com")
+      .authority("www.youtube-nocookie.com")
       .path("embed/" + videoId);
     if (allowAutoplay) {
       b.appendQueryParameter("autoplay", "1");
