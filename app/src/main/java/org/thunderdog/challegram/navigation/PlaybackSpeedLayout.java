@@ -73,6 +73,10 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
   private static final int FADE_ANIMATOR_ID = 0;
   private static final Rect tmpRect = new Rect();
 
+  public static int normalizeSpeed (int speed) {
+    return MathUtils.fromTo(speed, MIN_SPEED, MAX_SPEED);
+  }
+
   private static final int BUTTONS_COUNT = 6;
   private final Button[] buttons = new Button[BUTTONS_COUNT];
   private final BoolAnimator fade = new BoolAnimator(FADE_ANIMATOR_ID, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 230L);
@@ -367,6 +371,8 @@ public class PlaybackSpeedLayout extends MenuMoreWrapAbstract implements View.On
   }
 
   private void applySpeedAndUpdateViews (int speed, boolean isFinal) {
+    if (speed <= 0)
+      throw new IllegalArgumentException(Integer.toString(speed));
     currentSpeed = speed;
     listener.onChange(currentSpeed, isFinal);
     if (!isFinal) {

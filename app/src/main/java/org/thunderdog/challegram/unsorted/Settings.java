@@ -50,6 +50,7 @@ import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.emoji.RecentEmoji;
 import org.thunderdog.challegram.emoji.RecentInfo;
 import org.thunderdog.challegram.loader.ImageFile;
+import org.thunderdog.challegram.navigation.PlaybackSpeedLayout;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.ChatFolderOptions;
 import org.thunderdog.challegram.telegram.ChatFolderStyle;
@@ -7266,12 +7267,14 @@ public class Settings {
   private Integer _playbackSpeed;
 
   public void setPlaybackSpeed (int speed) {
+    if (speed <= 0)
+      throw new IllegalArgumentException(Integer.toString(speed));
     pmc.putInt(KEY_PLAYBACK_SPEED, _playbackSpeed = speed);
   }
 
   public int getPlaybackSpeed () {
     if (_playbackSpeed == null) {
-      _playbackSpeed = pmc.getInt(KEY_PLAYBACK_SPEED, 100);
+      _playbackSpeed = PlaybackSpeedLayout.normalizeSpeed(pmc.getInt(KEY_PLAYBACK_SPEED, 100));
     }
     return _playbackSpeed;
   }
