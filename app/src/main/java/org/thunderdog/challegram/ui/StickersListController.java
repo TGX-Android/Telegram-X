@@ -494,6 +494,11 @@ public class StickersListController extends ViewController<StickersListControlle
   }
 
   @Override
+  protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
+    Views.applyBottomInset(recyclerView, extraBottomInset);
+  }
+
+  @Override
   public void destroy () {
     super.destroy();
     Views.destroyRecyclerView(recyclerView);
